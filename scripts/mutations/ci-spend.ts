@@ -1,0 +1,78 @@
+// What CI spent each day (scripts/ci-spend.ts, docs/dev-loop.md's "CI
+// spend"): a waste unsaid, or a flag not raised, hides minutes Tu asked to
+// count.
+import type { Mutation } from "../mutations";
+export const mutations: Mutation[] = [
+  {
+    name: "ci-spend-cancelled-unsaid",
+    breaks: "a cancelled run's minutes aren't counted as waste",
+    file: "scripts/ci-spend.ts",
+    find: '    if (run.conclusion === "cancelled") waste.set(run.id, "cancelled");',
+    replace: "    if (false) waste.set(run.id, \"cancelled\");",
+    tests: ["test/ci-spend.test.ts", "-t", "each waste is the jobs that are it"],
+  },
+  {
+    name: "ci-spend-dispatch-a-rerun",
+    breaks: "a run started by hand of a commit already run, asked for with its own inputs, is counted as a re-run",
+    file: "scripts/ci-spend.ts",
+    find: ' && run.event !== "workflow_dispatch") waste.set(run.id, "re-run");',
+    replace: ') waste.set(run.id, "re-run");',
+    tests: ["test/ci-spend.test.ts", "-t", "each waste is the jobs that are it"],
+  },
+  {
+    name: "ci-spend-unread-unsaid",
+    breaks: "a verdict that came after a newer run's of its workflow and branch, which nothing reads, isn't counted as waste",
+    file: "scripts/ci-spend.ts",
+    find: "    if (newer) waste.set(run.id, \"unread\");",
+    replace: "",
+    tests: ["test/ci-spend.test.ts", "-t", "each waste is the jobs that are it"],
+  },
+  {
+    name: "ci-spend-kept-job-twice",
+    breaks: "a re-run's attempt that lists the jobs it kept of the one before counts them twice",
+    file: "scripts/ci-spend.ts",
+    find: "    if (!once.has(key)) once.set(key, job);",
+    replace: "    once.set(`${key}\\0${job.run_attempt}`, job);",
+    tests: ["test/ci-spend.test.ts", "-t", "each waste is the jobs that are it"],
+  },
+  {
+    name: "ci-spend-stopped-job-unsaid",
+    breaks: "a job that timed out, or was stopped in a run that wasn't cancelled, isn't counted as waste",
+    file: "scripts/ci-spend.ts",
+    find: '  if (job.conclusion === "timed_out" || job.conclusion === "cancelled") return "timed out";',
+    replace: '  if (job.conclusion === "timed_out") return "timed out";',
+    tests: ["test/ci-spend.test.ts", "-t", "each waste is the jobs that are it"],
+  },
+  {
+    name: "ci-spend-verdict-own-run",
+    breaks: "a push whose check was cancelled has no verdict said, though its batch's check gave it one",
+    file: "scripts/ci-spend.ts",
+    find: "other.created_at >= run.created_at && other.status",
+    replace: "other.id === run.id && other.status",
+    tests: ["test/ci-spend.test.ts", "-t", "a push's wait for its verdict"],
+  },
+  {
+    name: "ci-spend-waste-unflagged",
+    breaks: "waste past 10% of the day isn't flagged",
+    file: "scripts/ci-spend.ts",
+    find: "wasted / day.minutes > wasteFlag)",
+    replace: "wasted / day.minutes > 2 * wasteFlag)",
+    tests: ["test/ci-spend.test.ts", "-t", "waste past 10%"],
+  },
+  {
+    name: "ci-spend-growth-unflagged",
+    breaks: "a job kind that grew past 30% on the day before isn't flagged",
+    file: "scripts/ci-spend.ts",
+    find: "now > then * (1 + growthFlag)",
+    replace: "now > then * (2 + growthFlag)",
+    tests: ["test/ci-spend.test.ts", "-t", "waste past 10%"],
+  },
+  {
+    name: "ci-spend-history-dropped",
+    breaks: "the days before aren't kept in the comment, so no night compares with the one before",
+    file: "scripts/ci-spend.ts",
+    find: "  const kept = [...history.filter((d) => d.date !== day.date), day].slice(-14);",
+    replace: "  const kept = [day];",
+    tests: ["test/ci-spend.test.ts", "-t", "waste past 10%"],
+  },
+];

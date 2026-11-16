@@ -1377,6 +1377,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/clusters.ts --comment=1681 >> "$GITHUB_STEP_SUMMARY"
 
+  # What CI spent the last 24 hours (scripts/ci-spend.ts, docs/dev-loop.md's
+  # "CI spend"): runner-minutes by workflow and job kind, their share of
+  # the free plan's 20 jobs at once, queue waits, push-to-verdict latency
+  # and the minutes wasted, one comment on the pinned "CI spend" issue,
+  # #1989, edited in place each night with the days before; waste over 10%
+  # of the day or a job kind grown past 30% flagged.
+  ci-spend:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/ci-spend.ts --comment=1989 >> "$GITHUB_STEP_SUMMARY"
+
   # A red night of `main` is an issue, "Nightly red: <date>", opened or, run
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.

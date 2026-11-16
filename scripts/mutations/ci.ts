@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "run.headSha",
     tests: ["test/attribute.test.ts", "-t", "a batch's base is the newest check"],
   },
+  {
+    name: "always-run-reason-dropped",
+    breaks: "a job of a push's check runs whatever the change, ungated and with no reason said",
+    file: "scripts/ci.ts",
+    find: '  lint: "typecheck, rustfmt, clippy, cargo test and the Vite example\'s build: a change to any file can break one, and it starts beside plan",\n',
+    replace: "",
+    tests: ["test/ci.test.ts", "-t", "each job of a push's check is gated"],
+  },
 ];

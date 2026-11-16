@@ -67,6 +67,8 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Tests and mutation tooling | `test/`, `scripts/mutations.ts`, `scripts/mutations/`, `scripts/matrix.ts` |
 | Which tests a change can affect: the test selector, the one answer `bun run push`'s check and CI's suite run (ADR 1101, amended); the test map it reads of the compiler's code, recorded after each check of `main`; the nightly's audit of its misses | `scripts/select.ts`; `scripts/testMap.ts`, `.github/workflows/test-map.yml`; `scripts/selector-audit.ts` |
 | The issues' kind × area count, each cluster and the refactor its kind calls for (ADR 1085), the nightly's comment on #1681 | `scripts/clusters.ts`; the kinds' table, `docs/bug-kinds.md` |
+| What CI spent each day and what it wasted, the nightly's comment on #1989; which jobs of a push's check always run, and why | `scripts/ci-spend.ts`; `scripts/ci.ts`'s `alwaysRun` |
+| Which commit of a batched check broke each test it failed | `scripts/attribute.ts` |
 | Packaging, release and CI | `scripts/package-*.ts`, `scripts/ci.ts`, `.github/workflows/` |
 
 ## Hosts

@@ -419,3 +419,29 @@ Nothing is posted to a commit: a commit comment notifies its author's
 account, which is Tu's. The jobs run only after a failed suite, so a green
 check costs nothing more. Proof: `test/attribute.test.ts` and the
 `attribute-*` mutations.
+
+### Amended: every Actions minute counts (2026-11-16)
+
+Tu's standing guarantee. It rests on two rules, kept in docs/dev-loop.md's
+"CI spend".
+
+**A nightly CI spend report.** `scripts/ci-spend.ts`, the nightly's
+`ci-spend` job, keeps one comment on the pinned issue #1989. It counts
+runner-minutes, share of the 20-job cap, queue waits, push-to-verdict
+latency and wasted minutes, by workflow and by job kind, with the trend
+against the days before. Waste is a cancelled run's jobs; a re-run's (a
+later attempt, or a run of a commit its workflow already ran by the same
+event); an unread run's (its verdict after a newer run's of its workflow
+and branch); and a job that timed out or was stopped in a run that wasn't
+cancelled. The report flags waste over 10% of the day, and a job kind of
+30 minutes or more grown past 30% on the day before.
+
+**The gate rule.** Each job of a push's check either has a gate, its `if`
+reading `plan`'s outputs or another job's result, or is in `scripts/ci.ts`'s
+`alwaysRun` with a one-line reason. Every other workflow a push starts has
+a `paths:` filter. `test/ci.test.ts` fails on a job with neither.
+
+Proof: `test/ci-spend.test.ts` and the `ci-spend-*` mutations;
+`test/ci.test.ts`'s "each job of a push's check is gated" and the mutation
+`always-run-reason-dropped`.
+

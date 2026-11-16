@@ -23,6 +23,52 @@ background job of your own. Check `uptime` and stop or wait for anything else
 before each timed run, and give each number with its load. A timing taken
 under load isn't a measurement, and doesn't go in this ledger.
 
+## CI spend
+
+**Every GitHub Actions minute counts** (Tu, 2026-11-16), a standing
+guarantee, not a one-off. The free plan's limit that binds is 20 jobs at
+once, across every workflow.
+
+**The report.** The nightly's `ci-spend` job (`scripts/ci-spend.ts`) reads
+every workflow run of the last 24 hours, with every attempt's jobs. It
+keeps one comment on the pinned "CI spend" issue, #1989, up to date. The
+comment gives runner-minutes by workflow and by job kind, each one's share
+of the 20-job cap, and queue waits at p50 and p90. It gives peak
+concurrency, minutes at the cap, and push-to-verdict latency: from a
+push's check starting to the end of the first check of `main` at or after
+it that wasn't cancelled, its batch's. It gives the wasted minutes and the
+trend over the days before; each night's totals, 14 days of them, are kept
+in the comment itself. Run it by hand with `bun scripts/ci-spend.ts`.
+
+**Waste** is a job's minutes where:
+- **cancelled:** its run was cancelled;
+- **re-run:** it's of a run's second attempt or later, or of a run of a
+  commit its workflow had already run, by the same event. A run started by
+  hand is asked for with its own inputs, so it isn't a re-run;
+- **unread:** its run's verdict came after a newer run's of the same
+  workflow and branch, so nothing reads it;
+- **timed out:** it timed out, or was stopped in a run that wasn't
+  cancelled.
+
+It **flags** waste over 10% of the day, and any job kind of 30 minutes or
+more that grew more than 30% on the day before. A flag is worked like a
+slow spot: fix it, or record here why it stays.
+
+**The gate rule.** Every job of a push's check (`check.yml`) runs only
+where the change can affect it, by a gate: its `if` reads `plan`'s outputs
+(a path rule or the selection) or another job's result. The alternative is
+`scripts/ci.ts`'s `alwaysRun`, where each entry gives a one-line reason:
+today `plan`, `build` and `lint`. Every other workflow a push starts has a
+`paths:` filter. `test/ci.test.ts` holds this, so a new ungated job fails
+the suite until its author gates it or says why it always runs.
+
+The first report, of the 24 hours to 2026-11-16 13:30 UTC: 11,306
+runner-minutes, 2,540 wasted (22%). Of that, 2,156 was the nightly of
+2026-11-16, cancelled at 01:09 UTC with its jobs in progress. The mutation
+shards took 3,666 minutes, `Check`'s test shards 1,623, and the cap was
+full for 228 minutes. Push-to-verdict was 28 min at p50 and 65 min at p90,
+of 127 pushes.
+
 ## Active
 
 | Speed-up | Before | After | How | Where |

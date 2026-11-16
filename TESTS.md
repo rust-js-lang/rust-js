@@ -38,6 +38,12 @@ cases in both builds against native Rust. Its slice runs in each push's
 the mini in 10 parts. The nightly's `copies` job runs it whole, 205 s on the
 mini in 10 parts.
 
+Added on 2026-11-16: `test/ci-spend.test.ts`, the nightly's CI spend report
+(`scripts/ci-spend.ts`, docs/dev-loop.md's "CI spend"): each waste, the
+cap's minutes, push-to-verdict, the flags and the days kept in the comment
+on #1989. `test/ci.test.ts` holds the gate rule: every job of a push's
+check is gated or is on `alwaysRun` with its reason.
+
 Added on 2026-11-16: `test/attribute.test.ts`, a failed check's
 attribution (`scripts/attribute.ts`, ADR 1101, amended): the batch's
 commits its failing tests run again at, at most six, and the first each

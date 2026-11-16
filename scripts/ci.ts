@@ -328,6 +328,15 @@ async function plan(given?: string) {
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${said}\n`);
 }
 
+/** The jobs of a push's check that run whatever it changes, each with its
+ * reason; every other is gated, its `if` reading `plan`'s outputs or
+ * another job's result (docs/dev-loop.md's "CI spend", test/ci.test.ts). */
+export const alwaysRun: Record<string, string> = {
+  plan: "it decides every other job's gate, and the suite's selection",
+  build: "beside plan, the release build nets and iterator-forms restore: gated, it would wait for plan, a minute onto nets' leg, the check's longest; restored from its cache it's half a minute",
+  lint: "typecheck, rustfmt, clippy, cargo test and the Vite example's build: a change to any file can break one, and it starts beside plan",
+};
+
 /** The commit of the newest check of `main` that completed, red or green,
  * but HEAD's own: a batch's base, the commits after it its check runs over. */
 export function completedBase(all: Run[], head: string): string | undefined {

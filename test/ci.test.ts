@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, nets, netsSummary, resultsBase, testShards, timingsRun } from "../scripts/ci";
+import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import {
@@ -486,7 +486,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage", "test-times", "selector-audit", "clusters", "attribute-plan", "attribute", "attribute-report"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage", "test-times", "selector-audit", "clusters", "attribute-plan", "attribute", "attribute-report", "ci-spend"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -1299,7 +1299,7 @@ test("the nightly's test times follow each of its jobs, the suite's reports amon
   const nightly = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/nightly.yml"), "utf8")) as { jobs: Record<string, { needs?: string[]; if?: string }> };
   const times = nightly.jobs["test-times"]!;
   expect(times.if).toBe("always()");
-  const others = Object.keys(nightly.jobs).filter((id) => !["test-times", "issue", "decision-coverage", "seeds", "crater-report", "selector-audit", "clusters"].includes(id));
+  const others = Object.keys(nightly.jobs).filter((id) => !["test-times", "issue", "decision-coverage", "seeds", "crater-report", "selector-audit", "clusters", "ci-spend"].includes(id));
   expect(others.filter((id) => !times.needs!.includes(id))).toEqual([]);
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("name: junit-${{ matrix.shard }}");
   expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain('"--reporter=junit"');
@@ -1339,4 +1339,21 @@ test("a check's suite takes the machines its selection needs", () => {
   const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
   expect(check).toContain("test_shards: ${{ steps.plan.outputs.test_shards }}");
   expect(check).toContain("${{ inputs.test_shards || needs.plan.outputs.test_shards || '2' }}");
+});
+
+// Every minute counts (Tu, 2026-11-16): each job of a push's check runs
+// only where its change can affect it, by a gate, its `if` reading
+// `plan`'s outputs or another job's result, or is on `alwaysRun` with its
+// reason. A new job with neither fails here, and its author says why.
+test("each job of a push's check is gated, or always runs for a reason it names", () => {
+  const check = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { if?: string }> };
+  const gated = (id: string) => /\bneeds\.[\w-]+\.(outputs\.[\w-]+|result)\b/.test(check.jobs[id]!.if ?? "");
+  expect(Object.keys(check.jobs).filter((id) => !gated(id) && !(id in alwaysRun))).toEqual([]);
+  // The list names jobs there are, ungated, each with a reason.
+  expect(Object.entries(alwaysRun).filter(([id, why]) => !(id in check.jobs) || gated(id) || why.length < 20)).toEqual([]);
+  // Another workflow a push starts runs only of the paths it reads.
+  for (const file of readdirSync(join(root, ".github/workflows")).filter((name) => name !== "check.yml")) {
+    const on = (Bun.YAML.parse(readFileSync(join(root, ".github/workflows", file), "utf8")) as { on: Record<string, { paths?: string[] } | null> }).on;
+    if ("push" in on) expect([file, (on.push?.paths ?? []).length > 0]).toEqual([file, true]);
+  }
 });
