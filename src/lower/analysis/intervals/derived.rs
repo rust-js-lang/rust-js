@@ -1,7 +1,8 @@
 //! The relations an assignment's arithmetic gives what it assigns (ADR
 //! 1137's M2b-1, ADR 1168): `t = i - c` below what `i` is, `t = x / c` or
 //! `x >> c` at most `x`, `t = i + c` past `i + (c - 1)` strictly below, and
-//! the sum `t = x + c` is, which `x + c` again reads.
+//! the sum `t = x + c` is, which `x + c` again reads; and a heap's halving,
+//! the one scaled form (`halves`, `doubled`, ADR 1168).
 
 use super::*;
 
@@ -10,6 +11,10 @@ use super::*;
 pub(super) struct Derived {
     pub(super) below_as: Vec<(Term, bool)>,
     pub(super) sum: Option<(Local, i128, bool)>,
+    /// What `t` is a half of, `n >> 1` or `n / 2`.
+    pub(super) half_of: Option<Term>,
+    /// What `t` is twice what's strictly below a half of.
+    pub(super) twice_below: Option<Term>,
 }
 
 impl<'tcx> Walk<'_, 'tcx> {
@@ -46,20 +51,55 @@ impl<'tcx> Walk<'_, 'tcx> {
             }
         }
         // `t = x / c` or `t = x >> c` of what's never negative: at most `x`,
-        // below what it's below, `heap[(index - 1) >> 1]`.
-        if let Rvalue::BinaryOp(BinOp::Div | BinOp::Shr, operands) = rvalue
+        // below what it's below, `heap[(index - 1) >> 1]`; at most `x`
+        // itself, a slice's length or an integer, `half_length <= length`;
+        // and of `x >> 1` or `x / 2`, its half (`halves`, ADR 1168, #1948).
+        let mut half_of: Option<Term> = None;
+        let mut twice_below: Option<Term> = None;
+        if let Rvalue::BinaryOp(op @ (BinOp::Div | BinOp::Shr), operands) = rvalue
             && let Some(x) = operands.0.place().and_then(|p| p.as_local())
             && self.operand(&operands.0, state).is_some_and(|x| x.lo >= 0)
             && let Some(c) = self.operand(&operands.1, state)
             && c.lo == c.hi
-            && (c.lo >= 1 || matches!(rvalue, Rvalue::BinaryOp(BinOp::Shr, _)) && c.lo >= 0)
+            && (c.lo >= 1 || *op == BinOp::Shr && c.lo >= 0)
         {
+            let of = state.length_of(x).map_or(Term::Int(state.root(x)), Term::Len);
             let x = state.root(x);
             below_as.extend(
                 (state.below.iter())
                     .filter(|&&(of, _, _)| of == x)
                     .map(|&(_, y, strict)| (y, strict)),
             );
+            below_as.push((of, false));
+            if (*op, c.lo) == (BinOp::Shr, 1) || (*op, c.lo) == (BinOp::Div, 2) {
+                half_of = Some(of);
+            }
+        }
+        // `t = a * 2` or `2 * a` of `a` at most a half of `n`: at most `n`,
+        // and below it where `a` is below the half, as `2 * h <= n`; which
+        // never wraps, being at most `n` (`halves`, ADR 1168, #1948).
+        if let Rvalue::BinaryOp(BinOp::Mul, operands) = rvalue {
+            let two = |o: &Operand<'tcx>| self.operand(o, state).is_some_and(|c| (c.lo, c.hi) == (2, 2));
+            let doubled = match (
+                operands.0.place().and_then(|p| p.as_local()),
+                operands.1.place().and_then(|p| p.as_local()),
+            ) {
+                (Some(a), _) if two(&operands.1) => Some(a),
+                (_, Some(a)) if two(&operands.0) => Some(a),
+                _ => None,
+            };
+            if let Some(a) = doubled.map(|a| state.root(a)) {
+                let halved: Vec<(Term, bool)> = (state.below.iter())
+                    .filter(|&&(x, _, _)| x == a)
+                    .filter_map(|&(_, y, strict)| match y {
+                        Term::Int(h) => state.halves.get(&state.root(h)).map(|&n| (n, strict)),
+                        Term::Len(_) => None,
+                    })
+                    .collect();
+                // Twice what's strictly below the half: at most `n - 2`.
+                twice_below = halved.iter().find(|&&(_, strict)| strict).map(|&(n, _)| n);
+                below_as.extend(halved);
+            }
         }
         // `t = x + c` of a constant at least one: a sum known again, `x + c`
         // computed before, is that one, the same value though it wraps.
@@ -93,6 +133,20 @@ impl<'tcx> Walk<'_, 'tcx> {
                     .map(|&(_, y, _)| (y, false)),
             );
         }
-        Derived { below_as, sum }
+        // `t = b + 1` of `b` twice what's below a half of `n`, at most `n -
+        // 2`: below `n`, a heap's `2 * index + 1` (`doubled`, ADR 1168).
+        if let Rvalue::BinaryOp(BinOp::Add, operands) = rvalue
+            && let Some(b) = operands.0.place().and_then(|p| p.as_local())
+            && self.operand(&operands.1, state).is_some_and(|c| (c.lo, c.hi) == (1, 1))
+            && let Some(&n) = state.doubled.get(&state.root(b))
+        {
+            below_as.push((n, true));
+        }
+        Derived {
+            below_as,
+            sum,
+            half_of,
+            twice_below,
+        }
     }
 }

@@ -131,10 +131,10 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
 `);
   expect(wrapsProved(dir)).toEqual(["proved-wrap counted", "proved-wrap last", "proved-wrap sift_down", "proved-wrap sift_down", "proved-wrap sift_down", "proved-wrap sift_down", "proved-wrap skipped", "proved-wrap small", "proved-wrap small", "proved-wrap small", "proved-wrap small"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // `heap[leftIndex]` under `leftIndex < length` of the length its
-  // callers give: MIR doesn't carry the relation since it decides call
-  // indexes (#1948).
-  expect(js).toContain("    const leftIndex = (index + 1) * 2 - 1;\n    const rightIndex = leftIndex + 1;\n    if ($index(heap, leftIndex) < $index(heap, index)) {\n      if (rightIndex < length && heap[rightIndex] < heap[leftIndex]) {\n        [heap[index], heap[rightIndex]] = [heap[rightIndex], heap[index]];\n");
+  // `heap[leftIndex]` and `heap[index]` under `index < length >> 1`:
+  // twice what's below a half is below the whole, and the half at most
+  // the length (ADR 1168, #1948).
+  expect(js).toContain("    const leftIndex = (index + 1) * 2 - 1;\n    const rightIndex = leftIndex + 1;\n    if (heap[leftIndex] < heap[index]) {\n      if (rightIndex < length && heap[rightIndex] < heap[leftIndex]) {\n        [heap[index], heap[rightIndex]] = [heap[rightIndex], heap[index]];\n");
   expect(js).toContain("  const halfLength = length >>> 1;\n");
   expect(js).toContain("  [heap[0], heap[heap.length - 1]] = [heap[heap.length - 1], heap[0]];\n  const first = heap.pop();\n");
   expect(js).toContain("items[items.length - 1]");

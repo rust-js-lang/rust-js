@@ -1094,3 +1094,13 @@ React's port: 123 `$index` to 117, the Flight loaders'
 `js::truthy` between the test and the index, a plain index, none added.
 The bounds matrix's `vec_kept`, whose `keep` stores a raw pointer, stays
 escaped, its 13 programs as native Rust runs them.
+
+## Amendment: the relational part's derivation rules (2026-11-16, #1948, #1949)
+
+M2b-1's `below`, each `x < y` and `x <= y`, gains rules that derive it:
+a half at most what it halves, twice what's below a half below the whole
+(the one scaled form), and a bound through one integer between; next, a
+length shifted, a step-2 loop's index and callers' facts. General
+difference bounds, `x ≤ y + c`, come with the first shape needing another
+`c` ([1168](1168-difference-bounds-in-the-mir-intervals.md)).
+

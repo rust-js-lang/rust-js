@@ -333,6 +333,8 @@ impl<'tcx> Walk<'_, 'tcx> {
             has_keys: IndexMap::default(),
             equal_lens: IndexSet::default(),
             rows: IndexMap::default(),
+            halves: IndexMap::default(),
+            doubled: IndexMap::default(),
         });
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
@@ -642,7 +644,12 @@ impl<'tcx> Walk<'_, 'tcx> {
         let (mut comparison, mut copy_of, mut length_of) = (None, None, None);
         // What its arithmetic tells of it: each relation, and the sum it is
         // (`derived`).
-        let derived::Derived { mut below_as, sum } = self.derived(rvalue, state, range);
+        let derived::Derived {
+            mut below_as,
+            sum,
+            half_of,
+            twice_below,
+        } = self.derived(rvalue, state, range);
         let again = sum.and_then(|(of, c, _)| {
             (state.sums.iter())
                 .find(|&(&t, &(o, k, _))| (o, k) == (of, c) && t != local)
@@ -838,6 +845,12 @@ impl<'tcx> Walk<'_, 'tcx> {
             if y != Term::Len(local) && y != Term::Int(local) {
                 state.below.insert((local, y, strict));
             }
+        }
+        if let Some(of) = half_of.filter(|&of| of != Term::Len(local) && of != Term::Int(local)) {
+            state.halves.insert(local, of);
+        }
+        if let Some(of) = twice_below.filter(|&of| of != Term::Len(local) && of != Term::Int(local)) {
+            state.doubled.insert(local, of);
         }
     }
 

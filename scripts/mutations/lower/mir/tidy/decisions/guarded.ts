@@ -21,6 +21,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "written-pure-test-bound",
+    breaks: "a `const` a test the program wrote reads, one that calls nothing, `const _31 = heap[i]; if (_31 < heap[j])`, is read as its value, so the program's `if`s are a match's tree and their chain, `_19 < heap[index] && (rightIndex >= length || ..)` (#523; back with #1948, whose heap reads are pure again)",
+    file: "src/lower/mir/tidy/decisions/guarded.rs",
+    find: "        && (!pure(test) || guard())\n",
+    replace: "",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges"],
+  },
+  {
     name: "binding-set-first-always",
     breaks: "a binding the guard reads once, first, is set before it, `((x = b), odd(x))`, not where it's read, `odd((x = b))` (A1, #523)",
     file: "src/lower/mir/tidy/decisions/guarded.rs",

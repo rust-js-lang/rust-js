@@ -81,7 +81,7 @@ function main() {
     const value$2 = read_take(
       read_chain(
         $slice(data, 0, (n / 2) >>> 0),
-        $slice(data, 0, (n - ((n / 2) >>> 0)) >>> 0),
+        $slice(data, 0, n - ((n / 2) >>> 0)),
         $sliceReader,
         $sliceReader,
       ),
@@ -117,7 +117,7 @@ function main() {
       {
         value: read_chain(
           $slice(data, 0, (n / 2) >>> 0),
-          $slice(data, 0, (n - ((n / 2) >>> 0)) >>> 0),
+          $slice(data, 0, n - ((n / 2) >>> 0)),
           $sliceReader,
           $sliceReader,
         ),

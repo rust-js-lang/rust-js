@@ -138,6 +138,16 @@ pub(super) struct State {
     pub(super) equal_lens: IndexSet<(Local, Local)>,
     /// Each table of rows, by the row each of its rows is as long as.
     pub(super) rows: IndexMap<Local, Local>,
+    /// Each half of what's never negative, `h = n >> 1` or `n / 2`, by `h`:
+    /// `n`, a slice's length or an integer, of which twice what's at most
+    /// `h` is at most it, `left = (index + 1) * 2 - 1` below a heap's
+    /// length under `index < length >> 1` (ADR 1168, #1948). The one scaled
+    /// form the relations know.
+    pub(super) halves: IndexMap<Local, Term>,
+    /// Each twice what's below a half of `n`, by the product, `b = 2 *
+    /// index` under `index < n >> 1`: at most `n - 2`, so `b + 1` is below
+    /// `n`, a heap's `2 * index + 1` (`halves`, ADR 1168).
+    pub(super) doubled: IndexMap<Local, Term>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -258,6 +268,14 @@ impl State {
                 .collect(),
             equal_lens: self.equal_lens.intersection(&other.equal_lens).copied().collect(),
             rows: both(&self.rows, &other.rows),
+            halves: (self.halves.iter())
+                .filter(|&(k, v)| other.halves.get(k) == Some(v))
+                .map(|(&k, &v)| (k, v))
+                .collect(),
+            doubled: (self.doubled.iter())
+                .filter(|&(k, v)| other.doubled.get(k) == Some(v))
+                .map(|(&k, &v)| (k, v))
+                .collect(),
         }
     }
 
@@ -374,6 +392,10 @@ impl State {
             .retain(|&gave, &mut (map, key)| gave != local && map != local && key != local);
         self.equal_lens.retain(|&(a, b)| a != local && b != local);
         self.rows.retain(|&table, &mut row| table != local && row != local);
+        self.halves
+            .retain(|&half, &mut of| half != local && of != Term::Len(local) && of != Term::Int(local));
+        self.doubled
+            .retain(|&twice, &mut of| twice != local && of != Term::Len(local) && of != Term::Int(local));
     }
 
     /// Whether a held guard guards `cell`.

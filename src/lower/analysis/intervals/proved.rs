@@ -171,11 +171,29 @@ impl<'tcx> Walk<'_, 'tcx> {
             .is_some_and(|i| 0 <= i.lo && if strict { i.hi < least } else { i.hi <= least });
         let local = index.place().and_then(|p| p.as_local()).map(|i| state.root(i));
         // Below an integer that holds its length, `i < count` of
-        // `vec![0; count]` (`tables`), as below its length.
+        // `vec![0; count]` (`tables`), as below its length: of `i`, whether
+        // it's below `s`'s length, strictly, or at most it.
+        let to_len = |i: Local, s: Local| -> Option<bool> {
+            (state.below.iter())
+                .filter(|&&(x, y, _)| {
+                    x == i
+                        && match y {
+                            Term::Len(t) => t == s,
+                            Term::Int(w) => state.length_of(w) == Some(s),
+                        }
+                })
+                .map(|&(_, _, strict)| strict)
+                .max()
+        };
+        // And through one integer between, `index < half_length` and
+        // `half_length <= length`: strictly where either step is (ADR 1168,
+        // #1948).
         let below = |i: Local, s: Local, strict: bool| {
-            state.below.contains(&(i, Term::Len(s), strict))
-                || (state.below.iter()).any(|&(x, y, st)| {
-                    x == i && st == strict && matches!(y, Term::Int(w) if state.length_of(w) == Some(s))
+            to_len(i, s).is_some_and(|st| st == strict)
+                || (state.below.iter()).any(|&(x, y, first)| {
+                    x == i
+                        && matches!(y, Term::Int(m) if to_len(state.root(m), s).or_else(|| to_len(m, s))
+                            .is_some_and(|second| (first || second) == strict))
                 })
         };
         let related = local.is_some_and(|i| {

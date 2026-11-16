@@ -90,8 +90,16 @@ export const mutations: Mutation[] = [
     name: "below-a-length-holder-unread",
     breaks: "an index below an integer that holds a slice's length isn't below the length, so `sums[i]` under `i < count` of `vec![0; count]` keeps its check, a call-bounds line",
     file: "src/lower/analysis/intervals/proved.rs",
-    find: "                    x == i && st == strict && matches!(y, Term::Int(w) if state.length_of(w) == Some(s))\n",
-    replace: "                    x == i && st == strict && false && matches!(y, Term::Int(w) if state.length_of(w) == Some(s))\n",
+    find: "                            Term::Int(w) => state.length_of(w) == Some(s),\n",
+    replace: "                            Term::Int(w) => false && state.length_of(w) == Some(s),\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a table is as long"],
+  },
+  {
+    name: "below-through-an-integer-unfollowed",
+    breaks: "`i < m` and `m <= len` aren't joined, so `heap[index]` under `index < half_length <= length` keeps its check (ADR 1168, #1948)",
+    file: "src/lower/analysis/intervals/proved.rs",
+    find: "                || (state.below.iter()).any(|&(x, y, first)| {\n",
+    replace: "                || false && (state.below.iter()).any(|&(x, y, first)| {\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges"],
   },
 ];

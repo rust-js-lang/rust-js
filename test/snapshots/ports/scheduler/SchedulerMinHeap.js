@@ -55,7 +55,7 @@ function siftDown(heap, i) {
     const rightIndex = leftIndex + 1;
 
     // If the left or right node is smaller, swap with the smaller of those.
-    if (compare($index(heap, leftIndex), heap[index]) < 0) {
+    if (compare(heap[leftIndex], heap[index]) < 0) {
       if (rightIndex < length && compare(heap[rightIndex], heap[leftIndex]) < 0) {
         [heap[index], heap[rightIndex]] = [heap[rightIndex], heap[index]];
         index = rightIndex;
