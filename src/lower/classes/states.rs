@@ -56,8 +56,10 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
         }
     }
     taken.swap_remove(state.word());
-    let names: Vec<String> = (keys.iter())
-        .map(|key| crate::lower::fresh_in(&mut taken, key))
+    // Each key's parameter, named apart from what the body names: declared
+    // once, its reads clones of it.
+    let names: Vec<js::Name> = (keys.iter())
+        .map(|key| js::Name::declared(crate::lower::fresh_in(&mut taken, key)))
         .collect();
     let mut spread = 0;
     js::each_expr_mut(&mut function.body, &mut |e| {
@@ -70,7 +72,8 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
                     }) if v == state => {
                         spread += 1;
                         flat.extend(
-                            (keys.iter().zip(&names)).map(|(key, name)| Prop::Field(key.clone(), Expr::var(name))),
+                            (keys.iter().zip(&names))
+                                .map(|(key, name)| Prop::Field(key.clone(), Expr::var(name.clone()))),
                         );
                     }
                     prop => flat.push(prop),
