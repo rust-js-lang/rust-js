@@ -749,3 +749,10 @@ Now, the lead for the user:
   parts one after another, 101, 90 and 97 s, merged in 1 s, were the same
   map byte for byte but its time made: 22,575 functions, 5,373 tests, 71
   run on every change.
+
+On CI, dispatch 43797597400 of c2ef93b6b recorded HEAD's map in 10 min 53 s
+where one machine took 38.6: the counting build and plan 4 min 19 s, the
+eight parts 4 min 24 s to 5 min 56 s each (their tests 208–300 s), and the
+merge 33 s, 5,373 tests, 73 run on every change, as the one machine's map of
+8970d448c had. A push whose ancestor's map is kept restores it as before,
+its parts and merge skipped: check 43795629437's job, 40 s.
