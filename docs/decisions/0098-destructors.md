@@ -974,3 +974,25 @@ readability gate's `$iter` share moves from 87.4 to 87.5 in 10,000 lines
 by the lines gone alone, blessed for it. Corpus case
 `std_dictionaries_drop_their_values` against native Rust in both builds;
 four mutations.
+
+## Amendment (2026-11-17, #1857): `Option::flatten()` of a value with a destructor
+
+`Option<Option<T>>::flatten()` takes one level off, `some_value`: the inner
+`Option` moved out, nothing dropped. Of a `T` with a destructor it was
+refused, as std's methods that may drop what they're given are unless
+listed. It's now listed with `Option`'s other moving methods, `take` and
+`replace`. Each value is dropped once, where its new owner drops it, as
+native Rust does.
+
+Corpus case `option_flatten_of_a_value_with_a_destructor` holds:
+- `Some(Some(x))`, `Some(None)` and `None`;
+- a nested `Option` three deep, flattened twice, and a boxed value;
+- one flattened through a generic function;
+- one held as a panic unwinds past it.
+
+It matches native in each build and through every metamorphic rewrite.
+Mutation `option-flatten-drops-refused` (`std_types/values.ts`) is
+caught. The diagnostics row that held this refusal is gone. Mutation
+`mir-takes-drops-unchecked`, which named it, now names the limitation
+"`RefCell::into_inner` of a value with a destructor", the one test still
+refused by `check_takes_drops`, and is caught.

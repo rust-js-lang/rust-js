@@ -36,11 +36,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch/known_calls.rs",
     find: "        self.check_takes_drops(known, def_id, arg_tys, span)?;\n",
     replace: "",
-    tests: [
-      "test/diagnostics.test.ts",
-      "-t",
-      "flatten of an Option of an Option of a value with a destructor",
-    ],
+    tests: ["test/limitations.test.ts", "-t", "RefCell::into_inner` of a value with a destructor"],
   },
   {
     name: "mir-print-failing-unwrapped",

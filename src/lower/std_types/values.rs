@@ -257,6 +257,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::OptionTake
                     | Std::OptionReplace
                     | Std::OptionPlace(OptionPlaceOp::TakeIf)
+                    // And `flatten()`, which moves the inner `Option` out and
+                    // drops nothing (#1857).
+                    | Std::OptionFlatten
                     // A map's that drop the values they take out (ADR 0321).
                     | Std::Map(MapOp::Retain | MapOp::Extend | MapOp::Clear | MapOp::OrInsert | MapOp::DrainAll)
                     // And what drops what it doesn't keep, `insert`'s old value

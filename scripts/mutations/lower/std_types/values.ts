@@ -824,4 +824,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => made,\n",
     tests: ["test/corpus.test.ts","-t","^address_of_an_object_std_lends_from_its_storage.rs$"],
   },
+  {
+    name: "option-flatten-drops-refused",
+    breaks: "`Option<Option<T>>::flatten()` of a value with a destructor, which moves the inner `Option` out and drops nothing, is refused (#1857)",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::OptionFlatten\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_flatten_of_a_value_with_a_destructor.rs$"],
+  },
 ];
