@@ -600,6 +600,65 @@ named 1 big 5
 `);
 });
 
+// A `catch` of an unwind whose `Err` arm binds nothing names what it caught
+// `error`, a name not spelled yet, which preparation spells apart from what
+// the arm reads: `error$1` beside a parameter `error` the arm adds to,
+// which `catch (error)` would hide; and one whose arm binds it, `thrown`,
+// each `catch` of a function its own, spelled alone (ADR 1150). Run in
+// Node.
+test("a catch_unwind arm that reads an error of its own catches it apart", () => {
+  const { js, dir } = compiled("unwind-error-named", `use std::panic::catch_unwind;
+
+pub fn recovered(error: u32, fail: bool) -> u32 {
+    match catch_unwind(|| {
+        if fail {
+            panic!("failed");
+        }
+        1
+    }) {
+        Ok(v) => v,
+        Err(_) => error + 1,
+    }
+}
+
+/// Two catches of one function, the first's arm setting the function's
+/// \`thrown\`, the second's reading none.
+pub fn kept(fail: bool) -> String {
+    let thrown;
+    match catch_unwind(|| {
+        if fail {
+            panic!("first");
+        }
+        1
+    }) {
+        Ok(v) => thrown = v.to_string(),
+        Err(e) => thrown = e.downcast_ref::<&str>().map(|s| s.to_string()).unwrap_or_default(),
+    }
+    let again = match catch_unwind(|| {
+        if fail {
+            panic!("second");
+        }
+        2
+    }) {
+        Ok(v) => v.to_string(),
+        Err(e) => e.downcast_ref::<&str>().map(|s| s.to_string()).unwrap_or_default(),
+    };
+    format!("{thrown} {again}")
+}
+`);
+  // Each `catch`'s spelled alone: the first's `thrown$1`, beside the
+  // function's `thrown` it sets, not the second's too.
+  expect(js).toContain("  } catch (thrown$1) {\n    $catchable(thrown$1);\n    const e = $unwound(thrown$1);\n");
+  expect(js).toContain("  } catch (thrown) {\n    $catchable(thrown);\n    const e = $unwound(thrown);\n");
+  expect(js).toContain("  } catch (error$1) {\n    $catchable(error$1);\n    return (error + 1) >>> 0;\n  }\n");
+  writeFileSync(join(dir, "run.mjs"), `import * as lib from "./lib.js";
+console.log(lib.recovered(5, true), lib.recovered(5, false), lib.kept(true), lib.kept(false));
+`);
+  const ran = runSync([node!, join(dir, "run.mjs")], root, 60_000);
+  expect(ran.stderr).toBe("");
+  expect(ran.stdout).toBe("6 1 first second 1 2\n");
+});
+
 // React's throwAndUnwindWorkLoop keeps the value its closure makes in the
 // function's `didFatal`, `didFatal = throwException(..)` in the `try`, where
 // it was `const didFatal$1 = throwException(..); .. didFatal = didFatal$1;`

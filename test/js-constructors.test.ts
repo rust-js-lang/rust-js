@@ -982,6 +982,55 @@ pub fn name(n: f64) -> String {
   expect([lib.held(2), lib.name(3), lib.count(4), lib.count(-1)]).toEqual([2, "n3", 6, 0]);
 });
 
+// The `const` a handle on a place of `this` reads it through is a name not
+// spelled yet, which preparation spells apart from a `this$` its function
+// has already, a nested function's `const this$ = this;`: `this$$1`, where
+// a second `const this$` would be JS's syntax error (ADR 1150).
+test("a handle on its this's place beside a nested function's this$ reads it apart", async () => {
+  const { js, lib } = await compiled("constructor-this-handle-beside-nested", `use std::cell::RefCell;
+
+use js::function;
+
+pub struct Instance {
+    pub _count: RefCell<f64>,
+}
+
+unsafe impl js::Defined for Instance {}
+
+fn bump(count: &mut f64) {
+    *count += 1.0;
+}
+
+fn either<'a>(first: bool, a: &'a mut f64, b: &'a mut f64) -> &'a mut f64 {
+    if first { a } else { b }
+}
+
+type Constructor = fn(f64) -> Instance;
+
+thread_local! {
+    static INSTANCE: &'static js::Class<Constructor> =
+        js::Class::of(function::with_this(move |this, (n,): (f64,)| {
+            // SAFETY: \`new\` gives the constructor the object it makes.
+            let this: &'static Instance = unsafe { js::cast(this) };
+            this._count.replace(n);
+            let read = function::with_this(move |_own, ()| *this._count.borrow());
+            let mut spare = 0.0;
+            bump(either(n > 0.0, &mut this._count.borrow_mut(), &mut spare));
+            this._count.replace(read() * 10.0);
+            this
+        }));
+}
+
+pub fn count(n: f64) -> f64 {
+    let instance: &'static Instance = INSTANCE.with(|&class| js::new(class, (n,)));
+    *instance._count.borrow()
+}
+`);
+  expect(js).toContain("function instance(n) {\n  const this$$1 = this;\n  const this$ = this;\n");
+  expect(js).toContain("        get value() {\n          return this$$1._count;\n");
+  expect([lib.count(2), lib.count(-1)]).toEqual([30, -10]);
+});
+
 // ADR 1049: a typed array's class, and a `DataView`'s, is typed by one
 // view's constructor, `Class<fn(&'static ArrayBuffer, f64, f64) ->
 // ArrayBufferView>`, so one function takes any of them and `new` makes

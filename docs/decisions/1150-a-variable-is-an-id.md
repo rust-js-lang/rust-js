@@ -1430,3 +1430,18 @@ No holder of a loop's counter is made (2026-11-18): a holder
 and React's port found none; a debug build says so where lowering would
 make one (`FnCx::derived`, `mir::scopes`' fields).
 
+
+## Amendment: the names preparation makes are made names too (#1681 change 3, slice 12)
+
+What a `catch` of an unwind names what it caught, `thrown`, or `error`
+where its `Err` arm binds nothing, and the `const this$ = this;` a
+function's handles on a place of its `this` read it through, were spelled
+where preparation made them, apart from the words their scope had
+(`fresh_apart`, a `while` adding `_`, `fresh_in`). Each is now
+`Name::made_apart(base)`, a made name whose `k` is its id, as a counter's
+is (`Name::counter` is made of it), so no other made name of its item has
+its word, and `reclaim::spelled` spells it with the rest, apart from what
+its scope declares or reads. One spelling rule, the speller's: `error_`,
+the one spelling no other made name had, is `error$1` (no case in the
+corpus, the tests or React's port had it; lowering-unwind-arms pins it);
+`thrown$1` and `this$$1` are as they were, byte-identical.

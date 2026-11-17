@@ -287,8 +287,19 @@ impl Name {
     /// `i$1`, .. no counter of a loop around it is, an end `end`, `end$1`, ..,
     /// each one no other name of its item has and JS's scopes let it be.
     pub fn counter(base: &str) -> Name {
+        Name {
+            1: Of::Counter,
+            ..Name::made_apart(base)
+        }
+    }
+
+    /// A name a pass makes after lowering, of `base`, not spelled yet, as
+    /// `made`'s: its `k` its id, `thrown#12`, which no other made name of
+    /// its item has, so preparation spells it alone, apart from what its
+    /// scope reads (`prepare::reclaim::spelled`, ADR 1150).
+    pub fn made_apart(base: &str) -> Name {
         let id = Id::fresh();
-        Name(crate::names::made(base, id.0 as usize), Of::Counter, id, Id::WORD)
+        Name(crate::names::made(base, id.0 as usize), Of::Item, id, Id::WORD)
     }
 
     /// Whether it's a loop's counter or a held end tidy's loops made

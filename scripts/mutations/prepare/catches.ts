@@ -132,11 +132,19 @@ export const mutations: Mutation[] = [
   },
   {
     name: "thrown-shadowed",
-    breaks: "a `catch_unwind`'s `catch (thrown)` hides a `thrown` its `Err` arm reads, React's renderNode's `let thrown;` (rd551)",
+    breaks: "a `catch_unwind`'s `catch (thrown)` hides a `thrown` its `Err` arm reads, React's renderNode's `let thrown;` (rd551): the name spelled as it is, not by preparation apart from what its scope reads (ADR 1150)",
     file: "src/prepare/catches.rs",
-    find: "    js::names_in(handler, &mut taken);\n",
-    replace: "",
-    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch_unwind whose arm reads a thrown of its own"],
+    find: "    Name::made_apart(\"thrown\")\n",
+    replace: "    Name::declared(\"thrown\".to_string())\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch_unwind whose arm reads a thrown of its own|reads an error of its own"],
+  },
+  {
+    name: "caught-error-shadowed",
+    breaks: "a `catch_unwind` whose `Err` arm binds nothing catches into `error`, spelled as it is, which hides the `error` parameter its arm reads, `error + 1` of what was thrown (ADR 1150)",
+    file: "src/prepare/catches.rs",
+    find: "    let name = binding.unwrap_or_else(|| Name::made_apart(\"error\"));\n",
+    replace: "    let name = binding.unwrap_or_else(|| Name::declared(\"error\".to_string()));\n",
+    tests: ["test/lowering-unwind-arms.test.ts", "-t", "reads an error of its own"],
   },
   {
     name: "tail-try-return-kept",

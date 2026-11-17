@@ -4,11 +4,13 @@
 //! is that object (#449). A class's member's is its instance's name
 //! already, `const counted = this;` (`classes::this_outside_accessors`);
 //! any other function's, `js::function::with_this`'s say, is `this$`, as
-//! a function nested in it reads its `this` (ADR 0972).
+//! a function nested in it reads its `this` (ADR 0972), a name not spelled
+//! yet, which preparation spells apart from what its scope reads, `this$$1`
+//! where it reads another `this$` (`reclaim::spelled`, ADR 1150).
 
-use crate::js::{self, Stmt};
+use crate::js::{self, Name, Stmt};
 
 /// Of a function's `body`, before its handles are written.
 pub(super) fn this_read_apart(body: &mut Vec<Stmt>) {
-    js::this_outside_accessors(body, "this$");
+    js::this_outside_accessors_of(body, &Name::made_apart("this$"));
 }
