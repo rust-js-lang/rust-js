@@ -32,6 +32,7 @@ pub(super) fn module(module: &mut js::Module) {
 /// (`js::validate`, #1681 change 3, M2).
 pub(super) fn spelled(module: &mut js::Module) {
     let mut taken = mentions(module);
+    let top = scopes::Tree::module_top(module);
     for item in &mut module.items {
         let mut unspelled = Vec::new();
         names_mut(item, true, &mut |name| {
@@ -63,23 +64,35 @@ pub(super) fn spelled(module: &mut js::Module) {
                     .or_insert_with(|| root.to_string());
             }
         });
-        let mut tree = scopes::Tree::of(item);
+        let mut tree = scopes::Tree::of_in(item, &top);
         let mut spelled: IndexMap<String, String> = IndexMap::default();
         for name in unspelled {
             // Its source's, else what it was made of.
             let base = sources
                 .get(name.word())
                 .map_or_else(|| name.made_base().expect("made"), String::as_str);
+            // A temporary's suggested words first, each plain, then its base's
+            // (`Name::suggested`, ADR 0569).
+            let preferred = || (name.preferred().iter()).filter(|to| !crate::names::kept_word(to));
             let in_scope = tree.as_mut().and_then(|tree| {
-                let to = std::iter::once(base.to_string())
+                let to = (preferred().cloned())
+                    .chain(std::iter::once(base.to_string()))
                     .chain((1..).map(|k| crate::names::given_apart(base, k)))
                     .filter(|to| !crate::names::kept_word(to))
-                    .take(64)
-                    .find(|to| tree.renames(name.word(), to))?;
+                    .take(64 + name.preferred().len())
+                    // A suggested one, as a counter, shadows nothing and is
+                    // shadowed by nothing, an import's word the module's top
+                    // declares among them (`Tree::of_in`, #2032).
+                    .find(|to| {
+                        (name.preferred().is_empty() || !tree.shadows(name.word(), to)) && tree.renames(name.word(), to)
+                    })?;
                 tree.rename(name.word(), &to);
                 Some(to)
             });
-            let to = in_scope.unwrap_or_else(|| crate::names::fresh_apart(&mut taken, base));
+            let to = in_scope.unwrap_or_else(|| match preferred().find(|to| !taken.contains(*to)) {
+                Some(to) => to.clone(),
+                None => crate::names::fresh_apart(&mut taken, base),
+            });
             taken.insert(to.clone());
             spelled.insert(name.into_word(), to);
         }

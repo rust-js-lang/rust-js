@@ -7,6 +7,7 @@
 //! API answers both forms while they swap.
 
 use std::fmt;
+use std::sync::Arc;
 
 /// A name a read or a declaration has: the program's, or one lowering
 /// made, which preparation spells (S2); or a global's, which the module
@@ -16,9 +17,11 @@ use std::fmt;
 /// a clone of it, so a pass tells the program's inner `x` from its outer
 /// `x` ("names are ids", ADR 1150). A name of a form with no id, a
 /// global's, the module's, an item's, or one made of a word alone, is one
-/// by its form and word, as JS resolves it.
+/// by its form and word, as JS resolves it. A temporary's made name
+/// carries the words its body suggests of it, which preparation tries
+/// first (`suggested`, ADR 0569).
 #[derive(Clone, Default)]
-pub struct Name(String, Of, Id, Id);
+pub struct Name(String, Of, Id, Id, Option<Arc<[String]>>);
 
 /// Which variable a name of the item's is, of the names its declarations
 /// made: a fresh one each time one is made, kept by its clones, and kept
@@ -116,14 +119,14 @@ impl Name {
     /// its word again ("names are ids", ADR 1150). What's still made of a
     /// word alone, `From<&str>`, step 1 traces to one of these.
     pub fn declared(word: String) -> Name {
-        Name(word, Of::Item, Id::fresh(), Id::WORD)
+        Name(word, Of::Item, Id::fresh(), Id::WORD, None)
     }
 
     /// A local the program named, spelled `word`: `declared`'s, but the
     /// program's, which keeps the plain spelling where a name lowering
     /// made shares its word (`is_the_programs`, ADR 1150).
     pub fn program(word: String, source: u32) -> Name {
-        Name(word, Of::Program(source), Id::fresh(), Id::WORD)
+        Name(word, Of::Program(source), Id::fresh(), Id::WORD, None)
     }
 
     /// Of a local the program named, the identifier its Rust gave it, by
@@ -154,7 +157,7 @@ impl Name {
     /// (`Expr::global`), which `js::validate` takes for resolved where
     /// nothing in scope declares its word (#1681 change 3, S3).
     pub fn global(word: &str) -> Name {
-        Name(word.to_string(), Of::Global, Id::WORD, Id::WORD)
+        Name(word.to_string(), Of::Global, Id::WORD, Id::WORD, None)
     }
 
     /// The module's `word`, a name it declares at its top, no item's: a
@@ -164,14 +167,14 @@ impl Name {
     /// it ("names are ids", ADR 1150); `js::validate` refuses a read of one
     /// that a declaration nearer takes.
     pub fn module(word: &str) -> Name {
-        Name(word.to_string(), Of::Module, Id::WORD, Id::WORD)
+        Name(word.to_string(), Of::Module, Id::WORD, Id::WORD, None)
     }
 
     /// An import of another module of the crate's, spelled `word` as its
     /// `use` gives it: a module's name, but each import its own, which
     /// preparation may spell apart (link's, ADR 1150).
     pub fn imported(word: &str) -> Name {
-        Name(word.to_string(), Of::Module, Id::fresh(), Id::WORD)
+        Name(word.to_string(), Of::Module, Id::fresh(), Id::WORD, None)
     }
 
     /// The name of the crate's item `item` (its `DefIndex`), or of its copy
@@ -183,7 +186,7 @@ impl Name {
     /// its own; no local of its word is it.
     pub fn item(word: &str, item: u32, copy: Option<usize>) -> Name {
         let copy = copy.map_or(0, |at| u32::try_from(at + 1).expect("a copy's index fits"));
-        Name(word.to_string(), Of::BodyItem(item, copy), Id::WORD, Id::WORD)
+        Name(word.to_string(), Of::BodyItem(item, copy), Id::WORD, Id::WORD, None)
     }
 
     /// Whether it's the module's (`module`).
@@ -221,13 +224,13 @@ impl Name {
     /// (`temporary_names::temporary`), not one the program names: tidy
     /// asks `is_temporary` of it, not its word (#1681 change 3, S4).
     pub fn temporary(word: String) -> Name {
-        Name(word, Of::Temporary, Id::fresh(), Id::WORD)
+        Name(word, Of::Temporary, Id::fresh(), Id::WORD, None)
     }
 
     /// A value Rust leaves `_`, spelled `word`, which nothing reads
     /// (`is_unread`).
     pub fn unread(word: String) -> Name {
-        Name(word, Of::Unread, Id::fresh(), Id::WORD)
+        Name(word, Of::Unread, Id::fresh(), Id::WORD, None)
     }
 
     /// Whether Rust leaves it `_` (`unread`): a parameter of none JS's
@@ -244,13 +247,13 @@ impl Name {
     /// The name MIR's lowering holds an argument by, spelled `word`, `_arg`
     /// or given apart, `_arg$1` (S4).
     pub fn held_arg(word: String) -> Name {
-        Name(word, Of::HeldArg, Id::fresh(), Id::WORD)
+        Name(word, Of::HeldArg, Id::fresh(), Id::WORD, None)
     }
 
     /// A block's label MIR's lowering made, spelled `word`, `bb7`
     /// (`mir::queries::label`), not one the program writes (S5).
     pub fn block_label(word: String) -> Name {
-        Name(word, Of::BlockLabel, Id::WORD, Id::WORD)
+        Name(word, Of::BlockLabel, Id::WORD, Id::WORD, None)
     }
 
     /// A label the program wrote, `'rows`, spelled `word`: JS resolves a
@@ -259,7 +262,7 @@ impl Name {
     /// One written inside a loop or a block of its word is given apart
     /// where its hint is made, `a$1` (#1969), so it's never its outer's.
     pub fn label(word: &str) -> Name {
-        Name(word.to_string(), Of::Label, Id::WORD, Id::WORD)
+        Name(word.to_string(), Of::Label, Id::WORD, Id::WORD, None)
     }
 
     /// Whether it's a block's label (`block_label`).
@@ -277,7 +280,7 @@ impl Name {
     /// once its module's names are all made (`prepare::reclaim::spelled`),
     /// and the validator refuses one that reaches printing.
     pub fn made(base: &str, k: usize) -> Name {
-        Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
+        Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD, None)
     }
 
     /// A loop's counter, of `base` `i`, or what holds a range's end, of
@@ -299,7 +302,13 @@ impl Name {
     /// scope reads (`prepare::reclaim::spelled`, ADR 1150).
     pub fn made_apart(base: &str) -> Name {
         let id = Id::fresh();
-        Name(crate::names::made(base, id.0 as usize), Of::Item, id, Id::WORD)
+        Name(crate::names::made(base, id.0 as usize), Of::Item, id, Id::WORD, None)
+    }
+
+    /// The words it's suggested to be, first to last (`suggested`); none
+    /// of another name.
+    pub fn preferred(&self) -> &[String] {
+        self.4.as_deref().unwrap_or_default()
     }
 
     /// Whether it's a loop's counter or a held end tidy's loops made
@@ -338,7 +347,7 @@ impl Name {
     /// reads the `Count` it's made in (`prepare::reclaim::spelled`, ADR 1150).
     pub fn spelled_later(&self, k: usize) -> Name {
         let base = crate::names::made_base(&self.0).unwrap_or(&self.0);
-        Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
+        Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD, None)
     }
 
     /// It again, not spelled yet, the first `k` none of `names` is written
@@ -348,7 +357,7 @@ impl Name {
     pub fn spelled_later_apart<'n>(&self, names: impl IntoIterator<Item = &'n Name>) -> Name {
         let base = crate::names::made_base(&self.0).unwrap_or(&self.0);
         let k = Name::free_made_k(names, base);
-        Name(crate::names::made(base, k), self.1, Id::fresh(), Id::WORD)
+        Name(crate::names::made(base, k), self.1, Id::fresh(), Id::WORD, None)
     }
 
     /// A variable lowering makes of `source`, a holder of its value, the
@@ -369,7 +378,7 @@ impl Name {
             Id::WORD => Id::OF_WORD,
             kin => kin,
         };
-        Name(crate::names::made(base, k), of, Id::fresh(), origin)
+        Name(crate::names::made(base, k), of, Id::fresh(), origin, None)
     }
 
     /// A variable lowering makes of `source`, or of a local it names
@@ -393,7 +402,7 @@ impl Name {
         };
         let parts: String = parts.iter().map(|part| format!("${part}")).collect();
         let word = crate::names::made(&format!("{root}{parts}{}", suffix.text()), k);
-        Name(word, Of::Suffixed(suffix), Id::fresh(), origin)
+        Name(word, Of::Suffixed(suffix), Id::fresh(), origin, None)
     }
 
     /// It again, of `source`, its parts and suffix as they are, the first
@@ -541,7 +550,7 @@ impl Name {
     pub fn rebound(&self) -> Name {
         match self.2 == Id::WORD {
             true => self.clone(),
-            false => Name(self.0.clone(), self.1, Id::fresh(), self.3),
+            false => Name(self.0.clone(), self.1, Id::fresh(), self.3, None),
         }
     }
 
@@ -556,7 +565,13 @@ impl Name {
     /// It given apart the `k`th time, `node$2` of `node`, a name of its form:
     /// a temporary's still a temporary's (`names::given_apart`, S4).
     pub fn given_apart(&self, k: usize) -> Name {
-        Name(crate::names::given_apart(&self.0, k), self.1, Id::fresh(), self.kin())
+        Name(
+            crate::names::given_apart(&self.0, k),
+            self.1,
+            Id::fresh(),
+            self.kin(),
+            None,
+        )
     }
 
     /// Spelled `word` from now on, a name of its form still: a rename, preparation's spelling and
@@ -616,7 +631,7 @@ impl From<&Name> for Name {
 #[cfg(test)]
 impl From<&str> for Name {
     fn from(word: &str) -> Name {
-        Name(word.to_string(), Of::Item, Id::WORD, Id::WORD)
+        Name(word.to_string(), Of::Item, Id::WORD, Id::WORD, None)
     }
 }
 
@@ -626,7 +641,7 @@ impl From<&str> for Name {
 #[cfg(test)]
 impl From<String> for Name {
     fn from(word: String) -> Name {
-        Name(word, Of::Item, Id::WORD, Id::WORD)
+        Name(word, Of::Item, Id::WORD, Id::WORD, None)
     }
 }
 
@@ -636,7 +651,7 @@ impl From<String> for Name {
 #[cfg(test)]
 impl From<&String> for Name {
     fn from(word: &String) -> Name {
-        Name(word.clone(), Of::Item, Id::WORD, Id::WORD)
+        Name(word.clone(), Of::Item, Id::WORD, Id::WORD, None)
     }
 }
 

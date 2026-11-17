@@ -17,6 +17,7 @@ use crate::js::{self, Name};
 /// the end: of a loop inside one whose `i$1` reclaiming makes `i`, `j`.
 pub(super) fn spelled(module: &mut js::Module) {
     let mut taken = mentions(module);
+    let top = scopes::Tree::module_top(module);
     for item in &mut module.items {
         let mut counters: Vec<Name> = Vec::new();
         names_mut(item, true, &mut |name| {
@@ -27,7 +28,7 @@ pub(super) fn spelled(module: &mut js::Module) {
         if counters.is_empty() {
             continue;
         }
-        let mut tree = scopes::Tree::of(item);
+        let mut tree = scopes::Tree::of_in(item, &top);
         let mut spelled: IndexMap<String, String> = IndexMap::default();
         for name in counters {
             let in_scope = tree.as_mut().and_then(|tree| {

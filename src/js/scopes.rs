@@ -89,6 +89,27 @@ impl Tree {
         walk.tree.twice.is_empty().then_some(walk.tree)
     }
 
+    /// `item`'s scopes inside its module's: what the module declares at its
+    /// top besides its items, `top` (`module_top`), its imports and
+    /// packages, the scope around the item's, which a name the item declares
+    /// shadows (`shadows`); `of`'s otherwise.
+    pub(crate) fn of_in(item: &js::Item, top: &[String]) -> Option<Tree> {
+        let mut walk = Walk::default();
+        walk.enter();
+        top.iter().for_each(|name| walk.declare(name));
+        walk.item(item, true);
+        walk.tree.twice.is_empty().then_some(walk.tree)
+    }
+
+    /// What `module` declares at its top besides its items: its imports'
+    /// and its packages' names.
+    pub(crate) fn module_top(module: &js::Module) -> Vec<String> {
+        let imported = (module.imports.iter())
+            .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace))
+            .map(|local| local.word().to_string());
+        imported.chain(packaged(&module.packages).cloned()).collect()
+    }
+
     /// Each name declared or read, in the order first met.
     pub(crate) fn names(&self) -> impl Iterator<Item = &str> {
         let declared = self.declaring.keys().filter(|name| !self.reads.contains_key(*name));
@@ -98,11 +119,7 @@ impl Tree {
     /// `module`'s scopes: its imports', its packages' and its items' names
     /// the outermost's, then each item's own.
     pub(crate) fn of_module(module: &js::Module) -> Tree {
-        let imported: Vec<String> = (module.imports.iter())
-            .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace))
-            .map(|local| local.word().to_string())
-            .collect();
-        Tree::of_top(imported.iter().chain(packaged(&module.packages)), &module.items)
+        Tree::of_top(Tree::module_top(module).iter(), &module.items)
     }
 
     /// A module's scopes, of what its top declares besides its items,
