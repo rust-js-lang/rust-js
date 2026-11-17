@@ -155,3 +155,34 @@ own (`analysis/cell_flow.rs`). A value made a `dyn` is one that code may
 reach, so a `RefCell<Circle>` made a `RefCell<dyn Shape>` is still one
 cell, by this ADR's rule. A thread-local's own cell, only its key's,
 counts its key's borrows as before (`key_counted`).
+
+## Amendment: a `dyn` is a type made one that may implement its trait (#1006, 2026-11-17)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, Rust's behavior
+kept; a refusal beside a neighbour lifted.
+
+`may_be_cell` took a `dyn` in a place made unsized to be any type at all.
+Beside a `RefCell<dyn Named>`, which a coercion boxes (ADR 0397), the
+closure over boxed cells then took `RefCell<Framed<Circle>>` for one a
+`dyn Named` may be, and through its tail `RefCell<Framed<dyn Shape>>`.
+That cell was boxed and refused: "a `RefCell<Framed<dyn Shape>>`, whose
+last field is a `dyn`". Each case compiled alone; the neighbour shuffle
+found the pair.
+
+**A `dyn` is only what may be made one.** A concrete type, with no type
+parameter or alias in it, must be one that may implement the `dyn`'s
+principal trait. rustc's own selection answers that,
+`predicate_may_hold`, so it finds a generic impl too (`may_be_made`).
+
+Where selection is ambiguous, the type isn't concrete, or the `dyn` has no
+principal trait, it still may be, since the analysis over-approximates.
+An unsized type is no `dyn` either, but no case could tell that rule from
+the trait's, so there's one rule (the lead's decision).
+
+A probe over the whole corpus in both builds logged each pair the rule now
+says can't be. Every type in them implements none of the trait, and no
+snapshot changed.
+
+Corpus case `ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn`; the
+pairs are off `test/neighbours-known.txt`. Mutation `dyn-cell-any-trait`
+(`lower/analysis/cell_borrows.ts`).

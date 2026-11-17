@@ -9,10 +9,6 @@
 // goes wrong beside another neighbour, for the same reason, is a line more
 // under the same issue.
 
-#1006 P2: a `RefCell` of a struct whose last field is a `dyn` refused beside another case
-plain std dyn_tail_in_a_ref_cell.rs beside dyn_ref_cell_drop.rs
-plain std dyn_tail_in_a_ref_cell.rs beside rc_dyn_sinks.rs
-
 #1038 P2 (neighbours): identity_inside_keys.rs refused beside owner_handle_field_cloned.rs and rc_eq_generic_by_address_first.rs
 plain std identity_inside_keys.rs beside drop_impl_indirect.rs dyn_fn_of_a_params_function_drops.rs
 plain std identity_inside_keys.rs beside impl_fn_that_panics_keeps_its_cleanup.rs

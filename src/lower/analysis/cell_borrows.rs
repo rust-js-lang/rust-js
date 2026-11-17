@@ -1059,10 +1059,20 @@ pub(in crate::lower) fn may_be_cell<'tcx>(tcx: TyCtxt<'tcx>, a: Ty<'tcx>, b: Ty<
 }
 
 /// `may_be_cell` of `a` and `b`, where `unsized_here`, a `dyn` there may
-/// be any type made one in place.
+/// be any type made one in place that may implement its trait, as rustc's
+/// own selection says of a concrete type (`may_be_made`, #1006): not a
+/// `Framed<Circle>` of a `dyn Named`; a `dyn` or a type parameter may be
+/// either.
 fn may_be_cell_at<'tcx>(tcx: TyCtxt<'tcx>, (a, b): (Ty<'tcx>, Ty<'tcx>), unsized_here: bool) -> bool {
     match (a.kind(), b.kind()) {
-        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) if unsized_here => true,
+        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) if unsized_here => {
+            let (dyn_ty, other) = if matches!(a.kind(), ty::Dynamic(..)) {
+                (a, b)
+            } else {
+                (b, a)
+            };
+            matches!(other.kind(), ty::Dynamic(..)) || may_be_made(tcx, other, dyn_ty)
+        }
         (ty::Slice(x) | ty::Array(x, _), ty::Slice(y) | ty::Array(y, _)) => may_be_cell_at(tcx, (*x, *y), false),
         _ => match (
             crate::lower::analysis::head(tcx, a),
@@ -1078,6 +1088,35 @@ fn may_be_cell_at<'tcx>(tcx: TyCtxt<'tcx>, (a, b): (Ty<'tcx>, Ty<'tcx>), unsized
             _ => true,
         },
     }
+}
+
+/// Whether a value of `ty` may be made `dyn_ty`, a `dyn` of a trait: not
+/// where `ty` is concrete, no type parameter or alias in it, and rustc's
+/// selection says no impl of the `dyn`'s trait may apply to it, though
+/// generic. Ambiguous, or of a `dyn` of no trait but auto ones, it may
+/// (#1006): what may be a cell over-approximates.
+fn may_be_made<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, dyn_ty: Ty<'tcx>) -> bool {
+    use rustc_trait_selection::infer::TyCtxtInferExt;
+    use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt;
+    let ty::Dynamic(predicates, ..) = dyn_ty.kind() else {
+        return true;
+    };
+    let Some(principal) = predicates.principal() else {
+        return true;
+    };
+    let ty = tcx.erase_and_anonymize_regions(ty);
+    if crate::lower::generic_facts::may_be_any_type(ty) || ty.has_aliases() || ty.has_infer() {
+        return true;
+    }
+    let trait_ref = tcx.erase_and_anonymize_regions(principal.with_self_ty(tcx, ty).skip_binder());
+    let infcx = tcx.infer_ctxt().build(ty::TypingMode::PostAnalysis);
+    let obligation = rustc_trait_selection::traits::Obligation::new(
+        tcx,
+        rustc_trait_selection::traits::ObligationCause::dummy(),
+        ty::ParamEnv::empty(),
+        trait_ref,
+    );
+    infcx.predicate_may_hold(&obligation)
 }
 
 /// Which of `ty`'s type arguments, a struct's, counted among its types as
