@@ -16,6 +16,10 @@ pub(super) struct Holes {
 }
 
 /// Each hole in `stmts` filled with its function, and each in that (ADR 0296).
+/// Each copy of a hole too: a function compiled again apart, a copy its
+/// crate's Rust calls (ADR 0051, amended), `evensRevealed` beside `evens`
+/// (#1999), holds the holes of what's written in its body again, each
+/// filled with the item it's of, as each copy declares its own (#2018).
 pub(super) fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut Holes) {
     // A function written in a body, a declaration there, before what's left
     // is taken for an expression (ADR 0308), and a `const`, a `const` there
@@ -28,10 +32,10 @@ pub(super) fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut Holes) {
                 continue;
             };
             // Where it's written, which its comments are before.
-            if let Some(function) = holes.functions.swap_remove(&index) {
+            if let Some(function) = holes.functions.get(&index).cloned() {
                 stmt.span = function.span;
                 stmt.kind = StmtKind::Function(Box::new(function));
-            } else if let Some(constant) = holes.consts.swap_remove(&index) {
+            } else if let Some(constant) = holes.consts.get(&index).cloned() {
                 stmt.span = constant.span;
                 stmt.kind = StmtKind::Const(constant.name, constant.value);
             }
@@ -42,7 +46,7 @@ pub(super) fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut Holes) {
 
 pub(super) fn fill_hole(e: &mut Expr, holes: &mut Holes) {
     if let js::ExprKind::Hole(js::Hole::Item(index)) = e.kind
-        && let Some(mut function) = holes.functions.swap_remove(&index)
+        && let Some(mut function) = holes.functions.get(&index).cloned()
     {
         fill_holes(&mut function.body, holes);
         e.kind = js::ExprKind::Function(Box::new(function));
