@@ -616,4 +616,20 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_whose_length_a_capacity_asks.rs$"],
   },
+  {
+    name: "held-rev-in-place-source-untyped",
+    breaks: "a `rev()` a variable holds, std's struct, of a copy of a map made in place, doesn't make that map knowing its back and length by type, so the dictionary of what it holds is refused for its `len()` (#1978)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                        typed_sources.insert(erased(adapter));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^len_of_a_held_copy_of_a_map.rs$"],
+  },
+  {
+    name: "len-of-a-variable-unasked",
+    breaks: "a `len()` of a variable isn't recorded as its length asked, so a held copy of a map made in place isn't made knowing its length where it's written, and its `len()` is refused (#1978)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                if recognition.iterator_method(callee) == Some(crate::lower::recognition::IterMethod::Len)\n",
+    replace: "                if recognition.iterator_method(callee) == Some(crate::lower::recognition::IterMethod::NextBack)\n",
+    tests: ["test/corpus.test.ts", "-t", "^len_of_a_held_copy_of_a_map.rs$"],
+  },
 ];

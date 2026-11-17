@@ -883,6 +883,27 @@ pub(super) fn stepped_locals<'tcx>(
                         }
                     }
                 }
+                // A `len()` of a variable, through what moves or lends it: its
+                // length asked of it, made knowing it where it's written, as
+                // a `Vec`'s growth asks it (`written_as_asked`), a copy of a
+                // map made in place, whose type says nothing of its form
+                // (#1978).
+                if recognition.iterator_method(callee) == Some(crate::lower::recognition::IterMethod::Len)
+                    && let Some(mut local) = (args.first()).and_then(|arg| match &arg.node {
+                        mir::Operand::Move(place) | mir::Operand::Copy(place) => place.as_local(),
+                        _ => None,
+                    })
+                {
+                    let mut seen: IndexSet<mir::Local> = IndexSet::default();
+                    while seen.insert(local)
+                        && let Some(&of) = moved.get(&local).or_else(|| lent.get(&local))
+                    {
+                        local = of;
+                    }
+                    if user_variable(&mir.local_decls[local]) {
+                        counted.entry((owner, local)).or_insert(LengthAsked::Held);
+                    }
+                }
                 // A zip a `Vec` is grown by, in a crate that keeps capacities,
                 // exact-sized but not `TrustedLen`, whose length the collect
                 // or the extend asks to grow it by (`grown_ask`'s `exact`),
@@ -1070,6 +1091,28 @@ pub(super) fn stepped_locals<'tcx>(
                     && (given.iter()).any(|&(_, _, ty, held)| held && recognition.array_source(ty).is_none())
                 {
                     zips_of_held.insert((owner, destination.local));
+                }
+                // A `rev()` a variable holds, std's struct, which steps what it
+                // holds from its back and asks it its length, by the
+                // dictionary of its type alone, whatever the variable is asked:
+                // of a source not std's compiled struct, made in place, a
+                // copy's map, that source's type made knowing both, as one
+                // a struct holds stepped from its back is (#851, #1978), and
+                // each adapter beneath it that steps from its back where its
+                // source does (`back_stepped_source`), not what it's made of,
+                // a slice's iterator, whose type others share.
+                if crate::lower::recognition::is_held_compiled(tcx, made)
+                    && user_variable(&mir.local_decls[destination.local])
+                    && let Some(source) = reversed_source(tcx, made)
+                    && !crate::lower::recognition::is_compiled_std_iterator(tcx, source.peel_refs())
+                {
+                    let mut at = Some(source.peel_refs());
+                    while let Some(adapter) = at
+                        && let Some(beneath) = back_stepped_source(tcx, adapter)
+                    {
+                        typed_sources.insert(erased(adapter));
+                        at = Some(beneath.peel_refs());
+                    }
                 }
                 let made_stepped = stepped.contains_key(&(owner, destination.local));
                 let made_asked = made_stepped || asked.contains(&(owner, destination.local));

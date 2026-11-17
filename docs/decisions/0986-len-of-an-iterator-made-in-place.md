@@ -209,3 +209,43 @@ with the cases landed since its last bless. The growth comes only from
 new programs, these rows' generic code lifting a JS iterator by `$iter`
 as this ADR requires. Running the check over the stack's snapshots one
 commit at a time showed no existing program's output got worse.
+
+## Amendment (2026-11-17, #1978): a held copy of a map whose length is asked
+
+The amendment above left one shape refused: a `copied()` or `cloned()` of
+a map, held in a variable, whose `len()` is asked. The copy is its map in
+JS, made in place, and the type says nothing of its form. The map is
+`$mapEnds(..)` where its back is asked and JS's own `.map(f)` otherwise.
+Back_stepped's `asked_of`, the one answer of what's asked of a local, now
+answers it in two places.
+
+- **A `len()` of a variable is a length asked of it.** Through what moves
+  or lends it, the variable is `LengthAsked::Held`, as a `Vec`'s growth
+  asks (#1795). `written_as_asked` makes its value knowing its length
+  where it's written: `const m = $mapEnds($iter(items), f); m.len()`.
+- **A `rev()` a variable holds is std's struct (ADR 0871).** It steps what
+  it holds from its back and asks it its length by the dictionary of its
+  type alone, whatever the variable is asked. Where what it holds isn't
+  std's compiled struct, a copy of a map made in place, that type and
+  each adapter beneath it that steps from its back where its source does
+  are made knowing their back by type (`typed_sources`, as #851 made the
+  source of a struct stepped from its back). The slice's iterator beneath
+  isn't, as other values share its type: `iterator_rev($mapEnds($iter(items),
+  f))`, whose `len` is the map's own.
+
+No router changed: a call on a value made in place already goes to the
+iterator lowering (`steps_adapter_in_place`). Nothing else printed moved:
+the whole corpus and std's structs ran unchanged, snapshots compared.
+
+Corpus case `len_of_a_held_copy_of_a_map` holds such a copy, reversed or
+not, against native in each build and through every metamorphic rewrite:
+- its length alone;
+- stepped from either end, then its length;
+- its hint, and given to generic code;
+- items with a destructor, cloned, collected and dropped.
+
+Mutations `held-rev-in-place-source-untyped` and `len-of-a-variable-unasked`
+(`analysis/back_stepped.ts`) are caught. docs/readability.txt is blessed
+with the case: `$iter`'s share goes from 85.5 to 85.8 in 10,000 lines,
+only from the case's own ten, each the source of a map this ADR counts.
+No existing program's output changed.
