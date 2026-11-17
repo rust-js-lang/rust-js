@@ -6,6 +6,7 @@ import {
   $cleanup,
   $dropEach,
   $dropItems,
+  $held,
   $iter,
   $live,
   $next,
@@ -28,6 +29,7 @@ function loudDrop_drop(loud) {
 }
 
 function tee(iter, dropI, dropIItem) {
+  $held(iter);
   const buffer = {
     backlog: [],
     iter,

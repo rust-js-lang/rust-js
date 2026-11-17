@@ -9,6 +9,7 @@ import {
   $enumerate,
   $foldBack,
   $foldOf,
+  $held,
   $iter,
   $jsIterator,
   $lazyChain,
@@ -20,6 +21,7 @@ import {
   $roomForHint,
   $slicing,
   $stepByEnds,
+  $stepsOf,
   $taking,
   $tryOf,
   flattenDoubleEndedIterator_nextBack,
@@ -108,12 +110,13 @@ function stepped(src, dropI) {
 }
 
 function flattened(src, IFused, dropI) {
+  $held(src);
   return $collectDropping(
     $roomForHint(
       iterator_rev(
         iterator_map(
           iterator_flatten(
-            Iterator.from(src),
+            $stepsOf(src),
             $jsIterator,
             {
               intoIter: (items) => $iter(items),

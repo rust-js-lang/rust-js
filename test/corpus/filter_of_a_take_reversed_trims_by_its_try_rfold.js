@@ -41,6 +41,7 @@ function notes() {
 }
 
 function newestFirst(it, IIterator, IDoubleEndedIterator, dropI, dropIItem) {
+  $held(it);
   return iterator_rev(it, IIterator, IDoubleEndedIterator, dropI, dropIItem);
 }
 

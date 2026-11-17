@@ -8,9 +8,11 @@ import {
   $extend,
   $filterDropping,
   $grownBy,
+  $held,
   $iter,
   $jsIterator,
   $live,
+  $stepsOf,
   $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
@@ -24,13 +26,14 @@ function dDrop_drop(d) {
 }
 
 function grow(src, ITrustedLen, dropI) {
+  $held(src);
   const guard = [91];
   const calls = 0;
   const grown = [];
   let calls$1 = calls;
   try {
     const iter = iterator_map(
-      Iterator.from(src),
+      $stepsOf(src),
       (d) => {
         calls$1 = (calls$1 + 1) | 0;
         try {

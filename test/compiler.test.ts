@@ -1106,7 +1106,7 @@ test("generic iterators take arrays and JS iterators alike", async () => {
   expect(js).toContain("export function evensBelow(n) {\n  return iterator_filter({ start: 0, end: n }, (x) => x % 2 === 0, { next: $rangeNext });");
   // Its collect asks the hint of what it's given, which may be the crate's
   // own (ADR 1092, #733).
-  expect(js).toContain("export function middle(items, k) {\n  return $collectDropping(\n    $roomForHint(\n      iterator_take(iterator_skip(Iterator.from(items), 1, $jsIterator), k, $jsIterator),");
+  expect(js).toContain("export function middle(items, k) {\n  return $collectDropping(\n    $roomForHint(\n      iterator_take(iterator_skip($stepsOf(items), 1, $jsIterator), k, $jsIterator),");
   expect(js).toContain("for (const x of items) {");
   // One of the crate's own, given where a generic one goes.
   expect(js).toContain("total($iterator({ n }, countdownIterator_next))");

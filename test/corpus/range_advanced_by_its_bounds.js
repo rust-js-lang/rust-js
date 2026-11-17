@@ -11,6 +11,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rev,
+  $stepsOf,
   iterator_skip,
 } from "@rust-js/std";
 
@@ -19,7 +20,7 @@ export function entry() {
 }
 
 function skipped(it, n) {
-  return $nextSome(iterator_skip(Iterator.from(it), n, $jsIteratorSome));
+  return $nextSome(iterator_skip($stepsOf(it), n, $jsIteratorSome));
 }
 
 function main() {

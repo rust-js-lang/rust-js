@@ -478,3 +478,68 @@ Held by `test/corpus/sorted_keys_dropped_before_their_source.rs`:
 - an out-of-order run.
 
 Mutations `stepped-held-unheld` and `is-sorted-by-steps-armed`.
+
+## Amendment: what std's compiled struct holds (2026-11-18, #2039)
+
+Generic code's `it.fuse()` of a `FusedIterator` dropped its source when
+the source was stepped to its end, where Rust's `Fuse` keeps it until the
+`Fuse` drops. A `map` whose closure captured a `D` printed `drop 1` before
+`drained`, where native prints it after. Std's struct holds what it's
+given past its end, and drops it by the drop it's given, where Rust's drop
+glue or std's own code drops it. Two things closed it first:
+
+- **`Iterator.from(it)`.** Generic code gave std's compiled body its type
+  parameter's value so (#1962). That calls a `$Steps`' `[Symbol.iterator]()`,
+  which arms it to close itself at its end, as JS's own by-value consumers
+  take it.
+- **Its own `done`.** An adapter made in place, a `$closing` its caller
+  made, closes itself at its end unless it's held. A held `Fuse` holds its
+  source, as a `$Steps`' `hold()` holds its `iter`; but one in an array,
+  `[it.fuse()]`, isn't held, and its source closed as it was done.
+
+**The rules.**
+- A type parameter's value given to std's compiled body as its `self` is
+  `$stepsOf(it)`: an array's `$iter`, a `$Steps` as it is, anything else
+  JS's iterator of it, `Iterator.from`'s, which takes one with a `next`
+  alone (ADR 0061); never a `$Steps` armed.
+- A value moved into std's compiled struct, as the call makes it, is a
+  holder's: held where it's made, or where its function starts
+  (`moved_into_a_holder`), as a value moved into an aggregate is. It's
+  followed through each temporary MIR moves it into whole, `fuse(move _4)`
+  of `_4 = move _2`. Not into an adapter the body makes in place, a JS
+  iterator whose `hold()` holds it.
+
+**One output form per construct.** A type parameter's value is stepped as:
+- `$stepsOf(it)`, given to std's compiled struct, which holds it and drops
+  it where Rust does, so it mustn't close itself at its end;
+- `Iterator.from(it)`, in generic code's own chain of JS's iterator
+  helpers, `Iterator.from(it).map(f)`, whose helpers never call
+  `[Symbol.iterator]` and so need it armed to close at its end, where
+  Rust's chain consumed in place drops its source.
+
+JS's own by-value consumers, `Array.from`, `for..of` and a spread, arm a
+`$Steps` themselves when they take it. That's how a `Fuse` given back to
+its caller and collected there, or left by a loop's `break`, drops its
+source with it, as native does.
+
+89 corpus snapshots move, each one of the two forms: `Iterator.from(it)` to
+`$stepsOf(it)`, and a `$held(..)` of a value given to std's struct. Each
+runs as native, in both builds; none's output moves. React's port doesn't
+move.
+
+Corpus case `fuse_holds_its_source_in_generic_code` holds, against native:
+- a `fuse()` of a `FusedIterator` source, std's `Map` and a `map` its
+  caller makes in place, and one in an array;
+- `map`, `take` and `zip` in generic code, the zip made in place;
+- non-fused sources, the crate's own and a boxed `dyn`, dropped at their
+  first `None` as std's does;
+- a `Fuse` dropped before its source's end;
+- held locals in code that isn't generic;
+- a `Fuse` given back, collected by its caller, and left by a `break`;
+- a panic at its end.
+
+Mutations `compiled-self-armed`, `compiled-struct-not-a-holder`,
+`moved-through-temporaries-unseen` and `made-in-place-a-holder`. Generic
+code's `fuse()` where no caller gives `IFused`, an impl's own method's,
+still takes `false`, std's non-fused `Fuse`: #2042, as itertools'
+`ZipLongest::rfold` reaches it.

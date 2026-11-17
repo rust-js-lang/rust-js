@@ -569,4 +569,12 @@ export const mutations: Mutation[] = [
     replace: "                *value = held;\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_in_generic_code_of_a_hidden_source.rs$"],
   },
+  {
+    name: "compiled-self-armed",
+    breaks: "a type parameter's value given to std's compiled body is `Iterator.from(it)`, which arms a `$Steps` to close itself at its end, so a `fuse()` of a `FusedIterator` drops its source's closure as it's stepped to its end, not with the `Fuse` (#2039)",
+    file: "src/lower/iterators/stepping.rs",
+    find: '                *value = Expr::call_helper("$stepsOf", vec![held]);\n',
+    replace: "                *value = self.js_iterator(held);\n",
+    tests: ["test/corpus.test.ts", "-t", "^fuse_holds_its_source_in_generic_code\\.rs$"],
+  },
 ];

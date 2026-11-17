@@ -42,6 +42,7 @@ function tExt(
     [TIterator, TFused, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
       flat(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
+        $held(self);
         return $collectDropping(
           $roomForHint(
             iterator_flatMap(
@@ -69,6 +70,7 @@ function tExt(
         );
       },
       flattened(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
+        $held(self);
         return $collectDropping(
           $roomForHint(
             iterator_flatten(
@@ -93,6 +95,7 @@ function tExt(
         );
       },
       firstOfEach(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
+        $held(self);
         const flatMap = $held(
           iterator_flatMap(
             self,

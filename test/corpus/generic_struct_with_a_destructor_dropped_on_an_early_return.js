@@ -105,6 +105,7 @@ function chainParser(LParser, RParser, dropL, dropR) {
   }));
 }
 function chainParser_parse(chain, input, LParser, RParser, dropL, dropR) {
+  $held(input);
   let result$1;
   try {
     result$1 = LParser.parse(chain[0], input);
@@ -135,6 +136,7 @@ function chainParser_parse(chain, input, LParser, RParser, dropL, dropR) {
 }
 function pairs(i, IIterator) {
   const TokenParser = tokenParser(IIterator, $strictlyEqual);
+  $held(i);
   return chainParser_parse([[1], [2]], i, TokenParser, TokenParser, tokenDrop_drop, tokenDrop_drop);
 }
 function main() {

@@ -10,6 +10,7 @@ import {
   $lent,
   $live,
   $next,
+  $stepsOf,
   $unwindsOn,
   iterator_chain,
   iterator_enumerate,
@@ -61,11 +62,11 @@ function counted(it) {
 }
 
 function skipCounted(it) {
-  return $count(iterator_skip(Iterator.from(it), 1, $jsIteratorSome));
+  return $count(iterator_skip($stepsOf(it), 1, $jsIteratorSome));
 }
 
 function fuseCounted(it, IFused) {
-  return $count(iterator_fuse(Iterator.from(it), $jsIteratorSome, IFused));
+  return $count(iterator_fuse($stepsOf(it), $jsIteratorSome, IFused));
 }
 
 function ds() {

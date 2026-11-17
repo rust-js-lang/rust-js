@@ -24,6 +24,7 @@ import {
   $rangeNthBack,
   $rev,
   $slicing,
+  $stepsOf,
   $tryOf,
   filterDoubleEndedIterator_nextBack,
   filterDoubleEndedIterator_rfold,
@@ -103,9 +104,10 @@ function nthBack(it, dropI) {
 }
 
 function ends(it, dropI) {
+  $held(it);
   const r = $held(
     iterator_rev(
-      Iterator.from(it),
+      $stepsOf(it),
       $jsIterator,
       { next_back: $nextBack, rfold: $foldBack },
       dropI,

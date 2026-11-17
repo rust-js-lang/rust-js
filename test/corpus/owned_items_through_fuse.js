@@ -20,6 +20,7 @@ import {
   $rev,
   $roomFor,
   $slicing,
+  $stepsOf,
   $tryOf,
   $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
@@ -48,9 +49,10 @@ function louds(n) {
   return Array.from({ length: n }, (_, value) => [value]);
 }
 function firsts(it, dropI) {
+  $held(it);
   const map = $held(
     iterator_map(
-      Iterator.from(it),
+      $stepsOf(it),
       (l) => {
         const result = l[0];
         loudDrop_drop(l);

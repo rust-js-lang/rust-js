@@ -15,6 +15,7 @@ import {
   $roomForHint,
   $some,
   $someValue,
+  $stepsOf,
   iterator_enumerate,
   iterator_map,
   iterator_skip,
@@ -56,7 +57,7 @@ function maybeIterator_nth(maybe, n) {
 
 // In generic code, of what it's given: the crate's own, an array's.
 function lastSkipped(it) {
-  return $last(iterator_skip(Iterator.from(it), 3, $jsIterator));
+  return $last(iterator_skip($stepsOf(it), 3, $jsIterator));
 }
 
 function main() {

@@ -10,12 +10,14 @@ import {
   $cycleOf,
   $dropEach,
   $foldOf,
+  $held,
   $iter,
   $jsIterator,
   $next,
   $nth,
   $rangeNext,
   $roomForHint,
+  $stepsOf,
   fuseClone_clone,
   iterator_fuse,
   iterator_map,
@@ -46,8 +48,9 @@ function dDrop_drop(d) {
 }
 
 function tried(src, IInPlace, dropI) {
+  $held(src);
   const iter = iterator_map(
-    iterator_take(Iterator.from(src), 9, $jsIterator, dropI, dDrop_drop),
+    iterator_take($stepsOf(src), 9, $jsIterator, dropI, dDrop_drop),
     (value) => value,
     { next: $next, fold: $foldOf, nth: $nth },
     (take) => {

@@ -2,6 +2,7 @@
 
 import {
   $foldToArray,
+  $held,
   $iter,
   $knowing,
   $live,
@@ -35,9 +36,9 @@ function loudDrop_drop(loud) {
 function main() {
   const exactSizeIterator = { len: (iterator) => iterator.len() };
   const items = [1, 2, 3, 4, 5];
-  let m = iterator_rev($mapEnds($iter(items), (x) => Math.min(x, 9)));
+  let m = iterator_rev($held($mapEnds($iter(items), (x) => Math.min(x, 9))));
   console.log(`a ${revExactSizeIterator_len(m, exactSizeIterator)}`);
-  m = iterator_rev($mapEnds($iter(items), (x) => Math.min(x, 9)));
+  m = iterator_rev($held($mapEnds($iter(items), (x) => Math.min(x, 9))));
   const next = $next(m);
   console.log(
     `b ${next == null ? "None" : `Some(${next})`} ${revExactSizeIterator_len(m, exactSizeIterator)} ${((value) => (value == null ? "None" : `Some(${value})`))(revDoubleEndedIterator_nextBack(m))}`,
@@ -52,7 +53,7 @@ function main() {
   console.log(
     `e ${nextBack == null ? "None" : `Some(${nextBack})`} ${m.len()} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(hint(m))}`,
   );
-  m = iterator_rev($mapEnds($iter(items), (x) => Math.min(x, 9)));
+  m = iterator_rev($held($mapEnds($iter(items), (x) => Math.min(x, 9))));
   console.log(
     `f ${count($knowing(m, undefined, (iterator) => revExactSizeIterator_len(iterator, exactSizeIterator)))}`,
   );
@@ -71,7 +72,7 @@ function main() {
   const louds = [[1], [2], [3]];
   try {
     const m = iterator_rev(
-      $mapEnds($iter(louds), (l) => l),
+      $held($mapEnds($iter(louds), (l) => l)),
       { next: $next },
       { next_back: $nextBack },
       undefined,

@@ -16,6 +16,7 @@ function counterDrop_drop(counter) {
   console.log(`drop counter ${counter[0]}`);
 }
 function taken(items, IIterator, dropI) {
+  $held(items);
   return iterator_take(items, 2, IIterator, dropI);
 }
 function main() {

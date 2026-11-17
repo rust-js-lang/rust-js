@@ -63,6 +63,7 @@ function step(it) {
 }
 
 function first(it, dropI) {
+  $held(it);
   const items = { value: { value: it }, strong: 1, weak: 0 };
   let borrowMut;
   try {
@@ -95,6 +96,7 @@ function first(it, dropI) {
 }
 
 function second(it, dropI) {
+  $held(it);
   const items = { value: it };
   let held;
   try {
@@ -130,6 +132,7 @@ function second(it, dropI) {
 }
 
 function summed(it) {
+  $held(it);
   const items = { value: it };
   const borrowMut = $borrowMut(items, true);
   try {
@@ -227,6 +230,7 @@ function secondOf(source, SSource) {
 }
 
 function replaced(it, other, IVecCollect) {
+  $held(it);
   const held = { value: it };
   $borrowMut(held).value = other;
   const borrowMut = $borrowMut(held, true);

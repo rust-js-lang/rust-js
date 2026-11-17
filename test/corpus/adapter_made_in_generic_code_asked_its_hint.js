@@ -19,6 +19,7 @@ import {
   $slicing,
   $some,
   $someValue,
+  $stepsOf,
   iterator_filter,
   iterator_map,
   iterator_skip,
@@ -56,12 +57,12 @@ function hint(it, dropI) {
 }
 
 function doubled(it) {
-  return hint(iterator_map(Iterator.from(it), (x) => (x * 2) >>> 0, $jsIterator));
+  return hint(iterator_map($stepsOf(it), (x) => (x * 2) >>> 0, $jsIterator));
 }
 
 function firstTwo(it) {
   return hint(
-    iterator_map(iterator_take(Iterator.from(it), 2, $jsIterator), (x) => (x + 1) >>> 0, {
+    iterator_map(iterator_take($stepsOf(it), 2, $jsIterator), (x) => (x + 1) >>> 0, {
       next: $next,
       fold: $foldOf,
       nth: $nth,
@@ -71,11 +72,7 @@ function firstTwo(it) {
 
 function rest(it) {
   return hint(
-    iterator_filter(
-      iterator_skip(Iterator.from(it), 1, $jsIterator),
-      (x) => x % 2 === 0,
-      $jsIterator,
-    ),
+    iterator_filter(iterator_skip($stepsOf(it), 1, $jsIterator), (x) => x % 2 === 0, $jsIterator),
   );
 }
 
@@ -84,14 +81,16 @@ function restCloned(it, IIterator, IClone) {
 }
 
 function twoHinted(it, dropI) {
-  return hint(iterator_take(Iterator.from(it), 2, $jsIterator, dropI, dDrop_drop), (take) => {
+  $held(it);
+  return hint(iterator_take($stepsOf(it), 2, $jsIterator, dropI, dDrop_drop), (take) => {
     take.return();
   });
 }
 
 function lastOfFour(it, dropI) {
+  $held(it);
   const iter = iterator_map(
-    iterator_take(Iterator.from(it), 4, $jsIterator, dropI, dDrop_drop),
+    iterator_take($stepsOf(it), 4, $jsIterator, dropI, dDrop_drop),
     (d) => {
       const result = d[0];
       dDrop_drop(d);

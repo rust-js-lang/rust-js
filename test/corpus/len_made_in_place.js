@@ -15,6 +15,7 @@ import {
   $rev,
   $sizeHint,
   $slice,
+  $stepsOf,
   iterator_map,
   iterator_rev,
   iterator_take,
@@ -36,13 +37,13 @@ function reversedLen(it) {
 
 function mappedLen(it) {
   return mapExactSizeIterator_len(
-    iterator_map(Iterator.from(it), (x) => (x + 1) >>> 0, $jsIterator),
+    iterator_map($stepsOf(it), (x) => (x + 1) >>> 0, $jsIterator),
     { len: (iterator) => iterator.len() },
   );
 }
 
 function takenLen(it) {
-  return $exactLen($sizeHint(iterator_take(Iterator.from(it), 2, $jsIteratorSome)));
+  return $exactLen($sizeHint(iterator_take($stepsOf(it), 2, $jsIteratorSome)));
 }
 
 function zippedLen(it, v) {

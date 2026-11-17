@@ -732,10 +732,13 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// `$lazySplitBy`, `$lazyRsplitBy`, `$lazySplitTerminatorBy`,
 /// `$lazySplitInclusiveBy`, `$lazyMatchesBy` and `$lazyMatchIndicesBy`, and
 /// a slice's, `$lazySliceSplitBy`, `$lazyChunkBy` and their `_mut`s (#1501),
+/// what std's compiled body is given of a type parameter's value,
+/// `$stepsOf`, never armed to close itself at its end (#2039),
 /// and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 56] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 57] = [
     "$stdIterator",
+    "$stepsOf",
     "$chars",
     "$charIndices",
     "$memchrIter",

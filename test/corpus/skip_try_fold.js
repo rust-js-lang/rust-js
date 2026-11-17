@@ -15,6 +15,7 @@ import {
   $nth,
   $position,
   $rangeNext,
+  $stepsOf,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
@@ -65,7 +66,8 @@ function heldDrop_drop(held) {
 }
 
 function anyAbove(it, n, dropI) {
-  const map = $held(iterator_map(Iterator.from(it), (x) => (x + 1) | 0, $jsIterator, dropI));
+  $held(it);
+  const map = $held(iterator_map($stepsOf(it), (x) => (x + 1) | 0, $jsIterator, dropI));
   let result;
   try {
     result = $lent(map).some((x) => x > n);
@@ -82,9 +84,10 @@ function anyAbove(it, n, dropI) {
 // Its `map` past a `filter`, which isn't std's compiled struct, is the
 // hand-written form, and steps what it's given by its `try_fold` too.
 function anyKeptAbove(it, n, dropI) {
+  $held(it);
   const map = $held(
     iterator_map(
-      iterator_filter(Iterator.from(it), (x) => x !== 0, $jsIterator, dropI),
+      iterator_filter($stepsOf(it), (x) => x !== 0, $jsIterator, dropI),
       (x) => (x + 1) | 0,
       { next: $next, fold: $foldOf },
       (filter) => {

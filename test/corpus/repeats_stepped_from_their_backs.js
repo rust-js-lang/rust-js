@@ -64,7 +64,7 @@ function takes() {
       }
     }
   }
-  const held = iterator_take($repeating("x"), 4, {
+  const held = iterator_take($held($repeating("x")), 4, {
     next: $next,
     nth: $nth,
     last: $last,
@@ -83,7 +83,7 @@ function takes() {
   console.log(`${value == null ? "None" : `Some(${$debugStr(value, "'")})`}`);
   const louder = $held(
     iterator_take(
-      $repeating([2], (value) => loudClone_clone(value), loudDrop_drop),
+      $held($repeating([2], (value) => loudClone_clone(value), loudDrop_drop)),
       3,
       { next: $next, nth: $nth, last: $last, count: $count },
       (repeat) => {

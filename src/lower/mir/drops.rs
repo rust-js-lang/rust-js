@@ -274,11 +274,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// drops where Rust does: an aggregate, `Some(it)`, a struct, an array
     /// or a tuple, or a call whose value's type holds its type and isn't an
     /// iterator itself, `RefCell::new(it)` (#1270); not std's struct, compiled.
-    /// Not std's adapter of it,
-    /// an iterator, held through its own `hold()` where its owner holds it,
-    /// and closing what it holds where it's done; nor a consumer, whose
-    /// value holds no iterator. The one answer of every place a temporary
-    /// iterator can be moved into.
+    /// Nor an adapter of it made in place, an iterator, held through its own
+    /// `hold()` where its owner holds it, and closing what it holds where
+    /// it's done; nor a consumer, whose value holds no iterator. But std's
+    /// adapter compiled, `iterator_fuse(it, ..)`, which has no `hold()` and
+    /// drops what it holds by the drop it's given, where Rust's drop glue
+    /// or std's own code drops it, never as it's stepped to its end: what
+    /// it's given is held, so a `fuse()` of a `FusedIterator` keeps a
+    /// `map`'s closure past its end, as Rust's does (#2039). The one answer
+    /// of every place a temporary iterator can be moved into.
     fn moved_into_a_holder(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
         // Std's struct, compiled, which steps what it holds as Rust does and
         // has no `hold()` (#243); and what std's own bodies move into theirs,
@@ -291,25 +295,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return false;
         }
-        let moved = |operand: &mir::Operand<'tcx>| matches!(operand, mir::Operand::Move(place) if place.local == local && place.projection.is_empty());
+        // It, and each temporary it's moved into whole, `_4 = move _2`, which
+        // MIR makes of what it gives a call, `fuse(move _4)` (#2039).
+        let mut values = vec![local];
+        loop {
+            let more: Vec<mir::Local> = (body.basic_blocks.iter())
+                .flat_map(|data| &data.statements)
+                .filter_map(|statement| match &statement.kind {
+                    mir::StatementKind::Assign(assign) => match (&assign.0, &assign.1) {
+                        (to, mir::Rvalue::Use(mir::Operand::Move(from), ..))
+                            if to.projection.is_empty()
+                                && from.projection.is_empty()
+                                && values.contains(&from.local) =>
+                        {
+                            Some(to.local)
+                        }
+                        _ => None,
+                    },
+                    _ => None,
+                })
+                .filter(|to| !values.contains(to))
+                .collect();
+            if more.is_empty() {
+                break;
+            }
+            values.extend(more);
+        }
+        let moved = |operand: &mir::Operand<'tcx>| matches!(operand, mir::Operand::Move(place) if values.contains(&place.local) && place.projection.is_empty());
         let ty = self.tcx.erase_and_anonymize_regions(body.local_decls[local].ty);
-        let holds = |made: Ty<'tcx>| {
+        // Std's struct compiled, as the call makes it: not an adapter this
+        // body makes in place, a JS iterator whose `hold()` holds it.
+        let compiled = |made: Ty<'tcx>, at: rustc_span::Span| {
+            crate::lower::recognition::is_compiled_std_iterator(self.tcx, made)
+                && !(self.frame.facts.in_place_adapters).made_at(self.frame.thir, at)
+        };
+        let holds = |made: Ty<'tcx>, at: rustc_span::Span| {
             let made = self.tcx.erase_and_anonymize_regions(made);
             // An iterator itself, as the body's bounds say, generic code's
             // `Take<Cycle<I>>` too, whose item is `I::Item`.
             let iterator = crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::Iterator);
             made != ty
                 && made.walk().any(|part| part.as_type() == Some(ty))
-                && !self.recognition().may_hold_by_bounds(made, iterator)
+                && (!self.recognition().may_hold_by_bounds(made, iterator) || compiled(made, at))
         };
         (body.basic_blocks.iter()).any(|data| {
             !data.is_cleanup
                 && (data.statements.iter().any(|statement| {
                     matches!(&statement.kind, mir::StatementKind::Assign(assign)
                         if matches!(&assign.1, mir::Rvalue::Aggregate(_, operands) if operands.iter().any(moved)))
-                }) || matches!(&data.terminator().kind, TerminatorKind::Call { args, destination, .. }
+                }) || matches!(&data.terminator().kind, TerminatorKind::Call { args, destination, fn_span, .. }
                     if args.iter().any(|arg| moved(&arg.node))
-                        && holds(destination.ty(&body.local_decls, self.tcx).ty)))
+                        && holds(destination.ty(&body.local_decls, self.tcx).ty, *fn_span)))
         })
     }
 

@@ -80,6 +80,7 @@ function iKeeping_held(
   dropIItemItem,
   dropIItemIntoIter,
 ) {
+  $held(self);
   const iter = iterator_map(
     self,
     (i) => ({ iter: $held(IItemIntoIterator.intoIter(i)) }),

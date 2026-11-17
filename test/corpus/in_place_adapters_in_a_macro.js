@@ -14,6 +14,7 @@ import {
   $next,
   $nextBack,
   $roomForHint,
+  $stepsOf,
   $tryOf,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
@@ -74,7 +75,7 @@ function held(it) {
 function numbered(it) {
   return $collectDropping(
     $roomForHint(
-      iterator_map(Iterator.from(it), ([i, x]) => (((i * 100) >>> 0) + x) >>> 0, $jsIterator),
+      iterator_map($stepsOf(it), ([i, x]) => (((i * 100) >>> 0) + x) >>> 0, $jsIterator),
       4,
       false,
     ),

@@ -36,6 +36,7 @@ import {
   $reduceBy,
   $roomForHint,
   $some,
+  $stepsOf,
   $thenCmp,
   $traitImpl,
   iterator_enumerate,
@@ -617,7 +618,7 @@ export function total(items) {
 export function middle(items, k) {
   return $collectDropping(
     $roomForHint(
-      iterator_take(iterator_skip(Iterator.from(items), 1, $jsIterator), k, $jsIterator),
+      iterator_take(iterator_skip($stepsOf(items), 1, $jsIterator), k, $jsIterator),
       4,
       false,
     ),

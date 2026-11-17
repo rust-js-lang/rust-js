@@ -14,6 +14,7 @@ import {
   $nextBack,
   $nthDropping,
   $range,
+  $stepsOf,
   iterator_chain,
   iterator_rev,
   iterator_skip,
@@ -28,9 +29,11 @@ function noisyDrop_drop(noisy) {
 }
 
 function chainedNth(a, b, dropI) {
+  $held(a);
+  $held(b);
   const chain = $held(
     iterator_chain(
-      Iterator.from(a),
+      $stepsOf(a),
       b,
       $jsIterator,
       {

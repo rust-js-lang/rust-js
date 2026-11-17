@@ -12,6 +12,7 @@ import {
   $live,
   $next,
   $peek,
+  $stepsOf,
   $unwindsOn,
   iterator_peekable,
 } from "@rust-js/std";
@@ -25,6 +26,7 @@ function dDrop_drop(d) {
 }
 
 function peeked(it, IIterator, dropI) {
+  $held(it);
   return iterator_peekable(it, IIterator, dropI, dDrop_drop);
 }
 
@@ -36,7 +38,8 @@ function counterIterator_next(counter) {
 }
 
 function consumed(it, dropI) {
-  const iter = iterator_peekable(Iterator.from(it), $jsIterator, dropI);
+  $held(it);
+  const iter = iterator_peekable($stepsOf(it), $jsIterator, dropI);
   let result;
   try {
     result = iter.reduce((a, b) => (a + b) >>> 0, 0);

@@ -9,6 +9,7 @@ import {
   $lent,
   $position,
   $roomForHint,
+  $stepsOf,
   iterator_inspect,
 } from "@rust-js/std";
 
@@ -37,7 +38,7 @@ function seen(items) {
   const shown = (x) => {
     log.push(x);
   };
-  iterator_inspect(Iterator.from(items), shown, $jsIterator).forEach((value) => {});
+  iterator_inspect($stepsOf(items), shown, $jsIterator).forEach((value) => {});
   return log;
 }
 

@@ -20,6 +20,7 @@ import {
   $peek,
   $rev,
   $slicing,
+  $stepsOf,
   $took,
   $tryOf,
   $unwindsOn,
@@ -200,9 +201,10 @@ function stepsDoubleEndedIterator_nextBack(steps) {
 }
 
 function mappedFused(it, IFused, dropI) {
+  $held(it);
   const iter = iterator_fuse(
     iterator_map(
-      Iterator.from(it),
+      $stepsOf(it),
       (d) => {
         const result = [(d[0] + 10) >>> 0];
         dDrop_drop(d);
@@ -239,7 +241,8 @@ function mappedFused(it, IFused, dropI) {
 }
 
 function peekedReversed(it, dropI) {
-  it = $held(iterator_peekable(Iterator.from(it), $jsIterator, dropI, dDrop_drop));
+  $held(it);
+  it = $held(iterator_peekable($stepsOf(it), $jsIterator, dropI, dDrop_drop));
   try {
     const value = $peek(it)?.[0];
     console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
@@ -296,8 +299,9 @@ function peekedReversed(it, dropI) {
 }
 
 function fusedTotal(it, IFused) {
+  $held(it);
   const total = $foldDropping(
-    iterator_fuse(Iterator.from(it), $jsIterator, IFused),
+    iterator_fuse($stepsOf(it), $jsIterator, IFused),
     [0],
     (total, n) => {
       total[0] = (total[0] + n) >>> 0;
@@ -363,12 +367,14 @@ const Holder = {
 };
 
 function heldTotal(it, dropI) {
+  $held(it);
   return Holder.total({ it }, $jsIterator, dropI);
 }
 
 function heldMappedTotal(it, dropI) {
+  $held(it);
   return Holder.total(
-    { it: iterator_map(Iterator.from(it), (n) => (n + 1) >>> 0, $jsIterator, dropI) },
+    { it: iterator_map($stepsOf(it), (n) => (n + 1) >>> 0, $jsIterator, dropI) },
     { next: $next, fold: $foldOf },
     (map) => {
       map.return();

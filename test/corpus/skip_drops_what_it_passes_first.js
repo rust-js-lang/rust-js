@@ -12,6 +12,7 @@ import {
   $range,
   $rev,
   $skipping,
+  $stepsOf,
   $unwindsOn,
   iterator_skip,
 } from "@rust-js/std";
@@ -25,7 +26,8 @@ function dDrop_drop(d) {
 }
 
 function second(items, dropI) {
-  const skip = $held(iterator_skip(Iterator.from(items), 2, $jsIterator, dropI, dDrop_drop));
+  $held(items);
+  const skip = $held(iterator_skip($stepsOf(items), 2, $jsIterator, dropI, dDrop_drop));
   let next;
   function map(d) {
     const result = d[0];

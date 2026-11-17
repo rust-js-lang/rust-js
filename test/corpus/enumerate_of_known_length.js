@@ -9,6 +9,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $stepsOf,
   enumerateDoubleEndedIterator_nextBack,
   enumerateExactSizeIterator_len,
   iterator_enumerate,
@@ -27,7 +28,7 @@ function mapped(it) {
   return $enumerate($mapEnds(it, (x) => (x + 1) & 255)).len();
 }
 function backs(it) {
-  const e = iterator_enumerate(Iterator.from(it), $jsIterator);
+  const e = iterator_enumerate($stepsOf(it), $jsIterator);
   const back = enumerateDoubleEndedIterator_nextBack(
     e,
     { len: (iterator) => iterator.len() },

@@ -17,6 +17,7 @@ import {
   $rangeFromStep,
   $roomForHint,
   $some,
+  $stepsOf,
   $traitImpl,
   $treeFromSorted,
   $vecCollectWay,
@@ -57,7 +58,7 @@ function items(it, IVecCollect, IItemSize) {
 /** Of a filter's, which passes on its source's hint's upper bound. */
 function kept(it, keep, TSize) {
   return $collectDropping(
-    $roomForHint(iterator_filter(Iterator.from(it), keep, $jsIterator), TSize, false),
+    $roomForHint(iterator_filter($stepsOf(it), keep, $jsIterator), TSize, false),
   );
 }
 
@@ -70,7 +71,7 @@ function relayed(it, USize, JVecCollect) {
 function relayedTwice(it, JTrustedLen, JInPlace, JItemSize, JItemAlign) {
   return (
     (relayed(
-      iterator_map(Iterator.from(it), (x) => x, $jsIteratorSome),
+      iterator_map($stepsOf(it), (x) => x, $jsIteratorSome),
       JItemSize,
       $vecCollectWay($collectsInPlace(JInPlace, JItemSize, JItemAlign), JTrustedLen, JInPlace),
     ) +
@@ -92,7 +93,7 @@ function queued(it, TSize, IVecCollect) {
 function tagged(it, TU8Size) {
   return $collectDropping(
     $roomForHint(
-      iterator_map(Iterator.from(it), (x) => [x, 0], $jsIterator),
+      iterator_map($stepsOf(it), (x) => [x, 0], $jsIterator),
       TU8Size,
       false,
     ),
@@ -102,7 +103,7 @@ function tagged(it, TU8Size) {
 function wrapped(it, OptionSize) {
   return $collectDropping(
     $roomForHint(
-      iterator_map(Iterator.from(it), (value) => $some(value), $jsIteratorSome),
+      iterator_map($stepsOf(it), (value) => $some(value), $jsIteratorSome),
       OptionSize,
       false,
     ),

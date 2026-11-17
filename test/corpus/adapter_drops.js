@@ -70,7 +70,7 @@ function zip(
   let j$live = true;
   let tmp;
   try {
-    tmp = IIntoIterator.intoIter(i);
+    tmp = $held(IIntoIterator.intoIter(i));
     j$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -103,7 +103,7 @@ function chain(i, j, IIntoIterator, JIntoIterator, dropJ, dropIItem, dropIIntoIt
   let j$live = true;
   let tmp;
   try {
-    tmp = IIntoIterator.intoIter(i);
+    tmp = $held(IIntoIterator.intoIter(i));
     j$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -127,7 +127,7 @@ function chain(i, j, IIntoIterator, JIntoIterator, dropJ, dropIItem, dropIIntoIt
 
 function firsts(i, n, IIntoIterator, dropIItem, dropIIntoIter) {
   return iterator_take(
-    IIntoIterator.intoIter(i),
+    $held(IIntoIterator.intoIter(i)),
     n,
     IIntoIterator.IntoIterIterator(),
     dropIIntoIter,

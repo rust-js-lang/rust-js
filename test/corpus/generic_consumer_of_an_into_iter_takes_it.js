@@ -4,6 +4,7 @@ import {
   $cleanup,
   $closing,
   $count,
+  $held,
   $intoIter,
   $iterator,
   $jsIterator,
@@ -195,7 +196,7 @@ function total(it, dropI) {
 }
 
 function fused(iter, TIntoIterFused, dropTIntoIter) {
-  const iter$1 = iterator_fuse($intoIter(iter), $jsIterator, TIntoIterFused, dropTIntoIter);
+  const iter$1 = iterator_fuse($held($intoIter(iter)), $jsIterator, TIntoIterFused, dropTIntoIter);
   let result;
   try {
     result = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
@@ -211,7 +212,7 @@ function fused(iter, TIntoIterFused, dropTIntoIter) {
 
 function passedFused(iter, TIntoIterFused, dropTIntoIter) {
   return total(
-    iterator_fuse($intoIter(iter), $jsIterator, TIntoIterFused, dropTIntoIter),
+    iterator_fuse($held($intoIter(iter)), $jsIterator, TIntoIterFused, dropTIntoIter),
     (fuse) => {
       fuse.return();
     },

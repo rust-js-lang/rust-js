@@ -13,6 +13,7 @@ import {
   $rev,
   $sizeHint,
   $slicing,
+  $stepsOf,
   $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
@@ -60,10 +61,11 @@ function ends(it, dropI) {
 // holds, std's compiled struct, asked its hint: its source's, through the
 // map, not a `len` the struct has only where it's given one (#851).
 function hinted(src, dropI) {
+  $held(src);
   const held = [9];
   const it = $held(
     iterator_map(
-      Iterator.from(src),
+      $stepsOf(src),
       (x) => {
         const result = (x[0] + 1) >>> 0;
         loudDrop_drop(x);

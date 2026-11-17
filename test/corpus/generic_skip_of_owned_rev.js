@@ -14,6 +14,7 @@ import {
   $range,
   $rev,
   $roomForHint,
+  $stepsOf,
   iterator_chain,
   iterator_map,
   iterator_skip,
@@ -28,10 +29,11 @@ function noisyDrop_drop(noisy) {
 }
 
 function skipped(it, dropI) {
+  $held(it);
   return $collectDropping(
     $roomForHint(
       iterator_map(
-        iterator_skip(Iterator.from(it), 2, $jsIterator, dropI, noisyDrop_drop),
+        iterator_skip($stepsOf(it), 2, $jsIterator, dropI, noisyDrop_drop),
         (n) => {
           const result = n[0];
           noisyDrop_drop(n);
@@ -81,9 +83,11 @@ function nthOf(it, dropI) {
 }
 
 function chainedNth(a, b, dropI) {
+  $held(a);
+  $held(b);
   const chain = $held(
     iterator_chain(
-      Iterator.from(a),
+      $stepsOf(a),
       b,
       $jsIterator,
       {

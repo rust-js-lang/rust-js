@@ -21,6 +21,7 @@ import {
   $reserveHint,
   $roomForHint,
   $slicing,
+  $stepsOf,
   $tryFoldOk,
   $unwindsOn,
   iterator_enumerate,
@@ -89,7 +90,7 @@ function oddOnes(src, IInPlace) {
   return $collectsInPlace(IInPlace, 4, 4)
     ? $foldToArray(
         iterator_filter(
-          Iterator.from(src),
+          $stepsOf(src),
           (x) => x[0] % 2 === 1,
           $jsIterator,
           undefined,
@@ -101,7 +102,7 @@ function oddOnes(src, IInPlace) {
     : $collectDropping(
         $roomForHint(
           iterator_filter(
-            Iterator.from(src),
+            $stepsOf(src),
             (x) => x[0] % 2 === 1,
             $jsIterator,
             undefined,
@@ -121,7 +122,7 @@ function oddOnes(src, IInPlace) {
 function oddCount(src) {
   return $count(
     iterator_filter(
-      Iterator.from(src),
+      $stepsOf(src),
       (x) => x[0] % 2 === 1,
       $jsIterator,
       undefined,
@@ -133,10 +134,11 @@ function oddCount(src) {
 }
 
 function folded(src, dropI) {
+  $held(src);
   let seen = 0;
   const filter = $held(
     iterator_filter(
-      Iterator.from(src),
+      $stepsOf(src),
       (x) => {
         point();
         return x[0] % 2 === 1;

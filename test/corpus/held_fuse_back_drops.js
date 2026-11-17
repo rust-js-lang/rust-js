@@ -2,6 +2,7 @@
 
 import {
   $exactLen,
+  $held,
   $iter,
   $live,
   $next,
@@ -24,6 +25,7 @@ export function entry() {
 }
 
 function pad(iter, min, IIterator, IFused, dropI, dropIItem) {
+  $held(iter);
   return { iter: iterator_fuse(iter, IIterator, IFused, dropI, dropIItem), min };
 }
 

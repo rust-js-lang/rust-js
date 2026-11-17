@@ -10,6 +10,7 @@ import {
   $collectVec,
   $debugStr,
   $foldOf,
+  $held,
   $intoIter,
   $iter,
   $iterator,
@@ -81,6 +82,7 @@ function counterIterator_next(counter) {
 }
 
 function gathered(t, TVecCollect, TItemSize, dropT, dropTItem) {
+  $held(t);
   const v = $collectVec(
     $closing(Iterator.from(t), dropT, false),
     TItemSize,

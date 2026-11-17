@@ -4,6 +4,7 @@ import {
   $cleanup,
   $collectDropping,
   $findBack,
+  $held,
   $iter,
   $knowing,
   $next,
@@ -37,7 +38,7 @@ function louds(n) {
 }
 function chain(i, j, IIntoIterator, JIntoIterator, dropIIntoIter) {
   return iterator_chain(
-    IIntoIterator.intoIter(i),
+    $held(IIntoIterator.intoIter(i)),
     j,
     IIntoIterator.IntoIterIterator(),
     JIntoIterator,

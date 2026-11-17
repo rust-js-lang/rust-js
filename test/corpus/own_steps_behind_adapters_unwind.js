@@ -9,6 +9,7 @@ import {
   $exactLen,
   $foldDropping,
   $foldOf,
+  $held,
   $iter,
   $iterator,
   $jsIterator,
@@ -18,6 +19,7 @@ import {
   $rangeNext,
   $roomForHint,
   $sizeHint,
+  $stepsOf,
   $tryFoldSome,
   iterator_chain,
   iterator_fuse,
@@ -131,8 +133,9 @@ function boxed(at) {
 }
 
 function tried(it, IteratorFused) {
+  $held(it);
   const v = $tryFoldSome(
-    iterator_fuse(Iterator.from(it), $jsIterator, IteratorFused),
+    iterator_fuse($stepsOf(it), $jsIterator, IteratorFused),
     [],
     (acc, n) => push(acc, n),
     $dropEach(dDrop_drop),

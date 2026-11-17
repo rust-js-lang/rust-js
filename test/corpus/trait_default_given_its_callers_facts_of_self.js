@@ -43,6 +43,7 @@ const $tTools = new WeakMap();
 export function tTools(TIterator, TFused, OptionSize, dropT, dropTItem) {
   return $traitImpl($tTools, [TIterator, TFused, OptionSize, dropT, dropTItem], () => ({
     fusedFour(self) {
+      $held(self);
       const it = $held(iterator_fuse(self, TIterator, TFused, dropT, dropTItem));
       let result;
       try {
@@ -65,6 +66,7 @@ export function tTools(TIterator, TFused, OptionSize, dropT, dropTItem) {
       return result;
     },
     flattened(self, SelfIterator) {
+      $held(self);
       return $collectDropping(
         $roomForHint(
           iterator_flatten(

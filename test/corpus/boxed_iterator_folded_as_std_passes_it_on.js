@@ -435,7 +435,7 @@ function boxedFoldCountLast() {
 }
 
 function boxedMapSum() {
-  const b = iterator_take(
+  const a = iterator_take(
     iterator_skip(
       $iter(ds()),
       1,
@@ -450,6 +450,7 @@ function boxedMapSum() {
     },
     dDrop_drop,
   );
+  const b = $held(a);
   const iter = iterator_map(
     b,
     (x) => {

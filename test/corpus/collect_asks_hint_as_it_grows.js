@@ -7,6 +7,7 @@ import {
   $collectDropping,
   $foldToArray,
   $folded,
+  $held,
   $iter,
   $iterator,
   $jsIterator,
@@ -16,6 +17,7 @@ import {
   $reserveHint,
   $roomForHint,
   $some,
+  $stepsOf,
   iterator_chain,
   iterator_filter,
   iterator_flatMap,
@@ -411,9 +413,10 @@ function main() {
  * (#733).
  */
 function collected(it, dropI) {
+  $held(it);
   return $collectDropping(
     $roomForHint(
-      iterator_filter(Iterator.from(it), (n) => n % 3 !== 0, $jsIterator, dropI),
+      iterator_filter($stepsOf(it), (n) => n % 3 !== 0, $jsIterator, dropI),
       4,
       false,
     ),
@@ -421,8 +424,9 @@ function collected(it, dropI) {
 }
 
 function text(it, dropI) {
+  $held(it);
   const iter = iterator_map(
-    Iterator.from(it),
+    $stepsOf(it),
     (n) => String.fromCharCode((97 + (n & 255)) & 255),
     $jsIterator,
     dropI,

@@ -24,11 +24,13 @@ function counterDrop_drop(counter) {
   console.log(`drop counter ${counter[0]}`);
 }
 function firstTwo(items, IIterator, IClone, dropI) {
+  $held(items);
   const v = $collectDropping($roomForHint(iterator_take(items, 2, IIterator, dropI), 4, false));
   console.log("collected");
   return v;
 }
 function found(items, IIterator, IClone, dropI) {
+  $held(items);
   const map = $held(iterator_map(items, (x) => (x * 3) >>> 0, IIterator, dropI));
   let r;
   try {

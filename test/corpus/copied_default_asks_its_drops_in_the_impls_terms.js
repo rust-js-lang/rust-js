@@ -10,6 +10,7 @@ import {
   $foldOf,
   $given,
   $givenDrop,
+  $held,
   $intsOrdered,
   $iter,
   $iterator,
@@ -36,6 +37,7 @@ const $tExt = new WeakMap();
 function tExt(TIterator, TVecCollect, TItemSize, dropT, dropTItem) {
   return $traitImpl($tExt, [TIterator, TVecCollect, TItemSize, dropT, dropTItem], () => ({
     sortedByKeyUnstable(self, key, KOrd, SelfItemSort, dropK, dropFn) {
+      $held(self);
       let v;
       try {
         v = $collectVec(
@@ -75,6 +77,7 @@ function tExt(TIterator, TVecCollect, TItemSize, dropT, dropTItem) {
       return result;
     },
     sortedUnstable(self, SelfItemOrd, SelfItemSort) {
+      $held(self);
       const v = $collectVec(
         $closing($given(self, TIterator, true), $givenDrop(dropT), false),
         TItemSize,

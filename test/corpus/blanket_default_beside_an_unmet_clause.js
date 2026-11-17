@@ -156,6 +156,7 @@ function tExt(
         return out;
       },
       firsts(self, SelfItemIntoIterator) {
+        $held(self);
         const iter = iterator_filterMap(
           self,
           (items) => {

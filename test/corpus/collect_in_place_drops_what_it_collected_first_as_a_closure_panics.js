@@ -6,9 +6,11 @@ import {
   $collectsInPlace,
   $dropEach,
   $foldToArray,
+  $held,
   $iter,
   $jsIteratorSome,
   $roomForHint,
+  $stepsOf,
   iterator_filterMap,
 } from "@rust-js/std";
 
@@ -20,8 +22,9 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 function firsts(items, IInPlace, dropI) {
+  $held(items);
   const iter = iterator_filterMap(
-    Iterator.from(items),
+    $stepsOf(items),
     (item) => {
       if (item == null) {
         try {

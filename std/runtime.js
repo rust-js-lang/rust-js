@@ -4296,11 +4296,14 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
 // where Rust's adapter drops it, not at its end, as JS's own close it, so a
 // held chain's `b` is its owner's to drop (#243); an array, a `Vec`'s
 // `IntoIter`'s form, its `$iter`, which knows its length, its back and so
-// std's hint, as a chain sums it where it grows a `Vec` (#1658); else its
-// iterator.
+// std's hint, as a chain sums it where it grows a `Vec` (#1658); else JS's
+// iterator of it, `Iterator.from`'s, which takes one with a `next` alone too,
+// as a JS caller may give generic code (ADR 0061). And what std's compiled
+// body is given of a type parameter's value, never armed to close itself at
+// its end (#2039).
 export function $stepsOf(items) {
   if (items instanceof $Steps) return items;
-  return Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
+  return Array.isArray(items) ? $iter(items) : Iterator.from(items);
 }
 
 // What a consumer steps that drops something it holds after `items` end,

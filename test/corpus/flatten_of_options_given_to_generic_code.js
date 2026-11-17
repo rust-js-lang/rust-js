@@ -21,6 +21,7 @@ function dDrop_drop(d) {
 }
 
 function lastOf(it, dropI, dropIItem) {
+  $held(it);
   const iter = it;
   let result;
   try {

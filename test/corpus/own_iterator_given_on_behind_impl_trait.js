@@ -9,6 +9,7 @@ import {
   $jsIteratorSome,
   $next,
   $roomForHint,
+  $stepsOf,
   iterator_map,
 } from "@rust-js/std";
 
@@ -60,7 +61,7 @@ function sums(items, IItemIntoIterator) {
   return $collectDropping(
     $roomForHint(
       iterator_map(
-        Iterator.from(items),
+        $stepsOf(items),
         (item) =>
           $given(
             hidden(IItemIntoIterator.intoIter(item)),

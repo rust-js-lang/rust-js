@@ -7,6 +7,7 @@ import {
   $collectVec,
   $dropEach,
   $dropItems,
+  $held,
   $intsOrdered,
   $iter,
   $mapEnds,
@@ -25,6 +26,7 @@ function dDrop_drop(d) {
 }
 
 function all(iter, IVecCollect, IItemSize, dropI, dropIItem) {
+  $held(iter);
   return $collectVec(
     $closing(Iterator.from(iter), dropI, false),
     IItemSize,

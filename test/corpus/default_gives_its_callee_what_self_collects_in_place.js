@@ -16,6 +16,7 @@ import {
   $jsIteratorSome,
   $next,
   $roomForHint,
+  $stepsOf,
   $traitImpl,
   iterator_map,
 } from "@rust-js/std";
@@ -38,9 +39,10 @@ function heldAll(
   dropHItem,
   dropHItemIntoIter,
 ) {
+  $held(iters);
   let n = 0;
   const iter = iterator_map(
-    Iterator.from(iters),
+    $stepsOf(iters),
     (i) => {
       n = (n + 1) >>> 0;
       if (n >= 3) {
@@ -111,6 +113,7 @@ function tTools(TIterator, TInPlace, dropT, dropTItem, dropTItemItem, dropTItemI
     [TIterator, TInPlace, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
       held(self, SelfItemIntoIterator, HeldSize, HeldAlign) {
+        $held(self);
         const held = heldAll(
           $given(self, TIterator, true),
           SelfItemIntoIterator,

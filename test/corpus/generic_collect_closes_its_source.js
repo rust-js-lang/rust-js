@@ -8,9 +8,11 @@ import {
   $collectVec,
   $collectsInPlace,
   $dropEach,
+  $held,
   $iter,
   $iterator,
   $jsIterator,
+  $stepsOf,
   iterator_map,
 } from "@rust-js/std";
 
@@ -40,8 +42,9 @@ function collected(src, IVecCollect, dropI) {
 }
 
 function tried(src, IInPlace, dropI) {
+  $held(src);
   const iter = iterator_map(
-    Iterator.from(src),
+    $stepsOf(src),
     (value) => value,
     $jsIterator,
     dropI,

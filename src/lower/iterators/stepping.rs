@@ -474,10 +474,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A std body compiled into `@rust-js/std`, which holds what it's
             // given as it is and steps it by its dictionary, given a type
             // parameter's value stepped as JS's, given no dictionary of its
-            // own, which a JS caller may give an array (ADR 0061): JS's
-            // iterator of it, as the hand-written forms step it,
-            // `Iterator.from(items)` (#1962). One given its dictionary is
-            // what that dictionary steps, as it is.
+            // own, which a JS caller may give an array (ADR 0061): a JS
+            // iterator of it, `$stepsOf(items)` (#1962), an array's `$iter`,
+            // a `$Steps` as it is. Never `Iterator.from(items)`, which arms
+            // a `$Steps` to close itself at its end, as JS's own consumers
+            // take it: std's struct holds it past its end, a `fuse()` of a
+            // `FusedIterator`, and drops it by the drop it's given where
+            // Rust's does (#2039). One given its dictionary is what that
+            // dictionary steps, as it is.
             } else if let Some(index) = crate::lower::generic_facts::type_parameter_of(input)
                 && crate::lower::generic_facts::is_type_parameter(given)
                 && crate::lower::recognition::is_compiled_std(self.tcx, callee)
@@ -486,7 +490,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && self.given_js_iterator(value.clone(), given, false, false).is_none()
             {
                 let held = std::mem::replace(value, Expr::taken());
-                *value = self.js_iterator(held);
+                *value = Expr::call_helper("$stepsOf", vec![held]);
             }
             // A `Vec`'s, given its steps that drop what they pass as one
             // slice, where generic code can't tell it from a `Drain`'s

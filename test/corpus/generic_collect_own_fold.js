@@ -16,6 +16,7 @@ import {
   $next,
   $nth,
   $reserveHint,
+  $stepsOf,
   iterator_enumerate,
   iterator_map,
   iterator_skip,
@@ -66,7 +67,7 @@ function map(it) {
       new Map(),
       $reserveHint(
         $folded(
-          iterator_map(iterator_enumerate(Iterator.from(it), $jsIterator), ([i, c]) => [c, i], {
+          iterator_map(iterator_enumerate($stepsOf(it), $jsIterator), ([i, c]) => [c, i], {
             next: $next,
             fold: $foldOf,
             nth: $nth,
@@ -92,7 +93,7 @@ function upper(it) {
     $reserveHint(
       $folded(
         iterator_map(
-          Iterator.from(it),
+          $stepsOf(it),
           (c) => c.replace(/[a-z]/, (letter) => letter.toUpperCase()),
           $jsIterator,
         ),

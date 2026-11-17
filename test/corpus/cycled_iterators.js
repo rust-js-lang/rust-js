@@ -7,6 +7,7 @@ import {
   $debugStr,
   $foldOf,
   $foldToArray,
+  $held,
   $iter,
   $iterator,
   $jsIteratorSome,
@@ -14,6 +15,7 @@ import {
   $nextSome,
   $rangeNext,
   $roomForHint,
+  $stepsOf,
   iterator_cycle,
   iterator_map,
   iterator_take,
@@ -62,6 +64,7 @@ function counterIterator_next(counter) {
 }
 
 function firsts(iter, n, IIterator, IClone, IItemSize, dropI, dropIItem) {
+  $held(iter);
   return $collectDropping(
     $roomForHint(
       iterator_take(
@@ -84,7 +87,8 @@ function firsts(iter, n, IIterator, IClone, IItemSize, dropI, dropIItem) {
 }
 
 function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
-  const iter$1 = iterator_take(Iterator.from(iter), 2, $jsIteratorSome, dropI, dropIItem);
+  $held(iter);
+  const iter$1 = iterator_take($stepsOf(iter), 2, $jsIteratorSome, dropI, dropIItem);
   let result;
   try {
     result = $collectsInPlace(IInPlace, IItemSize, IItemAlign)

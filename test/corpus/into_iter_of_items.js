@@ -7,6 +7,7 @@ import {
   $jsIteratorSome,
   $next,
   $roomForHint,
+  $stepsOf,
   iterator_flatten,
   iterator_map,
 } from "@rust-js/std";
@@ -57,7 +58,7 @@ function summed(items, IItemIntoIterator) {
   return $collectDropping(
     $roomForHint(
       iterator_map(
-        Iterator.from(items),
+        $stepsOf(items),
         (item) =>
           $given(IItemIntoIterator.intoIter(item), IItemIntoIterator.IntoIterIterator()).reduce(
             (a, b) => (a + b) | 0,
@@ -73,7 +74,7 @@ function summed(items, IItemIntoIterator) {
 
 function flat(items, IItemIntoIterator, IFused, IItemConstSize, IItemIntoIterOneShot) {
   return iterator_flatten(
-    Iterator.from(items),
+    $stepsOf(items),
     $jsIteratorSome,
     IItemIntoIterator,
     IFused,

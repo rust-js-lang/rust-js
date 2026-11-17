@@ -231,7 +231,7 @@ function main() {
     console.log(`${found == null ? "None" : `Some(${found})`}`);
     const iter = iterator_zip(
       { start: 1, end: 3 },
-      $repeatingN([9], 4, (value) => lClone_clone(value), lDrop_drop),
+      $held($repeatingN([9], 4, (value) => lClone_clone(value), lDrop_drop)),
       { next: $rangeNext },
       {
         intoIter(items) {

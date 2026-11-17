@@ -77,6 +77,7 @@ const $iExt = new WeakMap();
 function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
   return $traitImpl($iExt, [IIterator, IVecCollect, IItemSize, dropI, dropIItem], () => ({
     listed(self) {
+      $held(self);
       return $collectVec(
         $closing($given(self, IIterator, true), $givenDrop(dropI), false),
         IItemSize,

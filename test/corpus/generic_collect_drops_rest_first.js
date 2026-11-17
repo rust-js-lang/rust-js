@@ -12,6 +12,7 @@ import {
   $dropItems,
   $foldOf,
   $foldToArray,
+  $held,
   $iter,
   $iterator,
   $jsIterator,
@@ -20,6 +21,7 @@ import {
   $next,
   $roomForHint,
   $slicing,
+  $stepsOf,
   iterator_chain,
   iterator_enumerate,
   iterator_filter,
@@ -53,12 +55,13 @@ function ds() {
 }
 
 function fused(src, IFused, dropI) {
+  $held(src);
   BOOM = 3;
   const v = $collectDropping(
     $roomForHint(
       iterator_fuse(
         iterator_map(
-          Iterator.from(src),
+          $stepsOf(src),
           (x) => {
             const result = [(x[0] + 100) >>> 0];
             dDrop_drop(x);
@@ -90,12 +93,13 @@ function fused(src, IFused, dropI) {
 }
 
 function peeked(src, dropI) {
+  $held(src);
   BOOM = 3;
   const v = $collectDropping(
     $roomForHint(
       iterator_peekable(
         iterator_map(
-          Iterator.from(src),
+          $stepsOf(src),
           (x) => {
             const result = [(x[0] + 100) >>> 0];
             dDrop_drop(x);
@@ -126,12 +130,13 @@ function peeked(src, dropI) {
 }
 
 function chained(src, dropI) {
+  $held(src);
   BOOM = 3;
   const v = $collectDropping(
     $roomForHint(
       iterator_chain(
         iterator_map(
-          Iterator.from(src),
+          $stepsOf(src),
           (x) => {
             const result = [(x[0] + 100) >>> 0];
             dDrop_drop(x);
@@ -171,9 +176,10 @@ function chained(src, dropI) {
 }
 
 function mapped(src, IInPlace, dropI) {
+  $held(src);
   BOOM = 3;
   const iter = iterator_map(
-    Iterator.from(src),
+    $stepsOf(src),
     (x) => {
       const result = [(x[0] + 100) >>> 0];
       dDrop_drop(x);
@@ -203,10 +209,11 @@ function mapped(src, IInPlace, dropI) {
 }
 
 function counted(src, IInPlace, dropI) {
+  $held(src);
   BOOM = 3;
   const iter = iterator_enumerate(
     iterator_map(
-      Iterator.from(src),
+      $stepsOf(src),
       (x) => {
         const result = [(x[0] + 100) >>> 0];
         dDrop_drop(x);
@@ -254,9 +261,10 @@ function counted(src, IInPlace, dropI) {
 }
 
 function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
+  $held(src);
   CALLS = 0;
   const iter = iterator_filter(
-    Iterator.from(src),
+    $stepsOf(src),
     () => {
       const previous = CALLS;
       CALLS = (previous + 1) >>> 0;
@@ -291,9 +299,10 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
 }
 
 function passed(src, JInPlace, dropJ) {
+  $held(src);
   return mapped(
     iterator_map(
-      Iterator.from(src),
+      $stepsOf(src),
       (x) => {
         const result = [(x[0] + 10) >>> 0];
         dDrop_drop(x);
@@ -313,9 +322,10 @@ function passed(src, JInPlace, dropJ) {
 }
 
 function tried(src, IInPlace, dropI) {
+  $held(src);
   BOOM = 3;
   const iter = iterator_map(
-    Iterator.from(src),
+    $stepsOf(src),
     (x) => {
       const value = [(x[0] + 100) >>> 0];
       dDrop_drop(x);
@@ -351,9 +361,10 @@ function tried(src, IInPlace, dropI) {
 }
 
 function discarded(src, IInPlace, dropI) {
+  $held(src);
   BOOM = 3;
   const iter = iterator_filter(
-    Iterator.from(src),
+    $stepsOf(src),
     (d) => d[0] !== 3,
     $jsIterator,
     dropI,

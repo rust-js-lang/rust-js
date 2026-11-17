@@ -116,6 +116,7 @@ function tTotals(TIterator, dropT) {
       return result;
     },
     doubled(self) {
+      $held(self);
       return $collectDropping(
         $roomForHint(
           iterator_map(self, (x) => (x * 2) & 255, TIterator, dropT),

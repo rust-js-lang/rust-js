@@ -10,12 +10,14 @@ import {
   $flattenEnds,
   $foldBack,
   $foldOf,
+  $held,
   $iter,
   $iterator,
   $jsIterator,
   $live,
   $next,
   $nextBack,
+  $stepsOf,
   $tryOf,
   $unwindsOn,
   flatMapDoubleEndedIterator_rfold,
@@ -191,10 +193,11 @@ function pair(d) {
 
 /** Generic code's flatten of what it's given, folded from its back. */
 function rfolded(it, IFused, dropI) {
+  $held(it);
   return flattenDoubleEndedIterator_rfold(
     iterator_flatten(
       iterator_map(
-        Iterator.from(it),
+        $stepsOf(it),
         pair,
         $jsIterator,
         dropI,

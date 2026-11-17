@@ -10,6 +10,7 @@ import {
   $jsIterator,
   $next,
   $roomForHint,
+  $stepsOf,
   $traitImpl,
   iterator_chain,
   iterator_filter,
@@ -50,7 +51,7 @@ export function tExt(TIterator, TFused, TTrustedLen, TItemConstSize, TItemItemSi
 function chained(it, ITrustedLen) {
   return $grownVec(
     $roomForHint(
-      iterator_chain(Iterator.from(it), ["x"], $jsIterator, {
+      iterator_chain($stepsOf(it), ["x"], $jsIterator, {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next }),
       }),

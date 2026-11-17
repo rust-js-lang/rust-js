@@ -6,6 +6,7 @@ import {
   $iter,
   $jsIterator,
   $next,
+  $stepsOf,
   iterator_map,
   mapClone,
   mapIterator___iteratorGetUnchecked,
@@ -17,7 +18,7 @@ export function entry() {
 
 function paired(a, b, JIterator, JClone) {
   return iterator_map(
-    Iterator.from(a),
+    $stepsOf(a),
     (x) =>
       Math.imul(
         x,

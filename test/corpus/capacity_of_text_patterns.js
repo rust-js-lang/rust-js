@@ -22,6 +22,7 @@ import {
   $splitN,
   $splitTerminator,
   $splitWhitespace,
+  $stepsOf,
   iterator_chain,
 } from "@rust-js/std";
 
@@ -32,7 +33,7 @@ export function entry() {
 function chained(it, ITrustedLen) {
   const v = $grownVec(
     $roomForHint(
-      iterator_chain(Iterator.from(it), $iter(["x"]), $jsIterator, {
+      iterator_chain($stepsOf(it), $iter(["x"]), $jsIterator, {
         intoIter: (items) => items,
         IntoIterIterator: () => ({ next: $next }),
       }),
@@ -47,7 +48,7 @@ function chained(it, ITrustedLen) {
 function words(it, ITrustedLen) {
   const v = $grownVec(
     $roomForHint(
-      iterator_chain(Iterator.from(it), $iter(["x"]), $jsIterator, {
+      iterator_chain($stepsOf(it), $iter(["x"]), $jsIterator, {
         intoIter: (items) => items,
         IntoIterIterator: () => ({ next: $next }),
       }),

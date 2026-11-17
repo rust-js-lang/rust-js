@@ -25,6 +25,7 @@ import {
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
   $roomForHint,
+  $stepsOf,
   $traitImpl,
   $unwindsOn,
   iterator_enumerate,
@@ -53,8 +54,9 @@ function held(
   dropHItem,
   dropHItemIntoIter,
 ) {
+  $held(iters);
   const iter = iterator_map(
-    Iterator.from(iters),
+    $stepsOf(iters),
     (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
     $jsIteratorSome,
     dropH,
@@ -172,10 +174,11 @@ function ranged(t, HeldSize, HeldAlign) {
  * asked (#1443).
  */
 function listed(iters, HItemIntoIterator, dropH, dropHItem, dropHItemIntoIter) {
+  $held(iters);
   return $collectDropping(
     $folded(
       iterator_map(
-        Iterator.from(iters),
+        $stepsOf(iters),
         (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
         $jsIteratorSome,
         dropH,
@@ -225,7 +228,7 @@ function holding(items, JInPlace, HeldSize, HeldAlign) {
   return $collectsInPlace(JInPlace, HeldSize, HeldAlign)
     ? $foldToArray(
         iterator_map(
-          Iterator.from(items),
+          $stepsOf(items),
           (iter) => ({ iter }),
           $jsIteratorSome,
           undefined,
@@ -236,7 +239,7 @@ function holding(items, JInPlace, HeldSize, HeldAlign) {
     : $collectDropping(
         $roomForHint(
           iterator_map(
-            Iterator.from(items),
+            $stepsOf(items),
             (iter) => ({ iter }),
             $jsIteratorSome,
             undefined,
@@ -254,7 +257,8 @@ function holding(items, JInPlace, HeldSize, HeldAlign) {
 
 /** Of a tuple built of its own, `(usize, I::Item)`. */
 function enumerated(items, IInPlace, UsizeIItemSize, UsizeIItemAlign, dropI, dropIItem) {
-  const iter = iterator_enumerate(Iterator.from(items), $jsIteratorSome, dropI, dropIItem);
+  $held(items);
+  const iter = iterator_enumerate($stepsOf(items), $jsIteratorSome, dropI, dropIItem);
   let result;
   try {
     result = $collectsInPlace(IInPlace, UsizeIItemSize, UsizeIItemAlign)
@@ -297,6 +301,7 @@ function tHolding(
     [TIterator, TInPlace, HeldSize, HeldAlign, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
       heldAll(self, SelfItemIntoIterator) {
+        $held(self);
         const iter = iterator_map(
           self,
           (i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) }),

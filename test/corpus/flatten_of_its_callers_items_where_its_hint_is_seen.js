@@ -7,6 +7,7 @@ import {
   $jsIteratorSome,
   $next,
   $roomForHint,
+  $stepsOf,
   iterator_flatMap,
   iterator_flatten,
   iterator_map,
@@ -32,7 +33,7 @@ function flat(it, IItemIntoIterator, IFused, IItemConstSize, IItemIntoIterOneSho
   return $collectDropping(
     $roomForHint(
       iterator_flatten(
-        Iterator.from(it),
+        $stepsOf(it),
         $jsIteratorSome,
         IItemIntoIterator,
         IFused,

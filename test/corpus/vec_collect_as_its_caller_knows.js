@@ -10,6 +10,7 @@ import {
   $dropEach,
   $filterEnds,
   $foldOf,
+  $held,
   $intoIter,
   $iter,
   $iterator,
@@ -27,6 +28,7 @@ import {
   $rangeNextBack,
   $repeating,
   $rev,
+  $stepsOf,
   $unwindsOn,
   $vecCollectWay,
   $zipEnds,
@@ -69,6 +71,7 @@ function built(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
 }
 
 function all(it, IVecCollect, IItemSize, dropI, dropIItem) {
+  $held(it);
   return $collectVec($closing(Iterator.from(it), dropI, false), IItemSize, IVecCollect, dropIItem);
 }
 
@@ -98,9 +101,10 @@ function mapped(it, JTrustedLen, JInPlace) {
  * what's left.
  */
 function kept(it, JInPlace, dropJ) {
+  $held(it);
   const v = built(
     iterator_filter(
-      Iterator.from(it),
+      $stepsOf(it),
       (l) => {
         if (l[0] === 3) {
           throw new Error(`at ${l[0]}`);
@@ -376,7 +380,7 @@ function main() {
   // Endless, stepped once: nothing more is made before the panic.
   r = $catchUnwind(() => {
     const endless = iterator_map(
-      $repeating(1),
+      $held($repeating(1)),
       (n) => {
         console.log("made");
         return [n];

@@ -22,6 +22,7 @@ import {
   $roomForHint,
   $sink,
   $sipHasher,
+  $stepsOf,
   $stringWriter,
   $toUppercase,
   $unwrap,
@@ -74,7 +75,7 @@ function hashed(t, THash) {
   return h.finish();
 }
 function take2(it) {
-  return $collectDropping($roomForHint(iterator_take(Iterator.from(it), 2, $jsIterator), 4, false));
+  return $collectDropping($roomForHint(iterator_take($stepsOf(it), 2, $jsIterator), 4, false));
 }
 function twice(f) {
   return f(f(1));

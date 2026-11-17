@@ -11,6 +11,7 @@ import {
   $lazyMapWhile,
   $live,
   $next,
+  $stepsOf,
   $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
@@ -83,7 +84,8 @@ function kept(f, v, dropF) {
 }
 
 function countBy(it, f, dropF) {
-  const iter = iterator_map(Iterator.from(it), f, $jsIteratorSome, undefined, undefined, dropF);
+  $held(it);
+  const iter = iterator_map($stepsOf(it), f, $jsIteratorSome, undefined, undefined, dropF);
   let result;
   try {
     result = iter.reduce((n) => n + 1, 0);

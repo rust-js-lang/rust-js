@@ -20,6 +20,7 @@ import {
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
   $roomForHint,
+  $stepsOf,
   $unwindsOn,
   iterator_map,
 } from "@rust-js/std";
@@ -42,8 +43,9 @@ function held(
   dropHItem,
   dropHItemIntoIter,
 ) {
+  $held(iters);
   const iter = iterator_map(
-    Iterator.from(iters),
+    $stepsOf(iters),
     (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
     $jsIteratorSome,
     dropH,

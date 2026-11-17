@@ -7,6 +7,7 @@ import {
   $next,
   $nextSome,
   $sizeHint,
+  $stepsOf,
   $traitImpl,
   iterator_fuse,
 } from "@rust-js/std";
@@ -16,7 +17,7 @@ export function entry() {
 }
 
 function hint(it, IFused) {
-  const fused = iterator_fuse(Iterator.from(it), $jsIteratorSome, IFused);
+  const fused = iterator_fuse($stepsOf(it), $jsIteratorSome, IFused);
   $nextSome(fused);
   return $sizeHint(fused);
 }

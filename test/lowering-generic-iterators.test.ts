@@ -1,5 +1,5 @@
-// What the compiler writes of generic code's iterators: one given as JS's,
-// `Iterator.from(items)`, collected or folded, the crate's own given from
+// What the compiler writes of generic code's iterators: one given to std's
+// compiled body as it is, `$stepsOf(items)`, collected or folded, the crate's own given from
 // behind an `impl Iterator`, a clone of a `copied()`, and a trait's
 // associated iterators an impl's dictionary makes JS iterators. Split from
 // lowering-iterators.test.ts by concept, as a test file is at most 1500
@@ -41,8 +41,8 @@ pub fn all() -> Vec<u32> {
   delete (globalThis as any).counted;
 });
 
-// A generic iterator is stepped as JS's, `Iterator.from(items)`, as an
-// array may be given (ADR 0061); the crate's own given from behind an
+// A generic iterator given std's compiled body is stepped as it is,
+// `$stepsOf(items)`, as an array may be given (ADR 0061); the crate's own given from behind an
 // `impl Iterator` is a JS iterator of it.
 test("a generic iterator takes the crate's own from behind impl Iterator", async () => {
   const dir = fixture("generic-iterator-opaque");
@@ -78,15 +78,15 @@ pub fn mapped(n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return $collectDropping(\n    $roomForHint(\n      iterator_take(iterator_skip(Iterator.from(items), 1, $jsIterator), k, $jsIterator),");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return $collectDropping(\n    $roomForHint(\n      iterator_take(iterator_skip($stepsOf(items), 1, $jsIterator), k, $jsIterator),");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.ofCountdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
 });
 
 // A std body compiled into `@rust-js/std`, which holds what it's given as
 // it is and steps it by its dictionary, given an `impl Iterator`
-// parameter, which a JS caller may give an array (ADR 0061): JS's iterator
-// of it, `Iterator.from(items)`, as the hand-written forms step it. Each
+// parameter, which a JS caller may give an array (ADR 0061): a JS iterator
+// of it, `$stepsOf(items)`, never armed to close at its end (#2039). Each
 // threw `it.next is not a function` of an array (#1962).
 test("a std body compiled given a generic iterator takes an array too", async () => {
   const dir = fixture("generic-iterator-compiled-given-an-array");
@@ -114,7 +114,7 @@ pub fn held<I: Iterator<Item = u32>>(items: I) -> Vec<u32> {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("iterator_peekable(Iterator.from(items), $jsIterator)");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("iterator_peekable($stepsOf(items), $jsIterator)");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.chained([5]), lib.numbered([7, 8]), lib.peeked([4, 5]), lib.fused([1, 2]), lib.held([1, 2, 3])]).toEqual([
     [5, 0, 1],
@@ -172,7 +172,7 @@ pub fn of_str(text: &str) -> String {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  return $foldToArray(\n    $reserveHint($folded(iterator_skip(Iterator.from(it), 1, $jsIterator)), 1),\n  ).join("");\n');
+  expect(js).toContain('  return $foldToArray($reserveHint($folded(iterator_skip($stepsOf(it), 1, $jsIterator)), 1)).join(\n    "",\n  );\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.ofVec(["a", "b", "c"]), lib.ofStr("xyz"), lib.ofStr("")]).toEqual(["bc", "yz", ""]);
 });

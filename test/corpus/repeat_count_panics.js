@@ -7,6 +7,7 @@ import {
   $count,
   $dropEach,
   $enumerate,
+  $held,
   $iter,
   $last,
   $lastDropping,
@@ -59,7 +60,7 @@ function main() {
     `${
       $catchUnwind(() => {
         const iter = iterator_fuse(
-          $repeating([5], undefined, lDrop_drop),
+          $held($repeating([5], undefined, lDrop_drop)),
           { next: $next, nth: $nth, last: $last, count: $count },
           true,
           (repeat) => {

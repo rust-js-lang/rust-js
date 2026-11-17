@@ -14,6 +14,7 @@ import {
   $roomForHint,
   $step,
   $stepBy,
+  $stepsOf,
   iterator_rev,
   iterator_skip,
   iterator_stepBy,
@@ -24,9 +25,7 @@ export function entry() {
 }
 
 function every(it, n) {
-  return $collectDropping(
-    $roomForHint(iterator_stepBy(Iterator.from(it), n, $jsIterator), 4, false),
-  );
+  return $collectDropping($roomForHint(iterator_stepBy($stepsOf(it), n, $jsIterator), 4, false));
 }
 
 function main() {

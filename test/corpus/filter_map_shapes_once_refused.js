@@ -10,6 +10,7 @@ import {
   $next,
   $nextBack,
   $sizeHint,
+  $stepsOf,
   $tryOf,
   filterMapDoubleEndedIterator_nextBack,
   filterMapDoubleEndedIterator_rfold,
@@ -31,7 +32,7 @@ export function entry() {
 
 export function genericHint(it) {
   return $sizeHint(
-    iterator_filterMap(Iterator.from(it), (x) => $checked(x - 1, 0, 4294967295), $jsIterator),
+    iterator_filterMap($stepsOf(it), (x) => $checked(x - 1, 0, 4294967295), $jsIterator),
   );
 }
 

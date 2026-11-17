@@ -8,6 +8,7 @@ import {
   $jsIteratorSome,
   $next,
   $roomForHint,
+  $stepsOf,
   iterator_map,
 } from "@rust-js/std";
 
@@ -19,7 +20,7 @@ function lengths(iters, HItemIntoIterator) {
   return $collectDropping(
     $roomForHint(
       iterator_map(
-        Iterator.from(iters),
+        $stepsOf(iters),
         (i) =>
           $count($given(HItemIntoIterator.intoIter(i), HItemIntoIterator.IntoIterIterator(), true)),
         $jsIteratorSome,

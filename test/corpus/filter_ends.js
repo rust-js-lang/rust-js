@@ -16,6 +16,7 @@ import {
   $roomForHint,
   $some,
   $someValue,
+  $stepsOf,
   filterDoubleEndedIterator_nextBack,
   iterator_filter,
 } from "@rust-js/std";
@@ -46,7 +47,7 @@ function sumBack(it) {
 }
 
 function bothEnds(it) {
-  const kept = iterator_filter(Iterator.from(it), (x) => x % 2 === 1, $jsIterator);
+  const kept = iterator_filter($stepsOf(it), (x) => x % 2 === 1, $jsIterator);
   return [
     filterDoubleEndedIterator_nextBack(kept, $jsIterator, {
       next_back: $nextBack,

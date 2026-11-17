@@ -379,8 +379,8 @@ export const mutations: Mutation[] = [
     name: "steps-of-an-array-hintless",
     breaks: "a `Vec` given as a chain's side is stepped as JS's own array iterator, whose hint is none, so a `Vec` grown by the chain in a crate that reads its capacity grows by the other side's alone, 18 where std's is 14 (#1658)",
     file: "src/runtime/steps.js",
-    find: "  return Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();\n",
-    replace: "  return items[Symbol.iterator]();\n",
+    find: "  return Array.isArray(items) ? $iter(items) : Iterator.from(items);\n",
+    replace: "  return Iterator.from(items);\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_side_of_a_chain_counts_in_its_hint.rs$"],
   },
   {

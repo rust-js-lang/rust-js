@@ -19,6 +19,7 @@ import {
   $range,
   $rangeNext,
   $slicing,
+  $stepsOf,
   $tryFoldOk,
   iterator_filter,
   iterator_zip,
@@ -64,14 +65,8 @@ function tryAdd(acc, d) {
 }
 
 function sumOdd(items, dropI) {
-  const iter = iterator_filter(
-    Iterator.from(items),
-    odd,
-    $jsIterator,
-    dropI,
-    undefined,
-    dDrop_drop,
-  );
+  $held(items);
+  const iter = iterator_filter($stepsOf(items), odd, $jsIterator, dropI, undefined, dDrop_drop);
   let result$1;
   try {
     result$1 = $foldDropping(iter, [0], add, accDrop_drop);

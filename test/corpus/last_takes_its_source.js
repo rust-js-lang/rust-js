@@ -150,6 +150,7 @@ function show(what, last) {
 }
 
 function end(it, dropI, dropIItem) {
+  $held(it);
   const iter = it;
   let result;
   try {
@@ -169,6 +170,7 @@ function end(it, dropI, dropIItem) {
 }
 
 function top(it, IItemOrd, dropI, dropIItem) {
+  $held(it);
   const iter = it;
   let result;
   try {

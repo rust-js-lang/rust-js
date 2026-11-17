@@ -6,11 +6,13 @@ import {
   $collectsInPlace,
   $dropEach,
   $foldToArray,
+  $held,
   $iter,
   $jsIterator,
   $live,
   $next,
   $roomForHint,
+  $stepsOf,
   $unwindsOn,
   iterator_filterMap,
 } from "@rust-js/std";
@@ -23,8 +25,9 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 function firsts(items, IInPlace, dropI) {
+  $held(items);
   const iter = iterator_filterMap(
-    Iterator.from(items),
+    $stepsOf(items),
     (wide) => {
       if (wide[1] === 0n) {
         for (const item of wide[0]) {
