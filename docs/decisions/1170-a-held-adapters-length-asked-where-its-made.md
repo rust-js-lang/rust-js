@@ -90,5 +90,12 @@ identity:
 ## Consequences
 
 A held adapter whose length a capacity read asks compiles, as one made in
-place does. Its readable form keeps being JS's own where nothing asks its
+place does. The mark a variable keeps of JS's own iterator form,
+`Known::IterHintless` (#1792), no longer guards that capacity, which the
+maker now gives. It still answers #1803's other question for a variable:
+whether its form has a fold, so a `Vec` extended by an adapter of it is
+`$extend(w, d.map(g))`, not given the `true` that changes nothing. Corpus
+`extend_by_an_adapter_of_a_held_js_iterator` holds that against native,
+with snapshots compared, and mutation `hintless-form-forgotten-by-its-variable`
+tests it there. Its readable form keeps being JS's own where nothing asks its
 length. The ADR 0908 note about #1744's held form is superseded.

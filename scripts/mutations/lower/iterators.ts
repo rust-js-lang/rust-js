@@ -450,11 +450,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hintless-form-forgotten-by-its-variable",
-    breaks: "a variable that holds JS's own iterator, a map of a slice's `values()` a `let` holds, keeps no fact of it, so a `Vec` grown of its `inspect()` where a capacity is read is taken for std's `Inspect`, whose hint is the slice's length, and grows from 4 to 8 where std's capacity is 5 (#1792)",
+    breaks: "a variable that holds JS's own iterator, a map of a slice's `values()` a `let` holds, keeps no fact of it, so a `Vec` extended by a map of it is given the `true` that asks a fold it hasn't, `$extend(w, d.map(g), true)`, a flag that changes nothing, where #1803 gives it none; the capacity it guarded for #1792 is the maker's since #1795 (ADR 1170)",
     file: "src/lower/iterators.rs",
     find: "    match hintless(value) {\n        true => marks.with(js::Known::IterHintless),\n",
     replace: "    match false {\n        true => marks.with(js::Known::IterHintless),\n",
-    tests: ["test/corpus.test.ts", "-t", "^(inspect_of_a_slice_collected_where_capacity_is_read|extend_by_an_inspect_of_a_slice_where_capacity_is_read|held_adapters_whose_length_a_capacity_asks).rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^extend_by_an_adapter_of_a_held_js_iterator.rs$"],
   },
   {
     name: "deque-range-copied-as-a-part",
