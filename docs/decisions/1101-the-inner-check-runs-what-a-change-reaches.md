@@ -328,8 +328,9 @@ those waiting only the newest kept, as GitHub replaces a pending run of the
 group with the next. (Cancelling the running one, as it first did, starved
 it: checks end about every 10 min and a recording takes longer, so every
 run was cancelled and none was recorded for 9 commits.) Each map is cached by
-its commit, one per entry, the newest 8 kept (`test-map-prune.yml`, about
-22 MB each), and uploaded as `test-map-of-<sha>`, which `bun run push`
+its commit, one per entry, the newest 8 kept (`cache-prune.yml`, about
+6 MB each; amended 2026-11-17: one prune keeps every cache family's newest
+8, the binaries' and native stores' too, `scripts/ci.ts`'s `cacheFamily`), and uploaded as `test-map-of-<sha>`, which `bun run push`
 downloads where it's nearer than the machine's (`fetchMap`; of this
 repository's `main` runs alone: test-map.yml's last runs, each asked for
 its own artifacts, as the repository's list of all of them, 100 a page,

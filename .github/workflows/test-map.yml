@@ -16,7 +16,7 @@ name: test map
 # the group with the next): cancelling the running one cancelled every one,
 # and no map was recorded for 9 commits (ADR 1101, amended). Kept in the Actions cache
 # by its commit, `test-map-<os>-<toolchain>-<sha>`, one map each, the
-# newest 8 (about 22 MB each, test-map-prune.yml); `bun run push` downloads the newest of an
+# newest 8 (about 6 MB each, cache-prune.yml's, as every cache family's); `bun run push` downloads the newest of an
 # ancestor of its HEAD (`fetchMap`). Called by rustc-tests.yml's mutations,
 # the map of HEAD or an ancestor kept, or HEAD's recorded where none is.
 on:
@@ -187,7 +187,7 @@ jobs:
 
   # The one map of every part's recording, alone in the cache's entry of
   # its commit, and given to the caller's jobs. The cache's maps past the
-  # newest 8 are removed after (test-map-prune.yml, which may write).
+  # newest 8 are removed after (cache-prune.yml, which may write).
   test-map-merge:
     needs: [test-map, test-map-part]
     if: ${{ needs.test-map.outputs.record == 'true' }}

@@ -630,12 +630,6 @@ export function nearestMap(store: string, checkout: string, toolchain: string, a
   return undefined;
 }
 
-/** Of the Actions cache's test maps, the newest first, those past the
- * newest `keep`, to remove. */
-export function cachePast(newestFirst: { id: number; key: string }[], keep: number): { id: number; key: string }[] {
-  return newestFirst.slice(keep);
-}
-
 /** What each test map CI recorded of a commit of `main` is named: the
  * artifact `test-map-of-<sha>` of test-map.yml's run after that commit's
  * check. */
@@ -1439,24 +1433,10 @@ if (import.meta.main) {
     for (const line of drift.slice(0, 50)) console.log(line);
     console.log(drift.length === 0 ? "no drift: each test the carry would have carried ran the functions the full recording saw" : `drift in ${drift.length} tests: recordings are full until a nightly's check passes (${relative(root, driftFlag)})`);
     if (drift.length > 0) process.exit(1);
-  } else if (command === "prune-cache") {
-    // CI's: the Actions cache's test maps past the newest `--keep`, by
-    // their key's `--prefix`, removed.
-    const keep = Number(args.find((arg) => arg.startsWith("--keep="))?.slice("--keep=".length));
-    const prefix = args.find((arg) => arg.startsWith("--prefix="))?.slice("--prefix=".length);
-    if (!Number.isInteger(keep) || keep < 1 || !prefix) throw new Error("prune-cache --keep=N --prefix=<key's start>");
-    const listed = Bun.spawnSync(["gh", "cache", "list", "--key", prefix, "--sort", "created_at", "--order", "desc", "--limit", "100", "--json", "id,key"], { cwd: root, stdout: "pipe", stderr: "inherit" });
-    if (listed.exitCode !== 0) process.exit(1);
-    const past = cachePast(JSON.parse(listed.stdout.toString()), keep);
-    for (const { id, key } of past) {
-      Bun.spawnSync(["gh", "cache", "delete", String(id)], { cwd: root, stdout: "inherit", stderr: "inherit" });
-      console.log(`removed ${key}`);
-    }
-    console.log(`kept the newest ${keep} test maps of ${prefix}*; removed ${past.length}`);
   } else if (command === "fetch") {
     console.log(fetchMap());
   } else {
-    console.error("usage: bun run test-map [record | kept [--head] | build --shards=N | units --shard=i/N | merge | prune-cache --keep=N --prefix=K | fetch] (what a change selects: bun scripts/select.ts)");
+    console.error("usage: bun run test-map [record | kept [--head] | build --shards=N | units --shard=i/N | merge | fetch] (what a change selects: bun scripts/select.ts)");
     process.exit(2);
   }
 }

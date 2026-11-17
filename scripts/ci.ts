@@ -8,6 +8,7 @@
 //   bun scripts/ci.ts mutation-timings <times>   # in CI: the mutations' times `plan` gave every shard, for them to balance by
 //   TIMES=<times> bun scripts/ci.ts merge-mutation-timings <ran> <out> # in CI: those and this run's shards' merged, for the next plan
 //   bun scripts/ci.ts nets                  # in CI: which of the `nets` job's nets ran, and which failed, from its `STEPS`
+//   bun scripts/ci.ts prune-cache [--dry-run]    # in CI, after each check, nightly and test map: each cache family's newest 8 kept
 //
 // A run whose snapshots or rustc's lists differ uploads what blessing them
 // writes, as `bless-*` artifacts: applied here, to be read as a local bless
@@ -530,6 +531,56 @@ function mergeMutationTimings(encoded: string, ran: string, out: string) {
   console.log(`${merged.size} mutations' times merged, ${own.size} of this run's shards over ${base.size} of its plan's, in ${out}`);
 }
 
+/** The Actions cache's entries each family keeps, the newest by when they
+ * were saved: a key restored exactly is of a run in flight, of the newest
+ * commits' sources, and one restored by its family's prefix takes the
+ * newest. 8 of a test map, about 6 MB each, of a binary, about 18 MB. */
+export const keptCacheEntries = 8;
+
+/** A cache key's family: the key less what's new each run or each set of
+ * inputs, its trailing hashes, `hashFiles`' and a commit's, and a run's id
+ * and attempt. `rust-js-release-Linux-<hash>` is `rust-js-release-Linux`'s,
+ * `native-outcomes-Linux-test-1-of-2-<run>-<attempt>` is
+ * `native-outcomes-Linux-test-1-of-2`'s, `test-map-Linux-<toolchain>-<sha>`
+ * is `test-map-Linux`'s. */
+export function cacheFamily(key: string): string {
+  return key.replace(/(-(?:[0-9a-f]{40,}|\d{9,}(?:-\d+)?))+$/, "");
+}
+
+export type CacheEntry = { id: number; key: string; ref: string; createdAt: string; sizeInBytes: number };
+
+/** Of the Actions cache's entries, those past each family's newest `keep`,
+ * a family a ref's: a branch's entries never push out main's. */
+export function cachePast(entries: CacheEntry[], keep: number): CacheEntry[] {
+  const families = Map.groupBy(entries, (entry) => `${entry.ref}\0${cacheFamily(entry.key)}`);
+  return [...families.values()].flatMap((family) => family.toSorted((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(keep));
+}
+
+/** CI's, after each check, nightly and test map (cache-prune.yml): the
+ * Actions cache's entries past each family's newest `keptCacheEntries`
+ * removed, or, `dryRun`, listed. */
+async function pruneCache(dryRun: boolean) {
+  const listed = Bun.spawnSync(["gh", "cache", "list", "--limit", "10000", "--json", "id,key,ref,createdAt,sizeInBytes"], { cwd: root, stdout: "pipe", stderr: "inherit" });
+  if (listed.exitCode !== 0) throw new Error("gh cache list failed");
+  const entries: CacheEntry[] = JSON.parse(listed.stdout.toString());
+  const past = cachePast(entries, keptCacheEntries);
+  const gb = (list: CacheEntry[]) => (list.reduce((sum, { sizeInBytes }) => sum + sizeInBytes, 0) / 1e9).toFixed(2);
+  let failed = 0;
+  // Sixteen at a time: each is a request of its own.
+  for (let at = 0; at < past.length; at += 16) {
+    await Promise.all(
+      past.slice(at, at + 16).map(async ({ id, key, ref }) => {
+        if (dryRun) return console.log(`would remove ${key} (${ref})`);
+        const removed = Bun.spawn(["gh", "cache", "delete", String(id)], { cwd: root, stdout: "ignore", stderr: "inherit" });
+        // One another run removed first is gone as asked.
+        if ((await removed.exited) !== 0) failed++;
+        else console.log(`removed ${key} (${ref})`);
+      }),
+    );
+  }
+  console.log(`${entries.length} entries, ${gb(entries)} GB; ${dryRun ? "would remove" : "removed"} ${past.length - failed}, ${gb(past)} GB, past each family's newest ${keptCacheEntries}${failed ? `; ${failed} not removed` : ""}`);
+}
+
 function bless(branch: string) {
   const run = latestRuns(runs()).find((r) => r.headBranch === branch && r.status === "completed");
   if (!run) throw new Error(`no completed ${workflow} run of ${branch}`);
@@ -565,8 +616,9 @@ if (import.meta.main) {
     else if (command === "mutation-timings") writeMutationTimings(rest[0] ?? "");
     else if (command === "merge-mutation-timings") mergeMutationTimings(process.env.TIMES ?? "", rest[0] ?? "", rest[1] ?? "");
     else if (command === "nets") console.log(netsSummary(JSON.parse(process.env.STEPS ?? "{}")));
+    else if (command === "prune-cache") await pruneCache(rest.includes("--dry-run"));
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings | mutation-timings <times> | merge-mutation-timings <ran> <out> | nets");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings | mutation-timings <times> | merge-mutation-timings <ran> <out> | nets | prune-cache [--dry-run]");
       process.exit(2);
     }
   } catch (error) {

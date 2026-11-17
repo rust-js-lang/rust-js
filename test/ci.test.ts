@@ -1006,7 +1006,7 @@ test("Miri and every native build of a program take its flags from programFlags 
 // Of those waiting, GitHub keeps only the newest. Cancelling is for jobs
 // that take seconds and leave nothing undone, each named here.
 test("no workflow cancels a run in progress but the seconds-long idempotent ones", () => {
-  const idempotent = ["test-map-prune.yml"];
+  const idempotent = ["cache-prune.yml"];
   const dir = join(root, ".github/workflows");
   for (const file of readdirSync(dir).filter((name) => name.endsWith(".yml"))) {
     const cancels = (Bun.YAML.parse(readFileSync(join(dir, file), "utf8")) as { concurrency?: { "cancel-in-progress"?: unknown } }).concurrency?.["cancel-in-progress"];

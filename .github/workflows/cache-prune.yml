@@ -1,0 +1,42 @@
+name: cache prune
+
+# The Actions cache's entries past each family's newest 8 removed, after
+# each run of the workflows that save them: a family is a key less what
+# each run or set of inputs makes new, its trailing hashes and run id
+# (`scripts/ci.ts`'s `cacheFamily`), as `rust-js-release-Linux-<hash>`,
+# `native-outcomes-Linux-test-1-of-2-<run>-<attempt>` and
+# `test-map-Linux-<toolchain>-<sha>`. A key restored exactly is of a run
+# in flight, of the newest sources; one restored by its family's prefix
+# takes the newest. The repository holds 10 GB of caches, and a binary a
+# compiler change, a native store a run, held 4.6 GB of it (docs/dev-loop.md).
+# Neither uploads nor downloads an artifact.
+on:
+  workflow_run:
+    workflows: [Check, Nightly, test map]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+# One at a time: a run cancelled by the next leaves nothing undone, as the
+# next removes the same, in seconds.
+concurrency:
+  group: cache-prune
+  cancel-in-progress: true
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Keep the newest 8 of each cache family
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/ci.ts prune-cache

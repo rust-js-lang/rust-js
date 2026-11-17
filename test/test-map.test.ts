@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -528,9 +528,8 @@ test("CI's test map is the kept one, or recorded in parts and merged where none 
 });
 
 // `bun run push` fetches CI's map of HEAD's nearest ancestor on `main`, of
-// this repository's runs alone, a fork's never; and the cache's maps past
-// the newest 8 go.
-test("CI's map of HEAD's nearest ancestor on main is the one fetched, and the cache keeps the newest 8", () => {
+// this repository's runs alone, a fork's never.
+test("CI's map of HEAD's nearest ancestor on main is the one fetched", () => {
   const run = (id: number, branch = "main", fork = false) => ({ id, head_branch: branch, repository_id: 1, head_repository_id: fork ? 2 : 1 });
   const sha = (c: string) => c.repeat(40);
   const artifacts = [
@@ -545,8 +544,6 @@ test("CI's map of HEAD's nearest ancestor on main is the one fetched, and the ca
   expect(ciMapOf(artifacts, (commit) => behind[commit])).toEqual({ run: 2, name: `${ciMapPrefix}${sha("b")}`, commit: sha("b"), behind: 2 });
   expect(ciMapOf(artifacts, (commit) => (commit === sha("a") ? 5 : undefined))?.run).toBe(1);
   expect(ciMapOf(artifacts, () => undefined)).toBeUndefined();
-  const listed = Array.from({ length: 11 }, (_, i) => ({ id: 100 - i, key: `test-map-Linux-t-${i}` }));
-  expect(cachePast(listed, 8).map(({ id }) => id)).toEqual([92, 91, 90]);
 });
 
 // Of a diff's own lines, what can't change a test (ADR 1101, amended): a
