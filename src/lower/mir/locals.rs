@@ -344,6 +344,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || name.is_unnamed()
                         || name.is_the_programs()
                         || name.is_temporary()
+                        || name.is_unread()
                         || name.is_held_arg(),
                     "{name:?}, a variable the program named, isn't the program's (ADR 1150)",
                 );

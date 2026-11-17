@@ -477,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let param = if state_drops.is_some() {
                         made_state.clone()
                     } else {
-                        js::Name::declared("_".to_string())
+                        js::Name::unread("_".to_string())
                     };
                     args.push(Expr::arrow(vec![param.into()], dropped));
                 }
@@ -562,7 +562,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let param = if body.len() > 1 {
                     item.clone()
                 } else {
-                    js::Name::declared("_".to_string())
+                    js::Name::unread("_".to_string())
                 };
                 method(
                     items,

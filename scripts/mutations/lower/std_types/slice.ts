@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`array::from_fn`'s arrow is given each item, `undefined`, not its index",
     file: "src/lower/std_types/slice.rs",
-    find: "                        params.insert(0, js::Name::declared(\"_\".to_string()).into());\n",
+    find: "                        params.insert(0, js::Name::unread(\"_\".to_string()).into());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
   },

@@ -338,7 +338,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let x = self.fresh(Role::X);
         let each = Expr::arrow(
-            vec![js::Name::declared("_".to_string()).into(), x.clone().into()],
+            vec![js::Name::unread("_".to_string()).into(), x.clone().into()],
             vec![StmtKind::Expr(Expr::call(f, vec![Expr::var(&x)])).at(js::Span::NONE)],
         );
         let args = vec![

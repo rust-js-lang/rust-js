@@ -1241,14 +1241,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         kind: js::ExprKind::Arrow(mut params, body),
                         ..
                     } if params.len() == 1 => {
-                        params.insert(0, js::Name::declared("_".to_string()).into());
+                        params.insert(0, js::Name::unread("_".to_string()).into());
                         Expr::arrow(params, body)
                     }
                     f => {
                         let i = self.fresh(Role::I);
                         let call = Expr::call(f, vec![Expr::var(&i)]);
                         Expr::arrow(
-                            vec![js::Name::declared("_".to_string()).into(), i.into()],
+                            vec![js::Name::unread("_".to_string()).into(), i.into()],
                             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
                         )
                     }

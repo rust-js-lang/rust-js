@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "program-underscore-not-unread",
+    breaks:
+      "an `async` closure's `|_|`, a parameter the program names `_`, is the program's, kept, `async (_) => 1`, where it takes nothing, `async () => 1`",
+    file: "src/lower/temporary_names.rs",
+    find: "            Base::Program(_, source) if *source == rustc_span::symbol::kw::Underscore.as_u32() => {\n",
+    replace: "            Base::Program(_, source) if *source == u32::MAX => {\n",
+    tests: ["test/lowering-async.test.ts", "-t", "an async closure's ignored argument is no parameter"],
+  },
+  {
     name: "temporary-name-taken-suffixed",
     breaks:
       "a temporary whose suggested names are taken is given one apart, `point$1`, not `value`",

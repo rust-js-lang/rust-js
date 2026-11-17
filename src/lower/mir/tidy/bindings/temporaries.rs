@@ -140,7 +140,8 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 {
                     renames.push((name.clone(), held_names(value), **role));
                 }
-                StmtKind::Const(name, value) if is_temporary(name) || is_held_arg(name) => {
+                // Not what Rust leaves `_`, which says nothing's read.
+                StmtKind::Const(name, value) if (is_temporary(name) && !name.is_unread()) || is_held_arg(name) => {
                     let any = match is_held_arg(name) {
                         true => Role::Arg,
                         false => Role::Value,

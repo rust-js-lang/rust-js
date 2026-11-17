@@ -211,7 +211,11 @@ pub(super) fn is_held_arg(name: &Name) -> bool {
 /// Whether `name` is a temporary MIR made, `_5`, or one given apart from
 /// one, `_5$1`, not one the program names (`Name::temporary`).
 pub(in crate::lower::mir) fn is_temporary(name: &Name) -> bool {
-    checked(name, name.is_temporary(), spelled_as_temporary(name.word()))
+    checked(
+        name,
+        name.is_temporary() || name.is_unread(),
+        spelled_as_temporary(name.word()) || name.is("_"),
+    )
 }
 
 /// `typed`, a name's form's answer, which is tidy's; where

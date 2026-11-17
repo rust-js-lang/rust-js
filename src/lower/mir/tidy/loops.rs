@@ -478,14 +478,14 @@ fn counted_range(
         return None;
     }
     // A count the body doesn't read, Rust's `_`: `i`.
-    let name = match name.word() {
-        "_" => js::Name::declared(
+    let name = match name.is_unread() {
+        true => js::Name::declared(
             std::iter::once("i".to_string())
                 .chain((1..).map(|k| format!("i${k}")))
                 .find(|n| !mentions.contains_key(n))
                 .expect("a name"),
         ),
-        _ => name,
+        false => name,
     };
     let held = (!same).then(|| {
         let unused = |n: &String| !mentions.contains_key(n);

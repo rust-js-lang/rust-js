@@ -295,7 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An `async` closure's `|_|`, which its MIR leaves unnamed, and its
         // THIR binds as `__arg0`: read nowhere, none either.
         while let Some(js::Pattern::Name(name)) = params.last()
-            && (name.is("_") || name.word().starts_with("_$"))
+            && name.is_unread()
             && js::mentions_of(&stmts, name) == 0
         {
             params.pop();

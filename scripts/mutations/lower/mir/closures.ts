@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `async` closure's `|_|` from MIR is `async (_) => ..`, not `async () => ..`",
     file: "src/lower/mir/closures.rs",
-    find: "            && (name.is(\"_\") || name.word().starts_with(\"_$\"))\n",
+    find: "            && name.is_unread()\n",
     replace: "            && name.is(\"never\")\n",
     tests: [
       "test/lowering-async.test.ts",

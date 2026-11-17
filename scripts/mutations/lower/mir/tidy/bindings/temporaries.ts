@@ -3,6 +3,16 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unread-named-for-what-it-holds",
+    breaks:
+      "a value Rust leaves `_`, `for _ in ids.borrow().iter()`'s, is named for what it holds, `const value = borrow[i]`, where it says nothing reads it, `const _`",
+    file: "src/lower/mir/tidy/bindings/temporaries.rs",
+    find: "StmtKind::Const(name, value) if (is_temporary(name) && !name.is_unread()) || is_held_arg(name) => {\n",
+    replace: "StmtKind::Const(name, value) if is_temporary(name) || is_held_arg(name) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^contains_guarded_other.rs$"],
+    snapshots: true,
+  },
+  {
     name: "temporary-takes-a-name-items-read",
     breaks:
       "a temporary beside a function written in the body takes the name of the module's function that function reads, `note`, which preparation then gives apart, `const note$1 = id(k)`, not its own `value`, where it once threw `note is not a function` (ADR 1150)",

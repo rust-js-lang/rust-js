@@ -65,6 +65,10 @@ enum Of {
     /// The name MIR's lowering holds an argument by, `_arg`, which tidy
     /// names `arg` (S4).
     HeldArg,
+    /// A value Rust leaves `_`, which nothing reads: a parameter the
+    /// program names `_`, an `async` closure's `|_|`, or one lowering names
+    /// for a value it reads nowhere, `_`, `_$1` (`Role::Unread`).
+    Unread,
     /// A block's label MIR's lowering made, `bb7`, not one the program
     /// writes, `'rows` (S5).
     BlockLabel,
@@ -169,6 +173,18 @@ impl Name {
     /// asks `is_temporary` of it, not its word (#1681 change 3, S4).
     pub fn temporary(word: String) -> Name {
         Name(word, Of::Temporary, Id::fresh(), Id::WORD)
+    }
+
+    /// A value Rust leaves `_`, spelled `word`, which nothing reads
+    /// (`is_unread`).
+    pub fn unread(word: String) -> Name {
+        Name(word, Of::Unread, Id::fresh(), Id::WORD)
+    }
+
+    /// Whether Rust leaves it `_` (`unread`): a parameter of none JS's
+    /// function need take, where it's last and read nowhere.
+    pub fn is_unread(&self) -> bool {
+        self.1 == Of::Unread
     }
 
     /// Whether it's a temporary (`temporary`).

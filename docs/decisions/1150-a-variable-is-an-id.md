@@ -1050,3 +1050,20 @@ merges as one of its type does: React narrows a parameter in place,
 `message = '' + (message || defaultMessage)`, which the pass on main already
 wrote; a rule merging only shadows of one type moved 44 of the port's files
 from upstream's form, and was dropped.
+
+## What Rust leaves `_` is a form: `Name::is_unread` (2026-11-17)
+
+An `async` closure's last parameters read nowhere were dropped where their
+word was `_` or began `_$`: the program's `|_|`, which the coroutine's MIR
+names `_`, and a value lowering names for what nothing reads,
+`Role::Unread`'s `_`, given apart `_$1`, the first a declared name and the
+second a temporary by its word's shape. Now each is made of the form
+`Unread` (`js::Name::unread`), the program's by its Rust identifier,
+`kw::Underscore`, and lowering's placeholders, `(_, i) => ..`, too:
+`is_unread` answers it. Tidy takes one for a temporary, so a copy nothing
+reads goes, but never names it for what it holds, `const _ = borrow[i]` of
+`for _ in ..` (`unread-named-for-what-it-holds`); a range's unread count is
+`i` by it. The output is as it was, the corpus's, the tests' and React's
+port's, which a probe of the old answer against the new held over all of
+them.
+

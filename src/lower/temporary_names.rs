@@ -372,6 +372,12 @@ impl Base<'_> {
         let name = match self {
             Base::Local(_) | Base::Temporary => crate::js::Name::temporary(word),
             Base::HeldArg => crate::js::Name::held_arg(word),
+            // What Rust leaves `_`: a value nothing reads, or a parameter
+            // the program names `_`, an `async` closure's `|_|`.
+            Base::Role(Role::Unread) => crate::js::Name::unread(word),
+            Base::Program(_, source) if *source == rustc_span::symbol::kw::Underscore.as_u32() => {
+                crate::js::Name::unread(word)
+            }
             _ if spelled_as_temporary(&word) => crate::js::Name::temporary(word),
             _ if spelled_as_held_arg(&word) => crate::js::Name::held_arg(word),
             Base::Program(_, source) => crate::js::Name::program(word, *source),
