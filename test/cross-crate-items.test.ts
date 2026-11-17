@@ -1475,4 +1475,3 @@ impl Tally {
   const { tally } = await import(join(dir, "app", "lib.js"));
   expect(tally()).toEqual([3, [[4], [5]], [[4, 6], [5]]]);
 });
-

@@ -1951,3 +1951,36 @@ items given out and changed by JS, and its copy's name; mutations
 `stored-stepped-array-escapes`, `stored-stepped-objects-shared`,
 `stored-stepped-by-anything`, `copy-named-value` and
 `copied-source-of-an-option-unread`.
+
+## Amendment: an iterator that gives copies of what it borrows copies (2026-11-17, #2014)
+
+`Copying` asked whether a library's function makes, of a borrow, a value
+that holds what the crate changes. A std call counted where its result
+held one by value and an argument was a reference. `ps.iter().copied()`
+is neither: its result, a `Copied<slice::Iter<'_, P>>`, holds no `P` by
+value, as an `Iter` borrows what it reads, and its argument, the `Iter`,
+is a borrow by its lifetime, not a reference. Yet it gives a copy of each
+`P` as it's stepped. So a crate that changed a `P` imported the library's
+JS, `return $iter(ps);`, which copies none of them, and its change of a
+copy changed its source (#2014), or its clone threw (#2013).
+
+A std call now copies where its result, or what it gives as an
+`Iterator` or an `IntoIterator`, its `Item`, holds what the crate changes
+by value, and an argument borrows: a reference or a raw pointer, and,
+of what an iterator gives alone, std's of a lifetime, the `Iter` it
+copies of. A value made of a lent iterator that shares none of what it
+reads, a fresh `Vec<&str>` of a `split`'s `collect()`, isn't a copy: the
+React port's `describe_native_component_frame` was taken for one, and
+compiled where it reads its library's private `REENTRY`. It's by the trait, not by `Copied` or `Cloned` names: a `map`
+whose closure copies is the closure's, which `Copying` walks already, and
+an `Option<&P>`'s `copied()` holds one by value. The crate that uses it
+compiles its own `copies`, as it does each library function that copies
+what it changes, so a copy it changes is its own, and one it clones is
+made clonable as in one crate.
+
+Where `Copying` is right and the function the crate compiles reads a
+private `static` of its library, which only the library's JS module
+holds, it's refused, naming the `static`: a private fn it calls is
+compiled too, and a private field is read as its key. Asking the program
+to make the `static` `pub` reshapes it for the compiler; #2017 is the
+library exporting it under an internal binding for that crate.

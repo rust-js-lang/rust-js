@@ -274,6 +274,30 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
             copies: bool,
             read: usize,
         }
+        impl<'tcx> Found<'_, '_, 'tcx> {
+            /// Whether `made` is an iterator, or what makes one, whose items
+            /// hold by value what the crate changes: its `Item`, an
+            /// `Iterator`'s or an `IntoIterator`'s (#2014).
+            fn gives(&self, made: Ty<'tcx>) -> bool {
+                let tcx = self.recognition.tcx;
+                let item_of = |of: super::recognition::StdItem| {
+                    let item = super::recognition::trait_method(tcx, super::recognition::std_item(tcx, of), "Item");
+                    let projection = Ty::new_projection(tcx, ty::IsRigid::No, item, [made]);
+                    tcx.try_normalize_erasing_regions(
+                        self.recognition.typing_env,
+                        ty::Unnormalized::new_wip(projection),
+                    )
+                    .ok()
+                };
+                [
+                    super::recognition::StdItem::Iterator,
+                    super::recognition::StdItem::IntoIterator,
+                ]
+                .into_iter()
+                .filter_map(item_of)
+                .any(|item| (self.holds)(item))
+            }
+        }
         impl Found<'_, '_, '_> {
             /// What `id`, a function it calls or a closure it makes, copies.
             fn ask(&mut self, id: DefId) {
@@ -364,14 +388,31 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
                             }
                         }
                         // Another's, std's: one that makes what it's given a
-                        // reference to, `Cell::get`, `clone`, `to_vec`.
+                        // reference to, `Cell::get`, `clone`, `to_vec`; or
+                        // an iterator that gives it, each item copied or cloned
+                        // as it's stepped, `ps.iter().copied()` (#2014). Given
+                        // a borrow: a reference, a raw pointer, or std's of a
+                        // lifetime, an `Iter<'_, P>`, which reads what it lends.
                         Some(_) => {
-                            (self.holds)(destination.ty(&self.body.local_decls, tcx).ty)
-                                && args.iter().any(|arg| {
+                            let made = destination.ty(&self.body.local_decls, tcx).ty;
+                            let given = |lent: bool| {
+                                args.iter().any(|arg| {
                                     (arg.node.ty(&self.body.local_decls, tcx).walk())
                                         .filter_map(|part| part.as_type())
-                                        .any(|part| part.is_ref() || super::pointers::raw_pointee(tcx, part).is_some())
+                                        .any(|part| {
+                                            part.is_ref()
+                                                || super::pointers::raw_pointee(tcx, part).is_some()
+                                                || lent
+                                                    && matches!(part.kind(), ty::Adt(adt, of)
+                                                        if super::recognition::is_std_crate(tcx, adt.did()) && of.regions().next().is_some())
+                                        })
                                 })
+                            };
+                            // A value made of what's given, a fresh one that
+                            // shares none of it, `collect()` of a `split`'s
+                            // `&str`s, isn't one: only one whose items are
+                            // copies is, of what an iterator it's given lends.
+                            (self.holds)(made) && given(false) || self.gives(made) && given(true)
                         }
                         // A fn pointer's, a `dyn`'s: code of its own.
                         None => false,

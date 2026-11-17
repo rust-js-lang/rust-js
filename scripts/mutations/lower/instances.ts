@@ -3,6 +3,24 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "copying-iterator-items-unasked",
+    breaks:
+      "a library's function whose iterator gives copies of what it borrows, `ps.iter().copied()`, isn't taken to copy what the crate changes, so the crate imports its JS, which shares them, and a copy it changes changes its source (#2014)",
+    file: "src/lower/instances.rs",
+    find: "(self.holds)(made) && given(false) || self.gives(made) && given(true)",
+    replace: "(self.holds)(made) && given(false)",
+    tests: ["test/cross-crate-copies.test.ts", "-t", "copies of what it borrows"],
+  },
+  {
+    name: "copying-std-borrows-unseen",
+    breaks:
+      "std's of a lifetime, an `Iter<'_, P>`, given to a call isn't a borrow, so `ps.iter().copied()` isn't taken to copy what it reads (#2014)",
+    file: "src/lower/instances.rs",
+    find: "                                                || lent\n",
+    replace: "                                                || false\n",
+    tests: ["test/cross-crate-copies.test.ts", "-t", "copies of what it borrows"],
+  },
+  {
     name: "closure-placed-by-its-root-alone",
     breaks: "a closure an instance makes of a function rustc inlined into it is looked up by its typeck root alone, `joined`, which no module holds: a panic (#1029)",
     file: "src/lower/instances.rs",
