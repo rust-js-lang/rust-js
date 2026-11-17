@@ -425,12 +425,6 @@ impl Name {
         crate::names::made_base(&self.0).unwrap_or_else(|| self.root())
     }
 
-    /// Whether it's a name lowering made that preparation hasn't spelled
-    /// yet, `value#1` (`made`, `derived`): its word says nothing yet.
-    pub fn is_unspelled(&self) -> bool {
-        crate::names::made_base(&self.0).is_some()
-    }
-
     /// Of a name lowering made, what it's of, `value` of `value#1`
     /// (`made`); none of another.
     pub fn made_base(&self) -> Option<&str> {

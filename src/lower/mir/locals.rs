@@ -396,9 +396,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         }
         // Each local rustc says the program named, a user variable's, is the
-        // program's (`js::Name::is_the_programs`, ADR 1150): checked in a
-        // debug build where `RUST_JS_CHECK_NAMES` is set, as names' forms are.
-        if cfg!(debug_assertions) && std::env::var_os("RUST_JS_CHECK_NAMES").is_some() {
+        // program's (`js::Name::is_the_programs`, ADR 1150): an invariant,
+        // checked in every debug build, the compiler the tests run.
+        if cfg!(debug_assertions) {
             for local in body.local_decls.indices() {
                 let name = &locals.names[local];
                 assert!(

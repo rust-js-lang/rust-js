@@ -1370,3 +1370,17 @@ tidy-made label's spelling, `loop$k`, and the order a loop's given
 variables are declared in, by spelling, are read so, marked.
 Byte-identical.
 
+## `RUST_JS_CHECK_NAMES` is gone (2026-11-18)
+
+Its cross-checks, of a name's form against what its word said, the answer
+before names had forms (S4's `checked`, a block label's), had only the
+form left to check against: the form is the authority, so they're gone,
+the variable with them, and `Name::is_unspelled`, which only they asked.
+What it also guarded wasn't a cross-check but two invariants of this ADR,
+each local rustc says the program named the program's, and a binding THIR
+names the very `Name` of the local MIR binds it to: they're checked in
+every debug build now, the compiler the tests and the port run (`mir/
+locals.rs`), each with a mutation that breaks it; the corpus took 78 s
+with them and 77 s without, within its noise. The mentions of the
+variable above are as they were.
+

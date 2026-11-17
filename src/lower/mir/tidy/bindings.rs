@@ -179,23 +179,6 @@ pub(in crate::lower::mir) fn is_temporary(name: &Name) -> bool {
     name.is_temporary() || name.is_unread()
 }
 
-/// `typed`, a name's form's answer, which is tidy's; where
-/// `RUST_JS_CHECK_NAMES` is set, in a debug build, checked against
-/// `spelled`, what its word says, the answer before names had forms (#1681
-/// change 3, S4): a name made of text, a `String`'s, where a name of its
-/// form should go on, is found where they differ.
-pub(in crate::lower::mir) fn checked(name: &Name, typed: bool, spelled: bool) -> bool {
-    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    // A name not spelled yet, `value#1`, has no word to say it.
-    if cfg!(debug_assertions)
-        && *ON.get_or_init(|| std::env::var_os("RUST_JS_CHECK_NAMES").is_some())
-        && !name.is_unspelled()
-    {
-        assert_eq!(typed, spelled, "`{name}`: its form and its word disagree");
-    }
-    typed
-}
-
 /// `const _5 = children;`, a temporary of a variable: `children` where it's
 /// read, before `children` is set again, as in `match name.as_str()` of a
 /// `let mut name`; one read nowhere, gone. A closure neither reads a

@@ -12,6 +12,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-async.test.ts", "-t", "an async fn's parameter its body sets"],
   },
   {
+    name: "user-local-not-the-programs",
+    breaks: "a local rustc says the program named is named as a name rust-js made, not the program's: reclaiming gives the program's name to another, a variable renamed (ADR 1150); the debug build's invariant says so where it's made",
+    file: "src/lower/mir/locals.rs",
+    find: "                    self.fresh(Base::Program(&named, sources[local]))\n",
+    replace: "                    self.fresh(Base::Named(&named))\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_kept_words.rs$"],
+  },
+  {
     name: "async-arg-named",
     breaks:
       "`__arg0`, rustc's name of an `async fn`'s parameter of a pattern, is a name the program wrote, kept, `const { params } = __arg0`, not taken apart where it's given",

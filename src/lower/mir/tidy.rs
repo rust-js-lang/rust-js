@@ -39,7 +39,7 @@ mod value_chains;
 mod values;
 
 pub(super) use self::again::Again;
-pub(super) use self::bindings::{checked, is_temporary, temporary, user_name};
+pub(super) use self::bindings::{is_temporary, temporary, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 use self::stability::{plain_field, read_past_calls};
 pub(super) use self::values::writer_body;

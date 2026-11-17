@@ -316,7 +316,7 @@ pub(in crate::lower) fn temporary(local: usize) -> String {
 /// Whether `word` is spelled as a temporary's is: `_5`, `_5$1` or `_$`.
 /// Asked of a name as it's made (`Base::name`), of a positional field's,
 /// `_0`, and of a drop flag's base; tidy asks a variable's name its form
-/// (S4b), and `RUST_JS_CHECK_NAMES` checks that against this.
+/// (S4b).
 pub(in crate::lower) fn spelled_as_temporary(word: &str) -> bool {
     word.strip_prefix('_')
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))

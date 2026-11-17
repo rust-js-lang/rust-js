@@ -13,6 +13,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "binding-a-second-name",
+    breaks: "a binding THIR names is a second `Name` of its variable, apart from the local MIR binds it to: two variables where Rust has one (ADR 1150); the debug build's invariant says so",
+    file: "src/lower.rs",
+    find: "                place: Expr::var(&name),\n",
+    replace: "                place: Expr::var(name.rebound()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|btree_nodes_seen|back_stepped_adapter_sources|adapters_own_work_that_panics).rs$"],
+  },
+  {
     name: "given-apart-of-nothing",
     breaks:
       "a name lowering gives apart from its base, `result$2` of `result`, records nothing it's of, so tidy never takes it for kin of the first, `x = y` of two of one base left apart",

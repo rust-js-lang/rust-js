@@ -295,10 +295,9 @@ pub(super) fn label(block: BasicBlock) -> js::Name {
 }
 
 /// Whether `name` is a label `label` made, of a block, not one the program
-/// writes, `'rows`: its form (`Name::block_label`, #1681 change 3, S5),
-/// checked against its spelling where `RUST_JS_CHECK_NAMES` is set.
+/// writes, `'rows`: its form (`Name::block_label`, #1681 change 3, S5).
 pub(in crate::lower::mir) fn is_block_label(name: &js::Name) -> bool {
-    super::tidy::checked(name, name.is_block_label(), spelled_as_block_label(name.word()))
+    name.is_block_label()
 }
 
 /// Whether `word` is spelled as `label` spells a block's label, `bb7`.
