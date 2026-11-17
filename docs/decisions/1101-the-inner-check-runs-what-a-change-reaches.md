@@ -640,10 +640,10 @@ to node/'s or react-native/'s build scripts, test/ports or serde's build.
 Each such helper of a few tests is a module of its own, imported by those
 alone: `limitations()` (test/limitations-of.ts), `buildReactNative`
 (test/react-native-crate.ts) and `ported` and its kin (test/ports-of.ts).
-`buildNode`, `buildSerde` and `cargoApp` stay in support.ts for now: their
-importers include four test files at the cap, which grow by an import line
-and are split by concept first (#1334). What support.ts still reads,
-react/'s build and the app seed's CLI, most tests do read.
+`buildNode` (test/node-crate.ts), `buildSerde` (test/serde-crate.ts) and
+`cargoApp` (test/cargo-app.ts) followed, once the four test files at the
+cap that import them were split by concept (#1334). What support.ts still
+reads, react/'s build and the app seed's CLI, most tests do read.
 
 ### Amended: a new module of items nothing refers to selects nothing of its own (2026-11-17)
 

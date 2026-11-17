@@ -7,7 +7,8 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildNode, buildReact, compiler, fixture, run, target } from "./support";
+import { buildNode } from "./node-crate";
+import { buildReact, compiler, fixture, run, target } from "./support";
 
 // React's `formatOwnerStack` (packages/shared/ReactOwnerStackFrames.js), as
 // its port writes it. Its JS was

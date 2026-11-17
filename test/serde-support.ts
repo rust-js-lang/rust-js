@@ -3,7 +3,8 @@
 // JS built and loaded (split from serde.test.ts by concept, #1334).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildSerde, compiler, contentDirectory, nativeBinary, run, writeWhole } from "./support";
+import { buildSerde } from "./serde-crate";
+import { compiler, contentDirectory, nativeBinary, run, writeWhole } from "./support";
 
 /** `dir/cases.rs` with serde_json natively, the oracle: printing its
  * `report()`. Built beside a copy named by what it says, so the same cases

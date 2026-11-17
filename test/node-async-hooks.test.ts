@@ -7,7 +7,8 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildNode, compiler, fixture, run } from "./support";
+import { buildNode } from "./node-crate";
+import { compiler, fixture, run } from "./support";
 
 test("an AsyncLocalStorage's store is what each resource made in its run reads, and a hook sees each", () => {
   const dir = fixture("node-async-hooks");

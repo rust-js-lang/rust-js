@@ -6,7 +6,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { printed } from "./crates";
-import { buildCompiler, buildSerde, compiler, fixture, nativeBinary, root, run, writeWhole } from "./support";
+import { buildSerde } from "./serde-crate";
+import { buildCompiler, compiler, fixture, nativeBinary, root, run, writeWhole } from "./support";
 
 beforeAll(() => {
   buildCompiler();

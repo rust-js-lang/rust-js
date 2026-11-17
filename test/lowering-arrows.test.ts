@@ -7,7 +7,8 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildNode, compiler, fixture, run, target } from "./support";
+import { buildNode } from "./node-crate";
+import { compiler, fixture, run, target } from "./support";
 
 // ADR 0883: a closure the program wrote as its call's value, `|| f()`, is
 // `() => f()` where the call's JS gives `undefined`: a function of the

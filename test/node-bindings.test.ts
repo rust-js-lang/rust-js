@@ -6,7 +6,9 @@ import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildNode, buildReact, cargoApp, compiler, fixture, root, run, target } from "./support";
+import { cargoApp } from "./cargo-app";
+import { buildNode } from "./node-crate";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);

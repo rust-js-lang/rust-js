@@ -7,7 +7,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
 import { basename, join } from "node:path";
 import { underLoad } from "../scripts/timing";
-import { buildCompiler, buildReact, buildSerde, compiler, expectSnapshot, root, run, target } from "./support";
+import { buildSerde } from "./serde-crate";
+import { buildCompiler, buildReact, compiler, expectSnapshot, root, run, target } from "./support";
 
 type Crate = "web" | "react" | "serde";
 

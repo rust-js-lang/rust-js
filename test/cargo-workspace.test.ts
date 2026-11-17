@@ -7,7 +7,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { node } from "./programs";
-import { buildCompiler, buildSerde, cargoArtifacts, compiler, fixture, outsideFixture, root, run, rustJsUnits } from "./support";
+import { buildSerde } from "./serde-crate";
+import { buildCompiler, cargoArtifacts, compiler, fixture, outsideFixture, root, run, rustJsUnits } from "./support";
 import { cargo, check, printed, throughRustJs } from "./crates";
 
 beforeAll(buildCompiler, 600_000);

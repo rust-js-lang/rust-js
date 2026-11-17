@@ -874,10 +874,10 @@ if (import.meta.main) {
   // And the node bindings the bindings and lowering tests compile against,
   // once, before the jobs that ask for them: built by the first test to ask
   // under the others' load, it outran bun's 5 s test timeout, was killed, and
-  // failed every test waiting on it (#227). support.ts's `buildNode`, whose
+  // failed every test waiting on it (#227). test/node-crate.ts's `buildNode`, whose
   // stamp skips it where nothing changed.
   const binding = Date.now();
-  const node = Bun.spawnSync(["bun", "-e", "import { buildNode } from './test/support.ts'; buildNode();"], {
+  const node = Bun.spawnSync(["bun", "-e", "import { buildNode } from './test/node-crate.ts'; buildNode();"], {
     cwd: root,
     env: { ...process.env, RUST_JS_COMPILER: compiler },
     stdout: "inherit",

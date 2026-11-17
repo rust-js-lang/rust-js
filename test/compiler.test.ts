@@ -9,7 +9,8 @@ import { dirname, join, relative } from "node:path";
 
 import { decode, expected, same, type Outcome } from "./oracle";
 import { callInNode, type Call } from "./programs";
-import { root, target, run, buildCompiler, buildReact, buildSerde, compiler, fixture, programFlags } from "./support";
+import { buildSerde } from "./serde-crate";
+import { root, target, run, buildCompiler, buildReact, compiler, fixture, programFlags } from "./support";
 
 // Values are JSON: numbers, and objects and arrays for structs and tuples.
 type Case = { fn: string; args: unknown[]; value?: unknown; panic?: string };

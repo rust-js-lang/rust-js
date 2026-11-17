@@ -5,7 +5,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { buildNode, compiler, fixture, root, run } from "./support";
+import { buildNode } from "./node-crate";
+import { compiler, fixture, root, run } from "./support";
 
 const portsJs = new Map<string, string>();
 /** A port in `test/ports/<port>` (React's, as react-in-rust ports it, copied

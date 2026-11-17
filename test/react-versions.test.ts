@@ -12,7 +12,8 @@ import { join } from "node:path";
 import { latest, releases } from "../react/cfg.js";
 import { bindings } from "../react/coverage";
 import versions from "../react/versions.json" with { type: "json" };
-import { buildCompiler, cargoApp, compiler, fixture, generatorOutput, root, run, target } from "./support";
+import { cargoApp } from "./cargo-app";
+import { buildCompiler, compiler, fixture, generatorOutput, root, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
 
 type Exports = Record<string, Record<string, { since: string; removed?: string }>>;

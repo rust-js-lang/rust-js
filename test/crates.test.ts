@@ -10,7 +10,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, buildReact, buildSerde, compiler, fixture, nativeCrates, programFlags, root, run, target } from "./support";
+import { buildSerde } from "./serde-crate";
+import { buildCompiler, buildReact, compiler, fixture, nativeCrates, programFlags, root, run, target } from "./support";
 import { chain, contract, counting, pairs, printed, triples } from "./crates";
 import { node } from "./programs";
 

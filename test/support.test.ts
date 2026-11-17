@@ -15,7 +15,8 @@ import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
 import { runSync } from "./child";
-import { cargoApp, cargoArtifacts, contentDirectory, fixture, nativeBinary, nativeCrates, once, portable, root, run, seeded } from "./support";
+import { cargoApp } from "./cargo-app";
+import { cargoArtifacts, contentDirectory, fixture, nativeBinary, nativeCrates, once, portable, root, run, seeded } from "./support";
 
 // Found in review: a file the case includes was changed, and the kept
 // binary, of the file before, answered for it.

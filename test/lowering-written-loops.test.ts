@@ -5,7 +5,8 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildNode, compiler, fixture, root, run } from "./support";
+import { buildNode } from "./node-crate";
+import { compiler, fixture, root, run } from "./support";
 
 // ADR 0702: a `while` whose test calls, `!lines[s].contains(..)` of a
 // `Vec`'s index, is `while (test) { .. }`, its test as written (ADR 0683),

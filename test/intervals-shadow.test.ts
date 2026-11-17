@@ -6,7 +6,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildCompiler, buildSerde, compiler, fixture, root } from "./support";
+import { buildSerde } from "./serde-crate";
+import { buildCompiler, compiler, fixture, root } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);

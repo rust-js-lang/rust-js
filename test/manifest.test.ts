@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { FIELD_FACTS, ITEM_FACTS, LIBRARY_ABI, PARAM_FACTS, parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
 import { createNativeBuilder } from "../tooling/build.js";
-import { buildCompiler, cargoApp, compiler, fixture, installStd, KeptApp, root as repository, run, stdDir } from "./support";
+import { cargoApp } from "./cargo-app";
+import { buildCompiler, compiler, fixture, installStd, KeptApp, root as repository, run, stdDir } from "./support";
 
 const manifest = {
   version: 1, input: "/virtual/lib.rs", output: "/virtual/lib.js",

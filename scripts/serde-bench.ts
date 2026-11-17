@@ -23,7 +23,8 @@ import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, w
 import { arch, cpus, platform, release } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
-import { buildSerde, compiler, root } from "../test/support";
+import { buildSerde } from "../test/serde-crate";
+import { compiler, root } from "../test/support";
 import { machine } from "./shard";
 
 const probes = join(root, "test", "serde-probes");

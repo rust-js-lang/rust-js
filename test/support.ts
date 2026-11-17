@@ -5,7 +5,6 @@ import { basename, dirname, join, resolve } from "node:path";
 
 import { tempRoot } from "./bounded";
 import { runSync, stopped } from "./child";
-import { keptSerdeFlags } from "./serde-kept";
 import { keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
 import { shard } from "../scripts/shard";
@@ -436,24 +435,6 @@ function alive(pid: number): boolean {
     return false;
   }
 }
-/** A Cargo package, `app`, its own workspace, in `dir`: `rust` at `lib`,
- * and React's crate by path where it uses it, as a host builds an app's
- * Rust (ADR 0101). `toml` is more of its `Cargo.toml`. What `checkCargo`
- * and a Cargo session are given of it. */
-export function cargoApp(at: string | KeptApp, rust: string, { lib = "src/lib.rs", react = false, toml = "" } = {}) {
-  // Into a fixture, or written through a kept app, each where it differs.
-  const dir = typeof at === "string" ? at : at.dir;
-  const write = (path: string, text: string) => {
-    if (typeof at !== "string") return void at.write(path, text);
-    mkdirSync(dirname(join(dir, path)), { recursive: true });
-    writeFileSync(join(dir, path), text);
-  };
-  write(lib, rust);
-  const path = lib === "src/lib.rs" ? "" : `\n[lib]\npath = "${lib}"\n`;
-  const dependencies = react ? `react = { package = "rust-js-react", path = ${JSON.stringify(join(root, "react"))} }\n` : "";
-  write("Cargo.toml", `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n${path}\n[dependencies]\n${dependencies}${toml ? `\n${toml}` : ""}\n[workspace]\n`);
-  return { manifestPath: join(dir, "Cargo.toml"), packageNames: ["app"], offline: true };
-}
 
 /** `@rust-js/std`, installed in an app outside the checkout, as a package
  * manager installs it: what its JS imports (ADRs 0103, 0561, #1095). */
@@ -850,21 +831,6 @@ export function rustJsUnits(profile: string): string[] {
   return existsSync(dir) ? readdirSync(dir).map((unit) => join(dir, unit)) : [];
 }
 
-/** serde, serde_derive and serde_json (ADR 0077): the flags that find them,
- * as metadata for rust-js, as libraries for a native build, for one on
- * wasm32-wasip1, whose 32-bit `usize` is the JS's, or built optimized, for
- * a native benchmark. */
-const serdeFlags: Record<string, string[]> = {};
-export function buildSerde(kind: "rmeta" | "rlib" | "rlib-wasm32" | "rlib-release" = "rmeta"): string[] {
-  // Of a snapshot of what Cargo built, which a rebuild of `target/serde`
-  // by another run never takes from under a compile (#1711).
-  serdeFlags[kind] ??= keptSerdeFlags(
-    run(["serde/build.sh", ...(kind === "rmeta" ? [] : [`--${kind}`])]).trim().split(/\s+/),
-    join(target, "serde-kept"),
-  );
-  return serdeFlags[kind];
-}
-
 /** Each file of `paths`, a file or a directory's, read whole: their digest. */
 function digest(paths: string[]): string {
   const hash = createHash("sha256");
@@ -911,30 +877,6 @@ export function buildReact() {
     );
     react = true;
   }
-}
-
-/** The node crate's metadata, and the webapi and js crates' it uses beside
- * it, in `target/node`, built once for the run and not again while what
- * they're made from is what it was, as the react crate's are (`buildReact`):
- * in a directory of their own, as node's build writes the webapi crate's
- * metadata too, which another test file may be reading from `target`. Ten
- * tests built it each, 1.5 s each. Where it is: `-L` it, and `--extern
- * node=<it>/libnode.rmeta`. */
-let node: string | undefined;
-export function buildNode(): string {
-  const dir = join(target, "node");
-  if (node === undefined) {
-    buildCompiler();
-    const inputs = ["node/src", "node/build.sh", "webapi/src", "webapi/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml"]
-      .map((path) => join(root, path))
-      .concat(compiler);
-    const outputs = ["node", "webapi", "js"].map((lib) => join(dir, `lib${lib}.rmeta`));
-    once(join(target, "tests-node", thisRun()), () =>
-      unlessUnchanged(join(dir, "libnode.stamp"), inputs, outputs, () => run(["node/build.sh", "-o", join(dir, "libnode.rmeta")])),
-    );
-    node = dir;
-  }
-  return node;
 }
 
 /** The generated JS files under `dir`, by their paths from there, and

@@ -6,7 +6,8 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildNode, buildReact, compiler, fixture, run } from "./support";
+import { buildNode } from "./node-crate";
+import { buildReact, compiler, fixture, run } from "./support";
 
 beforeAll(buildReact, 600_000);
 

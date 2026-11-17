@@ -4,7 +4,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiled, native } from "./serde-support";
-import { buildCompiler, buildSerde, compiler, fixture, run } from "./support";
+import { buildSerde } from "./serde-crate";
+import { buildCompiler, compiler, fixture, run } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(() => {

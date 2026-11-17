@@ -29,7 +29,8 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { buildRewriter, libraryCrate, rewritten } from "../test/metamorphic";
-import { buildSerde, compiler, root } from "../test/support";
+import { buildSerde } from "../test/serde-crate";
+import { compiler, root } from "../test/support";
 import { atOnce } from "./shard";
 
 const probes = join(root, "test", "serde-probes");

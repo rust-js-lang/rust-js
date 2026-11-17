@@ -3,7 +3,8 @@ import { mkdtempSync, realpathSync, mkdirSync, writeFileSync, readFileSync, rmSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseManifest } from "../tooling/manifest.js";
-import { buildCompiler, buildSerde, compiler, installStd, root as repository, run } from "./support";
+import { buildSerde } from "./serde-crate";
+import { buildCompiler, compiler, installStd, root as repository, run } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 
 test("independent native and JS clients share models, validation, and source edits", async () => {
