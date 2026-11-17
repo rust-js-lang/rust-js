@@ -6,7 +6,8 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, fixture, performanceTrack, target, wrapsProved } from "./support";
+import { performanceTrack } from "./ports-of";
+import { buildReact, fixture, target, wrapsProved } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);

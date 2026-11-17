@@ -4,7 +4,8 @@
 // each as upstream writes it, or as close as its Rust allows.
 
 import { beforeAll, expect, test } from "bun:test";
-import { buildReact, ported } from "./support";
+import { ported } from "./ports-of";
+import { buildReact } from "./support";
 
 beforeAll(buildReact, 600_000);
 

@@ -7,7 +7,8 @@
 
 import { test } from "bun:test";
 import { join } from "node:path";
-import { expectSnapshot, portedDir, root } from "./support";
+import { portedDir } from "./ports-of";
+import { expectSnapshot, root } from "./support";
 
 // Each file's header names its source from the repository's root, the same
 // on every machine.

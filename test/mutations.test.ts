@@ -15,7 +15,8 @@ import { run as runChild, type Exit } from "./child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "./corpus-mutants";
 import { installPackages } from "./packages-of";
 import { node } from "./programs";
-import { fixture, limitations, root, run } from "./support";
+import { limitations } from "./limitations-of";
+import { fixture, root, run } from "./support";
 
 // What the crate includes from beyond `src/`, `include_str!("../../../test/
 // vec-collect-ways.txt")`, is in the crate the mutations build, or its unit

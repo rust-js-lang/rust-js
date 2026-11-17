@@ -7,7 +7,8 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { underLoad } from "../scripts/timing";
-import { buildReact, compiler, fixture, performanceTrack, root, run } from "./support";
+import { performanceTrack } from "./ports-of";
+import { buildReact, compiler, fixture, root, run } from "./support";
 
 beforeAll(buildReact, 600_000);
 

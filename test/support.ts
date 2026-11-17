@@ -409,7 +409,7 @@ export function buildCompiler() {
 /** This test run, the same in each of its workers: its runner's pid, and
  * when it started. */
 let runId: string | undefined;
-function thisRun(): string {
+export function thisRun(): string {
   if (runId === undefined) {
     const runner = String(process.env.BUN_TEST_WORKER_ID ? process.ppid : process.pid);
     const started = run(["ps", "-o", "lstart=", "-p", runner]).trim();
@@ -937,64 +937,6 @@ export function buildNode(): string {
   return node;
 }
 
-/** The react-native crate's metadata, and the js crate's it uses beside
- * it, in `target/react-native`, built once for the run and not again while
- * what they're made from is what it was, as the node crate's are
- * (`buildNode`). Where it is: `-L` it, and `--extern
- * react_native=<it>/libreact_native.rmeta`. */
-let reactNative: string | undefined;
-export function buildReactNative(): string {
-  const dir = join(target, "react-native");
-  if (reactNative === undefined) {
-    buildCompiler();
-    const inputs = ["react-native/src", "react-native/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml"]
-      .map((path) => join(root, path))
-      .concat(compiler);
-    const outputs = ["react_native", "js"].map((lib) => join(dir, `lib${lib}.rmeta`));
-    once(join(target, "tests-react-native", thisRun()), () =>
-      unlessUnchanged(join(dir, "libreact_native.stamp"), inputs, outputs, () =>
-        run(["react-native/build.sh", "-o", join(dir, "libreact_native.rmeta")]),
-      ),
-    );
-    reactNative = dir;
-  }
-  return reactNative;
-}
-
-const portsJs = new Map<string, string>();
-/** A port in `test/ports/<port>` (React's, as react-in-rust ports it, copied
- * with the modules it uses), compiled once a run against the js, node and
- * webapi crates: the directory its modules' JS and declarations are in,
- * each by its file. */
-export function portedDir(port: string): string {
-  if (!portsJs.has(port)) {
-    const out = fixture(port);
-    const node = buildNode();
-    const crates = ["js", "node", "webapi"].flatMap((lib) => ["--extern", `${lib}=${join(node, `lib${lib}.rmeta`)}`]);
-    run([compiler, join(root, "test/ports", port, "lib.rs"), "-o", join(out, "lib.js"), "--declarations", "--", ...crates, "-L", node]);
-    portsJs.set(port, out);
-  }
-  return portsJs.get(port)!;
-}
-
-/** A port's JS (`portedDir`), of each of its modules, by file. */
-export function ported(port: string): (file: string) => string {
-  const dir = portedDir(port);
-  return (file) => readFileSync(join(dir, file), "utf8");
-}
-
-/** React's shared/ReactPerformanceTrackProperties, as react-in-rust ports
- * it (`test/ports/performance-track-properties`): its JS, a function of it
- * at a time. */
-export function performanceTrack(): (name: string) => string {
-  const js = ported("performance-track-properties")("ReactPerformanceTrackProperties.js");
-  return (name) => {
-    const at = js.indexOf(`function ${name}(`);
-    const ends = ["\nfunction ", "\nexport function ", "\nconst "].map((e) => js.indexOf(e, at + 1)).filter((e) => e > 0);
-    return js.slice(at, Math.min(js.length, ...ends));
-  };
-}
-
 /** The generated JS files under `dir`, by their paths from there, and
  * their declarations where `declarations` holds: no maps. */
 function generated(dir: string, declarations = false): string[] {
@@ -1071,14 +1013,3 @@ export function plainCheckWarnings(stderr: string): string[] {
     .filter((line) => !unseen.test(line));
 }
 
-/** Each `- item: \`example\`` line of docs/guide/limitations.md, its item,
- * its example and the name of limitations.test.ts's test that compiles it,
- * which a mutation's `-t` may name. */
-export function limitations(): { item: string; example: string; title: string }[] {
-  const page = readFileSync(join(root, "docs/guide/limitations.md"), "utf8");
-  return [...page.matchAll(/^- (.+?): `([^`]+)`$/gm)].map((m) => ({
-    item: m[1],
-    example: m[2],
-    title: `refused, as docs/guide/limitations.md says: ${m[1]}`,
-  }));
-}

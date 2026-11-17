@@ -5,7 +5,8 @@
 import { expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, compiler, fixture, limitations } from "./support";
+import { limitations } from "./limitations-of";
+import { buildCompiler, compiler, fixture } from "./support";
 
 test("the limitations page has examples to check", () => {
   expect(limitations().length).toBeGreaterThan(20);

@@ -23,7 +23,8 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { run } from "../test/child";
-import { buildCompiler, buildNode, buildReact, buildReactNative, buildSerde, cargoApp, compiler, KeptApp, root, target } from "../test/support";
+import { buildReactNative } from "../test/react-native-crate";
+import { buildCompiler, buildNode, buildReact, buildSerde, cargoApp, compiler, KeptApp, root, target } from "../test/support";
 import { machine } from "./shard";
 
 const check = process.argv.includes("--check");

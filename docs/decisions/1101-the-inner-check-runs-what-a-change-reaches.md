@@ -629,3 +629,19 @@ hub, which region coverage for hubs is to narrow.
 Proof: test/test-map.test.ts's "a constant's value"; mutations
 `selector-const-value-runs-all`, `selector-const-retyped-as-value` and
 `selector-const-read-outside-kept`.
+
+### Amended: a test reads what the helpers it imports read, so a helper of a few is a module of its own (2026-11-17)
+
+A test's reads are its modules' (`reachOf`), and every test imports
+test/support.ts: each path a helper there read was every test's. An edit
+of docs/guide/limitations.md, which `limitations()` alone reads, selected
+all 365 files (d0ce7d1ab's and 336483fa0's incoming side), as did a change
+to node/'s or react-native/'s build scripts, test/ports or serde's build.
+Each such helper of a few tests is a module of its own, imported by those
+alone: `limitations()` (test/limitations-of.ts), `buildReactNative`
+(test/react-native-crate.ts) and `ported` and its kin (test/ports-of.ts).
+`buildNode`, `buildSerde` and `cargoApp` stay in support.ts for now: their
+importers include four test files at the cap, which grow by an import line
+and are split by concept first (#1334). What support.ts still reads,
+react/'s build and the app seed's CLI, most tests do read.
+

@@ -11,7 +11,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { runSync } from "./child";
-import { buildReactNative, compiler, fixture, root } from "./support";
+import { buildReactNative } from "./react-native-crate";
+import { compiler, fixture, root } from "./support";
 
 let native = "";
 beforeAll(() => {
