@@ -6,6 +6,10 @@
 //   build     the compiler
 //   std       std/ made again (`bun run std`), refused where it differs from
 //             what's committed
+//   mutants   each mutation of a file the change touches, or of a list it
+//             touches, type-checked (`mutations.ts --typecheck`): a
+//             `replace` written against what the change changed, which
+//             CI's shards can't build, refused by name
 //   check     `check:fast`: the test files and cases the selector says the
 //             change can affect (scripts/select.ts, ADR 1101, amended),
 //             everything where it can't say; none at all, of a change
@@ -44,7 +48,7 @@ import { devTimesLog, whoRuns } from "./disk";
 import { touchesPort } from "./iteratorSlice";
 
 /** The phases, in the order they run. */
-export const phases = ["rebase", "build", "std", "check", "sanity", "react", "files", "push"] as const;
+export const phases = ["rebase", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
 export type Phase = (typeof phases)[number];
 
 
@@ -171,6 +175,8 @@ function main() {
         const std = lines(git("status", "--porcelain", "--", "std").out);
         if (std.length > 0) throw new Refused(`std/ differs from what's committed, made again from this tree:\n${std.join("\n")}\ncommit it, or rebase onto the commit that does`);
         phase("std");
+        run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);
+        phase("mutants");
         // The selection of what the change can affect, by the test map's
         // diff to this tree: first, and again, of the new tree, past a
         // rebase that brought commits (`sanity`), conflicted or not. None

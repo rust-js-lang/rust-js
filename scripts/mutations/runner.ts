@@ -90,4 +90,28 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/mutations.test.ts", "-t", "a mutant is caught, survives, or the run says nothing of it"],
   },
+  {
+    name: "typecheck-blames-the-batch",
+    breaks: "a check of many mutants that fails names each of them, not the one that doesn't type-check",
+    file: "scripts/mutations.ts",
+    find: "    if (batch.length > 1) queue.push(batch.slice(0, batch.length / 2), batch.slice(batch.length / 2));\n    else problems.set(batch[0]!.mutation, `doesn't type-check: ${why}`);\n",
+    replace: "    for (const { mutation } of batch) problems.set(mutation, `doesn't type-check: ${why}`);\n",
+    tests: ["test/mutation-changes.test.ts", "-t", "a change's mutants are type-checked many to a check"],
+  },
+  {
+    name: "typecheck-each-alone",
+    breaks: "each mutant is type-checked alone, a check each, not many to a check: a push's every touched file's mutants, a check of tens of seconds each",
+    file: "scripts/mutations.ts",
+    find: "    ...batches(ofUnit(false), Infinity),\n",
+    replace: "    ...batches(ofUnit(false), 1),\n",
+    tests: ["test/mutation-changes.test.ts", "-t", "a change's mutants are type-checked many to a check"],
+  },
+  {
+    name: "typecheck-touched-misses-lists",
+    breaks: "a change to a mutation list alone, a `replace` rewritten, type-checks none of its mutations",
+    file: "scripts/mutations.ts",
+    find: " && (touched.has(m.file) || touched.has(`scripts/mutations/${list.path}`)),",
+    replace: " && touched.has(m.file),",
+    tests: ["test/mutation-changes.test.ts", "-t", "a push type-checks the mutations of each file its change touches"],
+  },
 ];

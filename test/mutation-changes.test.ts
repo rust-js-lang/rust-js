@@ -5,7 +5,8 @@
 import { expect, test } from "bun:test";
 import { cpSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { batches, buildsUnmutated, type Change, changedLines, changedMutations, enclosingFunction, mutations, ownMutations, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, unitTestsModule } from "../scripts/mutations";
+import { batches, buildsUnmutated, type Change, changedLines, changedMutations, enclosingFunction, mutations, ofTouched, ownMutations, refusedFlags, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, typechecked, unitTestsModule } from "../scripts/mutations";
+import { phases } from "../scripts/push";
 import { fixture, root } from "./support";
 
 const mutation = (name: string, file: string, find = "a", replace = "b", tests = ["test/y.test.ts"]) => ({ name, breaks: "", file, find, replace, tests });
@@ -312,4 +313,45 @@ test("a diff's changed lines are where the file is changed now, and was", () => 
 test("a run of the scripts' mutations alone builds the compiler where none is given", () => {
   const of = (crate: boolean, harness: boolean, given: boolean) => buildsUnmutated({ crate, harness, given });
   expect([of(false, false, true), of(false, false, false), of(true, false, true), of(false, true, true)]).toEqual([false, true, true, true]);
+});
+
+// A push type-checks the mutations of what it changes (scripts/push.ts's
+// `mutants`): a `replace` written against a signature the change changed
+// passed the push's check of `find` and failed CI's shards as "doesn't
+// build", main red on 2026-11-18 (`own-method-call-other-this`).
+test("a push type-checks the mutations of each file its change touches, and of each list it touches", () => {
+  const of = (name: string, file: string) => ({ name, breaks: "", file, find: "", replace: "", tests: [] });
+  const among = [
+    { path: "a.ts", mutations: [of("in-a", "src/a.rs"), of("in-a-helper", "src/runtime/a.js")] },
+    { path: "b.ts", mutations: [of("in-b", "src/b.rs")] },
+    { path: "push.ts", mutations: [of("in-push", "scripts/push.ts")] },
+  ];
+  const names = (changed: string[]) => ofTouched(changed, among).map((m) => m.name);
+  expect(names(["src/a.rs", "docs/x.md"])).toEqual(["in-a"]);
+  expect(names(["scripts/mutations/b.ts"])).toEqual(["in-b"]);
+  expect(names(["scripts/push.ts", "scripts/mutations/push.ts"])).toEqual([]);
+  expect(refusedFlags(["--typecheck=origin/main"])).toEqual([]);
+  expect(refusedFlags(["--typecheck"])).toEqual(["--typecheck takes a value: --typecheck=<base>"]);
+  expect(phases.indexOf("mutants")).toBeGreaterThan(phases.indexOf("build"));
+  expect(phases.indexOf("mutants")).toBeLessThan(phases.indexOf("check"));
+  expect(readFileSync(join(root, "scripts/push.ts"), "utf8")).toContain('run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);');
+});
+
+test("a change's mutants are type-checked many to a check, and one that doesn't type-check is named alone", async () => {
+  const dir = fixture("mutation-typecheck");
+  let checks = 0;
+  const check = async (files: Map<string, string>) => {
+    checks++;
+    writeFileSync(join(dir, "main.rs"), files.get("src/main.rs")!);
+    const p = Bun.spawnSync(["rustc", "--edition=2021", "-Awarnings", "--emit=metadata", "--out-dir", dir, join(dir, "main.rs")], { cwd: root });
+    return p.exitCode === 0 ? undefined : p.stderr.toString().split("\n").find((line) => line.startsWith("error"));
+  };
+  const sited = (of: ReturnType<typeof inProgram>[]): Sited[] => of.map((mutation) => ({ mutation, site: site(mutation, readProgram) }));
+  // Those in bodies in one check, and one in a `const fn` alone.
+  const twiceOff = inProgram("twice-off", "n * 2", "n * 2 + 1");
+  expect([...(await typechecked(sited([sumOff, sumFirst, shownUnit, twiceOff]), check, readProgram))]).toEqual([]);
+  expect(checks).toBe(2);
+  const summedAsText = inProgram("sum-as-text", "    total\n", '    "total"\n');
+  const problems = await typechecked(sited([sumOff, summedAsText, shownUnit]), check, readProgram);
+  expect([...problems].map(([m, why]) => [m.name, why.startsWith("doesn't type-check: error[E0308]")])).toEqual([["sum-as-text", true]]);
 });

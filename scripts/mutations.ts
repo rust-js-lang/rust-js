@@ -9,6 +9,7 @@
 //   bun scripts/mutations.ts --changed=main   # a change's, since where it left main
 //   bun scripts/mutations.ts --shard=2/6      # a sixth of them, as CI splits them
 //   bun scripts/mutations.ts --batch=1        # each built alone, not 32 to a build
+//   bun scripts/mutations.ts --typecheck=origin/main  # a change's files' mutants type-checked, none run
 //
 // The mutations themselves are in `mutations/`, one list for each source
 // file. Each builds natively a few test programs: on macOS, with the app
@@ -980,6 +981,7 @@ const valued: Record<string, string> = {
   "--fresh": "--fresh=<share>",
   "--base": "--base=<commit>",
   "--retire": "--retire=<name>",
+  "--typecheck": "--typecheck=<base>",
 };
 
 /** The flags of `valued` whose value is a list, which may be empty: CI's
@@ -1008,6 +1010,99 @@ export function refusedFlags(args: string[]): string[] {
  * a script's. */
 export function ofCrate(file: string): boolean {
   return crateFiles.some((path) => file === path || file.startsWith(`${path}/`));
+}
+
+/** The mutations `--typecheck=<base>` checks, of `changed`, the files the
+ * change since `base` touches: each of the crate's Rust whose file it
+ * touches, or whose list. A change to a function's signature leaves a
+ * mutation's `replace` written against the old one, which a push's check
+ * of `find` alone passes and CI's shards then can't build: main went red
+ * so on 2026-11-18 (`own-method-call-other-this`, js/make.rs). */
+export function ofTouched(changed: string[], among = lists): Mutation[] {
+  const touched = new Set(changed);
+  return among.flatMap((list) =>
+    list.mutations.filter(
+      (m) => ofCrate(m.file) && m.file.endsWith(".rs") && (touched.has(m.file) || touched.has(`scripts/mutations/${list.path}`)),
+    ),
+  );
+}
+
+/** Each of `sited` type-checked as its build would be, by `check`, which
+ * says why the crate with `files` written over it doesn't type-check, or
+ * nothing where it does: as the runner builds them, of many at once, each
+ * site once for each of its mutations, chosen by name (`schema`), every
+ * site of the crate in two checks; one that fails split in two until it's
+ * one mutation, which it names. Why each that doesn't, by name. */
+export async function typechecked(
+  sited: Sited[],
+  check: (files: Map<string, string>, unit: boolean) => Promise<string | undefined>,
+  read: (file: string) => string = crateText,
+): Promise<Map<Mutation, string>> {
+  const problems = new Map<Mutation, string>();
+  const ofUnit = (unit: boolean) => sited.filter((s) => (s.mutation.unitTests !== undefined) === unit);
+  const queue: Sited[][] = [
+    ...batches(ofUnit(true), Infinity),
+    ...batches(ofUnit(false), Infinity),
+    ...sited.filter((s) => s.site === undefined).map((s) => [s]),
+  ];
+  for (let batch = queue.shift(); batch !== undefined; batch = queue.shift()) {
+    const files = schema(batch, read);
+    if (!(files instanceof Map)) {
+      for (const { mutation } of batch) problems.set(mutation, files.problem);
+      continue;
+    }
+    const why = await check(files, batch[0]!.mutation.unitTests !== undefined);
+    if (why === undefined) continue;
+    if (batch.length > 1) queue.push(batch.slice(0, batch.length / 2), batch.slice(batch.length / 2));
+    else problems.set(batch[0]!.mutation, `doesn't type-check: ${why}`);
+  }
+  return problems;
+}
+
+/** Where `--typecheck` writes its mutants: a crate of its own, so a run in
+ * target/mutants goes on beside it, checked into the checkout's target,
+ * whose dependencies clippy's check already made. */
+const checking = join(root, "target", "typecheck");
+
+/** `--typecheck=<base>`: each mutation of a file the change since `base`
+ * touches (`ofTouched`), type-checked, `cargo check`, none built or
+ * tested: a `replace` that no longer type-checks against the change, which
+ * CI's shard would call "doesn't build", is said by name before the push. */
+async function typecheck(base: string): Promise<void> {
+  const started = performance.now();
+  const listed = runSync(["git", "diff", "--name-only", base], root, 60_000);
+  if (listed.code !== 0) throw new Error(`git diff --name-only ${base}: ${listed.stderr}`);
+  const chosen = ofTouched(listed.stdout.split("\n").filter(Boolean));
+  const problems = new Map<Mutation, string>();
+  const sited: Sited[] = [];
+  for (const mutation of chosen) {
+    const mutated = mutate(crateText(mutation.file), mutation);
+    const at = site(mutation, crateText);
+    const problem = typeof mutated === "string" ? unparsed(mutation, at, crateText) : mutated.problem;
+    if (problem) problems.set(mutation, problem);
+    else sited.push({ mutation, site: at });
+  }
+  const crate = join(checking, "crate");
+  let checks = 0;
+  const check = async (files: Map<string, string>, unit: boolean) => {
+    checks++;
+    mkdirSync(crate, { recursive: true });
+    syncTree(crateSource, crate, crateFiles);
+    for (const [path, text] of files) {
+      mkdirSync(dirname(join(crate, path)), { recursive: true });
+      writeFileSync(join(crate, path), text);
+    }
+    const command = ["cargo", "check", "--quiet", "--locked", "--message-format=short", ...(unit ? ["--tests"] : []), "--target-dir", join(root, "target")];
+    const p = await run(command, crate, buildTimeout);
+    if (p.code === 0 && !stopped(p, buildTimeout)) return undefined;
+    return stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => /\berror\b/.test(line)) ?? `exited ${p.code}`;
+  };
+  for (const [mutation, problem] of await typechecked(sited, check)) problems.set(mutation, problem);
+  const files = new Set(chosen.map((m) => m.file)).size;
+  console.log(`${chosen.length} mutations of ${files} file${files === 1 ? "" : "s"} type-checked in ${checks} checks, ${((performance.now() - started) / 1000).toFixed(0)} s`);
+  if (problems.size > 0) {
+    throw new Error([...problems].map(([m, problem]) => `${m.name} (${m.file}): ${problem}`).join("\n"));
+  }
 }
 
 /** The trailer a commit that removes a mutation of the crate carries, its
@@ -1222,6 +1317,12 @@ async function main() {
   // value given none, a bare `--changed`, which ran every one (#2001).
   const refused = refusedFlags(args);
   if (refused.length > 0) throw new Error(refused.join("\n"));
+  // A change's mutants type-checked, `typecheck`, no other run.
+  const checked = args.find((arg) => arg.startsWith("--typecheck="))?.slice("--typecheck=".length);
+  if (checked !== undefined) {
+    if (args.length > 1) throw new Error("--typecheck=<base> runs alone: no mutation named, no other flag");
+    return typecheck(checked);
+  }
   const named = args.filter((arg) => !arg.startsWith("--"));
   const unknown = named.filter((name) => !mutations.some((m) => m.name === name));
   if (unknown.length > 0) throw new Error(`no mutation ${unknown.join(", ")}; there are ${mutations.map((m) => m.name).join(", ")}`);
@@ -1709,7 +1810,9 @@ async function main() {
   // Here, each one's time, its build and its tests, as many as run; CI's
   // are its own.
   if (!process.env.GITHUB_ACTIONS && rows.length > 0) {
-    console.log(timed("mutation, each", elapsed() / rows.length, { detail: `${rows.length} run` }));
+    // A run of one or two builds each alone, no build shared, its each
+    // five times a shared one's: it's said against runs of as few.
+    console.log(timed("mutation, each", elapsed() / rows.length, { detail: `${rows.length} run`, ran: rows.length < 3 ? "fewer than 3" : undefined }));
   }
   if (missed.length > 0) process.exitCode = 1;
   // And `--fresh`'s builds, each mutation's verdict the same as the build

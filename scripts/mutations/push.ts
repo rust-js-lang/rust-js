@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "  return conflicts.every((file) => file in regenerated);\n",
     tests: ["test/ci.test.ts", "-t", "a rebase's conflict in a ratchet is resolved by the lower count"],
   },
+  {
+    name: "push-mutants-unchecked",
+    breaks: "a push lands a mutation whose `replace` no longer type-checks against its change, which CI's shards call \"doesn't build\" (main red, 2026-11-18)",
+    file: "scripts/push.ts",
+    find: "        run(\"mutants\", [\"bun\", \"scripts/mutations.ts\", `--typecheck=${base}`]);\n",
+    replace: "",
+    tests: ["test/mutation-changes.test.ts", "-t", "a push type-checks the mutations of each file its change touches"],
+  },
 ];

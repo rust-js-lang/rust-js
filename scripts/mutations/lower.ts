@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     breaks: "another module's `const`, `util::SIZE`, is read by its name, but its module isn't imported for it",
     file: "src/lower.rs",
     find: "            let place = self.item_read(def_id, span);",
-    replace: "            let place = Expr::var(&self.krate.fns[&def_id].name);",
+    replace: "            let place = Expr::module(&self.krate.fns[&def_id].name);",
     tests: ["test/modules.test.ts", "-t", "imports follow what's used: functions, consts and thread-locals"],
   },
   {
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     breaks: "a binding's read of a global, `performance`, isn't made a global's: refused, a read nothing declares (#1681)",
     file: "src/lower.rs",
     find: "        None => rooted(path, Expr::global),\n",
-    replace: "        None => rooted(path, |word| Expr::var(word)),\n",
+    replace: "        None => rooted(path, |word| Expr::var(js::Name::declared(word.to_string()))),\n",
     tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],
   },
   {

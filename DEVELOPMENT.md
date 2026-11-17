@@ -808,7 +808,11 @@ checked:
 - **`bun run push` is the one way to push** (`scripts/push.ts`). It
   rebases onto `origin/main` (a conflict stops it, aborted), rebuilds,
   makes `std/` again and refuses where it differs from what's committed,
-  runs `check:fast`, which runs what the test selector says the change can
+  type-checks each mutation of a file the change touches, or of a
+  mutation list it touches (`bun scripts/mutations.ts --typecheck=<base>`,
+  as the runner builds them, many to a `cargo check`), refusing one whose
+  `replace` no longer type-checks, which CI's shards would call "doesn't
+  build", runs `check:fast`, which runs what the test selector says the change can
   affect (`scripts/select.ts`, ADR 1101, amended; everything where it
   can't say, none of a change nothing reads that isn't code, straight to
   the push), refuses where the React port differs at its pin, of a change
