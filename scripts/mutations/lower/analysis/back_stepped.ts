@@ -607,4 +607,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_step_by_of_a_reversed_range_grows_as_std.rs$"],
   },
+  {
+    name: "held-length-by-type",
+    breaks: "every variable of a type a `Vec`'s growth asks the length of is made knowing it, not only those its grown value is made of, so `summed`, of the same `Map` type as the grown `grown`, is made `$mapEnds` where it's JS's own map, a change of form where nothing asks it (#1795)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                        let mut seen: IndexSet<mir::Local> = IndexSet::default();\n",
+    replace: "                        let mut seen: IndexSet<mir::Local> = IndexSet::default();\n                        at.extend(mir.local_decls.indices());\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_whose_length_a_capacity_asks.rs$"],
+  },
 ];

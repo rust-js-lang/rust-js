@@ -51,7 +51,12 @@ identity:
 - The walk's growth branch asks `lengths_asked(grown)`: of an
   `ExactSizeIterator`, itself and what it passes its length on from
   (`length_kept_source`); of a chain or a zip whose hint is its parts', or
-  a copy of one, each part's.
+  a copy of one, each part's. It marks a variable `Held` by its MIR
+  identity, as the rest of the walk does: walking back from what the
+  growth's call is given, through moves, borrows and the calls that made
+  each value of an asked type. Another variable of the same type stays as
+  it was. (Amended 2026-11-17: the first form marked every variable of an
+  asked type in the body, the lead's review.)
 - A variable written with a value made in place, asked `Held` and not yet
   knowing its length, is made so where it's written (`written_as_asked`).
   The making is `made_as_growth_asks`, the owner of what the growth asks,
@@ -70,7 +75,9 @@ identity:
   - a held map that a chain of an `inspect` of it grows a `Vec`;
   - a held map stepped from its back and then grown by;
   - one of items with a destructor;
-  - one whose length nothing asks, still JS's own map.
+  - one whose length nothing asks, still JS's own map;
+  - of two variables of one adapter type, only the one the growth is made
+    of, made knowing, the other JS's own map.
 - It matches native in the plain build, with std's iterator structs, and
   through every metamorphic rewrite. On main it was refused.
 - The whole corpus passes unchanged, including:
@@ -86,6 +93,7 @@ identity:
   - `held-length-unmade`
   - `held-length-remade-back`
   - `held-chain-parts-unread`
+  - `held-length-by-type` (snapshots compared)
 
 ## Consequences
 

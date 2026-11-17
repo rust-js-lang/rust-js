@@ -5,7 +5,8 @@
 // slice's items grown by an `inspect` of it; a held chain of an `inspect`
 // and an array's items; a held map a chain of an `inspect` of which it's
 // grown by; one stepped from its back too; one whose items have a
-// destructor; and one whose length nothing asks, as it was.
+// destructor; one whose length nothing asks, as it was; and of two
+// variables of one adapter type, only the one the growth is made of.
 
 struct Loud(u32);
 
@@ -52,6 +53,17 @@ fn loud(n: u32) -> (Vec<String>, usize) {
     (tens, capacity)
 }
 
+fn double(x: &u32) -> u32 {
+    x * 2
+}
+
+fn one_of_two(v: &[u32]) -> (usize, u32) {
+    let grown = v.iter().map(double);
+    let summed = v.iter().map(double);
+    let w: Vec<u32> = grown.inspect(|_| ()).collect();
+    (w.capacity(), summed.sum())
+}
+
 fn unasked(v: &[u32]) -> u32 {
     let d = v.iter().map(|x| x * 3);
     d.sum()
@@ -63,6 +75,7 @@ fn main() {
         println!("{:?}", both_ends(v));
         println!("{:?}", part(v));
         println!("{}", unasked(v));
+        println!("{:?}", one_of_two(v));
     }
     println!("{:?}", chained(vec![1, 2, 3]));
     println!("{:?}", chained(Vec::new()));

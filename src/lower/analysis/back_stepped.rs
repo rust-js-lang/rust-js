@@ -619,15 +619,24 @@ pub(super) fn stepped_locals<'tcx>(
                 mir::Local,
             )> = Vec::new();
             let mut made_at: IndexMap<mir::Local, (mir::BasicBlock, usize)> = IndexMap::default();
+            // What each call's value is made of: the locals it's given,
+            // `_5 = inspect(move _4, ..)`'s `_4`.
+            let mut made_of: IndexMap<mir::Local, Vec<mir::Local>> = IndexMap::default();
             for (block, data) in mir.basic_blocks.iter_enumerated() {
                 if let mir::TerminatorKind::Call {
                     destination,
                     target: Some(target),
+                    args,
                     ..
                 } = &data.terminator().kind
                     && destination.projection.is_empty()
                 {
                     made_at.insert(destination.local, (*target, 0));
+                    let of = args.iter().filter_map(|arg| match &arg.node {
+                        mir::Operand::Move(place) | mir::Operand::Copy(place) => place.as_local(),
+                        _ => None,
+                    });
+                    made_of.entry(destination.local).or_default().extend(of);
                 }
                 for (at, statement) in data.statements.iter().enumerate() {
                     let mir::StatementKind::Assign(assign) = &statement.kind else {
@@ -896,12 +905,35 @@ pub(super) fn stepped_locals<'tcx>(
                     // length that growth asks, of it or of its parts, asked
                     // of the variable, made knowing it where it's made, as
                     // what's made in place is where it's grown (#1795, #1744).
+                    // By what the grown value is made of, back from what the
+                    // call's given, through each value of an asked type: not
+                    // another variable of the same type.
                     if let Some(grown) = grown {
                         let asked = lengths_asked(recognition, grown);
-                        for (local, decl) in mir.local_decls.iter_enumerated() {
-                            if user_variable(decl) && asked.contains(&erased(decl.ty)) {
+                        // Each step back: what a move gave it, what a borrow
+                        // lends, or what the call that made it was given.
+                        let mut at: Vec<mir::Local> = (args.iter())
+                            .filter_map(|arg| match &arg.node {
+                                mir::Operand::Move(place) | mir::Operand::Copy(place) => place.as_local(),
+                                _ => None,
+                            })
+                            .collect();
+                        let mut seen: IndexSet<mir::Local> = IndexSet::default();
+                        while let Some(local) = at.pop() {
+                            if !seen.insert(local) {
+                                continue;
+                            }
+                            if let Some(&of) = moved.get(&local).or_else(|| lent.get(&local)) {
+                                at.push(of);
+                                continue;
+                            }
+                            if !asked.contains(&erased(mir.local_decls[local].ty)) {
+                                continue;
+                            }
+                            if user_variable(&mir.local_decls[local]) {
                                 counted.entry((owner, local)).or_insert(LengthAsked::Held);
                             }
+                            at.extend(made_of.get(&local).into_iter().flatten());
                         }
                     }
                     if let Some(grown) = grown

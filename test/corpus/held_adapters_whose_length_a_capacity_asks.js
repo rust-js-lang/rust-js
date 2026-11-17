@@ -122,6 +122,28 @@ function loud(n) {
   return [tens, capacity];
 }
 
+function double(x) {
+  return (x * 2) >>> 0;
+}
+
+function oneOfTwo(v) {
+  const grown = $mapEnds($iter(v), double);
+  const summed = v.values().map(double);
+  function inspect() {}
+  const w = $grownVec(
+    $roomForHint(
+      grown.map((item) => {
+        inspect(item);
+        return item;
+      }),
+      4,
+      false,
+    ),
+    (grown) => Array.from(grown),
+  );
+  return [$capacity(w, 4), summed.reduce((a, b) => (a + b) >>> 0, 0)];
+}
+
 function unasked(v) {
   const d = v.values().map((x) => (x * 3) >>> 0);
   return d.reduce((a, b) => (a + b) >>> 0, 0);
@@ -138,6 +160,8 @@ function main() {
     const value$2 = part(v);
     console.log(`([${value$2[0].join(", ")}], ${value$2[1]})`);
     console.log(`${unasked(v)}`);
+    const value$3 = oneOfTwo(v);
+    console.log(`(${value$3[0]}, ${value$3[1]})`);
   }
   const value = chained([1, 2, 3]);
   console.log(`([${value[0].join(", ")}], ${value[1]}, ${value[2]})`);
