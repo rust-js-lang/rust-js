@@ -1290,6 +1290,11 @@ test("a rebase's conflict in a ratchet is resolved by the lower count, anything 
   expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;", "test(\"x\", () => {});"]))).toBeUndefined();
   expect(remakeable(["test/word-reads.txt", "docs/readability.txt"])).toBe(true);
   expect(remakeable(["test/architecture-names.test.ts", "src/lower/analysis.rs"])).toBe(false);
+  // WORD_WALKS lowered by two changes at once, d8eb74bd1's and another's:
+  // the lower; anything else in the test's conflict, stopped.
+  expect(remakeable(["test/architecture-names.test.ts", "test/word-reads.txt"])).toBe(true);
+  expect(lowerRatchets(conflict(["const WORD_WALKS = 161;"], ["const WORD_WALKS = 137;"]))).toBe(["# a ratchet", "const WORD_WALKS = 137;", "src/z.rs\t1", ""].join("\n"));
+  expect(lowerRatchets(conflict(["const WORD_WALKS = 161;", "  const free = [\"mentions_in\"];"], ["const WORD_WALKS = 137;"]))).toBeUndefined();
   for (const file of ratchets) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
 });
 

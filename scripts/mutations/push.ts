@@ -67,6 +67,14 @@ export const mutations: Mutation[] = [
     tests: ["test/ci.test.ts", "-t", "a rebase's conflict in a ratchet is resolved by the lower count"],
   },
   {
+    name: "ratchet-word-walks-unresolved",
+    breaks: "two changes lowering WORD_WALKS at once stop the push on a conflict its rebase could resolve by the lower count (d8eb74bd1's)",
+    file: "scripts/push.ts",
+    find: ', "test/type-parameter-reads.txt", "test/architecture-names.test.ts"];',
+    replace: ', "test/type-parameter-reads.txt"];',
+    tests: ["test/ci.test.ts", "-t", "a rebase's conflict in a ratchet is resolved by the lower count"],
+  },
+  {
     name: "push-mutants-unchecked",
     breaks: "a push lands a mutation whose `replace` no longer type-checks against its change, which CI's shards call \"doesn't build\" (main red, 2026-11-18)",
     file: "scripts/push.ts",

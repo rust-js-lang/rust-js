@@ -273,11 +273,15 @@ export const regenerated: Record<string, string> = {
 
 /** The ratchets that only fall, each a count several changes lower at
  * once: each file's line `<path>\t<n>`, or a test's `const NAME = n;`,
- * none now, KIN_PARSES at none a strict row (#1681 change 3).
+ * test/architecture-names.test.ts's WORD_WALKS (#1681 change 3; out of the
+ * list while KIN_PARSES, its only one then, was a strict row of none, and
+ * back with WORD_WALKS, whose two lowerings at once stopped d8eb74bd1's
+ * push). A conflict in that file of anything but such lines still stops
+ * the push (`lowerRatchets`).
  * Two lowered at once conflict, each side's lower than the base, and the
  * lower of the two holds of the rebased tree, as each only removes what's
  * counted (ADR 1101, amended). */
-export const ratchets = ["test/word-reads.txt", "test/sig-binders.txt", "test/type-parameter-reads.txt"];
+export const ratchets = ["test/word-reads.txt", "test/sig-binders.txt", "test/type-parameter-reads.txt", "test/architecture-names.test.ts"];
 
 /** `text`, a ratchet's with git's conflict markers, each conflict resolved
  * by the lower count of each key both sides name, and a key one side alone
