@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -138,6 +138,22 @@ test("a constant's value, an array's length with it, is the change of the functi
   // Its type changed past its length: everything.
   const retyped: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(in crate::lower) const FLIPPED: [String; 2] = ["], ["pub(in crate::lower) const FLIPPED: [&str; 2] = ["]]] };
   expect(pick(map, [retyped], files, cases, sources()).kind).toBe("all");
+});
+
+test("a new module of items nothing refers to selects nothing but what its users' changes do; one that may reach code no change names, everything (4ba38fa64's import_names.rs)", () => {
+  // Functions, types, their own `impl`s, a trait's for one of them too, and
+  // plain constants: reached only through the `mod` line and code changed
+  // to use them.
+  expect(unreferencedModule("use std::fmt;\npub(crate) struct Words<'a>(&'a str);\nimpl Words<'_> {\n    fn f(&self) {}\n}\nimpl fmt::Display for Words<'_> {}\nconst N: usize = 3;\npub(super) fn g() {}")).toBe(true);
+  // An `impl` of a type it doesn't declare, a `trait`, a `static`, a
+  // `const` that calls code, a macro defined or invoked as an item, a test.
+  for (const text of ["struct A;\nimpl Clone for B {}", "pub trait T {}", "static X: u8 = 1;", "const N: usize = f(3);", "macro_rules! m { () => {} }", "inventory::submit! { X }", "#[test]\nfn t() {}"]) {
+    expect([text, unreferencedModule(text)]).toEqual([text, false]);
+  }
+  // Of the map, nothing but what runs on every change; a new file the
+  // selector can't read, everything.
+  expect(pick(map, [{ file: "src/prepare/import_names.rs", hunks: "new" }], files, cases)).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"], cases: [] });
+  expect(pick(map, [{ file: "src/not-there.rs", hunks: "new" }], files, cases).kind).toBe("all");
 });
 
 test("a file read by `include_str!` is the line that reads it", () => {

@@ -645,3 +645,25 @@ importers include four test files at the cap, which grow by an import line
 and are split by concept first (#1334). What support.ts still reads,
 react/'s build and the app seed's CLI, most tests do read.
 
+### Amended: a new module of items nothing refers to selects nothing of its own (2026-11-17)
+
+A new src file selected everything ("is new since the map's commit"), as
+4ba38fa64's src/prepare/import_names.rs did on every rebase's incoming
+side. Nothing written before refers to a new module's items: it's reached
+through its `mod` line, a pure addition, and the functions changed to use
+it, whose own hunks select their tests. So a new module selects nothing of
+its own (`unreferencedModule`), but where it writes an `impl` of a type it
+doesn't declare, whose methods may be found where nothing names it; a
+`trait`; a `static`, or a `const` whose initializer calls or closes over
+code; a macro, defined or invoked as an item; or a `#[test]`. Its own
+types' `impl`s, a trait's for one of them too, are found only through a
+value of the type, which only code changed to use it makes.
+
+The interaction sanity's three examples (2905d5cdc, d0ce7d1ab,
+336483fa0), recomputed with the map at 2905d5cdc and each commit's three
+before it as the incoming side: 2905d5cdc's incoming side everything
+before, 362 files after; d0ce7d1ab's and 336483fa0's, limitations.md 365
+files to 5. Each interaction is still 291 to 362 files: both sides change
+functions every test reaches (`lower_crate`, src/output.rs's), which the
+hubs' region coverage is to narrow.
+

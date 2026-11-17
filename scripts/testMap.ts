@@ -157,6 +157,32 @@ export function constHolding(lines: string[], from: number, to: number): { name:
   return undefined;
 }
 
+/** Whether a new module's `text` is items nothing written before refers
+ * to: nothing reaches it but through its `mod` line and the functions
+ * changed to use it, whose own hunks select their tests, as a pure
+ * addition's items (`unreferencedOnly`). Not where it writes an `impl`
+ * of a type it doesn't declare, whose methods may be found where nothing
+ * names it; a `trait`; a macro,
+ * defined or invoked as an item, which may register what runs anywhere; a
+ * `#[test]`; or a `static`, or a `const` whose initializer calls or
+ * closes over code. */
+export function unreferencedModule(text: string): boolean {
+  const code = text.split("\n").filter((line) => !/^\s*\/\//.test(line));
+  // Its own types: an `impl` of one of them, a trait's too, is found only
+  // through a value of it, which only code changed to use it makes.
+  const own = new Set(code.flatMap((line) => /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:struct|enum|union|type)\s+(\w+)/.exec(line)?.[1] ?? []));
+  const ofOwn = (line: string) => {
+    const m = /^\s*(?:unsafe\s+)?impl\b(?:\s*<[^>]*>)?\s+(?:[\w:<>, '&]+\s+for\s+)?(?:[\w]+::)*(\w+)/.exec(line);
+    return m !== null && own.has(m[1]!);
+  };
+  return !code.some(
+    (line) =>
+      (/^\s*(?:#\[.*\]\s*)*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|default|auto)\s+)*impl\b/.test(line) && !ofOwn(line)) ||
+      /^\s*(?:#\[.*\]\s*)*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|auto)\s+)*(?:trait|static)\b|macro_rules!|#\[test\]|^\s*[\w:]+!\s*[({[]/.test(line) ||
+      (/^\s*(?:pub(?:\([^)]*\))?\s+)?const\s+[A-Z_][A-Z0-9_]*\s*:/.test(line) && /[(|]/.test(line.slice(line.indexOf("=")))),
+  );
+}
+
 /** `line` with an array type's length left out, `[&str; 18]` as `[&str; _]`. */
 const withoutLength = (line: string) => line.replace(/;\s*\d+\s*\]/g, "; _]");
 
@@ -366,7 +392,13 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       continue;
     }
     if (!file.startsWith("src/") || !file.endsWith(".rs")) return { kind: "all", why: `${file} isn't the compiler's code` };
-    if (hunks === "new") return { kind: "all", why: `${file} is new since the map's commit` };
+    if (hunks === "new") {
+      // A new module of items nothing referred to: its `mod` line, a pure
+      // addition, and the functions changed to use it select its tests.
+      const text = existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : undefined;
+      if (text !== undefined && unreferencedModule(text)) continue;
+      return { kind: "all", why: `${file} is new since the map's commit` };
+    }
     for (const [from, count, added = [], removed] of hunks) {
       // Comments alone, or blank lines, change nothing a test runs.
       if (removed !== undefined && [...added, ...removed].every(commentOnly)) continue;

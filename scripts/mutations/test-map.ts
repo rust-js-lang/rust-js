@@ -114,4 +114,28 @@ export const mutations: Mutation[] = [
     replace: "      readers.push(...found);\n",
     tests: ["test/test-map.test.ts", "-t", "a constant's value"],
   },
+  {
+    name: "selector-new-module-runs-all",
+    breaks: "a new module of items nothing refers to selects everything, as 4ba38fa64's src/prepare/import_names.rs did every incoming side it was on",
+    file: "scripts/testMap.ts",
+    find: "      if (text !== undefined && unreferencedModule(text)) continue;\n",
+    replace: "",
+    tests: ["test/test-map.test.ts", "-t", "a new module of items"],
+  },
+  {
+    name: "selector-new-module-foreign-impl",
+    breaks: "a new module's `impl` of a type it doesn't declare is taken as unreferenced, where its methods may be found by code no change names",
+    file: "scripts/testMap.ts",
+    find: "    return m !== null && own.has(m[1]!);\n",
+    replace: "    return m !== null;\n",
+    tests: ["test/test-map.test.ts", "-t", "a new module of items"],
+  },
+  {
+    name: "selector-new-module-static",
+    breaks: "a new module's `static` is taken as unreferenced, where it may hold what runs code",
+    file: "scripts/testMap.ts",
+    find: "(?:(?:unsafe|auto)\\s+)*(?:trait|static)\\b|macro_rules!",
+    replace: "(?:(?:unsafe|auto)\\s+)*(?:trait)\\b|macro_rules!",
+    tests: ["test/test-map.test.ts", "-t", "a new module of items"],
+  },
 ];
