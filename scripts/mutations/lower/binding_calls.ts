@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                out.push(StmtKind::Throw(this).at(self.js_span(span)));\n",
     replace:
-      '                out.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![this])).at(self.js_span(span)));\n',
+      '                out.push(StmtKind::Throw(Expr::new_(Expr::global("Error"), vec![this])).at(self.js_span(span)));\n',
     tests: ["test/lowering-throws.test.ts"],
   },
   {
@@ -839,7 +839,7 @@ export const mutations: Mutation[] = [
       "`js::to_number(width)` is `Number(width)`, which makes `1` of `1n`, where react-art's `+width` throws",
     file: "src/lower/binding_calls.rs",
     find: "                self.js_conversion(def_id, generic_args, Expr::unary(UnaryOp::Plus, this))\n",
-    replace: "                self.js_conversion(def_id, generic_args, Expr::call(Expr::var(\"Number\"), vec![this]))\n",
+    replace: "                self.js_conversion(def_id, generic_args, Expr::call(Expr::global(\"Number\"), vec![this]))\n",
     tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
   },
   {
