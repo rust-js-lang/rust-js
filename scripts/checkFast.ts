@@ -792,7 +792,14 @@ if (import.meta.main) {
     }
   }
   const args = process.argv.slice(2);
-  const all = args.includes("--all");
+  // Another compiler's run of the suite, a mutant's that's to be retired
+  // (`bun scripts/mutations.ts --retire=<name>`, ADR 0093, amended): every
+  // test file and the corpus whole with its snapshots, as `--all` runs
+  // them, with it as the tests' compiler; not the jobs that read the
+  // checkout's crate, not its compiler (cargo test, clippy, the formats,
+  // the change's mutations), nor what the run's selection or times say.
+  const given = args.find((arg) => arg.startsWith("--compiler="))?.slice("--compiler=".length);
+  const all = args.includes("--all") || given !== undefined;
   // The machine shared with concurrent runs, each its share (scripts/leases.ts).
   holdLease("check");
   const extra = args.filter((arg) => !arg.startsWith("--"));
@@ -855,8 +862,8 @@ if (import.meta.main) {
   }
   const own = join(runs, String(process.pid));
   mkdirSync(own, { recursive: true });
-  const compiler = join(own, "rust-js");
-  linkSync(join(root, "target", "debug", "rust-js"), compiler);
+  const compiler = given ?? join(own, "rust-js");
+  if (given === undefined) linkSync(join(root, "target", "debug", "rust-js"), compiler);
   process.on("exit", () => rmSync(own, { recursive: true, force: true }));
   // The apps' Cargo targets' seed, the binding crates checked once for the
   // run by the first test to ask, and gone with it (test/support.ts'
@@ -867,7 +874,8 @@ if (import.meta.main) {
   // before any runs: another build's, never found again, and past the
   // cap, the least recently used.
   const pruningCompiles = Date.now();
-  const compiles = prune({ current: currentBuild(compiler) });
+  // Not of another compiler's run: the checkout's build's would go.
+  const compiles = given === undefined ? prune({ current: currentBuild(compiler) }) : { size: 0, builds: 0, removed: 0 };
   const dropped = [compiles.builds ? "another build's" : "", compiles.removed ? `${compiles.removed} past the cap or the disk's floor` : ""].filter(Boolean);
   console.log(`${timed("pruning kept compiles", (Date.now() - pruningCompiles) / 1000)}: ${(compiles.size / 2 ** 20).toFixed(0)} MB kept${dropped.length ? `, ${dropped.join(" and ")} dropped` : ""}`);
 
@@ -920,7 +928,7 @@ if (import.meta.main) {
     console.log(`the selection: ${outcome(selection)}${selection.all ? "" : `, of ${pushSuite} test files and ${cases.length} corpus cases: ${selection.why}`}`);
   }
   // What it selected, which `bun run push` says on its line.
-  writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null }));
+  if (given === undefined) writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null }));
   // Of a change to the iterators' code, the rows of their tables it names,
   // which size its job (#1364): some 0.1 s.
   const rows = touchesIterators([...changed, ...branch])
@@ -930,13 +938,18 @@ if (import.meta.main) {
   const cores = machine().cores;
   const clock: Clock = { began: Date.now(), samples: [] };
   const logs = checkLogRun();
-  const results = await run(check.jobs, compiler, cores, clock, logs);
+  const listed = given === undefined ? check.jobs : check.jobs.filter((job) => job.cmd[0] === "bun" && job.cmd[1] === "test");
+  const results = await run(listed, compiler, cores, clock, logs, given === undefined ? jobTimesStore : join(own, "job-times"));
   const failed = results.filter((r) => r.code !== 0);
   profiled(results, clock.samples, args.includes("--profile"));
   // Still left running as it ends: its numbers aren't a measurement.
   const leftAtEnd = said(strays(root));
   if (leftAtEnd) console.warn(`warning: ${leftAtEnd}`);
   for (const { job: { name }, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
+  // Of another compiler's run, each test that failed with it, by its file,
+  // which the retirement names (scripts/mutations.ts's `--retire`).
+  const { failedTests } = await import("./mutations");
+  if (given !== undefined) for (const { job: { cmd }, log } of failed) for (const test of failedTests(log)) console.log(`failed with it: ${cmd[2]}\t${test}`);
   // Each failing job's whole output, kept past the next run as it failed
   // (#1622, #1706).
   const keptLogs = logs.kept();

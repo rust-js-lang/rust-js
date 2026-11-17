@@ -7,11 +7,11 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, refusedFlags } from "../scripts/mutations";
+import { byControl, crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, refusedFlags, removedOfCrate, retiredBy, retiredTrailer, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
-import { run as runChild, type Exit } from "./child";
+import { run as runChild, runSync, type Exit } from "./child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "./corpus-mutants";
 import { installPackages } from "./packages-of";
 import { node } from "./programs";
@@ -260,6 +260,46 @@ test("each mutation's test pattern names a test of its file", () => {
 test("a mutation's tests hold one `-t`, the one `bun test` reads", () => {
   const twice = mutations.filter((m) => (m.tests ?? []).filter((arg) => arg === "-t").length > 1).map((m) => m.name);
   expect(twice).toEqual([]);
+});
+
+// A mutation of the crate is retired with `--retire`'s evidence (ADR 0093,
+// amended): twice in a day one was called unreachable after its own rows
+// alone ran, and the second's removal failed 8 corpus cases. Each commit
+// not yet on `main`, as `bun run push` checks them.
+test("a commit that removes a mutation of the crate carries its retirement's evidence", () => {
+  const git = (args: string[]) => runSync(["git", ...args], root, 30_000);
+  const base = git(["merge-base", "HEAD", "origin/main"]);
+  if (base.code !== 0) return;
+  const commits = git(["rev-list", `${base.stdout.trim()}..HEAD`]).stdout.split("\n").filter(Boolean);
+  const unretired = commits.flatMap((commit) => {
+    const touched = git(["diff-tree", "--no-commit-id", "--name-only", "-r", `${commit}^`, commit, "--", "scripts/mutations/"]).stdout.split("\n").filter(Boolean);
+    const text = (at: string) => touched.map((file) => git(["show", `${at}:${file}`]).stdout).join("\n");
+    const retired = retiredBy(git(["log", "-1", "--format=%B", commit]).stdout);
+    return removedOfCrate(text(`${commit}^`), text(commit), (file) => git(["show", `${commit}:${file}`]).stdout)
+      .filter((name) => !retired.has(name))
+      .map((name) => `${commit.slice(0, 9)} removes ${name}: \`bun scripts/mutations.ts --retire=${name}\` prints the trailer it carries, or the tests that make it a row`);
+  });
+  expect(unretired).toEqual([]);
+});
+
+// The rule's parts: a mutation renamed or moved isn't removed, nor one
+// whose code went too, nor a script's; and the trailer is `--retire`'s,
+// its evidence said.
+test("a removed mutation is told from one renamed or moved, and its trailer is --retire's", () => {
+  const entry = (name: string, file: string, find: string) => `  {\n    name: "${name}",\n    breaks: "x",\n    file: "${file}",\n    find: "${find}",\n    replace: "",\n    tests: ["test/a.test.ts"],\n  },\n`;
+  const before = entry("kept", "src/a.rs", "a") + entry("renamed", "src/b.rs", "b") + entry("gone", "src/c.rs", "c") + entry("script-gone", "scripts/d.ts", "d");
+  const after = entry("kept", "src/a.rs", "a") + entry("renamed-now", "src/b.rs", "b");
+  const source = () => "a b c d";
+  expect(removedOfCrate(before, after, source)).toEqual(["gone"]);
+  // One whose code went with it, a refactor's folded into another, can't
+  // apply, and isn't retired (#2012's refactor of `given_fact_of`).
+  expect(removedOfCrate(before, after, () => "")).toEqual([]);
+  expect([...retiredBy(`fix: x\n\n${retiredTrailer}: gone: with it, at 0123abcde, the compiler's 900 unit tests passed, and check:fast's suite\n`)]).toEqual(["gone"]);
+  expect([...retiredBy(`fix: x\n\n${retiredTrailer}: gone\n`)]).toEqual([]);
+  // A test that fails as the compiler is too, in a mutant's environment,
+  // says nothing: it's no row of the mutation's.
+  const failed = [{ file: "test/corpus.test.ts", test: "untagged_enums.rs" }, { file: "test/compiles.test.ts", test: "a compile is kept" }];
+  expect(byControl(failed, new Set(["test/compiles.test.ts\ta compile is kept"]))).toEqual({ caught: ["test/corpus.test.ts: untagged_enums.rs"], silent: ["test/compiles.test.ts: a compile is kept"] });
 });
 
 test("each mutation list names one existing source file", () => {

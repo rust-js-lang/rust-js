@@ -875,3 +875,48 @@ hold each half.
 The two mutations had named two `-t`s, of which `bun test` reads the last,
 so test/compiler.test.ts's tests ran by the snapshots' pattern. They now
 name one, and the catalog's test refuses a mutation with more than one.
+
+## Amendment: a mutation of the crate is retired by `--retire`'s evidence (2026-11-17)
+
+Twice in a day a mutation was called unreachable after its own rows alone
+ran: the mark of a lent adapter, and a shadow check whose removal
+then failed 8 corpus cases. A mutation's rows are the tests it names, not
+everything that reaches its code. So the evidence that retires a mutation
+of the crate (`src/`, `std/` and the crate's build, what a mutant compiler
+is built of) is the run of everything with it, and not a judgement.
+
+`bun scripts/mutations.ts --retire=<name>` builds the mutant alone and
+runs it against:
+
+- the compiler's unit tests;
+- check:fast's suite with it as the tests' compiler (`--compiler=<path>`):
+  every test file, the browsers' too, the metamorphic sample, and the
+  corpus whole with its snapshots, in its own target and runtime, as a
+  mutant's tests run.
+
+A test fails with it only where it passes as the compiler is, in the
+same environment: each that failed is run again with the compiler as it
+is, as a mutant's tests run it, and the compiler's unit tests as the crate
+is. Some fail there with any compiler, and say nothing: the compile
+cache's tests in a mutant's own target, and a unit test that reads the
+checkout's snapshots from the crate's copy. They are listed apart.
+
+Where nothing else fails, it prints the evidence, a trailer:
+`Retired-mutation: <name>: with it, at <commit>, …`. Otherwise it names
+each test that failed with it and passes as the compiler is. Each of those
+reaches the code, and the mutation names it as a row instead of going.
+Its first run, of `untagged-bigint-number` (caught), named its two corpus
+cases and two tests, and the six that fail in any mutant's environment
+apart, in 7 minutes here.
+
+The commit that removes a mutation of the crate while its code stays
+carries that trailer. The catalog's test (test/mutations.test.ts) refuses
+one that doesn't. It checks each commit not yet on `main`, as `bun run
+push` runs it. A mutation that was renamed, or moved to another list,
+isn't removed: it is matched by its file and `find`. Nor is one whose code
+went with it, a refactor's whose mutation is folded into another's: it
+can't apply. The rule's first push found one, a refactor of
+src/lower/traits/given.rs that removed the line its mutation changed. A script's mutation is outside the rule: its tests run
+in a copy of the tree with it, and are its evidence. This supersedes
+#1979's evidence by hand above. The runtime retirement's rule, a run of
+the tree pushed, still holds of the push.
