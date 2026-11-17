@@ -561,4 +561,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(items) = None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_into_iterator_given_where_any_goes.rs$"],
   },
+  {
+    name: "in-place-chain-source-unlinked",
+    breaks: "a chain given to generic code that may collect it in place isn't made on a linked source, so generic code's collect can't follow JS's own `map` to its `Vec`, and the capacity its caller reads throws, naming #1180, where Rust gives the source's 10 (#1941)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                *value = self.made_so_its_source_is_found(held, given);\n",
+    replace: "                *value = held;\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_in_generic_code_of_a_hidden_source.rs$"],
+  },
 ];

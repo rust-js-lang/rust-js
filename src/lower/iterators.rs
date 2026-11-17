@@ -884,6 +884,34 @@ pub(in crate::lower) fn own_form(e: &Expr) -> Option<OwnForm> {
     }
 }
 
+/// `it`, JS's own adapters of a JS iterator, `$iter(v).map(f).filter(g)` or
+/// `opaque($iter(v)).map(f)`, made again on a source the runtime's adapters
+/// link to, `$stepsAround($iter(v)).map(f).filter(g)`: `$Steps`' own `map`,
+/// `filter`, `flatMap`, `take` and `drop`, each of which keeps what it
+/// steps (`from`), so what follows the links from it finds the source
+/// `Vec`, as std's `SourceIter` does, where JS's own keep none (#1941).
+/// `None` of another form, an array's own `map` among them, or of a source
+/// alone, which is found as it is.
+pub(in crate::lower) fn with_linked_source(it: &Expr) -> Option<Expr> {
+    let js::ExprKind::Call(callee, args) = &it.kind else {
+        return None;
+    };
+    let js::ExprKind::Member(object, name) = &callee.kind else {
+        return None;
+    };
+    if !matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") {
+        return None;
+    }
+    let object = match with_linked_source(object) {
+        Some(linked) => linked,
+        None if is_js_iterator(object) || own_form(object) == Some(OwnForm::Hintless) => {
+            Expr::call_helper("$stepsAround", vec![(**object).clone()])
+        }
+        None => return None,
+    };
+    Some(Expr::call(Expr::member(object, name.clone()), args.clone()))
+}
+
 /// Whether `it` is JS's own adapters of JS's own iterator (`own_form`'s
 /// `Hintless`): what knows no hint, whatever std's struct of its type
 /// knows. `v.iter().inspect(f)` made in place, `$iter(v).map(..)`, has

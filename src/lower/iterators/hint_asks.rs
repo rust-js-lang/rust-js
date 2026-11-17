@@ -611,6 +611,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(crate::lower::iterators::made_knowing_its_length(made).in_place())
     }
 
+    /// `it`, of type `ty`, given to generic code that may collect it in
+    /// place, `{ inPlace }` of its `IVecCollect` or `IInPlace`, made so its
+    /// source `Vec` can be found where it's collected: JS's own adapters
+    /// made again on a source the runtime's adapters link to
+    /// (`with_linked_source`), whose links generic code's collect follows
+    /// to that `Vec`'s capacity, `$inPlaceCapacityFrom`, as std's
+    /// `SourceIter` reaches it (#1941). Another as it is.
+    pub(in crate::lower) fn made_so_its_source_is_found(&self, it: Expr, ty: Ty<'tcx>) -> Expr {
+        let item = self.iterator_item(ty);
+        if !self.krate.keeps_capacity || self.collects_in_place(Some(ty), item) != Some(true) {
+            return it;
+        }
+        crate::lower::iterators::with_linked_source(&it).unwrap_or(it)
+    }
+
     /// Whether an iterator of type `ty`, std's compiled struct's part,
     /// hints std's lower bound: a source whose own is std's, or std's
     /// compiled adapter of such ones, whose `size_hint` is std's body's over

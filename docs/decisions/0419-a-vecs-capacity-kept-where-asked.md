@@ -1057,3 +1057,38 @@ against native Rust) and vec-capacity.test's std build of it, 4 of three;
 the pair is off test/neighbours-known.txt. Mutation
 `compiled-flat-map-hint-refused` (`lower/iterators/hint_asks.ts`).
 
+
+## Amendment (2026-11-17, #1941): generic code's in-place collect finds a hidden source by the links its caller makes
+
+Generic code's `collect()` of a chain its caller gives, which std may make
+in place, `$collectVec(it, size, { inPlace })`, finds its source `Vec`'s
+capacity as it runs, by each adapter's link (`$inPlaceCapacityFrom`, #1259,
+#1428). Where a call of the crate's hid the source, `at_0(opaque(
+kept.into_iter()).map(f))`, the caller made the chain with JS's own `map`,
+`Iterator.prototype`'s, which keeps no link. So the capacity read in
+another body threw #1180's error where Rust gives the source's 10. The
+metamorphic generic-instances rewrite of
+`in_place_collect_capacity_through_a_function` found it.
+
+The caller now makes such a chain on a source the runtime's adapters link
+to, `$stepsAround(opaque($iter(kept))).map(f)`: `$Steps`' own `map`,
+`filter`, `flatMap`, `take` and `drop` keep what they step.
+
+- Where it's asked: `given_iterators`, where a callee asks a type
+  parameter's `IVecCollect` or `IInPlace` and the caller's type may be
+  collected in place, the same `collects_in_place` that gives `{ inPlace }`.
+- The maker: hint_asks' `made_so_its_source_is_found`, beside
+  `made_as_growth_asks`.
+- The chain's form: `with_linked_source`, beside `own_form`, which wraps
+  the base only where it's a JS iterator, never an array's own `map`.
+
+No runtime change: each linked adapter already kept `from` or `iter`, and
+`$stepsAround` is #1690's. Nothing printed elsewhere moved: the whole
+corpus and std's structs ran unchanged.
+
+Corpus `in_place_collect_in_generic_code_of_a_hidden_source` holds each
+adapter std collects in place through, a chain of two, a direct chain, and
+items with a destructor, against native in the plain build, with std's
+iterator structs, and through every metamorphic rewrite. #1941's
+metamorphic-known line went. Mutations `in-place-chain-source-unlinked`
+and `linked-source-base-unwrapped` are caught.

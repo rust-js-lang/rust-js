@@ -499,6 +499,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let held = std::mem::replace(value, Expr::taken());
                 *value = self.slicing(held, given, back, span)?;
             }
+            // Where the callee may collect it in place, as the `{ inPlace }`
+            // it's given of this parameter says: made so its source `Vec`
+            // can be found (`made_so_its_source_is_found`, #1941).
+            if let Some(param) = crate::lower::generic_facts::type_parameter_of(input)
+                && (self.facts_asked(callee).iter()).any(|&(index, fact)| {
+                    index == param
+                        && matches!(
+                            fact,
+                            crate::lower::TypeFact::VecCollect | crate::lower::TypeFact::InPlace
+                        )
+                })
+            {
+                let held = std::mem::replace(value, Expr::taken());
+                *value = self.made_so_its_source_is_found(held, given);
+            }
         }
         Ok(())
     }

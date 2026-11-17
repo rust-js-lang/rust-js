@@ -466,4 +466,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
     snapshots: true,
   },
+  {
+    name: "linked-source-base-unwrapped",
+    breaks: "JS's own chain made again without its base wrapped in `$stepsAround`, so its first adapter is JS's `Iterator.prototype` one, which keeps no link to the source `Vec`, and the in-place capacity throws (#1941)",
+    file: "src/lower/iterators.rs",
+    find: "            Expr::call_helper(\"$stepsAround\", vec![(**object).clone()])\n",
+    replace: "            (**object).clone()\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_in_generic_code_of_a_hidden_source.rs$"],
+  },
 ];
