@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/process.js",
     find: '  if (process.platform !== "darwin") return "/tmp";\n',
     replace: '  return "/tmp";\n',
-    tests: ["test/process.test.ts", "-t", "env::temp_dir and env::home_dir"],
+    tests: ["test/process.test.ts", "-t", "env::temp_dir on macOS with no TMPDIR"],
   },
   {
     name: "home-dir-empty-taken",

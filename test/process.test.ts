@@ -4,7 +4,7 @@
 // panics, saying which.
 
 import { beforeAll, expect, test } from "bun:test";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compileJs, node, runJs } from "./programs";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
@@ -68,6 +68,39 @@ test("in a browser, a function of Node's process panics, saying which", async ()
   } finally {
     Object.defineProperty(globalThis, "process", { value: saved, configurable: true, writable: true });
   }
+});
+
+// `env::temp_dir()` on macOS with no `TMPDIR` is what `getconf
+// DARWIN_USER_TEMP_DIR` prints, `confstr`'s, or `/tmp` where it fails, as
+// std's `darwin_temp_dir` falls back (#1639): asked of a process that says
+// it's macOS, with a `getconf` of the test's own on its `PATH`, so the
+// branch runs on Linux too, where CI's mutations run.
+test("env::temp_dir on macOS with no TMPDIR asks getconf, else /tmp", async () => {
+  const dir = fixture("process-darwin-temp");
+  const module = join(dir, "runtime.mjs");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const { $tempDir } = await import(module);
+  const real = globalThis.process;
+  const asked = (getconf: string) => {
+    const bin = join(dir, `bin-${getconf.length}`);
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(join(bin, "getconf"), `#!/bin/sh\n${getconf}\n`, { mode: 0o755 });
+    const env = Object.fromEntries(Object.entries(real.env).filter(([name]) => name !== "TMPDIR"));
+    // Its own `env`, no `TMPDIR`, whose `PATH`, which `spawnSync` reads,
+    // finds the test's `getconf` first.
+    const darwin = Object.create(real, {
+      platform: { value: "darwin" },
+      env: { value: { ...env, PATH: `${bin}:${real.env.PATH}` } },
+    });
+    Object.defineProperty(globalThis, "process", { value: darwin, configurable: true, writable: true });
+    try {
+      return $tempDir();
+    } finally {
+      Object.defineProperty(globalThis, "process", { value: real, configurable: true, writable: true });
+    }
+  };
+  expect(asked('echo "/var/folders/stub/T/"')).toBe("/var/folders/stub/T/");
+  expect(asked("exit 1")).toBe("/tmp");
 });
 
 // In Node, `process::exit(code)` ends the program there, with its code.
