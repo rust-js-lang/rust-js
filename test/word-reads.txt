@@ -39,7 +39,7 @@ src/lower/mir/rvalues.rs	1
 src/lower/mir/scopes.rs	4
 src/lower/mir/std_calls/fmt_parts.rs	1
 src/lower/mir/temporaries.rs	4
-src/lower/mir/tidy/bindings.rs	16
+src/lower/mir/tidy/bindings.rs	15
 src/lower/mir/tidy/bindings/temporaries.rs	6
 src/lower/mir/tidy/branches.rs	2
 src/lower/mir/tidy/case_rests.rs	1

@@ -3,6 +3,16 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-arg-spilled-as-a-word",
+    breaks:
+      "an argument MIR's lowering holds, spilled, is a name of its word, `_arg`, not a held argument's, so tidy never names it `arg`",
+    file: "src/lower.rs",
+    find: "            Base::Derived(_) | Base::HeldArg => self.fresh(base),\n",
+    replace: "            Base::Derived(_) => self.fresh(base),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(option_combinator_drops|combinators_owned_drops|iter_next_back)\\.rs$"],
+    snapshots: true,
+  },
+  {
     name: "given-apart-of-nothing",
     breaks:
       "a name lowering gives apart from its base, `result$2` of `result`, records nothing it's of, so tidy never takes it for kin of the first, `x = y` of two of one base left apart",
@@ -205,8 +215,8 @@ export const mutations: Mutation[] = [
     name: "spill-hyphenated-name",
     breaks: "an attribute read first is a variable of its hyphenated name, `const data-step`",
     file: "src/lower.rs",
-    find: "        let name = match base {\n            Base::Derived(_) => self.fresh(base),\n            _ => self.fresh(Base::Named(&unhyphenated(&base.word()))),\n        };\n",
-    replace: "        let name = match base {\n            Base::Derived(_) => self.fresh(base),\n            _ => self.fresh(base),\n        };\n",
+    find: "            _ => self.fresh(Base::Named(&unhyphenated(&base.word()))),\n",
+    replace: "            _ => self.fresh(base),\n",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a hyphenated attribute read first"],
   },
   {

@@ -154,7 +154,6 @@ pub(super) fn only_read(stmts: &[Stmt], name: &js::Name) -> bool {
 pub(in crate::lower::mir) use crate::lower::temporary_names::temporary;
 
 use crate::js::Name;
-use crate::lower::temporary_names::spelled_as_held_arg;
 pub(in crate::lower::mir) use crate::lower::temporary_names::spelled_as_temporary;
 
 /// A name the program gives a local, as JS's: one spelled as a temporary's,
@@ -169,7 +168,7 @@ pub(in crate::lower::mir) fn user_name(name: &str) -> String {
 /// Whether `name` is MIR's lowering's of an argument it holds, `_arg`, or
 /// one given apart from it (`Name::held_arg`).
 pub(super) fn is_held_arg(name: &Name) -> bool {
-    checked(name, name.is_held_arg(), spelled_as_held_arg(name.word()))
+    name.is_held_arg()
 }
 
 /// Whether `name` is a temporary MIR made, `_5`, or one given apart from

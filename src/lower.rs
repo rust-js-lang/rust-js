@@ -1091,7 +1091,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let base = base.into();
         let name = match base {
-            Base::Derived(_) => self.fresh(base),
+            // A holder's, and a held argument's, of their form (ADR 1150).
+            Base::Derived(_) | Base::HeldArg => self.fresh(base),
             _ => self.fresh(Base::Named(&unhyphenated(&base.word()))),
         };
         // Of a role's, named again by tidy once the code is placed (#890).

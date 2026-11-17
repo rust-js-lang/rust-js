@@ -322,12 +322,6 @@ pub(in crate::lower) fn spelled_as_temporary(word: &str) -> bool {
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
 }
 
-/// Whether `word` is spelled as the name MIR's lowering holds an argument
-/// by is, `_arg` or `_arg$1`, which `Base::name` takes for one.
-pub(in crate::lower) fn spelled_as_held_arg(word: &str) -> bool {
-    word.split('$').next() == Some(HELD_ARG)
-}
-
 /// What a name lowering picks is made of: a role's word (`Role`), the `i`th
 /// of a role's, `arg0` (`Numbered`), a role's word before a name as it's
 /// written, `dropT`, or after one, capitalised, `countValue` (`Prefixed`,
@@ -365,10 +359,9 @@ impl Base<'_> {
     /// A name spelled `word` of the form it makes: a temporary's of a MIR
     /// local or of `Temporary`, a held argument's, else the item's. One
     /// spelled as a temporary's is one, `_0` of a positional field's or
-    /// `_$1` of an unread parameter's `_` given apart, and one spelled as a
-    /// held argument's, the program's `_arg`, one, as tidy has always taken
-    /// them: its form is decided once, here, as it's made, and tidy asks
-    /// that (#1681 change 3, S4).
+    /// `_$1` of an unread parameter's `_` given apart; a held argument's is
+    /// one by its base, `HeldArg`, never by its word: its form is decided
+    /// once, here, as it's made, and tidy asks that (#1681 change 3, S4).
     pub(in crate::lower) fn name(&self, word: String) -> crate::js::Name {
         match self {
             Base::Local(_) | Base::Temporary => crate::js::Name::temporary(word),
@@ -380,7 +373,6 @@ impl Base<'_> {
                 crate::js::Name::unread(word)
             }
             _ if spelled_as_temporary(&word) => crate::js::Name::temporary(word),
-            _ if spelled_as_held_arg(&word) => crate::js::Name::held_arg(word),
             Base::Program(_, source) => crate::js::Name::program(word, *source),
             _ => crate::js::Name::declared(word),
         }

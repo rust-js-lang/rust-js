@@ -184,18 +184,18 @@ test("a suffix is a js::Suffix, never written as text", () => {
 
 // `KIN_PARSES`, which only falls, to none: each is asked of the name's
 // origin and form by its id instead. The spelling's owners, `js::name`,
-// `names`, the runtime's helpers and printing, write and read it.
-const KIN_PARSES = 9;
+// `names`, the runtime's helpers, printing and preparation, write and read
+// it. Preparation parses a word only to spell or respell it; a question of
+// kinship it asks goes through `Name` (`given_apart_of`, `is_origin_of`).
+const KIN_PARSES = 2;
 test("a name's kinship and form are asked by parsing its word only as counted", () => {
   const owners = (file: string) => file === "src/js/name.rs" || file === "src/names.rs"
-    || file === "src/runtime.rs" || file.startsWith("src/to_oxc");
+    || file === "src/runtime.rs" || file.startsWith("src/to_oxc")
+    || file === "src/prepare.rs" || file.startsWith("src/prepare/");
   const patterns = [/\.apart_of\(\)/g, /names::apart\(/g, /split\('\$'\)/g, /split_once\('\$'\)/g,
     /starts_with\('\$'\)/g, /starts_with\("_\$"\)/g, /strip_prefix\("__arg"\)/g, /\bparam\.root\(\)/g];
   const parsed = sources.filter(file => !owners(file)).flatMap(file =>
     patterns.flatMap(pattern => [...read(file).matchAll(pattern)].map(() => file)));
-  if (read("src/js/name.rs").includes("self.apart_of().is_some_and(|(root, _)| root == of.root())")) {
-    parsed.push("src/js/name.rs: given_apart_of's fallback");
-  }
   expect(parsed.length).toBeLessThanOrEqual(KIN_PARSES);
 });
 

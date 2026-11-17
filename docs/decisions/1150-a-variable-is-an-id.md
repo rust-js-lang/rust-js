@@ -1194,3 +1194,11 @@ is of `lo`, never `lo` of `lo$1`. Over the whole check, the metamorphic
 net and React's port, its 3,450 answers were the words' answers, and the
 output is as it was.
 
+A held argument's name, `_arg`, is one by its base, `Base::HeldArg`, which
+`spill` keeps, never by its word: `spill` made every base but a holder's a
+name of its word, so a held argument's was told by its spelling,
+`spelled_as_held_arg`, which goes. Preparation, the spelling's owner, joins
+`js::name`, `names`, the runtime and printing in parsing a word, only to
+spell or respell it; a question of kinship it asks goes through `Name`
+(the architecture row counting the rest, at 2, the last of them tidy's).
+
