@@ -535,8 +535,13 @@ fn mark_in_place<'tcx>(
         let part = tcx.erase_and_anonymize_regions(part.peel_refs());
         let ty::Adt(_, args) = part.kind() else { continue };
         let Some(source) = args.types().next() else { continue };
+        // Or a copy made in place, never std's struct where it isn't
+        // compiled, JS's own `values().map(clone)` of an array's items
+        // (#1998).
+        let copy_in_place = (copied_source(tcx, part).or_else(|| cloned_source(tcx, part))).is_some()
+            && !crate::lower::recognition::is_compiled_std_iterator(tcx, part);
         if part == ty
-            || !crate::lower::recognition::is_held_compiled(tcx, part)
+            || !(crate::lower::recognition::is_held_compiled(tcx, part) || copy_in_place)
             || adapter(tcx, source)
             || recognition.array_source(source).is_none()
         {

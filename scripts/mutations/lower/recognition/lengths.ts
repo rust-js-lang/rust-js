@@ -311,11 +311,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hint-kept-through-an-arrays-map",
-    breaks: "a `map()` of an array's iterator, JS's own `values().map(f)`, which knows no hint, is taken to keep std's, so a `Vec` grown by a `take(n)` of a `cycle()` of it grows by doubling, capacity 8 where std's is 5 (#1572)",
+    breaks: "an array's iterator, JS's own `values()`, or what's made of it, which knows no hint, is taken to keep std's, so a `Vec` grown by it where its capacity is read takes JS's hint for std's, not refused (#1572; its `cycle().take(n)` of a map is std's since #1998 makes such parts knowing their hint)",
     file: "src/lower/recognition/lengths.rs",
     find: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {\n",
     replace: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) || self.is_array_iter(ty) || self.lower_bound_is_stds(ty) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec grown by a take of a cycle of a zip"],
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a chain of a skip where a capacity is read"],
   },
   {
     name: "enumerate-hint-not-passed-on",

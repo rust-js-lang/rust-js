@@ -355,3 +355,52 @@ the mutations of `mark_in_place` and `knowing.rs`'s exception, each caught.
 The neighbour pairs of #1572 and #1573 run as Rust does, off
 `test/neighbours-known.txt`.
 
+## Amendment (2026-11-17, #1998): a copy made in place is marked as its holder's part
+
+`mark_in_place` makes each adapter an iterator holds made in place
+knowing its hint where the hint is asked (#1427): a `skip(1)`'s
+`$skipping`, a `map`'s `$mapEnds`, its source `$iter`. It took only
+`HELD_COMPILED` parts, std's struct where it's held. A `cloned()` or
+`copied()` is never that in the plain build: it's made in place, JS's own
+`values().map(clone)` of an array's items, which keeps no hint. So
+`size_hint()` of a compiled `scan()` or `filter()` over one, lent through
+a function, `pass(a.by_ref()).size_hint()`, was refused.
+
+A copy that isn't std's compiled struct is now such a part too, and its
+source is made `$iter`: `iterator_scan($iter(v), 0, f)`.
+
+In the copy matrix's `size_hint` cells of each adapter over a `cloned()`
+or `copied()`, lent by `pass` or `by_ref`, 114 refused cells now compile
+and match native, and none moves the other way. #1998's own cells are
+among them: an array's, a `Vec`'s and strings' items, `filter` and
+`scan`. Other refusals remain, under other causes:
+- a generic source's `DoubleEndedIterator`/`ExactSizeIterator`;
+- a `chain` with a `vec::IntoIter` side;
+- a `zip` reading a copy by index.
+
+Three diagnostics rows compile now, each matching native in both builds,
+and become rows of the corpus case:
+- a `Vec` grown by a `take(4)` of a `cycle()` of a zip of copies, and one
+  of a `take(5)` of a map's, capacity std's (#1572's diagnostics shape;
+  #1572's neighbour pairs are other shapes);
+- a `peekable()` of copies' hint, peeked or not;
+- #1987's lent `scan()` of a `map` beside one of a `cloned()`.
+
+The refused `Peekable` hint row is now a peekable map of a string's
+`chars()`, still refused. Mutations that named the moved rows are
+retargeted, each caught:
+- `held-hint-of-lazy-adapter` to that peekable row;
+- `adapted-hint-of-arrays` to "size_hint of a held rev of a copied of a
+  skip";
+- `hint-kept-through-an-arrays-map` to "a Vec collected of a chain of a
+  skip where a capacity is read".
+
+Corpus case `size_hint_of_a_lent_copy_of_items` holds:
+- a scan of cloned items, and a filter of copied ones stepped first;
+- a filter of cloned strings;
+- a lent `skip(1)` of a `Vec`'s cloned items, with a destructor;
+- the moved rows above.
+
+It matches native in each build and through every metamorphic rewrite.
+Mutation `copy-in-place-hint-unmarked` (`analysis/hint_asked.ts`) is
+caught. docs/readability.txt is blessed with the case alone.

@@ -264,11 +264,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "                .all(|held| self.held_hint_known(held))\n",
     replace: "                .all(|_| true)\n",
-    tests: [
-      "test/diagnostics.test.ts",
-      "-t",
-      "the size hint of a peekable copied made here",
-    ],
+    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable map of a string's chars made here"],
   },
   {
     name: "held-hint-of-range-unknown",
@@ -497,7 +493,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.array_source(ty).is_some() && !self.made_knowing_here(ty) {\n            return false;\n        }\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable copied made here"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a copied of a skip"],
   },
   {
     name: "dropping-skip-uncounted",

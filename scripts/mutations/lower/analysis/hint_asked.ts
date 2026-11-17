@@ -238,4 +238,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(vec_grown_by_iterators_whose_hint_is_stds|inspect_of_a_slice_collected_where_capacity_is_read|counted_adapters_where_capacity_is_read).rs$"],
     snapshots: true,
   },
+  {
+    name: "copy-in-place-hint-unmarked",
+    breaks: "a `cloned()` or `copied()` of an array's items, made in place as JS's own `values().map(clone)`, isn't made knowing its hint where a compiled adapter over it is asked its hint, so that `size_hint()` is refused (#1998)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "            || !(crate::lower::recognition::is_held_compiled(tcx, part) || copy_in_place)\n",
+    replace: "            || !(crate::lower::recognition::is_held_compiled(tcx, part) || false && copy_in_place)\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_a_lent_copy_of_items.rs$"],
+  },
 ];
