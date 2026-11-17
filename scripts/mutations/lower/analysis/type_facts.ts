@@ -381,7 +381,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/type_facts.rs",
     find: "            let copies = copies[at].get_or_insert_with(|| copies_of_default(tcx, caller, args));\n",
     replace: "            let copies: Vec<collects::DefaultCopy<'tcx>> = Vec::new();\n            let _ = &copies[..];\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_gives_its_callee_what_self_collects_in_place.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(default_gives_its_callee_what_self_collects_in_place|map_keyed_by_a_tuple_of_a_type_parameter).rs$"],
   },
   {
     name: "impl-carried-built-type-unasked",
