@@ -2044,3 +2044,18 @@ Held by `test/cross-crate-private-state.test.ts`, as native:
 - a private module's `static` two calls down.
 
 The internal names are left out of the `.d.ts`.
+
+**The boundary.** Exported state is only state a consumer can read:
+- a `Freeze` `static`;
+- a thread-local;
+- a `static mut` or thread-local its module made its variable, whose set by
+  a consumer is refused (ADR 0270).
+
+Two kinds stay refused, as before:
+- a `static` that may change inside it, an atomic or a `Mutex`, which its
+  module may unbox into a `let` it sets in place;
+- a `let` set in place that isn't its module's variable.
+
+Exported, a consumer's copy of a `fetch_add` assigned the import, a
+`TypeError` (test/crates-compiled-here's `identity_merged_reads_private_state`,
+still refused). Lifting it, a setter exported beside the binding, is #2030.
