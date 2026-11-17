@@ -707,3 +707,26 @@ a file the map's commit and the change's base differ on) and 7 by a map
 that places it; which the selector's placing a moved line by its text
 addresses (the next amendment).
 
+### Amended: a moved line is placed by its text, and the fallback runs what runs on every change (2026-11-17)
+
+A side of a push's selection numbers its hunks by its base, `from`, not
+the map's commit; where a src file differs between the two, its hunks
+weren't the map's lines, so every test the map saw run any of the file's
+functions ran (`sideSelection`'s fallback). A hunk is now placed at the
+map's line its text has, where neither the map's commit nor `from`
+changed that text since (`mapLine`, `hunksAtMap`, as git places a moved
+line), and `pick` reads it as any other; only a hunk in text that changed
+since the map falls back. And the fallback runs, as `pick` does, each test
+the map says runs on every change (`movedUnits`), which it ran none of.
+
+Of the 24 commits to src since the map at 7150cc3ad, by that map, each
+commit's own side: 2905d5cdc stays the fallback, its src/output.rs hunks
+being in text the #1681 series changed since (290 files to 362, the
+always-run tests added); d0ce7d1ab is placed, in `lower_crate`, every
+test's (285 to 366, the fallback having run 81 fewer than the placed
+change); 8213a7d4f is placed outside any function, everything (293 to
+all); 6fb53cf24 365 to 348 files, 86b8aa91f 248 files and 2,038 cases to
+204 and 1,410. The 7 of 2905d5cdc's own side was a newer map's, at
+7fe40bde3, which has its text. So fresher maps, not placement, are what
+narrows a change in code under active edit.
+

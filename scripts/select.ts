@@ -40,7 +40,7 @@ import { join } from "node:path";
 
 import { importsOf } from "./iteratorSlice";
 import { pushSuiteFiles } from "./shard";
-import { type Change, caseFiles, hunksOf, mapStore, nearestMap, noMap, pick, readsOf, type TestMap, toolchainOf, unitsReaching } from "./testMap";
+import { type Change, caseFiles, type Hunk, hunksOf, mapStore, nearestMap, noMap, pick, readsOf, type TestMap, toolchainOf, unitsReaching } from "./testMap";
 
 const root = join(import.meta.dir, "..");
 
@@ -404,15 +404,83 @@ export function pushSelection(mine: Selection, theirs: Selection, compiler: bool
   };
 }
 
+/** Of a file the map's commit and `from` differ on, the line of the map's
+ * each of `from`'s is, where it's one neither changed: `between` is the
+ * diff's hunks from the map's to `from`'s, `[mapStart, mapCount,
+ * fromStart, fromCount]` each, as `git diff -U0` numbers them. A line in
+ * a hunk of theirs, text that changed since the map, is none. */
+export function mapLine(between: [number, number, number, number][], line: number): number | undefined {
+  let shift = 0;
+  for (const [mapStart, mapCount, fromStart, fromCount] of between) {
+    // A pure removal or addition `git diff` numbers after the line it's
+    // after; a change, from its first line.
+    const first = fromCount === 0 ? fromStart + 1 : fromStart;
+    if (line < first) break;
+    if (line < first + fromCount) return undefined;
+    shift = mapStart + (mapCount === 0 ? 1 : mapCount) - (fromStart + (fromCount === 0 ? 1 : fromCount));
+  }
+  return line + shift;
+}
+
+/** `change`'s hunks, numbered by `from`'s file, numbered by the map's
+ * (`mapLine`): each line of each hunk one neither the map's commit nor
+ * `from` changed since; or none, where a hunk lies in text that changed
+ * since the map. */
+export function hunksAtMap(change: Change, between: [number, number, number, number][]): Change | undefined {
+  if (change.hunks === "new") return undefined;
+  const hunks: Hunk[] = [];
+  for (const [start, count, added, removed] of change.hunks) {
+    if (count === 0) {
+      // Lines added after `start`: where it and the line after are the map's, in turn.
+      const at = mapLine(between, start);
+      const next = mapLine(between, start + 1);
+      if (at === undefined || (next !== undefined && next !== at + 1)) return undefined;
+      hunks.push([at, 0, added, removed]);
+      continue;
+    }
+    const at = mapLine(between, start);
+    for (let line = start; line < start + count; line++) if (mapLine(between, line) !== (at === undefined ? undefined : at + line - start)) return undefined;
+    if (at === undefined) return undefined;
+    hunks.push([at, count, added, removed]);
+  }
+  return { file: change.file, hunks };
+}
+
+/** What a change to `moved`, files whose text changed since the map where
+ * the change lies, runs: every test the map saw run any of their
+ * functions, and each it says runs on every change, `null`'s, as `pick`
+ * runs them; without those, the fallback ran 81 test files fewer than
+ * d0ce7d1ab's placed change, 285 where it's 366 (2026-11-17). */
+export function movedUnits(map: TestMap, moved: string[]): string[] {
+  const always = Object.entries(map.units).flatMap(([unit, bits]) => (bits === null ? [unit] : []));
+  return [...new Set([...unitsReaching(map, moved), ...always])];
+}
+
+/** The hunks `git diff -U0 <a> <b> -- <file>` gives. */
+function diffHunks(a: string, b: string, file: string): [number, number, number, number][] {
+  const out = Bun.spawnSync(["git", "diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", a, b, "--", file], { cwd: root, stdout: "pipe" }).stdout.toString();
+  return [...out.matchAll(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/gm)].map((m) => [Number(m[1]), m[2] === undefined ? 1 : Number(m[2]), Number(m[3]), m[4] === undefined ? 1 : Number(m[4])]);
+}
+
 /** What one side of a rebase selects, its changes since `from` by the map:
- * a line of a compiler's file the map's commit and `from` differ on isn't
- * the map's line, so of such a file, every test the map saw run any of its
- * functions (`unitsReaching`). */
+ * a line of a compiler's file the map's commit and `from` differ on is
+ * placed at the map's line its text has there where neither changed it
+ * since (`hunksAtMap`), as git places a moved line; one in text that
+ * changed since the map isn't the map's, so of such a file, every test the
+ * map saw run any of its functions (`unitsReaching`). Of 35 of ioCM's
+ * pushes and checks of 2026-11-17, 7 took that fallback, and 2905d5cdc's
+ * own change, src/output.rs, selected 291 files where the map at
+ * 7fe40bde3 placed it in one function, 7. */
 function sideSelection(changes: Change[], from: string, context: { files: string[]; cases: string[]; map: TestMap; reach: Reach; own: (file: string) => boolean }): Selection {
-  const moved = changes.filter((change) => change.file.startsWith("src/") && change.hunks !== "new" && differs(context.map.commit, from, change.file)).map(({ file }) => file);
-  const selection = select(changes.filter((change) => !moved.includes(change.file)), context);
+  const differing = changes.filter((change) => change.file.startsWith("src/") && change.hunks !== "new" && differs(context.map.commit, from, change.file));
+  const placed = new Map(differing.flatMap((change) => {
+    const at = hunksAtMap(change, diffHunks(context.map.commit, from, change.file));
+    return at === undefined ? [] : [[change.file, at] as const];
+  }));
+  const moved = differing.map(({ file }) => file).filter((file) => !placed.has(file));
+  const selection = select(changes.filter((change) => !moved.includes(change.file)).map((change) => placed.get(change.file) ?? change), context);
   if (moved.length === 0 || selection.all) return selection;
-  const reached = new Set(unitsReaching(context.map, moved));
+  const reached = new Set(movedUnits(context.map, moved));
   const byCase = context.cases.filter((name) => reached.has(`test/corpus/${name}`));
   return {
     ...selection,

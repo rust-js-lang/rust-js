@@ -130,4 +130,28 @@ export const mutations: Mutation[] = [
     replace: "  if (true) {",
     tests: ["test/select.test.ts", "-t", "a push's check runs its own change's tests"],
   },
+  {
+    name: "moved-file-not-placed",
+    breaks: "a change's line in a file changed since the map is never placed at the map's line its text has, so every test of the file's functions runs where its own text is unchanged",
+    file: "scripts/select.ts",
+    find: "    if (line < first + fromCount) return undefined;\n",
+    replace: "    if (line >= first) return undefined;\n",
+    tests: ["test/select.test.ts", "-t", "a change's line in a file changed since the map"],
+  },
+  {
+    name: "moved-text-placed-anyway",
+    breaks: "a change's line in text that changed since the map is placed at a line of the map's, which is another line's coverage",
+    file: "scripts/select.ts",
+    find: "    if (at === undefined) return undefined;\n    hunks.push([at, count, added, removed]);\n",
+    replace: "    hunks.push([at ?? start, count, added, removed]);\n",
+    tests: ["test/select.test.ts", "-t", "a change's line in a file changed since the map"],
+  },
+  {
+    name: "moved-fallback-drops-always",
+    breaks: "the fallback of a file changed since the map runs none of the tests that run on every change, 81 files fewer than the change placed (d0ce7d1ab)",
+    file: "scripts/select.ts",
+    find: "  return [...new Set([...unitsReaching(map, moved), ...always])];\n",
+    replace: "  return unitsReaching(map, moved);\n",
+    tests: ["test/select.test.ts", "-t", "a change's line in a file changed since the map"],
+  },
 ];

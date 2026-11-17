@@ -12,7 +12,7 @@ import { jobs, ranKey } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
 import { whoRuns } from "../scripts/disk";
 import { failedIn, misses } from "../scripts/selector-audit";
-import { baselines, capOf, interaction, osBranches, outcome, pushSelection, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
+import { baselines, capOf, hunksAtMap, interaction, mapLine, movedUnits, osBranches, outcome, pushSelection, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
 import { readsSources, type TestMap } from "../scripts/testMap";
 import { root } from "./support";
 
@@ -399,4 +399,19 @@ test("a push's check runs its own change's tests, others' function changes only 
   expect(pushSelection(mine, item, true)).toMatchObject({ all: false, files: mine.files, cases: mine.cases });
   // Her own item: everything.
   expect(pushSelection(side("src/a.rs", [[25, 1]], true), theirs, true).all).toBe(true);
+});
+
+test("a change's line in a file changed since the map is placed at the map's line its text has, and only text that changed falls back", () => {
+  // From the map's file to the change's base, as `git diff -U0` numbers
+  // them: the map's lines 3 and 4 one line, 3; two lines added after the
+  // map's 10, the base's 10 and 11; the map's 20 removed, after the base's 20.
+  const between: [number, number, number, number][] = [[3, 2, 3, 1], [10, 0, 10, 2], [20, 1, 20, 0]];
+  expect([1, 2, 3, 4, 5, 9, 10, 11, 12, 20, 21, 30].map((line) => mapLine(between, line))).toEqual([1, 2, undefined, 5, 6, 10, undefined, undefined, 11, 19, 21, 30]);
+  // A hunk in lines neither changed, placed; one in a changed line, none.
+  expect(hunksAtMap({ file: "src/a.rs", hunks: [[12, 2, ["x", "y"], ["a", "b"]], [21, 0, ["z"], []]] }, between)).toEqual({ file: "src/a.rs", hunks: [[11, 2, ["x", "y"], ["a", "b"]], [21, 0, ["z"], []]] });
+  expect(hunksAtMap({ file: "src/a.rs", hunks: [[3, 1, ["x"], ["a"]]] }, between)).toBeUndefined();
+  expect(hunksAtMap({ file: "src/a.rs", hunks: [[10, 0, ["x"], []]] }, between)).toBeUndefined();
+  // The fallback runs what runs on every change too.
+  const map = { functions: [{ file: "src/a.rs", spans: [[1, 9]] }, { file: "src/b.rs", spans: [[1, 9]] }], units: { "test/a.test.ts": Buffer.from([1]).toString("base64"), "test/b.test.ts": Buffer.from([2]).toString("base64"), "test/always.test.ts": null } } as never;
+  expect(movedUnits(map, ["src/a.rs"]).sort()).toEqual(["test/a.test.ts", "test/always.test.ts"]);
 });
