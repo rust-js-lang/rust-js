@@ -62,3 +62,14 @@ test("the crate's call graph is built once, and asked", () => {
   expect(graphs).toEqual([]);
   expect(read("src/lower/analysis/throwing.rs")).toContain("for component in &calls.graph.sccs {");
 });
+
+// Instance resolution is asked one way too, `traits::resolve`, which takes
+// a type a binder inside binds the regions of, erased as codegen's are: a
+// call of rustc's own from anywhere else may give it a method's late-bound
+// lifetime, which panicked (#2022, the class of #460, #1111, #1201, #1224).
+test("instance resolution is asked through `traits::resolve` alone", () => {
+  const callers = [...lowering, "src/lower.rs"].filter(
+    (file) => file !== "src/lower/traits.rs" && /Instance::try_resolve\(/.test(read(file)),
+  );
+  expect(callers).toEqual([]);
+});

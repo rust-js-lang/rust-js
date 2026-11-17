@@ -147,7 +147,7 @@ pub(crate) fn fields_given<'tcx>(
     if !(tcx.trait_of_assoc(callee)).is_some_and(|of| is_class_trait(tcx, of)) {
         return Vec::new();
     }
-    let may_be = match ty::Instance::try_resolve(tcx, typing_env, callee, args) {
+    let may_be = match crate::lower::traits::resolve(tcx, typing_env, callee, args) {
         Ok(Some(instance)) => vec![instance.def_id()],
         Ok(None) => (implementations(tcx, callee).into_iter().flatten())
             .map(|(own, _)| own)

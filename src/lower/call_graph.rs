@@ -252,7 +252,7 @@ pub(in crate::lower) fn call_graph<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[(DefId, &m
                 return None;
             };
             let callee = match func.const_fn_def() {
-                Some((id, args)) => match ty::Instance::try_resolve(tcx, typing_env, id, args) {
+                Some((id, args)) => match crate::lower::traits::resolve(tcx, typing_env, id, args) {
                     Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => {
                         Callee::Resolved(instance.def_id())
                     }

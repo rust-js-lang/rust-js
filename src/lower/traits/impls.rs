@@ -781,9 +781,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Iterator`, `fn items(&self) -> Self::Iter`, is a JS iterator
             // (ADR 0061): a range or the crate's own iterator the impl gives,
             // made one, as one given where a generic iterator goes is.
-            let declared_output = (self.tcx.fn_sig(item.def_id).instantiate_identity())
-                .skip_normalization()
-                .skip_binder()
+            // Its own late-bound lifetimes erased, as codegen's are: a
+            // method's `impl Trait` result, `Map<slice::Iter<'_, u32>, _>`,
+            // holds one, which no query takes (#2022).
+            let declared_output = (self.tcx)
+                .instantiate_bound_regions_with_erased(
+                    self.tcx.fn_sig(item.def_id).instantiate_identity().skip_normalization(),
+                )
                 .output();
             // As the impl makes it, `<Tens as Source>::Iter` its `Map`, an
             // `impl`'s hidden type std's struct it hides (#1292), and its
@@ -791,9 +795,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // tagged<U: Copy>`'s closure copying a `U` is an `FnMut` only by
             // it, and `fn hidden<const M: u32>`'s `M` rustc's normalization
             // panicked finding elsewhere (#1304, #1308).
-            let output = (tcx.fn_sig(method).instantiate(tcx, instance.args))
-                .skip_normalization()
-                .skip_binder()
+            let output = tcx
+                .instantiate_bound_regions_with_erased(
+                    tcx.fn_sig(method).instantiate(tcx, instance.args).skip_normalization(),
+                )
                 .output();
             let output = tcx
                 .try_normalize_erasing_regions(method_env, ty::Unnormalized::new_wip(output))

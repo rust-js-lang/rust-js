@@ -714,7 +714,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A trait's, of a type: its impl's (ADR 0410), of one generic code
         // names too, `Self::CAPACITY` of an `impl<T, const CAP: usize>`.
         let (def_id, args) = match self.tcx.trait_of_assoc(def_id) {
-            Some(_) => match ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) {
+            Some(_) => match crate::lower::traits::resolve(self.tcx, self.typing_env, def_id, args) {
                 Ok(Some(instance)) => (instance.def_id(), instance.args),
                 _ => (def_id, args),
             },

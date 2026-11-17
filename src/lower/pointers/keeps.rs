@@ -152,7 +152,7 @@ fn may_keep<'tcx>(
         )
     };
     let runs = |callee: DefId, callee_args: ty::GenericArgsRef<'tcx>, typing_env: ty::TypingEnv<'tcx>| {
-        match ty::Instance::try_resolve(tcx, typing_env, callee, callee_args) {
+        match crate::lower::traits::resolve(tcx, typing_env, callee, callee_args) {
             Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => {
                 Some(vec![(instance.def_id(), instance.args, typing_env)])
             }

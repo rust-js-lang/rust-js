@@ -25,10 +25,29 @@ impl<'tcx> TypeFolder<TyCtxt<'tcx>> for Revealer<'tcx> {
     }
 
     fn fold_ty(&mut self, ty: Ty<'tcx>) -> Ty<'tcx> {
-        if !ty.has_opaque_types() {
+        if !ty.has_opaque_types() && !ty.has_aliases() {
             return ty;
         }
         match *ty.kind() {
+            // A trait method's `impl Trait` result, a projection of its
+            // trait's anonymous associated type, `<A as Source>::{anon_assoc#0}`,
+            // of a type that's known: its impl's, the opaque type its method
+            // gives, which it hides as any other (#2022).
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) if self.tcx.is_impl_trait_in_trait(def_id) && !crate::lower::generic_facts::may_be_any_type(ty) => {
+                match self
+                    .tcx
+                    .try_normalize_erasing_regions(ty::TypingEnv::fully_monomorphized(), ty::Unnormalized::new_wip(ty))
+                {
+                    Ok(normalized) if normalized != ty => self.fold_ty(normalized),
+                    _ => ty.super_fold_with(self),
+                }
+            }
             ty::Alias(
                 _,
                 ty::AliasTy {

@@ -162,7 +162,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         // Not one that resolves to the trait's own method, a `dyn Trait`'s
         // call through its dictionary, which may be any impl's (#1055).
         if !args.has_non_region_param()
-            && let Ok(Some(instance)) = rustc_middle::ty::Instance::try_resolve(tcx, env, id, args)
+            && let Ok(Some(instance)) = crate::lower::traits::resolve(tcx, env, id, args)
             && instance.def_id() != id
         {
             return self.merges_identities(instance.def_id());

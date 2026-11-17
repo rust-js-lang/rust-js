@@ -46,7 +46,7 @@ fn generic_writes<'tcx>(tcx: TyCtxt<'tcx>, mir: &rustc_middle::mir::Body<'tcx>, 
             continue;
         };
         // Where it can't resolve, generic code's own call, what it names.
-        let resolved = match ty::Instance::try_resolve(tcx, typing_env, callee, generic_args) {
+        let resolved = match crate::lower::traits::resolve(tcx, typing_env, callee, generic_args) {
             Ok(Some(instance)) if !matches!(instance.def, ty::InstanceKind::Virtual(..)) => instance.def_id(),
             _ => callee,
         };

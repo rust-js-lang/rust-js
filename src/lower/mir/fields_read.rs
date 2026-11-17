@@ -32,7 +32,7 @@ impl<'tcx> Mir<'tcx> {
             }
             let [arg] = &args[..] else { continue };
             let Some(of) = arg.node.place() else { continue };
-            let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, callee, generic_args) else {
+            let Ok(Some(instance)) = crate::lower::traits::resolve(tcx, typing_env, callee, generic_args) else {
                 continue;
             };
             let Some(path) = crate::lower::classes::field_accessor(tcx, instance.def_id()) else {

@@ -872,7 +872,7 @@ impl<'tcx> Graph<'_, '_, 'tcx> {
         let mut target = callee;
         if tcx.trait_of_assoc(callee).is_some() {
             let typing_env = ty::TypingEnv::post_analysis(tcx, def);
-            match ty::Instance::try_resolve(tcx, typing_env, callee, generic_args) {
+            match crate::lower::traits::resolve(tcx, typing_env, callee, generic_args) {
                 Ok(Some(instance)) if !matches!(instance.def, ty::InstanceKind::Virtual(..)) => {
                     target = instance.def_id();
                 }

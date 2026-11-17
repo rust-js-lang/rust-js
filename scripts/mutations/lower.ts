@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     name: "trait-const-unresolved",
     breaks: "`<() as Trait>::ASSOC`, a function, is refused, not its impl's",
     file: "src/lower.rs",
-    find: "            Some(_) => match ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) {\n",
+    find: "            Some(_) => match crate::lower::traits::resolve(self.tcx, self.typing_env, def_id, args) {\n",
     replace: "            Some(_) if false => match ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
   },

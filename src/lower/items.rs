@@ -819,11 +819,11 @@ pub(super) fn resolve_instance_in<'tcx>(
     let Ok(args) = tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(args)) else {
         return Ok(None);
     };
-    match ty::Instance::try_resolve(tcx, typing_env, def_id, args)? {
+    match crate::lower::traits::resolve(tcx, typing_env, def_id, args)? {
         // One a more specific impl may specialize, only to do less work: the
         // impl rustc selects, whose result is the same (ADR 0899).
         None => match super::recognition::optimized_default(tcx, typing_env, def_id, args) {
-            Some((method, args)) => ty::Instance::try_resolve(tcx, typing_env, method, args),
+            Some((method, args)) => crate::lower::traits::resolve(tcx, typing_env, method, args),
             None => Ok(None),
         },
         resolved => Ok(resolved),

@@ -377,7 +377,7 @@ pub(crate) fn steps_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx
     });
     let value = effect.and_then(|effect| {
         let args = tcx.mk_args(&[tcx.erase_and_anonymize_regions(ty).into()]);
-        let instance = ty::Instance::try_resolve(tcx, typing_env, effect, args).ok()??;
+        let instance = crate::lower::traits::resolve(tcx, typing_env, effect, args).ok()??;
         let value = tcx
             .const_eval_instance(typing_env, instance, rustc_span::DUMMY_SP)
             .ok()?;

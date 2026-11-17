@@ -213,6 +213,35 @@ pub(in crate::lower) fn select<'tcx>(
     tcx.codegen_select_candidate(typing_env.as_query_input(tr))
 }
 
+/// The instance of `def_id` given `args` in `typing_env`: the one way the
+/// lowering asks rustc's instance resolution, as `select` is its trait
+/// selection's (#2022). A part of `args` a binder inside them binds the
+/// region of, the late-bound lifetime of a method's own `impl Trait`
+/// result, a `Map<slice::Iter<'_, u32>, _>` of a trait's `fn items(&self)
+/// -> impl DoubleEndedIterator + '_`, which resolution can't take, erased,
+/// as codegen's are; one a binder of types or consts binds, an internal
+/// error, loud.
+pub(in crate::lower) fn resolve<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
+    use rustc_middle::ty::TypeVisitableExt;
+    let args = match args.has_escaping_bound_vars() {
+        true => rustc_middle::ty::fold_regions(tcx, args, |region, depth| match region.kind() {
+            ty::ReBound(ty::BoundVarIndexKind::Bound(debruijn), _) if debruijn >= depth => tcx.lifetimes.re_erased,
+            _ => region,
+        }),
+        false => args,
+    };
+    assert!(
+        !args.has_escaping_bound_vars(),
+        "rust-js asked instance resolution of `{def_id:?}` given `{args:?}`, which a binder of types or consts binds: an internal error (#2022)"
+    );
+    ty::Instance::try_resolve(tcx, typing_env, def_id, args)
+}
+
 /// The impl whose dictionary is the evidence of `tr`, and its arguments: a
 /// user's, the crate's or another's, as `codegen_select_candidate` selects
 /// it, where `tr` isn't a built-in one, a `dyn`'s.

@@ -935,7 +935,7 @@ fn std_mir_never_unwinds<'tcx>(
     (id, args): (DefId, ty::GenericArgsRef<'tcx>),
     depth: usize,
 ) -> bool {
-    let Ok(Some(instance)) = ty::Instance::try_resolve(tcx, typing_env, id, args) else {
+    let Ok(Some(instance)) = crate::lower::traits::resolve(tcx, typing_env, id, args) else {
         return false;
     };
     let resolved = match instance.def {

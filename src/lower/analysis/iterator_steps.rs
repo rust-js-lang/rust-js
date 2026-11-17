@@ -385,7 +385,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                                 for (tr, name) in given {
                                     let Some(tr) = tr else { continue };
                                     let method = trait_method(tcx, tr, name);
-                                    if let Ok(Some(instance)) = ty::Instance::try_resolve(
+                                    if let Ok(Some(instance)) = crate::lower::traits::resolve(
                                         tcx,
                                         typing_env,
                                         method,

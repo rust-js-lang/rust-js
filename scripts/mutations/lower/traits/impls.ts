@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "dictionary-result-bound-lifetime",
+    breaks:
+      "an impl's dictionary takes its method's result with the method's own late-bound lifetime bound, `Map<slice::Iter<'_, u32>, _>`, and a query on it panics, `has escaping bound vars` (#2022)",
+    file: "src/lower/traits/impls.rs",
+    find: "            let output = tcx\n                .instantiate_bound_regions_with_erased(\n                    tcx.fn_sig(method).instantiate(tcx, instance.args).skip_normalization(),\n                )\n                .output();\n",
+    replace: "            let output = (tcx.fn_sig(method).instantiate(tcx, instance.args))\n                .skip_normalization()\n                .skip_binder()\n                .output();\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_method_impl_double_ended_result.rs$"],
+  },
+  {
     name: "made-item-iterator-own-dictionary",
     breaks:
       "the `DoubleEndedIterator` entry of an associated type the dictionary made a JS iterator of is the crate's own `next_back`, given that JS iterator: `undefined from the back` (#972)",
