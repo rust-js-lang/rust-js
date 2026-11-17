@@ -117,12 +117,12 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
 // name asks it (`Name::apart_of`, `root`, `given_apart_of`, #1681 change 3,
 // S4c), never its word. Besides `name.rs`, the reader is preparation's
 // speller, which reclaims `node$1` as `node` (`prepare/reclaim.rs`), and
-// the two passes that keep names as words till S6 gives them names, a
-// `catch`'s declarations and tidy's shadows' kin.
+// tidy's shadows' kin, which keeps names as words till S6 gives them names.
+// A `catch`'s declarations ask `given_apart_of` (#1681 change 3).
 test("a name given apart is read by its name's API alone", () => {
   const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
   const reading = sources.filter((file) => file !== "src/names.rs" && /names::apart\(/.test(outsideTests(file)));
-  expect(reading.sort()).toEqual(["src/js/name.rs", "src/prepare/catches.rs", "src/prepare/reclaim.rs"]);
+  expect(reading.sort()).toEqual(["src/js/name.rs", "src/prepare/reclaim.rs"]);
 });
 
 // A place a tree reads is keyed by `js::Path` alone (ADR 1150, step 3): its

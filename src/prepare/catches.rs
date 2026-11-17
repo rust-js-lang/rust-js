@@ -949,13 +949,15 @@ fn whole_binding(ok: &[Stmt], result: &str, call: &Expr) -> Option<Name> {
         }
     });
     let (name, read_after) = found.filter(|_| aliases == 1)?;
-    let base = |n: &str| crate::names::apart(n).map_or(n, |(base, _)| base).to_string();
-    let is_name = |n: &str| base(n) == base(name.word());
+    // It, or one given apart from it or it from one, by its id (ADR 1150).
+    let is_name = |n: &Name| *n == name || n.given_apart_of(&name) || name.given_apart_of(n);
     let mut declared = 0;
-    js::each_declared(ok, &mut |d| declared += usize::from(is_name(d)));
-    let mut of_call = IndexSet::default();
-    js::names_in(&[StmtKind::Expr(call.clone()).at(call.span)], &mut of_call);
-    let unclashed = !of_call.iter().any(|n| is_name(n));
+    js::each_declared_name(ok, &mut |d| declared += usize::from(is_name(d)));
+    let of_call = [StmtKind::Expr(call.clone()).at(call.span)];
+    let mut clashes = false;
+    js::visit_stmt_names(&of_call, &mut |n| clashes |= is_name(n));
+    js::each_declared_name(&of_call, &mut |n| clashes |= is_name(n));
+    let unclashed = !clashes;
     (declared == 1 && read_after == js::mentions_in(ok, name.word()) && unclashed).then_some(name)
 }
 

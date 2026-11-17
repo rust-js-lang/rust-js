@@ -376,7 +376,7 @@ export const mutations: Mutation[] = [
     name: "ok-binding-clash-unchecked",
     breaks: "the `try`'s value is named by the pattern's binding where the closure has that name too, so one of them stays given apart, `const picked$1 = pick(n)`",
     file: "src/prepare/catches.rs",
-    find: "    let unclashed = !of_call.iter().any(|n| is_name(n));\n",
+    find: "    let unclashed = !clashes;\n",
     replace: "    let unclashed = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
     snapshots: true,
