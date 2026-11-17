@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "  if (dir === undefined || dir !== undefined) return shard(items, index, count);\n",
     tests: ["test/ci.test.ts", "-t", "reads its times of the runs"],
   },
+  {
+    name: "untimed-mutations-as-the-median",
+    breaks: "a change's untimed mutations are estimated as the timed ones' median, not their file's or the 90th percentile, and a shard of several of them takes twice another's (run 43976170163)",
+    file: "scripts/shard.ts",
+    find: "    return known.length === 0 ? p90 : known[known.length >> 1]!;\n",
+    replace: "    return all[all.length >> 1] ?? 1;\n",
+    tests: ["test/ci.test.ts", "-t", "a change's untimed mutations are dealt first"],
+  },
+  {
+    name: "untimed-mutations-to-the-least",
+    breaks: "a change's untimed mutations are dealt to the least loaded shard, all to one when they're estimated alike, not in turn",
+    file: "scripts/shard.ts",
+    find: "    load[k % count] = load[k % count]! + estimate(item);\n    if (k % count === index - 1) mine.push(item);\n",
+    replace: "    const at = leastLoaded(load.map((l, i) => (i === 0 ? -1 : l)));\n    load[at] = load[at]! + estimate(item);\n    if (at === index - 1) mine.push(item);\n",
+    tests: ["test/ci.test.ts", "-t", "a change's untimed mutations are dealt first"],
+  },
 ];

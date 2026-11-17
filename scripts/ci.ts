@@ -5,7 +5,7 @@
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
 //   bun scripts/ci.ts timings               # in CI: the last run's shards' timings, for this run's to balance by
-//   bun scripts/ci.ts mutation-timings <run> # in CI: that nightly's mutations' times, for the mutation shards to balance by
+//   bun scripts/ci.ts mutation-timings <run,run> # in CI: those runs' mutations' times, the nightly's and main's last checks', for the mutation shards to balance by
 //   bun scripts/ci.ts nets                  # in CI: which of the `nets` job's nets ran, and which failed, from its `STEPS`
 //
 // A run whose snapshots or rustc's lists differ uploads what blessing them
@@ -297,11 +297,11 @@ async function plan(given?: string) {
   console.log(`port=${touchesPort(changed)}`);
   console.log(`memory=${touchesMemory(changed)}`);
   console.log(`mutations=${mutating}`);
-  let nightly: number | undefined;
+  let timed: number[] = [];
   try {
-    nightly = lastMutationTimings();
+    timed = lastMutationTimings();
   } catch {}
-  console.log(`mutation_timings=${nightly ?? ""}`);
+  console.log(`mutation_timings=${timed.join(",")}`);
   console.log(`wasm=${touchesWasm(changed)}`);
   console.log(`rustc=${touchesRustc(changed)}`);
   // The suite's selection (scripts/select.ts): by the newest test map of an
@@ -424,18 +424,41 @@ function fetchTimings() {
  * shard of a check, `plan`'s, as each that read the newest itself might
  * read another, dealing some mutations twice and others to none. */
 export function mutationTimingsRun(nightlies: number[], artifacts: Artifact[]): number | undefined {
-  const kept = new Set(artifacts.filter((a) => /^mutation-timings-\d+$/.test(a.name) && !a.expired).map((a) => a.run));
+  const kept = keptMutationTimings(artifacts);
   return nightlies.find((run) => kept.has(run));
+}
+
+/** The runs whose mutations' times GitHub still keeps. */
+const keptMutationTimings = (artifacts: Artifact[]) => new Set(artifacts.filter((a) => /^mutation-timings-\d+$/.test(a.name) && !a.expired).map((a) => a.run));
+
+/** The runs whose mutations' times the shards balance by, oldest first, a
+ * later's time of a mutation over an earlier's: the nightly's
+ * (`mutationTimingsRun`), then the newest `checks` of `main`, newest first
+ * given, that kept theirs, at most `most`. A check's shards run the
+ * mutations its change adds or edits, which the nightly before it never
+ * timed: dealt as the nightly's median, 10.7 s, one shard of run
+ * 43976170163's eight took 536 s and another 277, its new mutations' builds
+ * 16 to 55 s each (2026-11-17). */
+export function mutationTimingsRuns(nightlies: number[], checks: number[], artifacts: Artifact[], most = 5): number[] {
+  const kept = keptMutationTimings(artifacts);
+  const nightly = mutationTimingsRun(nightlies, artifacts);
+  const recent = checks.filter((run) => kept.has(run)).slice(0, most).reverse();
+  return [...(nightly === undefined ? [] : [nightly]), ...recent];
 }
 
 /** Of `plan`: the last completed nightlies, and which kept their mutations'
  * times (`mutationTimingsRun`). */
-function lastMutationTimings(): number | undefined {
+function lastMutationTimings(): number[] {
   const nightlies: { databaseId: number }[] = JSON.parse(gh(["run", "list", "--workflow=nightly.yml", "--status=completed", "--limit=10", "--json=databaseId"]));
+  const checks: { databaseId: number }[] = JSON.parse(gh(["run", "list", "--workflow=check.yml", "--branch=main", "--status=completed", "--limit=20", "--json=databaseId"]));
   const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
-    gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=mutation-timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
+    gh(["api", "--paginate", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=mutation-timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
   );
-  return mutationTimingsRun(nightlies.map((r) => r.databaseId), listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
+  return mutationTimingsRuns(
+    nightlies.map((r) => r.databaseId),
+    checks.map((r) => r.databaseId),
+    listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })),
+  );
 }
 
 /** In CI, before a mutation shard runs: `run`'s mutations' times, each
@@ -443,14 +466,16 @@ function lastMutationTimings(): number | undefined {
  * `bun scripts/mutations.ts --timings=` balances the shards by. A download
  * that fails fails the shard: one dealt otherwise than the others would
  * run some mutations twice and others not at all. */
-function fetchMutationTimings(run: string) {
-  if (!/^\d+$/.test(run)) throw new Error(`a run's id, not ${run}`);
+function fetchMutationTimings(runs: string) {
+  if (!/^\d+(,\d+)*$/.test(runs)) throw new Error(`runs' ids, comma-separated, oldest first, not ${runs}`);
   const dir = join(root, "target", "mutation-timings");
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  gh(["run", "download", run, "--pattern=mutation-timings-*", `--dir=${dir}`]);
+  // Each in a directory named for its order, so a later run's time of a
+  // mutation is read over an earlier's (`timingsUnder` reads them sorted).
+  runs.split(",").forEach((run, i) => gh(["run", "download", run, "--pattern=mutation-timings-*", `--dir=${join(dir, `${String(i).padStart(2, "0")}-${run}`)}`]));
   const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name === "timings.json");
-  console.log(`the mutation shards balance by run ${run}'s times, ${files.length} shard${files.length === 1 ? "'s" : "s'"} in target/mutation-timings`);
+  console.log(`the mutation shards balance by runs ${runs}'s times, ${files.length} shards' in target/mutation-timings`);
 }
 
 function bless(branch: string) {

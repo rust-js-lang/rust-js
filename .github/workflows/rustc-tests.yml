@@ -50,7 +50,7 @@ on:
         type: string
         default: '1'
       mutation_timings:
-        description: 'With mutations: the nightly run whose mutations'' times the shards balance by, as check.yml''s plan picks. Empty: dealt in turn.'
+        description: 'With mutations: the runs whose mutations'' times the shards balance by, comma-separated, oldest first (the nightly, then main''s last checks), as check.yml''s plan picks. Empty: dealt in turn.'
         required: false
         type: string
         default: ''
@@ -108,7 +108,7 @@ on:
         type: string
         default: '1'
       mutation_timings:
-        description: 'With mutations: the nightly run whose mutations'' times the shards balance by, as check.yml''s plan picks. Empty: dealt in turn.'
+        description: 'With mutations: the runs whose mutations'' times the shards balance by, comma-separated, oldest first (the nightly, then main''s last checks), as check.yml''s plan picks. Empty: dealt in turn.'
         required: false
         type: string
         default: ''

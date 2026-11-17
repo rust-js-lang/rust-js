@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
+import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, mutationTimingsRuns, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import { mutations, refusedFlags, site } from "../scripts/mutations";
@@ -15,7 +15,7 @@ import { lostObject } from "../scripts/testMap";
 import { reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
-import { browsers, drivesBrowser } from "../scripts/shard";
+import { balancedByGroup, browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
@@ -80,6 +80,13 @@ test("a check's mutation shards balance by the newest nightly that kept its muta
   const artifacts = [artifact("mutation-timings-1", 9), artifact("mutation-timings-1", 7, true), artifact("mutation-timings-1", 5), artifact("timings-1", 8), artifact("mutation-timings-1", 3)];
   expect(mutationTimingsRun([8, 7, 5, 3], artifacts)).toBe(5);
   expect(mutationTimingsRun([8, 7], artifacts)).toBeUndefined();
+  // And the newest checks of main that kept theirs after it, oldest first,
+  // a later one's time over an earlier's: the mutations a change adds were
+  // never the nightly's.
+  const checks = [{ name: "mutation-timings-1", run: 31, createdAt: "", expired: false }, { name: "mutation-timings-2", run: 33, createdAt: "", expired: false }, { name: "mutation-timings-1", run: 34, createdAt: "", expired: true }];
+  expect(mutationTimingsRuns([8, 7, 5, 3], [35, 34, 33, 32, 31], [...artifacts, ...checks])).toEqual([5, 31, 33]);
+  expect(mutationTimingsRuns([8, 7, 5, 3], [35, 34, 33, 32, 31], [...artifacts, ...checks], 1)).toEqual([5, 33]);
+  expect(mutationTimingsRuns([8], [33], checks)).toEqual([33]);
   const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
   expect(check).toContain("mutation_timings: ${{ needs.plan.outputs.mutation_timings }}");
   const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
@@ -1128,4 +1135,15 @@ test("a push's React gate runs again past a rebase only where the commits it bro
   expect(reactGate(["src/lower.rs"], ["src/js.rs"])).toBe("run");
   // A change that doesn't touch the port runs none.
   expect(reactGate(["docs/guide/README.md"], ["src/js.rs"])).toBe("none");
+});
+
+test("a change's untimed mutations are dealt first, in turn, each its file's usual or the timed ones' 90th percentile, so no shard takes several", () => {
+  const files: Record<string, string> = { a: "src/x.rs", b: "src/x.rs", n1: "src/x.rs", n2: "src/y.rs", n3: "src/y.rs", n4: "src/z.rs", c: "src/y.rs", d: "src/w.rs" };
+  const seconds = new Map([["a", 40], ["b", 60], ["c", 10], ["d", 10]]);
+  const shards = [1, 2].map((i) => balancedByGroup(Object.keys(files), i, 2, seconds, (name) => files[name]));
+  expect(shards.flat().sort()).toEqual(Object.keys(files).sort());
+  // Untimed n1 (src/x.rs's usual, 60), n2, n3 (src/y.rs's, 10), n4 (the
+  // 90th percentile, 60): two each, in turn, the longest first.
+  expect(shards.map((s) => s.filter((n) => n.startsWith("n")))).toEqual([["n1", "n2"], ["n3", "n4"]].map((s) => s.sort()));
+  expect(() => balancedByGroup(["a"], 3, 2, seconds, (name) => files[name])).toThrow("a shard is 1 to 2");
 });

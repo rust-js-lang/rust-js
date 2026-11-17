@@ -58,4 +58,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/ci.test.ts", "-t", "each job of a push's check is gated"],
   },
+  {
+    name: "mutation-timings-nightly-alone",
+    breaks: "the mutation shards balance by the nightly's times alone, so a change's new mutations, never timed, are dealt as its median and one shard took twice another's (run 43976170163)",
+    file: "scripts/ci.ts",
+    find: "  const recent = checks.filter((run) => kept.has(run)).slice(0, most).reverse();\n",
+    replace: "  const recent: number[] = [];\n",
+    tests: ["test/ci.test.ts", "-t", "mutation shards balance"],
+  },
+  {
+    name: "mutation-timings-oldest-over-newest",
+    breaks: "the oldest check's time of a mutation is read over the newest's, a site its next change made slower dealt as it was",
+    file: "scripts/ci.ts",
+    find: "  const recent = checks.filter((run) => kept.has(run)).slice(0, most).reverse();\n",
+    replace: "  const recent = checks.filter((run) => kept.has(run)).slice(0, most);\n",
+    tests: ["test/ci.test.ts", "-t", "mutation shards balance"],
+  },
 ];

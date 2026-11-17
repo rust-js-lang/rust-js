@@ -1013,7 +1013,7 @@ async function main() {
   chosen = [...chosen, ...mutations.filter((m) => also.includes(m.name) && !chosen.includes(m))];
   const sharded = shardArg(args);
   if (sharded) {
-    const names = timedShard(chosen.map((m) => m.name), sharded.index, sharded.count, args.find((arg) => arg.startsWith("--timings="))?.slice(10));
+    const names = timedShard(chosen.map((m) => m.name), sharded.index, sharded.count, args.find((arg) => arg.startsWith("--timings="))?.slice(10), (name) => mutations.find((m) => m.name === name)?.file);
     chosen = chosen.filter((m) => names.includes(m.name));
   }
   // The corpus harness's mutants (#918): of a change to the harness, and
