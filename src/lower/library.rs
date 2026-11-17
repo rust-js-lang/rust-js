@@ -7,11 +7,13 @@ mod cells;
 mod changed;
 mod compiled_here;
 mod exports;
+mod internal;
 mod reached;
 mod written_into;
 pub(super) use bound::bound;
 pub(super) use compiled_here::merging;
 pub(super) use exports::exports;
+pub(super) use internal::{internal_exports, internal_state};
 
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};

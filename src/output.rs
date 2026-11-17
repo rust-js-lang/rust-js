@@ -1136,7 +1136,11 @@ fn exports(module: &program::LoweredModule) -> Vec<String> {
     let reexported =
         (module.reexports.iter()).flat_map(|reexport| reexport.named.iter().map(|(_, alias)| alias.clone()));
     let default = module.default_export.as_ref().map(|_| "default".to_string());
-    let aliased = module.aliases.iter().map(|(_, exported)| exported.clone());
+    // Not what a library exports its private state by, for its consumers'
+    // compiles alone (#2017).
+    let aliased = (module.aliases.iter())
+        .filter(|(_, exported)| !crate::library::is_internal_export(exported))
+        .map(|(_, exported)| exported.clone());
     let own = own.chain(fields);
     own.chain(reexported).chain(default).chain(aliased).collect()
 }

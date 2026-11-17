@@ -11,7 +11,7 @@ use super::*;
 /// doesn't export, the consumer compiles (ADR 0914, amended).
 pub(in crate::lower) fn exports<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (functions, exported): (&IndexMap<DefId, FnInfo>, &Exported),
+    (functions, exported, internal): (&IndexMap<DefId, FnInfo>, &Exported, &[super::internal::InternalExport]),
     contracts: &Contracts<'_, 'tcx>,
     (trait_impls, held): (&[DefId], &IndexMap<LocalModId, Vec<HeldBinding>>),
     dependencies: &Dependencies,
@@ -90,6 +90,7 @@ pub(in crate::lower) fn exports<'tcx>(
             exported_as: (info.owner.is_none())
                 .then(|| crate::lower::default_exports::exported_as(tcx, id, info.exported()))
                 .filter(|exported| *exported != info.name),
+            internal: false,
             calling: crate::library::Calling {
                 params: type_params(tcx, id, contracts),
                 facts: [
@@ -130,6 +131,35 @@ pub(in crate::lower) fn exports<'tcx>(
             },
         })
         .collect();
+    // Its private state a consumer's compile of its functions may read,
+    // by its internal name (#2017).
+    items.extend(
+        internal
+            .iter()
+            .map(|super::internal::InternalExport { id, alias, variable }| Item {
+                key: key(tcx, *id),
+                rust_path: format!("{crate_name}::{}", tcx.def_path_str(*id)),
+                module: module_path(tcx, functions[id].module),
+                export: functions[id].name.clone(),
+                member: None,
+                exported_as: alias.clone(),
+                internal: true,
+                calling: crate::library::Calling {
+                    facts: [
+                        (
+                            ItemFact::Lazy,
+                            id.as_local()
+                                .is_some_and(|local| contracts.lazy_locals.contains(&local)),
+                        ),
+                        (ItemFact::Variable, *variable || variables.contains(id)),
+                    ]
+                    .into_iter()
+                    .filter_map(|(fact, holds)| holds.then_some(fact))
+                    .collect(),
+                    ..Default::default()
+                },
+            }),
+    );
     items.sort_by(|a, b| a.rust_path.cmp(&b.rust_path).then_with(|| a.key.cmp(&b.key)));
     let mut impls: Vec<String> = trait_impls
         .iter()

@@ -230,10 +230,10 @@ try { dep.useState(object); } catch (error) { console.log(error.message); }`;
   );
 }, 300_000);
 
-// ADR 0914: a library's function its consumer compiles itself has only
-// what's public of its library to read: one that reads its library's
-// private thread-local or static, of which its library's code has the one
-// there is, is refused, naming it; a public one is imported. So is one that
+// ADR 0914: a library's function its consumer compiles itself reads its
+// library's private thread-local or static by the internal name its library
+// exports it by (#2017), and is refused where it sets one, its library's
+// module variable, naming it; a public one is imported. So is one that
 // calls a binding its library names by a path relative to its own file, and
 // an impl's method, a destructor, its JS doesn't export (ADR 0914, amended).
 test("a library's function its consumer compiles is refused where it reads its library's private state", () => {
@@ -252,7 +252,7 @@ test("a library's function its consumer compiles is refused where it reads its l
     return printed(join(dir, "app.js"));
   };
   expect(() => app("println!(\"{}\", dep::discard(Loud(1)));")).toThrow(
-    "this crate compiles `dep::discard` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, a writer or a value whose writes may fail where its library's never do, an impl its library's code never asks for, or one that copies what this crate changes in place; but it reads `dep::COUNT`, private to its library",
+    "this crate compiles `dep::discard` itself, as its library's JS has none it can call: one given a value to copy or drop that it takes nothing for, a writer or a value whose writes may fail where its library's never do, an impl its library's code never asks for, or one that copies what this crate changes in place; but it sets `dep::COUNT`, its library's module variable",
   );
   expect(app("println!(\"{}\", dep::named(Loud(2)));")).toBe("dropped 2\ndep\n");
   // A binding's static, a global's, which any crate's JS reads as it is,
@@ -281,7 +281,7 @@ test("a library's function its consumer compiles is refused where it reads its l
   // take, which gives its `Formatter` on, compiled here to take them
   // (#1026), names what it's given.
   expect(() => app("println!(\"[{:>7}]\", dep::Shown);")).toThrow(
-    "this crate compiles `<dep::Shown as std::fmt::Display>::fmt` itself, as its library's JS has none it can call: a writer given a placeholder's options, `{:>4}` or `{:#?}`, which its library's JS doesn't take; but it reads `dep::COUNT`, private to its library",
+    "this crate compiles `<dep::Shown as std::fmt::Display>::fmt` itself, as its library's JS has none it can call: a writer given a placeholder's options, `{:>4}` or `{:#?}`, which its library's JS doesn't take; but it sets `dep::COUNT`, its library's module variable",
   );
 }, 300_000);
 

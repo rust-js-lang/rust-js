@@ -3,6 +3,15 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "internal-in-file-exports",
+    breaks:
+      "a module's file exports count what it exports its private state by, `$$SIDES`, so a glob's `pub use shapes::*` lists names where it's `export *` (#2017)",
+    file: "src/output.rs",
+    find: "        .filter(|(_, exported)| !crate::library::is_internal_export(exported))\n",
+    replace: "        .filter(|_| true)\n",
+    tests: ["test/cross-crate-private-state.test.ts"],
+  },
+  {
     name: "std-manifest-of-a-build",
     breaks: "`@rust-js/std`'s committed manifest says which build of the compiler wrote it, so each build's is another (ADR 1003)",
     file: "src/output.rs",

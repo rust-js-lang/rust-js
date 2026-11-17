@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "internal-imported-by-library-word",
+    breaks:
+      "a consumer imports a library's internal item by the library's own word, `LIMIT`, which it reserves in each module, so its own `static LIMIT` is `LIMIT$1` (#2017)",
+    file: "src/library/dependencies.rs",
+    find: "                let name = if item.internal { export.clone() } else { item.export };\n",
+    replace: "                let name = item.export;\n",
+    tests: ["test/cross-crate-private-state.test.ts"],
+  },
+  {
     name: "types-only-module-needs-js",
     breaks: "a library's module of types alone, which has no JS, is refused as one whose JS isn't fingerprinted, so its consumer can't import its types (ADR 1005)",
     file: "src/library/dependencies.rs",

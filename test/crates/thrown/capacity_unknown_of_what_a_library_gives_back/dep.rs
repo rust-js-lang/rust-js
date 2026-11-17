@@ -1,15 +1,25 @@
 //! A library that keeps no `Vec`'s capacity, whose function reads its
-//! private state through a private function it calls: a consumer that reads
-//! a capacity can't compile it itself, as a copy can't reach that state, so
+//! private state through a private function it calls: a thread-local whose
+//! cell it lends whole, which its module keeps as its `{ value }`, so it
+//! exports it by no internal name (#2017). A consumer that reads a
+//! capacity can't compile it itself, as a copy can't reach that state, so
 //! it calls the library's own, and each `Vec` it gives back has no known
 //! capacity, which `capacity()` refuses at run time, naming #1180 (#1180's
 //! (5)).
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::cell::Cell;
 
-static MADE: AtomicU32 = AtomicU32::new(0);
+thread_local! {
+    static MADE: Cell<u32> = const { Cell::new(0) };
+}
+
+fn next_of(made: &Cell<u32>) -> u32 {
+    let n = made.get();
+    made.set(n + 1);
+    n
+}
 
 fn next() -> u32 {
-    MADE.fetch_add(1, Ordering::Relaxed)
+    MADE.with(next_of)
 }
 
 pub struct Made {

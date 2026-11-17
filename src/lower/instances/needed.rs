@@ -574,18 +574,18 @@ pub(in crate::lower) enum OutOfReach {
     RelativeBinding(DefId, String),
 }
 
-/// `OutOfReach`'s, of `body`, a function's MIR of `foreign`'s libraries.
-pub(in crate::lower) fn out_of_reach<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
-    body: &mir::Body<'tcx>,
-) -> Vec<OutOfReach> {
-    let mut out = Vec::new();
-    struct Read<'tcx> {
+/// What `body` reads that may be state: each constant it evaluates, each
+/// static it points at and each thread-local it takes, which `is_state`
+/// tells apart. One answer of what a function reads of its library's
+/// state, its consumer's compile of it (`out_of_reach`) and its library's
+/// own, which exports what that may read (`library::internal_state`,
+/// #2017).
+pub(in crate::lower) fn reads<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Vec<DefId> {
+    struct Reads<'tcx> {
         tcx: TyCtxt<'tcx>,
         read: Vec<DefId>,
     }
-    impl<'tcx> mir::visit::Visitor<'tcx> for Read<'tcx> {
+    impl<'tcx> mir::visit::Visitor<'tcx> for Reads<'tcx> {
         fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
             if let mir::Const::Unevaluated(unevaluated, _) = constant.const_ {
                 self.read.push(unevaluated.def);
@@ -600,18 +600,34 @@ pub(in crate::lower) fn out_of_reach<'tcx>(
             self.super_rvalue(rvalue, location);
         }
     }
-    let mut read = Read { tcx, read: Vec::new() };
-    mir::visit::Visitor::visit_body(&mut read, body);
-    for &def in &read.read {
-        let state = matches!(tcx.def_kind(def), DefKind::Static { .. })
-            || (matches!(tcx.def_kind(def), DefKind::Const)
-                && matches!(tcx.type_of(def).instantiate_identity().skip_normalization().kind(),
-                    ty::Adt(key, _) if crate::lower::recognition::is_std_def(tcx, key.did(), crate::lower::recognition::StdItem::LocalKey)));
+    let mut reads = Reads { tcx, read: Vec::new() };
+    mir::visit::Visitor::visit_body(&mut reads, body);
+    reads.read
+}
+
+/// Whether `def`, of what a body `reads`, is state: a `static`, or a
+/// `thread_local!` key, a constant `LocalKey`.
+pub(in crate::lower) fn is_state(tcx: TyCtxt<'_>, def: DefId) -> bool {
+    matches!(tcx.def_kind(def), DefKind::Static { .. })
+        || (matches!(tcx.def_kind(def), DefKind::Const)
+            && matches!(tcx.type_of(def).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(key, _) if crate::lower::recognition::is_std_def(tcx, key.did(), crate::lower::recognition::StdItem::LocalKey)))
+}
+
+/// `OutOfReach`'s, of `body`, a function's MIR of `foreign`'s libraries.
+pub(in crate::lower) fn out_of_reach<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    body: &mir::Body<'tcx>,
+) -> Vec<OutOfReach> {
+    let mut out = Vec::new();
+    let read = reads(tcx, body);
+    for &def in &read {
         // A binding's, an `extern` block's static, is JS's, which the
         // crate's JS reads as its library's does, but of a module its
         // library names by a path relative to its own file, which is below.
         let binding = tcx.is_foreign_item(def);
-        if state && !binding && !def.is_local() && foreign.item(def).is_none() {
+        if is_state(tcx, def) && !binding && !def.is_local() && foreign.item(def).is_none() {
             out.push(OutOfReach::Private(def));
         }
     }
@@ -621,7 +637,7 @@ pub(in crate::lower) fn out_of_reach<'tcx>(
     // the type it holds.
     let variable =
         |def: DefId| (foreign.item(def)).is_some_and(|item| item.calling.has(crate::library::ItemFact::Variable));
-    let keys: Vec<DefId> = (read.read.iter().copied())
+    let keys: Vec<DefId> = (read.iter().copied())
         .filter(|&def| !def.is_local() && variable(def))
         .collect();
     let held = |key: DefId| match tcx.type_of(key).instantiate_identity().skip_normalization().kind() {
@@ -643,7 +659,7 @@ pub(in crate::lower) fn out_of_reach<'tcx>(
     }
     // A binding of its library's to a module by a path relative to that
     // library's file, `./stack.js`, which isn't this crate's.
-    let statics = (read.read.iter().copied())
+    let statics = (read.iter().copied())
         .filter(|&def| tcx.is_foreign_item(def) && matches!(tcx.def_kind(def), DefKind::Static { .. }));
     let bindings: Vec<DefId> = called(body)
         .into_iter()

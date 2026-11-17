@@ -103,8 +103,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's function its consumer compiles is refused where it reads a binding's static, a global JS has, as React DOM's call of the reconciler's runWithFiberInDEV reading shared's `__DEV__` was (ADR 0914, amended, gap rd75)",
     file: "src/lower/instances/needed.rs",
-    find: "if state && !binding && !def.is_local()",
-    replace: "if state && !def.is_local()",
+    find: "if is_state(tcx, def) && !binding && !def.is_local()",
+    replace: "if is_state(tcx, def) && !def.is_local()",
     tests: ["test/crates-compiled-here.test.ts", "-t", "private state"],
   },
   {

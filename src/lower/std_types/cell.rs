@@ -14,7 +14,7 @@ use rustc_middle::ty::{self, Ty};
 
 mod variables;
 pub(in crate::lower) use variables::{
-    crate_imported_variables, imported_variables_through, nullable_made, plain_statics,
+    crate_imported_variables, imported_variables_through, is_box, nullable_made, plain_statics,
 };
 
 /// Which of a `RefCell` guard's own functions maps it (#1275).

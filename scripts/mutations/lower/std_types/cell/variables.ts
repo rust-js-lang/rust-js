@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "internal-variable-unmade",
+    breaks:
+      "a library's private thread-local it makes its module's variable isn't listed as one, so a consumer reads its `.value` of the number it is (#2017)",
+    file: "src/lower/std_types/cell/variables.rs",
+    find: "                        exported.push((name.clone(), c.mutable));\n                    } else if internal.contains(name.as_str()) {\n",
+    replace: "                        exported.push((name.clone(), c.mutable));\n                    } else if false {\n",
+    tests: ["test/cross-crate-private-state.test.ts"],
+  },
+  {
     name: "mir-statics-closure-set-unseen",
     breaks:
       "a thread-local a closure sets is a `const`, which the closure can't set",

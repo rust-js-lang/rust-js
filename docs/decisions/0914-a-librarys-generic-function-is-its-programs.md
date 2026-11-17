@@ -1984,3 +1984,63 @@ holds, it's refused, naming the `static`: a private fn it calls is
 compiled too, and a private field is read as its key. Asking the program
 to make the `static` `pub` reshapes it for the compiler; #2017 is the
 library exporting it under an internal binding for that crate.
+
+## Amendment: a library exports its private state for its consumers' compiles (2026-11-17, #2017)
+
+A consumer compiles a library function itself for several reasons:
+- one its library's JS doesn't export;
+- a writer given more than the library's JS takes;
+- one whose JS may merge what it compares;
+- one whose library keeps no capacity it reads;
+- one that copies what it changes (`Copying`).
+
+That function may read a private `static` or `thread_local!` key of its
+library. State can't be copied, since a copy would be a second static. So
+it was refused, asking the program to make the item `pub`.
+
+**The library exports it.** One owner, `library::internal_state`, decides
+what. The roots are each function another crate can call (`escapes`); the
+walk follows the library's own calls and closures to the private statics
+and thread-local keys they read (`instances::reads`, `is_state`, which
+`out_of_reach` asks too). It's wide by design: any function a consumer may
+compile is one it can call, whatever the reason, so one rule covers every
+reason. An export no consumer reads is spent, where a narrower answer's
+miss would be a refusal (the user's decision, 2026-11-17).
+
+**How it's exported.** Each module exports them by an internal name,
+`export { LIMIT as $$LIMIT }`, given apart from its exports by the speller
+(`names::fresh_in`):
+- **What begins it:** `library::INTERNAL`. No Rust name, and no `pub use`
+  alias, begins `$$`.
+- **Not exported:** one its module keeps as its cell's `{ value }`, which an
+  importer would read as the box. It's refused as before.
+- **Not aliased:** one exported by its own name already, because another of
+  the crate's modules imports it.
+
+The manifest lists each as an `Item` with `internal: true`, its
+`exported_as` the internal name, and `Lazy` or `Variable` as the library
+made it. Library ABI 44.
+
+**What a consumer does with it.**
+- It imports it by its internal name (`$$LIMIT`), which no name of its own
+  is. Imported by the library's own word, `root`, it reserved that word in
+  every module and gave a program's shadowing local `root$1`.
+- It reads it as its library's public ones, by those facts.
+- A set of a module variable stays refused (ADR 0270).
+- A module's file exports, to a glob's `export *` and its manifest's
+  module, leave internal names out (`is_internal_export`), so `pub use m::*`
+  stays `export *`.
+
+**The React port.** 731 internal export lines across its seven crates,
+about 51 KB, about 0.6% of its JS, and nothing else: the user accepted them
+as a known difference from upstream (2026-11-17), listed in the port's
+PORTING.md.
+
+Held by `test/cross-crate-private-state.test.ts`, as native:
+- a private `static` through a private function (#2017's own);
+- an eager thread-local;
+- a lazy one whose initializer reads what the crate set first;
+- a variable the library sets;
+- a private module's `static` two calls down.
+
+The internal names are left out of the `.d.ts`.

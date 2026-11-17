@@ -124,3 +124,15 @@ new one is m6-react's to see first (#1462).
 | `FieldFact::Quiet` | closed-world: refused | a `RefCell` field none of whose borrows its code checks | lends none, and holds no borrow of one while code that may borrow it runs; lending one is refused (#1054) |
 | `FieldFact::RustFunctions` | closed-world: agrees | each fn pointer the field holds is a Rust function | its call of one leaves out a trailing `undefined` (ADR 0330) |
 <!-- end of the facts -->
+
+## An item that isn't public
+
+An `Item` with `internal: true` (library ABI 44, #2017) is its library's
+private state, a `static` or a `thread_local!` key no other crate can name,
+that a function a consumer may compile itself reads. Its JS exports it by an
+internal name, its `exported_as`, `$$LIMIT`, which no declaration names, or
+by its own where another of its crate's modules imports it. A consumer imports
+it by that name and reads it as a public one, by its facts, `Lazy` or
+`Variable`; it never sets it (ADR 0270). It's closed-world: the library lists
+what each function another crate can call reaches, through its own calls,
+and a consumer that compiles one of them agrees (ADR 0914, amended).

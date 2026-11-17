@@ -21,9 +21,13 @@ pub(super) fn place(
     module: LocalModId,
     items: &mut [js::Item],
     (fns, consts, foreign): (&IndexMap<DefId, FnInfo>, &[LocalDefId], &Foreign<'_, '_>),
-    (quiet_locals, thread_local_inits): (&IndexSet<LocalDefId>, &IndexMap<LocalDefId, LocalDefId>),
+    (quiet_locals, thread_local_inits, internal): (
+        &IndexSet<LocalDefId>,
+        &IndexMap<LocalDefId, LocalDefId>,
+        &IndexSet<LocalDefId>,
+    ),
     names: Option<&IndexMap<Export, String>>,
-) -> IndexMap<DefId, bool> {
+) -> (IndexMap<DefId, bool>, IndexSet<DefId>) {
     // Its `static mut`s, each its module's variable as a
     // thread-local of a value is (ADR 0096, amended).
     let statics = super::super::analysis::module_statics(tcx, consts, module);
@@ -53,8 +57,18 @@ pub(super) fn place(
         })
         .filter_map(|&key| Some(fns.get(&key.to_def_id())?.name.as_str()))
         .collect();
-    let (made, boxed) =
-        super::super::std_types::cell::plain_statics(items, &quiet, &held_values.keys().copied().collect(), &nullable);
+    // Its state a library exports by an internal name, made a variable as
+    // its exported one is, which a consumer reads so (#2017).
+    let internal_names: IndexSet<&str> = (internal.iter())
+        .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
+        .filter_map(|key| Some(fns.get(&key.to_def_id())?.name.as_str()))
+        .collect();
+    let (made, internal_made, boxed) = super::super::std_types::cell::plain_statics(
+        items,
+        (&quiet, &internal_names),
+        &held_values.keys().copied().collect(),
+        &nullable,
+    );
     for name in boxed {
         super::super::analysis::refuse_boxed_export(tcx, held_values[name.as_str()].to_def_id());
     }
@@ -94,5 +108,12 @@ pub(super) fn place(
             },
         );
     }
-    variables
+    // Its state a library exports by an internal name that it made a
+    // variable, which its importer reads by its name (#2017): not the
+    // crate's own variables, which its modules import by their names.
+    let internal_made: IndexSet<DefId> = (internal.iter())
+        .map(|key| key.to_def_id())
+        .filter(|key| fns.get(key).is_some_and(|info| internal_made.contains(&info.name)))
+        .collect();
+    (variables, internal_made)
 }

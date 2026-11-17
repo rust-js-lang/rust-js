@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "mir-statics-boxed",
     breaks: "a thread-local only its module reads and sets stays `{ value }`",
     file: "src/lower/pipeline/variables.rs",
-    find: "        super::super::std_types::cell::plain_statics(items, &quiet,",
-    replace: "        super::super::std_types::cell::plain_statics(&mut Vec::new(), &quiet,",
+    find: "    let (made, internal_made, boxed) = super::super::std_types::cell::plain_statics(\n        items,\n",
+    replace: "    let (made, internal_made, boxed) = super::super::std_types::cell::plain_statics(\n        &mut Vec::new(),\n",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",

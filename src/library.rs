@@ -122,7 +122,24 @@ pub use dependencies::Dependencies;
 /// (#1915).
 /// 43: `ReturnsJs`, a function whose JS gives back the JS iterator of its
 /// `impl Iterator`, which a consumer's Rust call doesn't read (#1999).
-pub const VERSION: u32 = 43;
+/// 44: `internal`, its private state a function a consumer may compile
+/// itself reads, which its JS exports by an internal name, `$$LIMIT`
+/// (#2017): an older library, listing none, would be read as having none.
+pub const VERSION: u32 = 44;
+
+/// What begins the name a library's JS exports its private state by, for
+/// its consumers' compiles of its functions, `$$LIMIT` of `LIMIT` (#2017,
+/// ADR 0914, amended): no Rust name has a `$`, nor does a `pub use`'s
+/// alias, so no other export's name begins so.
+pub const INTERNAL: &str = "$$";
+
+/// Whether `exported`, a name a module's `export { .. as .. }` gives, is
+/// one a library exports its private state by (`INTERNAL`): not one of
+/// what its file exports to a glob's `export *` or its manifest's module
+/// (#593, #629).
+pub fn is_internal_export(exported: &str) -> bool {
+    exported.starts_with(INTERNAL)
+}
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -145,6 +162,14 @@ pub struct Item {
     /// getCurrentTime as unstable_now }` (ADR 0596, amended).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exported_as: Option<String>,
+    /// Its library's private state, a `static` or a `thread_local!` key no
+    /// other crate can name, that a function a consumer may compile itself
+    /// reads: exported by an internal name, `exported_as`, `$$LIMIT`, which
+    /// no declaration names, or by its own where another of its crate's
+    /// modules imports it (#2017, ADR 0914, amended). A consumer reads it as
+    /// its library's public one, by its facts.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub internal: bool,
     /// What a consumer's call of it gives it and checks.
     #[serde(flatten)]
     pub calling: Calling,

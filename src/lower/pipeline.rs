@@ -712,8 +712,7 @@ pub fn lower_crate<'tcx>(
         pass.functions.entry(module).or_default().extend(first.functions);
         pass.local_consts.entry(module).or_default().extend(first.consts);
         let initializer = initialized.iter().any(|body| body.def_id == def_id);
-        // Each copy of it its callers need besides, beside it (ADR 0051,
-        // amended).
+        // Each copy of it its callers need besides, beside it (ADR 0051, amended).
         let mut copies = copies_of.swap_remove(&def_id).unwrap_or_default();
         copies::gather(&mut pass, (module, &mut lowered), &mut copies);
         // A class's trait of classes' impl: its defaults the prototype's (rd283).
@@ -997,9 +996,10 @@ pub fn lower_crate<'tcx>(
         .filter(|&&(from, id)| fns[&id].module != from)
         .map(|&(_, id)| id)
         .collect();
-    // The exported thread-locals and `static mut`s their modules made
-    // their variables.
+    // The thread-locals and `static mut`s their modules made their variables, exported or internal (#2017).
     let mut variables: IndexSet<DefId> = IndexSet::default();
+    // A library's private state its consumers' compiles may read, and what each module exports of it (#2017).
+    let (internal, mut internal_exports) = (super::library::internal_state(tcx, library), Vec::new());
     let mut lowered: Vec<UnlinkedModule> = modules
         .into_iter()
         .map(|module| {
@@ -1193,15 +1193,17 @@ pub fn lower_crate<'tcx>(
                 }
             }
             // Its variables, and a library's it reads (`variables.rs`).
-            let module_variables = variables::place(
+            let (module_variables, made) = variables::place(
                 tcx,
                 module,
                 &mut lowered.items,
                 (&fns, &consts, &foreign),
-                (&quiet_locals, &thread_local_inits),
+                (&quiet_locals, &thread_local_inits, &internal),
                 import_names.get(&module),
             );
             variables.extend(module_variables.keys().copied());
+            let exports = super::library::internal_exports(tcx, (module, &mut lowered), (&internal, &fns, &made));
+            internal_exports.extend(exports);
             // What a `&mut` and a `dyn` in a signature are, as the item's
             // body has them: asked of a context of the item (#619, #620).
             let context = |owner: DefId| contexts::item_cx((&shared, &settled), owner, (module, &taken[&module]));
@@ -1290,7 +1292,7 @@ pub fn lower_crate<'tcx>(
             library: export_library.then(|| {
                 super::library::exports(
                     tcx,
-                    (&fns, &exported),
+                    (&fns, &exported, &internal_exports),
                     &super::library::Contracts {
                         drop_params: &kept_drop_params,
                         shown_params: &shown_params.params,

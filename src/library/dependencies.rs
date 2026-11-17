@@ -120,10 +120,13 @@ impl Dependencies {
             for item in items {
                 let export = item.exported_as();
                 let rooted = rooted_of(&item.module, &export);
+                // An internal one by its internal name, `$$LIMIT`, which no name
+                // of a consumer's own is, as it reserves its imports' (#2017).
+                let name = if item.internal { export.clone() } else { item.export };
                 let mut imported = Imported {
                     from: specifier(&item.module)?,
                     export,
-                    name: item.export,
+                    name,
                     member: item.member,
                     calling: item.calling,
                     rooted: None,

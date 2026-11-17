@@ -17,7 +17,7 @@ use super::Body;
 
 mod failing;
 mod needed;
-pub(super) use needed::{Analyzed, copy_reaches, needed};
+pub(super) use needed::{Analyzed, copy_reaches, is_state, needed, reads};
 
 /// The library functions the crate compiles itself, each placed in the
 /// module of the crate's that first calls it (ADR 0914). Decided by the
@@ -532,7 +532,7 @@ pub(in crate::lower) fn read_by_js_alone<'tcx>(
 /// Each function `body` calls or names as a value, and its generic
 /// arguments there: a reference to one too, `&f` made a `&dyn Fn`, which
 /// MIR promotes to a constant of its own, `&FnDef` (#1210).
-fn called<'tcx>(body: &mir::Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
+pub(in crate::lower) fn called<'tcx>(body: &mir::Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>)> {
     struct Called<'tcx>(Vec<(DefId, ty::GenericArgsRef<'tcx>)>);
     impl<'tcx> mir::visit::Visitor<'tcx> for Called<'tcx> {
         fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {

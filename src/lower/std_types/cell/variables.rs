@@ -31,10 +31,10 @@ fn item_word(name: &js::Name) -> &str {
 /// (#541).
 pub(in crate::lower) fn plain_statics(
     items: &mut [js::Item],
-    quiet: &IndexSet<&str>,
+    (quiet, internal): (&IndexSet<&str>, &IndexSet<&str>),
     held_values: &IndexSet<&str>,
     nullable: &IndexSet<&str>,
-) -> (Vec<(String, bool)>, Vec<String>) {
+) -> (Vec<(String, bool)>, Vec<String>, Vec<String>) {
     // A closure called where it's made: its body (ADRs 0581, 0840), in a
     // function or in what the module runs when it's loaded, which no
     // `return` ends.
@@ -48,7 +48,7 @@ pub(in crate::lower) fn plain_statics(
             _ => None,
         })
         .collect();
-    let mut exported = Vec::new();
+    let (mut exported, mut internal_made) = (Vec::new(), Vec::new());
     for cell in cells {
         let name = item_word(&cell).to_string();
         outside_own_bindings(items, &name.clone(), |items| {
@@ -109,6 +109,8 @@ pub(in crate::lower) fn plain_statics(
                     c.mutable = sets > 0;
                     if c.export {
                         exported.push((name.clone(), c.mutable));
+                    } else if internal.contains(name.as_str()) {
+                        internal_made.push(name.clone());
                     }
                 }
             }
@@ -158,6 +160,8 @@ pub(in crate::lower) fn plain_statics(
                     c.mutable = true;
                     if c.export {
                         exported.push((name.clone(), true));
+                    } else if internal.contains(name.as_str()) {
+                        internal_made.push(name.clone());
                     }
                 }
             }
@@ -181,7 +185,7 @@ pub(in crate::lower) fn plain_statics(
             nullable_cell(&mut c.value);
         }
     }
-    (exported, boxed)
+    (exported, internal_made, boxed)
 }
 
 /// `made`, a thread-local's cell, `{ value: init }`, as one that stores
@@ -274,7 +278,7 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
 }
 
 /// Whether `made` is a thread-local's cell as its `{ value }`.
-fn is_box(made: &Expr) -> bool {
+pub(in crate::lower) fn is_box(made: &Expr) -> bool {
     matches!(&made.kind, js::ExprKind::Object(props, ..)
         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD))
 }
