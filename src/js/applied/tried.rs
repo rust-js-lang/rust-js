@@ -147,9 +147,9 @@ pub fn tried_set_where_made(body: &mut [Stmt]) {
             .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
             .count();
         let lets = &body[i - declared.max(1)..i];
-        let declared: Vec<String> = (lets.iter())
+        let declared: Vec<Name> = (lets.iter())
             .filter_map(|s| match &s.kind {
-                StmtKind::Let(name, _) => Some(name.to_string()),
+                StmtKind::Let(name, _) => Some(name.clone()),
                 _ => None,
             })
             .collect();
@@ -157,26 +157,24 @@ pub fn tried_set_where_made(body: &mut [Stmt]) {
         // done = found;`, set where it's made in turn.
         while let StmtKind::TryCatch(tried, binding, caught) = &body[i].kind {
             let Some((made, set, variable)) =
-                set_where_made(tried, binding.as_ref().map(|n| n.word()), caught, |name| {
-                    declared.iter().any(|n| n == name)
-                })
+                set_where_made(tried, binding.as_ref(), caught, |name| declared.contains(name))
             else {
                 break;
             };
             if body
                 .iter()
-                .any(|s| matches!(&s.kind, StmtKind::Function(f) if mentions_in(&f.body, &variable) > 0))
+                .any(|s| matches!(&s.kind, StmtKind::Function(f) if mentions_of(&f.body, &variable) > 0))
             {
                 break;
             }
-            set_at(&mut body[i], made, set, &variable);
+            set_at(&mut body[i], made, set);
         }
     }
 }
 
-/// `try`'s `v = value;` at `set` gone, `variable` set where the `const` at
-/// `made` makes the value.
-fn set_at(try_catch: &mut Stmt, made: usize, set: usize, variable: &str) {
+/// `try`'s `v = value;` at `set` gone, its variable set where the `const`
+/// at `made` makes the value.
+fn set_at(try_catch: &mut Stmt, made: usize, set: usize) {
     let StmtKind::TryCatch(tried, ..) = &mut try_catch.kind else {
         unreachable!("a try")
     };
@@ -194,15 +192,12 @@ fn set_at(try_catch: &mut Stmt, made: usize, set: usize, variable: &str) {
     };
     let value_name = value_name.clone();
     // Its reads the variable's, the one it's set to now.
-    let into = match &to.kind {
-        ExprKind::Var(into) => Some(into.clone()),
-        _ => None,
+    let ExprKind::Var(into) = &to.kind else {
+        unreachable!("a variable, found by set_where_made")
     };
+    let into = into.clone();
     tried[made].kind = StmtKind::Assign(to, value.clone());
-    match into {
-        Some(into) => merged(&mut tried[made + 1..set], value_name.word(), &into),
-        None => renamed(&mut tried[made + 1..set], value_name.word(), variable),
-    }
+    merged(&mut tried[made + 1..set], value_name.word(), &into);
 }
 
 /// Of a `try`'s `tried` and its `catch`, the `const` of the value made, the
@@ -210,10 +205,10 @@ fn set_at(try_catch: &mut Stmt, made: usize, set: usize, variable: &str) {
 /// it where the value is made is the same program (`tried_set_where_made`).
 fn set_where_made(
     tried: &[Stmt],
-    binding: Option<&str>,
+    binding: Option<&Name>,
     caught: &[Stmt],
-    declared: impl Fn(&str) -> bool,
-) -> Option<(usize, usize, String)> {
+    declared: impl Fn(&Name) -> bool,
+) -> Option<(usize, usize, Name)> {
     tried.iter().enumerate().find_map(|(set, stmt)| {
         let StmtKind::Assign(to, from) = &stmt.kind else {
             return None;
@@ -231,30 +226,30 @@ fn set_where_made(
             let leaves = caught.last().is_some_and(ends) && mentions_of(caught, variable) == 0;
             let first_set = caught.iter().position(|s| {
                 matches!(&s.kind, StmtKind::Assign(t, v)
-                    if matches!(&t.kind, ExprKind::Var(n) if n == variable) && !v.mentions_var(variable.word()))
+                    if matches!(&t.kind, ExprKind::Var(n) if n == variable) && !v.mentions_name(variable))
             });
             leaves || first_set.is_some_and(|first| mentions_of(&caught[..first], variable) == 0)
         };
-        let same = declared(variable.word())
+        let same = declared(variable)
             && mentions_of(&tried[..set], variable) == 0
             && !declares(between, variable)
             && mentions_of(&tried[set + 1..], value) == 0
-            && !read_in_a_closure(between, value.word())
-            && (between.iter().all(Stmt::cannot_throw) || binding != Some(variable.word()) && unseen(caught));
-        same.then(|| (made, set, variable.to_string()))
+            && !read_in_a_closure(between, value)
+            && (between.iter().all(Stmt::cannot_throw) || binding != Some(variable) && unseen(caught));
+        same.then(|| (made, set, variable.clone()))
     })
 }
 
 /// Whether a closure or function in `stmts` names `name`.
-fn read_in_a_closure(stmts: &[Stmt], name: &str) -> bool {
+fn read_in_a_closure(stmts: &[Stmt], name: &Name) -> bool {
     let mut read = false;
     each_expr(stmts, &mut |e| match &e.kind {
-        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => read |= mentions_in(body, name) > 0,
-        ExprKind::Function(function) => read |= mentions_in(&function.body, name) > 0,
+        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => read |= mentions_of(body, name) > 0,
+        ExprKind::Function(function) => read |= mentions_of(&function.body, name) > 0,
         _ => {}
     });
     each_list(stmts, &mut |list| {
-        read |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if mentions_in(&f.body, name) > 0));
+        read |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if mentions_of(&f.body, name) > 0));
     });
     read
 }

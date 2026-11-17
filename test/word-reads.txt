@@ -5,7 +5,7 @@
 # spelling step hasn't moved yet. Step done when only diagnostics are left.
 src/js.rs	2
 src/js/applied.rs	4
-src/js/applied/tried.rs	7
+src/js/applied/tried.rs	1
 src/js/expr_walk.rs	7
 src/js/make.rs	1
 src/js/pattern.rs	1
