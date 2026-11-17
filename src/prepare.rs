@@ -949,8 +949,11 @@ fn expr(e: &mut Expr) {
         // What the place reads, a name spelled later, `value#1`, as its base,
         // which preparation spells it where that's free: a parameter of
         // that word would take it (ADR 1150).
+        // word: a parameter of this word would take the place's reads of
+        // it, by its spelling (`js::scopes`).
+        let spelled = js::scopes::spelled(&[StmtKind::Expr((**place).clone()).at(place.span)]);
         let reads = |word: &str| {
-            let mut read = place.mentions_var(word);
+            let mut read = spelled.contains(word);
             place.visit_names(&mut |name| read |= name.made_base() == Some(word));
             read
         };

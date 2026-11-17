@@ -293,36 +293,14 @@ pub(super) fn fields(module: &mut js::Module) {
 /// { react_stack_bottom_frame: .. }`, data upstream keeps by its name
 /// (#584).
 pub(super) fn members(module: &mut js::Module) {
-    let mut names: IndexSet<String> = IndexSet::default();
+    // word: what JS reads a member's name as, anywhere in the module,
+    // by its spelling (`js::scopes`), and each namespace's methods' names,
+    // which its tree reads as no scope's.
+    let mut names: IndexSet<String> = js::scopes::Tree::of_module(module).names().map(str::to_owned).collect();
     for item in &module.items {
-        match item {
-            js::Item::Const(constant) => {
-                names.insert(constant.name.word().to_string());
-                js::names_in(&[StmtKind::Expr(constant.value.clone()).at(constant.span)], &mut names);
-            }
-            js::Item::Statements(stmts) => js::names_in(stmts, &mut names),
-            js::Item::Function(function) => js::names_in(
-                &[StmtKind::Function(Box::new(function.clone())).at(function.span)],
-                &mut names,
-            ),
-            js::Item::Namespace(namespace) => {
-                names.insert(namespace.name.word().to_string());
-                for method in &namespace.methods {
-                    js::names_in(
-                        &[StmtKind::Function(Box::new(method.clone())).at(method.span)],
-                        &mut names,
-                    );
-                }
-            }
+        if let js::Item::Namespace(namespace) = item {
+            names.extend(namespace.methods.iter().map(|method| method.name.word().to_string()));
         }
-    }
-    for import in &module.imports {
-        names.extend(import.named.iter().map(|(_, local)| local.word().to_string()));
-        names.extend(import.namespace.as_ref().map(|n| n.word().to_string()));
-    }
-    for package in &module.packages {
-        names.extend(package.named.iter().map(|(_, local)| local.clone()));
-        names.extend(package.default.clone().into_iter().chain(package.namespace.clone()));
     }
     for at in 0..module.items.len() {
         let js::Item::Const(constant) = &module.items[at] else {
