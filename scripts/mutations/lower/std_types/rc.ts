@@ -286,4 +286,12 @@ export const mutations: Mutation[] = [
     replace: "        let own = |_: Ty<'tcx>| false;\n",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
   },
+  {
+    name: "counted-rc-pointee-not-through-refs",
+    breaks: "`{}` of a counted `Rc` of a `&mut u32` is refused, its pointee a `&mut` cell left unread, where an uncounted one's is shown through it (#1577)",
+    file: "src/lower/std_types/rc.rs",
+    find: "            (value, ty) = self.through_refs_until(value, inside, stop);\n        }\n",
+    replace: "            ty = inside;\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^counted_rc_of_a_mut_ref_shown.rs$"],
+  },
 ];

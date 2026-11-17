@@ -40,3 +40,27 @@ it through its referent, so the JS was the same without it: the
 nightly's mutation `rc-of-ref-unpeeled` survived (#228). The loop gives
 back the reference it reaches, and the reference's own formatting peels
 it.
+
+## Amendment (2026-11-18, #1577): a counted `Rc`'s `&mut` cell is read through
+
+The amendment above let the loop give back the reference a counted `Rc`
+holds, for the reference's own formatting to peel. That holds of a `&T`,
+whose JS is what it refers to, but not of a `&mut` that's a cell, a
+number's or a `String`'s, whose `value` is what it refers to: `{}` of a
+counted `Rc<&mut u32>` was refused, "`{}` of a `&mut u32`". It showed
+only where the crate counts every `Rc`: beside an impl for any `Rc<T>`
+and an `Rc<dyn Fn>` whose `ptr_eq` it asks (ADRs 0852, 0959), the
+neighbour shuffle's `boxed_mut_ref_shown.rs` beside
+`rc_of_an_impls_parameter_counted_as_any.rs` or `rc_of_impl_fn_returned.rs`.
+`through_boxes_until` now goes through the references a counted `Rc`'s
+pointee holds, `through_refs_until`, as it does an uncounted one's: a
+cell's `value` read, a `&T` passed as it is, so nothing is peeled twice.
+
+Case C of ADR 0262: a refusal where native Rust shows the value. Corpus
+case `counted_rc_of_a_mut_ref_shown` puts the neighbour's two ingredients
+beside `boxed_mut_ref_shown`'s rows: an `Rc` and a `Box` of a `&mut u32`,
+one written through `Rc::get_mut` before it's shown, `**through += 10`, a
+`&mut String`'s and a counted `&mut Loud`'s. It runs against native in
+both builds. Both pairs run as native too, and leave
+test/neighbours-known.txt. Mutation `counted-rc-pointee-not-through-refs`
+is caught.
