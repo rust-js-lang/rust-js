@@ -212,6 +212,19 @@ impl Item {
         }
     }
 
+    /// Each variable it reads, its functions' bodies' too: its `Name`.
+    pub fn visit_names<'a>(&'a self, read: &mut dyn FnMut(&'a Name)) {
+        match self {
+            Item::Namespace(namespace) => {
+                namespace.constants.iter().for_each(|c| c.value.visit_names(read));
+                namespace.methods.iter().for_each(|m| m.visit_names(read));
+            }
+            Item::Const(constant) => constant.value.visit_names(read),
+            Item::Statements(stmts) => visit_stmt_names(stmts, read),
+            Item::Function(function) => function.visit_names(read),
+        }
+    }
+
     /// Where its Rust is, of what's in the crate's sources.
     fn spans(&self) -> Vec<Span> {
         let spans: Vec<Span> = match self {

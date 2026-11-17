@@ -153,6 +153,12 @@ impl Name {
         self.1 == Of::Module
     }
 
+    /// The runtime's helper it names, `$unwrap`: a module's name
+    /// `@rust-js/std` exports, a module's word its identity (ADR 0103).
+    pub fn helper(&self) -> Option<&str> {
+        (self.is_module() && crate::runtime::exports(&self.0)).then_some(self.0.as_str())
+    }
+
     /// Whether it's a global's (`global`).
     pub fn is_global(&self) -> bool {
         self.1 == Of::Global

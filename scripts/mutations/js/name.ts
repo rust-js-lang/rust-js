@@ -4,6 +4,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "local-named-as-a-helper-is-one",
+    breaks:
+      "a local the program names as a helper is spelled, `rust_js::name = \"$some\"`, is taken for the helper, its calls dropped as doing nothing: `0` where native Rust prints `5` (#2016)",
+    file: "src/js/name.rs",
+    find: "        (self.is_module() && crate::runtime::exports(&self.0)).then_some(self.0.as_str())\n",
+    replace: "        crate::runtime::exports(&self.0).then_some(self.0.as_str())\n",
+    tests: ["test/corpus.test.ts", "-t", "^local_named_as_a_helper.rs$"],
+  },
+  {
     name: "name-unlike-its-word",
     breaks: "a name compared with a word, `Var(v) if v.is(\"Boolean\")`, is never it: what a pass asks of a given name, a global's or a helper's, is never so",
     file: "src/js/name.rs",

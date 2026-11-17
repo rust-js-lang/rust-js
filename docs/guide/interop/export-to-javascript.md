@@ -115,7 +115,11 @@ variant's field ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-i
   ([ADR 0855](../../decisions/0855-a-parameters-rust-js-name-is-its-js-name.md)).
   One of a pattern or of `self` is an error. So is a `let`'s, a name Rust
   can't spell: `#[cfg_attr(rust_js, rust_js::name = "$$typeof")] let
-  typeof_ = ..` is `const $$typeof = ..` (ADR 0855, amended).
+  typeof_ = ..` is `const $$typeof = ..` (ADR 0855, amended). One spelled
+  as a helper of the runtime's is, `$some`, is the program's own, never
+  the helper: its calls run and may panic as written, and where its
+  function reads the helper too, it's spelled apart, `$some$1`
+  ([ADR 0103](../../decisions/0103-runtime-package.md), amended, #2016).
 - **A name JS reserves gets a `$`**: `delete` is `delete$`, `new` is
   `new$`. It's exported by its own name, `export { delete$ as delete };`,
   which a JS module imports, `import { delete as remove }`

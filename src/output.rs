@@ -473,11 +473,14 @@ impl OutputPlan {
         }
         // Of the helpers it asked for, and what they use, the names its
         // prepared tree reads (ADR 0103).
-        js_module.helpers = crate::runtime::imported_helpers(helper_sources, &js_module.read_vars());
+        js_module.helpers = crate::runtime::imported_helpers(helper_sources, &js_module.read_helpers());
         // A helper the module reads and didn't ask for would be a JS
         // error where it runs, its import left out: refused, as a
-        // compiler's mistake, not written.
-        if let Some(name) = (js_module.read_vars().into_iter())
+        // compiler's mistake, not written; of what's spelled as one, but
+        // a local the program named so, `rust_js::name = "$some"` (#2016).
+        if let Some(name) = (js_module.read_names().into_iter())
+            .filter(|name| !name.is_the_programs())
+            .map(js::Name::word)
             .find(|name| crate::runtime::exports(name) && !js_module.helpers.contains(name))
         {
             return Err(format!(

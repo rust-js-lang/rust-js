@@ -7,7 +7,7 @@ src/js.rs	2
 src/js/applied.rs	4
 src/js/applied/tried.rs	7
 src/js/expr_walk.rs	7
-src/js/make.rs	4
+src/js/make.rs	1
 src/js/pattern.rs	1
 src/js/stmt_walk.rs	9
 src/js/storage.rs	1
@@ -23,7 +23,7 @@ src/lower/drops.rs	2
 src/lower/drops/inlined.rs	14
 src/lower/items.rs	1
 src/lower/iterators.rs	1
-src/lower/iterators/eager.rs	4
+src/lower/iterators/eager.rs	3
 src/lower/iterators/in_place.rs	1
 src/lower/jsx.rs	1
 src/lower/library.rs	3

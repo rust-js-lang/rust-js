@@ -237,9 +237,7 @@ impl Expr {
     /// The runtime's helper this is, by the name it exports (ADR 0103).
     pub fn helper_name(&self) -> Option<&str> {
         match &self.kind {
-            ExprKind::Var(name) if name.word().starts_with('$') && crate::runtime::exports(name.word()) => {
-                Some(name.word())
-            }
+            ExprKind::Var(name) => name.helper(),
             _ => None,
         }
     }

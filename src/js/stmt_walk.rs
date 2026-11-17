@@ -35,14 +35,25 @@ impl Module {
     /// imports of the package is the helpers among them (ADR 0103), found
     /// in its tree, not in its text, where a string can spell one.
     pub fn read_vars(&self) -> BTreeSet<&str> {
-        let mut vars = BTreeSet::new();
-        let mut read = |name| {
-            vars.insert(name);
-        };
+        self.read_names().into_iter().map(Name::word).collect()
+    }
+
+    /// Each variable its code reads: its `Name`, each once.
+    pub fn read_names(&self) -> crate::collections::IndexSet<&Name> {
+        let mut names = crate::collections::IndexSet::default();
         for item in &self.items {
-            item.visit_vars(&mut read);
+            item.visit_names(&mut |name| {
+                names.insert(name);
+            });
         }
-        vars
+        names
+    }
+
+    /// The runtime's helpers its code reads (`Name::helper`): what it
+    /// imports of the package (ADR 0103), never a local the program named
+    /// as one is spelled, `rust_js::name = "$some"` (#2016).
+    pub fn read_helpers(&self) -> BTreeSet<&str> {
+        self.read_names().into_iter().filter_map(Name::helper).collect()
     }
 }
 

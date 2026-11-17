@@ -512,8 +512,7 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
                 let list = iterated(e.clone());
                 // Not one a runtime helper makes: `$closing(..)`'s, listed,
                 // would be stepped to its end and never closed (ADR 0510).
-                if matches!(&list.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Var(f) if f.word().starts_with('$')))
-                {
+                if matches!(&list.kind, js::ExprKind::Call(f, _) if f.helper_name().is_some()) {
                     return None;
                 }
                 let items = Expr::builtin(Expr::js_global("Array"), "from", vec![list]);

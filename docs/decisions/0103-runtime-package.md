@@ -215,3 +215,18 @@ event map to TypeScript, `index.d.ts`, which a crate's declarations
 import, `import type { EventMapOf } from "@rust-js/webapi"`, so this
 repository's tests resolve it as a consumer does, as `@rust-js/std` is
 std's ([ADR 1153](1153-a-binding-traits-projection-is-its-type-function.md)).
+
+## Amended: a helper is a module's name the runtime exports (2026-11-17, #2016)
+
+What's a helper was asked of a variable's word: `$` and an export of the
+runtime's. A local the program names, `#[rust_js::name = "$some"] let bump
+= ..`, is spelled so too, and was taken for the helper: `$some` does nothing,
+so `bump(2);` was dropped, `0` where native Rust gives `5`; the module also
+imported a `$some` nothing read. Now a helper is a name of the module's form
+whose word the runtime exports (`js::Name::helper`): a module's name's word
+is its identity, a local's never is. `Expr::helper_name`, the module's
+imports (`Module::read_helpers`) and the check that each helper read is
+imported ask it; the program's local is its own, spelled apart from the
+helper where one function reads both, `$some$1`
+(`test/corpus/local_named_as_a_helper.rs`).
+

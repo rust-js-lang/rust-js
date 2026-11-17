@@ -224,8 +224,8 @@ test("owned compiler output and downstream phases do not depend on rustc", () =>
 // helper's name (found in review).
 test("runtime imports are chosen before printing", () => {
   // The printer is given them, chosen where the module is prepared.
-  expect(read("src/to_oxc.rs")).not.toMatch(/imported_helpers|read_vars/);
-  expect(read("src/output.rs")).toContain("imported_helpers(helper_sources, &js_module.read_vars())");
+  expect(read("src/to_oxc.rs")).not.toMatch(/imported_helpers|read_vars|read_helpers/);
+  expect(read("src/output.rs")).toContain("imported_helpers(helper_sources, &js_module.read_helpers())");
   expect(read("src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
 });
 
