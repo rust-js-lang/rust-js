@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
       "a method read of a variable before it's set again, `element$.focus.call(element)`, is called of the one read, its `this` the old value (rd334)",
     file: "src/js/make.rs",
     find: "            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
-    replace: "            (ExprKind::Var(value), Some(ExprKind::Var(_))) if name == \"call\" => Some(value.word()),\n",
+    replace: "            (ExprKind::Var(value), Some(ExprKind::Var(_))) if name == \"call\" => Some(value),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
   },
   {
