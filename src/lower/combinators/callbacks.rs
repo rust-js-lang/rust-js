@@ -129,29 +129,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
-        let tcx = self.tcx;
-        let once = |input: Ty<'tcx>| {
-            crate::lower::recognition::function_kind(tcx, callee, input) == Some(ty::ClosureKind::FnOnce)
-        };
-        // Or one whose own bound takes such a one as it is, `impl Is<F>` of
-        // an `F: FnOnce()`, whose value is that one's (#966).
-        let through = |input: Ty<'tcx>| {
-            (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
-                .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-                .map(|bound| bound.skip_binder().trait_ref)
-                .filter(|tr| tr.self_ty() == input && tcx.fn_trait_kind_from_def_id(tr.def_id).is_none())
-                .any(|tr| {
-                    tr.args
-                        .types()
-                        .skip(1)
-                        .any(|arg| matches!(arg.kind(), ty::Param(_)) && once(arg))
-                })
-        };
         for (&ty, &input) in tys.iter().zip(inputs) {
             let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);
             if kind.is_some_and(|kind| kind != ty::ClosureKind::FnOnce)
                 && !matches!(*ty.kind(), ty::Closure(id, _) if self.krate.closure_facts.called_once(id))
-                && (once(input) || matches!(input.kind(), ty::Param(_)) && through(input))
+                && calls_param_once(self.tcx, callee, input)
                 && self.drops_function(ty)
             {
                 let name = self.tcx.item_name(callee);
@@ -260,4 +242,92 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(())
     }
+}
+
+/// How deep a chain of bounds `calls_param_once` follows: past it, it's
+/// taken as called by `FnOnce` (#2031).
+const MOST_BOUNDS: usize = 8;
+
+/// Whether `owner` calls what its type `input` holds by `FnOnce` alone: an
+/// `F: FnOnce()`, or one bound by another trait of such a one, `I: Is<F>`
+/// of an `F: FnOnce()`, whose value may be that one's (#966), however many
+/// bounds deep (#2031), each type parameter named in the bound's arguments
+/// followed, those an associated type of them names too, as
+/// `KMergePredicate<<<Self as Iterator>::Item as IntoIterator>::Item>`'s
+/// `Self`, which isn't one. A chain past `MOST_BOUNDS` is taken as calling
+/// it so. The one reading of it, which a function
+/// called by `&` given there asks (`check_called_once`), and a closure
+/// moved into a type whose parameter such an owner calls so
+/// (`adt_param_called_once`). The interim rule, before what the crate's
+/// instances say of each closure (#2031).
+pub(in crate::lower) fn calls_param_once<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    owner: rustc_span::def_id::DefId,
+    input: Ty<'tcx>,
+) -> bool {
+    fn once<'tcx>(
+        tcx: rustc_middle::ty::TyCtxt<'tcx>,
+        owner: rustc_span::def_id::DefId,
+        input: Ty<'tcx>,
+        depth: usize,
+    ) -> bool {
+        if crate::lower::recognition::function_kind(tcx, owner, input) == Some(ty::ClosureKind::FnOnce) {
+            return true;
+        }
+        if !matches!(input.kind(), ty::Param(_)) {
+            return false;
+        }
+        (tcx.clauses_of(owner).instantiate_identity(tcx).into_iter())
+            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+            .map(|bound| bound.skip_binder().trait_ref)
+            .filter(|tr| tr.self_ty() == input && tcx.fn_trait_kind_from_def_id(tr.def_id).is_none())
+            .any(|tr| {
+                (tr.args.types().skip(1))
+                    .flat_map(|arg| arg.walk().filter_map(|part| part.as_type()).collect::<Vec<_>>())
+                    .any(|part| match part.kind() {
+                        ty::Param(_) if part != input => depth >= MOST_BOUNDS || once(tcx, owner, part, depth + 1),
+                        _ => false,
+                    })
+            })
+    }
+    once(tcx, owner, input, 0)
+}
+
+/// Whether the crate calls by `FnOnce` alone what an `adt`'s type parameter
+/// of generic index `index` holds: a function of it given it, an impl's
+/// method's `self` too, whose own parameter in its place it calls so
+/// (`calls_param_once`), as `impl<F: FnOnce() -> u32> Run for Once<F>`'s
+/// `run(self)` does of `Once`'s `F`, and `fn run<F: FnOnce()>(o: Once<F>)`
+/// (#2031). A closure moved into it is called by `FnOnce`, which drops none
+/// of what it holds. The interim rule, read of the crate's own functions,
+/// before what its instances say.
+pub(in crate::lower) fn adt_param_called_once<'tcx>(
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
+    adt: rustc_span::def_id::DefId,
+    index: usize,
+) -> bool {
+    use rustc_hir::def::DefKind;
+    let holds = |owner: rustc_span::def_id::DefId, ty: Ty<'tcx>| {
+        (ty.walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
+            ty::Adt(def, args) if def.did() == adt => {
+                index < args.len()
+                    && args[index]
+                        .as_type()
+                        .is_some_and(|arg| calls_param_once(tcx, owner, arg))
+            }
+            _ => false,
+        })
+    };
+    (tcx.hir_crate_items(()).definitions()).any(|id| {
+        let owner = id.to_def_id();
+        match tcx.def_kind(id) {
+            DefKind::Fn | DefKind::AssocFn => {
+                let sig = tcx.instantiate_bound_regions_with_erased(
+                    tcx.fn_sig(owner).instantiate_identity().skip_normalization(),
+                );
+                sig.inputs().iter().any(|&input| holds(owner, input))
+            }
+            _ => false,
+        }
+    })
 }

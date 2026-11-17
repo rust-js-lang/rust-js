@@ -422,4 +422,12 @@ export const mutations: Mutation[] = [
     replace: "            if true || moves.read || through.is_some() {\n",
     tests: ["test/borrow-forms.test.ts", "-t", "a quiet let guard of a counted cell"],
   },
+  {
+    name: "closure-moved-into-a-once-type-unchecked",
+    breaks: "a closure that holds a value with a destructor, moved into a struct whose impl calls it by `FnOnce`, compiles, its captures never dropped (#2031)",
+    file: "src/lower/drops/facts.rs",
+    find: "                    self.moved_variable(field.expr)\n",
+    replace: "                    false && self.moved_variable(field.expr)\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_struct_called_once_refused.rs$"],
+  },
 ];

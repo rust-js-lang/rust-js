@@ -434,3 +434,57 @@ empty, of one item and more, of a type parameter's, of one given an
 iterator with no `Drop`, lent, and a key that panics. Mutations
 `keyed-extreme-of-dropping-keys-unclosed` and
 `keyed-extreme-of-a-type-parameter-unclosed` (`mir/iter/consumers.ts`).
+
+## Amended (2026-11-17, #2031): a closure moved where it's called by `FnOnce`, however it gets there
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. A wrong answer refused.
+
+A closure rustc infers `Fn`, holding a value with a destructor, bound by
+`let` and moved into a struct whose impl calls it by `FnOnce`,
+`let h = move || ..; run_it(Once(h))` of an
+`impl<F: FnOnce() -> u32> Run for Once<F>`, compiled and never dropped
+what it held. Rust's `call_once` of an `Fn` closure calls it by `&` and
+then drops it. JS's call of its body drops nothing, and the struct's drop
+doesn't run of a field moved out. The same closure made in place,
+`Once(move || ..)`, was refused already, as no `let` holds it.
+
+**What's called by `FnOnce` is read through every bound and every struct
+the crate's functions take** (`calls_param_once`,
+`adt_param_called_once`, `combinators/callbacks.rs`):
+- A parameter is called so where it's an `F: FnOnce`, or where it's bound
+  by another trait of one that is, however many bounds deep: `impl
+  Wrapped<I>` of an `I: Is<F>` of an `F: FnOnce`. A type parameter an
+  associated type in the bound names is followed too, as itertools'
+  `kmerge_by`'s `F: KMergePredicate<<<Self as Iterator>::Item as
+  IntoIterator>::Item>` names `Self`, which isn't one, so its `FnMut`
+  isn't refused. Past eight bounds, it's taken as called so.
+- A struct's type parameter is called so where one of the crate's
+  functions, an impl's method's `self` among them, takes the struct with
+  a parameter in its place that it calls so.
+- A closure moved into such a field (`drops/facts.rs`), or given to such
+  a parameter (`check_called_once`), is refused, unless its body is its
+  `call_once`'s (ADR 1020).
+
+A closure moved into a struct, a tuple or an array that's called by `&`,
+`Holder { f }`, `drop((a, b))`, a returned `(one, each)`, is left alone:
+its type's drop drops it. A blanket refusal of every closure moved into
+one refused two corpus cases that are right.
+
+This is the interim rule, read of the crate's own items. The precise one
+asks whether `<C as FnOnce>::call_once` is instantiated of each closure,
+by what `instances.rs` says of each `FnOnce` call site's type parameter.
+It's designed on #2031, which stays open for it. rustc's own answer, its
+`ClosureOnce` shims, isn't available, since rust-js compiles a crate as a
+library, whose lazy collection roots nothing private.
+
+Compile-fail corpus cases:
+- `fn_closure_moved_into_a_struct_called_once_refused` (#2031's repro);
+- `fn_closure_in_a_struct_a_function_calls_once_refused` (a free
+  function);
+- `fn_closure_given_two_bounds_deep_refused`.
+
+Mutations `closure-moved-into-a-once-type-unchecked`,
+`adt-param-once-functions-unread` and `calls-param-once-one-bound-deep`,
+and `called-once-through-bound-unrefused` and `called-once-unchecked`
+retargeted.
+

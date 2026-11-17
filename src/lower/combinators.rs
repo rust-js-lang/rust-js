@@ -5,6 +5,7 @@
 
 mod adapters;
 mod callbacks;
+pub(in crate::lower) use callbacks::adt_param_called_once;
 mod held;
 mod values;
 

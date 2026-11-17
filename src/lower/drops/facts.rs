@@ -219,6 +219,34 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     "a closure that holds a value with a destructor, given away without being called once",
                 );
             }
+            // A closure moved into a type the crate calls that part of by
+            // `FnOnce` alone, `Once(h)` of an `impl<F: FnOnce()> Run for
+            // Once<F>`, whose call drops none of what it holds; as the
+            // same closure made there is refused (#2031). Not one it calls
+            // by `&`, which its type's drop drops.
+            ExprKind::Adt(ref adt)
+                if adt.fields.iter().any(|field| {
+                    let value = self.thir[field.expr].ty;
+                    // Its type parameter, the one the struct's type gives the
+                    // closure's type, `Once<{closure}>`'s `F`.
+                    let at = adt.args.iter().position(|arg| arg.as_type() == Some(value));
+                    self.moved_variable(field.expr)
+                        && self.borrowing_closure(value)
+                        && !matches!(*value.kind(), ty::Closure(id, _) if self.cx.closure_facts.called_once(id))
+                        && at.is_some_and(|at| {
+                            crate::lower::combinators::adt_param_called_once(
+                                self.cx.recognition.tcx,
+                                adt.adt_def.did(),
+                                at,
+                            )
+                        })
+                }) =>
+            {
+                self.problem(
+                    expr.span,
+                    "a closure that holds a value with a destructor, moved where it's called by `FnOnce`, which drops none of it",
+                );
+            }
             ExprKind::Assign { lhs, .. }
                 if self.thir[lhs].ty.walk().any(|part| {
                     part.as_type()
@@ -261,6 +289,14 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             && (def_id.is_local()
                 || crate::lower::recognition::is_std_crate(tcx, def_id)
                 || self.cx.recognition.foreign.is_instance(def_id))
+    }
+
+    /// Whether `e` is a variable's value, moved: what a `let` holds.
+    fn moved_variable(&self, mut e: ExprId) -> bool {
+        while let ExprKind::Scope { value, .. } = self.thir[e].kind {
+            e = value;
+        }
+        matches!(self.thir[e].kind, ExprKind::VarRef { .. })
     }
 
     /// Whether `ty` is a closure that holds a value with a destructor, which

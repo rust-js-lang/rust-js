@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure called by `&` that holds a value with a destructor, given through `impl Is<F>` to an `F: FnOnce`, is given and its captures never dropped, where Rust drops them once it's run (#966)",
     file: "src/lower/combinators/callbacks.rs",
-    find: "                && (once(input) || matches!(input.kind(), ty::Param(_)) && through(input))\n",
-    replace: "                && once(input)\n",
+    find: "        if !matches!(input.kind(), ty::Param(_)) {\n            return false;\n        }\n",
+    replace: "        if true {\n            return false;\n        }\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_once_through_another_bound_refused.rs$"],
   },
   {
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `F: Fn` given on to a function that calls it once by `FnOnce` is never dropped",
     file: "src/lower/combinators/callbacks.rs",
-    find: "                && (once(input) || matches!(input.kind(), ty::Param(_)) && through(input))\n",
+    find: "                && calls_param_once(self.tcx, callee, input)\n",
     replace: "                && false\n",
     tests: [
       "test/diagnostics.test.ts",
@@ -213,5 +213,29 @@ export const mutations: Mutation[] = [
     find: "            self.boxed_function_kind(tys[at])\n",
     replace: "            crate::lower::recognition::function_kind(self.tcx, callee, *inputs.get(at)?)\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_through_a_call_drops.rs$"],
+  },
+  {
+    name: "adt-param-once-functions-unread",
+    breaks: "a free function that takes a struct and calls its field by `FnOnce`, `fn run<F: FnOnce()>(o: Once<F>)`, isn't read, so a closure moved into it is never dropped (#2031)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "                sig.inputs().iter().any(|&input| holds(owner, input))\n",
+    replace: "                sig.inputs().iter().any(|&input| false && holds(owner, input))\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_in_a_struct_a_function_calls_once_refused.rs$"],
+  },
+  {
+    name: "calls-param-once-one-bound-deep",
+    breaks: "a parameter two bounds from the `FnOnce` that calls it, `impl Wrapped<I>` of an `I: Is<F>`, isn't followed, so a closure given there is never dropped (#2031)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "                        ty::Param(_) if part != input => depth >= MOST_BOUNDS || once(tcx, owner, part, depth + 1),\n",
+    replace: "                        ty::Param(_) if part != input => {\n                            crate::lower::recognition::function_kind(tcx, owner, part) == Some(ty::ClosureKind::FnOnce)\n                        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_given_two_bounds_deep_refused.rs$"],
+  },
+  {
+    name: "calls-param-once-alias-taken-as-called",
+    breaks: "a bound naming an associated type, itertools' `kmerge_by`'s `F: KMergePredicate<<<Self as Iterator>::Item as IntoIterator>::Item>`, is taken as calling its `FnMut` by `FnOnce`, so the closure is refused (#2031)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "                        ty::Param(_) if part != input => depth >= MOST_BOUNDS || once(tcx, owner, part, depth + 1),\n                        _ => false,\n",
+    replace: "                        ty::Param(_) if part != input => depth >= MOST_BOUNDS || once(tcx, owner, part, depth + 1),\n                        ty::Alias(..) => true,\n                        _ => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_mut_predicate_of_an_item_called_many_times.rs$"],
   },
 ];
