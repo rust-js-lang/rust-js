@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
     replace: "            && false\n",
-    tests: ["test/bindings.test.ts", "-t", "as react.dev's Console does"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "as react.dev's Console does"],
   },
   {
     name: "mir-tidy-not-de-morgan",
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     "find": "            && is_text(&lhs)\n",
     "replace": "            && false\n",
     "tests": [
-      "test/bindings.test.ts",
+      "test/bindings-any-values.test.ts",
       "-t",
       "as react.dev's Console does"
     ]
@@ -415,7 +415,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "    e.facts.has(Known::Text)\n        || matches!(",
     replace: "    false\n        || matches!(",
-    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "any value is read as JS reads it"],
   },
   {
     name: "null-apart-unfolded",

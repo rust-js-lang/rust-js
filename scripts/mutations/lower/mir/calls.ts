@@ -424,7 +424,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/calls.rs",
     find: "                Expr::text_joined(place.clone(), rhs)\n",
     replace: "                Expr::bin(Op::Add, place.clone(), rhs)\n",
-    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "any value is read as JS reads it"],
   },
   {
     name: "mir-assign-op-call-place-twice",

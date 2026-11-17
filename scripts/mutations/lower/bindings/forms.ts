@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings/forms.rs",
     find: '        "typeof" => return JsForm::TypeOf,\n',
     replace: "",
-    tests: ["test/bindings.test.ts", "-t", "react.dev's Console"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "react.dev's Console"],
   },
   {
     name: "text-form-called",
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings/forms.rs",
     find: '        "\\"\\" +" => return JsForm::Text,\n',
     replace: "",
-    tests: ["test/bindings.test.ts", "-t", "react.dev's Console"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "react.dev's Console"],
   },
   {
     name: "is-function-form-called",

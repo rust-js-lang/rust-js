@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/arms.rs",
     find: "                ExprKind::Written(pieces) => pieces.iter().skip(1).map(|piece| (piece.span, \"+\", false)).collect(),\n",
     replace: "",
-    tests: ["test/lowering-strings.test.ts", "-t", "a comment inside a concat!"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a comment inside a concat!"],
   },
   {
     name: "concat-split-not-at-plus",
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/arms.rs",
     find: "(piece.span, \"+\", false)",
     replace: "(piece.span, \"?\", false)",
-    tests: ["test/lowering-strings.test.ts", "-t", "a comment inside a concat!"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a comment inside a concat!"],
   },
   {
     name: "arm-comment-after-question-only",

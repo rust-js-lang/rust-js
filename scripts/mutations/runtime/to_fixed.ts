@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/to_fixed.js",
     find: "  if (twice > denominator || (twice === denominator && rounded % 2n === 1n)) rounded += 1n;",
     replace: "  if (twice >= denominator) rounded += 1n;",
-    tests: ["test/compiler.test.ts", "-t", "the builtins crate's number::to_fixed is JS's toFixed, not format!'s"],
+    tests: ["test/builtins-crate.test.ts", "-t", "the builtins crate's number::to_fixed is JS's toFixed, not format!'s"],
   },
 ];

@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "        let output = sig\n            .instantiate(self.tcx, args)\n",
     replace: "        let output = sig\n            .instantiate_identity()\n",
-    tests: ["test/bindings.test.ts", "-t", "react.dev's Console"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "react.dev's Console"],
   },
   {
     name: "own-clone-from-of-std",

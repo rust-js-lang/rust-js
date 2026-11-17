@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/catches.rs",
     find: "            && let Some((call, of_throw, kind)) = threw(e)\n",
     replace: "            && let Some((call, of_throw, kind)) = threw(e).filter(|_| false)\n",
-    tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "concat_text of any value"],
   },
   {
     name: "threw-the-other-way",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/catches.rs",
     find: "    Some((call, eq != ok, caught))\n",
     replace: "    Some((call, eq == ok, caught))\n",
-    tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "concat_text of any value"],
   },
   {
     name: "try-past-declared-blocked",

@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
     replace:
       '    if !pieces.is_empty() {\n        let (parts, lines) = pieces.pop().expect("a piece");',
     tests: [
-      "test/lowering-strings.test.ts",
+      "test/lowering-concat.test.ts",
       "-t",
       "a format string of a concat! is its pieces joined by",
     ],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "        js::ExprKind::Stringed(value) => *value,\n",
     replace: "        js::ExprKind::Stringed(value) => *value,\n        js::ExprKind::Call(_, ref args) if args.len() == 1 => args[0].clone(),\n",
-    tests: ["test/bindings.test.ts", "-t", "js::shown"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown"],
   },
   {
     name: "stringed-not-string",
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "    if is_shown_text(&e) {\n        return vec![e];\n    }\n",
     replace: "",
-    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown's text is text"],
   },
   {
     name: "shown-texts-added",
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "    let strings_alone = !pieces.iter().any(|p| is_text(p) || is_shown_text(&p.0));\n",
     replace: "    let strings_alone = !pieces.iter().any(is_text);\n",
-    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown's text is text"],
   },
   {
     name: "separable-strings-added",
@@ -318,7 +318,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "Expr::text_joined(target.clone(), part)",
     replace: "Expr::bin(Op::Add, target.clone(), part)",
-    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "any value is read as JS reads it"],
   },
   {
     name: "shown-value-unevaluated",
@@ -423,7 +423,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "        true => shown_text(value),\n        false => Expr::call_helper(\"$shown\", vec![value]),\n",
     replace: "        true => Expr::call_helper(\"$shown\", vec![value]),\n        false => Expr::call_helper(\"$shown\", vec![value]),\n",
-    tests: ["test/bindings.test.ts", "-t", "js::shown"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown"],
   },
   {
     name: "shown-type-past-own-box",

@@ -494,7 +494,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            passes::run(Pass::TemplatesSpliced, e, Expr::splice_templates);\n",
     replace: "",
-    tests: ["test/bindings.test.ts", "-t", "js::shown is shown as a template"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown is shown as a template"],
   },
   {
     name: "assigned-test-unmade",

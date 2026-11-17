@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/written.rs",
     find: "            return Ok(super::binding_text(value));\n",
     replace: "            return Ok(value);\n",
-    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown's text is text"],
   },
   {
     name: "whole-display-unknown",

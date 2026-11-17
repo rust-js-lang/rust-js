@@ -2,7 +2,7 @@
 import type { Mutation } from "../../mutations";
 
 const concat = [
-  "test/lowering-strings.test.ts",
+  "test/lowering-concat.test.ts",
   "-t",
   "a format string of a concat! is its pieces joined by",
 ];

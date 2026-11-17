@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     find: '            Catching::PromiseResult => Expr::call(Expr::helper("$settle"), vec![value]),\n',
     replace: "            Catching::PromiseResult => value,\n",
     tests: [
-      "test/compiler.test.ts",
+      "test/builtins-crate.test.ts",
       "-t",
       "the builtins crate's object and js_error functions are JS's",
     ],

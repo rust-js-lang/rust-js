@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     find: "self.impl_binding(def_id, args).is_some()\n    }\n",
     replace: "false\n    }\n",
     tests: [
-      "test/node-bindings.test.ts",
+      "test/node-streams.test.ts",
       "-t",
       "a Duplex is read from and written to",
     ],

@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/format_spec.rs",
     find: "        if self.displays_itself(ty) {\n            return (super::display::binding_text(value), text);\n",
     replace: "        if false {\n            return (super::display::binding_text(value), text);\n",
-    tests: ["test/bindings.test.ts", "-t", "js::shown"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown"],
   },
   {
     name: "shown-formatted-as-itself",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/format_spec.rs",
     find: "            return (super::display::binding_text(value), text);\n",
     replace: "            return (value, text);\n",
-    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown's text is text"],
   },
   {
     name: "pointer-p-refused",

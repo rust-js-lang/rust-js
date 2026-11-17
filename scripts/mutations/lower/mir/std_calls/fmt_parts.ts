@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     replace:
       "            .take(1)\n            .map(|(template, lines)| Ok((self.formatted_parts(items, template, &mut arguments, span)?, *lines)))\n",
     tests: [
-      "test/lowering-strings.test.ts",
+      "test/lowering-concat.test.ts",
       "-t",
       "a format string of a concat! is its pieces joined by",
     ],

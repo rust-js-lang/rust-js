@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "Expr::bin(Op::In, args.remove(0), this)",
     replace: "Expr::bin(Op::In, this, args.remove(0))",
-    tests: ["test/compiler.test.ts", "-t", "string functions are JS's"],
+    tests: ["test/builtins-crate.test.ts", "-t", "string functions are JS's"],
   },
   {
     name: "truthy-once",
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: 'Expr::bin(Op::Add, Expr::str(""), this)',
     replace: 'Expr::bin(Op::Add, this, Expr::str(""))',
-    tests: ["test/bindings.test.ts", "-t", "concat_text of any value"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "concat_text of any value"],
   },
   {
     name: "rest-of-none-keeps-none",
@@ -1006,7 +1006,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                    true => this.plain(),\n",
     replace: "                    true => this,\n",
-    tests: ["test/bindings.test.ts", "-t", "js::shown"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown"],
   },
   {
     name: "method-call-by-a-shared-span",

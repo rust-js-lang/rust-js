@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     replace:
       'is_some_and(|id| !tcx.is_diagnostic_item(Symbol::intern("macro_concat"), id))',
     tests: [
-      "test/lowering-strings.test.ts",
+      "test/lowering-concat.test.ts",
       "-t",
       "a concat! of literals is its pieces joined by",
     ],

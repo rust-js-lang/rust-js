@@ -2,7 +2,7 @@
 // (ADRs 0066, 0641).
 import type { Mutation } from "../../mutations";
 
-const pieces = ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"];
+const pieces = ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"];
 
 export const mutations: Mutation[] = [
   {
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     file: "src/js/template.rs",
     find: "if inner.is_plain() && (!outer_lines || inner_texts.iter().all(String::is_empty)))",
     replace: "if inner.is_plain() && !outer_lines)",
-    tests: ["test/bindings.test.ts", "-t", "js::shown's text is text"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "js::shown's text is text"],
   },
   {
     name: "applied-template-breaks-unmoved",
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     file: "src/js/template.rs",
     find: "        (at.text, at.at) = (text, shift + at.at);",
     replace: "        (at.text, at.at) = (text, at.at);",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {
     name: "applied-template-into-pieces-unspliced",
@@ -77,6 +77,6 @@ export const mutations: Mutation[] = [
     file: "src/js/template.rs",
     find: "        let outer_lines = layout.lines || layout.breaks.iter().any(|at| at.lines);\n",
     replace: "        let outer_lines = layout.lines || !layout.breaks.is_empty();\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
 ];

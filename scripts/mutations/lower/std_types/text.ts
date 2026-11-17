@@ -415,7 +415,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "            Std::Concat => Expr::text_joined(arg(), arg()),\n",
     replace: "            Std::Concat => Expr::bin(Op::Add, arg(), arg()),\n",
-    tests: ["test/bindings.test.ts", "-t", "any value is read as JS reads it"],
+    tests: ["test/bindings-any-values.test.ts", "-t", "any value is read as JS reads it"],
   },
   {
     name: "extended-cows-as-objects",

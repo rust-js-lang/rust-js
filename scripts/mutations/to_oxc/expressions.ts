@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                let first = pieces.next().expect(\"a template's first piece\");\n                pieces.fold(first, |joined, next| {\n                    Expression::new_binary_expression(sp, joined, BinaryOperator::Addition, next, b)",
     replace: "                let first = pieces.next().expect(\"a template's first piece\");\n                pieces.fold(first, |joined, next| {\n                    Expression::new_binary_expression(sp, next, BinaryOperator::Addition, joined, b)",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {
     name: "template-text-piece-templated",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                        (true, false) => self.string_literal(sp, piece_texts[0]),\n",
     replace: "                        (true, false) if false => self.string_literal(sp, piece_texts[0]),\n",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {
     name: "template-piece-lines-dropped",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                            self.template_literal(sp, &piece_texts, &values[from..to], across, lines)",
     replace: "                            self.template_literal(sp, &piece_texts, &values[from..to], across, false)",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {
     name: "template-piece-middle-texts-lost",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                            .chain(texts[from + 1..to].iter().map(String::as_str))\n",
     replace: "",
-    tests: ["test/lowering-strings.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
   },
   {
     name: "import-specifier-unlinked",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "                let first = pieces.next().expect(\"a written string's pieces\");\n                pieces.fold(first, |joined, next| {\n                    Expression::new_binary_expression(sp, joined, BinaryOperator::Addition, next, b)",
     replace: "                let first = pieces.next().expect(\"a written string's pieces\");\n                pieces.fold(first, |joined, next| {\n                    Expression::new_binary_expression(sp, next, BinaryOperator::Addition, joined, b)",
-    tests: ["test/lowering-strings.test.ts", "-t", "a concat! of literals is its pieces joined by"],
+    tests: ["test/lowering-concat.test.ts", "-t", "a concat! of literals is its pieces joined by"],
   },
   {
     name: "lines-escaped",

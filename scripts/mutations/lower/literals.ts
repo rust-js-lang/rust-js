@@ -2,13 +2,13 @@
 import type { Mutation } from "../../mutations";
 
 const concat = [
-  "test/lowering-strings.test.ts",
+  "test/lowering-concat.test.ts",
   "-t",
   "a concat! of literals is its pieces joined by",
 ];
 
 const format = [
-  "test/lowering-strings.test.ts",
+  "test/lowering-concat.test.ts",
   "-t",
   "a format string of a concat! is its pieces joined by",
 ];
@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     replace:
       "            _ if true => js::Span::NONE,\n            _ => at(call\n",
     tests: [
-      "test/lowering-strings.test.ts",
+      "test/lowering-concat.test.ts",
       "-t",
       "a comment inside a concat!",
     ],
