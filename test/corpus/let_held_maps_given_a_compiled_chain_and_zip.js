@@ -92,15 +92,15 @@ function main() {
   }
   let sum = $lazyChain(a, b).reduce((s, x) => (s + x) >>> 0, 0);
   console.log(`chain ${sum}`);
-  let ga$1$live = true;
+  let ga$live$1 = true;
   const ga$1 = [7];
   let tmp$2;
   try {
     tmp$2 = $iter(v);
-    ga$1$live = false;
+    ga$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (ga$1$live) {
+      if (ga$live$1) {
         console.log(`drop ${ga$1[0]}`);
       }
     }, error);
@@ -122,18 +122,18 @@ function main() {
 
   // One whose hint is asked, held, std's struct, given a map made where
   // it's given.
-  let ga$2$live = true;
-  let gb$1$live = true;
+  let ga$live$2 = true;
+  let gb$live$1 = true;
   const ga$2 = [8];
   const gb$1 = [9];
   let tmp$3;
   try {
     tmp$3 = $iter(v);
-    ga$2$live = false;
+    ga$live$2 = false;
   } catch (error) {
     $cleanup(() => {
       console.log(`drop ${gb$1[0]}`);
-      if (ga$2$live) {
+      if (ga$live$2) {
         console.log(`drop ${ga$2[0]}`);
       }
     }, error);
@@ -164,11 +164,11 @@ function main() {
   let tmp$4;
   try {
     tmp$4 = $iter(v);
-    gb$1$live = false;
+    gb$live$1 = false;
   } catch (error) {
     $cleanup(() => {
       a.return();
-      if (gb$1$live) {
+      if (gb$live$1) {
         console.log(`drop ${gb$1[0]}`);
       }
     }, error);
@@ -192,18 +192,18 @@ function main() {
   }
   sum = $trustedZip(a, map).reduce((s, [x, y]) => (s + (Math.imul(x, y) >>> 0)) >>> 0, 0);
   console.log(`zip ${sum}`);
-  let ga$3$live = true;
-  let gb$2$live = true;
+  let ga$live$3 = true;
+  let gb$live$2 = true;
   const ga$3 = [10];
   const gb$2 = [11];
   let tmp$5;
   try {
     tmp$5 = $iter(v);
-    ga$3$live = false;
+    ga$live$3 = false;
   } catch (error) {
     $cleanup(() => {
       console.log(`drop ${gb$2[0]}`);
-      if (ga$3$live) {
+      if (ga$live$3) {
         console.log(`drop ${ga$3[0]}`);
       }
     }, error);
@@ -246,11 +246,11 @@ function main() {
   let tmp$7;
   try {
     tmp$7 = $iter(v);
-    gb$2$live = false;
+    gb$live$2 = false;
   } catch (error) {
     $cleanup(() => {
       a.return();
-      if (gb$2$live) {
+      if (gb$live$2) {
         console.log(`drop ${gb$2[0]}`);
       }
     }, error);
@@ -274,7 +274,7 @@ function main() {
   }
   sum = $lazyChain(a, tmp$8).reduce((s, x) => (s + x) >>> 0, 0);
   console.log(`chain ${sum}`);
-  let gb$3$live = true;
+  let gb$live$3 = true;
   const gb$3 = [12];
   try {
     a = iterator_enumerate($iter(v));
@@ -309,10 +309,10 @@ function main() {
   let tmp$10;
   try {
     tmp$10 = $iter([16, 17]);
-    gb$3$live = false;
+    gb$live$3 = false;
   } catch (error) {
     $cleanup(() => {
-      if (gb$3$live) {
+      if (gb$live$3) {
         console.log(`drop ${gb$3[0]}`);
       }
     }, error);

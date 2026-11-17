@@ -323,17 +323,17 @@ function main() {
     }
   }
 
-  let ga$1$live = true;
+  let ga$live$1 = true;
   const ga$1 = [5];
   const gb$1 = [6];
   let tmp$2;
   try {
     tmp$2 = $iter(v);
-    ga$1$live = false;
+    ga$live$1 = false;
   } catch (error) {
     $cleanup(() => {
       console.log(`drop ${gb$1[0]}`);
-      if (ga$1$live) {
+      if (ga$live$1) {
         console.log(`drop ${ga$1[0]}`);
       }
     }, error);
@@ -372,18 +372,18 @@ function main() {
   const sum = $trustedZip(a, b).reduce((s, [x, y]) => (s + (Math.imul(x, y) >>> 0)) >>> 0, 0);
   console.log(`fold ${sum}`);
 
-  let ga$2$live = true;
-  let gb$2$live = true;
+  let ga$live$2 = true;
+  let gb$live$1 = true;
   const ga$2 = [7];
   const gb$2 = [8];
   let tmp$3;
   try {
     tmp$3 = $iter(w);
-    ga$2$live = false;
+    ga$live$2 = false;
   } catch (error) {
     $cleanup(() => {
       console.log(`drop ${gb$2[0]}`);
-      if (ga$2$live) {
+      if (ga$live$2) {
         console.log(`drop ${ga$2[0]}`);
       }
     }, error);
@@ -407,11 +407,11 @@ function main() {
   let tmp$4;
   try {
     tmp$4 = $iter(v);
-    gb$2$live = false;
+    gb$live$1 = false;
   } catch (error) {
     $cleanup(() => {
       a.return();
-      if (gb$2$live) {
+      if (gb$live$1) {
         console.log(`drop ${gb$2[0]}`);
       }
     }, error);
@@ -448,18 +448,18 @@ function main() {
   console.log(`collect [${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 
   const caught = $catchUnwind(() => {
-    let ga$3$live = true;
-    let gb$3$live = true;
+    let ga$live = true;
+    let gb$live = true;
     const ga = [9];
     const gb = [10];
     let tmp;
     try {
       tmp = $iter(v);
-      ga$3$live = false;
+      ga$live = false;
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${gb[0]}`);
-        if (ga$3$live) {
+        if (ga$live) {
           console.log(`drop ${ga[0]}`);
         }
       }, error);
@@ -484,11 +484,11 @@ function main() {
     let tmp$1;
     try {
       tmp$1 = $iter(w);
-      gb$3$live = false;
+      gb$live = false;
     } catch (error) {
       $cleanup(() => {
         a.return();
-        if (gb$3$live) {
+        if (gb$live) {
           console.log(`drop ${gb[0]}`);
         }
       }, error);
@@ -515,7 +515,7 @@ function main() {
       }, error);
       throw error;
     }
-    let a$3$live = false;
+    let a$live = false;
     const iter = $trustedZip(a, b);
     while (true) {
       let tmp$2;
@@ -524,10 +524,10 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           iter.return();
-          if (a$3$live) {
+          if (a$live) {
             a.return();
           }
-          if (gb$3$live) {
+          if (gb$live) {
             console.log(`drop ${gb[0]}`);
           }
         }, error);
@@ -535,8 +535,8 @@ function main() {
       }
       if (tmp$2 == null) {
         iter.return();
-        a$3$live = false;
-        gb$3$live = false;
+        a$live = false;
+        gb$live = false;
         return;
       }
       const x = tmp$2[0];

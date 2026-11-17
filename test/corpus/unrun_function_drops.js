@@ -317,15 +317,15 @@ function main() {
   );
   const counts = new Map();
   counts.set("x", 1);
-  let a$24$live = true;
+  let a$live = true;
   const a$24 = [22];
   let entry;
   try {
     entry = $entry(counts, "x");
-    a$24$live = false;
+    a$live = false;
   } catch (error) {
     $cleanup(() => {
-      if (a$24$live) {
+      if (a$live) {
         console.log(`drop ${a$24[0]}`);
       }
     }, error);

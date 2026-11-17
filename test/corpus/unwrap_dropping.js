@@ -49,17 +49,17 @@ function expected(task) {
 }
 
 function readFirst(task) {
-  let task$1$live = true;
+  let task$live = true;
   const value = enqueueTaskImpl;
   let tmp;
   try {
     tmp = $unwrap(value, message);
-    task$1$live = false;
+    task$live = false;
   } catch (error) {
     $cleanup(() => {
       message = "changed";
       console.log("drop changing");
-      if (task$1$live) {
+      if (task$live) {
         $dispose(task);
       }
     }, error);
@@ -84,14 +84,14 @@ function counted() {
 }
 
 function once(task) {
-  let task$1$live = true;
+  let task$live = true;
   let tmp;
   try {
     tmp = $unwrap(counted());
-    task$1$live = false;
+    task$live = false;
   } catch (error) {
     $cleanup(() => {
-      if (task$1$live) {
+      if (task$live) {
         $dispose(task);
       }
     }, error);

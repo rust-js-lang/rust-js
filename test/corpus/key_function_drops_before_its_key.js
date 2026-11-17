@@ -39,15 +39,15 @@ function main() {
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const held$1 = "min's closure";
-  let dropping$1$live = true;
+  let dropping$live$1 = true;
   dropping = (x) => [(x % 7) | 0];
   let tmp$1;
   try {
     tmp$1 = $iter([5, 9, 13, 2]);
-    dropping$1$live = false;
+    dropping$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (dropping$1$live) {
+      if (dropping$live$1) {
         console.log(`drop ${held$1}`);
       }
     }, error);

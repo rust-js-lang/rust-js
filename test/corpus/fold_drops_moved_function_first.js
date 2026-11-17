@@ -124,14 +124,14 @@ function main() {
     $dropItems(v, dDrop_drop);
   });
   case$("sum", (g) => {
-    let g$1$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$1$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$1$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -163,14 +163,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("count", (g) => {
-    let g$2$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$2$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$2$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -201,14 +201,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("last", (g) => {
-    let g$3$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$3$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$3$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -240,14 +240,14 @@ function main() {
     $print(`| ${last == null ? "None" : `Some(${last})`} | `);
   });
   case$("for_each", (g) => {
-    let g$4$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$4$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$4$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -288,14 +288,14 @@ function main() {
     iter.return();
   });
   case$("fold", (g) => {
-    let g$5$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$5$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$5$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -327,14 +327,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("max", (g) => {
-    let g$6$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$6$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$6$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -366,14 +366,14 @@ function main() {
     $print(`| ${max == null ? "None" : `Some(${max})`} | `);
   });
   case$("min_by_key", (g) => {
-    let g$7$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$7$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$7$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -405,14 +405,14 @@ function main() {
     $print(`| ${min == null ? "None" : `Some(${min})`} | `);
   });
   case$("reduce", (g) => {
-    let g$8$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$8$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$8$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -444,14 +444,14 @@ function main() {
     $print(`| ${n == null ? "None" : `Some(${n})`} | `);
   });
   case$("partition", (g) => {
-    let g$9$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$9$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$9$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -483,15 +483,15 @@ function main() {
     $print(`| [${odd.join(", ")}] [${even.join(", ")}] | `);
   });
   case$("extend", (g) => {
-    let g$10$live = true;
+    let g$live = true;
     const v = [];
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$10$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$10$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -529,14 +529,14 @@ function main() {
     $print(`| [${v.join(", ")}] | `);
   });
   case$("collect", (g) => {
-    let g$11$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$11$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$11$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -576,14 +576,14 @@ function main() {
     $print(`| [${v.join(", ")}] | `);
   });
   case$("collect a String", (g) => {
-    let g$12$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$12$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$12$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -623,14 +623,14 @@ function main() {
     $print(`| ${s} | `);
   });
   case$("collect a set", (g) => {
-    let g$13$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$13$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$13$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -662,14 +662,14 @@ function main() {
     $print(`| ${set.size} | `);
   });
   case$("chained first", (g) => {
-    let g$14$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$14$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$14$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -706,14 +706,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("chained second", (g) => {
-    let g$15$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$15$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$15$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -737,14 +737,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("skipped", (g) => {
-    let g$16$live = true;
+    let g$live = true;
     let take;
     try {
       take = $skipping($closing($iter(ds()), $dropEach(dDrop_drop)), 1, dDrop_drop).take(2);
-      g$16$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$16$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -776,14 +776,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("skipped after a take", (g) => {
-    let g$17$live = true;
+    let g$live = true;
     let skip;
     try {
       skip = $skipping($closing($iter(ds()), $dropEach(dDrop_drop)).take(3), 1, dDrop_drop);
-      g$17$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$17$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -815,7 +815,7 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("taken while, then mapped", (g) => {
-    let g$18$live = true;
+    let g$live = true;
     let takeWhile;
     try {
       takeWhile = $lazyTakeWhile(
@@ -823,10 +823,10 @@ function main() {
         (d) => d[0] < 3,
         dDrop_drop,
       );
-      g$18$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$18$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -858,14 +858,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("enumerated", (g) => {
-    let g$19$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$19$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$19$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -888,14 +888,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("flat_map", (g) => {
-    let g$20$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$20$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$20$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -926,7 +926,7 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("peekable", (g) => {
-    let g$21$live = true;
+    let g$live = true;
     let tmp;
     try {
       tmp = iterator_take(
@@ -936,10 +936,10 @@ function main() {
         $dropEach(dDrop_drop),
         dDrop_drop,
       );
-      g$21$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$21$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -982,7 +982,7 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("fused", (g) => {
-    let g$22$live = true;
+    let g$live = true;
     let take;
     try {
       take = iterator_take(
@@ -992,10 +992,10 @@ function main() {
         $dropEach(dDrop_drop),
         dDrop_drop,
       );
-      g$22$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$22$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1068,17 +1068,17 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("two closures", (g) => {
-    let g$24$live = true;
+    let g$live = true;
     let h$live = true;
     const h = [8];
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$24$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
         dDrop_drop(h);
-        if (g$24$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1129,17 +1129,17 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("a filter's, then a map's", (g) => {
-    let g$25$live = true;
-    let h$1$live = true;
+    let g$live = true;
+    let h$live = true;
     const h = [8];
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$25$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
         dDrop_drop(h);
-        if (g$25$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1155,10 +1155,10 @@ function main() {
         },
         "before",
       );
-      h$1$live = false;
+      h$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (h$1$live) {
+        if (h$live) {
           dDrop_drop(h);
         }
       }, error);
@@ -1190,14 +1190,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("stepped, then summed", (g) => {
-    let g$26$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
-      g$26$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$26$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1241,14 +1241,14 @@ function main() {
     $print(`| ${first == null ? "None" : `Some(${first})`} ${n} | `);
   });
   case$("a panic in what's left", (g) => {
-    let g$27$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter([[1], [2], [40], [5]]), $dropEach(dDrop_drop)).take(2);
-      g$27$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$27$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1281,14 +1281,14 @@ function main() {
   });
   // Kept: what's left first.
   case$("collected in place", (g) => {
-    let g$28$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$28$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$28$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1317,14 +1317,14 @@ function main() {
     $dropItems(v, dDrop_drop);
   });
   case$("collected in place, of numbers", (g) => {
-    let g$29$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$29$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$29$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1347,14 +1347,14 @@ function main() {
     $print(`| [${v.join(", ")}] | `);
   });
   case$("collected by next", (g) => {
-    let g$30$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$30$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$30$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1385,14 +1385,14 @@ function main() {
     $print(`| [${v.join(", ")}] | `);
   });
   case$("a for loop", (g) => {
-    let g$31$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$31$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$31$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1428,14 +1428,14 @@ function main() {
     }
   });
   case$("find", (g) => {
-    let g$32$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(2);
-      g$32$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$32$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1468,14 +1468,14 @@ function main() {
     $print(`| ${found == null ? "None" : `Some(${found})`} | `);
   });
   case$("taken after", (g) => {
-    let g$33$live = true;
+    let g$live = true;
     let tmp;
     try {
       tmp = $iter(ds());
-      g$33$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$33$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1498,14 +1498,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("take_while", (g) => {
-    let g$34$live = true;
+    let g$live = true;
     let tmp;
     try {
       tmp = $iter(ds());
-      g$34$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$34$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1535,14 +1535,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("map_while", (g) => {
-    let g$35$live = true;
+    let g$live = true;
     let tmp;
     try {
       tmp = $iter(ds());
-      g$35$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$35$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1574,14 +1574,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("skip_while", (g) => {
-    let g$36$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
-      g$36$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$36$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1608,14 +1608,14 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("step_by", (g) => {
-    let g$37$live = true;
+    let g$live = true;
     let take;
     try {
       take = $closing($iter(ds()), $dropEach(dDrop_drop)).take(3);
-      g$37$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$37$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1639,7 +1639,7 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("zip", (g) => {
-    let g$38$live = true;
+    let g$live = true;
     let take;
     try {
       take = iterator_take(
@@ -1649,10 +1649,10 @@ function main() {
         $dropEach(dDrop_drop),
         dDrop_drop,
       );
-      g$38$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$38$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -1703,7 +1703,7 @@ function main() {
     $print(`| ${n} | `);
   });
   case$("by_ref", (g) => {
-    let g$39$live = true;
+    let g$live = true;
     let take;
     try {
       take = iterator_take(
@@ -1713,10 +1713,10 @@ function main() {
         $dropEach(dDrop_drop),
         dDrop_drop,
       );
-      g$39$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$39$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);

@@ -71,10 +71,10 @@ const Mapped = {
 };
 
 function middle(shape) {
-  let shape$1$live$1 = true;
+  let shape$1$live = true;
   let result;
   if (shape.TAG === "Pair") {
-    shape$1$live$1 = false;
+    shape$1$live = false;
   } else if (shape.TAG !== "Triple") {
     console.log("none");
     result = undefined;
@@ -93,7 +93,7 @@ function middle(shape) {
   result = m;
   if (shape.TAG === "Pair") {
     loudDrop_drop(shape._0);
-    if (shape$1$live$1) {
+    if (shape$1$live) {
       loudDrop_drop(shape._1);
     }
   } else if (shape.TAG === "Triple") {

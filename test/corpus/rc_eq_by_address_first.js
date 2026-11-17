@@ -52,14 +52,14 @@ function main() {
         let tmp$2;
         try {
           const value = $rcClone(b);
-          let value$live$1 = true;
+          let value$live = true;
           let tmp;
           try {
             tmp = $rcClone(c);
-            value$live$1 = false;
+            value$live = false;
             tmp$2 = [value, tmp];
           } catch (error) {
-            if (value$live$1) {
+            if (value$live) {
               $rcDrop(value);
             }
             throw error;

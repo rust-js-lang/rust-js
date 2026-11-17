@@ -174,10 +174,18 @@ test("js::scopes' words are asked only where names are spelled or checked", () =
 // `x`, and what form it is, a temporary's `_$`, a helper's `$`, `__arg`,
 // asked by parsing its word, here or in the fallback of
 // `Name::given_apart_of` where a name records no origin. Counted, at most
+// What a name lowering makes of another says of it after its word, a drop
+// flag's `$live`, is a `js::Suffix`, a closed kind (ADR 1150): nothing
+// writes one as text, `format!("{name}$live")`, outside its owner.
+test("a suffix is a js::Suffix, never written as text", () => {
+  const writing = sources.filter((file) => file !== "src/js/name.rs" && /\{[^}]*\}\$live/.test(read(file)));
+  expect(writing).toEqual([]);
+});
+
 // `KIN_PARSES`, which only falls, to none: each is asked of the name's
 // origin and form by its id instead. The spelling's owners, `js::name`,
 // `names`, the runtime's helpers and printing, write and read it.
-const KIN_PARSES = 14;
+const KIN_PARSES = 10;
 test("a name's kinship and form are asked by parsing its word only as counted", () => {
   const owners = (file: string) => file === "src/js/name.rs" || file === "src/names.rs"
     || file === "src/runtime.rs" || file.startsWith("src/to_oxc");

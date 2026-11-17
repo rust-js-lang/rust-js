@@ -93,14 +93,14 @@ function main() {
   );
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   dropping = (x) => [x];
-  let dropping$1$live = true;
+  let dropping$live = true;
   let tmp$1;
   try {
     tmp$1 = $iter([8, 3, 6]);
-    dropping$1$live = false;
+    dropping$live = false;
   } catch (error) {
     $cleanup(() => {
-      if (dropping$1$live) {
+      if (dropping$live) {
         $dispose(dropping);
       }
     }, error);
@@ -125,14 +125,14 @@ function main() {
       console.log(`drop ${held}`);
     },
   );
-  let dropping$2$live = true;
+  let dropping$live$1 = true;
   let tmp$2;
   try {
     tmp$2 = $iter([8, 3, 6]);
-    dropping$2$live = false;
+    dropping$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (dropping$2$live) {
+      if (dropping$live$1) {
         $dispose(dropping$1);
       }
     }, error);

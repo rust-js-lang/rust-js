@@ -9,6 +9,15 @@ const leaving = [
 
 export const mutations: Mutation[] = [
   {
+    name: "flag-named-for-a-helper",
+    breaks: "a temporary's drop flag is named for what its drop reads last, a runtime helper too, `$dropEach$live`",
+    file: "src/lower/mir/tidy/flags.rs",
+    find: "                    if name.helper().is_none() {\n",
+    replace: "                    if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(owner_handle_returns_another|owner_handle_kept_apart)\\.rs$"],
+    snapshots: true,
+  },
+  {
     name: "joined-flag-unnamed",
     breaks:
       "a drop flag tested with its pattern's test, `if (d && flag)`, keeps its temporary's name, `_13$0$live`",
@@ -53,8 +62,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary's drop flag is named for MIR's local, `_14$live`, not for what it says is there",
     file: "src/lower/mir/tidy/flags.rs",
-    find: "        if !super::spelled_as_temporary(base) {\n",
-    replace: "        if true || !super::spelled_as_temporary(base) {\n",
+    find: "        if !of_temporary {\n",
+    replace: "        if true {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

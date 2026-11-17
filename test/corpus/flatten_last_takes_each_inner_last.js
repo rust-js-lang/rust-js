@@ -63,7 +63,7 @@ function main() {
     dDrop_drop,
   );
   console.log(`last ${last?.[0] ?? 0}`);
-  let last$1$live = false;
+  let last$live = false;
   if (last != null) {
     dDrop_drop(last);
   }
@@ -75,7 +75,7 @@ function main() {
     dDrop_drop,
   );
   console.log(`last ${last$1?.[0] ?? 0}`);
-  let last$2$live = false;
+  let last$live$1 = false;
   if (last$1 != null) {
     dDrop_drop(last$1);
   }
@@ -115,7 +115,7 @@ function main() {
   let it$live = false;
   const last$2 = $lastDropping(it, dDrop_drop);
   console.log(`last ${last$2?.[0] ?? 0}`);
-  let last$3$live = false;
+  let last$live$2 = false;
   if (last$2 != null) {
     dDrop_drop(last$2);
   }
@@ -141,7 +141,7 @@ function main() {
     dDrop_drop,
   );
   console.log(`last ${last$3?.[0] ?? 0}`);
-  let last$4$live = false;
+  let last$live$3 = false;
   if (last$3 != null) {
     dDrop_drop(last$3);
   }
@@ -179,7 +179,7 @@ function main() {
     dDrop_drop,
   );
   console.log(`last ${last$4?.[0] ?? 0}`);
-  let last$5$live = false;
+  let last$live$4 = false;
   if (last$4 != null) {
     dDrop_drop(last$4);
   }
@@ -202,7 +202,7 @@ function main() {
       $dropEach(dDrop_drop),
     ),
   );
-  let it$1$live = true;
+  let it$live$1 = true;
   let iter;
   try {
     iter = $lent(it$1);
@@ -218,20 +218,20 @@ function main() {
       tmp = $next(iter);
     } catch (error) {
       $cleanup(() => {
-        if (it$1$live) {
+        if (it$live$1) {
           it$1.return();
         }
-        if (last$5$live) {
+        if (last$live$4) {
           if (last$4 != null) {
             dDrop_drop(last$4);
           }
         }
-        if (last$4$live) {
+        if (last$live$3) {
           if (last$3 != null) {
             dDrop_drop(last$3);
           }
         }
-        if (last$3$live) {
+        if (last$live$2) {
           if (last$2 != null) {
             dDrop_drop(last$2);
           }
@@ -244,12 +244,12 @@ function main() {
         if (it$live) {
           it.return();
         }
-        if (last$2$live) {
+        if (last$live$1) {
           if (last$1 != null) {
             dDrop_drop(last$1);
           }
         }
-        if (last$1$live) {
+        if (last$live) {
           if (last != null) {
             dDrop_drop(last);
           }
@@ -274,20 +274,20 @@ function main() {
     next = $next(it$1);
   } catch (error) {
     $cleanup(() => {
-      if (it$1$live) {
+      if (it$live$1) {
         it$1.return();
       }
-      if (last$5$live) {
+      if (last$live$4) {
         if (last$4 != null) {
           dDrop_drop(last$4);
         }
       }
-      if (last$4$live) {
+      if (last$live$3) {
         if (last$3 != null) {
           dDrop_drop(last$3);
         }
       }
-      if (last$3$live) {
+      if (last$live$2) {
         if (last$2 != null) {
           dDrop_drop(last$2);
         }
@@ -300,12 +300,12 @@ function main() {
       if (it$live) {
         it.return();
       }
-      if (last$2$live) {
+      if (last$live$1) {
         if (last$1 != null) {
           dDrop_drop(last$1);
         }
       }
-      if (last$1$live) {
+      if (last$live) {
         if (last != null) {
           dDrop_drop(last);
         }
@@ -317,20 +317,20 @@ function main() {
     console.log(`after ${next != null ? map(next) : 0}`);
   } catch (error) {
     $cleanup(() => {
-      if (it$1$live) {
+      if (it$live$1) {
         it$1.return();
       }
-      if (last$5$live) {
+      if (last$live$4) {
         if (last$4 != null) {
           dDrop_drop(last$4);
         }
       }
-      if (last$4$live) {
+      if (last$live$3) {
         if (last$3 != null) {
           dDrop_drop(last$3);
         }
       }
-      if (last$3$live) {
+      if (last$live$2) {
         if (last$2 != null) {
           dDrop_drop(last$2);
         }
@@ -343,12 +343,12 @@ function main() {
       if (it$live) {
         it.return();
       }
-      if (last$2$live) {
+      if (last$live$1) {
         if (last$1 != null) {
           dDrop_drop(last$1);
         }
       }
-      if (last$1$live) {
+      if (last$live) {
         if (last != null) {
           dDrop_drop(last);
         }
@@ -356,7 +356,7 @@ function main() {
     }, error);
     throw error;
   }
-  it$1$live = false;
+  it$live$1 = false;
   const iter$1 = it$1;
   let result;
   try {
@@ -371,17 +371,17 @@ function main() {
     }
   } catch (error) {
     $cleanup(() => {
-      if (last$5$live) {
+      if (last$live$4) {
         if (last$4 != null) {
           dDrop_drop(last$4);
         }
       }
-      if (last$4$live) {
+      if (last$live$3) {
         if (last$3 != null) {
           dDrop_drop(last$3);
         }
       }
-      if (last$3$live) {
+      if (last$live$2) {
         if (last$2 != null) {
           dDrop_drop(last$2);
         }
@@ -394,12 +394,12 @@ function main() {
       if (it$live) {
         it.return();
       }
-      if (last$2$live) {
+      if (last$live$1) {
         if (last$1 != null) {
           dDrop_drop(last$1);
         }
       }
-      if (last$1$live) {
+      if (last$live) {
         if (last != null) {
           dDrop_drop(last);
         }
@@ -416,17 +416,17 @@ function main() {
     console.log(`last ${result != null ? map$1(result) : 0}`);
   } catch (error) {
     $cleanup(() => {
-      if (last$5$live) {
+      if (last$live$4) {
         if (last$4 != null) {
           dDrop_drop(last$4);
         }
       }
-      if (last$4$live) {
+      if (last$live$3) {
         if (last$3 != null) {
           dDrop_drop(last$3);
         }
       }
-      if (last$3$live) {
+      if (last$live$2) {
         if (last$2 != null) {
           dDrop_drop(last$2);
         }
@@ -439,12 +439,12 @@ function main() {
       if (it$live) {
         it.return();
       }
-      if (last$2$live) {
+      if (last$live$1) {
         if (last$1 != null) {
           dDrop_drop(last$1);
         }
       }
-      if (last$1$live) {
+      if (last$live) {
         if (last != null) {
           dDrop_drop(last);
         }
@@ -453,12 +453,12 @@ function main() {
     throw error;
   }
   console.log("end");
-  last$5$live = false;
-  last$4$live = false;
-  last$3$live = false;
+  last$live$4 = false;
+  last$live$3 = false;
+  last$live$2 = false;
   first$live = false;
   it$live = false;
-  last$2$live = false;
-  last$1$live = false;
+  last$live$1 = false;
+  last$live = false;
 }
 //# sourceMappingURL=case.js.map

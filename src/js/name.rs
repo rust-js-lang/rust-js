@@ -44,6 +44,24 @@ impl Id {
     }
 }
 
+/// What a name lowering makes of another variable says of it, after that
+/// variable's word: closed, each kind a deliberate one, so nothing else
+/// writes a suffix as text (ADR 1150).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum Suffix {
+    /// A drop's flag, whether the value is still there to drop, `$live`.
+    Live,
+}
+
+impl Suffix {
+    /// Its text after the variable's word, and the parts', `$live`.
+    fn text(self) -> &'static str {
+        match self {
+            Suffix::Live => "$live",
+        }
+    }
+}
+
 /// Whose a name is.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 enum Of {
@@ -74,6 +92,9 @@ enum Of {
     /// program names `_`, an `async` closure's `|_|`, or one lowering names
     /// for a value it reads nowhere, `_`, `_$1` (`Role::Unread`).
     Unread,
+    /// A variable lowering makes of another to say a thing of it, a drop's
+    /// flag, `noisy$live`, of what `Suffix` it says (`suffixed`).
+    Suffixed(Suffix),
     /// A block's label MIR's lowering made, `bb7`, not one the program
     /// writes, `'rows` (S5).
     BlockLabel,
@@ -261,6 +282,71 @@ impl Name {
             kin => kin,
         };
         Name(crate::names::made(base, k), of, Id::fresh(), origin)
+    }
+
+    /// A variable lowering makes of `source`, or of a local it names
+    /// nothing, spelled `word`, `_14`: what `suffix` says of it, or of its
+    /// part, `parts`, the `k`th, unspelled, `noisy$live#1`, `pair$a$live#1`,
+    /// of the source by its id, which preparation spells of what the source
+    /// is spelled then, `noisy$live` (`suffix_tail`, ADR 1150).
+    pub fn suffixed(source: Result<&Name, &str>, parts: &[String], suffix: Suffix, k: usize) -> Name {
+        // Of a temporary, or what Rust leaves `_`, none: tidy names it for
+        // the variable its drop is of, once it knows it (`suffixed_again`).
+        let (root, origin) = match source {
+            Ok(source) if source.is_temporary() || source.is_unread() => (source.suffix_root(), Id::WORD),
+            Ok(source) => (
+                source.suffix_root(),
+                match source.kin() {
+                    Id::WORD => Id::OF_WORD,
+                    kin => kin,
+                },
+            ),
+            Err(word) => (word, Id::WORD),
+        };
+        let parts: String = parts.iter().map(|part| format!("${part}")).collect();
+        let word = crate::names::made(&format!("{root}{parts}{}", suffix.text()), k);
+        Name(word, Of::Suffixed(suffix), Id::fresh(), origin)
+    }
+
+    /// It again, of `source`, its parts and suffix as they are, the first
+    /// whose word none of `taken` is: a flag named for the variable its
+    /// drop is of once tidy knows it (`suffixed`).
+    pub fn suffixed_again(&self, source: &Name, taken: &crate::collections::IndexSet<String>) -> Name {
+        let Of::Suffixed(suffix) = self.1 else {
+            unreachable!("a suffixed name")
+        };
+        let tail = self.suffix_tail().expect("a suffixed name's tail");
+        let parts: Vec<String> = (tail.strip_suffix(suffix.text()).unwrap_or(""))
+            .split('$')
+            .filter(|part| !part.is_empty())
+            .map(str::to_string)
+            .collect();
+        (1..)
+            .map(|k| Name::suffixed(Ok(source), &parts, suffix, k))
+            .find(|name| !taken.contains(&name.0))
+            .expect("a word nothing has")
+    }
+
+    /// What a name `suffixed` makes of it begins with: what it's of, without
+    /// the `$` of a word JS keeps, `new` of `new$`, so no `$` is in it and
+    /// its suffix is what follows the first (`suffix_tail`).
+    pub fn suffix_root(&self) -> &str {
+        let base = self.base();
+        base.strip_suffix('$').unwrap_or(base)
+    }
+
+    /// Of one `suffixed` made, what follows its source's word, `$a$live` of
+    /// `pair$a$live#1`, unspelled; none of another.
+    pub fn suffix_tail(&self) -> Option<&str> {
+        let Of::Suffixed(_) = self.1 else { return None };
+        let base = crate::names::made_base(&self.0)?;
+        base.find('$').map(|at| &base[at..])
+    }
+
+    /// Whether it was made of another variable, by its id or its word
+    /// (`derived`, `suffixed`).
+    pub fn has_origin(&self) -> bool {
+        self.3 != Id::WORD
     }
 
     /// The first holder of `source` (`derived`) whose word none of `taken`
@@ -462,5 +548,22 @@ impl fmt::Debug for Name {
             true => fmt::Debug::fmt(&self.0, f),
             false => write!(f, "\"{}#{}\"", self.0, self.2.0),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Suffix;
+
+    // A suffix lowering derives a name with is one of these, a deliberate
+    // kind each: one added is a decision, this row its record (ADR 1150).
+    #[test]
+    fn the_suffixes_are_closed() {
+        // Each kind, by a `match` that names them all: one added fails to
+        // build here until it's written down.
+        let text = |suffix: Suffix| match suffix {
+            Suffix::Live => "$live",
+        };
+        assert_eq!(Suffix::Live.text(), text(Suffix::Live));
     }
 }

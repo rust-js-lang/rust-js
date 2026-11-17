@@ -21,10 +21,10 @@ function main() {
   function flush() {
     const old = pending;
     pending = undefined;
-    let old$1$0$live = true;
+    let old$0$live = true;
     let result;
     if (old != null) {
-      old$1$0$live = false;
+      old$0$live = false;
       const n = old;
       result = n[0];
       noisyDrop_drop(n);
@@ -32,7 +32,7 @@ function main() {
       result = 0;
     }
     if (old != null) {
-      if (old$1$0$live) {
+      if (old$0$live) {
         noisyDrop_drop(old);
       }
     }

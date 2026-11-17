@@ -1162,3 +1162,22 @@ spelled as it is takes nearer than its own (`Problem::Captured`), which
 found these over the whole check, the metamorphic net and React's port; a
 unit row holds it. Byte-identical.
 
+## A drop's flag is a `js::Suffix` of its variable (2026-11-17)
+
+A drop's flag, `noisy$live`, was spelled in lowering of its variable's word,
+given apart where it was, `a$1$live`, and tidy named a temporary's again by
+splitting words, `_14$live` into `value$live`. Now it's a name of its own
+form, `Of::Suffixed(js::Suffix::Live)`, of a closed kind (the lead's
+decision; a unit row names each kind by a `match`, and an architecture row
+refuses a suffix written as text outside `js/name.rs`), made unspelled of
+its variable's root and its part's keys, `pair$a$live#1`
+(`Name::suffixed`), the `$` of a word JS keeps left out, `new$0$live`; one of
+a temporary, or of what Rust leaves `_`, records no origin, as the
+temporary may be gone by tidy's end, and tidy names it for the variable its
+drop reads, by its `Name` (`suffixed_again`); preparation spells it as any
+unspelled name. The flags read plainer, `a$live` for `a$1$live` and
+`tryBorrowMut$0$live` for `tryBorrowMut$3$0$live`, 37 corpus files, 459
+lines with a `$` and a number to 151, std and React's port as they were; a
+variable and its shadow each flagged in one function are kept apart,
+`a$live` and `a$live$1` (`shadow_and_its_variable_each_flagged`).
+

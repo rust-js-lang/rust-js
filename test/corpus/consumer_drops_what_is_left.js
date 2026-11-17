@@ -450,9 +450,9 @@ function held(n) {
   }
   try {
     const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-    let taken$1$live = true;
+    let taken$live = true;
     if (n > 0) {
-      taken$1$live = false;
+      taken$live = false;
       const reduce = $reduce(
         $filterDropping(taken, (l) => l[0] > 99, loudDrop_drop).map((l) => {
           const result = l[0];
@@ -465,9 +465,9 @@ function held(n) {
     }
     try {
       const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-      let taken$2$live = true;
+      let taken$live = true;
       if (n > 0) {
-        taken$2$live = false;
+        taken$live = false;
         console.log(
           `held skipped ${$skipping(taken, 3, loudDrop_drop).reduce((k, _3) => {
             const result = (k + 1) | 0;
@@ -478,9 +478,9 @@ function held(n) {
       }
       try {
         const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-        let taken$3$live = true;
+        let taken$live = true;
         if (n > 0) {
-          taken$3$live = false;
+          taken$live = false;
           console.log(
             `held while ${$lazySkipWhile(taken, (l) => l[0] < 11, loudDrop_drop).reduce(
               (n, item) => {
@@ -493,9 +493,9 @@ function held(n) {
         }
         try {
           const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-          let taken$4$live = true;
+          let taken$live = true;
           if (n > 0) {
-            taken$4$live = false;
+            taken$live = false;
             console.log(
               `held counted ${taken.reduce((k, _3) => {
                 const result = (k + 1) | 0;
@@ -535,9 +535,9 @@ function held(n) {
             }
             try {
               const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
-              let taken$5$live = true;
+              let taken$live = true;
               if (n > 0) {
-                taken$5$live = false;
+                taken$live = false;
                 console.log(
                   `held mapped ${taken
                     .map((l) => {
@@ -588,12 +588,12 @@ function held(n) {
                 throw $unwindsOn(error);
               } finally {
                 if ($live()) {
-                  if (taken$5$live) {
+                  if (taken$live) {
                     taken.return();
                   }
                 }
               }
-              taken$5$live = false;
+              taken$live = false;
             } catch (error) {
               throw $unwindsOn(error);
             } finally {
@@ -608,42 +608,42 @@ function held(n) {
             throw $unwindsOn(error);
           } finally {
             if ($live()) {
-              if (taken$4$live) {
+              if (taken$live) {
                 taken.return();
               }
             }
           }
-          taken$4$live = false;
+          taken$live = false;
         } catch (error) {
           throw $unwindsOn(error);
         } finally {
           if ($live()) {
-            if (taken$3$live) {
+            if (taken$live) {
               taken.return();
             }
           }
         }
-        taken$3$live = false;
+        taken$live = false;
       } catch (error) {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          if (taken$2$live) {
+          if (taken$live) {
             taken.return();
           }
         }
       }
-      taken$2$live = false;
+      taken$live = false;
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        if (taken$1$live) {
+        if (taken$live) {
           taken.return();
         }
       }
     }
-    taken$1$live = false;
+    taken$live = false;
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

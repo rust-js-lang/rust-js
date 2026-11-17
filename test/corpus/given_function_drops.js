@@ -82,15 +82,15 @@ function main() {
       },
     )}`,
   );
-  let a$3$live = true;
+  let a$live = true;
   const a$3 = [4];
   let tmp;
   try {
     tmp = $iter([1, 2, 3]);
-    a$3$live = false;
+    a$live = false;
   } catch (error) {
     $cleanup(() => {
-      if (a$3$live) {
+      if (a$live) {
         console.log(`drop ${a$3[0]}`);
       }
     }, error);

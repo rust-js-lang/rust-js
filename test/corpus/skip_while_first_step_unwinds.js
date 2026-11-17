@@ -53,7 +53,7 @@ function skipping(n, calls) {
 
 function main() {
   let r = $catchUnwind(() => {
-    let g$1$live = true;
+    let g$live = true;
     const g = ["f"];
     let calls = 0;
     const value$1 = [1, 2, 3];
@@ -73,10 +73,10 @@ function main() {
         }
       });
       d = ["acc"];
-      g$1$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$1$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -131,7 +131,7 @@ function main() {
 
   // Of items with a destructor, what's left of the `Vec` after both.
   r = $catchUnwind(() => {
-    let g$3$live = true;
+    let g$live = true;
     const g = ["f"];
     let calls = 0;
     const value = [["1"], ["2"], ["3"]];
@@ -155,10 +155,10 @@ function main() {
         dDrop_drop,
       );
       d = ["acc"];
-      g$3$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$3$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -248,7 +248,7 @@ function main() {
   // A `skip()`'s `nth(n - 1)` is such a first step too, of `fold` and
   // `try_fold`.
   r = $catchUnwind(() => {
-    let g$5$live = true;
+    let g$live = true;
     const g = ["f"];
     const value = [["1"], ["2"], ["3"], ["4"]];
     let skip;
@@ -272,10 +272,10 @@ function main() {
         dDrop_drop,
       );
       d = ["acc"];
-      g$5$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$5$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -349,17 +349,17 @@ function main() {
   });
   console.log(`skip try_fold panicked ${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
-    let g$7$live = true;
+    let g$live = true;
     const g = ["f"];
     let stepBy;
     let d;
     try {
       stepBy = iterator_stepBy([0], 2, { next: ownIterator_next }, undefined, dDrop_drop);
       d = ["acc"];
-      g$7$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$7$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -407,7 +407,7 @@ function main() {
   // Of a `map()` whose function may panic, which the build that rewrites
   // adapters would make in place as a filter by index (#773).
   r = $catchUnwind(() => {
-    let g$9$live = true;
+    let g$live = true;
     const g = ["f"];
     const value = [["1"], ["2"], ["3"]];
     let stepBy;
@@ -431,10 +431,10 @@ function main() {
         dDrop_drop,
       );
       d = ["acc"];
-      g$9$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$9$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);

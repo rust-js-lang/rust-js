@@ -15,7 +15,7 @@ mod imports;
 mod known;
 mod make;
 mod name;
-pub use name::Name;
+pub use name::{Name, Suffix};
 mod optional_call;
 mod path;
 pub use path::{Path, PathRoot};

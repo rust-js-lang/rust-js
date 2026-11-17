@@ -151,16 +151,16 @@ function main() {
     return value ?? 0;
   });
   case$("skip", (g) => {
-    let g$4$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_skip(It.new(3, "it"), 1, { next: itIterator_next }, (it) => {
         dDrop_drop(it._held);
       });
-      g$4$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$4$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -180,7 +180,7 @@ function main() {
     }
   });
   case$("map", (g) => {
-    let g$5$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_map(
@@ -191,10 +191,10 @@ function main() {
           dDrop_drop(it._held);
         },
       );
-      g$5$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$5$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -214,16 +214,16 @@ function main() {
     }
   });
   case$("take", (g) => {
-    let g$6$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_take(It.new(3, "it"), 2, { next: itIterator_next }, (it) => {
         dDrop_drop(it._held);
       });
-      g$6$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$6$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -293,16 +293,16 @@ function main() {
     }
   });
   case$("taken past its end", (g) => {
-    let g$8$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_take(It.new(3, "it"), 5, { next: itIterator_next }, (it) => {
         dDrop_drop(it._held);
       });
-      g$8$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$8$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -322,16 +322,16 @@ function main() {
     }
   });
   case$("fused", (g) => {
-    let g$9$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_fuse(It.new(3, "it"), { next: itIterator_next }, false, (it) => {
         dDrop_drop(it._held);
       });
-      g$9$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$9$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -351,16 +351,16 @@ function main() {
     }
   });
   case$("enumerate", (g) => {
-    let g$10$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_enumerate(It.new(2, "it"), { next: itIterator_next }, (it) => {
         dDrop_drop(it._held);
       });
-      g$10$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$10$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -380,16 +380,16 @@ function main() {
     }
   });
   case$("step_by", (g) => {
-    let g$11$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_stepBy(It.new(4, "it"), 2, { next: itIterator_next }, (it) => {
         dDrop_drop(it._held);
       });
-      g$11$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$11$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -409,16 +409,16 @@ function main() {
     }
   });
   case$("peekable", (g) => {
-    let g$12$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_peekable(It.new(3, "it"), { next: itIterator_next }, (it) => {
         dDrop_drop(it._held);
       });
-      g$12$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$12$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -438,7 +438,7 @@ function main() {
     }
   });
   case$("filter", (g) => {
-    let g$13$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_filter(
@@ -449,10 +449,10 @@ function main() {
           dDrop_drop(it._held);
         },
       );
-      g$13$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$13$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -472,7 +472,7 @@ function main() {
     }
   });
   case$("zip", (g) => {
-    let g$14$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_zip(
@@ -490,10 +490,10 @@ function main() {
           dDrop_drop(it._held);
         },
       );
-      g$14$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$14$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -513,7 +513,7 @@ function main() {
     }
   });
   case$("rev", (g) => {
-    let g$15$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_rev(
@@ -524,10 +524,10 @@ function main() {
           dDrop_drop(it._held);
         },
       );
-      g$15$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$15$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -547,7 +547,7 @@ function main() {
     }
   });
   case$("skip_while", (g) => {
-    let g$16$live = true;
+    let g$live = true;
     let iter;
     try {
       iter = iterator_skipWhile(
@@ -558,10 +558,10 @@ function main() {
           dDrop_drop(it._held);
         },
       );
-      g$16$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$16$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -581,7 +581,7 @@ function main() {
     }
   });
   case$("flatten", (g) => {
-    let g$17$live = true;
+    let g$live = true;
     const value = [It.new(2, "a"), It.new(1, "b")];
     let flatten;
     try {
@@ -597,10 +597,10 @@ function main() {
             dDrop_drop(it.of._held);
           }),
       );
-      g$17$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$17$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -612,15 +612,15 @@ function main() {
     });
   });
   case$("a vec's rest", (g) => {
-    let g$18$live = true;
+    let g$live = true;
     const value = [["x"], ["y"]];
     let take;
     try {
       take = $closing($iter(value), $dropEach(dDrop_drop)).take(1);
-      g$18$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$18$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -636,16 +636,16 @@ function main() {
     });
   });
   case$("by_ref", (g) => {
-    let g$19$live = true;
+    let g$live = true;
     const it = It.new(3, "it");
     let take;
     try {
       take = iterator_take(it, 2, { next: itIterator_next });
-      g$19$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
         dDrop_drop(it._held);
-        if (g$19$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -696,15 +696,15 @@ function main() {
     }
   });
   case$("a panic in a reversed rfold", (g) => {
-    let g$21$live = true;
+    let g$live = true;
     const value = [["x"], ["y"], ["z"]];
     let rev;
     try {
       rev = $rev($closing($iter(value), $dropEach(dDrop_drop)));
-      g$21$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$21$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);

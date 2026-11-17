@@ -921,7 +921,7 @@ function main() {
     const x = $collectDropping(
       $closing($iter(ds({ start: 70, end: 74 })), $dropEach(dDrop_drop))
         .map((d) => {
-          let d$112$live = true;
+          let d$live = true;
           try {
             boom(d, 72);
           } catch (error) {
@@ -934,10 +934,10 @@ function main() {
           if (d[0] === 71) {
             result = undefined;
           } else {
-            d$112$live = false;
+            d$live = false;
             result = [d, 1n];
           }
-          if (d$112$live) {
+          if (d$live) {
             dDrop_drop(d);
           }
           return result;

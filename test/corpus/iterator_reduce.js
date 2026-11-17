@@ -47,25 +47,25 @@ function main() {
     `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
   );
   const loudest = $reduce($closing($iter([[1], [5], [3]]), $dropEach(loudDrop_drop)), (a, b) => {
-    let a$2$live = true;
-    let b$2$live = true;
+    let a$live = true;
+    let b$live = true;
     let result;
     if (b[0] > a[0]) {
-      b$2$live = false;
+      b$live = false;
       result = b;
     } else {
-      a$2$live = false;
+      a$live = false;
       result = a;
     }
     try {
-      if (b$2$live) {
+      if (b$live) {
         loudDrop_drop(b);
       }
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        if (a$2$live) {
+        if (a$live) {
           loudDrop_drop(a);
         }
       }

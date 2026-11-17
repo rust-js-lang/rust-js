@@ -8,7 +8,7 @@
 //! the variable its drop is of (ADR 0372).
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 /// What's known of each flag where a statement runs: `true` or `false`.
 type Known = IndexMap<js::Name, bool>;
@@ -57,18 +57,18 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
             }
         }
     });
+    // A temporary's flag, or one of a local named nothing, which records
+    // no origin, is named for the variable its drop is of (ADR 1150).
     for flag in &declared {
-        let Some((base, rest)) = flag.word().split_once('$') else {
-            continue;
-        };
-        if !super::spelled_as_temporary(base) {
+        let of_temporary = flag.suffix_tail().is_some() && !flag.has_origin();
+        if !of_temporary {
             continue;
         }
         let Some(dropped) = guarded(body, flag) else {
             continue;
         };
-        let named = dropped.split('$').next().unwrap_or(&dropped);
-        let to = Name::declared(crate::names::fresh_in(&mut taken, &format!("{named}${rest}")));
+        let to = flag.suffixed_again(&dropped, &taken);
+        taken.insert(to.word().to_string());
         js::statement_lists(body, &mut |list| {
             for stmt in list.iter_mut() {
                 if let StmtKind::Let(name, _) = &mut stmt.kind
@@ -91,7 +91,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
 /// The variable the drop `flag` guards is of: `x` of `if (flag) {
 /// drop(x); }`, and of a part of it, `drop(x.a)`: what the drop reads
 /// last, but the runtime's helpers.
-fn guarded(body: &mut [Stmt], flag: &js::Name) -> Option<String> {
+fn guarded(body: &mut [Stmt], flag: &js::Name) -> Option<js::Name> {
     let mut found = None;
     let mut copy = body.to_vec();
     js::statement_lists(&mut copy, &mut |list| {
@@ -100,9 +100,9 @@ fn guarded(body: &mut [Stmt], flag: &js::Name) -> Option<String> {
                 && let StmtKind::If(test, then, _) = &stmt.kind
                 && tests_flag(test, flag)
             {
-                js::visit_stmts(then, &mut |name| {
-                    if !name.starts_with('$') {
-                        found = Some(name.to_string());
+                js::visit_stmt_names(then, &mut |name| {
+                    if name.helper().is_none() {
+                        found = Some(name.clone());
                     }
                 });
             }

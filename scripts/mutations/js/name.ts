@@ -4,6 +4,25 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "suffix-root-keeps-a-kept-words-dollar",
+    breaks: "a drop flag of a word JS keeps, `new`, is `new$$$0$live`, its suffix taken from the `$` of `new$`",
+    file: "src/js/name.rs",
+    find: "        base.strip_suffix('$').unwrap_or(base)\n",
+    replace: "        base\n",
+    tests: ["test/corpus.test.ts", "-t", "^arm_temporaries.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "flag-of-a-temporary-kept-of-it",
+    breaks:
+      "a temporary's drop flag records the temporary it was made of, so tidy never names it for the variable its drop is of, `_14$live`",
+    file: "src/js/name.rs",
+    find: "            Ok(source) if source.is_temporary() || source.is_unread() => (source.suffix_root(), Id::WORD),\n",
+    replace: "            Ok(source) if false => (source.suffix_root(), Id::WORD),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(option_combinator_drops|combinators_owned_drops)\\.rs$"],
+    snapshots: true,
+  },
+  {
     name: "holder-of-a-temporary-not-one",
     breaks:
       "a holder lowering makes of a temporary, `_5`, isn't a temporary, so tidy never names it for what it holds, nor folds it as one",

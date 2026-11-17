@@ -174,7 +174,7 @@ function reachingItsOwnFold() {
     dDrop_drop(g);
   });
   console.log(`take ${n}`);
-  let g$1$live = true;
+  let g$live$1 = true;
   const g$1 = ["f"];
   let skip;
   try {
@@ -186,10 +186,10 @@ function reachingItsOwnFold() {
         dDrop_drop(own._held);
       },
     );
-    g$1$live = false;
+    g$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$1$live) {
+      if (g$live$1) {
         dDrop_drop(g$1);
       }
     }, error);
@@ -200,7 +200,7 @@ function reachingItsOwnFold() {
     dDrop_drop(g$1);
   });
   console.log(`skip ${n}`);
-  let g$2$live = true;
+  let g$live$2 = true;
   const g$2 = ["f"];
   let peekable;
   try {
@@ -211,10 +211,10 @@ function reachingItsOwnFold() {
         dDrop_drop(own._held);
       },
     );
-    g$2$live = false;
+    g$live$2 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$2$live) {
+      if (g$live$2) {
         dDrop_drop(g$2);
       }
     }, error);
@@ -225,7 +225,7 @@ function reachingItsOwnFold() {
     dDrop_drop(g$2);
   });
   console.log(`peekable ${n}`);
-  let g$3$live = true;
+  let g$live$3 = true;
   const g$3 = ["f"];
   let fuse;
   try {
@@ -237,10 +237,10 @@ function reachingItsOwnFold() {
         dDrop_drop(own._held);
       },
     );
-    g$3$live = false;
+    g$live$3 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$3$live) {
+      if (g$live$3) {
         dDrop_drop(g$3);
       }
     }, error);
@@ -251,7 +251,7 @@ function reachingItsOwnFold() {
     dDrop_drop(g$3);
   });
   console.log(`fuse ${n}`);
-  let g$4$live = true;
+  let g$live$4 = true;
   const g$4 = ["f"];
   let enumerate;
   try {
@@ -262,10 +262,10 @@ function reachingItsOwnFold() {
         dDrop_drop(own._held);
       },
     );
-    g$4$live = false;
+    g$live$4 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$4$live) {
+      if (g$live$4) {
         dDrop_drop(g$4);
       }
     }, error);
@@ -376,7 +376,7 @@ function steppedToItsEnd() {
   }
   const n = result;
   console.log(`step_by fold ${n}`);
-  let g$1$live = true;
+  let g$live$1 = true;
   const g$1 = ["map"];
   let tmp$1;
   try {
@@ -388,10 +388,10 @@ function steppedToItsEnd() {
         dDrop_drop(own._held);
       },
     );
-    g$1$live = false;
+    g$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$1$live) {
+      if (g$live$1) {
         dDrop_drop(g$1);
       }
     }, error);
@@ -481,7 +481,7 @@ function foldedFromTheBack() {
   let n = result;
   console.log(`map rfold ${n}`);
   const g$1 = ["filter"];
-  let h$1$live = true;
+  let h$live$1 = true;
   const h$1 = ["f"];
   const value$1 = own(4, "own");
   let filter;
@@ -497,10 +497,10 @@ function foldedFromTheBack() {
         dDrop_drop(g$1);
       },
     );
-    h$1$live = false;
+    h$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (h$1$live) {
+      if (h$live$1) {
         dDrop_drop(h$1);
       }
     }, error);
@@ -622,7 +622,7 @@ function ofAVecReversed() {
       dDrop_drop(g);
     },
   );
-  let g$1$live = true;
+  let g$live$1 = true;
   const g$1 = ["f"];
   const value$1 = [["x"], ["y"]];
   let map;
@@ -632,10 +632,10 @@ function ofAVecReversed() {
       dDrop_drop(d);
       return result;
     });
-    g$1$live = false;
+    g$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$1$live) {
+      if (g$live$1) {
         dDrop_drop(g$1);
       }
     }, error);
@@ -646,16 +646,16 @@ function ofAVecReversed() {
     dDrop_drop(g$1);
   });
   console.log(`vec map rfold ${n}`);
-  let g$2$live = true;
+  let g$live$2 = true;
   const g$2 = ["f"];
   const value$2 = [["x"], ["y"]];
   let rev;
   try {
     rev = $rev($closing($iter(value$2), $dropEach(dDrop_drop)));
-    g$2$live = false;
+    g$live$2 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$2$live) {
+      if (g$live$2) {
         dDrop_drop(g$2);
       }
     }, error);
@@ -700,7 +700,7 @@ function reversedWithoutAPanic() {
   }
   let n = value;
   console.log(`range rev rfold ${n}`);
-  let g$1$live = true;
+  let g$live$1 = true;
   const g$1 = ["f"];
   function inspect() {}
   let tmp;
@@ -709,10 +709,10 @@ function reversedWithoutAPanic() {
       inspect(item);
       return item;
     });
-    g$1$live = false;
+    g$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$1$live) {
+      if (g$live$1) {
         dDrop_drop(g$1);
       }
     }, error);
@@ -731,7 +731,7 @@ function reversedWithoutAPanic() {
   }
   n = value$1;
   console.log(`inspect rfold ${n}`);
-  let g$2$live = true;
+  let g$live$2 = true;
   const g$2 = ["f"];
   let flatMap;
   try {
@@ -739,10 +739,10 @@ function reversedWithoutAPanic() {
       $iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack),
       (x) => $iterator({ start: 0, end: x }, $rangeNext, false, $rangeNextBack),
     );
-    g$2$live = false;
+    g$live$2 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$2$live) {
+      if (g$live$2) {
         dDrop_drop(g$2);
       }
     }, error);
@@ -761,16 +761,16 @@ function reversedWithoutAPanic() {
   }
   n = value$2;
   console.log(`flat_map rfold ${n}`);
-  let g$3$live = true;
+  let g$live$3 = true;
   const g$3 = ["f"];
   const value$4 = [[1, 2], [3]];
   let flatten;
   try {
     flatten = $flattenEnds($iter(value$4), (item) => $iter(item));
-    g$3$live = false;
+    g$live$3 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$3$live) {
+      if (g$live$3) {
         dDrop_drop(g$3);
       }
     }, error);

@@ -87,15 +87,15 @@ function main() {
     $print(`${n} `);
   });
   case$("for_each", (g) => {
-    let g$1$live = true;
+    let g$live = true;
     const value = [1, 2, 3];
     let tmp;
     try {
       tmp = $iter(value);
-      g$1$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$1$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -117,15 +117,15 @@ function main() {
     }
   });
   case$("fold", (g) => {
-    let g$2$live = true;
+    let g$live = true;
     const value = [1, 2, 3];
     let tmp;
     try {
       tmp = $iter(value);
-      g$2$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$2$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);
@@ -240,15 +240,15 @@ function main() {
     $print(`${p == null ? "None" : `Some(${p})`} `);
   });
   case$("ok no panic", (g) => {
-    let g$7$live = true;
+    let g$live = true;
     const value = [1, 2];
     let tmp;
     try {
       tmp = $iter(value);
-      g$7$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$7$live) {
+        if (g$live) {
           dDrop_drop(g);
         }
       }, error);

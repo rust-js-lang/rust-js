@@ -48,8 +48,8 @@ function consume(l, TDisplay, dropT) {
 
 function pair(front, back, which, TDisplay, dropT) {
   console.log(`pair ${which}`);
-  let pair$1$1$live = true;
-  let pair$1$0$live = true;
+  let pair$1$live = true;
+  let pair$0$live = true;
   const pair = [front, back];
   front = pair[0];
   try {
@@ -63,7 +63,7 @@ function pair(front, back, which, TDisplay, dropT) {
   }
   let n;
   if (which === 0) {
-    pair$1$0$live = false;
+    pair$0$live = false;
     const front = pair[0];
     try {
       consume(front, TDisplay, dropT);
@@ -77,7 +77,7 @@ function pair(front, back, which, TDisplay, dropT) {
   } else {
     const back = pair[1];
     if (which === 1) {
-      pair$1$1$live = false;
+      pair$1$live = false;
       const back = pair[1];
       try {
         console.log(`back arm ${TDisplay.fmt(back)}`);
@@ -98,8 +98,8 @@ function pair(front, back, which, TDisplay, dropT) {
         throw error;
       }
     } else {
-      pair$1$1$live = false;
-      pair$1$0$live = false;
+      pair$1$live = false;
+      pair$0$live = false;
       const both = pair;
       try {
         console.log(`both ${TDisplay.fmt(both[0])} ${TDisplay.fmt(both[1])}`);
@@ -130,14 +130,14 @@ function pair(front, back, which, TDisplay, dropT) {
     }
   }
   console.log(`after match ${n}`);
-  if (pair$1$0$live) {
+  if (pair$0$live) {
     dropT?.(pair[0]);
   }
-  if (pair$1$1$live) {
+  if (pair$1$live) {
     dropT?.(pair[1]);
   }
-  pair$1$1$live = false;
-  pair$1$0$live = false;
+  pair$1$live = false;
+  pair$0$live = false;
 }
 
 function trio(t, which, TDisplay, dropT) {
@@ -364,7 +364,7 @@ function iHalves(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
         }, error);
         throw error;
       }
-      let pair$1$live = true;
+      let pair$live = true;
       const pair = [front, back];
       front = pair[0];
       console.log(`guard ${front.length}`);
@@ -386,7 +386,7 @@ function iHalves(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
           throw error;
         }
       } else {
-        pair$1$live = false;
+        pair$live = false;
         console.log("both");
         n = (pair[0].length + pair[1].length) >>> 0;
         try {
@@ -406,12 +406,12 @@ function iHalves(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
         });
       }
       console.log(`after halves ${n}`);
-      if (pair$1$live) {
+      if (pair$live) {
         $dropItems(pair[1], (item) => {
           dropIItem?.(item);
         });
       }
-      pair$1$live = false;
+      pair$live = false;
       return n;
     },
     $drop: dropI,
@@ -470,7 +470,7 @@ function wrapperExt(IIterator, dropI, dropIItem) {
         }, error);
         throw error;
       }
-      let pair$1$live = true;
+      let pair$live = true;
       const pair = [front, back];
       back = pair[1];
       let n;
@@ -490,7 +490,7 @@ function wrapperExt(IIterator, dropI, dropIItem) {
           throw error;
         }
       } else {
-        pair$1$live = false;
+        pair$live = false;
         n = (((pair[0].length * 10) >>> 0) + pair[1].length) >>> 0;
         try {
           $dropItems(pair[0], (item) => {
@@ -509,12 +509,12 @@ function wrapperExt(IIterator, dropI, dropIItem) {
         });
       }
       console.log(`after ends ${n}`);
-      if (pair$1$live) {
+      if (pair$live) {
         $dropItems(pair[0], (item) => {
           dropIItem?.(item);
         });
       }
-      pair$1$live = false;
+      pair$live = false;
       return n;
     },
     $drop(wrapper) {
@@ -571,7 +571,7 @@ function wrapperBoom(IIterator, dropI, dropIItem) {
         }, error);
         throw error;
       }
-      let pair$1$live = true;
+      let pair$live = true;
       const pair = [front, back];
       back = pair[1];
       let result;
@@ -603,7 +603,7 @@ function wrapperBoom(IIterator, dropI, dropIItem) {
           throw error;
         }
       } else {
-        pair$1$live = false;
+        pair$live = false;
         result = (pair[0].length + pair[1].length) >>> 0;
         try {
           $dropItems(pair[0], (item) => {
@@ -621,12 +621,12 @@ function wrapperBoom(IIterator, dropI, dropIItem) {
           dropIItem?.(item);
         });
       }
-      if (pair$1$live) {
+      if (pair$live) {
         $dropItems(pair[0], (item) => {
           dropIItem?.(item);
         });
       }
-      pair$1$live = false;
+      pair$live = false;
       return result;
     },
     $drop(wrapper) {

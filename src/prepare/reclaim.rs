@@ -49,7 +49,12 @@ pub(super) fn spelled(module: &mut js::Module) {
         // `value#1`, unspelled yet, which it's given apart from (ADR 1150).
         let mut sources: IndexMap<String, String> = IndexMap::default();
         names_mut(item, false, &mut |name| {
-            for derived in unspelled.iter().filter(|u| name.is_origin_of(u)) {
+            // Not a flag (`Suffix`), made of its variable's root, which
+            // nothing names again.
+            for derived in unspelled
+                .iter()
+                .filter(|u| u.suffix_tail().is_none() && name.is_origin_of(u))
+            {
                 let root = name.made_base().unwrap_or_else(|| name.root());
                 sources
                     .entry(derived.word().to_string())

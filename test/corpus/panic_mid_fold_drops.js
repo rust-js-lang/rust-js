@@ -1009,7 +1009,7 @@ function main() {
     const x = $foldDropping(
       $rev($closing($iter(ds({ start: 30, end: 34 })), $dropEach(dDrop_drop)))
         .map((d) => {
-          let d$118$live = true;
+          let d$live = true;
           try {
             boom(d, 32);
           } catch (error) {
@@ -1022,10 +1022,10 @@ function main() {
           if (d[0] === 31) {
             result = undefined;
           } else {
-            d$118$live = false;
+            d$live = false;
             result = d;
           }
-          if (d$118$live) {
+          if (d$live) {
             dDrop_drop(d);
           }
           return result;

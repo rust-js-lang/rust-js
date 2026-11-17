@@ -269,16 +269,16 @@ function edges() {
     return maxByKey != null ? map$3(maxByKey) : undefined;
   });
   $print(`| panic key ${r.TAG === "Err"}\n`);
-  let g$3$live = true;
+  let g$live = true;
   const g$3 = ["f"];
   const value$1 = [[5], [7]];
   let tmp;
   try {
     tmp = $iter(value$1);
-    g$3$live = false;
+    g$live = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$3$live) {
+      if (g$live) {
         dDrop_drop(g$3);
       }
     }, error);
@@ -302,15 +302,15 @@ function edges() {
   }
   m = value$2 != null ? map$2(value$2) : undefined;
   $print(`| vec key ${m == null ? "None" : `Some(${m})`}\n`);
-  let g$4$live = true;
+  let g$live$1 = true;
   const g$4 = ["f"];
   let tmp$1;
   try {
     tmp$1 = $iter([]);
-    g$4$live = false;
+    g$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (g$4$live) {
+      if (g$live$1) {
         dDrop_drop(g$4);
       }
     }, error);
@@ -336,7 +336,7 @@ function edges() {
   $print(`| vec empty key ${m == null ? "None" : `Some(${m})`}\n`);
   const g$5 = ["f"];
   r = $catchUnwind(() => {
-    let g$16$0$live = true;
+    let g$0$live = true;
     const value = [[5], [7]];
     let map;
     try {
@@ -353,10 +353,10 @@ function edges() {
         }
         return i;
       });
-      g$16$0$live = false;
+      g$0$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$16$0$live) {
+        if (g$0$live) {
           dDrop_drop(g$5);
         }
       }, error);

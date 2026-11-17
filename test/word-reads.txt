@@ -30,7 +30,6 @@ src/lower/library.rs	3
 src/lower/mir.rs	2
 src/lower/mir/census.rs	2
 src/lower/mir/closures.rs	3
-src/lower/mir/drops.rs	1
 src/lower/mir/hints/clones.rs	1
 src/lower/mir/hints/names.rs	1
 src/lower/mir/iter/consumers.rs	3

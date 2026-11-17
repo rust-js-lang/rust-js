@@ -33,7 +33,7 @@ const ports = [];
 let enqueueTaskImpl;
 
 function enqueueTask(task, host) {
-  let task$1$live = true;
+  let task$live = true;
   if (enqueueTaskImpl == null) {
     try {
       if (host === "node") {
@@ -65,10 +65,10 @@ function enqueueTask(task, host) {
     throw new Error("no host");
   }
   if (enqueueTaskImpl != null) {
-    task$1$live = false;
+    task$live = false;
     enqueueTaskImpl(task);
   }
-  if (task$1$live) {
+  if (task$live) {
     $dispose(task);
   }
 }
@@ -78,7 +78,7 @@ function enqueueTask(task, host) {
  * then, and dropped if the port is out of bounds or closed.
  */
 function enqueueOn(task, at) {
-  let task$1$live = true;
+  let task$live = true;
   let port;
   try {
     port = $index(ports, at);
@@ -89,10 +89,10 @@ function enqueueOn(task, at) {
     throw error;
   }
   if (port > 0) {
-    task$1$live = false;
+    task$live = false;
     task.call();
   }
-  if (task$1$live) {
+  if (task$live) {
     $dispose(task);
   }
 }

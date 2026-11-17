@@ -197,15 +197,15 @@ function main() {
   run("flatten fold", () => {
     let tmp$1;
     const value = ds({ start: 70, end: 72 });
-    let item$4$live = true;
+    let item$live = true;
     let tmp;
     try {
       tmp = ds({ start: 72, end: 74 });
-      item$4$live = false;
+      item$live = false;
       tmp$1 = [value, tmp];
     } catch (error) {
       $cleanup(() => {
-        if (item$4$live) {
+        if (item$live) {
           for (const item of value) {
             dDrop_drop(item);
           }

@@ -58,22 +58,22 @@ function main() {
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
-    let h$2$live = true;
+    let h$live = true;
     const h = [80];
-    let g$2$live = true;
+    let g$live = true;
     const g = [90];
     const value$1 = [1, 2];
     let tmp;
     try {
       tmp = $iter(value$1);
-      h$2$live = false;
+      h$live = false;
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${g[0]}`);
         if (g[0] === 90) {
           throw new Error("drop");
         }
-        if (h$2$live) {
+        if (h$live) {
           console.log(`drop ${h[0]}`);
           if (h[0] === 90) {
             throw new Error("drop");
@@ -95,10 +95,10 @@ function main() {
         },
         "after",
       );
-      g$2$live = false;
+      g$live = false;
     } catch (error) {
       $cleanup(() => {
-        if (g$2$live) {
+        if (g$live) {
           console.log(`drop ${g[0]}`);
           if (g[0] === 90) {
             throw new Error("drop");

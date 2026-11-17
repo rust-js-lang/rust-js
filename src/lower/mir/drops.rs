@@ -4,7 +4,7 @@
 //! flag of its own then says as the body runs, set where rustc sets it.
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::lower::temporary_names::{Base, Role};
+use crate::lower::temporary_names::Role;
 use rustc_abi::FieldIdx;
 use rustc_index::IndexVec;
 use rustc_middle::mir::{
@@ -473,10 +473,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// name, a part's by its field's, `pair$a$live`. A temporary's is MIR's
     /// local's until tidy names it for what its drop is of (`tidy/flags.rs`).
     pub(super) fn flag_name(&mut self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> js::Name {
-        let mut name = match state.locals.names[place.local].word() {
-            "" => super::tidy::temporary(place.local.as_usize()),
-            name => name.to_string(),
+        // Of its local by its id, or of one named nothing, by MIR's word.
+        let local = &state.locals.names[place.local];
+        let unnamed = super::tidy::temporary(place.local.as_usize());
+        let source = match local.is_unnamed() {
+            true => Err(unnamed.as_str()),
+            false => Ok(local),
         };
+        let mut parts: Vec<String> = Vec::new();
         let mut ty = mir::PlaceTy::from_ty(state.body.local_decls[place.local].ty);
         for elem in place.projection {
             if let ProjectionElem::Field(field, _) = elem {
@@ -491,11 +495,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => field.as_usize().to_string(),
                 };
-                name = format!("{name}${key}");
+                parts.push(key);
             }
             ty = ty.projection_ty(self.tcx, elem);
         }
-        self.fresh(Base::Named(&format!("{name}$live")))
+        self.unspelled_as(|k| js::Name::suffixed(source, &parts, js::Suffix::Live, k))
     }
 
     /// The flags set before `at`, as rustc sets them, after what's made

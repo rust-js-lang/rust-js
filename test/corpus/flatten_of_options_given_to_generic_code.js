@@ -105,15 +105,15 @@ function main() {
   const mapped = firstOf(
     $filterEnds(
       $mapEnds($closing($iter([[6], [7], [8]]), $dropEach(dDrop_drop)), (d) => {
-        let d$4$live = true;
+        let d$live = true;
         let result;
         if (d[0] > 6) {
-          d$4$live = false;
+          d$live = false;
           result = d;
         } else {
           result = undefined;
         }
-        if (d$4$live) {
+        if (d$live) {
           dDrop_drop(d);
         }
         return result;

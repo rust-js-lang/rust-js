@@ -199,14 +199,14 @@ function equal(
     }, error);
     throw error;
   }
-  let b$1$live = true;
+  let b$live = true;
   let iter;
   try {
     iter = IIntoIterator.intoIter(a$1);
-    b$1$live = false;
+    b$live = false;
   } catch (error) {
     $cleanup(() => {
-      if (b$1$live) {
+      if (b$live) {
         dropJ?.(b$1);
       }
     }, error);

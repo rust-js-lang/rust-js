@@ -223,7 +223,7 @@ function main() {
         }, error);
         throw error;
       }
-      let tx$1$live = false;
+      let tx$live$1 = false;
       try {
         $dropSender(tx$1);
       } catch (error) {
@@ -251,7 +251,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             $dropReceiver(rx$1);
-            if (tx$1$live) {
+            if (tx$live$1) {
               $dropSender(tx$1);
             }
             $dropReceiver(rx);
@@ -279,7 +279,7 @@ function main() {
         } catch (error) {
           $cleanup(() => {
             $dropReceiver(rx$1);
-            if (tx$1$live) {
+            if (tx$live$1) {
               $dropSender(tx$1);
             }
             $dropReceiver(rx);
@@ -306,7 +306,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx$1);
-          if (tx$1$live) {
+          if (tx$live$1) {
             $dropSender(tx$1);
           }
           $dropReceiver(rx);
@@ -333,7 +333,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx$1);
-          if (tx$1$live) {
+          if (tx$live$1) {
             $dropSender(tx$1);
           }
           $dropReceiver(rx);
@@ -361,7 +361,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx$1);
-          if (tx$1$live) {
+          if (tx$live$1) {
             $dropSender(tx$1);
           }
           $dropReceiver(rx);
@@ -386,7 +386,7 @@ function main() {
       } catch (error) {
         $cleanup(() => {
           $dropReceiver(rx$1);
-          if (tx$1$live) {
+          if (tx$live$1) {
             $dropSender(tx$1);
           }
           $dropReceiver(rx);
@@ -422,7 +422,7 @@ function main() {
         $dropReceiver(rx$1);
       } catch (error) {
         $cleanup(() => {
-          if (tx$1$live) {
+          if (tx$live$1) {
             $dropSender(tx$1);
           }
           $dropReceiver(rx);
@@ -442,7 +442,7 @@ function main() {
         }, error);
         throw error;
       }
-      tx$1$live = false;
+      tx$live$1 = false;
       try {
         $dropReceiver(rx);
       } catch (error) {

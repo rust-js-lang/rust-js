@@ -153,7 +153,7 @@ function folded(src, dropI) {
       filter,
       [0],
       (a, x) => {
-        let a$1$live = true;
+        let a$live = true;
         try {
           point();
         } catch (error) {
@@ -169,7 +169,7 @@ function folded(src, dropI) {
         if (seen === 3) {
           result = { TAG: "Err", _0: a[0] };
         } else {
-          a$1$live = false;
+          a$live = false;
           result = { TAG: "Ok", _0: a };
         }
         try {
@@ -178,7 +178,7 @@ function folded(src, dropI) {
           throw $unwindsOn(error);
         } finally {
           if ($live()) {
-            if (a$1$live) {
+            if (a$live) {
               accDrop_drop(a);
             }
           }

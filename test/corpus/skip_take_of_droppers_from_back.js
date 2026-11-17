@@ -176,7 +176,7 @@ function chainSides() {
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   w = [[20]];
-  let w$1$live = true;
+  let w$live$1 = true;
   let take;
   try {
     take = $taking(
@@ -184,10 +184,10 @@ function chainSides() {
       2,
       cDrop_drop,
     );
-    w$1$live = false;
+    w$live$1 = false;
   } catch (error) {
     $cleanup(() => {
-      if (w$1$live) {
+      if (w$live$1) {
         for (const item of w) {
           cDrop_drop(item);
         }
@@ -205,7 +205,7 @@ function chainSides() {
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   w = [[30]];
-  let w$2$live = true;
+  let w$live$2 = true;
   let tmp;
   try {
     tmp = $taking(
@@ -213,10 +213,10 @@ function chainSides() {
       3,
       cDrop_drop,
     );
-    w$2$live = false;
+    w$live$2 = false;
   } catch (error) {
     $cleanup(() => {
-      if (w$2$live) {
+      if (w$live$2) {
         for (const item of w) {
           cDrop_drop(item);
         }
@@ -243,7 +243,7 @@ function chainSides() {
   const value = taken != null ? map(taken) : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   w = [[40]];
-  let w$3$live = true;
+  let w$live$3 = true;
   let tmp$1;
   try {
     tmp$1 = $skipping(
@@ -251,10 +251,10 @@ function chainSides() {
       3,
       cDrop_drop,
     );
-    w$3$live = false;
+    w$live$3 = false;
   } catch (error) {
     $cleanup(() => {
-      if (w$3$live) {
+      if (w$live$3) {
         for (const item of w) {
           cDrop_drop(item);
         }

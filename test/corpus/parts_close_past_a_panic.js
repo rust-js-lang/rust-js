@@ -355,7 +355,7 @@ function main() {
         (d) => d[0] > 0,
         dDrop_drop,
       );
-      let other$1$live = true;
+      let other$live = true;
       let filter;
       try {
         filter = $filterDropping(
@@ -363,10 +363,10 @@ function main() {
           (d) => d[0] > 0,
           dDrop_drop,
         );
-        other$1$live = false;
+        other$live = false;
       } catch (error) {
         $cleanup(() => {
-          if (other$1$live) {
+          if (other$live) {
             other.return();
           }
         }, error);

@@ -20,7 +20,7 @@ function main() {
     throw error;
   }
   x[0].push(x[1]);
-  let y$1$live = true;
+  let y$live = true;
   y = [order, 3];
   x = [order, 4];
   console.log(`${x[1]} ${y[1]}`);
@@ -28,13 +28,13 @@ function main() {
     x[0].push(x[1]);
   } catch (error) {
     $cleanup(() => {
-      if (y$1$live) {
+      if (y$live) {
         y[0].push(y[1]);
       }
     }, error);
     throw error;
   }
-  y$1$live = false;
+  y$live = false;
   y[0].push(y[1]);
   console.log(`[${order.join(", ")}]`);
 }
