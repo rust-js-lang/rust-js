@@ -1577,14 +1577,14 @@ duplicate as it's found, of a `Box`'s or an `Rc`'s too; and a `Vec`'s
 source's length, writes over each it keeps, then clones the rest on; a
 `VecDeque`'s clears, then clones, `$cloneIntoDeque`; a `HashMap`'s drops
 its entries, then clones, `$cloneIntoMap`; an array's writes each item
-over; and an `Option`'s or a `Box`'s is its value's. Generic code's
+over; and an `Option`'s, a `Box`'s or a `Reverse`'s is its value's, of an
+`Option` of an `Option`, of a `Box` or of a `Result` too. Generic code's
 `clone_from` of a `T`, a `Box<T>` or an `Option<T>`'s value asks the
 caller's `Clone` dictionary for its `cloneFrom` first, which a std type's
 has where std's is in place, as an impl's own is, and is `*dest =
-source.clone()` where it has none; a generic `Result`'s, and a dictionary
-given to generic code of a type whose forwarding rust-js doesn't write
-yet, an `Option<T>` whose `T` has its own `clone_from`, are refused
-(#927). A `HashMap`'s drop,
+source.clone()` where it has none. A `Result`'s own written directly,
+whose `&mut` is the `Result` object itself, and a slice of `Reverse`s'
+are refused (#927). A `HashMap`'s drop,
 and its `clear()`, stop at an entry whose drop panics, a plain `for` loop,
 as hashbrown's do, where a `BTreeMap`'s go on; a `BTreeMap`'s `insert` of a
 key it holds drops the key given before it writes the value, `$insert(..,

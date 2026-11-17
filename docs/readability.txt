@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2691
-lines	361885
+files	2693
+lines	362156
 temporaries	0	0
 labeled blocks	0	0
 while (true)	223	6.2
-$iter	3134	86.6
+$iter	3134	86.5
 Iterator.from	365	10.1
 return;	347	9.6
-renamed x$1	16443	454.4
-role fallbacks	9159	253.1
+renamed x$1	16466	454.7
+role fallbacks	9165	253.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -324,7 +324,9 @@ test/corpus/clone_changed_as_a_vec_or_a_boxed_slice.js	62	0	0	0	0	0	0	0	0
 test/corpus/clone_changed_part.js	38	0	0	0	0	0	0	0	0
 test/corpus/clone_dictionary_of_a_nested_option.js	95	0	0	0	0	0	0	8	7
 test/corpus/clone_from.js	67	0	0	0	0	0	0	0	1
+test/corpus/clone_from_forwarded_to_its_value.js	228	0	0	0	0	0	0	23	6
 test/corpus/clone_from_generic_option_own.js	48	0	0	0	0	0	0	0	0
+test/corpus/clone_from_generic_reverse_own.js	43	0	0	0	0	0	0	0	0
 test/corpus/clone_from_generic_std_own.js	628	0	0	0	0	0	0	25	10
 test/corpus/clone_from_of_a_result_given_to_generic_code.js	426	0	0	0	0	0	0	25	9
 test/corpus/clone_from_of_an_option_given_to_generic_code.js	449	0	0	0	0	0	0	34	8

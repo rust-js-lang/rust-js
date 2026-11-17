@@ -1,8 +1,10 @@
 //! `dest.clone_from(&source)` of a std type, as std's `clone_from` writes
-//! it (#919, #922, #927, #928): its own in place, `clone_into`'s; an
-//! `Option`'s value's where both are `Some`; a value only the caller knows,
-//! its dictionary's `clone_from`, asked first; else `*dest =
-//! source.clone()`, what it held dropped.
+//! it (#919, #922, #927, #928): by the one composition generic code's
+//! dictionary asks too (`std_types/clone_from.rs`), its own in place,
+//! `clone_into`'s; a `Box`'s and a `Reverse`'s value's; an `Option`'s
+//! value's where both are `Some`; a value only the caller knows, its
+//! dictionary's `clone_from`, asked first; else `*dest = source.clone()`,
+//! what it held dropped.
 
 use super::*;
 use rustc_span::def_id::DefId;
@@ -23,19 +25,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let dest = values.next().expect("the destination");
             let source = values.next().expect("the source");
             let source = self.value_expr(source, span)?;
-            if let Some(into) = self.clone_into(ty, span)? {
-                let dest = self.dest_place(&dest, ty, span)?;
-                self.flush(state, out)?;
-                out.push(StmtKind::Expr(into.call(dest, source)).at(self.js_span(span)));
-                return Ok(Value::Expr(Expr::js_undefined()));
-            }
-            // Of an `Option`, its value's, where both are `Some`; of a
-            // value only the caller knows, a `T` or a `Box<T>`, or an
-            // `Option` of one, its dictionary's `clone_from`, where
-            // the caller's type has one, asked first (#928): given
-            // the box generic code has of `dest`, or one of its place
-            // here, written back.
-            let inner = self.option_of(ty).filter(|&inner| !self.boxed_payload(inner));
+            // Written over in place as std's `clone_from` writes it,
+            // the one composition generic code's dictionary asks too
+            // (`dictionary_clone_from`): of the type itself, a `Box`'s
+            // or a `Reverse`'s value's, a type's own, or a value only
+            // the caller knows, its dictionary's, asked first (#928);
+            // else an `Option`'s value's of two `Some`s
+            // (`option_clone_over`), a `Result`'s of two `Ok`s or two
+            // `Err`s (`result_clone_over`, #927). Given the box generic
+            // code has of `dest`, or one of its place here, written
+            // back, where what's written reads it.
             let to = self.dest_place(&dest, ty, span)?;
             let given_box = match &dest {
                 Value::Ref(place) => self.box_of_place(state, place),
@@ -43,45 +42,67 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let made = given_box.is_none().then(|| self.fresh(Role::To));
             let pointer = given_box.unwrap_or_else(|| Expr::var(made.as_ref().expect("a box made")));
-            let held = inner.unwrap_or(ty);
-            if self
-                .written_over(held, (to.clone(), pointer.clone()), source.clone(), span)?
-                .is_some()
+            self.flush(state, out)?;
+            // Read again by what's asked, each side and the clone; not where
+            // it's written over whatever it holds, read once, `clone_into`'s.
+            let once = matches!(
+                self.written_over(ty, (to.clone(), pointer.clone()), source.clone(), span)?,
+                Some((None, _))
+            );
+            let source = match source.reads_same() || once {
+                true => source,
+                false => self.spill(Role::Source, source, out),
+            };
+            let boxed = || crate::lower::mut_refs::boxed(to.clone());
+            let mentions = |stmts: &[Stmt], name: &js::Name| {
+                let mut read = false;
+                js::visit_stmt_names(stmts, &mut |n| read |= n == name);
+                read
+            };
+            if let Some((asked, written)) =
+                self.written_over(ty, (to.clone(), pointer.clone()), source.clone(), span)?
             {
-                self.flush(state, out)?;
-                // Read again by what's asked and by the clone.
-                let source = match source.reads_same() {
-                    true => source,
-                    false => self.spill(Role::Source, source, out),
-                };
-                let (asked, written) = self
-                    .written_over(held, (to.clone(), pointer), source.clone(), span)?
-                    .expect("written over, as asked above");
-                // The box made of the place, where a dictionary's is
-                // given it, not `clone_into`'s, which writes the place.
-                let made = made.filter(|_| asked.is_some());
-                let some = |e: &Expr| Expr::bin(Op::LooseNe, e.clone(), Expr::null());
-                let both = inner.map(|_| Expr::bin(Op::And, some(&to), some(&source)));
-                let test = match (both, asked) {
-                    (Some(both), Some(asked)) => Expr::bin(Op::And, both, asked),
-                    (Some(test), None) | (None, Some(test)) => test,
-                    (None, None) => unreachable!("`clone_into`'s is written above"),
-                };
-                let mut then = Vec::new();
-                if let Some(name) = &made {
-                    then.push(
-                        StmtKind::Const(name.into(), crate::lower::mut_refs::boxed(to.clone())).at(self.js_span(span)),
-                    );
-                }
-                then.push(StmtKind::Expr(written).at(self.js_span(span)));
-                if let Some(name) = &made {
+                // The box made of the place, where what's written
+                // reads it, written back there, in that branch alone.
+                let mut then = vec![StmtKind::Expr(written).at(self.js_span(span))];
+                if let Some(name) = made.as_ref().filter(|name| mentions(&then, name)) {
+                    then.insert(0, StmtKind::Const(name.into(), boxed()).at(self.js_span(span)));
                     then.push(
                         StmtKind::Assign(to.clone(), Expr::member(Expr::var(name), js::HELD)).at(self.js_span(span)),
                     );
                 }
-                let mut replaced = Vec::new();
-                self.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, &mut replaced)?;
-                out.push(StmtKind::If(test, then, Some(replaced)).at(self.js_span(span)));
+                match asked {
+                    Some(asked) => {
+                        let mut replaced = Vec::new();
+                        self.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, &mut replaced)?;
+                        out.push(StmtKind::If(asked, then, Some(replaced)).at(self.js_span(span)));
+                    }
+                    None => out.extend(then),
+                }
+                return Ok(Value::Expr(Expr::js_undefined()));
+            }
+            // Of an `Option`, by its place, which holds a value, not an
+            // object: a `Result` within it written there too. Not a
+            // `Result` itself, an object a `&mut` is, which
+            // `result_clone_over`'s `to = ..` would only rebind here,
+            // whose own place this body can't tell from another's
+            // (#927).
+            let composed = |this: &mut Self, place: Expr, pointer: Expr| -> R<Option<Vec<Stmt>>> {
+                this.option_clone_over(ty, (place, pointer), source.clone(), span)
+            };
+            if let Some(over) = composed(self, to.clone(), pointer.clone())? {
+                // Of a box made of the place that what's written reads,
+                // each branch written through it, its `value` the place,
+                // then written back once.
+                let Some(name) = made.as_ref().filter(|name| mentions(&over, name)) else {
+                    out.extend(over);
+                    return Ok(Value::Expr(Expr::js_undefined()));
+                };
+                let place = Expr::member(Expr::var(name), js::HELD);
+                let over = composed(self, place, Expr::var(name))?.expect("composed as above");
+                out.push(StmtKind::Const(name.into(), boxed()).at(self.js_span(span)));
+                out.extend(over);
+                out.push(StmtKind::Assign(to, Expr::member(Expr::var(name), js::HELD)).at(self.js_span(span)));
                 return Ok(Value::Expr(Expr::js_undefined()));
             }
             if self.forwards_clone_from(ty, span)? {

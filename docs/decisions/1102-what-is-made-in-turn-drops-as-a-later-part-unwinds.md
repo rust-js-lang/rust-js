@@ -345,3 +345,54 @@ in both builds and through the metamorphic net. So do
 caught, and three refusal mutations point
 at the cases still refused.
 
+
+## Amendment (2026-11-17, #927): a `Box`'s, a `Reverse`'s and a nested `Option`'s `clone_from`, by one composition
+
+A direct `dest.clone_from(&source)` composed its forwarding apart from
+generic code's dictionary. It handled an `Option`'s value inline, and
+refused a `Box`'s, a `Reverse`'s and an `Option` of an `Option` whose
+value's `clone_from` is the crate's own. It now asks the same owners as
+`dictionary_clone_from`, in the same order:
+- `written_over` of the type itself: `clone_into`'s, a type's own, a
+  value only the caller knows (its dictionary's, asked first, #928). It
+  now peels a `Box`, std's `(**self).clone_from(&**source)`, the box its
+  value in JS. And a `Reverse`'s value, `self.0.clone_from(&source.0)`,
+  is written at its place `[x]`'s `x`, given a box of it as a `Result`'s
+  `_0` is.
+- else `option_clone_over`, whose payload is now itself written by the
+  same composition: an `Option` of an `Option`, of a `Box` or of a
+  `Result`.
+
+The box made of the place, where what's written reads it, is written
+back in the branch that wrote through it alone. A first draft wrote it
+back after the whole `if`, which put the old value back over the
+`else`'s clone (`TClone.cloneFrom` undefined). The corpus case holds
+that branch now.
+
+Still refused, naming #927:
+- a `Result`'s own `clone_from` written directly. A `&mut` to a
+  `Result` is the object itself, and `result_clone_over` writes its place
+  by assignment, which would only rebind a parameter or another binding
+  of the same object. Converting `clone_from_generic_result_refused`
+  showed it, `Ok([7])` where native prints `Ok([3, 1])`.
+- a slice of `Reverse`s (`clone_from_slice_reverse_refused`), whose
+  `clone_over` composition is the slice's own.
+
+`clone_from_generic_reverse_own` (was `_refused`) runs against native.
+Corpus case `clone_from_forwarded_to_its_value` holds:
+- a `Box`'s and a `Reverse`'s, a `Reverse` of a `VecDeque`;
+- an `Option` of an `Option` (`Some`, `Some(None)`, `None`), of a
+  `Result` and of a `Box`;
+- a generic local given its caller's `clone_from` or none.
+Both match native in each build and through every metamorphic rewrite.
+
+Mutations `box-clone-from-not-its-values`,
+`reverse-clone-from-not-its-values` and
+`nested-option-clone-from-unforwarded` (`std_types/clone_from.ts`) are
+caught. `clone-from-option-replaced` now disables the direct path's
+`option_clone_over`, and is caught. `dictionary-clone-from-forwarded-unrefused`
+now names `clone_from_generic_reverse_of_a_result_refused`, a dictionary of
+a `Reverse` of a `Result`, still refused with the direct `Result` (#2028).
+It's caught.
+docs/readability.txt is blessed with the two cases alone. `$iter`'s
+share falls from 86.2 to 86.1, and the case's own renamed names add 23.

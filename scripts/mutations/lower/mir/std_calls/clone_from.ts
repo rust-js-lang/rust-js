@@ -3,19 +3,11 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "clone-from-vec-replaced",
-    breaks: "`w.clone_from(&v)` of a `Vec` of items with a destructor clones every item, then drops the old `Vec`, not std's `SpecCloneIntoVec` order (#919)",
-    file: "src/lower/mir/std_calls/clone_from.rs",
-    find: "            if let Some(into) = self.clone_into(ty, span)? {\n",
-    replace: "            if let Some(into) = self.clone_into(ty, span)?.filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(vec_clone_from_in_place|clone_from_std_own).rs$"],
-  },
-  {
     name: "clone-from-option-replaced",
     breaks: "`w.clone_from(&v)` of an `Option<Vec<D>>` of two `Some`s is `*w = v.clone()`, every clone before the old one's drop, not its `Vec`'s in place (#922)",
     file: "src/lower/mir/std_calls/clone_from.rs",
-    find: "            let inner = self.option_of(ty).filter(|&inner| !self.boxed_payload(inner));\n",
-    replace: "            let inner = self.option_of(ty).filter(|&inner| false && !self.boxed_payload(inner));\n",
+    find: "                this.option_clone_over(ty, (place, pointer), source.clone(), span)\n",
+    replace: "                Ok(None)\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
   },
   {

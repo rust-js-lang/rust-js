@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/clone_from.rs",
     find: "                None if self.forwards_clone_from(ty, span)? => {\n",
     replace: "                None if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_reverse_own_refused.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_reverse_of_a_result_refused.rs$"],
   },
   {
     name: "boxed-option-payload-unwritten",
@@ -194,5 +194,29 @@ export const mutations: Mutation[] = [
     find: "        let held = self.moved_out(to.clone(), ty);\n        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
     replace: "        replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_given_to_generic_code.rs$"],
+  },
+  {
+    name: "box-clone-from-not-its-values",
+    breaks: "a `Box`'s `clone_from` isn't its value's, std's `(**self).clone_from(&**source)`, so `Box<C>` whose `C` has its own `clone_from` is refused (#927)",
+    file: "src/lower/std_types/clone_from.rs",
+    find: "        while held.is_box() {\n",
+    replace: "        while false && held.is_box() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value.rs$"],
+  },
+  {
+    name: "reverse-clone-from-not-its-values",
+    breaks: "a `Reverse`'s `clone_from` isn't its value's, `self.0.clone_from(&source.0)`, so `Reverse<C>` whose `C` has its own `clone_from` is refused (#927)",
+    file: "src/lower/std_types/clone_from.rs",
+    find: "        if self.recognition().is_reverse(held)\n",
+    replace: "        if false && self.recognition().is_reverse(held)\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value.rs$"],
+  },
+  {
+    name: "nested-option-clone-from-unforwarded",
+    breaks: "an `Option` of an `Option` whose value's `clone_from` is the crate's own isn't forwarded through both, so it's refused (#927)",
+    file: "src/lower/std_types/clone_from.rs",
+    find: "                match self.option_clone_over(inner, (payload.clone(), payload_pointer), from_payload.clone(), span)? {\n",
+    replace: "                match None::<Vec<Stmt>> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value.rs$"],
   },
 ];

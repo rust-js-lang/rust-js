@@ -150,8 +150,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             false => (to.clone(), pointer, from.clone(), None),
         };
-        let Some((asked, written)) = self.written_over(inner, (payload, payload_pointer), from_payload, span)? else {
-            return Ok(None);
+        // Its value written over in place, or itself an `Option` or a
+        // `Result` whose value is, `Option<Option<T>>`'s (#927).
+        let (asked, written) = match self.written_over(
+            inner,
+            (payload.clone(), payload_pointer.clone()),
+            from_payload.clone(),
+            span,
+        )? {
+            Some((asked, written)) => (asked, vec![StmtKind::Expr(written).at(js::Span::NONE)]),
+            None => {
+                match self.option_clone_over(inner, (payload.clone(), payload_pointer), from_payload.clone(), span)? {
+                    Some(over) => (None, over),
+                    None => match self.result_clone_over(inner, payload, from_payload, span)? {
+                        Some(over) => (None, over),
+                        None => return Ok(None),
+                    },
+                }
+            }
         };
         let some = |e: &Expr| Expr::bin(Op::LooseNe, e.clone(), Expr::null());
         let mut both = Expr::bin(Op::And, some(&to), some(&from));
@@ -164,8 +180,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));
         replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
         self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
-        let written = StmtKind::Expr(written).at(js::Span::NONE);
-        let over = made.into_iter().chain([written]).collect();
+        let over = made.into_iter().chain(written).collect();
         Ok(Some(vec![StmtKind::If(both, over, Some(replaced)).at(js::Span::NONE)]))
     }
 
@@ -263,6 +278,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(into) = self.clone_into(held, span)? {
             return Ok(Some((None, into.call(place, from))));
         }
+        // A `Box`'s, its value's, as std's `Box::clone_from` writes
+        // `(**self).clone_from(&**source)`, the box its value in JS (#927).
+        let mut held = held;
+        while held.is_box() {
+            held = held.boxed_ty().expect("a `Box`");
+        }
+        // A `Reverse`'s, its value's, `self.0.clone_from(&source.0)`: of its
+        // place `[x]`'s `x`, given a box of it as a `Result`'s `_0` is
+        // (`result_clone_over`, #927).
+        if self.recognition().is_reverse(held)
+            && let ty::Adt(_, args) = held.kind()
+        {
+            let value = Expr::index(place, Expr::int(0));
+            let v = self.fresh(Role::V);
+            let getter = Expr::arrow(
+                Vec::new(),
+                vec![StmtKind::Return(Some(value.clone())).at(js::Span::NONE)],
+            );
+            let setter = Expr::arrow(
+                vec![v.clone().into()],
+                vec![StmtKind::Assign(value.clone(), Expr::var(&v)).at(js::Span::NONE)],
+            );
+            let pointer = Expr::object(vec![
+                js::Prop::Getter(js::HELD.into(), getter),
+                js::Prop::Setter(js::HELD.into(), setter),
+            ]);
+            return self.written_over(args.type_at(0), (value, pointer), Expr::index(from, Expr::int(0)), span);
+        }
         // A type's own `clone_from`, its impl's, given the value, or the box
         // of a value JS can't change in place (`clone_over`'s, #927).
         if self.recognition().own_clone_from(held) {
@@ -277,14 +320,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.impl_call(clone_from, args, vec![target, from], span)?,
             )));
         }
-        let mut value = held;
-        while value.is_box() {
-            value = value.boxed_ty().expect("a `Box`");
-        }
-        if !self.clone_given(value) {
+        if !self.clone_given(held) {
             return Ok(None);
         }
-        let clone_from = self.given_clone_from(value, span)?;
+        let clone_from = self.given_clone_from(held, span)?;
         Ok(Some((
             Some(clone_from.clone()),
             Expr::call(clone_from, vec![pointer, from]),
