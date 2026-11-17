@@ -662,6 +662,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`js::Name::derived`): preparation spells it of what the source is
     /// spelled then, given apart from it (ADR 1150).
     fn derived(&self, source: &js::Name) -> js::Name {
+        // Never of a loop's counter: a holder is spelled before counters are
+        // (`reclaim::spelled`, then `counters::spelled`), so it would take
+        // its counter's letter, `i`, and push the counter to `j`. None is
+        // made; this says so where one would be.
+        debug_assert!(
+            !source.is_counter(),
+            "a holder of a loop's counter, {source:?}, spelled before it (#2032)"
+        );
         self.unspelled_as(|k| js::Name::derived(source, k))
     }
 

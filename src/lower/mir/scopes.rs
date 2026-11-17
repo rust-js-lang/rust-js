@@ -257,7 +257,13 @@ pub(super) fn scope_fields(
                     // the field.
                     let k = js::Name::free_made_k(&names_had, &key);
                     let name = match e.as_ref().map(|e| &e.kind) {
-                        Some(js::ExprKind::Var(v)) if v.is(&key) => js::Name::derived(v, k),
+                        Some(js::ExprKind::Var(v)) if v.is(&key) => {
+                            debug_assert!(
+                                !v.is_counter(),
+                                "a holder of a loop's counter, {v:?}, spelled before it"
+                            );
+                            js::Name::derived(v, k)
+                        }
                         _ => js::Name::declared(key.clone()).spelled_later(k),
                     };
                     // Where its value is written, which a comment above the

@@ -1422,3 +1422,11 @@ end, not spelled yet, its word, `i#7`, its own by its id. Preparation's
 That removes the last tables of words lowering and tidy picked names
 from: tidy/stages' `mentions`, mut_items', and `FnCx::fresh(Role::I)` for
 a counter.
+
+No holder of a loop's counter is made (2026-11-18): a holder
+(`Name::derived`) is spelled by `reclaim::spelled` before counters are
+(`counters::spelled`, #2032), so one of a counter would take its letter,
+`i`, and push the counter to `j`. An assertion over the corpus, the tests
+and React's port found none; a debug build says so where lowering would
+make one (`FnCx::derived`, `mir::scopes`' fields).
+
