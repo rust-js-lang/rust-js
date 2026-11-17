@@ -294,6 +294,11 @@ test("a removed mutation is told from one renamed or moved, and its trailer is -
   // One whose code went with it, a refactor's folded into another, can't
   // apply, and isn't retired (#2012's refactor of `given_fact_of`).
   expect(removedOfCrate(before, after, () => "")).toEqual([]);
+  // A `find` in single quotes is read too: `cycle-compiled-in-every-build`'s
+  // `'    StdPath::IterCycle,\n'`, its code gone with the cycle flip.
+  const quoted = `  {\n    name: "single",\n    breaks: "x",\n    file: "src/e.rs",\n    find: '    it("x"),\\n',\n    replace: "",\n    tests: ["test/a.test.ts"],\n  },\n`;
+  expect(removedOfCrate(quoted, "", () => "")).toEqual([]);
+  expect(removedOfCrate(quoted, "", () => '    it("x"),\n')).toEqual(["single"]);
   expect([...retiredBy(`fix: x\n\n${retiredTrailer}: gone: with it, at 0123abcde, the compiler's 900 unit tests passed, and check:fast's suite\n`)]).toEqual(["gone"]);
   expect([...retiredBy(`fix: x\n\n${retiredTrailer}: gone\n`)]).toEqual([]);
   // A test that fails as the compiler is too, in a mutant's environment,

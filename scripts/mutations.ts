@@ -1134,10 +1134,14 @@ export function catalogEntries(text: string): { name: string; file?: string; key
     const body = text.slice(m.index! + m[0].length, starts[i + 1]?.index ?? text.length);
     const file = body.match(/^\s*file: "([^"]+)",$/m)?.[1];
     const written = body.match(/^\s*find:([\s\S]*?)^\s*replace:/m)?.[1]?.trim().replace(/,$/, "");
-    // Its code, where `find` is one string literal; otherwise unread.
+    // Its code, where `find` is one string literal, in double quotes or
+    // single; otherwise unread.
     let find: string | undefined;
     try {
       if (written !== undefined && /^"(?:[^"\\]|\\.)*"$/.test(written)) find = JSON.parse(written) as string;
+      else if (written !== undefined && /^'(?:[^'\\]|\\.)*'$/.test(written)) {
+        find = JSON.parse(`"${written.slice(1, -1).replace(/\\'/g, "'").replace(/(?<!\\)"/g, '\\"')}"`) as string;
+      }
     } catch {}
     return { name: m[1]!, file, key: `${file}\0${written?.replace(/\s+/g, " ")}`, find };
   });
