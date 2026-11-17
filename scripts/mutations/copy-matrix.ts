@@ -8,7 +8,9 @@ export const mutations: Mutation[] = [
     file: "test/copy-matrix.ts",
     find: '  const copied = way === "clone" ? "a.clone()" : way === "dup" ? "dup(&a)" : "pass(a)";',
     replace: '  const copied = "pass(a)";',
-    env: { ITERATOR_TABLE: "copies", ITERATOR_MATRIX: "#1983" },
+    // Its rows, #1983's that 41d89f84f fixed and their plain twins: an
+    // issue's rows go when it's fixed, which left `#1983` naming none.
+    env: { ITERATOR_TABLE: "copies", ITERATOR_MATRIX: "/ \\| copied \\| (clone|dup) \\| len$/" },
     tests: ["test/iterator-matrix.test.ts"],
   },
 ];
