@@ -1,12 +1,13 @@
 // Mutations of src/lower/mir/awaits.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
-const awaited = [
-  "test/compiler.test.ts",
-  "-t",
-  "async code becomes async functions and await",
-];
 const snapshot = ["test/snapshots.test.ts", "-t", "async"];
+// Both, the snapshot's file first, by one pattern: `bun test` reads one
+// `-t`, the last, and with `--bail` the first file's failure ends the run.
+// A mutant whose JS of examples/fetch.rs is wrong fails compiler.test's
+// setup, a failure of no test's name, so the snapshot's runs first, and is
+// named (checks 43996182737, 43999199934, inconclusive).
+const awaitedOrSnapshot = ["test/snapshots.test.ts", "test/compiler.test.ts", "-t", "async: the generated JS is its snapshot|async code becomes async functions and await"];
 
 export const mutations: Mutation[] = [
   {
@@ -16,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/awaits.rs",
     find: "        let destination = match read {\n",
     replace: "        let destination = match read.filter(|_| false) {\n",
-    tests: [...awaited, ...snapshot],
+    tests: awaitedOrSnapshot,
   },
   {
     name: "await-pending-taken-for-ready",
@@ -35,6 +36,6 @@ export const mutations: Mutation[] = [
     find: "            while let TerminatorKind::FalseEdge { real_target, .. } = body.basic_blocks[ready].terminator().kind\n                && body.basic_blocks[ready].statements.is_empty()\n",
     replace:
       "            while let TerminatorKind::FalseEdge { real_target, .. } = body.basic_blocks[ready].terminator().kind\n                && false\n",
-    tests: [...awaited, ...snapshot],
+    tests: awaitedOrSnapshot,
   },
 ];
