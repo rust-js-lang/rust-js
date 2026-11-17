@@ -12,6 +12,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { downloaded } from "./artifacts";
 
 /** A test file's time, summed over each run of it (the corpus's parts are
  * runs of one file), and how many tests it ran. */
@@ -130,7 +131,7 @@ function lastNight(run: string, dir: string): TestTimes | undefined {
   for (const { databaseId } of runs.filter((r) => String(r.databaseId) !== run)) {
     const into = join(dir, String(databaseId));
     try {
-      gh(["run", "download", String(databaseId), "--name=test-times", `--dir=${into}`]);
+      if (!downloaded(databaseId, ["--name=test-times"], into)) continue;
       return JSON.parse(readFileSync(join(into, "test-times.json"), "utf8"));
     } catch {}
   }

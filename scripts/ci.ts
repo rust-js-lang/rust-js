@@ -5,7 +5,8 @@
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
 //   bun scripts/ci.ts timings               # in CI: the last run's shards' timings, for this run's to balance by
-//   bun scripts/ci.ts mutation-timings <run,run> # in CI: those runs' mutations' times, the nightly's and main's last checks', for the mutation shards to balance by
+//   bun scripts/ci.ts mutation-timings <times>   # in CI: the mutations' times `plan` gave every shard, for them to balance by
+//   TIMES=<times> bun scripts/ci.ts merge-mutation-timings <ran> <out> # in CI: those and this run's shards' merged, for the next plan
 //   bun scripts/ci.ts nets                  # in CI: which of the `nets` job's nets ran, and which failed, from its `STEPS`
 //
 // A run whose snapshots or rustc's lists differ uploads what blessing them
@@ -14,11 +15,13 @@
 
 import { appendFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { gunzipSync, gzipSync } from "node:zlib";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
-import { changedSince } from "./mutations";
+import { changedSince, mutations } from "./mutations";
 import { outcome, type Selection, selectChange } from "./select";
-import { shardTimings } from "./shard";
+import { downloaded } from "./artifacts";
+import { shardTimings, timingsUnder } from "./shard";
 import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -102,8 +105,6 @@ function runResults(limit = 6, looked = 30): RunResults[] {
     ran++;
     const completed = shardJobs.filter((job) => job.conclusion === "success" || job.conclusion === "failure").length;
     const dir = join(root, "target", "mutation-results", String(run.databaseId));
-    rmSync(dir, { recursive: true, force: true });
-    mkdirSync(dir, { recursive: true });
     const results: RunResults["results"] = [];
     const latent: string[] = [];
     // Its artifacts first, as a download of none asks again, three times.
@@ -112,7 +113,7 @@ function runResults(limit = 6, looked = 30): RunResults[] {
         .some((name) => name.startsWith("mutation-results-"));
     if (shardJobs.length > 0 && completed === shardJobs.length && kept()) {
       try {
-        gh(["run", "download", String(run.databaseId), "--pattern=mutation-results-*", "--pattern=mutation-latent-*", `--dir=${dir}`]);
+        if (!downloaded(run.databaseId, ["--pattern=mutation-results-*", "--pattern=mutation-latent-*"], dir)) throw new Error(`run ${run.databaseId}'s results`);
         for (const shard of readdirSync(dir).filter((name) => name.startsWith("mutation-results-"))) results.push(JSON.parse(readFileSync(join(dir, shard, "results.json"), "utf8")));
         for (const shard of readdirSync(dir).filter((name) => name.startsWith("mutation-latent-"))) {
           const kept: { latent: { name: string }[] } = JSON.parse(readFileSync(join(dir, shard, "latent.json"), "utf8"));
@@ -202,9 +203,7 @@ function status() {
  * mutations', or none. */
 function attributionOf(run: number, name: string): string[] {
   const dir = join(root, "target", "ci-attribution", String(run), name);
-  rmSync(dir, { recursive: true, force: true });
-  const got = Bun.spawnSync(["gh", "run", "download", String(run), "--name", name, `--dir=${dir}`], { cwd: root, stdout: "pipe", stderr: "pipe" });
-  if (got.exitCode !== 0) return [];
+  if (!downloaded(run, [`--name=${name}`], dir)) return [];
   try {
     return (JSON.parse(readFileSync(join(dir, `${name}.json`), "utf8")) as { lines: string[] }).lines;
   } catch {
@@ -297,11 +296,7 @@ async function plan(given?: string) {
   console.log(`port=${touchesPort(changed)}`);
   console.log(`memory=${touchesMemory(changed)}`);
   console.log(`mutations=${mutating}`);
-  let timed: number[] = [];
-  try {
-    timed = lastMutationTimings();
-  } catch {}
-  console.log(`mutation_timings=${timed.join(",")}`);
+  console.log(`mutation_timings=${plannedMutationTimings()}`);
   console.log(`wasm=${touchesWasm(changed)}`);
   console.log(`rustc=${touchesRustc(changed)}`);
   // The suite's selection (scripts/select.ts): by the newest test map of an
@@ -412,38 +407,53 @@ function fetchTimings() {
     console.log("no run has kept its timings yet: the shards split by file count");
     return;
   }
-  mkdirSync(dir, { recursive: true });
-  gh(["run", "download", String(run), "--pattern=timings-*", `--dir=${dir}`]);
+  // Every shard deals by what it reads here, so one that can't read them
+  // fails rather than deal otherwise than the others.
+  if (!downloaded(run, ["--pattern=timings-*"], dir)) throw new Error(`run ${run}'s timings couldn't be read`);
   const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
   console.log(`the shards balance by run ${run}'s timings, ${files.length} file${files.length === 1 ? "" : "s"} in ${shardTimings}`);
 }
 
-/** The nightly whose mutations' times the mutation shards balance by: the
- * newest of `nightlies`, newest first, that kept them, `mutation-timings-*`,
- * still kept; or none, and the shards deal them in turn. One run for every
- * shard of a check, `plan`'s, as each that read the newest itself might
- * read another, dealing some mutations twice and others to none. */
-export function mutationTimingsRun(nightlies: number[], artifacts: Artifact[]): number | undefined {
-  const kept = keptMutationTimings(artifacts);
-  return nightlies.find((run) => kept.has(run));
+/** The run whose merged mutations' times a check's `plan` reads: the
+ * newest of `main` that kept `mutation-timings-merged` (the
+ * `mutation-timings` job's, rustc-tests.yml), still kept; or none, and the
+ * shards deal in turn. A merged file carries what each run before it
+ * timed, the nightly's every mutation and each check's since, the later
+ * time of a mutation over the earlier, so one small file is all a plan
+ * fetches: by each shard, a check's downloads of six runs' every shard's
+ * times, one of which GitHub's storage turned away (check of 6d9fcfb45). */
+export function mergedTimingsRun(artifacts: (Artifact & { branch: string })[]): number | undefined {
+  return [...artifacts]
+    .filter((a) => a.name === "mutation-timings-merged" && !a.expired && a.branch === "main")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.run;
 }
 
-/** The runs whose mutations' times GitHub still keeps. */
-const keptMutationTimings = (artifacts: Artifact[]) => new Set(artifacts.filter((a) => /^mutation-timings-\d+$/.test(a.name) && !a.expired).map((a) => a.run));
+/** Mutations' times, `{ name: seconds }`, as one line a job's output holds
+ * for every shard alike: each of `names` (the catalog, the checkout's
+ * every mutation, which every job of a run has the same of) in turn, its
+ * tenths of a second, or nothing where it has none; gzipped, base64.
+ * Handed so, not downloaded by each shard: a shard that couldn't read
+ * them would deal the mutations otherwise than the others, some run twice
+ * and some by none. About 20 KB of a nightly's 14,000. */
+export function encodedTimings(times: ReadonlyMap<string, number>, names: string[]): string {
+  const catalog = [...new Set(names)].sort();
+  const line = catalog.map((name) => (times.has(name) ? String(Math.round(times.get(name)! * 10)) : "")).join(",");
+  return Buffer.from(gzipSync(`${catalog.length}:${line}`)).toString("base64");
+}
 
-/** The runs whose mutations' times the shards balance by, oldest first, a
- * later's time of a mutation over an earlier's: the nightly's
- * (`mutationTimingsRun`), then the newest `checks` of `main`, newest first
- * given, that kept theirs, at most `most`. A check's shards run the
- * mutations its change adds or edits, which the nightly before it never
- * timed: dealt as the nightly's median, 10.7 s, one shard of run
- * 43976170163's eight took 536 s and another 277, its new mutations' builds
- * 16 to 55 s each (2026-11-17). */
-export function mutationTimingsRuns(nightlies: number[], checks: number[], artifacts: Artifact[], most = 5): number[] {
-  const kept = keptMutationTimings(artifacts);
-  const nightly = mutationTimingsRun(nightlies, artifacts);
-  const recent = checks.filter((run) => kept.has(run)).slice(0, most).reverse();
-  return [...(nightly === undefined ? [] : [nightly]), ...recent];
+/** `encodedTimings`' times again, of the same catalog `names`; refused
+ * where it's another's, a count that differs. */
+export function decodedTimings(encoded: string, names: string[]): Map<string, number> {
+  const catalog = [...new Set(names)].sort();
+  const text = gunzipSync(Buffer.from(encoded, "base64")).toString();
+  const colon = text.indexOf(":");
+  const count = Number(text.slice(0, colon));
+  if (count !== catalog.length) throw new Error(`mutations' times of a catalog of ${count}, not this checkout's ${catalog.length}`);
+  const times = new Map<string, number>();
+  text.slice(colon + 1).split(",").forEach((tenths, i) => {
+    if (tenths !== "") times.set(catalog[i]!, Number(tenths) / 10);
+  });
+  return times;
 }
 
 /** The values `gh api --paginate --jq '.items[] | ..'` prints, one a line. */
@@ -451,53 +461,84 @@ export function jsonLines<T>(text: string): T[] {
   return text.split("\n").filter((line) => line.trim() !== "").map((line) => JSON.parse(line) as T);
 }
 
-/** Of `plan`: the last completed nightlies, and which kept their mutations'
- * times (`mutationTimingsRun`). */
-function lastMutationTimings(): number[] {
-  const nightlies: { databaseId: number }[] = JSON.parse(gh(["run", "list", "--workflow=nightly.yml", "--status=completed", "--limit=10", "--json=databaseId"]));
-  const checks: { databaseId: number }[] = JSON.parse(gh(["run", "list", "--workflow=check.yml", "--branch=main", "--status=completed", "--limit=20", "--json=databaseId"]));
-  // One artifact a line, each page's: with `--paginate`, a `--jq` that
-  // makes an array makes one a page, which isn't one JSON value, and past
-  // a hundred kept the plan read none, every check's mutations dealt in
-  // turn (check 44072223912's shard 16, 18 minutes against 8).
-  const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = jsonLines(
-    gh(["api", "--paginate", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=mutation-timings-1", "--jq", ".artifacts[] | {name, workflow_run, created_at, expired}"]),
-  );
-  return mutationTimingsRuns(
-    nightlies.map((r) => r.databaseId),
-    checks.map((r) => r.databaseId),
-    listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })),
-  );
+/** Of `plan`: the merged mutations' times of the newest run that kept
+ * them (`mergedTimingsRun`), encoded for the shards (`encodedTimings`); or
+ * nothing, said why, and every shard deals in turn. Never a failure: a
+ * plan without them is a slower one. */
+function plannedMutationTimings(): string {
+  try {
+    const listed: { name: string; workflow_run: { id: number; head_branch: string }; created_at: string; expired: boolean }[] = jsonLines(
+      gh(["api", "--paginate", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=mutation-timings-merged", "--jq", ".artifacts[] | {name, workflow_run, created_at, expired}"]),
+    );
+    const run = mergedTimingsRun(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, branch: a.workflow_run.head_branch, createdAt: a.created_at, expired: a.expired })));
+    if (run === undefined) {
+      console.error("no run of main kept its merged mutations' times: the mutation shards deal in turn");
+      return "";
+    }
+    const dir = join(root, "target", "mutation-timings-merged");
+    if (!downloaded(run, ["--name=mutation-timings-merged"], dir)) {
+      console.error(`run ${run}'s merged mutations' times couldn't be read: the mutation shards deal in turn`);
+      return "";
+    }
+    return encodedTimings(timingsUnder(dir), mutations.map((m) => m.name));
+  } catch (error) {
+    console.error(`the merged mutations' times couldn't be read, ${error instanceof Error ? error.message : error}: the mutation shards deal in turn`);
+    return "";
+  }
 }
 
-/** In CI, before a mutation shard runs: `run`'s mutations' times, each
- * shard's `timings.json`, into `target/mutation-timings/`, which
- * `bun scripts/mutations.ts --timings=` balances the shards by. A download
- * that fails fails the shard: one dealt otherwise than the others would
- * run some mutations twice and others not at all. */
-function fetchMutationTimings(runs: string) {
-  if (!/^\d+(,\d+)*$/.test(runs)) throw new Error(`runs' ids, comma-separated, oldest first, not ${runs}`);
+/** In CI, before a mutation shard runs: the times `plan` gave every shard
+ * alike (`encodedTimings`), as `target/mutation-timings/timings.json`,
+ * which `bun scripts/mutations.ts --timings=` balances the shards by. */
+function writeMutationTimings(encoded: string) {
   const dir = join(root, "target", "mutation-timings");
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  // Each in a directory named for its order, so a later run's time of a
-  // mutation is read over an earlier's (`timingsUnder` reads them sorted).
-  runs.split(",").forEach((run, i) => gh(["run", "download", run, "--pattern=mutation-timings-*", `--dir=${join(dir, `${String(i).padStart(2, "0")}-${run}`)}`]));
-  const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name === "timings.json");
-  console.log(`the mutation shards balance by runs ${runs}'s times, ${files.length} shards' in target/mutation-timings`);
+  const times = decodedTimings(encoded, mutations.map((m) => m.name));
+  writeFileSync(join(dir, "timings.json"), timingsJson(times));
+  console.log(`the mutation shards balance by ${times.size} mutations' times, in target/mutation-timings`);
+}
+
+/** Times as a mutation shard writes them, `{ name: { build, tests } }`,
+ * each all its build's, to a tenth of a second, as dealing needs: what
+ * `timingsUnder` reads. */
+const timingsJson = (times: ReadonlyMap<string, number>) =>
+  JSON.stringify(Object.fromEntries([...times].map(([name, seconds]) => [name, { build: Math.round(seconds * 10) / 10, tests: 0 }]))) + "\n";
+
+/** `base`, a plan's times, with what this run's shards timed in `ran`
+ * over it, each `timings.json` under it: the times the next plan reads. */
+export function mergedTimings(base: ReadonlyMap<string, number>, ran: ReadonlyMap<string, number>): Map<string, number> {
+  return new Map([...base, ...ran]);
+}
+
+/** In CI, after a run's mutation shards (rustc-tests.yml's
+ * `mutation-timings`): the times its plan gave them (`encoded`, none of a
+ * first nightly's) and each shard's own under `ran`, merged into `out`,
+ * uploaded as `mutation-timings-merged` for the next plan. None where no
+ * shard's times were read: no file, so no upload, and the next plan reads
+ * an older run's. */
+function mergeMutationTimings(encoded: string, ran: string, out: string) {
+  const own = timingsUnder(ran);
+  if (own.size === 0) {
+    console.log(`no shard's times under ${ran}: nothing merged`);
+    return;
+  }
+  const base = encoded === "" ? new Map<string, number>() : decodedTimings(encoded, mutations.map((m) => m.name));
+  const merged = mergedTimings(base, own);
+  mkdirSync(join(out, ".."), { recursive: true });
+  writeFileSync(out, timingsJson(merged));
+  console.log(`${merged.size} mutations' times merged, ${own.size} of this run's shards over ${base.size} of its plan's, in ${out}`);
 }
 
 function bless(branch: string) {
   const run = latestRuns(runs()).find((r) => r.headBranch === branch && r.status === "completed");
   if (!run) throw new Error(`no completed ${workflow} run of ${branch}`);
   const dir = join(root, "target", "ci-bless", String(run.databaseId));
-  rmSync(dir, { recursive: true, force: true });
-  mkdirSync(dir, { recursive: true });
-  const download = Bun.spawnSync(["gh", "run", "download", String(run.databaseId), "--pattern=bless-*", `--dir=${dir}`], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  const got = downloaded(run.databaseId, ["--pattern=bless-*"], dir);
   const patches = readdirSync(dir, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".patch"))
     .map((entry) => join(entry.parentPath, entry.name));
-  if (download.exitCode !== 0 && patches.length === 0) {
+  if (!got && patches.length === 0) {
     console.log(`run ${run.databaseId} of ${branch} has no bless patches: nothing to apply`);
     return;
   }
@@ -521,10 +562,11 @@ if (import.meta.main) {
     else if (command === "bless") bless(branch);
     else if (command === "plan") await plan(since);
     else if (command === "timings") fetchTimings();
-    else if (command === "mutation-timings") fetchMutationTimings(rest[0] ?? "");
+    else if (command === "mutation-timings") writeMutationTimings(rest[0] ?? "");
+    else if (command === "merge-mutation-timings") mergeMutationTimings(process.env.TIMES ?? "", rest[0] ?? "", rest[1] ?? "");
     else if (command === "nets") console.log(netsSummary(JSON.parse(process.env.STEPS ?? "{}")));
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings | mutation-timings <run> | nets");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings | mutation-timings <times> | merge-mutation-timings <ran> <out> | nets");
       process.exit(2);
     }
   } catch (error) {

@@ -1138,8 +1138,9 @@ builds the guide's site and deploys it to GitHub Pages (`bun run deploy`).
   stopped at the suite's 25-minute deadline (2026-10-29).
 - `scripts/mutations.ts --changed=<base>` and `--shard=i/n`, by
   `scripts/shard.ts`, by the time each took where `--timings=<dir>` gives
-  a nightly's `mutation-timings-*` (`bun scripts/ci.ts mutation-timings
-  <run>`, of the run `plan` picks).
+  them: main's merged times, which `plan` hands every shard alike and
+  `bun scripts/ci.ts mutation-timings <times>` writes out; each run merges
+  its own over them, `mutation-timings-merged`, for the next plan.
 - `scripts/ci.ts`: `bun run ci:check`, `ci:status`, `ci:bless`, and a
   push's `plan`.
 - `scripts/port.ts`: `bun run port measure` and `compare`, of the

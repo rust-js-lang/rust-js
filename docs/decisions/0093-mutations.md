@@ -223,6 +223,28 @@ mutation twice or never; a download that fails fails its shard, never
 falls back to dealing in turn. Of today's 14,089 mutations and that
 night's 10,289 times, the longest shard's work is 279 minutes, not 309.
 
+## Amendment: the plan hands the shards their times
+
+Each shard downloaded the times itself: the nightly's every shard's and
+main's last five checks', about 320 KB. On main's check of 6d9fcfb45,
+GitHub's storage turned one of those downloads away, `503 Egress is over
+the account limit`. gh's retry then extracted into the half-written
+directory and failed, `openat timings.json: file exists`, and the shard
+failed before it ran anything.
+
+Now `plan` reads the times once: the newest `mutation-timings-merged` of
+`main`, one file. It hands them to every shard as its output, each
+catalog mutation's time in turn, gzipped (`encodedTimings`), so no shard
+downloads them and each deals alike. Where `plan` can't read them, it
+says so and every shard deals in turn, alike. Each run's
+`mutation-timings` job merges its shards' times over the plan's and
+uploads the result for the next plan. It uploads only where it had the
+plan's times to merge into, or ran every mutation, so what's merged never
+loses what was known. A run's artifacts are downloaded one way,
+`scripts/artifacts.ts`, each retry into an emptied directory. The shards
+restore the test map from the Actions cache by the key test-map.yml
+gives, not from a 7.9 MB artifact each.
+
 ## Amendment: a check's mutations are since the last check whose mutations passed
 
 A push's check runs the mutations of what changed since a baseline. That

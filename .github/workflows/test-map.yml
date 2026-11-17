@@ -40,6 +40,10 @@ on:
         description: "How many of the recording's parts at once; '' all (scripts/runners.ts)."
         type: string
         default: ''
+    outputs:
+      key:
+        description: "The Actions cache's key of the map store it served or recorded, which each mutation shard restores: the same store, from the cache, never an artifact each shard downloads."
+        value: ${{ jobs.test-map.outputs.key }}
 
 permissions:
   contents: read
@@ -69,6 +73,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       record: ${{ steps.map.outputs.record }}
+      key: ${{ steps.map.outputs.key }}
       shards: ${{ steps.map.outputs.shards }}
       parts: ${{ steps.map.outputs.parts }}
     steps:
@@ -80,6 +85,7 @@ jobs:
         with:
           build: 'false'
       - uses: actions/cache/restore@v6
+        id: kept
         with:
           path: .cache/test-maps
           key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ env.SHA }}
@@ -90,11 +96,16 @@ jobs:
           OF: ${{ inputs.of || 'head' }}
           FULL: ${{ inputs.full && 'true' || 'false' }}
           SHARDS: '8'
+          # The store served, as restored; or the one the merge saves.
+          KEPT: ${{ steps.kept.outputs.cache-matched-key }}
+          RECORDED: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ env.SHA }}
         run: |
           if [ "$OF" = "head" ]; then of=--head; else of=; fi
           if [ "$FULL" != "true" ] && bun scripts/testMap.ts kept $of; then
             echo "record=false" >> "$GITHUB_OUTPUT"
+            echo "key=$KEPT" >> "$GITHUB_OUTPUT"
           else
+            echo "key=$RECORDED" >> "$GITHUB_OUTPUT"
             # Incremental where an earlier map serves (`planCarry`); whole of
             # the nightly's, `full`.
             if [ "$FULL" = "true" ]; then full=--full; else full=; fi
@@ -103,11 +114,14 @@ jobs:
             tar -cf test-map-build.tar target/test-map/build/debug/rust-js
             echo "record=true" >> "$GITHUB_OUTPUT"
           fi
-      - if: steps.map.outputs.record == 'false'
+      # Of a push, not a call: a call's shards restore the store from the
+      # cache by `key`, 7.9 MB each a download of an artifact where GitHub's
+      # storage turns some away ("Egress is over the account limit").
+      - if: steps.map.outputs.record == 'false' && !inputs.of
         uses: actions/upload-artifact@v7
         with:
           # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
-          name: ${{ inputs.of && 'test-map' || format('test-map-of-{0}', env.SHA) }}
+          name: test-map-of-${{ env.SHA }}
           path: .cache/test-maps
           include-hidden-files: true
           retention-days: 3
@@ -214,10 +228,11 @@ jobs:
         with:
           path: .cache/test-maps
           key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ env.SHA }}
-      - uses: actions/upload-artifact@v7
+      - if: ${{ !inputs.of }}
+        uses: actions/upload-artifact@v7
         with:
           # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
-          name: ${{ inputs.of && 'test-map' || format('test-map-of-{0}', env.SHA) }}
+          name: test-map-of-${{ env.SHA }}
           path: .cache/test-maps
           include-hidden-files: true
           retention-days: 3

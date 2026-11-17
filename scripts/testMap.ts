@@ -58,6 +58,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
+import { downloaded } from "./artifacts";
 import { readJobTimes } from "./jobTimes";
 import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
 
@@ -704,9 +705,7 @@ export function fetchMap(): string {
   const kept = nearestMap(mapStore, root, toolchainOf());
   if (kept !== undefined && behind(kept.commit)! <= found.behind) return `the map kept of ${kept.commit.slice(0, 9)} is as near as CI's`;
   const into = join(mapDir, "fetched");
-  rmSync(into, { recursive: true, force: true });
-  const got = gh(["run", "download", String(found.run), "--name", found.name, "--dir", into]);
-  if (!got.ok) return `no map fetched: run ${found.run}'s ${found.name} didn't download (${got.err})`;
+  if (!downloaded(found.run, [`--name=${found.name}`], into)) return `no map fetched: run ${found.run}'s ${found.name} didn't download`;
   mkdirSync(mapStore, { recursive: true });
   let moved = 0;
   for (const name of readdirSync(into)) {

@@ -505,7 +505,7 @@ test("CI's test map is the kept one, or recorded in parts and merged where none 
   // keeps the newest.
   const group = (Bun.YAML.parse(map) as { concurrency: { "cancel-in-progress": boolean } }).concurrency;
   expect(group["cancel-in-progress"]).toBe(false);
-  expect(map).toContain("format('test-map-of-{0}', env.SHA)");
+  expect(map).toContain("name: test-map-of-${{ env.SHA }}");
   expect(job(map, "test-map")).toContain("bun scripts/testMap.ts kept");
   expect(job(map, "test-map")).toContain("bun scripts/testMap.ts build --shards=");
   expect(job(map, "test-map-part")).toContain("bun scripts/testMap.ts units --shard=${{ matrix.part }}/${{ needs.test-map.outputs.shards }}");

@@ -6,8 +6,9 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, mutationTimingsRuns, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
+import { checkedSince, decodedTimings, encodedTimings, jsonLines, latestRuns, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationJobsPassed, mutationShards, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
+import { downloaded } from "../scripts/artifacts";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
@@ -72,22 +73,33 @@ test("a mutation shard reads its times of the runs' timings.json under the direc
   expect(timedShard(names, 1, 1, join(dir, "none"))).toEqual(names);
 });
 
-// Every shard of a check balances by one nightly's times, `plan`'s: the
-// newest of the last nightlies that kept them; none, and they're dealt in
-// turn. One a shard picked itself might be another's, a newer one ending
-// between their starts, and a mutation run twice or never.
-test("a check's mutation shards balance by the newest nightly that kept its mutations' times", () => {
-  const artifact = (name: string, run: number, expired = false) => ({ name, run, createdAt: "2026-11-15T00:00:00Z", expired });
-  const artifacts = [artifact("mutation-timings-1", 9), artifact("mutation-timings-1", 7, true), artifact("mutation-timings-1", 5), artifact("timings-1", 8), artifact("mutation-timings-1", 3)];
-  expect(mutationTimingsRun([8, 7, 5, 3], artifacts)).toBe(5);
-  expect(mutationTimingsRun([8, 7], artifacts)).toBeUndefined();
-  // And the newest checks of main that kept theirs after it, oldest first,
-  // a later one's time over an earlier's: the mutations a change adds were
-  // never the nightly's.
-  const checks = [{ name: "mutation-timings-1", run: 31, createdAt: "", expired: false }, { name: "mutation-timings-2", run: 33, createdAt: "", expired: false }, { name: "mutation-timings-1", run: 34, createdAt: "", expired: true }];
-  expect(mutationTimingsRuns([8, 7, 5, 3], [35, 34, 33, 32, 31], [...artifacts, ...checks])).toEqual([5, 31, 33]);
-  expect(mutationTimingsRuns([8, 7, 5, 3], [35, 34, 33, 32, 31], [...artifacts, ...checks], 1)).toEqual([5, 33]);
-  expect(mutationTimingsRuns([8], [33], checks)).toEqual([33]);
+// Every shard of a check balances by the same times, `plan`'s: the merged
+// times of the newest run of main that kept them, which carry the
+// nightly's and each check's since, a later time over an earlier. Handed
+// to the shards as the plan's output, so none reads them apart: one that
+// couldn't would deal otherwise than the others, a mutation run twice or
+// never; none kept, they're dealt in turn.
+test("a check's mutation shards balance by the newest merged times of main, handed alike to each", () => {
+  const artifact = (name: string, run: number, createdAt: string, branch = "main", expired = false) => ({ name, run, createdAt, branch, expired });
+  const artifacts = [
+    artifact("mutation-timings-merged", 9, "2026-11-17T03:00:00Z", "main", true),
+    artifact("mutation-timings-merged", 8, "2026-11-17T02:00:00Z", "other"),
+    artifact("mutation-timings-1", 7, "2026-11-17T01:30:00Z"),
+    artifact("mutation-timings-merged", 5, "2026-11-17T01:00:00Z"),
+    artifact("mutation-timings-merged", 3, "2026-11-16T01:00:00Z"),
+  ];
+  expect(mergedTimingsRun(artifacts)).toBe(5);
+  expect(mergedTimingsRun(artifacts.slice(0, 3))).toBeUndefined();
+  // Each of the checkout's mutations in turn, a tenth of a second each: a
+  // catalog of another count refused, never read askew.
+  const names = ["b", "a", "c", "d"];
+  const times = new Map([["a", 12.34], ["c", 0.05], ["gone", 7]]);
+  expect([...decodedTimings(encodedTimings(times, names), names)]).toEqual([["a", 12.3], ["c", 0.1]]);
+  expect(() => decodedTimings(encodedTimings(times, names), [...names, "e"])).toThrow("a catalog of 4, not this checkout's 5");
+  const nightly = Array.from({ length: 14000 }, (_, i) => `mutation-of-some-rule-${i}`);
+  expect(encodedTimings(new Map(nightly.map((name, i) => [name, (i % 600) / 10])), nightly).length).toBeLessThan(64 * 1024);
+  // This run's own times over its plan's: the next plan's.
+  expect([...mergedTimings(new Map([["a", 1], ["b", 2]]), new Map([["b", 3], ["c", 4]]))]).toEqual([["a", 1], ["b", 3], ["c", 4]]);
   const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
   expect(check).toContain("mutation_timings: ${{ needs.plan.outputs.mutation_timings }}");
   const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
@@ -1062,14 +1074,16 @@ test("each job of a push's check is gated, or always runs for a reason it names"
 });
 
 // The mutation shards' snapshot judge places a site by the test map, the
-// `test-map` artifact its run made: test-map.yml called by rustc-tests.yml.
+// store test-map.yml served or recorded in its run, restored from the
+// Actions cache by the key it gives (`outputs.key`), not an artifact each
+// shard downloads: test-map.yml called by rustc-tests.yml.
 // A called workflow's event is its caller's, `push` of each
 // check of main, and test-map.yml named its artifact by it, so a call
 // uploaded `test-map-of-<sha>` and all 16 shards failed to download
 // `test-map` (check 43889550882). Each job that downloads `test-map` needs a
 // job of its run that calls test-map.yml, which tells a call from a push by
 // what only a call gives, `inputs.of`, never the event's name.
-test("each job that downloads the test map needs the job that makes it in its run", () => {
+test("each job that restores the test map by its run's key needs the job that gives it", () => {
   type Step = { uses?: string; with?: Record<string, string> };
   type Job = { uses?: string; needs?: string | string[]; steps?: Step[]; with?: Record<string, string> };
   const workflows = readdirSync(join(root, ".github/workflows")).filter((file) => file.endsWith(".yml"));
@@ -1077,16 +1091,21 @@ test("each job that downloads the test map needs the job that makes it in its ru
   for (const file of workflows) {
     const { jobs: all } = Bun.YAML.parse(readFileSync(join(root, ".github/workflows", file), "utf8")) as { jobs: Record<string, Job> };
     for (const [id, job] of Object.entries(all)) {
-      if (!(job.steps ?? []).some((step) => step.uses?.startsWith("actions/download-artifact") && step.with?.name === "test-map")) continue;
+      expect((job.steps ?? []).some((step) => step.uses?.startsWith("actions/download-artifact") && step.with?.name === "test-map"), `${file}'s ${id} downloads the test-map artifact, which no run uploads: restore it from the cache by \`needs.test-map.outputs.key\``).toBe(false);
+      if (!(job.steps ?? []).some((step) => step.uses?.startsWith("actions/cache/restore") && String(step.with?.key).includes("needs.test-map.outputs.key"))) continue;
       downloads.push(`${file} ${id}`);
       const needs = [job.needs ?? []].flat();
-      expect(needs.some((need) => all[need]?.uses === "./.github/workflows/test-map.yml" && all[need]?.with?.of !== undefined), `${file}'s ${id} downloads test-map: it needs a job that calls test-map.yml with \`of\``).toBe(true);
+      expect(needs.some((need) => all[need]?.uses === "./.github/workflows/test-map.yml" && all[need]?.with?.of !== undefined), `${file}'s ${id} restores the test map by its key: it needs a job that calls test-map.yml with \`of\``).toBe(true);
     }
   }
   expect(downloads.length).toBeGreaterThan(0);
   const made = readFileSync(join(root, ".github/workflows/test-map.yml"), "utf8");
   expect(made).not.toContain("github.event_name");
-  expect(made.match(/name: \$\{\{ inputs\.of && 'test-map' \|\| format\('test-map-of-\{0\}', env\.SHA\) \}\}/g)?.length).toBe(2);
+  // A push's map, by its commit, which `bun run push` fetches; a call's
+  // none, its store in the cache.
+  expect(made.match(/name: test-map-of-\$\{\{ env\.SHA \}\}/g)?.length).toBe(2);
+  expect(made.match(/if: [^\n]*!inputs\.of/g)?.length).toBe(2);
+  expect(made).toContain("value: ${{ jobs.test-map.outputs.key }}");
 });
 
 // CI's check of main selects by the full rule, the whole diff from its
@@ -1293,4 +1312,29 @@ test("what gh prints a value a line, over its pages, is read whole", () => {
   expect(jsonLines<{ run: number }>(pages).map((a) => a.run)).toEqual([1, 2, 3]);
   const ci = readFileSync(join(root, "scripts/ci.ts"), "utf8");
   expect(ci).not.toMatch(/"--paginate",[^\n]*"--jq", "\[/);
+});
+
+// A download GitHub's storage turns away, `503 Egress is over the account
+// limit`, is asked again into an empty directory: into what it left half
+// extracted, the retry failed `openat timings.json: file exists`, and the
+// mutation shard with it (main's check of 6d9fcfb45). One that matches no
+// artifact is asked once.
+test("an artifact's download is asked again into an empty directory", () => {
+  const dir = mkdtempSync(join(tmpdir(), "downloaded-"));
+  const seen: string[][] = [];
+  const flaky = (args: string[]) => {
+    const into = args.find((arg) => arg.startsWith("--dir="))!.slice("--dir=".length);
+    seen.push(readdirSync(into));
+    writeFileSync(join(into, "timings.json"), "{");
+    return seen.length < 3 ? { ok: false, said: "HTTP 503: 503 Egress is over the account limit." } : { ok: true, said: "" };
+  };
+  expect(downloaded(1, ["--name=x"], dir, flaky, () => {})).toBe(true);
+  expect(seen).toEqual([[], [], []]);
+  let asked = 0;
+  expect(downloaded(1, ["--name=x"], dir, () => (asked++, { ok: false, said: "no valid artifacts found to download" }), () => {})).toBe(false);
+  expect(asked).toBe(1);
+  // Every script fetches a run's artifacts so.
+  const scripts = readdirSync(join(root, "scripts")).filter((name) => name.endsWith(".ts") && name !== "artifacts.ts");
+  expect(scripts.filter((name) => /"run", "download"/.test(readFileSync(join(root, "scripts", name), "utf8")))).toEqual([]);
+  rmSync(dir, { recursive: true, force: true });
 });

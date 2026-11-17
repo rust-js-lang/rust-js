@@ -15,6 +15,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { downloaded } from "./artifacts";
 
 const root = join(import.meta.dir, "..");
 
@@ -70,11 +71,9 @@ function checksSince(): { since: string | undefined; checks: Selected[] } {
   const checks: Selected[] = [];
   for (const run of runs.filter((r) => since === undefined || r.createdAt > since)) {
     const dir = join(root, "target", "selector-audit", String(run.databaseId));
-    rmSync(dir, { recursive: true, force: true });
-    mkdirSync(dir, { recursive: true });
-    const got = Bun.spawnSync(["gh", "run", "download", String(run.databaseId), "--name", "selection", "--dir", dir], { cwd: root, stdout: "pipe", stderr: "pipe" });
+    const got = downloaded(run.databaseId, ["--name=selection"], dir);
     const file = join(dir, "selection.json");
-    if (got.exitCode !== 0 || !existsSync(file)) {
+    if (!got || !existsSync(file)) {
       checks.push({ sha: run.headSha, all: true, files: [], cases: [] });
       continue;
     }

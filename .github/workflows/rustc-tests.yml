@@ -50,7 +50,7 @@ on:
         type: string
         default: '1'
       mutation_timings:
-        description: 'With mutations: the runs whose mutations'' times the shards balance by, comma-separated, oldest first (the nightly, then main''s last checks), as check.yml''s plan picks. Empty: dealt in turn.'
+        description: 'With mutations: the mutations'' times the shards balance by, as check.yml''s plan hands them to every shard alike (scripts/ci.ts''s encodedTimings), the newest merged times of main. Empty: dealt in turn.'
         required: false
         type: string
         default: ''
@@ -113,7 +113,7 @@ on:
         type: string
         default: '1'
       mutation_timings:
-        description: 'With mutations: the runs whose mutations'' times the shards balance by, comma-separated, oldest first (the nightly, then main''s last checks), as check.yml''s plan picks. Empty: dealt in turn.'
+        description: 'With mutations: the mutations'' times the shards balance by, as check.yml''s plan hands them to every shard alike (scripts/ci.ts''s encodedTimings), the newest merged times of main. Empty: dealt in turn.'
         required: false
         type: string
         default: ''
@@ -384,10 +384,8 @@ jobs:
     name: mutations (${{ matrix.shard }}/${{ inputs.mutation_shards }})
     runs-on: ubuntu-latest
     timeout-minutes: 300
-    # And the nightly's mutations' times, `mutation_timings`.
     permissions:
       contents: read
-      actions: read
     strategy:
       fail-fast: false
       max-parallel: ${{ inputs.max_parallel || 16 }}
@@ -417,25 +415,39 @@ jobs:
           restore-keys: mutants-${{ runner.os }}-
       # The corpus ships each case through Vite too.
       - run: bun install --frozen-lockfile
-      # The test map its snapshot judge places each site by, the
-      # `test-map` job's.
-      - uses: actions/download-artifact@v8
+      # The test map its snapshot judge places each site by: the store the
+      # `test-map` job served or recorded, from the Actions cache by its key,
+      # not a 7.9 MB artifact each shard downloads (GitHub's storage turned
+      # one of a check's downloads away, "Egress is over the account
+      # limit"). Asked again where the first found none; a store pruned
+      # since, the newest the cache keeps, whose nearest ancestor's map the
+      # judge reads (`nearestMap`).
+      - uses: actions/cache/restore@v6
+        id: map
         with:
-          name: test-map
           path: .cache/test-maps
-      # What each mutation took the nightly `plan` picked, each shard of
-      # this run given the same, so each deals the same (scripts/shard.ts's
-      # `balanced`): dealt in turn, one shard of the nightly's 16 took 411
-      # min of work and another 230 (docs/dev-loop.md). None given, they're
-      # dealt in turn.
-      - name: Read the nightly's mutation times
+          key: ${{ needs.test-map.outputs.key }}
+          restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+      - if: steps.map.outputs.cache-matched-key == ''
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/test-maps
+          key: ${{ needs.test-map.outputs.key }}
+          restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+      # What each mutation took, the newest merged times of main, which
+      # `plan` handed every shard alike, so each deals the same
+      # (scripts/shard.ts's `balanced`): dealt in turn, one shard of the
+      # nightly's 16 took 411 min of work and another 230 (docs/dev-loop.md).
+      # None given, they're dealt in turn. Written from what the shard was
+      # given, never downloaded: a shard that couldn't read them would deal
+      # otherwise than the others.
+      - name: Write the mutations' times plan gave
         id: timings
         env:
-          GH_TOKEN: ${{ github.token }}
-          RUN: ${{ inputs.mutation_timings }}
+          TIMES: ${{ inputs.mutation_timings }}
         run: |
-          if [ -n "$RUN" ]; then
-            bun scripts/ci.ts mutation-timings "$RUN"
+          if [ -n "$TIMES" ]; then
+            bun scripts/ci.ts mutation-timings "$TIMES"
             echo "args=--timings=target/mutation-timings" >> "$GITHUB_OUTPUT"
           fi
       # And the browser, where a test a mutation runs drives one
@@ -508,6 +520,47 @@ jobs:
           name: mutation-latent-${{ matrix.shard }}
           path: target/mutants/latent.json
           if-no-files-found: ignore
+
+  # The times the next plan hands its shards (scripts/ci.ts's
+  # `merge-mutation-timings`): this run's plan's, each mutation this run's
+  # shards timed over it, one small artifact, `mutation-timings-merged`,
+  # where a plan read six runs' every shard's. Only where it had the plan's
+  # to merge into, or ran every mutation, the nightly's, so what's merged
+  # never loses what was known. Each step may fail without failing the
+  # run: the next plan reads an older run's.
+  mutation-timings:
+    if: ${{ always() && inputs.mutations && needs.mutations.result != 'skipped' && needs.mutations.result != 'cancelled' && (inputs.mutation_timings != '' || inputs.mutation_args == '') }}
+    needs: mutations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        continue-on-error: true
+      - uses: oven-sh/setup-bun@v2
+        continue-on-error: true
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+        continue-on-error: true
+      - uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          pattern: mutation-timings-*
+          path: target/mutation-timings-ran
+      - name: Merge them
+        continue-on-error: true
+        env:
+          TIMES: ${{ inputs.mutation_timings }}
+        run: bun scripts/ci.ts merge-mutation-timings target/mutation-timings-ran target/mutation-timings-merged/timings.json
+      - uses: actions/upload-artifact@v7
+        continue-on-error: true
+        with:
+          name: mutation-timings-merged
+          path: target/mutation-timings-merged/timings.json
+          if-no-files-found: ignore
+          retention-days: 14
 
   # The one issue listing the mutations surviving on `main` (ADR 0093,
   # amended): a push's latent survivors added to it, the nightly's every
