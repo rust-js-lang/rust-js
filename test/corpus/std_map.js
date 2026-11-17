@@ -17,9 +17,11 @@ import {
   $sizeHint,
   $tryOf,
   filterClone_clone,
+  iterator_cycle,
   iterator_filter,
   iterator_map,
   iterator_rev,
+  iterator_take,
   mapClone,
   mapClone_clone,
   mapDebug_fmt,
@@ -167,11 +169,23 @@ function main() {
   console.log(`[${Array.from(first).join(", ")}] [${Array.from(evens).join(", ")}]`);
   console.log(
     `[${Array.from(
-      $cycleOf(
-        iterator_map({ start: 1, end: 3 }, (x) => (x * 3) | 0, { next: $rangeNext }),
-        (iterator) => mapClone_clone(iterator, rangeClone, clone),
-        $next,
-      ).take(5),
+      $roomForHint(
+        iterator_take(
+          iterator_cycle(
+            iterator_map({ start: 1, end: 3 }, (x) => (x * 3) | 0, { next: $rangeNext }),
+            {
+              next: $next,
+              fold: $foldOf,
+              getUnchecked: (iterator, i) =>
+                mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+            },
+            mapClone(rangeClone, clone),
+          ),
+          5,
+        ),
+        4,
+        false,
+      ),
     ).join(", ")}]`,
   );
   // Read by a `rev()` that's held: std's struct, as its `rev()` is.

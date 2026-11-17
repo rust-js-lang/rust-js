@@ -2,13 +2,15 @@
 
 import {
   $collectDropping,
-  $cycleOf,
+  $foldOf,
   $iter,
   $next,
   $rangeNext,
   $roomForHint,
+  iterator_cycle,
   iterator_map,
-  mapClone_clone,
+  iterator_take,
+  mapClone,
 } from "@rust-js/std";
 
 export function entry() {
@@ -18,11 +20,14 @@ export function entry() {
 function cycled(items, f, IIterator, IClone, FClone) {
   return $collectDropping(
     $roomForHint(
-      $cycleOf(
-        iterator_map(items, f, IIterator),
-        (iterator) => mapClone_clone(iterator, IClone, FClone),
-        $next,
-      ).take(5),
+      iterator_take(
+        iterator_cycle(
+          iterator_map(items, f, IIterator),
+          { next: $next, fold: $foldOf },
+          mapClone(IClone, FClone),
+        ),
+        5,
+      ),
       4,
       false,
     ),

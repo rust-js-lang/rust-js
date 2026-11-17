@@ -2,7 +2,6 @@
 
 import {
   $count,
-  $cycleOf,
   $foldOf,
   $iter,
   $jsIteratorSome,
@@ -15,6 +14,7 @@ import {
   $rangeNext,
   $repeating,
   $sizeHint,
+  iterator_cycle,
   iterator_fuse,
   iterator_take,
 } from "@rust-js/std";
@@ -40,10 +40,10 @@ function main() {
   const sizeHint = $sizeHint(fused);
   console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   const cycled = {
-    it: $cycleOf(
+    it: iterator_cycle(
       { start: 0, end: 3 },
-      (iterator) => ({ start: iterator.start, end: iterator.end }),
-      $rangeNext,
+      { next: $rangeNext },
+      { clone: (value) => ({ start: value.start, end: value.end }) },
     ),
   };
   const taken = iterator_fuse(iterator_take(cycled.it, 5), { next: $next, fold: $foldOf }, true);

@@ -3,7 +3,6 @@
 import {
   $closing,
   $collectDropping,
-  $cycleOf,
   $debugStr,
   $dropEach,
   $foldToArray,
@@ -11,12 +10,15 @@ import {
   $lazyRange,
   $live,
   $next,
+  $nextSome,
   $rangeNext,
   $roomForHint,
   $unwindsOn,
   filterClone_clone,
+  iterator_cycle,
   iterator_filter,
   iterator_map,
+  iterator_take,
   mapClone_clone,
 } from "@rust-js/std";
 
@@ -34,7 +36,11 @@ function loudDrop_drop(loud) {
 
 export function firsts(iter, n, IIterator, IClone, IItemSize) {
   return $collectDropping(
-    $roomForHint($cycleOf(iter, IClone.clone, IIterator.next, true).take(n), IItemSize, false),
+    $roomForHint(
+      iterator_take(iterator_cycle(iter, IIterator, IClone), n, { next: $nextSome }),
+      IItemSize,
+      false,
+    ),
   );
 }
 

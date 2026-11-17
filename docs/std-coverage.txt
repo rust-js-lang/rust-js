@@ -1095,10 +1095,10 @@
 + Zip::next_back	spec
 + Zip::nth	spec
 + Zip::size_hint	spec
-# Cycle 2 of 3; bodies: 2 safe, 1 spec, 0 opaque, 0 memory, 0 none
+# Cycle 3 of 3; bodies: 2 safe, 1 spec, 0 opaque, 0 memory, 0 none
 + Cycle::next	safe
 + Cycle::size_hint	safe
-- Cycle::try_fold	spec
++ Cycle::try_fold	spec
 # StepBy 9 of 9; bodies: 2 safe, 1 spec, 0 opaque, 6 memory, 0 none
 + StepBy::fold	safe
 + StepBy::next	safe

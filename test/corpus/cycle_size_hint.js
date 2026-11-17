@@ -2,14 +2,15 @@
 
 import {
   $capacity,
-  $cycle,
-  $cycleOf,
   $grownVec,
+  $iter,
   $next,
   $rangeInclusiveNext,
   $rangeNext,
   $roomForHint,
   $sizeHint,
+  iterator_cycle,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -17,57 +18,41 @@ export function entry() {
 }
 
 function main() {
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const sizeHint = $sizeHint(
-    $cycleOf(
-      { start: 1, end: 10 },
-      (iterator) => ({ start: iterator.start, end: iterator.end }),
-      $rangeNext,
-    ),
+    iterator_cycle({ start: 1, end: 10 }, { next: $rangeNext }, rangeClone),
   );
   console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
-  const value = $sizeHint(
-    $cycleOf(
-      { start: 1, end: 1 },
-      (iterator) => ({ start: iterator.start, end: iterator.end }),
-      $rangeNext,
-    ),
-  );
+  const value = $sizeHint(iterator_cycle({ start: 1, end: 1 }, { next: $rangeNext }, rangeClone));
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
   const value$1 = $sizeHint(
-    $cycleOf({ start: 1, end: 3 }, (iterator) => ({ ...iterator }), $rangeInclusiveNext),
+    iterator_cycle(
+      { start: 1, end: 3 },
+      { next: $rangeInclusiveNext },
+      { clone: (value) => ({ ...value }) },
+    ),
   );
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
-  const value$2 = $sizeHint($cycle([1, 2]));
+  const value$2 = $sizeHint(iterator_cycle($iter([1, 2]), { next: $next }, clone));
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
-  const value$3 = $sizeHint($cycle([]));
+  const value$3 = $sizeHint(iterator_cycle($iter([]), { next: $next }, clone));
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
-  const value$4 = $sizeHint($cycle([1, 2]));
+  const value$4 = $sizeHint(iterator_cycle($iter([1, 2]), { next: $next }, clone));
   console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
-  const c = $cycleOf(
-    { start: 1, end: 3 },
-    (iterator) => ({ start: iterator.start, end: iterator.end }),
-    $rangeNext,
-  );
+  const c = iterator_cycle({ start: 1, end: 3 }, { next: $rangeNext }, rangeClone);
   $next(c);
   $next(c);
   $next(c);
   const value$5 = $sizeHint(c);
   console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
   const value$6 = $sizeHint(
-    $cycleOf(
-      { start: 1, end: 3 },
-      (iterator) => ({ start: iterator.start, end: iterator.end }),
-      $rangeNext,
-    ).take(5),
+    iterator_take(iterator_cycle({ start: 1, end: 3 }, { next: $rangeNext }, rangeClone), 5),
   );
   console.log(`(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`);
   const all = $grownVec(
     $roomForHint(
-      $cycleOf(
-        { start: 1, end: 3 },
-        (iterator) => ({ start: iterator.start, end: iterator.end }),
-        $rangeNext,
-      ).take(5),
+      iterator_take(iterator_cycle({ start: 1, end: 3 }, { next: $rangeNext }, rangeClone), 5),
       4,
       false,
     ),

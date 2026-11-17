@@ -2,18 +2,19 @@
 
 import {
   $collectDropping,
-  $cycleOf,
   $iter,
   $iterator,
+  $jsIterator,
   $lazyChain,
   $mapEnds,
-  $next,
   $nextBack,
   $rangeNext,
   $rangeNextBack,
   $roomForHint,
-  chainClone_clone,
+  chainClone,
   iterator_chain,
+  iterator_cycle,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -31,14 +32,17 @@ function summed(a, b) {
 function chainCycled(a, b, JIterator, JClone) {
   return $collectDropping(
     $roomForHint(
-      $cycleOf(
-        iterator_chain(a, b, JIterator, {
-          intoIter: (items) => items,
-          IntoIterIterator: () => JIterator,
-        }),
-        (iterator) => chainClone_clone(iterator, JClone, JClone),
-        $next,
-      ).take(5),
+      iterator_take(
+        iterator_cycle(
+          iterator_chain(a, b, JIterator, {
+            intoIter: (items) => items,
+            IntoIterIterator: () => JIterator,
+          }),
+          $jsIterator,
+          chainClone(JClone, JClone),
+        ),
+        5,
+      ),
       4,
       false,
     ),

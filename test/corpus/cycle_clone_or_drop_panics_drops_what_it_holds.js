@@ -3,11 +3,13 @@
 import {
   $catchUnwind,
   $cleanup,
-  $clone,
   $collectDropping,
-  $cycleOf,
   $held,
   $next,
+  $roomForHint,
+  cycleClone_clone,
+  iterator_cycle,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -57,7 +59,7 @@ function main() {
   reset(1, 4294967295);
   let caught = $catchUnwind(() => {
     const _cycled = $held(
-      $cycleOf({ id: 7, left: 1 }, stepsClone_clone, stepsIterator_next, false, stepsDrop_drop),
+      iterator_cycle({ id: 7, left: 1 }, { next: stepsIterator_next }, stepsClone, stepsDrop_drop),
     );
     _cycled.return();
   });
@@ -66,13 +68,11 @@ function main() {
   reset(3, 4294967295);
   caught = $catchUnwind(() => {
     const held = [
-      $held(
-        $cycleOf({ id: 8, left: 1 }, stepsClone_clone, stepsIterator_next, false, stepsDrop_drop),
-      ),
+      iterator_cycle({ id: 8, left: 1 }, { next: stepsIterator_next }, stepsClone, stepsDrop_drop),
     ];
     let _again;
     try {
-      _again = [$clone(held[0])];
+      _again = [cycleClone_clone(held[0], stepsClone, stepsDrop_drop)];
     } catch (error) {
       $cleanup(() => {
         held[0].return();
@@ -94,7 +94,7 @@ function main() {
   reset(4294967295, 9);
   caught = $catchUnwind(() => {
     const cycled = $held(
-      $cycleOf({ id: 9, left: 1 }, stepsClone_clone, stepsIterator_next, false, stepsDrop_drop),
+      iterator_cycle({ id: 9, left: 1 }, { next: stepsIterator_next }, stepsClone, stepsDrop_drop),
     );
     try {
       const next = $next(cycled);
@@ -120,8 +120,22 @@ function main() {
 
   reset(4294967295, 4294967295);
   const taken = $collectDropping(
-    $cycleOf({ id: 5, left: 2 }, stepsClone_clone, stepsIterator_next, false, stepsDrop_drop).take(
-      5,
+    $roomForHint(
+      iterator_take(
+        iterator_cycle(
+          { id: 5, left: 2 },
+          { next: stepsIterator_next },
+          stepsClone,
+          stepsDrop_drop,
+        ),
+        5,
+        { next: $next },
+        (cycle) => {
+          cycle.return();
+        },
+      ),
+      4,
+      false,
     ),
   );
   console.log(`[${taken.join(", ")}]`);

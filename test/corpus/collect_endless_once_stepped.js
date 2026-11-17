@@ -2,10 +2,8 @@
 
 import {
   $catchable,
-  $clone,
-  $cloning,
   $cycle,
-  $cycleOf,
+  $foldOf,
   $iter,
   $iterator,
   $lazyChain,
@@ -17,6 +15,9 @@ import {
   $roomForHint,
   $successors,
   $unwound,
+  filterClone,
+  iterator_cycle,
+  iterator_filter,
   iterator_map,
 } from "@rust-js/std";
 
@@ -70,18 +71,15 @@ function made(i) {
 }
 
 function main() {
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const items = [1, 2];
-  const cycled = $cycle(items);
+  const cycled = iterator_cycle($iter(items), { next: $next }, clone);
   check("cycle cloned map", () => Array.from($roomForHint(cycled.map(made), 1, false, true)));
-  const cycled$1 = $cycle(items);
+  const cycled$1 = iterator_cycle($iter(items), { next: $next }, clone);
   check("cycle map", () => Array.from($roomForHint(cycled$1.map(made), 1, false, true)));
-  const cycled$2 = $cycleOf(
-    $iter(items),
-    (iterator) => $iter(iterator.items.slice(iterator.at, iterator.end)),
-    $next,
-  );
+  const cycled$2 = iterator_cycle($iter(items), { next: $next }, clone);
   check("copied cycle", () => Array.from($roomForHint(cycled$2.map(made), 1, false, true)));
-  const cycled$3 = $cycle(items);
+  const cycled$3 = iterator_cycle($iter(items), { next: $next }, clone);
   check("cycle enumerate", () =>
     Array.from(
       $roomForHint(
@@ -92,8 +90,8 @@ function main() {
       ),
     ),
   );
-  const cycled$4 = $cycle(items);
-  const other = $cycle(items);
+  const cycled$4 = iterator_cycle($iter(items), { next: $next }, clone);
+  const other = iterator_cycle($iter(items), { next: $next }, clone);
   check("cycle zip", () =>
     Array.from(
       $roomForHint(
@@ -104,13 +102,13 @@ function main() {
       ),
     ),
   );
-  const cycled$5 = $cycle(items);
-  const other$1 = $cycle([9]);
+  const cycled$5 = iterator_cycle($iter(items), { next: $next }, clone);
+  const other$1 = iterator_cycle($iter([9]), { next: $next }, clone);
   check("cycle chain", () =>
     Array.from($roomForHint($lazyChain(cycled$5, other$1).map(made), 1, false, true)),
   );
   const empty = [];
-  const cycled$6 = $cycle(empty);
+  const cycled$6 = iterator_cycle($iter(empty), { next: $next }, clone);
   check("cycle empty", () => Array.from($roomForHint(cycled$6.map(made), 1, false, true)));
   const held = iterator_map($cycle(items), made);
   check("cycle held", () => Array.from($roomForHint(held, 1, false, true)));
@@ -148,7 +146,7 @@ function main() {
 
   // A lower bound of 0: std asks for a little and goes on.
   const seen = 0;
-  const cycled$7 = $cycle(items);
+  const cycled$7 = iterator_cycle($iter(items), { next: $next }, clone);
   let seen$1 = seen;
   check("cycle filter", () =>
     Array.from(
@@ -162,20 +160,18 @@ function main() {
     ),
   );
   let stepped = 0;
-  const makeFilter = (it, f) =>
-    $cloning(it.filter(f), () => makeFilter($iter(it.items.slice(it.at, it.end)), f));
-  const cycled$8 = $cycleOf(
-    makeFilter($iter(items), (i) => {
+  const cycled$8 = iterator_cycle(
+    iterator_filter($iter(items), (i) => {
       stepped = (stepped + 1) | 0;
       if (stepped >= 6) {
         throw new Error("ran on");
       }
       return i === 2;
     }),
-    $clone,
-    $next,
+    { next: $next, fold: $foldOf },
+    filterClone(clone, { clone: (value) => value }),
   );
-  check("filter cycle", () => Array.from(cycled$8));
+  check("filter cycle", () => Array.from($roomForHint(cycled$8, 4, false)));
   const counted = $successors(1, (n) => {
     if (n >= 4) {
       throw new Error("ran on");
@@ -189,13 +185,13 @@ function main() {
   check("repeat map", () => Array.from($roomForHint(repeated.map(made), 1, true)));
 
   // A zip with what has an end: its lower bound, which fits.
-  const cycled$9 = $cycle(items);
+  const cycled$9 = iterator_cycle($iter(items), { next: $next }, clone);
   check("cycle zip with an end", () =>
     Array.from($lazyZip(cycled$9, $iter([7, 8])).map(([i]) => made(i))),
   );
   // Items of no size: room for any number, so it goes on until what
   // makes them stops it.
-  const cycled$10 = $cycle(items);
+  const cycled$10 = iterator_cycle($iter(items), { next: $next }, clone);
   check("cycle units", () =>
     Array.from(
       cycled$10.map((i) => {

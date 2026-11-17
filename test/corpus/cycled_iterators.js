@@ -4,15 +4,18 @@ import {
   $cleanup,
   $collectDropping,
   $collectsInPlace,
-  $cycleOf,
   $debugStr,
+  $foldOf,
   $foldToArray,
   $iter,
   $iterator,
   $jsIteratorSome,
   $next,
+  $nextSome,
   $rangeNext,
   $roomForHint,
+  iterator_cycle,
+  iterator_map,
   iterator_take,
 } from "@rust-js/std";
 
@@ -61,7 +64,15 @@ function counterIterator_next(counter) {
 function firsts(iter, n, IIterator, IClone, IItemSize, dropI, dropIItem) {
   return $collectDropping(
     $roomForHint(
-      $cycleOf(iter, IClone.clone, IIterator.next, true, dropI).take(n),
+      iterator_take(
+        iterator_cycle(iter, IIterator, IClone, dropI, dropIItem),
+        n,
+        { next: $nextSome },
+        (cycle) => {
+          cycle.return();
+        },
+        dropIItem,
+      ),
       IItemSize,
       false,
       false,
@@ -91,15 +102,10 @@ function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
 
 function main() {
   const clone = { clone: (value) => [value[0]] };
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   console.log(`[${firsts([2], 5, { next: countdownIterator_next }, clone, 4).join(", ")}]`);
   console.log(
-    `[${firsts(
-      { start: 0, end: 3 },
-      7,
-      { next: $rangeNext },
-      { clone: (value) => ({ start: value.start, end: value.end }) },
-      4,
-    ).join(", ")}]`,
+    `[${firsts({ start: 0, end: 3 }, 7, { next: $rangeNext }, rangeClone, 4).join(", ")}]`,
   );
   console.log(
     `[${firsts(
@@ -113,30 +119,46 @@ function main() {
       .join(", ")}]`,
   );
   const r = Array.from(
-    $cycleOf(
-      { start: 1, end: 3 },
-      (iterator) => ({ start: iterator.start, end: iterator.end }),
-      $rangeNext,
-    ).take(5),
+    $roomForHint(
+      iterator_take(iterator_cycle({ start: 1, end: 3 }, { next: $rangeNext }, rangeClone), 5),
+      4,
+      false,
+    ),
   );
   console.log(`[${r.join(", ")}]`);
   const e = Array.from(
-    $cycleOf(
-      { start: 3, end: 3 },
-      (iterator) => ({ start: iterator.start, end: iterator.end }),
-      $rangeNext,
-    ).take(5),
+    $roomForHint(
+      iterator_take(iterator_cycle({ start: 3, end: 3 }, { next: $rangeNext }, rangeClone), 5),
+      4,
+      false,
+    ),
   );
   console.log(`[${e.join(", ")}]`);
 
   const tags = Array.from(
-    $cycleOf([0], (iterator) => [iterator[0]], genIterator_next)
-      .take(3)
-      .map((l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }),
+    $roomForHint(
+      iterator_map(
+        iterator_take(
+          iterator_cycle([0], { next: genIterator_next }, clone, undefined, loudDrop_drop),
+          3,
+          { next: $next },
+          undefined,
+          loudDrop_drop,
+        ),
+        (l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        },
+        { next: $next, fold: $foldOf },
+        undefined,
+        undefined,
+        undefined,
+        loudDrop_drop,
+      ),
+      1,
+      false,
+    ),
   );
   console.log(`[${tags.join(", ")}]`);
   const held = firsts([0], 3, { next: genIterator_next }, clone, 1, undefined, loudDrop_drop);
@@ -145,11 +167,18 @@ function main() {
     loudDrop_drop(item);
   }
 
-  const counted = Array.from(
-    $cycleOf({ n: 2, tag: [1] }, counterClone_clone, counterIterator_next, false, (counter) => {
+  const iter = iterator_take(
+    iterator_cycle({ n: 2, tag: [1] }, { next: counterIterator_next }, counterClone, (counter) => {
       loudDrop_drop(counter.tag);
-    }).take(5),
+    }),
+    5,
+    { next: $next },
+    (cycle) => {
+      cycle.return();
+    },
   );
+  const counted = Array.from($roomForHint(iter, 1, false));
+  iter.return();
   console.log(`[${counted.join(", ")}]`);
   console.log(
     `[${firsts(
@@ -163,11 +192,10 @@ function main() {
       },
     ).join(", ")}]`,
   );
-  const unstepped = $cycleOf(
+  const unstepped = iterator_cycle(
     { n: 3, tag: [3] },
-    counterClone_clone,
-    counterIterator_next,
-    false,
+    { next: counterIterator_next },
+    counterClone,
     (counter) => {
       loudDrop_drop(counter.tag);
     },

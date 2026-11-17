@@ -546,10 +546,13 @@ pub(crate) fn is_proved_link(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// its hand form proved equal to std's, of an ADR and the rows that prove
 /// it, each of which exists (ADR 1136, amended).
 const MEANING_ONLY: &[StdPath] = &[
-    // On its way: #1681's change 2.
+    // Kept, proved equal: each item a clone of the one held, the last the
+    // held one moved out, dropped where std's `RepeatN` drops it, and its
+    // count asked of what's left (ADR 1136).
+    // Proof: test/corpus/repeat_n_drops_what_it_holds.rs;
+    // test/corpus/repeat_n_cloned.rs;
+    // test/corpus/repeats_stepped_from_their_backs.rs.
     StdPath::IterRepeatN,
-    // On its way: #1681's change 2.
-    StdPath::IterCycle,
     // Kept, proved equal: a copy of a `Copy` item is the item (ADR 0480).
     // Proof: test/corpus/copied_kept_as_its_source.rs; the copy matrix's
     // rows ITERATOR_TABLE=copies ITERATOR_MATRIX=/[ .]copied[ .|]/.

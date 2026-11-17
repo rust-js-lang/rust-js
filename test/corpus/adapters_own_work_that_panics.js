@@ -6,7 +6,6 @@ import {
   $cleanup,
   $closing,
   $collectDropping,
-  $cycleOf,
   $dropEach,
   $dropItems,
   $flatMap,
@@ -27,9 +26,11 @@ import {
   $trustedZip,
   $zipEnds,
   iterator_chain,
+  iterator_cycle,
   iterator_flatMap,
   iterator_flatten,
   iterator_map,
+  iterator_take,
   iterator_zip,
   mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
@@ -381,22 +382,42 @@ function main() {
     [0, 2],
     () =>
       $collectDropping(
-        $cycleOf(
-          once(5),
-          (iterator) => ({ ...iterator, _held: dClone_clone(iterator._held) }),
-          onceIterator_next,
+        $roomForHint(
+          iterator_take(
+            iterator_cycle(
+              once(5),
+              { next: onceIterator_next },
+              { clone: (value) => ({ ...value, _held: dClone_clone(value._held) }) },
+              (once) => {
+                dDrop_drop(once._held);
+              },
+            ),
+            3,
+            { next: $next },
+            (cycle) => {
+              cycle.return();
+            },
+          ),
+          4,
           false,
-          (once) => {
-            dDrop_drop(once._held);
-          },
-        ).take(3),
+        ),
       ).length,
   );
   run("cycle of what holds nothing", [0, 2], () => {
     const collect = $collectDropping(
-      $cycleOf([2], twiceClone_clone, twiceIterator_next)
-        .take(5)
-        .map((value) => [value]),
+      $roomForHint(
+        iterator_map(
+          iterator_take(iterator_cycle([2], { next: twiceIterator_next }, twiceClone), 5),
+          (value) => [value],
+          { next: $next, fold: $foldOf },
+          undefined,
+          dDrop_drop,
+        ),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );

@@ -5,7 +5,6 @@ import {
   $capacity,
   $charIndices,
   $chars,
-  $cycleOf,
   $debugStr,
   $extend,
   $foldOf,
@@ -25,10 +24,12 @@ import {
   $tryOf,
   flatMapDoubleEndedIterator_nextBack,
   flatMapDoubleEndedIterator_tryRfold,
+  iterator_cycle,
   iterator_flatMap,
   iterator_map,
+  iterator_take,
   iterator_zip,
-  mapClone_clone,
+  mapClone,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
@@ -52,6 +53,12 @@ function main() {
       fold: $foldOf,
       getUnchecked: mapIterator___iteratorGetUnchecked,
     }),
+  };
+  const mapIterator = {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
   };
   const doubleEndedIterator = {
     next_back: mapDoubleEndedIterator_nextBack,
@@ -95,16 +102,17 @@ function main() {
   console.log(`powers [${powers.join(", ")}] ${arg}`);
   const cycled = $grownVec(
     $roomForHint(
-      $cycleOf(
-        iterator_map({ start: 0, end: 3 }, (x) => (x * 10) | 0, { next: $rangeNext }),
-        (iterator) =>
-          mapClone_clone(
-            iterator,
+      iterator_take(
+        iterator_cycle(
+          iterator_map({ start: 0, end: 3 }, (x) => (x * 10) | 0, { next: $rangeNext }),
+          mapIterator,
+          mapClone(
             { clone: (value) => ({ start: value.start, end: value.end }) },
             { clone: (value) => value },
           ),
-        $next,
-      ).take(7),
+        ),
+        7,
+      ),
       4,
       false,
     ),
@@ -173,15 +181,7 @@ function main() {
         $iter(bytes),
         (b) => iterator_map({ start: 0, end: b }, (i) => (i * b) & 255, { next: $rangeNext }),
         { next: $next },
-        {
-          intoIter: (items) => items,
-          IntoIterIterator: () => ({
-            next: $next,
-            fold: $foldOf,
-            getUnchecked: (iterator, i) =>
-              mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
-          }),
-        },
+        { intoIter: (items) => items, IntoIterIterator: () => mapIterator },
         true,
         undefined,
         false,

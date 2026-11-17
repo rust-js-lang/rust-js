@@ -2,19 +2,21 @@
 
 import {
   $cycle,
-  $cycleOf,
   $debugStr,
   $held,
-  $lazyRange,
-  $lazyZip,
   $lent,
   $live,
   $next,
   $position,
   $rangeNext,
+  $roomForHint,
   $sizeHint,
   $tryFoldSome,
   $unwindsOn,
+  iterator_cycle,
+  iterator_skip,
+  iterator_take,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -47,12 +49,20 @@ function count(tag, end) {
 }
 
 function main() {
-  const taken = Array.from(
-    $cycleOf(count(1, 2), countClone_clone, countIterator_next, false, countDrop_drop).take(5),
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
+  const iter = iterator_take(
+    iterator_cycle(count(1, 2), { next: countIterator_next }, countClone, countDrop_drop),
+    5,
+    { next: $next },
+    (cycle) => {
+      cycle.return();
+    },
   );
+  const taken = Array.from($roomForHint(iter, 4, false));
+  iter.return();
   console.log(`[${taken.join(", ")}]`);
   const it = $held(
-    $cycleOf(count(2, 3), countClone_clone, countIterator_next, false, countDrop_drop),
+    iterator_cycle(count(2, 3), { next: countIterator_next }, countClone, countDrop_drop),
   );
   try {
     const sizeHint = $sizeHint(it);
@@ -69,7 +79,7 @@ function main() {
     }
   }
   const empty = $held(
-    $cycleOf(count(3, 0), countClone_clone, countIterator_next, false, countDrop_drop),
+    iterator_cycle(count(3, 0), { next: countIterator_next }, countClone, countDrop_drop),
   );
   try {
     const value = $next(empty);
@@ -82,7 +92,14 @@ function main() {
     }
   }
   const skip = $held(
-    $cycleOf(count(4, 3), countClone_clone, countIterator_next, false, countDrop_drop).drop(1),
+    iterator_skip(
+      iterator_cycle(count(4, 3), { next: countIterator_next }, countClone, countDrop_drop),
+      1,
+      { next: $next },
+      (cycle) => {
+        cycle.return();
+      },
+    ),
   );
   let found;
   try {
@@ -95,12 +112,12 @@ function main() {
     }
   }
   console.log(`${found == null ? "None" : `Some(${found})`}`);
-  const cycle = $held(
-    $cycleOf(count(5, 3), countClone_clone, countIterator_next, false, countDrop_drop),
+  const value = $held(
+    iterator_cycle(count(5, 3), { next: countIterator_next }, countClone, countDrop_drop),
   );
   let over;
   try {
-    over = $tryFoldSome(cycle, 0, (acc, x) => {
+    over = $tryFoldSome(value, 0, (acc, x) => {
       if (acc > 10) {
         return;
       }
@@ -110,48 +127,48 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      cycle.return();
+      value.return();
     }
   }
   console.log(`${over == null ? "None" : `Some(${over})`}`);
   found = $position($lent($cycle([1, 2, 3])), (x) => x === 2);
   console.log(`${found == null ? "None" : `Some(${found})`}`);
-  const sum = $cycleOf(
-    { start: 1, end: 4 },
-    (iterator) => ({ start: iterator.start, end: iterator.end }),
-    $rangeNext,
-  )
-    .take(7)
-    .reduce((a, b) => (a + b) >>> 0, 0);
+  const sum = iterator_take(
+    iterator_cycle({ start: 1, end: 4 }, { next: $rangeNext }, rangeClone),
+    7,
+  ).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${sum}`);
-  const stepped = $cycleOf(
-    { start: 0, end: 3 },
-    (iterator) => ({ start: iterator.start, end: iterator.end }),
-    $rangeNext,
-  );
-  const value = Array.from($lent(stepped).drop(7).take(1))[0];
-  const value$1 = $sizeHint(stepped);
+  const stepped = iterator_cycle({ start: 0, end: 3 }, { next: $rangeNext }, rangeClone);
+  const value$1 = Array.from($lent(stepped).drop(7).take(1))[0];
+  const value$2 = $sizeHint(stepped);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`,
   );
-  const none = $cycleOf(
-    { start: 0, end: 0 },
-    (iterator) => ({ start: iterator.start, end: iterator.end }),
-    $rangeNext,
-  );
-  const value$2 = $sizeHint(none);
-  const value$3 = $next(none);
+  const none = iterator_cycle({ start: 0, end: 0 }, { next: $rangeNext }, rangeClone);
+  const value$3 = $sizeHint(none);
+  const value$4 = $next(none);
   console.log(
-    `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) ${value$3 == null ? "None" : `Some(${value$3})`}`,
+    `(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
   const words = Array.from($cycle(["a", "b"]).take(3));
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
-  const zipped = Array.from(
-    $lazyZip(
-      $cycleOf(count(6, 1), countClone_clone, countIterator_next, false, countDrop_drop),
-      $lazyRange(0, 2),
-    ),
+  const iter$1 = iterator_zip(
+    iterator_cycle(count(6, 1), { next: countIterator_next }, countClone, countDrop_drop),
+    { start: 0, end: 2 },
+    { next: $next },
+    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    (cycle) => {
+      cycle.return();
+    },
   );
+  const zipped = Array.from($roomForHint(iter$1, 8, false));
+  iter$1.return();
   console.log(`[${zipped.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

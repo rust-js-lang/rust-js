@@ -581,4 +581,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_step_by_of_a_reversed_range_grows_as_std.rs$"],
     snapshots: true,
   },
+  {
+    name: "cycle-not-flipped",
+    breaks:
+      "a `cycle()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written `$cycleOf` again, where std's compiled struct is the meaning (#1681's change 2, the cycle family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"cycle\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+    snapshots: true,
+  },
 ];

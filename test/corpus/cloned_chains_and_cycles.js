@@ -22,7 +22,6 @@ import {
   iterator_chain,
   iterator_map,
   iterator_skip,
-  iterator_take,
   iterator_zip,
   mapClone_clone,
   skipClone,
@@ -85,7 +84,7 @@ function cycles() {
     $next,
   );
   $next(it);
-  console.log(`[${Array.from($roomForHint(iterator_take(it, 4), 4, false)).join(", ")}]`);
+  console.log(`[${Array.from(it.take(4)).join(", ")}]`);
   const makeMap$3 = (it, f) =>
     $cloning(it.map(f), () => makeMap$3($iter(it.items.slice(it.at, it.end)), f));
   console.log(
