@@ -65,7 +65,6 @@ src/lower/mir/tidy/moves.rs	3
 src/lower/mir/tidy/options.rs	6
 src/lower/mir/tidy/shadows.rs	4
 src/lower/mir/tidy/switches.rs	2
-src/lower/mir/tidy/unwinds.rs	7
 src/lower/mir/tidy/values.rs	9
 src/lower/mir/tidy/values/handles.rs	1
 src/lower/mir/writer.rs	1

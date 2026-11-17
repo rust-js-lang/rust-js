@@ -245,9 +245,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an early `return callback();` from a guard's scope, of the function's return place, ends the scope: a `try` of each way out and a `let result`, where React's `runWithFiberInDEV` returns in its one `try` (ADR 0693, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "                    name.is(self.result) || self.declared.contains(name.word()) && !self.set_by_closures.contains(name)\n",
-    replace:
-      "                    self.declared.contains(name.word()) && !self.set_by_closures.contains(name)\n",
+    find: "                    name.is(self.result) || self.declared.contains(name) && !self.set_by_closures.contains(name)\n",
+    replace: "                    self.declared.contains(name) && !self.set_by_closures.contains(name)\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",

@@ -224,7 +224,7 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
                     && js::mentions_of(handler, name) == 0
                     && body.last().is_some_and(|last| {
                         let mut returned = last.clone();
-                        given_returned(&mut returned, name.word())
+                        given_returned(&mut returned, Some(name))
                             && js::mentions_of(std::slice::from_ref(&returned), name) == 0
                             && js::mentions_of(&body[..body.len() - 1], name) == 0
                     })
@@ -252,7 +252,7 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
                     stmts.insert(i + 1, StmtKind::Return(Some(value)).at(last.span))
                 }
                 _ => {
-                    given_returned(&mut last, "");
+                    given_returned(&mut last, None);
                     body.push(last);
                 }
             }
@@ -280,10 +280,10 @@ fn scope_body(body: &[Stmt]) -> (&[Stmt], &[Stmt]) {
 /// { return fn(); } else { return undefined; }` (rd286): whether each end
 /// was. Of `name` empty, each assignment's, as `returned_through_finally`
 /// has found them.
-fn given_returned(stmt: &mut Stmt, name: &str) -> bool {
+fn given_returned(stmt: &mut Stmt, name: Option<&Name>) -> bool {
     match &mut stmt.kind {
         StmtKind::Assign(target, value)
-            if name.is_empty() || matches!(&target.kind, ExprKind::Var(v) if v.is(name)) =>
+            if name.is_none_or(|name| matches!(&target.kind, ExprKind::Var(v) if v == name)) =>
         {
             stmt.kind = StmtKind::Return(Some(std::mem::replace(value, Expr::taken())));
             true
@@ -335,7 +335,7 @@ fn first_drop(stmts: &[Stmt]) -> Option<&Stmt> {
 /// .. } finally { .. }` (ADR 0693, amended).
 struct Run<'a> {
     drop: &'a Stmt,
-    declared: IndexSet<String>,
+    declared: IndexSet<Name>,
     set_by_closures: IndexSet<js::Name>,
     result: &'a str,
 }
@@ -346,7 +346,7 @@ impl<'a> Run<'a> {
         js::each_list(stmts, &mut |list| {
             for stmt in list {
                 if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                    declared.insert(name.to_string());
+                    declared.insert(name.clone());
                 }
             }
         });
@@ -417,7 +417,7 @@ impl<'a> Run<'a> {
             StmtKind::Return(None) => true,
             StmtKind::Return(Some(value)) => match &value.kind {
                 ExprKind::Var(name) => {
-                    name.is(self.result) || self.declared.contains(name.word()) && !self.set_by_closures.contains(name)
+                    name.is(self.result) || self.declared.contains(name) && !self.set_by_closures.contains(name)
                 }
                 _ => value.is_constant(),
             },
@@ -447,8 +447,8 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
                 ..
             })) = &leaving.kind
                 && let Some(made) = out.last().and_then(made_here)
-                && name.is(made)
-                && js::mentions_of(&all, name) == 2 + usize::from(declared_unset(&all, name.word()))
+                && name == made
+                && js::mentions_of(&all, name) == 2 + usize::from(declared_unset(&all, name))
                 && js::mentions_of(std::slice::from_ref(drop), name) == 0
                 && let Some(Stmt {
                     kind: StmtKind::Const(_, value) | StmtKind::Assign(_, value),
@@ -487,23 +487,23 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
 }
 
 /// Whether `stmts` declare `name` and set it nowhere there, `let v;`.
-fn declared_unset(stmts: &[Stmt], name: &str) -> bool {
+fn declared_unset(stmts: &[Stmt], name: &js::Name) -> bool {
     stmts
         .iter()
-        .any(|s| matches!(&s.kind, StmtKind::Let(v, None) if v.is(name)))
+        .any(|s| matches!(&s.kind, StmtKind::Let(v, None) if v == name))
 }
 
 /// The variable `stmt` makes, `const v = e;` or `v = e;`.
-fn made_here(stmt: &Stmt) -> Option<&str> {
+fn made_here(stmt: &Stmt) -> Option<&Name> {
     match &stmt.kind {
-        StmtKind::Const(name, _) => Some(name.word()),
+        StmtKind::Const(name, _) => Some(name),
         StmtKind::Assign(
             Expr {
                 kind: ExprKind::Var(name),
                 ..
             },
             _,
-        ) => Some(name.word()),
+        ) => Some(name),
         _ => None,
     }
 }
@@ -594,12 +594,10 @@ fn leaves(stmts: &[Stmt], depth: usize) -> bool {
 fn hoist_read_after(body: &mut Vec<Stmt>, after: &[Stmt]) -> Vec<Stmt> {
     let mut hoisted = Vec::new();
     for stmt in std::mem::take(body) {
-        let read_after = |name: &str| js::mentions_in(after, name) > 0;
+        let read_after = |name: &Name| js::mentions_of(after, name) > 0;
         match stmt.kind {
-            StmtKind::Let(name, None) if read_after(name.word()) => {
-                hoisted.push(StmtKind::Let(name, None).at(stmt.span))
-            }
-            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) if read_after(name.word()) => {
+            StmtKind::Let(name, None) if read_after(&name) => hoisted.push(StmtKind::Let(name, None).at(stmt.span)),
+            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) if read_after(&name) => {
                 hoisted.push(StmtKind::Let(name.clone(), None).at(stmt.span));
                 body.push(StmtKind::Assign(Expr::var(name), value).at(stmt.span));
             }
