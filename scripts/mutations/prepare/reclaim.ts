@@ -5,6 +5,60 @@ const tests = ["test/lowering-names.test.ts", "-t", "nothing it shadows"];
 
 export const mutations: Mutation[] = [
   {
+    name: "variables-of-one-word-reclaimed-together",
+    breaks:
+      "two variables spelled alike, `result$1` of two blocks, are reclaimed as one word, so neither is `result`",
+    file: "src/prepare/reclaim.rs",
+    find: "    apart_by_variable(&mut apart);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(calculator|interpreter).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "arrows-reclaimed-last",
+    breaks:
+      "an arrow's parameter is reclaimed after what its function declares around it, which takes its name first: `(item$2) => ..`",
+    file: "src/prepare/reclaim.rs",
+    find: "    declared.sort_by_key(|local| (!programs.contains(local.word()), !arrows.contains(local.word())));\n",
+    replace: "    declared.sort_by_key(|local| !programs.contains(local.word()));\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_repeat.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "closure-parameter-of-a-capture-shared",
+    breaks:
+      "a closure's parameter lowering names as the variable it captures, one `Name` declared twice, is reclaimed as that variable, `(shared$1) =>`",
+    file: "src/prepare/reclaim.rs",
+    find: "            .filter(|name| declarations.get(*name).is_some_and(|&n| n > 1))\n",
+    replace: "            .filter(|name| declarations.get(*name).is_some_and(|&n| n > 1) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "kept-word-never-reclaimed",
+    breaks: "a word JS keeps given apart, `arguments$$1`, stays so, where its own spelling, `arguments$`, is free",
+    file: "src/prepare/reclaim.rs",
+    find: "    if given.is_some() && base.strip_suffix('$').is_some_and(crate::names::kept_word) && !mentioned.contains(base) {\n",
+    replace: "    if false {\n",
+    tests: ["test/js-builtins.test.ts", "-t", "proxy's traps"],
+  },
+  {
+    name: "import-alias-only-its-base",
+    breaks: "an import given apart is reclaimed to its base or not at all, `add$2` where `add$1` is free",
+    file: "src/prepare/reclaim.rs",
+    find: "                .find(|to| !mentioned.contains(to))\n",
+    replace: "                .find(|to| !mentioned.contains(to) && !to.contains('$'))\n",
+    tests: ["test/link.test.ts", "-t", "late import aliases"],
+  },
+  {
+    name: "import-alias-old-word-kept",
+    breaks: "an import's alias reclaimed leaves its old word taken, so the next import is `Card$3` where `Card$2` is free",
+    file: "src/prepare/reclaim.rs",
+    find: "        mentioned.shift_remove(&local);\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "named component imports avoid"],
+  },
+  {
     name: "holder-spelled-of-its-own-word",
     breaks:
       "a holder of another variable's value is spelled of the word lowering gave its source, `value$1$1` of `value$1`, never of what that variable is of, `value$2`",
@@ -34,8 +88,8 @@ export const mutations: Mutation[] = [
     name: "reclaim-shadowing-read",
     breaks: "a local is named as the module's function it reads, which it then shadows",
     file: "src/prepare/reclaim.rs",
-    find: " || mentioned.contains(base) {",
-    replace: " {",
+    find: "                .find(|to| !mentioned.contains(to))\n",
+    replace: "                .next()\n",
     tests,
   },
   {
@@ -150,7 +204,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the names lowering made reclaim spellings in the order they're met, ahead of the program's, `bound$1` of a `for` loop's `bound` (ADR 1150)",
     file: "src/prepare/reclaim.rs",
-    find: "    declared.sort_by_key(|local| !programs.contains(local.word()));\n",
+    find: "    // An arrow's parameters first, before what its function declares\n    // around it, which reclaims a name around it then, as `(item) => ..`.\n    let mut arrows: IndexSet<String> = IndexSet::default();\n    js::each_item_expr_mut(std::slice::from_mut(item), &mut |e| {\n        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {\n            arrows.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));\n        }\n    });\n    declared.sort_by_key(|local| (!programs.contains(local.word()), !arrows.contains(local.word())));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(std_mixed_enum_mut|taken_and_returned|flattened_state_handed_on).rs$"],
     snapshots: true,

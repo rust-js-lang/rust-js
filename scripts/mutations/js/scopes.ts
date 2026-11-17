@@ -6,6 +6,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "module-scope-name-never-shadowed",
+    breaks:
+      "an inner binding never shadows a name the module's scope declares, `(value$1) => ..` beside an `on_load!` body's `const value`, where JS's scopes let it be `(value) => ..`",
+    file: "src/js/scopes.rs",
+    find: "        if self.module_scope && declaring.contains(&0) {\n",
+    replace: "        if self.module_scope && (declaring.contains(&0) || self.declares(0, to)) {\n",
+    tests: ["test/link.test.ts", "-t", "module-load statements"],
+  },
+  {
     name: "scopes-twice-allowed",
     breaks: "`const n = items.pop(); const n = ..` in one block, which JS refuses",
     file: "src/js/scopes.rs",
@@ -90,8 +99,8 @@ export const mutations: Mutation[] = [
     name: "validate-method-binds-its-name",
     breaks: "a type's method is taken to bind its own name inside itself, which none does: a global of its name read there, React's `getComputedStyle`, is refused as shadowed (#1681)",
     file: "src/js/scopes.rs",
-    find: "            js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| self.function(m, false)),\n",
-    replace: "            js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| self.function(m, true)),\n",
+    find: "            js::Item::Namespace(namespace) => {\n                namespace.constants.iter().for_each(|c| self.expr(&c.value));\n                namespace.methods.iter().for_each(|m| self.function(m, false));\n            }\n",
+    replace: "            js::Item::Namespace(namespace) => {\n                namespace.constants.iter().for_each(|c| self.expr(&c.value));\n                namespace.methods.iter().for_each(|m| self.function(m, true));\n            }\n",
     unitTests: "js::validate::tests::a_global_shadowed_is_refused",
   },
   {

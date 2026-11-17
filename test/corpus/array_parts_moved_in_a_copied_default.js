@@ -100,22 +100,22 @@ function iPicks(IIterator, dropI, dropIItem) {
         dropI?.(self);
         return result;
       }
-      const value$3 = $someValue(value);
+      const value$1 = $someValue(value);
       value$live = true;
-      let value$1;
+      let value$2;
       try {
-        value$1 = IIterator.next(self);
+        value$2 = IIterator.next(self);
       } catch (error) {
         $cleanup(() => {
-          dropIItem?.(value$3);
+          dropIItem?.(value$1);
           dropI?.(self);
         }, error);
         throw error;
       }
-      if (value$1 == null) {
+      if (value$2 == null) {
         result = undefined;
         try {
-          dropIItem?.(value$3);
+          dropIItem?.(value$1);
         } catch (error) {
           $cleanup(() => {
             dropI?.(self);
@@ -126,21 +126,21 @@ function iPicks(IIterator, dropI, dropIItem) {
         dropI?.(self);
         return result;
       }
-      const value$4 = $someValue(value$1);
-      let value$2;
+      const value$3 = $someValue(value$2);
+      let value$4;
       try {
-        value$2 = IIterator.next(self);
+        value$4 = IIterator.next(self);
       } catch (error) {
         $cleanup(() => {
-          dropIItem?.(value$4);
           dropIItem?.(value$3);
+          dropIItem?.(value$1);
           dropI?.(self);
         }, error);
         throw error;
       }
-      if (value$2 != null) {
+      if (value$4 != null) {
         value$live = false;
-        const three = [value$3, value$4, $someValue(value$2)];
+        const three = [value$1, value$3, $someValue(value$4)];
         const rest = three.slice(1, 3);
         result = rest;
         try {
@@ -156,18 +156,18 @@ function iPicks(IIterator, dropI, dropIItem) {
       }
       result = undefined;
       try {
-        dropIItem?.(value$4);
+        dropIItem?.(value$3);
       } catch (error) {
         $cleanup(() => {
           if (value$live) {
-            dropIItem?.(value$3);
+            dropIItem?.(value$1);
           }
           dropI?.(self);
         }, error);
         throw error;
       }
       try {
-        dropIItem?.(value$3);
+        dropIItem?.(value$1);
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);

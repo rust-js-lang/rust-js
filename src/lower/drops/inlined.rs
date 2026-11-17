@@ -448,6 +448,13 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::N
                 .filter(|s| matches!(&s.kind, StmtKind::Const(name, value) if name.is(n.word()) && field(value)))
                 .count();
         });
+        // Another declaration of its word, a closure's `|old|` beside it,
+        // whose reads the word's substitution below would take too. No
+        // tree reaches this since lowering spells a closure's parameters
+        // apart in its function and preparation reclaims them
+        // (`unsuffixed_params` gone, ADR 1150); kept, an exception the lead
+        // recorded, until #2026 substitutes by the copies' ids, which ends
+        // the hazard, with its mutation `field-copy-named-elsewhere-read`.
         if declared != copied {
             continue;
         }

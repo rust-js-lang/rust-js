@@ -232,15 +232,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "in a body is the body"],
   },
   {
-    name: "mir-params-suffixed",
-    breaks:
-      "MIR's closure parameter keeps the suffix its function's names gave it",
-    file: "src/lower/mir.rs",
-    find: "        tidy::unsuffixed_params(&mut out, self.module_names);\n",
-    replace: "",
-    tests: ["test/link.test.ts", "-t", "module-load statements"],
-  },
-  {
     name: "pointed-local-declared-plain",
     breaks: "a local a pointer's taken to, declared first, is no cell",
     file: "src/lower/mir.rs",

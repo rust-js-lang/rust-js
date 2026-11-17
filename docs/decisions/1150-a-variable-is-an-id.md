@@ -1109,3 +1109,39 @@ module's, which has no id, its origin says so (`Id::OF_WORD`) and it's of
 the name its base word is, a module's name's word its identity
 (`thread_local_shadow_of_its_handle`).
 
+## Reclaiming is per variable (2026-11-17)
+
+Preparation reclaimed a word, every declaration spelled so at once, in
+declaration order: where one word spelled two variables, an arrow's
+parameter and another's of its function, `item$2`, neither could be `item`
+if one couldn't, and tidy's `unsuffixed_params` renamed an arrow's
+parameters by word before preparation to make up for it. Now `reclaim::locals`
+gives each variable spelled as another its own spelling first, by its id,
+where the word is given apart (a plain word, `knownKeys` of two sibling
+functions, or a word JS keeps, `arguments$`, is as plain as it gets), and
+reclaims each by itself, an arrow's parameters first; a closure's parameter
+lowering names as the variable it captures, one `Name` declared twice, is
+bound again inside its closure, its holders with it (`js::rebound` carries a
+holder's origin too). `unsuffixed_params` goes. So that the moved spelling
+reads no less plainly:
+
+- `shadows` folds a copy given apart by its word's root only into a
+  closure's own parameter, `const p$13 = p$12;` of `|p|`, never a plain
+  alias into a variable given apart, `const tail = tail$1;`;
+- a word JS keeps given apart, `arguments$$1`, is reclaimed to its own
+  spelling, `arguments$`, never the word, which no module may bind;
+- an item's locals are reclaimed before the module's imports, and an
+  import given apart takes the first free spelling below its own, its old
+  word freed, `Card$1` and `Card$2` where they were `Card$2` and `Card$3`;
+- an inner binding may shadow a name the module's scope declares, an
+  `on_load!` body's `const value`, as JS's scopes resolve it, never where
+  its scope reads the module's name of that word, which `js::validate`
+  refuses (`ModuleShadowed`, a unit row in `prepare/reclaim.rs`);
+- the scope tree and reclaiming walk a namespace's constants too.
+
+The output moved where spellings got plainer: calculator's `result$1` is
+`result` in its blocks, 20 suffixed lines to 4; interpreter 21 to 7; React's
+ReactFlightServer 6 to 2, ReactFlightReplyClient 5 to 1; a few renumbered
+alike; the lexer's loop is the stepped `while ((c = $next(..)) != null)`,
+`c` its own; two tests' rows (the lead's approval).
+

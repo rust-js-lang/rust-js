@@ -33,9 +33,9 @@ const CALL = (f) => {
 const Calls = {
   NESTED: (depth, f) => {
     depth.value = (depth.value + 1) >>> 0;
-    let result$1;
+    let result;
     try {
-      result$1 = f();
+      result = f();
     } catch (error) {
       $cleanup(() => {
         depth.value = (depth.value - 1) >>> 0;
@@ -43,7 +43,7 @@ const Calls = {
       throw error;
     }
     depth.value = (depth.value - 1) >>> 0;
-    return result$1;
+    return result;
   },
 };
 

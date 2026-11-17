@@ -264,15 +264,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "mir-tidy-param-module-name-reused",
-    breaks: "MIR's closure parameter takes a name of the module's",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "                if named.contains(&base) || module.contains(&base) {\n",
-    replace: "                if named.contains(&base) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^thread_local_reads_another_set.rs$"],
-    snapshots: true,
-  },
-  {
     name: "alias-of-changing-set-between",
     breaks:
       "an alias of a variable set before it's read is the variable, `pair(n, { n += 1; n })` given the new `n` twice",

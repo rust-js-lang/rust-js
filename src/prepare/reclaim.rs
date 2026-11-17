@@ -10,12 +10,15 @@ use crate::js::scopes;
 use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {
-    aliased_imports(module);
-    imports(module);
-    own_items(module);
+    // Each item's locals first, then the imports of what's left: an import
+    // given apart from a local the item reclaims, `add$2` of a closure's
+    // `add$1` that's `add` now, is `add$1` (ADR 1150).
     for item in &mut module.items {
         locals(item);
     }
+    aliased_imports(module);
+    imports(module);
+    own_items(module);
 }
 
 /// Each name lowering made not spelled yet, `value#1` (`js::Name::made`),
@@ -197,7 +200,14 @@ fn imports(module: &mut js::Module) {
     // has no `$` (`reclaimable`).
     let mut mentioned = mentions(module);
     for local in locals {
-        let Some(base) = reclaimable(&local, &mentioned).map(str::to_string) else {
+        // Its base, or given apart from it less than it is, the first no
+        // name of the module's is.
+        let Some(base) = reclaimable(&local, &IndexSet::default()).and_then(|base| {
+            let given = crate::names::apart(&local).map_or(0, |(_, k)| k);
+            std::iter::once(base.to_string())
+                .chain((1..given).map(|k| crate::names::given_apart(base, k)))
+                .find(|to| !mentioned.contains(to))
+        }) else {
             continue;
         };
         // The one rule, `local` named `base`, of a name and of the text an
@@ -226,6 +236,8 @@ fn imports(module: &mut js::Module) {
         for item in &mut module.items {
             names_mut(item, true, &mut respell);
         }
+        // What it was is free now, for an import after it.
+        mentioned.shift_remove(&local);
         mentioned.insert(base);
     }
 }
@@ -294,6 +306,66 @@ fn own_items(module: &mut js::Module) {
         .retain(|alias| !(own_name(alias) && folded.contains(alias.0.as_str())));
 }
 
+/// Each variable `item` declares its own spelling: one whose word another
+/// variable it declares has too, by its id, spelled apart from every name it
+/// mentions, `item$9`, so `locals` reclaims each by itself, an arrow's
+/// `(item$2) => ..` as `(item) => ..` though another `item$2` beside it
+/// can't be (ADR 1150). The first declared keeps its word.
+fn apart_by_variable(item: &mut js::Item) {
+    // A closure's parameter of a name declared elsewhere in the item too,
+    // a capture's of `let shared = Rc::clone(&shared); move || ..` that
+    // lowering names as the variable it holds, is a binding of its own in
+    // JS: its own variable inside the closure, by an id of its own.
+    let mut declarations: IndexMap<Name, usize> = IndexMap::default();
+    names_mut(item, false, &mut |name| {
+        *declarations.entry(name.clone()).or_default() += 1
+    });
+    js::each_item_expr_mut(std::slice::from_mut(item), &mut |e| {
+        let (ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body)) = &mut e.kind else {
+            return;
+        };
+        let twice: Vec<Name> = (params.iter().flat_map(|p| p.bound()))
+            .filter(|name| declarations.get(*name).is_some_and(|&n| n > 1))
+            .cloned()
+            .collect();
+        for name in twice {
+            let own = name.rebound();
+            // Its holders too, of it by its id (`Name::derived`).
+            let mut change = |n: &mut Name| {
+                if *n == name {
+                    *n = own.clone();
+                } else {
+                    n.rebind_origin(&name, &own);
+                }
+            };
+            params.iter_mut().for_each(|p| p.each_name_mut(&mut change));
+            declared_mut(body, &mut change);
+            js::each_expr_mut(body, &mut |e| expr_mut(e, true, &mut change));
+        }
+    });
+    let mut taken: IndexSet<String> = IndexSet::default();
+    names_mut(item, true, &mut |name| _ = taken.insert(name.word().to_string()));
+    let mut first: IndexMap<String, Name> = IndexMap::default();
+    let mut apart: IndexMap<Name, String> = IndexMap::default();
+    // A word given apart, `item$2`, which reclaiming may make plainer; one
+    // that isn't, `knownKeys` of two functions' own, is as plain as it gets.
+    names_mut(item, false, &mut |name| match first.get(name.word()) {
+        None => _ = first.insert(name.word().to_string(), name.clone()),
+        Some(kept) if kept == name || apart.contains_key(name) || crate::names::apart(name.word()).is_none() => {}
+        Some(_) => {
+            let to = crate::names::fresh_apart(&mut taken, name.word());
+            apart.insert(name.clone(), to);
+        }
+    });
+    if !apart.is_empty() {
+        names_mut(item, true, &mut |name| {
+            if let Some(to) = apart.get(name) {
+                name.respell(to.as_str());
+            }
+        });
+    }
+}
+
 /// Each local of `item`'s, of a name where each read is still of what it
 /// was: its base, `n` of `n$2`, or else the first of `n$1` on that is.
 /// The scope tree is asked and renamed as each is decided, and the item
@@ -302,7 +374,14 @@ fn own_items(module: &mut js::Module) {
 /// six hundred such names took 60 ms being walked, and as long again in
 /// the tree.
 fn locals(item: &mut js::Item) {
-    let Some(mut tree) = scopes::Tree::of(item) else { return };
+    // Each variable spelled apart only where its item has scopes to reclaim
+    // it in, else as it was.
+    let mut apart = item.clone();
+    apart_by_variable(&mut apart);
+    let Some(mut tree) = scopes::Tree::of(&apart) else {
+        return;
+    };
+    *item = apart;
     let mut declared = Vec::new();
     // The words of the locals the program named (`Name::is_the_programs`).
     let mut programs: IndexSet<String> = IndexSet::default();
@@ -336,7 +415,15 @@ fn locals(item: &mut js::Item) {
             renamed.insert(local.word().to_string(), aside);
         }
     }
-    declared.sort_by_key(|local| !programs.contains(local.word()));
+    // An arrow's parameters first, before what its function declares
+    // around it, which reclaims a name around it then, as `(item) => ..`.
+    let mut arrows: IndexSet<String> = IndexSet::default();
+    js::each_item_expr_mut(std::slice::from_mut(item), &mut |e| {
+        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
+            arrows.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+        }
+    });
+    declared.sort_by_key(|local| (!programs.contains(local.word()), !arrows.contains(local.word())));
     for local in declared {
         // As it's spelled now, of one given way above.
         let now = renamed
@@ -376,10 +463,16 @@ fn locals(item: &mut js::Item) {
 /// may be that name: one none of `mentioned` is, nor a word JS keeps.
 fn reclaimable<'a>(name: &'a str, mentioned: &IndexSet<String>) -> Option<&'a str> {
     // `label$1`, given apart, or `Error$`, named apart for good.
-    let base = match crate::names::apart(name) {
+    let given = crate::names::apart(name);
+    let base = match given {
         Some((base, _)) => base,
         None => name.strip_suffix('$')?,
     };
+    // A word JS keeps given apart, `arguments$$1` of `arguments$`, is its
+    // own spelling where nothing else is so, never the word (ADR 1150).
+    if given.is_some() && base.strip_suffix('$').is_some_and(crate::names::kept_word) && !mentioned.contains(base) {
+        return Some(base);
+    }
     if base.is_empty() || base.contains('$') || mentioned.contains(base) {
         return None;
     }
@@ -434,7 +527,10 @@ pub(super) fn names_mut(item: &mut js::Item, reads: bool, f: &mut dyn FnMut(&mut
     };
     match item {
         js::Item::Function(item) => function(item, f),
-        js::Item::Namespace(namespace) => namespace.methods.iter_mut().for_each(|m| function(m, f)),
+        js::Item::Namespace(namespace) => {
+            (namespace.constants.iter_mut()).for_each(|c| c.value.each_mut(&mut |e| expr_mut(e, reads, f)));
+            namespace.methods.iter_mut().for_each(|m| function(m, f));
+        }
         js::Item::Const(constant) => constant.value.each_mut(&mut |e| expr_mut(e, reads, f)),
         js::Item::Statements(stmts) => {
             declared_mut(stmts, f);
@@ -533,6 +629,67 @@ mod tests {
     // `item`, which would call the parameter; where the module has none of
     // its word, its word; and reclaimed to its word where JS's scopes let it
     // be (#1681 change 3, M2). The module then validates.
+    // An inner binding may shadow a name the module's scope declares, an
+    // `on_load!` body's `const x`, as JS's scopes let it: `(x$1) => x$1` is
+    // `(x) => x`. Never where its scope reads the module's own name of the
+    // word, an import's `value` it calls: that one stays `value$1`. And the
+    // module spelled so, the import's read its parameter's, `js::validate`
+    // refuses (`Problem::ModuleShadowed`, ADR 1150).
+    #[test]
+    fn an_inner_name_shadows_a_modules_only_where_it_reads_none_of_it() {
+        let at = |kind: StmtKind| kind.at(js::Span::NONE);
+        let x = js::Name::declared("x".to_string());
+        let alone = js::Name::declared("x$1".to_string());
+        let imported = js::Name::module("value");
+        let reading = js::Name::declared("value$1".to_string());
+        let arrow = |param: &js::Name, reads: Vec<Expr>| {
+            Expr::arrow(
+                vec![js::Pattern::Name(param.clone())],
+                vec![at(StmtKind::Return(Some(Expr::call(Expr::var(param), reads))))],
+            )
+        };
+        let module = |reading: &js::Name| js::Module {
+            items: vec![js::Item::Statements(vec![
+                at(StmtKind::Const(x.clone(), Expr::num(1.0))),
+                at(StmtKind::Const("f".into(), arrow(&alone, Vec::new()))),
+                at(StmtKind::Const("g".into(), arrow(reading, vec![Expr::var(&imported)]))),
+            ])],
+            imports: vec![js::Import {
+                named: vec![("value".to_string(), imported.clone())],
+                namespace: None,
+                from: "./value.js".to_string(),
+                span: js::Span::NONE,
+            }],
+            ..js::Module::default()
+        };
+        let params = |module: &js::Module| -> Vec<String> {
+            let js::Item::Statements(stmts) = &module.items[0] else {
+                unreachable!("statements")
+            };
+            (stmts[1..].iter())
+                .map(|s| match &s.kind {
+                    StmtKind::Const(
+                        _,
+                        Expr {
+                            kind: ExprKind::Arrow(params, _),
+                            ..
+                        },
+                    ) => params[0].names()[0].to_string(),
+                    _ => unreachable!("an arrow"),
+                })
+                .collect()
+        };
+        let mut prepared = module(&reading);
+        crate::prepare::module(&mut prepared, crate::prepare::Passes::default());
+        assert_eq!(params(&prepared), ["x", "value$1"]);
+        assert_eq!(js::validate::module(&prepared), []);
+        let wrong = module(&js::Name::declared("value".to_string()));
+        assert_eq!(
+            js::validate::module(&wrong),
+            [js::validate::Problem::ModuleShadowed("value".to_string())]
+        );
+    }
+
     #[test]
     fn an_unspelled_name_is_spelled_apart_from_the_modules() {
         let at = |kind: StmtKind| kind.at(js::Span::NONE);

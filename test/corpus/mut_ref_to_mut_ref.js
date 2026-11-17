@@ -34,16 +34,15 @@ function shout(text) {
 }
 
 function main() {
-  let len$1 = 2;
+  let len = 2;
 
   function extend(n) {
-    const len = len$1;
     let value = {
       get value() {
-        return len$1;
+        return len;
       },
       set value(value) {
-        len$1 = value;
+        len = value;
       },
     };
     let data = len;
@@ -64,7 +63,7 @@ function main() {
   }
 
   extend(3);
-  console.log(`${len$1}`);
+  console.log(`${len}`);
   let a = 1;
   let b = 10;
   let r = {

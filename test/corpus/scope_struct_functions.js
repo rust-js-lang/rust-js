@@ -28,10 +28,10 @@ function processReply(root, prefix, depth) {
     return $toUppercase(key);
   }
 
-  function serializeModel(key, depth$1) {
+  function serializeModel(key, depth) {
     pending = (pending + 1) >>> 0;
     const later = (k) => resolveToJson(k, 0) + String(pending);
-    const json = resolveToJson(key, depth$1);
+    const json = resolveToJson(key, depth);
     const arg = later("x");
     return `${json}/${arg}`;
   }

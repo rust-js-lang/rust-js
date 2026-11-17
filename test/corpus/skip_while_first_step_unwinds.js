@@ -114,7 +114,7 @@ function main() {
       throw error;
     }
     const f = (a) => a;
-    const value$1 = $tryFoldSome(
+    const value = $tryFoldSome(
       skipWhile,
       ["acc"],
       (a, b) => f(a, b),
@@ -123,8 +123,8 @@ function main() {
         dDrop_drop(g);
       },
     );
-    if (value$1 != null) {
-      dDrop_drop(value$1);
+    if (value != null) {
+      dDrop_drop(value);
     }
   });
   console.log(`try_fold panicked ${r.TAG === "Err"}`);

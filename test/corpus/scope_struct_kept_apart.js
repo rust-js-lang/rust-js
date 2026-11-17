@@ -79,14 +79,14 @@ function implemented(n) {
 }
 
 const Public = {
-  get(public$$1) {
-    return (public$$1.n + 3) >>> 0;
+  get(public$) {
+    return (public$.n + 3) >>> 0;
   },
 };
 
 function public$(n) {
-  const public$$1 = { n };
-  return Public.get(public$$1);
+  const public$ = { n };
+  return Public.get(public$);
 }
 
 const Holder = {

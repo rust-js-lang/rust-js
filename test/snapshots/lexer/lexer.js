@@ -63,11 +63,8 @@ export const Lexer = {
   },
   tokens(lexer) {
     const out = [];
-    while (true) {
-      const c = $next(lexer.chars);
-      if (c == null) {
-        break;
-      }
+    let c;
+    while ((c = $next(lexer.chars)) != null) {
       if (c === "\n") {
         lexer.line = (lexer.line + 1) >>> 0;
       } else if (!$isWhitespace(c)) {

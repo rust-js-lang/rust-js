@@ -142,7 +142,7 @@ export const FlattenCompat = {
     dropIItem,
     dropIItemItem,
   ) {
-    let tmp$1 = true;
+    let tmp = true;
     if (flattenCompat.frontiter != null) {
       const iter = $someValue(flattenCompat.frontiter);
       try {
@@ -204,7 +204,7 @@ export const FlattenCompat = {
       acc = result;
     }
     if (flattenCompat.backiter != null) {
-      tmp$1 = false;
+      tmp = false;
       const iter = $someValue(flattenCompat.backiter);
       try {
         acc = fold(acc, iter);
@@ -221,7 +221,7 @@ export const FlattenCompat = {
     } catch (error) {
       $cleanup(() => {
         if (flattenCompat.backiter != null) {
-          if (tmp$1) {
+          if (tmp) {
             dropU?.($someValue(flattenCompat.backiter));
           }
         }
@@ -263,9 +263,9 @@ export const FlattenCompat = {
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
-          const value$1 = tmp$1._0;
+          const value = tmp$1._0;
           tmp = true;
-          acc = value$1;
+          acc = value;
         } else {
           try {
             result = FromResidual.fromResidual(tmp$1._0);
@@ -480,7 +480,7 @@ export const FlattenCompat = {
     dropIItem,
     dropIItemItem,
   ) {
-    let tmp$1 = true;
+    let tmp = true;
     if (flattenCompat.backiter != null) {
       const iter = $someValue(flattenCompat.backiter);
       try {
@@ -549,7 +549,7 @@ export const FlattenCompat = {
       acc = result;
     }
     if (flattenCompat.frontiter != null) {
-      tmp$1 = false;
+      tmp = false;
       const iter = $someValue(flattenCompat.frontiter);
       try {
         acc = fold(acc, iter);
@@ -566,7 +566,7 @@ export const FlattenCompat = {
     } catch (error) {
       $cleanup(() => {
         if (flattenCompat.frontiter != null) {
-          if (tmp$1) {
+          if (tmp) {
             dropU?.($someValue(flattenCompat.frontiter));
           }
         }
@@ -609,9 +609,9 @@ export const FlattenCompat = {
           throw error;
         }
         if (tmp$1.TAG === "Continue") {
-          const value$1 = tmp$1._0;
+          const value = tmp$1._0;
           tmp = true;
-          acc = value$1;
+          acc = value;
         } else {
           try {
             result = FromResidual.fromResidual(tmp$1._0);

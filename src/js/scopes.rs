@@ -144,8 +144,9 @@ impl Tree {
         let Some(declaring) = self.declaring.get(from).filter(|d| !d.is_empty()) else {
             return false;
         };
-        // A name of the module's, an `on_load!` body's own.
-        if self.module_scope && (declaring.contains(&0) || self.declares(0, to)) {
+        // A name of the module's, an `on_load!` body's own; an inner one may
+        // shadow one, as JS's scopes resolve its reads (below).
+        if self.module_scope && declaring.contains(&0) {
             return false;
         }
         if declaring.iter().any(|&s| self.declares(s, to)) {
@@ -323,7 +324,10 @@ impl Walk {
     fn item(&mut self, item: &js::Item, alone: bool) {
         match item {
             js::Item::Function(function) => self.function(function, false),
-            js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| self.function(m, false)),
+            js::Item::Namespace(namespace) => {
+                namespace.constants.iter().for_each(|c| self.expr(&c.value));
+                namespace.methods.iter().for_each(|m| self.function(m, false));
+            }
             js::Item::Const(constant) => self.expr(&constant.value),
             js::Item::Statements(stmts) if alone => {
                 self.tree.module_scope = true;

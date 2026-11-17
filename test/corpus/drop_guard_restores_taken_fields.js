@@ -42,9 +42,9 @@ function initializeModelChunk(chunk) {
       prevHandler = undefined;
       initializingHandler = old;
       if (DEV) {
-        const old$1 = prevChunk;
+        const old = prevChunk;
         prevChunk = undefined;
-        initializingChunk = old$1;
+        initializingChunk = old;
       }
     }, error);
     throw error;

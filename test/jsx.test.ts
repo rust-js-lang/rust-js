@@ -158,16 +158,16 @@ pub fn View() -> JSX::Element {
   run(args);
   snapshot(dir, "import-collisions");
   const output = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(output).toContain('import { Card as Card$2 } from "./first.jsx";');
-  expect(output).toContain('import { Card as Card$3 } from "./second.jsx";');
+  expect(output).toContain('import { Card as Card$1 } from "./first.jsx";');
+  expect(output).toContain('import { Card as Card$2 } from "./second.jsx";');
+  expect(output).toContain("<Card$1 />");
   expect(output).toContain("<Card$2 />");
-  expect(output).toContain("<Card$3 />");
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.View())).toBe("<b>first</b><b>second</b><span>9</span>");
   expect(renderToStaticMarkup(result.Card())).toBe("<b>local</b>");
   const lines = output.split("\n");
   const map = JSON.parse(readFileSync(join(dir, "lib.jsx.map"), "utf8"));
-  for (const [generated, original] of [["Card$2", "<first::Card"], ["Card$3", "<second::Card"]]) {
+  for (const [generated, original] of [["Card$1", "<first::Card"], ["Card$2", "<second::Card"]]) {
     const line = lines.findIndex(l => l.includes(`<${generated}`));
     expect(lookup(decodeMappings(map.mappings), line, lines[line].indexOf(generated))?.srcLine)
       .toBe(source.split("\n").findIndex(l => l.includes(original)));

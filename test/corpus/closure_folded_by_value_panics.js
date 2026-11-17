@@ -88,10 +88,10 @@ function main() {
   });
   case$("for_each", (g) => {
     let g$1$live = true;
-    const value$1 = [1, 2, 3];
+    const value = [1, 2, 3];
     let tmp;
     try {
-      tmp = $iter(value$1);
+      tmp = $iter(value);
       g$1$live = false;
     } catch (error) {
       $cleanup(() => {

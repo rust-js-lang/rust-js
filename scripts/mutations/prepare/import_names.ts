@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/import_names.rs",
     find: "            for param in params {\n                pattern(param, visitor);\n            }\n            block(body, visitor);\n",
     replace: "            let _ = (params, body);\n",
-    tests: ["test/jsx.test.ts", "-t", "named component imports avoid local functions"],
+    tests: ["test/snapshots.test.ts", "-t", "playground"],
   },
   {
     name: "link-locals-not-apart-from-helpers",

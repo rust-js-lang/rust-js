@@ -314,12 +314,12 @@ function main() {
             const read = mapped;
             console.log(`read ${read[0]}`);
             try {
-              const value$2 = found(make(12), [13], dDrop_drop);
-              console.log(`found ${value$2[0]}`);
-              dDrop_drop(value$2);
-              const value = found(undefined, [14], dDrop_drop);
+              const value = found(make(12), [13], dDrop_drop);
               console.log(`found ${value[0]}`);
               dDrop_drop(value);
+              const value$1 = found(undefined, [14], dDrop_drop);
+              console.log(`found ${value$1[0]}`);
+              dDrop_drop(value$1);
 
               const option = make(15);
               const ok = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "none" };

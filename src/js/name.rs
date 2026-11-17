@@ -351,6 +351,14 @@ impl Name {
         }
     }
 
+    /// Of a holder made of `was`, the same holder made of `now`, `was`
+    /// bound again (`rebound`); any other as it is.
+    pub fn rebind_origin(&mut self, was: &Name, now: &Name) {
+        if self.3 != Id::WORD && self.3 == was.2 {
+            self.3 = now.2;
+        }
+    }
+
     /// It given apart the `k`th time, `node$2` of `node`, a name of its form:
     /// a temporary's still a temporary's (`names::given_apart`, S4).
     pub fn given_apart(&self, k: usize) -> Name {

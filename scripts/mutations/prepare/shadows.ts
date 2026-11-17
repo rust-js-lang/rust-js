@@ -3,12 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "copy-of-a-closure-parameter-kept",
+    breaks:
+      "a closure's copy of its parameter, `const p$13 = p$12;` of `|p| .. p(d)`, stays, `(d) => p$13(d)`, where it's the parameter",
+    file: "src/prepare/shadows.rs",
+    find: "        true => of.root() == root,\n",
+    replace: "        true => of.is(root),\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_predicate_unwinds.rs$"],
+    snapshots: true,
+  },
+  {
     name: "alias-of-its-holder-kept",
     breaks:
       "a holder lowering made of a variable, `const a$1 = a;`, unspelled where this pass runs, stays, `a$1[value] = ..`, where it's the variable",
     file: "src/prepare/shadows.rs",
-    find: "                        && (alias.apart_of().is_some_and(|(base, _)| of.is(base)) || of.is_origin_of(alias))",
-    replace: "                        && alias.apart_of().is_some_and(|(base, _)| of.is(base))",
+    find: "    alias.apart_of().is_some_and(|(root, _)| base(root)) || of.is_origin_of(alias)\n",
+    replace: "    alias.apart_of().is_some_and(|(root, _)| base(root))\n",
     tests: ["test/corpus.test.ts", "-t", "^(kept_element_ref|frozen_borrow_named).rs$"],
     snapshots: true,
   },
@@ -93,8 +103,8 @@ export const mutations: Mutation[] = [
     name: "alias-of-another-name",
     breaks: "`let kept = text` is `text`, not the name written",
     file: "src/prepare/shadows.rs",
-    find: "                        && (alias.apart_of().is_some_and(|(base, _)| of.is(base)) || of.is_origin_of(alias))",
-    replace: "                        && !alias.word().is_empty()",
+    find: "    alias.apart_of().is_some_and(|(root, _)| base(root)) || of.is_origin_of(alias)\n",
+    replace: "    !alias.word().is_empty()\n",
     tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
   },
   {
@@ -109,7 +119,7 @@ export const mutations: Mutation[] = [
     name: "closure-shadow-kept",
     breaks: "a closure's parameter shadowed by its own value is `const item$1 = item`",
     file: "src/prepare/shadows.rs",
-    find: "            shadows(body, &own);\n",
+    find: "            let given: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();\n            shadows(body, &own, &given);\n",
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "async code becomes async functions and await"],
   },
@@ -117,7 +127,7 @@ export const mutations: Mutation[] = [
     name: "shadow-kept",
     breaks: "`let text = text.clone()` is `const text$1 = text`, not `text`",
     file: "src/prepare/shadows.rs",
-    find: "    shadows(&mut function.body, &own);\n",
+    find: "    shadows(&mut function.body, &own, &IndexSet::default());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
     snapshots: true,
@@ -192,7 +202,7 @@ export const mutations: Mutation[] = [
     name: "written-back-off",
     breaks: "a module's variable read into a local and stored again keeps its local, `let fallbackText$1 = fallbackText; .. fallbackText = fallbackText$1;` (ADR 0277, amended)",
     file: "src/prepare/shadows.rs",
-    find: "    written_back(&mut function.body, &own);\n",
+    find: "    written_back(&mut function.body, &own, &IndexSet::default());\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "stored again is the variable"],
   },

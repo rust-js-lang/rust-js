@@ -84,11 +84,8 @@ function number(chars) {
 function tokenize(source) {
   const tokens = [];
   const chars = iterator_peekable($chars(source));
-  while (true) {
-    const c = $peek(chars);
-    if (c == null) {
-      break;
-    }
+  let c;
+  while ((c = $peek(chars)) != null) {
     if (c === " ") {
       $next(chars);
     } else if ((c >= "0" && c <= "9") || c === ".") {
@@ -154,11 +151,11 @@ const Parser = {
         break;
       }
       Parser.next(parser);
-      const result$1 = Parser.term(parser);
-      if (result$1.TAG === "Err") {
-        return result$1;
+      const result = Parser.term(parser);
+      if (result.TAG === "Err") {
+        return result;
       }
-      const right = result$1._0;
+      const right = result._0;
       left = { TAG: "Bin", _0: left, _1: token._0, _2: right };
     }
     return { TAG: "Ok", _0: left };
@@ -177,11 +174,11 @@ const Parser = {
         break;
       }
       Parser.next(parser);
-      const result$1 = Parser.power(parser);
-      if (result$1.TAG === "Err") {
-        return result$1;
+      const result = Parser.power(parser);
+      if (result.TAG === "Err") {
+        return result;
       }
-      const right = result$1._0;
+      const right = result._0;
       left = { TAG: "Bin", _0: left, _1: token._0, _2: right };
     }
     return { TAG: "Ok", _0: left };
@@ -197,11 +194,11 @@ const Parser = {
     const peek = Parser.peek(parser);
     if (peek != null && peek.TAG === "Op" && peek._0 === "^") {
       Parser.next(parser);
-      const result$1 = Parser.power(parser);
-      if (result$1.TAG === "Err") {
-        return result$1;
+      const result = Parser.power(parser);
+      if (result.TAG === "Err") {
+        return result;
       }
-      const exponent = result$1._0;
+      const exponent = result._0;
       return { TAG: "Ok", _0: { TAG: "Bin", _0: base, _1: "^", _2: exponent } };
     }
     return { TAG: "Ok", _0: base };
@@ -333,11 +330,11 @@ const Calculator = {
       if (expr._1.length !== wanted) {
         return { TAG: "Err", _0: { TAG: "Arity", name: expr._0, wanted, got: expr._1.length } };
       }
-      const result$2 = $collectResults(expr._1.values().map((a) => Calculator.eval(calculator, a)));
-      if (result$2.TAG === "Err") {
-        return result$2;
+      const result$1 = $collectResults(expr._1.values().map((a) => Calculator.eval(calculator, a)));
+      if (result$1.TAG === "Err") {
+        return result$1;
       }
-      const values = result$2._0;
+      const values = result$1._0;
       powf = f(values);
     }
     return { TAG: "Ok", _0: powf };
@@ -366,11 +363,11 @@ const Calculator = {
       return { TAG: "Ok" };
     }
     const parser = { tokens, at: 0 };
-    const result$2 = Parser.expr(parser);
-    if (result$2.TAG === "Err") {
-      return result$2;
+    const result = Parser.expr(parser);
+    if (result.TAG === "Err") {
+      return result;
     }
-    const expr = result$2._0;
+    const expr = result._0;
     const extra = Parser.peek(parser);
     if (extra != null) {
       return { TAG: "Err", _0: { TAG: "Expected", _0: `the end, not ${tokenDebug_fmt(extra)}` } };

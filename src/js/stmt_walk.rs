@@ -647,10 +647,11 @@ pub fn rebound(stmts: &mut [Stmt]) {
             fresh.insert(name.clone(), name.rebound());
         }
     });
-    each_name(stmts, false, &mut |name| {
-        if let Some(to) = fresh.get(name) {
-            *name = to.clone();
-        }
+    // And each holder of one, of it by its id (`Name::derived`), of the
+    // fresh one.
+    each_name(stmts, false, &mut |name| match fresh.get(name) {
+        Some(to) => *name = to.clone(),
+        None => fresh.iter().for_each(|(was, now)| name.rebind_origin(was, now)),
     });
 }
 

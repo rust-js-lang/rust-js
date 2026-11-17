@@ -445,7 +445,8 @@ pub fn named(n: Option<String>) {
   );
   expect(js).not.toContain("g[0]");
   expect(js.slice(0, js.indexOf("function named")).match(/const old/g)).toBeNull();
-  expect(js).toContain("  const old = n;\n  const f = (old) =>");
+  // The copy is the field's variable itself: `n`, no `const old = n;`.
+  expect(js).toContain("export function named(n) {\n  const f = (old) =>");
   const logged: unknown[] = [];
   const log = console.log;
   console.log = (...args: unknown[]) => logged.push(args.join(" "));

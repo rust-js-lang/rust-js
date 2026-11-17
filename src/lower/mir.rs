@@ -690,7 +690,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|id| !placed.contains(&id.index.as_u32()))
             .collect();
         self.place_written(written, &mut out);
-        tidy::unsuffixed_params(&mut out, self.module_names);
         out.splice(0..0, self.directives(body.def_id));
         into.extend(out);
         Ok((params, is_async))

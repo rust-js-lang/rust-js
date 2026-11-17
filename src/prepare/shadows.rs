@@ -10,14 +10,15 @@ use crate::js::{self, Expr, ExprKind, Function, Pattern, Stmt, StmtKind};
 /// `function`'s shadows of their own value, and each of its closures'.
 pub(super) fn function(function: &mut Function) {
     let own = own_names(&function.params, &mut function.body);
-    shadows(&mut function.body, &own);
-    written_back(&mut function.body, &own);
+    shadows(&mut function.body, &own, &IndexSet::default());
+    written_back(&mut function.body, &own, &IndexSet::default());
     // A closure's own parameter, shadowed in it, or a variable it declares,
     // `for (const arg of args)`'s: nothing outside it sets one (ADR 0853).
     js::each_expr_mut(&mut function.body, &mut |e| {
         if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind {
             let own = own_names(params, body);
-            shadows(body, &own);
+            let given: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+            shadows(body, &own, &given);
         }
     });
 }
@@ -48,8 +49,8 @@ fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> IndexSet<String> {
 }
 
 /// Each `const n$1 = n;` of `body` that's `n` (`shadow`), `n` in its place.
-fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
-    while let Some((alias, of)) = shadow(body, own) {
+fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>, given: &IndexSet<String>) {
+    while let Some((alias, of)) = shadow(body, own, given) {
         // Of a global, `const performance$1 = performance;`, each read the
         // global's still, as `Expr::global` made it (`js::validate`).
         let mut read: Option<js::Name> = None;
@@ -90,7 +91,7 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
 /// say, which a call may set out of its sight: only where each read of
 /// `n$1` is before anything that may run code (`read_before_code`, ADR
 /// 0277, amended).
-fn shadow(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)> {
+fn shadow(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -> Option<(String, String)> {
     // What closures set, and what their parameters are named, which a
     // name read in them would mean instead.
     let mut in_closures = replaced_in_closures_spelled(body);
@@ -99,7 +100,10 @@ fn shadow(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)> {
             in_closures.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
         }
     });
-    let mut walk = Walk::default();
+    let mut walk = Walk {
+        given: given.clone(),
+        ..Walk::default()
+    };
     walk.stmts(body, false);
     walk.shadows.into_iter().find_map(|(at, looped, alias, of)| {
         let sets: Vec<usize> = walk
@@ -380,6 +384,8 @@ fn runs_code(stmts: &[Stmt]) -> bool {
 /// `const n$1 = n;`, where, and whether in a loop, and each variable set.
 #[derive(Default)]
 struct Walk {
+    /// The closure's parameters, of what it's given (`folds_into`).
+    given: IndexSet<String>,
     at: usize,
     shadows: Vec<(usize, bool, String, String)>,
     sets: Vec<(usize, String)>,
@@ -392,7 +398,7 @@ impl Walk {
             match &stmt.kind {
                 StmtKind::Const(alias, value) => {
                     if let ExprKind::Var(of) = &value.kind
-                        && (alias.apart_of().is_some_and(|(base, _)| of.is(base)) || of.is_origin_of(alias))
+                        && folds_into(alias, of, &self.given)
                     {
                         self.shadows.push((self.at, looped, alias.to_string(), of.to_string()));
                     }
@@ -451,8 +457,8 @@ impl Walk {
 /// else sets `n` nor `n$1` in a closure, and each read of `n$1` is before
 /// anything that may run code since the `let` or the last write back, of
 /// `n` not the function's own.
-fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
-    while let Some((alias, of)) = write_back(body, own) {
+fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>, given: &IndexSet<String>) {
+    while let Some((alias, of)) = write_back(body, own, given) {
         js::each_block_mut(body, &mut |stmts| {
             stmts.retain(|s| match &s.kind {
                 StmtKind::Let(name, Some(value)) => {
@@ -475,13 +481,13 @@ fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
 }
 
 /// A `let n$1 = n;` that `written_back` makes `n`, and `n`.
-fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, js::Name)> {
+fn write_back(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -> Option<(String, js::Name)> {
     let mut lets = Vec::new();
     js::each_list(body, &mut |list| {
         for stmt in list {
             if let StmtKind::Let(alias, Some(value)) = &stmt.kind
                 && let ExprKind::Var(of) = &value.kind
-                && (alias.apart_of().is_some_and(|(base, _)| of.is(base)) || of.is_origin_of(alias))
+                && folds_into(alias, of, given)
             {
                 lets.push((alias.to_string(), of.clone()));
             }
@@ -570,4 +576,16 @@ fn replaced_in_closures_spelled(body: &[Stmt]) -> IndexSet<String> {
 fn may_replace_spelled(stmts: &[Stmt], word: &str) -> bool {
     let writes = js::Writes::of(stmts);
     writes.replaced.iter().chain(&writes.handled).any(|name| name.is(word))
+}
+
+/// Whether `alias`, a `const` of `of`'s value, is `of` given apart, `p$1`
+/// of `p`, or a holder made of it (`Name::derived`): a copy of a closure's
+/// parameter, `p$13` of `p$12`, which reclaiming spells plainly once it's
+/// folded, by its word's root (ADR 1150).
+fn folds_into(alias: &js::Name, of: &js::Name, given: &IndexSet<String>) -> bool {
+    let base = |root: &str| match given.contains(of.word()) {
+        true => of.root() == root,
+        false => of.is(root),
+    };
+    alias.apart_of().is_some_and(|(root, _)| base(root)) || of.is_origin_of(alias)
 }

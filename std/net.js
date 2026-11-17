@@ -183,30 +183,30 @@ export const Ipv6Addr = {
   },
   toIpv4(ipv6Addr) {
     const value = ipv6Addr.octets.slice();
-    const value$3 = $fromBytes(value.slice(0, 2), 2, true, false);
-    const value$4 = $fromBytes(value.slice(2, 4), 2, true, false);
-    const value$5 = $fromBytes(value.slice(4, 6), 2, true, false);
-    const value$6 = $fromBytes(value.slice(6, 8), 2, true, false);
-    const value$7 = $fromBytes(value.slice(8, 10), 2, true, false);
-    const value$8 = $fromBytes(value.slice(10, 12), 2, true, false);
-    const value$9 = $fromBytes(value.slice(12, 14), 2, true, false);
-    const value$1 = $fromBytes(value.slice(14, 16), 2, true, false);
-    const value$2 = $swapBytes(value$3, 16, false);
-    const value$10 = $swapBytes(value$4, 16, false);
-    const value$11 = $swapBytes(value$5, 16, false);
-    const value$12 = $swapBytes(value$6, 16, false);
-    const value$13 = $swapBytes(value$7, 16, false);
-    const value$14 = $swapBytes(value$8, 16, false);
-    const ab = $swapBytes(value$9, 16, false);
-    const cd = $swapBytes(value$1, 16, false);
-    if (value$2 === 0) {
+    const value$1 = $fromBytes(value.slice(0, 2), 2, true, false);
+    const value$2 = $fromBytes(value.slice(2, 4), 2, true, false);
+    const value$3 = $fromBytes(value.slice(4, 6), 2, true, false);
+    const value$4 = $fromBytes(value.slice(6, 8), 2, true, false);
+    const value$5 = $fromBytes(value.slice(8, 10), 2, true, false);
+    const value$6 = $fromBytes(value.slice(10, 12), 2, true, false);
+    const value$7 = $fromBytes(value.slice(12, 14), 2, true, false);
+    const value$8 = $fromBytes(value.slice(14, 16), 2, true, false);
+    const value$9 = $swapBytes(value$1, 16, false);
+    const value$10 = $swapBytes(value$2, 16, false);
+    const value$11 = $swapBytes(value$3, 16, false);
+    const value$12 = $swapBytes(value$4, 16, false);
+    const value$13 = $swapBytes(value$5, 16, false);
+    const value$14 = $swapBytes(value$6, 16, false);
+    const ab = $swapBytes(value$7, 16, false);
+    const cd = $swapBytes(value$8, 16, false);
+    if (value$9 === 0) {
       if (value$10 === value$11 && value$10 === 0) {
         if (value$12 === value$13 && value$12 === 0) {
           if (value$14 === 0 || value$14 === 65535) {
-            const value$1 = $swapBytes(ab, 16, false);
-            const [a, b] = $toBytes(value$1, 2, true);
-            const value$2 = $swapBytes(cd, 16, false);
-            const [c, d] = $toBytes(value$2, 2, true);
+            const value = $swapBytes(ab, 16, false);
+            const [a, b] = $toBytes(value, 2, true);
+            const value$1 = $swapBytes(cd, 16, false);
+            const [c, d] = $toBytes(value$1, 2, true);
             return { octets: [a, b, c, d] };
           }
         }

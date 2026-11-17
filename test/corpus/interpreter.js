@@ -224,11 +224,11 @@ const Parser = {
           if (result.TAG === "Err") {
             return result;
           }
-          const result$2 = Parser.expr(parser);
-          if (result$2.TAG === "Err") {
-            return result$2;
+          const result$1 = Parser.expr(parser);
+          if (result$1.TAG === "Err") {
+            return result$1;
           }
-          stmt = { TAG: "Let", _0: name, _1: result$2._0 };
+          stmt = { TAG: "Let", _0: name, _1: result$1._0 };
         } else {
           return {
             TAG: "Err",
@@ -244,9 +244,9 @@ const Parser = {
       }
       stmts.push(stmt);
       if (Parser.peek(parser) != null) {
-        const result$3 = Parser.expect(parser, "Semi");
-        if (result$3.TAG === "Err") {
-          return result$3;
+        const result = Parser.expect(parser, "Semi");
+        if (result.TAG === "Err") {
+          return result;
         }
       }
     }
@@ -270,11 +270,11 @@ const Parser = {
   },
 
   binary(parser, min) {
-    const result$1 = Parser.call(parser);
-    if (result$1.TAG === "Err") {
-      return result$1;
+    const result = Parser.call(parser);
+    if (result.TAG === "Err") {
+      return result;
     }
-    let left = result$1._0;
+    let left = result._0;
     while (true) {
       const peek = Parser.peek(parser);
       if (peek == null || peek.TAG !== "Op") {
@@ -296,11 +296,11 @@ const Parser = {
   },
 
   call(parser) {
-    const result$1 = Parser.atom(parser);
-    if (result$1.TAG === "Err") {
-      return result$1;
+    const result = Parser.atom(parser);
+    if (result.TAG === "Err") {
+      return result;
     }
-    let e = result$1._0;
+    let e = result._0;
     while (Parser.peek(parser) === "LParen") {
       Parser.next(parser);
       const args = [];
@@ -318,9 +318,9 @@ const Parser = {
           }
         }
       }
-      const result$2 = Parser.expect(parser, "RParen");
-      if (result$2.TAG === "Err") {
-        return result$2;
+      const result = Parser.expect(parser, "RParen");
+      if (result.TAG === "Err") {
+        return result;
       }
       e = { TAG: "Call", _0: e, _1: args };
     }
@@ -352,9 +352,9 @@ const Parser = {
         return { TAG: "Ok", _0: e };
       }
       if (t === "Fn") {
-        const result$1 = Parser.expect(parser, "LParen");
-        if (result$1.TAG === "Err") {
-          return result$1;
+        const result = Parser.expect(parser, "LParen");
+        if (result.TAG === "Err") {
+          return result;
         }
         const params = [];
         while (true) {
@@ -368,9 +368,9 @@ const Parser = {
             Parser.next(parser);
           }
         }
-        const result = Parser.expect(parser, "RParen");
-        if (result.TAG === "Err") {
-          return result;
+        const result$1 = Parser.expect(parser, "RParen");
+        if (result$1.TAG === "Err") {
+          return result$1;
         }
         const result$2 = Parser.expect(parser, "Arrow");
         if (result$2.TAG === "Err") {

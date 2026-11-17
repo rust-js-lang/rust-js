@@ -148,42 +148,6 @@ pub(super) fn only_read(stmts: &[Stmt], name: &js::Name) -> bool {
     all == read && !js::Writes::sets(&stmts, name)
 }
 
-/// An arrow's parameter its function's names made unique, `(value$1) =>
-/// f(value$1)`, is the name it was made of where the arrow names nothing
-/// else so, `(value) => f(value)`, as JS's arrows shadow: once nothing's
-/// left to name. Not a name of the module's, which a closure's parameters
-/// stay apart from.
-pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &IndexSet<String>) {
-    js::each_expr_mut(body, &mut |e| {
-        let (ExprKind::Arrow(params, inner) | ExprKind::AsyncArrow(params, inner)) = &mut e.kind else {
-            return;
-        };
-        for i in 0..params.len() {
-            for k in 0..params[i].names().len() {
-                let name = params[i].bound()[k].clone();
-                let Some((base, _)) = name.apart_of() else {
-                    continue;
-                };
-                let base = base.to_string();
-                let mut named = IndexSet::default();
-                js::names_in(inner, &mut named);
-                named.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-                if named.contains(&base) || module.contains(&base) {
-                    continue;
-                }
-                js::each_expr_mut(inner, &mut |e| {
-                    if let ExprKind::Var(v) = &mut e.kind
-                        && *v == name
-                    {
-                        v.respell(base.as_str());
-                    }
-                });
-                params[i].names_mut().swap_remove(k).respell(base);
-            }
-        }
-    });
-}
-
 /// A temporary MIR made, by its local's index, `_5`: the one spelling of
 /// one, which `is_temporary` knows, and no name the program gives has
 /// (`user_name`).
