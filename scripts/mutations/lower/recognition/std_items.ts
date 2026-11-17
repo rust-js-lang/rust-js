@@ -350,4 +350,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^boxed_iterator_folded_as_std_passes_it_on.rs$|^boxed_iterator_folded_as_std_passes_it_on with"],
   },
+  {
+    name: "box-hasher-not-passed-through",
+    breaks: "a std hasher's method called of a `Box` of it, `b.write_u8(2)` of a `Box<DefaultHasher>`, std's `impl Hasher for Box<H>`'s, isn't the hasher's own, so it's refused (#1493)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        if is_hasher(tcx, trait_id) {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_written_through_a_box.rs$"],
+  },
 ];

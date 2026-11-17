@@ -71,28 +71,65 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`passed_through_box`): `I`'s arguments, its receiver's type made
     /// `I`'s of the box's (#1278). A `Box<I>` or a `&Box<I>` is `I`'s value;
     /// a `&mut Box<I>` of an iterator is what a `&mut I` is (#1314), given as
-    /// it is, where that's the iterator itself; `None` where it's a cell, and
-    /// of another call.
+    /// it is, where that's the iterator itself. A `&mut Box<H>` of a hasher
+    /// is a cell of the box, its receiver, of `values`, read through,
+    /// `dest_place`'s, `b` of `&mut b`, where a `&mut H` is the hasher
+    /// itself (#1493). `None` where a `&mut I` is a cell, and of another
+    /// call; refused, naming #2037, of a hasher's method still of a `&mut
+    /// Box<H>`, `r.finish()` of a `r = &mut b`, `&self`'s, which the `&mut`'s
+    /// pass-through (`passed_through`) takes only where the `&mut` reads as
+    /// the box itself.
     pub(super) fn passed_through_box(
         &mut self,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         arg_tys: &mut [Ty<'tcx>],
-    ) -> Option<ty::GenericArgsRef<'tcx>> {
-        let args = self.recognition().passed_through_box(def_id, generic_args)?;
-        let receiver_ty = arg_tys.first_mut()?;
+        values: &mut [Value<'tcx>],
+        span: Span,
+    ) -> R<Option<ty::GenericArgsRef<'tcx>>> {
+        let Some(args) = self.recognition().passed_through_box(def_id, generic_args) else {
+            if let Some(trait_id) = self.tcx.trait_of_assoc(def_id)
+                && crate::lower::recognition::is_hasher(self.tcx, trait_id)
+                && let Some(&ty::Ref(_, boxed, ty::Mutability::Mut)) = generic_args.types().next().map(|t| t.kind())
+                && boxed.is_box()
+            {
+                let what = format!(
+                    "`{}` of a `&mut` to a `Box` of a hasher (#2037)",
+                    self.tcx.item_name(def_id)
+                );
+                let why = "the `&mut` is a cell of the box, not the hasher: call it of the box, `(**r).finish()`";
+                return Err(crate::lower::refusal::refuse(
+                    self.tcx,
+                    span,
+                    crate::lower::refusal::Refused::Because(&what, why),
+                ));
+            }
+            return Ok(None);
+        };
+        let Some(receiver_ty) = arg_tys.first_mut() else {
+            return Ok(None);
+        };
         let (boxed, mutability) = match *receiver_ty.kind() {
             ty::Ref(_, boxed, mutability) => (boxed, Some(mutability)),
             _ => (*receiver_ty, None),
         };
-        let inner = boxed.boxed_ty()?;
-        if mutability == Some(ty::Mutability::Mut) && !self.mut_ref_form(inner).read_is_itself() {
-            return None;
+        let Some(inner) = boxed.boxed_ty() else {
+            return Ok(None);
+        };
+        let lent = mutability == Some(ty::Mutability::Mut);
+        if lent && !self.mut_ref_form(inner).read_is_itself() {
+            return Ok(None);
+        }
+        if lent
+            && !self.mut_ref_form(boxed).read_is_itself()
+            && let Some(receiver) = values.first_mut()
+        {
+            *receiver = Value::Expr(self.dest_place(receiver, boxed, span)?);
         }
         *receiver_ty = match mutability {
             Some(mutability) => Ty::new_ref(self.tcx, self.tcx.lifetimes.re_erased, inner, mutability),
             None => inner,
         };
-        Some(args)
+        Ok(Some(args))
     }
 }
 

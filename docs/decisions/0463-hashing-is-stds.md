@@ -379,3 +379,41 @@ generic function's call does, so a `write` that repoints it (`*self = ..`,
 `hasher_of_a_mut_given_to_generic_code`, native-compared; mutations
 `own-mut-hasher-taken-as-std-forwarding`, `own-mut-hasher-state-uncrossed`
 and `own-mut-hasher-not-written-back`, caught.
+
+
+## Amendment (2026-11-18, #1493): a std hasher in a `Box`, its own
+
+A std hasher's method called of a `Box` of it, `b.write_u8(2)` of a `b:
+Box<DefaultHasher>`, was refused, naming no issue. The call is std's
+`impl<H: Hasher + ?Sized> Hasher for Box<H>`'s, whose `Self` is the box,
+so the hasher's arm never saw a std hasher; the amendment of #1488 above
+left it refused. That impl writes each of `Hasher`'s methods as `H`'s,
+`(**self).write_u8(i)`, as std's `Box<I>` writes an iterator's, so the
+owner of the iterator's, `passed_through_box` (#1278), passes it on too:
+- Recognition (`recognition/std_items.rs`): of `Hasher`, each method
+  std's impl writes, all of them (`std_impl_writes`), of a sized `H`. A
+  `Box<dyn Hasher>`'s stays its `dyn`'s, which runs.
+- The receiver (`mir/dispatch/passed_on.rs`): a `&mut Box<H>` of a
+  hasher is a cell of the box (`MutRefForm::Box`), not the hasher, as a
+  `&mut Box<I>` of an iterator is the iterator (#1314). It's read through
+  by `dest_place`, `b` of `&mut b`, where a `&mut H`, an object's, is the
+  hasher itself. A first draft gave the cell as the hasher,
+  `{ get value() .. }.write(..)`, a TypeError where native Rust hashed:
+  the corpus case caught it.
+
+Still refused, naming #2037: a `&self` method, `finish()`, through a
+`&mut Box<H>` whose `&mut` is a cell, `let r = &mut b; r.finish()` or a
+`&mut Box<DefaultHasher>` parameter's. That call is std's `impl Hasher
+for &mut H`'s, whose pass-through takes `&self` only where the `&mut`
+reads as `H` itself (#1709).
+
+Case C of ADR 0262: results change, so the hasher's own writes are kept.
+Corpus case `hasher_written_through_a_box` writes each method std forwards
+that stable Rust can call (`write_str` and `write_length_prefix` are
+unstable), through a `&mut` and a `&mut &mut`, a value's `hash`, generic
+code given the box and a `&mut` to it, and a `Box<dyn Hasher>`, each
+compared with a hasher held as it is, against native in both builds.
+Compile-fail case `hasher_finished_through_a_mut_box_refused` holds the
+refusal. Mutations `box-hasher-not-passed-through`,
+`box-hasher-receiver-not-read-through` and `box-hasher-mut-finish-unnamed`
+are caught.

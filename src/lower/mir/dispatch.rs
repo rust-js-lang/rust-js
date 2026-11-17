@@ -1047,7 +1047,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
-        (values, arg_tys, nulled): (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
+        (mut values, arg_tys, nulled): (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
         output: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -1055,7 +1055,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg_tys = arg_tys.to_vec();
         let tcx = self.tcx;
         // A method std's impl for a `Box<I>` passes on to `I`'s: `I`'s (#1278).
-        if let Some(args) = self.passed_through_box((def_id, generic_args), &mut arg_tys) {
+        if let Some(args) = self.passed_through_box((def_id, generic_args), &mut arg_tys, &mut values, span)? {
             return self.mir_call_values_of(state, (def_id, args), (values, &arg_tys, nulled), output, span, out);
         }
         // What's refused of a call: the crate's `Borrow` where std's code

@@ -59,4 +59,20 @@ export const mutations: Mutation[] = [
     replace: "        let lent = (levels[0].1)\n",
     tests: ["test/mut-ref-matrix.test.ts"],
   },
+  {
+    name: "box-hasher-receiver-not-read-through",
+    breaks: "a std hasher's method of a `&mut Box<H>`, whose `&mut` is a cell of the box, is given the cell as the hasher, `{ get value() .. }.writeU8(2)`, a TypeError where native Rust writes the hash (#1493)",
+    file: "src/lower/mir/dispatch/passed_on.rs",
+    find: "            && !self.mut_ref_form(boxed).read_is_itself()\n            && let Some(receiver) = values.first_mut()\n",
+    replace: "            && false\n            && let Some(receiver) = values.first_mut()\n",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_written_through_a_box.rs$"],
+  },
+  {
+    name: "box-hasher-mut-finish-unnamed",
+    breaks: "`finish()` of a `&mut Box<H>` of a hasher, whose `&mut` is a cell, is refused as any call is, naming no issue, not #2037",
+    file: "src/lower/mir/dispatch/passed_on.rs",
+    find: "                && boxed.is_box()\n",
+    replace: "                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_a_mut_box_refused.rs$"],
+  },
 ];

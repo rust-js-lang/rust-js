@@ -126,7 +126,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `(**self).next()`, so the call is `I`'s, of the box's value, which a
     /// `Box<I>` is in JS (#1278), as `passed_through_mut_ref` says of a
     /// `&mut W`'s (#1309). Not a method the impl leaves its trait's default,
-    /// `by_ref()`'s or `take(n)`'s, which hold the box itself.
+    /// `by_ref()`'s or `take(n)`'s, which hold the box itself. So too
+    /// std's `impl Hasher for Box<H>`, which writes each of `Hasher`'s
+    /// methods as `H`'s, `(**self).write_u8(i)`: `b.write_u8(2)` of a `b:
+    /// Box<DefaultHasher>` is the hasher's own (#1493). A `Box<dyn
+    /// Hasher>`'s, of an unsized `H`, stays its `dyn`'s.
     pub(in crate::lower) fn passed_through_box(
         &self,
         def_id: DefId,
@@ -157,6 +161,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 (inner, inner)
             }
         };
+        let passed_on = || tcx.mk_args_from_iter(std::iter::once(unboxed.into()).chain(generic_args.iter().skip(1)));
+        // A hasher's, each method std's impl writes, all of `Hasher`'s.
+        if is_hasher(tcx, trait_id) {
+            return (inner.is_sized(tcx, self.typing_env) && self.std_impl_writes(def_id, generic_args))
+                .then(passed_on);
+        }
         (iterator_trait
             && inner.is_sized(tcx, self.typing_env)
             && (!(lends
@@ -164,7 +174,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 || crate::lower::recognition::is_compiled_std_iterator(tcx, inner)
                 || crate::lower::generic_facts::boxed_steps_given(tcx, inner, self.typing_env))
                 || self.std_impl_writes(def_id, generic_args)))
-        .then(|| tcx.mk_args_from_iter(std::iter::once(unboxed.into()).chain(generic_args.iter().skip(1))))
+        .then(passed_on)
     }
 
     /// Whether a call of `def_id` with `generic_args` resolves to a method a
