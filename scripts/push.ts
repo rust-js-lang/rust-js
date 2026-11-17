@@ -51,6 +51,16 @@ export type Phase = (typeof phases)[number];
 /** Whether `changed`, the files `git diff origin/main` names, are each one a
  * pushed commit changes, `pushed`'s: none another's, a tree older than
  * `main`'s carries back (scripts/push-guard.ts holds the remote's side). */
+/** Whether a round's React gate runs: of a change that touches the port's
+ * compile inputs (`touchesPort`), unless an earlier round's passed and the
+ * commits the rebase brought since, `incoming`, touch none of them, so the
+ * port compiles as it did then: m3-max's long pushes ran it, 54 s, at
+ * each of two or three rounds (2026-11-17). */
+export function reactGate(changed: string[], incoming: string[] | undefined): "run" | "reused" | "none" {
+  if (!touchesPort(changed)) return "none";
+  return incoming !== undefined && !touchesPort(incoming) ? "reused" : "run";
+}
+
 export function onlyPushedFiles(changed: string[], pushed: string[]): string[] {
   const ours = new Set(pushed);
   return changed.filter((file) => !ours.has(file));
@@ -147,6 +157,8 @@ function main() {
       throw new Refused("a tracked change isn't committed: the check would see it and the push wouldn't; commit it first");
     }
     let checked = "";
+    // The base an earlier round's React gate passed at, where one did.
+    let reactBase: string | undefined;
     for (;;) {
       rebase(bless);
       phase("rebase");
@@ -186,8 +198,14 @@ function main() {
         if (fetched.startsWith("no map fetched")) selection += ` [${fetched}]`;
         console.log(`push: selected ${selection}`);
         phase(name);
-        if (touchesPort(changed) && sh(["bun", "scripts/react-in-rust.ts", "regen"]).code !== 0) {
-          throw new Refused("the React port differs at its pin (target/react-in-rust.diff): regenerate the port and move ports/react-in-rust.pin in this push");
+        const incoming = reactBase === undefined ? undefined : lines(git("diff", "--name-only", reactBase, base).out);
+        const gate = reactGate(changed, incoming);
+        if (gate === "reused") console.log("push: the React port as the round before: the rebase's commits touch none of what compiles it");
+        if (gate === "run") {
+          if (sh(["bun", "scripts/react-in-rust.ts", "regen"]).code !== 0) {
+            throw new Refused("the React port differs at its pin (target/react-in-rust.diff): regenerate the port and move ports/react-in-rust.pin in this push");
+          }
+          reactBase = base;
         }
         phase("react");
         checked = git("rev-parse", "HEAD").out.trim();

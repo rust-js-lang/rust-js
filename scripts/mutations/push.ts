@@ -18,4 +18,20 @@ export const mutations: Mutation[] = [
     replace: 'lines(git("diff", "--name-only", "origin/main").out)',
     tests: ["test/select.test.ts", "-t", "bun run push says its selection on its line"],
   },
+  {
+    name: "push-react-gate-reused-blind",
+    breaks: "a push reuses the round before's React gate past a rebase whose commits touch what compiles the port, so a port regression another's commit and this one make together lands unseen",
+    file: "scripts/push.ts",
+    find: "  return incoming !== undefined && !touchesPort(incoming) ? \"reused\" : \"run\";\n",
+    replace: "  return incoming !== undefined ? \"reused\" : \"run\";\n",
+    tests: ["test/ci.test.ts", "-t", "a push's React gate runs again"],
+  },
+  {
+    name: "push-react-gate-never-reused",
+    breaks: "a push runs the React gate again at every round past a rebase, 54 s each, where the commits it brought touch nothing that compiles the port",
+    file: "scripts/push.ts",
+    find: "  return incoming !== undefined && !touchesPort(incoming) ? \"reused\" : \"run\";\n",
+    replace: "  return \"run\";\n",
+    tests: ["test/ci.test.ts", "-t", "a push's React gate runs again"],
+  },
 ];

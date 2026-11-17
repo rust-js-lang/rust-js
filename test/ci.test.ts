@@ -12,6 +12,7 @@ import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, 
 import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
+import { reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { browsers, drivesBrowser } from "../scripts/shard";
@@ -1118,4 +1119,13 @@ test("each job that runs a slice uploads its JUnit reports, and attribution read
   // And each net no rerun can say is a step of `nets` by that name.
   const nets = check.jobs.nets!.steps!.map((step) => step.name);
   for (const step of Object.keys(unrerunnable)) expect([step, nets.includes(step)]).toEqual([step, true]);
+});
+
+test("a push's React gate runs again past a rebase only where the commits it brought touch what compiles the port", () => {
+  // Its own change touches the compiler; a round before passed.
+  expect(reactGate(["src/lower.rs"], undefined)).toBe("run");
+  expect(reactGate(["src/lower.rs"], ["docs/guide/README.md", "test/corpus/x.rs"])).toBe("reused");
+  expect(reactGate(["src/lower.rs"], ["src/js.rs"])).toBe("run");
+  // A change that doesn't touch the port runs none.
+  expect(reactGate(["docs/guide/README.md"], ["src/js.rs"])).toBe("none");
 });
