@@ -131,3 +131,24 @@ its `library` rewrite of the case; by
 `test/crates/pairs/library_impl_method_where_clause`; and by the mutations
 `bound-self-unnormalized`, `impl-written-clauses-unslotted` and
 `library-entry-own-evidence-ungiven`.
+
+## Amendment: a type built of one no type here is none either (#1576, 2026-11-18)
+
+A slot's type that isn't a projection itself but is built of one that
+can't be made here, `Held<<<Range<u8> as Iterator>::Item as
+IntoIterator>::IntoIter>` of a default `held_all` whose `where Self::Item:
+IntoIterator` `u8` can't meet, was asked its facts where a dictionary
+carries them, `Range<u8>`'s beside a hinted `Vec::extend` (#1180), and
+`size_of` of it refused: no layout of a type rustc can't make.
+`drops::no_type_here` asks each part of the type now (`ty.walk()`), so a
+slot of one is given nothing, as one of a projection alone is: a part is
+no type only where rustc's selection says its clauses can't hold for
+these arguments (`instantiate_and_check_impossible_clauses`), or, of a
+type parameter's, where the bounds there can't normalize it; one valid
+there, rigid or an opaque's, keeps its facts. Nothing reads it, as
+nothing can call the method that would. Held by
+`test/corpus/default_where_clause_beside_a_hinted_extend.rs`, against
+native Rust, by the neighbours' pair, off their known list
+(`test/neighbours.test.ts`'s regressions), and by the mutation
+`no-type-here-of-the-top-alone`.
+

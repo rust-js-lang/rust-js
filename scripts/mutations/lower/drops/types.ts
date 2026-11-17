@@ -12,6 +12,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(copied_default_asks_its_drops_in_the_impls_terms|guard_held_while_a_type_parameters_value_drops)\\.rs$"],
   },
   {
+    name: "no-type-here-of-the-top-alone",
+    breaks: "a type built of a projection that can't be made here, `Held<<u8 as IntoIterator>::IntoIter>`, is asked its facts, refused, where only a projection itself is no type here (#1576)",
+    file: "src/lower/drops/types.rs",
+    find: "    ty.walk()\n        .filter_map(|arg| arg.as_type())\n        .any(|part| projection_not_here(tcx, typing_env, part))\n",
+    replace: "    projection_not_here(tcx, typing_env, ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_where_clause_beside_a_hinted_extend.rs$"],
+  },
+  {
     name: "uncounted-weak-drops",
     breaks:
       "an uncounted `Weak`'s drop is `$weakDrop` of the object itself, or of `null`, which throws (ADR 0843)",

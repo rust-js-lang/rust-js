@@ -785,6 +785,15 @@ pub(in crate::lower) fn no_type_here<'tcx>(
     typing_env: ty::TypingEnv<'tcx>,
     ty: Ty<'tcx>,
 ) -> bool {
+    // Of it or a type it's built of, `Held<<u8 as IntoIterator>::IntoIter>`'s
+    // projection: a type a part of which can't be made here can't be (#1576).
+    ty.walk()
+        .filter_map(|arg| arg.as_type())
+        .any(|part| projection_not_here(tcx, typing_env, part))
+}
+
+/// `no_type_here`'s of a projection itself.
+fn projection_not_here<'tcx>(tcx: ty::TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
     let ty::Alias(
         _,
         alias @ ty::AliasTy {

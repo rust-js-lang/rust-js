@@ -30,9 +30,6 @@ plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a
 plain std io_buf_reader.rs beside addresses_of_short_lived_allocations.rs
 std std_lends_beside_an_address.rs beside vec_set_len.rs
 
-#1576 P2 (neighbours): size_of of a where-clause's item type is refused beside a case that asks a hint as it fills
-plain std default_where_clause_item_drops.rs beside extend_asks_hint_as_it_fills.rs
-
 #1577 P2 (neighbours): {} of a &mut u32 is refused beside a case that counts an Rc of an impl's parameter as Any
 plain std boxed_mut_ref_shown.rs beside rc_of_an_impls_parameter_counted_as_any.rs
 plain std boxed_mut_ref_shown.rs beside rc_of_impl_fn_returned.rs
