@@ -9,10 +9,6 @@ beforeAll(buildCompiler, 600_000);
 
 for (const [name, source, message, crate] of [
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
-  // The crate's own `IntoIterator`'s `IntoIter` given to std's compiled
-  // zip, which would step it by index, `getUnchecked`, which its impl's
-  // dictionary doesn't give: refused in the build of std's structs (#2020).
-  ["the crate's own IntoIterator zipped by std's compiled zip", "pub struct Board { pub cells: Vec<u32> }\nimpl<'a> IntoIterator for &'a Board { type Item = u32; type IntoIter = std::iter::Copied<std::slice::Iter<'a, u32>>; fn into_iter(self) -> Self::IntoIter { self.cells.iter().copied() } }\npub fn f(b: &Board) -> Vec<(u32, u32)> { [7u32, 8].iter().copied().zip(b).collect() }", "a `&Board`'s own `IntoIterator`, whose iterator std's compiled code would step by index (#2020)", "std"],
   // A library that asks no address holds what its generic code lends from
   // std's storage as no handle on its place, so a raw pointer it makes of
   // one, for a consumer that may ask its address, is refused where it's

@@ -41,10 +41,11 @@ takes it asks for its iterator, which is where Rust calls `into_iter`.
   `into_iter` panics, what was taken out is dropped and the tail put back.
   A `splice` of the crate's own `IntoIterator` takes `$splicing`, never
   `$splice`, which puts its replacement in with no unwind.
-- With std's iterator structs, the impl's dictionary gives its `IntoIter`
-  as JS's iterator, `{ next: $next }`, with no `getUnchecked`. So a call
-  whose evidence says that `IntoIter` is `TrustedRandomAccess(NoCoerce)`,
-  a zip's, is refused, keyed on that fact wherever it's asked, naming #2020.
+- With std's iterator structs, the impl's dictionary gave its `IntoIter`
+  as JS's iterator, `{ next: $next }`, with no `getUnchecked`, so a call
+  whose evidence said that `IntoIter` is `TrustedRandomAccess(NoCoerce)`,
+  a zip's, was refused, naming #2020 (amended below: that entry is the
+  struct's own dictionary now).
 
 The name: `$intoIter` was already generic code's `into_iter` of what its
 caller gives, so the new helper is `$ownIntoIter`.
@@ -81,3 +82,33 @@ The crate's collections are given as Rust gives them, `into_iter` at
 Rust's point. #2020 makes the impl's `IntoIterIterator` entry its
 `IntoIter`'s own Iterator dictionary, after which the std build's refusal
 goes.
+
+## Amendment: the impl's `IntoIter` is what generic code holds (2026-11-17, #2020)
+
+The refusal above went. Its cause was in `item_bound_entries`. An impl's
+associated-type bound entry, `IntoIterIterator`, was the dictionary made of
+a JS iterator, `{ next: $next }`, wherever `made_js_iterator` said generic
+code held a JS iterator, std's compiled struct among them (#1292). But
+`made_for_generic_code` gives a compiled struct bounded by `Iterator`
+alone as `as_js_iterator` leaves it: the struct itself, as the impl's
+`into_iter` returns it. So std's compiled zip, told it's
+`TrustedRandomAccess`, asked a `getUnchecked` the entry didn't have.
+
+One answer, `held_by_generic_code`, now says what generic code holds of an
+associated type's value:
+
+- `AsGiven`: the value as the impl gives it;
+- `CompiledStruct`: std's compiled struct, itself;
+- `MadeJsIterator { back, len }`: a JS iterator made of it.
+
+Both askers read it: the value (`made_for_generic_code`) and the bound's
+entry (`item_bound_entries`), so they can't part. A compiled struct's entry
+is its own dictionary, `{ next, fold, getUnchecked }`. A probe of the other
+routes found none that wraps a compiled struct bounded by `Iterator` alone:
+an associated getter's and an `impl Iterator`'s value are the struct itself.
+
+`own_into_iterator_zipped` runs as native in every build: a zip collected,
+its `nth`, a `skip` of it, and a chain's `fold`, all through std's compiled
+bodies. It's in `iterator-forms`' few, and off `differs`. The diagnostics
+row, the limitations line and `own-into-iter-indexed-unrefused` went with
+the refusal. Mutation `held-compiled-struct-made-dictionary` is caught.

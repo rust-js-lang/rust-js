@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the `DoubleEndedIterator` entry of an associated type the dictionary made a JS iterator of is the crate's own `next_back`, given that JS iterator: `undefined from the back` (#972)",
     file: "src/lower/traits/impls.rs",
-    find: "                        .then(|| self.made_iterator_dictionary(bound.def_id, ty))\n",
-    replace: "                        .then(|| None)\n",
+    find: "                    .then(|| self.made_iterator_dictionary(bound.def_id, ty))\n",
+    replace: "                    .then(|| None)\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
   },
   {
@@ -700,5 +700,13 @@ export const mutations: Mutation[] = [
     find: "            && self.option_of(declared).is_none()\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_iterator_within_a_trait_methods_result.rs$"],
+  },
+  {
+    name: "held-compiled-struct-made-dictionary",
+    breaks: "an impl's associated type generic code holds as std's compiled struct, `<&Board as IntoIterator>::IntoIter`'s `Copied<slice::Iter>`, is given the dictionary made of a JS iterator, `{ next: $next }`, so std's compiled zip, which steps it by index, reads `NaN`s (#2020)",
+    file: "src/lower/traits/impls.rs",
+    find: "            true => HeldByGenericCode::CompiledStruct,\n",
+    replace: "            true => HeldByGenericCode::MadeJsIterator { back, len },\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^own_into_iterator_zipped with std's iterator structs$"],
   },
 ];

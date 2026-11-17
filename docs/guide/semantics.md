@@ -971,8 +971,7 @@ What's refused is in [the limitations](limitations.md).
   calls it: as a zip or a chain is made, as an extend starts, after a
   `splice` has taken out its range, where generic code calls `into_iter`
   ([1171](../decisions/1171-the-crates-own-into-iterator-taken-as-any.md),
-  #1940). With std's iterator structs, one std's compiled code would step
-  by index is refused (#2020). An iterator of the
+  #1940). An iterator of the
   crate's runs from both ends by its own `next_back`, `rev()` included, and
   its `len()` is its `size_hint()`, checked ([0164](../decisions/0164-double-ended-iterators.md)).
   `size_hint()` is Rust's where it's known: std's `(0, None)` of one of the

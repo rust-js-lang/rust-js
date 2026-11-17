@@ -92,51 +92,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )))
     }
 
-    /// Of a fact a call gives, `(of, fact)`, of its callee `id`'s slot
-    /// `index`: refused where it says the `IntoIter` of the crate's own
-    /// `IntoIterator`, `<&Board as IntoIterator>::IntoIter`, is stepped by
-    /// index, `TrustedRandomAccess`, as std's compiled zip then asks: its
-    /// impl's dictionary gives that iterator as JS's, with no
-    /// `getUnchecked` (#2020).
-    fn refuse_own_into_iter_indexed(
-        &self,
-        (id, index, args): (DefId, u32, ty::GenericArgsRef<'tcx>),
-        (of, fact): (Ty<'tcx>, TypeFact),
-        span: Span,
-    ) -> R<()> {
-        if !matches!(fact, TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce) {
-            return Ok(());
-        }
-        let slot = crate::lower::traits::drop_slot(self.tcx, self.slots(), id, index);
-        let slot = ty::EarlyBinder::bind(self.tcx, slot)
-            .instantiate(self.tcx, args)
-            .skip_normalization();
-        let ty::Alias(
-            _,
-            alias @ ty::AliasTy {
-                kind: ty::Projection { def_id: assoc },
-                ..
-            },
-        ) = *slot.kind()
-        else {
-            return Ok(());
-        };
-        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
-        if self.tcx.trait_of_assoc(assoc) == Some(into_iterator)
-            && self.user_into_iter(alias.self_ty()).is_some()
-            && self.trait_fact_may_hold(of, fact)
-        {
-            let collection = alias.self_ty();
-            return Err(self.unsupported(
-                span,
-                &format!(
-                    "a `{collection}`'s own `IntoIterator`, whose iterator std's compiled code would step by index (#2020)"
-                ),
-            ));
-        }
-        Ok(())
-    }
-
     /// What's refused of a call of `def_id`: a type taken as what its own
     /// `Borrow` gives (ADR 0167), and a `&mut &mut` of an object given to
     /// generic code (ADR 0454).
@@ -288,7 +243,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         values.push(Expr::js_undefined());
                         continue;
                     }
-                    self.refuse_own_into_iter_indexed((id, index, args), (of, fact), span)?;
                     values.push(self.type_fact_value(of, fact, span)?);
                 }
                 Slot::Drop(index) if let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {

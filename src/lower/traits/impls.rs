@@ -27,6 +27,22 @@ struct EntryForms<'tcx> {
     result_within: Option<Within<'tcx>>,
 }
 
+/// What generic code holds of a value of an associated type an impl gives
+/// (`held_by_generic_code`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum HeldByGenericCode {
+    /// The value as the impl gives it, stepped by its own dictionaries.
+    AsGiven,
+    /// Std's compiled struct, itself, as `as_js_iterator` leaves it, stepped
+    /// by its own `Iterator`, whose `getUnchecked` a compiled zip asks where
+    /// it's `TrustedRandomAccess` (#2020).
+    CompiledStruct,
+    /// A JS iterator made of it, knowing its back and its length where the
+    /// trait bounds it so, stepped by what the dictionary made of it,
+    /// `{ next: $next }` (`made_iterator_dictionary`, ADR 0061, #972).
+    MadeJsIterator { back: bool, len: bool },
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `tr` is the crate's own type's `io::Seek`, whose dictionary
     /// `$seekDefaults` gives std's provided methods (#1489).
@@ -107,9 +123,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let ty = self
                         .tcx
                         .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(bound.self_ty()));
-                    (self.item_made_js_iterator(item, ty))
-                        .then(|| self.made_iterator_dictionary(bound.def_id, ty))
-                        .flatten()
+                    // As generic code holds the value, the one answer
+                    // `made_for_generic_code` reads too: a JS iterator the
+                    // dictionary made, stepped by `$next`; else what it is,
+                    // std's compiled struct by its own `Iterator`, which
+                    // steps it by index too (#2020).
+                    matches!(
+                        self.item_held_by_generic_code(item, ty),
+                        HeldByGenericCode::MadeJsIterator { .. }
+                    )
+                    .then(|| self.made_iterator_dictionary(bound.def_id, ty))
+                    .flatten()
                 }
                 _ => None,
             };
@@ -126,12 +150,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether generic code has values of the associated type `item` an
-    /// impl gives as `ty` as JS iterators its dictionary made
-    /// (`made_js_iterator`), as the trait declares the type.
+    /// impl gives as `ty` as JS iterators (`held_by_generic_code`), as the
+    /// trait declares the type.
     pub(super) fn item_made_js_iterator(&self, item: DefId, ty: Ty<'tcx>) -> bool {
+        self.item_held_by_generic_code(item, ty) != HeldByGenericCode::AsGiven
+    }
+
+    /// What generic code holds of the associated type `item` an impl gives
+    /// as `ty`, as the trait declares the type (`held_by_generic_code`).
+    fn item_held_by_generic_code(&self, item: DefId, ty: Ty<'tcx>) -> HeldByGenericCode {
         let identity = ty::GenericArgs::identity_for_item(self.tcx, item);
         let alias = Ty::new_projection(self.tcx, ty::IsRigid::No, item, identity);
-        self.made_js_iterator(alias, self.tcx.param_env(item), ty)
+        self.held_by_generic_code(alias, self.tcx.param_env(item), ty)
+    }
+
+    /// What generic code holds of a value of an associated type, `alias` as
+    /// the trait declares it under `env`, of the type `ty` an impl gives it:
+    /// the one answer the impl's method's value (`made_for_generic_code`) and
+    /// its bound's dictionary entry (`item_bound_entries`) both read, so the
+    /// two never part (ADR 0061, #972, #1292, #2020).
+    pub(super) fn held_by_generic_code(
+        &self,
+        alias: Ty<'tcx>,
+        env: ty::ParamEnv<'tcx>,
+        ty: Ty<'tcx>,
+    ) -> HeldByGenericCode {
+        if !self.made_js_iterator(alias, env, ty) {
+            return HeldByGenericCode::AsGiven;
+        }
+        let (back, len) = self.made_iterator_ends(alias, env);
+        match !back && !len && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
+            true => HeldByGenericCode::CompiledStruct,
+            false => HeldByGenericCode::MadeJsIterator { back, len },
+        }
     }
 
     /// The dictionary of `trait_id`, `Iterator` or std's extension of it, of
@@ -227,12 +278,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (declared, env, output): (Ty<'tcx>, ty::ParamEnv<'tcx>, Ty<'tcx>),
         span: Span,
     ) -> R<Option<Expr>> {
-        if self.made_js_iterator(declared, env, output) {
-            return Ok(Some(match self.made_iterator_ends(declared, env) {
-                (back, true) => self.as_exact_size(value.clone(), output, back, span)?,
-                (true, false) => self.as_double_ended(value.clone(), output, span)?,
-                (false, false) => self.as_js_iterator(value.clone(), output, span)?,
-            }));
+        match self.held_by_generic_code(declared, env, output) {
+            HeldByGenericCode::CompiledStruct => return Ok(Some(self.as_js_iterator(value.clone(), output, span)?)),
+            HeldByGenericCode::MadeJsIterator { back, len } => {
+                return Ok(Some(match (back, len) {
+                    (back, true) => self.as_exact_size(value.clone(), output, back, span)?,
+                    (true, false) => self.as_double_ended(value.clone(), output, span)?,
+                    (false, false) => self.as_js_iterator(value.clone(), output, span)?,
+                }));
+            }
+            HeldByGenericCode::AsGiven => {}
         }
         // An `Option` of one, its payload's, or `undefined`, as `Within`'s
         // `Some` makes it: what holds an iterator never looks like `None`.

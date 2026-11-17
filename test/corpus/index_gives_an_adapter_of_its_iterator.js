@@ -7,6 +7,7 @@ import {
   $jsIteratorSome,
   $next,
   $nextSome,
+  $nthSome,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -32,7 +33,7 @@ const $rangeInclusiveIteratorIndexI = new WeakMap();
 
 function rangeInclusiveIteratorIndexI(IIterator) {
   return $traitImpl($rangeInclusiveIteratorIndexI, [IIterator], () => ({
-    OutputIterator: () => ({ next: $nextSome }),
+    OutputIterator: () => ({ next: $nextSome, fold: $foldOf, nth: $nthSome }),
     index: (arg0, arg1) => rangeInclusiveIteratorIndexI_index(arg0, arg1, IIterator),
   }));
 }

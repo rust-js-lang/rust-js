@@ -139,8 +139,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a call of a generic function that asks `size_of::<T>()` gives it no size",
     file: "src/lower/traits/calls.rs",
-    find: "                    self.refuse_own_into_iter_indexed((id, index, args), (of, fact), span)?;\n                    values.push(self.type_fact_value(of, fact, span)?);\n",
-    replace: "                    self.refuse_own_into_iter_indexed((id, index, args), (of, fact), span)?;\n                    let _ = (of, fact);\n",
+    find: "                    }\n                    values.push(self.type_fact_value(of, fact, span)?);\n                }\n",
+    replace:
+      "                    }\n                    let _ = (of, fact);\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
   {
@@ -608,13 +609,5 @@ export const mutations: Mutation[] = [
     find: "                && !self.slot_said(id, index)\n",
     replace: "                && false\n",
     tests: ["test/crates.test.ts", "-t", "nested past its contract is refused"],
-  },
-  {
-    name: "own-into-iter-indexed-unrefused",
-    breaks: "the crate's own `IntoIterator`'s `IntoIter` given to std's compiled zip that steps it by index isn't refused, so its `getUnchecked`, which its impl's dictionary doesn't give, reads `NaN`s (#2020)",
-    file: "src/lower/traits/calls.rs",
-    find: "        if !matches!(fact, TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce) {\n",
-    replace: "        if true {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "the crate's own IntoIterator zipped by std's compiled zip"],
   },
 ];
