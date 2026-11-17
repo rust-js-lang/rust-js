@@ -765,14 +765,14 @@ pub fn lower_crate<'tcx>(
                 }
                 consts.push(constant(fns[&def_id].name.clone(), object, export));
                 pass.dictionary_names
-                    .extend(consts[made..].iter().map(|c| c.name.to_string()));
+                    .extend(consts[made..].iter().map(|c| c.name.clone()));
                 if lowered.jsx {
                     pass.jsx.insert(module);
                 }
                 continue;
             }
             pass.dictionary_names
-                .extend(consts[made..].iter().map(|c| c.name.to_string()));
+                .extend(consts[made..].iter().map(|c| c.name.clone()));
         }
         pass.prototypes.read.extend(&lowered.dependencies.prototypes_read);
         match lowered {

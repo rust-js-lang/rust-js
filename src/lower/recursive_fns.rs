@@ -93,8 +93,8 @@ pub(super) struct WrittenBefore {
 
 impl WrittenBefore {
     /// Its `const`s' names, each a dictionary's.
-    pub(super) fn const_names(&self) -> impl Iterator<Item = String> + '_ {
-        self.consts.iter().map(|c| c.name.to_string())
+    pub(super) fn const_names(&self) -> impl Iterator<Item = crate::js::Name> + '_ {
+        self.consts.iter().map(|c| c.name.clone())
     }
 }
 

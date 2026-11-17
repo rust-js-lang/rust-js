@@ -20,7 +20,7 @@ pub(super) struct Pass {
     /// its impl (ADR 0592), that the crate's own code reaches; and the
     /// names of the `const`s each dictionary makes.
     pub(super) dictionary_consts: Vec<(LocalModId, DefId)>,
-    pub(super) dictionary_names: IndexSet<String>,
+    pub(super) dictionary_names: IndexSet<crate::js::Name>,
     /// What fills each item's hole, by its index.
     pub(super) holes: super::holes::Holes,
     /// Which items each module uses from another, and which JS imports.
