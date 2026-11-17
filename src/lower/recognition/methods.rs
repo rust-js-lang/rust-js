@@ -401,7 +401,9 @@ pub(super) fn char_pattern(name: &str) -> Option<TextOp> {
 /// into its function, `partition`'s into one of its two (ADR 0445),
 /// `unzip`'s each half into its own (#1120, #1150), `find_map`'s and
 /// `is_sorted_by_key`'s, std's `self.map(f).is_sorted()`, to its function
-/// (#776); or it drops each it passes over or discards, `filter`'s,
+/// (#776), `is_sorted`'s and `is_sorted_by`'s to `last`, each dropped as the
+/// next replaces it, as `$isSortedBy` drops them (#948); or it drops each it
+/// passes over or discards, `filter`'s,
 /// `skip_while`'s, `count`'s, `max_by`'s and `max_by_key`'s, and `nth`'s,
 /// which gives back the one it stops at (#180). Not `take`'s, of what it
 /// leaves; an adapter that holds its source, `filter_map`'s, is
@@ -431,6 +433,8 @@ pub(in crate::lower) fn keeps_each(name: &str) -> bool {
             | "min_by"
             | "max_by_key"
             | "min_by_key"
+            | "is_sorted"
+            | "is_sorted_by"
             | "eq"
             | "ne"
             | "last"

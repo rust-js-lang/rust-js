@@ -366,12 +366,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         arg_tys: &[Ty<'tcx>],
         span: Span,
     ) -> R<Expr> {
+        // What `$isSortedBy` steps, held (`$steppedHeld`), an array too: a
+        // type parameter's as it's given, not `Iterator.from`'s of it, which
+        // arms a `$Steps` to close itself at its end, a `take` at its limit,
+        // before `last` is dropped (#948).
+        let given = |it: Expr| crate::lower::iterators::iterator_from(&it).cloned().unwrap_or(it);
         match method {
+            // Of items with a destructor, given their drop, each dropped
+            // where std's `is_sorted_by` drops it (#948).
             IterMethod::IsSortedBy => {
                 let f = arg();
                 let ends = self.consumed_ends(Some(method), arg_tys, &f, span)?;
-                let mut args = vec![it, self.binary_callback(f, own)];
-                args.extend(ends);
+                let drop = self.std_drop_function(item, span)?;
+                let mut args = vec![given(it), self.binary_callback(f, own)];
+                match (ends, drop) {
+                    (ends, Some(drop)) => args.extend([ends.unwrap_or_else(Expr::js_undefined), drop]),
+                    (Some(ends), None) => args.push(ends),
+                    (None, None) => {}
+                }
                 Ok(Expr::call_helper("$isSortedBy", args))
             }
             IterMethod::IsSortedByKey => {
@@ -383,7 +395,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let keys = Expr::builtin(it, "map", vec![self.unary_callback(arg(), own)]);
                 self.is_sorted_call(keys, key, key_drop, span)
             }
-            _ => self.is_sorted_call(it, item, None, span),
+            _ => {
+                let drop = self.std_drop_function(item, span)?;
+                self.is_sorted_call(given(it), item, drop, span)
+            }
         }
     }
 

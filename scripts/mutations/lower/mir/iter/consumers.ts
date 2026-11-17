@@ -244,8 +244,8 @@ export const mutations: Mutation[] = [
     name: "is-sorted-by-ends-lost",
     breaks: "`is_sorted_by`'s function that holds what has a destructor is given nothing to drop it by, so it's never dropped (#763)",
     file: "src/lower/mir/iter/consumers.rs",
-    find: "                args.extend(ends);\n                Ok(Expr::call_helper(\"$isSortedBy\", args))\n",
-    replace: "                Ok(Expr::call_helper(\"$isSortedBy\", args))\n",
+    find: "                    (Some(ends), None) => args.push(ends),\n",
+    replace: "                    (Some(_), None) => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_is_sorted_by.rs$"],
   },
   {
@@ -364,4 +364,29 @@ export const mutations: Mutation[] = [
     find: "        (self.is_user_iterator(*iter) || crate::lower::recognition::known_by_bounds(*iter))\n",
     replace: "        self.is_user_iterator(*iter)\n",
     tests: ["test/corpus.test.ts", "-t", "^max_by_key_drops_its_iterator_before_the_kept_key.rs$"],
-  },];
+  },
+  {
+    name: "is-sorted-generic-armed",
+    breaks: "a type parameter's iterator given `is_sorted` is `Iterator.from`'s, which closes a `repeat`'s `take` at its limit, before `last` is dropped (#948)",
+    file: "src/lower/mir/iter/consumers.rs",
+    find: "        let given = |it: Expr| crate::lower::iterators::iterator_from(&it).cloned().unwrap_or(it);\n",
+    replace: "        let given = |it: Expr| it;\n",
+    tests: ["test/corpus.test.ts", "-t", "^is_sorted_of_items_with_a_destructor.rs$"],
+  },
+  {
+    name: "is-sorted-items-undropped",
+    breaks: "`is_sorted()` of items with a destructor drops none of them (#948)",
+    file: "src/lower/mir/iter/consumers.rs",
+    find: "                self.is_sorted_call(given(it), item, drop, span)\n",
+    replace: "                self.is_sorted_call(given(it), item, None, span)\n",
+    tests: ["test/corpus.test.ts", "-t", "^is_sorted_of_items_with_a_destructor.rs$"],
+  },
+  {
+    name: "is-sorted-by-items-undropped",
+    breaks: "`is_sorted_by(f)` of items with a destructor drops none of them (#948)",
+    file: "src/lower/mir/iter/consumers.rs",
+    find: "                    (ends, Some(drop)) => args.extend([ends.unwrap_or_else(Expr::js_undefined), drop]),\n",
+    replace: "                    (ends, Some(_)) => args.extend(ends),\n",
+    tests: ["test/corpus.test.ts", "-t", "^is_sorted_of_items_with_a_destructor.rs$"],
+  },
+];

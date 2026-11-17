@@ -451,11 +451,15 @@ twice before that:
 A `$lent` source's hold stops at the `$lent`, so its lender's iterator goes
 on as it was.
 
-**Who uses it.** `$isSortedBy` with keys or items to drop uses it now.
+**Who uses it.** `$isSortedBy` uses it on every path. That covers the keys
+`is_sorted_by_key` drops (#2027), items with a destructor of `is_sorted` and
+`is_sorted_by` (#948), and items without one, where only the closure's
+captures drop past the end (#2029). Before #2029, that last path closed the
+iterator where two items were out of order, before `all` dropped the
+closure: a wrong drop order.
 
 **Who will.** The other consumers that drop something past the end are
 refused today with items that have a destructor:
-- `is_sorted` and `is_sorted_by` (#948);
 - the comparison family, `cmp`, `partial_cmp` and `lt`, of an iterator that
   ends first while the other gives one more;
 - `eq` of two iterators whose lengths std asks first.

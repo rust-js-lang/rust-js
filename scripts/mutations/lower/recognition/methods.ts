@@ -187,4 +187,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^keys_with_a_destructor_drop_where_std_drops_them.rs$"],
   },
+  {
+    name: "is-sorted-keeps-none",
+    breaks: "`is_sorted` and `is_sorted_by` are taken for consumers that keep none of what they step, though each keeps `last` (#948)",
+    file: "src/lower/recognition/methods.rs",
+    find: "            | \"is_sorted\"\n            | \"is_sorted_by\"\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^is_sorted_of_items_with_a_destructor.rs$"],
+  },
 ];

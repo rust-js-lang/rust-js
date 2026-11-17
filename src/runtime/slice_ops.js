@@ -141,86 +141,58 @@ function $copyWithin(v, start, end, dest, inclusive) {
 // `f`: run at its end and as it unwinds, as std's `all` drops `f` before
 // what's left of the iterator (#763).
 //
-// Given `drop`, of items with a destructor, the keys `is_sorted_by_key`
-// makes: stepped as std's `is_sorted_by` steps them, each item kept as
-// `last` till the next replaces it, and dropped as `*last = curr` drops
-// it, `last` then `curr` though that drop panics. Where two are out of
-// order, `curr` dropped, then what drops with `f`, as `all` ends, then
-// `last`, then what's left of `items` closed, as `is_sorted_by`'s frame
-// drops them, and so as `f` or a step panics (#776). Held while it's
-// stepped, so what it steps isn't closed at its end, a `take` at its limit
-// or a `$closing` done, but after `last` is dropped, as std drops
-// `is_sorted_by`'s `self` after the `all` that holds `last` (#2027,
-// ADR 0570): `$steppedHeld`.
+// Stepped as std's `is_sorted_by` steps it, each item kept as `last` till
+// the next replaces it. Given `drop`, of items with a destructor (#948),
+// or the keys `is_sorted_by_key` makes (#776): each dropped as `*last =
+// curr` drops it, `last` then `curr` though that drop panics; where two
+// are out of order, `curr` dropped. Then, at its end, where two are out of
+// order and as `f` or a step panics, what drops with `f`, `ends`, as
+// `all` drops its closure; then `last`; then the iterator closed, as
+// `is_sorted_by`'s frame drops `self` after the `all` that holds `last`:
+// held while it's stepped, so nothing it steps closes at its end, a `take`
+// at its limit or a `$closing` done (`$steppedHeld`, ADR 0570, #2027,
+// #2029). As it unwinds, Rust's cleanup, where a drop's panic aborts
+// before any drop after it (`$cleanup`, `$dropsUnwinding`, #948).
 function $isSortedBy(items, f, ends, drop) {
-  if (drop !== undefined) {
-    const it = $steppedHeld(items);
-    let last;
-    let holding = false;
-    const end = () =>
-      $inTurn(
-        ends,
-        () => holding && ((holding = false), drop(last)),
-        () => it.return?.(),
-      );
-    let sorted = true;
-    try {
-      let step = it.next();
-      if (!step.done) {
-        last = step.value;
-        holding = true;
-        while (!(step = it.next()).done) {
-          const item = step.value;
-          let ordered;
-          try {
-            ordered = f(last, item);
-          } catch (error) {
-            drop(item);
-            throw error;
-          }
-          if (!ordered) {
-            drop(item);
-            sorted = false;
-            break;
-          }
-          const replaced = last;
-          last = item;
-          drop(replaced);
-        }
-      }
-    } catch (error) {
-      try {
-        end();
-      } catch {}
-      throw error;
-    }
-    end();
-    return sorted;
-  }
-  // Stepped by hand, closed where its step throws, a panic, as `for..of`
-  // doesn't, and where it stops early, as `is_sorted_by(self)` drops what
-  // it took (#1126).
-  const it = typeof items.next === "function" ? items : items[Symbol.iterator]();
-  let first = true;
+  const it = $steppedHeld(items);
   let last;
+  let holding = false;
+  const held = [
+    ends,
+    () => holding && ((holding = false), drop?.(last)),
+    () => it.return?.(),
+  ];
+  let sorted = true;
   try {
-    return $unwinds(
-      () => {
-        for (let step = it.next(); !step.done; step = it.next()) {
-          if (!first && !f(last, step.value)) {
-            it.return?.();
-            return false;
-          }
-          first = false;
-          last = step.value;
+    let step = it.next();
+    if (!step.done) {
+      last = step.value;
+      holding = true;
+      while (!(step = it.next()).done) {
+        const item = step.value;
+        let ordered;
+        try {
+          ordered = f(last, item);
+        } catch (error) {
+          if (drop !== undefined) $cleanup(() => drop(item), error);
+          throw error;
         }
-        return true;
-      },
-      () => it.return?.(),
-    );
-  } finally {
-    ends?.();
+        if (!ordered) {
+          drop?.(item);
+          sorted = false;
+          break;
+        }
+        const replaced = last;
+        last = item;
+        drop?.(replaced);
+      }
+    }
+  } catch (error) {
+    $dropsUnwinding(held);
+    throw error;
   }
+  $inTurn(...held);
+  return sorted;
 }
 
 // `is_sorted_by_key(f, cmp)`: `f` of each item once, as an iterator's is, up
