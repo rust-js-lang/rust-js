@@ -1,7 +1,7 @@
 //! A `while` that counts its variable last, as a `for` that steps it (ADR
 //! 0974); and a counter read and then stepped, `x++` (ADR 0948).
 
-use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind};
 
 /// `let i = 0; while (i < n) { ..; i++; }`: `for (let i = 0; i < n; i++)
 /// { .. }`, as React counts. Each runs the same: the start, then the test,
@@ -51,15 +51,15 @@ fn stepped(declared: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> {
         _ => return None,
     };
     if !matches!(&target.kind, ExprKind::Var(v) if v == name)
-        || !cond.mentions_var(name.word())
-        || js::mentions_in(after, name.word()) > 0
+        || !cond.mentions_name(name)
+        || js::mentions_of(after, name) > 0
         || js::continues(rest, label.as_ref())
         || js::Writes::sets(rest, name)
-        || in_function(body, name.word())
-        || function_names(cond, name.word())
+        || in_function(body, name)
+        || function_names(cond, name)
         || step
             .value()
-            .is_some_and(|value| function_names(value, name.word()) || reads_declared(value, rest))
+            .is_some_and(|value| function_names(value, name) || reads_declared(value, rest))
     {
         return None;
     }
@@ -82,23 +82,24 @@ fn reads_declared(value: &Expr, stmts: &[Stmt]) -> bool {
     declared
 }
 
-/// Whether a function in `stmts`, declared or a value, names `name`.
-fn in_function(stmts: &[Stmt], name: &str) -> bool {
+/// Whether a function in `stmts`, declared or a value, names the variable
+/// `name`, by its id (ADR 1150).
+fn in_function(stmts: &[Stmt], name: &Name) -> bool {
     let mut named = false;
     js::each_list(stmts, &mut |list| {
-        named |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_in(&f.body, name) > 0));
+        named |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_of(&f.body, name) > 0));
     });
     js::each_expr(stmts, &mut |e| named |= function_names(e, name));
     named
 }
 
-/// Whether `e` is, or holds, a function that names `name`.
-fn function_names(e: &Expr, name: &str) -> bool {
+/// Whether `e` is, or holds, a function that names the variable `name`.
+fn function_names(e: &Expr, name: &Name) -> bool {
     let mut named = false;
     e.each(&mut |e| {
         named |= match &e.kind {
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => js::mentions_in(body, name) > 0,
-            ExprKind::Function(function) => js::mentions_in(&function.body, name) > 0,
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => js::mentions_of(body, name) > 0,
+            ExprKind::Function(function) => js::mentions_of(&function.body, name) > 0,
             _ => false,
         };
     });

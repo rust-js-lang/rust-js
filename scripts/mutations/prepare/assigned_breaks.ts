@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     name: "assigned-break-read-twice",
     breaks: "a test that reads its value twice, `next != null && next.value > 1`, reads the field twice, `(next = node.next) != null && (next = node.next).value > 1` (rd148)",
     file: "src/prepare/assigned_breaks.rs",
-    find: "if matches!(&a.kind, ExprKind::Var(t) if t == made) && !b.mentions_var(made.word()));",
+    find: "if matches!(&a.kind, ExprKind::Var(t) if t == made) && !b.mentions_name(made));",
     replace: "if matches!(&a.kind, ExprKind::Var(t) if t == made));",
     tests: corpus,
     snapshots: true,

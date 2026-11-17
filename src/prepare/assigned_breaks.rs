@@ -2,7 +2,7 @@
 //! read, as JS writes it: `if ((next = node.nextSibling) !== null) {
 //! break; }` (rd148).
 
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// `let v; while (true) { ..; const t = e; if (t !== null) { v = t; break;
 /// } .. }`, the loop's value given at its one way out, `let next = loop {
@@ -28,8 +28,8 @@ pub(super) fn assigned_breaks(stmts: &mut [Stmt]) {
         let Some((variable, test, span)) = taken(&mut others, label.as_ref().map(|n| n.word())) else {
             continue;
         };
-        let declared = (before.iter()).any(|s| matches!(&s.kind, StmtKind::Let(n, None) if n.is(&variable)));
-        if !declared || js::mentions_in(&others, &variable) > 0 {
+        let declared = (before.iter()).any(|s| matches!(&s.kind, StmtKind::Let(n, None) if n == &variable));
+        if !declared || js::mentions_of(&others, &variable) > 0 {
             continue;
         }
         let way_out = StmtKind::If(test, vec![StmtKind::Break(None).at(js::Span::NONE)], None).at(span);
@@ -50,7 +50,7 @@ const WAY_OUT: &str = "an assigned break";
 /// The first way out of `list`, a loop's body, `assigned_at`'s, in it or
 /// in its `if`s' branches, taken out, `WAY_OUT` in its place: its
 /// variable, its test and where it's written.
-fn taken(list: &mut Vec<Stmt>, label: Option<&str>) -> Option<(String, Expr, js::Span)> {
+fn taken(list: &mut Vec<Stmt>, label: Option<&str>) -> Option<(Name, Expr, js::Span)> {
     for k in 0..list.len() {
         if k + 1 < list.len()
             && let Some((variable, test)) = assigned_at(list, k, label)
@@ -74,7 +74,7 @@ fn taken(list: &mut Vec<Stmt>, label: Option<&str>) -> Option<(String, Expr, js:
 /// Of `body`'s `const t = e; if (T(t)) { v = t; break; }` at `k`: `v`, and
 /// `T((v = e))`, where `T` reads `t` first, once, and nothing after reads
 /// it.
-fn assigned_at(body: &[Stmt], k: usize, label: Option<&str>) -> Option<(String, Expr)> {
+fn assigned_at(body: &[Stmt], k: usize, label: Option<&str>) -> Option<(Name, Expr)> {
     let [
         Stmt {
             kind: StmtKind::Const(made, value),
@@ -105,15 +105,15 @@ fn assigned_at(body: &[Stmt], k: usize, label: Option<&str>) -> Option<(String, 
         return None;
     };
     let tested_first = matches!(&test.kind, ExprKind::Binary(_, a, b)
-        if matches!(&a.kind, ExprKind::Var(t) if t == made) && !b.mentions_var(made.word()));
+        if matches!(&a.kind, ExprKind::Var(t) if t == made) && !b.mentions_name(made));
     if read != made
         || !(l.is_none() || l.as_ref().map(|n| n.word()) == label)
         || !tested_first
-        || js::mentions_in(&body[k + 2..], made.word()) > 0
+        || js::mentions_of(&body[k + 2..], made) > 0
     {
         return None;
     }
     let assigned = Expr::assigned(Expr::var(variable), value.clone());
-    let test = test.substitute(&|n: &str| made.is(n).then(|| assigned.clone()))?;
-    Some((variable.to_string(), test))
+    let test = test.substitute_names(&|n| (n == made).then(|| assigned.clone()))?;
+    Some((variable.clone(), test))
 }

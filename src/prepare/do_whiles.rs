@@ -79,8 +79,8 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
             .iter()
             .any(|a| !a.variable.is(variable.word()) || !same(&a.test, &first.test))
         || js::continues(&turn, label.as_ref())
-        || js::mentions_in(after, variable.word()) > 0
-        || in_function(&turn, variable.word())
+        || js::mentions_of(after, variable) > 0
+        || in_function(&turn, variable)
     {
         return None;
     }
@@ -114,7 +114,7 @@ fn tested_last(label: &Option<Name>, body: &[Stmt], looped: js::Span) -> Option<
     };
     if !matches!(&then[..], [Stmt { kind: StmtKind::Break(l), .. }] if ours(l))
         || js::continues(turn, label.as_ref())
-        || js::declared_names(turn).iter().any(|name| done.mentions_var(name))
+        || reads_declared(done, turn)
     {
         return None;
     }
@@ -262,27 +262,36 @@ fn given(test: &Expr, value: &Expr, variable: &Name) -> Option<Expr> {
             *e = Expr::var(hole.clone()).or_at(e.span);
         }
     });
-    if holed.mentions_var(variable.word()) || !holed.mentions_var(HOLE) {
+    if holed.mentions_name(variable) || !holed.mentions_name(&hole) {
         return None;
     }
     holed.each_mut(&mut |e| {
-        if matches!(&e.kind, ExprKind::Var(v) if v.is(HOLE)) {
+        if matches!(&e.kind, ExprKind::Var(v) if v == &hole) {
             *e = Expr::var(variable.clone()).or_at(e.span);
         }
     });
     Some(holed)
 }
 
-/// Whether a function in `stmts`, declared or a value, names `name`.
-fn in_function(stmts: &[Stmt], name: &str) -> bool {
+/// Whether `test` reads a variable `stmts` declare, by its id: the body's,
+/// out of the `do`'s test's scope.
+fn reads_declared(test: &Expr, stmts: &[Stmt]) -> bool {
+    let mut declared = false;
+    test.visit_names(&mut |v| declared |= js::declares(stmts, v));
+    declared
+}
+
+/// Whether a function in `stmts`, declared or a value, names the variable
+/// `name`, by its id (ADR 1150).
+fn in_function(stmts: &[Stmt], name: &Name) -> bool {
     let mut named = false;
     js::each_list(stmts, &mut |list| {
-        named |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_in(&f.body, name) > 0));
+        named |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_of(&f.body, name) > 0));
     });
     js::each_expr(stmts, &mut |e| {
         named |= match &e.kind {
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => js::mentions_in(body, name) > 0,
-            ExprKind::Function(function) => js::mentions_in(&function.body, name) > 0,
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => js::mentions_of(body, name) > 0,
+            ExprKind::Function(function) => js::mentions_of(&function.body, name) > 0,
             _ => false,
         };
     });
