@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2671
-lines	359253
+files	2673
+lines	359510
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.2
-$iter	3038	84.6
-Iterator.from	362	10.1
+$iter	3048	84.8
+Iterator.from	363	10.1
 return;	346	9.6
-renamed x$1	16707	465
-role fallbacks	9089	253
+renamed x$1	16718	465
+role fallbacks	9096	253
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -489,9 +489,10 @@ test/corpus/copied_default_of_a_wrapper_normalizes_its_items_drop.js	173	0	0	0	0
 test/corpus/copied_default_own_params.js	58	0	0	0	2	0	0	0	2
 test/corpus/copied_default_through_its_entry.js	357	0	0	0	0	0	0	11	2
 test/corpus/copied_given_back.js	35	0	0	0	1	0	0	0	1
-test/corpus/copied_given_len.js	139	0	0	0	5	1	1	5	4
+test/corpus/copied_given_len.js	154	0	0	0	6	2	1	7	5
 test/corpus/copied_given_to_generic_backs.js	79	0	0	0	4	0	0	6	4
 test/corpus/copied_iterator_defaults.js	273	0	0	1	1	0	0	4	6
+test/corpus/copied_kept_as_its_source.js	113	0	0	0	6	0	0	9	5
 test/corpus/copied_of_a_copy_with_its_own_clone.js	270	0	0	0	9	0	0	18	7
 test/corpus/copied_of_a_parameter.js	31	0	0	0	4	2	0	2	2
 test/corpus/copied_of_generic_code_knowing_its_back.js	69	0	0	0	3	0	0	0	0
@@ -820,7 +821,7 @@ test/corpus/flat_map_drops.js	160	0	0	0	10	0	0	0	2
 test/corpus/flat_map_inner_iterables.js	54	0	0	0	0	0	0	0	1
 test/corpus/flat_map_of_a_bound_reference.js	141	0	0	0	6	0	0	11	5
 test/corpus/flat_map_of_a_maps_iterators_grows_a_vec.js	48	0	0	0	2	0	0	0	1
-test/corpus/flat_map_of_a_where_clause_into_iterator.js	263	0	0	0	6	0	0	30	12
+test/corpus/flat_map_of_a_where_clause_into_iterator.js	272	0	0	0	6	0	0	30	12
 test/corpus/flat_map_of_given_adapters_from_its_back.js	1365	0	0	0	4	0	0	12	6
 test/corpus/flat_map_of_maps_from_its_back.js	57	0	0	0	8	0	0	0	0
 test/corpus/flatten_boxed_options.js	76	0	0	0	0	0	0	0	1
@@ -2389,6 +2390,7 @@ test/corpus/trailing_none_arguments_left_out.js	61	0	0	0	0	0	0	0	1
 test/corpus/trailing_none_items.js	82	0	0	0	0	0	0	0	1
 test/corpus/trait_default_bounds.js	86	0	0	0	0	0	0	0	0
 test/corpus/trait_default_flat_map_of_arrays_collects_trusted.js	111	0	0	0	9	1	0	12	7
+test/corpus/trait_default_given_its_callers_facts_of_self.js	120	0	0	0	3	0	0	0	1
 test/corpus/trait_default_impl_const.js	34	0	0	0	0	0	0	0	0
 test/corpus/trait_default_of_its_associated_type.js	47	0	0	0	0	0	0	0	0
 test/corpus/trait_default_takes_an_iterator_as_its_callers_give_it.js	155	0	0	0	1	0	0	4	1

@@ -74,6 +74,19 @@ fn moved_plain<'a, I: ExactSizeIterator<Item = &'a Point>>(it: I) -> (Point, usi
     (first, copied.len(), copied.collect())
 }
 
+// A copy of structs handed on to what asks its length, whose JS iterator
+// is the map that copies each item as it's stepped, which knows it too.
+fn len_of<J: ExactSizeIterator>(j: J) -> usize {
+    j.len()
+}
+
+fn moved_on<'a, I: ExactSizeIterator<Item = &'a Point>>(it: I) -> (Point, usize) {
+    let mut copied = it.copied();
+    let mut first = copied.next().unwrap();
+    first.x += 20;
+    (first, len_of(copied))
+}
+
 fn lent<'a, I: ExactSizeIterator<Item = &'a u32> + Clone>(mut it: I) -> (usize, Option<u32>, usize) {
     let mut copied = (&mut it).copied();
     copied.next();
@@ -96,6 +109,7 @@ fn main() {
     let points = vec![Point { x: 1 }, Point { x: 2 }, Point { x: 3 }];
     println!("{:?}", moved(points.iter()));
     println!("{:?}", moved_plain(points.iter()));
+    println!("{:?}", moved_on(points.iter()));
     println!("{points:?}");
     println!("{:?} {:?}", lent(refs(0)), lent_plain(ITEMS.iter().rev()));
 }

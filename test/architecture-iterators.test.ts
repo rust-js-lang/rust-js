@@ -806,3 +806,54 @@ test("a function's return provenance is returned.rs's, and the in-place adapters
   expect(read("src/lower/pointers/returned.rs")).not.toMatch(/"(map|filter|enumerate|zip|skip|take)"/);
 });
 
+
+// Each of `MEANING_ONLY`'s entries says why it's there, so the list can't
+// hold an unproved hand form (ADR 1136, amended): on its way to being held
+// as std's struct, of an issue; or kept, its hand form proved equal to
+// std's, of an ADR and its proof, a test file or the copy matrix's rows,
+// each of which exists.
+test("each MEANING_ONLY entry is on its way, of an issue, or kept, of an ADR and the rows that prove it", async () => {
+  const source = read("src/lower/recognition/compiled_std.rs");
+  const list = source.match(/^const MEANING_ONLY: &\[StdPath\] = &\[\n([\s\S]*?)^\];/m);
+  expect(list).not.toBeNull();
+  const problems: string[] = [];
+  let said: string[] = [];
+  for (const line of list![1].split("\n")) {
+    const comment = line.match(/^\s*\/\/ (.*)$/);
+    if (comment) {
+      said.push(comment[1]);
+      continue;
+    }
+    const entry = line.match(/^\s*StdPath::(\w+),$/);
+    if (!entry) continue;
+    const why = said.join(" ");
+    said = [];
+    if (/^On its way: #\d+/.test(why)) continue;
+    if (!/^Kept, proved equal:/.test(why)) {
+      problems.push(`${entry[1]}: neither "On its way: #<issue>" nor "Kept, proved equal: .. (ADR <n>). Proof: .."`);
+      continue;
+    }
+    const adr = why.match(/\(ADR (\d{4})\)/)?.[1];
+    if (adr === undefined || !readdirSync(join(root, "docs", "decisions")).some((file) => file.startsWith(`${adr}-`))) {
+      problems.push(`${entry[1]}: its ADR, ${adr ?? "none"}, isn't one`);
+    }
+    const proof = why.match(/Proof: (.*)$/)?.[1] ?? "";
+    const paths = [...proof.matchAll(/(test\/[\w/.-]+\.(?:rs|ts))/g)].map((m) => m[1]);
+    const rows = [...proof.matchAll(/ITERATOR_TABLE=(\w+) ITERATOR_MATRIX=(\/[^\s]+\/)/g)];
+    if (paths.length + rows.length === 0) problems.push(`${entry[1]}: its proof names no test file or matrix rows`);
+    for (const path of paths) {
+      try {
+        read(path);
+      } catch {
+        problems.push(`${entry[1]}: its proof's ${path} doesn't exist`);
+      }
+    }
+    const { tableOf } = await import("./matrix-tables");
+    for (const [, table, pattern] of rows) {
+      const re = new RegExp(pattern.slice(1, -1));
+      const found = tableOf(table as "copies").cases().filter((c: { id: string }) => re.test(c.id)).length;
+      if (found === 0) problems.push(`${entry[1]}: its proof's ${table} rows ${pattern} are none`);
+    }
+  }
+  expect(problems).toEqual([]);
+});

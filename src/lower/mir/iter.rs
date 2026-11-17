@@ -1197,7 +1197,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
         let back = self.knows_its_back(output);
-        let ends = back || self.knows_its_length(output);
+        // Of one that knows its length and not its back, the map that
+        // copies its items would lose it; none reaches here: a copy that
+        // knows its length is of what knows its back too (#1979).
+        let ends = back;
         let source = crate::lower::recognition::copied_source(self.tcx, output)
             .or_else(|| crate::lower::recognition::cloned_source(self.tcx, output));
         let it = match source {

@@ -75,6 +75,19 @@ function movedPlain(it) {
   return [{ ...first }, copied.len(), $collectDropping($roomForHint(copied, 4, false))];
 }
 
+// A copy of structs handed on to what asks its length, whose JS iterator
+// is the map that copies each item as it's stepped, which knows it too.
+function lenOf(j) {
+  return j.len();
+}
+
+function movedOn(it) {
+  const copied = $mapEnds(Iterator.from(it), (item) => ({ ...item }));
+  const first = $unwrap($next(copied));
+  first.x = (first.x + 20) >>> 0;
+  return [{ ...first }, lenOf(copied)];
+}
+
 function lent(it, IIterator, IExactSizeIterator, IClone) {
   const copied = $lent($given(it, IIterator, false, undefined, IExactSizeIterator.len));
   $next(copied);
@@ -123,16 +136,18 @@ function main() {
   console.log(
     `(${pointDebug_fmt(value$1[0])}, ${value$1[1]}, [${value$1[2].map((item) => pointDebug_fmt(item)).join(", ")}])`,
   );
+  const value$2 = movedOn($iter(points));
+  console.log(`(${pointDebug_fmt(value$2[0])}, ${value$2[1]})`);
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
-  const value$2 = lent(
+  const value$3 = lent(
     refs(0),
     { next: refsIterator_next, sizeHint: refsIterator_sizeHint },
     refsExactSizeIterator,
     refsClone,
   );
-  const value$3 = lentPlain($iter(ITEMS.toReversed()));
+  const value$4 = lentPlain($iter(ITEMS.toReversed()));
   console.log(
-    `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}, ${value$2[2]}) (${value$3[0]}, [${value$3[1].join(", ")}], ${value$3[2] == null ? "None" : `Some(${value$3[2]})`})`,
+    `(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}, ${value$3[2]}) (${value$4[0]}, [${value$4[1].join(", ")}], ${value$4[2] == null ? "None" : `Some(${value$4[2]})`})`,
   );
 }
 //# sourceMappingURL=case.js.map

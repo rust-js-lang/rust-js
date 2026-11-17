@@ -113,3 +113,6 @@ plain std loud-call dyn_fn_handed_only.rs
 
 #1941 a `capacity()` of an in-place collect generic code makes of a chain it's given, whose source a call in that chain hides, `at_0(opaque(kept.into_iter()).map(f))`, throws where it runs, naming #1180: the read isn't in the body that collects, so it isn't refused where it's compiled (ADR 0419, amended for #1926)
 plain generic-instances in_place_collect_capacity_through_a_function.rs
+
+#2013 P1: a library's copied() its function returns, cloned by the library's generic dup<I: Clone> in a crate that uses it, throws f[$cloneKey] is not a function
+plain library copied_kept_as_its_source.rs

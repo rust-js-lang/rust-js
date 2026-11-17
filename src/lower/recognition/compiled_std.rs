@@ -540,10 +540,21 @@ pub(crate) fn is_proved_link(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// `@rust-js/std` and std's struct in the build of std's structs alone, the
 /// differential build (ADR 0908), and what the recognizers make wherever
 /// the crate makes one in any other, as before it was compiled.
+///
+/// Each entry says why it's here, as test/architecture-iterators.test.ts
+/// checks: on its way to being held as std's struct, of an issue; or kept,
+/// its hand form proved equal to std's, of an ADR and the rows that prove
+/// it, each of which exists (ADR 1136, amended).
 const MEANING_ONLY: &[StdPath] = &[
+    // On its way: #1681's change 2.
     StdPath::IterRepeatN,
+    // On its way: #1681's change 2.
     StdPath::IterCycle,
+    // Kept, proved equal: a copy of a `Copy` item is the item (ADR 0480).
+    // Proof: test/corpus/copied_kept_as_its_source.rs; the copy matrix's
+    // rows ITERATOR_TABLE=copies ITERATOR_MATRIX=/[ .]copied[ .|]/.
     StdPath::IterCopied,
+    // On its way: #1681's change 2.
     StdPath::IterCloned,
 ];
 

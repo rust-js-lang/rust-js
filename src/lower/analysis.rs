@@ -9,7 +9,7 @@ mod ground;
 pub(super) use ground::{Ground, of as ground};
 mod hint_asked;
 use crate::collections::{IndexMap, IndexSet};
-pub(in crate::lower) use back_stepped::{Asked, BackStepped, LengthAsked, SteppedLocal, field_of, made_by};
+pub(in crate::lower) use back_stepped::{Asked, BackStepped, LengthAsked, SteppedLocal, field_of};
 mod callers_decide;
 mod cell_borrows;
 mod cell_flow;

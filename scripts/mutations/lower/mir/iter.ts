@@ -21,15 +21,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^enumerate_next_back_of_items.rs$"],
   },
   {
-    name: "copied-items-mapped-lengthless",
-    breaks:
-      "a `copied()` that knows its length, of items copied as it steps, is JS's `map` of them, whose `len()` throws (#387)",
-    file: "src/lower/mir/iter.rs",
-    find: "        let ends = back || self.knows_its_length(output);\n",
-    replace: "        let ends = back || false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
-  },
-  {
     name: "cloned-apart-filter-unknowing",
     breaks:
       "a held `filter()` cloned apart and stepped from its back is JS's `it.filter(f)`, which has no back: `TypeError: it.back is not a function` (ADR 0984)",

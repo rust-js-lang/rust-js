@@ -789,29 +789,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Of std's own adapter methods alone, whose makers ask it, not
                 // what a function gives, nor std's compiled struct, which no
                 // maker makes knowing it.
-                let call_of = fn_def(func.ty(&state.body.local_decls, self.tcx));
-                let callee = call_of.map(|(def_id, _)| def_id);
-                // Or what a function or a closure of the crate's makes it into,
-                // its return place, made knowing its back there (#851).
-                let given_back = call_of.is_some_and(|(def_id, args)| {
-                    let made_by = crate::lower::analysis::made_by(self.tcx, def_id, args);
-                    self.krate
-                        .back_stepped
-                        .locals
-                        .contains_key(&(made_by, mir::RETURN_PLACE))
-                });
+                // What a function or a closure of the crate's makes it into,
+                // made knowing its back in its return place, is made so by its
+                // maker, `back_stepped`'s `asked_of`, already (#851, #1979).
+                let callee = fn_def(func.ty(&state.body.local_decls, self.tcx)).map(|(def_id, _)| def_id);
                 let value = match (value, into) {
                     (Value::Expr(e), Some((local, made)))
                         if self.local_stepped_from_its_back(local).is_some()
                             && self.made_knowing_its_back_by_its_maker(made)
-                            && (given_back
-                                || callee.is_some_and(|callee| {
-                                    let iterator = crate::lower::recognition::std_item(
-                                        self.tcx,
-                                        crate::lower::recognition::StdItem::Iterator,
-                                    );
-                                    self.tcx.trait_of_assoc(callee) == Some(iterator)
-                                }))
+                            && callee.is_some_and(|callee| {
+                                let iterator = crate::lower::recognition::std_item(
+                                    self.tcx,
+                                    crate::lower::recognition::StdItem::Iterator,
+                                );
+                                self.tcx.trait_of_assoc(callee) == Some(iterator)
+                            })
                             && !self.compiled_struct(made, &e) =>
                     {
                         Value::Expr(crate::lower::iterators::made_knowing_its_back(e))

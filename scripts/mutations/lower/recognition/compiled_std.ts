@@ -98,8 +98,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Cloned` isn't `MEANING_ONLY`, so the normal build makes a held `cloned()` std's struct, not the JS iterator the recognizers make of it: the normal build's JS changes (#727, ADR 0938)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    StdPath::IterCopied,\n    StdPath::IterCloned,\n];\n',
-    replace: '    StdPath::IterCopied,\n];\n',
+    find: '    // On its way: #1681\'s change 2.\n    StdPath::IterCloned,\n];\n',
+    replace: "];\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^cloned_items_from_both_ends.rs$"],
   },
