@@ -100,8 +100,8 @@ pub(super) fn unread(
 ) {
     let mut read = IndexSet::default();
     for item in &lowered.items {
-        item.visit_vars(&mut |name| {
-            read.insert(name.to_string());
+        item.visit_names(&mut |name| {
+            read.insert(name.word().to_string()); // word: a module's import, which its local's word names
         });
     }
     let analyzed = |from: &str, export: &str| {

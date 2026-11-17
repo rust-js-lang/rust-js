@@ -868,7 +868,14 @@ impl<'a> Cx<'a> {
                         None => self.pattern(var),
                     };
                     // `{ x }` for `{ x: x }`.
-                    BindingProperty::new(SPAN, key, value, var.name() == Some(field.as_str()), false, b)
+                    BindingProperty::new(
+                        SPAN,
+                        key,
+                        value,
+                        var.name().map(js::Name::word) == Some(field.as_str()),
+                        false,
+                        b,
+                    )
                 });
                 let rest = rest
                     .as_ref()

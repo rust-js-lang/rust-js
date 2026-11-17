@@ -547,7 +547,7 @@ impl OutputPlan {
                     taken.insert(function.name.word().to_string()); // word: the printed module's, which a helper's import is kept apart from
                 }
                 js::Item::Statements(stmts) => taken.extend(js::declared_names(stmts)),
-                _ => taken.extend(item.declared().map(str::to_string)),
+                _ => taken.extend(item.declared_name().map(|name| name.word().to_string())), // word: the printed module's, which a helper's import is kept apart from
             }
         }
         taken.extend(js_module.packages.iter().flat_map(|package| {

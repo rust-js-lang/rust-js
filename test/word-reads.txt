@@ -3,10 +3,8 @@
 # step): a ratchet that only falls (test/architecture-names.test.ts). A
 # question of a variable asks its `Name`; a word read here is one the
 # spelling step hasn't moved yet. Step done when only diagnostics are left.
-src/js.rs	2
 src/js/applied.rs	3
 src/js/expr_walk.rs	5
-src/js/pattern.rs	1
 src/js/stmt_walk.rs	3
 src/js/validate.rs	2
 src/lower.rs	2
@@ -22,7 +20,7 @@ src/lower/mir/tidy/contracts.rs	4
 src/lower/mir/tidy/copied.rs	2
 src/lower/mir/tidy/decisions.rs	1
 src/lower/mir/tidy/decisions/paths.rs	1
-src/lower/mir/tidy/values.rs	2
+src/lower/mir/tidy/values.rs	1
 src/lower/pipeline/copies.rs	3
 src/lower/std_types/cell/variables.rs	2
 src/lower/temporary_names.rs	1

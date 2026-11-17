@@ -77,9 +77,9 @@ impl Pattern {
     }
 
     /// The variable it is, if it's one.
-    pub fn name(&self) -> Option<&str> {
+    pub fn name(&self) -> Option<&Name> {
         match self {
-            Pattern::Name(name) => Some(name.word()),
+            Pattern::Name(name) => Some(name),
             _ => None,
         }
     }

@@ -199,19 +199,6 @@ impl Item {
         function.into_iter().chain(methods.into_iter().flatten())
     }
 
-    /// Each variable it reads, its functions' bodies' too.
-    pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
-        match self {
-            Item::Namespace(namespace) => {
-                namespace.constants.iter().for_each(|c| c.value.visit_vars(read));
-                namespace.methods.iter().for_each(|m| m.visit_vars(read));
-            }
-            Item::Const(constant) => constant.value.visit_vars(read),
-            Item::Statements(stmts) => visit_stmts(stmts, read),
-            Item::Function(function) => function.visit_vars(read),
-        }
-    }
-
     /// Each variable it reads, its functions' bodies' too: its `Name`.
     pub fn visit_names<'a>(&'a self, read: &mut dyn FnMut(&'a Name)) {
         match self {
@@ -241,12 +228,6 @@ impl Item {
     /// Where it's first written in the crate's sources, of one that is.
     pub fn written_at(&self) -> Option<u32> {
         self.spans().iter().map(|span| span.lo).min()
-    }
-
-    /// The variable it declares at its module's top that another item can
-    /// read: a `const`'s, a type's.
-    pub fn declared(&self) -> Option<&str> {
-        self.declared_name().map(|name| name.word())
     }
 
     /// The variable it declares at its module's top that another item can
@@ -416,11 +397,6 @@ pub struct Function {
 }
 
 impl Function {
-    /// The word of each variable it reads, `visit_names`' spelled.
-    pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
-        self.visit_names(&mut |name| read(name.word()));
-    }
-
     /// Each variable it reads: its parameters' defaults', `IIterator = {
     /// next: $next }`'s (ADR 0995), and its body's; its `Name`, so its id.
     pub fn visit_names<'a>(&'a self, read: &mut dyn FnMut(&'a Name)) {

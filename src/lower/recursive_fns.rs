@@ -158,8 +158,8 @@ impl<'tcx> ModuleFns<'tcx> {
         }
         let mut read: IndexSet<String> = IndexSet::default();
         items.iter().for_each(|function| {
-            function.visit_vars(&mut |name: &str| {
-                read.insert(name.to_owned());
+            function.visit_names(&mut |name| {
+                read.insert(name.word().to_owned()); // word: a module's function value, which its word names
             })
         });
         self.drop_unread_values(&read);
@@ -200,8 +200,8 @@ impl<'tcx> ModuleFns<'tcx> {
         loop {
             let mut read = by_items.clone();
             self.functions_mut().for_each(|function| {
-                function.visit_vars(&mut |name: &str| {
-                    read.insert(name.to_owned());
+                function.visit_names(&mut |name| {
+                    read.insert(name.word().to_owned()); // word: a module's function value, which its word names
                 })
             });
             let mut dropped = false;

@@ -138,7 +138,7 @@ fn aliased_imports(module: &mut js::Module) {
             // By its word: a declaration of it anywhere, another
             // function's own variable too, takes the import's name.
             names_mut(item, false, &mut |name| declared += usize::from(name.is(alias.word())));
-            if item.declared() == Some(alias.word()) {
+            if item.declared_name().map(js::Name::word) == Some(alias.word()) {
                 declared += 1;
             }
         }
@@ -495,8 +495,8 @@ fn reclaimable<'a>(name: &'a str, mentioned: &IndexSet<String>) -> Option<&'a st
 pub(super) fn mentions(module: &mut js::Module) -> IndexSet<String> {
     let mut names = IndexSet::default();
     for item in &mut module.items {
-        if let Some(name) = item.declared() {
-            names.insert(name.to_string());
+        if let Some(name) = item.declared_name() {
+            names.insert(name.word().to_string());
         }
         names_mut(item, true, &mut |name| {
             names.insert(name.word().to_string());
