@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
       "a map of a type parameter's keys is a `Map`, whatever its caller's keys are",
     file: "src/lower/std_types/map.rs",
     find: "                _ => self.given_fact_of(key, fact),\n",
-    replace: '                _ => Some(Expr::var("Map")),\n',
+    replace: '                _ => Some(Expr::global("Map")),\n',
     tests: ["test/corpus.test.ts", "-t", "^item_keyed_map.rs$"],
   },
   {
@@ -618,7 +618,7 @@ export const mutations: Mutation[] = [
     breaks: "a set's operator, `&a | &b`, of items that are objects, is a plain `Set`, which finds an item by identity: `contains` false, `insert` adding one it holds (#961)",
     file: "src/lower/std_types/map.rs",
     find: "                let class = self.map_class(true, self.is_sorted(receiver), (Some(item), None), span)?;\n",
-    replace: "                let class = Expr::var(\"Set\");\n",
+    replace: "                let class = Expr::global(\"Set\");\n",
     tests: ["test/corpus.test.ts", "-t", "^set_operators_find_by_value.rs$"],
   },
   {

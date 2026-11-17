@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/impls.rs",
     find: "                    vec![Expr::module(cache), keys, make],\n",
     replace:
-      '                    vec![Expr::new_(Expr::var("WeakMap"), Vec::new()), keys, make],\n',
+      '                    vec![Expr::new_(Expr::global("WeakMap"), Vec::new()), keys, make],\n',
     tests: ["test/traits.test.ts", "-t", "dictionaries are explicit"],
   },
   {

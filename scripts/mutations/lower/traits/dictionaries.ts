@@ -923,7 +923,7 @@ export const mutations: Mutation[] = [
     breaks: "a list's `Extend` dictionary drops the iterator its own `fold` took and dropped, twice (#1511)",
     file: "src/lower/traits/dictionaries.rs",
     find: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::js_undefined(),\n",
-    replace: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::var(\"dropIter\"),\n",
+    replace: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::var(drop_iter_param.clone()),\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator\\.rs$"],
   },
   {

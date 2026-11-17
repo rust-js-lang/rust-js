@@ -275,7 +275,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_impls/clones.rs",
     find: '                // part read more than once of a `RefCell` inside (#200).\n                let param = self.fresh(Role::Value);\n',
     replace:
-      '                // part read more than once of a `RefCell` inside (#200).\n                let param = String::from("value");\n',
+      '                // part read more than once of a `RefCell` inside (#200).\n                let param = js::Name::declared("value".to_string());\n',
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_nested_parts.rs$"],
   },
   {

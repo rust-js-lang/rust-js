@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: '        false => Expr::call_helper("$intoIter", vec![items]),\n',
     replace:
-      '        false => Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![items]),\n',
+      '        false => Expr::call(Expr::member(Expr::global("Iterator"), "from"), vec![items]),\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_into_iter_values.rs$"],
   },
   {

@@ -255,7 +255,7 @@ export const mutations: Mutation[] = [
     breaks: "a loop's test's `(step = iterator.next())` sets another variable, `unset`, its `step` never set (ADR 0860)",
     file: "src/to_oxc/expressions.rs",
     find: "                self.assignment_target(target),\n                self.expr(value),\n",
-    replace: "                self.assignment_target(&js::Expr::var(\"unset\")),\n                self.expr(value),\n",
+    replace: "                self.assignment_target(&js::Expr::var(js::Name::declared(\"unset\".to_string()))),\n                self.expr(value),\n",
     tests: ["test/corpus.test.ts", "-t", "loop_assigned_tests"],
   },
   {

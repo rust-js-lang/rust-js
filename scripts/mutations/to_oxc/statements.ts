@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     breaks: "a class's method is written `Component.setState = function ..`, the constructor's, so an instance's `this.setState` is `undefined` (ADR 0761)",
     file: "src/to_oxc/statements.rs",
     find: "                true => prototype(),\n",
-    replace: "                true => js::Expr::var(n.name.word()),\n",
+    replace: "                true => js::Expr::var(&n.name),\n",
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
   },
   {

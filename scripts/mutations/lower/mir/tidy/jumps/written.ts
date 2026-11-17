@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
     breaks: "a late `let x;` before a written `if c { return 0; } else if let .. { x = .. } else { x = .. }` is made the `else`'s, out of the scope of `x * 2` after it, which throws `x is not defined` (rd578)",
     file: "src/lower/mir/tidy/jumps/written.rs",
     find: "                bindings::kept_declarations(moved, after).map(|kept| (turned, k, kept))\n",
-    replace: "                Some((turned, k, Vec::<String>::new()))\n",
+    replace: "                Some((turned, k, Vec::new()))\n",
     tests: ["test/corpus.test.ts", "-t", "^late_let_before_written_else.rs$"],
     snapshots: true,
   },

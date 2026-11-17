@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/debug.rs",
     find: "                    (Expr::bin(Op::Eq, tag.clone(), Expr::str(&js_name)), this)\n",
     replace:
-      '                    (Expr::bin(Op::Eq, Expr::var("value"), Expr::str(&js_name)), this)\n',
+      '                    (Expr::bin(Op::Eq, Expr::var(&param), Expr::str(&js_name)), this)\n',
     tests: ["test/corpus.test.ts", "-t", "^std_enum_debug.rs$"],
   },
   {

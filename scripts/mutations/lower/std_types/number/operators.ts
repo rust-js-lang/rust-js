@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
       "`n as f32` of a `u64` is rounded to an `f64` first, and then can't be told from a tie",
     file: "src/lower/std_types/number/operators.rs",
     find: 'Expr::call(Expr::helper("$bigToF32"), vec![v]',
-    replace: 'target.wrap(Expr::call(Expr::var("Number"), vec![v])',
+    replace: 'target.wrap(Expr::call(Expr::global("Number"), vec![v])',
     tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
   },
   {
