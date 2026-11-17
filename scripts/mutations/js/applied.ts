@@ -95,11 +95,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "applied-shadow-not-apart",
-    breaks: "a parameter's shadow is named as what it was given apart from, `held` of `held$1`, the module's thread-local itself",
+    breaks:
+      "a parameter's shadow is made a holder of the parameter, not of the thread-local the handle it's given reads, so it stays, `const current$1 = current;`, where it's the thread-local",
     file: "src/js/applied.rs",
-    find: "        let root = param.root();\n",
-    replace: "        let root = param.word();\n",
-    tests: ["test/corpus.test.ts", "-t", "^thread_local_with_in_place.rs$"],
+    find: "        let of = given.unwrap_or(param);\n",
+    replace: "        let of = param;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(thread_local_with_in_place|thread_local_shadow_of_its_handle).rs$"],
     snapshots: true,
   },
   {

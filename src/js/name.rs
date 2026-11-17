@@ -32,6 +32,11 @@ impl Id {
     /// item's, or one made of a word.
     const WORD: Id = Id(0);
 
+    /// Of a holder made of a name its word says (`WORD`'s), a module's
+    /// `currentState` say, which has no id to be of: what it's of is the
+    /// name its own word is of (`derived`, `is_origin_of`).
+    const OF_WORD: Id = Id(u32::MAX);
+
     /// A variable's own, apart from every other made so far.
     fn fresh() -> Id {
         static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
@@ -245,12 +250,36 @@ impl Name {
             Of::HeldArg => Of::HeldArg,
             _ => Of::Item,
         };
-        Name(crate::names::made(base, k), of, Id::fresh(), source.kin())
+        let origin = match source.kin() {
+            Id::WORD => Id::OF_WORD,
+            kin => kin,
+        };
+        Name(crate::names::made(base, k), of, Id::fresh(), origin)
     }
 
-    /// Whether `derived` was made of it, by its id (`derived`).
+    /// The first holder of `source` (`derived`) whose word none of `taken`
+    /// is: one of a tree's own, outside lowering's naming table.
+    pub fn derived_apart(source: &Name, taken: &crate::collections::IndexSet<String>) -> Name {
+        (1..)
+            .map(|k| Name::derived(source, k))
+            .find(|name| !taken.contains(&name.0))
+            .expect("a word nothing has")
+    }
+
+    /// Whether `derived` was made of it (`derived`): by its id, or of a name
+    /// its word says, by that word, which is what it is.
     pub fn is_origin_of(&self, derived: &Name) -> bool {
-        derived.3 != Id::WORD && derived.3 == self.2
+        match derived.3 {
+            Id::WORD => false,
+            Id::OF_WORD => self.2 == Id::WORD && self.3 == Id::WORD && derived.base() == self.0,
+            origin => origin == self.2,
+        }
+    }
+
+    /// What a name made of another is of, as its word says: `value` of
+    /// `value#1`, unspelled, and of `value$1`.
+    fn base(&self) -> &str {
+        crate::names::made_base(&self.0).unwrap_or_else(|| self.root())
     }
 
     /// Whether it's a name lowering made that preparation hasn't spelled
@@ -295,6 +324,9 @@ impl Name {
     pub fn given_apart_of(&self, of: &Name) -> bool {
         // By what it was made of where it says, a holder's source or what
         // it was given apart from (`derived`, `given_apart`), by its id.
+        if self.3 == Id::OF_WORD {
+            return of.is_origin_of(self) || (of.3 == Id::OF_WORD && of.base() == self.base());
+        }
         if self.3 != Id::WORD {
             return self.3 == of.kin();
         }

@@ -573,14 +573,23 @@ fn in_place(
         let value = value.clone();
         let mut mentioned = names();
         names_in(&body, &mut mentioned);
-        // Apart from what the parameter was given apart from, `held` of
-        // `held$1`, as lowering names each (ADR 0352).
-        let root = param.root();
-        let to = (1..)
-            .map(|k| crate::names::given_apart(root, k))
-            .find(|to| !mentioned.contains(to))
-            .expect("a name nothing mentions");
-        let to = Name::declared(to);
+        // Of the parameter, by its id, spelled by preparation apart from
+        // it, `held$1` of `held`, as lowering names a holder (`derived`,
+        // ADR 1150), its word its own in the function.
+        // A holder of what the parameter reads: the variable it's given
+        // where it's read as that, or the variable whose place, or a part
+        // of it, a handle it's given reads, a thread-local's `current` of
+        // `with_borrow_mut(|current| ..)`, else the parameter.
+        let given = match parameter {
+            Some((_, arg)) if !held => match &arg.kind {
+                ExprKind::Var(v) => Some(v),
+                ExprKind::Handle(place, _) => read_through(place),
+                _ => None,
+            },
+            _ => None,
+        };
+        let of = given.unwrap_or(param);
+        let to = Name::derived_apart(of, &mentioned);
         let mut after = body.split_off(first + 1);
         merged(&mut after, param.word(), &to);
         let again = Writes::sets(&after, &to);
@@ -1012,6 +1021,16 @@ fn returns_as_breaks(stmts: &mut [Stmt]) -> bool {
         StmtKind::Switch { cases, default, .. } => !case_lists(cases, default).any(|body| returns(body).0),
         _ => true,
     })
+}
+
+/// The variable `place` reads, itself or through its fields, `state` of
+/// `state.value.items`; none of another place.
+fn read_through(place: &Expr) -> Option<&Name> {
+    match &place.kind {
+        ExprKind::Var(name) => Some(name),
+        ExprKind::Member(of, _) => read_through(of),
+        _ => None,
+    }
 }
 
 #[cfg(test)]

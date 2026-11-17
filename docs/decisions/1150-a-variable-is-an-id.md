@@ -1099,3 +1099,13 @@ source found by its id, given apart from it as JS's scopes need. Preparation's
 asks the origin too. The output moved only where a holder had taken a `$k`
 of lowering's, two corpus files renumbered (`n$6$live` is `n$4$live`).
 
+A parameter's shadow in a body applied where it's called, `const held$1 =
+$unwrap(held);` (`js::applied_call`), is such a holder too, made by
+`Name::derived_apart` of what the parameter reads: the variable it's given,
+or the variable whose place a handle it's given reads, a public
+thread-local's of `with_borrow_mut(|current| ..)`, which the parameter
+becomes; else the parameter. Of one made of a name its word says, a
+module's, which has no id, its origin says so (`Id::OF_WORD`) and it's of
+the name its base word is, a module's name's word its identity
+(`thread_local_shadow_of_its_handle`).
+
