@@ -197,7 +197,11 @@ impl<'a> Cx<'a> {
                 let define = js::Expr::member(js::Expr::global("Object"), "defineProperty");
                 let call = js::Expr::call(
                     define,
-                    vec![prototype(), at(js::ExprKind::Str(f.name.to_string())), descriptor],
+                    vec![
+                        prototype(),
+                        at(js::ExprKind::Str(f.name.word().to_string())),
+                        descriptor,
+                    ],
                 );
                 assigned.push(js::StmtKind::Expr(call).at(f.span));
                 continue;

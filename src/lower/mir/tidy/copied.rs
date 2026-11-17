@@ -78,7 +78,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
             let a_read = a.clone();
             let named = !user.contains(a) && user.contains(b);
             let (a_name, b_name) = (a.clone(), b.clone());
-            let (a, b) = (a.to_string(), b.to_string());
+            let (a, b) = (a.word().to_string(), b.word().to_string());
             let rest = &stmts[i + 2..];
             if !set_before_read(rest, &a_name, &b_name) && !rebinds(rest, &b_name) && !in_closure(rest, &b_name) {
                 // Of a variable rust-js named, `old` of `take()`'s value,

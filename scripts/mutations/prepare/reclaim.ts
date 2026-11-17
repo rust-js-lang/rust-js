@@ -145,8 +145,8 @@ export const mutations: Mutation[] = [
     "name": "own-item-exported-reclaimed",
     "breaks": "an exported function named apart by its `#[rust_js::name]`, `query$`, is reclaimed, `export function query`, and JS importing `query$` finds nothing",
     "file": "src/prepare/reclaim.rs",
-    "find": "            js::Item::Function(function) if !function.export => Some(function.name.to_string()),",
-    "replace": "            js::Item::Function(function) => Some(function.name.to_string()),",
+    "find": "            js::Item::Function(function) if !function.export => Some(function.name.word().to_string()),",
+    "replace": "            js::Item::Function(function) => Some(function.name.word().to_string()),",
     "tests": ["test/lowering-names.test.ts", "-t", "own function named as a global"]
   },
   {

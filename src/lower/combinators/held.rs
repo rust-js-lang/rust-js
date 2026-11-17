@@ -56,7 +56,7 @@ pub(super) fn read_in_place(value: Expr, spilled_at: Option<usize>, out: &mut Ve
     let StmtKind::Const(name, held) = &out[at].kind else {
         return value;
     };
-    let name = name.to_string();
+    let name = name.word().to_string();
     let mut reads = 0;
     value.visit_vars(&mut |var| reads += usize::from(var == name));
     // The root of its chain, read first: what a property, a key or a

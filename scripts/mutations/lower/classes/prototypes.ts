@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     name: "class-prototype-set-past-a-load",
     breaks: "a class's prototype set at load moves past a thread-local made as its module loads, which would see it replaced first (#448)",
     file: "src/lower/classes/prototypes.rs",
-    find: "            js::Item::Const(constant) => Some(format!(\"`{}`\", constant.name)),\n",
+    find: "            js::Item::Const(constant) => Some(format!(\"`{}`\", constant.name.word())),\n",
     replace: "            js::Item::Const(_) => None,\n",
     tests: [
       "test/classes.test.ts",

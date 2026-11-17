@@ -377,7 +377,7 @@ pub(in crate::lower::mir::tidy) fn named_labels(stmts: &mut [Stmt], loops: &[(js
                 relabeled(body, label, &to);
                 *label = to;
             }
-            around.push(label.to_string());
+            around.push(label.word().to_string()); // word: a label, which JS resolves by its word
             walk(body, loops, around);
             around.pop();
         }
@@ -518,7 +518,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
             | StmtKind::ForOf { label: Some(l), .. }
             | StmtKind::For { label: Some(l), .. } = &stmt.kind
             {
-                *taken.entry(l.to_string()).or_default() += 1;
+                *taken.entry(l.word().to_string()).or_default() += 1; // word: a label, which JS resolves by its word
             }
         }
     });

@@ -182,7 +182,7 @@ fn set_prototypes(
             .find_map(|item| match item {
                 js::Item::Function(_) | js::Item::Namespace(_) => None,
                 js::Item::Const(constant) if constant.value.is_constant() => None,
-                js::Item::Const(constant) => Some(format!("`{}`", constant.name)),
+                js::Item::Const(constant) => Some(format!("`{}`", constant.name.word())),
                 js::Item::Statements(_) => Some("another `js::on_load!`".to_owned()),
             });
         if let Some(between) = between {

@@ -124,7 +124,7 @@ pub(super) fn functions(module: &mut js::Module) {
                     rename(n);
                 }
                 if export {
-                    module.aliases.push((name.to_string(), name.to_string()));
+                    module.aliases.push((name.word().to_string(), name.word().to_string()));
                 }
                 stmts[0].span
             }
@@ -297,7 +297,7 @@ pub(super) fn members(module: &mut js::Module) {
     for item in &module.items {
         match item {
             js::Item::Const(constant) => {
-                names.insert(constant.name.to_string());
+                names.insert(constant.name.word().to_string());
                 js::names_in(&[StmtKind::Expr(constant.value.clone()).at(constant.span)], &mut names);
             }
             js::Item::Statements(stmts) => js::names_in(stmts, &mut names),
@@ -306,7 +306,7 @@ pub(super) fn members(module: &mut js::Module) {
                 &mut names,
             ),
             js::Item::Namespace(namespace) => {
-                names.insert(namespace.name.to_string());
+                names.insert(namespace.name.word().to_string());
                 for method in &namespace.methods {
                     js::names_in(
                         &[StmtKind::Function(Box::new(method.clone())).at(method.span)],

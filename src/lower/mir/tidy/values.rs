@@ -153,7 +153,7 @@ pub(super) fn array_values(e: &mut Expr) {
 /// Whether `f` is `(x, i) => [i, x]`, an item paired with its index.
 pub(super) fn pairs_index(f: &Expr) -> bool {
     let var = |e: &Expr| match &e.kind {
-        ExprKind::Var(v) => Some(v.to_string()),
+        ExprKind::Var(v) => Some(v.word().to_string()),
         _ => None,
     };
     if let ExprKind::Arrow(params, body) = &f.kind

@@ -797,7 +797,7 @@ fn escapes(stmts: &[Stmt]) -> bool {
             StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.iter().any(|i| l.is(i)),
             StmtKind::If(_, a, b) => out(a, inner, loops) || b.as_deref().is_some_and(|b| out(b, inner, loops)),
             StmtKind::Labeled(l, body) => {
-                inner.push(l.to_string());
+                inner.push(l.word().to_string()); // word: a label, which JS resolves by its word
                 let out = out(body, inner, loops);
                 inner.pop();
                 out
@@ -806,7 +806,7 @@ fn escapes(stmts: &[Stmt]) -> bool {
             | StmtKind::DoWhile { label, body, .. }
             | StmtKind::ForOf { label, body, .. }
             | StmtKind::For { label, body, .. } => {
-                inner.extend(label.as_ref().map(Name::to_string));
+                inner.extend(label.as_ref().map(|l| l.word().to_string())); // word: a label, which JS resolves by its word
                 let out = out(body, inner, loops + 1);
                 inner.truncate(inner.len() - usize::from(label.is_some()));
                 out

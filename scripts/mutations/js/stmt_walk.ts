@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
     breaks: "two drops alike but for the names they declare, `for (const item$1 of v)` and `for (const item of v)`, aren't, so a scope stays a `try` per statement",
     file: "src/js/stmt_walk.rs",
     find: "        .map(|(i, name)| (name, format!(\"${i}\")))\n",
-    replace: "        .map(|(_, name)| (name.clone(), name.to_string()))\n",
+    replace: "        .map(|(_, name)| (name.clone(), name.word().to_string()))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_auto_traits.rs$"],
     snapshots: true,
   },

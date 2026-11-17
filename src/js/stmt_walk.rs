@@ -809,7 +809,7 @@ pub fn reads_this(stmts: &[Stmt]) -> bool {
 /// The variables a statement declares where it is: `const x`, `let [a, b]`.
 pub fn declared_here(statement: &Stmt) -> Vec<String> {
     match &statement.kind {
-        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.to_string()],
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.word().to_string()],
         StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),
         _ => Vec::new(),
     }
@@ -828,7 +828,7 @@ pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {
             }
         }
     });
-    declared.iter().map(ToString::to_string).collect()
+    declared.iter().map(|n| n.word().to_string()).collect()
 }
 
 /// The names `stmts` declare, in order, an arrow's in them too.

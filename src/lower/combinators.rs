@@ -415,12 +415,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `e?.[1] ?? d`, as a `match` of it is (ADR 0309).
                 let option = match spilled_at {
                     Some(at) if out.len() == at + 1 => match &out[at].kind {
-                        StmtKind::Const(name, option) => Some((name.to_string(), option.clone(), true)),
+                        StmtKind::Const(name, option) => Some((name.word().to_string(), option.clone(), true)),
                         _ => None,
                     },
                     Some(_) => None,
                     None => match &subject.kind {
-                        js::ExprKind::Var(name) => Some((name.to_string(), subject.clone(), false)),
+                        js::ExprKind::Var(name) => Some((name.word().to_string(), subject.clone(), false)),
                         _ => None,
                     },
                 };

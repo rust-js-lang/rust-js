@@ -179,6 +179,6 @@ pub(in crate::lower) fn read_of_its_parameter(function: &js::Function) -> Option
     }
     match read.kind {
         js::ExprKind::Var(_) => None,
-        _ => Some((param.to_string(), path(read, param)?)),
+        _ => Some((param.word().to_string(), path(read, param)?)),
     }
 }

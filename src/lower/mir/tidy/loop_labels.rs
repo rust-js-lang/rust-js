@@ -46,11 +46,11 @@ pub(super) fn labels_in(stmts: &[Stmt], labels: &mut IndexSet<String>) {
             StmtKind::While { label, body, .. }
             | StmtKind::ForOf { label, body, .. }
             | StmtKind::For { label, body, .. } => {
-                labels.extend(label.as_ref().map(Name::to_string));
+                labels.extend(label.as_ref().map(|l| l.word().to_string())); // word: a label, which JS resolves by its word
                 labels_in(body, labels);
             }
             StmtKind::Labeled(label, body) => {
-                labels.insert(label.to_string());
+                labels.insert(label.word().to_string()); // word: a label, which JS resolves by its word
                 labels_in(body, labels);
             }
             StmtKind::If(_, a, b) => {
@@ -139,7 +139,7 @@ fn jumped_labels(stmts: &[Stmt], labels: &mut IndexSet<String>) {
     js::each_list(stmts, &mut |list| {
         for stmt in list {
             if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &stmt.kind {
-                labels.insert(l.to_string());
+                labels.insert(l.word().to_string()); // word: a label, which JS resolves by its word
             }
         }
     });

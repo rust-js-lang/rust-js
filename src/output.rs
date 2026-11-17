@@ -544,7 +544,7 @@ impl OutputPlan {
         for item in &js_module.items {
             match item {
                 js::Item::Function(function) => {
-                    taken.insert(function.name.to_string());
+                    taken.insert(function.name.word().to_string()); // word: the printed module's, which a helper's import is kept apart from
                 }
                 js::Item::Statements(stmts) => taken.extend(js::declared_names(stmts)),
                 _ => taken.extend(item.declared().map(str::to_string)),
@@ -1121,9 +1121,11 @@ fn every_export(reexport: &program::Reexport, exported: &IndexMap<Vec<String>, B
 /// `default`, of its default export.
 fn exports(module: &program::LoweredModule) -> Vec<String> {
     let own = module.items.iter().filter_map(|item| match item {
-        js::Item::Function(function) if function.export => Some(function.name.to_string()),
-        js::Item::Const(constant) if constant.export && constant.fields.is_empty() => Some(constant.name.to_string()),
-        js::Item::Namespace(namespace) if namespace.export => Some(namespace.name.to_string()),
+        js::Item::Function(function) if function.export => Some(function.name.word().to_string()), // word: an export's, which importers name
+        js::Item::Const(constant) if constant.export && constant.fields.is_empty() => {
+            Some(constant.name.word().to_string()) // word: an export's, which importers name
+        }
+        js::Item::Namespace(namespace) if namespace.export => Some(namespace.name.word().to_string()), // word: an export's, which importers name
         _ => None,
     });
     // A namespace's value's fields (ADR 1037, amended).

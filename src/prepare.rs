@@ -241,7 +241,7 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
 fn read_together(module: &mut js::Module) {
     let values: IndexSet<String> = (module.items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(constant) => Some(constant.name.to_string()),
+            js::Item::Const(constant) => Some(constant.name.word().to_string()),
             _ => None,
         })
         .chain(

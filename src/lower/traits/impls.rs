@@ -940,7 +940,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // name and each read's one.
             let renamed: Vec<(String, js::Name)> = (shared.iter())
                 .filter_map(|stmt| match &stmt.kind {
-                    StmtKind::Const(name, _) => Some((name.to_string(), js::Name::module(&format!("{cache}_{name}")))),
+                    StmtKind::Const(name, _) => Some((
+                        name.word().to_string(),
+                        js::Name::module(&format!("{cache}_{}", name.word())),
+                    )),
                     _ => None,
                 })
                 .collect();

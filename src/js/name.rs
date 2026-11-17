@@ -619,12 +619,6 @@ impl From<Name> for super::Pattern {
     }
 }
 
-impl fmt::Display for Name {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-
 /// Its word, and its id where it has one, `value#3`, so two of one word
 /// are told apart where no table spells them: a `Debug` of a tree, a
 /// refusal's or a check's text. Never JS's, which preparation's spelling

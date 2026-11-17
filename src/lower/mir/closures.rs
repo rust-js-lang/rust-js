@@ -261,7 +261,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if let js::ExprKind::Var(name) = &e.kind
                         && by_value.get(i).copied().unwrap_or(false)
                     {
-                        moved.push(name.to_string());
+                        moved.push(name.word().to_string());
                     }
                     (e, false)
                 }

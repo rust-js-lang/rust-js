@@ -162,7 +162,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
     let mut called = IndexSet::default();
     js::function_exprs_mut(function, &mut |e| {
         if let ExprKind::Var(name) = &e.kind
-            && let Some((to, _)) = renamed.get(&(module, None, name.to_string()))
+            && let Some((to, _)) = renamed.get(&(module, None, name.word().to_string()))
         {
             called.insert(to.clone());
         }
@@ -193,7 +193,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
 fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) {
     let mut each = |e: &mut Expr| match &mut e.kind {
         ExprKind::Var(name) => {
-            if let Some((to, _)) = renamed.get(&(module, None, name.to_string())) {
+            if let Some((to, _)) = renamed.get(&(module, None, name.word().to_string())) {
                 name.respell(to.clone());
             }
         }
@@ -212,7 +212,7 @@ fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Na
         // namespace, `Plugin.extractEvents` (rd114, ADR 1018).
         ExprKind::Member(object, name) => {
             let owner = match &object.kind {
-                ExprKind::Var(owner) => Some((module, Some(owner.to_string()))),
+                ExprKind::Var(owner) => Some((module, Some(owner.word().to_string()))),
                 ExprKind::Symbol(symbol) => (renamed.keys())
                     .find(|(of, _, _)| of.to_def_id().index.as_u32() == symbol.module)
                     .map(|(of, _, _)| {

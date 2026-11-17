@@ -99,7 +99,7 @@ pub(super) const LABELS_NAMED: Contract = Contract {
                     } = &stmt.kind
                     && !crate::js::names_jump(inner, label)
                 {
-                    found = Some(format!("`{label}` named by no jump"));
+                    found = Some(format!("`{}` named by no jump", label.word()));
                 }
             }
         });
@@ -152,14 +152,14 @@ pub(super) const NO_CONSTANT_TEST: Contract = Contract {
 /// A statement, as a message names it: `const x`, an `if`.
 fn described(stmt: &Stmt) -> String {
     match &stmt.kind {
-        StmtKind::Const(name, _) => format!("`const {name}`"),
-        StmtKind::Let(name, _) => format!("`let {name}`"),
+        StmtKind::Const(name, _) => format!("`const {}`", name.word()),
+        StmtKind::Let(name, _) => format!("`let {}`", name.word()),
         StmtKind::Destructure { .. } => "a destructuring".into(),
         StmtKind::Assign(..) | StmtKind::Compound(..) => "an assignment".into(),
         StmtKind::Expr(_) => "an expression".into(),
         StmtKind::If(..) => "an `if`".into(),
         StmtKind::While { .. } | StmtKind::ForOf { .. } | StmtKind::For { .. } => "a loop".into(),
-        StmtKind::Labeled(label, _) => format!("block `{label}`"),
+        StmtKind::Labeled(label, _) => format!("block `{}`", label.word()),
         StmtKind::Switch { .. } => "a `switch`".into(),
         StmtKind::Try(..) | StmtKind::TryCatch(..) => "a `try`".into(),
         _ => jump_name(stmt).into(),

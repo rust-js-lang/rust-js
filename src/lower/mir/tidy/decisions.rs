@@ -81,7 +81,7 @@ pub(super) fn fixed_params(params: &[js::Pattern], body: &[Stmt]) -> Vec<String>
         let mut param = param.clone();
         param.each_name_mut(&mut |name| {
             if !writes.may_replace(name) && !js::declares(body, name) {
-                fixed.push(name.to_string());
+                fixed.push(name.word().to_string());
             }
         });
     }

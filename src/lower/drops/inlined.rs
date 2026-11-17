@@ -25,7 +25,7 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<St
     // never a set's, which would change the JS from one build to the next.
     let mut left: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            Item::Function(f) if drops.contains(f.name.word()) => Some(f.name.to_string()), // word: a module's drop function, by its item's name
+            Item::Function(f) if drops.contains(f.name.word()) => Some(f.name.word().to_string()), // word: a module's drop function, by its item's name
             _ => None,
         })
         .collect();

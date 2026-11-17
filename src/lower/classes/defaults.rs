@@ -75,7 +75,7 @@ pub(in crate::lower) fn take_default(
     if namespaces[at].methods.iter().any(|f| f.name == function.name) {
         return Err(format!(
             "a class's method named as a method its trait gives it, `{}`, which one prototype holds one of",
-            function.name
+            function.name.word()
         ));
     }
     let alike = namespaces.iter_mut().find(|n| {
@@ -92,13 +92,15 @@ pub(in crate::lower) fn take_default(
     {
         match class.shared.iter_mut().find(|(method, _)| function.name.is(method)) {
             Some((_, others)) => others.push(owner.to_owned()),
-            None => class.shared.push((function.name.to_string(), vec![owner.to_owned()])),
+            None => class
+                .shared
+                .push((function.name.word().to_string(), vec![owner.to_owned()])),
         }
         return Ok(());
     }
     let namespace = &mut namespaces[at];
     if let Some(class) = &mut namespace.class {
-        class.prototype.push(function.name.to_string());
+        class.prototype.push(function.name.word().to_string());
     }
     namespace.methods.push(function);
     Ok(())

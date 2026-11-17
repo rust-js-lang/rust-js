@@ -152,7 +152,7 @@ fn walk(
                     written,
                     named: false,
                 };
-                labels.push(readable.to_string());
+                labels.push(readable.word().to_string()); // word: a label, which JS resolves by its word
                 walk(body, program, labels, Some(&mut inner), true);
                 labels.pop();
                 // A `continue` MIR made, past what an arm does, that ends

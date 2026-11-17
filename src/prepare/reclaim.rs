@@ -164,7 +164,7 @@ fn aliased_imports(module: &mut js::Module) {
         }
         let rename = |name: &mut String| {
             if *name == local {
-                *name = alias.to_string();
+                *name = alias.word().to_string();
             }
         };
         for package in &mut module.packages {
@@ -255,8 +255,8 @@ fn imports(module: &mut js::Module) {
 fn own_items(module: &mut js::Module) {
     let own: Vec<String> = (module.items.iter())
         .filter_map(|item| match item {
-            js::Item::Function(function) if !function.export => Some(function.name.to_string()),
-            js::Item::Const(constant) if !constant.export => Some(constant.name.to_string()),
+            js::Item::Function(function) if !function.export => Some(function.name.word().to_string()),
+            js::Item::Const(constant) if !constant.export => Some(constant.name.word().to_string()),
             _ => None,
         })
         .collect();
@@ -499,7 +499,7 @@ pub(super) fn mentions(module: &mut js::Module) -> IndexSet<String> {
             names.insert(name.to_string());
         }
         names_mut(item, true, &mut |name| {
-            names.insert(name.to_string());
+            names.insert(name.word().to_string());
         });
     }
     for package in &module.packages {
