@@ -63,15 +63,15 @@ function main() {
   console.log(`${holds$3}`);
   const n$2 = some(6);
   function then(n) {
-    let n$6$live = true;
+    let n$4$live = true;
     let result$6;
     if (n[0] > 0) {
-      n$6$live = false;
+      n$4$live = false;
       result$6 = n;
     } else {
       result$6 = undefined;
     }
-    if (n$6$live) {
+    if (n$4$live) {
       console.log(`drop ${n[0]}`);
     }
     return result$6;

@@ -346,8 +346,9 @@ pub(in crate::lower) enum Base<'a> {
     /// A local the program named, `let state`'s: `Named`'s word, but the
     /// program's own variable (`js::Name::program`, ADR 1150).
     Program(&'a str, u32),
-    /// A holder of another variable's value, spelled of its word as `Named`
-    /// is, kin of it by its id (`js::Name::originated`).
+    /// A holder of another variable's value, of it by its id, not spelled
+    /// yet: preparation spells it of what the source is spelled then
+    /// (`js::Name::derived`).
     Derived(&'a crate::js::Name),
     Local(usize),
     Temporary,
@@ -369,7 +370,7 @@ impl Base<'_> {
     /// them: its form is decided once, here, as it's made, and tidy asks
     /// that (#1681 change 3, S4).
     pub(in crate::lower) fn name(&self, word: String) -> crate::js::Name {
-        let name = match self {
+        match self {
             Base::Local(_) | Base::Temporary => crate::js::Name::temporary(word),
             Base::HeldArg => crate::js::Name::held_arg(word),
             // What Rust leaves `_`: a value nothing reads, or a parameter
@@ -382,11 +383,6 @@ impl Base<'_> {
             _ if spelled_as_held_arg(&word) => crate::js::Name::held_arg(word),
             Base::Program(_, source) => crate::js::Name::program(word, *source),
             _ => crate::js::Name::declared(word),
-        };
-        // A holder of another's value, kin of it by its id (ADR 1150).
-        match self {
-            Base::Derived(source) => name.originated(source),
-            _ => name,
         }
     }
 

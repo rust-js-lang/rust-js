@@ -634,7 +634,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// ids", ADR 1150).
     fn fresh<'b>(&self, base: impl Into<Base<'b>>) -> js::Name {
         let base = base.into();
+        if let Base::Derived(source) = base {
+            return self.derived(source);
+        }
         base.name(fresh_in(&mut self.names.borrow_mut(), &base.word()))
+    }
+
+    /// A holder of `source`'s value, of it by its id, not spelled yet
+    /// (`js::Name::derived`): preparation spells it of what the source is
+    /// spelled then, given apart from it (ADR 1150).
+    fn derived(&self, source: &js::Name) -> js::Name {
+        self.unspelled_as(|k| js::Name::derived(source, k))
     }
 
     /// A name lowering makes for a variable of its own, `base`'s, not
@@ -643,9 +653,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// early, of a closure's clone before the closure's own `key` is named,
     /// never costs the program its name (#1681 change 3, M2).
     fn unspelled(&self, base: &str) -> js::Name {
+        self.unspelled_as(|k| js::Name::made(base, k))
+    }
+
+    /// The first of `made`'s names, its `k`th, that the item has none of
+    /// yet: an unspelled name (`unspelled`), or a holder's (`derived`).
+    fn unspelled_as(&self, made: impl Fn(usize) -> js::Name) -> js::Name {
         let mut names = self.names.borrow_mut();
         (1..)
-            .map(|k| js::Name::made(base, k))
+            .map(made)
             .find(|name| names.insert(name.word().to_string()))
             .unwrap()
     }

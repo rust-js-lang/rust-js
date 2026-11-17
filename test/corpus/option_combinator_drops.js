@@ -230,7 +230,7 @@ function main() {
         if (d != null) {
           dDrop_drop(d);
         }
-        const value$1 = keep(
+        const value = keep(
           $some(make(7)),
           (d) => d != null,
           (option) => {
@@ -239,19 +239,19 @@ function main() {
             }
           },
         );
-        console.log(`generic ${value$1 != null}`);
-        if (value$1 != null) {
-          if ($someValue(value$1) != null) {
-            dDrop_drop($someValue(value$1));
+        console.log(`generic ${value != null}`);
+        if (value != null) {
+          if ($someValue(value) != null) {
+            dDrop_drop($someValue(value));
           }
         }
 
-        const value = make(8);
+        const value$2 = make(8);
         const fallback = "Nothing";
         let mapped;
-        if (value != null) {
+        if (value$2 != null) {
           try {
-            mapped = { TAG: "One", _0: value };
+            mapped = { TAG: "One", _0: value$2 };
           } catch (error) {
             throw $unwindsOn(error);
           } finally {
@@ -268,13 +268,13 @@ function main() {
         if (one.TAG === "One") {
           console.log(`one ${one._0[0]}`);
         }
-        const value$2 = make(0);
+        const value$1 = make(0);
         const fallback$1 = { TAG: "One", _0: [9] };
         try {
           let mapped;
-          if (value$2 != null) {
+          if (value$1 != null) {
             try {
-              mapped = { TAG: "One", _0: value$2 };
+              mapped = { TAG: "One", _0: value$1 };
             } catch (error) {
               throw $unwindsOn(error);
             } finally {
@@ -314,12 +314,12 @@ function main() {
             const read = mapped;
             console.log(`read ${read[0]}`);
             try {
-              const value = found(make(12), [13], dDrop_drop);
+              const value$2 = found(make(12), [13], dDrop_drop);
+              console.log(`found ${value$2[0]}`);
+              dDrop_drop(value$2);
+              const value = found(undefined, [14], dDrop_drop);
               console.log(`found ${value[0]}`);
               dDrop_drop(value);
-              const value$1 = found(undefined, [14], dDrop_drop);
-              console.log(`found ${value$1[0]}`);
-              dDrop_drop(value$1);
 
               const option = make(15);
               const ok = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "none" };

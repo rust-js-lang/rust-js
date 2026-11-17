@@ -4,6 +4,16 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "holder-of-a-temporary-not-one",
+    breaks:
+      "a holder lowering makes of a temporary, `_5`, isn't a temporary, so tidy never names it for what it holds, nor folds it as one",
+    file: "src/js/name.rs",
+    find: "            Of::Temporary | Of::Unread => Of::Temporary,\n",
+    replace: "            Of::Temporary | Of::Unread => Of::Item,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(untagged_field_of_each_variant|store_get_mut)\\.rs$"],
+    snapshots: true,
+  },
+  {
     name: "local-named-as-a-helper-is-one",
     breaks:
       "a local the program names as a helper is spelled, `rust_js::name = \"$some\"`, is taken for the helper, its calls dropped as doing nothing: `0` where native Rust prints `5` (#2016)",

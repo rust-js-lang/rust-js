@@ -225,7 +225,11 @@ pub(in crate::lower::mir) fn is_temporary(name: &Name) -> bool {
 /// form should go on, is found where they differ.
 pub(in crate::lower::mir) fn checked(name: &Name, typed: bool, spelled: bool) -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    if cfg!(debug_assertions) && *ON.get_or_init(|| std::env::var_os("RUST_JS_CHECK_NAMES").is_some()) {
+    // A name not spelled yet, `value#1`, has no word to say it.
+    if cfg!(debug_assertions)
+        && *ON.get_or_init(|| std::env::var_os("RUST_JS_CHECK_NAMES").is_some())
+        && !name.is_unspelled()
+    {
         assert_eq!(typed, spelled, "`{name}`: its form and its word disagree");
     }
     typed

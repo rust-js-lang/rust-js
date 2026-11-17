@@ -3,6 +3,16 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "alias-of-its-holder-kept",
+    breaks:
+      "a holder lowering made of a variable, `const a$1 = a;`, unspelled where this pass runs, stays, `a$1[value] = ..`, where it's the variable",
+    file: "src/prepare/shadows.rs",
+    find: "                        && (alias.apart_of().is_some_and(|(base, _)| of.is(base)) || of.is_origin_of(alias))",
+    replace: "                        && alias.apart_of().is_some_and(|(base, _)| of.is(base))",
+    tests: ["test/corpus.test.ts", "-t", "^(kept_element_ref|frozen_borrow_named).rs$"],
+    snapshots: true,
+  },
+  {
     name: "shadow-read-where-redeclared",
     breaks:
       "a closure's `const d$1 = d` is read as `d` in a closure in it that declares a `d` of its own, so `$assign(d$1, d)` is `$assign(d, d)` and `d` is never set (#1078)",
@@ -83,7 +93,7 @@ export const mutations: Mutation[] = [
     name: "alias-of-another-name",
     breaks: "`let kept = text` is `text`, not the name written",
     file: "src/prepare/shadows.rs",
-    find: "                        && alias.apart_of().is_some_and(|(base, _)| of.is(base))",
+    find: "                        && (alias.apart_of().is_some_and(|(base, _)| of.is(base)) || of.is_origin_of(alias))",
     replace: "                        && !alias.word().is_empty()",
     tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
   },

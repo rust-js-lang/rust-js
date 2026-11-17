@@ -231,6 +231,34 @@ impl Name {
         Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
     }
 
+    /// A variable lowering makes of `source`, a holder of its value, the
+    /// `k`th: not spelled yet, `value#1` of `value`, as `made`'s, and of the
+    /// source by its id, which preparation spells of what the
+    /// source is spelled then, given apart from it, `value$1`
+    /// (`prepare::reclaim::spelled`, ADR 1150). Of the source's form: a
+    /// temporary's, or what Rust leaves `_`, is a temporary; a held
+    /// argument's is one.
+    pub fn derived(source: &Name, k: usize) -> Name {
+        let base = crate::names::made_base(&source.0).unwrap_or(&source.0);
+        let of = match source.1 {
+            Of::Temporary | Of::Unread => Of::Temporary,
+            Of::HeldArg => Of::HeldArg,
+            _ => Of::Item,
+        };
+        Name(crate::names::made(base, k), of, Id::fresh(), source.kin())
+    }
+
+    /// Whether `derived` was made of it, by its id (`derived`).
+    pub fn is_origin_of(&self, derived: &Name) -> bool {
+        derived.3 != Id::WORD && derived.3 == self.2
+    }
+
+    /// Whether it's a name lowering made that preparation hasn't spelled
+    /// yet, `value#1` (`made`, `derived`): its word says nothing yet.
+    pub fn is_unspelled(&self) -> bool {
+        crate::names::made_base(&self.0).is_some()
+    }
+
     /// Of a name lowering made, what it's of, `value` of `value#1`
     /// (`made`); none of another.
     pub fn made_base(&self) -> Option<&str> {
@@ -266,7 +294,7 @@ impl Name {
     /// tidy's kinship of two names (S4c).
     pub fn given_apart_of(&self, of: &Name) -> bool {
         // By what it was made of where it says, a holder's source or what
-        // it was given apart from (`originated`, `given_apart`), by its id.
+        // it was given apart from (`derived`, `given_apart`), by its id.
         if self.3 != Id::WORD {
             return self.3 == of.kin();
         }
@@ -279,13 +307,6 @@ impl Name {
             true => self.2,
             false => self.3,
         }
-    }
-
-    /// It as made of `of`, a holder of its value or a name given apart from
-    /// it: kin of it by its id, which `given_apart_of` asks (ADR 1150).
-    pub fn originated(mut self, of: &Name) -> Name {
-        self.3 = of.kin();
-        self
     }
 
     /// It again, of its word and form, another variable, a fresh id: of a

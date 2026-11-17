@@ -98,8 +98,11 @@ test("a temporary's name a value carries is set and read in one place each", () 
 // its word and reads it, and `js::Name::made` alone is made of it (S2);
 // lowering makes one by `FnCx::unspelled` alone, unique in its item;
 // preparation spells it, `reclaim::spelled`, asking the name; the
-// validator, whose scopes keep words, refuses one printed. Nothing else
-// makes or reads the form.
+// validator, whose scopes keep words, refuses one printed; tidy's check of
+// a name's form against its word skips one, asking `Name::is_unspelled`. A
+// holder of another variable's value is one too (`Name::derived`, through
+// `FnCx::unspelled_as`), of its source by its id. Nothing else makes or
+// reads the form.
 test("an unspelled name is made, spelled and refused in one place each", () => {
   const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
   const with_ = (pattern: RegExp) => sources.filter((file) => pattern.test(outsideTests(file)));

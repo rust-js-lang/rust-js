@@ -1083,3 +1083,19 @@ _2[0]` (`test/lowering-async.test.ts`). Its parts taken apart in its body
 first, `const { params } = __arg0;`, no longer happen, and that branch went:
 none of the corpus, the tests or React's port reached it.
 
+## A holder's name is spelled in preparation, of its source (2026-11-17, step (a))
+
+A variable lowering makes to hold another's value, `const a$1 = a;`, was
+spelled where it was made, given apart from its source's word then, so its
+spelling was fixed before the program's names were all known and was read
+back, `a$1` of `a`, by passes that asked whether it was the source's. Now
+it's made unspelled, `a#1`, as any name lowering makes for itself is, by
+`js::Name::derived`, of its source by its id (`is_origin_of`), and of the
+source's form: a temporary's holder is a temporary, a held argument's one.
+`FnCx::unspelled_as` is the one way lowering makes an unspelled name, and
+preparation's `reclaim::spelled` spells it of what its source is of, the
+source found by its id, given apart from it as JS's scopes need. Preparation's
+`shadows`, which folds a holder into its source and runs before spelling,
+asks the origin too. The output moved only where a holder had taken a `$k`
+of lowering's, two corpus files renumbered (`n$6$live` is `n$4$live`).
+

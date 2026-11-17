@@ -41,10 +41,25 @@ pub(super) fn spelled(module: &mut js::Module) {
         if unspelled.is_empty() {
             continue;
         }
+        // Of a holder of another variable's value (`Name::derived`), what
+        // that variable is of, found by its id: `value` of `value$1`, or of
+        // `value#1`, unspelled yet, which it's given apart from (ADR 1150).
+        let mut sources: IndexMap<String, String> = IndexMap::default();
+        names_mut(item, false, &mut |name| {
+            for derived in unspelled.iter().filter(|u| name.is_origin_of(u)) {
+                let root = name.made_base().unwrap_or_else(|| name.root());
+                sources
+                    .entry(derived.word().to_string())
+                    .or_insert_with(|| root.to_string());
+            }
+        });
         let mut tree = scopes::Tree::of(item);
         let mut spelled: IndexMap<String, String> = IndexMap::default();
         for name in unspelled {
-            let base = name.made_base().expect("made");
+            // Its source's, else what it was made of.
+            let base = sources
+                .get(name.word())
+                .map_or_else(|| name.made_base().expect("made"), String::as_str);
             let in_scope = tree.as_mut().and_then(|tree| {
                 let to = std::iter::once(base.to_string())
                     .chain((1..).map(|k| crate::names::given_apart(base, k)))

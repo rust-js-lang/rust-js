@@ -5,6 +5,16 @@ const tests = ["test/lowering-names.test.ts", "-t", "nothing it shadows"];
 
 export const mutations: Mutation[] = [
   {
+    name: "holder-spelled-of-its-own-word",
+    breaks:
+      "a holder of another variable's value is spelled of the word lowering gave its source, `value$1$1` of `value$1`, never of what that variable is of, `value$2`",
+    file: "src/prepare/reclaim.rs",
+    find: "            let base = sources\n                .get(name.word())\n                .map_or_else(|| name.made_base().expect(\"made\"), String::as_str);\n",
+    replace: "            let base = name.made_base().expect(\"made\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^(given_last_unwinds|refcell_vec_element_places|reference_a_field_holds_set_again)\\.rs$"],
+    snapshots: true,
+  },
+  {
     name: "aliased-import-kept",
     breaks: "`import SAME ..; const same = SAME;`, not `import same ..`",
     file: "src/prepare/reclaim.rs",
