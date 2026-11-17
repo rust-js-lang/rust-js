@@ -7,6 +7,7 @@
 // batch's JS.
 //
 //   bun test test/iterator-matrix.test.ts                                        # its slice, of every source, adapter, consumer and panic site
+//   bun run nightly matrix                                                      # every batch, in parts on all the cores
 //   ITERATOR_MATRIX=all RUST_JS_CASES=1/8 bun test test/iterator-matrix.test.ts  # an eighth of every batch
 //   ITERATOR_MATRIX=#651 bun test test/iterator-matrix.test.ts                   # the batches holding #651's known cases
 //   ITERATOR_MATRIX='/step_by/' bun test test/iterator-matrix.test.ts           # the cases whose ids match, in batches of their own, a change's (#818)
@@ -39,7 +40,7 @@ import { same, type Outcome } from "./oracle";
 import { importedHelpers } from "./twin-net";
 import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
 import { buildCompiler, fixture } from "./support";
-import { shard } from "../scripts/shard";
+import { machine, shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
 
 // What rustc's told of a crate of rust-js's bindings the table's programs
@@ -102,6 +103,16 @@ const mine = shard(
   part,
   parts,
 ).map(Number);
+// One process judges its batches one after another, on one core: a whole
+// table's in one, `ITERATOR_MATRIX=all`, ran past 50 minutes at a load of 3
+// to 4 and was stopped (2026-11-17). Where there are more batches than
+// cores, it's run in parts on all of them, `bun run nightly <table>`
+// (scripts/nightly.ts), each part its `RUST_JS_CASES=i/n`.
+if (which === "all" && process.env.RUST_JS_CASES === undefined && mine.length > machine().cores) {
+  throw new Error(
+    `ITERATOR_MATRIX=all of the ${table} table is ${mine.length} batches, one after another in one process: \`bun run nightly ${table}\` runs them in parts on all the cores, or give \`RUST_JS_CASES=<i>/<n>\``,
+  );
+}
 // Its numbers are of the cases the generator made when it was made: of
 // another generator, another list, each issue's cases found again.
 // The list is both tables'; this run judges its own table's rows.
