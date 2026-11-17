@@ -983,6 +983,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Method(name) => {
                 let this = arg();
                 let mut rest: Vec<Expr> = (1..tys.len()).map(|_| arg()).collect();
+                // An array's `map` by the identity in JS, `String::from` of a
+                // `&str`: the array, or a copy where one may be told apart
+                // (`mapped_as_itself`, #1882).
+                if name == "map"
+                    && rest.first().is_some_and(Expr::is_identity)
+                    && let ty::Array(_, len) = tys[0].kind()
+                    && let Some(output) = generic_args.types().last()
+                {
+                    let to = Ty::new_array_with_const_len(self.tcx, output, *len);
+                    return Ok(Some(self.mapped_as_itself(this, tys[0], to)));
+                }
                 // An array's `map` of what has a destructor, an item or what
                 // it's mapped to: `$arrayMap`, which drops what was made and
                 // what's left where the closure panics part-way, as std's

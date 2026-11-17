@@ -554,4 +554,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(inclusive) = inclusive.filter(|_| false) {\n            if lazy && list.len() == 4 {",
     tests: ["test/corpus.test.ts", "-t", "^slice_inclusive_range_panics.rs$"],
   },
+  {
+    name: "identity-array-map-kept",
+    breaks: "an array's `map` by the identity in JS, `[\"Share\", \"Copy\"].map(String::from)`, keeps `.map((s) => s)` (#1882)",
+    file: "src/lower/std_types/text.rs",
+    find: "                    && rest.first().is_some_and(Expr::is_identity)\n",
+    replace: "                    && rest.first().is_some_and(|f| false && f.is_identity())\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "an array's map by the identity"],
+  },
 ];

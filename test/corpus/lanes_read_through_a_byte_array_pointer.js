@@ -46,7 +46,7 @@ function readLe(input) {
       $fromBytes(value.slice(12, 16), 4, true, false),
     ],
   ];
-  return [x[0].slice().map((n) => n)];
+  return [x[0].slice()];
 }
 
 function readBe(input) {
@@ -71,7 +71,7 @@ function writeLe(x, out) {
   if (length !== value$1) {
     $assertFailed("Eq", String(length), String(value$1));
   }
-  x = [x[0].slice().map((n) => n)];
+  x = [x[0].slice()];
   const value$2 = $ptrRetyped($ptr(out, 0), 16, "bytes");
   const value = [x[0].slice()];
   value$2.value = [
@@ -103,7 +103,7 @@ function readWideLe(input) {
   const x = [
     [$fromBytes(value.slice(0, 8), 8, true, false), $fromBytes(value.slice(8, 16), 8, true, false)],
   ];
-  return [x[0].map((n) => n)];
+  return [x[0]];
 }
 
 function writeWideBe(x, out) {

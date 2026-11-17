@@ -37,6 +37,15 @@ pub(in crate::lower) struct VariantGroup<'v, 'tcx> {
 /// What `variant_groups` asks of a variant and its fields.
 type OfVariant<'a, 'tcx> = &'a dyn Fn(&ty::VariantDef, &[(String, Ty<'tcx>)]) -> bool;
 
+/// Whether `array` is an array made here, which nothing else holds: `[1,
+/// 2]`, one `made_array` says is made, or a `.slice(..)` (`copy_if_needed`,
+/// `mapped_as_itself`).
+fn fresh_array(array: &Expr) -> bool {
+    super::iterators::made_array(array)
+        || matches!(&array.kind, js::ExprKind::Call(callee, _)
+            if matches!(&callee.kind, js::ExprKind::Member(_, name) if name == "slice"))
+}
+
 /// What `copy`, a copy `copy_parts` makes, copies: `x` of `{ ...x }`, of
 /// `x.slice()`, or of `x == null ? x : <either>`; else nothing. What a
 /// temporary holding it is named by, as it would be holding `x` (ADR 0569,
@@ -608,12 +617,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.contains_mutated(ty) || (stored && self.holds_plain_object(ty, 0))
     }
 
+    /// An array `array` of `from`, mapped by a function that's the identity
+    /// in JS into one of `to`, `["a", "b"].map(String::from)`: the array
+    /// itself, as JS's `map` would have made a new one, where no one can
+    /// tell the two apart: one just made, one moved, as of a type that
+    /// isn't `Copy`, or one neither of whose types anything changes in
+    /// place. Else its copy, as a `Copy` array mapped stays usable and
+    /// either may be written after, `b[0] = 5` (#1882).
+    pub(in crate::lower) fn mapped_as_itself(&self, array: Expr, from: Ty<'tcx>, to: Ty<'tcx>) -> Expr {
+        let told_apart = (self.contains_mutated(from) || self.contains_mutated(to)) && self.is_copy(from);
+        match told_apart && !fresh_array(&array) {
+            true => self.copy(array, from),
+            false => array,
+        }
+    }
+
     pub(super) fn copy_if_needed(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
-        // An array made here, which nothing else holds, `[1, 2]` or a
-        // `.slice(..)`, of items that need no copy of their own: itself.
-        let fresh = super::iterators::made_array(&place)
-            || matches!(&place.kind, js::ExprKind::Call(callee, _)
-                if matches!(&callee.kind, js::ExprKind::Member(_, name) if name == "slice"));
+        // An array made here, which nothing else holds, of items that need
+        // no copy of their own: itself.
+        let fresh = fresh_array(&place);
         let items_plain = match ty.kind() {
             ty::Array(item, _) => !self.contains_mutated(*item),
             _ => false,

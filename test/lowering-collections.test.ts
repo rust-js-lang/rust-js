@@ -24,6 +24,20 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// An array's `map` by the identity in JS is the array: no `.map((s) => s)`,
+// and a copy only where a `Copy` array mapped may be told apart from its
+// result (#1882).
+test("an array's map by the identity in JS is the array, copied where it may be told apart", () => {
+  const dir = fixture("array-map-identity");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/array_map_of_an_identity.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('return ["Share", "Copy"];');
+  expect(js).toContain("const d = c.slice();");
+  expect(js).not.toContain(".map((s) => s)");
+  expect(js).not.toContain(".map((x) => x)");
+});
+
 // A part of a slice, `&v[1..3]`, is JS's own `v.slice(1, 3)` where it's in
 // bounds, of a crate that takes no slice's address, as before #1185; of
 // one that does, `$part(v, 1, 3)`, which records where it is in `v`, so a

@@ -26,8 +26,8 @@ function main() {
   const only = new $BTreeSet($treeSetAlgebra(a, b, "difference", $cmp));
   console.log(`${only.has(1)} ${only.has(2)} ${only.size}`);
 
-  const names = new $BTreeSet(["ann", "bo"].map((s) => s));
-  const more = new $BTreeSet(["bo", "cy"].map((s) => s));
+  const names = new $BTreeSet(["ann", "bo"]);
+  const more = new $BTreeSet(["bo", "cy"]);
   console.log(
     `{${Array.from($sortedKeys(new $BTreeSet($treeSetAlgebra(names, more, "union", $cmp)), $cmp))
       .map((item) => $debugStr(item))

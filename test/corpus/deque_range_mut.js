@@ -13,7 +13,7 @@ function main() {
     x.value = (x.value * 10) | 0;
   }
   console.log(`[${d.join(", ")}]`);
-  const words = ["a", "b", "c"].map((s) => s);
+  const words = ["a", "b", "c"];
   Iterator.from($mutItems($viewRange(words, 1))).forEach((w) => {
     w.value += "!";
   });

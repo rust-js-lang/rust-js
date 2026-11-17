@@ -168,7 +168,7 @@ function main() {
   }
   const words = Array.from(
     tExt({ next: $next }, "fold", 12).sortedUnstable(
-      $iter(["pear", "fig", "apple"].map((s) => s)),
+      $iter(["pear", "fig", "apple"]),
       $ordered,
       "general8",
     ),

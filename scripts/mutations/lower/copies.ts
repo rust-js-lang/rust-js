@@ -585,4 +585,12 @@ export const mutations: Mutation[] = [
     replace: "        let bound = bound.fold_with(&mut giving);\n",
     tests: ["test/corpus.test.ts", "-t", "^map_of_another_closure_not_cloned_apart.rs$|^generic_map_past_a_take_cloned_beside_another_bound.rs$"],
   },
+  {
+    name: "identity-map-shared-though-written",
+    breaks: "a `Copy` array mapped by the identity in JS, `a.map(String::from)`, is the same array as its result where one is written after, `d[0] = String::from(\"z\")`, which then writes the array mapped too (#1882)",
+    file: "src/lower/copies.rs",
+    find: "        let told_apart = (self.contains_mutated(from) || self.contains_mutated(to)) && self.is_copy(from);\n",
+    replace: "        let told_apart = self.contains_mutated(from) && self.is_copy(from);\n",
+    tests: ["test/corpus.test.ts", "-t", "^array_map_of_an_identity.rs$"],
+  },
 ];

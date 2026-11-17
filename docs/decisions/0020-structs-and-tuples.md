@@ -424,3 +424,29 @@ keeps its `.bind()`. Mutations param-changed-taken-as-only-read,
 param-borrowed-taken-as-only-read, given-uncopied-though-lent,
 given-uncopied-though-pointed, given-uncopied-through-a-reference and
 given-uncopied-never, caught.
+
+## Amendment (2026-11-18, #1882): an array's identity `map` is the array, copied where it may be told apart
+
+`["Share", "Copy"].map(String::from)` printed `.map((s) => s)`: `String::from`
+of a `&str` is the same JS string, so the map changed nothing but made a
+new array. An array's `map` whose function is the identity in JS
+(`Expr::is_identity`: `String::from` of a `&str`, `|x| x`, `Into::into`
+between types of one representation) is now the array, with the copy JS's
+`map` gave asked of this policy (`mapped_as_itself`, `copies.rs`):
+- the array itself where no one can tell the two apart: one just made,
+  `[..]` or a `.slice()`; one moved, of a type that isn't `Copy`; or one
+  neither of whose types, the mapped array's or the result's, anything
+  changes in place;
+- else its copy (`copy`). `[&str; 2]` mapped into `[String; 2]` is two
+  types: a `Copy` array stays usable after its `map`, and a write of the
+  result, `d[0] = String::from("z")`, would write it too where they share
+  one array.
+
+Case C of ADR 0262: a shared array where Rust has two changes results.
+Corpus case `array_map_of_an_identity` runs against native in both builds:
+`String::from`, `|x| x` and `Into::into` maps, each result written after,
+`push_str`, `d[0] = ..`, `m[0] = 5`, its source printed unchanged; a moved
+`String` array; and one nothing writes. test/lowering-collections.test.ts
+holds the JS, `return ["Share", "Copy"];` and `const d = c.slice();`.
+Mutations `identity-map-shared-though-written` and
+`identity-array-map-kept` are caught.

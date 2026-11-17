@@ -52,7 +52,7 @@ function main() {
   const key = (x) => (x.value / 10) >>> 0;
   $dedupByCells(tens, (a, b) => key(a) === key(b));
   console.log(`[${tens.join(", ")}]`);
-  const words = ["a", "A", "b", "B", "b"].map((s) => s);
+  const words = ["a", "A", "b", "B", "b"];
   $dedupByCells(words, (a, b) => $toLowercase(a.value) === $toLowercase(b.value));
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const s = [1, 2, 3];

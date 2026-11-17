@@ -26,14 +26,13 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  let lists = Array.from({ length: 2 });
+  const lists = Array.from({ length: 2 });
   for (let i = 0; i < lists.length; i++) {
     const item = i & 255;
     const n = i + 1;
     $roomFor(n, 1);
     lists[i] = new Array(n).fill(item);
   }
-  lists = lists.map((slot) => slot);
   console.log(`[${lists.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   const named = Array.from({ length: 2 }, () => EMPTY);
   named[1] = "n";

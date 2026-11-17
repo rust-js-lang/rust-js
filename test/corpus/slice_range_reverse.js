@@ -70,7 +70,7 @@ function main() {
   $reverseRange(a, range.start, range.end);
   console.log(`[${a.join(", ")}] [${seen.map((item) => $debugStr(item)).join(", ")}]`);
 
-  const words = ["a", "b", "c", "d"].map((s) => s);
+  const words = ["a", "b", "c", "d"];
   flip(words, 0, 3);
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
 
