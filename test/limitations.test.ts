@@ -17,7 +17,9 @@ for (const { item, example, title } of limitations()) {
     buildCompiler();
     const dir = fixture("limitation");
     writeFileSync(join(dir, "main.rs"), `#![allow(unused)]\nfn main() {\n${example}\n}\n`);
-    const result = Bun.spawnSync([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js")], { cwd: dir });
+    // One that says it's of the build of std's iterator structs, compiled in it.
+    const build = item.startsWith("With std's iterator structs (`--std-iterators`)") ? ["--std-iterators"] : [];
+    const result = Bun.spawnSync([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js"), ...build], { cwd: dir });
     const stderr = result.stderr.toString();
     // Refused by rust-js, not rustc's error of an example written wrong: a
     // feature it lacks, `rust-js does not support`, or a rule of its own,

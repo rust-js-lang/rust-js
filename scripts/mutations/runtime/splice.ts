@@ -71,8 +71,16 @@ export const mutations: Mutation[] = [
     name: "splicing-replacement-kept-past-a-range-panic",
     breaks: "`w.splice(1..4, [Loud(7)])` of three items panics without dropping its replacement, where Rust drops `Loud(7)` unwinding out of `splice` (#1936)",
     file: "src/runtime/splice.js",
-    find: "  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => it.return?.());\n",
+    find: "  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => given?.return?.());\n",
     replace: "  $checkRange(start, end, items.length, inclusive);\n",
     tests: ["test/corpus.test.ts", "-t", "^moved_into_a_panicking_call_dropped.rs$"],
+  },
+  {
+    name: "splicing-into-iter-before-drain",
+    breaks: "`$splicing` makes its replacement's iterator before it takes out the range, so an `into_iter` that panics leaves the items in place, `[1, 2, 3, 4]`, where std's `Drain` drops them and puts the tail back, `[1, 4]` (#1940)",
+    file: "src/runtime/splice.js",
+    find: "  const given = typeof replacement.next === \"function\" ? replacement : undefined;\n",
+    replace: "  const given = typeof replacement.next === \"function\" ? replacement : replacement[Symbol.iterator]();\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_into_iterator_given_where_any_goes.rs$"],
   },
 ];

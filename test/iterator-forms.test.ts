@@ -255,7 +255,10 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
 /** The cases whose std-struct build doesn't run as native Rust yet, each
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
-const differs: Record<string, string> = {};
+const differs: Record<string, string> = {
+  "own_into_iterator_zipped.rs":
+    "#2020: the crate's own `IntoIterator`'s `IntoIter` given to std's compiled zip, which would step it by index, is refused",
+};
 
 test("the cases a run of a few names are the corpus's, and each listed difference is one", () => {
   for (const name of [...few, ...Object.keys(differs)])

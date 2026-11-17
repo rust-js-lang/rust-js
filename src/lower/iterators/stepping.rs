@@ -633,6 +633,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(items) = self.items_by_dictionary(value.clone(), ty, span)? {
             return Ok(items);
         }
+        // The crate's own, `v.extend(&board)`'s, what its own `into_iter`
+        // makes where what takes it asks it (`own_into_iter_of`, #1940).
+        if let Some(items) = self.own_into_iter_of(value.clone(), ty, span)? {
+            return Ok(items);
+        }
         // A `&mut` range is stepped where it is, as it's taken from.
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind()
             && self.range_kind(*inner).is_some()

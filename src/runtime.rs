@@ -60,6 +60,7 @@ helpers! {
     Readers,
     Reduce,
     IntoIter,
+    OwnIntoIter,
     Remove,
     Repeat,
     Local,
@@ -917,6 +918,7 @@ impl Helper {
             Helper::Readers => include_str!("runtime/readers.js"),
             Helper::Reduce => include_str!("runtime/reduce.js"),
             Helper::IntoIter => include_str!("runtime/into_iter.js"),
+            Helper::OwnIntoIter => include_str!("runtime/own_into_iter.js"),
             // A map's `remove` for its value: the one it took out, or `None`.
             Helper::Remove => include_str!("runtime/remove.js"),
             // `v.extend(items)` (ADR 0062): a `push` of each, not of an array

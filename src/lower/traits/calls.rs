@@ -56,47 +56,89 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .find(|&(key, by)| self.found_by_hash(key) && !self.borrowed_is_the_key(key, by))
     }
 
-    /// A collection of the crate's that a call takes as any `IntoIterator`:
-    /// generic code, std's or the crate's, iterates what it's given as JS
-    /// does, which never calls the collection's own `into_iter` (ADR 0160).
-    /// Not `into_iter` itself, which is the collection's.
-    pub(in crate::lower) fn collection_as_iterable(
-        &self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> Option<Ty<'tcx>> {
-        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
-        if self.tcx.trait_of_assoc(def_id) == Some(into_iterator) {
-            return None;
-        }
-        let declared = self.tcx.clauses_of(def_id).instantiate_identity(self.tcx);
-        let clauses = self.tcx.clauses_of(def_id).instantiate(self.tcx, generic_args);
-        clauses
-            .clauses
-            .iter()
-            .zip(declared.clauses.iter())
-            .find_map(|(clause, declared)| {
-                // One on a reference to a type parameter is given its dictionary,
-                // the collection's own `into_iter` (ADR 0457).
-                let declared = declared.skip_normalization().as_trait_clause()?.skip_binder().trait_ref;
-                if into_iter_by_dictionary(self.tcx, declared.def_id, declared.self_ty()) {
-                    return None;
-                }
-                // A bound of any lifetime, `for<'a> &'a T: IntoIterator`, is of an
-                // erased one: a type rustc can select an impl for.
-                let bound = self
-                    .tcx
-                    .instantiate_bound_regions_with_erased(clause.skip_normalization().as_trait_clause()?)
-                    .trait_ref;
-                (bound.def_id == into_iterator)
-                    .then(|| bound.self_ty())
-                    .filter(|&ty| self.user_into_iter(ty).is_some())
-            })
+    /// `value`, of type `ty`, the crate's own `IntoIterator` taken as any
+    /// by what iterates it as JS does, as `$ownIntoIter(() => its
+    /// into_iter)`: its own `into_iter`, made where what takes it asks it,
+    /// where Rust calls `into_iter`, as a zip or a chain is made, an extend
+    /// starts or generic code calls it (ADR 1171, #1940). The one maker,
+    /// asked by `iterable_items` of what std's recognizers and the crate's
+    /// or a library's generic code are given (`given_iterators`); `None`
+    /// of another type.
+    pub(in crate::lower) fn own_into_iter_of(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        let Some((into_iter, args)) = self.user_into_iter(ty) else {
+            return Ok(None);
+        };
+        let into_ty = self.tcx.instantiate_bound_regions_with_erased(
+            self.tcx
+                .fn_sig(into_iter)
+                .instantiate(self.tcx, args)
+                .skip_normalization(),
+        );
+        let into_ty = (self.tcx)
+            .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(into_ty.output()))
+            .unwrap_or(into_ty.output());
+        // Its impl's `into_iter`, given the value as it is: the call itself,
+        // not one that gives it as an `IntoIterator` again.
+        let instance = (self.resolve_instance(into_iter, args)?)
+            .ok_or_else(|| self.unsupported(span, &format!("the `IntoIterator` of a `{ty}`")))?;
+        let mut values = vec![value];
+        values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
+        let made = self.crate_called(instance.def_id(), values);
+        let made = self.as_js_iterator(made, into_ty, span)?;
+        let make = vec![crate::js::StmtKind::Return(Some(made)).at(self.js_span(span))];
+        Ok(Some(Expr::call_helper(
+            "$ownIntoIter",
+            vec![Expr::arrow(Vec::new(), make)],
+        )))
     }
 
-    /// What's refused of a call of `def_id`: a collection of the crate's
-    /// taken as any `IntoIterator`, a type taken as what its own `Borrow`
-    /// gives (ADRs 0160, 0167), and a `&mut &mut` of an object given to
+    /// Of a fact a call gives, `(of, fact)`, of its callee `id`'s slot
+    /// `index`: refused where it says the `IntoIter` of the crate's own
+    /// `IntoIterator`, `<&Board as IntoIterator>::IntoIter`, is stepped by
+    /// index, `TrustedRandomAccess`, as std's compiled zip then asks: its
+    /// impl's dictionary gives that iterator as JS's, with no
+    /// `getUnchecked` (#2020).
+    fn refuse_own_into_iter_indexed(
+        &self,
+        (id, index, args): (DefId, u32, ty::GenericArgsRef<'tcx>),
+        (of, fact): (Ty<'tcx>, TypeFact),
+        span: Span,
+    ) -> R<()> {
+        if !matches!(fact, TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce) {
+            return Ok(());
+        }
+        let slot = crate::lower::traits::drop_slot(self.tcx, self.slots(), id, index);
+        let slot = ty::EarlyBinder::bind(self.tcx, slot)
+            .instantiate(self.tcx, args)
+            .skip_normalization();
+        let ty::Alias(
+            _,
+            alias @ ty::AliasTy {
+                kind: ty::Projection { def_id: assoc },
+                ..
+            },
+        ) = *slot.kind()
+        else {
+            return Ok(());
+        };
+        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
+        if self.tcx.trait_of_assoc(assoc) == Some(into_iterator)
+            && self.user_into_iter(alias.self_ty()).is_some()
+            && self.trait_fact_may_hold(of, fact)
+        {
+            let collection = alias.self_ty();
+            return Err(self.unsupported(
+                span,
+                &format!(
+                    "a `{collection}`'s own `IntoIterator`, whose iterator std's compiled code would step by index (#2020)"
+                ),
+            ));
+        }
+        Ok(())
+    }
+
+    /// What's refused of a call of `def_id`: a type taken as what its own
+    /// `Borrow` gives (ADR 0167), and a `&mut &mut` of an object given to
     /// generic code (ADR 0454).
     pub(in crate::lower) fn check_call_takes(
         &self,
@@ -104,10 +146,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         generic_args: ty::GenericArgsRef<'tcx>,
         span: Span,
     ) -> R<()> {
-        if let Some(collection) = self.collection_as_iterable(def_id, generic_args) {
-            let what = format!("a `{collection}`, whose `IntoIterator` is the crate's, where any `IntoIterator` goes");
-            return Err(self.unsupported(span, &what));
-        }
         if let Some(ty) = self.borrowed_by_user(def_id, generic_args)? {
             let path = self.tcx.def_path_str(def_id);
             return Err(self.unsupported(span, &format!("`{path}` of a `{ty}` as what its own `Borrow` gives")));
@@ -250,6 +288,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         values.push(Expr::js_undefined());
                         continue;
                     }
+                    self.refuse_own_into_iter_indexed((id, index, args), (of, fact), span)?;
                     values.push(self.type_fact_value(of, fact, span)?);
                 }
                 Slot::Drop(index) if let Some((_, drop)) = dropped.iter().find(|(at, _)| *at == index) => {

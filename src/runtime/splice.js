@@ -23,12 +23,23 @@ function $splice(items, start, end, replacement, inclusive) {
 // of `replacement` closed, the `Splice`'s fields in their order (#1147,
 // #1149). Its range is checked as std's `drain` checks it, before any of
 // that: where it panics, `replacement`, moved into the call, is closed,
-// which drops it, as Rust drops it unwinding out of `splice` (#1936).
+// which drops it, as Rust drops it unwinding out of `splice` (#1936). Then
+// what the range holds taken out, and only then `replacement`'s iterator
+// made, the crate's own `into_iter` where it's the crate's (`$ownIntoIter`),
+// as std's `splice` makes its `Drain` first: where that panics, what was
+// taken out dropped and the tail put back, the `Drain`'s drop (#1940).
 function $splicing(items, start, end, replacement, dropItem, inclusive) {
-  const it = typeof replacement.next === "function" ? replacement : replacement[Symbol.iterator]();
-  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => it.return?.());
+  const given = typeof replacement.next === "function" ? replacement : undefined;
+  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => given?.return?.());
   const tail = items.splice(end);
   const removed = items.splice(start);
+  const it =
+    given ??
+    $unwinds(
+      () => replacement[Symbol.iterator](),
+      dropItem && (() => $dropItems(removed, dropItem)),
+      () => $extend(items, tail),
+    );
   const gap = removed.length;
   // At most `n` of it put in place, `Drain::fill`'s: whether it has more.
   const fill = (n) => {

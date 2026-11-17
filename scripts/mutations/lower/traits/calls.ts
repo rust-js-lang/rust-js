@@ -139,9 +139,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a call of a generic function that asks `size_of::<T>()` gives it no size",
     file: "src/lower/traits/calls.rs",
-    find: "                    }\n                    values.push(self.type_fact_value(of, fact, span)?);\n                }\n",
-    replace:
-      "                    }\n                    let _ = (of, fact);\n                }\n",
+    find: "                    self.refuse_own_into_iter_indexed((id, index, args), (of, fact), span)?;\n                    values.push(self.type_fact_value(of, fact, span)?);\n",
+    replace: "                    self.refuse_own_into_iter_indexed((id, index, args), (of, fact), span)?;\n                    let _ = (of, fact);\n",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
   {
@@ -182,16 +181,6 @@ export const mutations: Mutation[] = [
     replace:
       "                true => self.held_drop_function(ty, iterated, span)?,\n",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
-  },
-  {
-    name: "collection-as-iterable-unchecked",
-    breaks:
-      "a collection of the crate's given to `extend` or generic code is iterated as JS does, to nothing or a crash",
-    file: "src/lower/traits/calls.rs",
-    find: "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args) {",
-    replace:
-      "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args).filter(|_| false) {",
-    tests: ["test/diagnostics.test.ts", "-t", "collection of the crate"],
   },
   {
     name: "own-borrow-mut-guarded",
@@ -305,15 +294,6 @@ export const mutations: Mutation[] = [
       "-t",
       "^(generic_extend|self_given_on_as_into_iter).rs$",
     ],
-  },
-  {
-    name: "into-iter-crate-collection-refused",
-    breaks:
-      "a crate's collection given where a `for<'a> &'a C: IntoIterator` bound is, a dictionary, is refused as one where any `IntoIterator` goes",
-    file: "src/lower/traits/calls.rs",
-    find: "                if into_iter_by_dictionary(self.tcx, declared.def_id, declared.self_ty()) {\n                    return None;\n                }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_ref_param.rs$"],
   },
   {
     name: "own-evidence-facts-ungiven",
@@ -628,5 +608,13 @@ export const mutations: Mutation[] = [
     find: "                && !self.slot_said(id, index)\n",
     replace: "                && false\n",
     tests: ["test/crates.test.ts", "-t", "nested past its contract is refused"],
+  },
+  {
+    name: "own-into-iter-indexed-unrefused",
+    breaks: "the crate's own `IntoIterator`'s `IntoIter` given to std's compiled zip that steps it by index isn't refused, so its `getUnchecked`, which its impl's dictionary doesn't give, reads `NaN`s (#2020)",
+    file: "src/lower/traits/calls.rs",
+    find: "        if !matches!(fact, TypeFact::RandomAccess | TypeFact::RandomAccessNoCoerce) {\n",
+    replace: "        if true {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "the crate's own IntoIterator zipped by std's compiled zip"],
   },
 ];

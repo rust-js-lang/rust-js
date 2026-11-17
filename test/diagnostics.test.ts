@@ -9,6 +9,10 @@ beforeAll(buildCompiler, 600_000);
 
 for (const [name, source, message, crate] of [
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
+  // The crate's own `IntoIterator`'s `IntoIter` given to std's compiled
+  // zip, which would step it by index, `getUnchecked`, which its impl's
+  // dictionary doesn't give: refused in the build of std's structs (#2020).
+  ["the crate's own IntoIterator zipped by std's compiled zip", "pub struct Board { pub cells: Vec<u32> }\nimpl<'a> IntoIterator for &'a Board { type Item = u32; type IntoIter = std::iter::Copied<std::slice::Iter<'a, u32>>; fn into_iter(self) -> Self::IntoIter { self.cells.iter().copied() } }\npub fn f(b: &Board) -> Vec<(u32, u32)> { [7u32, 8].iter().copied().zip(b).collect() }", "a `&Board`'s own `IntoIterator`, whose iterator std's compiled code would step by index (#2020)", "std"],
   // A library that asks no address holds what its generic code lends from
   // std's storage as no handle on its place, so a raw pointer it makes of
   // one, for a consumer that may ask its address, is refused where it's
@@ -376,8 +380,6 @@ for (const [name, source, message, crate] of [
   // another generic function's clone makes apart among them (#1119).
   ["a pub generic chain stepped from its back beside another's cloned", "pub fn chained<I: DoubleEndedIterator<Item = i32>>(a: I, b: I) -> Option<i32> { a.chain(b).map(|x| x + 1).next_back() }\npub fn cycled<J: Iterator<Item = i32> + Clone>(a: J, b: J) -> Vec<i32> { a.chain(b).cycle().take(5).collect() }", "made where `I` isn't bound by `Clone`"],
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],
-  ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],
-  ["a collection of the crate's given to generic code", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\nfn count<I: IntoIterator>(i: I) -> usize { i.into_iter().count() }\npub fn f(b: Bag) -> usize { count(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],
   // A `&mut` to an object within a struct's field, an `Option<&mut T>`,
   // where generic code has the box and its caller the object; one the
   // field holds whole is generic code's box everywhere (#1405).
@@ -510,8 +512,10 @@ for (const [name, source, message, crate] of [
     const dir = fixture("diagnostic");
     const input = join(dir, "lib.rs"), output = join(dir, "lib.js"), manifest = join(dir, "manifest.json");
     writeFileSync(input, source);
-    const crates = crate === "js" ? (buildReact(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate ? buildSerde() : [];
-    const args = [compiler, input, "-o", output, "--manifest", manifest, ...(crates.length ? ["--", ...crates] : [])];
+    // Of `"std"`, the build of std's iterator structs (ADR 0908).
+    const crates = crate === "js" ? (buildReact(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate && crate !== "std" ? buildSerde() : [];
+    const build = crate === "std" ? ["--std-iterators"] : [];
+    const args = [compiler, input, "-o", output, "--manifest", manifest, ...build, ...(crates.length ? ["--", ...crates] : [])];
     rmSync(output, { force: true });
     rmSync(output + ".map", { force: true });
     rmSync(manifest, { force: true });

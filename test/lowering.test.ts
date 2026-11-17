@@ -933,7 +933,6 @@ ${body}
 // unlike Rust, found running them both.
 for (const [name, source, message] of [
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "as what its own `Borrow` gives"],
-  ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "whose `IntoIterator` is the crate's"],
   ["an untagged enum's variants of one kind, matched", "#[rust_js::untagged] pub enum E { A(&'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "which JS can't tell apart"],
   ["an Rc<dyn Iterator> of a value with a destructor", "pub struct D(u32);\nimpl Drop for D { fn drop(&mut self) {} }\nimpl Iterator for D { type Item = u32; fn next(&mut self) -> Option<u32> { None } }\npub fn f() -> usize { let b: std::rc::Rc<dyn Iterator<Item = u32>> = std::rc::Rc::new(D(1)); std::rc::Rc::strong_count(&b) }", "a `dyn` of a value with a destructor"],
   ["a new closure assigned through a &mut to one", "pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }", "assigning a whole value through a `&mut`"],

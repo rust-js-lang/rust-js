@@ -779,8 +779,8 @@ export const mutations: Mutation[] = [
     name: "splice-eager-where-items-drop",
     breaks: "a `splice` of items with a destructor is put in place where it's made, so what it took out drops after the replacement's steps, native Rust's other order (#1149, #1189)",
     file: "src/lower/mir/std_calls.rs",
-    find: "                    let lazy = op == TextOp::Splice && this.drops(output) != crate::lower::drops::Drops::Nothing;\n",
-    replace: "                    let lazy = false;\n",
+    find: "                        && (this.drops(output) != crate::lower::drops::Drops::Nothing\n",
+    replace: "                        && (false\n",
     tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
   },
   {
@@ -800,5 +800,13 @@ export const mutations: Mutation[] = [
     replace: "                        Value::DynDebug(from, _, value) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^(dyn_debug_shown_where_rust_calls_fmt|pretty_debug)\\.rs$"],
     snapshots: true,
+  },
+  {
+    name: "splice-own-into-iter-put-eagerly",
+    breaks: "a `splice` of the crate's own `IntoIterator` takes `$splice`, which puts its replacement in with no unwind, so an `into_iter` that panics loses the tail: `[1]` where Rust's `Drain` puts it back, `[1, 4]` (#1940)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                            || this.user_into_iter(arg_tys[2]).is_some());\n",
+    replace: ");\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_into_iterator_given_where_any_goes.rs$"],
   },
 ];

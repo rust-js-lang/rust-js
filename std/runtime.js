@@ -1996,6 +1996,16 @@ export function $intoIter(items) {
   return items instanceof $Steps ? items : Iterator.from(items);
 }
 
+// The crate's own `IntoIterator`, `&Board`'s, given where std's code or
+// generic code takes any `IntoIterator`, `v.extend(&board)`'s (#1940, ADR
+// 1171): an iterable whose iterator is the one its own `into_iter` makes,
+// `make()`, made as what takes it asks for it, where Rust calls
+// `into_iter`: as a zip or a chain is made, as an extend starts, as generic
+// code calls `into_iter`.
+export function $ownIntoIter(make) {
+  return { [Symbol.iterator]: make };
+}
+
 // A map's `remove(k)`: `Some` of the value it had, boxed where it looks
 // like `None` (ADR 0051), or `None`; of keys with a destructor, the key it
 // held dropped by `dropKey` (ADR 0467). One search, a B-tree's of its keys'
@@ -20602,12 +20612,23 @@ export function $splice(items, start, end, replacement, inclusive) {
 // of `replacement` closed, the `Splice`'s fields in their order (#1147,
 // #1149). Its range is checked as std's `drain` checks it, before any of
 // that: where it panics, `replacement`, moved into the call, is closed,
-// which drops it, as Rust drops it unwinding out of `splice` (#1936).
+// which drops it, as Rust drops it unwinding out of `splice` (#1936). Then
+// what the range holds taken out, and only then `replacement`'s iterator
+// made, the crate's own `into_iter` where it's the crate's (`$ownIntoIter`),
+// as std's `splice` makes its `Drain` first: where that panics, what was
+// taken out dropped and the tail put back, the `Drain`'s drop (#1940).
 export function $splicing(items, start, end, replacement, dropItem, inclusive) {
-  const it = typeof replacement.next === "function" ? replacement : replacement[Symbol.iterator]();
-  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => it.return?.());
+  const given = typeof replacement.next === "function" ? replacement : undefined;
+  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => given?.return?.());
   const tail = items.splice(end);
   const removed = items.splice(start);
+  const it =
+    given ??
+    $unwinds(
+      () => replacement[Symbol.iterator](),
+      dropItem && (() => $dropItems(removed, dropItem)),
+      () => $extend(items, tail),
+    );
   const gap = removed.length;
   // At most `n` of it put in place, `Drain::fill`'s: whether it has more.
   const fill = (n) => {

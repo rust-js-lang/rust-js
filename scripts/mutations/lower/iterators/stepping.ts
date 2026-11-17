@@ -553,4 +553,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
   },
+  {
+    name: "own-into-iter-unmade",
+    breaks: "the crate's own `IntoIterator` given to `extend`, a `chain` or generic code is iterated as JS does, as the object it is, never its own `into_iter`: nothing or a crash (#1940)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        if let Some(items) = self.own_into_iter_of(value.clone(), ty, span)? {\n",
+    replace: "        if let Some(items) = None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_into_iterator_given_where_any_goes.rs$"],
+  },
 ];

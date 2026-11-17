@@ -1045,8 +1045,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(args) = self.passed_through_box((def_id, generic_args), &mut arg_tys) {
             return self.mir_call_values_of(state, (def_id, args), (values, &arg_tys, nulled), output, span, out);
         }
-        // What's refused of a call: the crate's collection or `Borrow` where
-        // std's code takes JS's (ADRs 0160, 0167).
+        // What's refused of a call: the crate's `Borrow` where std's code
+        // takes JS's (ADR 0167).
         self.check_call_takes(def_id, generic_args, span)?;
         // serde_json's `Value` and what makes one (ADR 0083).
         if let Some(operation) = self.recognition().json_call(def_id, generic_args) {

@@ -618,8 +618,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     // A `Splice` whose drop runs nothing, of an array's items
                     // that have no destructor, put in place where it's made,
-                    // `$splice`; else std's, `$splicing` (#1189).
-                    let lazy = op == TextOp::Splice && this.drops(output) != crate::lower::drops::Drops::Nothing;
+                    // `$splice`; else std's, `$splicing` (#1189), and of the
+                    // crate's own `IntoIterator`, whose `into_iter` runs, and
+                    // may panic, after the range is taken out (#1940).
+                    let lazy = op == TextOp::Splice
+                        && (this.drops(output) != crate::lower::drops::Drops::Nothing
+                            || this.user_into_iter(arg_tys[2]).is_some());
                     let range =
                         this.slice_range_values((range_read(op), false), items, (range, arg_tys[1]), span, out)?;
                     let clone = match this.slice_item(arg_tys[0]) {

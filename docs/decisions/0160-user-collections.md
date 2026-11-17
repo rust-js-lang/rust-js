@@ -36,7 +36,10 @@ error, as an impl of a std trait rust-js doesn't call is (ADR 0049).
   `IntoIterator` goes,** to `v.extend(cart)` or to `fn f<I:
   IntoIterator>`: std's code and generic code iterate it as JS does, which
   never calls its `into_iter`. That's an error, saying so; `for` over it,
-  and `cart.into_iter()` itself, are its own.
+  and `cart.into_iter()` itself, are its own. (Superseded by
+  [1171](1171-the-crates-own-into-iterator-taken-as-any.md): it's given as
+  `$ownIntoIter`, whose iterator its own `into_iter` makes where Rust calls
+  it.)
 - `Extend`, `Sum` and `Product` have no diagnostic items: they're known by
   their names in `core`, as `FromStr` is (ADR 0159).
 
