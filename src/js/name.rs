@@ -18,7 +18,7 @@ use std::fmt;
 /// global's, the module's, an item's, or one made of a word alone, is one
 /// by its form and word, as JS resolves it.
 #[derive(Clone, Default)]
-pub struct Name(String, Of, Id);
+pub struct Name(String, Of, Id, Id);
 
 /// Which variable a name of the item's is, of the names its declarations
 /// made: a fresh one each time one is made, kept by its clones, and kept
@@ -78,14 +78,14 @@ impl Name {
     /// its word again ("names are ids", ADR 1150). What's still made of a
     /// word alone, `From<&str>`, step 1 traces to one of these.
     pub fn declared(word: String) -> Name {
-        Name(word, Of::Item, Id::fresh())
+        Name(word, Of::Item, Id::fresh(), Id::WORD)
     }
 
     /// A local the program named, spelled `word`: `declared`'s, but the
     /// program's, which keeps the plain spelling where a name lowering
     /// made shares its word (`is_the_programs`, ADR 1150).
     pub fn program(word: String) -> Name {
-        Name(word, Of::Program, Id::fresh())
+        Name(word, Of::Program, Id::fresh(), Id::WORD)
     }
 
     /// Whether the program named it: a local (`program`), or a crate item
@@ -99,7 +99,7 @@ impl Name {
     /// (`Expr::global`), which `js::validate` takes for resolved where
     /// nothing in scope declares its word (#1681 change 3, S3).
     pub fn global(word: &str) -> Name {
-        Name(word.to_string(), Of::Global, Id::WORD)
+        Name(word.to_string(), Of::Global, Id::WORD, Id::WORD)
     }
 
     /// The module's `word`, a name it declares at its top, no item's: a
@@ -109,14 +109,14 @@ impl Name {
     /// it ("names are ids", ADR 1150); `js::validate` refuses a read of one
     /// that a declaration nearer takes.
     pub fn module(word: &str) -> Name {
-        Name(word.to_string(), Of::Module, Id::WORD)
+        Name(word.to_string(), Of::Module, Id::WORD, Id::WORD)
     }
 
     /// An import of another module of the crate's, spelled `word` as its
     /// `use` gives it: a module's name, but each import its own, which
     /// preparation may spell apart (link's, ADR 1150).
     pub fn imported(word: &str) -> Name {
-        Name(word.to_string(), Of::Module, Id::fresh())
+        Name(word.to_string(), Of::Module, Id::fresh(), Id::WORD)
     }
 
     /// The name of the crate's item `item` (its `DefIndex`), or of its copy
@@ -128,7 +128,7 @@ impl Name {
     /// its own; no local of its word is it.
     pub fn item(word: &str, item: u32, copy: Option<usize>) -> Name {
         let copy = copy.map_or(0, |at| u32::try_from(at + 1).expect("a copy's index fits"));
-        Name(word.to_string(), Of::BodyItem(item, copy), Id::WORD)
+        Name(word.to_string(), Of::BodyItem(item, copy), Id::WORD, Id::WORD)
     }
 
     /// Whether it's the module's (`module`).
@@ -145,7 +145,7 @@ impl Name {
     /// (`temporary_names::temporary`), not one the program names: tidy
     /// asks `is_temporary` of it, not its word (#1681 change 3, S4).
     pub fn temporary(word: String) -> Name {
-        Name(word, Of::Temporary, Id::fresh())
+        Name(word, Of::Temporary, Id::fresh(), Id::WORD)
     }
 
     /// Whether it's a temporary (`temporary`).
@@ -156,13 +156,13 @@ impl Name {
     /// The name MIR's lowering holds an argument by, spelled `word`, `_arg`
     /// or given apart, `_arg$1` (S4).
     pub fn held_arg(word: String) -> Name {
-        Name(word, Of::HeldArg, Id::fresh())
+        Name(word, Of::HeldArg, Id::fresh(), Id::WORD)
     }
 
     /// A block's label MIR's lowering made, spelled `word`, `bb7`
     /// (`mir::queries::label`), not one the program writes (S5).
     pub fn block_label(word: String) -> Name {
-        Name(word, Of::BlockLabel, Id::WORD)
+        Name(word, Of::BlockLabel, Id::WORD, Id::WORD)
     }
 
     /// A label the program wrote, `'rows`, spelled `word`: JS resolves a
@@ -171,7 +171,7 @@ impl Name {
     /// One written inside a loop or a block of its word is given apart
     /// where its hint is made, `a$1` (#1969), so it's never its outer's.
     pub fn label(word: &str) -> Name {
-        Name(word.to_string(), Of::Label, Id::WORD)
+        Name(word.to_string(), Of::Label, Id::WORD, Id::WORD)
     }
 
     /// Whether it's a block's label (`block_label`).
@@ -189,7 +189,7 @@ impl Name {
     /// once its module's names are all made (`prepare::reclaim::spelled`),
     /// and the validator refuses one that reaches printing.
     pub fn made(base: &str, k: usize) -> Name {
-        Name(crate::names::made(base, k), Of::Item, Id::fresh())
+        Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
     }
 
     /// Of a name lowering made, what it's of, `value` of `value#1`
@@ -226,7 +226,27 @@ impl Name {
     /// Whether it's `of` given apart, `node$1` of `node` or of `node$2`:
     /// tidy's kinship of two names (S4c).
     pub fn given_apart_of(&self, of: &Name) -> bool {
+        // By what it was made of where it says, a holder's source or what
+        // it was given apart from (`originated`, `given_apart`), by its id.
+        if self.3 != Id::WORD {
+            return self.3 == of.kin();
+        }
         self.apart_of().is_some_and(|(root, _)| root == of.root())
+    }
+
+    /// What it's kin of, by its id: what it was made of, else itself.
+    fn kin(&self) -> Id {
+        match self.3 == Id::WORD {
+            true => self.2,
+            false => self.3,
+        }
+    }
+
+    /// It as made of `of`, a holder of its value or a name given apart from
+    /// it: kin of it by its id, which `given_apart_of` asks (ADR 1150).
+    pub fn originated(mut self, of: &Name) -> Name {
+        self.3 = of.kin();
+        self
     }
 
     /// It again, of its word and form, another variable, a fresh id: of a
@@ -235,14 +255,14 @@ impl Name {
     pub fn rebound(&self) -> Name {
         match self.2 == Id::WORD {
             true => self.clone(),
-            false => Name(self.0.clone(), self.1, Id::fresh()),
+            false => Name(self.0.clone(), self.1, Id::fresh(), self.3),
         }
     }
 
     /// It given apart the `k`th time, `node$2` of `node`, a name of its form:
     /// a temporary's still a temporary's (`names::given_apart`, S4).
     pub fn given_apart(&self, k: usize) -> Name {
-        Name(crate::names::given_apart(&self.0, k), self.1, Id::fresh())
+        Name(crate::names::given_apart(&self.0, k), self.1, Id::fresh(), self.kin())
     }
 
     /// Spelled `word` from now on, a name of its form still: a rename, preparation's spelling and
@@ -298,19 +318,19 @@ impl From<&Name> for Name {
 
 impl From<&str> for Name {
     fn from(word: &str) -> Name {
-        Name(word.to_string(), Of::Item, Id::WORD)
+        Name(word.to_string(), Of::Item, Id::WORD, Id::WORD)
     }
 }
 
 impl From<String> for Name {
     fn from(word: String) -> Name {
-        Name(word, Of::Item, Id::WORD)
+        Name(word, Of::Item, Id::WORD, Id::WORD)
     }
 }
 
 impl From<&String> for Name {
     fn from(word: &String) -> Name {
-        Name(word.clone(), Of::Item, Id::WORD)
+        Name(word.clone(), Of::Item, Id::WORD, Id::WORD)
     }
 }
 

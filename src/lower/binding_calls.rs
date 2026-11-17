@@ -1026,7 +1026,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Some(js::Pattern::Name(tuple)) => {
-                let items: Vec<crate::js::Name> = (0..arity).map(|_| self.fresh(Base::Named(tuple.word()))).collect();
+                let items: Vec<crate::js::Name> = (0..arity).map(|_| self.fresh(Base::Derived(&tuple))).collect();
                 let whole = match arity {
                     0 => Expr::js_undefined(),
                     _ => Expr::array(items.iter().map(Expr::var).collect()),

@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => {
                             let name = state.locals.names[place.local].clone();
                             self.flush(state, out)?;
-                            let held = self.spill(Base::Named(name.word()), Expr::var(&name), out);
+                            let held = self.spill(Base::Derived(&name), Expr::var(&name), out);
                             // A place holds no closure, so `substitute` renames
                             // it; else it's refused (#1525).
                             target
@@ -288,7 +288,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flush(state, out)?;
                     if local {
                         let name = state.locals.names[place.local].clone();
-                        let held = self.spill(Base::Named(name.word()), Expr::var(&name), out);
+                        let held = self.spill(Base::Derived(&name), Expr::var(&name), out);
                         // A place holds no closure, so `substitute` renames it;
                         // else it's refused, never left reading the variable
                         // the snapshot stands for (#1525).

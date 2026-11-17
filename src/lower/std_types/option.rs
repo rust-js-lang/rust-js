@@ -411,7 +411,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 };
                 let base = match &param {
-                    Some(Some(js::Pattern::Name(name))) => Base::Named(name.word()),
+                    Some(Some(js::Pattern::Name(name))) => Base::Derived(name),
                     _ => Base::Role(Role::Option),
                 };
                 // What a `filter` kept is its variable, where its test holds.

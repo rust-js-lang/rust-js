@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match &e.kind {
             js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name.word()) => {
                 let name = name.clone();
-                self.spill(Base::Named(name.word()), e, out)
+                self.spill(Base::Derived(&name), e, out)
             }
             js::ExprKind::Member(_, field) => {
                 let field = field.clone();

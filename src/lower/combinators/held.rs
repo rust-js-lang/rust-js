@@ -28,7 +28,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         });
         match &param {
-            Some(name) => self.spill_subject(Base::Named(name.word()), subject, (true, false), out),
+            Some(name) => self.spill_subject(Base::Derived(name), subject, (true, false), out),
             None if option => self.spill_subject(Role::Option, subject, (true, false), out),
             None => self.spill_subject(Role::Result, subject, (false, false), out),
         }

@@ -346,6 +346,9 @@ pub(in crate::lower) enum Base<'a> {
     /// A local the program named, `let state`'s: `Named`'s word, but the
     /// program's own variable (`js::Name::program`, ADR 1150).
     Program(&'a str),
+    /// A holder of another variable's value, spelled of its word as `Named`
+    /// is, kin of it by its id (`js::Name::originated`).
+    Derived(&'a crate::js::Name),
     Local(usize),
     Temporary,
     HeldArg,
@@ -366,13 +369,18 @@ impl Base<'_> {
     /// them: its form is decided once, here, as it's made, and tidy asks
     /// that (#1681 change 3, S4).
     pub(in crate::lower) fn name(&self, word: String) -> crate::js::Name {
-        match self {
+        let name = match self {
             Base::Local(_) | Base::Temporary => crate::js::Name::temporary(word),
             Base::HeldArg => crate::js::Name::held_arg(word),
             _ if spelled_as_temporary(&word) => crate::js::Name::temporary(word),
             _ if spelled_as_held_arg(&word) => crate::js::Name::held_arg(word),
             Base::Program(_) => crate::js::Name::program(word),
             _ => crate::js::Name::declared(word),
+        };
+        // A holder of another's value, kin of it by its id (ADR 1150).
+        match self {
+            Base::Derived(source) => name.originated(source),
+            _ => name,
         }
     }
 
@@ -384,6 +392,7 @@ impl Base<'_> {
             Base::Prefixed(role, name) => format!("{}{name}", role.word()).into(),
             Base::Suffixed(name, role) => format!("{name}{}", crate::lower::upper_first(role.word())).into(),
             Base::Named(name) | Base::Program(name) => name.into(),
+            Base::Derived(source) => source.word().into(),
             Base::Local(local) => temporary(local).into(),
             Base::Temporary => "_$".into(),
             Base::HeldArg => HELD_ARG.into(),

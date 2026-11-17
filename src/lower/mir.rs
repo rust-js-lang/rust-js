@@ -801,7 +801,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // one a pointer is taken to is (ADR 0407, #1381). Its
         // callers give the value.
         if !boxed && state.facts.pointed().locals.contains(&local) {
-            let cell = self.fresh(Base::Named(name.word()));
+            let cell = self.fresh(Base::Derived(&name));
             state.locals.names[local] = cell.clone();
             cell_params.push((cell, name.clone()));
             return js::Pattern::Name(name);

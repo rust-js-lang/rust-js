@@ -1060,7 +1060,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// tidy picks again, a call's name first (#890).
     fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let base = base.into();
-        let name = self.fresh(Base::Named(&unhyphenated(&base.word())));
+        let name = match base {
+            Base::Derived(_) => self.fresh(base),
+            _ => self.fresh(Base::Named(&unhyphenated(&base.word()))),
+        };
         // Of a role's, named again by tidy once the code is placed (#890).
         if let Base::Role(role) = base {
             self.note_spilled(name.word(), role);
