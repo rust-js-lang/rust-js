@@ -1021,3 +1021,32 @@ tidy ask it only `alpha_eq`, which asks no word. Tidy's drop flags are
 asked of by their `Name`s, what each is known to hold, what's assigned
 it and whether it's read or tested; the word a flag is named after, of
 the variable whose drop it guards, stays its spelling. The ratchet: 263.
+
+## Names are ids: kin by id, and a shadow by its Rust identifier (2026-11-17)
+
+Whether a name is another's given apart, `x$1` of `x`, was asked of the
+words' shapes, and tidy's shadow pass found the binding a `let` shadows by
+the root of their words. Now a name records what it was made of, its
+origin, apart from its identity (`Name::originated`, `given_apart`), and
+`given_apart_of` answers by it; and a variable the program named records
+the identifier its Rust gave it, rustc's `Symbol` as an opaque number
+(`Of::Program(source)`, `Name::source`), from the pattern's binding or the
+MIR local's debug info, so two variables of one identifier, a shadow and
+what it shadows, are kin by it (`Name::same_source`), with no map of words.
+What's still asked by parsing a word is counted and falls to none (the
+architecture test "a name's kinship and form are asked by parsing its word
+only as counted").
+
+The output moved where the shadow pass found its binding. The root of the
+words found the nearest name of that root, often one lowering made, which
+isn't the program's, so the pass merged nothing; by the identifier it finds
+the variable itself, and its own checks merge the two as one variable
+reassigned, as the Rust shadows it: React's `reportGlobalError`,
+`let message = error?.message; message = typeof message === 'string' ?
+message : String(error);` for `const message$1 = ..; const message = ..`,
+a `$1` gone, in 13 of the port's files and 7 of the corpus's cases, their
+runs as native Rust's (the lead's decision). A shadow of another type
+merges as one of its type does: React narrows a parameter in place,
+`message = '' + (message || defaultMessage)`, which the pass on main already
+wrote; a rule merging only shadows of one type moved 44 of the port's files
+from upstream's form, and was dropped.

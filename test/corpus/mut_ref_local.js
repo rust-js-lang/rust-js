@@ -81,11 +81,11 @@ function main() {
   const nb = { count: 10 };
   const h = { list: xs, node: na };
   $index(h.list, 0);
-  const list$2 = h.list;
+  const list$1 = h.list;
   const node = h.node;
   h.list = ys;
   h.node = nb;
-  list$2[0] = (list$2[0] + 1) | 0;
+  list$1[0] = (list$1[0] + 1) | 0;
   node.count = (node.count + 1) | 0;
   h.list[$at(h.list, 1)] = (h.list[1] + 1) | 0;
   console.log(`[${xs.join(", ")}] [${ys.join(", ")}] ${na.count} ${nb.count}`);
@@ -101,10 +101,10 @@ function main() {
   console.log(`[${xs.join(", ")}] [${ys.join(", ")}]`);
   xs = [1, 2];
   ys = [10, 20];
-  let list$1 = xs;
-  $index(list$1, 0);
-  const item$2 = list$1;
-  list$1 = ys;
+  list = xs;
+  $index(list, 0);
+  const item$2 = list;
+  list = ys;
   item$2[0] = (item$2[0] + 1) | 0;
   console.log(`[${xs.join(", ")}] [${ys.join(", ")}]`);
 

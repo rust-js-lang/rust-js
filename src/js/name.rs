@@ -49,7 +49,7 @@ enum Of {
     /// A local the program named, `let state`: where one lowering made
     /// shares its word in a scope, the program's keeps the plain spelling
     /// and the one lowering made gives way (`prepare::reclaim`, ADR 1150).
-    Program,
+    Program(u32),
     /// A global's, JS's `Array` or a binding's `document`.
     Global,
     /// One the module declares at its top: its functions, its constants,
@@ -84,14 +84,31 @@ impl Name {
     /// A local the program named, spelled `word`: `declared`'s, but the
     /// program's, which keeps the plain spelling where a name lowering
     /// made shares its word (`is_the_programs`, ADR 1150).
-    pub fn program(word: String) -> Name {
-        Name(word, Of::Program, Id::fresh(), Id::WORD)
+    pub fn program(word: String, source: u32) -> Name {
+        Name(word, Of::Program(source), Id::fresh(), Id::WORD)
+    }
+
+    /// Of a local the program named, the identifier its Rust gave it, by
+    /// rustc's own (`program`'s `source`, its `Symbol`), `0` of none: two
+    /// variables of one identifier, `let x; .. let x;`, are kin of it,
+    /// whatever JS spells each (ADR 1150).
+    pub fn source(&self) -> u32 {
+        match self.1 {
+            Of::Program(source) => source,
+            _ => 0,
+        }
+    }
+
+    /// Whether it and `other` are two of the program's variables of one
+    /// Rust identifier (`source`): a shadow and what it shadows.
+    pub fn same_source(&self, other: &Name) -> bool {
+        self.source() != 0 && self.source() == other.source()
     }
 
     /// Whether the program named it: a local (`program`), or a crate item
     /// written in a function's body (`item`'s of one).
     pub fn is_the_programs(&self) -> bool {
-        matches!(self.1, Of::Program | Of::BodyItem(..))
+        matches!(self.1, Of::Program(_) | Of::BodyItem(..))
     }
 
     /// The global `word`, JS's `Array` or a binding's `document`, which the

@@ -667,8 +667,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A variable a pattern binds, rustc's `LocalVarId`, the program's:
     /// its name the program's (`js::Name::program`, ADR 1150).
-    fn bind(&mut self, var: LocalVarId, name: &str, mutable: bool) -> js::Name {
-        let name = self.fresh(Base::Program(&camel_case(name)));
+    fn bind(&mut self, var: LocalVarId, name: rustc_span::Symbol, mutable: bool) -> js::Name {
+        let name = self.fresh(Base::Program(&camel_case(name.as_str()), name.as_u32()));
         self.locals.vars.insert(
             var,
             Var {

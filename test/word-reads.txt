@@ -59,7 +59,7 @@ src/lower/mir/tidy/loop_labels.rs	2
 src/lower/mir/tidy/loops.rs	4
 src/lower/mir/tidy/moves.rs	3
 src/lower/mir/tidy/options.rs	6
-src/lower/mir/tidy/shadows.rs	4
+src/lower/mir/tidy/shadows.rs	1
 src/lower/mir/tidy/switches.rs	2
 src/lower/mir/tidy/values.rs	2
 src/lower/mir/tidy/values/handles.rs	1

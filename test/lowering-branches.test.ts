@@ -563,7 +563,7 @@ pub fn named<'a>(names: &[&'a str], blank: &'a str) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  const current = state ?? blank;\n");
-  expect(js).toMatch(/  const name = name\$1 \?\? blank;\n/);
+  expect(js).toContain("  const name = names.find((s) => $byteLen(s) < 2) ?? blank;\n");
   expect(js).toContain('  const text = find != null ? find[1] : "";\n');
   expect(js).toMatch(/  const i = \$find\(path, "x"\);\n  const n = i != null \? \(i \+ 1\) >>> 0 : 0;\n/);
   expect(js).toContain('  return $rsplitOnce(path, "/")?.[1] ?? path;\n');

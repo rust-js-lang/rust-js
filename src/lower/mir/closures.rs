@@ -220,7 +220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flush(state, out)?;
                     // The program's variable, moved in, of one the program named.
                     let name = self.fresh(match &e.kind {
-                        js::ExprKind::Var(name) if name.is_the_programs() => Base::Program(name.word()),
+                        js::ExprKind::Var(name) if name.is_the_programs() => Base::Program(name.word(), name.source()),
                         js::ExprKind::Var(name) => Base::Named(name.word()),
                         _ => Base::Role(Role::Captured),
                     });

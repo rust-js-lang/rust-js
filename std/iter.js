@@ -13509,23 +13509,18 @@ export function stepByStepByBackImplI_specNthBack(
   dropI,
   dropIItem,
 ) {
-  const n$2 = (stepBy.stepMinusOne + 1) >>> 0;
-  const value = n$2 === 0 ? undefined : n$2;
+  const n$1 = (stepBy.stepMinusOne + 1) >>> 0;
+  const value = n$1 === 0 ? undefined : n$1;
   const [_14, _15] = $overflowing(Math.imul(n, value) >>> 0, n * value, 0, 4294967295);
   let tmp = _14;
   if (_15) {
     tmp = 4294967295;
   }
-  const n$1 = Math.min(
+  n = Math.min(
     tmp + StepBy.nextBackIndex(stepBy, IExactSizeIterator, dropI, dropIItem),
     4294967295,
   );
-  return $nthBack(
-    $given(stepBy.iter, IIterator, true, IDoubleEndedIterator),
-    n$1,
-    $some,
-    dropIItem,
-  );
+  return $nthBack($given(stepBy.iter, IIterator, true, IDoubleEndedIterator), n, $some, dropIItem);
 }
 
 export function stepByStepByBackImplI_specRfold(

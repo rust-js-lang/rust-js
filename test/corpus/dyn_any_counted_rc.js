@@ -70,8 +70,7 @@ function main() {
     });
     throw new Error("internal error: entered unreachable code");
   }
-  const back$1 = tmp._0;
-  const back = back$1;
+  const back = tmp._0;
   try {
     if (tmp.TAG !== "Err") {
       if (tmp.TAG === "Ok") {

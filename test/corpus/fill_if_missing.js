@@ -70,10 +70,10 @@ function droppedOf(slots, at) {
 
 // Of a guard's test too, which takes more than its being there: as written.
 function guardedOf(cache, id) {
-  const info$1 = cache.get(id);
-  const info =
-    info$1 != null && info$1.size > 1
-      ? info$1
+  let info = cache.get(id);
+  info =
+    info != null && info.size > 1
+      ? info
       : {
           name: id,
           size: 2,

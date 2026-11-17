@@ -239,8 +239,8 @@ export function widths(el) {
  */
 export function unionsRead(reader, data) {
   const text = typeof reader.result === "string";
-  const name$1 = data.get("name");
-  const name = typeof name$1 === "string" ? name$1 : undefined;
+  let name = data.get("name");
+  name = typeof name === "string" ? name : undefined;
   return [text, name];
 }
 

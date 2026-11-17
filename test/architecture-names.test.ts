@@ -119,7 +119,7 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
 test("a name given apart is read by its name's API alone", () => {
   const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
   const reading = sources.filter((file) => file !== "src/names.rs" && /names::apart\(/.test(outsideTests(file)));
-  expect(reading.sort()).toEqual(["src/js/name.rs", "src/lower/mir/tidy/shadows.rs", "src/prepare/catches.rs", "src/prepare/reclaim.rs"]);
+  expect(reading.sort()).toEqual(["src/js/name.rs", "src/prepare/catches.rs", "src/prepare/reclaim.rs"]);
 });
 
 // A place a tree reads is keyed by `js::Path` alone (ADR 1150, step 3): its
@@ -174,7 +174,7 @@ test("js::scopes' words are asked only where names are spelled or checked", () =
 // `KIN_PARSES`, which only falls, to none: each is asked of the name's
 // origin and form by its id instead. The spelling's owners, `js::name`,
 // `names`, the runtime's helpers and printing, write and read it.
-const KIN_PARSES = 23;
+const KIN_PARSES = 21;
 test("a name's kinship and form are asked by parsing its word only as counted", () => {
   const owners = (file: string) => file === "src/js/name.rs" || file === "src/names.rs"
     || file === "src/runtime.rs" || file.startsWith("src/to_oxc");

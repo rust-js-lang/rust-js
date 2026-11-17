@@ -88,16 +88,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
   },
   {
-    name: "shadow-of-a-temporary",
-    breaks:
-      "a temporary rust-js holds, `tmp`, is reused for unrelated values, `tmp = tmp(next)`",
-    file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(&binding) {\n",
-    replace: "    if captured.contains(&binding) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
-    snapshots: true,
-  },
-  {
     name: "shadow-set-in-cases-kept-apart",
     breaks:
       "a `let x$1;` its `switch`'s cases set, shadowing a binding read no more, stays apart, `let priorityLevel$1; switch (priorityLevel) { .. priorityLevel$1 = priorityLevel; ..`, not upstream's `switch (priorityLevel) { .. default: priorityLevel = NormalPriority; }`",

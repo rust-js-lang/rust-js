@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut items = Vec::new();
             for (i, part) in parts {
                 items.resize(i + 1, None);
-                items[i] = part.map(|(name, var, m)| self.bind(var, name.as_str(), m));
+                items[i] = part.map(|(name, var, m)| self.bind(var, name, m));
             }
             // `[a, , ]` is `[a]`.
             while items.last().is_some_and(Option::is_none) {
@@ -74,7 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Array(tys) => {
                 let mut items = vec![None; tys.len()];
                 for (i, part) in parts {
-                    items[i] = part.map(|(name, var, m)| self.bind(var, name.as_str(), m));
+                    items[i] = part.map(|(name, var, m)| self.bind(var, name, m));
                 }
                 // `[a, b, , ]` is `[a, b]`.
                 while items.last().is_some_and(Option::is_none) {
@@ -90,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut rest = None;
                 for (i, part) in parts {
                     let Some((name, var, m)) = part else { continue };
-                    let bound = self.bind(var, name.as_str(), m);
+                    let bound = self.bind(var, name, m);
                     // The props a component's struct doesn't name, `...rest` (ADR
                     // 0195), or a flattened struct's, typed (ADR 0204).
                     match super::bindings::is_rest_field(self.tcx, pat.ty, i) {

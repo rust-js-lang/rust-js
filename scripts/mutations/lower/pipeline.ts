@@ -415,8 +415,8 @@ export const mutations: Mutation[] = [
     name: "scope-function-names-unreserved",
     breaks: "a scope struct's method's function is named as its method, which a variable of its function, `resolve`, hides",
     file: "src/lower/pipeline.rs",
-    find: ".map(|&method| {\n                (\n                    method,\n                    js::Name::program(crate::names::fresh_in(&mut names, &fns[&method].name)),\n                )\n            })",
-    replace: ".map(|&method| {\n                (\n                    method,\n                    js::Name::program(fns[&method].name.clone()),\n                )\n            })",
+    find: ".map(|&method| {\n                (\n                    method,\n                    js::Name::program(crate::names::fresh_in(&mut names, &fns[&method].name), 0),\n                )\n            })",
+    replace: ".map(|&method| {\n                (\n                    method,\n                    js::Name::program(fns[&method].name.clone(), 0),\n                )\n            })",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
   },
   {

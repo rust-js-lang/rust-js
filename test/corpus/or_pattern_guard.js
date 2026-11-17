@@ -5,13 +5,12 @@ export function entry() {
 }
 
 export function f(p) {
-  let a$1 = p[0];
-  let a;
-  if (a$1 > 10) {
+  let a = p[0];
+  if (a > 10) {
     a = p[0];
   } else {
-    a$1 = p[1];
-    if (a$1 <= 10) {
+    a = p[1];
+    if (a <= 10) {
       return 0;
     }
     a = p[1];

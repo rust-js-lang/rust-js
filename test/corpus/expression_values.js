@@ -80,8 +80,8 @@ function main() {
   const pairs = [[1, 2], undefined];
   const sums = pairs.map((p) => (10 + (p != null ? (p[0] + p[1]) | 0 : 0)) | 0);
   const words = ["a", "bb"];
-  const first$1 = words[0];
-  const first = (1 + Array.from(first$1).length) >>> 0;
+  let first = words[0];
+  first = (1 + Array.from(first).length) >>> 0;
   console.log(
     `${missing} [${items.join(", ")}] (${pair[0]}, ${pair[1]}) [${sums.join(", ")}] ${first}`,
   );

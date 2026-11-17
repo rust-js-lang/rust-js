@@ -134,6 +134,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             named.push((Local::from_usize(1), name));
         }
         let mut user: IndexVec<Local, Option<String>> = IndexVec::from_elem_n(None, n);
+        // Of each, the identifier its Rust gave it, rustc's (`js::Name::source`).
+        let mut sources: IndexVec<Local, u32> = IndexVec::from_elem_n(0, n);
         let sm = self.tcx.sess.source_map();
         // `?`'s own `val`, what its `Continue` holds: a temporary.
         let continued = self.continued(body);
@@ -169,6 +171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => crate::lower::camel_case(&name),
                 });
                 locals.user[place.local] = true;
+                sources[place.local] = info.name.as_u32();
             }
         }
         // What `pin!` pins, held in a variable of std's: named after the
@@ -176,6 +179,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (pinned, pin) in self.pinned_by(body) {
             if user[pinned].is_none() {
                 user[pinned] = user[pin].clone();
+                sources[pinned] = sources[pin];
             }
         }
         let indirect = |place: &Place<'tcx>| crate::lower::body_queries::indirect(self.tcx, &body.local_decls, place);
@@ -320,7 +324,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals.names[local] = match (&user[local], body.local_kind(local)) {
                 (Some(name), _) => {
                     let named = tidy::user_name(name);
-                    self.fresh(Base::Program(&named))
+                    self.fresh(Base::Program(&named, sources[local]))
                 }
                 (None, LocalKind::ReturnPointer) => self.fresh(Role::Result),
                 (None, _) => {

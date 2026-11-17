@@ -22,8 +22,8 @@ Point.prototype.either = function (other) {
 
 export const Plain = {
   moved(plain, by) {
-    plain = { x: plain.x + by };
-    return plain.x;
+    const plain$1 = { x: plain.x + by };
+    return plain$1.x;
   },
 };
 

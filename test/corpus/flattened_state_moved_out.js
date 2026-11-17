@@ -98,15 +98,14 @@ function lent() {
       task.value = state.value.value;
     }
   }
-  const old$3 = { value: old };
-  bump(old$3);
-  old = old$3.value;
+  const old$1 = { value: old };
+  bump(old$1);
+  old = old$1.value;
   const arg = shown(task);
   console.log(`finish ${statusDebug_fmt(old)}, ${arg}`);
   const state$1 = { value: task };
-  let old$1;
   try {
-    old$1 = halt(state$1);
+    old = halt(state$1);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -117,7 +116,7 @@ function lent() {
     }
   }
   const arg$1 = shown(task);
-  console.log(`halt ${statusDebug_fmt(old$1)}, ${arg$1}`);
+  console.log(`halt ${statusDebug_fmt(old)}, ${arg$1}`);
   let other = { status: "pending", tries: 2 };
   const state$2 = { value: task };
   const other$1 = { value: other };
@@ -133,15 +132,14 @@ function lent() {
       other = other$1.value;
     }
   }
-  const old$4 = { value: other };
-  bump(old$4);
-  other = old$4.value;
+  const old$2 = { value: other };
+  bump(old$2);
+  other = old$2.value;
   const arg$2 = shown(task);
   console.log(`exchange ${statusDebug_fmt(other)}, ${arg$2}`);
   const state$3 = { value: task };
-  let old$2;
   try {
-    old$2 = restart(state$3);
+    old = restart(state$3);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -152,10 +150,10 @@ function lent() {
     }
   }
   const arg$3 = shown(task);
-  console.log(`restart ${statusDebug_fmt(old$2)}, ${arg$3}`);
+  console.log(`restart ${statusDebug_fmt(old)}, ${arg$3}`);
   const state$4 = { value: task };
   try {
-    old$2 = finish(state$4);
+    old = finish(state$4);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -165,16 +163,16 @@ function lent() {
       task.value = state$4.value.value;
     }
   }
-  const old$5 = { value: old$2 };
-  bump(old$5);
-  old$2 = old$5.value;
+  const old$3 = { value: old };
+  bump(old$3);
+  old = old$3.value;
   const arg$4 = shown(task);
-  console.log(`finish ${statusDebug_fmt(old$2)}, ${arg$4}`);
+  console.log(`finish ${statusDebug_fmt(old)}, ${arg$4}`);
 }
 
 function held() {
   let task = new Task("pending", 3, undefined, "held");
-  const old$3 =
+  const old$1 =
     task.status === "pending"
       ? { status: task.status, tries: task.tries }
       : task.status === "done"
@@ -182,20 +180,20 @@ function held() {
         : { status: task.status };
   task.status = "done";
   task.value = "w";
-  let old = old$3;
-  const old$4 = { value: old };
-  bump(old$4);
-  old = old$4.value;
+  let old = old$1;
+  const old$2 = { value: old };
+  bump(old$2);
+  old = old$2.value;
   console.log(`replace ${statusDebug_fmt(old)}`);
   console.log(`${shown(task)}`);
-  const old$1 =
+  old =
     task.status === "pending"
       ? { status: task.status, tries: task.tries }
       : task.status === "done"
         ? { status: task.status, value: task.value }
         : { status: task.status };
   task.status = "halted";
-  console.log(`take ${statusDebug_fmt(old$1)}`);
+  console.log(`take ${statusDebug_fmt(old)}`);
   console.log(`${shown(task)}`);
   let other = { status: "pending", tries: 4 };
   const t = other;
@@ -209,13 +207,13 @@ function held() {
   task.tries = t.tries;
   task.value = t.value;
   console.log(`swap ${statusDebug_fmt(other)}`);
-  const old$5 = { value: task };
-  bump(old$5);
-  task.status = old$5.value.status;
-  task.tries = old$5.value.tries;
-  task.value = old$5.value.value;
+  const old$3 = { value: task };
+  bump(old$3);
+  task.status = old$3.value.status;
+  task.tries = old$3.value.tries;
+  task.value = old$3.value.value;
   console.log(`${shown(task)}`);
-  const old$6 =
+  old =
     task.status === "pending"
       ? { status: task.status, tries: task.tries }
       : task.status === "done"
@@ -223,17 +221,16 @@ function held() {
         : { status: task.status };
   task.status = "done";
   task.value = "x";
-  let old$2 = old$6;
-  const old$7 = { value: old$2 };
-  bump(old$7);
-  old$2 = old$7.value;
-  console.log(`cell ${statusDebug_fmt(old$2)}`);
+  const old$4 = { value: old };
+  bump(old$4);
+  old = old$4.value;
+  console.log(`cell ${statusDebug_fmt(old)}`);
   console.log(`${shown(task)}`);
 }
 
 function itsCell() {
   const task = new Task("pending", 6, undefined, "cell");
-  const old$2 =
+  const old$1 =
     task.status === "pending"
       ? { status: task.status, tries: task.tries }
       : task.status === "done"
@@ -241,13 +238,13 @@ function itsCell() {
         : { status: task.status };
   task.status = "done";
   task.value = "y";
-  let old = old$2;
-  const old$3 = { value: old };
-  bump(old$3);
-  old = old$3.value;
+  let old = old$1;
+  const old$2 = { value: old };
+  bump(old$2);
+  old = old$2.value;
   const arg = shown(task);
   console.log(`replace ${statusDebug_fmt(old)}, ${arg}`);
-  const old$1 =
+  old =
     task.status === "pending"
       ? { status: task.status, tries: task.tries }
       : task.status === "done"
@@ -256,7 +253,7 @@ function itsCell() {
   task.status = "pending";
   task.tries = 7;
   const arg$1 = shown(task);
-  console.log(`replace ${statusDebug_fmt(old$1)}, ${arg$1}`);
+  console.log(`replace ${statusDebug_fmt(old)}, ${arg$1}`);
 }
 
 function own() {
@@ -264,14 +261,14 @@ function own() {
   const state$1 = { value: state };
   let old = finish(state$1);
   state = state$1.value;
-  const old$2 = { value: old };
-  bump(old$2);
-  old = old$2.value;
+  const old$1 = { value: old };
+  bump(old$1);
+  old = old$1.value;
   console.log(`own ${statusDebug_fmt(old)} ${statusDebug_fmt(state)}`);
   const state$2 = { value: state };
-  const old$1 = halt(state$2);
+  old = halt(state$2);
   state = state$2.value;
-  console.log(`own ${statusDebug_fmt(old$1)} ${statusDebug_fmt(state)}`);
+  console.log(`own ${statusDebug_fmt(old)} ${statusDebug_fmt(state)}`);
 }
 
 function main() {

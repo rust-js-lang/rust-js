@@ -345,7 +345,7 @@ pub(in crate::lower) enum Base<'a> {
     Named(&'a str),
     /// A local the program named, `let state`'s: `Named`'s word, but the
     /// program's own variable (`js::Name::program`, ADR 1150).
-    Program(&'a str),
+    Program(&'a str, u32),
     /// A holder of another variable's value, spelled of its word as `Named`
     /// is, kin of it by its id (`js::Name::originated`).
     Derived(&'a crate::js::Name),
@@ -374,7 +374,7 @@ impl Base<'_> {
             Base::HeldArg => crate::js::Name::held_arg(word),
             _ if spelled_as_temporary(&word) => crate::js::Name::temporary(word),
             _ if spelled_as_held_arg(&word) => crate::js::Name::held_arg(word),
-            Base::Program(_) => crate::js::Name::program(word),
+            Base::Program(_, source) => crate::js::Name::program(word, *source),
             _ => crate::js::Name::declared(word),
         };
         // A holder of another's value, kin of it by its id (ADR 1150).
@@ -391,7 +391,7 @@ impl Base<'_> {
             Base::Numbered(role, i) => format!("{}{i}", role.word()).into(),
             Base::Prefixed(role, name) => format!("{}{name}", role.word()).into(),
             Base::Suffixed(name, role) => format!("{name}{}", crate::lower::upper_first(role.word())).into(),
-            Base::Named(name) | Base::Program(name) => name.into(),
+            Base::Named(name) | Base::Program(name, _) => name.into(),
             Base::Derived(source) => source.word().into(),
             Base::Local(local) => temporary(local).into(),
             Base::Temporary => "_$".into(),

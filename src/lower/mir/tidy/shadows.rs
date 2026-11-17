@@ -124,10 +124,9 @@ fn shadow_of(
         StmtKind::Let(shadow, value) => (shadow.clone(), value.as_ref(), true),
         _ => return None,
     };
-    let (base, _) = shadow.apart_of()?;
-    // The nearest binding before it of its name, or of one given apart
-    // from it, `stack$1` of `stack$2`.
-    let kin = |name: &str| name == base || crate::names::apart(name).is_some_and(|(b, _)| b == base);
+    // The nearest binding before it of its Rust identifier, rustc's, the
+    // variable it shadows, `stack` or `stack$1` of `stack$2` (ADR 1150).
+    let kin = |name: &js::Name| *name != shadow && name.same_source(&shadow);
     let declaring = |s: &Stmt| -> Vec<js::Name> {
         match &s.kind {
             StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
@@ -135,16 +134,12 @@ fn shadow_of(
             _ => Vec::new(),
         }
     };
-    let (at, binding) = match stmts[..i]
-        .iter()
-        .rposition(|s| declaring(s).iter().any(|n| kin(n.word())))
-    {
-        Some(at) => (
-            Some(at),
-            declaring(&stmts[at]).into_iter().rev().find(|n| kin(n.word()))?,
-        ),
-        None => (None, heads.iter().rev().find(|n| kin(n.word()))?.clone()),
+    let (at, binding) = match stmts[..i].iter().rposition(|s| declaring(s).iter().any(&kin)) {
+        Some(at) => (Some(at), declaring(&stmts[at]).into_iter().rev().find(|n| kin(n))?),
+        None => (None, heads.iter().rev().find(|n| kin(n))?.clone()),
     };
+    // Both the program's own, which kin by the Rust identifier is already
+    // but for a closure's copy of a variable, which carries its source too.
     if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(&binding) {
         return None;
     }
