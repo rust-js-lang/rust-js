@@ -718,4 +718,28 @@ export const mutations: Mutation[] = [
     replace: "            true => HeldByGenericCode::MadeJsIterator { back, len },\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^own_into_iterator_zipped with std's iterator structs$"],
   },
+  {
+    name: "within-unwalked-beside-iterators",
+    breaks: "what a trait method gives is walked for its iterators without the `&mut`s generic code holds as its box, so `(&mut Self::Item, impl Iterator)`'s `&mut` reaches generic code unboxed and a write through it never reaches the impl's value (#2010)",
+    file: "src/lower/traits/impls.rs",
+    find: "                    forms.result_within.as_ref(),\n",
+    replace: "                    None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_beside_impl_iterator_in_a_trait_methods_result.rs$"],
+  },
+  {
+    name: "within-tuple-field-dropped",
+    breaks: "a tuple's `Within` isn't walked into its fields beside the iterators, so a `&mut` in `(&mut Self::Item, impl Iterator)` isn't boxed for generic code (#2010)",
+    file: "src/lower/traits/impls.rs",
+    find: "                Within::Tuple(parts) => Some(&parts[at]),\n",
+    replace: "                Within::Tuple(_) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_beside_impl_iterator_in_a_trait_methods_result.rs$"],
+  },
+  {
+    name: "within-option-payload-dropped",
+    breaks: "an `Option`'s `Within` isn't walked into its payload beside the iterator, so `Option<(&mut Self::Item, impl Iterator)>`'s `&mut` isn't boxed for generic code (#2010)",
+    file: "src/lower/traits/impls.rs",
+    find: "                Within::Some(inner) => Some(inner.as_ref()),\n",
+    replace: "                Within::Some(_) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_beside_impl_iterator_in_a_trait_methods_result.rs$"],
+  },
 ];

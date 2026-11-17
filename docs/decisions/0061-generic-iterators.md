@@ -152,9 +152,37 @@ a tuple's fields, nested ones too, and an `Option`'s payload, each made as
 its own would be, read of the value the entry holds first: `const given =
 aSrc_tup(arg0); return [$iterator(given[0], $rangeNext), given[1]];`. A
 result that holds both a `&mut` generic code's box adapts and an
-`impl Iterator` is refused, naming #2010. Corpus case
+`impl Iterator` was refused, naming #2010, until the amendment below.
+Corpus case
 `impl_iterator_within_a_trait_methods_result` holds a range, the crate's
 own iterator, one stepped from its back, a nested tuple's, an `Option`'s
 `Some` and `None`, and items and a field with a destructor against native
 in each build; mutations `impl-iterator-within-tuple-unmade` and
 `impl-iterator-within-option-unmade` are caught.
+
+## Amendment: a `&mut` beside an `impl Iterator` in what a trait method gives (2026-11-17, #2010)
+
+An impl's dictionary entry adapted what its method gives in two passes
+over the one value: each `&mut` generic code holds as its box (`Within`,
+#686) and each `impl Iterator` made the JS iterator generic code steps
+(`made_for_generic_code`, #2005). A result needing both, `fn pair(&mut
+self) -> (&mut Self::Item, impl Iterator<Item = u32>)`, was refused.
+Both walk the same tuples and `Option`s, so `made_for_generic_code` now
+walks `Within` beside them: at each part that isn't a tuple or an
+`Option`, an iterator is made as before, and anything else is
+`Within::given_back` of it. The cell is made in the method's
+environment, where the iterators are made. That environment holds the
+impl's bounds, and a generic impl's `&mut T` was the same in either
+environment. One array comes out: `const given
+= heldSrc_maybe(arg0.value, arg1); return given != null ?
+[$cellOf(given[0]), $iterator(given[1], $rangeInclusiveNext)] :
+undefined;`. A result that isn't a tuple or an `Option` keeps its `&mut`
+adaptation apart, as it was.
+
+Corpus case `mut_ref_beside_impl_iterator_in_a_trait_methods_result`
+holds a `&mut` before an iterator and after one stepped from its back,
+and an `Option` of both, of a generic impl's `&mut T` too. It covers an
+object's and a number's `&mut`, an
+item with a destructor written through each `&mut`, and an `Option`'s
+`None`. It matches native in each build and through every metamorphic
+rewrite. The diagnostics row and the guide's limitation are gone.

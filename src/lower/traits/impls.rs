@@ -270,12 +270,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or an `impl Iterator` (`made_js_iterator`, ADR 0061, #1292), knowing
     /// its back and its length where the trait bounds it so; and of a tuple,
     /// each field so, `(impl Iterator, u8)`'s, and of an `Option`, its
-    /// payload, as its own would be (#2005).
-    /// `None` where it's as the impl gives it.
+    /// payload, as its own would be (#2005). And, walked with them, a
+    /// `&mut` generic code holds as its box (`within`, #686), each part of
+    /// the one value adapted as it holds it, `(&mut Self::Item, impl
+    /// Iterator)`'s (#2010). `None` where it's as the impl gives it.
     fn made_for_generic_code(
         &mut self,
         value: &Expr,
         (declared, env, output): (Ty<'tcx>, ty::ParamEnv<'tcx>, Ty<'tcx>),
+        within: Option<&Within<'tcx>>,
         span: Span,
     ) -> R<Option<Expr>> {
         match self.held_by_generic_code(declared, env, output) {
@@ -294,8 +297,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let (Some(declared), Some(output)) = (self.option_of(declared), self.option_of(output))
             && self.option_of(declared).is_none()
         {
-            let Some(made) = self.made_for_generic_code(&value.clone().present(), (declared, env, output), span)?
-            else {
+            let within = within.and_then(|within| match within {
+                Within::Some(inner) => Some(inner.as_ref()),
+                _ => None,
+            });
+            let made = self.made_for_generic_code(&value.clone().present(), (declared, env, output), within, span)?;
+            let Some(made) = made else {
                 return Ok(None);
             };
             return Ok(Some(Expr::cond(
@@ -305,12 +312,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )));
         }
         let (ty::Tuple(fields), ty::Tuple(made)) = (declared.kind(), output.kind()) else {
-            return Ok(None);
+            // What's left, the box of a `&mut` generic code holds, `within`'s.
+            let Some(within) = within else {
+                return Ok(None);
+            };
+            return within.given_back(self, value, span);
         };
         let field = |at: usize| Expr::index(value.clone(), Expr::int(at as i128));
         let mut parts = Vec::new();
         for (at, (declared, output)) in fields.iter().zip(made.iter()).enumerate() {
-            parts.push(self.made_for_generic_code(&field(at), (declared, env, output), span)?);
+            let within = within.and_then(|within| match within {
+                Within::Tuple(parts) => Some(&parts[at]),
+                _ => None,
+            });
+            parts.push(self.made_for_generic_code(&field(at), (declared, env, output), within, span)?);
         }
         if parts.iter().all(Option::is_none) {
             return Ok(None);
@@ -806,10 +821,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Iterator, u8)`'s (#2005).
             let given = self.fresh(Role::Given);
             let tuple = matches!(declared_output.kind(), ty::Tuple(_)) || self.option_of(declared_output).is_some();
+            // And of one, each `&mut` within it, the impl's made generic code's
+            // box, `Option<&mut Self>`'s, walked with the iterators it holds
+            // (#686, #2010).
             let dictionary_env = std::mem::replace(&mut self.typing_env, method_env);
             let made = match tuple {
-                true => self.made_for_generic_code(&Expr::var(&given), (declared_output, env, output), span),
-                false => self.made_for_generic_code(&call, (declared_output, env, output), span),
+                true => self.made_for_generic_code(
+                    &Expr::var(&given),
+                    (declared_output, env, output),
+                    forms.result_within.as_ref(),
+                    span,
+                ),
+                false => self.made_for_generic_code(&call, (declared_output, env, output), None, span),
             };
             self.typing_env = dictionary_env;
             let (call, within_tuple) = match (tuple, made?) {
@@ -846,20 +869,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 false => call,
             };
-            // And a `&mut` within what it gives, `Option<&mut Self>`'s, the
-            // impl's made generic code's box (#686).
-            let given_back = match forms.result_within.as_ref() {
-                Some(within) => within.given_back(self, &Expr::var(&given), span)?,
-                None => None,
-            };
-            let given_back = match (given_back, within_tuple) {
-                (Some(_), Some(_)) => {
-                    return Err(self.unsupported(
-                        span,
-                        "a trait method's result holding both a `&mut` and an `impl Iterator` generic code takes apart (#2010)",
-                    ));
-                }
-                (adapted, iterators) => adapted.or(iterators),
+            // Of another, a `&mut` within what it gives (#686).
+            let given_back = match (tuple, forms.result_within.as_ref()) {
+                (true, _) => within_tuple,
+                (false, Some(within)) => within.given_back(self, &Expr::var(&given), span)?,
+                (false, None) => None,
             };
             let made = call.is_none() && given_back.is_none();
             let call = call.unwrap_or_else(|| Expr::call(callee, values));
