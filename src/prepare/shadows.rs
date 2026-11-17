@@ -5,7 +5,7 @@
 
 use crate::collections::IndexSet;
 
-use crate::js::{self, Expr, ExprKind, Function, Pattern, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Function, Name, Pattern, Stmt, StmtKind};
 
 /// `function`'s shadows of their own value, and each of its closures'.
 pub(super) fn function(function: &mut Function) {
@@ -17,7 +17,7 @@ pub(super) fn function(function: &mut Function) {
     js::each_expr_mut(&mut function.body, &mut |e| {
         if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind {
             let own = own_names(params, body);
-            let given: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+            let given: IndexSet<Name> = params.iter().flat_map(|p| p.bound()).cloned().collect();
             shadows(body, &own, &given);
         }
     });
@@ -26,21 +26,21 @@ pub(super) fn function(function: &mut Function) {
 /// The names a function or a closure of `params` and `body` declares: its
 /// parameters and each variable its blocks declare, a loop's, a `catch`'s
 /// and a function's too, which only it, and its closures, set.
-fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> IndexSet<String> {
-    let mut own: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> IndexSet<Name> {
+    let mut own: IndexSet<Name> = params.iter().flat_map(|p| p.bound()).cloned().collect();
     js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
-                    _ = own.insert(name.to_string());
+                    _ = own.insert(name.clone());
                 }
                 // Each name a pattern declares, `const [id, chunks] =
                 // metadata;`'s, an or-pattern's alike arms' (rd712).
                 StmtKind::Destructure { pattern, .. } => {
-                    own.extend(pattern.names().into_iter().map(str::to_string));
+                    own.extend(pattern.bound().into_iter().cloned());
                 }
-                StmtKind::TryCatch(_, Some(name), _) => _ = own.insert(name.to_string()),
-                StmtKind::Function(function) => _ = own.insert(function.name.to_string()),
+                StmtKind::TryCatch(_, Some(name), _) => _ = own.insert(name.clone()),
+                StmtKind::Function(function) => _ = own.insert(function.name.clone()),
                 _ => {}
             }
         }
@@ -48,40 +48,36 @@ fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> IndexSet<String> {
     own
 }
 
-/// Each `const n$1 = n;` of `body` that's `n` (`shadow`), `n` in its place.
-fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>, given: &IndexSet<String>) {
-    while let Some((alias, of)) = shadow(body, own, given) {
+/// Each `const n$1 = n;` of `body` that's `n` (`shadow`), `n` in its place:
+/// each read of the copy, by its id, a read of `n`, never a closure's own
+/// of its word, its `catch_unwind`'s result (#457), a function's declared
+/// beside it (#1766), nor a closure's parameter (ADR 1150); and only where
+/// each of those reads is of `n` still, as JS's scopes say, none where
+/// another of its spelling takes it, a function's own `const n = n$1`
+/// beside it, React's Flight server's `busboyStream`
+/// (`js::scopes::not_read_as_themselves`). Of no variable made of its word
+/// alone, which no scope tells from another of its spelling.
+fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<Name>, given: &IndexSet<Name>) {
+    let mut kept_apart: IndexSet<Name> = IndexSet::default();
+    while let Some((alias, of)) = shadow(body, own, given, &kept_apart) {
         // Of a global, `const performance$1 = performance;`, each read the
         // global's still, as `Expr::global` made it (`js::validate`).
-        let mut read: Option<js::Name> = None;
-        js::each_block_mut(body, &mut |stmts| {
-            for s in stmts.iter() {
-                if let StmtKind::Const(name, value) = &s.kind
-                    && name.is(&alias)
-                    && let ExprKind::Var(v) = &value.kind
-                    && v.is(&of)
-                    && read.as_ref().is_none_or(|read| !read.is_global())
-                {
-                    read = Some(v.clone());
-                }
+        let mut folded = body.clone();
+        js::each_expr_mut(&mut folded, &mut |e| {
+            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
+                e.kind = ExprKind::Var(of.clone());
             }
         });
-        let read = read.expect("the `const` a shadow is of");
-        // Not a closure's own of the name, its `catch_unwind`'s result
-        // named `value$1` apart from the `value` it captures (#457).
-        js::outside_shadows(body, &alias, |body| {
-            js::each_expr_mut(body, &mut |e| {
-                if matches!(&e.kind, ExprKind::Var(name) if name.is(&alias)) {
-                    e.kind = ExprKind::Var(read.clone());
-                }
-            });
-            js::each_block_mut(body, &mut |stmts| {
-                stmts.retain(|s| {
-                    !matches!(&s.kind, StmtKind::Const(name, value)
-                    if name.is(&alias) && matches!(&value.kind, ExprKind::Var(v) if v.is(&of)))
-                });
+        js::each_block_mut(&mut folded, &mut |stmts| {
+            stmts.retain(|s| {
+                !matches!(&s.kind, StmtKind::Const(name, value)
+                    if *name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
             });
         });
+        match js::scopes::not_read_as_themselves(&folded, &[&of]).is_empty() {
+            true => *body = folded,
+            false => _ = kept_apart.insert(alias),
+        }
     }
 }
 
@@ -91,21 +87,26 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>, given: &IndexSet<String
 /// say, which a call may set out of its sight: only where each read of
 /// `n$1` is before anything that may run code (`read_before_code`, ADR
 /// 0277, amended).
-fn shadow(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -> Option<(String, String)> {
-    // What closures set, and what their parameters are named, which a
-    // name read in them would mean instead.
-    let mut in_closures = replaced_in_closures_spelled(body);
-    js::each_expr(body, &mut |e| {
-        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
-            in_closures.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-        }
-    });
+fn shadow(
+    body: &[Stmt],
+    own: &IndexSet<Name>,
+    given: &IndexSet<Name>,
+    kept_apart: &IndexSet<Name>,
+) -> Option<(Name, Name)> {
+    // What closures set: what a read where the copy was may not be of.
+    let in_closures = js::Writes::of(body).replaced_in_closures;
     let mut walk = Walk {
         given: given.clone(),
         ..Walk::default()
     };
     walk.stmts(body, false);
     walk.shadows.into_iter().find_map(|(at, looped, alias, of)| {
+        // Of a variable with an id of its own, or a global or a module's
+        // name: one made of its word alone neither `js::scopes` nor
+        // `js::validate` tells from another of its spelling (`shadows`).
+        if kept_apart.contains(&alias) || !(of.has_id() || of.is_global() || of.is_module()) {
+            return None;
+        }
         let sets: Vec<usize> = walk
             .sets
             .iter()
@@ -120,14 +121,7 @@ fn shadow(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -> Op
         let unread_after = || {
             rest.is_some_and(|rest| !read_later(rest, &alias) && read_before_set(rest, &alias, &of, &mut false, true))
         };
-        // Nor where what's after declares `n` again, a closure's `const n`
-        // the read of `n$1` there would be of instead (#1078).
-        let mut redeclared = false;
-        if let Some(rest) = rest {
-            js::each_declared(rest, &mut |name| redeclared |= name == of);
-        }
         let kept = !in_closures.contains(&of)
-            && !redeclared
             && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at) || unread_after());
         let seen = own.contains(&of) || rest.is_some_and(|rest| read_before_code(rest, &alias, &mut false, true));
         (kept && seen).then_some((alias, of))
@@ -137,19 +131,19 @@ fn shadow(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -> Op
 /// Whether `stmts` read `alias` where they don't run: in a closure, or a
 /// function, or a handle's accessors, `{ get value() { return list$1.next;
 /// } }`, each of which reads it when it's called.
-fn read_later(stmts: &[Stmt], alias: &str) -> bool {
+fn read_later(stmts: &[Stmt], alias: &Name) -> bool {
     let mut later = false;
     js::each_expr(stmts, &mut |e| {
         later |= match &e.kind {
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => js::mentions_in(body, alias) > 0,
-            ExprKind::Function(function) => js::mentions_in(&function.body, alias) > 0,
-            ExprKind::Handle(place, _) => place.mentions_var(alias),
-            ExprKind::Pair(a, b, _) => a.mentions_var(alias) || b.mentions_var(alias),
+            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => js::mentions_of(body, alias) > 0,
+            ExprKind::Function(function) => js::mentions_of(&function.body, alias) > 0,
+            ExprKind::Handle(place, _) => place.mentions_name(alias),
+            ExprKind::Pair(a, b, _) => a.mentions_name(alias) || b.mentions_name(alias),
             _ => false,
         };
     });
     js::each_list(stmts, &mut |list| {
-        later |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_in(&f.body, alias) > 0));
+        later |= (list.iter()).any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_of(&f.body, alias) > 0));
     });
     later
 }
@@ -160,14 +154,14 @@ fn read_later(stmts: &[Stmt], alias: &str) -> bool {
 /// the next; a loop's, which goes round, only where it sets nothing or
 /// reads nothing. `of = .. alias ..` reads it first. `top`, whether it's
 /// the copy's list or an `if`'s of it (`after_ways`).
-fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool, top: bool) -> bool {
-    let reads = |stmts: &[Stmt]| js::mentions_in(stmts, alias) > 0;
-    let sets = |stmts: &[Stmt]| may_replace_spelled(stmts, of);
+fn read_before_set(stmts: &[Stmt], alias: &Name, of: &Name, set: &mut bool, top: bool) -> bool {
+    let reads = |stmts: &[Stmt]| js::mentions_of(stmts, alias) > 0;
+    let sets = |stmts: &[Stmt]| may_replace(stmts, of);
     for stmt in stmts {
         let one = std::slice::from_ref(stmt);
         let ok = match &stmt.kind {
             StmtKind::If(test, a, b) => {
-                let first = !*set || !test.mentions_var(alias);
+                let first = !*set || !test.mentions_name(alias);
                 let mut other = *set;
                 let b = b.as_deref().unwrap_or(&[]);
                 let ok = read_before_set(a, alias, of, set, top) && read_before_set(b, alias, of, &mut other, top);
@@ -179,7 +173,7 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool, top: b
                 cases,
                 default,
             } => {
-                let first = !*set || !discriminant.mentions_var(alias);
+                let first = !*set || !discriminant.mentions_name(alias);
                 first && js::case_lists(cases, default).all(|body| read_before_set(body, alias, of, set, false))
             }
             StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
@@ -187,10 +181,10 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool, top: b
             }
             StmtKind::Labeled(_, body) => read_before_set(body, alias, of, set, false),
             StmtKind::Assign(target, value)
-                if matches!(&target.kind, ExprKind::Var(v) if v.is(of))
+                if matches!(&target.kind, ExprKind::Var(v) if v == of)
                     && !sets(&[StmtKind::Expr(value.clone()).at(js::Span::NONE)]) =>
             {
-                let ok = !*set || !value.mentions_var(alias);
+                let ok = !*set || !value.mentions_name(alias);
                 *set = true;
                 ok
             }
@@ -243,9 +237,9 @@ fn leaves(stmt: &Stmt) -> bool {
 }
 
 /// The statements after `const alias = ..` in the list that has it.
-fn after<'s>(stmts: &'s [Stmt], alias: &str) -> Option<&'s [Stmt]> {
+fn after<'s>(stmts: &'s [Stmt], alias: &Name) -> Option<&'s [Stmt]> {
     for (i, stmt) in stmts.iter().enumerate() {
-        if matches!(&stmt.kind, StmtKind::Const(name, _) if name.is(alias)) {
+        if matches!(&stmt.kind, StmtKind::Const(name, _) if name == alias) {
             return Some(&stmts[i + 1..]);
         }
         let found = match &stmt.kind {
@@ -275,7 +269,7 @@ fn after<'s>(stmts: &'s [Stmt], alias: &str) -> Option<&'s [Stmt]> {
 /// or `finally` after all of it; what a loop or a `switch` reads of it,
 /// only where it runs nothing. `top`, whether it's the copy's list or an
 /// `if`'s of it (`after_ways`).
-fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool, top: bool) -> bool {
+fn read_before_code(stmts: &[Stmt], alias: &Name, ran: &mut bool, top: bool) -> bool {
     for stmt in stmts {
         let ok = match &stmt.kind {
             StmtKind::Const(_, e)
@@ -310,7 +304,7 @@ fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool, top: bool) -> b
             _ => {
                 let one = std::slice::from_ref(stmt);
                 let runs = runs_code(one);
-                let read = js::mentions_in(one, alias) > 0;
+                let read = js::mentions_of(one, alias) > 0;
                 *ran |= runs;
                 !read || !runs && !*ran
             }
@@ -325,9 +319,9 @@ fn read_before_code(stmts: &[Stmt], alias: &str, ran: &mut bool, top: bool) -> b
 /// Whether each read of `alias` in `e`, in JS's order, is before anything
 /// in it that may run code (`read_before_code`): a call's callee and
 /// arguments before it runs, a property's object before its getter.
-fn read_first(e: &Expr, alias: &str, ran: &mut bool) -> bool {
+fn read_first(e: &Expr, alias: &Name, ran: &mut bool) -> bool {
     let one = [StmtKind::Expr(e.clone()).at(js::Span::NONE)];
-    let read = js::mentions_in(&one, alias) > 0;
+    let read = js::mentions_of(&one, alias) > 0;
     if !runs_code(&one) {
         return !read || !*ran;
     }
@@ -385,10 +379,10 @@ fn runs_code(stmts: &[Stmt]) -> bool {
 #[derive(Default)]
 struct Walk {
     /// The closure's parameters, of what it's given (`folds_into`).
-    given: IndexSet<String>,
+    given: IndexSet<Name>,
     at: usize,
-    shadows: Vec<(usize, bool, String, String)>,
-    sets: Vec<(usize, String)>,
+    shadows: Vec<(usize, bool, Name, Name)>,
+    sets: Vec<(usize, Name)>,
 }
 
 impl Walk {
@@ -400,7 +394,7 @@ impl Walk {
                     if let ExprKind::Var(of) = &value.kind
                         && folds_into(alias, of, &self.given)
                     {
-                        self.shadows.push((self.at, looped, alias.to_string(), of.to_string()));
+                        self.shadows.push((self.at, looped, alias.clone(), of.clone()));
                     }
                 }
                 // Each variable it sets, as `js::Writes` says: each of a
@@ -408,7 +402,7 @@ impl Walk {
                 StmtKind::Assign(..) | StmtKind::Compound(..) => {
                     for place in js::Writes::places(std::slice::from_ref(stmt)) {
                         if let ExprKind::Var(name) = place.kind {
-                            self.sets.push((self.at, name.into_word()));
+                            self.sets.push((self.at, name));
                         }
                     }
                 }
@@ -422,7 +416,7 @@ impl Walk {
                     self.stmts(body, true)
                 }
                 StmtKind::For { name, body, .. } => {
-                    self.sets.push((self.at, name.to_string()));
+                    self.sets.push((self.at, name.clone()));
                     self.stmts(body, true);
                 }
                 StmtKind::Labeled(_, body) => self.stmts(body, looped),
@@ -457,23 +451,25 @@ impl Walk {
 /// else sets `n` nor `n$1` in a closure, and each read of `n$1` is before
 /// anything that may run code since the `let` or the last write back, of
 /// `n` not the function's own.
-fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>, given: &IndexSet<String>) {
+fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<Name>, given: &IndexSet<Name>) {
     while let Some((alias, of)) = write_back(body, own, given) {
         js::each_block_mut(body, &mut |stmts| {
             stmts.retain(|s| match &s.kind {
                 StmtKind::Let(name, Some(value)) => {
-                    !(name.is(&alias) && matches!(&value.kind, ExprKind::Var(v) if v.is(of.word())))
+                    !(*name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
                 }
                 StmtKind::Assign(target, value) => {
-                    !(matches!(&target.kind, ExprKind::Var(t) if t.is(of.word()))
-                        && matches!(&value.kind, ExprKind::Var(v) if v.is(&alias)))
+                    !(matches!(&target.kind, ExprKind::Var(t) if *t == of)
+                        && matches!(&value.kind, ExprKind::Var(v) if *v == alias))
                 }
                 _ => true,
             });
         });
-        // Its reads the variable's it was written back to, as it's one now.
+        // Its reads the variable's it was written back to, as it's one now:
+        // none in a closure (`read_later`), where another of its name could
+        // be declared.
         js::each_expr_mut(body, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(name) if name.is(&alias)) {
+            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
                 e.kind = ExprKind::Var(of.clone());
             }
         });
@@ -481,7 +477,7 @@ fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>, given: &IndexSet<S
 }
 
 /// A `let n$1 = n;` that `written_back` makes `n`, and `n`.
-fn write_back(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -> Option<(String, js::Name)> {
+fn write_back(body: &[Stmt], own: &IndexSet<Name>, given: &IndexSet<Name>) -> Option<(Name, Name)> {
     let mut lets = Vec::new();
     js::each_list(body, &mut |list| {
         for stmt in list {
@@ -489,14 +485,13 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -
                 && let ExprKind::Var(of) = &value.kind
                 && folds_into(alias, of, given)
             {
-                lets.push((alias.to_string(), of.clone()));
+                lets.push((alias.clone(), of.clone()));
             }
         }
     });
-    let in_closures = replaced_in_closures_spelled(body);
+    let in_closures = js::Writes::of(body).replaced_in_closures;
     lets.into_iter().find(|(alias, of)| {
-        let of = of.word();
-        let is = |e: &Expr, name: &str| matches!(&e.kind, ExprKind::Var(v) if v.is(name));
+        let is = |e: &Expr, name: &Name| matches!(&e.kind, ExprKind::Var(v) if v == name);
         // Each write of either: of `n$1` right before `n = n$1;`, of `n`
         // only that.
         let mut paired = true;
@@ -512,7 +507,7 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -
                     }
                     StmtKind::Assign(target, value) if is(target, of) => paired &= is(value, alias),
                     StmtKind::Compound(_, target, _) if is(target, alias) || is(target, of) => paired = false,
-                    StmtKind::For { name, .. } if name.is(alias) || name.is(of) => paired = false,
+                    StmtKind::For { name, .. } if name == alias || name == of => paired = false,
                     _ => {}
                 }
             }
@@ -529,18 +524,18 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>, given: &IndexSet<String>) -
 /// `read_before_code` of a `let n$1 = n;` written back: each read of
 /// `alias` before anything that may run code since the `let`, or since the
 /// last `of = alias;`, which makes them one again.
-fn synced_reads(stmts: &[Stmt], alias: &str, of: &str, ran: &mut bool) -> bool {
+fn synced_reads(stmts: &[Stmt], alias: &Name, of: &Name, ran: &mut bool) -> bool {
     for stmt in stmts {
         let ok = match &stmt.kind {
             StmtKind::Assign(target, value)
-                if matches!(&target.kind, ExprKind::Var(t) if t.is(of))
-                    && matches!(&value.kind, ExprKind::Var(v) if v.is(alias)) =>
+                if matches!(&target.kind, ExprKind::Var(t) if t == of)
+                    && matches!(&value.kind, ExprKind::Var(v) if v == alias) =>
             {
                 *ran = false;
                 true
             }
-            StmtKind::Let(name, Some(_)) if name.is(alias) => true,
-            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(t) if t.is(alias)) => {
+            StmtKind::Let(name, Some(_)) if name == alias => true,
+            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(t) if t == alias) => {
                 read_first(value, alias, ran)
             }
             StmtKind::If(test, a, b) => {
@@ -560,32 +555,99 @@ fn synced_reads(stmts: &[Stmt], alias: &str, of: &str, ran: &mut bool) -> bool {
     true
 }
 
-/// The spellings of the variables `body`'s closures replace: what a name
-/// read in one would mean, as JS reads a name by its spelling.
-/// Preparation's own question, the spelling step's API (ADR 1150), not
-/// a way to ask `js::Writes` of a variable, which asks of its `Name`.
-fn replaced_in_closures_spelled(body: &[Stmt]) -> IndexSet<String> {
-    (js::Writes::of(body).replaced_in_closures.iter())
-        .map(|name| name.word().to_string())
-        .collect()
-}
-
-/// Whether `stmts` may replace a variable spelled `word`, a binding JS
-/// would read by that spelling: preparation's own question
-/// (`replaced_in_closures_spelled`'s).
-fn may_replace_spelled(stmts: &[Stmt], word: &str) -> bool {
+/// Whether `stmts` may replace `of`, or lend it to be replaced
+/// (`js::Writes`), by its id.
+fn may_replace(stmts: &[Stmt], of: &Name) -> bool {
     let writes = js::Writes::of(stmts);
-    writes.replaced.iter().chain(&writes.handled).any(|name| name.is(word))
+    writes.replaced.contains(of) || writes.handled.contains(of)
 }
 
 /// Whether `alias`, a `const` of `of`'s value, is `of` given apart, `p$1`
 /// of `p`, or a holder made of it (`Name::derived`): a copy of a closure's
 /// parameter, `p$13` of `p$12`, which reclaiming spells plainly once it's
 /// folded, by its word's root (ADR 1150).
-fn folds_into(alias: &js::Name, of: &js::Name, given: &IndexSet<String>) -> bool {
-    let base = |root: &str| match given.contains(of.word()) {
+fn folds_into(alias: &Name, of: &Name, given: &IndexSet<Name>) -> bool {
+    let base = |root: &str| match given.contains(of) {
         true => of.root() == root,
         false => of.is(root),
     };
     alias.apart_of().is_some_and(|(root, _)| base(root)) || of.is_origin_of(alias)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn function(name: Name, params: Vec<Name>, body: Vec<Stmt>) -> Function {
+        Function {
+            name,
+            params: params.into_iter().map(Pattern::Name).collect(),
+            body,
+            export: false,
+            is_async: false,
+            noinline: false,
+            span: js::Span::NONE,
+            name_span: js::Span::NONE,
+            param_spans: Vec::new(),
+            set_apart: false,
+        }
+    }
+
+    fn call(callee: &Name, of: &Name) -> Stmt {
+        StmtKind::Expr(Expr::call(Expr::var(callee.clone()), vec![Expr::var(of.clone())])).at(js::Span::NONE)
+    }
+
+    // React's Flight server's `decodeReplyFromBusboy`: its copy of the
+    // stream, `const busboyStream$1 = busboyStream`, read by a function
+    // declared beside it into one of its own of the stream's name, `const
+    // busboyStream = busboyStream$1`, stays: folded, that one would read
+    // itself before it's made, which `js::validate` refuses
+    // (`js::scopes::not_read_as_themselves`).
+    #[test]
+    fn a_copy_read_into_a_function_s_own_of_its_name_stays() {
+        let stream = Name::program("busboyStream".into(), 1);
+        let copy = Name::program("busboyStream$1".into(), 2);
+        let own = Name::program("busboyStream".into(), 3);
+        let destroy = Name::global("destroy");
+        let flush = Name::declared("flush".into());
+        let inner = function(
+            flush.clone(),
+            Vec::new(),
+            vec![
+                StmtKind::Const(own.clone(), Expr::var(copy.clone())).at(js::Span::NONE),
+                call(&destroy, &own),
+            ],
+        );
+        let mut outer = function(
+            Name::declared("decode".into()),
+            vec![stream.clone()],
+            vec![
+                StmtKind::Const(copy.clone(), Expr::var(stream.clone())).at(js::Span::NONE),
+                StmtKind::Function(Box::new(inner)).at(js::Span::NONE),
+                call(&flush, &stream),
+            ],
+        );
+        super::function(&mut outer);
+        assert!(matches!(&outer.body[0].kind, StmtKind::Const(name, _) if *name == copy));
+        assert_eq!(js::validate::body(&outer.body), []);
+    }
+
+    // A copy of a variable made of its word alone, which no scope tells
+    // from another of its spelling, a closure's own: never folded.
+    #[test]
+    fn a_copy_of_a_variable_of_its_word_alone_stays() {
+        let value = Name::from("value");
+        let copy = Name::program("value$1".into(), 1);
+        let destroy = Name::global("destroy");
+        let mut outer = function(
+            Name::declared("decode".into()),
+            vec![value.clone()],
+            vec![
+                StmtKind::Const(copy.clone(), Expr::var(value.clone())).at(js::Span::NONE),
+                call(&destroy, &copy),
+            ],
+        );
+        super::function(&mut outer);
+        assert!(matches!(&outer.body[0].kind, StmtKind::Const(name, _) if *name == copy));
+    }
 }

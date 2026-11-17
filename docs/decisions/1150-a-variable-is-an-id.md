@@ -1314,3 +1314,28 @@ And `library.rs`'s: the names a library's modules export, what its
 consumers import, are read by one marked `exported_as`, an item's export
 name its word at a module's scope.
 
+## Preparation's shadows by id, their scoping asked of `js::scopes` (2026-11-17)
+
+`prepare::shadows`, which makes `const n$1 = n;` `n` (ADR 0277), asked of
+words: its variables, the function's own and a closure's given, sets of
+words; the copy and what it's of, words; and three checks stood in for
+one question, whether `n`'s reads, put where the copy's were, are `n`'s
+still: a later declaration of `n`'s word (#1078), a closure's parameter
+of it, and `js::outside_shadows`, which set a closure or a function that
+declares its own of the copy's word apart (#457, #1766). It runs before
+names are spelled. Now each is a `Name`: the fold makes each read of the
+copy, by its id, a read of `n`, so no closure's own of its word is ever
+renamed; the order and write questions ask by id (`mentions_of`,
+`js::Writes`); and the one scoping question is `js::scopes`':
+`not_read_as_themselves` of the fold made on a copy, which keeps the copy
+where any read would be another variable's of that spelling. That isn't
+spare: React's Flight server's `decodeReplyFromBusboy` copies its stream,
+`const busboyStream$1 = busboyStream`, and the function `flush` declared
+beside it reads the copy into its own, `const busboyStream =
+busboyStream$1`, which the fold would make read itself. `js::validate`
+refuses such a read at every build (`output.rs`, after preparation;
+`validate.rs`, `Problem::Captured`), but only of names with ids of their
+own: a copy of a variable made of its word alone, which neither tells
+from another of its spelling, isn't folded. `outside_shadows`, with no
+caller left, goes; `written_back`'s fold, whose copy no closure reads
+(`read_later`), asks nothing more. Byte-identical.

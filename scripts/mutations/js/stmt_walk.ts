@@ -3,15 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "declared-function-not-set-apart",
-    breaks:
-      "a function declared beside a shadow of its maker's, `const value$1 = value`, isn't set apart, so its own `value$1`, its `match`'s `Result`, is read as its `value`: `rejected undefined Some(2)` where native Rust has `2:2` (#1766, a wrong answer)",
-    file: "src/js/stmt_walk.rs",
-    find: "            if let StmtKind::Function(function) = &mut stmt.kind {\n                set_apart(&mut function.params, &mut function.body);\n",
-    replace: "            if let StmtKind::Function(function) = &mut stmt.kind {\n                _ = function;\n",
-    tests: ["test/corpus.test.ts", "-t", "^shadow_in_an_else_beside_a_declared_function.rs$"],
-  },
-  {
     name: "same-without-facts",
     breaks:
       "statements alike but for what's known of their parts are the same, so one arm's field read stands for another's getter, its facts taken for both (rd687)",
@@ -228,14 +219,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_handed_to_js.rs$"],
   },
   {
-    name: "shadowed-temporary-renamed",
-    breaks: "a temporary renamed `value` renames a closure's own parameter of its name too, so the closure reads the outer value",
-    file: "src/js/stmt_walk.rs",
-    find: "        if params.iter().any(|p| p.names().contains(&name)) || declares_own(body, name) {\n",
-    replace: "        if declares_own(body, name) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^temporaries_taken_apart.rs$"],
-  },
-  {
     name: "handler-calling-nothing-kept",
     breaks: "`onClick={() => onClear()}`, not `onClick={onClear}`: a statement of the call is never passed on",
     file: "src/js/stmt_walk.rs",
@@ -385,23 +368,6 @@ export const mutations: Mutation[] = [
     replace: "            StmtKind::Let(_, None) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "drop_guard_restores_taken_fields"],
     snapshots: true,
-  },
-  {
-    name: "outside-shadows-own-declaration-not-apart",
-    breaks:
-      "a closure that declares its own of the name, its `catch_unwind`'s result `value$1`, is renamed with its maker's `const value$1 = value;`, so each retry reads the captured `value`, `value.TAG` (#457)",
-    file: "src/js/stmt_walk.rs",
-    find: "        if params.iter().any(|p| p.names().contains(&name)) || declares_own(body, name) {\n",
-    replace: "        if params.iter().any(|p| p.names().contains(&name)) {\n",
-    tests: ["test/corpus.test.ts", "-t", "shadow_beside_closure_own_of_its_name"],
-  },
-  {
-    name: "declares-own-not-const",
-    breaks: "a closure's own `const value$1` isn't taken for a declaration of the name, so its maker's shadow renames its reads (#457)",
-    file: "src/js/stmt_walk.rs",
-    find: "                StmtKind::Const(n, _) | StmtKind::Let(n, _) | StmtKind::For { name: n, .. } => n.is(name),\n",
-    replace: "                StmtKind::Let(n, _) | StmtKind::For { name: n, .. } => n.is(name),\n",
-    tests: ["test/corpus.test.ts", "-t", "shadow_beside_closure_own_of_its_name"],
   },
   {
     name: "on-load-destructured-names-unreserved",
