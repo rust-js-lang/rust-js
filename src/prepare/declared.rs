@@ -86,7 +86,9 @@ pub(super) fn declared_functions(stmts: &mut [Stmt]) {
         // of a listener `key`: a reader sees one name meaning two things,
         // and React Compiler refuses the function that declares it (#1702).
         let mut shadows = params.iter().any(|p| p.names().contains(&name.word()));
-        js::each_declared(body, &mut |declared| shadows |= name.is(declared));
+        // word: a declaration JS reads in the function as its own name, by
+        // its spelling (`js::scopes`).
+        shadows |= js::scopes::declared_spelled(body).contains(name.word());
         if own || value_alone || shadows {
             continue;
         }
@@ -116,7 +118,7 @@ fn named_as(value: &mut Expr, property: &str) {
     if function.name.word().is_empty()
         && crate::names::is_identifier(property)
         && !crate::names::kept_word(property)
-        && js::mentions_in(&function.body, property) == 0
+        && !js::scopes::spelled(&function.body).contains(property)
     {
         function.name = js::Name::declared(property.to_string());
     }

@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "function-named-as-what-it-reads",
     breaks: "a function stored as `update.callback` is named `callback` where it reads a variable of that name, which its own name then is: `function callback() { return callback(); }` calls itself (a wrong answer, ADR 0972)",
     file: "src/prepare/declared.rs",
-    find: "        && js::mentions_in(&function.body, property) == 0\n",
+    find: "        && !js::scopes::spelled(&function.body).contains(property)\n",
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"]
   },

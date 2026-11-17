@@ -327,6 +327,20 @@ pub(crate) fn packaged(packages: &[js::Package]) -> impl Iterator<Item = &String
     })
 }
 
+/// Each word `stmts` declare or read, their closures' and functions'
+/// too: the spelling question JS asks where a name is spelled into them, a
+/// word none of these may be, as JS would read it as one of them.
+pub(crate) fn spelled(stmts: &[Stmt]) -> crate::collections::IndexSet<String> {
+    Tree::of_body(stmts).names().map(str::to_owned).collect()
+}
+
+/// Each word `stmts` declare, their closures' and functions' too: the
+/// spelling question JS asks of a name spelled as one of them, which a
+/// reader, and JS inside that scope, takes for the declared one.
+pub(crate) fn declared_spelled(stmts: &[Stmt]) -> crate::collections::IndexSet<String> {
+    Tree::of_body(stmts).declaring.keys().cloned().collect()
+}
+
 /// Whether each of `names` is in reach where `at`, read once in `body`, a
 /// function's, is read, by their ids ([`Tree::reach`]): asked by ids, no
 /// word, where a pass moves a closure's body to its call.

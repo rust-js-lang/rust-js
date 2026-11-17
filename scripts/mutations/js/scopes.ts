@@ -150,4 +150,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(local_named_as_a_helper_its_scope_reads|clones_beside_a_generic_clone_of_a_copied_map|locals_named_as_the_modules_names).rs$"],
     snapshots: true,
   },
+  {
+    name: "spelled-declared-alone",
+    breaks: "a function stored as a property is named the property though its body reads a variable of that spelling, which its own name then takes",
+    file: "src/js/scopes.rs",
+    find: "    Tree::of_body(stmts).names().map(str::to_owned).collect()\n",
+    replace: "    Tree::of_body(stmts).declaring.keys().cloned().collect()\n",
+    tests: ["test/js-functions.test.ts", "-t", "stored as a property is named"],
+  },
+
 ];

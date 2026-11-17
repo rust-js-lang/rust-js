@@ -1170,9 +1170,10 @@ fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, V
             *e = Expr::var(&thrown).or_at(e.span);
         }
     });
-    let mut declared = 0;
-    js::each_declared(&rest, &mut |name| declared += usize::from(payload.is(name)));
-    if js::mentions_of(&rest, &payload) > 0 || declared > 0 {
+    // word: a declaration of the payload's spelling, which the `catch`'s
+    // binding of it would shadow (`js::scopes`).
+    let declared = js::scopes::declared_spelled(&rest).contains(payload.word());
+    if js::mentions_of(&rest, &payload) > 0 || declared {
         return (Some(thrown), unwound_where_read(handler[0].clone(), &payload, rest));
     }
     js::each_expr_mut(&mut rest, &mut |e| {
