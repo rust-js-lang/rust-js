@@ -920,3 +920,48 @@ src/lower/traits/given.rs that removed the line its mutation changed. A script's
 in a copy of the tree with it, and are its evidence. This supersedes
 #1979's evidence by hand above. The runtime retirement's rule, a run of
 the tree pushed, still holds of the push.
+
+## Amendment: the Nightly holds 14 of the 20 runners, its jobs in lanes (2026-11-17)
+
+The Free plan runs 20 jobs at once across the account, and the Nightly
+held all 20 for most of its run. Over three nights (43650311159,
+43532160173, 43333093940) it ran 142–168 minutes on 2,119–2,231
+runner-minutes, peaked at 20, and stayed above 14 for 74–101 minutes. The
+pushes' checks, their attribution and the test map's recordings queued
+behind it: a check's `attribute-mutations` waited over half an hour for a
+runner on 2026-11-17. The Nightly's latency doesn't matter, but a push's
+feedback does.
+
+A scheduled workflow now holds at most `NIGHTLY_RUNNERS`, 14, leaving 6
+for the pushes. The number is defined once, in scripts/runners.ts, and
+`test/ci.test.ts` holds each scheduled workflow to it by its worst case as
+its YAML says:
+
+- the heaviest set of jobs that no `needs` path orders (Dilworth's
+  theorem, as a minimum flow), the workflows it calls inlined;
+- each matrix job counted as many at once as its `max-parallel` lets. A
+  matrix whose size is known only as it runs must have a cap.
+- every `if:` counted as running, except one its caller's `inputs` decide
+  false, and a job GitHub skips because something it needs was skipped
+  and its `if:` asks no status. A `needs.*` result, a status function or
+  `github.*` can't be decided, so it counts as running.
+
+The Nightly's jobs run in lanes, each job `needs` the one before it with
+`if: ${{ !cancelled() }}`, so a red job doesn't stop its lane:
+
+- three at once: the metamorphic net, then tidy's stages, then the
+  generated programs;
+- one at a time: Crater's parts, the matrices and the nets of crates and
+  copies;
+- one at a time: the generated programs' fuzz, then each short net;
+- check.yml in two calls: its suite (`part: suite`, two of each matrix at
+  once), then its mutations (`part: mutations`, 9 of the 16 shards at
+  once, and the test map's parts).
+
+So the shards dealt by time above run 9 at once, not 16. The worst case is
+14. The callers' `max_parallel` input reaches each matrix of check.yml,
+rustc-tests.yml and test-map.yml, and a push passes none, so its checks
+are as before. Measuring which of the Nightly's check jobs a passed push
+check had already run at the same commit found 0 to 17 runner-minutes a
+night, under 1%, so the Nightly doesn't skip them: a job a push's selection
+skipped isn't a pass, and the Nightly audits that selector.

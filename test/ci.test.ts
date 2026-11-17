@@ -12,6 +12,7 @@ import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, 
 import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
+import { evaluateIf, heldJobs, mostAtOnce, NIGHTLY_RUNNERS, scheduled } from "../scripts/runners";
 import { reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
@@ -479,7 +480,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage", "test-times", "selector-audit", "clusters", "attribute-plan", "attribute", "attribute-report", "attribute-mutations", "ci-spend"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "check-mutations", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage", "test-times", "selector-audit", "clusters", "attribute-plan", "attribute", "attribute-report", "attribute-mutations", "ci-spend"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -916,9 +917,9 @@ test("each push's corpus builds every case as a library, as the nightly's does",
 // tests or script import is in it.
 test("the WASM build, rustc's tests and the mutations run where what they run changed", () => {
   const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
-  expect(check).toContain("if: ${{ inputs.nightly || needs.plan.outputs.wasm == 'true' }}");
-  expect(check).toContain("if: ${{ inputs.nightly || needs.plan.outputs.rustc == 'true' }}");
-  expect(check).toContain("if: ${{ inputs.nightly || needs.plan.outputs.mutations == 'true' }}");
+  expect(check).toContain("if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true') }}");
+  expect(check).toContain("if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.rustc == 'true') }}");
+  expect(check).toContain("if: ${{ inputs.part != 'suite' && (inputs.nightly || needs.plan.outputs.mutations == 'true') }}");
   expect(wasmInputs("INPUTS=(src Cargo.toml wasm/patches)\n")).toEqual(["src/**", "Cargo.toml", "wasm/patches/**"]);
   for (const file of ["src/lower/copies.rs", "wasm/patches/a.patch", "rust-toolchain.toml", "std/lib.rs", "test/snapshots/x.js", "examples/fib.rs"]) {
     expect([file, touchesWasm([file])]).toEqual([file, true]);
@@ -1146,4 +1147,56 @@ test("a change's untimed mutations are dealt first, in turn, each its file's usu
   // 90th percentile, 60): two each, in turn, the longest first.
   expect(shards.map((s) => s.filter((n) => n.startsWith("n")))).toEqual([["n1", "n2"], ["n3", "n4"]].map((s) => s.sort()));
   expect(() => balancedByGroup(["a"], 3, 2, seconds, (name) => files[name])).toThrow("a shard is 1 to 2");
+});
+
+// The free plan runs 20 jobs at once across the account, and the Nightly
+// held all 20 for most of its run: its three nights before the lanes,
+// 74 to 101 minutes past 14, while the pushes' checks and their
+// attribution queued behind it. A scheduled workflow holds at most
+// `NIGHTLY_RUNNERS`, its worst case as scripts/runners.ts reads its YAML:
+// each matrix job as many at once as its `max-parallel` lets, every
+// `if:` running but one its caller's inputs decide false.
+test("a scheduled workflow holds at most NIGHTLY_RUNNERS of the free plan's runners at once", () => {
+  const dir = join(root, ".github/workflows");
+  const files = scheduled((name) => readFileSync(join(dir, name), "utf8"), readdirSync(dir).filter((name) => name.endsWith(".yml")));
+  expect(files).toContain("nightly.yml");
+  for (const file of files) {
+    const { jobs, order } = heldJobs(file);
+    const unbounded = jobs.filter((job) => !Number.isFinite(job.at)).map((job) => `${job.id}: ${job.why}`);
+    expect([file, unbounded]).toEqual([file, []]);
+    expect([file, mostAtOnce(jobs, order) <= NIGHTLY_RUNNERS]).toEqual([file, true]);
+  }
+});
+
+// Its parts: an `if:` the caller's inputs decide is decided, one a run's
+// results decide counts as running; a job is ruled out with what it
+// needs, unless its `if:` asks a status; and the most at once is of jobs
+// no `needs` orders, each its own runners.
+test("the runners' bound reads `if:` of inputs alone, and counts jobs no need orders", () => {
+  expect(evaluateIf("${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}", { nightly: true })).toBe(false);
+  expect(evaluateIf("${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}", { nightly: false })).toBe("?");
+  expect(evaluateIf("${{ needs.mutations.result == 'failure' }}", {})).toBe("?");
+  expect(evaluateIf("inputs.tests != ''", {})).toBe(false);
+  expect(evaluateIf("${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true') }}", { part: "suite", nightly: true })).toBe(true);
+  expect(evaluateIf("always() && inputs.fuzz_seeds != ''", { fuzz_seeds: "600" })).toBe("?");
+  const yaml: Record<string, string> = {
+    "w.yml": `jobs:
+  a: { runs-on: x, if: "\${{ inputs.go }}" }
+  b: { runs-on: x, needs: a }
+  c: { runs-on: x, needs: a, if: "always()" }
+  d: { runs-on: x, strategy: { max-parallel: "\${{ inputs.wide || 3 }}", matrix: { n: [1, 2, 3, 4] } } }
+  e: { runs-on: x, needs: d, strategy: { matrix: { n: "\${{ fromJSON(needs.d.outputs.n) }}" } } }
+`,
+  };
+  const read = (name: string) => yaml[name]!;
+  const held = (inputs: Record<string, unknown>) => Object.fromEntries(heldJobs("w.yml", inputs, "", read).jobs.map((job) => [job.id, job.at]));
+  expect(held({ go: false, wide: "2" })).toEqual({ a: 0, b: 0, c: 1, d: 2, e: Number.POSITIVE_INFINITY });
+  expect(held({ go: true })).toEqual({ a: 1, b: 1, c: 1, d: 3, e: Number.POSITIVE_INFINITY });
+  const job = (id: string, at: number) => ({ id, at });
+  expect(mostAtOnce([job("a", 1), job("b", 1), job("c", 1)], [["a", "b"], ["b", "c"]])).toBe(1);
+  expect(mostAtOnce([job("a", 2), job("b", 3)], [])).toBe(5);
+  // A diamond: a before b and c, both before d; b and c at once.
+  expect(mostAtOnce([job("a", 4), job("b", 2), job("c", 3), job("d", 1)], [["a", "b"], ["a", "c"], ["b", "d"], ["c", "d"]])).toBe(5);
+  // A long lane beside a short one: the lane's widest job, not its sum.
+  expect(mostAtOnce([job("l1", 3), job("l2", 1), job("s", 2)], [["l1", "l2"]])).toBe(5);
 });

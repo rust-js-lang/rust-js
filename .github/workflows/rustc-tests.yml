@@ -70,6 +70,11 @@ on:
         default: ''
   workflow_call:
     inputs:
+      # How many of each matrix's jobs at once, the test map's parts too;
+      # '' each its own (scripts/runners.ts).
+      max_parallel:
+        type: string
+        default: ''
       tests:
         description: 'Tests or directories under tests/ui, separated by spaces, like "derives/ consts/std/iter.rs". Empty: all of them.'
         required: false
@@ -168,6 +173,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max_parallel || 6 }}
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     steps:
@@ -244,6 +250,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max_parallel || 6 }}
       matrix:
         part: [1, 2, 3, 4, 5, 6]
     steps:
@@ -363,6 +370,7 @@ jobs:
       contents: read
       actions: read
     with:
+      max_parallel: ${{ inputs.max_parallel }}
       of: ${{ inputs.mutation_args == '' && 'head' || 'any' }}
       # The nightly's, a run of every mutation: whole, and its drift check.
       full: ${{ inputs.mutation_args == '' }}
@@ -382,6 +390,7 @@ jobs:
       actions: read
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max_parallel || 16 }}
       matrix:
         shard: ${{ fromJSON(inputs.mutation_shards == '16' && '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]' || inputs.mutation_shards == '8' && '[1, 2, 3, 4, 5, 6, 7, 8]' || inputs.mutation_shards == '4' && '[1, 2, 3, 4]' || inputs.mutation_shards == '2' && '[1, 2]' || '[1]') }}
     steps:
@@ -539,6 +548,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max_parallel || 16 }}
       matrix:
         shard: ${{ fromJSON(inputs.ablation_shards == '16' && '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]' || inputs.ablation_shards == '8' && '[1, 2, 3, 4, 5, 6, 7, 8]' || inputs.ablation_shards == '4' && '[1, 2, 3, 4]' || inputs.ablation_shards == '2' && '[1, 2]' || '[1]') }}
     steps:

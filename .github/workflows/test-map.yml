@@ -36,6 +36,10 @@ on:
         description: "The nightly's: HEAD's map recorded whole, never carried, then checked against what a carry makes of it (`testMap.ts drift`), a drift making each recording full until a nightly's check passes."
         type: boolean
         default: false
+      max_parallel:
+        description: "How many of the recording's parts at once; '' all (scripts/runners.ts)."
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -133,6 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
+      max-parallel: ${{ inputs.max_parallel || 20 }}
       matrix:
         part: ${{ fromJSON(needs.test-map.outputs.parts) }}
     steps:

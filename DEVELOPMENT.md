@@ -73,7 +73,7 @@ behind `main`'s queue, was 2,156 runner-minutes, all wasted (#1989).
 |---|---|---|---|
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
-| The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 16 machines |
+| The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, in 16 shards, 9 at once (ADR 0093, amended) |
 | `bun run check:fast`: lint, and the test files and corpus cases the selector says the change can affect (`scripts/select.ts`, ADR 1101, amended), each file a job, the nets its paths run, `cargo test` and the Vite example's build where its change can reach them, its new mutations, at once; everything where the selector can't say; `--all`, everything a push's check runs that can run here: typecheck, fmt, clippy, `cargo test`, the Vite example's build, and every test file of the suite, the browsers' after the rest | yes, before each commit; `bun run push` runs it before a push, with the change's mutations: nothing else | | |
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | `bun run nightly`: every job the nightly runs, here, each in parts on all the cores (`scripts/nightly.ts`); `bun run nightly stages forms` runs some | yes, before a change the nightly would find, or to prove a night green | | |
@@ -769,7 +769,7 @@ checked:
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |
 | A mutant's serde, shipped-crates and bound-maps tests (145 mutations) | Each builds its native program again in the mutant's own target, its wrapper `include!`ing a file beside it in a fixture there, so the path, and the kept build's key, is the mutant's; a serde build links serde's rlibs. The corpus's wrappers are kept by content in the checkout's target (#875) | The wrapper and the files it includes written to a `contentDirectory` of the checkout's, as `runNative` writes the corpus's |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time: CI's shards are dealt by it now (ADR 0093, amended), their count still by how many |
-| The nightly's wall, 2 h 48 min (nightly 43650311159, 2026-11-15) | 91 jobs, 2,231 runner-minutes against the Free plan's 20 at once, so from minute 30 to 90 every slot is held and jobs wait: the mutation shards started 16 to 45 min in. GitHub's start, about 4 h after the cron's 19:00 UTC, is outside our control | Fewer runner-minutes, below: the five longest jobs are the next five rows |
+| The nightly's wall, 2 h 48 min (nightly 43650311159, 2026-11-15), before it held 14 runners in lanes (ADR 0093, amended, 2026-11-17), its wall since to be measured | 91 jobs, 2,231 runner-minutes against the Free plan's 20 at once, so from minute 30 to 90 every slot is held and jobs wait: the mutation shards started 16 to 45 min in. GitHub's start, about 4 h after the cron's 19:00 UTC, is outside our control | Fewer runner-minutes, below: the five longest jobs are the next five rows |
 | The nightly's mutations, 16 shards, 13–136 min each | 67% of the night's runner-minutes. Of the 10,410 mutations timed, the 210 whose site isn't in a function (`site`) are built alone, 600 of the 2,012 build-minutes, each a whole compile of the crate on CI until it was built incrementally (ADR 0093's amendment of 2026-11-16, #1959); about two a shard aren't caught by their tests and fell back to every corpus snapshot, 15 min each, without a test map on CI (`lent-string-iterator-kept`'s 709 s), each now judged by the cases CI's `test-map` job's map says reach it (ADR 0093, amended). Dealt by time since ADR 0093's amendment | A batch that can hold a site outside a function |
 | The nightly's metamorphic net, 3 machines, ~104 min each | 853 cases a machine, a median of 27 s each, 405 min summed in 4 parts: each rewrite of each case built natively again every night, as nothing native is kept between CI runs. Locally the corpus's part 1/8 is 236 s with the native and verified-run stores cold, 44.8 s with the natives warm, 5.6 s with both (Mac mini, load 2.0) | Kept since ADR 0567's amendment: a native program's run by its build's key beside what the build read, a few MB that CI caches, so a rewrite unchanged since the last night is neither built nor run. To measure: the first night with them |
 | The nightly's small Crater 4 of 4, 43 min | 2,545 s of one step, against 11–15 min for the other three: httparse's 363 tests (the row above) | The row above |
@@ -1009,14 +1009,19 @@ bun test test/fuzz.test.ts`. Miri adds about 0.6 s a program; 720 seeds in
 
 Every test there is: `check.yml`'s jobs, its suite in 2 shards with the
 files only the nightly runs (`--nightly`, ADR 1030), and every
-mutation on 16 machines where a branch's check runs only its own, 600
-generated programs, new ones each night, from the day's number, and every
-corpus case after each of tidy's stages and without each of preparation's
-rewrites on 6 machines, and the 600 programs so on 6 more (ADRs 0659,
-1087), and every case of the iterator matrix on 6 machines of 4 parts
-(`matrix`, ADR 1090, 2,970 s on the Mac in 4 parts at a load of 15–60,
-2026-11-04). It's a
-group of its own, so it neither cancels nor waits for a push's check.
+mutation in 16 shards, 9 at once, after the suite, where a branch's
+check runs only its own, 600 generated programs, new ones each night,
+from the day's number, and every corpus case after each of tidy's stages
+and without each of preparation's rewrites in 6 parts, and the 600
+programs so in 6 more (ADRs 0659, 1087), and every case of the iterator
+matrix in 6 parts of 4 (`matrix`, ADR 1090, 2,970 s on the Mac in 4 parts
+at a load of 15–60, 2026-11-04). It holds at most 14 of the Free plan's
+20 runners, so a push's check keeps 6: its jobs run in lanes, each
+`needs` the one before it, and each matrix has a `max-parallel`. The
+bound is its YAML's worst case, `bun scripts/runners.ts nightly.yml`,
+which `test/ci.test.ts` holds to `NIGHTLY_RUNNERS` (ADR 0093, amended).
+It's a group of its own, so it neither cancels nor waits for a push's
+check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to
 whoever last changed the schedule. Of a public repository, its machines
 cost nothing. Started by hand too: `gh workflow run nightly.yml`.

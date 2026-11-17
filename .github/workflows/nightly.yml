@@ -43,6 +43,24 @@ jobs:
     with:
       test_shards: '2'
       nightly: true
+      part: suite
+      max_parallel: '2'
+
+  # Every mutation, after the suite's jobs: its 16 shards 9 at once, the
+  # Nightly's widest lane (scripts/runners.ts).
+  check-mutations:
+    needs: check
+    if: ${{ !cancelled() }}
+    uses: ./.github/workflows/check.yml
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    with:
+      test_shards: '2'
+      nightly: true
+      part: mutations
+      max_parallel: '9'
 
   # Each night's programs are new: 600 from the day's number times 600.
   seeds:
@@ -55,6 +73,7 @@ jobs:
 
   fuzz:
     needs: seeds
+    if: ${{ !cancelled() }}
     uses: ./.github/workflows/rustc-tests.yml
     # What its survivors job may use, though this runs no mutations: a
     # called workflow's every job is held to what its caller grants.
@@ -66,6 +85,7 @@ jobs:
       fuzz_seeds: '600'
       fuzz_start: ${{ needs.seeds.outputs.start }}
       decisions: true
+      max_parallel: '1'
 
   # Tidy's stages and preparation's rewrites on the whole corpus (ADRs
   # 0659, 1087): each case's JS as tidy leaves it after each stage, and as
@@ -74,10 +94,13 @@ jobs:
   # nightly's suite runs a few of them.
   stages:
     name: tidy stages (${{ matrix.part }}/6)
+    needs: metamorphic
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         part: [1, 2, 3, 4, 5, 6]
     steps:
@@ -124,11 +147,13 @@ jobs:
   # `target/fuzz/seed-<n>.stages.rs`.
   programs:
     name: program stages (${{ matrix.part }}/6)
-    needs: seeds
+    needs: [stages, seeds]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         part: [1, 2, 3, 4, 5, 6]
     steps:
@@ -166,10 +191,13 @@ jobs:
   # does, but the cases `differs` lists; the nightly's suite runs a few of them.
   forms:
     name: iterator forms (${{ matrix.part }}/2)
+    needs: fuzz
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         part: [1, 2]
     steps:
@@ -212,10 +240,13 @@ jobs:
   # and manifest; the nightly's suite compiles a few of them eight times.
   determinism:
     name: determinism (${{ matrix.part }}/2)
+    needs: forms
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         part: [1, 2]
     steps:
@@ -247,10 +278,13 @@ jobs:
   # cases.
   react-compiler:
     name: react-compiler (${{ matrix.part }}/2)
+    needs: object-model
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         part: [1, 2]
     steps:
@@ -286,6 +320,7 @@ jobs:
     timeout-minutes: 150
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         machine: [1, 2, 3]
     steps:
@@ -337,6 +372,8 @@ jobs:
   # model's owners or the readability passes runs one case in 64.
   object-model:
     name: object model net
+    needs: determinism
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -380,6 +417,8 @@ jobs:
   # form changes.
   nones:
     name: None matrix
+    needs: points
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -422,7 +461,8 @@ jobs:
   # 0's first two groups and each listed pair.
   neighbours:
     name: neighbour shuffle
-    needs: seeds
+    needs: [matrix, seeds]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -473,7 +513,8 @@ jobs:
   # the pointers' code runs the slice's 24 (check.yml's `memory-net`).
   memory:
     name: memory net
-    needs: seeds
+    needs: [nones, seeds]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -517,7 +558,8 @@ jobs:
   # refuse it, or an open issue's, test/rustlantis-known.txt.
   rustlantis:
     name: Rustlantis net
-    needs: seeds
+    needs: [port, seeds]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -547,6 +589,8 @@ jobs:
   # push runs a sample.
   mut-refs:
     name: mut-ref matrix
+    needs: memory
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -589,10 +633,13 @@ jobs:
   # iterators' code runs its slice (check.yml's `iterators`, #731).
   matrix:
     name: iterator matrix (${{ matrix.machine }}/6)
+    needs: crater-report
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         machine: [1, 2, 3, 4, 5, 6]
     steps:
@@ -643,10 +690,13 @@ jobs:
   # rows of test/iterator-matrix-known.txt it lists.
   conformance:
     name: iterator conformance (${{ matrix.machine }}/2)
+    needs: numbers
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         machine: [1, 2]
     steps:
@@ -698,6 +748,8 @@ jobs:
   # test/iterator-matrix-known.txt.
   points:
     name: iterator panic points
+    needs: conformance
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -749,6 +801,8 @@ jobs:
   # the `unwind:` rows of test/iterator-matrix-known.txt.
   unwind:
     name: panic points beyond iterators
+    needs: format
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -798,6 +852,8 @@ jobs:
   # but the `format:` rows of test/iterator-matrix-known.txt.
   format:
     name: formatting grid
+    needs: rustlantis
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -848,6 +904,8 @@ jobs:
   # test/iterator-matrix-known.txt.
   numbers:
     name: numbers grid
+    needs: react-compiler
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -897,6 +955,8 @@ jobs:
   # native Rust, but the `async:` rows of test/iterator-matrix-known.txt.
   async:
     name: panic points across await
+    needs: unwind
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -947,6 +1007,8 @@ jobs:
   # native Rust, but the `copies:` rows of test/iterator-matrix-known.txt.
   copies:
     name: copy matrix
+    needs: crates
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -994,6 +1056,8 @@ jobs:
   # rows of test/iterator-matrix-known.txt.
   consumers:
     name: consumer net
+    needs: mut-refs
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1044,6 +1108,8 @@ jobs:
   # of test/iterator-matrix-known.txt.
   std:
     name: std net
+    needs: async
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1095,6 +1161,8 @@ jobs:
   # imported by none. A push runs each table's slice.
   twins:
     name: twin net
+    needs: neighbours
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -1130,6 +1198,8 @@ jobs:
   # and rust_decimal went from runs to refused unseen (#467, #468).
   crates:
     name: crate corpus
+    needs: twins
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -1168,6 +1238,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         shard: [1, 2, 3, 4]
     steps:
@@ -1233,6 +1304,8 @@ jobs:
   # moving the pin to the port's commit that regenerated it.
   port:
     name: react-in-rust port
+    needs: consumers
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1273,7 +1346,7 @@ jobs:
   # a corpus case to write; a red night is the nets', not this.
   decision-coverage:
     name: decision coverage
-    needs: [check, fuzz, stages, programs, forms, determinism, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, twins, crates, crater, port]
+    needs: [check, check-mutations, fuzz, stages, programs, forms, determinism, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, twins, crates, crater, port]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1307,7 +1380,7 @@ jobs:
   # `test-times`, which the next night compares with.
   test-times:
     name: test times
-    needs: [check, fuzz, stages, programs, forms, determinism, react-compiler, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, twins, crates, crater, port]
+    needs: [check, check-mutations, fuzz, stages, programs, forms, determinism, react-compiler, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, twins, crates, crater, port]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1337,7 +1410,7 @@ jobs:
   # `selector: …`: the change that broke it went by unchecked.
   selector-audit:
     name: selector audit
-    needs: check
+    needs: [std, check]
     if: always() && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -1362,7 +1435,8 @@ jobs:
   # clusters, one comment on the architecture review's campaign, #1681,
   # edited in place each night.
   clusters:
-    if: github.ref == 'refs/heads/main'
+    needs: copies
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1385,7 +1459,8 @@ jobs:
   # of the day, a job kind grown past 30% or a micro-benchmark past 1.5
   # times the night before's flagged.
   ci-spend:
-    if: github.ref == 'refs/heads/main'
+    needs: clusters
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -1408,7 +1483,7 @@ jobs:
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.
   issue:
-    needs: [check, seeds, fuzz, stages, programs, forms, determinism, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, crates, crater-report, port]
+    needs: [check, check-mutations, seeds, fuzz, stages, programs, forms, determinism, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, crates, crater-report, port]
     if: always() && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10

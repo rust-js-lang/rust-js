@@ -36,6 +36,18 @@ on:
       nightly:
         type: boolean
         default: false
+      # Which of its jobs a run of the Nightly's runs: `suite`, all but the
+      # mutations, or `mutations`, those alone, after the suite's; '' all.
+      # The Nightly's two calls hold its runners one after the other
+      # (scripts/runners.ts, `NIGHTLY_RUNNERS`).
+      part:
+        type: string
+        default: ''
+      # How many of each matrix's jobs at once, its called workflows' too;
+      # '' each its own.
+      max_parallel:
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -108,7 +120,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/ci.ts plan ${{ inputs.since && format('--since={0}', inputs.since) || '' }} >> "$GITHUB_OUTPUT"
       # What the suite's shards run of it.
-      - uses: actions/upload-artifact@v7
+      - if: ${{ inputs.part != 'mutations' }}
+        uses: actions/upload-artifact@v7
         with:
           name: selection
           path: target/selection.json
@@ -119,6 +132,7 @@ jobs:
   # where each started together and built it again, 9 builds of about 3 min
   # a run whose compiler changed (docs/dev-loop.md). Beside `plan`.
   build:
+    if: ${{ inputs.part != 'mutations' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -135,7 +149,7 @@ jobs:
   iterator-forms:
     name: iterator forms of the corpus
     needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
+    if: ${{ inputs.part != 'mutations' && !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -334,6 +348,7 @@ jobs:
 
 
   lint:
+    if: ${{ inputs.part != 'mutations' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -376,7 +391,7 @@ jobs:
   test:
     name: test (${{ matrix.shard }}/${{ inputs.test_shards || needs.plan.outputs.test_shards || '2' }})
     needs: plan
-    if: ${{ inputs.nightly || needs.plan.outputs.tests != 'none' }}
+    if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.tests != 'none') }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -384,6 +399,7 @@ jobs:
       actions: read
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max_parallel || 4 }}
       matrix:
         shard: ${{ fromJSON((inputs.test_shards || needs.plan.outputs.test_shards) == '4' && '[1, 2, 3, 4]' || (inputs.test_shards || needs.plan.outputs.test_shards || '2') == '2' && '[1, 2]' || '[1]') }}
     steps:
@@ -515,12 +531,13 @@ jobs:
 
   attribute:
     needs: attribute-plan
-    if: ${{ !cancelled() && needs.attribute-plan.outputs.commits != '' && needs.attribute-plan.outputs.commits != '[]' }}
+    if: ${{ !cancelled() && !inputs.nightly && needs.attribute-plan.outputs.commits != '' && needs.attribute-plan.outputs.commits != '[]' }}
     name: attribute (${{ matrix.commit }})
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       fail-fast: false
+      max-parallel: ${{ inputs.max_parallel || 20 }}
       matrix:
         commit: ${{ fromJSON(needs.attribute-plan.outputs.commits) }}
     steps:
@@ -574,7 +591,7 @@ jobs:
 
   attribute-report:
     needs: [attribute-plan, attribute]
-    if: ${{ !cancelled() && needs.attribute-plan.result == 'success' && needs.attribute-plan.outputs.commits != '' && needs.attribute-plan.outputs.commits != '[]' }}
+    if: ${{ !cancelled() && !inputs.nightly && needs.attribute-plan.result == 'success' && needs.attribute-plan.outputs.commits != '' && needs.attribute-plan.outputs.commits != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -640,7 +657,7 @@ jobs:
   # change ran it, 13 min, to the answer it had. The nightly runs it.
   wasm:
     needs: plan
-    if: ${{ inputs.nightly || needs.plan.outputs.wasm == 'true' }}
+    if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.wasm == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -694,7 +711,7 @@ jobs:
   # jobs waited for machines behind the rest. The nightly runs them.
   rustc:
     needs: plan
-    if: ${{ inputs.nightly || needs.plan.outputs.rustc == 'true' }}
+    if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.rustc == 'true') }}
     uses: ./.github/workflows/rustc-tests.yml
     # What its mutations and survivors jobs may use, though this runs
     # neither: a called workflow's every job is held to what its caller
@@ -703,6 +720,8 @@ jobs:
       contents: read
       actions: read
       issues: write
+    with:
+      max_parallel: ${{ inputs.max_parallel }}
 
   # The mutations the change touches (ADR 0093): those in the functions and
   # tests it changes, and those it adds or edits, on as many machines as
@@ -711,13 +730,14 @@ jobs:
   # all of them, on 16 machines.
   mutations:
     needs: plan
-    if: ${{ inputs.nightly || needs.plan.outputs.mutations == 'true' }}
+    if: ${{ inputs.part != 'suite' && (inputs.nightly || needs.plan.outputs.mutations == 'true') }}
     uses: ./.github/workflows/rustc-tests.yml
     permissions:
       contents: read
       actions: read
       issues: write
     with:
+      max_parallel: ${{ inputs.max_parallel }}
       mutations: true
       mutation_timings: ${{ needs.plan.outputs.mutation_timings }}
       mutation_args: ${{ !inputs.nightly && format('--changed={0} --also={1} --base={0}', needs.plan.outputs.since, needs.plan.outputs.retry) || '' }}
