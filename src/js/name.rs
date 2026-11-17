@@ -168,6 +168,12 @@ impl Name {
         (self.is_module() && crate::runtime::exports(&self.0)).then_some(self.0.as_str())
     }
 
+    /// Whether it has an id of its own, a variable's, not one its word
+    /// says, made of the word alone (`Id::WORD`).
+    pub fn has_id(&self) -> bool {
+        self.2 != Id::WORD
+    }
+
     /// Whether it's a global's (`global`).
     pub fn is_global(&self) -> bool {
         self.1 == Of::Global

@@ -4,6 +4,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "captured-read-unrefused",
+    breaks:
+      "a read of a variable another declaration of its word takes, nearer, is printed, JS reading that one (#2026)",
+    file: "src/js/validate.rs",
+    find: "    problems.extend(tree.captured().into_iter().map(Problem::Captured));\n",
+    replace: "",
+    unitTests: "js::validate::tests::a_read_is_of_its_own_variable",
+  },
+  {
     name: "validate-helper-unresolved",
     breaks: "a read of the runtime's helper, `$cleanup`, isn't taken for resolved: a program whose drops run as it unwinds is refused",
     file: "src/js/validate.rs",

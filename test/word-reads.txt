@@ -20,7 +20,7 @@ src/lower/classes/member_functions.rs	2
 src/lower/classes/prototypes.rs	1
 src/lower/classes/states.rs	1
 src/lower/drops.rs	2
-src/lower/drops/inlined.rs	14
+src/lower/drops/inlined.rs	9
 src/lower/items.rs	1
 src/lower/iterators.rs	1
 src/lower/iterators/eager.rs	3

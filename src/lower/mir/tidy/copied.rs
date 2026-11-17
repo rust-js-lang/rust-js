@@ -90,29 +90,31 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
                 let named = named && own;
                 let renamed = named && js::mentions_in(stmts, &b) == js::mentions_in(&stmts[i + 1..], &b);
                 stmts.remove(i + 1);
-                // The variable named so where it's declared and read, or
-                // the binding read as the variable after it.
-                let (from, to, at) = match renamed {
-                    true => (a, b, 0),
-                    false => (b, a, i + 1),
+                // The variable named so where it's declared and read, the
+                // binding's reads its reads; or the binding read as the
+                // variable after it. By their ids, each read the variable's
+                // own, never a word another declaration may spell too (#2026).
+                let one = match renamed {
+                    true => {
+                        let mut spelled = a_name.clone();
+                        spelled.respell(b);
+                        spelled
+                    }
+                    false => a_read,
                 };
+                let at = if renamed { 0 } else { i + 1 };
                 for stmt in stmts[at..].iter_mut() {
                     if let StmtKind::Const(n, _) | StmtKind::Let(n, _) = &mut stmt.kind
-                        && n.is(&from)
+                        && *n == a_name
                     {
-                        n.respell(to.clone());
+                        *n = one.clone();
                     }
                 }
                 js::each_expr_mut(&mut stmts[at..], &mut |e| {
                     if let ExprKind::Var(v) = &mut e.kind
-                        && v.is(&from)
+                        && (*v == b_name || (renamed && *v == a_name))
                     {
-                        // A read of what's renamed, renamed; one of the
-                        // binding gone, a read of the variable.
-                        match renamed {
-                            true => v.respell(to.clone()),
-                            false => *v = a_read.clone(),
-                        }
+                        *v = one.clone();
                     }
                 });
             }

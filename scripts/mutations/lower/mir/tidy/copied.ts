@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "copied-binding-reads-keep-their-id",
+    breaks:
+      "a binding's reads made the variable's keep the binding's id, spelled as the variable is: a read `js::validate` refuses as another variable's (#2026)",
+    file: "src/lower/mir/tidy/copied.rs",
+    find: "                        && (*v == b_name || (renamed && *v == a_name))\n",
+    replace: "                        && (renamed && *v == a_name)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(stock_orders|dyn_any_counted_rc|closure_writes_captured_formatter).rs$"],
+  },
+  {
     name: "let-else-binding-unnamed",
     breaks:
       "a `let`-`else`'s binding of what `take()` gives is `old`, rust-js's name, not the program's, `thenable` (ADR 0598, amended)",

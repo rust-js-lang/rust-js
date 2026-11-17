@@ -75,8 +75,8 @@ export const mutations: Mutation[] = [
     name: "validate-global-unmarked",
     breaks: "a global's read, `console` of a `println!`, isn't taken for resolved by its name: every program refused, `console` read and declared nowhere",
     file: "src/js/scopes.rs",
-    find: "            ExprKind::Var(name) => self.read(name.word(), Whose::of(name)),\n",
-    replace: "            ExprKind::Var(name) => self.read(name.word(), Whose::Local),\n",
+    find: "        self.read(name.word(), Whose::of(name));\n",
+    replace: "        self.read(name.word(), Whose::Local);\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drop_past_a_panic.rs$"],
   },
   {

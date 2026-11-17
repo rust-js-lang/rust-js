@@ -1145,3 +1145,20 @@ ReactFlightServer 6 to 2, ReactFlightReplyClient 5 to 1; a few renumbered
 alike; the lexer's loop is the stepped `while ((c = $next(..)) != null)`,
 `c` its own; two tests' rows (the lead's approval).
 
+## A read is of its own variable, by its id (2026-11-17, #2026)
+
+Some reads carried another variable's id than the declaration they resolve
+to, the words alike, so JS read the right one while a respelling by id
+would have parted them: tidy's `copied bindings` named a variable rust-js
+made for the binding the program named, `old` of `take()` as
+`updatesForLane`, and left the binding's reads its own id; a `Drop`'s body
+applied in place dropped a field's copy of the variable's own word, `const
+prevProps = prevProps;`, its reads the copy's. Each now gives a read the
+variable's id where it makes one of the other, and `copies_read_as`
+substitutes a field's copies by their ids, which ended the hazard the guard
+kept since per-variable reclaiming held (its exception, recorded then,
+closed). `js::validate` refuses a read a declaration of another variable
+spelled as it is takes nearer than its own (`Problem::Captured`), which
+found these over the whole check, the metamorphic net and React's port; a
+unit row holds it. Byte-identical.
+

@@ -23,6 +23,8 @@ pub(crate) struct Read {
     scope: usize,
     pub(crate) of: Option<usize>,
     pub(crate) whose: Whose,
+    /// The variable it reads, a variable's read's `Name`.
+    name: Option<Name>,
 }
 
 /// Whose name a read reads, of its name's form.
@@ -187,6 +189,28 @@ impl Tree {
             }
         }
         taking
+    }
+
+    /// Each word read where JS's scopes resolve it to another variable
+    /// than the one it is, by their ids: a declaration spelled as it is
+    /// nearer than its own (`Problem::Captured`). Of variables with ids
+    /// of their own; one made of its word alone is that word.
+    pub(crate) fn captured(&self) -> Vec<String> {
+        let mut captured = Vec::new();
+        for (word, reads) in &self.reads {
+            for read in reads {
+                if let (Some(of), Some(name)) = (read.of, &read.name)
+                    && let Some(declared) = self.scopes[of].bound.get(word)
+                    && name.has_id()
+                    && declared.has_id()
+                    && declared != name
+                    && !captured.contains(word)
+                {
+                    captured.push(word.clone());
+                }
+            }
+        }
+        captured
     }
 
     /// `from` named `to`, where [`Tree::renames`] said it keeps each read.
@@ -380,11 +404,20 @@ impl Walk {
             Some(s) => Event::Read(self.tree.scopes[s].names.get(name).copied()),
             None => Event::Outside(name.to_string()),
         });
-        self.tree
-            .reads
-            .entry(name.to_string())
-            .or_default()
-            .push(Read { scope, of, whose });
+        self.tree.reads.entry(name.to_string()).or_default().push(Read {
+            scope,
+            of,
+            whose,
+            name: None,
+        });
+    }
+
+    /// A read of the variable `name`, by its word, which knows its id.
+    fn read_name(&mut self, name: &Name) {
+        self.read(name.word(), Whose::of(name));
+        if let Some(read) = self.tree.reads.get_mut(name.word()).and_then(|reads| reads.last_mut()) {
+            read.name = Some(name.clone());
+        }
     }
 
     /// A function's parameters and its body's own declarations are one scope;
@@ -582,7 +615,7 @@ impl Walk {
 
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
-            ExprKind::Var(name) => self.read(name.word(), Whose::of(name)),
+            ExprKind::Var(name) => self.read_name(name),
             // What it sets is resolved as a read is.
             ExprKind::Assigned(target, a) => {
                 self.expr(target);

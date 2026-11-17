@@ -416,14 +416,17 @@ fn unread_writes(stmts: &mut Vec<Stmt>, guard: &str, mut read_after: GuardReads)
 /// Each `const n = e;` of `body` of what `field` says is a read of a
 /// guard's field nothing writes, which reads as `v`, the variable it was
 /// made of or a `const` of its own, `const old = _restore[0];` of a
-/// `Drop`'s `self.0.take()`: `n` read as `v`, where each of `body`'s
-/// declarations of `n` is such a copy, as nothing sets either once it's
-/// made (ADR 0705, amended); never `undefined` where `defined` says the
+/// `Drop`'s `self.0.take()`: `n`, by its id, read as `v`, as nothing sets
+/// either once it's made (ADR 0705, amended, #2026); never `undefined`
+/// where `defined` says the
 /// field was made of what isn't, as the field's own read is (ADR 0841,
 /// amended): `initializingChunk = prevChunk` of the drop's `old ?? null`
 /// (rd523).
 fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::Name, defined: bool) {
-    let mut copies = Vec::new();
+    // Each copy by its id, one in each place the drop is its own: another
+    // declaration of its word, a closure's `|old|` beside it, is another
+    // variable, its reads its own (#2026).
+    let mut copies: Vec<js::Name> = Vec::new();
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter() {
             if let StmtKind::Const(n, value) = &s.kind
@@ -434,43 +437,21 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::N
             }
         }
     });
-    // By their words, as each is asked of below: one declared in each place
-    // the drop is, made apart, is one copy (#1681 change 3).
-    copies.sort_by(|a, b| a.word().cmp(b.word()));
-    copies.dedup_by(|a, b| a.is(b.word()));
-    for n in copies {
-        // Each of its declarations a copy, in each place the drop is.
-        let mut declared = 0;
-        js::each_declared(body, &mut |name| declared += usize::from(n.is(name)));
-        let mut copied = 0;
-        js::each_block_mut(body, &mut |stmts| {
-            copied += (stmts.iter())
-                .filter(|s| matches!(&s.kind, StmtKind::Const(name, value) if name.is(n.word()) && field(value)))
-                .count();
-        });
-        // Another declaration of its word, a closure's `|old|` beside it,
-        // whose reads the word's substitution below would take too. No
-        // tree reaches this since lowering spells a closure's parameters
-        // apart in its function and preparation reclaims them
-        // (`unsuffixed_params` gone, ADR 1150); kept, an exception the lead
-        // recorded, until #2026 substitutes by the copies' ids, which ends
-        // the hazard, with its mutation `field-copy-named-elsewhere-read`.
-        if declared != copied {
-            continue;
-        }
-        js::each_block_mut(body, &mut |stmts| {
-            stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(name, value) if name.is(n.word()) && field(value)));
-        });
-        js::each_expr_mut(body, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(name) if name.is(n.word())) {
-                let read = Expr::var(v.clone()).or_at(e.span);
-                *e = match defined {
-                    true => read.defined(),
-                    false => read,
-                };
-            }
-        });
+    if copies.is_empty() {
+        return;
     }
+    js::each_block_mut(body, &mut |stmts| {
+        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(name, value) if copies.contains(name) && field(value)));
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if matches!(&e.kind, ExprKind::Var(name) if copies.contains(name)) {
+            let read = Expr::var(v.clone()).or_at(e.span);
+            *e = match defined {
+                true => read.defined(),
+                false => read,
+            };
+        }
+    });
 }
 
 /// How often `item` names `name`.
@@ -655,9 +636,27 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
         }
     });
     js::each_expr_mut(body, &mut Expr::store_again);
+    // A copy of a field the variable it reads as, `const prevProps =
+    // prevProps;`, is that variable, its reads by their id too (#2026).
+    let mut itself: Vec<(js::Name, js::Name)> = Vec::new();
     js::each_block_mut(body, &mut |stmts| {
-        // A copy of a field the variable it reads as, `const prevProps =
-        // prevProps;`, is that variable.
+        for s in stmts.iter() {
+            if let StmtKind::Const(n, value) = &s.kind
+                && let ExprKind::Var(v) = &value.kind
+                && v.is(n.word())
+            {
+                itself.push((n.clone(), v.clone()));
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Var(n) = &mut e.kind
+            && let Some((_, v)) = itself.iter().find(|(copy, _)| copy == n)
+        {
+            *n = v.clone();
+        }
+    });
+    js::each_block_mut(body, &mut |stmts| {
         stmts.retain(
             // Of its word, a `const` of itself, which JS reads before it's made.
             |s| !matches!(&s.kind, StmtKind::Const(n, value) if matches!(&value.kind, ExprKind::Var(v) if v.is(n.word()))),

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "self-copy-reads-keep-their-id",
+    breaks:
+      "a drop's copy of a field of the variable's own word, `const prevProps = prevProps;`, goes, its reads keeping the copy's id: a read `js::validate` refuses (#2026)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            *n = v.clone();\n",
+    replace: "            let _ = v;\n",
+    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard's fields are its variables"],
+  },
+  {
     name: "guard-field-known-lost",
     breaks:
       "a guard's field read as the variable it was made of loses that it's never `undefined`: `internals.T = prevTransition ?? null` in its `finally` (ADR 0841, amended)",
@@ -136,15 +145,6 @@ export const mutations: Mutation[] = [
     find: "                if made_in(body) =>\n",
     replace: "                if false =>\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
-  },
-  {
-    name: "field-copy-named-elsewhere-read",
-    breaks:
-      "a drop's copy of its guard's field whose name the drop gives another of its own, a closure's parameter, is read as the field's variable there too: `f(\"xy\")` gives the guard's length (ADR 0705, amended)",
-    file: "src/lower/drops/inlined.rs",
-    find: "        if declared != copied {\n",
-    replace: "        if declared < copied {\n",
-    tests: ["test/lowering-drop-guards.test.ts", "-t", "copy of its guard"],
   },
   {
     name: "named-field-copy-kept",

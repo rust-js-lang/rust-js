@@ -31,6 +31,9 @@ pub enum Problem {
     /// nearer than the module's top takes, a local of its word, which JS
     /// reads instead.
     ModuleShadowed(String),
+    /// A read of a variable that a declaration of another variable,
+    /// spelled as it is, takes nearer than its own: JS reads that one.
+    Captured(String),
     /// A name lowering made that was never spelled, `value#1`
     /// (`js::Name::made`).
     Unspelled(String),
@@ -46,6 +49,7 @@ impl std::fmt::Display for Problem {
             Problem::Unlanded(jump) => write!(f, "`{jump}` lands on nothing around it"),
             Problem::Twice(name) => write!(f, "`{name}` is declared twice in one block"),
             Problem::Unresolved(name) => write!(f, "`{name}` is read, and nothing declares it nor made it a global"),
+            Problem::Captured(name) => write!(f, "a read of `{name}` is of another variable spelled so, nearer"),
             Problem::Unspelled(name) => write!(f, "`{name}`, a name lowering made, was never spelled"),
             Problem::Hole(super::Hole::Taken(at)) => {
                 write!(f, "it holds {}, taken at {at}", super::Hole::Taken(at).what())
@@ -118,6 +122,7 @@ pub fn body(body: &[Stmt]) -> Vec<Problem> {
 /// declaration nearer than the module's top takes.
 fn names(tree: &scopes::Tree) -> Vec<Problem> {
     let mut problems: Vec<Problem> = tree.twice.iter().cloned().map(Problem::Twice).collect();
+    problems.extend(tree.captured().into_iter().map(Problem::Captured));
     for (name, reads) in &tree.reads {
         for read in reads {
             match (read.of, read.whose) {
@@ -399,6 +404,30 @@ mod tests {
 
     fn read(e: Expr) -> Stmt {
         stmt(StmtKind::Expr(e))
+    }
+
+    // A read is of the variable it is, by its id: one spelled as another
+    // that a declaration nearer takes is refused, though its word resolves
+    // (#2026); a read of its own declaration is fine.
+    #[test]
+    fn a_read_is_of_its_own_variable() {
+        let outer = Name::declared("x".to_string());
+        let inner = Name::declared("x".to_string());
+        let body = |name: &Name| {
+            vec![
+                stmt(StmtKind::Const(outer.clone(), Expr::num(1.0))),
+                stmt(StmtKind::If(
+                    Expr::var(&outer),
+                    vec![
+                        stmt(StmtKind::Const(inner.clone(), Expr::num(2.0))),
+                        read(Expr::var(name)),
+                    ],
+                    None,
+                )),
+            ]
+        };
+        assert_eq!(of(body(&inner)), vec![]);
+        assert_eq!(of(body(&outer)), vec![Problem::Captured("x".into())]);
     }
 
     // A read resolves to what's declared, a global made so, or a helper;
