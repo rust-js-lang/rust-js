@@ -16,7 +16,7 @@ import { evaluateIf, heldJobs, mostAtOnce, NIGHTLY_RUNNERS, scheduled } from "..
 import { reactGate, regenerated, remakeable } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
-import { balancedByGroup, browsers, drivesBrowser } from "../scripts/shard";
+import { balancedByGroup, browsers, drivesBrowser, testFileSeconds } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
@@ -1236,4 +1236,31 @@ test("a rebase's conflict in a blessed baseline alone is made again, any other s
   expect(remakeable(["docs/readability.txt", "react/coverage.txt"])).toBe(true);
   expect(remakeable(["docs/readability.txt", "src/lower/analysis.rs"])).toBe(false);
   expect(remakeable(["src/lower/analysis.rs"])).toBe(false);
+});
+
+// A check's test shards are dealt by what each file took (`balanced`), not
+// by `bun test --shard`, which gave check 44022102403's shards 101 and 261
+// of 362 files, 1,127 and 1,894 measured seconds, and its second shard
+// ended 4.5 minutes after its first. Dealt by those times, each has 1,511.
+test("a check's test shards are dealt by what each file took", () => {
+  const dir = mkdtempSync(join(tmpdir(), "test-timings-"));
+  try {
+    const at = (name: string, files: Record<string, number>) => {
+      writeFileSync(join(dir, name), JSON.stringify({ version: 1, files }));
+      return join(dir, name);
+    };
+    // This checkout's own time of a file first, then the last CI run's.
+    const seconds = testFileSeconds([at("mine.json", { "test/a.test.ts": 4000 }), at("ci.json", { "test/a.test.ts": 9000, "test/b.test.ts": 3000, "test/c.test.ts": 2000, "test/d.test.ts": 1000 }), join(dir, "none.json")]);
+    expect([...seconds]).toEqual([["test/a.test.ts", 4], ["test/b.test.ts", 3], ["test/c.test.ts", 2], ["test/d.test.ts", 1]]);
+    const files = [...seconds.keys()];
+    const load = (index: number) => balanced(files, index, 2, seconds).reduce((sum, file) => sum + seconds.get(file)!, 0);
+    expect([load(1), load(2)]).toEqual([5, 5]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  // The suite's files and the browsers' are given to `bun test` dealt so,
+  // never with its `--shard`.
+  const suite = readFileSync(join(root, "scripts/test.ts"), "utf8");
+  expect(suite).not.toContain("...shard,");
+  expect(suite).toContain("const pageFiles = dealt(");
 });

@@ -104,6 +104,19 @@ export function balancedByGroup<T extends string>(items: T[], index: number, cou
 /** What each took of the runs' `timings.json`s under `dir`, in seconds, by
  * its name, of the files in their sorted order, a later one's over an
  * earlier's: none where there's none. */
+/** How long each test file took, in seconds, of the runs whose `bun test
+ * --update-timings` files `paths` are (`{ version: 1, files: { [file]: ms } }`),
+ * the first that timed a file its time. */
+export function testFileSeconds(paths: string[]): Map<string, number> {
+  const seconds = new Map<string, number>();
+  for (const path of paths) {
+    if (!existsSync(path)) continue;
+    const timings: { files?: Record<string, number> } = JSON.parse(readFileSync(path, "utf8"));
+    for (const [file, ms] of Object.entries(timings.files ?? {})) if (!seconds.has(file)) seconds.set(file, ms / 1000);
+  }
+  return seconds;
+}
+
 export function timingsUnder(dir: string): Map<string, number> {
   const seconds = new Map<string, number>();
   if (!existsSync(dir)) return seconds;

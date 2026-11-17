@@ -396,7 +396,7 @@ export function timingsRun(artifacts: Artifact[]): number | undefined {
 }
 
 /** In CI, before the suite: the last run's `timings-*` artifacts, into
- * `target/shard-timings/`, which `bun run test` gives `bun test --shard`
+ * `target/shard-timings/`, by which `bun run test` deals each shard its files
  * (scripts/test.ts). The runs are those whose first shard kept its timings,
  * `timings-1`, as each that ran the suite has: GitHub lists those by name,
  * where its list of all the repository's artifacts fails as often as not

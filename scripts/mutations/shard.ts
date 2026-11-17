@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "    const at = leastLoaded(load.map((l, i) => (i === 0 ? -1 : l)));\n    load[at] = load[at]! + estimate(item);\n    if (at === index - 1) mine.push(item);\n",
     tests: ["test/ci.test.ts", "-t", "a change's untimed mutations are dealt first"],
   },
+  {
+    name: "test-timings-last-wins",
+    breaks: "a file's time is the last run's of those given, not this checkout's own first, so a shard is dealt by an older run's time of it",
+    file: "scripts/shard.ts",
+    find: "    for (const [file, ms] of Object.entries(timings.files ?? {})) if (!seconds.has(file)) seconds.set(file, ms / 1000);\n",
+    replace: "    for (const [file, ms] of Object.entries(timings.files ?? {})) seconds.set(file, ms / 1000);\n",
+    tests: ["test/ci.test.ts", "-t", "a check's test shards are dealt by what each file took"],
+  },
 ];

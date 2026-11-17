@@ -1123,8 +1123,9 @@ builds the guide's site and deploys it to GitHub Pages (`bun run deploy`).
 - `.github/workflows/check.yml`, the jobs above, with caches: Cargo's
   registry and `target/debug` by `Cargo.lock` and the toolchain; the WASM
   build's by its lockfile and patches.
-- `scripts/test.ts --shard=i/n`, which `bun test --shard` splits by how
-  long each file took, in this checkout and in the last run's shards,
+- `scripts/test.ts --shard=i/n`, which deals the files out itself by how
+  long each took (`balanced`, the longest first to the shard with the
+  least), in this checkout and in the last run's shards,
   whose `timings-*` artifacts `bun scripts/ci.ts timings` fetches; and
   the corpus beside them in parts, one for each two cores, as
   `check:fast` runs it, each shard its `1/n` of them (`caseShardParts`,

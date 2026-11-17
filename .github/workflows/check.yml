@@ -379,8 +379,8 @@ jobs:
       - run: bun run --cwd examples/vite-react build
 
   # The suite, on one machine, or split across `test_shards`, by how long
-  # each file took in the last run that kept its timings (`bun test
-  # --shard`): each shard uploads what it measured, `timings-<shard>`, and
+  # each file took in the last run that kept its timings (scripts/test.ts's
+  # `balanced` dealing): each shard uploads what it measured, `timings-<shard>`, and
   # the next run's shards read them all, so the shards finish together.
   # The nightly's adds the files only it runs (`--nightly`, ADR 1030).
   # Of a push's check, the files and corpus cases its selection says the

@@ -10,13 +10,13 @@
 // `--selection=<file>`, a selection the selector wrote (scripts/select.ts,
 // CI's `plan`), runs only the files and the corpus's cases it selected,
 // unless it's `all`.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { stopGroup } from "../test/child";
 import { currentBuild, prune } from "../test/compiles";
 import { pruneKeptStores } from "../test/kept";
-import { browsers, caseFiles, casePoolJobs, casePoolWidth, nightly, shardArg, shardTimings } from "./shard";
+import { balanced, browsers, caseFiles, casePoolJobs, casePoolWidth, nightly, shardArg, shardTimings, testFileSeconds } from "./shard";
 import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -85,10 +85,17 @@ const caseJobs = casePoolJobs(index, count, cores)
 // where `bun scripts/ci.ts timings` put them: `bun test` balances the
 // shards by them all, and writes this run's to the first.
 const kept = join(root, shardTimings);
-const timings = [
-  "--timings=target/test-timings.json",
-  ...(existsSync(kept) ? [...new Bun.Glob("**/*.json").scanSync(kept)].sort().map((file) => `--timings=${join(shardTimings, file)}`) : []),
-];
+const timings = ["--timings=target/test-timings.json"];
+// Each shard's test files, dealt by what each took, the longest first, to
+// the shard with the least so far (`balanced`): `bun test --shard` gave
+// check 44022102403's shards 101 and 261 of 362 files, 1,127 and 1,894 of
+// their measured seconds, 282 s and 474 s of wall, and the second shard
+// ended 4.5 minutes after the first.
+const seconds = testFileSeconds([
+  join(root, "target", "test-timings.json"),
+  ...(existsSync(kept) ? [...new Bun.Glob("**/*.json").scanSync(kept)].sort().map((file) => join(kept, file)) : []),
+]);
+const dealt = (files: string[]) => (count > 1 ? balanced(files, index, count, seconds) : files);
 // And past 25 minutes, it's stopped, and fails: a test worker on CI spun
 // for 34 minutes in a `spawnSync` of rustc, which had ended unreaped, past
 // its own timeout (2026-10-15), and the job ran on till it was cancelled.
@@ -131,8 +138,13 @@ const of = `${index}-of-${count}`;
 let restRunning = true;
 // Of a selection, the files it selected but the case files' and the
 // browsers', named; none where it selected none.
-const rest = selected?.files.filter((file) => !(Object.values(caseFiles) as string[]).includes(file) && !browsers.includes(file));
-const rested = rest?.length === 0 ? Promise.resolve(0) : run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`), ...(rest ?? [])]);
+const everyFile = readdirSync(join(root, "test")).filter((name) => name.endsWith(".test.ts")).map((name) => `test/${name}`);
+const rest = dealt(
+  (selected?.files ?? everyFile).filter(
+    (file) => !(Object.values(caseFiles) as string[]).includes(file) && !browsers.includes(file) && (atNight || !nightly.includes(file)),
+  ),
+);
+const rested = rest.length === 0 ? Promise.resolve(0) : run(["--parallel", ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`), ...rest]);
 // The pool: a part starts as one ends, as many at once as `casePoolWidth`
 // says while the rest runs, and more as soon as it's ended. One not
 // started by the deadline fails. Each case built as a library too, a
@@ -165,7 +177,7 @@ const cases = await new Promise<number[]>((done) => {
   fill();
 });
 const restCode = await rested;
-const pageFiles = selected ? browsers.filter((file) => selected.files.includes(file)) : browsers;
-const pages = pageFiles.length === 0 ? 0 : Date.now() < deadline ? await run(["--parallel", ...shard, ...timings, ...pageFiles, ...junit(`browsers-${of}`)]) : 1;
+const pageFiles = dealt(selected ? browsers.filter((file) => selected.files.includes(file)) : browsers);
+const pages = pageFiles.length === 0 ? 0 : Date.now() < deadline ? await run(["--parallel", ...timings, ...pageFiles, ...junit(`browsers-${of}`)]) : 1;
 watchdog.kill();
 process.exit(restCode || cases.find((code) => code !== 0) || pages);
