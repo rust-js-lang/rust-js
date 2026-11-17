@@ -93,7 +93,7 @@ pub(super) struct LetNames {
 /// What MIR's lowering, and THIR, say of a body for tidying it.
 pub(super) struct Hints<'h> {
     /// The name of the function's return place.
-    pub(super) result: &'h str,
+    pub(super) result: &'h js::Name,
     /// The temporaries a function that skips what's falsy is given.
     pub(super) falsy: &'h IndexSet<js::Name>,
     /// And the temporaries such a `test && value` tests.
@@ -244,13 +244,9 @@ pub(crate) fn pass_names() -> Vec<String> {
 }
 
 /// The function's return place, `let` first, where nothing reads it now.
-fn unread_result(body: &mut Vec<Stmt>, result: &str) {
-    let mut read = IndexSet::default();
-    js::visit_stmts(body, &mut |name| {
-        read.insert(name.to_string());
-    });
-    if !read.contains(result) {
-        body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name.is(result)));
+fn unread_result(body: &mut Vec<Stmt>, result: &js::Name) {
+    if js::mentions_of(body, result) == 0 {
+        body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name == result));
     }
 }
 
@@ -667,7 +663,7 @@ mod tests {
         use super::branches::one_assignment;
         let none = js::Span::NONE;
         let one = |then: Vec<Stmt>, otherwise: Vec<Stmt>, test: &Expr| {
-            one_assignment(test, (&then, &otherwise), none, ("_0", &[]), &[]).map(|one| one.target)
+            one_assignment(test, (&then, &otherwise), none, (&lowered("_0"), &[]), &[]).map(|one| one.target)
         };
         let c = Expr::var("c");
         // Accepted: one variable, each arm a value.
@@ -734,8 +730,8 @@ mod tests {
         }];
         let then = [assign("x", Expr::num(1))];
         let otherwise = [assign("x", Expr::num(2))];
-        assert!(one_assignment(&c, (&then, &otherwise), at, ("_0", &switches), &[]).is_none());
-        assert!(one_assignment(&c, (&then, &otherwise), none, ("_0", &switches), &[]).is_some());
+        assert!(one_assignment(&c, (&then, &otherwise), at, (&lowered("_0"), &switches), &[]).is_none());
+        assert!(one_assignment(&c, (&then, &otherwise), none, (&lowered("_0"), &switches), &[]).is_some());
     }
 
     /// A block MIR made of a value whose end gives a variable, `bb7: { if

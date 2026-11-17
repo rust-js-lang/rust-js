@@ -1188,7 +1188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tidy::tidy(
             &mut out,
             &tidy::Hints {
-                result: state.locals.names[mir::RETURN_PLACE].word(),
+                result: &state.locals.names[mir::RETURN_PLACE],
                 falsy: &falsy,
                 tested: &tested,
                 written: &written,

@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`let tmp; if (now) { tmp = () => 1; } else { .. } return tmp;`, where each branch returns",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "    if !returned.is(result) && !is_temporary(returned) {\n",
-    replace: "    if !returned.is(result) {\n",
+    find: "    if returned != result && !is_temporary(returned) {\n",
+    replace: "    if returned != result {\n",
     tests: [
       "test/lowering-branches.test.ts",
       "-t",
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value MIR holds of three branches, its first doing more, is `else { tmp = b ? q : r; }`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "\n                        || is_temporary(x) && then.len() > 1)",
+    find: " || is_temporary(x) && then.len() > 1)",
     replace: ")",
     tests: [
       "test/lowering-written-branches.test.ts",
@@ -577,7 +577,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if let Some(p) = parent { return f(&p); } return None;` is `return parent != null ? f(parent) : null;`, not the `if` of `return`s written (ADR 0657, amended)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !(one.target.is(result) && written_returns((then, otherwise), returns, span))\n                    // Not an `if` the program wrote as a statement",
+    find: "                    && !(one.target == *result && written_returns((then, otherwise), returns, span))\n                    // Not an `if` the program wrote as a statement",
     replace:
       "                    && true\n                    // Not an `if` the program wrote as a statement",
     tests: [
@@ -860,7 +860,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable's value of a chain whose first arm does more than give it, `const t = tests; entries = [t];`, is half a conditional, `else { entries = !test && main ? [9] : compute(3); }`, not the chain (#583, ADR 0969)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "(then.len() == 1 || !x.is(result))",
+    find: "(then.len() == 1 || x != result)",
     replace: "then.len() == 1",
     tests: ["test/corpus.test.ts", "-t", "^let_match_computed_default.rs$"],
     snapshots: true,
@@ -870,7 +870,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function's value of an arm doing more and an `Option`'s `and_then`, `return scope.parent != null ? Env.get(..) : undefined;`, is an `else if` chain, no arm of the program's (#583)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "(then.len() == 1 || !x.is(result))",
+    find: "(then.len() == 1 || x != result)",
     replace: "(then.len() == 1 || true)",
     tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
     snapshots: true,

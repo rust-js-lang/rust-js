@@ -110,10 +110,9 @@ function run() {
   const path = `${base}.shared.txt`;
 
   // Written through `&File`, as it is and through generic code.
-  const result$1 = $fileCreate(path);
-  let result;
-  if (result$1.TAG !== "Err") {
-    const file = result$1._0;
+  const result = $fileCreate(path);
+  if (result.TAG !== "Err") {
+    const file = result._0;
     let tmp = file;
     $fileWriter.writeAll(
       {
@@ -140,7 +139,7 @@ function run() {
     );
     logTo(file, ["four", "five"], $fileWriter);
     let tmp$1 = file;
-    const result$2 = $fileReader.streamPosition({
+    const result$1 = $fileReader.streamPosition({
       get value() {
         return tmp$1;
       },
@@ -148,20 +147,54 @@ function run() {
         tmp$1 = value;
       },
     });
+    if (result$1.TAG === "Err") {
+      return $ioThrow(result$1._0);
+    }
+    const value = result$1._0;
+    const result$2 = tell(file, $fileReader);
     if (result$2.TAG !== "Err") {
-      const value = result$2._0;
-      const result$1 = tell(file, $fileReader);
-      if (result$1.TAG !== "Err") {
-        console.log(`${value} ${result$1._0}`);
+      console.log(`${value} ${result$2._0}`);
 
-        // Two `&File`s of one file read on from where the other stopped.
-        const result$2 = $fileOpen(path);
-        if (result$2.TAG !== "Err") {
-          const file = result$2._0;
-          let a = file;
-          let b = file;
-          const four = [0, 0, 0, 0];
-          $fileReader.readExact(
+      // Two `&File`s of one file read on from where the other stopped.
+      const result = $fileOpen(path);
+      if (result.TAG !== "Err") {
+        const file = result._0;
+        let a = file;
+        let b = file;
+        const four = [0, 0, 0, 0];
+        $fileReader.readExact(
+          {
+            get value() {
+              return a;
+            },
+            set value(value) {
+              a = value;
+            },
+          },
+          four,
+        );
+        $fileReader.readExact(
+          {
+            get value() {
+              return b;
+            },
+            set value(value) {
+              b = value;
+            },
+          },
+          four,
+        );
+        const result$1 = $fileReader.streamPosition({
+          get value() {
+            return a;
+          },
+          set value(value) {
+            a = value;
+          },
+        });
+        if (result$1.TAG !== "Err") {
+          console.log(`[${four.join(", ")}] ${result$1._0}`);
+          const result = $fileReader.seek(
             {
               get value() {
                 return a;
@@ -170,222 +203,169 @@ function run() {
                 a = value;
               },
             },
-            four,
+            { TAG: "Start", _0: 0n },
           );
-          $fileReader.readExact(
-            {
-              get value() {
-                return b;
-              },
-              set value(value) {
-                b = value;
-              },
-            },
-            four,
-          );
-          const result$1 = $fileReader.streamPosition({
-            get value() {
-              return a;
-            },
-            set value(value) {
-              a = value;
-            },
-          });
-          if (result$1.TAG !== "Err") {
-            console.log(`[${four.join(", ")}] ${result$1._0}`);
-            const result$2 = $fileReader.seek(
-              {
-                get value() {
-                  return a;
-                },
-                set value(value) {
-                  a = value;
-                },
-              },
-              { TAG: "Start", _0: 0n },
-            );
-            if (result$2.TAG !== "Err") {
-              const result$1 = $collectResults(
-                $iterator(
-                  bufRead_lines(
-                    { inner: file, buf: new Array(8192).fill(0), pos: 0, filled: 0 },
-                    BufReaderBufRead,
-                    BufReaderBufRead,
-                  ),
-                  (iterator) => linesIterator_next(iterator, BufReaderBufRead),
-                ),
-              );
-              if (result$1.TAG !== "Err") {
-                const lines = result$1._0;
-                console.log(`[${lines.map((item) => $debugStr(item)).join(", ")}]`);
-                const result$2 = tell(file, $fileReader);
-                if (result$2.TAG !== "Err") {
-                  console.log(`${result$2._0}`);
-                  let tmp = file;
-                  const self = { value: tmp };
-                  let rewind;
-                  try {
-                    rewind = $writeTry(() => seek_rewind(self, $fileReader));
-                  } catch (error) {
-                    throw $unwindsOn(error);
-                  } finally {
-                    if ($live()) {
-                      tmp = self.value;
-                    }
-                  }
-                  $writeCheck(rewind);
-                  const result$1 = readAll(file, $fileReader);
-                  if (result$1.TAG !== "Err") {
-                    console.log(`${$debugStr(result$1._0)}`);
-                    const result$2 = readAll(file, $fileReader);
-                    if (result$2.TAG !== "Err") {
-                      console.log(`${$debugStr(result$2._0)}`);
-
-                      // Written and read through one `&File`, opened to both.
-                      const result$1 = $openOptions().read(true).write(true).open(path);
-                      if (result$1.TAG !== "Err") {
-                        const both = result$1._0;
-                        let tmp = both;
-                        const result$2 = $fileReader.seek(
-                          {
-                            get value() {
-                              return tmp;
-                            },
-                            set value(value) {
-                              tmp = value;
-                            },
-                          },
-                          { TAG: "End", _0: -5n },
-                        );
-                        if (result$2.TAG !== "Err") {
-                          let tmp = both;
-                          $fileWriter.writeAll(
-                            {
-                              get value() {
-                                return tmp;
-                              },
-                              set value(value) {
-                                tmp = value;
-                              },
-                            },
-                            [70, 73, 86, 69],
-                          );
-                          let tmp$1 = both;
-                          const result$1 = $fileReader.seek(
-                            {
-                              get value() {
-                                return tmp$1;
-                              },
-                              set value(value) {
-                                tmp$1 = value;
-                              },
-                            },
-                            { TAG: "Current", _0: -4n },
-                          );
-                          if (result$1.TAG !== "Err") {
-                            const result$1 = readAll(both, $fileReader);
-                            if (result$1.TAG !== "Err") {
-                              console.log(`${$debugStr(result$1._0)}`);
-
-                              // `{:?}` of a file, as std shows it: its path and modes.
-                              const result$2 = $fileOpen(path);
-                              if (result$2.TAG !== "Err") {
-                                const reader = result$2._0;
-                                console.log(`${shown($fileDebug(reader), base)}`);
-                                console.log(`${shown($fileDebug(both), base)}`);
-                                const result$1 = $fileCreate(path);
-                                if (result$1.TAG !== "Err") {
-                                  console.log(
-                                    `${shown($fileDebug(result$1._0, { alternate: true }), base)}`,
-                                  );
-                                  console.log(
-                                    `${shown(`[${$fileDebug(both, { width: 5 })}]`, base)}`,
-                                  );
-                                  const result$2 = $openOptions().append(true).open(path);
-                                  if (result$2.TAG !== "Err") {
-                                    const appending = result$2._0;
-                                    console.log(`${shown($fileDebug(appending), base)}`);
-                                    const value = $fileOpen(path);
-                                    console.log(
-                                      `${shown(value.TAG === "Ok" ? `Ok(${$fileDebug(value._0)})` : `Err(${$ioErrorDebug(value._0)})`, base)}`,
-                                    );
-
-                                    // `unwrap_err()` of a file opened: its panic shows the file.
-                                    const opened = $fileOpen(path);
-                                    const catchUnwind = $catchUnwind(() =>
-                                      $unwrapErr(opened, undefined, $fileDebug),
-                                    );
-                                    let message;
-                                    if (catchUnwind.TAG === "Ok") {
-                                      const e = catchUnwind._0;
-                                      message = `no panic: ${$ioErrorDisplay(e)}`;
-                                    } else {
-                                      const payload = catchUnwind._0;
-                                      message =
-                                        (payload.impl.typeId() === "alloc::string::String" ||
-                                        payload.impl === $panicMessage
-                                          ? payload.value
-                                          : undefined) ?? "";
-                                    }
-                                    console.log(`${shown(message, base)}`);
-                                    const missing = $unwrapErr(
-                                      $fileOpen(`${base}.missing`),
-                                      undefined,
-                                      $fileDebug,
-                                    );
-                                    console.log(`${missing.kind}`);
-                                    $fsRemoveFile(path);
-                                    return;
-                                  }
-                                  result = $ioThrow(result$2._0);
-                                } else {
-                                  result = $ioThrow(result$1._0);
-                                }
-                              } else {
-                                result = $ioThrow(result$2._0);
-                              }
-                            } else {
-                              result = $ioThrow(result$1._0);
-                            }
-                          } else {
-                            result = $ioThrow(result$1._0);
-                          }
-                        } else {
-                          result = $ioThrow(result$2._0);
-                        }
-                      } else {
-                        result = $ioThrow(result$1._0);
-                      }
-                    } else {
-                      result = $ioThrow(result$2._0);
-                    }
-                  } else {
-                    result = $ioThrow(result$1._0);
-                  }
-                } else {
-                  result = $ioThrow(result$2._0);
-                }
-              } else {
-                result = $ioThrow(result$1._0);
-              }
-            } else {
-              result = $ioThrow(result$2._0);
-            }
-          } else {
-            result = $ioThrow(result$1._0);
+          if (result.TAG === "Err") {
+            return $ioThrow(result._0);
           }
-        } else {
-          result = $ioThrow(result$2._0);
+          const result$2 = $collectResults(
+            $iterator(
+              bufRead_lines(
+                { inner: file, buf: new Array(8192).fill(0), pos: 0, filled: 0 },
+                BufReaderBufRead,
+                BufReaderBufRead,
+              ),
+              (iterator) => linesIterator_next(iterator, BufReaderBufRead),
+            ),
+          );
+          if (result$2.TAG !== "Err") {
+            const lines = result$2._0;
+            console.log(`[${lines.map((item) => $debugStr(item)).join(", ")}]`);
+            const result = tell(file, $fileReader);
+            if (result.TAG !== "Err") {
+              console.log(`${result._0}`);
+              let tmp = file;
+              const self = { value: tmp };
+              let rewind;
+              try {
+                rewind = $writeTry(() => seek_rewind(self, $fileReader));
+              } catch (error) {
+                throw $unwindsOn(error);
+              } finally {
+                if ($live()) {
+                  tmp = self.value;
+                }
+              }
+              $writeCheck(rewind);
+              const result$1 = readAll(file, $fileReader);
+              if (result$1.TAG !== "Err") {
+                console.log(`${$debugStr(result$1._0)}`);
+                const result = readAll(file, $fileReader);
+                if (result.TAG !== "Err") {
+                  console.log(`${$debugStr(result._0)}`);
+
+                  // Written and read through one `&File`, opened to both.
+                  const result$1 = $openOptions().read(true).write(true).open(path);
+                  if (result$1.TAG !== "Err") {
+                    const both = result$1._0;
+                    let tmp = both;
+                    const result = $fileReader.seek(
+                      {
+                        get value() {
+                          return tmp;
+                        },
+                        set value(value) {
+                          tmp = value;
+                        },
+                      },
+                      { TAG: "End", _0: -5n },
+                    );
+                    if (result.TAG === "Err") {
+                      return $ioThrow(result._0);
+                    }
+                    let tmp$1 = both;
+                    $fileWriter.writeAll(
+                      {
+                        get value() {
+                          return tmp$1;
+                        },
+                        set value(value) {
+                          tmp$1 = value;
+                        },
+                      },
+                      [70, 73, 86, 69],
+                    );
+                    let tmp$2 = both;
+                    const result$2 = $fileReader.seek(
+                      {
+                        get value() {
+                          return tmp$2;
+                        },
+                        set value(value) {
+                          tmp$2 = value;
+                        },
+                      },
+                      { TAG: "Current", _0: -4n },
+                    );
+                    if (result$2.TAG === "Err") {
+                      return $ioThrow(result$2._0);
+                    }
+                    const result$3 = readAll(both, $fileReader);
+                    if (result$3.TAG !== "Err") {
+                      console.log(`${$debugStr(result$3._0)}`);
+
+                      // `{:?}` of a file, as std shows it: its path and modes.
+                      const result = $fileOpen(path);
+                      if (result.TAG !== "Err") {
+                        const reader = result._0;
+                        console.log(`${shown($fileDebug(reader), base)}`);
+                        console.log(`${shown($fileDebug(both), base)}`);
+                        const result$1 = $fileCreate(path);
+                        if (result$1.TAG !== "Err") {
+                          console.log(
+                            `${shown($fileDebug(result$1._0, { alternate: true }), base)}`,
+                          );
+                          console.log(`${shown(`[${$fileDebug(both, { width: 5 })}]`, base)}`);
+                          const result = $openOptions().append(true).open(path);
+                          if (result.TAG !== "Err") {
+                            const appending = result._0;
+                            console.log(`${shown($fileDebug(appending), base)}`);
+                            const value = $fileOpen(path);
+                            console.log(
+                              `${shown(value.TAG === "Ok" ? `Ok(${$fileDebug(value._0)})` : `Err(${$ioErrorDebug(value._0)})`, base)}`,
+                            );
+
+                            // `unwrap_err()` of a file opened: its panic shows the file.
+                            const opened = $fileOpen(path);
+                            const catchUnwind = $catchUnwind(() =>
+                              $unwrapErr(opened, undefined, $fileDebug),
+                            );
+                            let message;
+                            if (catchUnwind.TAG === "Ok") {
+                              const e = catchUnwind._0;
+                              message = `no panic: ${$ioErrorDisplay(e)}`;
+                            } else {
+                              const payload = catchUnwind._0;
+                              message =
+                                (payload.impl.typeId() === "alloc::string::String" ||
+                                payload.impl === $panicMessage
+                                  ? payload.value
+                                  : undefined) ?? "";
+                            }
+                            console.log(`${shown(message, base)}`);
+                            const missing = $unwrapErr(
+                              $fileOpen(`${base}.missing`),
+                              undefined,
+                              $fileDebug,
+                            );
+                            console.log(`${missing.kind}`);
+                            $fsRemoveFile(path);
+                            return;
+                          }
+                          return $ioThrow(result._0);
+                        }
+                        return $ioThrow(result$1._0);
+                      }
+                      return $ioThrow(result._0);
+                    }
+                    return $ioThrow(result$3._0);
+                  }
+                  return $ioThrow(result$1._0);
+                }
+                return $ioThrow(result._0);
+              }
+              return $ioThrow(result$1._0);
+            }
+            return $ioThrow(result._0);
+          }
+          return $ioThrow(result$2._0);
         }
-      } else {
-        result = $ioThrow(result$1._0);
+        return $ioThrow(result$1._0);
       }
-    } else {
-      result = $ioThrow(result$2._0);
+      return $ioThrow(result._0);
     }
-  } else {
-    result = $ioThrow(result$1._0);
+    return $ioThrow(result$2._0);
   }
-  return result;
+  return $ioThrow(result._0);
 }
 //# sourceMappingURL=case.js.map

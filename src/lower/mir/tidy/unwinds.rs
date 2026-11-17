@@ -17,7 +17,7 @@ use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 /// `result` is the function's return place; `guards`, where each drop
 /// guard's `let` is written and where the block it's dropped at the end of
 /// ends. Whether it made one.
-pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)]) -> bool {
+pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>, result: &js::Name, guards: &[(u32, u32)]) -> bool {
     scoped_runs(stmts, result, guards, &|_| true)
 }
 
@@ -27,7 +27,7 @@ pub(super) fn scoped_drops(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, 
 /// drop guard's scope, in an `if` of it, `if (xs != null) { for (let i =
 /// xs.length - 1; i >= 0; i--) { .. } }`, is the `for` it is out of one
 /// (rd711). Whether it made one.
-pub(super) fn scoped_loops(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)]) -> bool {
+pub(super) fn scoped_loops(stmts: &mut Vec<Stmt>, result: &js::Name, guards: &[(u32, u32)]) -> bool {
     let steps = |run: &[Stmt]| {
         let mut found = false;
         js::each_list(run, &mut |list| found |= list.iter().any(|s| stepped(s).is_some()));
@@ -37,7 +37,12 @@ pub(super) fn scoped_loops(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, 
 }
 
 /// `scoped_drops` of the runs `taken` takes.
-fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken: &dyn Fn(&[Stmt]) -> bool) -> bool {
+fn scoped_runs(
+    stmts: &mut Vec<Stmt>,
+    result: &js::Name,
+    guards: &[(u32, u32)],
+    taken: &dyn Fn(&[Stmt]) -> bool,
+) -> bool {
     let mut scoped = false;
     let mut i = 0;
     while i < stmts.len() {
@@ -300,7 +305,7 @@ fn given_returned(stmt: &mut Stmt, name: Option<&Name>) -> bool {
 /// value last, then throws on: where the scope drops it, the statement
 /// written as that drop, if every statement before it that may throw drops
 /// it too and nothing leaves the run another way.
-fn scope_end(stmts: &[Stmt], start: usize, result: &str) -> Option<usize> {
+fn scope_end(stmts: &[Stmt], start: usize, result: &js::Name) -> Option<usize> {
     let drop = first_drop(std::slice::from_ref(&stmts[start]))
         .filter(|drop| !crate::lower::drops::may_throw(std::slice::from_ref(drop)))?;
     let run = Run::of(&stmts[start..], drop, result);
@@ -337,11 +342,11 @@ struct Run<'a> {
     drop: &'a Stmt,
     declared: IndexSet<Name>,
     set_by_closures: IndexSet<js::Name>,
-    result: &'a str,
+    result: &'a js::Name,
 }
 
 impl<'a> Run<'a> {
-    fn of(stmts: &[Stmt], drop: &'a Stmt, result: &'a str) -> Run<'a> {
+    fn of(stmts: &[Stmt], drop: &'a Stmt, result: &'a js::Name) -> Run<'a> {
         let mut declared = IndexSet::default();
         js::each_list(stmts, &mut |list| {
             for stmt in list {
@@ -417,7 +422,7 @@ impl<'a> Run<'a> {
             StmtKind::Return(None) => true,
             StmtKind::Return(Some(value)) => match &value.kind {
                 ExprKind::Var(name) => {
-                    name.is(self.result) || self.declared.contains(name) && !self.set_by_closures.contains(name)
+                    name == self.result || self.declared.contains(name) && !self.set_by_closures.contains(name)
                 }
                 _ => value.is_constant(),
             },

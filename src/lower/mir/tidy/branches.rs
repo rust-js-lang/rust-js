@@ -221,7 +221,7 @@ pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
     booleans: &IndexSet<js::Path>,
-    (result, switches): (&str, &[Switch]),
+    (result, switches): (&js::Name, &[Switch]),
     program: &crate::lower::mir::hints::Written,
 ) {
     let elses = &program.elses;
@@ -271,7 +271,7 @@ pub(super) fn branch_values(
                     && !is_temporary(x)
                     && let Some((y, no)) = assigned_through(otherwise).or_else(|| assigned_only(otherwise))
                     && x == y
-                    && !(x.is(result) && written_returns((then, otherwise), returns, span))
+                    && !(x == result && written_returns((then, otherwise), returns, span))
                     && !switched(test, span, switches)
                     && !written_as_statement(test, span, program)
                     && let Some(value) = plain_chain_of(
@@ -300,8 +300,7 @@ pub(super) fn branch_values(
                     ..
                 }) = then.last()
                     && let ExprKind::Var(x) = &target.kind
-                    && (!is_temporary(x) && (then.len() == 1 || !x.is(result))
-                        || is_temporary(x) && then.len() > 1)
+                    && (!is_temporary(x) && (then.len() == 1 || x != result) || is_temporary(x) && then.len() > 1)
                     && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))
                     && x == y
                     && !switched(test, span, switches)
@@ -315,7 +314,7 @@ pub(super) fn branch_values(
                     // `return` the program wrote, `if c { return a; }
                     // return b;`, MIR's one `return`: an `if` of `return`s
                     // (ADR 0657, amended).
-                    && !(one.target.is(result) && written_returns((then, otherwise), returns, span))
+                    && !(one.target == *result && written_returns((then, otherwise), returns, span))
                     // Not an `if` the program wrote as a statement, of a late
                     // `let`, `let error; if c { error = a; } else { error =
                     // b; }`, which stays as it's written (rd187).
@@ -473,7 +472,7 @@ pub(super) fn one_assignment(
     test: &Expr,
     (then, otherwise): (&[Stmt], &[Stmt]),
     span: js::Span,
-    (result, switches): (&str, &[Switch]),
+    (result, switches): (&js::Name, &[Switch]),
     elses: &[(js::Span, js::Span, js::Span)],
 ) -> Option<OneAssignment> {
     let (x, yes) = assigned_only(then)?;
@@ -481,7 +480,7 @@ pub(super) fn one_assignment(
     let one = x == y
         && !(super::logicals::alike_branches(yes, no) && test.has_effects())
         && ((small(yes) && small(no)) || is_temporary(x))
-        && (!x.is(result) || folds_into_return(yes, no))
+        && (x != result || folds_into_return(yes, no))
         && !(updates(x.word(), yes) || updates(x.word(), no))
         && !switched(test, span, switches);
     if !one {
@@ -750,11 +749,11 @@ pub(super) fn same_test(a: &Expr, b: &Expr) -> bool {
 
 /// `const result = e; return result;`, the place MIR makes what a function
 /// gives in, `returned`'s once it's a `const`: `return e;`.
-pub(super) fn returned_consts(stmts: &mut Vec<Stmt>, result: &str) {
+pub(super) fn returned_consts(stmts: &mut Vec<Stmt>, result: &js::Name) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let returns = matches!((&stmts[i].kind, &stmts[i + 1].kind), (StmtKind::Const(name, _), StmtKind::Return(Some(value)))
-            if name.is(result) && matches!(&value.kind, ExprKind::Var(v) if v == name));
+            if name == result && matches!(&value.kind, ExprKind::Var(v) if v == name));
         if returns {
             let StmtKind::Const(_, value) = stmts.remove(i).kind else {
                 unreachable!("matched")
@@ -916,7 +915,7 @@ pub(super) fn is_boolean(e: &Expr, booleans: &IndexSet<js::Path>) -> bool {
 /// { s; return a; } return b;`, at the `return`s the program wrote. Of a
 /// temporary it's made in before it's the result, too, a `Box<dyn Fn()>`'s
 /// before it's coerced, `_5 = work; .. return _5;` (ADR 0599).
-pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
+pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &js::Name) {
     returned_from_block(stmts, result);
     let [.., last_if, last] = stmts.as_slice() else {
         return;
@@ -928,10 +927,10 @@ pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
         return;
     };
     // Not a variable the program names, `let item;`, which it returns.
-    if !returned.is(result) && !is_temporary(returned) {
+    if returned != result && !is_temporary(returned) {
         return;
     }
-    let result = returned.word();
+    let result = returned;
     if !matches!(last_if.kind, StmtKind::If(_, _, Some(_))) || !made_at_ends(std::slice::from_ref(last_if), result) {
         return;
     }
@@ -939,8 +938,8 @@ pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
     returned_at_ends(&mut made);
     let [made] = <[Stmt; 1]>::try_from(made).unwrap_or_else(|_| unreachable!("an `if`, as it was"));
     // Read nowhere else.
-    if js::mentions_in(std::slice::from_ref(&made), result) > 0
-        || js::mentions_in(&stmts[..stmts.len() - 2], result) > 0
+    if js::mentions_of(std::slice::from_ref(&made), result) > 0
+        || js::mentions_of(&stmts[..stmts.len() - 2], result) > 0
     {
         return;
     }

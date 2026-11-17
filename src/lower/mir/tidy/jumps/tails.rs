@@ -24,11 +24,11 @@ pub(in crate::lower::mir::tidy) fn own_jumps(stmts: &[Stmt], label: Option<&js::
 
 /// `result = e; return result;` is `return e;`: nothing reads the return
 /// place once it's returned, nor could a closure.
-pub(in crate::lower::mir::tidy) fn returned(stmts: &mut Vec<Stmt>, result: &str) {
+pub(in crate::lower::mir::tidy) fn returned(stmts: &mut Vec<Stmt>, result: &js::Name) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let assigns = matches!(&stmts[i].kind, StmtKind::Assign(target, _)
-            if matches!(&target.kind, ExprKind::Var(name) if name.is(result)));
+            if matches!(&target.kind, ExprKind::Var(name) if name == result));
         let returns = matches!((&stmts[i].kind, &stmts[i + 1].kind), (StmtKind::Assign(target, _), StmtKind::Return(Some(value)))
             if matches!((&target.kind, &value.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b));
         if assigns && returns {
@@ -46,11 +46,11 @@ pub(in crate::lower::mir::tidy) fn returned(stmts: &mut Vec<Stmt>, result: &str)
 /// list of statements: each a `return` where it's made, `return a;`, and
 /// the block's statements where nothing jumps to its end. Each is the
 /// `return` it jumps to, whatever else reads `result`.
-pub(in crate::lower::mir::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, result: &str) {
+pub(in crate::lower::mir::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, result: &js::Name) {
     let [.., block, last] = stmts.as_mut_slice() else {
         return;
     };
-    if !matches!(&last.kind, StmtKind::Return(Some(v)) if matches!(&v.kind, ExprKind::Var(r) if r.is(result))) {
+    if !matches!(&last.kind, StmtKind::Return(Some(v)) if matches!(&v.kind, ExprKind::Var(r) if r == result)) {
         return;
     }
     let StmtKind::Labeled(label, body) = &mut block.kind else {
@@ -76,7 +76,7 @@ pub(in crate::lower::mir::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, re
 
 /// Of block `label`, followed by `return result`: each `break label` once
 /// the result is made, a `return` where it's made.
-fn returned_where_made(body: &mut Vec<Stmt>, label: &js::Name, result: &str) {
+fn returned_where_made(body: &mut Vec<Stmt>, label: &js::Name, result: &js::Name) {
     js::statement_lists(body, &mut |list| {
         let mut i = 1;
         while i < list.len() {
@@ -456,9 +456,9 @@ pub(in crate::lower::mir::tidy) fn first_written(stmts: &[Stmt]) -> Option<u32> 
 /// Whether `stmts` end assigning `result`, or leaving, each branch of an
 /// `if` that ends them too: a `return`, a `throw`, or a jump, which, to a
 /// block's end, stays, as the block does then.
-pub(in crate::lower::mir::tidy) fn made_at_ends(stmts: &[Stmt], result: &str) -> bool {
+pub(in crate::lower::mir::tidy) fn made_at_ends(stmts: &[Stmt], result: &js::Name) -> bool {
     match stmts.last().map(|s| &s.kind) {
-        Some(StmtKind::Assign(target, _)) => matches!(&target.kind, ExprKind::Var(r) if r.is(result)),
+        Some(StmtKind::Assign(target, _)) => matches!(&target.kind, ExprKind::Var(r) if r == result),
         Some(StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Continue(_) | StmtKind::Break(_)) => true,
         // Or a `while (true)` left only once the result is made, where it
         // goes on to what they end at, or never left.
@@ -481,7 +481,7 @@ pub(in crate::lower::mir::tidy) fn made_at_ends(stmts: &[Stmt], result: &str) ->
 /// Whether each `break` in `stmts` that leaves loop `looped` follows what
 /// makes `result`, as `made_at_ends` says: one of no label where `own`,
 /// not in a loop or a `switch` of their own, and one of its label.
-fn broken_made(stmts: &[Stmt], own: bool, looped: Option<&js::Name>, result: &str) -> bool {
+fn broken_made(stmts: &[Stmt], own: bool, looped: Option<&js::Name>, result: &js::Name) -> bool {
     stmts.iter().enumerate().all(|(i, stmt)| match &stmt.kind {
         StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_ref() == looped) => {
             made_at_ends(&stmts[..i], result)
