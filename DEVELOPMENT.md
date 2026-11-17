@@ -1130,7 +1130,8 @@ builds the guide's site and deploys it to GitHub Pages (`bun run deploy`).
 - `scripts/test.ts --shard=i/n`, which deals the files out itself by how
   long each took (`balanced`, the longest first to the shard with the
   least), in this checkout and in the last run's shards,
-  whose `timings-*` artifacts `bun scripts/ci.ts timings` fetches; and
+  whose `timings-*` artifacts the check's `plan` reads once and hands
+  every shard (`bun scripts/ci.ts test-timings`); and
   the corpus beside them in parts, one for each two cores, as
   `check:fast` runs it, each shard its `1/n` of them (`caseShardParts`,
   `scripts/shard.ts`). One file of 1,300 cases one after another, it was

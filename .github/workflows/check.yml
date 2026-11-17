@@ -94,6 +94,7 @@ jobs:
       port: ${{ steps.plan.outputs.port }}
       mutations: ${{ steps.plan.outputs.mutations }}
       mutation_timings: ${{ steps.plan.outputs.mutation_timings }}
+      test_timings: ${{ steps.plan.outputs.test_timings }}
       wasm: ${{ steps.plan.outputs.wasm }}
       rustc: ${{ steps.plan.outputs.rustc }}
       tests: ${{ steps.plan.outputs.tests }}
@@ -381,7 +382,8 @@ jobs:
   # The suite, on one machine, or split across `test_shards`, by how long
   # each file took in the last run that kept its timings (scripts/test.ts's
   # `balanced` dealing): each shard uploads what it measured, `timings-<shard>`, and
-  # the next run's shards read them all, so the shards finish together.
+  # the next run's `plan` reads them all and hands them to its shards, so
+  # the shards finish together.
   # The nightly's adds the files only it runs (`--nightly`, ADR 1030).
   # Of a push's check, the files and corpus cases its selection says the
   # change can affect (`plan`'s `tests`, scripts/select.ts): none, and the
@@ -426,10 +428,13 @@ jobs:
       - uses: ./.github/actions/build-rust-js
         with:
           profile: debug
-      - name: Read the last run's timings
+      # The last run's times of each test file, which `plan` read once and
+      # gave every shard alike: none downloads them (a shard whose download
+      # failed failed, check of 7f324c2ec).
+      - name: Write the test files' times plan gave
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: bun scripts/ci.ts timings
+          TIMES: ${{ needs.plan.outputs.test_timings }}
+        run: bun scripts/ci.ts test-timings "$TIMES"
       # Native programs' runs, kept by what they were built from, and the
       # corpus's verified runs: of a cold corpus part, 236 s, the natives'
       # builds were 191 (docs/dev-loop.md), and none is built again of a

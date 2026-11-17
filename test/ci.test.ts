@@ -5,8 +5,9 @@
 import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { gunzipSync } from "node:zlib";
 import { dirname, join, relative } from "node:path";
-import { checkedSince, decodedTimings, encodedTimings, jsonLines, latestRuns, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationJobsPassed, mutationShards, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
+import { checkedSince, decodedTimings, encodedTestTimings, encodedTimings, jsonLines, latestRuns, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationJobsPassed, mutationShards, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { downloaded } from "../scripts/artifacts";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
@@ -108,6 +109,23 @@ test("a check's mutation shards balance by the newest merged times of main, hand
   // A run of every mutation, the nightly's, builds 5% of its builds again
   // fresh (ADR 0093's incremental amendment).
   expect(tests).toContain("ARGS: ${{ inputs.mutation_args || '--fresh=0.05' }}");
+});
+
+// The test files' times, too, `plan`'s to read once and hand every test
+// shard alike: a shard that downloaded them itself failed where GitHub's
+// storage turned it away (check of 7f324c2ec), and none downloads them.
+test("a test shard is handed its files' times by plan, never downloading them", () => {
+  const dir = fixture("test-timings-handed");
+  const seconds = new Map([["test/b.test.ts", 2.5], ["test/a.test.ts", 0.0004]]);
+  writeFileSync(join(dir, "plan.json"), gunzipSync(Buffer.from(encodedTestTimings(seconds), "base64")));
+  expect([...testFileSeconds([join(dir, "plan.json")])].sort()).toEqual([["test/a.test.ts", 0], ["test/b.test.ts", 2.5]]);
+  const files = new Map(Array.from({ length: 400 }, (_, i) => [`test/some-concept-of-the-suite-${i}.test.ts`, i * 1.234] as const));
+  expect(encodedTestTimings(files).length).toBeLessThan(16 * 1024);
+  const jobs = (Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { outputs?: Record<string, string>; steps: { run?: string; env?: Record<string, string> }[] }> }).jobs;
+  expect(jobs.plan.outputs?.test_timings).toBe("${{ steps.plan.outputs.test_timings }}");
+  const handed = jobs.test.steps.find((step) => step.run?.includes("bun scripts/ci.ts test-timings"));
+  expect(handed?.env?.TIMES).toBe("${{ needs.plan.outputs.test_timings }}");
+  expect(jobs.test.steps.filter((step) => /\bci\.ts timings\b|gh run download/.test(step.run ?? ""))).toEqual([]);
 });
 
 // The builds of the compiler a run makes at once, mutations' `--jobs`, are

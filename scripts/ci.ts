@@ -4,7 +4,7 @@
 //   bun run ci:check [branch] [--shards=4] [--since=<rev>]  # check a branch as it's pushed; main's push checks it already
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
-//   bun scripts/ci.ts timings               # in CI: the last run's shards' timings, for this run's to balance by
+//   bun scripts/ci.ts test-timings <times>  # in CI: the test files' times `plan` gave every shard, for them to balance by
 //   bun scripts/ci.ts mutation-timings <times>   # in CI: the mutations' times `plan` gave every shard, for them to balance by
 //   TIMES=<times> bun scripts/ci.ts merge-mutation-timings <ran> <out> # in CI: those and this run's shards' merged, for the next plan
 //   bun scripts/ci.ts nets                  # in CI: which of the `nets` job's nets ran, and which failed, from its `STEPS`
@@ -22,7 +22,7 @@ import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDec
 import { changedSince, mutations } from "./mutations";
 import { outcome, type Selection, selectChange } from "./select";
 import { downloaded } from "./artifacts";
-import { shardTimings, timingsUnder } from "./shard";
+import { shardTimings, testFileSeconds, timingsUnder } from "./shard";
 import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -298,6 +298,7 @@ async function plan(given?: string) {
   console.log(`memory=${touchesMemory(changed)}`);
   console.log(`mutations=${mutating}`);
   console.log(`mutation_timings=${plannedMutationTimings()}`);
+  console.log(`test_timings=${plannedTestTimings()}`);
   console.log(`wasm=${touchesWasm(changed)}`);
   console.log(`rustc=${touchesRustc(changed)}`);
   // The suite's selection (scripts/select.ts): by the newest test map of an
@@ -391,28 +392,63 @@ export function timingsRun(artifacts: Artifact[]): number | undefined {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.run;
 }
 
-/** In CI, before the suite: the last run's `timings-*` artifacts, into
- * `target/shard-timings/`, by which `bun run test` deals each shard its files
- * (scripts/test.ts). The runs are those whose first shard kept its timings,
- * `timings-1`, as each that ran the suite has: GitHub lists those by name,
- * where its list of all the repository's artifacts fails as often as not
- * with a 500 that three asks don't get past (#606). */
-function fetchTimings() {
-  const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
-    gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
-  );
-  const run = timingsRun(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
+/** In CI, `plan`'s: the test files' times of the last run's `timings-*`
+ * artifacts, read once and handed to every test shard alike as its output
+ * (`encodedTestTimings`), as the mutations' times are: each shard
+ * downloaded them itself, and one GitHub's storage turned away three times
+ * failed (check of 7f324c2ec, `503 Egress is over the account limit`).
+ * Where none can be read it says so, and every shard deals by file count.
+ * The runs are those whose first shard kept its timings, `timings-1`, as
+ * each that ran the suite has: GitHub lists those by name, where its list
+ * of all the repository's artifacts fails as often as not with a 500 that
+ * three asks don't get past (#606). */
+function plannedTestTimings(): string {
+  try {
+    const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
+      gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
+    );
+    const run = timingsRun(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
+    if (run === undefined) {
+      console.error("no run has kept its timings yet: the test shards split by file count");
+      return "";
+    }
+    const dir = join(root, "target", "test-timings-ran");
+    if (!downloaded(run, ["--pattern=timings-*"], dir)) {
+      console.error(`run ${run}'s timings couldn't be read: the test shards split by file count`);
+      return "";
+    }
+    const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
+    const seconds = testFileSeconds(files.map((entry) => join(entry.parentPath, entry.name)).sort());
+    console.error(`the test shards balance by run ${run}'s timings, ${seconds.size} files'`);
+    return encodedTestTimings(seconds);
+  } catch (error) {
+    console.error(`the test files' times couldn't be read, ${error instanceof Error ? error.message : error}: the test shards split by file count`);
+    return "";
+  }
+}
+
+/** Test files' times, as `bun test --timings` writes them, `{ version: 1,
+ * files: { [file]: ms } }`, gzipped, base64: one line of a job's output,
+ * every shard's alike. A few KB of some 360 files. */
+export function encodedTestTimings(seconds: ReadonlyMap<string, number>): string {
+  const files = Object.fromEntries([...seconds].sort(([a], [b]) => a.localeCompare(b)).map(([file, s]) => [file, Math.round(s * 1000)]));
+  return gzipSync(JSON.stringify({ version: 1, files })).toString("base64");
+}
+
+/** In CI, before a test shard runs: the times `plan` gave every shard
+ * alike, as `target/shard-timings/plan.json`, by which `bun run test` deals
+ * each shard its files (scripts/test.ts); none where it gave none. */
+function writeTestTimings(encoded: string) {
   const dir = join(root, shardTimings);
   rmSync(dir, { recursive: true, force: true });
-  if (run === undefined) {
-    console.log("no run has kept its timings yet: the shards split by file count");
+  if (encoded === "") {
+    console.log("plan read no timings: the shards split by file count");
     return;
   }
-  // Every shard deals by what it reads here, so one that can't read them
-  // fails rather than deal otherwise than the others.
-  if (!downloaded(run, ["--pattern=timings-*"], dir)) throw new Error(`run ${run}'s timings couldn't be read`);
-  const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
-  console.log(`the shards balance by run ${run}'s timings, ${files.length} file${files.length === 1 ? "" : "s"} in ${shardTimings}`);
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "plan.json");
+  writeFileSync(file, gunzipSync(Buffer.from(encoded, "base64")));
+  console.log(`the shards balance by ${testFileSeconds([file]).size} files' times, in ${shardTimings}`);
 }
 
 /** The run whose merged mutations' times a check's `plan` reads: the
@@ -612,13 +648,13 @@ if (import.meta.main) {
     else if (command === "check") await check(branch, shards, since);
     else if (command === "bless") bless(branch);
     else if (command === "plan") await plan(since);
-    else if (command === "timings") fetchTimings();
+    else if (command === "test-timings") writeTestTimings(rest[0] ?? "");
     else if (command === "mutation-timings") writeMutationTimings(rest[0] ?? "");
     else if (command === "merge-mutation-timings") mergeMutationTimings(process.env.TIMES ?? "", rest[0] ?? "", rest[1] ?? "");
     else if (command === "nets") console.log(netsSummary(JSON.parse(process.env.STEPS ?? "{}")));
     else if (command === "prune-cache") await pruneCache(rest.includes("--dry-run"));
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings | mutation-timings <times> | merge-mutation-timings <ran> <out> | nets | prune-cache [--dry-run]");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | test-timings <times> | mutation-timings <times> | merge-mutation-timings <ran> <out> | nets | prune-cache [--dry-run]");
       process.exit(2);
     }
   } catch (error) {

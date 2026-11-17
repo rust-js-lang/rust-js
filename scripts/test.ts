@@ -82,7 +82,7 @@ const caseJobs = casePoolJobs(index, count, cores)
   .filter(({ file }) => !selected || (file === caseFiles.corpus ? selected.cases.length > 0 || selected.files.includes(file) : selected.files.includes(file)))
   .map((job) => (selected && job.file === caseFiles.corpus ? { ...job, part: `${job.part}:${caseList}` } : job));
 // How long each file took, this checkout's, and the last CI run's shards'
-// where `bun scripts/ci.ts timings` put them: `bun test` balances the
+// where `bun scripts/ci.ts test-timings` put them: `bun test` balances the
 // shards by them all, and writes this run's to the first.
 const kept = join(root, shardTimings);
 const timings = ["--timings=target/test-timings.json"];

@@ -283,9 +283,9 @@ export function shardArg(args: string[]): { index: number; count: number } | und
 }
 
 /** Where the last run's shards' timings of each test file are kept, from
- * `target/`, for `bun test --shard` to balance this run's by: `bun
- * scripts/ci.ts timings` downloads them there, and `bun run test` gives
- * each file in it. */
+ * `target/`, for `bun run test` to balance this run's by: `bun
+ * scripts/ci.ts test-timings` writes there what `plan` read of them, and
+ * `bun run test` reads each file in it. */
 export const shardTimings = "target/shard-timings";
 
 /** The files that run a browser, beside a dev server, Vite's, Next.js's,
