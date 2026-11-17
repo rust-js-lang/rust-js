@@ -69,42 +69,6 @@ if (written.length === 0) {
 const index: Map<string, number> = new Map((JSON.parse(readFileSync(join(dir, "names.json"), "utf8")) as string[]).map((name, i) => [name, i]));
 // Of each function's counts, those not all zero: the functions it ran.
 const text = Bun.spawnSync([profdata, "merge", "-sparse", "--text", ...written, "-o", "-"], { stdout: "pipe", stderr: "pipe" });
-// And of the functions it ran, each code region it ran, by llvm-cov's
-// export of the same build, its functions' regions in the table's order:
-// the hubs' regions a recording keeps (`hubRegions`, ADR 1101, amended).
-// One it can't count is no test's region: its function's bit stands.
-const regionsTable = join(dir, "regions.json");
-if (text.exitCode === 0 && existsSync(regionsTable)) {
-  const cov = env("RUST_JS_TEST_MAP_COV");
-  const counts = JSON.parse(readFileSync(regionsTable, "utf8")) as number[];
-  const offsets: number[] = [];
-  let total = 0;
-  for (const n of counts) {
-    offsets.push(total);
-    total += n;
-  }
-  const merged = join(dir, "raw", `${id}.profdata`);
-  if (Bun.spawnSync([profdata, "merge", "-sparse", ...written, "-o", merged]).exitCode === 0) {
-    const exported = Bun.spawnSync([cov, "export", "-format=text", "-skip-expansions", "-skip-branches", "-instr-profile", merged, real], { stdout: "pipe", stderr: "pipe" });
-    rmSync(merged, { force: true });
-    if (exported.exitCode === 0) {
-      const names: Map<string, number> = new Map((JSON.parse(readFileSync(join(dir, "names.json"), "utf8")) as string[]).map((name, i) => [name, i]));
-      const fns = JSON.parse(exported.stdout.toString()).data[0].functions as { name: string; count: number; regions: number[][] }[];
-      const rbits = new Uint8Array(Math.ceil(total / 8));
-      for (const f of fns) {
-        const at = f.count > 0 ? names.get(f.name) : undefined;
-        if (at === undefined) continue;
-        let k = 0;
-        for (const r of f.regions) {
-          if (!(r[7] === 0 && r[5] === 0)) continue;
-          if (r[4]! > 0 && k < counts[at]!) rbits[(offsets[at]! + k) >> 3] |= 1 << ((offsets[at]! + k) & 7);
-          k++;
-        }
-      }
-      writeFileSync(join(dir, "units", `${slug}.${id}.rbits`), rbits);
-    }
-  }
-}
 for (const raw of written) rmSync(raw, { force: true });
 if (text.exitCode !== 0) {
   appendFileSync(join(dir, "unknown"), `${unit}\n`);

@@ -92,34 +92,6 @@ export type TestMap = {
   noCompiler: string[];
 };
 
-/** The hubs' regions a map's recording kept beside it (ADR 1101, amended
- * for the hubs' region coverage): of each function `hubShare` of the tests
- * reach, each code region whose run some tests and not others share,
- * between `varyingShare` and its complement; each test's bits over those.
- * A file of its own beside the map's, `regionsFile`, of its own layout,
- * `regionsVersion`, so the map's layout and its readers are as they were:
- * the selector reads none of it yet. */
-export type Regions = {
-  version: number;
-  commit: string;
-  /** Each kept region: its function, by the map's index, and its lines. */
-  regions: { at: number; lines: [number, number] }[];
-  units: Record<string, string>;
-  /** What the recording kept and dropped, said in its log. */
-  counted: { hubs: number; hubRegions: number; kept: number };
-};
-export const regionsVersion = 1;
-/** The share of the tests a hub's reached by. */
-export const hubShare = 0.9;
-/** A region kept is run by more than this share of the tests and fewer than
- * all but it: one nearly every test runs, or nearly none, narrows little. */
-export const varyingShare = 0.01;
-
-/** A map's regions' file, beside it. */
-export function regionsFile(store: string, commit: string, toolchain: string): string {
-  return join(store, `${commit}-${toolchain.slice(0, 12)}-v${mapVersion}.regions-v${regionsVersion}`);
-}
-
 /** A change to a file: each hunk's lines of the map's commit, `[from,
  * count]`, a count of 0 lines added after `from`, and the lines it writes
  * there; or `new`, a file the commit didn't have. */
@@ -564,12 +536,7 @@ export function pruneMaps(dir = mapStore, cap = keptMaps, free = () => freeBytes
   // A map of another toolchain or layout than `toolchain`'s, a stale key,
   // which no check of this one reads, goes whatever its use.
   const stale = (name: string) => toolchain !== undefined && name.endsWith(".json") && !name.endsWith(keySuffix(toolchain));
-  // A map's regions' file goes with its map, and isn't one of the kept.
-  const sidecar = (name: string) => /\.regions-v\d+$/.test(name);
-  const all = readdirSync(dir);
-  const maps = new Set(all.filter((name) => name.endsWith(".json")).map((name) => name.slice(0, -".json".length)));
-  for (const name of all.filter(sidecar)) if (!maps.has(name.replace(/\.regions-v\d+$/, ""))) rmSync(join(dir, name), { force: true });
-  const names = readdirSync(dir).filter((name) => !sidecar(name));
+  const names = readdirSync(dir);
   const kept = names
     .filter((name) => !stale(name))
     .map((name) => {
@@ -579,10 +546,7 @@ export function pruneMaps(dir = mapStore, cap = keptMaps, free = () => freeBytes
   const newest = [...kept].sort((a, b) => b.used - a.used);
   const past = [...names.filter(stale).map((name) => join(dir, name)), ...newest.slice(cap).map(({ path }) => path)];
   const within = evict(newest.slice(0, cap), { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes });
-  for (const path of past) {
-    rmSync(path, { force: true });
-    for (const name of readdirSync(dir)) if (sidecar(name) && path.endsWith(".json") && join(dir, name).startsWith(path.slice(0, -".json".length))) rmSync(join(dir, name), { force: true });
-  }
+  for (const path of past) rmSync(path, { force: true });
   return { removed: past.length + within.removed, size: within.size };
 }
 
@@ -833,14 +797,8 @@ function functionTable(binary: string, record: string, tools: { profdata: string
     const merged = joinedSpans(lines, sourceLines(file));
     return { file, spans: merged };
   });
-  // And each one's code regions, in the export's order, which a compile's
-  // export of the same build gives them in (testMapCompiler.ts).
-  const regions = fns.map(({ regions: of }) => of.filter(codeRegion).map((r) => [r[0], r[2]] as [number, number]));
-  return { names: fns.map((f) => f.name), functions, regions };
+  return { names: fns.map((f) => f.name), functions };
 }
-
-/** A code region of llvm-cov's export, of its function's own file. */
-export const codeRegion = (r: number[]) => r[7] === 0 && r[5] === 0;
 
 /** A function's counted lines, `[from, to]` each, in order, joined where
  * what's between is the function's own, what counts none: a `use`, a
@@ -943,8 +901,6 @@ export type Plan = {
   parts: number;
   names: string[];
   functions: TestMap["functions"];
-  /** Each function's code regions' lines, in its export's order. */
-  regions: [number, number][][];
   files: string[];
   caseNames: string[];
   readsSources: string[];
@@ -1039,7 +995,7 @@ async function build(shards: number): Promise<Plan> {
   const table = join(mapDir, "table");
   rmSync(table, { recursive: true, force: true });
   mkdirSync(table, { recursive: true });
-  const { names, functions, regions } = functionTable(countingBinary, table, tools);
+  const { names, functions } = functionTable(countingBinary, table, tools);
   rmSync(table, { recursive: true, force: true });
 
   const perShard = machine().cores;
@@ -1056,7 +1012,6 @@ async function build(shards: number): Promise<Plan> {
     parts,
     names,
     functions,
-    regions,
     files,
     caseNames: readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")),
     readsSources: files.filter((file) => readsSources(file)),
@@ -1093,7 +1048,6 @@ async function recordPart(plan: Plan, shard: number): Promise<string> {
   rmSync(recording, { recursive: true, force: true });
   for (const dir of ["raw", "units", "targets"]) mkdirSync(join(recording, dir), { recursive: true });
   writeFileSync(join(recording, "names.json"), JSON.stringify(plan.names));
-  writeFileSync(join(recording, "regions.json"), JSON.stringify(plan.regions.map((of) => of.length)));
   const units = plan.units.filter((unit) => unit.shard === shard);
   // The longest first, by what check:fast keeps of each file's time on this
   // machine (scripts/jobTimes.ts), so no long one runs alone at the end; the
@@ -1107,7 +1061,6 @@ async function recordPart(plan: Plan, shard: number): Promise<string> {
     RUST_JS_TEST_MAP_COMPILER: countingBinary,
     RUST_JS_TEST_MAP_DIR: recording,
     RUST_JS_TEST_MAP_PROFDATA: tools.profdata,
-    RUST_JS_TEST_MAP_COV: tools.cov,
     RUST_JS_TEST_MAP_ROOT: root,
     RUST_JS_COMPILE_CACHE_MB: "0",
     RUST_JS_LOAD_SCALE: "3",
@@ -1119,7 +1072,7 @@ async function recordPart(plan: Plan, shard: number): Promise<string> {
     process.exit(1);
   }
   writeFileSync(join(recording, "ended.json"), JSON.stringify(Object.fromEntries(ended)));
-  for (const dir of ["raw", "targets", "names.json", "regions.json"]) rmSync(join(recording, dir), { recursive: true, force: true });
+  for (const dir of ["raw", "targets", "names.json"]) rmSync(join(recording, dir), { recursive: true, force: true });
   console.log(`part ${shard} of ${plan.shards}: ${units.length} tests, ${((Date.now() - started) / 1000).toFixed(0)} s`);
   return recording;
 }
@@ -1131,11 +1084,9 @@ async function recordPart(plan: Plan, shard: number): Promise<string> {
  * compiler's sources, `null`, run on every change. The same map of the
  * same tests however they're parted (test/test-map.test.ts). A test of the
  * plan no part, or two, said ended of is refused: a part was lost. */
-export function mergeRecordings(plan: Plan, parts: string[], made: number): { map: TestMap; always: string[]; regions: Regions } {
+export function mergeRecordings(plan: Plan, parts: string[], made: number): { map: TestMap; always: string[] } {
   const ended = new Map<string, number>();
   const bits = new Map<string, Uint8Array>();
-  const regionBits = new Map<string, Uint8Array>();
-  const regionCount = plan.regions.reduce((n, of) => n + of.length, 0);
   const unfinished = new Set<string>();
   const unknown = new Set<string>();
   for (const part of parts) {
@@ -1145,18 +1096,11 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number): { ma
       ended.set(name, code);
     }
     for (const name of readdirSync(join(part, "units"))) {
-      const [, slug, kind] = /^(.*)\.\d+-\d+\.(bits|start|rbits)$/.exec(name) ?? [];
+      const [, slug, kind] = /^(.*)\.\d+-\d+\.(bits|start)$/.exec(name) ?? [];
       if (slug === undefined) continue;
       const unit = slug.replaceAll("__", "/");
       if (kind === "start") {
         unfinished.add(unit);
-        continue;
-      }
-      if (kind === "rbits") {
-        const own = regionBits.get(unit) ?? new Uint8Array(Math.ceil(regionCount / 8));
-        const read = readFileSync(join(part, "units", name));
-        own.forEach((_, i) => (own[i] |= read[i] ?? 0));
-        regionBits.set(unit, own);
         continue;
       }
       const own = bits.get(unit) ?? new Uint8Array(Math.ceil(plan.names.length / 8));
@@ -1207,56 +1151,7 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number): { ma
     if (isFile && why === "it ran no compiler") noCompiler.push(unit);
   }
   const { version, commit, toolchain, functions, includes, corpusReaders } = plan;
-  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler }, always, regions: hubRegions(plan, units, regionBits) };
-}
-
-/** Of a recording's `units`, those counted, and each one's bits over every
- * function's code regions, `regionBits`: the hubs' varying regions and each
- * test's bits over them (`Regions`). */
-export function hubRegions(plan: Pick<Plan, "commit" | "names" | "regions">, units: TestMap["units"], regionBits: Map<string, Uint8Array>): Regions {
-  const counted = Object.entries(units).filter((entry): entry is [string, string] => entry[1] !== null);
-  const total = counted.length;
-  const offsets: number[] = [];
-  let at = 0;
-  for (const of of plan.regions) {
-    offsets.push(at);
-    at += of.length;
-  }
-  const reaching = new Uint32Array(plan.names.length);
-  for (const [, b64] of counted) {
-    const bytes = Buffer.from(b64, "base64");
-    for (let f = 0; f < plan.names.length; f++) if (bytes[f >> 3]! & (1 << (f & 7))) reaching[f]!++;
-  }
-  const hubs = [...reaching.keys()].filter((f) => total > 0 && reaching[f]! >= hubShare * total);
-  const ran = new Map<number, number>();
-  for (const [unit] of counted) {
-    const bytes = regionBits.get(unit);
-    if (bytes === undefined) continue;
-    for (const f of hubs) for (let k = 0; k < plan.regions[f]!.length; k++) {
-      const r = offsets[f]! + k;
-      if (bytes[r >> 3]! & (1 << (r & 7))) ran.set(r, (ran.get(r) ?? 0) + 1);
-    }
-  }
-  const kept: { at: number; lines: [number, number]; r: number }[] = [];
-  let hubRegionCount = 0;
-  for (const f of hubs) {
-    for (let k = 0; k < plan.regions[f]!.length; k++) {
-      hubRegionCount++;
-      const r = offsets[f]! + k;
-      const n = ran.get(r) ?? 0;
-      if (n > varyingShare * total && n < (1 - varyingShare) * total) kept.push({ at: f, lines: plan.regions[f]![k]!, r });
-    }
-  }
-  const out: Regions["units"] = {};
-  for (const [unit] of counted) {
-    const bytes = regionBits.get(unit) ?? new Uint8Array(0);
-    const own = new Uint8Array(Math.ceil(kept.length / 8));
-    kept.forEach(({ r }, i) => {
-      if (bytes[r >> 3]! & (1 << (r & 7))) own[i >> 3] |= 1 << (i & 7);
-    });
-    out[unit] = Buffer.from(own).toString("base64");
-  }
-  return { version: regionsVersion, commit: plan.commit, regions: kept.map(({ at, lines }) => ({ at, lines })), units: out, counted: { hubs: hubs.length, hubRegions: hubRegionCount, kept: kept.length } };
+  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler }, always };
 }
 
 /** The map of the plan's recording, every part's, kept in the machine's
@@ -1264,24 +1159,13 @@ export function hubRegions(plan: Pick<Plan, "commit" | "names" | "regions">, uni
 function merge(plan: Plan, keep: boolean) {
   const parts = existsSync(recordings) ? readdirSync(recordings).map((name) => join(recordings, name)) : [];
   if (parts.length !== plan.shards) throw new Error(`the plan has ${plan.shards} parts, and ${parts.length} were recorded in ${relative(root, recordings)}`);
-  const { map, always, regions } = mergeRecordings(plan, parts, Date.now());
+  const { map, always } = mergeRecordings(plan, parts, Date.now());
   const file = mapFile(mapStore, plan.commit, plan.toolchain);
-  // Written whole, then named, so another worktree never reads half of it;
-  // the regions' first, so a map read finds them there.
+  // Written whole, then named, so another worktree never reads half of it.
   mkdirSync(mapStore, { recursive: true });
-  const regionsAt = regionsFile(mapStore, plan.commit, plan.toolchain);
-  const regionsText = JSON.stringify(regions);
-  writeFileSync(`${regionsAt}.${process.pid}.tmp`, regionsText);
-  renameSync(`${regionsAt}.${process.pid}.tmp`, regionsAt);
-  const mapText = JSON.stringify(map);
   const writing = `${file}.${process.pid}.tmp`;
-  writeFileSync(writing, mapText);
+  writeFileSync(writing, JSON.stringify(map));
   renameSync(writing, file);
-  const mb = (bytes: number) => `${(bytes / 2 ** 20).toFixed(1)} MB`;
-  console.log(
-    `the hubs' regions: ${regions.counted.hubs} hubs (≥${hubShare} of the tests), ${regions.counted.hubRegions} code regions, ${regions.counted.kept} varying kept; ` +
-      `the map ${mb(mapText.length)}, ${mb(Bun.gzipSync(mapText).length)} gzipped; the regions ${mb(regionsText.length)}, ${mb(Bun.gzipSync(regionsText).length)} gzipped`,
-  );
   pruneMaps(mapStore, keptMaps, () => freeBytes(mapStore), plan.toolchain);
   // What only this recording needed, its counts and each test's target,
   // kept with `--keep`, to see why a test runs on every change. Its build is

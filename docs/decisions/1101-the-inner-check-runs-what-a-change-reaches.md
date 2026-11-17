@@ -682,33 +682,28 @@ everything, `pub import_names: ImportNames` added to `Module`, which
 derives `PartialEq`: a new field changes what equality compares wherever
 it's asked, so a field's addition stays everything.
 
-### Amended: the hubs' regions are recorded beside the map (2026-11-17)
+### Amended: the hubs' regions, tried and dropped (2026-11-17)
 
-A function most tests reach selects them all wherever a hunk lies in it:
-`lower_crate` and src/output.rs's functions made the interaction sanity's
-three examples (2905d5cdc, d0ce7d1ab, 336483fa0) 291 to 362 files. Of map
-2905d5cdc's 22,775 functions, 5,026 are reached by 90% or more of its 5,563
-tests, 3,544 by 99%. Their code regions, of llvm-cov's export, number
-78,912; one export of every function's regions of one compile takes 0.10 s
-here, about 0.4 s a test with the parse, some 37 CPU-minutes a recording.
+A function most tests reach selects them all wherever a hunk lies in it,
+so the recording kept, beside the map, each hub's code regions that some
+tests ran and others not (29c746696): of each function 90% or more of the
+tests reach, each region 1% to 99% of them ran, and each test's bits over
+those, for a hunk in such a region to select only the tests that ran it.
 
-The recording keeps, beside the map, of each function `hubShare` (0.9) of
-the tests reach, each code region whose run neither nearly every test nor
-nearly none shares (`varyingShare`, 1% to 99%), and each test's bits over
-those (`hubRegions`): its own file, `<map>.regions-v1`, of its own layout,
-so the map and its readers are as they were. The unit hook
-(testMapCompiler.ts) exports each compile's regions of the functions it
-ran; the merge says how many regions it kept and both files' sizes,
-gzipped too. Kept and pruned with its map (`pruneMaps`), within the map
-store's cap (scripts/disk.ts).
+The first recording (test-map run 43990610976, of 7fe40bde3): 5,027 hubs,
+79,135 code regions, 30,262 varying kept; the map 21.8 MB (7.2 MB gzipped),
+the regions 28.0 MB (7.5 MB gzipped). Its parts took 7,311 s summed where
+the recording before took 4,014 (+82%), its longest part 1,197 s where it
+took 729, and the artifact every push downloads 15.4 MB where it was 7.5
+(7.3 s here). The interaction sanity's three examples, placed in that
+map by their changed text, selected the same with the regions as without:
+every hub hunk of theirs, `lower_crate`'s among them, lies in a region
+every test runs, which narrows nothing. Their changes touch code every
+compile runs. The recording side is reverted.
 
-The selector reads none of it until one CI recording says the kept regions'
-count and size and the three examples' would-be selections. Its rules
-then: a hunk maps to the hub's kept regions whose lines it lies inside, read
-through the rebase's line mapping as the function rule's are; a hunk in no
-kept region, a new statement, a signature, a match arm's pattern, or one
-in a file changed since the map with no mapping, is its whole function's.
-
-Proof: test/test-map.test.ts's "a recording keeps, of each hub"; mutations
-`hub-regions-keep-every-region` and `hub-regions-every-function`.
+What the examples did show: 2905d5cdc's own change, src/output.rs, was
+291 files by the stale map's fallback ("by every test of its functions",
+a file the map's commit and the change's base differ on) and 7 by a map
+that places it; which the selector's placing a moved line by its text
+addresses (the next amendment).
 
