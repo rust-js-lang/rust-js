@@ -839,7 +839,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &order.kind
             && callee.reads_same()
-            && matches!(args.as_slice(), [x, y] if is_var(x, made_a.word()) && is_var(y, made_b.word()))
+            && matches!(args.as_slice(), [x, y] if is_var(x, &made_a) && is_var(y, &made_b))
         {
             return Ok((**callee).clone());
         }
@@ -888,7 +888,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &order.kind
             && callee.reads_same()
-            && matches!(args.as_slice(), [x, y] if is_var(x, made_a.word()) && is_var(y, made_b.word()))
+            && matches!(args.as_slice(), [x, y] if is_var(x, &made_a) && is_var(y, &made_b))
         {
             return Ok((**callee).clone());
         }
@@ -1064,8 +1064,8 @@ fn any_shape(tcx: rustc_middle::ty::TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.peel_refs().kind(), rustc_middle::ty::Adt(adt, _) if super::declarations::any_shape(tcx, adt.did()))
 }
 
-fn is_var(e: &Expr, name: &str) -> bool {
-    matches!(&e.kind, js::ExprKind::Var(n) if n.is(name))
+fn is_var(e: &Expr, name: &js::Name) -> bool {
+    matches!(&e.kind, js::ExprKind::Var(n) if n == name)
 }
 
 /// The types `order_total` is asking of, outermost first.

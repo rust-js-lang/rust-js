@@ -574,16 +574,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (x, y) = (self.fresh(Role::X), self.fresh(Role::Y));
             let mut made = Vec::new();
             let same = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(1), span, &mut made)?;
-            let is = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v.is(name));
+            let is = |e: &Expr, name: &js::Name| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
             let mut list = vec![a, b];
             match &same.kind {
                 // `===`, which it compares by where it's given none.
-                js::ExprKind::Binary(Op::Eq, l, r) if made.is_empty() && is(l, x.word()) && is(r, y.word()) => {}
+                js::ExprKind::Binary(Op::Eq, l, r) if made.is_empty() && is(l, &x) && is(r, &y) => {}
                 // A helper of the two, `$eq`: the helper.
                 js::ExprKind::Call(callee, given)
                     if made.is_empty()
                         && callee.helper_name().is_some()
-                        && matches!(&given[..], [l, r] if is(l, x.word()) && is(r, y.word())) =>
+                        && matches!(&given[..], [l, r] if is(l, &x) && is(r, &y)) =>
                 {
                     list.push((**callee).clone());
                 }

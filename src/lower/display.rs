@@ -771,7 +771,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         if let Some(value) = text_of
             && params.len() == 1
-            && is_var(value, param.word())
+            && is_var(value, &param)
         {
             return Ok(Expr::js_global("String"));
         }
@@ -936,8 +936,8 @@ fn joined_pieces(e: Expr) -> Vec<Expr> {
     vec![e]
 }
 
-fn is_var(e: &Expr, name: &str) -> bool {
-    matches!(&e.kind, js::ExprKind::Var(n) if n.is(name))
+fn is_var(e: &Expr, name: &js::Name) -> bool {
+    matches!(&e.kind, js::ExprKind::Var(n) if n == name)
 }
 
 /// `String(n)`, or the text itself for a constant: `"4096"`.
