@@ -1583,8 +1583,10 @@ over; and an `Option`'s, a `Box`'s or a `Reverse`'s is its value's, of an
 caller's `Clone` dictionary for its `cloneFrom` first, which a std type's
 has where std's is in place, as an impl's own is, and is `*dest =
 source.clone()` where it has none. A `Result`'s own written directly,
-whose `&mut` is the `Result` object itself, and a slice of `Reverse`s'
-are refused (#927). A `HashMap`'s drop,
+whose `&mut` is the `Result` object itself, writes it in place: its
+value's where both are `Ok` or both `Err`, else `$take` of a clone
+(#2028). A `Reverse` of a `Result`'s written directly, and a slice of
+`Reverse`s', are refused (#927). A `HashMap`'s drop,
 and its `clear()`, stop at an entry whose drop panics, a plain `for` loop,
 as hashbrown's do, where a `BTreeMap`'s go on; a `BTreeMap`'s `insert` of a
 key it holds drops the key given before it writes the value, `$insert(..,

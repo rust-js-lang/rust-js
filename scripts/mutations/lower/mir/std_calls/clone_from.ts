@@ -16,7 +16,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/clone_from.rs",
     find: "            if self.forwards_clone_from(ty, span)? {\n",
     replace: "            if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_result_refused.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_reverse_of_a_result_refused.rs$"],
+  },
+  {
+    name: "clone-from-result-direct-unwritten",
+    breaks: "a direct `clone_from` of a `Result` through a `&mut`, which is the `Result` itself, isn't written as its value's where both are `Ok` or both `Err`, so it's refused (#2028)",
+    file: "src/lower/mir/std_calls/clone_from.rs",
+    find: "            if let Some(sides) = self.result_sides(ty, to.clone(), source.clone(), span)? {\n",
+    replace: "            if let Some(sides) = None::<Vec<(Expr, Vec<Stmt>)>> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_through_a_mut_ref.rs$"],
   },
   {
     name: "generic-clone-from-place-not-given-back",

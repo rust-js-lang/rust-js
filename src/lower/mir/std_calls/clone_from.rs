@@ -2,7 +2,8 @@
 //! it (#919, #922, #927, #928): by the one composition generic code's
 //! dictionary asks too (`std_types/clone_from.rs`), its own in place,
 //! `clone_into`'s; a `Box`'s and a `Reverse`'s value's; an `Option`'s
-//! value's where both are `Some`; a value only the caller knows, its
+//! value's where both are `Some`, a `Result`'s where both are `Ok` or both
+//! `Err`; a value only the caller knows, its
 //! dictionary's `clone_from`, asked first; else `*dest = source.clone()`,
 //! what it held dropped.
 
@@ -82,11 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(Expr::js_undefined()));
             }
             // Of an `Option`, by its place, which holds a value, not an
-            // object: a `Result` within it written there too. Not a
-            // `Result` itself, an object a `&mut` is, which
-            // `result_clone_over`'s `to = ..` would only rebind here,
-            // whose own place this body can't tell from another's
-            // (#927).
+            // object: a `Result` within it written there too.
             let composed = |this: &mut Self, place: Expr, pointer: Expr| -> R<Option<Vec<Stmt>>> {
                 this.option_clone_over(ty, (place, pointer), source.clone(), span)
             };
@@ -103,6 +100,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Const(name.into(), boxed()).at(self.js_span(span)));
                 out.extend(over);
                 out.push(StmtKind::Assign(to, Expr::member(Expr::var(name), js::HELD)).at(self.js_span(span)));
+                return Ok(Value::Expr(Expr::js_undefined()));
+            }
+            // Of a `Result`, an object a `&mut` is: of two `Ok`s or two
+            // `Err`s its value's, the `Result` written in place
+            // (`result_sides`); else `*dest = source.clone()`, written as
+            // any replace of what a `&mut` is (#2028).
+            if let Some(sides) = self.result_sides(ty, to.clone(), source.clone(), span)? {
+                let mut replaced = Vec::new();
+                self.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, &mut replaced)?;
+                out.extend(Self::sides_or(sides, replaced));
                 return Ok(Value::Expr(Expr::js_undefined()));
             }
             if self.forwards_clone_from(ty, span)? {

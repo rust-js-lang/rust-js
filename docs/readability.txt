@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2713
-lines	363757
+files	2716
+lines	364712
 temporaries	0	0
 labeled blocks	0	0
-while (true)	224	6.2
-$iter	3148	86.5
-Iterator.from	366	10.1
-return;	348	9.6
-renamed x$1	16575	455.7
-role fallbacks	9179	252.3
+while (true)	226	6.2
+$iter	3161	86.7
+Iterator.from	366	10
+return;	349	9.6
+renamed x$1	16635	456.1
+role fallbacks	9203	252.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -326,11 +326,12 @@ test/corpus/clone_changed_as_a_vec_or_a_boxed_slice.js	62	0	0	0	0	0	0	0	0
 test/corpus/clone_changed_part.js	38	0	0	0	0	0	0	0	0
 test/corpus/clone_dictionary_of_a_nested_option.js	95	0	0	0	0	0	0	8	7
 test/corpus/clone_from.js	67	0	0	0	0	0	0	0	1
-test/corpus/clone_from_forwarded_to_its_value.js	228	0	0	0	0	0	0	23	6
+test/corpus/clone_from_forwarded_to_its_value.js	212	0	0	0	0	0	0	23	6
 test/corpus/clone_from_generic_option_own.js	48	0	0	0	0	0	0	0	0
 test/corpus/clone_from_generic_reverse_own.js	43	0	0	0	0	0	0	0	0
 test/corpus/clone_from_generic_std_own.js	628	0	0	0	0	0	0	25	10
-test/corpus/clone_from_of_a_result_given_to_generic_code.js	426	0	0	0	0	0	0	25	9
+test/corpus/clone_from_of_a_result_given_to_generic_code.js	378	0	0	0	0	0	0	25	9
+test/corpus/clone_from_of_a_result_through_a_mut_ref.js	423	0	0	0	0	0	0	38	14
 test/corpus/clone_from_of_an_option_given_to_generic_code.js	449	0	0	0	0	0	0	34	8
 test/corpus/clone_from_option_own.js	31	0	0	0	0	0	0	0	0
 test/corpus/clone_from_slice_generic.js	72	0	0	0	0	0	0	0	0
@@ -576,6 +577,7 @@ test/corpus/default_own_param_numbered_as_the_impls.js	211	0	0	0	8	0	0	21	3
 test/corpus/default_self_mut_object.js	37	0	0	0	0	0	0	3	0
 test/corpus/default_unwinds_what_it_made.js	141	0	0	0	0	0	0	2	0
 test/corpus/default_value_exits.js	478	0	0	0	0	0	2	3	1
+test/corpus/default_where_clause_beside_a_hinted_extend.js	551	0	0	2	13	0	1	17	11
 test/corpus/default_where_clause_facts_its_callers.js	160	0	0	0	4	0	0	0	0
 test/corpus/default_where_clause_item_drops.js	498	0	0	2	13	0	0	17	11
 test/corpus/deque_index_out_of_bounds.js	19	0	0	0	0	0	0	0	1
@@ -1273,7 +1275,7 @@ test/corpus/io_unit_result_question_converts_its_error.js	76	0	0	0	0	0	0	4	6
 test/corpus/io_write_impl.js	105	0	0	0	0	0	0	0	2
 test/corpus/io_write_mut_generic.js	43	0	0	0	0	0	0	6	1
 test/corpus/io_writer_fails_in_main.js	52	0	0	0	0	0	0	0	1
-test/corpus/io_writers.js	77	0	0	0	0	0	0	0	1
+test/corpus/io_writers.js	76	0	0	0	0	0	0	0	0
 test/corpus/is_sorted_by_closes_its_source_after_its_closure.js	188	0	0	0	0	0	0	25	7
 test/corpus/is_sorted_drop_panics_during_its_unwind.js	32	0	0	0	1	0	0	0	0
 test/corpus/is_sorted_items.js	74	0	0	0	2	0	0	0	0
@@ -1548,7 +1550,7 @@ test/corpus/mut_ref_of_a_boxed_function_as_dyn.js	101	0	0	0	0	0	0	3	1
 test/corpus/mut_ref_of_a_boxed_iterator_is_the_iterators.js	93	0	0	0	4	0	0	4	4
 test/corpus/mut_ref_of_a_mut_slice.js	320	0	0	0	0	0	0	26	11
 test/corpus/mut_ref_of_unit_kept.js	54	0	0	0	0	0	0	0	1
-test/corpus/mut_ref_reborrow_reassigned.js	67	0	0	0	0	0	0	8	3
+test/corpus/mut_ref_reborrow_reassigned.js	66	0	0	0	0	0	0	8	2
 test/corpus/mut_ref_std_items.js	85	0	0	0	0	0	0	0	2
 test/corpus/mut_ref_temporary.js	53	0	0	0	0	0	0	11	5
 test/corpus/mut_ref_to_its_own_type_parameter_through_std_impls.js	126	0	0	0	1	0	1	15	9
@@ -2122,6 +2124,7 @@ test/corpus/scan_state_through_its_box.js	46	0	0	0	4	0	1	0	0
 test/corpus/scope_field_copies.js	84	0	0	0	0	0	0	7	0
 test/corpus/scope_method_closure_addr_eq.js	26	0	0	0	0	0	0	0	1
 test/corpus/scope_method_closure_ptr_eq.js	26	0	0	0	0	0	0	0	1
+test/corpus/scope_struct_fields_of_locals.js	47	0	0	0	0	0	0	5	1
 test/corpus/scope_struct_functions.js	76	0	0	0	0	0	0	15	1
 test/corpus/scope_struct_generic.js	130	0	0	0	0	0	0	4	3
 test/corpus/scope_struct_kept_apart.js	209	0	0	0	0	0	0	3	2

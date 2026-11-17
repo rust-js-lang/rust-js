@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/clone_from.rs",
     find: "        self.is_unknown(ty) && (self.evidence_for(ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]))).is_some()\n",
     replace: "        false && self.is_unknown(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^clone_from_generic_(std_own|result_refused).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_(generic_std_own|of_a_result_through_a_mut_ref).rs$"],
   },
   {
     name: "generic-clone-from-asked-of-any-caller",
@@ -191,9 +191,17 @@ export const mutations: Mutation[] = [
     name: "result-clone-from-old-shared",
     breaks: "a `Result` written over through an in-place cell drops what's now there, not what it held (#927)",
     file: "src/lower/std_types/clone_from.rs",
-    find: "        let held = self.moved_out(to.clone(), ty);\n        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
-    replace: "        replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
+    find: "        let held = self.moved_out(to.clone(), ty);\n        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        Ok(Some(Self::sides_or(sides, replaced)))",
+    replace: "        replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        Ok(Some(Self::sides_or(sides, replaced)))",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_given_to_generic_code.rs$"],
+  },
+  {
+    name: "result-side-setter-rebinds",
+    breaks: "a `Result`'s side, its value's `clone_from` writing the value whole, `*self = ..` of a fieldless enum's, rebinds the name it's written through, `dest = { TAG: \"Ok\", _0: v }`, not the `Result` a `&mut` is: the caller's stays as it was (#2028)",
+    file: "src/lower/std_types/clone_from.rs",
+    find: "                let assigned = self.in_place(InPlaceWriter::Assign, ty, vec![to.clone(), replaced], span)?;\n                let setter = Expr::arrow(vec![v.into()], vec![StmtKind::Expr(assigned).at(js::Span::NONE)]);\n",
+    replace: "                let setter = Expr::arrow(vec![v.into()], vec![StmtKind::Assign(to.clone(), replaced).at(js::Span::NONE)]);\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_through_a_mut_ref.rs$"],
   },
   {
     name: "box-clone-from-not-its-values",

@@ -396,3 +396,65 @@ a `Reverse` of a `Result`, still refused with the direct `Result` (#2028).
 It's caught.
 docs/readability.txt is blessed with the two cases alone. `$iter`'s
 share falls from 86.2 to 86.1, and the case's own renamed names add 23.
+
+
+## Amendment (2026-11-18, #2028): a `Result`'s `clone_from` written directly, the `Result` written in place
+
+A direct `dest.clone_from(source)` of a `Result` was refused. A `&mut` to
+a `Result` is the object itself (ADR 0025), and `result_clone_over` wrote
+its place by assignment, which would only rebind the parameter. It is now
+written as std writes it:
+- `result_sides` gives each side, two `Ok`s or two `Err`s, where its
+  value's `clone_from` is in place (`written_over`): the test, and the
+  write, which reads the value at `to._0` itself.
+- Where that write takes a box of the value, a dictionary's `cloneFrom`
+  or a value whose `&mut` is a box, the box's setter writes the `Result`
+  in place, `$assign(to, { TAG: "Ok", _0: v })`, through `in_place`.
+  This replaces the setter above that made a new `Result` "because one
+  may be shared". Whether one is shared is the copy policy's answer, not
+  this function's: a `Result` anything takes `&mut` of is a type changed
+  in place (`mutated_types`), so where Rust copies one, JS does too.
+  `in_place` refuses where that policy leaves a copy out, as each write
+  in place does. A `Result` moved, `let r = holder.result`, is one value
+  in Rust, whatever JS shares.
+- Otherwise the direct path writes `*dest = source.clone()` as any
+  replacement of what a `&mut` is, `replace_with_clone` (`$take`, ADR
+  0147), and drops what it held. Generic code's dictionary keeps its own
+  replacement of its box's `value` (`result_clone_over`).
+- The box is made only where the write reads it. Generic code's
+  `TClone.cloneFrom(payload, ..)` still takes one; a `Vec`'s is
+  `$cloneIntoVec(dest._0, ..)`. `clone_from_forwarded_to_its_value` and
+  `clone_from_of_a_result_given_to_generic_code` lose a box nothing
+  wrote through.
+
+Case C of ADR 0262: results change, so Rust's order of clones, drops and
+values is kept.
+
+`clone_from_generic_result_refused` goes. Its program is the first row of
+`clone_from_of_a_result_through_a_mut_ref`, which runs against native in
+both builds. Its rows: a parameter `&mut Result`, generic and concrete; a
+reborrow `let p = &mut r`; a local; `Ok`/`Err` both ways; a fieldless
+enum with its own `clone_from`, whose box's setter writes the `Result`;
+and a `Result` moved out of a struct's field, `clone_from`'d through a
+`&mut`, with the struct's other field read and its field given a new
+value, which stays as it was. The direct path's one refusal left is a
+`Reverse` of a `Result`, `clone_from_of_a_reverse_of_a_result_refused`.
+
+Mutations:
+- `clone-from-result-direct-unwritten` (`mir/std_calls/clone_from.ts`)
+  and `result-side-setter-rebinds` (`std_types/clone_from.ts`) are new.
+- `clone-from-forwarded-unrefused` now names the `Reverse` case.
+- `generic-clone-from-never-given` and `result-clone-from-old-shared` are
+  retargeted.
+All are caught. Making the box on each side whether it's read or not is
+not a mutation: preparation drops a `const` nothing reads, so the JS is
+the same. `test/lowering-std-unwinds.test.ts` holds the direct `Vec`
+form.
+
+docs/readability.txt is blessed. The two cases that lose their boxes
+lose 64 lines and no rename (31 and 35 renamed names before and after),
+so renamed `x$1`'s share of the lines rises. The new case's 38 lines
+with renames, each `&Ok(..)` it's given held in a `value` numbered apart,
+`value$1` to `value$5`, and the cases committed since the last bless,
+which weren't counted yet, come with it:
+`x$1` from 455.2 to 455.7, `$iter` from 86.6 to 86.4 in 10,000 lines.

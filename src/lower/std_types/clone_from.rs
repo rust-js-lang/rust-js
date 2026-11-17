@@ -12,8 +12,13 @@ use rustc_middle::ty;
 use rustc_span::Span;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::copies::InPlaceWriter;
 use crate::lower::recognition::trait_method;
 use crate::lower::{FnCx, R};
+
+/// One side of a `Result`'s `clone_from`, two `Ok`s or two `Err`s: the
+/// test of it, and its write (`result_sides`).
+pub(in crate::lower) type Side = (Expr, Vec<Stmt>);
 
 /// A value written over in place by a clone of another, as std's own
 /// `clone_from` of its type does (`clone_into`): `helper(to, from,
@@ -186,12 +191,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `to.clone_from(from)` of a `Result`, as std's is: of two `Ok`s its
     /// value's, of two `Err`s its error's, where that's written in place
-    /// (`written_over`); otherwise `*to = from.clone()`, the clone written
+    /// (`result_sides`); otherwise `*to = from.clone()`, the clone written
     /// over it, then what it held dropped, quickcheck's `Result<A, B>`
-    /// (#927). Each side's place is read and written through `to`'s `_0`,
-    /// `{ get value() { return to._0; }, set value(v) { to = { TAG: "Ok",
-    /// _0: v }; } }`, a new `Result` where it's set, as one may be shared. `None`
-    /// of another type, or where neither side is written in place.
+    /// (#927). `to` a place this writes, a box's `value`, an `Option`'s
+    /// value's place or a local; `None` of another type, or where neither
+    /// side is written in place.
     pub(in crate::lower) fn result_clone_over(
         &mut self,
         ty: ty::Ty<'tcx>,
@@ -199,6 +203,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         from: Expr,
         span: Span,
     ) -> R<Option<Vec<Stmt>>> {
+        let Some(sides) = self.result_sides(ty, to.clone(), from.clone(), span)? else {
+            return Ok(None);
+        };
+        let mut replaced = Vec::new();
+        let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
+        let old = self.fresh(Role::Old);
+        let held = self.moved_out(to.clone(), ty);
+        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));
+        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
+        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
+        Ok(Some(Self::sides_or(sides, replaced)))
+    }
+
+    /// Each side of `to.clone_from(from)` of a `Result` std writes as its
+    /// value's, two `Ok`s or two `Err`s, where that's written in place
+    /// (`written_over`): the test of it, and the write. Each side's place is
+    /// `to`'s `_0`, and where the write takes a box of it, `{ get value() {
+    /// return to._0; }, set value(v) { $assign(to, { TAG: "Ok", _0: v });
+    /// } }`, the `Result` written in place, as a `&mut` to one is the object
+    /// itself, asking the copy policy as each write in place does
+    /// (`in_place`, #2028). `None` of another type, or where neither side is
+    /// written in place.
+    pub(in crate::lower) fn result_sides(
+        &mut self,
+        ty: ty::Ty<'tcx>,
+        to: Expr,
+        from: Expr,
+        span: Span,
+    ) -> R<Option<Vec<Side>>> {
         if !self.is_std_type(ty, crate::lower::recognition::StdItem::Result) {
             return Ok(None);
         }
@@ -212,20 +245,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Vec::new(),
                 vec![StmtKind::Return(Some(js::result::held(to.clone()))).at(js::Span::NONE)],
             );
-            let v = self.fresh(Role::V);
-            let replaced = js::result::made(ok, Expr::var(&v));
-            let setter = Expr::arrow(
-                vec![v.into()],
-                vec![StmtKind::Assign(to.clone(), replaced).at(js::Span::NONE)],
-            );
-            let made = Expr::object(vec![
-                js::Prop::Getter(js::HELD.into(), getter),
-                js::Prop::Setter(js::HELD.into(), setter),
-            ]);
             let pointer = Expr::var(&name);
-            let place = Expr::member(pointer.clone(), js::HELD);
-            let Some((asked, written)) =
-                self.written_over(held, (place, pointer), js::result::held(from.clone()), span)?
+            let Some((asked, written)) = self.written_over(
+                held,
+                (js::result::held(to.clone()), pointer),
+                js::result::held(from.clone()),
+                span,
+            )?
             else {
                 continue;
             };
@@ -237,27 +263,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(asked) = asked {
                 test = Expr::bin(Op::And, test, asked);
             }
-            let body = vec![
-                StmtKind::Const(name, made).at(js::Span::NONE),
-                StmtKind::Expr(written).at(js::Span::NONE),
-            ];
+            let mut body = vec![StmtKind::Expr(written).at(js::Span::NONE)];
+            // The box, where what's written takes one, a dictionary's
+            // `cloneFrom`'s or a value's whose `&mut` is a box: the write in
+            // place it holds asked of the copy policy only there.
+            if js::mentions_of(&body, &name) > 0 {
+                let v = self.fresh(Role::V);
+                let replaced = js::result::made(ok, Expr::var(&v));
+                let assigned = self.in_place(InPlaceWriter::Assign, ty, vec![to.clone(), replaced], span)?;
+                let setter = Expr::arrow(vec![v.into()], vec![StmtKind::Expr(assigned).at(js::Span::NONE)]);
+                let made = Expr::object(vec![
+                    js::Prop::Getter(js::HELD.into(), getter),
+                    js::Prop::Setter(js::HELD.into(), setter),
+                ]);
+                body.insert(0, StmtKind::Const(name, made).at(js::Span::NONE));
+            }
             sides.push((test, body));
         }
-        if sides.is_empty() {
-            return Ok(None);
-        }
-        let mut replaced = Vec::new();
-        let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
-        let old = self.fresh(Role::Old);
-        let held = self.moved_out(to.clone(), ty);
-        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));
-        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
-        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
-        let mut otherwise = Some(replaced);
+        Ok((!sides.is_empty()).then_some(sides))
+    }
+
+    /// `sides`' tests, each its write, the last's `else` `otherwise`.
+    pub(in crate::lower) fn sides_or(sides: Vec<Side>, otherwise: Vec<Stmt>) -> Vec<Stmt> {
+        let mut otherwise = otherwise;
         for (test, body) in sides.into_iter().rev() {
-            otherwise = Some(vec![StmtKind::If(test, body, otherwise).at(js::Span::NONE)]);
+            otherwise = vec![StmtKind::If(test, body, Some(otherwise)).at(js::Span::NONE)];
         }
-        Ok(otherwise)
+        otherwise
     }
 
     /// `held` at `place`, `pointer` the box generic code has of it, written

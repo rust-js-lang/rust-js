@@ -125,15 +125,7 @@ function main() {
     const source = { TAG: "Ok", _0: [13] };
     if (or != null && source != null) {
       if (or.TAG === "Ok" && source.TAG === "Ok") {
-        const payload = {
-          get value() {
-            return or._0;
-          },
-          set value(v) {
-            or = { TAG: "Ok", _0: v };
-          },
-        };
-        cClone_cloneFrom(payload.value, source._0);
+        cClone_cloneFrom(or._0, source._0);
       } else {
         or = source.TAG === "Ok" ? { ...source, _0: cClone_clone(source._0) } : source;
       }
@@ -151,15 +143,7 @@ function main() {
     const source$1 = { TAG: "Err", _0: 2 };
     if (or != null && source$1 != null) {
       if (or.TAG === "Ok" && source$1.TAG === "Ok") {
-        const payload = {
-          get value() {
-            return or._0;
-          },
-          set value(v) {
-            or = { TAG: "Ok", _0: v };
-          },
-        };
-        cClone_cloneFrom(payload.value, source$1._0);
+        cClone_cloneFrom(or._0, source$1._0);
       } else {
         or = source$1.TAG === "Ok" ? { ...source$1, _0: cClone_clone(source$1._0) } : source$1;
       }

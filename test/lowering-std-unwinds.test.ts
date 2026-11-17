@@ -161,7 +161,7 @@ pub fn boxed(v: &mut Vec<Box<Loud>>) {
   expect(body(flat, "boxed")).toMatch(/\$dedupByCells\(.*loudDrop_drop\)/);
 });
 
-test("a Vec's clone_from writes over what it keeps in place, where its order can be seen", () => {
+test("a Vec's clone_from writes over what it keeps in place, where its order can be seen, of a Result's too", () => {
   const flat = compiled(
     "std-unwinds-clone-from",
     `${types}
@@ -176,11 +176,20 @@ pub fn loud(w: &mut Vec<Loud>, v: &Vec<Loud>) {
 pub fn nested(w: &mut [Vec<Loud>], v: Vec<Loud>) {
     w.fill(v);
 }
+
+pub fn result(w: &mut Result<Vec<Loud>, u8>, v: &Result<Vec<Loud>, u8>) {
+    w.clone_from(v);
+}
 `,
   );
   expect(body(flat, "texts")).not.toContain("$cloneIntoVec");
   expect(body(flat, "loud")).toContain("$cloneIntoVec(w, v, (item) => loudClone_clone(item), undefined, loudDrop_drop);");
   expect(body(flat, "nested")).toContain("(items, i, from) => { $cloneIntoVec(items[i], from, (item) => loudClone_clone(item), undefined, loudDrop_drop); }");
+  // A `Result`'s, whose `&mut` is the `Result` itself, its `Vec`'s where
+  // both are `Ok`, read where it is, no box of it made (#2028).
+  expect(body(flat, "result")).toContain(
+    'if (w.TAG === "Ok" && v.TAG === "Ok") { $cloneIntoVec(w._0, v._0, (item) => loudClone_clone(item), undefined, loudDrop_drop); } else { const value = $take( w,',
+  );
 });
 
 // #928: generic code's `clone_from` asks the caller's `Clone` dictionary
