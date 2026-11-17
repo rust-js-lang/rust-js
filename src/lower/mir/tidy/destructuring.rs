@@ -780,9 +780,10 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
 }
 
 /// A parameter an `async fn`'s body copies where it starts and reads nowhere
-/// else, `const forbidden$2 = forbidden$1`: the copy, of the parameter's own
-/// name, is the parameter, as JS's parameters are variables the body may
-/// set. Not a variable the program names otherwise, `let mut n = from`.
+/// else, `const forbidden$2 = forbidden$1`: the copy, a holder of the
+/// parameter (`Name::derived`, `mir_locals`), is the parameter, as JS's
+/// parameters are variables the body may set. Not a variable the program
+/// names otherwise, `let mut n = from`.
 pub(in crate::lower::mir) fn copied_params(params: &[js::Pattern], body: &mut Vec<Stmt>) {
     let names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
     while let Some(first) = body.first()
@@ -790,7 +791,7 @@ pub(in crate::lower::mir) fn copied_params(params: &[js::Pattern], body: &mut Ve
         && let ExprKind::Var(param) = &value.kind
         && names.contains(&param.word())
         && !names.contains(&copy.word())
-        && copy.word().split('$').next() == param.word().split('$').next()
+        && param.is_origin_of(copy)
         && js::mentions_of(body, param) == 1
     {
         let (copy, param) = (copy.clone(), param.clone());

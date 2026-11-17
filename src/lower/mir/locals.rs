@@ -4,6 +4,10 @@ use super::*;
 use crate::collections::IndexSet;
 use crate::lower::temporary_names::{Base, Role};
 
+/// What `mir_function` is told a closure's body captures, `captures`; none
+/// of a function's.
+type Captures = Option<Vec<(Expr, bool)>>;
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each local `pin!` pins, and the local its `Pin` is.
     fn pinned_by(&self, body: &mir::Body<'tcx>) -> Vec<(Local, Local)> {
@@ -105,12 +109,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// Of `body`, an `async fn`'s, each variable its Rust names after a
+    /// parameter, what it captures, `captured`, by its identifier, `sources`, that the body
+    /// sets to it, `_3 = copy (_1.0)` of `n => (_1.0)` and `n => _3`: the
+    /// copy of it the body starts with. None of another body.
+    fn parameter_copies<'n>(
+        &self,
+        body: &mir::Body<'tcx>,
+        captured: &'n [(Expr, bool)],
+        sources: &IndexVec<Local, u32>,
+    ) -> IndexMap<Local, &'n js::Name> {
+        let async_fn = matches!(
+            self.tcx.coroutine_kind(body.source.def_id()),
+            Some(rustc_hir::CoroutineKind::Desugared(
+                rustc_hir::CoroutineDesugaring::Async,
+                rustc_hir::CoroutineSource::Fn
+            ))
+        );
+        let captures = Local::from_u32(1);
+        let field = |place: &Place<'tcx>| match place.projection.as_slice() {
+            [mir::ProjectionElem::Field(field, _)] if place.local == captures => Some(field.as_usize()),
+            _ => None,
+        };
+        // Each parameter's identifier, by the field it's captured in.
+        let params: IndexMap<usize, u32> = (body.var_debug_info.iter())
+            .filter(|_| async_fn)
+            .filter_map(|info| match &info.value {
+                mir::VarDebugInfoContents::Place(place) => Some((field(place)?, info.name.as_u32())),
+                _ => None,
+            })
+            .collect();
+        let mut copies = IndexMap::default();
+        for data in body.basic_blocks.iter().filter(|_| !params.is_empty()) {
+            for statement in &data.statements {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let (to, Rvalue::Use(mir::Operand::Copy(from) | mir::Operand::Move(from), _)) = &**assign
+                    && to.projection.is_empty()
+                    && let Some(at) = field(from)
+                    && params.get(&at) == Some(&sources[to.local])
+                    && let Some((capture, _)) = captured.get(at)
+                    && let js::ExprKind::Var(param) = &capture.kind
+                {
+                    copies.insert(to.local, param);
+                }
+            }
+        }
+        copies
+    }
+
     /// Each local's name, the user's where it has one, and how it's used.
     pub(super) fn mir_locals(
         &mut self,
         body: &mir::Body<'tcx>,
         drops: Option<&drops::Elaboration<'tcx>>,
-        named: &[(Local, js::Name)],
+        (named, captured): (&[(Local, js::Name)], &Captures),
         unreached: &IndexSet<BasicBlock>,
     ) -> Locals {
         let n = body.local_decls.len();
@@ -178,6 +230,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 sources[place.local] = info.name.as_u32();
             }
         }
+        // Of an `async fn`'s body, each variable that copies one of its
+        // parameters, which its coroutine captures, `let n = n;` of the same
+        // name where the body starts: a holder of the parameter
+        // (`Name::derived`), which `copied_params` makes it again.
+        let copies = self.parameter_copies(body, captured.as_deref().unwrap_or_default(), &sources);
         // What `pin!` pins, held in a variable of std's: named after the
         // binding its `Pin` is, `block` of `let block = pin!(..)`.
         for (pinned, pin) in self.pinned_by(body) {
@@ -326,6 +383,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             locals.names[local] = match (&user[local], body.local_kind(local)) {
+                (Some(_), _) if let Some(param) = copies.get(&local) => self.fresh(Base::Derived(param)),
                 (Some(name), _) => {
                     let named = tidy::user_name(name);
                     self.fresh(Base::Program(&named, sources[local]))
@@ -349,7 +407,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || name.is_the_programs()
                         || name.is_temporary()
                         || name.is_unread()
-                        || name.is_held_arg(),
+                        || name.is_held_arg()
+                        // Or the copy of a parameter an `async fn`'s body starts
+                        // with, rustc's `let n = n;`, a holder of it.
+                        || copies.contains_key(&local),
                     "{name:?}, a variable the program named, isn't the program's (ADR 1150)",
                 );
             }

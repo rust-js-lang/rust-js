@@ -182,3 +182,20 @@ test("an async fn's pattern parameter after another is taken apart where it's gi
   const lib = await import(join(dir, "mir.js"));
   expect(await lib.total(1, [2, 3])).toBe(6);
 });
+
+// An `async fn`'s body starts with rustc's copy of each parameter, `let n =
+// n;`, a holder of it (`Name::derived`): one read nowhere else is the
+// parameter, which JS's body may set, never `const n$1 = n` beside it
+// (`copied_params`, asked by origin, #1681 change 3).
+test("an async fn's parameter its body sets is the parameter, not a copy", async () => {
+  const dir = fixture("async-param-copies");
+  writeFileSync(join(dir, "lib.rs"), `pub async fn later(mut n: u32) -> u32 {
+    n += 1;
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export async function later(n) {\n  n = (n + 1) >>> 0;\n  return n;\n}");
+  expect(await (await import(join(dir, "lib.js"))).later(4)).toBe(5);
+});

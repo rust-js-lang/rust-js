@@ -942,7 +942,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let named: Vec<(Local, js::Name)> = patterns.iter().flat_map(|(_, _, named)| named.clone()).collect();
         let alternatives = self.mir_alike_alternatives(mir_body);
-        let mut locals = self.mir_locals(mir_body, drops.as_ref(), &named, &alternatives.unreached);
+        let mut locals = self.mir_locals(mir_body, drops.as_ref(), (&named, &captures), &alternatives.unreached);
         // A drop reads what it drops more than once, so it's a variable.
         let dropped: Vec<Local> = drops.iter().flat_map(|drops| drops.read(mir_body)).collect();
         for &local in &dropped {
