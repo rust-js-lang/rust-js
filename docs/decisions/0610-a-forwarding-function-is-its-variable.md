@@ -393,3 +393,15 @@ system taken apart, and a clock of `Date.UTC` kept, each `None` and
 `each-count-full-unread` (`prepare/forwarding.ts`). The alien-signals
 port's `createReactiveSystem` destructuring is as upstream's.
 
+
+## Amendment: a type's method's name doesn't keep a member whole (#1681 change 3)
+
+A type's method is its object's property, `const Host = {
+createContainer(tag) { .. } }`, whose key declares no variable, not even in
+its own body; so a member named as one is taken apart beside it, and the
+method's own call of the member is the member's. The names a member mustn't
+take are what JS's scopes read in the module (`Tree::of_module`), no more:
+the methods' names were held by the walk the members check had before,
+which read each method as a declaration. No case in the corpus, the tests or
+React's port had one; lowering-forwarding "a member named as a type's
+method is taken apart beside it" runs it in Node. Case N of ADR 0262.

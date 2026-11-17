@@ -583,6 +583,69 @@ pub fn swapped() -> u32 {
   expect(other$.swapped()).toBe(9);
 });
 
+// A type's method is its object's property, `const Host = {
+// createContainer(tag) { .. } }`, whose key declares no variable, not even
+// in its own body: a member of its name is taken apart beside it, and the
+// method's own call of the member, `createContainer(tag)`, is the
+// member's, not itself, which would never return (#561).
+test("a member named as a type's method is taken apart beside it", async () => {
+  const dir = fixture("forwarding-members-beside-a-method");
+  writeFileSync(join(dir, "reconciler.rs"), `#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Reconciler;
+
+unsafe impl js::Defined for Reconciler {}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Reconciler {
+    pub fn create_container(&self, tag: u32) -> u32 {
+        tag
+    }
+}
+`);
+  writeFileSync(join(dir, "make.js"), "export default (config) => ({ createContainer: (n) => n + config.base });\n");
+  writeFileSync(join(dir, "lib.rs"), `pub mod reconciler;
+
+use crate::reconciler::Reconciler;
+
+pub struct Config {
+    pub base: u32,
+}
+
+unsafe impl js::Defined for Config {}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./make.js#default")]
+fn create_reconciler(_config: &Config) -> &'static Reconciler {
+    unreachable!()
+}
+
+thread_local! {
+    static NOOP: &'static Reconciler = create_reconciler(&Config { base: 100 });
+}
+
+struct Host;
+
+impl Host {
+    fn create_container(tag: u32) -> u32 {
+        NOOP.with(|noop| noop.create_container(tag)) + 1
+    }
+}
+
+pub fn noop() -> u32 {
+    NOOP.with(|noop| noop.create_container(4))
+}
+
+pub fn hosted() -> u32 {
+    Host::create_container(4)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const { createContainer } = createReconciler({ base: 100 });\n");
+  expect(js).toContain("const Host = {\n  createContainer(tag) {\n    return (createContainer(tag) + 1) >>> 0;\n  },\n};\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.noop(), lib.hosted()]).toEqual([104, 105]);
+});
+
 // #584: React's ReactJSXElement has `const createFakeCallStack = {
 // react_stack_bottom_frame: (callStackForError) => callStackForError() };`,
 // read only to call its field, `createFakeCallStack.react_stack_bottom_frame(UnknownOwner)`.

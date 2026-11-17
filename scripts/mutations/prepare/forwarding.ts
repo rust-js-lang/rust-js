@@ -161,6 +161,16 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-forwarding.test.ts", "-t", "a const struct of fields read only to call them keeps its name"],
   },
   {
+    name: "members-beside-a-method-kept",
+    breaks:
+      "a member named as a type's method, `const Host = { createContainer(tag) { .. } }`, keeps its value whole, `NOOP.createContainer(4)`, as if the method's key declared a variable it would take (#561)",
+    file: "src/prepare/forwarding.rs",
+    find: "    let mut names: IndexSet<String> = js::scopes::Tree::of_module(module).names().map(str::to_owned).collect();\n",
+    replace:
+      "    let mut names: IndexSet<String> = js::scopes::Tree::of_module(module).names().map(str::to_owned).collect();\n    for item in &module.items {\n        if let js::Item::Namespace(namespace) = item {\n            names.extend(namespace.methods.iter().map(|method| method.name.word().to_string()));\n        }\n    }\n",
+    tests: ["test/lowering-forwarding.test.ts", "-t", "a member named as a type's method is taken apart beside it"],
+  },
+  {
     name: "members-names-unreserved",
     breaks:
       "a second thread-local of the same methods is taken apart too, declaring `createContainer` twice (#561)",

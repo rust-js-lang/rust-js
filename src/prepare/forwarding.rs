@@ -294,14 +294,10 @@ pub(super) fn fields(module: &mut js::Module) {
 /// (#584).
 pub(super) fn members(module: &mut js::Module) {
     // word: what JS reads a member's name as, anywhere in the module,
-    // by its spelling (`js::scopes`), and each namespace's methods' names,
-    // which its tree reads as no scope's.
+    // by its spelling (`js::scopes`). Not a namespace's method's, a
+    // property's key, `{ createContainer(tag) { .. } }`, which declares
+    // no variable, not even in its own body.
     let mut names: IndexSet<String> = js::scopes::Tree::of_module(module).names().map(str::to_owned).collect();
-    for item in &module.items {
-        if let js::Item::Namespace(namespace) = item {
-            names.extend(namespace.methods.iter().map(|method| method.name.word().to_string()));
-        }
-    }
     for at in 0..module.items.len() {
         let js::Item::Const(constant) = &module.items[at] else {
             continue;
