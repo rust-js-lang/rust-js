@@ -43,6 +43,7 @@ pub(in crate::lower) mod c_str;
 pub(super) mod cell;
 pub(super) mod channel;
 pub(super) mod clock;
+pub(super) mod clone_from;
 pub(super) mod cow;
 pub(super) mod fs;
 pub(super) mod future;
