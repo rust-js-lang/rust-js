@@ -161,10 +161,17 @@ impl Expr {
         }
     }
 
-    /// This with each variable that `with` names replaced by its expression:
-    /// a closure's parameter by its argument, to put its body in place.
-    /// `None` if there's a closure inside, whose own names could shadow them.
+    /// This with each variable whose word `with` names replaced by its
+    /// expression, `substitute_names`' asked by its word.
     pub fn substitute(&self, with: &dyn Fn(&str) -> Option<Expr>) -> Option<Expr> {
+        self.replace(&|name| with(name.word()), false)
+    }
+
+    /// This with each variable that `with` names, by its `Name`, so its id
+    /// (ADR 1150), replaced by its expression: a closure's parameter by its
+    /// argument, to put its body in place. `None` if there's a closure
+    /// inside, whose own names could shadow them.
+    pub fn substitute_names(&self, with: &dyn Fn(&Name) -> Option<Expr>) -> Option<Expr> {
         self.replace(with, false)
     }
 
@@ -173,10 +180,10 @@ impl Expr {
     /// or one the replacements read. Only for callbacks that run at once: in
     /// one that runs later, a variable would be read later.
     pub fn substitute_in_callbacks(&self, with: &dyn Fn(&str) -> Option<Expr>) -> Option<Expr> {
-        self.replace(with, true)
+        self.replace(&|name| with(name.word()), true)
     }
 
-    fn replace(&self, with: &dyn Fn(&str) -> Option<Expr>, callbacks: bool) -> Option<Expr> {
+    fn replace(&self, with: &dyn Fn(&Name) -> Option<Expr>, callbacks: bool) -> Option<Expr> {
         let all = |items: &[Expr]| {
             items
                 .iter()
@@ -205,7 +212,7 @@ impl Expr {
                 .collect::<Option<Vec<_>>>()
         };
         let kind = match &self.kind {
-            ExprKind::Var(name) => match with(name.word()) {
+            ExprKind::Var(name) => match with(name) {
                 Some(e) => return Some(e.or_at(self.span)),
                 None => ExprKind::Var(name.clone()),
             },
@@ -214,7 +221,7 @@ impl Expr {
             ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_)
                 if {
                     let mut replaced = false;
-                    self.visit_vars(&mut |name| replaced |= with(name).is_some());
+                    self.visit_names(&mut |name| replaced |= with(name).is_some());
                     !replaced
                 } =>
             {
@@ -234,8 +241,8 @@ impl Expr {
                 // A name it binds is its own in its body, not the one replaced.
                 let names: Vec<&str> = params.iter().flat_map(Pattern::names).collect();
                 let clash = std::cell::Cell::new(false);
-                let inner = |n: &str| {
-                    let replaced = with(n).filter(|_| !names.contains(&n))?;
+                let inner = |n: &Name| {
+                    let replaced = with(n).filter(|_| !names.contains(&n.word()))?; // word: JS reads a parameter by its word
                     clash.set(clash.get() || replaced.mentions(&names));
                     Some(replaced)
                 };
@@ -252,8 +259,7 @@ impl Expr {
             ExprKind::DropArgument(item, index, drop) => ExprKind::DropArgument(*item, *index, one(drop)?),
             ExprKind::Pair(place, dictionary, storage) => ExprKind::Pair(one(place)?, one(dictionary)?, *storage),
             // What it sets isn't replaced: one that names it is no assignment.
-            ExprKind::Assigned(target, _) if matches!(&target.kind, ExprKind::Var(name) if with(name.word()).is_some()) =>
-            {
+            ExprKind::Assigned(target, _) if matches!(&target.kind, ExprKind::Var(name) if with(name).is_some()) => {
                 return None;
             }
             ExprKind::Assigned(target, value) => ExprKind::Assigned(one(target)?, one(value)?),
@@ -888,5 +894,19 @@ mod tests {
         let e = Expr::call(Expr::var("f"), vec![callback.clone(), Expr::var("value")]);
         let replaced = e.substitute_in_callbacks(&|n| (n == "value").then(|| Expr::var("x")));
         assert!(replaced == Some(Expr::call(Expr::var("f"), vec![callback, Expr::var("x")])));
+    }
+
+    // A substitution by `Name` replaces the variable it names, by its id,
+    // not another spelled as it: of `f(value, value)`, two variables of
+    // one word, the first alone replaced (ADR 1150).
+    #[test]
+    fn a_substitution_by_name_replaces_that_variable_alone() {
+        let (first, second) = (Name::declared("value".into()), Name::declared("value".into()));
+        let e = Expr::call(
+            Expr::var("f"),
+            vec![Expr::var(first.clone()), Expr::var(second.clone())],
+        );
+        let replaced = e.substitute_names(&|n| (n == &first).then(|| Expr::var("x")));
+        assert!(replaced == Some(Expr::call(Expr::var("f"), vec![Expr::var("x"), Expr::var(second)])));
     }
 }

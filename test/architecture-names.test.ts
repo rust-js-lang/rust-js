@@ -228,18 +228,19 @@ test("a name's word is read outside preparation and printing only as the ratchet
 
 // `WORD_WALKS`, which only falls, to none: the calls of the walks that ask
 // a variable by its word, `mentions_in`, `Expr::mentions_var`,
-// `visit_stmts`, `visit_vars`, `each_declared`, `names_in`, `renamed`,
-// `merged`, `outside_shadows`, `read_as_this` and
+// `visit_stmts`, `visit_vars`, `Expr::substitute`, `each_declared`,
+// `names_in`, `renamed`, `merged`, `outside_shadows`, `read_as_this` and
 // `this_outside_accessors`, each with a twin that asks it by its `Name`
 // (`mentions_of`, `mentions_name`, `visit_stmt_names`, `visit_names`,
-// `each_declared_name`, `replaced`, ..), as names are ids (ADR 1150).
+// `substitute_names`, `each_declared_name`, `replaced`, ..), as names are
+// ids (ADR 1150).
 // Change 3's last slice deletes them. A file's own function of one of
 // those names is its own.
-const WORD_WALKS = 216;
+const WORD_WALKS = 221;
 test("a variable is asked of the walks by its word only as counted", () => {
   const free = ["mentions_in", "visit_stmts", "each_declared", "names_in", "renamed", "merged", "outside_shadows",
     "read_as_this", "this_outside_accessors"];
-  const methods = ["mentions_var", "visit_vars"];
+  const methods = ["mentions_var", "visit_vars", "substitute"];
   const walks = (file: string) => {
     const text = read(file);
     const lines = text.split("\n");

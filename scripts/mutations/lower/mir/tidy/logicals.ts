@@ -387,8 +387,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain that takes apart what its first test tested is nested, `if (value) { const a = value[0]; .. if (a < 10)`, not `if (value && value[0] < 10)` (ADR 0842)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        value.visit_vars(&mut |v| apart &= !tested.contains(v));\n",
-    replace: "        value.visit_vars(&mut |_| {});\n",
+    find: "        value.visit_names(&mut |v| apart &= !tested.contains(v));\n",
+    replace: "        value.visit_names(&mut |_| {});\n",
     tests: ["test/snapshots.test.ts", "-t", "options"],
     snapshots: true,
   },
@@ -397,8 +397,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain whose tests read its binding twice joins them, `if (debug && counts.count != null && counts.count > 3)`, the place read twice (ADR 0842)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        apart && tested > 0 && tested + again(at, name.word()) > 1\n",
-    replace: "        apart && tested > 0 && again(at, name.word()) > 0\n",
+    find: "        apart && tested > 0 && tested + again(at, name) > 1\n",
+    replace: "        apart && tested > 0 && again(at, name) > 0\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",

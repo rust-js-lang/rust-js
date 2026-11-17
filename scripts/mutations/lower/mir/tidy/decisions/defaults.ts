@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a value the block sets and goes on from is given first, then set over",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "                if !breaks || js::mentions_in(",
-    replace: "                if false && !breaks || js::mentions_in(",
+    find: "                    if !breaks || value.mentions_name(self.x) {\n",
+    replace: "                    if false && !breaks || value.mentions_name(self.x) {\n",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },
   {
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable declared before the block is taken as seen by nothing, though a closure made since reads it",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "        .is_some_and(|at| js::mentions_in(&before[at + 1..], x) == 0)\n",
+    find: "        .is_some_and(|at| js::mentions_of(&before[at + 1..], x) == 0)\n",
     replace: "        .is_some()\n",
     tests: [
       "test/lowering-switch-symbols.test.ts",
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let`'s value, which nothing sees before the block, isn't given first: `let v = if let .. { q } else { 0 }` keeps its block",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "                local: declared_unread(&stmts[..i], x.word()),\n",
+    find: "                local: declared_unread(&stmts[..i], x),\n",
     replace: "                local: false,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },

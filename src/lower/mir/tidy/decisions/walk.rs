@@ -32,7 +32,7 @@ pub(super) struct Walk<'s, 'w> {
     pub(super) declared: &'w mut Vec<&'s Stmt>,
     /// Each variable a guard's binding declares that the walk read as its
     /// value, `let x = b;`.
-    pub(super) locals: &'w mut Vec<String>,
+    pub(super) locals: &'w mut Vec<Name>,
     /// The block's body and what follows it in its list.
     pub(super) around: (&'s [Stmt], &'s [Stmt]),
 }
@@ -46,7 +46,7 @@ impl<'s> Walk<'s, '_> {
         &mut self,
         mut frames: Vec<&'s [Stmt]>,
         tests: Vec<Expr>,
-        given: Vec<(String, Expr)>,
+        given: Vec<(Name, Expr)>,
     ) -> Option<()> {
         if self.leaves.len() > LEAVES {
             return None;
@@ -200,7 +200,7 @@ pub(super) struct Test<'s> {
     pub(super) otherwise: Option<&'s [Stmt]>,
     pub(super) rest: &'s [Stmt],
     /// What the bindings before it give, read in its branches' tests too.
-    pub(super) given: Vec<(String, Expr)>,
+    pub(super) given: Vec<(Name, Expr)>,
     /// Those of them that declare their variable, `let x = b;`.
-    pub(super) locals: Vec<String>,
+    pub(super) locals: Vec<Name>,
 }

@@ -25,9 +25,9 @@ pub(in crate::lower::mir::tidy) fn default_values(stmts: &mut Vec<Stmt>) {
             && let ExprKind::Var(x) = &target.kind
             && given_first(value)
             && let Some(given) = (Given {
-                x: x.word(),
-                label: label.word(),
-                local: declared_unread(&stmts[..i], x.word()),
+                x,
+                label,
+                local: declared_unread(&stmts[..i], x),
             })
             .before_breaks(rest, &Inside::default())
             && js::mentions_of(rest, x) == given
@@ -133,17 +133,17 @@ fn copied(value: &Expr) -> bool {
 /// Whether `x` is declared in `before`, `let x = ..;`, and named by nothing
 /// since: what can see it is only what follows in the list, which a
 /// way out of it never reaches.
-fn declared_unread(before: &[Stmt], x: &str) -> bool {
+fn declared_unread(before: &[Stmt], x: &js::Name) -> bool {
     (before.iter())
-        .rposition(|s| matches!(&s.kind, StmtKind::Let(name, _) if name.is(x)))
-        .is_some_and(|at| js::mentions_in(&before[at + 1..], x) == 0)
+        .rposition(|s| matches!(&s.kind, StmtKind::Let(name, _) if name == x))
+        .is_some_and(|at| js::mentions_of(&before[at + 1..], x) == 0)
 }
 
 /// A value `x` a block labeled `label` gives last, as `default_values`
 /// asks of what comes before it.
 struct Given<'a> {
-    x: &'a str,
-    label: &'a str,
+    x: &'a js::Name,
+    label: &'a js::Name,
     /// Whether `x` is declared in the block's list, named by nothing
     /// since (`declared_unread`): nothing but the block sees it before it
     /// ends, nor once it's left another way.
@@ -188,14 +188,14 @@ impl Given<'_> {
     /// see it given: code of the program's that it calls, or what throws.
     fn before_breaks<'s>(&self, stmts: &'s [Stmt], inside: &Inside<'s>) -> Option<usize> {
         let quiet = |e: &Expr| self.local || !e.may_throw();
-        let gives = |stmt: &Stmt| matches!(&stmt.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v.is(self.x)));
+        let gives = |stmt: &Stmt| matches!(&stmt.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == self.x));
         let mut given = 0;
         for (k, stmt) in stmts.iter().enumerate() {
             given += match &stmt.kind {
                 StmtKind::Assign(_, value) if gives(stmt) => {
                     let breaks =
-                        matches!(stmts.get(k + 1).map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(self.label));
-                    if !breaks || js::mentions_in(&[StmtKind::Expr(value.clone()).at(stmt.span)], self.x) > 0 {
+                        matches!(stmts.get(k + 1).map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == self.label);
+                    if !breaks || value.mentions_name(self.x) {
                         return None;
                     }
                     if !quiet(value) {
@@ -204,7 +204,7 @@ impl Given<'_> {
                     1
                 }
                 // A way out of the block that gives no value of its own.
-                StmtKind::Break(Some(l)) if l.is(self.label) => {
+                StmtKind::Break(Some(l)) if l == self.label => {
                     if !k.checked_sub(1).is_some_and(|p| gives(&stmts[p])) {
                         return None;
                     }

@@ -312,15 +312,15 @@ fn has_conditional(e: &Expr) -> bool {
 /// by its index and name: a getter's, `request.url`, runs once, as Rust's
 /// `js::get` does (ADR 0672). What reads variables, or Rust's data, a
 /// field, `node.count`, or a tuple's item, `pair[0]`, reads the same again.
-pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &str) -> usize) -> Option<Expr> {
+pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &js::Name) -> usize) -> Option<Expr> {
     let getter = reads_a_getter;
     (bound.iter().enumerate().rev()).try_fold(test.clone(), |test, (at, stmt)| match &stmt.kind {
         StmtKind::Const(name, value) if value.reads_same() => {
             let tested = js::mentions_of(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], name);
-            if getter(value) && tested > 0 && tested + again(at, name.word()) > 1 {
+            if getter(value) && tested > 0 && tested + again(at, name) > 1 {
                 return None;
             }
-            test.substitute(&|v| name.is(v).then(|| value.clone()))
+            test.substitute_names(&|v| (v == name).then(|| value.clone()))
         }
         _ => None,
     })
@@ -461,7 +461,7 @@ pub(super) fn and_tests(
         if !one || (switched(second, inner.span, switches) && !switched(test, span, switches)) {
             continue;
         }
-        let again = |at: usize, name: &str| js::mentions_in(body, name) + js::mentions_in(&bound[at + 1..], name);
+        let again = |at: usize, name: &js::Name| js::mentions_of(body, name) + js::mentions_of(&bound[at + 1..], name);
         let Some(second_joined) = bound_into(second, bound, &again) else {
             first_reads.extend(read_once_first(stmt).map(|read| (i, read)));
             continue;
@@ -523,10 +523,10 @@ pub(super) fn and_tests(
 /// apart what its first test tested, `const a = value[0]` of `if (value)`,
 /// is joined, `if (value && value[0] < 10)`, the test and the binding of
 /// one value.
-fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &str) -> usize) -> bool {
+fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &js::Name) -> usize) -> bool {
     let mut tested = IndexSet::default();
-    a.visit_vars(&mut |v| {
-        tested.insert(v.to_string());
+    a.visit_names(&mut |v| {
+        tested.insert(v.clone());
     });
     let test = [StmtKind::Expr(b.clone()).at(js::Span::NONE)];
     (bound.iter().enumerate()).any(|(at, stmt)| {
@@ -534,9 +534,9 @@ fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &s
             return false;
         };
         let mut apart = true;
-        value.visit_vars(&mut |v| apart &= !tested.contains(v));
+        value.visit_names(&mut |v| apart &= !tested.contains(v));
         let tested = js::mentions_of(&test, name);
-        apart && tested > 0 && tested + again(at, name.word()) > 1
+        apart && tested > 0 && tested + again(at, name) > 1
     })
 }
 
@@ -545,10 +545,10 @@ fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &s
 /// change it: `let Some(task) = fiber.task.get() && probe(fiber)`, whose
 /// `task` is what was read before `probe` cleared it. A binding `s` or a
 /// later one reads stays before `b` (ADR 0842, amended).
-fn read_past_code(bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &str) -> usize) -> bool {
+fn read_past_code(bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &js::Name) -> usize) -> bool {
     b.has_effects()
         && (bound.iter().enumerate())
-            .any(|(at, stmt)| matches!(&stmt.kind, StmtKind::Const(name, _) if again(at, name.word()) > 0))
+            .any(|(at, stmt)| matches!(&stmt.kind, StmtKind::Const(name, _) if again(at, name) > 0))
 }
 
 /// Of `if (a) { const x = e; if (b) { s; break l; } }`, a chain whose `e`
@@ -569,7 +569,7 @@ fn read_once_first(stmt: &mut Stmt) -> Option<Stmt> {
         return None;
     };
     let mut others = false;
-    second.visit_vars(&mut |v| others |= !name.is(v));
+    second.visit_names(&mut |v| others |= v != name);
     let breaks = matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(Some(_))));
     if !reads_a_getter(value) || others || !breaks {
         return None;
@@ -688,7 +688,7 @@ fn valued_chain(
     if !one {
         return None;
     }
-    if js::mentions_of(others, name) > 0 || declared(others).any(|n| name.is(n)) {
+    if js::mentions_of(others, name) > 0 || declared_names(others).any(|n| n == name) {
         return None;
     }
     let test = (tests.into_iter())
@@ -700,7 +700,7 @@ fn valued_chain(
 
 /// What a branch of a chain's value gives, of `label`'s block.
 enum Valued<'s> {
-    Assigned(&'s str, &'s Expr),
+    Assigned(&'s js::Name, &'s Expr),
     Returned(&'s Expr),
 }
 
@@ -710,7 +710,7 @@ enum Valued<'s> {
 fn one_value<'s>(stmts: &'s [Stmt], label: Option<&js::Name>, returns: &[js::Span], last: bool) -> Option<Valued<'s>> {
     let assigned = |s: &'s Stmt| match &s.kind {
         StmtKind::Assign(target, value) => match &target.kind {
-            ExprKind::Var(x) => Some(Valued::Assigned(x.word(), value)),
+            ExprKind::Var(x) => Some(Valued::Assigned(x, value)),
             _ => None,
         },
         _ => None,
@@ -1135,16 +1135,16 @@ pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &IndexSet<js::Name>, patt
     let mut declared = IndexSet::default();
     js::each_expr(body, &mut |e| match &e.kind {
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
-            declared.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-            js::each_declared(body, &mut |name| _ = declared.insert(name.to_string()));
+            declared.extend(params.iter().flat_map(|p| p.bound()).cloned());
+            js::each_declared_name(body, &mut |name| _ = declared.insert(name.clone()));
         }
         ExprKind::Function(function) => {
-            declared.extend(function.params.iter().flat_map(|p| p.names()).map(str::to_string));
-            js::each_declared(&function.body, &mut |name| _ = declared.insert(name.to_string()));
+            declared.extend(function.params.iter().flat_map(|p| p.bound()).cloned());
+            js::each_declared_name(&function.body, &mut |name| _ = declared.insert(name.clone()));
         }
         _ => {}
     });
-    let integer = |name: &js::Name| numbers.contains(name) && !declared.contains(name.word());
+    let integer = |name: &js::Name| numbers.contains(name) && !declared.contains(name);
     // Not a `match`'s pattern's, `0 | 6 =>`, which compares what's matched
     // with its constants, as a `switch`'s `case 0:` would.
     let matched = |span: js::Span| {

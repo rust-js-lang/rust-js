@@ -51,10 +51,10 @@ fn tails_in(label: &js::Name, list: &[Stmt], told: &Told, whole: bool) -> Option
             list.extend(chain);
             // A `let` the chain read as its value, read nowhere else: gone.
             for (name, _) in &given {
-                let own = |s: &Stmt| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n.is(name));
+                let own = |s: &Stmt| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n == name);
                 if let Some(at) = list[..k].iter().rposition(own) {
                     let others = [&list[..at], &list[at + 1..]].concat();
-                    if js::mentions_in(&others, name) == 0 {
+                    if js::mentions_of(&others, name) == 0 {
                         list.remove(at);
                     }
                 }
@@ -95,9 +95,8 @@ pub(super) fn nested(label: &js::Name, list: &[Stmt]) -> Option<Vec<Stmt>> {
             }
             // What follows declares in a scope of its own then: none of it
             // named before, a closure's read of what's declared later.
-            let named_before = (list[k + 1..].iter())
-                .flat_map(js::declared_here)
-                .any(|name| js::mentions_in(&list[..=k], &name) > 0);
+            let named_before =
+                super::super::declared_names(&list[k + 1..]).any(|name| js::mentions_of(&list[..=k], name) > 0);
             if named_before {
                 continue;
             }

@@ -55,9 +55,9 @@ const SHARED: usize = 3;
 pub(super) struct Told<'h> {
     pub guards: &'h [Guard],
     pub switches: &'h [Switch],
-    pub bound: &'h IndexSet<String>,
+    pub bound: &'h IndexSet<Name>,
     /// Each loop's label (`loop_labels`), a `break` of which leaves it.
-    pub loops: &'h IndexSet<String>,
+    pub loops: &'h IndexSet<Name>,
     /// Where each test the program wrote is, an `if`'s condition and an
     /// `&&` or `||` (`Written::ifs`, `Written::logicals`): a tree of them
     /// is theirs, as written, not a `match`'s.
@@ -89,7 +89,7 @@ pub(super) fn fixed_params(params: &[js::Pattern], body: &[Stmt]) -> Vec<String>
 }
 
 /// The label of each loop in `body`.
-pub(super) fn loop_labels(body: &[Stmt]) -> IndexSet<String> {
+pub(super) fn loop_labels(body: &[Stmt]) -> IndexSet<Name> {
     let mut labels = IndexSet::default();
     js::each_list(body, &mut |list| {
         for stmt in list {
@@ -98,7 +98,7 @@ pub(super) fn loop_labels(body: &[Stmt]) -> IndexSet<String> {
             | StmtKind::ForOf { label: Some(l), .. }
             | StmtKind::For { label: Some(l), .. } = &stmt.kind
             {
-                labels.insert(l.to_string());
+                labels.insert(l.clone());
             }
         }
     });
@@ -221,7 +221,7 @@ fn chain(
     body: &[Stmt],
     after: &[Stmt],
     told: &Told,
-    (kept, given): (bool, &[(String, Expr)]),
+    (kept, given): (bool, &[(Name, Expr)]),
 ) -> Option<(Vec<Stmt>, bool)> {
     // A block a `return` of what it makes follows, `?`'s: its arms each
     // return, as `returned_in_branches` writes them.
@@ -257,13 +257,13 @@ fn chain(
     // its value, named by no leaf but where a leaf declares it again, `const
     // x = b;` of the arm's own binding: one given again there, `x = b;`,
     // would be left without its declaration (#771).
-    let named = |leaf: &Leaf, name: &str| {
+    let named = |leaf: &Leaf, name: &Name| {
         let own = (leaf.body.iter())
-            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n.is(name)))
+            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == name))
             .unwrap_or(leaf.body.len());
-        (leaf.body[..own].iter()).any(|s| js::mentions_in(std::slice::from_ref(*s), name) > 0)
+        (leaf.body[..own].iter()).any(|s| js::mentions_of(std::slice::from_ref(*s), name) > 0)
     };
-    if (locals.iter()).any(|name| leaves.iter().any(|leaf| named(leaf, name)) || js::mentions_in(after, name) > 0) {
+    if (locals.iter()).any(|name| leaves.iter().any(|leaf| named(leaf, name)) || js::mentions_of(after, name) > 0) {
         return None;
     }
     // A tree whose tests are a guard of a `match` that's a `switch`: the
@@ -310,7 +310,7 @@ fn chain(
     for s in arms_and_after.chain(after) {
         js::each_list(std::slice::from_ref(s), &mut |list| {
             breaking |= (list.iter()).any(|s| match &s.kind {
-                StmtKind::Break(l) => l.as_ref().is_none_or(|l| told.loops.contains(l.word())),
+                StmtKind::Break(l) => l.as_ref().is_none_or(|l| told.loops.contains(l)),
                 _ => false,
             });
         });

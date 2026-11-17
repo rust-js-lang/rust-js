@@ -116,9 +116,17 @@ export const mutations: Mutation[] = [
     name: "js-substitute-shadowed",
     breaks: "a name a callback binds itself is replaced in its body too, and `{:?}` of an `Option` of an `Option` prints the outer value where the inner is",
     file: "src/js/expr_walk.rs",
-    find: "with(n).filter(|_| !names.contains(&n))?",
+    find: "with(n).filter(|_| !names.contains(&n.word()))?",
     replace: "with(n)?",
     unitTests: "js::expr_walk::tests::a_callback_keeps_a_name_it_binds_from_a_substitution",
+  },
+  {
+    name: "js-substitute-names-by-word",
+    breaks: "a substitution by `Name` replaces each variable spelled as the one it names, another variable of its word too",
+    file: "src/js/expr_walk.rs",
+    find: "        self.replace(with, false)\n",
+    replace: "        self.replace(&|name| { let mut hit = None; self.visit_names(&mut |v| if hit.is_none() && v.is(name.word()) { hit = with(v) }); hit }, false)\n",
+    unitTests: "js::expr_walk::tests::a_substitution_by_name_replaces_that_variable_alone",
   },
   {
     name: "symbol-key-has-effects",

@@ -14,10 +14,10 @@ use super::*;
 /// | Sphere(r)) if r > 1.0` (#523); read in the `if`s MIR nests of the
 /// guard too, or by nothing, `x$1 = s[0]; y$1 = s[1]; if (g(c, y$1))`
 /// (#771).
-pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> IndexSet<String> {
-    let mut named: IndexMap<&str, usize> = IndexMap::default();
-    js::visit_stmts(body, &mut |name| *named.entry(name).or_default() += 1);
-    let mut given: IndexMap<String, usize> = IndexMap::default();
+pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> IndexSet<Name> {
+    let mut named: IndexMap<&Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *named.entry(name).or_default() += 1);
+    let mut given: IndexMap<Name, usize> = IndexMap::default();
     let binding = |s: &Stmt| match &s.kind {
         StmtKind::Assign(target, value) => matches!(target.kind, ExprKind::Var(_)) && pure(value),
         StmtKind::Const(_, value) => pure(value),
@@ -35,7 +35,7 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
                 && pure(value)
                 && let Some(reads) = tested_reads(block, name).filter(|&n| n > 0)
             {
-                *given.entry(name.to_string()).or_default() += reads;
+                *given.entry(name.clone()).or_default() += reads;
             }
             // An assignment, or a `const` of another arm's binding of the
             // name, `const x$3 = _6[1];`, whose reads are counted too, as
@@ -64,12 +64,12 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
                 let reads = js::mentions_of(&[StmtKind::Expr(test.clone()).at(list[at].span)], name)
                     + tested_reads(then, name).unwrap_or(0)
                     + otherwise.and_then(|o| tested_reads(o, name)).unwrap_or(0);
-                *given.entry(name.to_string()).or_default() += set + reads;
+                *given.entry(name.clone()).or_default() += set + reads;
             }
         }
     });
     (given.into_iter())
-        .filter(|(name, n)| named.get(name.as_str()) == Some(n))
+        .filter(|(name, n)| named.get(name) == Some(n))
         .map(|(name, _)| name)
         .collect()
 }
@@ -108,7 +108,7 @@ pub(super) fn binds(
 /// walk reads as its value, as it does the others' (#771). Past the
 /// declarations of the arms' bindings between, `let x;`, which read
 /// nothing (#1620).
-pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Vec<(String, Expr)> {
+pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Vec<(Name, Expr)> {
     let mut given = Vec::new();
     let declared = (before.iter().rev())
         .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
@@ -126,7 +126,7 @@ pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Ve
             && tested_reads(body, name).is_some_and(|n| n > 0)
             && js::mentions_of(after, name) == 0
         {
-            given.push((name.to_string(), value.clone()));
+            given.push((name.clone(), value.clone()));
         }
     }
     given.reverse();
@@ -137,13 +137,13 @@ pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Ve
 /// statement reads now the chain reads its value in its place: gone, as
 /// what it's given reads nothing that changes, `let x$1 = a;` of `(x, _) |
 /// (x, 1) if h(c, x).is_some()` (#1620).
-pub(super) fn given_unread(stmts: &mut Vec<Stmt>, given: &[(String, Expr)]) {
+pub(super) fn given_unread(stmts: &mut Vec<Stmt>, given: &[(Name, Expr)]) {
     for (name, _) in given {
         let at = stmts
             .iter()
-            .position(|s| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n.is(name)));
+            .position(|s| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n == name));
         if let Some(at) = at
-            && js::mentions_in(&stmts[..at], name) + js::mentions_in(&stmts[at + 1..], name) == 0
+            && js::mentions_of(&stmts[..at], name) + js::mentions_of(&stmts[at + 1..], name) == 0
         {
             stmts.remove(at);
         }
@@ -190,9 +190,9 @@ fn tested_reads(stmts: &[Stmt], name: &js::Name) -> Option<usize> {
 
 /// `test` with what each of `given` names in its place, the latest of a
 /// name's.
-fn given_in(test: &Expr, given: &[(String, Expr)]) -> Option<Expr> {
-    match given.iter().any(|(name, _)| test.mentions_var(name)) {
-        true => test.substitute(&|v| (given.iter().rev()).find(|(name, _)| name == v).map(|(_, e)| e.clone())),
+fn given_in(test: &Expr, given: &[(Name, Expr)]) -> Option<Expr> {
+    match given.iter().any(|(name, _)| test.mentions_name(name)) {
+        true => test.substitute_names(&|v| (given.iter().rev()).find(|(name, _)| name == v).map(|(_, e)| e.clone())),
         false => Some(test.clone()),
     }
 }
@@ -206,7 +206,7 @@ impl<'s> Walk<'s, '_> {
     /// if (y * 2 > 1)`, each with its value in its place, `odd(b)`, in the
     /// `if`s MIR nests of the guard too, `if (g(c, b)) { if (b > 1)`
     /// (`given`, #771). Of each test, what `given` names is its value.
-    pub(super) fn test_at(&self, stmt: &'s Stmt, rest: &'s [Stmt], given: &[(String, Expr)]) -> Option<Test<'s>> {
+    pub(super) fn test_at(&self, stmt: &'s Stmt, rest: &'s [Stmt], given: &[(Name, Expr)]) -> Option<Test<'s>> {
         let guard = |test: &Expr| {
             let mut parts = Vec::new();
             leaf_tests(test, js::Span::NONE, &mut parts);
@@ -234,7 +234,7 @@ impl<'s> Walk<'s, '_> {
         let binding = |s: &'s Stmt| match &s.kind {
             StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => Some((name, value, true)),
             StmtKind::Assign(target, value) => match &target.kind {
-                ExprKind::Var(name) if self.told.bound.contains(name.word()) => Some((name, value, false)),
+                ExprKind::Var(name) if self.told.bound.contains(name) => Some((name, value, false)),
                 _ => None,
             },
             _ => None,
@@ -271,8 +271,8 @@ impl<'s> Walk<'s, '_> {
         if !run.iter().all(read) || !tested || !guard(test) {
             return None;
         }
-        let bound: Vec<(String, Expr)> = (run.iter())
-            .map(|(name, value, _)| Some((name.to_string(), given_in(value, given)?)))
+        let bound: Vec<(Name, Expr)> = (run.iter())
+            .map(|(name, value, _)| Some(((*name).clone(), given_in(value, given)?)))
             .collect::<Option<_>>()?;
         let given = [given, &bound].concat();
         Some(Test {
@@ -284,7 +284,7 @@ impl<'s> Walk<'s, '_> {
             given: bound,
             locals: (run.iter())
                 .filter(|(.., local)| *local)
-                .map(|(name, ..)| name.to_string())
+                .map(|(name, ..)| (*name).clone())
                 .collect(),
         })
     }
@@ -323,18 +323,18 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
             .filter(|site| at(site) > 0)
             .map(|site| {
                 let mut reads = 0;
-                site.guard.visit_vars(&mut |v| reads += usize::from(name.is(v)));
+                site.guard.visit_names(&mut |v| reads += usize::from(v == name));
                 reads
             })
             .sum();
         js::mentions_of(tree, name) == found.iter().map(at).sum::<usize>() + reads
     };
-    let read: IndexSet<String> = (found.iter().flat_map(|site| &site.before))
+    let read: IndexSet<js::Name> = (found.iter().flat_map(|site| &site.before))
         .map(|(name, _)| name)
         .filter(|name| given(name))
-        .map(|name| name.word().to_string())
+        .cloned()
         .collect();
-    found.retain(|site| site.before.iter().all(|(name, _)| read.contains(name.word())));
+    found.retain(|site| site.before.iter().all(|(name, _)| read.contains(name)));
     // Each binding two sites or more set, named nowhere else in the tree.
     let set_by = |arm: &js::Name| {
         found
@@ -342,10 +342,10 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
             .filter(|site| site.arms.iter().any(|(a, _)| a == arm))
             .count()
     };
-    let many: IndexSet<String> = (found.iter().flat_map(|site| &site.arms))
+    let many: IndexSet<js::Name> = (found.iter().flat_map(|site| &site.arms))
         .map(|(arm, _)| arm)
         .filter(|arm| set_by(arm) > 1 && js::mentions_of(tree, arm) == set_by(arm))
-        .map(|arm| arm.word().to_string())
+        .cloned()
         .collect();
     if many.is_empty() {
         return None;
@@ -382,13 +382,13 @@ impl Site {
             && given.written_alike(value)
         {
             let mut reads = 0;
-            self.guard.visit_vars(&mut |v| reads += usize::from(name.is(v)));
+            self.guard.visit_names(&mut |v| reads += usize::from(v == name));
             if reads == 1 && super::super::moves::leads(&self.guard, name, None, &|_| true) == Some(true) {
-                return self.guard.substitute(&|v| name.is(v).then(|| sets[0].clone()));
+                return self.guard.substitute_names(&|v| (v == name).then(|| sets[0].clone()));
             }
         }
-        let guard = self.guard.substitute(&|v| {
-            let (_, value) = self.before.iter().find(|(name, _)| name.is(v))?;
+        let guard = self.guard.substitute_names(&|v| {
+            let (_, value) = self.before.iter().find(|(name, _)| name == v)?;
             Some(match self.arms.iter().find(|(_, given)| given.written_alike(value)) {
                 Some((arm, _)) => Expr::var(arm.clone()),
                 None => value.clone(),
@@ -457,12 +457,12 @@ fn sites(list: &[Stmt], told: &Told, out: &mut Vec<Site>) {
 /// Each site in `list` each of whose bindings is one of `many`, and each of
 /// its guard's `read`'s, its test setting them, what its guard's are given
 /// gone.
-fn rewrite(list: &mut Vec<Stmt>, told: &Told, many: &IndexSet<String>, read: &IndexSet<String>) {
+fn rewrite(list: &mut Vec<Stmt>, told: &Told, many: &IndexSet<js::Name>, read: &IndexSet<js::Name>) {
     let mut i = 0;
     while i < list.len() {
         if let Some(site) = site(list, i, told)
-            && site.arms.iter().all(|(arm, _)| many.contains(arm.word()))
-            && site.before.iter().all(|(name, _)| read.contains(name.word()))
+            && site.arms.iter().all(|(arm, _)| many.contains(arm))
+            && site.before.iter().all(|(name, _)| read.contains(name))
             && let Some(test) = site.test()
         {
             let given = site.before.len();
