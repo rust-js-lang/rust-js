@@ -253,6 +253,15 @@ test("each mutation's test pattern names a test of its file", () => {
   expect(unmatched).toEqual([]);
 });
 
+// `bun test` reads one `-t`, the last: a mutation of two ran its first
+// files' tests by the second's pattern, and await-value-unread's ran none
+// of its first file's (checks 43996182737, 43999199934). Each file's tests
+// are named by one pattern, alternatives joined by `|`.
+test("a mutation's tests hold one `-t`, the one `bun test` reads", () => {
+  const twice = mutations.filter((m) => (m.tests ?? []).filter((arg) => arg === "-t").length > 1).map((m) => m.name);
+  expect(twice).toEqual([]);
+});
+
 test("each mutation list names one existing source file", () => {
   const owners = lists.flatMap(list => list.mutations.length ? [list.mutations[0].file] : []);
   expect(new Set(owners).size).toBe(owners.length);
@@ -280,8 +289,18 @@ test("a mutant is caught, survives, or the run says nothing of it", () => {
   expect(judge(exit(null, { timedOut: true, signal: "SIGTERM" }), failed)).toBe("inconclusive");
   expect(judge(exit(null, { signal: "SIGKILL" }), "")).toBe("inconclusive");
   expect(judge(exit(1), "error: Cannot find module './corpus'\n\n 0 pass\n 1 fail\n")).toBe("inconclusive");
-  expect(judge(exit(1), "(fail) (unnamed) [0.3ms]\n\n 0 pass\n 1 fail\n")).toBe("inconclusive");
   expect(judge(exit(0), " 0 pass\n 0 fail\n")).toBe("inconclusive");
+  // A setup that failed, its control having passed, is the mutant's doing:
+  // await-value-unread's examples/fetch.rs, compiled in test/compiler.test.ts's
+  // `beforeAll`, read what nothing declares, and `--bail` ended the run
+  // there (checks 43996182737, 43999199934, inconclusive). As bun test
+  // prints a `beforeAll` that threw, and a `describe`'s body.
+  expect(judge(exit(1), "(fail) (unnamed) [0.3ms]\nBailed out after 1 failure\n")).toBe("caught");
+  const between = (error: string) => `# Unhandled error between tests\n-------------------------------\n${error}\n-------------------------------\n\n 1 pass\n 0 fail\n 1 error\n`;
+  expect(judge(exit(1), between("error: describe broke\n      at <anonymous> (d.test.ts:4:35)"))).toBe("caught");
+  // One that ran out of time says nothing still.
+  expect(judge(exit(1), "(fail) (unnamed) [202.02ms]\n  ^ a beforeEach/afterEach hook timed out for this test.\nBailed out after 1 failure\n")).toBe("inconclusive");
+  expect(judge(exit(1), between("error: beforeAll timed out after 5000ms"))).toBe("inconclusive");
   // A long diff bun test cuts short doesn't end its last line, and the
   // `(fail)` after it is printed on that line. Found running `f32_digits`.
   expect(judge(exit(1), "+ 38818(fail) f32_digits.rs [409.30ms]\n\n 0 pass\n 1 fail\n")).toBe("caught");

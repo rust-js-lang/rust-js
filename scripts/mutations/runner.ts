@@ -34,4 +34,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/ci.test.ts", "-t", "the mutation shards' arguments, as check.yml writes them"],
   },
+  {
+    name: "mutant-setup-failure-inconclusive",
+    breaks: "a mutant that fails its tests' `beforeAll`, its control having passed, is inconclusive, and the check fails: await-value-unread's examples/fetch.rs (checks 43996182737, 43999199934)",
+    file: "scripts/mutations.ts",
+    find: "  const failed = [...output.matchAll(/\\(fail\\) (.*)$\\n?(  \\^ .* timed out\\b)?/gm)].filter((m) => m[2] === undefined);\n",
+    replace: "  const failed = [...output.matchAll(/\\(fail\\) (.*)$\\n?(  \\^ .* timed out\\b)?/gm)].filter((m) => !m[1].startsWith(\"(unnamed)\") && m[2] === undefined);\n",
+    tests: ["test/mutations.test.ts", "-t", "a mutant is caught, survives, or the run says nothing of it"],
+  },
+  {
+    name: "mutant-describe-failure-inconclusive",
+    breaks: "a mutant that fails a `describe`'s body, an error between tests, its control having passed, is inconclusive",
+    file: "scripts/mutations.ts",
+    find: "  return p.code === 1 && failed.length + between.length > 0 ? \"caught\" : \"inconclusive\";\n",
+    replace: "  return p.code === 1 && failed.length > 0 ? \"caught\" : \"inconclusive\";\n",
+    tests: ["test/mutations.test.ts", "-t", "a mutant is caught, survives, or the run says nothing of it"],
+  },
+  {
+    name: "mutant-setup-timeout-caught",
+    breaks: "a setup that ran out of time, between tests, counts as caught, though it says nothing of the mutant",
+    file: "scripts/mutations.ts",
+    find: ".filter((m) => !/\\btimed out\\b/.test(m[1]));\n",
+    replace: ";\n",
+    tests: ["test/mutations.test.ts", "-t", "a mutant is caught, survives, or the run says nothing of it"],
+  },
 ];

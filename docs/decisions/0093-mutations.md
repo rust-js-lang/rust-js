@@ -850,3 +850,28 @@ a branch no program reaches today that's right as Rust is: a
 `take_while()`'s hint once its predicate failed, `(0, Some(0))`, driven
 directly. Code nothing tests doesn't stay, and nothing is retired that a
 route to come would need.
+
+## Amendment: a setup that failed is caught, one that ran out of time isn't (2026-11-17)
+
+Checks 43996182737 and 43999199934 failed with `await-value-unread` and
+`await-false-edge-ready` inconclusive. Each mutant made examples/fetch.rs's
+JS read `_19`, which nothing declares, and test/compiler.test.ts compiles
+it in its `beforeAll`: bun test printed `(fail) (unnamed)`, and `--bail`
+ended the run before the async snapshot, a named test, ran. The
+Consequences' rule judged a failure before any test inconclusive. That
+rule was right of a process that failed for its own reasons, and of a test
+or hook that timed out. A setup that threw is different: the same tests
+passed as the compiler is (the run's controls, or a source mutation's own
+control), so the mutant failed it, as surely as it fails a named test.
+
+A mutant whose tests' setup fails, a `beforeAll` that threw (`(fail)
+(unnamed)`) or a `describe`'s body (an error between tests), is caught. A
+setup that ran out of time is still inconclusive, as a test that did is.
+`judge` (scripts/mutations.ts) says so, and its test holds each form as
+bun test prints it. Mutations `mutant-setup-failure-inconclusive`,
+`mutant-describe-failure-inconclusive` and `mutant-setup-timeout-caught`
+hold each half.
+
+The two mutations had named two `-t`s, of which `bun test` reads the last,
+so test/compiler.test.ts's tests ran by the snapshots' pattern. They now
+name one, and the catalog's test refuses a mutation with more than one.

@@ -771,10 +771,17 @@ function runtimeOf(compiler: string): Promise<string | Exit> {
 
 
 /** What a run of a mutant's tests says of it: `caught` by a test that
- * failed, the runner ending as it does when one does; `survived`, as its
- * tests ran and passed; or `inconclusive`, as the runner, its tests or
- * their hooks ran out of time, it was stopped, or failed before any test
- * did, which says nothing of it. */
+ * failed, or a setup of theirs, the runner ending as it does when one does;
+ * `survived`, as its tests ran and passed; or `inconclusive`, as the
+ * runner, its tests or their hooks ran out of time, it was stopped, or it
+ * failed before any test or setup did, which says nothing of it.
+ *
+ * A setup that failed counts: a `beforeAll` that threw, which bun test
+ * prints as `(fail) (unnamed)`, or a `describe`'s body, an error between
+ * tests. The same tests passed as the compiler is (the run's controls, a
+ * source mutation's own), so what failed it was the mutant's doing: what
+ * it compiled there was wrong, as await-value-unread's examples/fetch.rs
+ * was (ADR 0093). */
 export function judge(p: Exit, output: string): "caught" | "survived" | "inconclusive" {
   // A mutant compiler that runs away, growing past what a run of tests is
   // given, is one broken as surely as one that fails a test: what took
@@ -785,10 +792,9 @@ export function judge(p: Exit, output: string): "caught" | "survived" | "inconcl
   if (p.code === 0) return passed(p.code, true, output) ? "survived" : "inconclusive";
   // Not only at a line's start: a long diff bun test cuts short doesn't end
   // its last line, and the `(fail)` after it is printed on that line.
-  const failed = [...output.matchAll(/\(fail\) (.*)$\n?(  \^ .* timed out\b)?/gm)].filter(
-    (m) => !m[1].startsWith("(unnamed)") && m[2] === undefined,
-  );
-  return p.code === 1 && failed.length > 0 ? "caught" : "inconclusive";
+  const failed = [...output.matchAll(/\(fail\) (.*)$\n?(  \^ .* timed out\b)?/gm)].filter((m) => m[2] === undefined);
+  const between = [...output.matchAll(/^# Unhandled error between tests\n-+\n([\s\S]*?)\n-+$/gm)].filter((m) => !/\btimed out\b/.test(m[1]));
+  return p.code === 1 && failed.length + between.length > 0 ? "caught" : "inconclusive";
 }
 
 // Each test run's own target is numbered: the controls run at once with
