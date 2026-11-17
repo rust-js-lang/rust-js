@@ -486,4 +486,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/borrow-forms.test.ts", "-t", "an undo stack's guards"],
   },
+  {
+    name: "uninhabited-drops-asked",
+    breaks: "an uninhabited enum's drop, which never runs, is walked as any type's, so its glue's `Unreachable` refuses it and what holds one, an empty `Vec` say, steps each item to drop nothing (#916)",
+    file: "src/lower/drops/types.rs",
+    find: "            && adt.variants().is_empty()\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_of_an_uninhabited_enum.rs$"],
+  },
+  {
+    name: "uninhabited-drops-by-rustc",
+    breaks: "every type rustc calls uninhabited drops nothing, std's `PoisonError` too, which holds a `!` where std is built without unwinding, so a poisoned `try_lock`'s guard is never unlocked as it drops (#916)",
+    file: "src/lower/drops/types.rs",
+    find: "        if let ty::Adt(adt, _) = ty.kind()\n            && adt.is_enum()\n            && adt.variants().is_empty()\n        {\n",
+    replace: "        if ty.is_privately_uninhabited(tcx, self.recognition.typing_env) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^try_lock.rs$"],
+    snapshots: true,
+  },
 ];

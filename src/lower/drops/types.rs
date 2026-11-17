@@ -391,6 +391,17 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         if !ty.needs_drop(tcx, self.recognition.typing_env) {
             return Drops::Nothing;
         }
+        // An enum of no variants has no value: no drop of it ever runs, its
+        // own `Drop` either, so what holds one drops nothing of it (#916).
+        // Not rustc's whole `is_privately_uninhabited`: std's `PoisonError`
+        // holds a `!` where it's built without unwinding, which rust-js's
+        // runtime does unwind, and its guard is unlocked as it drops.
+        if let ty::Adt(adt, _) = ty.kind()
+            && adt.is_enum()
+            && adt.variants().is_empty()
+        {
+            return Drops::Nothing;
+        }
         if let Some(at) = walk.seen.iter().position(|&t| t == ty) {
             walk.reached = walk.reached.min(at);
             return Drops::Nothing;

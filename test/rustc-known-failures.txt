@@ -36,7 +36,6 @@ coroutine/issue-93161.rs	error: rust-js does not support user implementations of
 derives/debug/derive-debug.rs	error: rust-js does not support `{:?}` of a `*const dyn std::marker::Send` yet
 drop/box-conditional-drop-allocator.rs	error: rust-js does not support user implementations of `std::alloc::Allocator` (#1656) yet
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::boxed::Box<isize>` as `*const u8`, which aren't numbers alone
-drop/drop-uninhabited-enum.rs	error: rust-js does not support dropping `Foo` yet
 dst/dst-field-align.rs	node: ended {"panic":"assertion `left == right` failed\n  left: 0x10004\n right: 0x10004"}
 dst/dst-raw.rs	error: rust-js does not support a `Foo<dyn Trait>`, whose last field is a `dyn` yet
 enum-discriminant/niche-prefer-zero.rs	error: rust-js does not support addressable memory yet: a `transmute` of `std::option::Option<Size>` as `u8`, which aren't numbers alone
