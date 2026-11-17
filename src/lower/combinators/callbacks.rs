@@ -307,7 +307,16 @@ pub(in crate::lower) fn adt_param_called_once<'tcx>(
     index: usize,
 ) -> bool {
     use rustc_hir::def::DefKind;
-    let holds = |owner: rustc_span::def_id::DefId, ty: Ty<'tcx>| {
+    // Of `ty`, where `adt` is: in its arguments, `Option<Once<F>>`'s, or a
+    // field of a struct of the crate's, `W<F>`'s `o: Once<F>`, however deep;
+    // past `MOST_BOUNDS` of them, taken as called so (#2031).
+    fn holds<'tcx>(
+        tcx: rustc_middle::ty::TyCtxt<'tcx>,
+        (adt, index): (rustc_span::def_id::DefId, usize),
+        owner: rustc_span::def_id::DefId,
+        ty: Ty<'tcx>,
+        depth: usize,
+    ) -> bool {
         (ty.walk().filter_map(|part| part.as_type())).any(|part| match part.kind() {
             ty::Adt(def, args) if def.did() == adt => {
                 index < args.len()
@@ -315,9 +324,21 @@ pub(in crate::lower) fn adt_param_called_once<'tcx>(
                         .as_type()
                         .is_some_and(|arg| calls_param_once(tcx, owner, arg))
             }
+            ty::Adt(def, args) if def.did().is_local() => {
+                depth >= MOST_BOUNDS
+                    || def.all_fields().any(|field| {
+                        holds(
+                            tcx,
+                            (adt, index),
+                            owner,
+                            field.ty(tcx, args).skip_normalization(),
+                            depth + 1,
+                        )
+                    })
+            }
             _ => false,
         })
-    };
+    }
     (tcx.hir_crate_items(()).definitions()).any(|id| {
         let owner = id.to_def_id();
         match tcx.def_kind(id) {
@@ -325,7 +346,9 @@ pub(in crate::lower) fn adt_param_called_once<'tcx>(
                 let sig = tcx.instantiate_bound_regions_with_erased(
                     tcx.fn_sig(owner).instantiate_identity().skip_normalization(),
                 );
-                sig.inputs().iter().any(|&input| holds(owner, input))
+                sig.inputs()
+                    .iter()
+                    .any(|&input| holds(tcx, (adt, index), owner, input, 0))
             }
             _ => false,
         }

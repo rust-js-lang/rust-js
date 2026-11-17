@@ -218,8 +218,8 @@ export const mutations: Mutation[] = [
     name: "adt-param-once-functions-unread",
     breaks: "a free function that takes a struct and calls its field by `FnOnce`, `fn run<F: FnOnce()>(o: Once<F>)`, isn't read, so a closure moved into it is never dropped (#2031)",
     file: "src/lower/combinators/callbacks.rs",
-    find: "                sig.inputs().iter().any(|&input| holds(owner, input))\n",
-    replace: "                sig.inputs().iter().any(|&input| false && holds(owner, input))\n",
+    find: "                    .any(|&input| holds(tcx, (adt, index), owner, input, 0))\n",
+    replace: "                    .any(|&input| false && holds(tcx, (adt, index), owner, input, 0))\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_closure_in_a_struct_a_function_calls_once_refused.rs$"],
   },
   {
@@ -237,5 +237,13 @@ export const mutations: Mutation[] = [
     find: "                        ty::Param(_) if part != input => depth >= MOST_BOUNDS || once(tcx, owner, part, depth + 1),\n                        _ => false,\n",
     replace: "                        ty::Param(_) if part != input => depth >= MOST_BOUNDS || once(tcx, owner, part, depth + 1),\n                        ty::Alias(..) => true,\n                        _ => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_mut_predicate_of_an_item_called_many_times.rs$"],
+  },
+  {
+    name: "adt-param-once-fields-unfollowed",
+    breaks: "a struct held in another's field, `W { o: Once(h) }` of a function that calls `(w.o.0)()` by `FnOnce`, isn't followed, so a closure moved into it is never dropped (#2031)",
+    file: "src/lower/combinators/callbacks.rs",
+    find: "            ty::Adt(def, args) if def.did().is_local() => {\n",
+    replace: "            ty::Adt(def, args) if false && def.did().is_local() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_in_a_nested_struct_called_once_refused.rs$"],
   },
 ];
