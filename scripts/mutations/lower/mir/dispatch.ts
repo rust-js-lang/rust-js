@@ -897,4 +897,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
   },
+  {
+    name: "boxed-fn-given-once-undropped",
+    breaks: "a `Box<dyn Fn()>` holding a value with a destructor, given to an `F: FnOnce`, is given as it is, so what it took is never dropped, after the call or as it unwinds (#2033)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                for at in self.boxes_called_once(def_id, arg_tys) {\n",
+    replace: "                for at in self.boxes_called_once(def_id, arg_tys).into_iter().filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_fn_given_to_a_once_callee_drops.rs$"],
+  },
 ];

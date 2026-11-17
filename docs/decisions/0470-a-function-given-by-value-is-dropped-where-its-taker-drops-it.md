@@ -488,3 +488,26 @@ Mutations `closure-moved-into-a-once-type-unchecked`,
 and `called-once-through-bound-unrefused` and `called-once-unchecked`
 retargeted.
 
+## Amended (2026-11-17, #2033): a boxed `Fn` given where it's called by `FnOnce` drops after its call
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. A wrong answer fixed.
+
+A `Box<dyn Fn()>` or `Box<dyn FnMut()>` whose closure holds a value with a
+destructor, given to a generic `F: FnOnce`, was given as it was. The call
+of its JS function drops nothing, so what it took was never dropped,
+neither after a normal call nor as the call unwound. std's `call_once`
+of a `Box<F>` calls it and then drops the box.
+
+**Such a box is given as one whose call drops it** (`boxes_called_once`,
+`combinators/callbacks.rs`, beside `drops_unrun`; the call in
+`mir/dispatch.rs`): `$droppingOnce(f, () => drop(f))`, the runtime's
+`call_once` shim of an `Fn` made a `dyn FnOnce` (#409). It drops as the
+call returns or unwinds, and carries the same drop where the callee
+leaves it uncalled. A second generic function it's given on to gets a
+type parameter, not the box, so the drop is made once, where it's called.
+
+Corpus case `boxed_fn_given_to_a_once_callee_drops`: return, uncalled,
+forwarded through a second generic `FnOnce`, a `Box<dyn FnMut>`, and a
+panic. Found by METAMORPHIC=all's `dyn` transform of #995's case.
+Mutation `boxed-fn-given-once-undropped` (`lower/mir/dispatch.ts`).
+

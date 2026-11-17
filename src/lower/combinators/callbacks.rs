@@ -157,6 +157,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.drops_function(ty)
     }
 
+    /// Each of a call's arguments, by its place, that's a boxed function
+    /// called by `&` or `&mut`, `Box<dyn Fn()>`'s, holding a value with a
+    /// destructor, given where `callee` calls it by `FnOnce` alone
+    /// (`calls_param_once`): std's `call_once` of a `Box<F>` calls it and then
+    /// drops the box, as it returns or unwinds, which the call of its JS
+    /// function doesn't, so it's given as one that does, `$droppingOnce`
+    /// (#2033). A closure's own kind its type says is `check_called_once`'s.
+    pub(in crate::lower) fn boxes_called_once(
+        &self,
+        callee: rustc_span::def_id::DefId,
+        tys: &[Ty<'tcx>],
+    ) -> Vec<usize> {
+        let sig = (self.tcx)
+            .instantiate_bound_regions_with_erased(self.tcx.fn_sig(callee).instantiate_identity().skip_normalization());
+        let inputs = sig.inputs();
+        (tys.iter().zip(inputs).enumerate())
+            .filter(|&(_, (&ty, _))| {
+                crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty).is_none()
+                    && matches!(
+                        self.boxed_function_kind(ty),
+                        Some(ty::ClosureKind::Fn | ty::ClosureKind::FnMut)
+                    )
+            })
+            .filter(|&(_, (&ty, &input))| calls_param_once(self.tcx, callee, input) && self.drops_function(ty))
+            .map(|(at, _)| at)
+            .collect()
+    }
+
     /// How a boxed function of type `ty` is called, which its type doesn't
     /// say: `Box<dyn FnMut(..)>`'s by its `dyn`'s trait, a box of a closure
     /// by the closure's kind, through an `AssertUnwindSafe` as what it holds

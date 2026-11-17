@@ -895,6 +895,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             false => {
                 self.check_called_once(def_id, arg_tys, span)?;
+                // A boxed `Fn` given where it's called by `FnOnce`: one whose
+                // call drops it, as std's `call_once` of a `Box<F>` does, or
+                // as it unwinds, its drop kept where it's left uncalled
+                // (`boxes_called_once`, #2033).
+                for at in self.boxes_called_once(def_id, arg_tys) {
+                    let f = self.held_value(&mut values, at, Role::F.into(), span, out)?;
+                    let mut dropped = Vec::new();
+                    self.drop_value(f.clone(), arg_tys[at], span, &mut dropped)?;
+                    values[at] = Value::Expr(Expr::call_helper(
+                        "$droppingOnce",
+                        vec![f, Expr::arrow(Vec::new(), dropped)],
+                    ));
+                }
                 Vec::new()
             }
         };
