@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { byControl, crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, refusedFlags, removedOfCrate, retiredBy, retiredTrailer, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed } from "../scripts/mutations";
+import { byControl, crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -315,6 +315,23 @@ test("a removed mutation is told from one renamed or moved, and its trailer is -
   // says nothing: it's no row of the mutation's.
   const failed = [{ file: "test/corpus.test.ts", test: "untagged_enums.rs" }, { file: "test/compiles.test.ts", test: "a compile is kept" }];
   expect(byControl(failed, new Set(["test/compiles.test.ts\ta compile is kept"]))).toEqual({ caught: ["test/corpus.test.ts: untagged_enums.rs"], silent: ["test/compiles.test.ts: a compile is kept"] });
+});
+
+// A retirement's evidence holds React's port too, at its pin, which
+// check:fast leaves to CI: a retirement that passed the suite refused 5 of
+// the port's Flight entries. Its control, the compiler as it is, must
+// regenerate it as committed, or the retirement is refused.
+test("--retire regenerates React's port with the mutant, held to its control", () => {
+  expect(regenDiffers("### react-in-rust at 0123abcde: 2 file(s) differ from what it committed\n\n- ` M crates/flight/js/server.js`\n- `?? crates/flight/js/new.js`\n")).toEqual(["M crates/flight/js/server.js", "?? crates/flight/js/new.js"]);
+  expect(regenDiffers("### react-in-rust at 0123abcde doesn't compile\n\n```\nerror\n```")).toEqual(["its crates didn't compile"]);
+  expect(regenDiffers("something else")).toEqual([]);
+  const retire = readFileSync(join(root, "scripts/mutations.ts"), "utf8").match(/\nasync function retire\([\s\S]*?\n}\n/)![0];
+  const control = retire.indexOf("await portDiffers(portControl)");
+  expect(control).toBeGreaterThan(0);
+  expect(control).toBeLessThan(retire.indexOf("scripts/checkFast.ts"));
+  expect(retire).toContain("port control fails: ");
+  expect(retire).toContain("...portCaught]");
+  expect(retire).toContain("React's port at its pin regenerated as it committed");
 });
 
 test("each mutation list names one existing source file", () => {

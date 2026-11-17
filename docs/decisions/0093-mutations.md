@@ -943,6 +943,27 @@ in a copy of the tree with it, and are its evidence. This supersedes
 #1979's evidence by hand above. The runtime retirement's rule, a run of
 the tree pushed, still holds of the push.
 
+## Amendment: a retirement's evidence holds React's port too (2026-11-17)
+
+`--retire` ran only rust-js's own suite. check:fast leaves React's port
+to CI (`leftToCi`), so a mutant that passed the suite could still break
+it. One retirement would have: with its mutant, `js::validate` refused 5
+of the port's Flight entries, and only its author's regen by hand caught
+it. "Nothing tests it" has to mean nothing.
+
+So `--retire` also regenerates React's port at its pin,
+`bun scripts/react-in-rust.ts regen` with the mutant as `RUST_JS_COMPILER`,
+and compares its JS with what the pin committed (`portDiffers`). Each file
+that differs, or the crates failing to compile, is a row that caught it,
+`react-in-rust regen: <file>`. Its control runs first, before the suite:
+the same regen with the compiler as it is. Where the control differs, the
+port says nothing either way, and `--retire` refuses with `port control
+fails: <files>; fix the pin first`. A retirement needs clean evidence, so
+the lead decided this isn't counted as silent. The trailer says the port
+regenerated as it committed. On the Mac mini a regen takes about 35 s once
+the port is fetched; the first trial, `drop-let-value-context` (caught by
+15 rows), ran whole in about 12 minutes.
+
 ## Amendment: the Nightly holds 14 of the 20 runners, its jobs in lanes (2026-11-17)
 
 The Free plan runs 20 jobs at once across the account, and the Nightly
