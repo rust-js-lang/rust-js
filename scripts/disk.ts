@@ -161,7 +161,8 @@ export function stores(): Store[] {
     entries: rustcNotes,
     bound: () => {
       for (const name of readdirSync(checkout).filter(rustcNotes)) {
-        if (Date.now() - statSync(join(checkout, name)).mtimeMs > 86_400_000) rmSync(join(checkout, name), { force: true });
+        const seen = statSync(join(checkout, name), { throwIfNoEntry: false });
+        if (seen !== undefined && Date.now() - seen.mtimeMs > 86_400_000) rmSync(join(checkout, name), { force: true });
       }
     },
   });
@@ -225,7 +226,9 @@ const size = (n: number) => (n >= GiB ? `${(n / GiB).toFixed(1)} GiB` : `${Math.
 /** The least recently changed entry of `store`, its age in days. */
 function oldest(store: Store): string {
   try {
-    const times = readdirSync(store.dir).filter(store.entries ?? (() => true)).map((name) => statSync(join(store.dir, name)).mtimeMs);
+    const times = readdirSync(store.dir)
+      .filter(store.entries ?? (() => true))
+      .flatMap((name) => statSync(join(store.dir, name), { throwIfNoEntry: false })?.mtimeMs ?? []);
     return times.length ? `${Math.floor((Date.now() - Math.min(...times)) / 86_400_000)} d` : "-";
   } catch {
     return "-";

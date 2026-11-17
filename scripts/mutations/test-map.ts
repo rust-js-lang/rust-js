@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "      bits.set(unit, bits.get(unit) ?? own);\n",
     tests: ["test/test-map.test.ts", "-t", "the merge of a recording.s parts"],
   },
+  {
+    name: "map-prune-throws-on-gone",
+    breaks: "the maps' prune throws on a map another run's prune removed since it was listed",
+    file: "scripts/testMap.ts",
+    find: "      const seen = statSync(path, { throwIfNoEntry: false });\n",
+    replace: "      const seen = statSync(path);\n",
+    tests: ["test/support.test.ts", "-t", "a store's sweep skips an entry gone since it was listed"],
+  },
 ];

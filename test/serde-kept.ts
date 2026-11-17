@@ -57,9 +57,13 @@ export function keptSerdeFlags(flags: string[], store: string): string[] {
   }
   const now = new Date();
   utimesSync(dir, now, now);
+  // An entry another run's sweep removed, or renamed into place, since it
+  // was listed is no longer this one's to judge (crates.test.ts's ENOENT,
+  // 2026-11-17).
   for (const other of readdirSync(store)) {
     const at = join(store, other);
-    if (at !== dir && now.getTime() - statSync(at).mtimeMs > keptFor) rmSync(at, { recursive: true, force: true });
+    const seen = statSync(at, { throwIfNoEntry: false });
+    if (at !== dir && seen !== undefined && now.getTime() - seen.mtimeMs > keptFor) rmSync(at, { recursive: true, force: true });
   }
   let k = 0;
   return flags.map((flag, i) => {

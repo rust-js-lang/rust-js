@@ -171,7 +171,12 @@ export function nativeKey(source: string, dir: string, flags: string[]): string 
 /** What a dependencies directory holds, each file's name and digest: read
  * again only where a file's size or time has changed since. */
 function dependencies(dir: string): string {
-  const files = readdirSync(dir).sort().map((name) => [name, statSync(join(dir, name))] as const).filter(([, stat]) => stat.isFile());
+  const files = readdirSync(dir)
+    .sort()
+    .flatMap((name) => {
+      const stat = statSync(join(dir, name), { throwIfNoEntry: false });
+      return stat?.isFile() ? [[name, stat] as const] : [];
+    });
   const seen = `${dir}\0${files.map(([name, stat]) => `${name} ${stat.size} ${stat.mtimeMs}`).join("\0")}`;
   let found = dependencyDigests.get(seen);
   if (found === undefined) {

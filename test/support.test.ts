@@ -14,6 +14,9 @@ import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, prun
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
+import { boundCrater } from "../scripts/crater";
+import { pruneMaps } from "../scripts/testMap";
+import { keptSerdeFlags } from "./serde-kept";
 import { runSync } from "./child";
 import { cargoApp } from "./cargo-app";
 import { cargoArtifacts, contentDirectory, fixture, nativeBinary, nativeCrates, once, portable, root, run, seeded } from "./support";
@@ -536,4 +539,31 @@ test("the machine's stores where they were are moved where they are, once", () =
   expect(readFileSync(join(current, "tasks", "main.jsonl"), "utf8")).toBe('{"kind":"start","at":1}\n{"kind":"run","at":2}\n');
   adoptRetiredStores(retired, current);
   expect(readdirSync(current).sort()).toEqual(["native-cache", "tasks", "test-maps"]);
+});
+
+// A store's sweep lists its entries and then reads each one's time, while
+// another run's sweep of the same store removes or renames them: crates.test.ts
+// failed on `ENOENT … stat '…/target/serde-kept/<hash>'` (2026-11-17). An
+// entry gone since it was listed, here a link whose target is gone, which
+// `statSync` reads as such, is skipped by each sweep, not thrown on.
+test("a store's sweep skips an entry gone since it was listed", () => {
+  const dir = fixture("sweep-vanished");
+  const gone = (store: string, name: string) => {
+    mkdirSync(store, { recursive: true });
+    symlinkSync(join(dir, "nothing-here"), join(store, name));
+  };
+  const serdeStore = join(dir, "serde-kept");
+  gone(serdeStore, "0123456789abcdef01234567");
+  const built = join(dir, "built.rmeta");
+  writeFileSync(built, "serde's");
+  expect(keptSerdeFlags(["--extern", `serde=${built}`], serdeStore)).toHaveLength(2);
+  const kept = join(dir, "kept");
+  gone(join(kept, "program"), "build");
+  expect(pruneKept(kept, { free: () => Number.POSITIVE_INFINITY }).removed).toBe(0);
+  const maps = join(dir, "maps");
+  gone(maps, "map.json");
+  expect(() => pruneMaps(maps, 1, () => Number.POSITIVE_INFINITY)).not.toThrow();
+  const crater = join(dir, "crater");
+  gone(crater, "a-crate");
+  expect(() => boundCrater({ dir: crater, cap: 1, free: () => Number.POSITIVE_INFINITY })).not.toThrow();
 });

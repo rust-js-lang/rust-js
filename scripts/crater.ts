@@ -222,7 +222,11 @@ export function boundCrater({ dir = work, cap = craterCap, free = () => freeByte
   const entries: Kept[] = readdirSync(dir)
     .filter((name) => name !== "kept")
     .map((name) => join(dir, name))
-    .map((path) => ({ path, bytes: bytesOf(path), used: statSync(path).mtimeMs }));
+    .flatMap((path) => {
+      // One another run removed since it was listed is no longer kept.
+      const seen = statSync(path, { throwIfNoEntry: false });
+      return seen === undefined ? [] : [{ path, bytes: bytesOf(path), used: seen.mtimeMs }];
+    });
   return evict(entries, { cap, free, floor: floorBytes });
 }
 

@@ -579,9 +579,11 @@ export function pruneMaps(dir = mapStore, cap = keptMaps, free = () => freeBytes
   const names = readdirSync(dir).filter((name) => join(dir, name) !== driftFlag && name !== "drift-failed");
   const kept = names
     .filter((name) => !stale(name))
-    .map((name) => {
+    .flatMap((name) => {
+      // One another run's prune removed since it was listed is no longer kept.
       const path = join(dir, name);
-      return { path, bytes: bytesOf(path), used: statSync(path).mtimeMs };
+      const seen = statSync(path, { throwIfNoEntry: false });
+      return seen === undefined ? [] : [{ path, bytes: bytesOf(path), used: seen.mtimeMs }];
     });
   const newest = [...kept].sort((a, b) => b.used - a.used);
   const past = [...names.filter(stale).map((name) => join(dir, name)), ...newest.slice(cap).map(({ path }) => path)];

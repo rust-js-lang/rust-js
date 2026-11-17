@@ -1,0 +1,13 @@
+// Mutations of the native programs' kept builds (test/kept.ts): a sweep that skips what another run removed.
+import type { Mutation } from "../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "kept-prune-throws-on-gone",
+    breaks: "the kept builds' prune throws on a build another run's prune removed since it was listed",
+    file: "test/kept.ts",
+    find: "      const seen = statSync(path, { throwIfNoEntry: false });\n",
+    replace: "      const seen = statSync(path);\n",
+    tests: ["test/support.test.ts", "-t", "a store's sweep skips an entry gone since it was listed"],
+  },
+];

@@ -89,7 +89,10 @@ export function pruneKept(
     }
     for (const build of builds) {
       const path = join(dir, build);
-      const used = statSync(path).mtimeMs;
+      // One another run's prune removed since it was listed is gone.
+      const seen = statSync(path, { throwIfNoEntry: false });
+      if (seen === undefined) continue;
+      const used = seen.mtimeMs;
       const age = now - used / 1000;
       if (age > days * day || (build.startsWith(".building-") && age > 60 * 60)) {
         rmSync(path, { recursive: true, force: true });
