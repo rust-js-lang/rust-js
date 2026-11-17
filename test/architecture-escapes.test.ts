@@ -43,6 +43,7 @@ const itemPublic: Record<string, [number, string]> = {
   "src/lower/analysis/nulled_params/read_alike.rs": [1, "#2024: a key"],
   "src/lower/analysis/owned_by_return.rs": [1, "#2024: a field"],
   "src/lower/analysis/scopes.rs": [1, "#2024: a type"],
+  "src/lower/instances.rs": [3, "#2024: whether JS or another crate reaches a generic owner, `seen_whole`'s `Shared` and `Counted`, a `pub` trait's impl by its exported dictionary too, and a trait"],
   "src/lower/analysis/wholes.rs": [3, "#2024: a public type's field (two calls), a key"],
 };
 
@@ -52,7 +53,7 @@ test("rustc's own answer of what another crate reaches is asked only where #2015
 });
 
 test("an analysis asks an item's `is_public()` only as #2015's ratchet allows", () => {
-  const counted = rust("src/lower/analysis")
+  const counted = [...rust("src/lower/analysis"), "src/lower/instances.rs"]
     .map((file) => [file, count(file, /visibility\([^)]*\)\.is_public\(\)/g)] as const)
     .filter(([, n]) => n > 0);
   expect(counted.filter(([file, n]) => n > (itemPublic[file]?.[0] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${itemPublic[file]?.[0] ?? 0}`)).toEqual([]);
