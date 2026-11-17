@@ -1181,3 +1181,16 @@ lines with a `$` and a number to 151, std and React's port as they were; a
 variable and its shadow each flagged in one function are kept apart,
 `a$live` and `a$live$1` (`shadow_and_its_variable_each_flagged`).
 
+## A name given apart is of the first of its base, by its id (2026-11-17)
+
+Whether a name was another given apart, `result$2` of `result`, `lo$1` of
+`lo`, was asked of their words where neither said what it was made of.
+Now `FnCx::fresh` keeps the first name it gives out of each base in the
+item, and one it gives apart from that base records it as its origin
+(`Name::given_apart_from`): `given_apart_of` asks the origin alone, a
+holder's source, the first of its base, or what it was given apart from,
+and a name of none is kin of none. Directional, as the words were: `lo$1`
+is of `lo`, never `lo` of `lo$1`. Over the whole check, the metamorphic
+net and React's port, its 3,450 answers were the words' answers, and the
+output is as it was.
+

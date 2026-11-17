@@ -185,7 +185,7 @@ test("a suffix is a js::Suffix, never written as text", () => {
 // `KIN_PARSES`, which only falls, to none: each is asked of the name's
 // origin and form by its id instead. The spelling's owners, `js::name`,
 // `names`, the runtime's helpers and printing, write and read it.
-const KIN_PARSES = 10;
+const KIN_PARSES = 9;
 test("a name's kinship and form are asked by parsing its word only as counted", () => {
   const owners = (file: string) => file === "src/js/name.rs" || file === "src/names.rs"
     || file === "src/runtime.rs" || file.startsWith("src/to_oxc");

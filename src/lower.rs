@@ -448,6 +448,10 @@ struct FnCx<'a, 'tcx> {
     /// `&self` too, so each name a body declares is the item's own
     /// wherever it's made (#1681 change 3, M2).
     names: std::cell::RefCell<IndexSet<String>>,
+    /// Of each word `fresh` gives out as a base, the first name made of it
+    /// in the item: what a name given apart from that base is of, by its
+    /// id (`js::Name::given_apart_from`, ADR 1150).
+    first_of: std::cell::RefCell<IndexMap<String, js::Name>>,
     /// Those taken by the module: its functions, imports and globals.
     module_names: &'a IndexSet<String>,
     /// Whether this function makes JSX.
@@ -637,7 +641,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Base::Derived(source) = base {
             return self.derived(source);
         }
-        base.name(fresh_in(&mut self.names.borrow_mut(), &base.word()))
+        let word = base.word();
+        let name = base.name(fresh_in(&mut self.names.borrow_mut(), &word));
+        // The first of its base, or given apart from that one, of it.
+        let mut first_of = self.first_of.borrow_mut();
+        match first_of.get(word.as_ref()) {
+            Some(first) => name.given_apart_from(first),
+            None => {
+                first_of.insert(word.into_owned(), name.clone());
+                name
+            }
+        }
     }
 
     /// A holder of `source`'s value, of it by its id, not spelled yet

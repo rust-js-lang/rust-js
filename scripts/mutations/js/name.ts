@@ -62,9 +62,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`const value = make(); x = value;` is `x = make()`, the program's `value` lost",
     file: "src/js/name.rs",
-    find: "        self.apart_of().is_some_and(|(root, _)| root == of.root())\n",
-    replace:
-      "        self.apart_of().is_some_and(|(root, _)| root == of.root()) || !self.0.is_empty()\n",
+    find: "            Id::WORD => false,\n            origin => origin == of.kin(),\n",
+    replace: "            Id::WORD => true,\n            origin => origin == of.kin(),\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
     snapshots: true,
   },

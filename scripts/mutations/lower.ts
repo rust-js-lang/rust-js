@@ -3,6 +3,16 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "given-apart-of-nothing",
+    breaks:
+      "a name lowering gives apart from its base, `result$2` of `result`, records nothing it's of, so tidy never takes it for kin of the first, `x = y` of two of one base left apart",
+    file: "src/lower.rs",
+    find: "            Some(first) => name.given_apart_from(first),\n",
+    replace: "            Some(_) => name,\n",
+    tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
+    snapshots: true,
+  },
+  {
     name: "instance-value-made-at-each-use",
     breaks:
       "a generic function's instance taken as a value is a new arrow at each use, so `f == table[0]` of `double::<i32>` taken twice is false (#974)",

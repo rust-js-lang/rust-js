@@ -24,7 +24,7 @@ pub struct Name(String, Of, Id, Id);
 /// made: a fresh one each time one is made, kept by its clones, and kept
 /// when it's respelled. `Id::WORD` of a name whose form and word say
 /// which it is.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug)]
 struct Id(u32);
 
 impl Id {
@@ -414,15 +414,24 @@ impl Name {
     /// Whether it's `of` given apart, `node$1` of `node` or of `node$2`:
     /// tidy's kinship of two names (S4c).
     pub fn given_apart_of(&self, of: &Name) -> bool {
-        // By what it was made of where it says, a holder's source or what
-        // it was given apart from (`derived`, `given_apart`), by its id.
-        if self.3 == Id::OF_WORD {
-            return of.is_origin_of(self) || (of.3 == Id::OF_WORD && of.base() == self.base());
+        // By what it was made of, by its id: a holder's source, or the first
+        // name of its base it was given apart from (`derived`,
+        // `given_apart_from`, `given_apart`); of none, no kin (ADR 1150).
+        match self.3 {
+            Id::OF_WORD => of.is_origin_of(self) || (of.3 == Id::OF_WORD && of.base() == self.base()),
+            Id::WORD => false,
+            origin => origin == of.kin(),
         }
-        if self.3 != Id::WORD {
-            return self.3 == of.kin();
+    }
+
+    /// It as given apart from `first`, the first name of its base in its
+    /// item (`FnCx::fresh`): of it by its id, which `given_apart_of` asks.
+    /// One that says what it's of already keeps that.
+    pub fn given_apart_from(mut self, first: &Name) -> Name {
+        if self.3 == Id::WORD && self != *first {
+            self.3 = first.kin();
         }
-        self.apart_of().is_some_and(|(root, _)| root == of.root())
+        self
     }
 
     /// What it's kin of, by its id: what it was made of, else itself.

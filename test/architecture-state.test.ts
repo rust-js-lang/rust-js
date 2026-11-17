@@ -95,6 +95,9 @@ const owners: Record<string, string[]> = {
   // MIR identity, which what's stepped from its back asks (#814).
   "self.made_into": ["src/lower/iterators/back_facts.rs"],
   "self.made_from": ["src/lower/iterators/back_facts.rs"],
+  // The first name of each base `fresh` gives out in the item, what one
+  // given apart from it is of, by its id (ADR 1150): `fresh`'s alone.
+  "self.first_of": ["src/lower.rs"],
   "self.asking_made": ["src/lower/iterators/back_facts.rs", "src/lower/mir/iter/backs.rs"],
 };
 // The rest of a function's context, which each module may read, and why:
