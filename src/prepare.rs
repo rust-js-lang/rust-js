@@ -942,11 +942,19 @@ fn expr(e: &mut Expr) {
     // (ADR 0772).
     if let ExprKind::Handle(place, storage) | ExprKind::Pair(place, _, storage) = &e.kind {
         let storage = *storage;
+        // What the place reads, a name spelled later, `value#1`, as its base,
+        // which preparation spells it where that's free: a parameter of
+        // that word would take it (ADR 1150).
+        let reads = |word: &str| {
+            let mut read = place.mentions_var(word);
+            place.visit_names(&mut |name| read |= name.made_base() == Some(word));
+            read
+        };
         let mut param = "value".to_string();
-        if place.mentions_var(&param) {
+        if reads(&param) {
             param = "newValue".to_string();
         }
-        while place.mentions_var(&param) {
+        while reads(&param) {
             param.push('_');
         }
         let param = js::Name::declared(param);

@@ -16,31 +16,28 @@ function initialize(chunk, tracked, run) {
   if (tracked) {
     initializingChunk = chunk;
   }
-  const _restore = {
-    prevHandler,
-    prevChunk,
-    tracked,
-  };
+  let prevHandler$1 = prevHandler;
+  let prevChunk$1 = prevChunk;
   let result;
   try {
     result = run();
   } catch (error) {
     $cleanup(() => {
-      const old = _restore.prevHandler;
-      _restore.prevHandler = undefined;
+      const old = prevHandler$1;
+      prevHandler$1 = undefined;
       initializingHandler = old ?? null;
-      if (_restore.tracked) {
-        const old = _restore.prevChunk;
-        _restore.prevChunk = undefined;
+      if (tracked) {
+        const old = prevChunk$1;
+        prevChunk$1 = undefined;
         initializingChunk = old ?? null;
       }
     }, error);
     throw error;
   }
-  const old = _restore.prevHandler;
+  const old = prevHandler$1;
   initializingHandler = old ?? null;
-  if (_restore.tracked) {
-    const old = _restore.prevChunk;
+  if (tracked) {
+    const old = prevChunk$1;
     initializingChunk = old ?? null;
   }
   return result;

@@ -3,18 +3,36 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inlined-guard-named-by-number",
+    breaks:
+      "a drop's guard inlined while it's a temporary, `_3`, is read by its number, `const 3 = ..`, which JS can't read, at every tidy stage before its names",
+    file: "src/lower/parameter_names.rs",
+    find: "!n.starts_with('_') && crate::names::is_identifier(n) && ",
+    replace: "!n.starts_with('_') && ",
+    tests: ["test/tidy-stages.test.ts", "-t", "^drop_guard_name_shared after"],
+  },
+  {
+    name: "drop-guard-kept-word",
+    breaks: "a value kept to be dropped, `_in`, is read as `in`, a word JS keeps, spelled `in$1` where its `_` stays (`parameter_names::unmarked`)",
+    file: "src/lower/parameter_names.rs",
+    find: " && crate::names::js_ident(n) == *n)",
+    replace: ")",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_kept_words.rs$"],
+    snapshots: true
+  },
+  {
     name: "parameter-underscore-kept",
     breaks: "a parameter's `_`, Rust's mark of one unused, is in its JS name, `describeClientReference(_ref)`",
     file: "src/lower/parameter_names.rs",
-    find: "        true => unmarked.to_string(),\n",
-    replace: "        true => named.clone(),\n",
+    find: "        false => unmarked.to_string(),\n",
+    replace: "        false => named.clone(),\n",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
   },
   {
     name: "parameter-underscore-reserved",
     breaks: "`_new` without its `_` is `new`, a word JS keeps, given apart as `new$`",
     file: "src/lower/parameter_names.rs",
-    find: "    match crate::names::js_ident(unmarked) == unmarked && !taken() {",
+    find: "    match taken() {",
     replace: "    match !taken() {",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
   },
@@ -22,7 +40,7 @@ export const mutations: Mutation[] = [
     name: "parameter-underscore-collides",
     breaks: "`_x` beside an `x` is `x` too, so one is `x$1`",
     file: "src/lower/parameter_names.rs",
-    find: "    match crate::names::js_ident(unmarked) == unmarked && !taken() {",
+    find: "    match taken() {",
     replace: "    match crate::names::js_ident(unmarked) == unmarked {",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
   },
@@ -103,8 +121,8 @@ export const mutations: Mutation[] = [
     name: "written-parameter-underscore-kept",
     breaks: "a fn pointer's `_sum` is declared `_sum`, where its JS name, as a function's is, is `sum` (ADR 0678)",
     file: "src/lower/parameter_names.rs",
-    find: "        Some(unmarked) if crate::names::js_ident(unmarked) == unmarked => unmarked.to_string(),\n",
-    replace: "        Some(_) if false => String::new(),\n",
+    find: "        Some(unmarked) => unmarked.to_string(),\n",
+    replace: "        Some(_) => crate::names::js_ident(&named),\n",
     tests: ["test/declarations-function-types.test.ts"],
   },
 ];

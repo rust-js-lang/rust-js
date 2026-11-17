@@ -407,12 +407,12 @@ function main() {
         throw error;
       }
       const caught = $catchUnwind(() => {
-        const _n = "inner";
+        const n = "inner";
         try {
           throw new Error("boom");
         } catch (error) {
           $cleanup(() => {
-            console.log(`drop ${_n} panicking=${$panicking()}`);
+            console.log(`drop ${n} panicking=${$panicking()}`);
           }, error);
           throw error;
         }

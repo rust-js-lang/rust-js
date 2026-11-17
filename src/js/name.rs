@@ -279,6 +279,18 @@ impl Name {
         taken.swap_remove(&self.0);
     }
 
+    /// The first `k` none of `names` is written `base#k` with: of a name a
+    /// pass makes once lowering's made its own, `spelled_later`'s, apart
+    /// from those of its base already made, as preparation takes each made
+    /// word for one variable in its item (`prepare::reclaim::spelled`).
+    pub fn free_made_k<'n>(names: impl IntoIterator<Item = &'n Name>, base: &str) -> usize {
+        let taken: crate::collections::IndexSet<usize> = (names.into_iter())
+            .filter(|name| crate::names::made_base(&name.0) == Some(base))
+            .filter_map(|name| name.0.rsplit_once('#')?.1.parse().ok())
+            .collect();
+        (1..).find(|k| !taken.contains(k)).expect("a free one")
+    }
+
     /// A name of its word not spelled yet, the `k`th, `Count#3`: a function
     /// written in an expression, named in itself alone, which preparation
     /// spells apart from what its scope reads, `Count$1` where its body

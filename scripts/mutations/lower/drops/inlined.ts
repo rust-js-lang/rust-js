@@ -3,22 +3,12 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "self-copy-reads-keep-their-id",
-    breaks:
-      "a drop's copy of a field of the variable's own word, `const prevProps = prevProps;`, goes, its reads keeping the copy's id: a read `js::validate` refuses (#2026)",
-    file: "src/lower/drops/inlined.rs",
-    find: "            *n = v.clone();\n",
-    replace: "            let _ = v;\n",
-    tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard's fields are its variables"],
-  },
-  {
     name: "guard-field-known-lost",
     breaks:
       "a guard's field read as the variable it was made of loses that it's never `undefined`: `internals.T = prevTransition ?? null` in its `finally` (ADR 0841, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "            *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {\n                true => read.defined(),\n",
-    replace:
-      "            *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {\n                true => read,\n",
+    find: "                *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {\n                    true => read.defined(),\n",
+    replace: "                *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {\n                    true => read,\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -43,9 +33,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field guard read as what it was made of loses that it's never `undefined`: `sharedInternals.T = reset ?? null` (ADR 0841, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "            *e = match known.has(js::Known::Defined) {\n                true => read.defined(),\n",
-    replace:
-      "            *e = match known.has(js::Known::Defined) {\n                true => read,\n",
+    find: "                *e = match known.has(js::Known::Defined) {\n                    true => read.defined(),\n",
+    replace: "                *e = match known.has(js::Known::Defined) {\n                    true => read,\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -84,9 +73,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field tuple guard of a variable nothing sets once it's made is a copy of its own, `const restore = previousFiber;`, read in the `finally` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) => Some(v.clone()),\n",
+    find: "        ExprKind::Var(v) if kept_variables(body, params, guard).contains(v) => Some(v.clone()),\n",
     replace:
-      "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) && false => Some(v.clone()),\n",
+      "        ExprKind::Var(v) if kept_variables(body, params, guard).contains(v) && false => Some(v.clone()),\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -98,7 +87,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field tuple guard of a variable set once it's made reads as that variable, what it's set to later, not what the guard was made of (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) => Some(v.clone()),\n",
+    find: "        ExprKind::Var(v) if kept_variables(body, params, guard).contains(v) => Some(v.clone()),\n",
     replace: "        ExprKind::Var(v) => Some(v.clone()),\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
@@ -111,7 +100,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field tuple guard read as the variable it was made of leaves its `const restore = previousFiber;` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        if variable.is_some() {\n            stmts.retain(|s| !made(s));\n        }\n",
+    find: "            if variable.is_some() {\n                stmts.retain(|s| !made_here(s));\n            }\n",
     replace: "",
     tests: [
       "test/lowering-drop-guards.test.ts",
@@ -151,7 +140,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop's copy of a named guard field it takes stays `const old = previousFiber;`, read in the `finally` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        copies_read_as(body, &read, &v, field.1.facts.has(js::Known::Defined));\n",
+    find: "            copies_read_as(&mut made, &read, &v, field.1.facts.has(js::Known::Defined));\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
@@ -169,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop's copy of a one-field guard's field stays `const old = previousFiber;`, read in the `finally` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "    copies_read_as(body, &field, &read, known.has(js::Known::Defined));\n",
+    find: "        copies_read_as(&mut made, &field, &read, known.has(js::Known::Defined));\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
@@ -178,9 +167,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard whose field is written stays `const more = { hasMoreWork: true }`",
     file: "src/lower/drops/inlined.rs",
-    find: "    if reads != js::mentions_in(body, guard) {\n        return Vec::new();\n    }\n    let mut names",
+    find: "    if reads != js::mentions_of(body, guard) {\n        return Vec::new();\n    }",
     replace:
-      "    if reads != js::mentions_in(body, guard) || !written.is_empty() {\n        return Vec::new();\n    }\n    let mut names",
+      "    if reads != js::mentions_of(body, guard) || !written.is_empty() {\n        return Vec::new();\n    }",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
   {
@@ -207,18 +196,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard read whole, given to a function, is taken apart into its fields, and the function reads a variable that's gone",
     file: "src/lower/drops/inlined.rs",
-    find: "    if written || reads != js::mentions_in(body, guard) {\n",
+    find: "    if written || reads != js::mentions_of(body, guard) {\n",
     replace: "    if written {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_given_whole.rs$"],
-  },
-  {
-    name: "drop-guard-kept-word",
-    breaks:
-      "a value kept to be dropped, `_in`, is read as `in`, a word JS keeps, which the module can't be parsed with",
-    file: "src/lower/drops/inlined.rs",
-    find: " && !crate::names::kept_word(free) =>",
-    replace: " =>",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_kept_words.rs$"],
   },
   {
     name: "drops-inlined-callees-first",
@@ -236,9 +216,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's field of a variable stays `const _restoreProps = { prototype, prevProps }`, read `_restoreProps.prototype`",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.word()) => Some(v.clone()),\n",
+    find: "            ExprKind::Var(v) if !written.contains(key) && kept.contains(v) => Some(v.clone()),\n    ",
     replace:
-      "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.word()) && false => Some(v.clone()),\n",
+      "            ExprKind::Var(v) if !written.contains(key) && kept.contains(v) && false => Some(v.clone()),\n    ",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -250,8 +230,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's field of a variable set once the guard's made reads that variable, its new value",
     file: "src/lower/drops/inlined.rs",
-    find: "                && !written(&later.replaced, name)\n                && !written(&later.handled, name)\n",
-    replace: "",
+    find: "            !later.replaced.contains(name)\n                && !later.handled.contains(name)\n                && ",
+    replace: "            ",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -260,11 +240,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "guard-field-copy-declares",
-    breaks:
-      "a `Drop`'s copy of a field, `const prevProps = guard.prevProps`, keeps the guard an object",
+    breaks: "a `Drop`'s binding, `let Self { prevProps, .. }`, a copy of the field, isn't made the variable the field was made of, by its id, `const prevProps$1 = prevProps;` left (ADR 1150)",
     file: "src/lower/drops/inlined.rs",
-    find: "                *count -= 1;\n",
-    replace: "",
+    find: "                && n != v\n",
+    replace: "                && false\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -272,29 +251,20 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "guard-field-self-copy-kept",
-    breaks:
-      "`const prevProps = prevProps;` stays where a field's copy read as its variable, which throws",
+    name: "guard-field-read-where-hidden",
+    breaks: "a guard's field is read as the variable it was made of where the `Drop`'s own `previous` hides it, a read `js::validate` refuses, never a `const` of its own (`js::scopes::not_read_as_themselves`, ADR 1150)",
     file: "src/lower/drops/inlined.rs",
-    find: "            |s| !matches!(&s.kind, StmtKind::Const(n, value) if matches!(&value.kind, ExprKind::Var(v) if v.is(n.word()))),\n",
-    replace: "            |_| true,\n",
-    tests: [
-      "test/lowering-drop-guards.test.ts",
-      "-t",
-      "a guard's fields are its variables",
-    ],
+    find: "        if not.is_empty() {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_binding_shadows_its_variable.rs$"],
   },
   {
-    name: "guard-field-shadowed",
-    breaks: "a field reads as a variable of a name the function declares twice",
+    name: "one-field-read-where-hidden",
+    breaks: "a one-field guard is read as the variable it was made of where another of its word hides it, never a `const` of its own (`js::scopes::not_read_as_themselves`, ADR 1150)",
     file: "src/lower/drops/inlined.rs",
-    find: "            *count == 1\n",
-    replace: "            *count >= 1\n",
-    tests: [
-      "test/lowering-drop-guards.test.ts",
-      "-t",
-      "a guard's fields are its variables",
-    ],
+    find: "            && !js::scopes::not_read_as_themselves(&made, &[v]).is_empty()\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_binding_shadows_its_variable.rs$"],
   },
   {
     name: "drop-of-its-own-type-inlined",
@@ -304,15 +274,6 @@ export const mutations: Mutation[] = [
     find: "    if js::mentions_in(&body, name) > 0 {\n        return;\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_of_its_own_type.rs$"],
-  },
-  {
-    name: "guard-named-twice-taken-apart",
-    breaks:
-      "a closure's `counted` parameter, named as another closure's one-field guard, is read as the guard's field: `counted[0]` is `counted`, and `map(|c| c.0).sum()` adds arrays (#239)",
-    file: "src/lower/drops/inlined.rs",
-    find: "    declared == 1\n        && (whole",
-    replace: "    declared >= 1\n        && (whole",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_name_shared.rs$"],
   },
   {
     name: "guard-named-twice-kept-whole",
@@ -390,15 +351,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "inlined-guard-named-by-number",
-    breaks:
-      "a drop's guard inlined while it's a temporary, `_3`, is read by its number, `const 3 = ..`, which JS can't read, at every tidy stage before its names",
-    file: "src/lower/drops/inlined.rs",
-    find: "                && !free.starts_with(|c: char| c.is_ascii_digit())\n",
-    replace: "",
-    tests: ["test/tidy-stages.test.ts", "-t", "^drop_guard_name_shared after"],
-  },
-  {
     name: "guard-field-read-by-another",
     breaks:
       "a guard's take of a field is kept where its drop reads another field after, so React's Flight client's `_restore.prevHandler = undefined` keeps the guard an object (rd429)",
@@ -437,33 +389,13 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard of a closure"],
   },
   {
-    name: "guard-closure-called-twice-inlined",
-    breaks:
-      "a guard's closure called at two drops is its body at the first and a call of it at the second (#501)",
-    file: "src/lower/drops/inlined.rs",
-    find: "    if declared != 1 || js::mentions_in(body, name) != 1 || !reads_where_made(",
-    replace: "    if declared != 1 || js::mentions_in(body, name) == 0 || !reads_where_made(",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
-    snapshots: true,
-  },
-  {
     name: "closure-read-of-the-function-refused",
     breaks:
       "a guard's closure that reads the function's own parameter or `const` stays `function restore() { .. }` (#501)",
     file: "src/lower/drops/inlined.rs",
-    find: "            1 => {\n                let mut seen",
-    replace: "            1 => false,\n            2 => {\n                let mut seen",
+    find: " || given.contains(&n) ",
+    replace: " ",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a guard of a closure"],
-  },
-  {
-    name: "closure-read-of-a-block-refused",
-    breaks:
-      "a guard's closure that reads a `const` the function's block declares, `start`, stays a function, though the call sees the same `start` (#501)",
-    file: "src/lower/drops/inlined.rs",
-    find: "                    seen |= makes(stmts)\n",
-    replace: "                    seen |= false && makes(stmts)\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
-    snapshots: true,
   },
   {
     name: "one-field-guard-written-unasked",
@@ -479,8 +411,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a named-field guard's field a swap writes, `[count, pair.right] = ..`, is a `const` the swap assigns, a `TypeError` (#1593)",
     file: "src/lower/drops/inlined.rs",
-    find: "            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v.is(guard)) => Some(key),\n",
-    replace: "            ExprKind::Member(of, key) if false && matches!(&of.kind, ExprKind::Var(v) if v.is(guard)) => Some(key),\n",
+    find: "            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),\n",
+    replace: "            ExprKind::Member(of, key) if false && matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_field_written_by_a_swap_or_in_an_expression.rs$"],
   },
   {
@@ -488,7 +420,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's closure's body, in its call's place, names what it declares apart from its own `const`'s, `hold$1$1`, alien-signals' `link$1$1` (#501)",
     file: "src/lower/drops/inlined.rs",
-    find: "        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n.is(name)));\n    });\n    let mut done = false;\n",
+    find: "        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));\n    });\n    let mut done = false;\n",
     replace: "    });\n    let mut done = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
     snapshots: true,

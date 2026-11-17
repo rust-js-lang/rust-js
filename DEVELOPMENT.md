@@ -832,8 +832,8 @@ checked:
   `merge=binary` (`regenerated` in scripts/push.ts), takes main's and
   blesses it again from the rebased tree, printing what changed and
   amending the top commit; one in a ratchet that only falls (`ratchets`:
-  test/word-reads.txt, test/sig-binders.txt, test/type-parameter-reads.txt
-  and KIN_PARSES) takes the lower count of each, which holds of the
+  test/word-reads.txt, test/sig-binders.txt and
+  test/type-parameter-reads.txt) takes the lower count of each, which holds of the
   rebased tree as each side only removed what's counted; any other
   conflict, hand-written code's too, stops the push. `--bless-readability` blesses `docs/readability.txt`
   first without a conflict; without it a readability failure stops the

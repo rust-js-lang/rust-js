@@ -213,6 +213,58 @@ impl Tree {
         captured
     }
 
+    /// Whether each of `names` is in reach where `at`, read once, is read:
+    /// declared, by its id, in that read's scope or one around it, so JS
+    /// reads that variable there once preparation spells each apart (ADR
+    /// 1150). A body's parameters, outside its tree, aren't any scope's.
+    pub(crate) fn reach(&self, at: &Name, names: &[&Name]) -> bool {
+        let mut reads = (self.reads.get(at.word()).into_iter().flatten()).filter(|read| read.name.as_ref() == Some(at));
+        let (Some(read), None) = (reads.next(), reads.next()) else {
+            return false;
+        };
+        names.iter().all(|name| {
+            let mut scope = Some(read.scope);
+            while let Some(at) = scope {
+                if self.scopes[at].bound.get(name.word()) == Some(*name) {
+                    return true;
+                }
+                scope = self.scopes[at].parent;
+            }
+            false
+        })
+    }
+
+    /// Of `names`, each a read of which JS's scopes resolve to another
+    /// variable than itself, by their ids: one declared in the tree read
+    /// where a nearer declaration is spelled as it is, or where it's out of
+    /// reach; one declared outside it, a function's parameter, read where
+    /// a declaration in it is spelled so. What a pass that puts a variable's
+    /// reads in new places asks before keeping them (`drops::inlined`).
+    pub(crate) fn not_read_as_themselves(&self, names: &[&Name]) -> Vec<Name> {
+        let declared = |name: &Name| {
+            self.scopes
+                .iter()
+                .any(|scope| scope.bound.get(name.word()) == Some(name))
+        };
+        let mut not = Vec::new();
+        for name in names {
+            let inside = declared(name);
+            let reads = self.reads.get(name.word()).into_iter().flatten();
+            let own = |read: &Read| match read.of {
+                Some(of) => inside && self.scopes[of].bound.get(name.word()) == Some(*name),
+                None => !inside,
+            };
+            if reads
+                .filter(|read| read.name.as_ref() == Some(*name))
+                .any(|read| !own(read))
+                && !not.contains(*name)
+            {
+                not.push((*name).clone());
+            }
+        }
+        not
+    }
+
     /// `from` named `to`, where [`Tree::renames`] said it keeps each read.
     pub(crate) fn rename(&mut self, from: &str, to: &str) {
         let declaring = self.declaring.swap_remove(from).unwrap_or_default();
@@ -255,6 +307,20 @@ pub(crate) fn packaged(packages: &[js::Package]) -> impl Iterator<Item = &String
             .chain(&package.default)
             .chain(&package.namespace)
     })
+}
+
+/// Whether each of `names` is in reach where `at`, read once in `body`, a
+/// function's, is read, by their ids ([`Tree::reach`]): asked by ids, no
+/// word, where a pass moves a closure's body to its call.
+pub(crate) fn reach(body: &[Stmt], at: &Name, names: &[&Name]) -> bool {
+    Tree::of_body(body).reach(at, names)
+}
+
+/// Of `names`, each a read of which in `body`, a function's, JS's scopes
+/// resolve to another variable ([`Tree::not_read_as_themselves`]): asked
+/// by ids, no word, where a pass puts a variable's reads in new places.
+pub(crate) fn not_read_as_themselves(body: &[Stmt], names: &[&Name]) -> Vec<Name> {
+    Tree::of_body(body).not_read_as_themselves(names)
 }
 
 /// Whether `a` and `b` are the same but for what their declarations are

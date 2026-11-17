@@ -6,6 +6,25 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "closure-read-of-a-block-refused",
+    breaks:
+      "a guard's closure that reads a `const` the function's block declares, `start`, stays a function, though the call sees the same `start` (#501)",
+    file: "src/js/scopes.rs",
+    find: "                    return true;\n                }\n                scope = self.scopes[at].parent;\n            }\n            false\n        })\n    }\n\n    /// Of `names`",
+    replace: "                    return true;\n                }\n                scope = None;\n            }\n            false\n        })\n    }\n\n    /// Of `names`",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_closure_reads_an_outer_block.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "guard-closure-called-twice-inlined",
+    breaks: "a guard's closure called at two drops is its body at the first and a call of it at the second (#501): `reach` asks of a read that's its only one",
+    file: "src/js/scopes.rs",
+    find: "        let (Some(read), None) = (reads.next(), reads.next()) else {\n",
+    replace: "        let (Some(read), _) = (reads.next(), reads.next()) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
+    snapshots: true,
+  },
+  {
     name: "module-scope-name-never-shadowed",
     breaks:
       "an inner binding never shadows a name the module's scope declares, `(value$1) => ..` beside an `on_load!` body's `const value`, where JS's scopes let it be `(value) => ..`",

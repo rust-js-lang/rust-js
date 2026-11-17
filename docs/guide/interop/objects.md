@@ -822,8 +822,8 @@ pub fn work(fail: bool) -> u32 {
 import { $live, $unwindsOn } from "@rust-js/std";
 
 export function work(fail) {
-  const _outer = { name: "outer" };
-  const name = "inner";
+  const name = "outer";
+  const name$1 = "inner";
   try {
     try {
       if (fail) {
@@ -833,14 +833,14 @@ export function work(fail) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        console.log(`closing ${name}`);
+        console.log(`closing ${name$1}`);
       }
     }
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`closing ${_outer.name}`);
+      console.log(`closing ${name}`);
     }
   }
   return 1;

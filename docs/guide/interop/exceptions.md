@@ -369,8 +369,8 @@ pub fn work(fail: bool) -> u32 {
 import { $live, $unwindsOn } from "@rust-js/std";
 
 export function work(fail) {
-  const _outer = { name: "outer" };
-  const name = "inner";
+  const name = "outer";
+  const name$1 = "inner";
   try {
     try {
       if (fail) {
@@ -380,14 +380,14 @@ export function work(fail) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        console.log(`closing ${name}`);
+        console.log(`closing ${name$1}`);
       }
     }
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`closing ${_outer.name}`);
+      console.log(`closing ${name}`);
     }
   }
   return 1;
@@ -421,6 +421,11 @@ are the variables it was made of, `name` above, a tuple struct's one
 field too, `Restore(previous)` read `previous`, where nothing sets them
 once it's made; a `Drop` that takes its field, `self.0.take()`, reads
 `previous` too, as nothing reads the guard after its drop ([ADR 0705](../../decisions/0705-a-guards-scope-reads-as-any-body.md)).
+A field whose variable is set once the guard's made, or read where the
+`Drop`'s own variable of its name would hide it, is a `const` of its own,
+of its key, `previous$1` where `previous` is taken, as a value made only
+to be dropped, `_restore` read once it's inlined, is `restore`, or
+`restore$1` ([ADR 1150](../../decisions/1150-a-variable-is-an-id.md)).
 
 ## `RefCell` borrows
 

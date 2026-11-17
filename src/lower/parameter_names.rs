@@ -24,10 +24,21 @@ pub(super) fn parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> St
 /// keeps; no body reads it.
 pub(super) fn written_parameter_name(name: &str) -> String {
     let named = camel_case(name);
-    match named.strip_prefix('_').filter(|n| !n.is_empty() && !n.starts_with('_')) {
-        Some(unmarked) if crate::names::js_ident(unmarked) == unmarked => unmarked.to_string(),
-        _ => crate::names::js_ident(&named),
+    match unmarked(&named) {
+        Some(unmarked) => unmarked.to_string(),
+        None => crate::names::js_ident(&named),
     }
+}
+
+/// A name without the leading `_` that tells Rust it's unused, `_ref`'s
+/// `ref`: the one rule of what's left (ADR 0678), a word JS lets a variable
+/// have, none of `_new`'s `new`, `__x`'s `_x`, `_9`'s `9`. Asked of a
+/// parameter's name, and of a guard's, read once it's inlined
+/// (`drops::inlined`).
+pub(in crate::lower) fn unmarked(named: &str) -> Option<&str> {
+    named
+        .strip_prefix('_')
+        .filter(|n| !n.starts_with('_') && crate::names::is_identifier(n) && crate::names::js_ident(n) == *n)
 }
 
 /// A parameter's name where it says none (ADR 0678): camelCase, without
@@ -38,7 +49,7 @@ pub(super) fn written_parameter_name(name: &str) -> String {
 /// `_` is then the program's name and no mark of one unused (amended).
 pub(super) fn default_parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &str) -> String {
     let named = camel_case(name);
-    let Some(unmarked) = named.strip_prefix('_').filter(|n| !n.is_empty() && !n.starts_with('_')) else {
+    let Some(unmarked) = unmarked(&named) else {
         return named;
     };
     if reads_parameter(tcx, function, name) {
@@ -54,9 +65,9 @@ pub(super) fn default_parameter_name(tcx: TyCtxt<'_>, function: DefId, name: &st
         None => return named,
     };
     let taken = || names.iter().any(|other| camel_case(other.as_str()) == unmarked);
-    match crate::names::js_ident(unmarked) == unmarked && !taken() {
-        true => unmarked.to_string(),
-        false => named,
+    match taken() {
+        false => unmarked.to_string(),
+        true => named,
     }
 }
 

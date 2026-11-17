@@ -364,7 +364,7 @@ pub fn shows(n: u32) -> u32 {
   expect(js).toContain("  } catch (error) {\n    throw $unwindsOn(error);\n  } finally {\n    if ($live()) {\n      const bumped = (n + 1) >>> 0;\n      console.log(`bumped ${bumped}`);\n    }\n  }");
   expect(js).toContain("  return () => {\n    const level = depth;\n    depth = n;\n    try {\n      return work(n);\n    } catch (error) {\n      throw $unwindsOn(error);\n    } finally {\n      if ($live()) {\n        depth = level;\n      }\n    }\n  };");
   expect(js).toContain("  let more = true;\n  try {\n    more = work(n) > 3;\n  } catch (error) {\n    throw $unwindsOn(error);\n  } finally {\n    if ($live()) {\n      console.log(`more ${more}`);\n    }\n  }");
-  expect(js).toContain('const name = "b";\n  console.log(`drop ${name}`);\n  console.log(`drop ${_a.name}`);');
+  expect(js).toContain('const name = "a";\n  const name$1 = "b";\n  console.log(`drop ${name$1}`);\n  console.log(`drop ${name}`);');
   expect(js).not.toContain("seenDrop_drop");
   expect(js).toContain("const seen = { number: id };");
   const lib = await import(join(dir, "lib.js"));

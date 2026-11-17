@@ -221,14 +221,14 @@ function main() {
     early = $catchUnwind(() => {
       const v = [1, 2, 3];
       const value = $view(v, 5);
-      const point = { x: 9 };
+      const x = 9;
       try {
-        bump(value, point.x);
+        bump(value, x);
       } catch (error) {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          if (point.x === 9) {
+          if (x === 9) {
             console.log("dropped");
           }
         }

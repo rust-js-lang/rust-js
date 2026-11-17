@@ -1246,3 +1246,54 @@ module's scope its identity, is read so by one `item_word`, marked (`cell
 (`drops::inlined`). Byte-identical; the ratchet 176 → 165.
 `drops::inlined`'s own questions of words follow as their own step.
 
+## A guard inlined is asked of by ids (step (e), 2026-11-17)
+
+`drops::inlined`, which writes a guard's `Drop` where it's dropped and
+takes the guard apart into its fields' variables (ADRs 0589, 0705), asked
+its questions of words until now, this ADR's recorded exception: the guard
+was a word, the `Drop`'s binding, `let Self { previous, .. }`, made the
+field's variable by their shared word, a variable whose word was declared
+twice never kept, a field's own `const` named its key where no name of the
+function's had that word, and a closure called where its guard's dropped
+moved to its call where no declaration of a word it reads stood between,
+each a second scope engine beside `js::scopes`.
+
+Now the guard is a `Name`, read by `==` and `mentions_of`; the binding is
+a copy of the field, its reads the variable's by id (`copies_read_as`); a
+variable's kept where nothing writes it once the guard's made, counted by
+its id; a field's own `const`, and the guard's own once read, `restore` of
+`_restore`, are names spelled later, `Name::spelled_later`, of a `k` none
+of the function's names has (`Name::free_made_k`), spelled by preparation,
+`previous$1` where `previous` isn't free (the lead's decision: a field
+taken apart as `key$1` reads better than the object left whole, and
+`restore$1` is spelled as every other is). The `_` comes off by the one
+rule a parameter's does, `parameter_names::unmarked`, which now also
+refuses what's left where it's no JS name, `_9`, a parameter's too; a
+global's name, `_window` of a guard, is spelled apart from the global's
+reads in its scope by preparation, `escape$1` of `_escape` beside a call
+of `escape`, as the copy kept `_escape` by asking the words its function
+read.
+
+What scoping it asks is `js::scopes`', by ids, no word: whether each
+variable a closure reads is in reach where it's called (`reach`), and
+whether each kept variable's reads, put where the field's are, resolve to
+it (`not_read_as_themselves`). The second is what a variable's word declared
+twice was a stand-in for: lowering names two of the program's variables of
+one word apart only along a scope chain, which preparation relies on, so a
+field's read put beside the `Drop`'s own `let previous` would read that one;
+such a variable isn't kept, its field a `const` of its own. The guard's
+word is read once, to take its `_` off, marked (`// word:`).
+
+A `&mut` handle's setter's parameter, chosen in preparation before names
+are spelled, counts a name spelled later of base `value` as `value`, which
+it's spelled where free, so it's `newValue` beside the place's `value`
+still.
+
+Output: guards whose fields share a word with a variable in the function
+are taken apart, `let prevHandler$1 = prevHandler;` for React's Flight
+client's `_restore = { prevHandler, prevChunk }`, the guard a plain
+variable, `const n` of `const _n`; React's `ReactChildFiber`'s restore
+reads `prevDebugInfo` as upstream does. Native and JS agree on every
+corpus case, with rows for a binding sharing its word with variables in
+scope, a variable written after the guard's made, a panic between, and
+guards named as globals.

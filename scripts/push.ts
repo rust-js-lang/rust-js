@@ -266,11 +266,12 @@ export const regenerated: Record<string, string> = {
 };
 
 /** The ratchets that only fall, each a count several changes lower at
- * once: each file's line `<path>\t<n>`, or a test's `const NAME = n;`.
+ * once: each file's line `<path>\t<n>`, or a test's `const NAME = n;`,
+ * none now, KIN_PARSES at none a strict row (#1681 change 3).
  * Two lowered at once conflict, each side's lower than the base, and the
  * lower of the two holds of the rebased tree, as each only removes what's
  * counted (ADR 1101, amended). */
-export const ratchets = ["test/word-reads.txt", "test/sig-binders.txt", "test/type-parameter-reads.txt", "test/architecture-names.test.ts"];
+export const ratchets = ["test/word-reads.txt", "test/sig-binders.txt", "test/type-parameter-reads.txt"];
 
 /** `text`, a ratchet's with git's conflict markers, each conflict resolved
  * by the lower count of each key both sides name, and a key one side alone

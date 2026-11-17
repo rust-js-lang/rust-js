@@ -4,6 +4,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "made-k-not-free",
+    breaks: "two guards' fields of one key in a function, `name`, are made one name, `name#1`, which preparation spells as one variable, declared twice (`Name::free_made_k`, ADR 1150)",
+    file: "src/js/name.rs",
+    find: "        (1..).find(|k| !taken.contains(k)).expect(\"a free one\")\n",
+    replace: "        let _ = taken;\n        1\n",
+    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once is its body where it's dropped"],
+  },
+  {
     name: "value-suffix-tail-from-a-dollar",
     breaks: "a key's entry's value, `keyValue`, is told its suffix from a `$` it has none of, `Value` lost, as a flag's is",
     file: "src/js/name.rs",

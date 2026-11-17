@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     name: "handle-setter-reads-its-param",
     breaks: "a handle on `value[0]` names its setter's parameter `value_`, not `newValue`, as a person names it",
     file: "src/prepare.rs",
-    find: "        if place.mentions_var(&param) {\n            param = \"newValue\".to_string();\n        }\n",
+    find: "        if reads(&param) {\n            param = \"newValue\".to_string();\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "handle_named_value"],
     "snapshots": true

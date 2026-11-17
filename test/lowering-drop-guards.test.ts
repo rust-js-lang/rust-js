@@ -1115,8 +1115,11 @@ pub fn props_twice(prototype: u32) -> u32 {
     }
   }`);
   // A variable set once the guard's made isn't what the guard holds.
-  expect(js).toContain("const _restore = {\n    previous,\n    dispatcher: previous,\n  };");
-  expect(js).toContain("  _restore.dispatcher != null\n    ? globalThis.restored(_restore.previous, _restore.dispatcher)\n    : globalThis.restored(_restore.previous);\n");
+  expect(js).toContain("  const previous$1 = previous;\n  const dispatcher = previous;\n  previous = (previous + 1) >>> 0;\n");
+  expect(js).toContain("  dispatcher != null\n    ? globalThis.restored(previous$1, dispatcher)\n    : globalThis.restored(previous$1);\n");
+  // The `Drop`'s own `previous`, beside the field's read: the field's own
+  // `const`, spelled apart, never the variable its read would be.
+  expect(js).toContain("    const previous = (previous$1 * 2) >>> 0;\n    globalThis.restored(previous);\n");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
   const calls: unknown[][] = [];

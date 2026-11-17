@@ -99,7 +99,9 @@ test("a temporary's name a value carries is set and read in one place each", () 
 // lowering makes one by `FnCx::unspelled` alone, unique in its item;
 // preparation spells it, `reclaim::spelled`, asking the name; the
 // validator, whose scopes keep words, refuses one printed; tidy's check of
-// a name's form against its word skips one, asking `Name::is_unspelled`. A
+// a name's form against its word skips one, asking `Name::is_unspelled`;
+// preparation's choice of a `&mut` handle's setter's parameter, before
+// they're spelled, reads one as its base, which it's spelled where free. A
 // holder of another variable's value is one too (`Name::derived`, through
 // `FnCx::unspelled_as`), of its source by its id. Nothing else makes or
 // reads the form.
@@ -109,7 +111,7 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
   expect(with_(/names::made\(/)).toEqual(["src/js/name.rs"]);
   expect(with_(/Name::made\(/)).toEqual(["src/lower.rs"]);
   expect(with_(/names::made_base\(/)).toEqual(["src/js/name.rs", "src/js/validate.rs"]);
-  expect(with_(/\.made_base\(\)/)).toEqual(["src/prepare/reclaim.rs"]);
+  expect(with_(/\.made_base\(\)/).sort()).toEqual(["src/prepare.rs", "src/prepare/reclaim.rs"]);
 });
 
 // A name given apart, `node$2` of `node`, is spelled by `names.rs` alone,
@@ -154,14 +156,17 @@ test("link reads no name's word", () => {
 // ratchet, what's asked of it by words, its trees, renames and a local
 // given apart from a module's read, is asked where names are spelled or
 // checked: preparation and `js::validate`; anywhere else only whether two
-// trees are alike but for their names (`alpha_eq`), which asks no word.
+// trees are alike but for their names (`alpha_eq`), or whether variables
+// are in reach where one is read, or read as themselves where a pass put
+// their reads, by their ids (`reach`, `not_read_as_themselves`), which ask
+// no word.
 test("js::scopes' words are asked only where names are spelled or checked", () => {
   const spelling = (file: string) => file.startsWith("src/prepare/") || file === "src/prepare.rs"
     || file.startsWith("src/to_oxc") || file === "src/js/scopes.rs" || file === "src/js/validate.rs";
   const asked = sources.filter(file => !spelling(file)).flatMap(file => {
     const text = read(file);
     const items = [...text.matchAll(/js::scopes::(\w+)/g)].map(m => m[1])
-      .filter(item => item !== "alpha_eq" && item !== "alpha_eq_functions")
+      .filter(item => !["alpha_eq", "alpha_eq_functions", "reach", "not_read_as_themselves"].includes(item))
       .map(item => `${file}: js::scopes::${item}`);
     // Nor brought in to be asked unqualified.
     const imported = /use crate::js::scopes\b|js::\{[^}]*\bscopes\b/.test(text) ? [`${file}: imports js::scopes`] : [];
@@ -182,13 +187,12 @@ test("a suffix is a js::Suffix, never written as text", () => {
   expect(writing).toEqual([]);
 });
 
-// `KIN_PARSES`, which only falls, to none: each is asked of the name's
-// origin and form by its id instead. The spelling's owners, `js::name`,
-// `names`, the runtime's helpers, printing and preparation, write and read
-// it. Preparation parses a word only to spell or respell it; a question of
-// kinship it asks goes through `Name` (`given_apart_of`, `is_origin_of`).
-const KIN_PARSES = 0;
-test("a name's kinship and form are asked by parsing its word only as counted", () => {
+// None, each asked of the name's origin and form by its id instead (#1681
+// change 3). The spelling's owners, `js::name`, `names`, the runtime's
+// helpers, printing and preparation, write and read it. Preparation parses
+// a word only to spell or respell it; a question of kinship it asks goes
+// through `Name` (`given_apart_of`, `is_origin_of`).
+test("a name's kinship and form are never asked by parsing its word outside its owners", () => {
   const owners = (file: string) => file === "src/js/name.rs" || file === "src/names.rs"
     || file === "src/runtime.rs" || file.startsWith("src/to_oxc")
     || file === "src/prepare.rs" || file.startsWith("src/prepare/");
@@ -196,7 +200,7 @@ test("a name's kinship and form are asked by parsing its word only as counted", 
     /starts_with\('\$'\)/g, /starts_with\("_\$"\)/g, /strip_prefix\("__arg"\)/g, /\bparam\.root\(\)/g];
   const parsed = sources.filter(file => !owners(file)).flatMap(file =>
     patterns.flatMap(pattern => [...read(file).matchAll(pattern)].map(() => file)));
-  expect(parsed.length).toBeLessThanOrEqual(KIN_PARSES);
+  expect(parsed).toEqual([]);
 });
 
 // The spelling step (ADR 1150): a name's word is read where names are
