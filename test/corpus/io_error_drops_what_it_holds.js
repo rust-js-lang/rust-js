@@ -278,17 +278,15 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp;
   try {
-    tmp = $writeTry(() => randFill());
+    e = $writeTry(() => randFill());
   } catch (error) {
     $cleanup(() => {
       $ioErrorDrop(plain);
     }, error);
     throw error;
   }
-  if (tmp !== undefined) {
-    const e = tmp;
+  if (e !== undefined) {
     try {
       $out(`${$ioErrorDisplay(e)}\n`);
     } catch (error) {
@@ -308,8 +306,8 @@ function main() {
     }
   } else {
     try {
-      if (tmp !== undefined) {
-        $ioErrorDrop(tmp);
+      if (e !== undefined) {
+        $ioErrorDrop(e);
       }
     } catch (error) {
       $cleanup(() => {

@@ -79,7 +79,7 @@ function main() {
         $weakDrop(value.me);
       });
     }
-    const node = $unwrap(value, "the only one");
+    let node = $unwrap(value, "the only one");
     let get;
     let upgrade;
     try {
@@ -193,9 +193,8 @@ function main() {
         });
       }
     }
-    let tmp$2;
     try {
-      tmp$2 = $countedBox(only).strong === 1 && $countedBox(only).weak === 0 ? only : undefined;
+      node = $countedBox(only).strong === 1 && $countedBox(only).weak === 0 ? only : undefined;
     } catch (error) {
       $cleanup(() => {
         $rcDrop(only, (value) => {
@@ -204,13 +203,12 @@ function main() {
       }, error);
       throw error;
     }
-    if (tmp$2 != null) {
-      const node = tmp$2;
+    if (node != null) {
       node.n = 7;
     }
-    let tmp$3;
+    let tmp$2;
     try {
-      tmp$3 = only.get();
+      tmp$2 = only.get();
       only$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -231,7 +229,7 @@ function main() {
       }
     }
     const value$1 = n != null ? map(n) : undefined;
-    console.log(`${tmp$3} ${value$1 == null ? "None" : `Some(${value$1})`}`);
+    console.log(`${tmp$2} ${value$1 == null ? "None" : `Some(${value$1})`}`);
     const cyclic = $newCyclic((me) => new Node(9, $weakClone(me)), true);
     try {
       const knowsItself = cyclic.knowsItself();

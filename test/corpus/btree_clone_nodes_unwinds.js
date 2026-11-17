@@ -175,9 +175,9 @@ function main() {
       throw error;
     }
     while (true) {
-      let tmp;
+      let at;
       try {
-        tmp = $next(iter);
+        at = $next(iter);
       } catch (error) {
         $cleanup(() => {
           $dropItems($sortedEntries(m, keyOrd_cmp), ([key, value]) => {
@@ -194,10 +194,9 @@ function main() {
         }, error);
         throw error;
       }
-      if (tmp == null) {
+      if (at == null) {
         break;
       }
-      const at = tmp;
       clones = 0;
       panicAt = at;
       const copy = $catchUnwind(() =>
@@ -505,9 +504,9 @@ function main() {
       throw error;
     }
     while (true) {
-      let tmp;
+      let at;
       try {
-        tmp = $next(iter$1);
+        at = $next(iter$1);
       } catch (error) {
         $cleanup(() => {
           $dropItems($sortedKeys(s, keyOrd_cmp), keyDrop_drop);
@@ -525,10 +524,9 @@ function main() {
         }, error);
         throw error;
       }
-      if (tmp == null) {
+      if (at == null) {
         break;
       }
-      const at = tmp;
       clones = 0;
       panicAt = at;
       const copy = $catchUnwind(() =>

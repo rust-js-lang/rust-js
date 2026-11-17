@@ -76,17 +76,16 @@ function skipOne(it, IIterator, dropI, dropIItem) {
 
 function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
   const it = $held($intoIter(items));
-  let next;
+  let item;
   try {
-    next = $next(it);
+    item = $next(it);
   } catch (error) {
     $cleanup(() => {
       dropIIntoIter?.(it);
     }, error);
     throw error;
   }
-  if (next != null) {
-    const item = next;
+  if (item != null) {
     try {
       bag[0].push(item);
     } catch (error) {
@@ -97,8 +96,8 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
     }
   } else {
     try {
-      if (next != null) {
-        loudDrop_drop(next);
+      if (item != null) {
+        loudDrop_drop(item);
       }
     } catch (error) {
       $cleanup(() => {

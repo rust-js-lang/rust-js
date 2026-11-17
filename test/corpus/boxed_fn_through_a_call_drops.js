@@ -77,9 +77,9 @@ function entriesAndCatch() {
     },
   );
   let k$live = true;
-  let tmp;
+  let entry$1;
   try {
-    tmp = $entry(counts, "x");
+    entry$1 = $entry(counts, "x");
     k$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -89,7 +89,6 @@ function entriesAndCatch() {
     }, error);
     throw error;
   }
-  const entry$1 = tmp;
   $orInsertWith(entry$1._0[0], entry$1._0[1], k, undefined, $dispose);
   const value$2 = $mutGet(entry$1._0[0], entry$1._0[1]);
   value$2.value += 0;
@@ -127,9 +126,9 @@ function entriesAndCatch() {
   console.log(`caught ${value$5 == null ? "None" : `Some(${value$5})`}`);
   let d$live = true;
   const d = [50];
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = $iter([1, 2]);
+    tmp = $iter([1, 2]);
     d$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -152,7 +151,7 @@ function entriesAndCatch() {
     ),
   );
   const sums = $collectDropping(
-    $lazyScan(tmp$1, 0, value$6, true, (_) => {
+    $lazyScan(tmp, 0, value$6, true, (_) => {
       $dispose(value$6);
     }),
   );

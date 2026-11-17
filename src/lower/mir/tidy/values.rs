@@ -787,7 +787,8 @@ pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
 
 /// `const tick = () => { … }; useEffect(tick, [count]);`, a closure only a
 /// hook's function is: written there, a function its `let` names, `function
-/// tick() { … }`, unless it reads that name (ADR 0297).
+/// tick() { … }`; one that reads what its name is given apart from, `step`
+/// of `step$1`, too, which the speller keeps apart (ADR 0297, amended).
 pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<js::Name>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -795,13 +796,6 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<js::Na
             && callbacks.contains(name)
             && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..))
             && !value.mentions_name(name)
-            // Nor one reading what it would be named, `step` of `step$1`
-            // (ADR 0297).
-            && name.word().split('$').next().is_none_or(|base| {
-                let mut reads = false;
-                value.visit_vars(&mut |v| reads |= v == base);
-                !reads
-            })
             && js::mentions_of(&stmts[i + 1..], name) == 1
         {
             let span = stmts[i].span;

@@ -36,36 +36,34 @@ function byNext(it, dropI) {
   $held(it);
   let total = 0;
   while (true) {
-    let next;
+    let x;
     try {
-      next = $next(it);
+      x = $next(it);
     } catch (error) {
       $cleanup(() => {
         dropI?.(it);
       }, error);
       throw error;
     }
-    if (next == null) {
+    if (x == null) {
       break;
     }
-    const x = next;
     total = (total + x) >>> 0;
   }
   console.log(`first part ${total}`);
   while (true) {
-    let tmp;
+    let x;
     try {
-      tmp = $next(it);
+      x = $next(it);
     } catch (error) {
       $cleanup(() => {
         dropI?.(it);
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (x == null) {
       break;
     }
-    const x = tmp;
     total = (total + x) >>> 0;
   }
   console.log(`second part ${total}`);
@@ -112,37 +110,35 @@ function byFor(it, dropI) {
     throw error;
   }
   while (true) {
-    let tmp;
+    let x;
     try {
-      tmp = $next(iter);
+      x = $next(iter);
     } catch (error) {
       $cleanup(() => {
         dropI?.(it);
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (x == null) {
       break;
     }
-    const x = tmp;
     total = (total + x) >>> 0;
   }
   console.log(`for a ${total}`);
   iter = it;
   while (true) {
-    let tmp;
+    let x;
     try {
-      tmp = $next(iter);
+      x = $next(iter);
     } catch (error) {
       $cleanup(() => {
         dropI?.(it);
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (x == null) {
       break;
     }
-    const x = tmp;
     total = (total + x) >>> 0;
   }
   console.log(`for b ${total}`);

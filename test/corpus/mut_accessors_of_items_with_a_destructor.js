@@ -258,9 +258,9 @@ function main() {
     throw error;
   }
   while (true) {
-    let tmp;
+    let d;
     try {
-      tmp = $next(iter);
+      d = $next(iter);
     } catch (error) {
       $cleanup(() => {
         for (const item of q) {
@@ -272,10 +272,9 @@ function main() {
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (d == null) {
       break;
     }
-    const d = tmp;
     d[0] = (d[0] * 2) >>> 0;
   }
   try {
@@ -724,9 +723,9 @@ function main() {
         throw error;
       }
       const items = [[1], [2], [3], [4], [5]];
-      let firstChunkMut;
+      let c;
       try {
-        firstChunkMut = items.length >= 2 ? $view(items, 0, 2) : undefined;
+        c = items.length >= 2 ? $view(items, 0, 2) : undefined;
       } catch (error) {
         $cleanup(() => {
           for (const item of items) {
@@ -746,8 +745,7 @@ function main() {
         }, error);
         throw error;
       }
-      if (firstChunkMut != null) {
-        const c = firstChunkMut;
+      if (c != null) {
         dDrop_drop(c[0]);
         c[0] = [10];
       }
@@ -773,9 +771,9 @@ function main() {
         throw error;
       }
       while (true) {
-        let tmp;
+        let c;
         try {
-          tmp = $next(iter);
+          c = $next(iter);
         } catch (error) {
           $cleanup(() => {
             for (const item of items) {
@@ -795,10 +793,9 @@ function main() {
           }, error);
           throw error;
         }
-        if (tmp == null) {
+        if (c == null) {
           break;
         }
-        const c = tmp;
         try {
           $swap(c, 0, 1);
         } catch (error) {

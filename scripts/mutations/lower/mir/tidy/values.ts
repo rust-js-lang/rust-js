@@ -44,23 +44,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "named-callback-reads-base",
-    breaks:
-      "a closure reading what it would be named, `step` of `step$1`, is named it, reading itself",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "            !reads\n",
-    replace: "            true\n",
-    tests: [
-      "test/jsx-children.test.ts",
-      "test/jsx-evaluation-order.test.ts",
-      "test/jsx-events.test.ts",
-      "test/jsx-props.test.ts",
-      "test/jsx-react-dev.test.ts",
-      "test/jsx-types.test.ts",
-      "test/jsx.test.ts",
-    ],
-  },
-  {
     name: "mir-enumerate-mapped",
     breaks:
       "`iter().enumerate()` of a slice from MIR is `xs.values().map((x, i) => [i, x])`, not `xs.entries()`",

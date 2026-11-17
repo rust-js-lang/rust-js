@@ -449,24 +449,19 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             // `n` and `n$1` (ADR 0357): each declared nowhere else, and read
             // only after it.
             let Some((b, _)) = found.first() else { continue };
-            let base = |name: &str| name.split('$').next().unwrap_or(name).to_string();
+            // Of one name: each the same, or one given apart of the other.
+            let one_name = |other: &js::Name| other == b || other.given_apart_of(b) || b.given_apart_of(other);
             if found.iter().any(|(other, after)| {
-                base(other.word()) != base(b.word())
+                !one_name(other)
                     || declared.get(other.word()) != Some(&1)
                     || reads.get(other.word()).copied().unwrap_or(0) != *after
             }) {
                 continue;
             }
-            // A `let` set in a `try` takes the name in its own, wider scope:
-            // not where another of that name is declared, `max` of a
-            // destructuring beside it, which would be `max$1` then.
-            let set_in_try = matches!(stmts[i].kind, StmtKind::Let(..));
-            if set_in_try
-                && (declared.keys())
-                    .any(|name| base(name) == base(b.word()) && !found.iter().any(|(other, _)| other.is(name)))
-            {
-                continue;
-            }
+            // A `let` set in a `try` takes the name in its own, wider scope,
+            // given apart by the speller where another of that name is
+            // declared there, `max$1` beside a destructuring's `max` (ADR
+            // 0357, amended).
             let b = b.clone();
             let taken: Vec<js::Name> = found.iter().map(|(name, _)| name.clone()).collect();
             for name in &taken {

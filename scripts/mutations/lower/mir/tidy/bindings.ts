@@ -248,8 +248,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`n` that two arms bind, `n` and `n$1` until named in their scopes, stays `const n = length;` in each",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                base(other.word()) != base(b.word())\n",
-    replace: "                *other != *b\n",
+    find: "            let one_name = |other: &js::Name| other == b || other.given_apart_of(b) || b.given_apart_of(other);\n",
+    replace: "            let one_name = |other: &js::Name| other == b;\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
     snapshots: true,
   },

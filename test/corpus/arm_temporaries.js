@@ -21,7 +21,7 @@ const Mapped = {
   andThen(mapped, f, dropU) {
     let new$0$live = false;
     let min$0$0$live = false;
-    let tmp$1$0$live = false;
+    let max$1$0$live = false;
     let result;
     if (mapped === "None") {
       result = "None";
@@ -44,9 +44,9 @@ const Mapped = {
     } else {
       let { _0: min, _1: max } = mapped;
       min = f(min);
-      let tmp;
+      let max$1;
       try {
-        tmp = f(max);
+        max$1 = f(max);
       } catch (error) {
         $cleanup(() => {
           if (min != null) {
@@ -55,13 +55,12 @@ const Mapped = {
         }, error);
         throw error;
       }
-      tmp$1$0$live = true;
+      max$1$0$live = true;
       min$0$0$live = true;
-      if (min != null && tmp != null) {
+      if (min != null && max$1 != null) {
         min$0$0$live = false;
-        tmp$1$0$live = false;
-        const max = tmp;
-        result = { TAG: "Ambiguous", _0: min, _1: max };
+        max$1$0$live = false;
+        result = { TAG: "Ambiguous", _0: min, _1: max$1 };
       } else {
         result = "None";
       }
@@ -70,12 +69,12 @@ const Mapped = {
           dropU?.(min);
         }
       }
-      if (tmp != null) {
-        if (tmp$1$0$live) {
-          dropU?.(tmp);
+      if (max$1 != null) {
+        if (max$1$0$live) {
+          dropU?.(max$1);
         }
       }
-      tmp$1$0$live = false;
+      max$1$0$live = false;
       min$0$0$live = false;
     }
     return result;

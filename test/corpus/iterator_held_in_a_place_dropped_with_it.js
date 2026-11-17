@@ -58,9 +58,9 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
           }, error);
           throw error;
         }
-        let next;
+        let n;
         try {
-          next = $next(borrowMut.value);
+          n = $next(borrowMut.value);
         } catch (error) {
           $cleanup(() => {
             $unborrow(borrowMut);
@@ -70,8 +70,7 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
           }, error);
           throw error;
         }
-        if (next != null) {
-          const n = next;
+        if (n != null) {
           sum = (sum + n) >>> 0;
           $unborrow(borrowMut);
         } else {
@@ -88,19 +87,18 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
     case 1: {
       const it = $held($intoIter(items));
       while (true) {
-        let tmp;
+        let n;
         try {
-          tmp = $next(it);
+          n = $next(it);
         } catch (error) {
           $cleanup(() => {
             dropIIntoIter?.(it);
           }, error);
           throw error;
         }
-        if (tmp == null) {
+        if (n == null) {
           break;
         }
-        const n = tmp;
         sum = (sum + n) >>> 0;
       }
       console.log(`box summed ${sum}`);
@@ -110,9 +108,9 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
     case 2: {
       const it = $some($held($intoIter(items)));
       while (true) {
-        let tmp;
+        let n;
         try {
-          tmp = $next($someValue($unwrap(it)));
+          n = $next($someValue($unwrap(it)));
         } catch (error) {
           $cleanup(() => {
             if (it != null) {
@@ -121,10 +119,9 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
           }, error);
           throw error;
         }
-        if (tmp == null) {
+        if (n == null) {
           break;
         }
-        const n = tmp;
         sum = (sum + n) >>> 0;
       }
       console.log(`option summed ${sum}`);
@@ -136,19 +133,18 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
     case 3: {
       const held = { it: $held($intoIter(items)) };
       while (true) {
-        let tmp;
+        let n;
         try {
-          tmp = $next(held.it);
+          n = $next(held.it);
         } catch (error) {
           $cleanup(() => {
             dropIIntoIter?.(held.it);
           }, error);
           throw error;
         }
-        if (tmp == null) {
+        if (n == null) {
           break;
         }
-        const n = tmp;
         sum = (sum + n) >>> 0;
       }
       console.log(`field summed ${sum}`);
@@ -158,9 +154,9 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
     case 4: {
       const held = [$held($intoIter(items))];
       while (true) {
-        let tmp;
+        let n;
         try {
-          tmp = $next(held[0]);
+          n = $next(held[0]);
         } catch (error) {
           $cleanup(() => {
             $dropItems(held, (item) => {
@@ -169,10 +165,9 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
           }, error);
           throw error;
         }
-        if (tmp == null) {
+        if (n == null) {
           break;
         }
-        const n = tmp;
         sum = (sum + n) >>> 0;
       }
       console.log(`array summed ${sum}`);
@@ -184,19 +179,18 @@ function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {
     default: {
       const held = [$held($intoIter(items)), 0];
       while (true) {
-        let tmp;
+        let n;
         try {
-          tmp = $next(held[0]);
+          n = $next(held[0]);
         } catch (error) {
           $cleanup(() => {
             dropIIntoIter?.(held[0]);
           }, error);
           throw error;
         }
-        if (tmp == null) {
+        if (n == null) {
           break;
         }
-        const n = tmp;
         sum = (sum + n) >>> 0;
       }
       console.log(`tuple summed ${sum}`);

@@ -296,9 +296,9 @@ function main() {
               throw error;
             }
             while (true) {
-              let tmp;
+              let values;
               try {
-                tmp = $next(iter);
+                values = $next(iter);
               } catch (error) {
                 $cleanup(() => {
                   for (const item of held) {
@@ -329,10 +329,9 @@ function main() {
                 }, error);
                 throw error;
               }
-              if (tmp == null) {
+              if (values == null) {
                 break;
               }
-              const values = tmp;
               const first = values[0];
               if (first == null || first === 1) {
                 console.log("none");

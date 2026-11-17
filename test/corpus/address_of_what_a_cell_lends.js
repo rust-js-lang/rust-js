@@ -101,16 +101,14 @@ function main() {
   const lent = $addr($ptrTo(guard), 8);
   const own = $addr($ptrOuter(one, 4), 12);
   console.log(`object ${(lent - own) >>> 0} ${($addr($ptrTo(one), 8) - own) >>> 0}`);
-  let tmp;
   try {
-    tmp = $borrow(one, true);
+    p = $borrow(one, true);
   } catch (error) {
     $unborrow(borrow);
     throw error;
   }
-  p = tmp;
   console.log(`object field ${($addr($ptr(p, "b", 4), 4) - own) >>> 0}`);
-  $unborrow(tmp);
+  $unborrow(p);
 
   // A `Cell`'s, at its start.
   const c = { value: { a: 7, b: 8 } };
@@ -130,9 +128,9 @@ function main() {
     $unborrow(borrow);
     throw error;
   }
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = $addr($ptr(guard.value, "b", 4), 4);
+    tmp = $addr($ptr(guard.value, "b", 4), 4);
   } catch (error) {
     $cleanup(() => {
       $unlock(guard);
@@ -141,7 +139,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`mutex ${(tmp$1 - $addr($ptrTo(m), 12)) >>> 0}`);
+    console.log(`mutex ${(tmp - $addr($ptrTo(m), 12)) >>> 0}`);
   } catch (error) {
     $cleanup(() => {
       $unlock(guard);
@@ -157,16 +155,16 @@ function main() {
     $unborrow(borrow);
     throw error;
   }
-  let tmp$2;
+  let tmp$1;
   try {
-    tmp$2 = $addr($ptrTo(read.value), 8);
+    tmp$1 = $addr($ptrTo(read.value), 8);
   } catch (error) {
     $unborrow(read);
     $unborrow(borrow);
     throw error;
   }
   try {
-    console.log(`rwlock ${(tmp$2 - $addr($ptrTo(r), 12)) >>> 0}`);
+    console.log(`rwlock ${(tmp$1 - $addr($ptrTo(r), 12)) >>> 0}`);
   } catch (error) {
     $unborrow(read);
     $unborrow(borrow);
@@ -197,15 +195,15 @@ function main() {
     $unborrow(borrow);
     throw error;
   }
-  let tmp$3;
+  let tmp$2;
   try {
-    tmp$3 = $storedValue(shared, 4).value;
+    tmp$2 = $storedValue(shared, 4).value;
   } catch (error) {
     $unborrow(borrow);
     throw error;
   }
-  $stored($ptr(tmp$3, 1), 8);
-  console.log(`rc ${($addr($ptr(tmp$3[1], "a", 0, tmp$3, 8), 1) - start) >>> 0}`);
+  $stored($ptr(tmp$2, 1), 8);
+  console.log(`rc ${($addr($ptr(tmp$2[1], "a", 0, tmp$2, 8), 1) - start) >>> 0}`);
 
   // A struct's `RefCell` field of a number, which holds it, and a `Cell`'s.
   const counter = { tag: 1, count: 3, seen: 4 };

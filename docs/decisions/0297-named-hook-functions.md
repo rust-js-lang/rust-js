@@ -45,3 +45,22 @@ use_effect(createBundler, ());
   function reads its variables when it runs wherever it's written; nothing
   in a Rust closure reads `this` or `arguments`, where an arrow and a
   function differ.
+
+## Amendment: one that reads what its name is given apart from is named too (#1681 change 3)
+
+A closure whose body read the word its name was given apart from was kept
+a `const`: `let step = 1; let step = move || set_n.set(step);` gave
+`const step$1 = () => setN(step)`. The fear was that, named, it would read
+itself. It can't: the function is `step$1`, and preparation's speller
+never respells a name into a word it would capture (`reclaim::locals`
+checks each read is still of what it was). The check compared the roots
+of two words in lowering, guessing the speller's answer, which change 3
+removes. Such a closure is now the hook's named function like any other:
+
+```js
+useEffect(function step$1() { setN(step); }, [n]);
+```
+
+The corpus and the React port are byte-identical; only
+`test/jsx-children.test.ts`'s row for it changes. Mutation
+`named-callback-reads-base` goes with the check it mutated.

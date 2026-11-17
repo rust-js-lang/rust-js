@@ -425,3 +425,28 @@ temporaries are named (`named_flags`). The one left named after MIR's
 local, `_12$0$live`, was a flag read by nothing, which now goes (ADR
 0372, amended, #841); with `$some` pure, no snapshot has a name derived
 from a positional temporary.
+
+## Amendment: a `let` a `try` sets takes its name though the speller gives it apart (#1681 change 3)
+
+#444 kept the temporary, `let tmp; try { tmp = e; } .. const max = tmp;`,
+wherever another variable of the pattern's name was declared, since the
+`let`'s wider scope would meet it and the name would be `max$1`. That
+check compared the roots of two words, `split('$')`. It guarded no
+collision: preparation's speller keeps two variables of one word apart in
+any case. It was a shape preference, decided in lowering by guessing the
+speller's answer. Now the `let` takes the pattern's name wherever it's set
+once in its `try`, and the speller gives it apart where it must:
+`let max$1; try { max$1 = f(max); }` beside a destructuring's `max`.
+
+- **Corpus:** twelve snapshots change, 126 lines to 100, with no `const max
+  = tmp` after the `try`.
+- **Spellings:** six of the twelve read the program's name where they read
+  `tmp`, `values` and `iter`. Six spell 23 names given apart, `max$1`.
+- **React port:** byte-identical.
+
+The arms' one name (ADR 0357) is now asked by `Name` kinship, by id:
+`given_apart_of` either way, not their words' roots. Its output is the
+same.
+
+Held by the twelve snapshots, `set_once_in_a_try`, and mutation
+`arms-binding-one-name-apart`, re-anchored.

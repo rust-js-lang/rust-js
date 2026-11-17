@@ -90,9 +90,9 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
     collectTuple(self, SelfIterator, TTuple, dropT) {
       $held(self);
       let elt$live = false;
-      let nextTuple;
+      let elt;
       try {
-        nextTuple = iExt(SelfIterator, IVecCollect, IItemSize, dropI, TTuple.$dropItem).nextTuple(
+        elt = iExt(SelfIterator, IVecCollect, IItemSize, dropI, TTuple.$dropItem).nextTuple(
           self,
           SelfIterator,
           TTuple,
@@ -104,12 +104,11 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
         }, error);
         throw error;
       }
-      let nextTuple$live = true;
+      let elt$live$1 = true;
       let result;
-      if (nextTuple != null) {
-        nextTuple$live = false;
+      if (elt != null) {
+        elt$live$1 = false;
         elt$live = true;
-        const elt = nextTuple;
         let next;
         try {
           next = SelfIterator.next(self);
@@ -160,9 +159,9 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
         result = undefined;
       }
       try {
-        if (nextTuple$live) {
-          if (nextTuple != null) {
-            dropT?.(nextTuple);
+        if (elt$live$1) {
+          if (elt != null) {
+            dropT?.(elt);
           }
         }
       } catch (error) {
@@ -171,7 +170,7 @@ function iExt(IIterator, IVecCollect, IItemSize, dropI, dropIItem) {
         }, error);
         throw error;
       }
-      nextTuple$live = false;
+      elt$live$1 = false;
       dropI?.(self);
       return result;
     },

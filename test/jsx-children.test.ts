@@ -695,7 +695,8 @@ pub fn Page() -> JSX::Element {
 // ADR 0297: a closure a `let` names and only a hook's function is is written
 // there, named, as react.dev names its effects: `useEffect(function
 // createBundler() { .. }, [])`. Given elsewhere, or used twice, it's a
-// `const` as before.
+// `const` as before. One that reads what its name is given apart from is
+// named too, the speller keeping it apart (ADR 0297, amended).
 test("a closure a let names for a hook is the hook's named function", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx, use_callback, use_effect, use_memo, use_state};
@@ -711,7 +712,8 @@ pub fn Ticker() -> JSX::Element {
     let onClick = use_callback(handleClick, [n]);
     let twice = move || n;
     let both = twice() + twice();
-    // One reading what it would be named is a const too.
+    // One reading what its name is given apart from is named too, step$1,
+    // which the speller keeps apart from the step it reads.
     let step = 1u32;
     let step = move || set_n.set(step);
     use_effect(step, Some(&[n]));
@@ -729,7 +731,7 @@ pub fn Ticker() -> JSX::Element {
   expect(jsx).toMatch(/useCallback\(\s*function handleClick\(\) \{/);
   expect(jsx).toContain("const twice = () => n;");
   expect(jsx).toContain("const report = () => n;");
-  expect(jsx).toMatch(/const step\$1 = \(\) => setN\(step\);\n\s*useEffect\(step\$1, \[n\]\);/);
+  expect(jsx).toMatch(/useEffect\(\s*function step\$1\(\) \{\s*setN\(step\);\s*\},\s*\[n\],?\s*\);/);
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Ticker))).toBe("<button>0</button>");
 });
