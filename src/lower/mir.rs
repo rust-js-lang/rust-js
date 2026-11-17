@@ -642,10 +642,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its scope struct's fields, its variables (ADR 1043, amended).
         let (own, others) = std::mem::take(&mut self.scope_values)
             .into_iter()
-            .partition(|(of, _)| *of == def_id);
+            .partition(|(of, _, _)| *of == def_id);
         self.scope_values = others;
-        for (_, value) in own {
-            scopes::scope_fields(&value, &params, &mut out);
+        for (_, value, moved_once) in own {
+            scopes::scope_fields(&value, (&params, &moved_once), &mut out);
         }
         // An `async fn`'s body is its coroutine's, an async arrow called
         // at once: the async function's own (ADR 0029).

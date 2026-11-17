@@ -8,7 +8,6 @@ function serialize(next) {
   const model = [];
   const id = next + 1;
   let reader = 0;
-  let reader$1 = reader;
 
   function progress(value) {
     if (value == null) {
@@ -16,13 +15,15 @@ function serialize(next) {
       return (((length * 100) >>> 0) + id) >>> 0;
     } else {
       model.push(value);
-      reader$1 = (reader$1 + 1) >>> 0;
-      const next = reader$1 < 3 ? (value + 1) >>> 0 : undefined;
+      reader = (reader + 1) >>> 0;
+      const next = reader < 3 ? (value + 1) >>> 0 : undefined;
       return progress(next);
     }
   }
 
-  return progress(10);
+  // `id` read again after: copied into the field, a holder of its value,
+  // which is `id` itself where nothing sets either.
+  return (progress(10) + id) >>> 0;
 }
 
 function label(prefix) {

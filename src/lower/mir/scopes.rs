@@ -52,8 +52,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(scope.written, "a scope struct's `let`, lowered to no statement"));
             }
             // Its fields, made the function's variables once tidy has read
-            // its body (`scope_fields`).
-            self.scope_values.push((scope.function, value));
+            // its body (`scope_fields`); and the locals a field may be, each
+            // made once and read once, by MIR, on every path, loops' too, so
+            // never assigned nor read again after its move, nor borrowed
+            // (#2036).
+            let moved_once: IndexSet<js::Name> = (state.body.local_decls.indices())
+                .filter(|&local| {
+                    state.locals.writes[local] == 1 && state.locals.reads[local] == 1 && !state.locals.borrowed[local]
+                })
+                .map(|local| state.locals.names[local].clone())
+                .collect();
+            self.scope_values.push((scope.function, value, moved_once));
         }
         Ok(())
     }
@@ -119,7 +128,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// nothing writes, and one a parameter gives that nothing writes is that
 /// parameter; each read of a field is its variable's. Where anything reads
 /// the value but a field of it, or names its variable again, it stays one.
-pub(super) fn scope_fields(value: &js::Name, params: &[js::Pattern], out: &mut Vec<Stmt>) {
+pub(super) fn scope_fields(
+    value: &js::Name,
+    (params, moved_once): (&[js::Pattern], &IndexSet<js::Name>),
+    out: &mut Vec<Stmt>,
+) {
     // Every list of statements, closures' and declared functions' too.
     let mut lists: Vec<Vec<Stmt>> = Vec::new();
     js::each_block_mut(&mut out.clone(), &mut |list| lists.push(list.clone()));
@@ -229,6 +242,10 @@ pub(super) fn scope_fields(value: &js::Name, params: &[js::Pattern], out: &mut V
                 {
                     Some(p.clone())
                 }
+                // A local of its name moved into the literal, which nothing
+                // assigns nor reads after (`moved_once`): that local, written
+                // or not, a `let` where the field is written (#2036).
+                js::ExprKind::Var(l) if moved_once.contains(l) && l.is(&key) && !refused.contains(l) => Some(l.clone()),
                 _ => None,
             });
             let name = match given {
@@ -260,9 +277,26 @@ pub(super) fn scope_fields(value: &js::Name, params: &[js::Pattern], out: &mut V
         }
         let mut made = out.clone();
         fielded(&mut made, value, &holders, &held, names.clone(), lets);
-        let given: Vec<&js::Name> = names.values().filter(|n| param_names.contains(n)).collect();
+        let given: Vec<&js::Name> = names
+            .values()
+            .filter(|n| param_names.contains(n) || moved_once.contains(*n))
+            .collect();
         let not = js::scopes::not_read_as_themselves(&made, &given);
         if not.is_empty() {
+            // A local a written field is, declared `const`: a `let` now.
+            let lets: Vec<&js::Name> = (names.iter())
+                .filter(|(key, n)| moved_once.contains(*n) && written.contains(*key))
+                .map(|(_, n)| n)
+                .collect();
+            js::each_block_mut(&mut made, &mut |list| {
+                for stmt in list.iter_mut() {
+                    if let StmtKind::Const(n, e) = &stmt.kind
+                        && lets.contains(&n)
+                    {
+                        stmt.kind = StmtKind::Let(n.clone(), Some(e.clone()));
+                    }
+                }
+            });
             *out = made;
             return;
         }
@@ -522,7 +556,11 @@ mod tests {
             stmt(StmtKind::Function(Box::new(method))),
             stmt(StmtKind::Return(Some(Expr::call(Expr::var(&name), Vec::new())))),
         ];
-        scope_fields(&label, &[js::Pattern::Name(prefix.clone())], &mut body);
+        scope_fields(
+            &label,
+            (&[js::Pattern::Name(prefix.clone())], &IndexSet::default()),
+            &mut body,
+        );
         assert_eq!(js::validate::body(&body), []);
         let StmtKind::Const(field, value) = &body[0].kind else {
             panic!("the field's own `const` first")

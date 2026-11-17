@@ -447,3 +447,19 @@ two `Rc`s of one method that `Rc::ptr_eq` compares, and
 compares, each `false`, their arrows kept. Mutations
 `scope-method-closure-kept`, `scope-method-closure-identity-unasked` and
 `functions-pointed-at-unseen`.
+
+## Amendment: a field made of a local moved into it is that local (#2036, 2026-11-18)
+
+A field made of a local of its name, written by the struct's methods, was
+a `let` of its own copying the local, `let reader$1 = reader;`, where
+upstream's `serializeDebugBlob` has `reader` alone. Where MIR says the
+local is made once and read once, the move into the literal, on every
+path, a loop's too, and never borrowed (the lowering's census of its
+locals), nothing can assign or read it after the move, so the field is
+that local, a `let` where the field is written. One assigned or read again
+after its move keeps its copy, so its new value never overwrites the
+field's: rows in `test/corpus/scope_struct_field_of_a_reassigned_local.rs`,
+one of them valid Rust that rustc warns on (`unused_assignments`, allowed
+there, the lead's decision), as no other shape writes a moved local again
+unread; and the mutation `scope-field-of-a-reassigned-local`.
+

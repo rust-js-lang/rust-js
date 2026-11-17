@@ -36,7 +36,9 @@ fn serialize(next: u32) -> u32 {
     let id = next + 1;
     let reader = Cell::new(0);
     let blob = Rc::new(Blob { model, id, reader });
-    blob.progress(Some(10))
+    // `id` read again after: copied into the field, a holder of its value,
+    // which is `id` itself where nothing sets either.
+    blob.progress(Some(10)) + id
 }
 
 struct Label {

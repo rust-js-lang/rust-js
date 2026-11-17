@@ -105,6 +105,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "scope-field-of-a-reassigned-local",
+    breaks: "a scope struct's field made of a local the program assigns again after its move, `count = Cell::new(100)`, is that local, so the new value overwrites the field's: a wrong answer (#2036)",
+    file: "src/lower/mir/scopes.rs",
+    find: "                    state.locals.writes[local] == 1 && state.locals.reads[local] == 1 && !state.locals.borrowed[local]\n",
+    replace: "                    state.locals.reads[local] == 1 && !state.locals.borrowed[local]\n",
+    tests: ["test/corpus.test.ts", "-t", "^scope_struct_field_of_a_reassigned_local.rs$"],
+  },
+  {
     name: "scope-field-reads-kept",
     breaks: "a read of a scope struct's field stays its property's, of the object its variables replace",
     file: "src/lower/mir/scopes.rs",
