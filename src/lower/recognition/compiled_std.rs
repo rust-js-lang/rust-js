@@ -554,7 +554,10 @@ const MEANING_ONLY: &[StdPath] = &[
     // Proof: test/corpus/copied_kept_as_its_source.rs; the copy matrix's
     // rows ITERATOR_TABLE=copies ITERATOR_MATRIX=/[ .]copied[ .|]/.
     StdPath::IterCopied,
-    // On its way: #1681's change 2.
+    // Kept, proved equal: each item cloned as it's stepped, once, from either
+    // end, and none for what `len()` or a hint counts (ADR 1136).
+    // Proof: test/corpus/cloned_kept_as_its_source.rs; the copy matrix's
+    // rows ITERATOR_TABLE=copies ITERATOR_MATRIX=/[ .]cloned[ .|]/.
     StdPath::IterCloned,
 ];
 

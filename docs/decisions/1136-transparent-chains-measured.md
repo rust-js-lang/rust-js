@@ -620,6 +620,7 @@ out, caught.
 | `map_while` | 6 | 1,754 to 1,744 (×0.994); `map_while` taken off `MEANING_ONLY` too, which moves 2 of the 6 (`map_while-meaning-only`); drops/types.rs's held-function arm retired, each type it named std's compiled struct now, which the arm before it takes (ADR 0093) | 1,310,967 bytes, the same: std's `MapWhile` was compiled for the meaning build already | renamed `x$1` 467.1 to 466.9, role fallbacks 253.5 to 253.2, `$iter` 84.5 to 84.3 | `map_while-not-flipped`, `map_while-meaning-only` |
 | `scan` | 11 | 3,649 to 3,854 (×1.056); `scan` taken off `MEANING_ONLY` too, which moves 3 of the 11 (`scan-meaning-only`); std's `Scan` calls its closure with the state's `&mut`, a box, so the crate's closure, which takes the state as JS holds it, is given it through an arrow that unboxes it, `(x0, x1) => ((pair) => { .. })(x0.value, x1)`, in two cases | 1,310,967 bytes, the same: std's `Scan` was compiled for the meaning build already | renamed `x$1` 466.9 to 467.2 (the moved files' adapters' temporaries), role fallbacks 253.2, the same | `scan-not-flipped`, `scan-meaning-only` |
 | `copied` | kept, proved equal, not flipped: flipped, 47 snapshots moved, 8,863 to 9,865 lines (×1.113), an identity made std's struct wherever it's held or returned, `iterator_copied($iter(xs), ..)` for `$iter(xs)`, and a `copied()` of the crate's iterator given to a double-ended parameter wrapped twice, thrown (associated_double_ended.rs) | the same | the same | the proof: a copy of a `Copy` item is the item (ADR 0480); copied_kept_as_its_source.rs and the copy matrix's `copied` rows |
+| `cloned` | kept, proved equal, not flipped: flipped, 10 snapshots moved, 1,190 to 1,297 lines (×1.090), in 8 of the 10 an identity made std's struct for `Copy` items, `iterator_cloned($iter(v), { next: $next }, u32Clone)` with `{ clone: (value) => value }`, and each read of it a call with that dictionary, `clonedExactSizeIterator_len(held, .., u32Clone)` for `held.len()`; the copy matrix's 89 `cloned` rows passed flipped | the same | the same: no share grew | the proof: each item cloned as it's stepped, once, from either end, none for what `len()` or a hint counts, as std's `Cloned` calls `Clone`; cloned_kept_as_its_source.rs, an item whose `Clone` prints and counts, from the front and the back, partly stepped and asked its `len()`, `nth`, `count`, and an item with a destructor, each clone dropped where Rust drops it, in both builds and its every metamorphic rewrite, `library`'s too; and the copy matrix's `cloned` rows |
 
 
 ## Amendment: a hand form kept by decision names its proof (2026-11-17)
@@ -628,7 +629,12 @@ A family whose hand form is std's meaning by construction isn't flipped
 where the flip only adds weight: `copied`'s, the iterator it copies, as a
 copy of a `Copy` item is the item (ADR 0480), which the flip made std's
 `Copied` struct wherever it's held or returned, ×1.113 in the 47 cases it
-moved. It stays in `MEANING_ONLY`, and so that the list holds no hand form
+moved. It stays in `MEANING_ONLY`, and `cloned`'s with it: its flip made an
+identity std's `Cloned` struct for `Copy` items in 8 of the 10 cases it
+moved, ×1.090, for no change of meaning, and flipping only where the item
+isn't `Copy` would be a second rule. With these two kept and `fuse` std's
+struct wherever it's made, no adapter family is left to flip; `repeat_n`
+and `cycle`, sources, stay in `MEANING_ONLY` on their way. So that the list holds no hand form
 nobody proved, each entry says why it's there in a comment beside it: on
 its way to being held, of an issue, or kept, proved equal, of an ADR and
 its proof, a test file or the copy matrix's rows, each of which exists.
