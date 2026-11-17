@@ -40,7 +40,7 @@ pub(in crate::lower) fn prototype_defaults(
             continue;
         };
         if let Some(Pattern::Name(receiver)) = (!params.is_empty()).then(|| params.remove(0))
-            && js::read_as_this(&mut body, receiver.word())
+            && js::read_as_this_of(&mut body, &receiver)
         {
             body.insert(0, StmtKind::Const(receiver, Expr::this()).at(js::Span::NONE));
         }

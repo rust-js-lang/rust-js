@@ -703,31 +703,32 @@ fn each_name(stmts: &mut [Stmt], binders_only: bool, change: &mut dyn FnMut(&mut
     });
 }
 
-/// Each read of the variable `name` in `stmts` JS's `this`: in them, and
-/// in each arrow in them, which sees the `this` of the function it's
-/// made in; not in a function made in them, `js::function::with_this`'s,
-/// which JS calls with a `this` of its own, where `name` stays. Whether
-/// one reads it there, so `stmts` must declare it, `const name = this;`
+/// Each read of the variable `name`, by its id (ADR 1150), in `stmts`
+/// JS's `this`: in them, and in each arrow in them, which sees the `this`
+/// of the function it's made in; not in a function made in them,
+/// `js::function::with_this`'s, which JS calls with a `this` of its own,
+/// where `name` stays. Whether one reads it there, so `stmts` must declare
+/// it, `const name = this;`
 /// (ADRs 0761, 0972). Of a body lowered, before preparation makes
 /// methods of arrows (ADR 0882), and where a function declared in it is
 /// a nested `fn`'s, which captures nothing.
-pub fn read_as_this(stmts: &mut [Stmt], name: &str) -> bool {
-    const APART: &str = "\u{0}this";
+pub fn read_as_this_of(stmts: &mut [Stmt], name: &Name) -> bool {
+    let apart = Name::declared(String::from("\u{0}this"));
     let mut nested = false;
     each_expr_mut(stmts, &mut |e| {
         if let ExprKind::Function(function) = &mut e.kind
-            && mentions_in(&function.body, name) > 0
+            && mentions_of(&function.body, name) > 0
         {
             nested = true;
-            renamed(&mut function.body, name, APART);
+            replaced(&mut function.body, name, &apart);
         }
     });
     each_expr_mut(stmts, &mut |e| {
-        if matches!(&e.kind, ExprKind::Var(v) if v.is(name)) {
+        if matches!(&e.kind, ExprKind::Var(v) if v == name) {
             e.kind = ExprKind::This;
         }
     });
-    renamed(stmts, APART, name);
+    replaced(stmts, &apart, name);
     nested
 }
 

@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a method's `self` stays the variable of its parameter, which no one declares, not `this`",
     file: "src/lower/classes/member_functions.rs",
-    find: "    if js::read_as_this(body, receiver.word()) {\n",
+    find: "    if js::read_as_this_of(body, &receiver) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "class_methods"],
   },

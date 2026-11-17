@@ -134,7 +134,7 @@ pub(in crate::lower) fn receiver_as_this(
     params.remove(0);
     // A function nested in it, `js::function::with_this`'s, has a `this`
     // of its own: it reads `self` as the method's, a `const` of it.
-    if js::read_as_this(body, receiver.word()) {
+    if js::read_as_this_of(body, &receiver) {
         body.insert(0, StmtKind::Const(receiver.clone(), Expr::this()).at(js::Span::NONE));
     }
     *booleans = std::mem::take(booleans)
@@ -244,7 +244,7 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
             }
         }
     });
-    if js::read_as_this(body, instance.word()) {
+    if js::read_as_this_of(body, &instance) {
         return Err("a constructor whose instance a function made in it reads, whose `this` is its own");
     }
     Ok(())

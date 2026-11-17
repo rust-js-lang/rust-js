@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait default on a class's prototype reads its `self` as a variable, not `this` (rd283)",
     file: "src/lower/classes/defaults.rs",
-    find: "            && js::read_as_this(&mut body, receiver.word())\n",
+    find: "            && js::read_as_this_of(&mut body, &receiver)\n",
     replace: "            && false\n",
     tests: ["test/classes-traits.test.ts"],
   },
