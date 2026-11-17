@@ -1061,17 +1061,17 @@ pub(super) fn declared_names(stmts: &[Stmt]) -> impl Iterator<Item = &Name> {
 /// once, by the statement after it, and nowhere else: each is read where
 /// it's made, as a `const` read once is (`inlined`, ADR 0564). Optimized
 /// MIR's `bool`s are such, a test made and negated along each path to it.
-pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
-    let mut mentions: IndexMap<String, usize> = IndexMap::default();
-    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
+pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<Name> {
+    let mut mentions: IndexMap<Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *mentions.entry(name.clone()).or_default() += 1);
     let mut lets = IndexSet::default();
-    let mut pairs: IndexMap<String, usize> = IndexMap::default();
+    let mut pairs: IndexMap<Name, usize> = IndexMap::default();
     let mut unpaired = IndexSet::default();
     js::each_list(body, &mut |list| {
         for (k, stmt) in list.iter().enumerate() {
             match &stmt.kind {
                 StmtKind::Let(name, None) if is_temporary(name) => {
-                    lets.insert(name.to_string());
+                    lets.insert(name.clone());
                 }
                 StmtKind::Assign(target, value)
                     if let ExprKind::Var(name) = &target.kind
@@ -1080,9 +1080,9 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
                     let read_next =
                         (list.get(k + 1)).is_some_and(|s| js::mentions_of(std::slice::from_ref(s), name) == 1);
                     match !value.mentions_name(name) && read_next {
-                        true => *pairs.entry(name.to_string()).or_default() += 1,
+                        true => *pairs.entry(name.clone()).or_default() += 1,
                         false => {
-                            unpaired.insert(name.to_string());
+                            unpaired.insert(name.clone());
                         }
                     }
                 }
@@ -1091,12 +1091,8 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
         }
     });
     (lets.into_iter())
-        .filter(|name| !unpaired.contains(name.as_str()))
-        .filter(|name| {
-            pairs
-                .get(name.as_str())
-                .is_some_and(|&n| mentions.get(name.as_str()) == Some(&(2 * n)))
-        })
+        .filter(|name| !unpaired.contains(name))
+        .filter(|name| pairs.get(name).is_some_and(|&n| mentions.get(name) == Some(&(2 * n))))
         .collect()
 }
 

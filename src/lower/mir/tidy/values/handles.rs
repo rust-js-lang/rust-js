@@ -143,7 +143,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
                         && (place.reads_same()
                             || matches!(&place.kind, ExprKind::Index(of, at) if of.reads_same() && at.reads_same())))
             {
-                let at_once = frozen.contains(name) || read_at_once(stmts, k, name.word());
+                let at_once = frozen.contains(name) || read_at_once(stmts, k, name);
                 handles.push((name.clone(), (**place).clone(), at_once, *storage));
             }
         }
@@ -310,10 +310,10 @@ pub(in crate::lower::mir::tidy) fn read_handles(
 
 /// Whether what `stmts[at]` names is last read before anything that could
 /// set a field: no field set nor call made from it to there.
-pub(super) fn read_at_once(stmts: &[Stmt], at: usize, name: &str) -> bool {
+pub(super) fn read_at_once(stmts: &[Stmt], at: usize, name: &js::Name) -> bool {
     let Some(last) = (at + 1..stmts.len())
         .rev()
-        .find(|&k| js::mentions_in(&stmts[k..=k], name) > 0)
+        .find(|&k| js::mentions_of(&stmts[k..=k], name) > 0)
     else {
         return true;
     };

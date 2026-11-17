@@ -147,9 +147,9 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<js::Name>) {
         let ExprKind::Var(a) = &value.kind else {
             continue;
         };
-        let declared = |name: &str, stmts: &[Stmt]| {
+        let declared = |name: &js::Name, stmts: &[Stmt]| {
             let mut n = 0;
-            js::each_declared(stmts, &mut |d| n += usize::from(d == name));
+            js::each_declared_name(stmts, &mut |d| n += usize::from(d == name));
             n
         };
         let own = (stmts[..i].iter()).any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == a));
@@ -159,7 +159,7 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<js::Name>) {
             || is_temporary(b)
             || !own
             || !tests_present(test, a)
-            || declared(b.word(), stmts) != 1
+            || declared(b, stmts) != 1
             || js::mentions_of(stmts, b) != js::mentions_of(then, b)
             || in_closure(&then[1..], b)
         {

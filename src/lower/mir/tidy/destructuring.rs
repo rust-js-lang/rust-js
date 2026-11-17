@@ -785,12 +785,12 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
 /// parameters are variables the body may set. Not a variable the program
 /// names otherwise, `let mut n = from`.
 pub(in crate::lower::mir) fn copied_params(params: &[js::Pattern], body: &mut Vec<Stmt>) {
-    let names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
+    let names: Vec<&js::Name> = params.iter().flat_map(|p| p.bound()).collect();
     while let Some(first) = body.first()
         && let StmtKind::Const(copy, value) | StmtKind::Let(copy, Some(value)) = &first.kind
         && let ExprKind::Var(param) = &value.kind
-        && names.contains(&param.word())
-        && !names.contains(&copy.word())
+        && names.contains(&param)
+        && !names.contains(&copy)
         && param.is_origin_of(copy)
         && js::mentions_of(body, param) == 1
     {
@@ -916,10 +916,10 @@ fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &js::Name, names: &[js::Name]) -> Opt
         {
             let items = items.clone();
             stmts.pop();
-            let reads_in_items = |held: &str| {
+            let reads_in_items = |held: &js::Name| {
                 let mut reads = 0;
                 for item in &items {
-                    item.visit_vars(&mut |v| reads += usize::from(v == held));
+                    item.visit_names(&mut |v| reads += usize::from(v == held));
                 }
                 reads
             };
@@ -930,7 +930,7 @@ fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &js::Name, names: &[js::Name]) -> Opt
                 if let ExprKind::Var(held) = &item.kind
                     && let Some(k) = (stmts.iter()).rposition(|s| matches!(&s.kind, StmtKind::Const(v, _) if v == held))
                     && js::mentions_of(&stmts[k + 1..], held) == 0
-                    && reads_in_items(held.word()) == 1
+                    && reads_in_items(held) == 1
                     && let StmtKind::Const(_, value) = &stmts[k].kind
                 {
                     let span = stmts[k].span;

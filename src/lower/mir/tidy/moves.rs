@@ -21,7 +21,7 @@ pub(super) struct MoveFacts<'a> {
     pub fixed: &'a IndexSet<js::Name>,
     /// The temporaries each of whose values is read once, by the statement
     /// after it (`paired_temporaries`).
-    pub paired: &'a IndexSet<String>,
+    pub paired: &'a IndexSet<js::Name>,
 }
 
 /// A temporary MIR made, `const _5 = e;`, read once, by the statement
@@ -153,7 +153,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         // the statement after it (`paired_temporaries`).
         StmtKind::Assign(target, value)
             if let ExprKind::Var(name) = &target.kind
-                && facts.paired.contains(name.word()) =>
+                && facts.paired.contains(name) =>
         {
             (name, value, true)
         }
@@ -683,7 +683,7 @@ fn receiver_read(stmts: &mut Vec<Stmt>, at: usize, lets: &LetNames) -> bool {
     let Some(StmtKind::Expr(call)) = rest.first_mut().map(|s| &mut s.kind) else {
         return false;
     };
-    if call.own_keyed_method_receiver() != Some(name.word()) || !call.own_method_called(Some(value.clone())) {
+    if call.own_keyed_method_receiver() != Some(name) || !call.own_method_called(Some(value.clone())) {
         return false;
     }
     stmts.remove(at);
@@ -893,7 +893,6 @@ mod tests {
     /// What `moved` says of `body`'s first statement, a temporary, given
     /// nothing in the body changed or set.
     fn decided(body: &[Stmt]) -> Option<Why> {
-        let none = IndexSet::default();
         let no_names: IndexSet<js::Name> = IndexSet::default();
         let no_paths: IndexSet<js::Path> = IndexSet::default();
         let facts = MoveFacts {
@@ -902,7 +901,7 @@ mod tests {
             plain: &no_paths,
             captured: &no_names,
             fixed: &no_names,
-            paired: &none,
+            paired: &no_names,
         };
         moved(&body[0], &body[1..], &facts).map(|(_, why)| why)
     }

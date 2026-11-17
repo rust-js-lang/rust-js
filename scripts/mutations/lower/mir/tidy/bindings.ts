@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary assigned then read once each time stays a `let` assigned and read, `tmp$7 = make(8); tmp$8 = [tmp$6, tmp$7]` (ADR 0564)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                        true => *pairs.entry(name.to_string()).or_default() += 1,\n",
+    find: "                        true => *pairs.entry(name.clone()).or_default() += 1,\n",
     replace: "                        true => {}\n",
     tests: [
       "test/std-package.test.ts",

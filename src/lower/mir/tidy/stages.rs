@@ -1174,9 +1174,11 @@ fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
 /// Each of `body`'s loops of an iterator's steps, a `for` of what it steps
 /// (`loops`), the innermost first.
 fn for_loops(body: &mut Vec<Stmt>, hints: &Hints) {
-    let mut taken = mentions(body);
+    let (mut taken, mut counted) = (mentions(body), counted(body));
     let captured = bindings::captured(body);
-    bottom_up(body, &mut |stmts| loops(stmts, &mut taken, hints.numbers, &captured));
+    bottom_up(body, &mut |stmts| {
+        loops(stmts, (&mut taken, &mut counted), hints.numbers, &captured)
+    });
     loop_bound_lets(body);
 }
 
@@ -1185,11 +1187,13 @@ fn for_loops(body: &mut Vec<Stmt>, hints: &Hints) {
 /// `loops` makes one; whether it made any.
 fn looped_drops_of_made(body: &mut Vec<Stmt>, hints: &Hints, for_made: bool) -> bool {
     let mut looped = false;
-    let mut taken = mentions(body);
+    let (mut taken, mut counted) = (mentions(body), counted(body));
     let captured = bindings::captured(body);
     let mut tidied = |run: &mut Vec<Stmt>| {
         bindings::declarations(run);
-        bottom_up(run, &mut |stmts| loops(stmts, &mut taken, hints.numbers, &captured));
+        bottom_up(run, &mut |stmts| {
+            loops(stmts, (&mut taken, &mut counted), hints.numbers, &captured)
+        });
     };
     js::statement_lists(body, &mut |stmts| {
         looped |= unwinds::looped_drops(stmts, for_made, &mut tidied)
@@ -1238,6 +1242,14 @@ fn mentions(body: &[Stmt]) -> IndexMap<String, usize> {
     let mut mentions: IndexMap<String, usize> = IndexMap::default();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     mentions
+}
+
+/// How often `body` mentions each variable, by its id: what `loops` asks of
+/// an iterator, where `mentions`' words are what it picks a counter's from.
+fn counted(body: &[Stmt]) -> IndexMap<js::Name, usize> {
+    let mut counted: IndexMap<js::Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *counted.entry(name.clone()).or_default() += 1);
+    counted
 }
 
 /// Each `if` the program wrote with an `else` but a `match` of constants,

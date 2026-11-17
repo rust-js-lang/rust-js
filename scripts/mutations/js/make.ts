@@ -506,8 +506,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a method held in a variable before an argument's statements, `handleEvent.call(listener, sum)`, is called alone, `handleEvent(sum)`, its `this` none (rd334)",
     file: "src/js/make.rs",
-    find: "        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {\n            return None;\n        };\n        match (&of.kind, args.first().map(|this| &this.kind)) {\n            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value.word()),\n",
-    replace: "        match (&method.kind, args.first().map(|this| &this.kind)) {\n            (_, Some(ExprKind::Var(this))) if name == \"call\" => Some(this.word()),\n",
+    find: "        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {\n            return None;\n        };\n        match (&of.kind, args.first().map(|this| &this.kind)) {\n            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
+    replace: "        match (&method.kind, args.first().map(|this| &this.kind)) {\n            (_, Some(ExprKind::Var(this))) if name == \"call\" => Some(this),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
   },
   {
@@ -515,7 +515,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a method read of a variable before it's set again, `element$.focus.call(element)`, is called of the one read, its `this` the old value (rd334)",
     file: "src/js/make.rs",
-    find: "            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value.word()),\n",
+    find: "            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
     replace: "            (ExprKind::Var(value), Some(ExprKind::Var(_))) if name == \"call\" => Some(value.word()),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
   },

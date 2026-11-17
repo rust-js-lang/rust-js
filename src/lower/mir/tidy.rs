@@ -1050,9 +1050,8 @@ mod tests {
         body.extend(pair("a", "f"));
         body.extend(pair("b", "g"));
         let paired = paired_temporaries(&body);
-        assert_eq!(paired, [t5.to_string(), t6.to_string()].into());
+        assert_eq!(paired, IndexSet::from_iter([t5.clone(), t6.clone()]));
         let changing: IndexSet<js::Name> = IndexSet::from_iter([t5.clone(), t6.clone()]);
-        let none = IndexSet::default();
         let no_names: IndexSet<js::Name> = IndexSet::default();
         let no_paths: IndexSet<js::Path> = IndexSet::default();
         let facts = MoveFacts {
@@ -1060,7 +1059,7 @@ mod tests {
             set: &no_names,
             plain: &no_paths,
             captured: &no_names,
-            fixed: &none,
+            fixed: &no_names,
             paired: &paired,
         };
         inlined(&mut body, &facts);

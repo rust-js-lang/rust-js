@@ -80,7 +80,7 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
                 .count();
         });
         let mut rest = Some(rest);
-        if named != 1 || !placed(case, inner.word(), &outer, &mut rest) {
+        if named != 1 || !placed(case, &inner, &outer, &mut rest) {
             continue;
         }
         // The block, then its `break outer`, which its end does.
@@ -99,8 +99,8 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
 /// `if` in it, not in a loop, where a `continue` of no label in `rest`
 /// would be the loop's; then the `break outer` that ends the block it
 /// leaves where `rest` goes on. Whether it was.
-fn placed(case: &mut Vec<Stmt>, inner: &str, outer: &js::Name, rest: &mut Option<Vec<Stmt>>) -> bool {
-    if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(inner))
+fn placed(case: &mut Vec<Stmt>, inner: &js::Name, outer: &js::Name, rest: &mut Option<Vec<Stmt>>) -> bool {
+    if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == inner)
         && let Some(rest) = rest.take()
     {
         case.pop();

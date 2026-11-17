@@ -13,7 +13,7 @@ use crate::js::Name;
 /// body; break; } exit`, its body going on to the exit where it ends.
 pub(super) fn loops(
     stmts: &mut Vec<Stmt>,
-    mentions: &mut IndexMap<String, usize>,
+    (mentions, by_id): (&mut IndexMap<String, usize>, &mut IndexMap<js::Name, usize>),
     numbers: &IndexSet<js::Name>,
     captured: &IndexSet<js::Name>,
 ) {
@@ -21,13 +21,17 @@ pub(super) fn loops(
     while i + 1 < stmts.len() {
         // A range whose end is held first, in a `try` of its own: its
         // statements before the loop's.
-        let held = held_end(&stmts[i], mentions, captured)
-            .and_then(|(held, range)| Some((held, for_of(&range, &stmts[i + 1], &stmts[i + 2..], mentions, numbers)?)));
+        let held = held_end(&stmts[i], mentions, captured).and_then(|(held, range)| {
+            Some((
+                held,
+                for_of(&range, &stmts[i + 1], &stmts[i + 2..], (mentions, by_id), numbers)?,
+            ))
+        });
         let (held, made) = match held {
             Some((held, made)) => (held, Some(made)),
             None => (
                 Vec::new(),
-                for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], mentions, numbers),
+                for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], (mentions, by_id), numbers),
             ),
         };
         if let Some(made) = made {
@@ -36,9 +40,10 @@ pub(super) fn loops(
             // loop over one, scoped to its loop (ADR 1042).
             for stmt in held.iter().chain(&made) {
                 if let StmtKind::Let(name, _) | StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind
-                    && !counts(std::slice::from_ref(stmt), name.word())
+                    && !counts_by(std::slice::from_ref(stmt), &|n| n == name)
                 {
                     *mentions.entry(name.to_string()).or_default() += 1;
+                    *by_id.entry(name.clone()).or_default() += 1;
                 }
             }
             let count = held.len();
@@ -158,14 +163,14 @@ pub(super) fn for_of(
     made: &Stmt,
     looped: &Stmt,
     after: &[Stmt],
-    mentions: &IndexMap<String, usize>,
+    (mentions, by_id): (&IndexMap<String, usize>, &IndexMap<js::Name, usize>),
     numbers: &IndexSet<js::Name>,
 ) -> Option<Vec<Stmt>> {
     let (iter, source) = match &made.kind {
         StmtKind::Const(iter, source) => (iter, source),
         StmtKind::Assign(target, source)
             if let ExprKind::Var(iter) = &target.kind
-                && mentions.get(iter.word()) == Some(&2) =>
+                && by_id.get(iter) == Some(&2) =>
         {
             (iter, source)
         }
@@ -624,6 +629,17 @@ fn item_at(span: js::Span) -> js::Span {
 /// whose counter nothing else reads, as clippy's `needless_range_loop` has
 /// no program write it.
 fn counts(stmts: &[Stmt], name: &str) -> bool {
+    counts_by(stmts, &|n| n.is(name))
+}
+
+/// `counts` of the variable `is` says, by its `Name`: of a counter a
+/// loop's `made` declares, its id.
+fn counts_by(stmts: &[Stmt], is: &dyn Fn(&js::Name) -> bool) -> bool {
+    let mentioned = |e: &Expr| {
+        let mut found = false;
+        e.visit_names(&mut |v| found |= is(v));
+        found
+    };
     let mut found = false;
     js::each_list(stmts, &mut |list| {
         found |= list.iter().any(|s| match &s.kind {
@@ -634,8 +650,8 @@ fn counts(stmts: &[Stmt], name: &str) -> bool {
                 step: js::Step::Up,
                 body,
                 ..
-            } if n.is(name) && !start.mentions_var(name) => {
-                let read = |e: &Expr| matches!(&e.kind, ExprKind::Index(_, at) if matches!(&at.kind, ExprKind::Var(v) if v.is(name)));
+            } if is(n) && !mentioned(start) => {
+                let read = |e: &Expr| matches!(&e.kind, ExprKind::Index(_, at) if matches!(&at.kind, ExprKind::Var(v) if is(v)));
                 let bound = match body.first().map(|s| &s.kind) {
                     Some(StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Destructure { value: e, .. }) => {
                         read(e)
@@ -643,9 +659,13 @@ fn counts(stmts: &[Stmt], name: &str) -> bool {
                     _ => false,
                 };
                 matches!(&test.kind, ExprKind::Binary(Op::Lt, counter, end)
-                    if matches!(&counter.kind, ExprKind::Var(v) if v.is(name)) && !end.mentions_var(name))
+                    if matches!(&counter.kind, ExprKind::Var(v) if is(v)) && !mentioned(end))
                     && bound
-                    && js::mentions_in(&body[1..], name) == 0
+                    && {
+                        let mut reads = 0;
+                        js::visit_stmt_names(&body[1..], &mut |v| reads += usize::from(is(v)));
+                        reads == 0
+                    }
             }
             _ => false,
         });
@@ -736,9 +756,9 @@ fn from_the_end(
     if mutable || !number(range.start, numbers) || !number(range.end, numbers) || !same {
         return None;
     }
-    let name = match name.word() {
-        "_" => fresh("i"),
-        _ => name.clone(),
+    let name = match name.is_unread() {
+        true => fresh("i"),
+        false => name.clone(),
     };
     let start = match (range.inclusive, range.end.as_int()) {
         (true, _) => range.end.clone(),

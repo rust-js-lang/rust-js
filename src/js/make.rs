@@ -1069,7 +1069,7 @@ impl Expr {
     /// (`Known::OwnMethodCall`): what `own_method_call` writes as the
     /// method's call. Of `f` held in a variable, or read of another value,
     /// none.
-    fn own_method_receiver(&self) -> Option<&str> {
+    fn own_method_receiver(&self) -> Option<&Name> {
         if !self.facts.has(Known::OwnMethodCall) {
             return None;
         }
@@ -1083,7 +1083,7 @@ impl Expr {
             return None;
         };
         match (&of.kind, args.first().map(|this| &this.kind)) {
-            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == "call" && value == this => Some(value.word()),
+            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == "call" && value == this => Some(value),
             _ => None,
         }
     }
@@ -1092,7 +1092,7 @@ impl Expr {
     /// key names (`Known::KeyedMethod`), `js::method((value, key))`'s: the
     /// variable alone the receiver of a call that only rd334's form, which
     /// names it twice, writes (rd226b).
-    pub fn own_keyed_method_receiver(&self) -> Option<&str> {
+    pub fn own_keyed_method_receiver(&self) -> Option<&Name> {
         let ExprKind::Call(callee, _) = &self.kind else {
             return None;
         };

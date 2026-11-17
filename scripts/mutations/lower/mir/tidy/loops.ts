@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop inside another, whose iterator is a `let` assigned each time, stays `while (true)` stepping it",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "                && mentions.get(iter.word()) == Some(&2) =>\n",
+    find: "                && by_id.get(iter) == Some(&2) =>\n",
     replace: "                && mentions.get(iter.word()) == Some(&99) =>\n",
     tests: [
       "test/lowering-loops.test.ts",
@@ -140,8 +140,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unread-count-underscore",
     breaks: "MIR's range count the body doesn't read is `_`, `_++`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    let name = match name.is_unread() {\n",
-    replace: "    let name = match name.is_unread() && false {\n",
+    find: "    let name = match name.is_unread() {\n        true => js::Name::declared(\n",
+    replace: "    let name = match name.is_unread() && false {\n        true => js::Name::declared(\n",
     tests: ["test/lowering-loops.test.ts", "-t", "an unread count of a range"],
   },
   {
@@ -662,7 +662,7 @@ export const mutations: Mutation[] = [
     name: "counted-loop-counter-taken",
     breaks: "a loop over an array after another counts with `j`, as if the other's `i`, scoped to its loop, were the function's (ADR 1042)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "                    && !counts(std::slice::from_ref(stmt), name.word())\n",
+    find: "                    && !counts_by(std::slice::from_ref(stmt), &|n| n == name)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
     snapshots: true,
@@ -687,8 +687,8 @@ export const mutations: Mutation[] = [
     name: "indexed-range-siblings-apart",
     breaks: "sibling loops over ranges of a slice count with `k`, `j` and `i`, not each `i` (rd376)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            } if n.is(name) && !start.mentions_var(name) => {\n",
-    replace: "            } if n.is(name) && start.as_int() == Some(0) => {\n",
+    find: "            } if is(n) && !mentioned(start) => {\n",
+    replace: "            } if is(n) && start.as_int() == Some(0) => {\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
   },
   {

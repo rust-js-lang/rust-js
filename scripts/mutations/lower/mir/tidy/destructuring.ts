@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a part held once and given twice, `(n, n)`, is moved to the first's assignment, so the second reads a `const` that's gone (a wrong answer, rd524)",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "                    && reads_in_items(held.word()) == 1\n",
+    find: "                    && reads_in_items(held) == 1\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^tuple_of_taken_parts.rs$"],
   },
