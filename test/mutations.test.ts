@@ -262,6 +262,16 @@ test("a mutation's tests hold one `-t`, the one `bun test` reads", () => {
   expect(twice).toEqual([]);
 });
 
+// A matrix's rows a mutation runs are named by a pattern of their ids,
+// `ITERATOR_MATRIX=/ \| copied \| (clone|dup) \| len$/`, never by an
+// issue's known rows, `#1983`: the issue's fix takes them from the known
+// list, and the mutation's control then finds no case and fails, as
+// `copy-matrix-clones-nothing`'s did, main's mutation job red (41d89f84f).
+test("a mutation runs a matrix's rows by a pattern of their ids, not by an issue's", () => {
+  const byIssue = mutations.filter((m) => /^#/.test(m.env?.ITERATOR_MATRIX ?? "")).map((m) => `${m.name}: ITERATOR_MATRIX=${m.env!.ITERATOR_MATRIX}, name its rows by a pattern of their ids, /<regex>/`);
+  expect(byIssue).toEqual([]);
+});
+
 // A mutation of the crate is retired with `--retire`'s evidence (ADR 0093,
 // amended): twice in a day one was called unreachable after its own rows
 // alone ran, and the second's removal failed 8 corpus cases. Each commit
