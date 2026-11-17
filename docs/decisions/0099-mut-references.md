@@ -837,3 +837,30 @@ caught, and `passed-on-receiver-not-read-through` and
 `shared-receiver-passed-through-a-cell` retargeted, caught. Generic code
 given the crate's own `&mut Tally` hasher, `"text".hash(&mut t)`, is still
 refused (#1730).
+
+## Amendment: a `&self` method through a `&mut` to a `Box` of an object (2026-11-18, #2037)
+
+`finish()` of a `r: &mut Box<DefaultHasher>`, a local's `&mut` or a
+parameter's, finds std's `impl Hasher for &mut H` of `H` the box, of
+`&self`. The pass-through (#1709) took it only where the `&mut W` reads as
+`W` itself, and a `&mut` to a `Box` of a hasher is a cell of the box
+(`MutRefForm::Box`), so it was refused, naming #2037 since #1493.
+
+#1724's test already takes a cell where the `W` its place holds is never
+a copy: a reference, whose `&W` is the `W` itself, read once more through
+`lent_by`. A `Box` whose `&mut` to what it holds reads as that itself, an
+object's, is the same: in JS the box is the object, so the place's `*r`
+is the hasher, never a copy. `passed_through`'s `deepest` takes it, and
+std's `Box<H>` then passes the call on to `H`'s own (`passed_through_box`,
+ADR 0463, amended). A `Box` of what a `&mut` holds in a cell, a number's,
+isn't read through.
+
+Case C of ADR 0262: results change. Corpus case
+`hasher_written_through_a_box` gains `r.finish()` of a local's `&mut`, a
+`&mut Box<DefaultHasher>` parameter's, and the crate's own `Tally` in a
+`Box`, whose `finish` reads the sum and count written through the `&mut`,
+`6002`, then `15003` through a parameter and after it, which a copy would
+have left at `0`. It runs against native in both builds.
+`hasher_finished_through_a_mut_box_refused` goes, as does the refusal and
+its mutation `box-hasher-mut-finish-unnamed`. Mutation
+`box-hasher-shared-not-read-through` is new, and caught.

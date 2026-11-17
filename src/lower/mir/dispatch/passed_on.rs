@@ -28,8 +28,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `&mut W` reads as `W` itself, an object's, not a number's cell
         // (#1709), or, where `W` is a reference, the crate's own `impl
         // Hasher for &mut Tally`'s, the `W` its place holds, whose `&W` is
-        // the `W` itself, never a copy (#1724). Each `&mut` before it is
-        // read through as a place is.
+        // the `W` itself, never a copy (#1724), or a `Box` of a hasher
+        // whose `&mut` is the hasher itself, `r.finish()` of a `r: &mut
+        // Box<DefaultHasher>`, a cell of the box: the box its place holds is
+        // the hasher, never a copy, whose `&self` method std's `Box<H>` passes
+        // on (`passed_through_box`, #2037). Each `&mut` before it is read
+        // through as a place is.
         let mut levels = Vec::new();
         let mut at = generic_args;
         while let Some((inner, shared)) = self.recognition().passed_through_mut_ref(def_id, at) {
@@ -40,7 +44,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let w = inner.type_at(0);
             match !shared || self.mut_ref_form(w).read_is_itself() {
                 true => Some((k, inner, false)),
-                false => w.is_ref().then_some((k, inner, true)),
+                false => (w.is_ref()
+                    || w.boxed_ty()
+                        .is_some_and(|held| self.mut_ref_form(held).read_is_itself()))
+                .then_some((k, inner, true)),
             }
         });
         let Some((k, inner, holds)) = deepest else {
@@ -75,10 +82,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is a cell of the box, its receiver, of `values`, read through,
     /// `dest_place`'s, `b` of `&mut b`, where a `&mut H` is the hasher
     /// itself (#1493). `None` where a `&mut I` is a cell, and of another
-    /// call; refused, naming #2037, of a hasher's method still of a `&mut
-    /// Box<H>`, `r.finish()` of a `r = &mut b`, `&self`'s, which the `&mut`'s
-    /// pass-through (`passed_through`) takes only where the `&mut` reads as
-    /// the box itself.
+    /// call.
     pub(super) fn passed_through_box(
         &mut self,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
@@ -87,22 +91,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<ty::GenericArgsRef<'tcx>>> {
         let Some(args) = self.recognition().passed_through_box(def_id, generic_args) else {
-            if let Some(trait_id) = self.tcx.trait_of_assoc(def_id)
-                && crate::lower::recognition::is_hasher(self.tcx, trait_id)
-                && let Some(&ty::Ref(_, boxed, ty::Mutability::Mut)) = generic_args.types().next().map(|t| t.kind())
-                && boxed.is_box()
-            {
-                let what = format!(
-                    "`{}` of a `&mut` to a `Box` of a hasher (#2037)",
-                    self.tcx.item_name(def_id)
-                );
-                let why = "the `&mut` is a cell of the box, not the hasher: call it of the box, `(**r).finish()`";
-                return Err(crate::lower::refusal::refuse(
-                    self.tcx,
-                    span,
-                    crate::lower::refusal::Refused::Because(&what, why),
-                ));
-            }
             return Ok(None);
         };
         let Some(receiver_ty) = arg_tys.first_mut() else {

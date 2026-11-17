@@ -200,7 +200,6 @@ impls write them, a crate's own `Hash` inside called as std calls it (ADR
 
 - A `BuildHasher` method generic code calls of its type parameter (#1482): `fn h<S: std::hash::BuildHasher>(s: &S) -> u64 { s.hash_one(5u32) } println!("{}", h(&std::hash::RandomState::new()));`
 - `{:?}` of a std hasher: `println!("{:?}", std::hash::DefaultHasher::new());`
-- `finish()`, or another `&self` method, of a `&mut` to a `Box` of a std hasher, a local's or a parameter's (#2037); of the box itself, `b.finish()`, it compiles, as each write through the `&mut` does: `use std::hash::Hasher; let mut b = Box::new(std::hash::DefaultHasher::new()); let r = &mut b; r.write_u8(1); println!("{}", r.finish() != 0);`
 
 ## Panics, processes and I/O
 

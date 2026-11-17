@@ -39,8 +39,8 @@ export const mutations: Mutation[] = [
     name: "reference-w-not-passed-on",
     breaks: "`finish()` of a `&mut &mut Tally`, whose `&mut Tally` has the crate's own `Hasher`, isn't passed on to that impl, and is refused (#1724)",
     file: "src/lower/mir/dispatch/passed_on.rs",
-    find: "                false => w.is_ref().then_some((k, inner, true)),\n",
-    replace: "                false => None,\n",
+    find: "                false => (w.is_ref()\n",
+    replace: "                false => (false\n",
     tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_a_mut_of_its_mut.rs$"],
   },
   {
@@ -68,11 +68,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^hasher_written_through_a_box.rs$"],
   },
   {
-    name: "box-hasher-mut-finish-unnamed",
-    breaks: "`finish()` of a `&mut Box<H>` of a hasher, whose `&mut` is a cell, is refused as any call is, naming no issue, not #2037",
+    name: "box-hasher-shared-not-read-through",
+    breaks: "`finish()` of a `&mut Box<H>` of a hasher, `&self`'s through a `&mut` that's a cell of the box, isn't passed on to `H`'s, so it's refused where native Rust finishes the hash (#2037)",
     file: "src/lower/mir/dispatch/passed_on.rs",
-    find: "                && boxed.is_box()\n",
-    replace: "                && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_a_mut_box_refused.rs$"],
+    find: "                    || w.boxed_ty()\n",
+    replace: "                    || false && w.boxed_ty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_written_through_a_box.rs$"],
   },
 ];

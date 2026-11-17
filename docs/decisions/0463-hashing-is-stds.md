@@ -405,7 +405,8 @@ Still refused, naming #2037: a `&self` method, `finish()`, through a
 `&mut Box<H>` whose `&mut` is a cell, `let r = &mut b; r.finish()` or a
 `&mut Box<DefaultHasher>` parameter's. That call is std's `impl Hasher
 for &mut H`'s, whose pass-through takes `&self` only where the `&mut`
-reads as `H` itself (#1709).
+reads as `H` itself (#1709). Since taken, the box the `&mut` holds being
+the hasher, never a copy (ADR 0099, amended, #2037).
 
 Case C of ADR 0262: results change, so the hasher's own writes are kept.
 Corpus case `hasher_written_through_a_box` writes each method std forwards
