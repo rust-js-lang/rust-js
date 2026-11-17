@@ -737,7 +737,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = self.fresh(Base::Named(&format!(
                     "{}{}",
                     drop_word(self.tcx, declared),
-                    fact.word()
+                    fact.text()
                 )));
                 if !(self.given.type_facts.iter()).any(|&(at, given, _)| at == of && given == fact) {
                     self.given.type_facts.push((of, fact, Expr::var(&name)));

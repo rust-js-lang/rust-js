@@ -484,7 +484,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Slot::Fact(index, fact) => {
                     let of = drop_slot(self.tcx, self.slots(), id, index);
-                    let name = self.fresh(Base::Named(&format!("{}{}", drop_word(self.tcx, of), fact.word())));
+                    let name = self.fresh(Base::Named(&format!("{}{}", drop_word(self.tcx, of), fact.text())));
                     self.given.type_facts.push((of, fact, Expr::var(&name)));
                     name
                 }

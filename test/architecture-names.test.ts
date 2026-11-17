@@ -211,8 +211,13 @@ test("a name's word is read outside preparation and printing only as the ratchet
   );
   const outside = (file: string) => !file.startsWith("src/prepare/") && file !== "src/prepare.rs"
     && !file.startsWith("src/to_oxc") && file !== "src/js/name.rs" && file !== "src/js/scopes.rs";
+  // A line that says why it reads one, `// word: <reason>`, a name JS
+  // sees as it's written, isn't counted: the one form an exemption has.
+  const reads = (text: string) =>
+    text.split("\n").filter((line) => !line.includes("// word: "))
+      .reduce((n, line) => n + (line.match(/\.(?:into_)?word\(\)/g) ?? []).length, 0);
   const counted = sources.filter(outside)
-    .map((file) => [file, (read(file).match(/\.(?:into_)?word\(\)/g) ?? []).length] as const)
+    .map((file) => [file, reads(read(file))] as const)
     .filter(([, n]) => n > 0);
   expect(counted.filter(([file, n]) => n > (allowed[file] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${allowed[file] ?? 0}`)).toEqual([]);
 });

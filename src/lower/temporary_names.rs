@@ -166,7 +166,7 @@ impl Role {
     }
 
     /// The word a name of this role is.
-    pub(in crate::lower) fn word(self) -> &'static str {
+    pub(in crate::lower) fn text(self) -> &'static str {
         match self {
             Role::A => "a",
             Role::AKey => "aKey",
@@ -381,11 +381,11 @@ impl Base<'_> {
     }
 
     /// The name it's made of, before it's given apart.
-    pub(in crate::lower) fn word(&self) -> std::borrow::Cow<'_, str> {
+    pub(in crate::lower) fn text(&self) -> std::borrow::Cow<'_, str> {
         match *self {
-            Base::Role(role) => role.word().into(),
-            Base::Numbered(role, i) => format!("{}{i}", role.word()).into(),
-            Base::Prefixed(role, name) => format!("{}{name}", role.word()).into(),
+            Base::Role(role) => role.text().into(),
+            Base::Numbered(role, i) => format!("{}{i}", role.text()).into(),
+            Base::Prefixed(role, name) => format!("{}{name}", role.text()).into(),
             Base::Suffixed(..) => unreachable!("made unspelled, by `FnCx::fresh`"),
             Base::Named(name) | Base::Program(name, _) => name.into(),
             Base::Derived(source) => source.word().into(),
@@ -406,7 +406,7 @@ pub(in crate::lower) fn pick(
 ) -> String {
     let base = (suggestions.into_iter())
         .find(|name| !taken.contains(name))
-        .unwrap_or_else(|| role.word().to_string());
+        .unwrap_or_else(|| role.text().to_string());
     crate::names::fresh_in(taken, &base)
 }
 

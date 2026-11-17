@@ -201,7 +201,7 @@ pub(in crate::lower) fn drop_carried_impl_trait(tcx: TyCtxt<'_>, item: DefId) ->
 /// The key a dictionary has a fact of its associated type `item` under,
 /// `ItemSize` (ADR 0145), `hiddenConstSize` of `hidden`'s `impl Trait`.
 pub(in crate::lower) fn item_fact_key(tcx: TyCtxt<'_>, item: DefId, fact: TypeFact) -> String {
-    format!("{}{}", item_word(tcx, item), fact.word())
+    format!("{}{}", item_word(tcx, item), fact.text())
 }
 
 /// The key of a fact a trait's dictionary carries of an associated type of

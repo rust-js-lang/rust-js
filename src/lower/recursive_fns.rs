@@ -398,7 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .chain(self.module_fn_names())
             .collect();
         let names = self.names.replace(names);
-        let params: Vec<js::Name> = params.iter().map(|p| self.unspelled(&p.word())).collect();
+        let params: Vec<js::Name> = params.iter().map(|p| self.unspelled(&p.text())).collect();
         let uses = self.dependencies.replace(Dependencies::default());
         let given = self.set_given_aside();
         let mut body = Vec::new();

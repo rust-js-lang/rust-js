@@ -106,7 +106,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
         {
             given
                 .entry(v.to_string())
-                .or_insert_with(|| Role::Receiver.word().to_string());
+                .or_insert_with(|| Role::Receiver.text().to_string());
         }
         if let ExprKind::Jsx(jsx) = &e.kind {
             for prop in &jsx.props {
@@ -124,7 +124,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 {
                     given
                         .entry(v.to_string())
-                        .or_insert_with(|| Role::Children.word().to_string());
+                        .or_insert_with(|| Role::Children.text().to_string());
                 }
             }
         }

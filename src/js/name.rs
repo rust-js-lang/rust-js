@@ -267,6 +267,12 @@ impl Name {
         Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
     }
 
+    /// Its word taken in `taken`, a naming table's words: whether it wasn't
+    /// yet (`FnCx::unspelled_as`, tidy's flags).
+    pub fn reserve_in(&self, taken: &mut crate::collections::IndexSet<String>) -> bool {
+        taken.insert(self.0.clone())
+    }
+
     /// A name of its word not spelled yet, the `k`th, `Count#3`: a function
     /// written in an expression, named in itself alone, which preparation
     /// spells apart from what its scope reads, `Count$1` where its body

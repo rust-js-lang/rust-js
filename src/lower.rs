@@ -645,7 +645,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => {}
         }
-        let word = base.word();
+        let word = base.text();
         let name = base.name(fresh_in(&mut self.names.borrow_mut(), &word));
         // The first of its base, or given apart from that one, of it.
         let mut first_of = self.first_of.borrow_mut();
@@ -678,10 +678,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// yet: an unspelled name (`unspelled`), or a holder's (`derived`).
     fn unspelled_as(&self, made: impl Fn(usize) -> js::Name) -> js::Name {
         let mut names = self.names.borrow_mut();
-        (1..)
-            .map(made)
-            .find(|name| names.insert(name.word().to_string()))
-            .unwrap()
+        (1..).map(made).find(|name| name.reserve_in(&mut names)).unwrap()
     }
 
     /// A `catch`'s parameter each time it's asked, of the item's names,
@@ -1097,7 +1094,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let name = match base {
             // A holder's, and a held argument's, of their form (ADR 1150).
             Base::Derived(_) | Base::HeldArg | Base::Suffixed(..) => self.fresh(base),
-            _ => self.fresh(Base::Named(&unhyphenated(&base.word()))),
+            _ => self.fresh(Base::Named(&unhyphenated(&base.text()))),
         };
         // Of a role's, named again by tidy once the code is placed (#890).
         if let Base::Role(role) = base {

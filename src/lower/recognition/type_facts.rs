@@ -180,13 +180,13 @@ impl TypeFact {
     pub(crate) fn key(self) -> &'static str {
         match self {
             TypeFact::Room => "RoomSize",
-            _ => self.word(),
+            _ => self.text(),
         }
     }
 
     /// Its name in JS, after its type's, `TSize`: `Room`'s is `Size`'s, so
     /// a slot is never asked both (`settle_room`).
-    pub(crate) fn word(self) -> &'static str {
+    pub(crate) fn text(self) -> &'static str {
         match self {
             TypeFact::Size | TypeFact::Room => "Size",
             TypeFact::Align => "Align",

@@ -116,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Err(self.unsupported(span, "a trait default's type parameter's fact here"));
             }
-            let name = self.fresh(Base::Named(&format!("{}{}", drop_word(self.tcx, of), fact.word())));
+            let name = self.fresh(Base::Named(&format!("{}{}", drop_word(self.tcx, of), fact.text())));
             facts.push((of, fact, Expr::var(&name)));
             // And in the impl's terms, as the body asks: `T::Item` of the
             // trait's `Self::Item`.

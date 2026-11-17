@@ -761,7 +761,7 @@ pub fn lower_crate<'tcx>(
                 };
                 for stmt in body {
                     if let StmtKind::Const(name, value) = stmt.kind {
-                        consts.push(constant(name.into_word(), value, false));
+                        consts.push(constant(name.into_word(), value, false)); // word: the module's constant, its word its identity
                     }
                 }
                 consts.push(constant(fns[&def_id].name.clone(), object, export));
@@ -863,7 +863,7 @@ pub fn lower_crate<'tcx>(
                                 ..super::classes::js_class(tcx, def_id, &import_names[&module])
                             });
                             let forwarding = forwarding_prototypes.contains(&def_id);
-                            super::classes::place((member, forwarding), class, lowered.function.name.word());
+                            super::classes::place((member, forwarding), class, lowered.function.name.word()); // word: the method's JS name, as the class shows it
                         }
                         namespace.methods.push(lowered.function);
                         namespace.methods.extend(copies);

@@ -12,7 +12,7 @@ src/js/pattern.rs	1
 src/js/stmt_walk.rs	9
 src/js/storage.rs	1
 src/js/validate.rs	2
-src/lower.rs	4
+src/lower.rs	1
 src/lower/binding_calls.rs	1
 src/lower/calls.rs	1
 src/lower/classes/defaults.rs	1
@@ -21,7 +21,6 @@ src/lower/classes/prototypes.rs	1
 src/lower/classes/states.rs	1
 src/lower/drops.rs	2
 src/lower/drops/inlined.rs	9
-src/lower/items.rs	1
 src/lower/iterators.rs	1
 src/lower/iterators/eager.rs	3
 src/lower/iterators/in_place.rs	1
@@ -40,7 +39,7 @@ src/lower/mir/scopes.rs	4
 src/lower/mir/std_calls/fmt_parts.rs	1
 src/lower/mir/temporaries.rs	4
 src/lower/mir/tidy/bindings.rs	15
-src/lower/mir/tidy/bindings/temporaries.rs	6
+src/lower/mir/tidy/bindings/temporaries.rs	4
 src/lower/mir/tidy/branches.rs	2
 src/lower/mir/tidy/case_rests.rs	1
 src/lower/mir/tidy/copied.rs	1
@@ -48,7 +47,6 @@ src/lower/mir/tidy/decisions.rs	1
 src/lower/mir/tidy/decisions/defaults.rs	3
 src/lower/mir/tidy/decisions/guarded.rs	6
 src/lower/mir/tidy/destructuring.rs	3
-src/lower/mir/tidy/flags.rs	1
 src/lower/mir/tidy/jumps/continues.rs	3
 src/lower/mir/tidy/jumps/labels.rs	6
 src/lower/mir/tidy/jumps/tails.rs	1
@@ -63,21 +61,12 @@ src/lower/mir/tidy/switches.rs	2
 src/lower/mir/tidy/values.rs	2
 src/lower/mir/tidy/values/handles.rs	1
 src/lower/mir/writer.rs	1
-src/lower/pipeline.rs	2
 src/lower/pipeline/load_cycles.rs	1
 src/lower/pipeline/variables.rs	2
-src/lower/recognition/type_facts.rs	1
-src/lower/recursive_fns.rs	1
 src/lower/std_impls/clones.rs	1
 src/lower/std_types/cell/variables.rs	5
 src/lower/std_types/map.rs	1
 src/lower/std_types/option.rs	1
-src/lower/temporary_names.rs	5
-src/lower/traits/dictionaries.rs	1
-src/lower/traits/dictionaries/collecting.rs	1
+src/lower/temporary_names.rs	1
 src/lower/traits/dictionaries/declared.rs	3
-src/lower/traits/given.rs	1
-src/lower/traits/impls.rs	1
-src/lower/traits/impls/defaults.rs	1
-src/lower/traits/words.rs	1
 src/lower/untagged/field_reads.rs	1

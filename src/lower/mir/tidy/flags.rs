@@ -68,7 +68,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
             continue;
         };
         let to = flag.suffixed_again(&dropped, &taken);
-        taken.insert(to.word().to_string());
+        to.reserve_in(&mut taken);
         js::statement_lists(body, &mut |list| {
             for stmt in list.iter_mut() {
                 if let StmtKind::Let(name, _) = &mut stmt.kind

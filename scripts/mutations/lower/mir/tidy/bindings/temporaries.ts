@@ -52,8 +52,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's trait object a method is called on is named `value`, not `receiver`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                .or_insert_with(|| Role::Receiver.word().to_string());\n",
-    replace: "                .or_insert_with(|| Role::Value.word().to_string());\n",
+    find: "                .or_insert_with(|| Role::Receiver.text().to_string());\n",
+    replace: "                .or_insert_with(|| Role::Value.text().to_string());\n",
     tests: ["test/traits.test.ts", "-t", "MIR dictionaries are explicit"],
   },
   {

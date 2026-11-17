@@ -684,7 +684,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let given = *input;
         let input = input.peel_refs();
-        let name = js::Name::declared(self.parameter_name(input).word().to_string());
+        let name = js::Name::declared(self.parameter_name(input).text().to_string());
         let x = Expr::var(&name);
         let body = match known {
             Std::Trim { start, end } => self.trimmed(x, start, end),

@@ -1216,7 +1216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Mutability::Mut => Role::Cell,
             Mutability::Not => self.parameter_name(pointee),
         };
-        let name = js::Name::declared(role.word().to_string());
+        let name = js::Name::declared(role.text().to_string());
         let given = match boxed {
             true => Expr::held(Expr::var(name.clone())),
             false => Expr::var(name.clone()),

@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
     name: "spill-hyphenated-name",
     breaks: "an attribute read first is a variable of its hyphenated name, `const data-step`",
     file: "src/lower.rs",
-    find: "            _ => self.fresh(Base::Named(&unhyphenated(&base.word()))),\n",
+    find: "            _ => self.fresh(Base::Named(&unhyphenated(&base.text()))),\n",
     replace: "            _ => self.fresh(base),\n",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a hyphenated attribute read first"],
   },

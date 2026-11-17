@@ -1224,3 +1224,14 @@ key's word (`suffix_tail`), made unspelled of the key by its id
 preparation: a new kind, a deliberate one, which the unit row's `match`
 names. Byte-identical.
 
+## `word()` is a name's spelling alone; an exemption says why (2026-11-17)
+
+`Role::word`, `Base::word` and `TypeFact::word` gave a role's or a fact's
+text, `value`, `Size`, not a name's spelling, which `word` means here:
+they're `text()` now (the lead's decision, a misnomer each), so what reads a
+name's word is what the ratchet counts. A read of one that stays, a name JS
+sees as it's written, a module's constant or a class's method, says so on
+its line, `// word: <reason>`, the one form an exemption has, which the
+ratchet's row skips; a word reserved in a naming table goes through
+`Name::reserve_in`. The ratchet: 201 → 180.
+
