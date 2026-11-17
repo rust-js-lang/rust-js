@@ -1356,3 +1356,17 @@ covers every local. `From<&str>`, `From<String>` and `From<&String>` for
 270 unit tests build their trees of words, a shape the compiler can't
 make; they go when those tests make identified names.
 
+Slice 5's (2026-11-17), tidy's jumps: a label, a block's or a loop's, is
+a `Name` where a pass keeps it, the labels a loop holds, the blocks a
+`switch` leaves by, where each block's turn rests, the blocks a `return`
+was joined past, and a jump's is asked of them by `==`, which of a
+label, made of its word alone, is its word and its form; a variable a
+pass asks of, a `Result` held (`js::result::held_of`, of which
+`reads_held` asks by word for preparation), a copy read in place
+(`substitute_names`), what a block declares and what reads it after
+(`declared_names`, `mentions_of`), by its id. Each old and new answer
+probed over the corpus, the tests and React's port, none differing; a
+tidy-made label's spelling, `loop$k`, and the order a loop's given
+variables are declared in, by spelling, are read so, marked.
+Byte-identical.
+

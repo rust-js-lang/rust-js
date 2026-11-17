@@ -150,7 +150,7 @@ fn returns_past(
     written: &crate::lower::mir::hints::Written,
     returns: &[js::Span],
     starts: &[u32],
-    joined_past: &IndexSet<String>,
+    joined_past: &IndexSet<js::Name>,
 ) {
     let mut i = 0;
     while i + 1 < stmts.len() {
@@ -173,7 +173,7 @@ fn returns_past(
         // } return;`, stays theirs.
         let joins = if joined.is_none() {
             joined_returns(body, label, returns, starts)
-        } else if joined_past.contains(label.word()) {
+        } else if joined_past.contains(&*label) {
             let mut taken = Vec::new();
             js::each_list(body, &mut |list| {
                 taken.extend(
@@ -211,7 +211,7 @@ fn returns_past(
                 ] = pair
                     && *l == label
                 {
-                    inner.insert(own.to_string());
+                    inner.insert(own.clone());
                 }
             }
         });

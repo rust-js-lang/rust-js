@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block MIR made inside one whose `break`s are the program's `return`s, the `return;` after it given the place of one written in it, keeps its label: React's Fizz renderNode's `bb51: { .. if (out.length <= 1) { break bb51; } .. }` (rd499)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        } else if joined_past.contains(label.word()) {\n",
+    find: "        } else if joined_past.contains(&*label) {\n",
     replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_returns_in_arms\\.rs$"],
     snapshots: true,

@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a last `_`'s statements MIR placed after the chain stay after the `switch`, not its `default:` (React's `resolveThenable`)",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "                match declared(&after[..n]).all(|name| js::mentions_in(rest, name) == 0) {\n",
+    find: "                match super::bindings::declared_names(&after[..n]).all(|name| js::mentions_of(rest, name) == 0) {\n",
     replace: "                match false {\n",
     tests: ["test/lowering-switches.test.ts", "-t", "resolveThenable"],
   },

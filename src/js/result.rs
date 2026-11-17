@@ -103,6 +103,17 @@ pub fn tested(test: &Expr) -> Option<(&Expr, bool, bool)> {
 
 /// Whether `e` reads what `result`, a variable, holds: `result._0`.
 pub fn reads_held(e: &Expr, result: &str) -> bool {
-    matches!(&e.kind, ExprKind::Member(of, field)
-        if *field == payload() && matches!(&of.kind, ExprKind::Var(v) if v.is(result)))
+    held_of(e).is_some_and(|v| v.is(result))
+}
+
+/// The `Result` whose payload `e` reads, `r.value` of `r`: `reads_held`'s,
+/// by its `Name` (ADR 1150).
+pub fn held_of(e: &Expr) -> Option<&super::Name> {
+    match &e.kind {
+        ExprKind::Member(of, field) if *field == payload() => match &of.kind {
+            ExprKind::Var(v) => Some(v),
+            _ => None,
+        },
+        _ => None,
+    }
 }

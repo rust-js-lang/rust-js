@@ -424,8 +424,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a formatter's arms each writing, `Some(w) => write!(f, \"{:>w$}\", s), None => f.write_str(&s)`, are `f = w != null ? f + $pad(..) : f + s`, not each its `return`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        && !(updates(x.word(), yes) || updates(x.word(), no))\n",
-    replace: "        && !((updates(x.word(), yes) || updates(x.word(), no)) && false)\n",
+    find: "        && !(updates(x, yes) || updates(x, no))\n",
+    replace: "        && !((updates(x, yes) || updates(x, no)) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_queries.rs$"],
     snapshots: true,
   },

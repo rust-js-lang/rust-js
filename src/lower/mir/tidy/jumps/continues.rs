@@ -154,14 +154,14 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     stmts: &mut [Stmt],
     guards: &[(js::Span, js::Span)],
     arms: &[(js::Span, js::Span, js::Span)],
-    (rests, commented): (&IndexMap<String, u32>, &[js::Span]),
+    (rests, commented): (&IndexMap<Name, u32>, &[js::Span]),
 ) {
     /// A block's `break`s, `block`, each of which goes on to `jump`, and
     /// the arms of a `continue` whose `match` is before something it holds,
     /// with their `match`'s place; and the `continue`s of arms with
     /// comments above them (#610).
     struct Of<'w> {
-        block: &'w str,
+        block: &'w Name,
         jump: &'w Stmt,
         guards: &'w [(js::Span, js::Span)],
         arms: Vec<(js::Span, js::Span, js::Span)>,
@@ -203,7 +203,7 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     }
     // `stmts`' `break`s of the block, where `tested`.
     fn replaced(stmts: &mut [Stmt], of: &Of, tested: Tested, found: &mut Found) {
-        let breaks = |s: &Stmt| matches!(&s.kind, StmtKind::Break(Some(l)) if l.is(of.block));
+        let breaks = |s: &Stmt| matches!(&s.kind, StmtKind::Break(Some(l)) if l == of.block);
         // What an arm of a `continue` does last, its `break`: where that
         // arm is, of what's before it, or of the `if` of its pattern.
         let n = stmts.len();
@@ -277,9 +277,9 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     for at in 1..stmts.len() {
         let (before, after) = stmts.split_at_mut(at);
         if let (StmtKind::Labeled(block, body), StmtKind::Continue(_)) = (&mut before[at - 1].kind, &after[0].kind) {
-            let past = latest(body).max(rests.get(block.word()).copied().unwrap_or(0));
+            let past = latest(body).max(rests.get(&*block).copied().unwrap_or(0));
             let of = Of {
-                block: block.word(),
+                block,
                 jump: &after[0],
                 guards,
                 arms: (arms.iter())
@@ -437,13 +437,13 @@ pub(super) fn latest(stmts: &[Stmt]) -> u32 {
 /// Of each block `body` labels, where the last statement past it starts,
 /// in the lists it's in (`latest`): what a `break` of it that goes on to a
 /// `continue` skips (`continues_written`, #530).
-pub(in crate::lower::mir::tidy) fn turn_rests(body: &[Stmt]) -> IndexMap<String, u32> {
-    fn walk(stmts: &[Stmt], later: u32, rests: &mut IndexMap<String, u32>) {
+pub(in crate::lower::mir::tidy) fn turn_rests(body: &[Stmt]) -> IndexMap<Name, u32> {
+    fn walk(stmts: &[Stmt], later: u32, rests: &mut IndexMap<Name, u32>) {
         for (i, stmt) in stmts.iter().enumerate() {
             let after = later.max(latest(&stmts[i + 1..]));
             match &stmt.kind {
                 StmtKind::Labeled(label, inner) => {
-                    rests.insert(label.to_string(), after);
+                    rests.insert(label.clone(), after);
                     walk(inner, after, rests);
                 }
                 StmtKind::If(_, then, otherwise) => {
@@ -1001,14 +1001,14 @@ pub(in crate::lower::mir::tidy) fn outer_continues(stmts: &mut [Stmt], loops: &[
         } = &mut stmt.kind
             && !named
         {
-            ending(body, label.word());
+            ending(body, label);
         }
     }
 }
 
 /// Each loop that ends `stmts`, or a branch of an `if` that ends them: its
 /// own `continue looped`, its `break` (`outer_continues`).
-fn ending(stmts: &mut [Stmt], looped: &str) {
+fn ending(stmts: &mut [Stmt], looped: &Name) {
     match stmts.last_mut().map(|s| &mut s.kind) {
         Some(
             StmtKind::While { body: inner, .. }
@@ -1026,10 +1026,10 @@ fn ending(stmts: &mut [Stmt], looped: &str) {
 }
 
 /// Each `continue looped` of `stmts`, not a loop's inside them, `break`.
-fn outer_broken(stmts: &mut [Stmt], looped: &str) {
+fn outer_broken(stmts: &mut [Stmt], looped: &Name) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Continue(Some(l)) if l.is(looped) => stmt.kind = StmtKind::Break(None),
+            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),
             StmtKind::If(_, a, b) => {
                 outer_broken(a, looped);
                 if let Some(b) = b {

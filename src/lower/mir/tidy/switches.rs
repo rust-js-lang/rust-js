@@ -173,7 +173,7 @@ fn walk(
                 }
                 if inner.named {
                     if let Some(from) = label.as_ref()
-                        && from.word() != readable.word()
+                        && *from != readable
                     {
                         relabeled(body, from, &readable);
                     }
@@ -418,7 +418,7 @@ fn switch_at(
             true => {
                 let n = (after.iter()).take_while(|s| own(s)).count();
                 let rest = &after[n..];
-                match declared(&after[..n]).all(|name| js::mentions_in(rest, name) == 0) {
+                match super::bindings::declared_names(&after[..n]).all(|name| js::mentions_of(rest, name) == 0) {
                     true => n,
                     false => 0,
                 }
@@ -443,7 +443,7 @@ fn switch_at(
     {
         let own = |s: &Stmt| written_at(s).is_none_or(|at| within(at, arm.span));
         let n = (after.iter()).take_while(|s| own(s)).count();
-        if declared(&after[..n]).all(|name| js::mentions_in(&after[n..], name) == 0) {
+        if super::bindings::declared_names(&after[..n]).all(|name| js::mentions_of(&after[n..], name) == 0) {
             let own_case: Vec<usize> = (going.iter().copied())
                 .filter(|&c| cases[c].3 == arm.span && !going_after.contains(&c))
                 .collect();

@@ -323,8 +323,8 @@ pub(in crate::lower::mir::tidy) fn made_ok_tried(stmts: &mut Vec<Stmt>) {
             at += 1;
         }
         let folded = match stmts.get_mut(at).map(|s| &mut s.kind) {
-            Some(StmtKind::Labeled(_, body)) => taken_in_place(body, 0, name.word()),
-            Some(_) => taken_in_place(stmts, at, name.word()),
+            Some(StmtKind::Labeled(_, body)) => taken_in_place(body, 0, &name),
+            Some(_) => taken_in_place(stmts, at, &name),
             None => false,
         };
         if !folded {
@@ -334,13 +334,13 @@ pub(in crate::lower::mir::tidy) fn made_ok_tried(stmts: &mut Vec<Stmt>) {
         // What it holds, read in its place, where reading it there is the same.
         if let Some(value) = payload.filter(|value| value.is_constant() || matches!(value.kind, ExprKind::Var(_))) {
             js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
-                if result::reads_held(e, name.word()) {
+                if result::held_of(e) == Some(&name) {
                     *e = value.clone();
                 }
             });
         }
         let mut read = false;
-        js::visit_stmts(&stmts[i + 1..], &mut |n| read |= name.is(n));
+        js::visit_stmt_names(&stmts[i + 1..], &mut |n| read |= *n == name);
         let StmtKind::Const(_, made) = &stmts[i].kind else {
             unreachable!("matched")
         };
@@ -353,14 +353,14 @@ pub(in crate::lower::mir::tidy) fn made_ok_tried(stmts: &mut Vec<Stmt>) {
 
 /// `stmts[at]`, an `if` testing whether `name`, an `Ok`, is one: the branch it
 /// takes, in its place. Whether it was one.
-fn taken_in_place(stmts: &mut Vec<Stmt>, at: usize, name: &str) -> bool {
+fn taken_in_place(stmts: &mut Vec<Stmt>, at: usize, name: &js::Name) -> bool {
     let Some(StmtKind::If(test, _, _)) = stmts.get(at).map(|s| &s.kind) else {
         return false;
     };
     let Some((of, ok, equal)) = result::tested(test) else {
         return false;
     };
-    if !matches!(&of.kind, ExprKind::Var(r) if r.is(name)) {
+    if !matches!(&of.kind, ExprKind::Var(r) if r == name) {
         return false;
     }
     let StmtKind::If(_, then, otherwise) = std::mem::replace(&mut stmts[at].kind, StmtKind::Break(None)) else {

@@ -95,9 +95,9 @@ pub(super) fn continued(switch: &mut StmtKind) {
 /// label (#389b, the user's decision: no label the program didn't
 /// write).
 pub(super) fn guarded_loops(stmts: &mut Vec<Stmt>) {
-    let mut locals = IndexSet::default();
-    js::each_declared(stmts, &mut |name| {
-        locals.insert(name.to_string());
+    let mut locals: IndexSet<js::Name> = IndexSet::default();
+    js::each_declared_name(stmts, &mut |name| {
+        locals.insert(name.clone());
     });
     js::statement_lists(stmts, &mut |list| {
         for stmt in list.iter_mut() {
@@ -108,7 +108,8 @@ pub(super) fn guarded_loops(stmts: &mut Vec<Stmt>) {
             else {
                 continue;
             };
-            let Some(name) = label.clone().filter(|l| tidy_made(l.word())) else {
+            let made_here = |l: &js::Name| tidy_made(l.word()); // word: a label's spelling, tidy's `loop$k`
+            let Some(name) = label.clone().filter(made_here) else {
                 continue;
             };
             chained_in(body, &name, &locals);
@@ -160,7 +161,7 @@ fn tidy_made(label: &str) -> bool {
 /// what's matched forbids it, or a temporary that holds what does
 /// something, `const nextCode = c.nextCode();`; and a `switch` that stays,
 /// held still where the `switch` stays one.
-fn chained_in(stmts: &mut Vec<Stmt>, label: &js::Name, locals: &IndexSet<String>) {
+fn chained_in(stmts: &mut Vec<Stmt>, label: &js::Name, locals: &IndexSet<js::Name>) {
     let mut k = 0;
     while k < stmts.len() {
         let span = stmts[k].span;
@@ -202,7 +203,7 @@ fn chained_in(stmts: &mut Vec<Stmt>, label: &js::Name, locals: &IndexSet<String>
 /// `codes[i]`, as the program writes it, the copy gone. Each test runs
 /// before any link's statements, and no test sets a variable the function
 /// declares, which only a statement does. Whether it went.
-fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &IndexSet<String>) -> bool {
+fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &IndexSet<js::Name>) -> bool {
     // Each test of the chain `stmt`, its links'.
     fn tests(stmt: &mut Stmt, f: &mut dyn FnMut(&mut Expr)) {
         if let StmtKind::If(test, _, otherwise) = &mut stmt.kind {
@@ -221,15 +222,15 @@ fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &IndexSet<String>
     let js::ExprKind::Var(of) = &value.kind else {
         return false;
     };
-    if !super::is_temporary(copy) || !locals.contains(of.word()) || value.facts.has(js::Known::LocalRead) {
+    if !super::is_temporary(copy) || !locals.contains(of) || value.facts.has(js::Known::LocalRead) {
         return false;
     }
     let (copy, of) = (copy.clone(), Expr::var(of).or_at(value.span));
     let mut chain = stmts[k].clone();
     let mut read = true;
     tests(&mut chain, &mut |test| {
-        let with = |name: &str| copy.is(name).then(|| of.clone());
-        match test.substitute(&with) {
+        let with = |name: &js::Name| (*name == copy).then(|| of.clone());
+        match test.substitute_names(&with) {
             Some(read_in_place) => *test = read_in_place,
             None => read = false,
         }

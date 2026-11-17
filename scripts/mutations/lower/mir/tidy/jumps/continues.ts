@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an inner loop's way out, which ends the outer loop's turn, is `continue bb4`, not its `break`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            StmtKind::Continue(Some(l)) if l.is(looped) => stmt.kind = StmtKind::Break(None),\n",
+    find: "            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nested_loop_jumps.rs$"],
     snapshots: true,
@@ -414,7 +414,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guarded arm that continues before the `match`'s other arms, whose block MIR nests in the one the rest of the turn follows, keeps MIR's `bb9: { switch (..) { .. break bb9; } continue; }`, labels the program didn't write (#530)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            let past = latest(body).max(rests.get(block.word()).copied().unwrap_or(0));\n",
+    find: "            let past = latest(body).max(rests.get(&*block).copied().unwrap_or(0));\n",
     replace: "            let past = latest(body);\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guarded_arm_continues_first.rs$"],
     snapshots: true,

@@ -31,7 +31,7 @@ pub(super) fn exit_after(
         return None;
     }
     // The labels inside it, whose jumps don't leave it.
-    let mut inner: IndexSet<String> = label.iter().map(Name::to_string).collect();
+    let mut inner: IndexSet<Name> = label.iter().cloned().collect();
     js::each_list(body, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
@@ -39,7 +39,7 @@ pub(super) fn exit_after(
                 | StmtKind::While { label: Some(l), .. }
                 | StmtKind::ForOf { label: Some(l), .. }
                 | StmtKind::For { label: Some(l), .. } => {
-                    inner.insert(l.to_string());
+                    inner.insert(l.clone());
                 }
                 _ => {}
             }
@@ -73,8 +73,8 @@ pub(super) fn exit_after(
     // What goes on where it's put: no jump to the loop, nor to a label
     // inside it, but one of its own.
     let stays = |s: &Stmt| {
-        let mut own: IndexSet<String> = IndexSet::default();
-        let mut jumps: Vec<String> = Vec::new();
+        let mut own: IndexSet<Name> = IndexSet::default();
+        let mut jumps: Vec<Name> = Vec::new();
         js::each_list(std::slice::from_ref(s), &mut |list| {
             for stmt in list.iter() {
                 match &stmt.kind {
@@ -82,9 +82,9 @@ pub(super) fn exit_after(
                     | StmtKind::While { label: Some(l), .. }
                     | StmtKind::ForOf { label: Some(l), .. }
                     | StmtKind::For { label: Some(l), .. } => {
-                        own.insert(l.to_string());
+                        own.insert(l.clone());
                     }
-                    StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => jumps.push(l.to_string()),
+                    StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => jumps.push(l.clone()),
                     _ => {}
                 }
             }
@@ -98,7 +98,7 @@ pub(super) fn exit_after(
     // a label in this one, `break bb22` of a block it's in.
     let leaves = |s: &Stmt| match &s.kind {
         StmtKind::Return(_) | StmtKind::Throw(_) => true,
-        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l.word()),
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),
         StmtKind::While { label, cond, body } => {
             matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_ref()) && stays(s)
         }
@@ -218,13 +218,13 @@ pub(super) fn exit_after(
     // the value it gives, `let next = loop { .. break v; };`, which MIR
     // declares where it's given, `const next = v;`, and what's moved reads:
     // declared before the loop, `let next;`, and given at the `break`.
-    let made: IndexSet<&str> = declared(&moved).collect();
+    let made: IndexSet<&Name> = declared_names(&moved).collect();
     let mut own: IndexSet<js::Name> = IndexSet::default();
     js::statement_lists(&mut kept, &mut |list| own.extend(declared_names(list).cloned()));
     let mut given: Vec<js::Name> = (own.into_iter())
-        .filter(|name| !made.contains(name.word()) && js::mentions_of(&moved, name) > 0)
+        .filter(|name| !made.contains(name) && js::mentions_of(&moved, name) > 0)
         .collect();
-    given.sort_by(|a, b| a.word().cmp(b.word()));
+    given.sort_by(|a, b| a.word().cmp(b.word())); // word: the order they're declared in the output, by spelling
     // Its name is apart from what's beside the loop, as the Rust's is,
     // whose block the loop is in (`exits_after`).
     let mut before = Vec::new();
@@ -465,11 +465,11 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
 pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
     let written = |span: js::Span| (blocks.iter()).find(|b| !span.is_none() && b.span == span);
     // Where each JS block is written, by its label.
-    let mut spans: IndexMap<String, js::Span> = IndexMap::default();
+    let mut spans: IndexMap<Name, js::Span> = IndexMap::default();
     js::each_list(body, &mut |list| {
         for stmt in list {
             if let StmtKind::Labeled(l, _) = &stmt.kind {
-                spans.insert(l.to_string(), stmt.span);
+                spans.insert(l.clone(), stmt.span);
             }
         }
     });
@@ -483,7 +483,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
             };
             if let Some(to) = to
                 && written(stmts[i].span).is_some()
-                && spans.get(to.word()) == Some(&stmts[i].span)
+                && spans.get(&to) == Some(&stmts[i].span)
                 && let StmtKind::Labeled(label, inner) = &mut stmts[i].kind
                 && crate::lower::mir::is_block_label(label)
             {
@@ -573,7 +573,7 @@ fn around_loops(stmts: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
                 after.last().is_some_and(ends)
                     && matches!(&body[k].kind, StmtKind::Labeled(_, b) if b.last().is_some_and(ends))
                     && !js::names_jump(after, l)
-                    && !declared(&body[..k]).any(|name| js::mentions_in(after, name) > 0)
+                    && !declared_names(&body[..k]).any(|name| js::mentions_of(after, name) > 0)
             }),
             _ => None,
         };
@@ -599,8 +599,8 @@ fn around_loops(stmts: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
         // declares.
         let within = |s: &Stmt| !s.span.is_none() && span.lo <= s.span.lo && s.span.hi <= span.hi;
         let first = i - (stmts[..i].iter().rev()).take_while(|s| within(s)).count();
-        let read_after = (declared(&stmts[first..i]))
-            .any(|name| js::mentions_in(&after, name) > 0 || js::mentions_in(&stmts[i + 1..], name) > 0);
+        let read_after = (declared_names(&stmts[first..i]))
+            .any(|name| js::mentions_of(&after, name) > 0 || js::mentions_of(&stmts[i + 1..], name) > 0);
         let first = if read_after { i } else { first };
         let inside: Vec<Stmt> = stmts.drain(first..=i).collect();
         let n = after.len();
@@ -772,7 +772,7 @@ fn taken_away(stmts: &mut Vec<Stmt>) {
 pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
     /// `stmts`, whose end is that of the blocks of `ending` and goes on to
     /// the `return` of `then`.
-    fn walk(stmts: &mut [Stmt], ending: &[String], then: Option<&Option<Expr>>) {
+    fn walk(stmts: &mut [Stmt], ending: &[Name], then: Option<&Option<Expr>>) {
         let n = stmts.len();
         // What each statement goes on to, a `return` after it.
         let next = |stmts: &[Stmt], i: usize| match stmts.get(i + 1).map(|s| &s.kind) {
@@ -786,15 +786,15 @@ pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
             if let Some(label) = left_by(&mut stmts[i], leaving, returned.as_ref()) {
                 let switch = std::mem::replace(&mut stmts[i], StmtKind::Comments.at(js::Span::NONE));
                 let span = switch.span;
-                stmts[i] = StmtKind::Labeled(js::Name::label(&label), vec![switch]).at(span);
+                stmts[i] = StmtKind::Labeled(js::Name::label(label.word()), vec![switch]).at(span); // word: the program's label, as a `switch`'s
             }
         }
         for i in 0..n {
-            let ending: &[String] = if i + 1 == n { ending } else { &[] };
+            let ending: &[Name] = if i + 1 == n { ending } else { &[] };
             let returned = next(stmts, i);
             match &mut stmts[i].kind {
                 StmtKind::Labeled(label, body) => {
-                    let ending: Vec<String> = ending.iter().cloned().chain([label.to_string()]).collect();
+                    let ending: Vec<Name> = ending.iter().cloned().chain([label.clone()]).collect();
                     walk(body, &ending, returned.as_ref());
                 }
                 StmtKind::If(_, a, b) => {
@@ -827,10 +827,10 @@ pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
 /// it goes on to, `returned`'s. The one label of them all: each such
 /// block's statements in its place, its `break`s the `switch`'s now, and
 /// the jump after it gone where they never go on to it.
-fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>>) -> Option<String> {
+fn left_by(switch: &mut Stmt, leaving: &[Name], returned: Option<&Option<Expr>>) -> Option<Name> {
     let leaves = |stmt: Option<&Stmt>| match (stmt.map(|s| &s.kind), returned) {
         (Some(StmtKind::Break(None)), _) => true,
-        (Some(StmtKind::Break(Some(to))), _) => leaving.iter().any(|l| to.is(l)),
+        (Some(StmtKind::Break(Some(to))), _) => leaving.contains(to),
         (Some(StmtKind::Return(None)), Some(None)) => true,
         (Some(StmtKind::Return(Some(value))), Some(Some(after))) => super::super::switches::alike(value, after),
         _ => false,
@@ -900,7 +900,7 @@ fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>
     };
     let label = label.clone();
     js::case_lists_mut(cases, default).for_each(|case| unwrapped(case, &label));
-    Some(label.into_word())
+    Some(label)
 }
 
 /// Whether `stmt` never goes on to what's after it: a jump past it, a

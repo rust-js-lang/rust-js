@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block the program labeled followed by a `break` of a block the `switch` ends, getTag's in an `else`, labels nothing (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "        (Some(StmtKind::Break(Some(to))), _) => leaving.iter().any(|l| to.is(l)),\n",
+    find: "        (Some(StmtKind::Break(Some(to))), _) => leaving.contains(to),\n",
     replace:
       "        (Some(StmtKind::Break(Some(to))), _) => leaving.is_empty() && to.word().is_empty(),\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],

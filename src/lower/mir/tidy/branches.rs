@@ -442,8 +442,8 @@ pub(super) fn small(e: &Expr) -> bool {
 }
 
 /// Whether `value`, given `x`, is `x` changed, `x + a`: `x += a`.
-pub(super) fn updates(x: &str, value: &Expr) -> bool {
-    matches!(&value.kind, ExprKind::Binary(_, of, _) if matches!(&of.kind, ExprKind::Var(v) if v.is(x)))
+pub(super) fn updates(x: &js::Name, value: &Expr) -> bool {
+    matches!(&value.kind, ExprKind::Binary(_, of, _) if matches!(&of.kind, ExprKind::Var(v) if v == x))
 }
 
 /// `if (test) { x = yes; } else { x = no; }` as one assignment, `x = test ?
@@ -481,7 +481,7 @@ pub(super) fn one_assignment(
         && !(super::logicals::alike_branches(yes, no) && test.has_effects())
         && ((small(yes) && small(no)) || is_temporary(x))
         && (x != result || folds_into_return(yes, no))
-        && !(updates(x.word(), yes) || updates(x.word(), no))
+        && !(updates(x, yes) || updates(x, no))
         && !switched(test, span, switches);
     if !one {
         return None;
@@ -1106,7 +1106,8 @@ pub(super) fn or_tests(stmts: &mut Vec<Stmt>) {
             (tests.len() > 1
                 && body.last().is_some_and(ends)
                 && rest.last().is_some_and(ends)
-                && !declared(body).any(|name| declared(rest).any(|n| n == name)))
+                && !super::bindings::declared_names(body)
+                    .any(|name| super::bindings::declared_names(rest).any(|n| n == name)))
             .then(|| {
                 let test = (tests.iter())
                     .map(|t| (*t).clone().negated_test())
@@ -1285,7 +1286,7 @@ fn shared_tail(a: &[Stmt], b: &[Stmt]) -> usize {
 /// Whether `tail` reads a name `branches` declare, which it can't leave.
 fn reads_declared<'s>(tail: &[Stmt], branches: impl Iterator<Item = &'s Stmt>) -> bool {
     let branches: Vec<Stmt> = branches.cloned().collect();
-    declared(&branches).any(|name| js::mentions_in(tail, name) > 0)
+    super::bindings::declared_names(&branches).any(|name| js::mentions_of(tail, name) > 0)
 }
 
 /// A flag a test made, as `matches!(..)` of a guard makes one, a block

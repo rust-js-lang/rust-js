@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     breaks:
       '`?` of an `Ok` made where it\'s tried keeps its test, `const r = { TAG: "Ok", _0: 3 }; if (r.TAG === "Err") ..`',
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            Some(_) => taken_in_place(stmts, at, name.word()),\n",
+    find: "            Some(_) => taken_in_place(stmts, at, &name),\n",
     replace: "            Some(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^ok_made_tried.rs$"],
     snapshots: true,
