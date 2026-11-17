@@ -41,8 +41,8 @@ function main() {
   );
   const data = Array.from({ length: 9000 }, (_, i) => 97 + (i % 26));
   const counts = [0, 1, 31, 32, 33, 50, 64, 100, 4095, 4096, 4097, 5000, 8192, 8193];
-  for (let j = 0; j < counts.length; j++) {
-    const n = counts[j];
+  for (let i = 0; i < counts.length; i++) {
+    const n = counts[i];
     let v = [];
     const take = read_take({ byte: 1 }, BigInt(n), $repeatReader);
     let read = $readerDefaults(takeRead($repeatReader), $takeReadBuf($repeatReader)).readToEnd(

@@ -1178,7 +1178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => list,
             false => self.spill(Role::Items, list, out),
         };
-        let i = self.fresh(Role::I);
+        let i = js::Name::counter("i");
         let mut body = Vec::new();
         let item = Expr::index(list.clone(), Expr::var(&i));
         let item = match cloned {

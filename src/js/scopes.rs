@@ -138,6 +138,22 @@ impl Tree {
         self.scopes[scope].names.contains_key(name)
     }
 
+    /// Would `from` named `to` shadow a variable, or be shadowed by one:
+    /// does a scope around one that declares `from` declare `to`, or one
+    /// inside it? JS lets it where no read crosses (`renames`); a loop's
+    /// counter a person writes doesn't: `j` inside a loop of `i`, and `j`
+    /// of a loop that holds one of `i` (ADR 1042, `prepare::counters`).
+    pub(crate) fn shadows(&self, from: &str, to: &str) -> bool {
+        let ups = |scope: usize| std::iter::successors(self.scopes[scope].parent, |&up| self.scopes[up].parent);
+        let declaring = self.declaring.get(from).map(Vec::as_slice).unwrap_or_default();
+        let around = declaring
+            .iter()
+            .any(|&scope| ups(scope).any(|up| self.declares(up, to)));
+        let inside =
+            (self.declaring.get(to).into_iter().flatten()).any(|&inner| ups(inner).any(|up| declaring.contains(&up)));
+        around || inside
+    }
+
     /// Does each read stay of what it's of, where `from` is named `to`? No
     /// scope that declares `from` declares `to` too; no read of `from`
     /// passes a declaration of `to` before its own; and no read of `to`

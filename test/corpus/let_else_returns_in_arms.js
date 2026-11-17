@@ -233,8 +233,8 @@ function main() {
     [0, undefined, undefined, [4, 5]],
     [0, 300, "pre", [4]],
   ];
-  for (let j = 0; j < requests.length; j++) {
-    const [pending, root, preamble, queue] = requests[j];
+  for (let i = 0; i < requests.length; i++) {
+    const [pending, root, preamble, queue] = requests[i];
     const request = {
       pending,
       root: root != null ? { value: root } : undefined,

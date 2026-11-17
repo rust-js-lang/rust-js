@@ -16,8 +16,8 @@ function main() {
   try {
     const end = probe(1);
     for (let i = 0; i < end; i++) {
-      const end = probe(2);
-      for (let j = 0; j < end; j++) {
+      const end$1 = probe(2);
+      for (let j = 0; j < end$1; j++) {
         $checked(probe((i + j) >>> 0) - 1, 0, 4294967295);
       }
     }

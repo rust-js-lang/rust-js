@@ -565,7 +565,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: '            return Ok(Expr::call_helper("$extend", vec![collection, items, trusted]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, items]))\n',
     replace:
-      '            return Ok(Expr::call_helper("$extend", vec![collection, items, trusted]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])]))\n',
+      '            return Ok(Expr::call_helper("$extend", vec![collection, items, trusted]));\n        }\n        Ok(Expr::call_helper("$extend", vec![collection, Expr::call(Expr::member(Expr::js_global("Array"), "from"), vec![items])]))\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
     snapshots: true,
   },

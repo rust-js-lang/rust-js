@@ -98,8 +98,8 @@ function main() {
       unit: null,
     },
   ];
-  for (let j = 0; j < constants.length; j++) {
-    const consumer = constants[j];
+  for (let i = 0; i < constants.length; i++) {
+    const consumer = constants[i];
     console.log(
       `${consumer.name} ${tests(consumer)} ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(kept(consumer))}`,
     );

@@ -1026,8 +1026,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`for s in state.iter_mut()` stays `for (const s of $mutItems(state))` and `s.value = ..`, not `state[i] = ..` (#320)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                bottom_up(b, &mut |stmts| mut_items::mut_item_loops(stmts, &mut taken));\n",
-    replace: "                let _ = &mut taken;\n",
+    find: "            pass(\"mut items\", |b, _| bottom_up(b, &mut mut_items::mut_item_loops)),\n",
+    replace: "            pass(\"mut items\", |_, _| {}),\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_mut_index_loops.rs$"],
     snapshots: true,
   },

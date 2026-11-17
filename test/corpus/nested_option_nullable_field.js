@@ -80,8 +80,8 @@ function main() {
       line: 3,
     },
   ];
-  for (let j = 0; j < constants.length; j++) {
-    const candidate = constants[j];
+  for (let i = 0; i < constants.length; i++) {
+    const candidate = constants[i];
     console.log(`${kind(candidate)} ${tests(candidate)} ${flattened(candidate)}`);
     console.log(
       `${shown(candidate.sdpMid === undefined ? undefined : $some(candidate.sdpMid), { fmt: (value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(value))})`) })} ${shown(candidate.line === undefined ? undefined : $some(candidate.line), { fmt: (value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`) })}`,

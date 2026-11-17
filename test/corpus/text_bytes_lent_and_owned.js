@@ -57,8 +57,8 @@ function uses(s) {
   const m = $utf8Bytes(s).toReversed();
   const n = [];
   const items = $utf8Bytes(s);
-  for (let i = 0; i < items.length; i++) {
-    n.push(items[i]);
+  for (let i$1 = 0; i$1 < items.length; i$1++) {
+    n.push(items[i$1]);
   }
   n[$at(n, 0)] = 13;
   const o = Array.from(new TextEncoder().encode(s));

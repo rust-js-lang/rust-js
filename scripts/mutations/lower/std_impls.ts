@@ -41,8 +41,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`==` of two `Vec`s of other item types names its arrow's `x` and `i` as they are, hiding a variable so named and a nested one's outer index (#307)",
     file: "src/lower/std_impls.rs",
-    find: '        let (x, i) = (self.fresh(Role::X), self.fresh(Role::I));\n',
-    replace: '        let (x, i) = ("x".to_string(), "i".to_string());\n',
+    find: '        let (x, i) = (self.fresh(Role::X), js::Name::counter("i"));\n',
+    replace: '        let (x, i) = (js::Name::declared("x".to_string()), js::Name::declared("i".to_string()));\n',
     tests: ["test/corpus.test.ts", "-t", "^eq_items_of_other_types.rs$"],
   },
   {

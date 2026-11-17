@@ -78,8 +78,8 @@ function main() {
     }
     events.push(event(key, composition));
   }
-  for (let j = 0; j < events.length; j++) {
-    const event = events[j];
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
     const kind = typeof event.eventType === "string" ? "wrapped" : "direct";
     console.log(
       `${event.key} ${kind} ${handles(event)} ${event.shiftKey == null ? "None" : `Some(${event.shiftKey})`} ${wrappedType(event)}`,

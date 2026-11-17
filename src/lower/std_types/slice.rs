@@ -800,7 +800,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::arrow(params, body)
                     }
                     f => {
-                        let i = self.fresh(Role::I);
+                        let i = js::Name::counter("i");
                         let call = Expr::call(f, vec![Expr::var(&i)]);
                         Expr::arrow(
                             vec![js::Name::unread("_".to_string()).into(), i.into()],

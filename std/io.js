@@ -548,8 +548,8 @@ export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
       if (i != null) {
         available = $slice(available, 0, i + 1, true);
         const length = buf.length;
-        for (let i = 0; i < available.length; i++) {
-          buf.push(available[i]);
+        for (let j = 0; j < available.length; j++) {
+          buf.push(available[j]);
         }
         $grew(buf, 1, length);
         tmp = available.length;
@@ -558,8 +558,8 @@ export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
         read = (read + tmp) >>> 0;
       } else {
         const length = buf.length;
-        for (let i = 0; i < available.length; i++) {
-          buf.push(available[i]);
+        for (let j = 0; j < available.length; j++) {
+          buf.push(available[j]);
         }
         $grew(buf, 1, length);
         tmp = available.length;

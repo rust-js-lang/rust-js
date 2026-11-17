@@ -47,8 +47,8 @@ function sales() {
 function main() {
   const all = sales();
   const byRegion = new $BTreeMap();
-  for (let j = 0; j < all.length; j++) {
-    const s = all[j];
+  for (let i = 0; i < all.length; i++) {
+    const s = all[i];
     if (!byRegion.has(s.region)) {
       byRegion.set(s.region, []);
     }

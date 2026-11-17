@@ -1409,3 +1409,16 @@ where a method's own of that spelling would take it, which the word set of
 the body's names stood in for; the order walks by `Name`. Byte-identical,
 React's Flight server's `{ model, reader, id }` among them.
 
+
+## Amendment: a loop's counter is a made name the speller spells (#2032)
+
+`Of::Counter`, `Name::counter(base)`: a loop's counter, or a held range
+end, not spelled yet, its word, `i#7`, its own by its id. Preparation's
+`counters::spelled` spells it after `reclaim::module`, by ADR 1042's rule:
+- the first of `i`, `j`, `k`, `i$1`, ..;
+- shadowing nothing around it;
+- each read its own.
+
+That removes the last tables of words lowering and tidy picked names
+from: tidy/stages' `mentions`, mut_items', and `FnCx::fresh(Role::I)` for
+a counter.

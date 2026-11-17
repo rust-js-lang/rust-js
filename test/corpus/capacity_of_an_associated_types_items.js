@@ -84,8 +84,8 @@ function gathered(s, SSource) {
   for (let i = 0; i < 3; i++) {
     const length = all.length;
     const items = SSource.items(s);
-    for (let i = 0; i < items.length; i++) {
-      all.push(items[i]);
+    for (let j = 0; j < items.length; j++) {
+      all.push(items[j]);
     }
     $grew(all, SSource.ItemSize, length);
   }

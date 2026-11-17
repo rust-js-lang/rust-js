@@ -23,16 +23,16 @@ function nested(n) {
     throw error;
   }
   for (let k = 0; k < end; k++) {
-    let end;
+    let end$1;
     try {
-      end = id(3);
+      end$1 = id(3);
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${d[0]}`);
       }, error);
       throw error;
     }
-    for (let j = 0; j < end; j++) {
+    for (let j = 0; j < end$1; j++) {
       let tmp;
       try {
         tmp = [id((((k * 10) >>> 0) + j) >>> 0)];
@@ -86,16 +86,16 @@ function generated() {
     throw error;
   }
   for (let _k27 = 0; _k27 < end; _k27++) {
-    let end;
+    let end$1;
     try {
-      end = id(3);
+      end$1 = id(3);
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${d23[0]}`);
       }, error);
       throw error;
     }
-    for (let _k28 = 0; _k28 < end; _k28++) {
+    for (let _k28 = 0; _k28 < end$1; _k28++) {
       let d;
       try {
         d = [id(29)];

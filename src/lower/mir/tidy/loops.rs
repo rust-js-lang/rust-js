@@ -13,7 +13,7 @@ use crate::js::Name;
 /// body; break; } exit`, its body going on to the exit where it ends.
 pub(super) fn loops(
     stmts: &mut Vec<Stmt>,
-    (mentions, by_id): (&mut IndexMap<String, usize>, &mut IndexMap<js::Name, usize>),
+    by_id: &IndexMap<js::Name, usize>,
     numbers: &IndexSet<js::Name>,
     captured: &IndexSet<js::Name>,
 ) {
@@ -21,31 +21,16 @@ pub(super) fn loops(
     while i + 1 < stmts.len() {
         // A range whose end is held first, in a `try` of its own: its
         // statements before the loop's.
-        let held = held_end(&stmts[i], mentions, captured).and_then(|(held, range)| {
-            Some((
-                held,
-                for_of(&range, &stmts[i + 1], &stmts[i + 2..], (mentions, by_id), numbers)?,
-            ))
-        });
+        let held = held_end(&stmts[i], captured)
+            .and_then(|(held, range)| Some((held, for_of(&range, &stmts[i + 1], &stmts[i + 2..], by_id, numbers)?)));
         let (held, made) = match held {
             Some((held, made)) => (held, Some(made)),
             None => (
                 Vec::new(),
-                for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], (mentions, by_id), numbers),
+                for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], by_id, numbers),
             ),
         };
         if let Some(made) = made {
-            // What it names, its loop's `end` held say, taken: another
-            // loop's is another name; but an array's counter, `i` of each
-            // loop over one, scoped to its loop (ADR 1042).
-            for stmt in held.iter().chain(&made) {
-                if let StmtKind::Let(name, _) | StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind
-                    && !counts_by(std::slice::from_ref(stmt), &|n| n == name)
-                {
-                    *mentions.entry(name.to_string()).or_default() += 1;
-                    *by_id.entry(name.clone()).or_default() += 1;
-                }
-            }
             let count = held.len();
             stmts.splice(i..i + 2, held.into_iter().chain(made));
             i += count;
@@ -64,11 +49,7 @@ pub(super) fn loops(
 /// Rust reads it: a constant, or a variable nothing the end runs can set,
 /// one no closure, function or `&mut`'s handle of the body names
 /// (`captured`).
-fn held_end(
-    stmt: &Stmt,
-    mentions: &IndexMap<String, usize>,
-    captured: &IndexSet<js::Name>,
-) -> Option<(Vec<Stmt>, Stmt)> {
+fn held_end(stmt: &Stmt, captured: &IndexSet<js::Name>) -> Option<(Vec<Stmt>, Stmt)> {
     let StmtKind::TryCatch(body, error, handler) = &stmt.kind else {
         return None;
     };
@@ -89,12 +70,8 @@ fn held_end(
     if start_key != "start" || end_key != "end" || !same || !end.has_effects() {
         return None;
     }
-    let name = js::Name::declared(
-        std::iter::once("end".to_string())
-            .chain((1..).map(|k| format!("end${k}")))
-            .find(|n| !mentions.contains_key(n))
-            .expect("a name"),
-    );
+    // Spelled `end`, or given apart, by the speller (`prepare::counters`).
+    let name = js::Name::counter("end");
     let read = std::mem::replace(end, Expr::var(name.clone()));
     let held = vec![
         StmtKind::Let(name.clone(), None).at(js::Span::NONE),
@@ -163,7 +140,7 @@ pub(super) fn for_of(
     made: &Stmt,
     looped: &Stmt,
     after: &[Stmt],
-    (mentions, by_id): (&IndexMap<String, usize>, &IndexMap<js::Name, usize>),
+    by_id: &IndexMap<js::Name, usize>,
     numbers: &IndexSet<js::Name>,
 ) -> Option<Vec<Stmt>> {
     let (iter, source) = match &made.kind {
@@ -366,8 +343,8 @@ pub(super) fn for_of(
                         n => js::Step::By(Op::Add, Expr::int(n)),
                     },
                 };
-                return counted_range(range, (label, pattern, mutable, body, exit, span), (numbers, mentions));
-            } else if let Some(down) = from_the_end(&iterable, &pattern, mutable, &body, span, (numbers, mentions)) {
+                return counted_range(range, (label, pattern, mutable, body, exit, span), numbers);
+            } else if let Some(down) = from_the_end(&iterable, &pattern, mutable, &body, span, numbers) {
                 let (name, start, test, body) = down;
                 StmtKind::For {
                     label: label.clone(),
@@ -377,9 +354,7 @@ pub(super) fn for_of(
                     step: js::Step::Down,
                     body,
                 }
-            } else if let Some((name, start, test, body)) =
-                indexed(source, &iterable, &pattern, mutable, &body, span, mentions)
-            {
+            } else if let Some((name, start, test, body)) = indexed(source, &iterable, &pattern, mutable, &body, span) {
                 StmtKind::For {
                     label: label.clone(),
                     name,
@@ -430,7 +405,7 @@ pub(super) fn for_of(
                 inclusive: step == "$rangeInclusiveNext",
                 step: js::Step::Up,
             };
-            return counted_range(range, (label, pattern, mutable, body, exit, span), (numbers, mentions));
+            return counted_range(range, (label, pattern, mutable, body, exit, span), numbers);
         }
     };
     let mut out = vec![looped.at(span)];
@@ -457,7 +432,7 @@ struct Counted<'e> {
 fn counted_range(
     range: Counted<'_>,
     (label, pattern, mutable, body, exit, span): (&Option<Name>, js::Pattern, bool, Vec<Stmt>, Vec<Stmt>, js::Span),
-    (numbers, mentions): (&IndexSet<js::Name>, &IndexMap<String, usize>),
+    numbers: &IndexSet<js::Name>,
 ) -> Option<Vec<Stmt>> {
     let Counted {
         start,
@@ -484,22 +459,10 @@ fn counted_range(
     }
     // A count the body doesn't read, Rust's `_`: `i`.
     let name = match name.is_unread() {
-        true => js::Name::declared(
-            std::iter::once("i".to_string())
-                .chain((1..).map(|k| format!("i${k}")))
-                .find(|n| !mentions.contains_key(n))
-                .expect("a name"),
-        ),
+        true => js::Name::counter("i"),
         false => name,
     };
-    let held = (!same).then(|| {
-        let unused = |n: &String| !mentions.contains_key(n);
-        let name = std::iter::once("end".to_string())
-            .chain((1..).map(|k| format!("end${k}")))
-            .find(unused)
-            .expect("a name");
-        (js::Name::declared(name), end.clone())
-    });
+    let held = (!same).then(|| (js::Name::counter("end"), end.clone()));
     // Its end held first, read before its start where Rust reads it
     // after: of a start that reads only variables, which an end of
     // no effects leaves as they are.
@@ -548,7 +511,6 @@ fn indexed(
     mutable: bool,
     body: &[Stmt],
     span: js::Span,
-    mentions: &IndexMap<String, usize>,
 ) -> Option<(js::Name, Expr, Expr, Vec<Stmt>)> {
     let (iterable, start, end) = match &iterable.kind {
         // Said so where it's stepped, `$iter(v.slice(a))`, as `unarrayed`
@@ -573,25 +535,10 @@ fn indexed(
     if end.as_ref().is_some_and(|end| !same(end)) {
         return None;
     }
-    // A name the function doesn't mention, or only as the counter of a
-    // loop `body` holds, renamed: none the body reads is another's then.
-    let given = body;
-    let unread = |n: &str| !mentions.contains_key(n) || counts(given, n);
-    // The counters of the loops it holds, made first, inside out: each a
-    // letter on, `i` its own (ADR 1042).
-    let mut body = body.to_vec();
-    for (from, to) in [("j", "k"), ("i", "j")] {
-        if counts(&body, from) && !mentions.contains_key(to) && js::mentions_in(&body, to) == 0 {
-            js::renamed(&mut body, from, to);
-        }
-    }
-    let index = ["i", "j", "k"]
-        .into_iter()
-        .map(String::from)
-        .chain((1..).map(|k| format!("i${k}")))
-        .find(|n| unread(n) && js::mentions_in(&body, n) == 0)
-        .map(js::Name::declared)
-        .expect("a name");
+    // Its counter, which the speller spells `i`, or a letter on of the
+    // loops around it, `j` (`prepare::counters`, ADR 1042, #2032).
+    let body = body.to_vec();
+    let index = js::Name::counter("i");
     let item = Expr::index(iterable.clone(), Expr::var(&index));
     let bound = match (pattern, mutable) {
         (js::Pattern::Name(name), false) => StmtKind::Const(name.clone(), item),
@@ -623,56 +570,6 @@ fn item_at(span: js::Span) -> js::Span {
     }
 }
 
-/// Whether `stmts` hold a loop `indexed` made counting with `name`: `for
-/// (let name = 0; name < v.length; name++) { const x = v[name]; .. }`, or
-/// of a range of `v`, from `a` to `b`,
-/// whose counter nothing else reads, as clippy's `needless_range_loop` has
-/// no program write it.
-fn counts(stmts: &[Stmt], name: &str) -> bool {
-    counts_by(stmts, &|n| n.is(name))
-}
-
-/// `counts` of the variable `is` says, by its `Name`: of a counter a
-/// loop's `made` declares, its id.
-fn counts_by(stmts: &[Stmt], is: &dyn Fn(&js::Name) -> bool) -> bool {
-    let mentioned = |e: &Expr| {
-        let mut found = false;
-        e.visit_names(&mut |v| found |= is(v));
-        found
-    };
-    let mut found = false;
-    js::each_list(stmts, &mut |list| {
-        found |= list.iter().any(|s| match &s.kind {
-            StmtKind::For {
-                name: n,
-                start,
-                test,
-                step: js::Step::Up,
-                body,
-                ..
-            } if is(n) && !mentioned(start) => {
-                let read = |e: &Expr| matches!(&e.kind, ExprKind::Index(_, at) if matches!(&at.kind, ExprKind::Var(v) if is(v)));
-                let bound = match body.first().map(|s| &s.kind) {
-                    Some(StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Destructure { value: e, .. }) => {
-                        read(e)
-                    }
-                    _ => false,
-                };
-                matches!(&test.kind, ExprKind::Binary(Op::Lt, counter, end)
-                    if matches!(&counter.kind, ExprKind::Var(v) if is(v)) && !mentioned(end))
-                    && bound
-                    && {
-                        let mut reads = 0;
-                        js::visit_stmt_names(&body[1..], &mut |v| reads += usize::from(is(v)));
-                        reads == 0
-                    }
-            }
-            _ => false,
-        });
-    });
-    found
-}
-
 /// A `for…of` of `iterable`, binding `pattern`, `mutable`, as a `for` that
 /// counts down (ADR 0904): its counter's name, start and test, and its
 /// body. Of an array's items reversed, `v.toReversed()`, which Rust's
@@ -688,15 +585,8 @@ fn from_the_end(
     mutable: bool,
     body: &[Stmt],
     span: js::Span,
-    (numbers, mentions): (&IndexSet<js::Name>, &IndexMap<String, usize>),
+    numbers: &IndexSet<js::Name>,
 ) -> Option<(js::Name, Expr, Expr, Vec<Stmt>)> {
-    let fresh = |base: &str| {
-        std::iter::once(base.to_string())
-            .chain((1..).map(|k| format!("{base}${k}")))
-            .find(|n| !mentions.contains_key(n))
-            .map(js::Name::declared)
-            .expect("a name")
-    };
     if let Some(items) = iterators::reversed_source(iterable) {
         let ExprKind::Var(array) = &items.kind else {
             return None;
@@ -704,7 +594,7 @@ fn from_the_end(
         if js::Writes::sets(body, array) {
             return None;
         }
-        let index = fresh("i");
+        let index = js::Name::counter("i");
         let item = Expr::index(items.clone(), Expr::var(&index));
         let bound = match (pattern, mutable) {
             (js::Pattern::Name(name), false) => StmtKind::Const(name.clone(), item),
@@ -757,7 +647,7 @@ fn from_the_end(
         return None;
     }
     let name = match name.is_unread() {
-        true => fresh("i"),
+        true => js::Name::counter("i"),
         false => name.clone(),
     };
     let start = match (range.inclusive, range.end.as_int()) {

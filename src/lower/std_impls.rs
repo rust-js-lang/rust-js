@@ -842,7 +842,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             self.spill(Role::Other, b, out)
         };
-        let (x, i) = (self.fresh(Role::X), self.fresh(Role::I));
+        let (x, i) = (self.fresh(Role::X), js::Name::counter("i"));
         let mut body = Vec::new();
         let other = Expr::index(b.clone(), Expr::var(&i));
         // std's slice `==` asks each two `x != y`, until one is: of items

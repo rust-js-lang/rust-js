@@ -99,16 +99,16 @@ function earlyBreak() {
     throw error;
   }
   for (let i = 0; i < end; i++) {
-    let end;
+    let end$1;
     try {
-      end = id(3);
+      end$1 = id(3);
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${held[0]}`);
       }, error);
       throw error;
     }
-    for (let j = 0; j < end; j++) {
+    for (let j = 0; j < end$1; j++) {
       let noisy;
       try {
         noisy = [id((((51 + ((i * 3) >>> 0)) >>> 0) + j) >>> 0)];
@@ -155,16 +155,16 @@ function innerContinue() {
     throw error;
   }
   for (let i = 0; i < end; i++) {
-    let end;
+    let end$1;
     try {
-      end = id(3);
+      end$1 = id(3);
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${held[0]}`);
       }, error);
       throw error;
     }
-    for (let j = 0; j < end; j++) {
+    for (let j = 0; j < end$1; j++) {
       if (j === 1) {
         continue;
       }
@@ -197,16 +197,16 @@ function outerContinue() {
     throw error;
   }
   outer: for (let i = 0; i < end; i++) {
-    let end;
+    let end$1;
     try {
-      end = id(3);
+      end$1 = id(3);
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${held[0]}`);
       }, error);
       throw error;
     }
-    for (let j = 0; j < end; j++) {
+    for (let j = 0; j < end$1; j++) {
       if (j === i) {
         continue outer;
       }

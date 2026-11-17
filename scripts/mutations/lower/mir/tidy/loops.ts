@@ -43,7 +43,7 @@ export const mutations: Mutation[] = [
       "a loop inside another, whose iterator is a `let` assigned each time, stays `while (true)` stepping it",
     file: "src/lower/mir/tidy/loops.rs",
     find: "                && by_id.get(iter) == Some(&2) =>\n",
-    replace: "                && mentions.get(iter.word()) == Some(&99) =>\n",
+    replace: "                && by_id.get(iter) == Some(&99) =>\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -69,9 +69,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range loop whose end is a call stays `while (true)` stepping `$rangeNext`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    let held = (!same).then(|| {\n",
+    find: "    let held = (!same).then(|| (js::Name::counter(\"end\"), end.clone()));\n",
     replace:
-      "    if !same {\n        return None;\n    }\n    let held = (!same).then(|| {\n",
+      "    if !same {\n        return None;\n    }\n    let held = (!same).then(|| (js::Name::counter(\"end\"), end.clone()));\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -140,22 +140,9 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unread-count-underscore",
     breaks: "MIR's range count the body doesn't read is `_`, `_++`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    let name = match name.is_unread() {\n        true => js::Name::declared(\n",
-    replace: "    let name = match name.is_unread() && false {\n        true => js::Name::declared(\n",
+    find: "    let name = match name.is_unread() {\n        true => js::Name::counter(\"i\"),\n        false => name,\n",
+    replace: "    let name = match name.is_unread() && false {\n        true => js::Name::counter(\"i\"),\n        false => name,\n",
     tests: ["test/lowering-loops.test.ts", "-t", "an unread count of a range"],
-  },
-  {
-    name: "mir-tidy-loop-names-retaken",
-    breaks:
-      "MIR's two loops each holding a range's end both name it `end`, two `const end`s of one block",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "                    *mentions.entry(name.to_string()).or_default() += 1;\n",
-    replace: "",
-    tests: [
-      "test/lowering-names.test.ts",
-      "-t",
-      "two loops each hold their range's end",
-    ],
   },
   {
     name: "mir-tidy-char-range-counted",
@@ -565,15 +552,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "held-range-end-named-end",
-    breaks:
-      "a range's end held first is named `end` where the program has an `end` of its own, which it then reads in its place",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "            .find(|n| !mentions.contains_key(n))\n            .expect(\"a name\"),\n    );\n",
-    replace: "            .find(|_| true)\n            .expect(\"a name\"),\n    );\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
-  },
-  {
     name: "held-end-of-captured-start",
     breaks:
       "a range's start a closure may set is read after its end's call, `for (let k = s; k < end; k++)` once `end = id(n)` has run, where Rust read it before",
@@ -650,24 +628,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
   },
   {
-    name: "counted-loops-inside-unrenamed",
-    breaks: "a loop over an array inside one counts with `i` and the outer one with `j`, not upstream's `i` then `j` (ADR 1042)",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "    for (from, to) in [(\"j\", \"k\"), (\"i\", \"j\")] {\n",
-    replace: "    for (from, to) in [] as [(&str, &str); 0] {\n",
-    tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "counted-loop-counter-taken",
-    breaks: "a loop over an array after another counts with `j`, as if the other's `i`, scoped to its loop, were the function's (ADR 1042)",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "                    && !counts_by(std::slice::from_ref(stmt), &|n| n == name)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
-    snapshots: true,
-  },
-  {
     name: "indexed-range-unsliced",
     breaks: "a loop over a range of a slice in bounds, `&v[1..]`, is `for (const x of v.slice(1))`, a copy, not an index loop from 1 (rd376)",
     file: "src/lower/mir/tidy/loops.rs",
@@ -681,14 +641,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "    if end.as_ref().is_some_and(|end| !same(end)) {\n",
     replace: "    if false {\n",
-    tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
-  },
-  {
-    name: "indexed-range-siblings-apart",
-    breaks: "sibling loops over ranges of a slice count with `k`, `j` and `i`, not each `i` (rd376)",
-    file: "src/lower/mir/tidy/loops.rs",
-    find: "            } if is(n) && !mentioned(start) => {\n",
-    replace: "            } if is(n) && start.as_int() == Some(0) => {\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
   },
   {

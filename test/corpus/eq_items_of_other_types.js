@@ -9,7 +9,7 @@ function main() {
   const x = ["p", "q"];
   const i = ["p", "z"];
   console.log(
-    `${a.length === x.length && a.every((x$1, i) => x$1 === x[i])} ${a.length === i.length && a.every((x, i$1) => x === i[i$1])} ${x.length === a.length && x.every((x, i) => x === a[i])}`,
+    `${a.length === x.length && a.every((x$1, j) => x$1 === x[j])} ${a.length === i.length && a.every((x, j) => x === i[j])} ${x.length === a.length && x.every((x, j) => x === a[j])}`,
   );
 
   const rows = [
@@ -25,7 +25,7 @@ function main() {
     ["y", "d"],
   ];
   console.log(
-    `${rows.length === same.length && rows.every((x, i) => x.length === same[i].length && x.every((x, i$1) => x === same[i][i$1]))} ${rows.length === diagonal.length && rows.every((x, i) => x.length === diagonal[i].length && x.every((x, i$1) => x === diagonal[i][i$1]))}`,
+    `${rows.length === same.length && rows.every((x, j) => x.length === same[j].length && x.every((x, k) => x === same[j][k]))} ${rows.length === diagonal.length && rows.every((x, j) => x.length === diagonal[j].length && x.every((x, k) => x === diagonal[j][k]))}`,
   );
 }
 //# sourceMappingURL=case.js.map

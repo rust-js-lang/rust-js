@@ -154,8 +154,8 @@ function maps(n) {
     }
   }
   report(`get ${found}`, n, ofMap(m));
-  const end = (n / 3) >>> 0;
-  for (let i = 0; i < end; i++) {
+  const end$1 = (n / 3) >>> 0;
+  for (let i = 0; i < end$1; i++) {
     const v = $remove(m, key(random(span)));
     if (v != null) {
       found = (found + v) >>> 0;
@@ -267,8 +267,8 @@ function maps(n) {
   $retainMap(m, (k, v) => ((k.k + v.value) >>> 0) % 3 !== 0, $sortedEntries(m, keyOrd_cmp), true);
   report("retain", n, ofMap(m));
   const copy = $ordTreeMap(keyOrd_cmp).ofSorted(m, m);
-  const end$1 = (n / 4) >>> 0;
-  for (let i = 0; i < end$1; i++) {
+  const end$2 = (n / 4) >>> 0;
+  for (let i = 0; i < end$2; i++) {
     copy.set(key(random(span)), 1);
   }
   report("clone", n, ofMap(copy));

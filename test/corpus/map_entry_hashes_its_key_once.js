@@ -296,8 +296,8 @@ function main() {
 
   // Where the map's keys are known here.
   let counts = new ($hashedMap(wordHash, wordPartialEq_eq))();
-  for (let j = 0; j < words.length; j++) {
-    const word = words[j];
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
     const orInsert = $entryOrInsert($entry(counts, word), 0, true);
     orInsert.value = (orInsert.value + 1) >>> 0;
   }

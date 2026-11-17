@@ -111,8 +111,8 @@ function main() {
       ),
     ],
   ];
-  for (let j = 0; j < rows.length; j++) {
-    const [name, v] = rows[j];
+  for (let i = 0; i < rows.length; i++) {
+    const [name, v] = rows[i];
     const arg = $capacity(v, 4);
     console.log(`${name} [${v.join(", ")}] ${arg}`);
   }

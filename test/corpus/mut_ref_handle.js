@@ -24,7 +24,7 @@ function first(v) {
 
 function main() {
   let drops = 0;
-  for (let i = 0; i < 2; i++) {
+  for (let k = 0; k < 2; k++) {
     const c = {
       get value() {
         return drops;

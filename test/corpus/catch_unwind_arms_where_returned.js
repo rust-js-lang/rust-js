@@ -198,11 +198,11 @@ function looped(xs) {
  */
 function searched(xs) {
   let found = 0;
-  for (let j = 0; j < xs.length; j++) {
-    const limit = xs[j];
+  for (let i = 0; i < xs.length; i++) {
+    const limit = xs[i];
     try {
-      for (let i = 0; i < xs.length; i++) {
-        const x = xs[i];
+      for (let j = 0; j < xs.length; j++) {
+        const x = xs[j];
         if (x === limit) {
           continue;
         }
@@ -226,13 +226,13 @@ function searched(xs) {
  */
 function broke(xs) {
   let seen = 0;
-  for (let j = 0; j < xs.length; j++) {
-    const limit = xs[j];
+  for (let i = 0; i < xs.length; i++) {
+    const limit = xs[i];
     try {
       if (
         (() => {
-          for (let i = 0; i < xs.length; i++) {
-            const x = xs[i];
+          for (let j = 0; j < xs.length; j++) {
+            const x = xs[j];
             if (throwException(x) && x > limit) {
               return true;
             }
@@ -261,13 +261,13 @@ function broke(xs) {
  */
 function keptOn(xs) {
   let seen = 0;
-  for (let j = 0; j < xs.length; j++) {
-    const limit = xs[j];
+  for (let i = 0; i < xs.length; i++) {
+    const limit = xs[i];
     try {
       if (
         (() => {
-          for (let i = 0; i < xs.length; i++) {
-            const x = xs[i];
+          for (let j = 0; j < xs.length; j++) {
+            const x = xs[j];
             if (throwException(x) && x > limit) {
               return false;
             }

@@ -548,7 +548,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let (item, i) = (
                     self.fresh(crate::lower::Base::Named("item")),
-                    self.fresh(crate::lower::Base::Named("i")),
+                    crate::js::Name::counter("i"),
                 );
                 let keep = Expr::bin(Op::Eq, Expr::bin(Op::Rem, Expr::var(&i), n), Expr::int(0));
                 let body = match self.item_drop_call(receiver_ty, Expr::var(&item), span)? {

@@ -112,15 +112,15 @@ export function table(input) {
   }
   rows.sort((a, b) => $cmp(b.score, a.score) || $cmp(a.name, b.name));
   out += `${$pad(HEADERS[0], 8, "<")}|${$pad(HEADERS[2], 6, ">")}|${$pad("grade", 7, "^")}|${HEADERS[1]}\n`;
-  for (let j = 0; j < rows.length; j++) {
-    const r = rows[j];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
     const value = capitalize(r.name);
     const value$1 = grade(r.score, r.age);
     out += `${$pad(value, 8, "<")}|${String(r.score).padStart(6)}|${$pad(value$1, 7, "^")}|${$toUppercase(r.team)}\n`;
   }
   const byTeam = new $BTreeMap();
-  for (let j = 0; j < rows.length; j++) {
-    const r = rows[j];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
     if (!byTeam.has(r.team)) {
       byTeam.set(r.team, []);
     }

@@ -6,6 +6,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "shadows-inside-unasked",
+    breaks:
+      "a loop's counter whose body holds the program's own `for i` is spelled `i` too, shadowed by it, not `j` (ADR 1042, #2032)",
+    file: "src/js/scopes.rs",
+    find: "        around || inside\n",
+    replace: "        around\n",
+    tests: ["test/lowering-mir-lets.test.ts", "-t", "is declared in the body"],
+  },
+  {
     name: "closure-read-of-a-block-refused",
     breaks:
       "a guard's closure that reads a `const` the function's block declares, `start`, stays a function, though the call sees the same `start` (#501)",

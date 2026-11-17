@@ -175,8 +175,8 @@ export function shared(times) {
   }
   const v = log;
   let total = 0;
-  for (let j = 0; j < v.length; j++) {
-    const x = v[j];
+  for (let i = 0; i < v.length; i++) {
+    const x = v[i];
     total = (total + x) | 0;
   }
   return [total, v.length];

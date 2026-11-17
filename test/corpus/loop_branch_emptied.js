@@ -13,8 +13,8 @@ function probe(n) {
 
 function main() {
   const len = probe(3);
-  const end$2 = probe(2);
-  for (let i = 0; i < end$2; i++) {
+  const end = probe(2);
+  for (let i = 0; i < end; i++) {
     const product = $checked(len * probe(i), 0, 255);
   }
   const values = [probe(5), probe(9)];
@@ -23,8 +23,8 @@ function main() {
   for (let i = 0; i < end$1; i++) {
     best = $max(values);
   }
-  const end = probe(1);
-  for (let i = 0; i < end; i++) {}
+  const end$2 = probe(1);
+  for (let i = 0; i < end$2; i++) {}
   console.log(`${best == null ? "None" : `Some(${best})`}`);
   scaledOrLast();
   heldCopied(probe(6));
@@ -52,8 +52,8 @@ function scaledOrLast() {
     const e = [same(-2n), same(5n)].at(-1);
     const last = e != null ? BigInt.asIntN(64, e * same(7n)) : undefined;
   }
-  const end = same(3);
-  for (let i = 0; i < end; i++) {}
+  const end$1 = same(3);
+  for (let i = 0; i < end$1; i++) {}
   console.log("scaled or last");
 }
 //# sourceMappingURL=case.js.map

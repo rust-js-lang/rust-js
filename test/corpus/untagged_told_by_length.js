@@ -178,14 +178,14 @@ function main() {
   console.log(`${$displayF64(sum(two))} ${$displayF64(sum(three))}`);
 
   const shapes = ["word", [1, 2], [0, 0, 2, 3], [1, 2, 4]];
-  for (let j = 0; j < shapes.length; j++) {
-    const shape = shapes[j];
+  for (let i = 0; i < shapes.length; i++) {
+    const shape = shapes[i];
     console.log(`${$displayF64(area(shape))}`);
   }
 
   const entries = [["pair", 1], { name: "named" }];
-  for (let j = 0; j < entries.length; j++) {
-    const entry = entries[j];
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
     console.log(`${name(entry)}`);
   }
 

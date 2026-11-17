@@ -43,7 +43,7 @@ function pairs(v) {
   let out = "";
   for (let i = v.length - 1; i >= 0; i--) {
     const [n, c] = v[i];
-    for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
       out += c;
     }
   }

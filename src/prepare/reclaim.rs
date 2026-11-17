@@ -37,7 +37,9 @@ pub(super) fn spelled(module: &mut js::Module) {
         names_mut(item, true, &mut |name| {
             // By its word, as it's spelled below: a made name's word is
             // its own in its item, each of its clones' too.
-            if name.made_base().is_some() && !unspelled.iter().any(|u: &Name| u.is(name.word())) {
+            // Not a loop's counter, spelled once the program's names are
+            // reclaimed (`counters::spelled`, #2032).
+            if name.made_base().is_some() && !name.is_counter() && !unspelled.iter().any(|u: &Name| u.is(name.word())) {
                 unspelled.push(name.clone());
             }
         });

@@ -32,8 +32,8 @@ function main() {
     [4, 4],
   ];
   const copy = held.map((item) => item.slice());
-  for (let j = 0; j < held.length; j++) {
-    const row = held[j];
+  for (let i = 0; i < held.length; i++) {
+    const row = held[i];
     row[0] = 9;
     console.log(`[${row.join(", ")}]`);
   }
@@ -43,8 +43,8 @@ function main() {
     [a[0], a[1]],
     [a[0], a[1]],
   ];
-  for (let j = 0; j < pair.length; j++) {
-    const p = pair[j];
+  for (let i = 0; i < pair.length; i++) {
+    const p = pair[i];
     bump(p);
     console.log(`(${p[0]}, ${p[1]})`);
   }

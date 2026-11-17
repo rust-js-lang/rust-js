@@ -104,6 +104,10 @@ enum Of {
     BlockLabel,
     /// A label the program wrote, `'rows` (`label`).
     Label,
+    /// A loop's counter tidy's loops make, or the variable a range's end
+    /// is held in, not spelled yet, `i#7`, `end#8`: preparation picks its
+    /// word (`counter`, `prepare::counters`, ADR 1042, #2032).
+    Counter,
 }
 
 impl Name {
@@ -274,6 +278,23 @@ impl Name {
     /// and the validator refuses one that reaches printing.
     pub fn made(base: &str, k: usize) -> Name {
         Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
+    }
+
+    /// A loop's counter, of `base` `i`, or what holds a range's end, of
+    /// `end`, as tidy's loops make one (ADR 1042): not spelled yet, `i#7`,
+    /// its word its own by its id, which preparation spells
+    /// (`prepare::counters`, #2032): a counter the first of `i`, `j`, `k`,
+    /// `i$1`, .. no counter of a loop around it is, an end `end`, `end$1`, ..,
+    /// each one no other name of its item has and JS's scopes let it be.
+    pub fn counter(base: &str) -> Name {
+        let id = Id::fresh();
+        Name(crate::names::made(base, id.0 as usize), Of::Counter, id, Id::WORD)
+    }
+
+    /// Whether it's a loop's counter or a held end tidy's loops made
+    /// (`counter`).
+    pub fn is_counter(&self) -> bool {
+        self.1 == Of::Counter
     }
 
     /// Its word taken in `taken`, a naming table's words: whether it wasn't

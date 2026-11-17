@@ -9,6 +9,7 @@ pub use passes::{Fired, PASSES, Pass, Passes};
 
 mod assigned_breaks;
 mod catches;
+mod counters;
 mod declared;
 mod do_whiles;
 mod forwarding;
@@ -88,6 +89,9 @@ fn prepared_module(module: &mut js::Module) {
     });
     reclaim::spelled(module);
     passes::run(Pass::NamesReclaimed, module, reclaim::module);
+    // Not one of the passes `--prepare-without` leaves out: a module is
+    // never printed with a counter unspelled (#2032).
+    counters::spelled(module);
     passes::run(Pass::CompoundAssignments, module, compound);
     each_block(Pass::SteppedWhiles, module, &mut stepped_whiles::stepped_whiles);
     passes::run(Pass::Counters, module, stepped_whiles::counters);

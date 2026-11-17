@@ -213,3 +213,49 @@ had its own. Case N of ADR 0262, as above. Held by
 `extend-whole-array-unseen`, `extend-whole-of-the-type-given` and
 `extend-from-slice-unlooped` (`lower/combinators.ts`); `extend-written-helper`,
 `extend-written-of-any` and `pushed-none-left-out` retargeted.
+
+## Amendment: a counter is preparation's to spell, shadowing nothing around it (#2032)
+
+Tidy's loops picked a counter's word themselves, from a table of the
+words the function mentions:
+- `i`, `j`, `k`, then `i$1`, for a counter;
+- `end`, `end$1`, for a held end;
+- inner counters renamed by word, `i` to `j`, so the outer one took `i`.
+
+mut_items had its own table, and lowering named an index loop's counter
+`i` through its naming table, `fresh(Role::I)`. So each place answered
+the speller's question, which word is free, a second time.
+
+Each counter is now a made name of its own form, `Name::counter("i")`,
+not spelled until preparation. That covers:
+- tidy's `indexed`, `counted_range` and `from_the_end`;
+- mut_items' index and bound;
+- combinators', adapters', std_impls' and slice's index loops;
+- the held end, `Name::counter("end")`.
+
+`prepare::counters::spelled` spells each one after the program's names
+are reclaimed. A counter is the first of `i`, `j`, `k`, `i$1`, .. (an
+end's `end`, `end$1`, ..) that:
+- shadows no variable in a scope around it, and is shadowed by none in a
+  scope inside its own (`js::scopes::Tree::shadows`, both ways);
+- keeps each read its own (`Tree::renames`).
+
+Loops side by side each count with `i`. One inside a loop of `i` counts
+with `j`, and so does one whose body holds the program's own `for i`. A
+held end follows the same rule both ways: beside a later `const end` of
+the function, whose scope holds an `else` block's own held end, one is
+`end$1` (the lead's decision: one rule over a split). A variable of the program's in scope is shadowed by no counter:
+a later `let i` in the same block is in scope for the whole block. An
+item with no scope tree takes the first word its module doesn't have.
+Both word tables, stages' `mentions` and mut_items', go.
+
+**React port, 14 counters, each now upstream's spelling or one that
+shadows no longer:**
+- `j`/`k` → `i` where nothing encloses an `i`, as upstream writes it;
+- ReactFlightWebpackPlugin's inverted pair, outer `j` and inner `i`, now
+  `i` and `j`;
+- the Fizz instruction set's `appearingImages`, under an enclosing `i`,
+  now `j`.
+
+**The corpus:** 25 snapshots move, counter spellings only (the lead's
+review). Mutations `counter-shadows-around` and `counter-letters-gone`.

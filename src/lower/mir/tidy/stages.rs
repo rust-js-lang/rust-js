@@ -302,10 +302,7 @@ pub(super) const STAGES: &[Stage] = &[
             }),
             pass("assigned parts", |b, _| js::statement_lists(b, &mut assigned_parts)),
             // A loop over an array's `&mut`s, over its indices (#320).
-            pass("mut items", |b, _| {
-                let mut taken = mentions(b);
-                bottom_up(b, &mut |stmts| mut_items::mut_item_loops(stmts, &mut taken));
-            }),
+            pass("mut items", |b, _| bottom_up(b, &mut mut_items::mut_item_loops)),
             // A tuple of an `if`'s value taken apart: a `let` of each part,
             // assigned in each branch (rd45).
             pass("conditional tuples", |b, _| {
@@ -1174,11 +1171,9 @@ fn branch_values_of(body: &mut Vec<Stmt>, hints: &Hints) {
 /// Each of `body`'s loops of an iterator's steps, a `for` of what it steps
 /// (`loops`), the innermost first.
 fn for_loops(body: &mut Vec<Stmt>, hints: &Hints) {
-    let (mut taken, mut counted) = (mentions(body), counted(body));
+    let counted = counted(body);
     let captured = bindings::captured(body);
-    bottom_up(body, &mut |stmts| {
-        loops(stmts, (&mut taken, &mut counted), hints.numbers, &captured)
-    });
+    bottom_up(body, &mut |stmts| loops(stmts, &counted, hints.numbers, &captured));
     loop_bound_lets(body);
 }
 
@@ -1187,13 +1182,11 @@ fn for_loops(body: &mut Vec<Stmt>, hints: &Hints) {
 /// `loops` makes one; whether it made any.
 fn looped_drops_of_made(body: &mut Vec<Stmt>, hints: &Hints, for_made: bool) -> bool {
     let mut looped = false;
-    let (mut taken, mut counted) = (mentions(body), counted(body));
+    let counted = counted(body);
     let captured = bindings::captured(body);
     let mut tidied = |run: &mut Vec<Stmt>| {
         bindings::declarations(run);
-        bottom_up(run, &mut |stmts| {
-            loops(stmts, (&mut taken, &mut counted), hints.numbers, &captured)
-        });
+        bottom_up(run, &mut |stmts| loops(stmts, &counted, hints.numbers, &captured));
     };
     js::statement_lists(body, &mut |stmts| {
         looped |= unwinds::looped_drops(stmts, for_made, &mut tidied)
@@ -1238,12 +1231,6 @@ fn mentioned(body: &[Stmt]) -> IndexMap<js::Name, usize> {
 }
 
 /// How many times each name is mentioned.
-fn mentions(body: &[Stmt]) -> IndexMap<String, usize> {
-    let mut mentions: IndexMap<String, usize> = IndexMap::default();
-    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
-    mentions
-}
-
 /// How often `body` mentions each variable, by its id: what `loops` asks of
 /// an iterator, where `mentions`' words are what it picks a counter's from.
 fn counted(body: &[Stmt]) -> IndexMap<js::Name, usize> {
