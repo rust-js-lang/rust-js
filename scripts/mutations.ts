@@ -1027,12 +1027,44 @@ export function ofTouched(changed: string[], among = lists): Mutation[] {
   );
 }
 
+/** The mutations of a build of many, `files` as `schema` wrote them, whose
+ * arms rustc's diagnostics `said` place an error in: of each error's
+ * `file:line`, the arm the nearest `__mutant_is("name")` before it opens.
+ * Each is checked alone after, as an error placed past an arm, in the
+ * `else` its type must agree with, is blamed on the arm before it. */
+export function blamed(said: string, files: Map<string, string>): Set<string> {
+  const names = new Set<string>();
+  const lines = said.split("\n");
+  const at: [string, number][] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const short = /^([^\s:]+\.rs):(\d+):\d+: error/.exec(lines[i]!);
+    if (short) at.push([short[1]!, Number(short[2])]);
+    else if (/^error/.test(lines[i]!)) {
+      const arrow = /^\s*--> ([^\s:]+\.rs):(\d+):\d+/.exec(lines[i + 1] ?? "");
+      if (arrow) at.push([arrow[1]!, Number(arrow[2])]);
+    }
+  }
+  const opening = "if crate::__mutant_is(";
+  for (const [path, line] of at) {
+    const key = [...files.keys()].find((file) => path === file || path.endsWith(`/${file}`));
+    if (key === undefined) continue;
+    const text = files.get(key)!;
+    const end = text.split("\n").slice(0, line).join("\n").length;
+    const opened = text.lastIndexOf(opening, end);
+    const name = opened < 0 ? undefined : /^"((?:[^"\\]|\\.)*)"/.exec(text.slice(opened + opening.length))?.[1];
+    if (name !== undefined) names.add(name);
+  }
+  return names;
+}
+
 /** Each of `sited` type-checked as its build would be, by `check`, which
- * says why the crate with `files` written over it doesn't type-check, or
- * nothing where it does: as the runner builds them, of many at once, each
- * site once for each of its mutations, chosen by name (`schema`), every
- * site of the crate in two checks; one that fails split in two until it's
- * one mutation, which it names. Why each that doesn't, by name. */
+ * says rustc's diagnostics where the crate with `files` written over it
+ * doesn't type-check, or nothing where it does: as the runner builds
+ * them, of many at once, each site once for each of its mutations, chosen
+ * by name (`schema`), every site of the crate in two checks. Of one that
+ * fails, the mutations its errors are in (`blamed`) each checked alone and
+ * the rest again together, or, where none is placed, it split in two;
+ * until one alone fails, which it names. Why each that doesn't, by name. */
 export async function typechecked(
   sited: Sited[],
   check: (files: Map<string, string>, unit: boolean) => Promise<string | undefined>,
@@ -1051,10 +1083,15 @@ export async function typechecked(
       for (const { mutation } of batch) problems.set(mutation, files.problem);
       continue;
     }
-    const why = await check(files, batch[0]!.mutation.unitTests !== undefined);
-    if (why === undefined) continue;
-    if (batch.length > 1) queue.push(batch.slice(0, batch.length / 2), batch.slice(batch.length / 2));
-    else problems.set(batch[0]!.mutation, `doesn't type-check: ${why}`);
+    const said = await check(files, batch[0]!.mutation.unitTests !== undefined);
+    if (said === undefined) continue;
+    const names = batch.length > 1 ? blamed(said, files) : new Set<string>();
+    const placed = batch.filter((s) => names.has(s.mutation.name));
+    if (placed.length > 0) {
+      queue.push(...placed.map((s) => [s]));
+      if (placed.length < batch.length) queue.push(batch.filter((s) => !names.has(s.mutation.name)));
+    } else if (batch.length > 1) queue.push(batch.slice(0, batch.length / 2), batch.slice(batch.length / 2));
+    else problems.set(batch[0]!.mutation, `doesn't type-check: ${said.split("\n").find((line) => /\berror\b/.test(line)) ?? said.split("\n")[0]}`);
   }
   return problems;
 }
@@ -1095,7 +1132,7 @@ async function typecheck(base: string): Promise<void> {
     const command = ["cargo", "check", "--quiet", "--locked", "--message-format=short", ...(unit ? ["--tests"] : []), "--target-dir", join(root, "target")];
     const p = await run(command, crate, buildTimeout);
     if (p.code === 0 && !stopped(p, buildTimeout)) return undefined;
-    return stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => /\berror\b/.test(line)) ?? `exited ${p.code}`;
+    return stopped(p, buildTimeout) ?? (p.stderr || `exited ${p.code}`);
   };
   for (const [mutation, problem] of await typechecked(sited, check)) problems.set(mutation, problem);
   const files = new Set(chosen.map((m) => m.file)).size;

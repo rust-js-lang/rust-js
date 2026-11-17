@@ -91,11 +91,19 @@ export const mutations: Mutation[] = [
     tests: ["test/mutations.test.ts", "-t", "a mutant is caught, survives, or the run says nothing of it"],
   },
   {
-    name: "typecheck-blames-the-batch",
-    breaks: "a check of many mutants that fails names each of them, not the one that doesn't type-check",
+    name: "typecheck-blamed-unconfirmed",
+    breaks: "a mutant an error of a check of many is placed in is said not to type-check, not checked alone, where an error past its arm is blamed on it",
     file: "scripts/mutations.ts",
-    find: "    if (batch.length > 1) queue.push(batch.slice(0, batch.length / 2), batch.slice(batch.length / 2));\n    else problems.set(batch[0]!.mutation, `doesn't type-check: ${why}`);\n",
-    replace: "    for (const { mutation } of batch) problems.set(mutation, `doesn't type-check: ${why}`);\n",
+    find: "      queue.push(...placed.map((s) => [s]));\n",
+    replace: "      for (const { mutation } of placed) problems.set(mutation, \"doesn't type-check\");\n",
+    tests: ["test/mutation-changes.test.ts", "-t", "a change's mutants are type-checked many to a check"],
+  },
+  {
+    name: "typecheck-blame-unplaced",
+    breaks: "a failing check of many is halved down to its mutant, a check of thousands of arms each time, where rustc's error says which arm",
+    file: "scripts/mutations.ts",
+    find: "    if (name !== undefined) names.add(name);\n",
+    replace: "",
     tests: ["test/mutation-changes.test.ts", "-t", "a change's mutants are type-checked many to a check"],
   },
   {

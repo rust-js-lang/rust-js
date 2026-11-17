@@ -3,7 +3,7 @@
 // to a build. Split from test/ci.test.ts by concept (#1334).
 
 import { expect, test } from "bun:test";
-import { cpSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { batches, buildsUnmutated, type Change, changedLines, changedMutations, enclosingFunction, mutations, ofTouched, ownMutations, refusedFlags, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, typechecked, unitTestsModule } from "../scripts/mutations";
 import { phases } from "../scripts/push";
@@ -342,9 +342,10 @@ test("a change's mutants are type-checked many to a check, and one that doesn't 
   let checks = 0;
   const check = async (files: Map<string, string>) => {
     checks++;
-    writeFileSync(join(dir, "main.rs"), files.get("src/main.rs")!);
-    const p = Bun.spawnSync(["rustc", "--edition=2021", "-Awarnings", "--emit=metadata", "--out-dir", dir, join(dir, "main.rs")], { cwd: root });
-    return p.exitCode === 0 ? undefined : p.stderr.toString().split("\n").find((line) => line.startsWith("error"));
+    mkdirSync(join(dir, "src"), { recursive: true });
+    writeFileSync(join(dir, "src/main.rs"), files.get("src/main.rs")!);
+    const p = Bun.spawnSync(["rustc", "--edition=2021", "-Awarnings", "--emit=metadata", "--out-dir", dir, "src/main.rs"], { cwd: dir });
+    return p.exitCode === 0 ? undefined : p.stderr.toString();
   };
   const sited = (of: ReturnType<typeof inProgram>[]): Sited[] => of.map((mutation) => ({ mutation, site: site(mutation, readProgram) }));
   // Those in bodies in one check, and one in a `const fn` alone.
@@ -354,4 +355,7 @@ test("a change's mutants are type-checked many to a check, and one that doesn't 
   const summedAsText = inProgram("sum-as-text", "    total\n", '    "total"\n');
   const problems = await typechecked(sited([sumOff, summedAsText, shownUnit]), check, readProgram);
   expect([...problems].map(([m, why]) => [m.name, why.startsWith("doesn't type-check: error[E0308]")])).toEqual([["sum-as-text", true]]);
+  // Placed by its error, checked alone, the rest again together: three
+  // checks, not a halving's.
+  expect(checks).toBe(5);
 });

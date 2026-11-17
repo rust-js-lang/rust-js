@@ -15,7 +15,7 @@ import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
 import { evaluateIf, heldJobs, mostAtOnce, NIGHTLY_RUNNERS, scheduled } from "../scripts/runners";
-import { lowerRatchets, ratchets, reactGate, regenerated, remakeable } from "../scripts/push";
+import { appendedBoth, lowerRatchets, ratchets, reactGate, regenerated, remakeable } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, drivesBrowser, testFileSeconds } from "../scripts/shard";
@@ -1296,6 +1296,23 @@ test("a rebase's conflict in a ratchet is resolved by the lower count, anything 
   expect(lowerRatchets(conflict(["const WORD_WALKS = 161;"], ["const WORD_WALKS = 137;"]))).toBe(["# a ratchet", "const WORD_WALKS = 137;", "src/z.rs\t1", ""].join("\n"));
   expect(lowerRatchets(conflict(["const WORD_WALKS = 161;", "  const free = [\"mentions_in\"];"], ["const WORD_WALKS = 137;"]))).toBeUndefined();
   for (const file of ratchets) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
+});
+
+// Two pushes amending one ADR at once each append to its end: m3-max's
+// stopped twice on ADR 1150 (2026-11-18). Both kept, main's first, each
+// whole; a change to the text they share still stops.
+test("a rebase's conflict in an ADR both sides only appended to keeps both amendments, any other stops", () => {
+  const base = "# ADR 1150\n\nThe decision.\n";
+  const ours = `${base}\n### Amended: one (m3-max)\n\nIts text.\n`;
+  const theirs = `${base}\n### Amended: another (ioCP)\n\nIts text.\n`;
+  expect(appendedBoth(base, ours, theirs)).toBe(`${base}\n### Amended: one (m3-max)\n\nIts text.\n\n### Amended: another (ioCP)\n\nIts text.\n`);
+  // One with no newline at its end is ended before the other's.
+  expect(appendedBoth(base, `${base}X`, `${base}Y\n`)).toBe(`${base}X\nY\n`);
+  expect(appendedBoth(base, ours.replace("The decision.", "The decision, amended."), theirs)).toBeUndefined();
+  expect(appendedBoth(base, ours, theirs.replace("# ADR 1150", "# ADR 1150, renamed"))).toBeUndefined();
+  expect(remakeable(["docs/decisions/1150-names-are-ids.md", "test/word-reads.txt"])).toBe(true);
+  expect(remakeable(["docs/decisions/README.md"])).toBe(false);
+  expect(remakeable(["docs/guide/README.md"])).toBe(false);
 });
 
 // `gh api --paginate` runs its `--jq` on each page: one that makes an

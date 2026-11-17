@@ -320,10 +320,29 @@ export function lowerRatchets(text: string): string | undefined {
 }
 
 /** Whether a rebase's `conflicts` are each a blessed baseline's, which it
- * resolves by making them again, or a ratchet's, by the lower count; any
- * other, hand-written code's too, stops it. */
+ * resolves by making them again, a ratchet's, by the lower count, or an
+ * ADR's, by both sides' amendments (`appendedBoth`); any other,
+ * hand-written code's too, stops it. */
 export function remakeable(conflicts: string[]): boolean {
-  return conflicts.every((file) => file in regenerated || ratchets.includes(file));
+  return conflicts.every((file) => file in regenerated || ratchets.includes(file) || decision(file));
+}
+
+/** An ADR, docs/decisions/<n>-<name>.md, which a change amends by
+ * appending to its end. */
+const decision = (file: string) => /^docs\/decisions\/\d+-[^/]+\.md$/.test(file);
+
+/** An ADR both sides only appended to, each its amendment at the end of
+ * `base`, the text they shared: `base`, then `ours`' amendment, the commit
+ * the rebase is onto, then `theirs`, the one replayed, each whole, as two
+ * pushes amending ADR 1150 at once stopped m3-max's twice (2026-11-18).
+ * Undefined where either side changed `base` itself, which stays the
+ * change's author's to merge. */
+export function appendedBoth(base: string, ours: string, theirs: string): string | undefined {
+  if (!ours.startsWith(base) || !theirs.startsWith(base)) return undefined;
+  const mine = ours.slice(base.length);
+  const yours = theirs.slice(base.length);
+  const joined = mine.endsWith("\n") || mine === "" ? mine : `${mine}\n`;
+  return base + joined + yours;
 }
 
 /** Onto origin/main. A conflict in a blessed baseline alone (`regenerated`)
@@ -343,6 +362,16 @@ function rebase(): string[] {
       throw new Refused(`the rebase stopped on a conflict, aborted: ${conflicts.join(", ")}`);
     }
     for (const file of conflicts) {
+      if (decision(file)) {
+        const merged = appendedBoth(git("show", `:1:${file}`).out, git("show", `:2:${file}`).out, git("show", `:3:${file}`).out);
+        if (merged === undefined) {
+          git("rebase", "--abort");
+          throw new Refused(`the rebase stopped on a conflict in ${file} that isn't two amendments appended to its end, aborted`);
+        }
+        writeFileSync(file, merged);
+        git("add", file);
+        continue;
+      }
       if (ratchets.includes(file)) {
         const lowered = lowerRatchets(readFileSync(file, "utf8"));
         if (lowered === undefined) {
