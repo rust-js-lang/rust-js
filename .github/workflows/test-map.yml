@@ -32,6 +32,10 @@ on:
         description: "'head': HEAD's map, recorded where none is kept; 'any': HEAD's or an ancestor's kept."
         type: string
         default: 'any'
+      full:
+        description: "The nightly's: HEAD's map recorded whole, never carried, then checked against what a carry makes of it (`testMap.ts drift`), a drift making each recording full until a nightly's check passes."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -80,13 +84,17 @@ jobs:
         id: map
         env:
           OF: ${{ inputs.of || 'head' }}
+          FULL: ${{ inputs.full && 'true' || 'false' }}
           SHARDS: '8'
         run: |
           if [ "$OF" = "head" ]; then of=--head; else of=; fi
-          if bun scripts/testMap.ts kept $of; then
+          if [ "$FULL" != "true" ] && bun scripts/testMap.ts kept $of; then
             echo "record=false" >> "$GITHUB_OUTPUT"
           else
-            bun scripts/testMap.ts build --shards="$SHARDS"
+            # Incremental where an earlier map serves (`planCarry`); whole of
+            # the nightly's, `full`.
+            if [ "$FULL" = "true" ]; then full=--full; else full=; fi
+            bun scripts/testMap.ts build --shards="$SHARDS" $full
             # A tar, which keeps the binary's mode, as an artifact doesn't.
             tar -cf test-map-build.tar target/test-map/build/debug/rust-js
             echo "record=true" >> "$GITHUB_OUTPUT"
@@ -109,7 +117,11 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-map-plan
-          path: target/test-map/plan.json
+          # And the map it carries from, which the merge reads (`carriedFrom`).
+          path: |
+            target/test-map/plan.json
+            target/test-map/from.json
+          if-no-files-found: ignore
           retention-days: 1
 
   # A part of the map's recording, its plan's share of the tests, each run
@@ -183,6 +195,16 @@ jobs:
         run: |
           for part in test-map-part-*.tar; do tar -xf "$part"; done
           bun scripts/testMap.ts merge
+      # The nightly's: the full map against what a carry makes of it; a
+      # drift fails the run and leaves `drift-failed` in the store the cache
+      # keeps, each recording full until a nightly's check passes.
+      - if: inputs.full
+        name: The drift check
+        run: bun scripts/testMap.ts drift || { echo "drift=true" >> "$GITHUB_ENV"; }
+      - if: always() && inputs.full && env.drift == 'true'
+        run: |
+          echo "the test map's drift check failed: recordings are full until a nightly's passes" >> "$GITHUB_STEP_SUMMARY"
+          exit 1
       - uses: actions/cache/save@v6
         with:
           path: .cache/test-maps

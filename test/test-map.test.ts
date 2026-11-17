@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, carriedUnits, carryOf, remapBits, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -173,6 +173,14 @@ test("a name no item declared, added to a `use`, changes nothing but the code ch
   // A name taken out of a `use`: everything.
   const taken: Change = { file: "src/a.rs", hunks: [[23, 1, ["    imports::{Import},"], ["    imports::{Import, Package},"]]] };
   expect(pick(map, [taken], files, cases, sources(false)).kind).toBe("all");
+});
+
+test("a test carried over keeps its functions by their symbols, and one new since isn't any carried test's", () => {
+  // f1 and f2 swap places; f3 is new; f0 is gone.
+  const from = ["f0", "f1", "f2"];
+  const to = ["f2", "f1", "f3"];
+  expect([...remapBits(new Uint8Array([0b111]), from, to)]).toEqual([0b011]);
+  expect([...remapBits(new Uint8Array([0b010]), from, to)]).toEqual([0b010]);
 });
 
 test("a file read by `include_str!` is the line that reads it", () => {
@@ -404,7 +412,9 @@ test("the merge of a recording's parts is the map of one part's recording", () =
           continue;
         }
         const [i, n] = cases.split("/").map(Number);
-        for (const name of shard(plan.caseNames, i, n)) {
+        // Of an incremental plan, the cases it lists (`carriedUnits`).
+        const listed = plan.carry === undefined ? plan.caseNames : plan.caseNames.filter((name) => (file === "test/corpus.test.ts" ? plan.carry!.cases : plan.carry!.forms).includes(name));
+        for (const name of shard(listed, i, n)) {
           const unitName = file === "test/corpus.test.ts" ? `test/corpus/${name}` : `${file} test/corpus/${name}`;
           write(part, unitName, unitName);
           write(part, unitName, `${unitName}!`);
@@ -443,6 +453,24 @@ test("the merge of a recording's parts is the map of one part's recording", () =
     "test/unknown.test.ts (a compile of it ran a function the table hasn't)",
     "test/none.test.ts (it ran no compiler)",
   ]);
+  // An incremental recording, carried from the whole one: the tests it
+  // records, its own; each other, the whole one's by each function's
+  // symbol, so the same map, but for what says it carried.
+  expect(whole.map.names).toEqual(names);
+  const carry = carryOf(whole.map, { files: ["test/two.test.ts"], cases: ["c.rs"], forms: [] }, files, caseNames, { commit: "c0", made: 1 });
+  // What it records: what's selected, and what the whole one has none of.
+  expect([carry.recorded, carry.cases, carry.forms]).toEqual([["test/two.test.ts", "test/fails.test.ts", "test/reads.test.ts", "test/unknown.test.ts", "test/none.test.ts"], ["c.rs"], []]);
+  const incremental: Plan = { ...one, carry, units: carriedUnits(one.units, carry) };
+  expect(incremental.units.map((unit) => unit.name).sort()).toEqual(["test/corpus.test.ts 1/2", "test/corpus.test.ts 2/2", ...carry.recorded].sort());
+  expect(incremental.units.find((unit) => unit.name === "test/corpus.test.ts 1/2")!.env.RUST_JS_CASES).toMatch(/^1\/2:target\/test-map\/carried-cases\.txt$/);
+  const carried = mergeRecordings(incremental, record(incremental, join(dir, "incremental")), 1, whole.map);
+  const { carried: said, ...map } = carried.map;
+  expect(JSON.stringify(map)).toBe(JSON.stringify(whole.map));
+  // Its five files, its one case and the two case files, whose own compiles are each part's.
+  expect(said).toEqual({ from: "c0", recorded: 8, carried: Object.keys(whole.map.units).length - 8 });
+  // A test neither recorded nor in the map carried from is refused.
+  const lacking = { ...whole.map, units: { ...whole.map.units, "test/one.test.ts": null } };
+  expect(() => mergeRecordings(incremental, readdirSync(join(dir, "incremental")).map((name) => join(dir, "incremental", name)), 1, lacking)).toThrow(/neither recorded nor carried/);
   // A part lost, and a part read twice.
   const parts = readdirSync(join(dir, "three")).map((name) => join(dir, "three", name));
   expect(() => mergeRecordings(three, parts.slice(1), 1)).toThrow(/no part of the recording ran/);

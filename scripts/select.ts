@@ -374,8 +374,19 @@ export function selectChange(base = "origin/main", sanity?: string, rule: Rule =
     const theirs = sideSelection(changesBetween(map.commit, since), map.commit, { files, cases, map, reach, own: () => false });
     return { ...pushSelection(mine, theirs, [...own].some((file) => file.startsWith("src/"))), map: map.commit, behind };
   }
-  const selection = select(changesSince(map.commit), { files, cases, map, reach, own: (file) => own.has(file) });
+  const selection = fullSelection(map, (file) => own.has(file), { files, cases, reach });
   return { ...selection, map: map.commit, behind };
+}
+
+/** The full rule's selection of what changed since `map`'s commit, the
+ * working tree's too: CI's check of `main`'s (`selectChange`'s `full`), and
+ * what an incremental test map records (scripts/testMap.ts's `planCarry`),
+ * so the two can't diverge (ADR 1101, amended). */
+export function fullSelection(map: TestMap, own: (file: string) => boolean = () => true, given?: { files: string[]; cases: string[]; reach: Reach }): Selection {
+  const files = given?.files ?? suiteFiles();
+  const cases = given?.cases ?? corpusCases();
+  const reach = given?.reach ?? reachOf([...files, caseFiles[1]]);
+  return select(changesSince(map.commit), { files, cases, map, reach, own });
 }
 
 /** What a push's check runs (ADR 1101, amended): what the branch's own

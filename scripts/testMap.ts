@@ -14,7 +14,11 @@
 //                              whether a map of HEAD or an ancestor (`--head`: of HEAD)
 //                              is kept, its exit status: CI's mutation jobs, whose
 //                              snapshot judge places each site by it (ADR 0093, amended)
-//   bun scripts/testMap.ts build --shards=N
+//   bun scripts/testMap.ts build --shards=N [--full]
+//                              incremental where an earlier map serves (`planCarry`): the
+//                              tests the selector's full rule picks recorded, the rest carried
+//   bun scripts/testMap.ts drift
+//                              the nightly's: HEAD's full map against what a carry makes
 //   bun scripts/testMap.ts units --shard=i/N
 //   bun scripts/testMap.ts merge
 //                              a recording in N parts on N machines, CI's: the counting
@@ -48,7 +52,7 @@
 // of those of HEAD's ancestors, the nearest is read. One whose commit isn't
 // HEAD's ancestor, or of another version or toolchain, is never read.
 
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
 import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
@@ -90,7 +94,42 @@ export type TestMap = {
    * runs where std's package or the runtime changes only where it reads or
    * imports it (scripts/select.ts). */
   noCompiler: string[];
+  /** Each function's symbol, by its index: what an incremental recording
+   * carries a test's functions over by, a function's index and lines
+   * moving between commits. A map without them is never carried from. */
+  names?: string[];
+  /** The full recording its chain of incremental ones started from: its
+   * commit and when it was made, itself where it's full. */
+  base?: { commit: string; made: number };
+  /** Of an incremental recording, the map it carried from, and how many of
+   * its tests it recorded and carried. */
+  carried?: { from: string; recorded: number; carried: number };
 };
+
+/** How far an incremental recording carries from: a map at most this many
+ * commits behind, whose chain's full recording is at most `baseDays` old
+ * and `baseCommits` behind; past either, a recording is full, so a drift
+ * between nightlies can't compound (ADR 1101, amended). */
+export const carryCommits = 40;
+export const baseCommits = 200;
+export const baseDays = 1;
+/** Written in the map store where the nightly's drift check failed: each
+ * recording is full until a nightly's passes again. */
+export const driftFlag = join(mapStore, "drift-failed");
+
+/** Of a test's bits over `from`'s functions, its bits over `to`'s, each
+ * function by its symbol: one `to` has that `from` hasn't, new since, no
+ * test it carries ran, as only code changed since calls it. */
+export function remapBits(bits: Uint8Array, from: string[], to: string[]): Uint8Array {
+  const at = new Map(to.map((name, i) => [name, i]));
+  const out = new Uint8Array(Math.ceil(to.length / 8));
+  for (let f = 0; f < from.length; f++) {
+    if (!(bits[f >> 3]! & (1 << (f & 7)))) continue;
+    const i = at.get(from[f]!);
+    if (i !== undefined) out[i >> 3] |= 1 << (i & 7);
+  }
+  return out;
+}
 
 /** A change to a file: each hunk's lines of the map's commit, `[from,
  * count]`, a count of 0 lines added after `from`, and the lines it writes
@@ -536,7 +575,8 @@ export function pruneMaps(dir = mapStore, cap = keptMaps, free = () => freeBytes
   // A map of another toolchain or layout than `toolchain`'s, a stale key,
   // which no check of this one reads, goes whatever its use.
   const stale = (name: string) => toolchain !== undefined && name.endsWith(".json") && !name.endsWith(keySuffix(toolchain));
-  const names = readdirSync(dir);
+  // The drift check's flag is no map: it stays until a nightly's check passes.
+  const names = readdirSync(dir).filter((name) => join(dir, name) !== driftFlag && name !== "drift-failed");
   const kept = names
     .filter((name) => !stale(name))
     .map((name) => {
@@ -554,7 +594,13 @@ export function pruneMaps(dir = mapStore, cap = keptMaps, free = () => freeBytes
  * its nearest ancestor, of this layout and `toolchain`, touched as it's
  * read; or none. A commit `checkout` doesn't have, another clone's, is no
  * ancestor of it. */
-export function nearestMap(store: string, checkout: string, toolchain: string): TestMap | undefined {
+/** The file of the map `nearestMap` gives of this checkout, `accept`ed. */
+function nearestMapFile(accept: (map: TestMap) => boolean): string | undefined {
+  const map = nearestMap(mapStore, root, toolchainOf(), accept);
+  return map === undefined ? undefined : mapFile(mapStore, map.commit, map.toolchain);
+}
+
+export function nearestMap(store: string, checkout: string, toolchain: string, accept: (map: TestMap) => boolean = () => true): TestMap | undefined {
   if (!existsSync(store)) return undefined;
   // By its file's name, `mapFile`'s, the commits of HEAD's ancestors, the
   // nearest first: only that one's read, where it's whole and of this layout.
@@ -573,7 +619,7 @@ export function nearestMap(store: string, checkout: string, toolchain: string): 
     } catch {
       continue;
     }
-    if (map.version !== mapVersion || map.toolchain !== toolchain) continue;
+    if (map.version !== mapVersion || map.toolchain !== toolchain || !accept(map)) continue;
     const now = Date.now() / 1000;
     utimesSync(path, now, now);
     return map;
@@ -907,6 +953,10 @@ export type Plan = {
   corpusReaders: string[];
   includes: TestMap["includes"];
   units: { name: string; cmd: string[]; env: Record<string, string>; shard: number }[];
+  /** Of an incremental recording: the map it carries from, its chain's
+   * full base, and the tests it records, files and case units; the corpus's
+   * cases and std's iterator structs' it runs, a list each its parts read. */
+  carry?: { from: string; base: { commit: string; made: number }; recorded: string[]; cases: string[]; forms: string[] };
 };
 
 /** Where `build` writes the plan and each part's recording is, the merge's
@@ -965,7 +1015,7 @@ export function planUnits(files: string[], shards: number, perShard: number, sec
  * there are cores on all of them, the push suite's files dealt by what
  * check:fast keeps of each one's time on this machine (scripts/jobTimes.ts),
  * none where it keeps none, CI's. */
-async function build(shards: number): Promise<Plan> {
+async function build(shards: number, carry?: (names: string[], files: string[], caseNames: string[]) => Promise<NonNullable<Plan["carry"]> | string>): Promise<Plan> {
   if (git(["status", "--porcelain"]).out.trim() !== "") throw new Error(unclean);
   const started = Date.now();
   const tools = llvmTools();
@@ -1003,7 +1053,20 @@ async function build(shards: number): Promise<Plan> {
   const files = mappedFiles();
   const times = readJobTimes();
   const seconds = new Map(files.map((file) => [file, Math.max(0, ...(times[file]?.seconds ?? []))] as const).filter(([, s]) => s > 0));
-  const units = planUnits(files, shards, perShard, seconds);
+  const caseNames = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+  // What it carries, where an earlier map serves; why not, where none does.
+  const carried = carry === undefined ? "a full recording, asked" : await carry(names, files, caseNames);
+  if (typeof carried === "string") console.log(`a full recording: ${carried}`);
+  // The map it carries from, beside the plan, which the merge reads on a
+  // machine whose store may not keep it.
+  // Of a full one, the nearest earlier map with names, which the nightly's
+  // drift check carries from (`driftCheck`).
+  rmSync(carriedFrom, { force: true });
+  const head = git(["rev-parse", "HEAD"]).out.trim();
+  const earlier = typeof carried !== "string" ? mapFile(mapStore, carried.from, toolchainOf()) : nearestMapFile((map) => map.names !== undefined && map.commit !== head);
+  if (earlier !== undefined) copyFileSync(earlier, carriedFrom);
+  const carrying = typeof carried === "string" ? undefined : carried;
+  const units = carrying === undefined ? planUnits(files, shards, perShard, seconds) : carriedUnits(planUnits(files, shards, perShard, seconds), carrying);
   const plan: Plan = {
     version: mapVersion,
     commit: git(["rev-parse", "HEAD"]).out.trim(),
@@ -1013,15 +1076,122 @@ async function build(shards: number): Promise<Plan> {
     names,
     functions,
     files,
-    caseNames: readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")),
+    caseNames,
     readsSources: files.filter((file) => readsSources(file)),
     // The push suite's files that read the corpus's files: each says where.
     corpusReaders: files.filter((file) => /\bcorpus\b/.test(readFileSync(join(root, file), "utf8"))),
     includes: includes(),
     units,
+    ...(carrying === undefined ? {} : { carry: carrying }),
   };
   writeFileSync(planFile, JSON.stringify(plan));
   return plan;
+}
+
+/** What an incremental recording from `from` records, of the selector's
+ * full rule's `selection` of the commits since (CI's check of `main`'s,
+ * `fullSelection`, never the push rule): each test file and case it
+ * selects; each `from` has none of, new since; and each `null` there, run
+ * on every change. */
+export function carryOf(from: TestMap, selection: { files: string[]; cases: string[]; forms: string[] }, files: string[], caseNames: string[], base: { commit: string; made: number }): NonNullable<Plan["carry"]> {
+  const unrecorded = (unit: string) => typeof from.units[unit] !== "string";
+  return {
+    from: from.commit,
+    base,
+    recorded: files.filter((file) => selection.files.includes(file) || unrecorded(file)),
+    cases: caseNames.filter((name) => selection.cases.includes(name) || unrecorded(caseUnit(caseFiles[0], name)!)),
+    forms: caseNames.filter((name) => selection.forms.includes(name) || unrecorded(caseUnit(caseFiles[1], name)!)),
+  };
+}
+
+/** Why a recording of HEAD is full, or the carry it records: none where the
+ * nightly's drift check failed (`driftFlag`), where no map of an ancestor
+ * has names, where the nearest is past `carryCommits`, where its chain's
+ * full recording is past `baseDays` or `baseCommits`, or where the
+ * selector's full rule says everything. */
+export async function planCarry(names: string[], files: string[], caseNames: string[]): Promise<NonNullable<Plan["carry"]> | string> {
+  void names;
+  if (existsSync(driftFlag)) return "the nightly's drift check failed: each recording full until one passes";
+  const head = git(["rev-parse", "HEAD"]).out.trim();
+  const from = nearestMap(mapStore, root, toolchainOf(), (map) => map.names !== undefined && map.commit !== head);
+  if (from === undefined) return "no map of an ancestor of HEAD has its functions' names";
+  const behind = Number(git(["rev-list", "--count", `${from.commit}..HEAD`]).out.trim());
+  if (behind > carryCommits) return `the nearest map with names, ${from.commit.slice(0, 9)}, is ${behind} commits behind, past ${carryCommits}`;
+  const base = from.base ?? { commit: from.commit, made: from.made };
+  const baseBehind = Number(git(["rev-list", "--count", `${base.commit}..HEAD`]).out.trim());
+  if (Date.now() - base.made > baseDays * 86_400_000 || baseBehind > baseCommits) return `its chain's full recording, ${base.commit.slice(0, 9)}, is past ${baseDays} day or ${baseCommits} commits`;
+  const { fullSelection } = await import("./select");
+  const selection = fullSelection(from);
+  if (selection.all) return `the selector's full rule selects everything since ${from.commit.slice(0, 9)}: ${selection.why}`;
+  return carryOf(from, selection, files, caseNames, base);
+}
+
+/** The nightly's drift check: HEAD's full map against the one a carry
+ * from the nearest earlier map with names would make of the same tests,
+ * each test it carries the earlier map's functions, by symbol, the rest
+ * the full map's. Each test the full map counted whose functions differ is
+ * drift: written to `driftFlag`, so recordings are full until a nightly's
+ * check passes, and said; none, and the flag goes. */
+export async function driftCheck(): Promise<string[]> {
+  const head = git(["rev-parse", "HEAD"]).out.trim();
+  const full = nearestMap(mapStore, root, toolchainOf(), (map) => map.commit === head && map.carried === undefined && map.names !== undefined);
+  if (full === undefined) throw new Error("no full map of HEAD with names: the nightly records one first");
+  // The map the full recording's plan kept beside it, the nearest earlier
+  // one with names; or this machine's.
+  const kept = existsSync(carriedFrom) ? (JSON.parse(readFileSync(carriedFrom, "utf8")) as TestMap) : undefined;
+  const from = kept?.names !== undefined && kept.commit !== head ? kept : nearestMap(mapStore, root, toolchainOf(), (map) => map.names !== undefined && map.commit !== head);
+  if (from === undefined) {
+    console.log("no earlier map with names: nothing a carry would make to check");
+    return [];
+  }
+  const { fullSelection } = await import("./select");
+  const selection = fullSelection(from);
+  if (selection.all) {
+    console.log(`the selector's full rule selects everything since ${from.commit.slice(0, 9)}: a carry would record all`);
+    return [];
+  }
+  const caseNames = Object.keys(full.units).flatMap((unit) => /^test\/corpus\/([^ ]+\.rs)$/.exec(unit)?.[1] ?? []);
+  const files = Object.keys(full.units).filter((unit) => !unit.includes(" ") && !unit.startsWith("test/corpus/"));
+  const carry = carryOf(from, selection, files, caseNames, { commit: from.commit, made: from.made });
+  const recorded = new Set([...carry.recorded, ...carry.cases.map((name) => caseUnit(caseFiles[0], name)!), ...carry.forms.map((name) => caseUnit(caseFiles[1], name)!), ...caseFiles]);
+  const drift: string[] = [];
+  for (const [unit, bits] of Object.entries(full.units)) {
+    if (bits === null || recorded.has(unit)) continue;
+    const was = from.units[unit];
+    if (typeof was !== "string") continue;
+    const carried = remapBits(Buffer.from(was, "base64"), from.names!, full.names!);
+    const now = Buffer.from(bits, "base64");
+    const differ: string[] = [];
+    for (let f = 0; f < full.names!.length; f++) if (((carried[f >> 3]! >> (f & 7)) & 1) !== ((now[f >> 3]! >> (f & 7)) & 1)) differ.push(full.names![f]!);
+    if (differ.length > 0) drift.push(`${unit}: ${differ.length} functions differ, ${differ.slice(0, 3).join(", ")}`);
+  }
+  mkdirSync(mapStore, { recursive: true });
+  if (drift.length > 0) writeFileSync(driftFlag, `${head}\n${drift.join("\n")}\n`);
+  else rmSync(driftFlag, { force: true });
+  return drift;
+}
+
+/** The map an incremental recording carries from, beside its plan. */
+const carriedFrom = join(mapDir, "from.json");
+
+/** Where an incremental recording's parts read the cases they run. */
+const carriedCaseLists = { corpus: "target/test-map/carried-cases.txt", forms: "target/test-map/carried-forms.txt" };
+
+/** Of a full plan's `units`, those an incremental one records: each file
+ * it names, and the corpus's parts, and std's iterator structs', of the
+ * cases it names alone (`RUST_JS_CASES=i/n:<list>`), none where it names
+ * none. */
+export function carriedUnits(units: Plan["units"], carry: NonNullable<Plan["carry"]>): Plan["units"] {
+  const recorded = new Set(carry.recorded);
+  return units.flatMap((unit) => {
+    const [file] = unit.name.split(" ");
+    if (file === caseFiles[0] || file === caseFiles[1]) {
+      const list = file === caseFiles[0] ? carry.cases : carry.forms;
+      if (list.length === 0) return [];
+      return [{ ...unit, env: { ...unit.env, RUST_JS_CASES: `${unit.env.RUST_JS_CASES}:${file === caseFiles[0] ? carriedCaseLists.corpus : carriedCaseLists.forms}` } }];
+    }
+    return recorded.has(file!) ? [unit] : [];
+  });
 }
 
 /** The plan `build` wrote, of HEAD's commit, or why there's none. */
@@ -1048,6 +1218,10 @@ async function recordPart(plan: Plan, shard: number): Promise<string> {
   rmSync(recording, { recursive: true, force: true });
   for (const dir of ["raw", "units", "targets"]) mkdirSync(join(recording, dir), { recursive: true });
   writeFileSync(join(recording, "names.json"), JSON.stringify(plan.names));
+  if (plan.carry !== undefined) {
+    writeFileSync(join(root, carriedCaseLists.corpus), `${plan.carry.cases.join("\n")}\n`);
+    writeFileSync(join(root, carriedCaseLists.forms), `${plan.carry.forms.join("\n")}\n`);
+  }
   const units = plan.units.filter((unit) => unit.shard === shard);
   // The longest first, by what check:fast keeps of each file's time on this
   // machine (scripts/jobTimes.ts), so no long one runs alone at the end; the
@@ -1084,7 +1258,10 @@ async function recordPart(plan: Plan, shard: number): Promise<string> {
  * compiler's sources, `null`, run on every change. The same map of the
  * same tests however they're parted (test/test-map.test.ts). A test of the
  * plan no part, or two, said ended of is refused: a part was lost. */
-export function mergeRecordings(plan: Plan, parts: string[], made: number): { map: TestMap; always: string[] } {
+export function mergeRecordings(plan: Plan, parts: string[], made: number, from?: TestMap): { map: TestMap; always: string[] } {
+  if (plan.carry !== undefined && (from === undefined || from.commit !== plan.carry.from || from.names === undefined)) {
+    throw new Error(`the plan carries from ${plan.carry.from.slice(0, 9)}'s map, which isn't kept here, or has no names`);
+  }
   const ended = new Map<string, number>();
   const bits = new Map<string, Uint8Array>();
   const unfinished = new Set<string>();
@@ -1118,12 +1295,19 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number): { ma
   // the file's own tests.
   const failedUnits = new Set<string>();
   for (const file of caseFiles) {
+    // Of an incremental recording, its parts ran the cases it lists alone.
+    const listed = plan.carry === undefined ? plan.caseNames : plan.caseNames.filter((name) => (file === caseFiles[0] ? plan.carry!.cases : plan.carry!.forms).includes(name));
     for (let i = 1; i <= plan.parts; i++) {
-      if (ended.get(`${file} ${i}/${plan.parts}`) === 0) continue;
+      const name = `${file} ${i}/${plan.parts}`;
+      if (!plan.units.some((unit) => unit.name === name) || ended.get(name) === 0) continue;
       failedUnits.add(file);
-      for (const name of shard(plan.caseNames, i, plan.parts)) failedUnits.add(caseUnit(file, name)!);
+      for (const name of shard(listed, i, plan.parts)) failedUnits.add(caseUnit(file, name)!);
     }
   }
+  // What an incremental recording didn't record, carried over from the map
+  // it carries from, by each function's symbol (`remapBits`).
+  const recorded = plan.carry === undefined ? undefined : new Set([...plan.carry.recorded, ...plan.carry.cases.flatMap((name) => [caseUnit(caseFiles[0], name)!]), ...plan.carry.forms.flatMap((name) => [caseUnit(caseFiles[1], name)!])]);
+  let carriedCount = 0;
   const caseUnits = caseFiles.flatMap((file) => plan.caseNames.map((name) => caseUnit(file, name)!));
   const units: TestMap["units"] = {};
   const always: string[] = [];
@@ -1133,6 +1317,22 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number): { ma
     partedFiles.includes(file) ? plan.units.filter((unit) => unit.name.startsWith(`${file} `)).every((unit) => ended.get(unit.name) === 0) : ended.get(file) === 0;
   for (const unit of [...plan.files, ...caseFiles, ...caseUnits]) {
     const isFile = plan.files.includes(unit);
+    if (recorded !== undefined && !recorded.has(unit) && !(caseFiles as readonly string[]).includes(unit)) {
+      const was = from!.units[unit];
+      if (was === undefined || was === null) throw new Error(`${unit} is neither recorded nor carried: the plan records each test its map has none of`);
+      units[unit] = Buffer.from(remapBits(Buffer.from(was, "base64"), from!.names!, plan.names)).toString("base64");
+      carriedCount++;
+      continue;
+    }
+    // A case file's own compiles, of an incremental recording, with those
+    // the map it carries from saw, so none a case left out ran is lost;
+    // carried whole where it ran none of its parts.
+    if (recorded !== undefined && (caseFiles as readonly string[]).includes(unit) && typeof from!.units[unit] === "string") {
+      const was = remapBits(Buffer.from(from!.units[unit] as string, "base64"), from!.names!, plan.names);
+      const own = bits.get(unit) ?? new Uint8Array(was.length);
+      for (let i = 0; i < own.length; i++) own[i] |= was[i] ?? 0;
+      bits.set(unit, own);
+    }
     const failed = isFile ? !fileEnded(unit) : failedUnits.has(unit);
     const own = bits.get(unit);
     const why = failed
@@ -1150,8 +1350,10 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number): { ma
     if (why !== undefined) always.push(`${unit} (${why})`);
     if (isFile && why === "it ran no compiler") noCompiler.push(unit);
   }
-  const { version, commit, toolchain, functions, includes, corpusReaders } = plan;
-  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler }, always };
+  const { version, commit, toolchain, functions, includes, corpusReaders, names } = plan;
+  const base = plan.carry?.base ?? { commit, made };
+  const carried = plan.carry === undefined ? {} : { carried: { from: plan.carry.from, recorded: Object.keys(units).length - carriedCount, carried: carriedCount } };
+  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried }, always };
 }
 
 /** The map of the plan's recording, every part's, kept in the machine's
@@ -1159,7 +1361,10 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number): { ma
 function merge(plan: Plan, keep: boolean) {
   const parts = existsSync(recordings) ? readdirSync(recordings).map((name) => join(recordings, name)) : [];
   if (parts.length !== plan.shards) throw new Error(`the plan has ${plan.shards} parts, and ${parts.length} were recorded in ${relative(root, recordings)}`);
-  const { map, always } = mergeRecordings(plan, parts, Date.now());
+  const fromPath = plan.carry === undefined ? undefined : existsSync(carriedFrom) ? carriedFrom : mapFile(mapStore, plan.carry.from, plan.toolchain);
+  const from = fromPath === undefined || !existsSync(fromPath) ? undefined : (JSON.parse(readFileSync(fromPath, "utf8")) as TestMap);
+  const { map, always } = mergeRecordings(plan, parts, Date.now(), from);
+  if (map.carried !== undefined) console.log(`carried from ${map.carried.from.slice(0, 9)}: ${map.carried.recorded} tests recorded, ${map.carried.carried} carried; its chain's full recording ${map.base!.commit.slice(0, 9)}`);
   const file = mapFile(mapStore, plan.commit, plan.toolchain);
   // Written whole, then named, so another worktree never reads half of it.
   mkdirSync(mapStore, { recursive: true });
@@ -1216,8 +1421,8 @@ if (import.meta.main) {
   } else if (command === "build") {
     const shards = Number(args.find((arg) => arg.startsWith("--shards="))?.slice("--shards=".length));
     if (!Number.isInteger(shards) || shards < 1) throw new Error("build --shards=N: the machines the recording's parts run on, at least 1");
-    const plan = await build(shards);
-    console.log(`the plan of ${plan.commit.slice(0, 9)}: ${plan.units.length} tests in ${plan.shards} parts, the corpus's files in ${plan.parts}`);
+    const plan = await build(shards, args.includes("--full") ? undefined : planCarry);
+    console.log(`the plan of ${plan.commit.slice(0, 9)}: ${plan.units.length} tests in ${plan.shards} parts, the corpus's files in ${plan.parts}${plan.carry ? `, carried from ${plan.carry.from.slice(0, 9)}: ${plan.carry.recorded.length} files, ${plan.carry.cases.length} cases, ${plan.carry.forms.length} forms recorded` : ""}`);
     // CI's parts, a job each: their count and each one's number.
     const parts = Array.from({ length: plan.shards }, (_, i) => i + 1);
     if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `shards=${plan.shards}\nparts=${JSON.stringify(parts)}\n`);
@@ -1228,6 +1433,11 @@ if (import.meta.main) {
     await recordPart(plan, part.index);
   } else if (command === "merge") {
     merge(readPlan(), false);
+  } else if (command === "drift") {
+    const drift = await driftCheck();
+    for (const line of drift.slice(0, 50)) console.log(line);
+    console.log(drift.length === 0 ? "no drift: each test the carry would have carried ran the functions the full recording saw" : `drift in ${drift.length} tests: recordings are full until a nightly's check passes (${relative(root, driftFlag)})`);
+    if (drift.length > 0) process.exit(1);
   } else if (command === "prune-cache") {
     // CI's: the Actions cache's test maps past the newest `--keep`, by
     // their key's `--prefix`, removed.

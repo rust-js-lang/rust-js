@@ -730,3 +730,39 @@ all); 6fb53cf24 365 to 348 files, 86b8aa91f 248 files and 2,038 cases to
 7fe40bde3, which has its text. So fresher maps, not placement, are what
 narrows a change in code under active edit.
 
+### Amended: a recording carries what the commits since its map can't change (2026-11-17)
+
+A map trails `main` by its recording, 22 to 44 minutes on CI's 8 machines,
+some 4,000 s of their parts, and a push read one a median 6 commits behind
+(at most 11, of ioCM's 84 pushes' selections of the day): a change near
+code another's commit changed since falls back to every test of its file's
+functions. So a recording is incremental where an earlier map serves
+(`planCarry`): it records the tests the selector's full rule selects of
+the commits since that map, `fullSelection`, the very selection CI's check
+of `main` makes (`selectChange`'s `full`), never the push rule, so the two
+can't diverge, with what that rule counts as a change, the runtime, std,
+fixtures and each file a test reads, as well as src; each test the map
+has none of or ran on every change; and carries every other test's
+functions over from that map by each function's symbol (`remapBits`), its
+index and lines having moved. A test that ran none of a changed function
+runs the same code, so the same functions (why a skip is sound, above). A
+function new since is in no carried test, as only changed code calls it.
+
+The map now keeps its functions' symbols (`names`), the full recording
+its chain started from (`base`), and what it carried (`carried`). A
+recording is full where the selector's rule says everything, where no
+earlier map has names, where the nearest is past `carryCommits` (40), where
+its chain's full recording is past `baseDays` (1) or `baseCommits` (200),
+so a drift can't compound between nightlies, and where the nightly's drift
+check failed (`driftFlag`, kept in the map store until a nightly's
+passes). The nightly records HEAD's map whole (`full`) and checks it
+against what a carry from the nearest earlier map with names makes of it
+(`driftCheck`): a test whose functions differ fails the run, says which,
+and flags the store.
+
+Proof: test/test-map.test.ts's merge of a recording in parts, where an
+incremental recording of the same tests merges to the same map as the
+whole one, and "a test carried over keeps its functions by their
+symbols"; mutations `carry-new-function-counted`,
+`carry-skips-what-ran-always` and `carry-case-file-own-lost`.
+

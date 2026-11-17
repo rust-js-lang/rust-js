@@ -154,4 +154,28 @@ export const mutations: Mutation[] = [
     replace: "    return fresh.length > 0 && fresh.every((word) => [].every(",
     tests: ["test/test-map.test.ts", "-t", "a name no item declared"],
   },
+  {
+    name: "carry-new-function-counted",
+    breaks: "a test carried over keeps a function by its index, not its symbol, so one moved since reads as another, and one new since as run",
+    file: "scripts/testMap.ts",
+    find: "    const i = at.get(from[f]!);\n",
+    replace: "    const i = f < to.length ? f : undefined;\n",
+    tests: ["test/test-map.test.ts", "-t", "a test carried over keeps its functions"],
+  },
+  {
+    name: "carry-skips-what-ran-always",
+    breaks: "an incremental recording carries a test the map it carries from ran on every change, `null`, so it stays always-run, or its functions are never recorded",
+    file: "scripts/testMap.ts",
+    find: "  const unrecorded = (unit: string) => typeof from.units[unit] !== \"string\";\n",
+    replace: "  const unrecorded = (unit: string) => !(unit in from.units);\n",
+    tests: ["test/test-map.test.ts", "-t", "the merge of a recording.s parts"],
+  },
+  {
+    name: "carry-case-file-own-lost",
+    breaks: "an incremental recording's case file keeps only the compiles of the cases it ran, losing those of the cases it carried",
+    file: "scripts/testMap.ts",
+    find: "      for (let i = 0; i < own.length; i++) own[i] |= was[i] ?? 0;\n      bits.set(unit, own);\n",
+    replace: "      bits.set(unit, bits.get(unit) ?? own);\n",
+    tests: ["test/test-map.test.ts", "-t", "the merge of a recording.s parts"],
+  },
 ];
