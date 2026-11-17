@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         let held = self.spill(name, value, out);
         if let js::ExprKind::Var(name) = &held.kind {
-            self.locals.mir.made.fixed.insert(name.to_string());
+            self.locals.mir.made.fixed.insert(name.clone());
         }
         held
     }

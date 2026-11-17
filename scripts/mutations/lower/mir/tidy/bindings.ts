@@ -34,9 +34,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && fixed.contains(a)\n                && clones.contains(b.word())\n",
+    find: "                && fixed.contains(a)\n                && clones.contains(b)\n",
     replace:
-      "                && fixed.contains(a)\n                && clones.contains(b.word())\n                && false\n",
+      "                && fixed.contains(a)\n                && clones.contains(b)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
     snapshots: true,
   },
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     breaks:
       "any `const b = a` of a parameter is read as `a`, the name the program gave `b` lost: `const gas = n`'s `gas`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && fixed.contains(a)\n                && clones.contains(b.word())\n",
+    find: "                && fixed.contains(a)\n                && clones.contains(b)\n",
     replace: "                && fixed.contains(a)\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_adversary.rs$"],
     snapshots: true,
@@ -541,8 +541,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` field binding of a flattened state, `Pending { value } | Blocked { value }`, holds its chunk under a name of its own, `const value = chunk; value.value ??= [];`, where upstream reads `chunk.value` (rd482)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && (is_temporary(alias) || fixed.contains(alias.word()))\n",
-    replace: "                && (is_temporary(alias) || fixed.is_empty() && fixed.contains(alias.word()))\n",
+    find: "                && (is_temporary(alias) || fixed.contains(alias))\n",
+    replace: "                && (is_temporary(alias) || fixed.is_empty() && fixed.contains(alias))\n",
     // or_pattern_one_place's chunk is read in place without it now; the
     // flattened state of one variant's, `listen`'s `get_or_insert_with`,
     // isn't (the Nightly of 3c71ee8f9).

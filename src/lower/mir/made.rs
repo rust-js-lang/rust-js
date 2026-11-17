@@ -11,7 +11,7 @@ pub(in crate::lower) struct Made {
     pub(in crate::lower) captured: IndexSet<crate::js::Name>,
     /// Of what it held to read in place where that's once (`held_in_place`), a place it fixed,
     /// `const item = $unwrap(resource.state);`, or an `Option` its items read twice.
-    pub(in crate::lower) fixed: IndexSet<String>,
+    pub(in crate::lower) fixed: IndexSet<crate::js::Name>,
     /// Of what holds a `&mut`'s handle on a nullable place, the place (#541).
     pub(in crate::lower) handles: IndexMap<String, Expr>,
     /// The body's naming table (#890): each name `spill` gave a value of a

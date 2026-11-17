@@ -172,13 +172,11 @@ pub(super) fn is_held_arg(name: &Name) -> bool {
 }
 
 /// Whether `name` is a temporary MIR made, `_5`, or one given apart from
-/// one, `_5$1`, not one the program names (`Name::temporary`).
+/// one, `_5$1`, not one the program names (`Name::temporary`): its form
+/// says, the one authority now that a name's kin and form are its id's
+/// (#1681 change 3; the word's cross-check, S4's, retired here).
 pub(in crate::lower::mir) fn is_temporary(name: &Name) -> bool {
-    checked(
-        name,
-        name.is_temporary() || name.is_unread(),
-        spelled_as_temporary(name.word()) || name.is("_"),
-    )
+    name.is_temporary() || name.is_unread()
 }
 
 /// `typed`, a name's form's answer, which is tidy's; where
@@ -206,13 +204,13 @@ pub(in crate::lower::mir) fn checked(name: &Name, typed: bool, spelled: bool) ->
 /// its place whenever it's read, past its last mention: one whose place
 /// reads a temporary keeps it where what it's of is set anywhere, `const
 /// _10 = index` of `lanes[_10]` before `index++` (#968).
-pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
+pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<Name>) {
     let set = js::Writes::of(body).replaced;
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
             if let StmtKind::Const(alias, value) = &stmts[i].kind
-                && (is_temporary(alias) || fixed.contains(alias.word()))
+                && (is_temporary(alias) || fixed.contains(alias))
                 && let ExprKind::Var(of) = &value.kind
             {
                 let last = (i + 1..stmts.len())
@@ -398,22 +396,23 @@ pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<js::Path>, cap
 /// `if let Some(current) = r.current()`'s, or several arms' of one name,
 /// where nothing else is named so: `const current = e;`, read by that name.
 pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
-    // How often each name is declared, and read, in the whole body.
-    let mut declared: IndexMap<String, usize> = IndexMap::default();
+    // How often each variable is declared, and read, in the whole body, by
+    // its id: another of its word is the speller's to keep apart.
+    let mut declared: IndexMap<Name, usize> = IndexMap::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
-            let names = match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.word()],
-                StmtKind::Destructure { pattern, .. } => pattern.names(),
+            let names: Vec<&Name> = match &stmt.kind {
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name],
+                StmtKind::Destructure { pattern, .. } => pattern.bound(),
                 _ => Vec::new(),
             };
             for name in names {
-                *declared.entry(name.to_string()).or_default() += 1;
+                *declared.entry(name.clone()).or_default() += 1;
             }
         }
     });
-    let mut reads: IndexMap<String, usize> = IndexMap::default();
-    js::visit_stmts(body, &mut |name| *reads.entry(name.to_string()).or_default() += 1);
+    let mut reads: IndexMap<Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *reads.entry(name.clone()).or_default() += 1);
     js::statement_lists(body, &mut |stmts| {
         // What it takes goes from after it: the list shortens.
         let mut next = 0;
@@ -452,9 +451,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             // Of one name: each the same, or one given apart of the other.
             let one_name = |other: &js::Name| other == b || other.given_apart_of(b) || b.given_apart_of(other);
             if found.iter().any(|(other, after)| {
-                !one_name(other)
-                    || declared.get(other.word()) != Some(&1)
-                    || reads.get(other.word()).copied().unwrap_or(0) != *after
+                !one_name(other) || declared.get(other) != Some(&1) || reads.get(other).copied().unwrap_or(0) != *after
             }) {
                 continue;
             }
@@ -744,14 +741,14 @@ pub(super) fn variable_clones(body: &mut Vec<Stmt>, clones: &crate::lower::mir::
 
 /// Each `const b = a;` of `body`'s own lists, `b` one of `clones` and `a`
 /// one of `fixed`, gone, `b` read as `a` after it.
-fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<js::Name>, clones: &IndexSet<String>) {
+fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<js::Name>, clones: &IndexSet<js::Name>) {
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
             if let StmtKind::Const(b, value) = &stmts[i].kind
                 && let ExprKind::Var(a) = &value.kind
                 && fixed.contains(a)
-                && clones.contains(b.word())
+                && clones.contains(b)
                 && !rebinds(&stmts[i + 1..], b)
             {
                 let (a, b) = (a.clone(), b.clone());
@@ -772,13 +769,13 @@ fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<js::Name>, clones: &Ind
 
 /// Each `const b = a;` of `body`'s own lists that a `clone()` made,
 /// `clones`: `b` and `a`.
-fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<String>) -> Vec<(js::Name, js::Name)> {
+fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<js::Name>) -> Vec<(js::Name, js::Name)> {
     let mut found = Vec::new();
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Const(b, value) = &stmt.kind
                 && let ExprKind::Var(a) = &value.kind
-                && clones.contains(b.word())
+                && clones.contains(b)
             {
                 found.push((b.clone(), a.clone()));
             }
@@ -1165,9 +1162,9 @@ pub(super) fn filled_lazily(stmts: &mut Vec<Stmt>) {
             else {
                 unreachable!("the `if` `lazily_filled` matched")
             };
-            let test = (test.substitute(&|v| (v == read).then(|| Expr::var(var.clone()))))
+            let test = (test.substitute(&|v| read.is(v).then(|| Expr::var(var.clone()))))
                 .expect("`lazily_filled` renames the test");
-            stmts[i + 2].kind = match gives_read(&otherwise, var.word(), &read) {
+            stmts[i + 2].kind = match gives_read(&otherwise, &var, &read) {
                 true => StmtKind::If(test, then, None),
                 false => StmtKind::If(test.negated_test(), otherwise, None),
             };
@@ -1178,7 +1175,7 @@ pub(super) fn filled_lazily(stmts: &mut Vec<Stmt>) {
 }
 
 /// Of `stmts[i..]`, `filled_lazily`'s: what's read and the variable.
-fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, js::Name)> {
+fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(js::Name, js::Name)> {
     let (read, var) = match (&stmts[i].kind, &stmts[i + 1].kind) {
         (StmtKind::Const(read, _), StmtKind::Let(var, None)) | (StmtKind::Let(var, None), StmtKind::Const(read, _)) => {
             (read, var)
@@ -1188,10 +1185,7 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, js::Name)> {
     let StmtKind::If(test, then, Some(otherwise)) = &stmts[i + 2].kind else {
         return None;
     };
-    let other = match (
-        gives_read(then, var.word(), read.word()),
-        gives_read(otherwise, var.word(), read.word()),
-    ) {
+    let other = match (gives_read(then, var, read), gives_read(otherwise, var, read)) {
         (false, true) => then.as_slice(),
         (true, false) => otherwise.as_slice(),
         _ => return None,
@@ -1206,13 +1200,13 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, js::Name)> {
         || js::mentions_of(other, read) > 0
         || js::mentions_of(&stmts[i + 3..], read) > 0
         || !renamed;
-    (!kept).then(|| (read.to_string(), var.clone()))
+    (!kept).then(|| (read.clone(), var.clone()))
 }
 
 /// Whether `branch` is `var = read;` alone.
-fn gives_read(branch: &[Stmt], var: &str, read: &str) -> bool {
+fn gives_read(branch: &[Stmt], var: &js::Name, read: &js::Name) -> bool {
     matches!(branch, [s] if matches!(&s.kind, StmtKind::Assign(t, v)
-        if matches!(&t.kind, ExprKind::Var(n) if n.is(var)) && matches!(&v.kind, ExprKind::Var(n) if n.is(read))))
+        if matches!(&t.kind, ExprKind::Var(n) if n == var) && matches!(&v.kind, ExprKind::Var(n) if n == read)))
 }
 
 /// Of `moved`, statements made a branch of an `if` that `after` follows:

@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary is never named as rust-analyzer suggests, after the call that made it or the type it holds, but `value`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                        (None, _) => suggested.get(name.word()).cloned().unwrap_or_default(),\n",
+    find: "                        (None, _) => suggested.get(name).cloned().unwrap_or_default(),\n",
     replace: "                        (None, _) => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
     snapshots: true,
@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     breaks:
       "temporaries are named outer lists first, so a `let` set late takes `next` from one read first",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "    renames.sort_by_key(|(from, ..)| first.get(from.word()).copied().unwrap_or(usize::MAX));\n",
+    find: "    renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^loop_drops.rs$"],
     snapshots: true,

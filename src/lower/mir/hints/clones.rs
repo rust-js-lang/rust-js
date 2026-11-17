@@ -58,9 +58,9 @@ impl<'tcx> FnCx<'_, 'tcx> {
             _ => None,
         });
         let locals: Vec<Local> = cloned.iter().copied().chain(taken).collect();
-        let names = |locals: &mut dyn Iterator<Item = Local>| -> IndexSet<String> {
-            (locals.map(|local| state.locals.names[local].word().to_string()))
-                .filter(|name| !name.is_empty())
+        let names = |locals: &mut dyn Iterator<Item = Local>| -> IndexSet<crate::js::Name> {
+            (locals.map(|local| state.locals.names[local].clone()))
+                .filter(|name| !name.is_unnamed())
                 .collect()
         };
         // Of an `Rc` JS holds as the object itself, one not counted.
@@ -79,8 +79,8 @@ impl<'tcx> FnCx<'_, 'tcx> {
 /// uncounted `Rc`, the object itself, which a variable bound once is read
 /// as (the user's decision, rd616).
 pub(in crate::lower::mir) struct Clones {
-    pub all: IndexSet<String>,
-    pub rcs: IndexSet<String>,
+    pub all: IndexSet<crate::js::Name>,
+    pub rcs: IndexSet<crate::js::Name>,
 }
 
 /// A closure's captures it took by value, each a variable its maker never

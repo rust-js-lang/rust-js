@@ -142,7 +142,7 @@ pub(super) struct Hints<'h> {
     /// The function's parameters, which the `finish` stage takes apart.
     pub(super) params: &'h std::cell::RefCell<Vec<js::Pattern>>,
     /// The names MIR suggests of its temporaries, for `finish` to give.
-    pub(super) suggested: &'h IndexMap<String, Vec<String>>,
+    pub(super) suggested: &'h IndexMap<crate::js::Name, Vec<String>>,
     /// What a function or `const` written in the body, placed once tidy is
     /// done and filled once every body is lowered, may read that the body
     /// doesn't show: the module's names, which no local takes (ADR 0267),

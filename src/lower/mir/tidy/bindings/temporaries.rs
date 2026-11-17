@@ -20,7 +20,7 @@ use crate::lower::temporary_names::{self, Role};
 /// What MIR suggests of its temporaries, the body's naming table, and what
 /// an item written in the body may read (`readable_temporaries`).
 type Named<'a> = (
-    &'a IndexMap<String, Vec<String>>,
+    &'a IndexMap<js::Name, Vec<String>>,
     &'a IndexMap<String, Role>,
     &'a IndexSet<String>,
 );
@@ -94,7 +94,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
     });
     // What an element is given each as, `href={_5}` or a child, `{_6}`: the
     // prop's name, `href`, or `children`.
-    let mut given: IndexMap<String, String> = IndexMap::default();
+    let mut given: IndexMap<js::Name, String> = IndexMap::default();
     js::each_expr(body, &mut |e| {
         // A trait object's, `_5.impl.add(_5.value)`: its `receiver`.
         if let ExprKind::Call(callee, _) = &e.kind
@@ -105,7 +105,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             && is_temporary(v)
         {
             given
-                .entry(v.to_string())
+                .entry(v.clone())
                 .or_insert_with(|| Role::Receiver.text().to_string());
         }
         if let ExprKind::Jsx(jsx) = &e.kind {
@@ -115,7 +115,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                     && (is_temporary(v) || is_held_arg(v))
                     && key.chars().all(|c| c.is_ascii_alphanumeric())
                 {
-                    given.entry(v.to_string()).or_insert_with(|| key.clone());
+                    given.entry(v.clone()).or_insert_with(|| key.clone());
                 }
             }
             for child in &jsx.children {
@@ -123,7 +123,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                     && (is_temporary(v) || is_held_arg(v))
                 {
                     given
-                        .entry(v.to_string())
+                        .entry(v.clone())
                         .or_insert_with(|| Role::Children.text().to_string());
                 }
             }
@@ -146,7 +146,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                         true => Role::Arg,
                         false => Role::Value,
                     };
-                    let names = match (given.get(name.word()), &value.kind) {
+                    let names = match (given.get(name), &value.kind) {
                         (Some(prop), _) => vec![prop.clone()],
                         (None, _) if is_held_arg(name) => Vec::new(),
                         // Not a positional field's, `_0`, a temporary's name.
@@ -163,7 +163,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                         {
                             vec![field.clone()]
                         }
-                        (None, _) => suggested.get(name.word()).cloned().unwrap_or_default(),
+                        (None, _) => suggested.get(name).cloned().unwrap_or_default(),
                     };
                     // Else what made its value suggests, its call's name
                     // (#890, #837); not an argument held, which MIR's rule
@@ -180,7 +180,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 StmtKind::Let(name, _) if is_temporary(name) => {
                     renames.push((
                         name.clone(),
-                        suggested.get(name.word()).cloned().unwrap_or_default(),
+                        suggested.get(name).cloned().unwrap_or_default(),
                         Role::BranchSet,
                     ));
                 }
@@ -193,11 +193,11 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
     // later, `let next; .. next = $next(z);` (ADR 0705).
     let mut first = IndexMap::default();
     let mut at = 0;
-    js::visit_stmts(body, &mut |name| {
-        first.entry(name.to_string()).or_insert(at);
+    js::visit_stmt_names(body, &mut |name| {
+        first.entry(name.clone()).or_insert(at);
         at += 1;
     });
-    renames.sort_by_key(|(from, ..)| first.get(from.word()).copied().unwrap_or(usize::MAX));
+    renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));
     for (from, names, role) in renames {
         // A spilled value's name changes only to what made it suggests, its
         // call's, where that's free: else it keeps the one it has, which

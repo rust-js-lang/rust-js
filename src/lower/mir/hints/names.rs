@@ -20,7 +20,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
         &self,
         mir_body: &mir::Body<'tcx>,
         state: &State<'_, 'tcx>,
-    ) -> IndexMap<String, Vec<String>> {
+    ) -> IndexMap<js::Name, Vec<String>> {
         let called = self.calls_named_in_source(mir_body);
         let mut taken_from: IndexMap<Local, Local> = IndexMap::default();
         for data in mir_body.basic_blocks.iter() {
@@ -55,7 +55,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
                 let names = (suggested.into_iter().flatten())
                     .filter_map(|name| temporary_names::suggested(&name))
                     .collect();
-                (name.word().to_string(), names)
+                (name.clone(), names)
             })
             .collect()
     }

@@ -18,7 +18,7 @@ pub(super) struct MoveFacts<'a> {
     pub captured: &'a IndexSet<js::Name>,
     /// What holds a place MIR's lowering fixed, `const item =
     /// $unwrap(resource.state);`: a temporary of its, named.
-    pub fixed: &'a IndexSet<String>,
+    pub fixed: &'a IndexSet<js::Name>,
     /// The temporaries each of whose values is read once, by the statement
     /// after it (`paired_temporaries`).
     pub paired: &'a IndexSet<String>,
@@ -162,7 +162,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // A temporary MIR made, or an element made ahead of a branch: what the
     // program didn't name.
     let element = facts.captured.contains(name);
-    if !is_temporary(name) && !element && !facts.fixed.contains(name.word()) {
+    if !is_temporary(name) && !element && !facts.fixed.contains(name) {
         return None;
     }
     // What may run before it's read: what does nothing, where it does
@@ -901,7 +901,7 @@ mod tests {
             set: &no_names,
             plain: &no_paths,
             captured: &no_names,
-            fixed: &none,
+            fixed: &no_names,
             paired: &none,
         };
         moved(&body[0], &body[1..], &facts).map(|(_, why)| why)
