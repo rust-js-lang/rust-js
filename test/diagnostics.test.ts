@@ -346,7 +346,7 @@ for (const [name, source, message, crate] of [
   // A function with a destructor an iterator keeps, `from_fn`'s, that nothing closes to drop it (ADR 0991).
   ["a function with a destructor from_fn keeps", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(d: D) -> usize { std::iter::from_fn(move || { let _g = &d; None::<u32> }).count() }', "a function that holds a value with a destructor, kept by what it's given to"],
   // A refused `len()` names its adapter's type, not its closures', which name where they're written.
-  ["len of a reversed step_by of a map", "pub fn f(v: &[u32]) -> usize { v.iter().map(|x| x + 1).step_by(2).rev().len() }", "`len()` of a lazy or generic `std::iter::Rev`, from its MIR"],
+  ["len of a reversed fuse of a map", "pub fn f(v: &[u32]) -> usize { v.iter().map(|x| x + 1).fuse().rev().len() }", "`len()` of a lazy or generic `std::iter::Rev`, from its MIR"],
   // A compiled struct's hint is what it holds' (ADR 0561): of a filter_map made here, a JS
   // iterator's, which knows nothing of its length, refused, not `(0, None)` where Rust gives
   // `(0, Some(3))` (#382). Not a `filter`'s, std's compiled `Filter` since its family's flip.

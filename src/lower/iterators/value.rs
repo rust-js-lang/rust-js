@@ -496,6 +496,19 @@ pub(in crate::lower) fn count_bound(e: &Expr) -> Option<i128> {
     }
 }
 
+/// A map made here: JS's own, `source.map(f)`, or one made knowing its
+/// back, `$mapEnds(source, f)` (ADR 0455): its source and its function.
+pub(in crate::lower) fn mapped_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    match (&callee.kind, args.as_slice()) {
+        (js::ExprKind::Member(source, method), [f]) if method == "map" => Some((source, f)),
+        (_, [source, f]) if callee.helper_name() == Some("$mapEnds") => Some((source, f)),
+        _ => None,
+    }
+}
+
 /// A chain made here, `$lazyChain(a, b)`: its two halves.
 pub(in crate::lower) fn chain_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
     let js::ExprKind::Call(callee, args) = &e.kind else {

@@ -157,3 +157,44 @@ corpus `counted_where_made_runs_each_part_once`. Mutations
 `count-read-through-a-call-read-again` and collect.rs's
 `collect-count-of-a-call-read-again` are gone with the leaf checks and the
 caller's copy.
+
+## Amendment (2026-11-17, #1978): a map made knowing its back, and a clone that's its source
+
+A `rev()` of a `copied()` of a slice's `map` makes the map one that knows
+its back, `$mapEnds($iter(items), f)`, where a `rev()` straight over the map
+reverses the array inward. The count read only JS's own `source.map(f)`,
+so `len()` of `items.iter().map(f).copied().rev()` was refused. A map's
+parts are now read by one reader, `mapped_parts` (iterators/value.rs,
+which owns the forms): `source.map(f)` or `$mapEnds(source, f)`. Either
+is counted as its source, `f` made and not called: `items.length`.
+
+A `cloned()` of what needs no clone is its source in JS, as a `copied()`
+is (`is_its_source`, ADR 0547), and is now counted as its source too.
+
+A `copied()` or `cloned()` of a map held in a variable whose `len()` is
+asked stays refused. In place, the copy's map is `$mapEnds(..)` or JS's
+own `.map(f)`, not std's compiled `Map`, and what asks a held value's
+steps by its type, a compiled `Rev`'s dictionary of what it holds, can't
+tell which. Reading it as its source's type gave the compiled `Map`'s
+`len` to a `$mapEnds` and threw, so it stays refused, #1978's remainder.
+
+The same reader counts what a `rev()` made so elsewhere, each refused
+before:
+- an `enumerate()`, a `step_by(s)` or a `skip(k)` of a slice's map
+  reversed;
+- a slice's `chunks(k)` mapped;
+- a `take(k)` of a reversed copy.
+
+A collect of such a count asks no hint, `$roomForHint`, any more, as one
+counted where it's made doesn't (`back_steps_beside_a_live_drop`'s
+snapshot). The diagnostics row that held a refused `len()` naming its
+adapter's type, once a `step_by(2).rev()` of a map, is now a
+`fuse().rev()` of one, still refused.
+
+Corpus case `len_of_a_reversed_copy_of_a_map` holds:
+- a `copied()`'s, a `cloned()`'s and a `skip(1)`'s count;
+- a map whose function is never called;
+- a `map(..).rev()` collected and a reversed sum;
+- each shape above, at each length to 6 and a step known only at run time.
+It matches native in each build and through every metamorphic rewrite. Mutations
+`map-ends-parts-unread` and `clone-as-its-source-uncounted` are caught.

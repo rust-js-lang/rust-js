@@ -232,4 +232,21 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-matrix.test.ts"],
     env: { ITERATOR_TABLE: "copies", ITERATOR_MATRIX: "/rev vec generic \\| filter_map \\| by_ref \\| next_back/" },
   },
+  {
+    name: "map-ends-parts-unread",
+    breaks: "a map made knowing its back, `$mapEnds(source, f)`, isn't read as a map, so `len()` of a `rev()` of a `copied()` of a slice's map, counted in place without calling `f`, is refused (#1978)",
+    file: "src/lower/iterators/value.rs",
+    find: "        (_, [source, f]) if callee.helper_name() == Some(\"$mapEnds\") => Some((source, f)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^len_of_a_reversed_copy_of_a_map.rs$"],
+  },
+  {
+    name: "len-in-place-map-unread",
+    breaks:
+      "`len()` of a `map` made in place isn't its source's: `v.iter().map(f).len()` is refused (ADR 0986)",
+    file: "src/lower/iterators/value.rs",
+    find: '        (js::ExprKind::Member(source, method), [f]) if method == "map" => Some((source, f)),\n',
+    replace: '        (js::ExprKind::Member(source, method), [f]) if method == "mapped" => Some((source, f)),\n',
+    tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
+  },
 ];

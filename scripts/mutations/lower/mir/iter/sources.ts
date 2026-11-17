@@ -72,15 +72,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_of_generic_code_knowing_its_back.rs$"],
   },
   {
-    name: "len-in-place-map-unread",
-    breaks:
-      "`len()` of a `map` made in place isn't its source's: `v.iter().map(f).len()` is refused (ADR 0986)",
-    file: "src/lower/mir/iter/sources.rs",
-    find: '            && method == "map"\n            && let [f] = args.as_slice()\n',
-    replace: '            && method == "mapped"\n            && let [f] = args.as_slice()\n',
-    tests: ["test/corpus.test.ts", "-t", "^len_made_in_place.rs$"],
-  },
-  {
     name: "len-in-place-take-unbounded",
     breaks:
       "`len()` of a `take(n)` made in place is more than `n`: `v.iter().take(2).map(f).len()` is 5, not 2 (ADR 0986)",
@@ -555,5 +546,13 @@ export const mutations: Mutation[] = [
     find: "            let items = self.recognition().steps_its_array(ty) && (of_items || made_array(&value));\n",
     replace: "            let items = self.recognition().steps_its_array(ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^stepped_iterator_lent_as_a_dyn.rs$"],
+  },
+  {
+    name: "clone-as-its-source-uncounted",
+    breaks: "a `cloned()` of what needs no clone, which is its source in JS, isn't counted as its source, so `len()` of a `rev()` of a `cloned()` of a slice's map is refused (#1978)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            r::copied_source(self.tcx, ty).or_else(|| r::cloned_source(self.tcx, ty).filter(|_| self.is_its_source(ty)))\n",
+    replace: "            r::copied_source(self.tcx, ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^len_of_a_reversed_copy_of_a_map.rs$"],
   },
 ];

@@ -278,8 +278,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ceil = Expr::member(Expr::js_global("Math"), "ceil");
             return Ok(Expr::call(ceil, vec![Expr::bin(Op::Div, count, step)]));
         }
-        // A copy of its source's items, which is its source in JS (ADR 0547).
-        if let Some(source) = r::copied_source(self.tcx, ty) {
+        // A copy of its source's items, which is its source in JS (ADR 0547),
+        // or a clone of what needs none, which is too (`is_its_source`, #1978).
+        if let Some(source) =
+            r::copied_source(self.tcx, ty).or_else(|| r::cloned_source(self.tcx, ty).filter(|_| self.is_its_source(ty)))
+        {
             return self.counted_in_place(it, source, made, discards);
         }
         if let Some(source) = r::enumerated_source(self.tcx, ty) {
@@ -289,12 +292,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .clone();
             return self.counted_in_place(&source_value, source, made, discards);
         }
-        // `source.map(f)`, `f` made and not called.
+        // `source.map(f)`, or `$mapEnds(source, f)` of one stepped from its
+        // back, a `rev()`'s through a `copied()` (#1978): `f` made and not
+        // called.
         if let Some(source) = r::mapped_source(self.tcx, ty)
-            && let js::ExprKind::Call(callee, args) = &it.kind
-            && let js::ExprKind::Member(source_value, method) = &callee.kind
-            && method == "map"
-            && let [f] = args.as_slice()
+            && let Some((source_value, f)) = crate::lower::iterators::mapped_parts(it)
         {
             let mut counting = Vec::new();
             let count = self.counted_in_place(&source_value.clone(), source, &mut counting, discards)?;

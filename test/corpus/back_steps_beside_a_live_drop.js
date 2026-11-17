@@ -25,7 +25,6 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rev,
-  $roomForHint,
   $skipping,
   $taking,
   $unwindsOn,
@@ -92,17 +91,13 @@ function besideALiveDrop() {
     );
     console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
     v = Array.from(
-      $roomForHint(
-        $rev(
-          $enumerate(
-            $mapEnds(
-              $iterator({ start: 1, end: 5 }, $rangeNext, false, $rangeNextBack, $rangeLen),
-              f,
-            ),
+      $rev(
+        $enumerate(
+          $mapEnds(
+            $iterator({ start: 1, end: 5 }, $rangeNext, false, $rangeNextBack, $rangeLen),
+            f,
           ),
         ),
-        8,
-        true,
       ),
     );
     console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
