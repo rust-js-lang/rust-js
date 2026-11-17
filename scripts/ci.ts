@@ -446,13 +446,22 @@ export function mutationTimingsRuns(nightlies: number[], checks: number[], artif
   return [...(nightly === undefined ? [] : [nightly]), ...recent];
 }
 
+/** The values `gh api --paginate --jq '.items[] | ..'` prints, one a line. */
+export function jsonLines<T>(text: string): T[] {
+  return text.split("\n").filter((line) => line.trim() !== "").map((line) => JSON.parse(line) as T);
+}
+
 /** Of `plan`: the last completed nightlies, and which kept their mutations'
  * times (`mutationTimingsRun`). */
 function lastMutationTimings(): number[] {
   const nightlies: { databaseId: number }[] = JSON.parse(gh(["run", "list", "--workflow=nightly.yml", "--status=completed", "--limit=10", "--json=databaseId"]));
   const checks: { databaseId: number }[] = JSON.parse(gh(["run", "list", "--workflow=check.yml", "--branch=main", "--status=completed", "--limit=20", "--json=databaseId"]));
-  const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
-    gh(["api", "--paginate", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=mutation-timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
+  // One artifact a line, each page's: with `--paginate`, a `--jq` that
+  // makes an array makes one a page, which isn't one JSON value, and past
+  // a hundred kept the plan read none, every check's mutations dealt in
+  // turn (check 44072223912's shard 16, 18 minutes against 8).
+  const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = jsonLines(
+    gh(["api", "--paginate", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=mutation-timings-1", "--jq", ".artifacts[] | {name, workflow_run, created_at, expired}"]),
   );
   return mutationTimingsRuns(
     nightlies.map((r) => r.databaseId),

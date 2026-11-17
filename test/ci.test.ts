@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
-import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, mutationTimingsRuns, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
+import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, mutationTimingsRuns, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import { mutations, refusedFlags, site } from "../scripts/mutations";
@@ -1280,4 +1280,17 @@ test("a rebase's conflict in a ratchet is resolved by the lower count, anything 
   expect(remakeable(["test/word-reads.txt", "docs/readability.txt"])).toBe(true);
   expect(remakeable(["test/architecture-names.test.ts", "src/lower/analysis.rs"])).toBe(false);
   for (const file of ratchets) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
+});
+
+// `gh api --paginate` runs its `--jq` on each page: one that makes an
+// array makes one a page, two arrays where there are two pages, which
+// isn't one JSON value. The plan read the mutations' kept times so, and
+// past a hundred artifacts read none, every check's mutations dealt in turn
+// (check 44072223912's shard 16, 18 minutes against the others' 8). Each
+// value a line is read whatever the pages.
+test("what gh prints a value a line, over its pages, is read whole", () => {
+  const pages = ['{"name":"mutation-timings-1","run":1}', '{"name":"mutation-timings-1","run":2}', "", '{"name":"mutation-timings-1","run":3}', ""].join("\n");
+  expect(jsonLines<{ run: number }>(pages).map((a) => a.run)).toEqual([1, 2, 3]);
+  const ci = readFileSync(join(root, "scripts/ci.ts"), "utf8");
+  expect(ci).not.toMatch(/"--paginate",[^\n]*"--jq", "\[/);
 });

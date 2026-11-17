@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "  const recent = checks.filter((run) => kept.has(run)).slice(0, most);\n",
     tests: ["test/ci.test.ts", "-t", "mutation shards balance"],
   },
+  {
+    name: "gh-pages-read-as-one",
+    breaks: "what gh prints over its pages, a value a line, is read as one JSON value, and the plan reads no mutation times past a page of artifacts (check 44072223912)",
+    file: "scripts/ci.ts",
+    find: "  return text.split(\"\\n\").filter((line) => line.trim() !== \"\").map((line) => JSON.parse(line) as T);\n",
+    replace: "  return JSON.parse(text) as T[];\n",
+    tests: ["test/ci.test.ts", "-t", "what gh prints a value a line, over its pages, is read whole"],
+  },
 ];
