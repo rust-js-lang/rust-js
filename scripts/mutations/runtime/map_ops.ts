@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "extend-map-by-next",
     breaks: "a map's `collect` or `extend` steps an iterator with its own `fold` by `next`, so a `skip`'s first step is `nth(n)` and what it replaces is dropped after its source is (#494)",
     file: "src/runtime/map_ops.js",
-    find: "  if (Object.hasOwn(items, \"fold\")) {\n    items.fold(",
+    find: "  if ($ownMethod(items, \"fold\")) {\n    items.fold(",
     replace: "  if (false) {\n    items.fold(",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },

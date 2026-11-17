@@ -476,6 +476,16 @@ export const sliceReports = join(root, "target", "junit", "slices");
 /** What ran a slice's report: the run's name, its file and its settings. */
 export type SliceReport = { of: string; name: string; file: string; env: Record<string, string> };
 
+/** Where part `part` of `parts` of a run writes its JUnit report, with
+ * what ran it written beside it, `<report>.json`, which a failed check's
+ * `attribute` reads to run each failing test again (#2003). */
+export function sliceReport(ran: SliceReport, part: number, parts: number, into = sliceReports): string {
+  const report = join(into, `${ran.of}-${ran.name.replace(/\W+/g, "-")}-${part}-of-${parts}.xml`);
+  mkdirSync(into, { recursive: true });
+  writeFileSync(`${report}.json`, JSON.stringify(ran satisfies SliceReport));
+  return report;
+}
+
 /** `of`, in `parts` processes at once, each its share of the cases
  * (`RUST_JS_CASES`), or of those `list` names, a line each, as plain
  * `check:fast` picks the corpus's by the test map (#876), their logs
@@ -509,9 +519,7 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
   for (const { name, file, env, rate } of each) {
     const start = Date.now();
     const parted = Array.from({ length: parts }, async (_, i) => {
-      const report = join(sliceReports, `${of}-${name.replace(/\W+/g, "-")}-${i + 1}-of-${parts}.xml`);
-      mkdirSync(sliceReports, { recursive: true });
-      writeFileSync(`${report}.json`, JSON.stringify({ of, name, file, env } satisfies SliceReport));
+      const report = sliceReport({ of, name, file, env }, i + 1, parts);
       const p = Bun.spawn(["bun", "test", "--timeout=600000", "--reporter=junit", `--reporter-outfile=${report}`, file], {
         cwd: root,
         env: { ...process.env, ...env, RUST_JS_CASES: `${i + 1}/${parts}${list === undefined ? "" : `:${list}`}` },

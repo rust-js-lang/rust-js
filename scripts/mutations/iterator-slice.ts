@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     replace: '  "scripts/rustc-suite.ts",',
     tests: ["test/ci.test.ts", "-t", "the WASM build, rustc's tests and the mutations run"],
   },
+  {
+    name: "slice-report-unsaid",
+    breaks: "a slice's JUnit report is written with nothing beside it saying what ran it, so a failed check's `attribute` can't run its failing tests again (#2003)",
+    file: "scripts/iteratorSlice.ts",
+    find: "  writeFileSync(`${report}.json`, JSON.stringify(ran satisfies SliceReport));\n",
+    replace: "",
+    tests: ["test/ci.test.ts", "-t", "a slice's report says what ran it"],
+  },
 ];

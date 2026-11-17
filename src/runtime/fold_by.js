@@ -3,7 +3,7 @@
 // it steps past given to `drop`. How many there weren't (#286).
 function $advanceByOf(it, m, drop, iterator) {
   const given = iterator === undefined ? it : $given(it, iterator, true);
-  if (Object.hasOwn(given, "advanceBy")) return given.advanceBy(m, drop);
+  if ($ownMethod(given, "advanceBy")) return given.advanceBy(m, drop);
   return $Steps.prototype.advanceBy.call($lent(given), m, drop);
 }
 
@@ -21,7 +21,7 @@ function $advanceBy(it, m, drop) {
 // to `drop`, a `Drain`'s and a B-tree's (#704).
 function $revAdvanceBy(rev, m, drop, iterator, back) {
   const it = back === undefined ? rev.iter : $given(rev.iter, iterator, true, back);
-  if (Object.hasOwn(it, "advanceBackBy")) return it.advanceBackBy(m, drop);
+  if ($ownMethod(it, "advanceBackBy")) return it.advanceBackBy(m, drop);
   for (; m > 0; m--) {
     const step = it.back();
     if (step.done) break;

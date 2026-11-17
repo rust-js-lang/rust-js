@@ -1334,3 +1334,15 @@ test("a bare template value is made only of text, a number or a bool", () => {
   }
   expect(read("src/lower/untagged/displayed.rs")).toContain("if !(self.is_string_like(shown) || shown.is_integral() || shown.is_bool()) {");
 });
+
+// Whether an iterator has its own method, not `$Steps.prototype`'s default,
+// is asked in one place, `$ownMethod` (src/runtime/steps.js, #2000): 13
+// readings in seven files had each asked `Object.hasOwn` of a step's name.
+test("the runtime asks whether an iterator has its own method by `$ownMethod` alone", () => {
+  const steps = /Object\.hasOwn\([^,]+, "(next|back|advanceBy|advanceBackBy|nth|nthBack|fold|rfold|tryFold|tryRfold|sizeHint|len|last|count)"\)/;
+  const asking = readdirSync(join(root, "src/runtime"))
+    .filter((name) => name.endsWith(".js"))
+    .filter((name) => steps.test(read(`src/runtime/${name}`)));
+  expect(asking).toEqual([]);
+  expect(read("src/runtime/steps.js")).toContain("function $ownMethod(it, step) {\n  return Object.hasOwn(it, step);\n}");
+});

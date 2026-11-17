@@ -169,3 +169,13 @@ unchanged, so the output is too.
 `$lent`'s kind stays an argument, `$lent(it, "lentUnsized")`. Whether `I`
 is sized is a fact of the Rust type, not of the JS value: a `dyn`'s
 iterator and a sized one's are alike at run time.
+
+At run time, whether an iterator has its own method, rather than
+`$Steps.prototype`'s default over `next`, is asked in one place:
+`$ownMethod(it, step)` in src/runtime/steps.js. Before, 13 readings in
+seven files each called `Object.hasOwn` on a step's name, and
+test/architecture.test.ts now refuses that form. It's a different fact
+from `$ownStep`'s flag (#870), which says a step drops what it passes
+itself. A mutation reading the inherited method as the iterator's own
+(`step in it`) survived the whole suite under `--retire`: for a `$Steps`,
+the inherited method is std's default either way. So it isn't kept.

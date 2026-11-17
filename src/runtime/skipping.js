@@ -17,7 +17,7 @@ function $skipping(iter, n, drop) {
       // a `skip` of billions in generic code stepped each of (#1310).
       if (
         skipping.n > 0 &&
-        (skipping.iter.ownNth || Object.hasOwn(skipping.iter, "tryFold") || Object.hasOwn(skipping.iter, "advanceBy"))
+        (skipping.iter.ownNth || $ownMethod(skipping.iter, "tryFold") || $ownMethod(skipping.iter, "advanceBy"))
       ) {
         const n = skipping.n;
         skipping.n = 0;

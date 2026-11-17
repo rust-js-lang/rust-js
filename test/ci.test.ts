@@ -15,7 +15,7 @@ import { lostObject } from "../scripts/testMap";
 import { evaluateIf, heldJobs, mostAtOnce, NIGHTLY_RUNNERS, scheduled } from "../scripts/runners";
 import { reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
-import { changedCases, runs, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
+import { changedCases, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
@@ -1199,4 +1199,19 @@ test("the runners' bound reads `if:` of inputs alone, and counts jobs no need or
   expect(mostAtOnce([job("a", 4), job("b", 2), job("c", 3), job("d", 1)], [["a", "b"], ["a", "c"], ["b", "d"], ["c", "d"]])).toBe(5);
   // A long lane beside a short one: the lane's widest job, not its sum.
   expect(mostAtOnce([job("l1", 3), job("l2", 1), job("s", 2)], [["l1", "l2"]])).toBe(5);
+});
+
+// A slice's part writes its JUnit report where its job uploads it, and
+// beside it what ran it, its run's name, file and settings: a failed
+// check's `attribute` reads that to run each failing test again (#2003).
+test("a slice's report says what ran it, beside where its JUnit is written", () => {
+  const into = mkdtempSync(join(tmpdir(), "slice-report-"));
+  try {
+    const ran = { of: "matrix", name: "the matrix's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "matrix" } };
+    const report = sliceReport(ran, 2, 4, into);
+    expect(relative(into, report)).toBe("matrix-the-matrix-s-slice-2-of-4.xml");
+    expect(JSON.parse(readFileSync(`${report}.json`, "utf8"))).toEqual(ran);
+  } finally {
+    rmSync(into, { recursive: true, force: true });
+  }
 });

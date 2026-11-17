@@ -374,7 +374,7 @@ function $extendMap(m, items, set, drop, dropKey, sorted) {
       drop?.(old);
     }
   };
-  if (Object.hasOwn(items, "fold")) {
+  if ($ownMethod(items, "fold")) {
     items.fold(undefined, (_, item) => put(item));
     return m;
   }

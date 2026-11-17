@@ -374,4 +374,12 @@ export const mutations: Mutation[] = [
     replace: "  return items[Symbol.iterator]();\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_side_of_a_chain_counts_in_its_hint.rs$"],
   },
+  {
+    name: "own-method-never",
+    breaks: "no iterator is asked its own `advanceBy`, `advanceBackBy` or `fold`: each is stepped by std's default over `next`",
+    file: "src/runtime/steps.js",
+    find: "  return Object.hasOwn(it, step);\n",
+    replace: "  return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+  },
 ];

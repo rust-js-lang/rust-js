@@ -72,7 +72,7 @@ function $lastDropping(it, drop, boxed) {
         () => source?.return?.(),
       );
     }
-    if (source !== undefined && Object.hasOwn(source, "fold")) {
+    if (source !== undefined && $ownMethod(source, "fold")) {
       source.fold(undefined, (_, item) => take(() => $stepsOf(f(item))), drop && unwind);
     } else if (source !== undefined) {
       $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind);
@@ -107,7 +107,7 @@ function $lastDropping(it, drop, boxed) {
   // (`$kept`, #651), nor what the fold drops of its own once it has
   // folded it all, a `take`'s source, as rustc doesn't drop what a
   // function gives back as a later drop unwinds (#648).
-  if (Object.hasOwn(it, "fold")) {
+  if ($ownMethod(it, "fold")) {
     const unwind = () => {
       if (seen) {
         seen = false;

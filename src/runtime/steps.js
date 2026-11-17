@@ -1,3 +1,13 @@
+// Whether `it` has its own method `step`, `advanceBy`, `advanceBackBy`,
+// `fold` or `tryFold`: the crate's iterator's, or an adapter's that passes
+// its source's on, an own property of the object, where `$Steps.prototype`
+// holds std's default over `next` and `next_back`. The runtime's one place
+// that asks it (#2000). Not `$ownStep`'s flag (#870), which says a step
+// drops what it passes itself.
+function $ownMethod(it, step) {
+  return Object.hasOwn(it, step);
+}
+
 // An iterator rust-js makes, stepped as Rust's is: each `next` steps on, so
 // one that gave `None` may give more, as the crate's own or `from_fn`'s may,
 // and its `map`, `filter`, `flatMap`, `take` and `drop` are std's adapters, which pass

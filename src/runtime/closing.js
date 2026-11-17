@@ -31,7 +31,7 @@ function $closing(it, drop, slices = true) {
   // (#250); how many there weren't. Of one given its own, `$slicing`'s,
   // which generic code's caller gives it, those (#703, #704).
   // A `Vec`'s `IntoIter`, whose `last` is its own (#648).
-  const own = Object.hasOwn(it, "advanceBackBy");
+  const own = $ownMethod(it, "advanceBackBy");
   const intoIter = own || (slices && it.items !== undefined && it.nthBack === undefined && drop !== undefined);
   const slice = own || (intoIter && drop.each !== undefined);
   const advanceBackBy = own ? (m) => it.advanceBackBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each, true);
@@ -117,7 +117,7 @@ function $closing(it, drop, slices = true) {
   $forward(closing, it, {
     advanceBackBy: slice ? advanceBackBy : undefined,
     // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
-    advanceBy: slice ? advanceBy : Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    advanceBy: slice ? advanceBy : $ownMethod(it, "advanceBy") ? "advanceBy" : undefined,
     // Of one given its own, by its slice's with this one's drop.
     nth: own ? sliceNth : it.nth !== undefined ? (k, dropItem) => done(it.nth(k, dropItem)) : slice ? sliceNth : undefined,
     nthBack: own ? sliceNthBack : it.nthBack !== undefined ? (k) => done(it.nthBack(k)) : slice ? sliceNthBack : undefined,
@@ -230,7 +230,7 @@ function $slicing(it, drop) {
     return it;
   }
   // Given them already, or a JS iterator of its own, one closed, whose are.
-  if (it.items === undefined || Object.hasOwn(it, "advanceBackBy")) return it;
+  if (it.items === undefined || $ownMethod(it, "advanceBackBy")) return it;
   $forward(it, it, {
     advanceBy: (m, each = drop) => $advanceSlice(it, m, each),
     advanceBackBy: (m, each = drop) => $advanceSlice(it, m, each, true),

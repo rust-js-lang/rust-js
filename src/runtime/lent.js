@@ -58,12 +58,12 @@ function $lent(it, kind = "lent") {
   const rfold = (init, f, unwind, ends) => it.tryRfold(init, f, () => false, unwind, ends);
   const lent = $forward(new $Steps(() => it.next(), owns ? () => it.return?.() : undefined), it, {
     nth: passed("nth"),
-    advanceBy: passed("advanceBy") && Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    advanceBy: passed("advanceBy") && $ownMethod(it, "advanceBy") ? "advanceBy" : undefined,
     tryFold: passed("tryFold"),
     fold: passed("fold") && it.tryFold !== undefined ? fold : undefined,
     last: passed("last"),
     nthBack: passed("nthBack"),
-    advanceBackBy: passed("advanceBackBy") && Object.hasOwn(it, "advanceBackBy") ? "advanceBackBy" : undefined,
+    advanceBackBy: passed("advanceBackBy") && $ownMethod(it, "advanceBackBy") ? "advanceBackBy" : undefined,
     tryRfold: passed("tryRfold"),
     rfold: passed("rfold") && it.tryRfold !== undefined ? rfold : undefined,
   });

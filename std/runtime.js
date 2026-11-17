@@ -896,7 +896,7 @@ export function $given(value, iterator, boxed = false, back, len) {
   // JS iterator made of it, given its length, passes them over as it does
   // (#703, #704). A unit struct's value is `undefined`, which has none
   // (itertools' laziness tests).
-  if (value != null && Object.hasOwn(value, "advanceBackBy") && value.items !== undefined) {
+  if (value != null && $ownMethod(value, "advanceBackBy") && value.items !== undefined) {
     $forward(it, value, {
       advanceBy: "advanceBy",
       advanceBackBy: "advanceBackBy",
@@ -3987,6 +3987,16 @@ export function $btreeSet(cmp, Base = Set) {
 export const $BTreeMap = $btreeMap($cmp);
 export const $BTreeSet = $btreeSet($cmp);
 
+// Whether `it` has its own method `step`, `advanceBy`, `advanceBackBy`,
+// `fold` or `tryFold`: the crate's iterator's, or an adapter's that passes
+// its source's on, an own property of the object, where `$Steps.prototype`
+// holds std's default over `next` and `next_back`. The runtime's one place
+// that asks it (#2000). Not `$ownStep`'s flag (#870), which says a step
+// drops what it passes itself.
+export function $ownMethod(it, step) {
+  return Object.hasOwn(it, step);
+}
+
 // An iterator rust-js makes, stepped as Rust's is: each `next` steps on, so
 // one that gave `None` may give more, as the crate's own or `from_fn`'s may,
 // and its `map`, `filter`, `flatMap`, `take` and `drop` are std's adapters, which pass
@@ -4682,7 +4692,7 @@ export function $lastDropping(it, drop, boxed) {
         () => source?.return?.(),
       );
     }
-    if (source !== undefined && Object.hasOwn(source, "fold")) {
+    if (source !== undefined && $ownMethod(source, "fold")) {
       source.fold(undefined, (_, item) => take(() => $stepsOf(f(item))), drop && unwind);
     } else if (source !== undefined) {
       $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind);
@@ -4717,7 +4727,7 @@ export function $lastDropping(it, drop, boxed) {
   // (`$kept`, #651), nor what the fold drops of its own once it has
   // folded it all, a `take`'s source, as rustc doesn't drop what a
   // function gives back as a later drop unwinds (#648).
-  if (Object.hasOwn(it, "fold")) {
+  if ($ownMethod(it, "fold")) {
     const unwind = () => {
       if (seen) {
         seen = false;
@@ -5142,7 +5152,7 @@ export function $closing(it, drop, slices = true) {
   // (#250); how many there weren't. Of one given its own, `$slicing`'s,
   // which generic code's caller gives it, those (#703, #704).
   // A `Vec`'s `IntoIter`, whose `last` is its own (#648).
-  const own = Object.hasOwn(it, "advanceBackBy");
+  const own = $ownMethod(it, "advanceBackBy");
   const intoIter = own || (slices && it.items !== undefined && it.nthBack === undefined && drop !== undefined);
   const slice = own || (intoIter && drop.each !== undefined);
   const advanceBackBy = own ? (m) => it.advanceBackBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each, true);
@@ -5228,7 +5238,7 @@ export function $closing(it, drop, slices = true) {
   $forward(closing, it, {
     advanceBackBy: slice ? advanceBackBy : undefined,
     // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
-    advanceBy: slice ? advanceBy : Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    advanceBy: slice ? advanceBy : $ownMethod(it, "advanceBy") ? "advanceBy" : undefined,
     // Of one given its own, by its slice's with this one's drop.
     nth: own ? sliceNth : it.nth !== undefined ? (k, dropItem) => done(it.nth(k, dropItem)) : slice ? sliceNth : undefined,
     nthBack: own ? sliceNthBack : it.nthBack !== undefined ? (k) => done(it.nthBack(k)) : slice ? sliceNthBack : undefined,
@@ -5341,7 +5351,7 @@ export function $slicing(it, drop) {
     return it;
   }
   // Given them already, or a JS iterator of its own, one closed, whose are.
-  if (it.items === undefined || Object.hasOwn(it, "advanceBackBy")) return it;
+  if (it.items === undefined || $ownMethod(it, "advanceBackBy")) return it;
   $forward(it, it, {
     advanceBy: (m, each = drop) => $advanceSlice(it, m, each),
     advanceBackBy: (m, each = drop) => $advanceSlice(it, m, each, true),
@@ -5435,7 +5445,7 @@ export function $skipping(iter, n, drop) {
       // a `skip` of billions in generic code stepped each of (#1310).
       if (
         skipping.n > 0 &&
-        (skipping.iter.ownNth || Object.hasOwn(skipping.iter, "tryFold") || Object.hasOwn(skipping.iter, "advanceBy"))
+        (skipping.iter.ownNth || $ownMethod(skipping.iter, "tryFold") || $ownMethod(skipping.iter, "advanceBy"))
       ) {
         const n = skipping.n;
         skipping.n = 0;
@@ -10541,7 +10551,7 @@ export function $extendMap(m, items, set, drop, dropKey, sorted) {
       drop?.(old);
     }
   };
-  if (Object.hasOwn(items, "fold")) {
+  if ($ownMethod(items, "fold")) {
     items.fold(undefined, (_, item) => put(item));
     return m;
   }
@@ -22393,12 +22403,12 @@ export function $lent(it, kind = "lent") {
   const rfold = (init, f, unwind, ends) => it.tryRfold(init, f, () => false, unwind, ends);
   const lent = $forward(new $Steps(() => it.next(), owns ? () => it.return?.() : undefined), it, {
     nth: passed("nth"),
-    advanceBy: passed("advanceBy") && Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    advanceBy: passed("advanceBy") && $ownMethod(it, "advanceBy") ? "advanceBy" : undefined,
     tryFold: passed("tryFold"),
     fold: passed("fold") && it.tryFold !== undefined ? fold : undefined,
     last: passed("last"),
     nthBack: passed("nthBack"),
-    advanceBackBy: passed("advanceBackBy") && Object.hasOwn(it, "advanceBackBy") ? "advanceBackBy" : undefined,
+    advanceBackBy: passed("advanceBackBy") && $ownMethod(it, "advanceBackBy") ? "advanceBackBy" : undefined,
     tryRfold: passed("tryRfold"),
     rfold: passed("rfold") && it.tryRfold !== undefined ? rfold : undefined,
   });
@@ -22554,7 +22564,7 @@ export function $folded(it, firstByNext = false) {
 // it steps past given to `drop`. How many there weren't (#286).
 export function $advanceByOf(it, m, drop, iterator) {
   const given = iterator === undefined ? it : $given(it, iterator, true);
-  if (Object.hasOwn(given, "advanceBy")) return given.advanceBy(m, drop);
+  if ($ownMethod(given, "advanceBy")) return given.advanceBy(m, drop);
   return $Steps.prototype.advanceBy.call($lent(given), m, drop);
 }
 
@@ -22572,7 +22582,7 @@ export function $advanceBy(it, m, drop) {
 // to `drop`, a `Drain`'s and a B-tree's (#704).
 export function $revAdvanceBy(rev, m, drop, iterator, back) {
   const it = back === undefined ? rev.iter : $given(rev.iter, iterator, true, back);
-  if (Object.hasOwn(it, "advanceBackBy")) return it.advanceBackBy(m, drop);
+  if ($ownMethod(it, "advanceBackBy")) return it.advanceBackBy(m, drop);
   for (; m > 0; m--) {
     const step = it.back();
     if (step.done) break;
