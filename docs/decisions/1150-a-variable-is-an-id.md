@@ -1310,3 +1310,7 @@ import, its word as its `use` names it (rd650), is read so, marked. Each
 old and new answer probed over the corpus, the tests and React's port,
 none differing; byte-identical.
 
+And `library.rs`'s: the names a library's modules export, what its
+consumers import, are read by one marked `exported_as`, an item's export
+name its word at a module's scope.
+

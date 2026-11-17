@@ -381,15 +381,21 @@ pub(super) fn refuse_unsaid_locations(
     }
 }
 
+/// The name a module's item is exported by, its consumers' import of it:
+/// at a module's scope a name's word is its identity (ADR 1150).
+fn exported_as(name: &crate::js::Name) -> &str {
+    name.word() // word: an item's export name, what its consumers import
+}
+
 pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Exported {
     let mut exported = IndexSet::default();
     for module in modules.iter().map(|unlinked| &unlinked.module) {
         let mut export = |name: &str| exported.insert((module.path.clone(), name.to_string()));
         for item in &module.items {
             match item {
-                crate::js::Item::Function(function) if function.export => export(function.name.word()),
-                crate::js::Item::Const(constant) if constant.export => export(constant.name.word()),
-                crate::js::Item::Namespace(namespace) if namespace.export => export(namespace.name.word()),
+                crate::js::Item::Function(function) if function.export => export(exported_as(&function.name)),
+                crate::js::Item::Const(constant) if constant.export => export(exported_as(&constant.name)),
+                crate::js::Item::Namespace(namespace) if namespace.export => export(exported_as(&namespace.name)),
                 _ => false,
             };
         }
