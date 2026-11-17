@@ -1397,3 +1397,15 @@ and a captured variable moved into a closure, its own `let` of its name
 again (till `js::name` has that method). Byte-identical. `mir::scopes`'
 fields follow as their own step.
 
+And its second, a scope struct's fields (ADR 1043): its value is carried
+by its `Name` (`scope_values`), its holders by theirs; each field's own
+variable is spelled by preparation, apart from what its scope has, a
+holder of the local it's made of where it's named as that local, `{ model
+}` of `model`, which preparation's `shadows` folds into it by its id,
+else made of the field's key (`Name::spelled_later`); a parameter of the
+field's name is read as the field only where each of its reads put there
+is the parameter's, as `js::scopes` says (`not_read_as_themselves`), not
+where a method's own of that spelling would take it, which the word set of
+the body's names stood in for; the order walks by `Name`. Byte-identical,
+React's Flight server's `{ model, reader, id }` among them.
+

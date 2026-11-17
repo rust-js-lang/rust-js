@@ -12,6 +12,5 @@ src/js/validate.rs	2
 src/lower.rs	1
 src/lower/classes/prototypes.rs	1
 src/lower/jsx.rs	1
-src/lower/mir/scopes.rs	4
 src/lower/mir/tidy/values.rs	1
 src/lower/temporary_names.rs	1

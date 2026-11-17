@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Its fields, made the function's variables once tidy has read
             // its body (`scope_fields`).
-            self.scope_values.push((scope.function, value.into_word()));
+            self.scope_values.push((scope.function, value));
         }
         Ok(())
     }
@@ -119,18 +119,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// nothing writes, and one a parameter gives that nothing writes is that
 /// parameter; each read of a field is its variable's. Where anything reads
 /// the value but a field of it, or names its variable again, it stays one.
-pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<Stmt>) {
+pub(super) fn scope_fields(value: &js::Name, params: &[js::Pattern], out: &mut Vec<Stmt>) {
     // Every list of statements, closures' and declared functions' too.
     let mut lists: Vec<Vec<Stmt>> = Vec::new();
     js::each_block_mut(&mut out.clone(), &mut |list| lists.push(list.clone()));
     let statements = || lists.iter().flatten();
     // What holds it: its variable, and each `const` of it, a closure's.
-    let mut holders = vec![value.to_string()];
+    let mut holders = vec![value.clone()];
     loop {
-        let more: Vec<String> = (statements())
+        let more: Vec<js::Name> = (statements())
             .filter_map(|stmt| match &stmt.kind {
-                StmtKind::Const(alias, e) if !holders.iter().any(|h| alias.is(h)) => match &e.kind {
-                    js::ExprKind::Var(of) if holders.iter().any(|h| of.is(h)) => Some(alias.to_string()),
+                StmtKind::Const(alias, e) if !holders.contains(alias) => match &e.kind {
+                    js::ExprKind::Var(of) if holders.contains(of) => Some(alias.clone()),
                     _ => None,
                 },
                 _ => None,
@@ -141,10 +141,10 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         }
         holders.extend(more);
     }
-    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(name) if holders.iter().any(|h| name.is(h)));
+    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(name) if holders.contains(name));
     // Its literal, the one statement that makes it.
     let literal = statements().find_map(|stmt| match &stmt.kind {
-        StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) if name.is(value) => match &e.kind {
+        StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) if name == value => match &e.kind {
             js::ExprKind::Object(props, _) => Some(props.clone()),
             _ => None,
         },
@@ -162,7 +162,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     let (mut reads, mut fields_read, mut written) = (0, 0, IndexSet::<String>::default());
     let mut whole = false;
     js::each_expr(out, &mut |e| match &e.kind {
-        js::ExprKind::Var(name) if holders.iter().any(|h| name.is(h)) => reads += 1,
+        js::ExprKind::Var(name) if holders.contains(name) => reads += 1,
         // A field's read, its literal's own: a `None` is written there,
         // `undefined`, until preparation leaves its key out.
         js::ExprKind::Member(of, key) if held(of) => {
@@ -179,38 +179,28 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     for place in js::Writes::places(out) {
         match place.kind {
             js::ExprKind::Member(of, key) if held(&of) => _ = written.insert(key),
-            js::ExprKind::Var(name) if holders.iter().any(|h| name.is(h)) => whole = true,
+            js::ExprKind::Var(name) if holders.contains(&name) => whole = true,
             _ => {}
         }
     }
     let aliases = (statements())
-        .filter(|stmt| matches!(&stmt.kind, StmtKind::Const(alias, e) if !alias.is(value) && holders.iter().any(|h| alias.is(h)) && held(e)))
+        .filter(|stmt| matches!(&stmt.kind, StmtKind::Const(alias, e) if alias != value && holders.contains(alias) && held(e)))
         .count();
     // Each holder declared once, never named again.
     let mut declared = 0;
-    js::each_declared(out, &mut |name| {
-        declared += usize::from(holders.iter().any(|h| h == name))
-    });
-    let rebound = params
-        .iter()
-        .flat_map(|p| p.names())
-        .any(|name| holders.iter().any(|h| h == name));
+    js::each_declared_name(out, &mut |name| declared += usize::from(holders.contains(name)));
+    let rebound = params.iter().flat_map(|p| p.bound()).any(|name| holders.contains(name));
     if whole || rebound || reads != fields_read + aliases || declared != holders.len() {
         return;
     }
     // A copy of a field the program names as the field, read before
     // anything can set it again: the field, so its variable keeps its name.
     js::each_block_mut(out, &mut |list| copies_read_through(list, &held));
-    // Each field's variable, named apart from every name the body has.
-    let mut taken = IndexSet::default();
-    js::names_in(out, &mut taken);
-    taken.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-    // A parameter nothing assigns, nor declares again, a nested
-    // function's own of its name: what it's read as everywhere in the body.
-    let mut declared = IndexSet::default();
-    js::each_declared(out, &mut |name| {
-        declared.insert(name.to_string());
-    });
+    // A parameter nothing assigns: what it's read as everywhere in the
+    // body, where each of its reads put where the field's are reads it
+    // still, as JS's scopes say (`js::scopes::not_read_as_themselves`, ADR
+    // 1150), a nested function's own of its spelling none; handled and set
+    // by the variable it is.
     let mut handled: IndexSet<js::Name> = IndexSet::default();
     js::each_expr(out, &mut |e| {
         if let js::ExprKind::Handle(place, _) = &e.kind {
@@ -221,39 +211,75 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
             });
         }
     });
-    // Declared again by its spelling, which JS reads it by; handled and
-    // set by the variable it is.
-    let assigned =
-        |name: &js::Name| declared.contains(name.word()) || handled.contains(name) || js::Writes::sets(out, name);
-    let param_names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
-    let mut names: IndexMap<String, js::Name> = IndexMap::default();
-    let mut lets = Vec::new();
-    for (key, e) in fields {
-        let given = e.as_ref().and_then(|e| match &e.kind {
-            js::ExprKind::Var(p) if param_names.contains(&p.word()) && !assigned(p) && !written.contains(&key) => {
-                Some(p.clone())
-            }
-            _ => None,
-        });
-        let name = match given {
-            Some(p) => p,
-            None => {
-                let name = js::Name::declared(crate::names::fresh_in(&mut taken, &key));
-                // Where its value is written, which a comment above the
-                // field is before; the first where the literal's `let` is.
-                let at = e.as_ref().map_or(js::Span::NONE, |e| e.span);
-                lets.push(
-                    match (written.contains(&key), e) {
-                        (false, Some(e)) => StmtKind::Const(name.clone(), e),
-                        (_, e) => StmtKind::Let(name.clone(), e),
-                    }
-                    .at(at),
-                );
-                name
-            }
-        };
-        names.insert(key, name);
+    let assigned = |name: &js::Name| handled.contains(name) || js::Writes::sets(out, name);
+    let param_names: Vec<&js::Name> = params.iter().flat_map(|p| p.bound()).collect();
+    // Each field's own variable, named after it, spelled by preparation
+    // apart from what its scope has, `at$1` where `at` is taken (ADR 1150).
+    let mut names_had: Vec<js::Name> = params.iter().flat_map(|p| p.bound()).cloned().collect();
+    js::each_declared_name(out, &mut |name| names_had.push(name.clone()));
+    js::visit_stmt_names(out, &mut |name| names_had.push(name.clone()));
+    let mut refused: IndexSet<js::Name> = IndexSet::default();
+    loop {
+        let mut names: IndexMap<String, js::Name> = IndexMap::default();
+        let mut lets = Vec::new();
+        for (key, e) in fields.iter().cloned() {
+            let given = e.as_ref().and_then(|e| match &e.kind {
+                js::ExprKind::Var(p)
+                    if param_names.contains(&p) && !assigned(p) && !written.contains(&key) && !refused.contains(p) =>
+                {
+                    Some(p.clone())
+                }
+                _ => None,
+            });
+            let name = match given {
+                Some(p) => p,
+                None => {
+                    // Of the variable it was made of, where the field is
+                    // named as it, a holder of its value, which preparation
+                    // folds into it (`shadows`, by its id); else named after
+                    // the field.
+                    let k = js::Name::free_made_k(&names_had, &key);
+                    let name = match e.as_ref().map(|e| &e.kind) {
+                        Some(js::ExprKind::Var(v)) if v.is(&key) => js::Name::derived(v, k),
+                        _ => js::Name::declared(key.clone()).spelled_later(k),
+                    };
+                    // Where its value is written, which a comment above the
+                    // field is before; the first where the literal's `let` is.
+                    let at = e.as_ref().map_or(js::Span::NONE, |e| e.span);
+                    lets.push(
+                        match (written.contains(&key), e) {
+                            (false, Some(e)) => StmtKind::Const(name.clone(), e),
+                            (_, e) => StmtKind::Let(name.clone(), e),
+                        }
+                        .at(at),
+                    );
+                    name
+                }
+            };
+            names.insert(key, name);
+        }
+        let mut made = out.clone();
+        fielded(&mut made, value, &holders, &held, names.clone(), lets);
+        let given: Vec<&js::Name> = names.values().filter(|n| param_names.contains(n)).collect();
+        let not = js::scopes::not_read_as_themselves(&made, &given);
+        if not.is_empty() {
+            *out = made;
+            return;
+        }
+        refused.extend(not);
     }
+}
+
+/// `out`, the scope's value made its fields' variables, `names` each
+/// field's, `lets` the statements that make them, in place of its literal's.
+fn fielded(
+    out: &mut Vec<Stmt>,
+    value: &js::Name,
+    holders: &[js::Name],
+    held: &dyn Fn(&Expr) -> bool,
+    names: IndexMap<String, js::Name>,
+    lets: Vec<Stmt>,
+) {
     // Its reads made its variables', its `const`s and their aliases gone.
     js::each_expr_mut(out, &mut |e| {
         if let js::ExprKind::Member(of, key) = &e.kind
@@ -269,7 +295,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         let mut i = 0;
         while i < list.len() {
             match &list[i].kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, Some(_)) if name.is(value) => {
+                StmtKind::Const(name, _) | StmtKind::Let(name, Some(_)) if name == value => {
                     let span = list[i].span;
                     let mut made = lets.take().unwrap_or_default();
                     for (k, stmt) in made.iter_mut().enumerate() {
@@ -281,7 +307,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
                     list.splice(i..=i, made);
                     i += n;
                 }
-                StmtKind::Const(name, _) if holders.iter().any(|h| name.is(h)) => {
+                StmtKind::Const(name, _) if holders.contains(name) => {
                     list.remove(i);
                 }
                 _ => i += 1,
@@ -321,8 +347,8 @@ fn copies_read_through(list: &mut Vec<Stmt>, held: &dyn Fn(&Expr) -> bool) {
         };
         let rest = i + 1 + usize::from(made.is_some());
         let mut declared = false;
-        js::each_declared(&list[rest..], &mut |n| declared |= name.is(n));
-        if declared || !copied_until_effects(&list[rest..], name.word()) {
+        js::each_declared_name(&list[rest..], &mut |n| declared |= *n == name);
+        if declared || !copied_until_effects(&list[rest..], &name) {
             i += 1;
             continue;
         }
@@ -351,20 +377,20 @@ fn copies_read_through(list: &mut Vec<Stmt>, held: &dyn Fn(&Expr) -> bool) {
 /// anything that may run other code: a call that may have effects, a
 /// getter's read, a write but a variable's; none in a closure, which runs
 /// later, nor in a statement whose order isn't followed here.
-fn copied_until_effects(stmts: &[Stmt], name: &str) -> bool {
+fn copied_until_effects(stmts: &[Stmt], name: &js::Name) -> bool {
     let mut order = Order {
         name,
         seen: 0,
         stopped: false,
     };
     order.stmts(stmts);
-    order.seen == js::mentions_in(stmts, name)
+    order.seen == js::mentions_of(stmts, name)
 }
 
 /// `copied_until_effects`' walk: the reads of `name` seen, until what may
 /// run other code stops it.
 struct Order<'n> {
-    name: &'n str,
+    name: &'n js::Name,
     seen: usize,
     stopped: bool,
 }
@@ -393,10 +419,10 @@ impl Order<'_> {
                 }
                 StmtKind::Assign(target, value) if matches!(target.kind, js::ExprKind::Var(_)) => {
                     self.expr(value);
-                    self.stopped |= target.mentions_var(self.name);
+                    self.stopped |= target.mentions_name(self.name);
                 }
                 StmtKind::Let(_, None) | StmtKind::Return(None) | StmtKind::Comments => {}
-                StmtKind::Function(_) if js::mentions_in(std::slice::from_ref(stmt), self.name) == 0 => {}
+                StmtKind::Function(_) if js::mentions_of(std::slice::from_ref(stmt), self.name) == 0 => {}
                 _ => self.stopped = true,
             }
         }
@@ -407,7 +433,7 @@ impl Order<'_> {
             return;
         }
         match &e.kind {
-            js::ExprKind::Var(v) => self.seen += usize::from(v.is(self.name)),
+            js::ExprKind::Var(v) => self.seen += usize::from(v == self.name),
             js::ExprKind::Member(of, _) | js::ExprKind::OptionalMember(of, _) => {
                 self.expr(of);
                 self.stopped |= e.facts.has(js::Known::Getter);
@@ -445,7 +471,62 @@ impl Order<'_> {
             }
             // Anything else, of an order not followed here: stopped where it
             // reads `name` or may do anything, a closure made reads nothing.
-            _ => self.stopped |= e.mentions_var(self.name) || e.has_effects(),
+            _ => self.stopped |= e.mentions_name(self.name) || e.has_effects(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn stmt(kind: StmtKind) -> Stmt {
+        kind.at(js::Span::NONE)
+    }
+
+    // A field a parameter of its name gives, `{ prefix }` of `prefix`, read
+    // in a method that declares its own `prefix`, spelled so, before it:
+    // read as the parameter there, the method's own would take the read,
+    // so the field is a variable of its own, and the tree reads each as it
+    // is (`js::scopes::not_read_as_themselves`, ADR 1150).
+    #[test]
+    fn a_parameter_a_method_s_own_would_take_is_no_field() {
+        let prefix = js::Name::program("prefix".into(), 1);
+        let own = js::Name::program("prefix".into(), 2);
+        let label = js::Name::program("label".into(), 3);
+        let name = js::Name::declared("name".into());
+        let method = js::Function {
+            name: name.clone(),
+            params: Vec::new(),
+            body: vec![
+                stmt(StmtKind::Const(own.clone(), Expr::num(2.0))),
+                stmt(StmtKind::Return(Some(Expr::bin(
+                    js::Op::Add,
+                    Expr::member(Expr::var(&label), "prefix"),
+                    Expr::var(&own),
+                )))),
+            ],
+            export: false,
+            is_async: false,
+            noinline: false,
+            span: js::Span::NONE,
+            name_span: js::Span::NONE,
+            param_spans: Vec::new(),
+            set_apart: false,
+        };
+        let mut body = vec![
+            stmt(StmtKind::Const(
+                label.clone(),
+                Expr::object(vec![js::Prop::Field("prefix".into(), Expr::var(&prefix))]),
+            )),
+            stmt(StmtKind::Function(Box::new(method))),
+            stmt(StmtKind::Return(Some(Expr::call(Expr::var(&name), Vec::new())))),
+        ];
+        scope_fields(&label, &[js::Pattern::Name(prefix.clone())], &mut body);
+        assert_eq!(js::validate::body(&body), []);
+        let StmtKind::Const(field, value) = &body[0].kind else {
+            panic!("the field's own `const` first")
+        };
+        assert!(*field != prefix && matches!(&value.kind, js::ExprKind::Var(v) if *v == prefix));
     }
 }

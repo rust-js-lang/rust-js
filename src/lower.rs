@@ -484,7 +484,7 @@ struct FnCx<'a, 'tcx> {
     /// Once a function's body is lowered, the variable of each of its
     /// scope structs' values, by the function, whose fields are then its
     /// variables (ADR 1043, amended).
-    scope_values: Vec<(DefId, String)>,
+    scope_values: Vec<(DefId, js::Name)>,
     /// While a `match`'s tests of its arms are made, which it refuses
     /// itself where they'd tell a variant by `instanceof` of a JS object
     /// type's class, once it knows its arms differ (#555): no test of them
