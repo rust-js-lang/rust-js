@@ -2,7 +2,6 @@
 //! takes the state's keys, and each `new` gives them.
 
 use super::{Member, class_of, member};
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Pattern, Prop, StmtKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
@@ -48,19 +47,10 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
     let Some(Pattern::Name(state)) = function.params.get(at).cloned() else {
         return Err("a constructor whose flattened state is no parameter of its own name");
     };
-    let mut taken = IndexSet::default();
-    js::names_in(&function.body, &mut taken);
-    for param in &function.params {
-        if let Pattern::Name(name) = param {
-            taken.insert(name.to_string());
-        }
-    }
-    taken.swap_remove(state.word());
-    // Each key's parameter, named apart from what the body names: declared
-    // once, its reads clones of it.
-    let names: Vec<js::Name> = (keys.iter())
-        .map(|key| js::Name::declared(crate::lower::fresh_in(&mut taken, key)))
-        .collect();
+    // Each key's parameter, a variable of its own, spelled apart from what
+    // the body names where it's spelled (ADR 1150): declared once, its
+    // reads clones of it.
+    let names: Vec<js::Name> = (keys.iter()).map(|key| js::Name::declared(key.to_string())).collect();
     let mut spread = 0;
     js::each_expr_mut(&mut function.body, &mut |e| {
         if let ExprKind::Object(props, _) = &mut e.kind {

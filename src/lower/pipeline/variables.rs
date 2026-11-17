@@ -74,17 +74,23 @@ pub(super) fn place(
         .flat_map(|item| std::iter::once((item.from.clone(), item.export.clone())).chain(item.rooted.clone()))
         .collect();
     let local = |export: &(String, String)| names?.get(export).map(String::as_str);
-    let foreign_variables: IndexSet<&str> = exports.iter().filter_map(local).collect();
-    let namespaced: IndexSet<(&str, &str)> = (exports.iter())
-        .filter_map(|(from, export)| Some((local(&(from.clone(), js::NAMESPACE.into()))?, export.as_str())))
+    // Each the module's import of its word, by its name (ADR 1150).
+    let foreign_variables: IndexSet<js::Name> = exports.iter().filter_map(local).map(js::Name::module).collect();
+    let namespaced: IndexSet<(js::Name, &str)> = (exports.iter())
+        .filter_map(|(from, export)| {
+            Some((
+                js::Name::module(local(&(from.clone(), js::NAMESPACE.into()))?),
+                export.as_str(),
+            ))
+        })
         .collect();
     if !foreign_variables.is_empty() || !namespaced.is_empty() {
         super::super::std_types::cell::imported_variables_through(
             items,
-            &|e| matches!(&e.kind, js::ExprKind::Var(name) if foreign_variables.contains(name.word())),
+            &|e| matches!(&e.kind, js::ExprKind::Var(name) if foreign_variables.contains(name)),
             &|namespace, export| {
                 matches!(&namespace.kind,
-                js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.word(), export)))
+                js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.clone(), export)))
             },
         );
     }
