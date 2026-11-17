@@ -254,7 +254,7 @@ pub(super) struct DropState<'tcx> {
     outer: Vec<SwappedDrops<'tcx>>,
     /// The drop functions made here whose body never throws, so a part
     /// dropped by one needs no `finally` for those after it (#416).
-    quiet: IndexSet<String>,
+    quiet: IndexSet<js::Name>,
 }
 
 /// A body's drop functions, each of a type inside itself or with a long
@@ -612,7 +612,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut body = Vec::new();
             self.drop_parts(Expr::var(&param), ty, span, made, &mut body)?;
             if !parts::may_throw(&body) {
-                self.drop_state.quiet.insert(name.clone().into_word());
+                self.drop_state.quiet.insert(name.clone());
             }
             let def = StmtKind::Const(name.clone(), Expr::arrow(vec![param.into()], body)).at(js_span);
             match self.drop_state.hoisted.as_mut() {
@@ -629,7 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// to throw where its body never does (`quiet`).
     fn drop_function_call(&self, name: &js::Name, value: Expr) -> Expr {
         let mut call = Expr::call(Expr::var(name.clone()), vec![value]);
-        if self.drop_state.quiet.contains(name.word()) {
+        if self.drop_state.quiet.contains(name) {
             call.facts = call.facts.with(js::Known::NeverThrows);
         }
         call

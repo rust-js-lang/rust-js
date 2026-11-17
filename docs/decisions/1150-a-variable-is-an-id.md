@@ -1235,3 +1235,14 @@ its line, `// word: <reason>`, the one form an exemption has, which the
 ratchet's row skips; a word reserved in a naming table goes through
 `Name::reserve_in`. The ratchet: 201 → 180.
 
+Slice 8's (2026-11-17): a drop function known never to throw is one of a
+set of `Name`s (`drops.rs`), an `Option`'s chain's parameter one by its id
+(`optional_chain`), a map's call JS's own by the runtime's helper it
+names (`Name::helper`), and a name made and taken away again gives its
+word back to the naming table (`Name::release_in`, `reserve_in`'s
+inverse). A module's static, kept in sets of its item's name, at a
+module's scope its identity, is read so by one `item_word`, marked (`cell
+/variables.rs`); a drop function by its item's name too
+(`drops::inlined`). Byte-identical; the ratchet 176 → 165.
+`drops::inlined`'s own questions of words follow as their own step.
+

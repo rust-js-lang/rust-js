@@ -147,9 +147,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`first_element_child(p).map(|c| id(c))` is `const child = ..; child?.id`, not `p.firstElementChild?.id`",
     file: "src/lower/std_types/option.rs",
-    find: "                            && let Some(chain) = optional_chain(&option, b, p.word())\n",
+    find: "                            && let Some(chain) = optional_chain(&option, b, p)\n",
     replace:
-      "                            && let Some(chain) = optional_chain(&option, b, p.word()).filter(|_| false)\n",
+      "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
     tests: [
       "test/lowering-optional-chains.test.ts",
       "-t",
@@ -553,8 +553,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`it.peek().map(|d| d.0)` of a tuple is `const option = $peek(it); option?.[0]`, not `$peek(it)?.[0]`, an `Option`'s key held in a `const` (#1908)",
     file: "src/lower/std_types/option.rs",
-    find: "        js::ExprKind::Index(of, key) if !key.mentions_var(param) => match &of.kind {\n",
-    replace: "        js::ExprKind::Index(of, key) if false && !key.mentions_var(param) => match &of.kind {\n",
+    find: "        js::ExprKind::Index(of, key) if !key.mentions_name(param) => match &of.kind {\n",
+    replace: "        js::ExprKind::Index(of, key) if false && !key.mentions_name(param) => match &of.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source.rs$"],
     snapshots: true,
   },

@@ -5,6 +5,12 @@
 
 use super::*;
 
+/// A module's static by its item's name, the word its sets are of: at a
+/// module's scope a name's word is its identity (ADR 1150).
+fn item_word(name: &js::Name) -> &str {
+    name.word() // word: a module's static, by its item's name, its word its identity
+}
+
 /// A module's own `const X = { value: init }`, a thread-local's cell or a
 /// `static mut` (ADR 0096, amended) MIR reads by its `value`, that its
 /// module reads and sets only so, by name: `let X = init`, `X` where it's
@@ -36,7 +42,7 @@ pub(in crate::lower) fn plain_statics(
     // Each by its declaration's name, which its reads are made of.
     let cells: Vec<js::Name> = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c) if (!c.export || quiet.contains(c.name.word())) && is_box(&c.value) => {
+            js::Item::Const(c) if (!c.export || quiet.contains(item_word(&c.name))) && is_box(&c.value) => {
                 Some(c.name.clone())
             }
             _ => None,
@@ -44,7 +50,7 @@ pub(in crate::lower) fn plain_statics(
         .collect();
     let mut exported = Vec::new();
     for cell in cells {
-        let name = cell.word().to_string();
+        let name = item_word(&cell).to_string();
         outside_own_bindings(items, &name.clone(), |items| {
             let (mut reads, mut values, mut sets) = (0, 0, 0);
             js::each_item_expr_mut(items, &mut |e| match &e.kind {
@@ -116,7 +122,7 @@ pub(in crate::lower) fn plain_statics(
     // module writes the one it reads in place, as before.
     let objects: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c) if quiet.contains(c.name.word()) && !is_box(&c.value) => Some(c.name.to_string()),
+            js::Item::Const(c) if quiet.contains(item_word(&c.name)) && !is_box(&c.value) => Some(c.name.to_string()),
             _ => None,
         })
         .collect();
@@ -162,7 +168,7 @@ pub(in crate::lower) fn plain_statics(
     // not what it holds, so the caller refuses it (ADR 0270, amended).
     let boxed = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c) if c.export && held_values.contains(c.name.word()) && is_box(&c.value) => {
+            js::Item::Const(c) if c.export && held_values.contains(item_word(&c.name)) && is_box(&c.value) => {
                 Some(c.name.to_string())
             }
             _ => None,
@@ -170,7 +176,7 @@ pub(in crate::lower) fn plain_statics(
         .collect();
     for item in items.iter_mut() {
         if let js::Item::Const(c) = item
-            && nullable.contains(c.name.word())
+            && nullable.contains(item_word(&c.name))
         {
             nullable_cell(&mut c.value);
         }

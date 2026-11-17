@@ -1179,7 +1179,7 @@ pub(in crate::lower) fn discarded_calls(items: &mut [js::Item]) {
             if let StmtKind::Expr(e) = &mut stmt.kind
                 && let js::ExprKind::Call(callee, args) = &mut e.kind
                 && let js::ExprKind::Var(helper) = &callee.kind
-                && let Some(method) = match (helper.word(), args.len()) {
+                && let Some(method) = match (helper.helper().unwrap_or(""), args.len()) {
                     ("$add", 2) => Some("add"),
                     ("$insert", 3) => Some("set"),
                     ("$remove", 2) => Some("delete"),

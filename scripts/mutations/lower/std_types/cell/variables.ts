@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` thread-local's cell only its module sets is `export const enabled = { value: false }`, which a JS importer reads as an object (ADR 0270, amended)",
     file: "src/lower/std_types/cell/variables.rs",
-    find: "            js::Item::Const(c) if (!c.export || quiet.contains(c.name.word())) && is_box(&c.value) => {\n",
+    find: "            js::Item::Const(c) if (!c.export || quiet.contains(item_word(&c.name))) && is_box(&c.value) => {\n",
     replace:
       "            js::Item::Const(c) if !c.export && is_box(&c.value) => {\n",
     tests: [
@@ -66,9 +66,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a thread-local its module keeps, whose `&mut` it hands on, is refused as an exported one is, though no JS module imports it (ADR 0270, amended)",
     file: "src/lower/std_types/cell/variables.rs",
-    find: "            js::Item::Const(c) if c.export && held_values.contains(c.name.word()) && is_box(&c.value) => {\n",
+    find: "            js::Item::Const(c) if c.export && held_values.contains(item_word(&c.name)) && is_box(&c.value) => {\n",
     replace:
-      "            js::Item::Const(c) if held_values.contains(c.name.word()) && is_box(&c.value) => {\n",
+      "            js::Item::Const(c) if held_values.contains(item_word(&c.name)) && is_box(&c.value) => {\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",

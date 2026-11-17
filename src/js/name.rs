@@ -273,6 +273,12 @@ impl Name {
         taken.insert(self.0.clone())
     }
 
+    /// Its word given back to `taken`, a naming table's words: one made and
+    /// taken away again (`reserve_in`).
+    pub fn release_in(&self, taken: &mut crate::collections::IndexSet<String>) {
+        taken.swap_remove(&self.0);
+    }
+
     /// A name of its word not spelled yet, the `k`th, `Count#3`: a function
     /// written in an expression, named in itself alone, which preparation
     /// spells apart from what its scope reads, `Count$1` where its body
