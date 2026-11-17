@@ -10,6 +10,7 @@ use crate::lower::format_args::Piece;
 use crate::lower::std_types::once::OnceOp;
 use crate::lower::temporary_names::{Base, Role};
 
+mod clone_from;
 mod fmt_parts;
 mod iterators;
 mod written_into;
@@ -993,85 +994,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // of one: `clone_into`'s, in place, `$cloneIntoVec(dest, source,
             // ..)` (#919, #922); an `Option`'s of one, its value's where both
             // are `Some`.
-            Std::CloneFrom => lower(move |this, state, values, out| {
-                Ok(Value::Expr({
-                    let ty = arg_tys[1].peel_refs();
-                    let dest = values.next().expect("the destination");
-                    let source = values.next().expect("the source");
-                    let source = this.value_expr(source, span)?;
-                    if let Some(into) = this.clone_into(ty, span)? {
-                        let dest = this.dest_place(&dest, ty, span)?;
-                        this.flush(state, out)?;
-                        out.push(StmtKind::Expr(into.call(dest, source)).at(this.js_span(span)));
-                        return Ok(Value::Expr(Expr::js_undefined()));
-                    }
-                    // Of an `Option`, its value's, where both are `Some`; of a
-                    // value only the caller knows, a `T` or a `Box<T>`, or an
-                    // `Option` of one, its dictionary's `clone_from`, where
-                    // the caller's type has one, asked first (#928): given
-                    // the box generic code has of `dest`, or one of its place
-                    // here, written back.
-                    let inner = this.option_of(ty).filter(|&inner| !this.boxed_payload(inner));
-                    let to = this.dest_place(&dest, ty, span)?;
-                    let given_box = match &dest {
-                        Value::Ref(place) => this.box_of_place(state, place),
-                        _ => Some(this.value_expr(dest.clone(), span)?),
-                    };
-                    let made = given_box.is_none().then(|| this.fresh(Role::To));
-                    let pointer = given_box.unwrap_or_else(|| Expr::var(made.as_ref().expect("a box made")));
-                    let held = inner.unwrap_or(ty);
-                    if this
-                        .written_over(held, (to.clone(), pointer.clone()), source.clone(), span)?
-                        .is_some()
-                    {
-                        this.flush(state, out)?;
-                        // Read again by what's asked and by the clone.
-                        let source = match source.reads_same() {
-                            true => source,
-                            false => this.spill(Role::Source, source, out),
-                        };
-                        let (asked, written) = this
-                            .written_over(held, (to.clone(), pointer), source.clone(), span)?
-                            .expect("written over, as asked above");
-                        // The box made of the place, where a dictionary's is
-                        // given it, not `clone_into`'s, which writes the place.
-                        let made = made.filter(|_| asked.is_some());
-                        let some = |e: &Expr| Expr::bin(Op::LooseNe, e.clone(), Expr::null());
-                        let both = inner.map(|_| Expr::bin(Op::And, some(&to), some(&source)));
-                        let test = match (both, asked) {
-                            (Some(both), Some(asked)) => Expr::bin(Op::And, both, asked),
-                            (Some(test), None) | (None, Some(test)) => test,
-                            (None, None) => unreachable!("`clone_into`'s is written above"),
-                        };
-                        let mut then = Vec::new();
-                        if let Some(name) = &made {
-                            then.push(
-                                StmtKind::Const(name.into(), crate::lower::mut_refs::boxed(to.clone()))
-                                    .at(this.js_span(span)),
-                            );
-                        }
-                        then.push(StmtKind::Expr(written).at(this.js_span(span)));
-                        if let Some(name) = &made {
-                            then.push(
-                                StmtKind::Assign(to.clone(), Expr::member(Expr::var(name), js::HELD))
-                                    .at(this.js_span(span)),
-                            );
-                        }
-                        let mut replaced = Vec::new();
-                        this.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, &mut replaced)?;
-                        out.push(StmtKind::If(test, then, Some(replaced)).at(this.js_span(span)));
-                        return Ok(Value::Expr(Expr::js_undefined()));
-                    }
-                    if this.forwards_clone_from(ty, span)? {
-                        return Err(this.unsupported(
-                            span,
-                            &format!("`clone_from` of `{ty}`, whose std `clone_from` is its value's, which the crate's or std's own writes in place (#927): write the value's `clone_from` where both hold one, `match (&mut *dest, source) {{ (Some(to), Some(from)) => to.clone_from(from), _ => *dest = source.clone() }}`"),
-                        ));
-                    }
-                    this.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, out)?;
-                    Expr::js_undefined()
-                }))
-            }),
+            Std::CloneFrom => {
+                lower(move |this, state, values, out| this.mir_clone_from(state, values, (def_id, arg_tys), span, out))
+            }
             // `Rc::make_mut(&mut rc)` of a local `Rc` of this body, or one a
             // `&mut` reaches, its place's box (ADR 0523): the place given the
             // one `$makeMut` gives. Through a shared reference the place isn't
