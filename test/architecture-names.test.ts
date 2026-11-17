@@ -167,6 +167,27 @@ test("js::scopes' words are asked only where names are spelled or checked", () =
   expect(asked).toEqual([]);
 });
 
+// Kin by id (ADR 1150): whether a name is another's given apart, `x$1` of
+// `x`, and what form it is, a temporary's `_$`, a helper's `$`, `__arg`,
+// asked by parsing its word, here or in the fallback of
+// `Name::given_apart_of` where a name records no origin. Counted, at most
+// `KIN_PARSES`, which only falls, to none: each is asked of the name's
+// origin and form by its id instead. The spelling's owners, `js::name`,
+// `names`, the runtime's helpers and printing, write and read it.
+const KIN_PARSES = 23;
+test("a name's kinship and form are asked by parsing its word only as counted", () => {
+  const owners = (file: string) => file === "src/js/name.rs" || file === "src/names.rs"
+    || file === "src/runtime.rs" || file.startsWith("src/to_oxc");
+  const patterns = [/\.apart_of\(\)/g, /names::apart\(/g, /split\('\$'\)/g, /split_once\('\$'\)/g,
+    /starts_with\('\$'\)/g, /starts_with\("_\$"\)/g, /strip_prefix\("__arg"\)/g, /\bparam\.root\(\)/g];
+  const parsed = sources.filter(file => !owners(file)).flatMap(file =>
+    patterns.flatMap(pattern => [...read(file).matchAll(pattern)].map(() => file)));
+  if (read("src/js/name.rs").includes("self.apart_of().is_some_and(|(root, _)| root == of.root())")) {
+    parsed.push("src/js/name.rs: given_apart_of's fallback");
+  }
+  expect(parsed.length).toBeLessThanOrEqual(KIN_PARSES);
+});
+
 // The spelling step (ADR 1150): a name's word is read where names are
 // spelled, preparation and printing, and asked of a `Name` everywhere
 // else. Each file's reads of a word outside them are at most
