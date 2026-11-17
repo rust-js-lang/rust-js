@@ -273,7 +273,7 @@ fn says_within(e: &Expr, subject: &Expr, set: &Set) -> bool {
 /// neither calling nor throwing. A test of no one part, a call's or a
 /// getter's, stays where MIR reads it, and those around it on its side.
 pub(super) fn written_order(path: &mut [Expr]) {
-    let parts: Vec<Option<(String, f64)>> = path.iter().map(part).collect();
+    let parts: Vec<Option<(js::Name, f64)>> = path.iter().map(part).collect();
     let mut start = 0;
     while start < path.len() {
         let Some((tuple, _)) = &parts[start] else {
@@ -404,7 +404,7 @@ fn within_place(outer: &Expr, inner: &Expr) -> bool {
 /// `_5[1] === 3`, `_5[1] != null`, `_5[1][0] === 3` and `_5[1].length ===
 /// 2`: of a test whose every read is of that one part, `None` of one that
 /// calls, or reads anything else.
-pub(super) fn part(test: &Expr) -> Option<(String, f64)> {
+pub(super) fn part(test: &Expr) -> Option<(js::Name, f64)> {
     let of = |place: &Expr| {
         let root = std::iter::once(place).chain(holders(place)).find(|p| match &p.kind {
             ExprKind::Index(of, _) => matches!(of.kind, ExprKind::Var(_)),
@@ -421,7 +421,7 @@ pub(super) fn part(test: &Expr) -> Option<(String, f64)> {
         let (ExprKind::Var(tuple), ExprKind::Num(n)) = (&of.kind, &at.kind) else {
             return None;
         };
-        Some((tuple.word().to_string(), *n))
+        Some((tuple.clone(), *n))
     };
     let places = places(test)?;
     let (first, rest) = places.split_first()?;

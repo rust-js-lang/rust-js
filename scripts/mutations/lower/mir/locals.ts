@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     name: "user-local-not-the-programs",
     breaks: "a local rustc says the program named is named as a name rust-js made, not the program's: reclaiming gives the program's name to another, a variable renamed (ADR 1150); the debug build's invariant says so where it's made",
     file: "src/lower/mir/locals.rs",
-    find: "                    self.fresh(Base::Program(&named, sources[local]))\n",
-    replace: "                    self.fresh(Base::Named(&named))\n",
+    find: "                    self.fresh(Base::Program(&named))\n",
+    replace: "                    self.fresh(Base::Named(named.word()))\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_kept_words.rs$"],
   },
   {

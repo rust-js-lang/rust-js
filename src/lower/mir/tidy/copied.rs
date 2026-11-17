@@ -78,7 +78,6 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
             let a_read = a.clone();
             let named = !user.contains(a) && user.contains(b);
             let (a_name, b_name) = (a.clone(), b.clone());
-            let (a, b) = (a.word().to_string(), b.word().to_string());
             let rest = &stmts[i + 2..];
             if !set_before_read(rest, &a_name, &b_name) && !rebinds(rest, &b_name) && !in_closure(rest, &b_name) {
                 // Of a variable rust-js named, `old` of `take()`'s value,
@@ -86,9 +85,9 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
                 // binding's name for both, as an `if let`'s is
                 // (`named_for_bindings`, ADR 0598, amended).
                 let own = (stmts[..i].iter())
-                    .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n.is(&a)));
+                    .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if *n == a_name));
                 let named = named && own;
-                let renamed = named && js::mentions_in(stmts, &b) == js::mentions_in(&stmts[i + 1..], &b);
+                let renamed = named && js::mentions_of(stmts, &b_name) == js::mentions_of(&stmts[i + 1..], &b_name);
                 stmts.remove(i + 1);
                 // The variable named so where it's declared and read, the
                 // binding's reads its reads; or the binding read as the
@@ -97,7 +96,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
                 let one = match renamed {
                     true => {
                         let mut spelled = a_name.clone();
-                        spelled.respell(b);
+                        spelled.respell(b_name.word()); // word: the binding's, which the variable is spelled as
                         spelled
                     }
                     false => a_read,

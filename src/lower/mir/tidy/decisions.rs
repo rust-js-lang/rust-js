@@ -69,19 +69,19 @@ pub(super) struct Told<'h> {
     pub kept: bool,
     /// The function's parameters it never replaces nor declares again
     /// (`fixed_params`), which no call changes.
-    pub fixed: &'h [String],
+    pub fixed: &'h [js::Name],
 }
 
 /// The parameters of a function of `params` and `body` that it never
 /// replaces nor declares again: what a guard's call can't change.
-pub(super) fn fixed_params(params: &[js::Pattern], body: &[Stmt]) -> Vec<String> {
+pub(super) fn fixed_params(params: &[js::Pattern], body: &[Stmt]) -> Vec<js::Name> {
     let writes = js::Writes::of(body);
     let mut fixed = Vec::new();
     for param in params {
         let mut param = param.clone();
         param.each_name_mut(&mut |name| {
             if !writes.may_replace(name) && !js::declares(body, name) {
-                fixed.push(name.word().to_string());
+                fixed.push(name.clone());
             }
         });
     }

@@ -385,8 +385,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals.names[local] = match (&user[local], body.local_kind(local)) {
                 (Some(_), _) if let Some(param) = copies.get(&local) => self.fresh(Base::Derived(param)),
                 (Some(name), _) => {
-                    let named = tidy::user_name(name);
-                    self.fresh(Base::Program(&named, sources[local]))
+                    let named = js::Name::program(tidy::user_name(name), sources[local]);
+                    self.fresh(Base::Program(&named))
                 }
                 (None, LocalKind::ReturnPointer) => self.fresh(Role::Result),
                 (None, _) => {

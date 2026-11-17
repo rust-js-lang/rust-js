@@ -35,7 +35,7 @@ impl Model<'_> {
     /// out, of each value tested apart from the others, so what holds of
     /// all of them holds of those a program has: `None` where there are
     /// too many, or one it can't tell.
-    pub(super) fn of<'e>(arms: &[Arm], calls: &'e [Expr], guards: &[Guard], fixed: &[String]) -> Option<Model<'e>> {
+    pub(super) fn of<'e>(arms: &[Arm], calls: &'e [Expr], guards: &[Guard], fixed: &[js::Name]) -> Option<Model<'e>> {
         // Calls alike, one call of the model: a guarded or-pattern's guard,
         // MIR's copy of which each alternative makes, `A | B if on(x)`, of
         // which a path makes one (rd136). One a path makes again, the guard
@@ -407,7 +407,7 @@ fn merged(paths: &mut Vec<Vec<Expr>>) {
 pub(super) struct Model<'e> {
     /// The function's parameters it never replaces nor declares again,
     /// which no call changes (`Told::fixed`).
-    fixed: Vec<String>,
+    fixed: Vec<js::Name>,
     subjects: Vec<(Expr, Vec<Set>, Vec<js::Span>)>,
     opaque: Vec<(Expr, Vec<js::Span>)>,
     calls: Vec<&'e Expr>,
@@ -471,8 +471,7 @@ impl Model<'_> {
     fn unchanged(&self, test: &Expr) -> bool {
         let mut places = Vec::new();
         read_places(test, &mut places)
-            && (places.iter())
-                .all(|place| matches!(&place.kind, ExprKind::Var(v) if self.fixed.iter().any(|f| v.is(f))))
+            && (places.iter()).all(|place| matches!(&place.kind, ExprKind::Var(v) if self.fixed.contains(v)))
     }
 
     fn read(&self, part: &Expr) -> Option<Read> {

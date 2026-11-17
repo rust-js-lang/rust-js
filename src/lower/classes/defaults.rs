@@ -94,13 +94,13 @@ pub(in crate::lower) fn take_default(
             Some((_, others)) => others.push(owner.to_owned()),
             None => class
                 .shared
-                .push((function.name.word().to_string(), vec![owner.to_owned()])),
+                .push((function.name.word().to_string(), vec![owner.to_owned()])), // word: a prototype's property, which JS reads by its word
         }
         return Ok(());
     }
     let namespace = &mut namespaces[at];
     if let Some(class) = &mut namespace.class {
-        class.prototype.push(function.name.word().to_string());
+        class.prototype.push(function.name.word().to_string()); // word: a prototype's property, which JS reads by its word
     }
     namespace.methods.push(function);
     Ok(())

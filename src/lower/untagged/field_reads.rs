@@ -153,7 +153,7 @@ pub(in crate::lower) fn reads_each_variants_field<'tcx>(tcx: TyCtxt<'tcx>, body:
 /// the same where it's called of the value given, once (rd317). Made anew,
 /// of what's known of the function's own reads nothing, so its caller's
 /// lowering takes it as any read of its value.
-pub(in crate::lower) fn read_of_its_parameter(function: &js::Function) -> Option<(String, Expr)> {
+pub(in crate::lower) fn read_of_its_parameter(function: &js::Function) -> Option<(js::Name, Expr)> {
     let [js::Pattern::Name(param)] = &function.params[..] else {
         return None;
     };
@@ -179,6 +179,6 @@ pub(in crate::lower) fn read_of_its_parameter(function: &js::Function) -> Option
     }
     match read.kind {
         js::ExprKind::Var(_) => None,
-        _ => Some((param.word().to_string(), path(read, param)?)),
+        _ => Some((param.clone(), path(read, param)?)),
     }
 }

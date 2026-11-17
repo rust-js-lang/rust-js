@@ -267,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // JSX reads a lowercase name as a DOM element's, and Fast
                 // Refresh only keeps the state of a capitalized component.
                 if let Some(name) = match &tag.kind {
-                    js::ExprKind::Var(name) => Some(name.word()),
+                    js::ExprKind::Var(name) => Some(name.word()), // word: JSX reads a lowercase tag as a DOM element's
                     js::ExprKind::Symbol(symbol) => Some(symbol.export.as_str()),
                     _ => None,
                 } && !name.starts_with(|c: char| c.is_ascii_uppercase())

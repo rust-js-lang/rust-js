@@ -91,6 +91,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let value = self.value_expr(value.clone(), span)?;
-        Ok(read.substitute(&|v| (v == param).then(|| value.clone())))
+        Ok(read.substitute_names(&|v| (*v == param).then(|| value.clone())))
     }
 }

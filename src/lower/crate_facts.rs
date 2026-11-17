@@ -244,7 +244,7 @@ impl<T> Lazy<T> {
 pub(in crate::lower) struct Settled<'tcx> {
     /// Each method that reads each variant's field, its JS's parameter and
     /// read, of one lowered (rd317): lowered before its callers.
-    pub(in crate::lower) field_reads: IndexMap<DefId, (String, Expr)>,
+    pub(in crate::lower) field_reads: IndexMap<DefId, (js::Name, Expr)>,
     /// Each body run where its module loads, a thread-local's value, a
     /// static's or constant's initializer lowered as code, a `js::on_load!`,
     /// that reads another of the crate's modules' `const` that may load

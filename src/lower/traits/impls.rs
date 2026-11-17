@@ -938,16 +938,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // entries share is the module's too, named apart by its cache's
             // name, `$smallWrite_writeStr`: the module's, its declaration's
             // name and each read's one.
-            let renamed: Vec<(String, js::Name)> = (shared.iter())
+            let renamed: Vec<(js::Name, js::Name)> = (shared.iter())
                 .filter_map(|stmt| match &stmt.kind {
                     StmtKind::Const(name, _) => Some((
-                        name.word().to_string(),
-                        js::Name::module(&format!("{cache}_{}", name.word())),
+                        name.clone(),
+                        js::Name::module(&format!("{cache}_{}", name.word())), // word: a module's name made of it, `$cache_name`
                     )),
                     _ => None,
                 })
                 .collect();
-            let rename = |v: &str| {
+            let rename = |v: &js::Name| {
                 (renamed.iter())
                     .find(|(from, _)| from == v)
                     .map(|(_, to)| Expr::var(to.clone()))
@@ -957,7 +957,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // longer declared, so it's refused, never left so (#1489).
             let renamed_in = |value: &Expr| match renamed.is_empty() {
                 true => Some(value.clone()),
-                false => value.substitute(&rename),
+                false => value.substitute_names(&rename),
             };
             let dangling = || {
                 self.unsupported(
@@ -969,7 +969,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let StmtKind::Const(name, value) = &mut stmt.kind {
                     *value = renamed_in(value).ok_or_else(dangling)?;
                     let to = (renamed.iter())
-                        .find(|(from, _)| name.is(from))
+                        .find(|(from, _)| from == name)
                         .map(|(_, to)| to.clone());
                     *name = to.expect("each shared `const` renamed");
                 }

@@ -761,7 +761,7 @@ pub(in crate::lower) fn is_some_box(value: Expr) -> Expr {
 /// `e?.[1] ?? d`, which end where `e` is `None` and give `d` (ADR 0309).
 /// Its test is whether `m` is there, `m != null`.
 pub(in crate::lower) fn nullish_or(
-    m: &str,
+    m: &js::Name,
     option: &Expr,
     test: &Expr,
     yes: &Expr,
@@ -772,11 +772,11 @@ pub(in crate::lower) fn nullish_or(
         js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
         _ => return None,
     };
-    if !matches!(&tested.kind, js::ExprKind::Var(v) if v.is(m)) || no.mentions_var(m) {
+    if !matches!(&tested.kind, js::ExprKind::Var(v) if v == m) || no.mentions_name(m) {
         return None;
     }
     let value = match &yes.kind {
-        js::ExprKind::Var(v) if v.is(m) => option.clone(),
+        js::ExprKind::Var(v) if v == m => option.clone(),
         _ if part_never_nullish => optional_part(yes, m, option)?,
         _ => return None,
     };
@@ -788,15 +788,15 @@ pub(in crate::lower) fn nullish_or(
 
 /// `part`, a member or index chain of `m`, `m.a[1]`, as one of `option` that
 /// ends where it's `None`: `option?.a[1]`.
-fn optional_part(part: &Expr, m: &str, option: &Expr) -> Option<Expr> {
-    let is_m = |of: &Expr| matches!(&of.kind, js::ExprKind::Var(v) if v.is(m));
+fn optional_part(part: &Expr, m: &js::Name, option: &Expr) -> Option<Expr> {
+    let is_m = |of: &Expr| matches!(&of.kind, js::ExprKind::Var(v) if v == m);
     match &part.kind {
         js::ExprKind::Member(of, field) if is_m(of) => Some(Expr::optional_member(option.clone(), field.clone())),
-        js::ExprKind::Index(of, index) if is_m(of) && !index.mentions_var(m) => {
+        js::ExprKind::Index(of, index) if is_m(of) && !index.mentions_name(m) => {
             Some(Expr::optional_index(option.clone(), (**index).clone()))
         }
         js::ExprKind::Member(of, field) => Some(Expr::member(optional_part(of, m, option)?, field.clone())),
-        js::ExprKind::Index(of, index) if !index.mentions_var(m) => {
+        js::ExprKind::Index(of, index) if !index.mentions_name(m) => {
             Some(Expr::index(optional_part(of, m, option)?, (**index).clone()))
         }
         _ => None,

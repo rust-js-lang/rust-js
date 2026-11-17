@@ -152,6 +152,11 @@ fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, 
     function
 }
 
+/// A module's function as `renamed` has it, by its word.
+fn named(module: LocalModId, name: &js::Name) -> Named {
+    (module, None, name.word().to_string()) // word: a module's function, which its word names
+}
+
 /// Each local of `function`, of a module's `module`, of the name a copy it
 /// calls is `renamed` to, named apart, so the call reads the function it's
 /// alike, not the local: chrono's `parse` named its result for its call of
@@ -162,7 +167,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
     let mut called = IndexSet::default();
     js::function_exprs_mut(function, &mut |e| {
         if let ExprKind::Var(name) = &e.kind
-            && let Some((to, _)) = renamed.get(&(module, None, name.word().to_string()))
+            && let Some((to, _)) = renamed.get(&named(module, name))
         {
             called.insert(to.clone());
         }
@@ -193,7 +198,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
 fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) {
     let mut each = |e: &mut Expr| match &mut e.kind {
         ExprKind::Var(name) => {
-            if let Some((to, _)) = renamed.get(&(module, None, name.word().to_string())) {
+            if let Some((to, _)) = renamed.get(&named(module, name)) {
                 name.respell(to.clone());
             }
         }
@@ -212,7 +217,7 @@ fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Na
         // namespace, `Plugin.extractEvents` (rd114, ADR 1018).
         ExprKind::Member(object, name) => {
             let owner = match &object.kind {
-                ExprKind::Var(owner) => Some((module, Some(owner.word().to_string()))),
+                ExprKind::Var(owner) => Some((module, Some(owner.word().to_string()))), // word: a module's type, which its word names
                 ExprKind::Symbol(symbol) => (renamed.keys())
                     .find(|(of, _, _)| of.to_def_id().index.as_u32() == symbol.module)
                     .map(|(of, _, _)| {

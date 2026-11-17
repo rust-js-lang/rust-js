@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a combinator's subject held once is kept in its `const` where the JS reads it once anyway, `const result = window.$RB; result.push(a, b)` and `const result = q.items; return $swapRemove(result, 0);` (#1908)",
     file: "src/lower/combinators/held.rs",
-    find: "    if reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if var.is(&name)) {\n",
-    replace: "    if true || reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if var.is(&name)) {\n",
+    find: "    if reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if *var == name) {\n",
+    replace: "    if true || reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if *var == name) {\n",
     tests: ["test/corpus.test.ts", "-t", "^combinator_subject_read_in_place.rs$"],
     snapshots: true,
   },];

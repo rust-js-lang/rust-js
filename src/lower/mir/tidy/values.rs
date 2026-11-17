@@ -918,7 +918,7 @@ pub(super) fn applied_values(
         if let Some(value) = first_applied(root, &mut before, &name, set, plain) {
             let span = stmts[i].span;
             stmts.insert(i, StmtKind::Const(name.clone(), value).at(span));
-            taken.insert(name.into_word());
+            taken.insert(name.into_word()); // word: a temporary's, `_$k`, in the table it's picked apart in
         }
         i += 1;
     }

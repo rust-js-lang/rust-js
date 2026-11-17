@@ -707,7 +707,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A variable a pattern binds, rustc's `LocalVarId`, the program's:
     /// its name the program's (`js::Name::program`, ADR 1150).
     fn bind(&mut self, var: LocalVarId, name: rustc_span::Symbol, mutable: bool) -> js::Name {
-        let name = self.fresh(Base::Program(&camel_case(name.as_str()), name.as_u32()));
+        let name = self.fresh(Base::Program(&js::Name::program(
+            camel_case(name.as_str()),
+            name.as_u32(),
+        )));
         self.locals.vars.insert(
             var,
             Var {
@@ -974,7 +977,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
                 .collect();
             let name = match &callee.kind {
-                js::ExprKind::Var(name) => name.word().to_string(),
+                js::ExprKind::Var(name) => name.word().to_string(), // word: a module function's, its instance's name made of it
                 _ => camel_case(self.tcx.item_name(def_id).as_str()),
             };
             // And its options where it takes them, which a call through the
@@ -1106,7 +1109,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Of a role's, named again by tidy once the code is placed (#890).
         if let Base::Role(role) = base {
-            self.note_spilled(name.word(), role);
+            self.note_spilled(name.word(), role); // word: tidy's readable names, a naming table of words (`readable_temporaries`)
         }
         let (span, marks) = (value.span, iterators::marks_kept(&value));
         out.push(StmtKind::Const(name.clone(), value).at(span));

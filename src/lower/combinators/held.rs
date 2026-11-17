@@ -56,9 +56,9 @@ pub(super) fn read_in_place(value: Expr, spilled_at: Option<usize>, out: &mut Ve
     let StmtKind::Const(name, held) = &out[at].kind else {
         return value;
     };
-    let name = name.word().to_string();
+    let name = name.clone();
     let mut reads = 0;
-    value.visit_vars(&mut |var| reads += usize::from(var == name));
+    value.visit_names(&mut |var| reads += usize::from(*var == name));
     // The root of its chain, read first: what a property, a key or a
     // method is of, and a helper's first argument, `$swapRemove(v, 0)`'s.
     let mut root = &value;
@@ -73,11 +73,11 @@ pub(super) fn read_in_place(value: Expr, spilled_at: Option<usize>, out: &mut Ve
             _ => break,
         };
     }
-    if reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if var.is(&name)) {
+    if reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if *var == name) {
         return value;
     }
     let held = held.clone();
-    match value.substitute(&|var| (var == name).then(|| held.clone())) {
+    match value.substitute_names(&|var| (*var == name).then(|| held.clone())) {
         Some(value) => {
             out.pop();
             value

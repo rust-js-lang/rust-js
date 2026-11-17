@@ -68,7 +68,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
     js::statement_lists(body, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                *declared.entry(name.word().to_string()).or_default() += 1;
+                *declared.entry(name.word().to_string()).or_default() += 1; // word: its naming table's, which picks a readable word
             }
         }
     });

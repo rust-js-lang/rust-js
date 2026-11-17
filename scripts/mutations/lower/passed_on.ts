@@ -302,9 +302,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that passes on what it borrows, `(cb, o) => startTransition(fiber, false, cb, o)` of `&fiber`, is bound to it as a moved value is (ADR 0605, amended)",
     file: "src/lower/passed_on.rs",
-    find: "    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.iter().any(|m| v.is(m)));\n",
+    find: "    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v));\n",
     replace:
-      "    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.iter().any(|m| v.is(m)) || !v.is(\"\"));\n",
+      "    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v) || !v.is(\"\"));\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "is the function bound"],
   },
   {

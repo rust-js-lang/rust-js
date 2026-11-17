@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `async` closure's `|_|`, a parameter the program names `_`, is the program's, kept, `async (_) => 1`, where it takes nothing, `async () => 1`",
     file: "src/lower/temporary_names.rs",
-    find: "            Base::Program(_, source) if *source == rustc_span::symbol::kw::Underscore.as_u32() => {\n",
-    replace: "            Base::Program(_, source) if *source == u32::MAX => {\n",
+    find: "            Base::Program(name) if name.source() == rustc_span::symbol::kw::Underscore.as_u32() => {\n",
+    replace: "            Base::Program(name) if name.source() == u32::MAX => {\n",
     tests: ["test/lowering-async.test.ts", "-t", "an async closure's ignored argument is no parameter"],
   },
   {
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a local the program named is made as one lowering made, so a name lowering made keeps the spelling the program's wants, and the check of user variables fails (ADR 1150)",
     file: "src/lower/temporary_names.rs",
-    find: "            Base::Program(_, source) => crate::js::Name::program(word, *source),\n",
+    find: "            Base::Program(name) => crate::js::Name::program(word, name.source()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(flattened_state_handed_on|taken_and_returned|std_mixed_enum_mut).rs$"],
     snapshots: true,

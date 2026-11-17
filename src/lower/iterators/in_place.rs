@@ -169,21 +169,21 @@ pub(in crate::lower) fn does(f: &Expr) -> bool {
     // Of what it declares, `declared`, an assignment sets nothing outside
     // it: `let sign; if (x < 0) { sign = "-"; } else { sign = "+"; }`, as
     // the program wrote it (rd187).
-    fn body_does(stmts: &[Stmt], declared: &mut Vec<String>) -> bool {
+    fn body_does(stmts: &[Stmt], declared: &mut Vec<js::Name>) -> bool {
         stmts.iter().any(|stmt| match &stmt.kind {
             StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) => {
-                declared.push(name.word().to_string());
+                declared.push(name.clone());
                 acts(e)
             }
             StmtKind::Return(Some(e)) | StmtKind::Expr(e) => acts(e),
             StmtKind::Destructure { value, .. } => acts(value),
             StmtKind::Let(name, None) => {
-                declared.push(name.word().to_string());
+                declared.push(name.clone());
                 false
             }
             StmtKind::Return(None) => false,
             StmtKind::Assign(target, e) => {
-                !matches!(&target.kind, js::ExprKind::Var(name) if declared.iter().any(|d| name.is(d))) || acts(e)
+                !matches!(&target.kind, js::ExprKind::Var(name) if declared.contains(name)) || acts(e)
             }
             StmtKind::If(test, then, otherwise) => {
                 acts(test)

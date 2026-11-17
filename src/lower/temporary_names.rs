@@ -339,9 +339,10 @@ pub(in crate::lower) enum Base<'a> {
     /// by its id, spelled by preparation (`js::Name::suffixed`).
     Suffixed(&'a crate::js::Name, crate::js::Suffix),
     Named(&'a str),
-    /// A local the program named, `let state`'s: `Named`'s word, but the
-    /// program's own variable (`js::Name::program`, ADR 1150).
-    Program(&'a str, u32),
+    /// A local the program named, `let state`'s: of its word, the
+    /// program's own variable (`js::Name::program`, ADR 1150), a
+    /// variable it names again, one a closure moves in, of its own.
+    Program(&'a crate::js::Name),
     /// A holder of another variable's value, of it by its id, not spelled
     /// yet: preparation spells it of what the source is spelled then
     /// (`js::Name::derived`).
@@ -371,11 +372,11 @@ impl Base<'_> {
             // What Rust leaves `_`: a value nothing reads, or a parameter
             // the program names `_`, an `async` closure's `|_|`.
             Base::Role(Role::Unread) => crate::js::Name::unread(word),
-            Base::Program(_, source) if *source == rustc_span::symbol::kw::Underscore.as_u32() => {
+            Base::Program(name) if name.source() == rustc_span::symbol::kw::Underscore.as_u32() => {
                 crate::js::Name::unread(word)
             }
             _ if spelled_as_temporary(&word) => crate::js::Name::temporary(word),
-            Base::Program(_, source) => crate::js::Name::program(word, *source),
+            Base::Program(name) => crate::js::Name::program(word, name.source()),
             _ => crate::js::Name::declared(word),
         }
     }
@@ -387,8 +388,9 @@ impl Base<'_> {
             Base::Numbered(role, i) => format!("{}{i}", role.text()).into(),
             Base::Prefixed(role, name) => format!("{}{name}", role.text()).into(),
             Base::Suffixed(..) => unreachable!("made unspelled, by `FnCx::fresh`"),
-            Base::Named(name) | Base::Program(name, _) => name.into(),
-            Base::Derived(source) => source.word().into(),
+            Base::Named(name) => name.into(),
+            Base::Program(name) => name.word().into(), // word: the program's variable's, named again
+            Base::Derived(source) => source.word().into(), // word: a holder's spelling made of its source's
             Base::Local(local) => temporary(local).into(),
             Base::Temporary => "_$".into(),
             Base::HeldArg => HELD_ARG.into(),

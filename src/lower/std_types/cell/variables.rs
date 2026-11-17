@@ -125,7 +125,7 @@ pub(in crate::lower) fn plain_statics(
     let objects: Vec<String> = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c) if quiet.contains(item_word(&c.name)) && !is_box(&c.value) => {
-                Some(c.name.word().to_string())
+                Some(item_word(&c.name).to_string())
             }
             _ => None,
         })
@@ -175,7 +175,7 @@ pub(in crate::lower) fn plain_statics(
     let boxed = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c) if c.export && held_values.contains(item_word(&c.name)) && is_box(&c.value) => {
-                Some(c.name.word().to_string())
+                Some(item_word(&c.name).to_string())
             }
             _ => None,
         })
