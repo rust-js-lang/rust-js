@@ -771,7 +771,7 @@ export const mutations: Mutation[] = [
     find: '                json!({ "kind": "intersection", "types": types })\n',
     replace: "                union(types)\n",
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "-t",
       "an untagged enum's js::RegExpMatch is an array",
     ],

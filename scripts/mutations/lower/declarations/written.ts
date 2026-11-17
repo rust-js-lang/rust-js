@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     find: '            } => name == "Function",',
     replace: '            } => !name.is_empty(),',
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "-t",
       "an untagged enum's JS object is tested by the class TypeScript names",
     ],

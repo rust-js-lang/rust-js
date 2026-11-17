@@ -155,6 +155,7 @@ export const mutations: Mutation[] = [
     replace: "    true\n        && match code.chars().next() {",
     tests: [
       "test/lowering-strings.test.ts",
+      "test/lowering-concat.test.ts",
       "-t",
       "a concat! of literals is its pieces joined by|written across lines",
     ],
@@ -168,6 +169,7 @@ export const mutations: Mutation[] = [
     replace: "            value.clone()\n",
     tests: [
       "test/lowering-strings.test.ts",
+      "test/lowering-concat.test.ts",
       "-t",
       "a concat! of literals is its pieces joined by|const of a string written across lines",
     ],

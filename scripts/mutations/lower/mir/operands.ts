@@ -177,6 +177,7 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: [
       "test/lowering-strings.test.ts",
+      "test/lowering-concat.test.ts",
       "-t",
       "a string written across lines keeps its lines|a concat! of literals is its pieces joined by",
     ],

@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     find: "            && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
     replace:
       "            && false && crate::lower::recognition::is_js_class(self.tcx, adt.did())\n",
-    tests: ["test/compiler.test.ts", "-t", "js::Class is a function"],
+    tests: ["test/untagged-enums.test.ts", "-t", "js::Class is a function"],
   },
   {
     name: "untagged-ref-cell-refused",
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
     replace:
       "                None if self.is_js_error(ty) => None,\n                None => class(bindings::class_name(self.tcx, adt.did())),\n",
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "-t",
       "an untagged enum's JS object is tested by the class TypeScript names",
     ],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
     find: "            return Some(if num.big() { Kind::BigInt } else { Kind::Number });\n",
     replace: "            return Some(Kind::Number);\n",
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "test/lowering-options.test.ts",
       "test/lowering-structs-enums.test.ts",
       "-t",
@@ -228,7 +228,7 @@ export const mutations: Mutation[] = [
     find: "                    Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Key(_),\n",
     replace: "                    Kind::Member(..) | Kind::Key(_),\n",
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "test/lowering-options.test.ts",
       "test/lowering-structs-enums.test.ts",
       "-t",
@@ -243,7 +243,7 @@ export const mutations: Mutation[] = [
     find: "        if let Some(i) = (variants.iter()).position(|v| otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
     replace:
       "        if let Some(i) = (variants.iter()).position(|v| false && otherwise(v) && self.otherwise_kind(adt, args).is_none()) {\n",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum is its payload"],
+    tests: ["test/untagged-enums.test.ts", "-t", "untagged enum is its payload"],
   },
   {
     name: "otherwise-kind-unseen",
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/untagged.rs",
     find: "            Err(_) => None,\n",
     replace: "            Err(left) => left.into_iter().next(),\n",
-    tests: ["test/compiler.test.ts", "-t", "untagged enum is its payload"],
+    tests: ["test/untagged-enums.test.ts", "-t", "untagged enum is its payload"],
   },
   {
     name: "otherwise-kind-past-a-literal",
@@ -471,7 +471,7 @@ export const mutations: Mutation[] = [
     replace:
       "                Some(Written::Reference { from: None, .. }) => class(bindings::class_name(self.tcx, adt.did())),\n",
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "-t",
       "an untagged enum's JS object is tested by the class TypeScript names",
     ],
@@ -485,7 +485,7 @@ export const mutations: Mutation[] = [
     replace:
       "                Some(Written::Object(_)) => Some(Kind::Object),\n                Some(Written::Reference { from: Some(_), name, .. }) => class(name),\n",
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "-t",
       "an untagged enum's JS object is tested by the class TypeScript names",
     ],
@@ -512,7 +512,7 @@ export const mutations: Mutation[] = [
     replace:
       "                Some(Written::Intersection(types)) if false && types.iter().any(|ty| matches!(ty, Written::Array { .. })) => {\n",
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "-t",
       "an untagged enum's js::RegExpMatch is an array",
     ],

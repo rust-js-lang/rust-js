@@ -177,7 +177,7 @@ export const mutations: Mutation[] = [
     find: "        .filter(|&id| !is_js_object_deref(tcx, id))\n",
     replace: "",
     tests: [
-      "test/compiler.test.ts",
+      "test/untagged-enums.test.ts",
       "-t",
       "an untagged enum is its payload, told apart",
     ],
