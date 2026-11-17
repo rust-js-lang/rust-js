@@ -279,8 +279,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         names
     }
 
-    /// The fact of its type parameter `index` this function was given,
-    /// `TSize` (ADR 0145).
     /// Whether type parameter `index` is a `FusedIterator`, as its caller
     /// says, `IFused` (ADR 0543): `None` where none says, which is `false`,
     /// a generic iterator's `Fuse` cleared as it ends, as most are (ADR
@@ -308,9 +306,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made
     }
 
+    /// The fact of type parameter `index` this function was given, `TSize`
+    /// (ADR 0145): one given of it, or of a type the bounds here normalize to it, a copied
+    /// default's `<W<I> as Iterator>::Item` of `impl<I, T> Tools for W<I>
+    /// where I: Iterator<Item = T>`, the impl's `T` (#2012).
     pub(in crate::lower) fn given_type_fact(&self, index: u32, fact: TypeFact) -> Option<Expr> {
+        let is_param = |of: Ty<'tcx>| matches!(of.kind(), ty::Param(p) if p.index == index);
+        let normal = |of: Ty<'tcx>| {
+            (self.tcx)
+                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of))
+                .unwrap_or(of)
+        };
         let given = (self.given.type_facts.iter())
-            .find(|&&(of, given, _)| matches!(of.kind(), ty::Param(p) if p.index == index) && given == fact)
+            .filter(|&&(_, given, _)| given == fact)
+            .find(|&&(of, _, _)| is_param(of))
+            .or_else(|| {
+                (self.given.type_facts.iter())
+                    .filter(|&&(_, given, _)| given == fact)
+                    .find(|&&(of, _, _)| matches!(of.kind(), ty::Alias(..)) && is_param(normal(of)))
+            })
             .map(|(_, _, value)| value.clone());
         crate::decisions::record("type-fact-given", if given.is_some() { "given" } else { "none" });
         given

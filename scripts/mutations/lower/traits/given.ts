@@ -26,9 +26,8 @@ export const mutations: Mutation[] = [
     name: "type-fact-of-wrong-kind",
     breaks: "`align_of::<T>()` reads the size its caller gave",
     file: "src/lower/traits/given.rs",
-    find: "            .find(|&&(of, given, _)| matches!(of.kind(), ty::Param(p) if p.index == index) && given == fact)",
-    replace:
-      "            .find(|&&(of, _, _)| matches!(of.kind(), ty::Param(p) if p.index == index))",
+    find: "            .filter(|&&(_, given, _)| given == fact)\n            .find(|&&(of, _, _)| is_param(of))\n",
+    replace: "            .find(|&&(of, _, _)| is_param(of))\n",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
   {
@@ -221,5 +220,13 @@ export const mutations: Mutation[] = [
     find: "            || (self.facts_asked(id).iter()).any(|&(index, _)| of_its_own(drop_slot(self.tcx, self.slots(), id, index)))\n",
     replace: "            || self.facts_asked(id).iter().any(|&(index, _)| index >= impls)\n",
     tests: ["test/corpus.test.ts", "-t", "^own_last_of_its_impls_item_layout.rs$"],
+  },
+  {
+    name: "given-fact-of-a-normalized-projection-unread",
+    breaks: "a fact given of a type the bounds normalize to a type parameter, a copied default's `<W<I> as Iterator>::Item` of `impl<I, T> Tools for W<I>`, isn't read as `T`'s, so its callee's `Vec` growth is refused: `size_of` of a type parameter (#2012)",
+    file: "src/lower/traits/given.rs",
+    find: "                    .find(|&&(of, _, _)| matches!(of.kind(), ty::Alias(..)) && is_param(normal(of)))\n",
+    replace: "                    .find(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_gives_a_callee_its_selfs_items_of_an_impls_own_parameter.rs$"],
   },
 ];

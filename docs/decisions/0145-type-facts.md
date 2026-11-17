@@ -763,3 +763,25 @@ with std's iterator structs, and through every metamorphic rewrite.
 `zip_of_sides_only_callers_know` comes off `iterator-forms`' `differs`
 list, matching native in that build too. Mutation
 `default-self-asks-unrelayed` is caught.
+
+## Amendment: a parameter's fact given of a projection that normalizes to it (2026-11-17, #2012)
+
+A trait's default copied into `impl<I, T> Tools for W<I> where I:
+Iterator<Item = T>` gives `Self` to `room<J: Iterator>`, which grows a
+`Vec` of `J::Item`s and reads its capacity. The copy is given that size
+keyed by the projection, `<W<I> as Iterator>::Item`, or its default's slot
+`<Self as Iterator>::Item`. Lowering asks it of `T`, the type the impl's
+bounds normalize the projection to, by the parameter's index
+(`given_type_fact`), which read only facts keyed by the parameter itself.
+It refused: "`size_of` of a type parameter". A generic function in the
+same place, given `SItemSize`, compiled.
+
+`given_type_fact`, the one lookup of a type parameter's given fact, now
+also reads a fact given of a projection that the bounds here normalize to
+that parameter, as `given_fact_of` already normalizes. A fact keyed by the
+parameter itself still comes first. Corpus
+`default_gives_a_callee_its_selfs_items_of_an_impls_own_parameter`, with
+items of one byte, of 320 bytes and with a destructor, matches native in
+the plain build, with std's iterator structs, and through every
+metamorphic rewrite. Mutation `given-fact-of-a-normalized-projection-unread`
+is caught.
