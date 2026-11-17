@@ -127,6 +127,8 @@ std_paths! {
     EnvVarError => "std::env::VarError",
     EnvArgsFn => "std::env::args",
     EnvCurrentDirFn => "std::env::current_dir",
+    EnvTempDirFn => "std::env::temp_dir",
+    EnvHomeDirFn => "std::env::home_dir",
     EnvVarFn => "std::env::var",
     EnvVarOsFn => "std::env::var_os",
     EnvVarsFn => "std::env::vars",

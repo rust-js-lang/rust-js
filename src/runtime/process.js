@@ -42,6 +42,38 @@ function $currentDir() {
   const process = $process("`std::env::current_dir`");
   return $fsTry(() => process.cwd());
 }
+// `env::temp_dir()`, as std's unix body: `TMPDIR`, set, if empty too; else
+// of macOS `confstr(_CS_DARWIN_USER_TEMP_DIR)`, which `getconf` prints, or
+// `/tmp` where it fails, as std's does; of Android `/data/local/tmp`; of
+// another `/tmp` (#1639).
+function $tempDir() {
+  const process = $process("`std::env::temp_dir`");
+  const dir = process.env.TMPDIR;
+  if (dir !== undefined) return dir;
+  if (process.platform === "android") return "/data/local/tmp";
+  if (process.platform !== "darwin") return "/tmp";
+  const asked = process
+    .getBuiltinModule("node:child_process")
+    .spawnSync("getconf", ["DARWIN_USER_TEMP_DIR"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  if (asked.error !== undefined || asked.status !== 0) return "/tmp";
+  return asked.stdout.endsWith("\n") ? asked.stdout.slice(0, -1) : asked.stdout;
+}
+// `env::home_dir()`, as std's unix body: `HOME` where it isn't empty, else
+// the password database's entry of the process's user, `getpwuid_r` of
+// `getuid()`, or `None`, `undefined`, where it has none, or on Android.
+// Node's `os.userInfo()` reads `geteuid()`'s entry, the same user unless
+// the process runs set-user-ID, which it says (#1639).
+function $homeDir() {
+  const process = $process("`std::env::home_dir`");
+  const home = process.env.HOME;
+  if (home !== undefined && home !== "") return home;
+  if (process.platform === "android") return undefined;
+  if (process.getuid() !== process.geteuid()) {
+    throw new Error("`std::env::home_dir` reads the real user's entry, which Node can't ask of a set-user-ID process (#1639)");
+  }
+  const user = $fsTry(() => process.getBuiltinModule("node:os").userInfo());
+  return user.TAG === "Ok" ? user._0.homedir : undefined;
+}
 // `process::exit(code)`.
 function $exit(code) {
   $process("`std::process::exit`").exit(code);

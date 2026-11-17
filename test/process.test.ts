@@ -83,3 +83,40 @@ test("process::exit ends the program with its code", () => {
   // The process exited 3, having said how it ended: by `exit`, of 3.
   expect(ran.outcome).toBe('exited 3 after it ended {"exit":3}');
 });
+
+// `env::temp_dir()` and `env::home_dir()` are std's unix bodies (#1639):
+// `TMPDIR`, else macOS's `confstr(_CS_DARWIN_USER_TEMP_DIR)`, which
+// `getconf` prints, else `/tmp`; `HOME` where it isn't empty, else the
+// password database's entry. Each environment that picks a branch, run
+// natively and as JS, prints the same.
+test("env::temp_dir and env::home_dir read the environment, else the OS, as std's unix bodies do", () => {
+  const dir = fixture("process-dirs");
+  const file = join(dir, "dirs.rs");
+  writeFileSync(
+    file,
+    'fn main() {\n    println!("{}", std::env::temp_dir().display());\n    println!("{:?}", std::env::home_dir());\n}\n',
+  );
+  const compiled = compileJs(file, dir);
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const js = readFileSync(compiled.js, "utf8");
+  expect(js).toContain("$tempDir()");
+  expect(js).toContain("$homeDir()");
+  const binary = join(dir, "dirs");
+  run(["rustc", "--edition", "2024", "-o", binary, file]);
+  const { TMPDIR: tmp, HOME: home, ...rest } = process.env;
+  const environments: Record<string, Record<string, string | undefined>> = {
+    "as it is": process.env,
+    "no TMPDIR": { ...rest, HOME: home },
+    "an empty TMPDIR": { ...process.env, TMPDIR: "" },
+    "no HOME": { ...rest, TMPDIR: tmp },
+    "an empty HOME": { ...process.env, HOME: "" },
+  };
+  for (const [name, env] of Object.entries(environments)) {
+    const native = Bun.spawnSync([binary], { env, cwd: dir });
+    const outcome = join(dir, "dirs.json");
+    const ran = Bun.spawnSync([node ?? "node", join(root, "test/corpus-run.ts"), compiled.js, outcome, compiled.js, outcome], { env, cwd: root });
+    expect(native.exitCode).toBe(0);
+    expect(native.stdout.toString().split("\n")).toHaveLength(3);
+    expect(`${name}: ${ran.stdout.toString()}`).toBe(`${name}: ${native.stdout.toString()}`);
+  }
+});

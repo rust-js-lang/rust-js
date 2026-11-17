@@ -42,4 +42,28 @@ export const mutations: Mutation[] = [
     replace: "  return process.cwd();\n",
     tests: ["test/corpus.test.ts", "-t", "^fs_canonicalize_and_current_dir.rs$"],
   },
+  {
+    name: "temp-dir-darwin-is-tmp",
+    breaks: "`env::temp_dir()` on macOS with no `TMPDIR` is `/tmp`, not `confstr(_CS_DARWIN_USER_TEMP_DIR)`'s `/var/folders/../T/`, which std's gives (#1639)",
+    file: "src/runtime/process.js",
+    find: '  if (process.platform !== "darwin") return "/tmp";\n',
+    replace: '  return "/tmp";\n',
+    tests: ["test/process.test.ts", "-t", "env::temp_dir and env::home_dir"],
+  },
+  {
+    name: "home-dir-empty-taken",
+    breaks: "`env::home_dir()` of an empty `HOME` is `Some(\"\")`, where std's reads the password database's entry (#1639)",
+    file: "src/runtime/process.js",
+    find: '  if (home !== undefined && home !== "") return home;\n',
+    replace: '  if (home !== undefined) return home;\n',
+    tests: ["test/process.test.ts", "-t", "env::temp_dir and env::home_dir"],
+  },
+  {
+    name: "home-dir-no-fallback",
+    breaks: "`env::home_dir()` with no `HOME` is `None`, where std's reads the password database's entry of the process's user (#1639)",
+    file: "src/runtime/process.js",
+    find: '  return user.TAG === "Ok" ? user._0.homedir : undefined;\n',
+    replace: '  return undefined;\n',
+    tests: ["test/process.test.ts", "-t", "env::temp_dir and env::home_dir"],
+  },
 ];

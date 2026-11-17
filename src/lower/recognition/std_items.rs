@@ -260,6 +260,8 @@ const NODE_ONLY: &[(StdPath, NodeOnly)] = &[
     (StdPath::EnvVarsOsFn, NodeOnly::Process(ProcessOp::VarsOs)),
     (StdPath::ProcessExitFn, NodeOnly::Process(ProcessOp::Exit)),
     (StdPath::EnvCurrentDirFn, NodeOnly::Process(ProcessOp::CurrentDir)),
+    (StdPath::EnvTempDirFn, NodeOnly::Process(ProcessOp::TempDir)),
+    (StdPath::EnvHomeDirFn, NodeOnly::Process(ProcessOp::HomeDir)),
     (StdPath::FileOpen, NodeOnly::Fs(FsOp::Open)),
     (StdPath::FileCreate, NodeOnly::Fs(FsOp::Create)),
     (StdPath::OpenOptionsOpen, NodeOnly::Fs(FsOp::OptionsOpen)),

@@ -1,7 +1,8 @@
 //! The process a program runs in (ADR 0391): its arguments, `env::args()`,
 //! its environment, `env::var(key)`, `env::vars()` and their `_os`
-//! forms, its working directory, `env::current_dir()`, and its end,
-//! `process::exit(code)`. Node has one, and a browser hasn't:
+//! forms, its working directory, `env::current_dir()`, its temporary and
+//! home directories, `env::temp_dir()` and `env::home_dir()`, and its
+//! end, `process::exit(code)`. Node has one, and a browser hasn't:
 //! each is a helper of the runtime's `process.js`, which in a browser
 //! panics, saying which, and recognition's `NODE_ONLY` is the one list of
 //! them.
@@ -30,6 +31,13 @@ pub(in crate::lower) enum ProcessOp {
     /// `env::current_dir()`: `Ok` of its working directory, a path its text
     /// (ADR 0173), or `Err` of the OS's error, quickcheck's (#1420).
     CurrentDir,
+    /// `env::temp_dir()`: `TMPDIR`, else std's unix body's by the OS, of
+    /// macOS `confstr(_CS_DARWIN_USER_TEMP_DIR)`'s, `/tmp` where that
+    /// fails, of another `/tmp` (#1639).
+    TempDir,
+    /// `env::home_dir()`: `HOME` where it isn't empty, else the password
+    /// database's entry of the process's user, or `None` (#1639).
+    HomeDir,
 }
 
 impl ProcessOp {
@@ -43,6 +51,8 @@ impl ProcessOp {
             ProcessOp::VarsOs => "$varsOs",
             ProcessOp::Exit => "$exit",
             ProcessOp::CurrentDir => "$currentDir",
+            ProcessOp::TempDir => "$tempDir",
+            ProcessOp::HomeDir => "$homeDir",
         }
     }
 }

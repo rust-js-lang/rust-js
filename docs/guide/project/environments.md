@@ -73,7 +73,8 @@ as TypeScript's `lib.dom.d.ts`. A call is the DOM's own:
 
 - **Some of std needs a process**, which a browser hasn't:
   `std::env::args`, `std::env::var`, `std::env::vars`,
-  `std::env::current_dir`, `std::process::exit` and std's files,
+  `std::env::current_dir`, `std::env::temp_dir`, `std::env::home_dir`,
+  `std::process::exit` and std's files,
   `std::fs`'s `File`, `read_dir`, `canonicalize` and the rest, work in
   Node and panic in a browser, saying so:
 
@@ -100,6 +101,9 @@ node -e 'import("./src/lib.js").then((m) => console.log(m.totalArea([1, 2])))'
   `env::args()` is `process.argv.slice(1)`, `env::current_dir()` is
   `process.cwd()`, `process::exit(code)` is `process.exit(code)`, and
   `fs::canonicalize(path)` is `fs.realpathSync.native(path)`.
+  `env::temp_dir()` and `env::home_dir()` are std's unix bodies: `TMPDIR`,
+  else macOS's `getconf DARWIN_USER_TEMP_DIR`, else `/tmp`; `HOME` where it
+  isn't empty, else `os.userInfo().homedir`.
 - **`println!` is `console.log`**, and `print!` is `process.stdout.write`;
   in a browser, which has no stream, a line at a time to `console.log`, a
   part `print!` leaves held till its line ends.

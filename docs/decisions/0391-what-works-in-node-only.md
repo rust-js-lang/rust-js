@@ -141,3 +141,32 @@ lists both. Case C of ADR 0262. Corpus case
 `fs_canonicalize_and_current_dir` checks them against native Rust in both
 builds. Mutations `current-dir-unwrapped`, `canonicalize-resolved-not-real`
 and `path-canonicalize-unrecognized` are caught.
+
+## Amendment (2026-11-18, #1639): `env::temp_dir` and `env::home_dir`
+
+Both were refused. They join `NODE_ONLY` beside `env::var_os` and
+`current_dir`, each a helper of `process.js` behind `$process`, and each
+is std's unix body (1.100's `sys/paths/unix.rs`):
+- `$tempDir()`: `TMPDIR` where it's set, an empty one too. Otherwise,
+  by the OS Node runs on: macOS's `confstr(_CS_DARWIN_USER_TEMP_DIR)`,
+  which `getconf DARWIN_USER_TEMP_DIR` prints (Node's `child_process`'s
+  `spawnSync`, its newline cut), or `/tmp` where that fails, as std's own
+  `darwin_temp_dir` falls back; Android's `/data/local/tmp`; another's
+  `/tmp`. Not Node's `os.tmpdir()`, which reads `TMP` and `TEMP` too and
+  cuts a trailing `/`.
+- `$homeDir()`: `HOME` where it isn't empty; otherwise the password
+  database's entry of the process's user, `os.userInfo().homedir`, the
+  `getpwuid_r` std's fallback reads, through `$fsTry`, or `None` where
+  there's none, and on Android, whose std has no fallback. Node reads
+  `geteuid()`'s entry and std `getuid()`'s, the same user unless the
+  process runs set-user-ID, where `$homeDir` panics, saying so, rather
+  than give another user's directory.
+
+Case C of ADR 0262: the paths are what the program reads, so std's are
+kept, the macOS fallback too, which Node has no call for but `getconf`.
+test/process.test.ts runs a program printing both natively and as JS
+under the environment as it is, with no `TMPDIR`, an empty one, no
+`HOME` and an empty one; each prints the same, on macOS the `no TMPDIR`
+run `getconf`'s `/var/folders/../T/`. Mutations `temp-dir-darwin-is-tmp`,
+`home-dir-empty-taken`, `home-dir-no-fallback` and `temp-dir-is-home-dir`
+are caught.
