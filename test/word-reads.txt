@@ -69,11 +69,10 @@ src/lower/pipeline/variables.rs	2
 src/lower/recognition/type_facts.rs	1
 src/lower/recursive_fns.rs	1
 src/lower/std_impls/clones.rs	1
-src/lower/std_types/cell.rs	2
 src/lower/std_types/cell/variables.rs	5
 src/lower/std_types/map.rs	1
 src/lower/std_types/option.rs	1
-src/lower/temporary_names.rs	6
+src/lower/temporary_names.rs	5
 src/lower/traits/dictionaries.rs	1
 src/lower/traits/dictionaries/collecting.rs	1
 src/lower/traits/dictionaries/declared.rs	3

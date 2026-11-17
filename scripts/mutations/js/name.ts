@@ -4,6 +4,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "value-suffix-tail-from-a-dollar",
+    breaks: "a key's entry's value, `keyValue`, is told its suffix from a `$` it has none of, `Value` lost, as a flag's is",
+    file: "src/js/name.rs",
+    find: "            Suffix::Value => base.len().checked_sub(suffix.text().len()).map(|at| &base[at..]),\n",
+    replace: "            Suffix::Value => base.find('$').map(|at| &base[at..]),\n",
+    unitTests: "js::name::tests::the_value_suffix_is_its_text",
+  },
+  {
     name: "suffix-root-keeps-a-kept-words-dollar",
     breaks: "a drop flag of a word JS keeps, `new`, is `new$$$0$live`, its suffix taken from the `$` of `new$`",
     file: "src/js/name.rs",

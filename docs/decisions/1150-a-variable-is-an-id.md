@@ -1216,3 +1216,11 @@ module's function values settle to are keyed by the function's module
 name, and an alias's export is asked of its item's `Name` (`Name::is`).
 Byte-identical, the corpus, the tests and React's port.
 
+A key's entry's value, `keyValue` of `key` (`std_types/cell.rs`), was
+spelled in lowering of the key's word and the role's; it's a `js::Suffix`
+too now, `Suffix::Value`, joined as camelCase, `Value` its text after the
+key's word (`suffix_tail`), made unspelled of the key by its id
+(`Base::Suffixed(&Name, Suffix)` through `FnCx::fresh`), spelled by
+preparation: a new kind, a deliberate one, which the unit row's `match`
+names. Byte-identical.
+

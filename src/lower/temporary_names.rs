@@ -335,7 +335,9 @@ pub(in crate::lower) enum Base<'a> {
     Role(Role),
     Numbered(Role, usize),
     Prefixed(Role, &'a str),
-    Suffixed(&'a str, Role),
+    /// What a `js::Suffix` says of a variable, `keyValue` of `key`, of it
+    /// by its id, spelled by preparation (`js::Name::suffixed`).
+    Suffixed(&'a crate::js::Name, crate::js::Suffix),
     Named(&'a str),
     /// A local the program named, `let state`'s: `Named`'s word, but the
     /// program's own variable (`js::Name::program`, ADR 1150).
@@ -384,7 +386,7 @@ impl Base<'_> {
             Base::Role(role) => role.word().into(),
             Base::Numbered(role, i) => format!("{}{i}", role.word()).into(),
             Base::Prefixed(role, name) => format!("{}{name}", role.word()).into(),
-            Base::Suffixed(name, role) => format!("{name}{}", crate::lower::upper_first(role.word())).into(),
+            Base::Suffixed(..) => unreachable!("made unspelled, by `FnCx::fresh`"),
             Base::Named(name) | Base::Program(name, _) => name.into(),
             Base::Derived(source) => source.word().into(),
             Base::Local(local) => temporary(local).into(),

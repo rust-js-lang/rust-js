@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an argument MIR's lowering holds, spilled, is a name of its word, `_arg`, not a held argument's, so tidy never names it `arg`",
     file: "src/lower.rs",
-    find: "            Base::Derived(_) | Base::HeldArg => self.fresh(base),\n",
-    replace: "            Base::Derived(_) => self.fresh(base),\n",
+    find: "            Base::Derived(_) | Base::HeldArg | Base::Suffixed(..) => self.fresh(base),\n",
+    replace: "            Base::Derived(_) | Base::Suffixed(..) => self.fresh(base),\n",
     tests: ["test/corpus.test.ts", "-t", "^(option_combinator_drops|combinators_owned_drops|iter_next_back)\\.rs$"],
     snapshots: true,
   },

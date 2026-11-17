@@ -51,6 +51,9 @@ impl Id {
 pub enum Suffix {
     /// A drop's flag, whether the value is still there to drop, `$live`.
     Live,
+    /// What a key's entry holds, `keyValue` of `key`: the value a map's
+    /// `entry(key)` gives, read where the entry is (`std_types/cell.rs`).
+    Value,
 }
 
 impl Suffix {
@@ -58,6 +61,7 @@ impl Suffix {
     fn text(self) -> &'static str {
         match self {
             Suffix::Live => "$live",
+            Suffix::Value => "Value",
         }
     }
 }
@@ -347,9 +351,14 @@ impl Name {
     /// Of one `suffixed` made, what follows its source's word, `$a$live` of
     /// `pair$a$live#1`, unspelled; none of another.
     pub fn suffix_tail(&self) -> Option<&str> {
-        let Of::Suffixed(_) = self.1 else { return None };
+        let Of::Suffixed(suffix) = self.1 else { return None };
         let base = crate::names::made_base(&self.0)?;
-        base.find('$').map(|at| &base[at..])
+        match suffix {
+            // Its parts' keys and its text, each after a `$`.
+            Suffix::Live => base.find('$').map(|at| &base[at..]),
+            // Its text alone, after the variable's word.
+            Suffix::Value => base.len().checked_sub(suffix.text().len()).map(|at| &base[at..]),
+        }
     }
 
     /// Whether it was made of another variable, by its id or its word
@@ -581,7 +590,21 @@ mod tests {
         // build here until it's written down.
         let text = |suffix: Suffix| match suffix {
             Suffix::Live => "$live",
+            Suffix::Value => "Value",
         };
-        assert_eq!(Suffix::Live.text(), text(Suffix::Live));
+        for suffix in [Suffix::Live, Suffix::Value] {
+            assert_eq!(suffix.text(), text(suffix));
+        }
+    }
+
+    // A key's entry's value is its key's word and `Value`, camelCase, no
+    // `$`: what follows the key is `Value` (`suffix_tail`).
+    #[test]
+    fn the_value_suffix_is_its_text() {
+        let key = super::Name::program("key".to_string(), 1);
+        let value = super::Name::suffixed(Ok(&key), &[], Suffix::Value, 1);
+        assert_eq!(value.suffix_tail(), Some("Value"));
+        let flag = super::Name::suffixed(Ok(&key), &["a".to_string()], Suffix::Live, 1);
+        assert_eq!(flag.suffix_tail(), Some("$a$live"));
     }
 }

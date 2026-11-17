@@ -638,8 +638,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// ids", ADR 1150).
     fn fresh<'b>(&self, base: impl Into<Base<'b>>) -> js::Name {
         let base = base.into();
-        if let Base::Derived(source) = base {
-            return self.derived(source);
+        match base {
+            Base::Derived(source) => return self.derived(source),
+            Base::Suffixed(source, suffix) => {
+                return self.unspelled_as(|k| js::Name::suffixed(Ok(source), &[], suffix, k));
+            }
+            _ => {}
         }
         let word = base.word();
         let name = base.name(fresh_in(&mut self.names.borrow_mut(), &word));
@@ -1092,7 +1096,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let base = base.into();
         let name = match base {
             // A holder's, and a held argument's, of their form (ADR 1150).
-            Base::Derived(_) | Base::HeldArg => self.fresh(base),
+            Base::Derived(_) | Base::HeldArg | Base::Suffixed(..) => self.fresh(base),
             _ => self.fresh(Base::Named(&unhyphenated(&base.word()))),
         };
         // Of a role's, named again by tidy once the code is placed (#890).
