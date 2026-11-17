@@ -133,12 +133,8 @@ fn may_keep<'tcx>(
     // library's of a trait no other crate sees; another crate may
     // implement one it does, std's among them.
     let library = libraries.library;
-    let all_known = |trait_id: DefId| {
-        !library
-            || trait_id
-                .as_local()
-                .is_some_and(|local| !tcx.effective_visibilities(()).is_reachable(local))
-    };
+    let all_known =
+        |trait_id: DefId| !library || trait_id.is_local() && !crate::lower::library::escapes(tcx, library, trait_id);
     // A closure, a function and a function pointer are the `Fn` traits'
     // without an impl: what they run isn't known.
     let followed = |trait_id: DefId| {

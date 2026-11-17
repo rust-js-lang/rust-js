@@ -126,7 +126,7 @@ pub(super) fn carried_by_every_impl<'tcx>(
                 carried.push((item.def_id, TypeFact::ConstSize));
             }
             if library
-                && tcx.effective_visibilities(()).is_reachable(trait_id)
+                && crate::lower::library::escapes(tcx, library, trait_id.to_def_id())
                 && tcx.generics_of(item.def_id).own_params.is_empty()
                 && projection.is_sized(tcx, typing_env)
                 && layouts_given(tcx, foreign, trait_id.to_def_id(), item.def_id)
