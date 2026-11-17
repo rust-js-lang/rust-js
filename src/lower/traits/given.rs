@@ -307,35 +307,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The fact of type parameter `index` this function was given, `TSize`
-    /// (ADR 0145): one given of it, or of a type the bounds here normalize to it, a copied
-    /// default's `<W<I> as Iterator>::Item` of `impl<I, T> Tools for W<I>
-    /// where I: Iterator<Item = T>`, the impl's `T` (#2012).
+    /// (ADR 0145): `given_fact_of` the parameter, so one given of a type the
+    /// bounds here normalize to it is its too, a copied default's `<W<I> as
+    /// Iterator>::Item` of `impl<I, T> Tools for W<I> where I:
+    /// Iterator<Item = T>`, the impl's `T` (#2012).
     pub(in crate::lower) fn given_type_fact(&self, index: u32, fact: TypeFact) -> Option<Expr> {
-        let is_param = |of: Ty<'tcx>| matches!(of.kind(), ty::Param(p) if p.index == index);
-        let normal = |of: Ty<'tcx>| {
-            (self.tcx)
-                .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of))
-                .unwrap_or(of)
-        };
-        let given = (self.given.type_facts.iter())
-            .filter(|&&(_, given, _)| given == fact)
-            .find(|&&(of, _, _)| is_param(of))
-            .or_else(|| {
-                (self.given.type_facts.iter())
-                    .filter(|&&(_, given, _)| given == fact)
-                    .find(|&&(of, _, _)| matches!(of.kind(), ty::Alias(..)) && is_param(normal(of)))
-            })
-            .map(|(_, _, value)| value.clone());
+        let given = self.param_type(index).and_then(|param| self.given_fact_of(param, fact));
         crate::decisions::record("type-fact-given", if given.is_some() { "given" } else { "none" });
         given
     }
 
-    /// The fact of `of`, a std associated type of a type parameter, this
-    /// function was given, `IItemMap` (ADR 0466): each given one and `of`
-    /// compared as the bounds here normalize them, so a copied default's
-    /// `<Self as Iterator>::Item`, the impl's slot, is the `<T as
-    /// TupleCollect>::Item` its where clause, `Self: Iterator<Item =
-    /// T::Item>`, says it is, itertools' `collect_tuple` (#828).
+    /// Type parameter `index` of the function being lowered, as a type: the
+    /// one its given facts name, else its generics'.
+    fn param_type(&self, index: u32) -> Option<Ty<'tcx>> {
+        let named = (self.given.type_facts.iter())
+            .map(|&(of, _, _)| of)
+            .find(|of| matches!(of.kind(), ty::Param(p) if p.index == index));
+        named.or_else(|| {
+            let generics = self.tcx.generics_of(self.item);
+            ((index as usize) < generics.count())
+                .then(|| self.tcx.mk_param_from_def(generics.param_at(index as usize, self.tcx)))
+                .and_then(|param| param.as_type())
+        })
+    }
+
+    /// The fact of `of` this function was given (ADR 0145, 0466): one given
+    /// of a type the bounds here normalize as they normalize `of`, `of`
+    /// itself among them, so a copied default's `<Self as
+    /// Iterator>::Item`, the impl's slot, is the `<T as TupleCollect>::Item`
+    /// its where clause, `Self: Iterator<Item = T::Item>`, says it is,
+    /// itertools' `collect_tuple` (#828), and a type parameter's is what's
+    /// given of a projection that normalizes to it (#2012); else what its
+    /// trait's dictionary carries (`carried_super_fact`). Two given of types
+    /// that normalize alike are facts of one type, so which is read is the
+    /// same.
     pub(in crate::lower) fn given_fact_of(&self, of: Ty<'tcx>, fact: TypeFact) -> Option<Expr> {
         let normal = |ty: Ty<'tcx>| {
             let ty = self.tcx.erase_and_anonymize_regions(ty);
@@ -345,7 +350,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let of = normal(of);
         (self.given.type_facts.iter())
-            .find(|&&(at, given, _)| given == fact && normal(at) == of)
+            .filter(|&&(_, given, _)| given == fact)
+            .find(|&&(at, _, _)| normal(at) == of)
             .map(|(_, _, value)| value.clone())
             .or_else(|| self.carried_super_fact(of, fact))
     }

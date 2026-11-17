@@ -26,8 +26,8 @@ export const mutations: Mutation[] = [
     name: "type-fact-of-wrong-kind",
     breaks: "`align_of::<T>()` reads the size its caller gave",
     file: "src/lower/traits/given.rs",
-    find: "            .filter(|&&(_, given, _)| given == fact)\n            .find(|&&(of, _, _)| is_param(of))\n",
-    replace: "            .find(|&&(of, _, _)| is_param(of))\n",
+    find: "            .filter(|&&(_, given, _)| given == fact)\n            .find(|&&(at, _, _)| normal(at) == of)\n",
+    replace: "            .find(|&&(at, _, _)| normal(at) == of)\n",
     tests: ["test/corpus.test.ts", "-t", "type_facts"],
   },
   {
@@ -190,11 +190,11 @@ export const mutations: Mutation[] = [
   {
     name: "given-fact-unnormalized",
     breaks:
-      "a fact of an impl's slot is found only by its type as written, so a copied default whose where clause says `Self::Item` is `T::Item` is refused `size_of` of what it was given (#828)",
+      "a fact given is found only by its type as written, so a copied default whose where clause says `Self::Item` is `T::Item` is refused `size_of` of what it was given (#828), and a copied default's `<W<I> as Iterator>::Item` of `impl<I, T> Tools for W<I>` isn't the impl's `T`'s (#2012)",
     file: "src/lower/traits/given.rs",
-    find: "            .find(|&&(at, given, _)| given == fact && normal(at) == of)\n",
-    replace: "            .find(|&&(at, given, _)| given == fact && self.tcx.erase_and_anonymize_regions(at) == self.tcx.erase_and_anonymize_regions(of))\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_matches_its_tuple_whole.rs$"],
+    find: "            .find(|&&(at, _, _)| normal(at) == of)\n",
+    replace: "            .find(|&&(at, _, _)| self.tcx.erase_and_anonymize_regions(at) == of)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(default_matches_its_tuple_whole|default_gives_a_callee_its_selfs_items_of_an_impls_own_parameter).rs$"],
   },
   {
     name: "copied-closure-own-generics-dropped",
@@ -220,13 +220,5 @@ export const mutations: Mutation[] = [
     find: "            || (self.facts_asked(id).iter()).any(|&(index, _)| of_its_own(drop_slot(self.tcx, self.slots(), id, index)))\n",
     replace: "            || self.facts_asked(id).iter().any(|&(index, _)| index >= impls)\n",
     tests: ["test/corpus.test.ts", "-t", "^own_last_of_its_impls_item_layout.rs$"],
-  },
-  {
-    name: "given-fact-of-a-normalized-projection-unread",
-    breaks: "a fact given of a type the bounds normalize to a type parameter, a copied default's `<W<I> as Iterator>::Item` of `impl<I, T> Tools for W<I>`, isn't read as `T`'s, so its callee's `Vec` growth is refused: `size_of` of a type parameter (#2012)",
-    file: "src/lower/traits/given.rs",
-    find: "                    .find(|&&(of, _, _)| matches!(of.kind(), ty::Alias(..)) && is_param(normal(of)))\n",
-    replace: "                    .find(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^default_gives_a_callee_its_selfs_items_of_an_impls_own_parameter.rs$"],
   },
 ];
