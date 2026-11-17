@@ -330,6 +330,16 @@ impl Name {
         Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
     }
 
+    /// It again, not spelled yet, the first `k` none of `names` is written
+    /// with (`free_made_k`), `current#2`, of its form: the program's still
+    /// the program's, which keeps its word where a name lowering made
+    /// shares it (`is_the_programs`), as it did spelled (ADR 1150).
+    pub fn spelled_later_apart<'n>(&self, names: impl IntoIterator<Item = &'n Name>) -> Name {
+        let base = crate::names::made_base(&self.0).unwrap_or(&self.0);
+        let k = Name::free_made_k(names, base);
+        Name(crate::names::made(base, k), self.1, Id::fresh(), Id::WORD)
+    }
+
     /// A variable lowering makes of `source`, a holder of its value, the
     /// `k`th: not spelled yet, `value#1` of `value`, as `made`'s, and of the
     /// source by its id, which preparation spells of what the
@@ -444,6 +454,12 @@ impl Name {
     /// `value#1`, unspelled, and of `value$1`.
     fn base(&self) -> &str {
         crate::names::made_base(&self.0).unwrap_or_else(|| self.root())
+    }
+
+    /// Whether preparation spells it, a name made and not spelled yet,
+    /// `value#1` (`made`, `spelled_later`, `derived`).
+    pub fn is_unspelled(&self) -> bool {
+        crate::names::made_base(&self.0).is_some()
     }
 
     /// Of a name lowering made, what it's of, `value` of `value#1`

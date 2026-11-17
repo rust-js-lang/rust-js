@@ -60,8 +60,8 @@ function initializeModelChunk(chunk) {
   const old$1 = prevHandler;
   initializingHandler = old$1;
   if (DEV) {
-    const old$1 = prevChunk;
-    initializingChunk = old$1;
+    const old = prevChunk;
+    initializingChunk = old;
   }
   return value;
 }

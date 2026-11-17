@@ -76,10 +76,10 @@ function withHeld(n) {
         const old = _restore[0];
         _restore[0] = undefined;
         const cell = held;
-        const old$1$1 = cell.value;
+        const old$1 = cell.value;
         cell.value = old;
-        if (old$1$1 != null) {
-          loudDrop_drop(old$1$1);
+        if (old$1 != null) {
+          loudDrop_drop(old$1);
         }
       } finally {
         if (_restore[0] != null) {
@@ -123,10 +123,10 @@ function withShared(n) {
         const old = _restore[0];
         _restore[0] = undefined;
         const cell = shared;
-        const old$1$1 = cell.value;
+        const old$1 = cell.value;
         cell.value = old;
-        if (old$1$1 != null) {
-          $rcDrop(old$1$1, loudDrop_drop);
+        if (old$1 != null) {
+          $rcDrop(old$1, loudDrop_drop);
         }
       } finally {
         if (_restore[0] != null) {

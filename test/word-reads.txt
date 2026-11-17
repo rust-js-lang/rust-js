@@ -3,7 +3,6 @@
 # step): a ratchet that only falls (test/architecture-names.test.ts). A
 # question of a variable asks its `Name`; a word read here is one the
 # spelling step hasn't moved yet. Step done when only diagnostics are left.
-src/js/applied.rs	3
 src/js/expr_walk.rs	5
 src/js/stmt_walk.rs	3
 src/js/validate.rs	2

@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2716
-lines	364712
+files	2721
+lines	365466
 temporaries	0	0
 labeled blocks	0	0
 while (true)	226	6.2
-$iter	3161	86.7
+$iter	3161	86.5
 Iterator.from	366	10
-return;	349	9.6
-renamed x$1	16635	456.1
-role fallbacks	9203	252.3
+return;	354	9.7
+renamed x$1	16681	456.4
+role fallbacks	9216	252.2
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -60,6 +60,7 @@ test/corpus/any_given_to_a_nullable_parameter.js	21	0	0	0	0	0	0	0	0
 test/corpus/any_mapped_to_a_nullable_parameter.js	43	0	0	0	0	0	0	0	0
 test/corpus/any_of_one_value_is_includes.js	38	0	0	0	0	0	0	0	0
 test/corpus/app_errors.js	118	0	0	0	0	0	0	4	4
+test/corpus/applied_body_keeps_the_programs_name.js	45	0	0	0	0	0	0	4	0
 test/corpus/argument_guard_reentered.js	35	0	0	0	0	0	0	0	0
 test/corpus/arguments_given_to_a_generic_writer.js	180	0	0	0	0	0	0	0	1
 test/corpus/arguments_given_to_a_generic_writer_alone.js	62	0	0	0	0	0	0	0	0
@@ -631,7 +632,7 @@ test/corpus/drop_guard_named_as_a_global.js	18	0	0	0	0	0	0	0	0
 test/corpus/drop_guard_of_a_closure.js	266	0	0	0	0	0	0	5	4
 test/corpus/drop_guard_restores_nullable_fields.js	82	0	0	0	0	0	0	8	3
 test/corpus/drop_guard_restores_on_panic.js	45	0	0	0	0	0	0	2	1
-test/corpus/drop_guard_restores_taken_fields.js	111	0	0	0	0	0	0	4	2
+test/corpus/drop_guard_restores_taken_fields.js	111	0	0	0	0	0	0	2	2
 test/corpus/drop_guard_scope_returns.js	98	0	0	0	0	0	0	0	2
 test/corpus/drop_guard_variable_written_after.js	29	0	0	0	0	0	0	3	1
 test/corpus/drop_impl_clear.js	66	0	0	0	0	0	0	0	0
@@ -1122,6 +1123,7 @@ test/corpus/hashed_keys_looked_up_by_their_borrow.js	92	0	0	0	0	0	0	0	1
 test/corpus/hasher_finished_through_a_mut_of_its_mut.js	85	0	0	0	0	0	0	3	2
 test/corpus/hasher_finished_through_its_mut.js	96	0	0	0	0	0	0	8	3
 test/corpus/hasher_of_a_mut_given_to_generic_code.js	152	0	0	0	0	0	0	9	4
+test/corpus/hasher_written_through_a_box.js	153	0	0	0	0	0	0	15	4
 test/corpus/heap_destructors.js	128	0	0	0	1	0	0	0	2
 test/corpus/heap_extend.js	62	0	0	0	0	0	0	0	0
 test/corpus/heap_halves_bound_their_children.js	114	0	0	0	0	0	2	0	1
@@ -1910,7 +1912,7 @@ test/corpus/rc_dyn_struct_tail.js	163	0	0	0	0	0	0	6	1
 test/corpus/rc_dyn_upcast_counted.js	304	0	0	0	0	0	0	11	6
 test/corpus/rc_eq_by_address_first.js	122	0	0	0	0	0	0	7	9
 test/corpus/rc_eq_generic_by_address_first.js	85	0	0	0	0	0	0	4	3
-test/corpus/rc_field_of_a_parameter_beside_an_untagged_rc.js	543	0	0	0	0	0	1	10	6
+test/corpus/rc_field_of_a_parameter_beside_an_untagged_rc.js	538	0	0	0	0	0	1	10	5
 test/corpus/rc_field_of_a_private_parameter_beside_an_untagged_rc.js	96	0	0	0	0	0	0	9	9
 test/corpus/rc_fn_made_of_a_counted_rc.js	100	0	0	0	0	0	0	4	0
 test/corpus/rc_fn_ptr_eq.js	79	0	0	0	0	0	0	0	0
@@ -2005,6 +2007,7 @@ test/corpus/refcell_generic_mut_method.js	90	0	0	0	0	0	0	0	0
 test/corpus/refcell_generic_variant_field.js	45	0	0	0	0	0	0	0	2
 test/corpus/refcell_generic_variant_held.js	56	0	0	0	0	0	0	0	2
 test/corpus/refcell_guard_bounds.js	213	0	0	0	0	0	1	3	3
+test/corpus/refcell_guard_fields.js	302	0	0	0	0	0	2	3	7
 test/corpus/refcell_held_while_asked.js	209	0	0	0	0	0	0	19	11
 test/corpus/refcell_identity_set.js	36	0	0	0	0	0	0	0	0
 test/corpus/refcell_if_let_held.js	35	0	0	0	0	0	0	0	1
@@ -2124,7 +2127,8 @@ test/corpus/scan_state_through_its_box.js	46	0	0	0	4	0	1	0	0
 test/corpus/scope_field_copies.js	84	0	0	0	0	0	0	7	0
 test/corpus/scope_method_closure_addr_eq.js	26	0	0	0	0	0	0	0	1
 test/corpus/scope_method_closure_ptr_eq.js	26	0	0	0	0	0	0	0	1
-test/corpus/scope_struct_fields_of_locals.js	47	0	0	0	0	0	0	5	1
+test/corpus/scope_struct_field_of_a_reassigned_local.js	78	0	0	0	0	0	0	5	0
+test/corpus/scope_struct_fields_of_locals.js	48	0	0	0	0	0	0	2	1
 test/corpus/scope_struct_functions.js	76	0	0	0	0	0	0	15	1
 test/corpus/scope_struct_generic.js	130	0	0	0	0	0	0	4	3
 test/corpus/scope_struct_kept_apart.js	209	0	0	0	0	0	0	3	2
@@ -2470,6 +2474,7 @@ test/corpus/type_reexport_in_no_load_cycle.js	14	0	0	0	0	0	0	0	0
 test/corpus/u32_masks.js	39	0	0	0	0	0	0	0	0
 test/corpus/unboxed_type_params.js	94	0	0	0	0	0	0	6	0
 test/corpus/unchecked_and_saturating_neg.js	23	0	0	0	0	0	0	0	0
+test/corpus/undo_stack_map_reentered.js	180	0	0	0	0	0	3	24	3
 test/corpus/unicode_answers_are_rusts.js	51	0	0	0	0	0	0	0	0
 test/corpus/uninit_array_param.js	65	0	0	0	0	0	0	4	3
 test/corpus/uninit_bytes_written_one_by_one.js	321	0	0	0	0	0	0	36	0

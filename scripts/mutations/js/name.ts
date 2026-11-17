@@ -4,6 +4,16 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "spelled-later-apart-of-the-item",
+    breaks:
+      "a closure's own `current`, applied where it's called, is no longer the program's, so an arm's `current` inside it takes the word, the outer `current$1` (ADR 1150)",
+    file: "src/js/name.rs",
+    find: "        Name(crate::names::made(base, k), self.1, Id::fresh(), Id::WORD)\n",
+    replace: "        Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)\n",
+    tests: ["test/corpus.test.ts", "-t", "^applied_body_keeps_the_programs_name.rs$"],
+    snapshots: true,
+  },
+  {
     name: "body-item-not-identified",
     breaks: "a body's item, a `fn` the body declares, is asked no capture: a read of it where a nearer local of its spelling takes it isn't refused, a wrong answer unrefused (#2034)",
     file: "src/js/name.rs",

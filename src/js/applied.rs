@@ -614,18 +614,17 @@ fn in_place(
             _ => {}
         }
     }
-    if !declared.is_empty() {
-        let names = names();
-        let mut mentioned = names.clone();
-        names_in(&body, &mut mentioned);
-        for from in declared.into_iter().filter(|name| names.contains(name.word())) {
-            let to = (1..)
-                .map(|k| crate::names::given_apart(from.word(), k))
-                .find(|to| !mentioned.contains(to))
-                .expect("a name nothing mentions");
-            renamed(&mut body, from.word(), &to);
-            mentioned.insert(to);
-        }
+    // Each not spelled yet, `borrow#1`, by its id, which preparation spells
+    // apart from what its scope has where it's applied, `borrow$1` beside
+    // the function's `borrow` (`Name::spelled_later`, ADR 1150).
+    let mut made: Vec<Name> = Vec::new();
+    visit_stmt_names(whole, &mut |name| made.push(name.clone()));
+    visit_stmt_names(&body, &mut |name| made.push(name.clone()));
+    // One made already is preparation's to spell as it is.
+    for from in declared.into_iter().filter(|name| !name.is_unspelled()) {
+        let to = from.spelled_later_apart(&made);
+        super::stmt_walk::replaced(&mut body, &from, &to);
+        made.push(to);
     }
     // Read as what it's given: a parameter never set, now, of a body with
     // no closure of its own whose names could shadow it.

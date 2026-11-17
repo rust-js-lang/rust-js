@@ -3,6 +3,16 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "applied-unspelled-spelled-again",
+    breaks:
+      "a closure's shadow of its parameter lowering made already, `currentCallbacks#1`, is made again, so what its handle reads is held, `const currentCallbacks$1 = currentCallbacks` (ADR 1150)",
+    file: "src/js/applied.rs",
+    find: "    for from in declared.into_iter().filter(|name| !name.is_unspelled()) {\n",
+    replace: "    for from in declared {\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_shadow_of_its_handle.rs$"],
+    snapshots: true,
+  },
+  {
     name: "applied-tail-switch-unseen",
     breaks: "a closure called last in a `switch`'s case at the function's end stays `return ((e) => { throw e; })(e);` (rd378)",
     file: "src/js/applied.rs",
@@ -137,18 +147,10 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "applied-clash-refused",
-    breaks: "a `Drop`'s body that declares a name of the function it's dropped in, its `borrow` beside an `if`'s, stays a function each drop calls, `finishDrop_drop(_finish)`",
-    file: "src/js/applied.rs",
-    find: "        for from in declared.into_iter().filter(|name| names.contains(name.word())) {\n",
-    replace: "        if declared.iter().any(|name| names.contains(name.word())) {\n            return None;\n        }\n        for from in declared.into_iter().filter(|name| names.contains(name.word())) {\n",
-    tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
-  },
-  {
     name: "applied-clash-kept",
     breaks: "a `Drop`'s body's name that's the caller's own is kept, `const doubled = ..` where the caller's parameter is `doubled`, which JS refuses",
     file: "src/js/applied.rs",
-    find: "            renamed(&mut body, from.word(), &to);\n",
+    find: "        super::stmt_walk::replaced(&mut body, &from, &to);\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a Drop dropped once"],
   },
