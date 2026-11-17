@@ -13,7 +13,7 @@ import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
 import { evaluateIf, heldJobs, mostAtOnce, NIGHTLY_RUNNERS, scheduled } from "../scripts/runners";
-import { reactGate, regenerated, remakeable } from "../scripts/push";
+import { lowerRatchets, ratchets, reactGate, regenerated, remakeable } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, drivesBrowser, testFileSeconds } from "../scripts/shard";
@@ -1263,4 +1263,21 @@ test("a check's test shards are dealt by what each file took", () => {
   const suite = readFileSync(join(root, "scripts/test.ts"), "utf8");
   expect(suite).not.toContain("...shard,");
   expect(suite).toContain("const pageFiles = dealt(");
+});
+
+// A ratchet two changes lowered at once conflicts on rebase, and `bun run
+// push` resolves it by the lower count, which holds of the rebased tree as
+// each change only removed what's counted: KIN_PARSES, lowered 15 to 14 by
+// one change and to 10 by others, cost a hand rebase (2026-11-17).
+test("a rebase's conflict in a ratchet is resolved by the lower count, anything else in it stops", () => {
+  const conflict = (ours: string[], theirs: string[], base?: string[]) =>
+    ["# a ratchet", "<<<<<<< HEAD", ...ours, ...(base ? ["||||||| base", ...base] : []), "=======", ...theirs, ">>>>>>> theirs", "src/z.rs\t1", ""].join("\n");
+  expect(lowerRatchets(conflict(["src/a.rs\t3", "src/b.rs\t5"], ["src/a.rs\t4", "src/b.rs\t2"]))).toBe(["# a ratchet", "src/a.rs\t3", "src/b.rs\t2", "src/z.rs\t1", ""].join("\n"));
+  // A key one side alone names is kept as it says; a base section is read past.
+  expect(lowerRatchets(conflict(["src/a.rs\t3"], ["src/a.rs\t2", "src/c.rs\t1"], ["src/a.rs\t9"]))).toBe(["# a ratchet", "src/a.rs\t2", "src/c.rs\t1", "src/z.rs\t1", ""].join("\n"));
+  expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;"]))).toBe(["# a ratchet", "const KIN_PARSES = 10;", "src/z.rs\t1", ""].join("\n"));
+  expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;", "test(\"x\", () => {});"]))).toBeUndefined();
+  expect(remakeable(["test/word-reads.txt", "docs/readability.txt"])).toBe(true);
+  expect(remakeable(["test/architecture-names.test.ts", "src/lower/analysis.rs"])).toBe(false);
+  for (const file of ratchets) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
 });

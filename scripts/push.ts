@@ -37,7 +37,7 @@
 // how far behind it is (scripts/select.ts); the machine and agent each
 // machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
 import { spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, readFileSync, rmSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { loadavg } from "node:os";
 import { selectionFile } from "./select";
 import { devTimesLog, whoRuns } from "./disk";
@@ -265,11 +265,54 @@ export const regenerated: Record<string, string> = {
   "webapi/coverage.txt": "test/webapi-coverage.test.ts",
 };
 
+/** The ratchets that only fall, each a count several changes lower at
+ * once: each file's line `<path>\t<n>`, or a test's `const NAME = n;`.
+ * Two lowered at once conflict, each side's lower than the base, and the
+ * lower of the two holds of the rebased tree, as each only removes what's
+ * counted (ADR 1101, amended). */
+export const ratchets = ["test/word-reads.txt", "test/sig-binders.txt", "test/type-parameter-reads.txt", "test/architecture-names.test.ts"];
+
+/** `text`, a ratchet's with git's conflict markers, each conflict resolved
+ * by the lower count of each key both sides name, and a key one side alone
+ * names kept as it says; or undefined where a conflict holds anything else,
+ * which stays the change's author's to merge. */
+export function lowerRatchets(text: string): string | undefined {
+  const count = /^(?:(\S+)\t(\d+)|const (\w+) = (\d+);)$/;
+  const out: string[] = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i]!.startsWith("<<<<<<< ")) {
+      out.push(lines[i]!);
+      continue;
+    }
+    const sides: string[][] = [[], []];
+    let side = 0;
+    let base = false;
+    for (i++; i < lines.length && !lines[i]!.startsWith(">>>>>>> "); i++) {
+      const line = lines[i]!;
+      if (line.startsWith("||||||| ")) base = true;
+      else if (line === "=======") (base = false), (side = 1);
+      else if (!base) sides[side]!.push(line);
+    }
+    const merged = new Map<string, { line: string; n: number }>();
+    for (const line of [...sides[0]!, ...sides[1]!]) {
+      const m = line.match(count);
+      if (!m) return undefined;
+      const key = m[1] ?? m[3]!;
+      const n = Number(m[2] ?? m[4]);
+      const was = merged.get(key);
+      if (was === undefined || n < was.n) merged.set(key, { line, n });
+    }
+    out.push(...[...merged.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([, { line }]) => line));
+  }
+  return out.join("\n");
+}
+
 /** Whether a rebase's `conflicts` are each a blessed baseline's, which it
- * resolves by making them again; any other, hand-written code's too, stops
- * it. */
+ * resolves by making them again, or a ratchet's, by the lower count; any
+ * other, hand-written code's too, stops it. */
 export function remakeable(conflicts: string[]): boolean {
-  return conflicts.every((file) => file in regenerated);
+  return conflicts.every((file) => file in regenerated || ratchets.includes(file));
 }
 
 /** Onto origin/main. A conflict in a blessed baseline alone (`regenerated`)
@@ -289,6 +332,16 @@ function rebase(): string[] {
       throw new Refused(`the rebase stopped on a conflict, aborted: ${conflicts.join(", ")}`);
     }
     for (const file of conflicts) {
+      if (ratchets.includes(file)) {
+        const lowered = lowerRatchets(readFileSync(file, "utf8"));
+        if (lowered === undefined) {
+          git("rebase", "--abort");
+          throw new Refused(`the rebase stopped on a conflict in ${file} that isn't a ratchet's count, aborted`);
+        }
+        writeFileSync(file, lowered);
+        git("add", file);
+        continue;
+      }
       git("checkout", "--ours", file);
       git("add", file);
       remade.add(file);
