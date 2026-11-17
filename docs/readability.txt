@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2703
-lines	362558
+files	2710
+lines	363381
 temporaries	0	0
 labeled blocks	0	0
-while (true)	223	6.2
-$iter	3137	86.5
-Iterator.from	365	10.1
-return;	347	9.6
-renamed x$1	16495	455
-role fallbacks	9155	252.5
+while (true)	223	6.1
+$iter	3146	86.6
+Iterator.from	365	10
+return;	348	9.6
+renamed x$1	16540	455.2
+role fallbacks	9174	252.5
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -639,6 +639,7 @@ test/corpus/drop_impl_param_call.js	57	0	0	0	0	0	0	0	1
 test/corpus/drop_in_const_closure.js	89	0	0	0	0	0	0	0	3
 test/corpus/drop_index_panic.js	25	0	0	0	0	0	0	0	0
 test/corpus/drop_kept_where_not_inlined.js	37	0	0	0	1	0	0	0	1
+test/corpus/drop_of_an_uninhabited_enum.js	33	0	0	0	0	0	0	2	2
 test/corpus/drop_of_its_own_type.js	35	0	0	0	0	0	0	0	0
 test/corpus/drop_on_panic.js	48	0	0	0	0	0	0	0	0
 test/corpus/drop_operand_leaves.js	76	0	0	0	0	0	0	4	4
@@ -820,6 +821,7 @@ test/corpus/field_rewrite_singles.js	115	0	0	0	0	0	0	2	2
 test/corpus/fill_if_missing.js	101	0	0	0	0	0	0	12	1
 test/corpus/fill_with_drops.js	40	0	0	0	0	0	0	0	0
 test/corpus/fill_with_writes_what_it_made_though_a_drop_panics.js	61	0	0	0	0	0	0	0	0
+test/corpus/filled_where_absent.js	34	0	0	0	0	0	1	0	0
 test/corpus/filter_ends.js	127	0	0	0	3	3	0	4	3
 test/corpus/filter_folds_by_its_sources_fold.js	213	0	0	1	1	0	2	0	5
 test/corpus/filter_given_back_stepped_from_its_back.js	157	0	0	0	2	0	0	6	8
@@ -1269,7 +1271,11 @@ test/corpus/io_write_impl.js	105	0	0	0	0	0	0	0	2
 test/corpus/io_write_mut_generic.js	43	0	0	0	0	0	0	6	1
 test/corpus/io_writer_fails_in_main.js	52	0	0	0	0	0	0	0	1
 test/corpus/io_writers.js	77	0	0	0	0	0	0	0	1
+test/corpus/is_sorted_by_closes_its_source_after_its_closure.js	188	0	0	0	0	0	0	25	7
+test/corpus/is_sorted_drop_panics_during_its_unwind.js	32	0	0	0	1	0	0	0	0
 test/corpus/is_sorted_items.js	74	0	0	0	2	0	0	0	0
+test/corpus/is_sorted_last_drop_panics_during_its_unwind.js	32	0	0	0	1	0	0	0	0
+test/corpus/is_sorted_of_items_with_a_destructor.js	155	0	0	0	7	0	0	0	2
 test/corpus/item_keyed_map.js	150	0	0	0	3	0	0	2	3
 test/corpus/item_none_stored_in_a_nullable_field.js	38	0	0	0	0	0	0	0	0
 test/corpus/item_written_of_its_own_read.js	21	0	0	0	0	0	0	0	0
@@ -1954,6 +1960,7 @@ test/corpus/ref_cell_borrowed_while_std_runs_a_generic_callback.js	32	0	0	0	0	0	
 test/corpus/ref_cell_contents_written_in_place_are_copied.js	51	0	0	0	0	0	0	0	0
 test/corpus/ref_cell_field_const.js	32	0	0	0	0	0	0	0	1
 test/corpus/ref_cell_guards_mapped.js	248	0	0	0	0	0	0	46	12
+test/corpus/ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.js	349	0	0	0	0	0	0	18	8
 test/corpus/ref_cell_replaced_while_borrowed_drops_what_it_was_given.js	123	0	0	0	0	0	0	0	0
 test/corpus/ref_mut_bindings_copied.js	57	0	0	0	1	0	0	3	2
 test/corpus/ref_mut_of_mut_payload.js	139	0	0	0	0	0	0	19	9

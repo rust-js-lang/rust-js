@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/bindings.rs",
     find: "                false => StmtKind::If(test.negated_test(), otherwise, None),\n",
     replace: "                false => StmtKind::If(test, otherwise, None),\n",
-    tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^filled_where_absent.rs$"],
   },
   {
     name: "unread-spreads-apart",
