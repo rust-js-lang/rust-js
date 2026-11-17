@@ -550,8 +550,8 @@ test("CI's map of HEAD's nearest ancestor on main is the one fetched", () => {
 // comment, a pure addition of items nothing referred to before, `mod
 // derived;` of m1-lisa's heap split, and a signature line's visibility,
 // `pub(super) fn`, #1983's, which is that function's change. An `impl`, a
-// `use` or a macro added, or a signature's types changed, still can't be
-// said.
+// `use` or a macro added, or a signature's types changed, of sources it
+// can't read, still can't be said.
 test("a comment, a new item nothing refers to, and a signature's visibility select no more than they change", () => {
   const one = (hunk: [number, number, string[], string[]]) => pick(map, [{ file: "src/a.rs", hunks: [hunk] }], files, cases);
   expect(one([25, 1, ["// the new words"], ["// the old words"]]).kind).toBe("picked");
@@ -572,4 +572,62 @@ test("a comment, a new item nothing refers to, and a signature's visibility sele
   expect(hunksOf("diff --git a/src/a.rs b/src/a.rs\n--- a/src/a.rs\n+++ b/src/a.rs\n@@ -29 +29 @@\n-fn second() {\n+pub fn second() {\n")).toEqual([
     { file: "src/a.rs", hunks: [[29, 1, ["pub fn second() {"], ["fn second() {"]]] },
   ]);
+});
+
+// A private `use` changed, or a function's signature (ADR 1101, amended):
+// selected as the code they can change, where the push's select-all of
+// 191ad93e9 ran the crate corpus and every net for `use crate::js::{..,
+// Name, ..};` at assigned_breaks.rs:5 and `fn function_names(e: &Expr,
+// name: &Name)` at stepped_whiles.rs:96.
+test("a private `use` changed is each function of its module's, where no code outside one names its words; a glob, a `pub` one, or a word a type names, everything", () => {
+  const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  text[2] = "use crate::js::{Expr, Stmt};";
+  text[14] = "    let n: Name = Expr::of(s);";
+  text[24] = "    held: Name,";
+  const sources = (sites: { file: string; line: number }[]): Sources => ({
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : file === "src/a/b.rs" ? "    field: Name," : file === "src/c.rs" ? "    other: Name," : file === "src/js.rs" ? "pub struct Name;" : undefined),
+    // Declared at the map's commit, so no name new to the crate.
+    naming: (word) => (word === "Name" ? [{ file: "src/js.rs", line: 1 }, ...sites] : []),
+  });
+  const named: Change = { file: "src/a.rs", hunks: [[3, 1, ["use crate::js::{Expr, Name, Stmt};"], ["use crate::js::{Expr, Stmt};"]]] };
+  // Every function of a.rs, as a trait it brings changes how a method of
+  // either resolves, though only the first names it.
+  const everyFunction = pick(map, [{ file: "src/a.rs", hunks: [[15, 1], [31, 1]] }], files, cases);
+  expect(pick(map, [named], files, cases, sources([{ file: "src/a.rs", line: 15 }, { file: "src/c.rs", line: 1 }]))).toEqual({ ...everyFunction, why: expect.any(String) } as never);
+  // A type's field of a.rs, or of a module in it, names it: everything.
+  expect(pick(map, [named], files, cases, sources([{ file: "src/a.rs", line: 25 }])).kind).toBe("all");
+  expect(pick(map, [named], files, cases, sources([{ file: "src/a/b.rs", line: 1 }])).kind).toBe("all");
+  // A glob, whose names no word says, and a `pub` one, read wherever it's imported.
+  const glob: Change = { file: "src/a.rs", hunks: [[3, 1, ["use crate::js::*;"], ["use crate::js::{Expr, Stmt};"]]] };
+  expect(pick(map, [glob], files, cases, sources([])).kind).toBe("all");
+  text[2] = "pub use crate::js::{Expr, Stmt};";
+  const reexported: Change = { file: "src/a.rs", hunks: [[3, 1, ["pub use crate::js::{Expr, Name, Stmt};"], ["pub use crate::js::{Expr, Stmt};"]]] };
+  expect(pick(map, [reexported], files, cases, sources([])).kind).toBe("all");
+  text[2] = "use crate::js::{Expr, Stmt};";
+  // A whole `use` added between two, as a trait's.
+  const trait: Change = { file: "src/a.rs", hunks: [[3, 0, ["use std::fmt::Write;"], []]] };
+  expect(pick(map, [trait], files, cases, sources([]))).toEqual({ ...everyFunction, why: expect.any(String) } as never);
+});
+
+test("a function's signature changed is its body's change and each that names it; one named outside any function, everything", () => {
+  const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  text[8] = "fn f(x: &str) -> u32 {";
+  text[31] = "    f(&y);";
+  text[24] = "const N: u32 = f;";
+  const sources = (sites: { file: string; line: number }[]): Sources => ({
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : file === "src/c.rs" ? "x\n".repeat(8) + "static G: u32 = f(&Y);" : undefined),
+    naming: (word) => (word === "f" ? sites : []),
+  });
+  const retyped: Change = { file: "src/a.rs", hunks: [[8, 2, ["/// Of a variable.", "fn f(x: &Name) -> u32 {"], ["/// Of a word.", "fn f(x: &str) -> u32 {"]]] };
+  const both = pick(map, [{ file: "src/a.rs", hunks: [[15, 1], [32, 1]] }], files, cases);
+  // Its body and its caller's; a private one's name elsewhere is another's.
+  expect(pick(map, [retyped], files, cases, sources([{ file: "src/a.rs", line: 9 }, { file: "src/a.rs", line: 32 }, { file: "src/c.rs", line: 9 }]))).toEqual({ ...both, why: expect.any(String) } as never);
+  expect(pick(map, [retyped], files, cases, sources([{ file: "src/a.rs", line: 25 }])).kind).toBe("all");
+  // A function written before it, new: nothing names it yet.
+  const added: Change = { file: "src/a.rs", hunks: [[8, 2, ["fn g() -> u32 {", "    1", "}", "", "fn f(x: &Name) -> u32 {"], ["/// Of a word.", "fn f(x: &str) -> u32 {"]]] };
+  expect(pick(map, [added], files, cases, sources([{ file: "src/a.rs", line: 32 }]))).toEqual({ ...both, why: expect.any(String) } as never);
+  // A `pub` one's callers anywhere: c.rs's, a static's, outside any function.
+  const public_: Change = { file: "src/a.rs", hunks: [[9, 1, ["pub fn f(x: &Name) -> u32 {"], ["pub fn f(x: &str) -> u32 {"]]] };
+  text[8] = "pub fn f(x: &str) -> u32 {";
+  expect(pick(map, [public_], files, cases, sources([{ file: "src/c.rs", line: 9 }])).kind).toBe("all");
 });

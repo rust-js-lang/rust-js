@@ -441,6 +441,96 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     const declares = (word: string) => new RegExp(`\\b(?:struct|enum|union|trait|type|fn|const|static|mod|macro_rules!)\\s+${word}\\b`);
     return fresh.length > 0 && fresh.every((word) => sources.naming(word).every((site) => !declares(word).test((sources.text(site.file) ?? "").split("\n")[site.line - 1] ?? "")));
   };
+  // A line of a function's signature, from its `fn` to its body's `{`.
+  const inSignature = (of: string[], line: number) => {
+    for (let at = line; at >= Math.max(1, line - 12); at--) {
+      const text = of[at - 1] ?? "";
+      if (/\bfn\s+\w+/.test(text)) return true;
+      if (at < line && (commentOnly(text) || /[;{}]\s*$/.test(text.replace(/\/\/.*$/, "")))) return false;
+    }
+    return false;
+  };
+  // The files a private item of `file` is seen in: its module's, and the
+  // modules' in it, `src/a/b.rs` and `src/a/b/**`; the crate's of main.rs.
+  const moduleOf = (file: string) => {
+    const under = /^src\/(?:main|lib)\.rs$/.test(file) ? "src/" : file.replace(/(?:\/mod)?\.rs$/, "/");
+    return (at: string) => at === file || at.startsWith(under);
+  };
+  const texts = new Map<string, string[]>();
+  const linesOf = (at: string) => {
+    if (!texts.has(at)) texts.set(at, (sources.text(at) ?? "").split("\n"));
+    return texts.get(at)!;
+  };
+  // A function's signature changed, its parameters' types say, and new
+  // items written before it, which nothing named before (as a pure
+  // addition's, `unreferencedOnly`): what compiles otherwise is its body
+  // and each place that names it, a call or a path, the functions that
+  // hold them; one named outside any function's code, everything.
+  const signatureChanged = (file: string, from: number, count: number, added: string[], removed: string[] | undefined): number[] | undefined => {
+    if (removed === undefined || count === 0 || sources.text(file) === undefined) return undefined;
+    const code = (lines: string[]) => lines.filter((line) => !commentOnly(line)).map((line) => line.replace(/\/\/.*$/, ""));
+    const before = code(removed);
+    const name = before.join(" ").match(/\bfn\s+(\w+)/g);
+    if (name === null || name.length !== 1 || !/\{\s*$/.test(before.at(-1) ?? "") || before.slice(0, -1).some((line) => /[;{}]/.test(line))) return undefined;
+    const fn = name[0]!.replace(/^fn\s+/, "");
+    const after = code(added);
+    const at = after.findIndex((line) => new RegExp(`\\bfn\\s+${fn}\\b`).test(line));
+    if (at < 0 || !/\{\s*$/.test(after.at(-1) ?? "") || after.slice(at, -1).some((line) => /[;{}]/.test(line))) return undefined;
+    const items = after.slice(0, at);
+    if (items.length > 0 && !unreferencedOnly(items)) return undefined;
+    const own = following(file, from + count - 1);
+    if (own === undefined) return undefined;
+    // A private one's names are its module's; a `pub` one's, anywhere.
+    const seen = /^\s*pub\b/.test(before.find((line) => /\bfn\s/.test(line))!) ? () => true : moduleOf(file);
+    const readers = [own];
+    for (const site of sources.naming(fn)) {
+      if (!seen(site.file)) continue;
+      const of = linesOf(site.file);
+      if (commentOnly(of[site.line - 1] ?? "") || constHolding(of, site.line, site.line, useItem) !== undefined) continue;
+      const found = holding(site.file, site.line);
+      if (found.length === 0 && !inSignature(of, site.line)) return undefined;
+      readers.push(...found);
+    }
+    return readers;
+  };
+  // A private `use` changed, its names added, taken out or moved, and no
+  // glob: what it can change is how the code in its module's scope resolves
+  // a name, a path's or a method's by a trait it brings, which only a
+  // function's code calls (a constant's is const, which calls no trait's
+  // method). So every function of the file and of its modules', unless one
+  // of its words is named in their code outside any function, a type's
+  // field, an `impl`'s header, a constant's value, an item a macro makes,
+  // where it's everything. A `pub` one's reach is wherever it's imported,
+  // and a glob's names no word says: everything (ADR 1101, amended).
+  const useChanged = (file: string, from: number, count: number, added: string[], removed: string[] | undefined): number[] | undefined => {
+    if (removed === undefined) return undefined;
+    const text = sources.text(file);
+    if (text === undefined) return undefined;
+    const lines = text.split("\n");
+    const privateUse = (at: number) => {
+      const item = constHolding(lines, at, at, useItem);
+      return item !== undefined && !/^\s*pub\b/.test(lines[item.start - 1]!);
+    };
+    const written = [...added, ...removed].filter((line) => !commentOnly(line)).map((line) => line.replace(/\/\/.*$/, ""));
+    if (written.length === 0 || written.some((line) => /\bpub\b|\bextern\b/.test(line) || !/^\s*(?:use\s+)?[\w\s:{},;]*$/.test(line))) return undefined;
+    for (let line = from; line < from + count; line++) if (!commentOnly(lines[line - 1] ?? "") && !privateUse(line)) return undefined;
+    const addedCode = added.filter((line) => !commentOnly(line)).join(" ");
+    // Lines added between two: inside one `use`'s list, or whole `use`s.
+    if (count === 0 && !(privateUse(from) && privateUse(from + 1) && constHolding(lines, from, from + 1, useItem) !== undefined) && !/^(?:\s*use\s+[\w\s:{},]+;)+\s*$/.test(addedCode)) return undefined;
+    const keywords = new Set(["use", "crate", "self", "super", "in", "as", "Self"]);
+    const words = new Set(written.join(" ").match(/\b[A-Za-z_]\w*\b/g)?.filter((word) => !keywords.has(word)) ?? []);
+    const inScope = moduleOf(file);
+    const scoped = map.functions.flatMap(({ file: at }, f) => (inScope(at) ? [f] : []));
+    for (const word of words) {
+      for (const site of sources.naming(word)) {
+        if (!inScope(site.file) || holding(site.file, site.line).length > 0) continue;
+        const of = linesOf(site.file);
+        if (commentOnly(of[site.line - 1] ?? "") || constHolding(of, site.line, site.line, useItem) !== undefined || inSignature(of, site.line)) continue;
+        return undefined;
+      }
+    }
+    return scoped;
+  };
   for (const { file, hunks } of changes) {
     const sites = map.includes[file];
     if (sites !== undefined && hunks !== "new") {
@@ -478,6 +568,11 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
         }
       }
       if (holding(file, from).length === 0 && newNamesUsed(file, from, count, added, removed)) continue;
+      const resolving = holding(file, from).length === 0 ? (useChanged(file, from, count, added, removed) ?? signatureChanged(file, from, count, added, removed)) : undefined;
+      if (resolving !== undefined) {
+        for (const f of resolving) touched.add(f);
+        continue;
+      }
       const readers = holding(file, from).length === 0 ? constValue(file, from, count, added, removed) : undefined;
       if (readers !== undefined) {
         for (const f of readers) touched.add(f);

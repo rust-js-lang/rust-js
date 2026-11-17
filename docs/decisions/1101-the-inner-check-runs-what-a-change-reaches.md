@@ -767,3 +767,41 @@ whole one, and "a test carried over keeps its functions by their
 symbols"; mutations `carry-new-function-counted`,
 `carry-skips-what-ran-always` and `carry-case-file-own-lost`.
 
+
+### Amended: a private `use` changed, and a function's signature, select what they can change (2026-11-18)
+
+A hunk outside any function's code selected everything, with every net and
+the crate corpus: 7963110df and 191ad93e9 for `use crate::js::{..,
+Name, ..};` at assigned_breaks.rs:5, then `fn function_names(e: &Expr,
+name: &Name)` at stepped_whiles.rs:96, its parameter's type changed. Two
+such hunks are now said:
+
+- **A private `use`** (`useChanged`), its names added, taken out or moved,
+  no glob, no `pub`: it changes how code in its module's scope resolves a
+  name, a path's or a method's by a trait it brings, so it selects every
+  function of the file and of the modules in it (`src/a/b.rs` and
+  `src/a/b/**`; the crate's of main.rs), not only those that name its
+  words, as a trait resolves a method no line names. Only a function calls
+  a trait's method: a constant's or a static's value is const, which
+  calls none. Where a word of the `use` is named in that scope outside any
+  function's code and its signature, a type's field, an `impl`'s header,
+  a constant's value or an item a macro makes, everything still. A glob's
+  names no word says, and a `pub` one is read wherever it's imported:
+  everything.
+- **A function's signature** (`signatureChanged`), with new items written
+  before it that nothing named before (`unreferencedOnly`): its body and
+  each function that names it, a call or a path, the module's of a private
+  one, the crate's of a `pub` one; one named outside any function's code,
+  everything. Of sources it can't read, everything.
+
+Measured on the select-all pushes of 2026-11-17 replayed against the map
+nearest each: 7963110df and 191ad93e9 select some, 371 of 374 files and
+2,658 of 2,731 cases (the change touches preparation, which every compile
+runs), but no longer every net and the crate corpus; 0eba652be (an
+attribute, `#[cfg(test)]`, on three `impl`s) and a628bf769 (a field added
+to a struct) are everything still, as is ec5f73747 (a workflow). Test:
+test/test-map.test.ts, "a private `use` changed is each function of its
+module's" and "a function's signature changed is its body's change";
+mutations `use-change-glob-taken`, `use-change-only-namers`,
+`use-change-type-field-unseen`, `signature-change-callers-unseen` and
+`signature-change-pub-module-only`, each caught.
