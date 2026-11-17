@@ -263,6 +263,15 @@ impl Name {
         Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
     }
 
+    /// A name of its word not spelled yet, the `k`th, `Count#3`: a function
+    /// written in an expression, named in itself alone, which preparation
+    /// spells apart from what its scope reads, `Count$1` where its body
+    /// reads the `Count` it's made in (`prepare::reclaim::spelled`, ADR 1150).
+    pub fn spelled_later(&self, k: usize) -> Name {
+        let base = crate::names::made_base(&self.0).unwrap_or(&self.0);
+        Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD)
+    }
+
     /// A variable lowering makes of `source`, a holder of its value, the
     /// `k`th: not spelled yet, `value#1` of `value`, as `made`'s, and of the
     /// source by its id, which preparation spells of what the

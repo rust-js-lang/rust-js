@@ -1202,3 +1202,17 @@ name of its word, so a held argument's was told by its spelling,
 spell or respell it; a question of kinship it asks goes through `Name`
 (the architecture row counting the rest, at 2, the last of them tidy's).
 
+## The module's spelling in lowering goes to preparation (2026-11-17, step (d))
+
+A function written in an expression was named in itself apart from the
+words its body reads, `function Count$1` in `const Count = memo(function
+Count() { .. <Count /> .. })`, and a recursive function's lifted body took
+its parameters apart from the module's names, each by its words, in
+lowering. Now the first is a name of its word not spelled yet
+(`Name::spelled_later`, its own in its item by its index there), and the
+second's parameters `FnCx::unspelled`'s, which preparation spells apart
+from what their scopes read, as JS's scopes resolve it; the aliases a
+module's function values settle to are keyed by the function's module
+name, and an alias's export is asked of its item's `Name` (`Name::is`).
+Byte-identical, the corpus, the tests and React's port.
+

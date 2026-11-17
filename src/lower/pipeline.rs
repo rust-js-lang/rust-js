@@ -885,11 +885,10 @@ pub fn lower_crate<'tcx>(
                     }
                     None if named_expressions.contains(&def_id) => {
                         let mut function = lowered.function;
-                        let mut read = IndexSet::default();
-                        js::visit_stmts(&function.body, &mut |name| {
-                            read.insert(name.to_owned());
-                        });
-                        function.name = js::Name::declared(super::fresh_in(&mut read, function.name.word()));
+                        // Spelled by preparation apart from what its body
+                        // reads, of the item it's written in, its own by its
+                        // index there.
+                        function.name = function.name.spelled_later(def_id.index.as_usize());
                         function.export = false;
                         pass.holes.functions.insert(def_id.index.as_u32(), function);
                     }
@@ -1185,11 +1184,11 @@ pub fn lower_crate<'tcx>(
             // What it exports by another name it exports by that alone,
             // `function getCurrentTime() {}`, whoever else reads it (ADR
             // 0596, amended).
-            let aliased = |name: &str| lowered.aliases.iter().any(|(local, _)| local == name);
+            let aliased = |name: &js::Name| lowered.aliases.iter().any(|(local, _)| name.is(local));
             for item in &mut lowered.items {
                 match item {
-                    js::Item::Function(function) if aliased(function.name.word()) => function.export = false,
-                    js::Item::Const(constant) if aliased(constant.name.word()) => constant.export = false,
+                    js::Item::Function(function) if aliased(&function.name) => function.export = false,
+                    js::Item::Const(constant) if aliased(&constant.name) => constant.export = false,
                     _ => {}
                 }
             }

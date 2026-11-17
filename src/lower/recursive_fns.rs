@@ -144,7 +144,7 @@ impl<'tcx> ModuleFns<'tcx> {
         if !aliases.is_empty() {
             let alias = |e: &mut Expr| {
                 if let js::ExprKind::Var(name) = &e.kind
-                    && let Some(target) = aliases.get(name.word())
+                    && let Some(target) = aliases.get(name)
                 {
                     *e = target.clone();
                 }
@@ -168,7 +168,7 @@ impl<'tcx> ModuleFns<'tcx> {
     /// Each instance's value that its settled drop arguments left the
     /// function itself, `const keepLoud = keep`: by its name, that
     /// function, which each use reads in its place, never written (#974).
-    fn take_aliases(&mut self) -> IndexMap<String, Expr> {
+    fn take_aliases(&mut self) -> IndexMap<js::Name, Expr> {
         let mut aliases = IndexMap::default();
         for ((_, kind, _), made) in self.made.iter_mut() {
             if !kind.is_fn_value() {
@@ -183,7 +183,7 @@ impl<'tcx> ModuleFns<'tcx> {
             ] = function.body.as_slice()
                 && matches!(value.kind, js::ExprKind::Var(_))
             {
-                aliases.insert(made.name.clone(), value.clone());
+                aliases.insert(js::Name::module(&made.name), value.clone());
                 made.lowered = None;
             }
         }
@@ -392,15 +392,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.names.borrow_mut().insert(name.clone());
         // Its body, lowered as a function of its own: its names apart from
         // this body's, what it uses its own, given no dictionary of this
-        // item's.
-        let mut names: IndexSet<String> = (self.module_names.iter().cloned())
+        // item's; its parameters spelled by preparation, apart from what
+        // its body reads.
+        let names: IndexSet<String> = (self.module_names.iter().cloned())
             .chain(self.module_fn_names())
             .collect();
-        let params: Vec<js::Name> = params
-            .iter()
-            .map(|p| js::Name::declared(super::fresh_in(&mut names, &p.word())))
-            .collect();
         let names = self.names.replace(names);
+        let params: Vec<js::Name> = params.iter().map(|p| self.unspelled(&p.word())).collect();
         let uses = self.dependencies.replace(Dependencies::default());
         let given = self.set_given_aside();
         let mut body = Vec::new();

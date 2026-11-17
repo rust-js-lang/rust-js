@@ -107,9 +107,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a function its module exports as `unstable_now` is `export function getCurrentTime` too (ADR 0596, amended)",
     file: "src/lower/pipeline.rs",
-    find: "                    js::Item::Function(function) if aliased(function.name.word()) => function.export = false,\n",
+    find: "                    js::Item::Function(function) if aliased(&function.name) => function.export = false,\n",
     replace:
-      "                    js::Item::Function(function) if false && aliased(function.name.word()) => function.export = false,\n",
+      "                    js::Item::Function(function) if false && aliased(&function.name) => function.export = false,\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
@@ -117,9 +117,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a constant its module exports as `MAX_LIMIT` is `export const LIMIT` too (ADR 0596, amended)",
     file: "src/lower/pipeline.rs",
-    find: "                    js::Item::Const(constant) if aliased(constant.name.word()) => constant.export = false,\n",
+    find: "                    js::Item::Const(constant) if aliased(&constant.name) => constant.export = false,\n",
     replace:
-      "                    js::Item::Const(constant) if false && aliased(constant.name.word()) => constant.export = false,\n",
+      "                    js::Item::Const(constant) if false && aliased(&constant.name) => constant.export = false,\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
   },
   {
@@ -252,7 +252,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a named function expression reading what's named as it is reads itself: `<Count>` in `Count` renders the unmemoized function",
     file: "src/lower/pipeline.rs",
-    find: "                        function.name = js::Name::declared(super::fresh_in(&mut read, function.name.word()));\n",
+    find: "                        function.name = function.name.spelled_later(def_id.index.as_usize());\n",
     replace: "",
     tests: [
       "test/jsx-children.test.ts",

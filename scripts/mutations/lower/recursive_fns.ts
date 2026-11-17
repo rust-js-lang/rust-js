@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     breaks: "an instance's value its drops left the function itself is written as an alias, `const keepLoud = keep`, and read as one (#974)",
     file: "src/lower/recursive_fns.rs",
     find: "        let aliases = self.take_aliases();\n",
-    replace: "        let aliases: IndexMap<String, Expr> = IndexMap::default();\n",
+    replace: "        let aliases: IndexMap<js::Name, Expr> = IndexMap::default();\n",
     tests: ["test/corpus.test.ts", "-t", "^function_value_drops_by_need.rs$"],
     snapshots: true,
   },
