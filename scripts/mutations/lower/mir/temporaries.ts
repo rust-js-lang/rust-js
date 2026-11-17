@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a static's component made before it's used is a `const` of a temporary's name, no tag",
     file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Var(name) => self.module_names.contains(name.word()) || self.alike_local(name),\n",
+    find: "            js::ExprKind::Var(name) => self.module_name(name) || self.alike_local(name),\n",
     replace: "            js::ExprKind::Var(name) => self.alike_local(name),\n",
     tests: [
       "test/jsx-children.test.ts",
@@ -175,8 +175,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable nothing changes, a tag, made before it's used is a `const` of a temporary's name, no tag",
     file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Var(name) => self.module_names.contains(name.word()) || self.alike_local(name),\n",
-    replace: "            js::ExprKind::Var(name) => self.module_names.contains(name.word()),\n",
+    find: "            js::ExprKind::Var(name) => self.module_name(name) || self.alike_local(name),\n",
+    replace: "            js::ExprKind::Var(name) => self.module_name(name),\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -542,7 +542,7 @@ export const mutations: Mutation[] = [
     name: "guard-settle-any-reference",
     breaks: "a guard's drop that writes nothing settles every read through any reference, set past where another branch reads it, `root ${parent.tag}` of an unset `parent` (#452)",
     file: "src/lower/mir/temporaries.rs",
-    find: "        self.settle(state, &[block], Some(guard.word()), out);\n    }\n",
+    find: "        self.settle(state, &[block], Some(&guard), out);\n    }\n",
     replace: "        self.settle(state, &[block], None, out);\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "returns_joined_past_blocks"],
   },
@@ -621,7 +621,7 @@ export const mutations: Mutation[] = [
     name: "pair-place-holder-unnamed",
     breaks: "what a pair's place is reached through, a reassigned `x` of `x.value`, isn't named where the pair's made, so the pair reads what `x` is later (#968)",
     file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name.word()) => {\n",
+    find: "            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_name(name) => {\n",
     replace: "            js::ExprKind::Var(name) if false && !self.alike_local(name) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },

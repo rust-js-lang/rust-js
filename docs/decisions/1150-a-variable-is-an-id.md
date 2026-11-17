@@ -1384,3 +1384,16 @@ locals.rs`), each with a mutation that breaks it; the corpus took 78 s
 with them and 77 s without, within its noise. The mentions of the
 variable above are as they were.
 
+Slice 7's first part (2026-11-18), MIR's lowering: a place's variables
+each given once, a writer's sink, a spilled iterator's one read, a `let`
+of a guard's references, the drops a body's hoisted functions read, and
+what a handle a variable holds is on (`Made::handles`), each asked of the
+variable by its id (`substitute_names`, `visit_names`, `==`); a name of
+no word by `is_unnamed`, `$strPart` by `Name::helper`. Each old and new
+answer probed over the corpus, the tests and React's port, none
+differing. Read by word, marked: a module's items (`module_name`, till
+#2035 gives each one `Name`), the label census, whose report is spelling,
+and a captured variable moved into a closure, its own `let` of its name
+again (till `js::name` has that method). Byte-identical. `mir::scopes`'
+fields follow as their own step.
+

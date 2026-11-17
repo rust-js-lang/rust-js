@@ -199,7 +199,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(ty::Ref(_, _, ty::Mutability::Mut))
                     ) && matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
                             .any(|(local, n)| name == n && !state.body.local_decls[local].ty.is_ref())
-                            || self.is_writers_sink(state, name.word())) =>
+                            || self.is_writers_sink(state, name)) =>
                 {
                     (e, true)
                 }
@@ -224,8 +224,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flush(state, out)?;
                     // The program's variable, moved in, of one the program named.
                     let name = self.fresh(match &e.kind {
-                        js::ExprKind::Var(name) if name.is_the_programs() => Base::Program(name.word(), name.source()),
-                        js::ExprKind::Var(name) => Base::Named(name.word()),
+                        js::ExprKind::Var(name) if name.is_the_programs() => Base::Program(name.word(), name.source()), // word: the program's variable, moved in, its name again
+                        js::ExprKind::Var(name) => Base::Named(name.word()), // word: the variable moved in, its name again
                         _ => Base::Role(Role::Captured),
                     });
                     out.push(StmtKind::Let(name.clone(), Some(e)).at(self.js_span(span)));

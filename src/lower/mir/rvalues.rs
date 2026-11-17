@@ -39,7 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let handle = self.spill(Role::Place, handle, out);
         if let (js::ExprKind::Var(name), Some(on)) = (&handle.kind, on) {
-            self.locals.mir.made.handles.insert(name.to_string(), on);
+            self.locals.mir.made.handles.insert(name.clone(), on);
         }
         Expr::held(handle)
     }
@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn unhandled(&self, place: &Expr) -> Option<Expr> {
         match &place.kind {
             js::ExprKind::Member(of, key) if key == js::HELD => match &of.kind {
-                js::ExprKind::Var(name) => self.locals.mir.made.handles.get(name.word()).cloned(),
+                js::ExprKind::Var(name) => self.locals.mir.made.handles.get(name).cloned(),
                 _ => None,
             },
             _ => None,
@@ -220,7 +220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // A place holds no closure, so `substitute` renames
                             // it; else it's refused (#1525).
                             target
-                                .substitute(&|v| name.is(v).then(|| held.clone()))
+                                .substitute_names(&|v| (*v == name).then(|| held.clone()))
                                 .ok_or_else(|| {
                                     self.unsupported(span, "a place a closure reads, which can't be renamed")
                                 })?
@@ -292,7 +292,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // A place holds no closure, so `substitute` renames it;
                         // else it's refused, never left reading the variable
                         // the snapshot stands for (#1525).
-                        target = (target.substitute(&|v| name.is(v).then(|| held.clone())))
+                        target = target
+                            .substitute_names(&|v| (*v == name).then(|| held.clone()))
                             .ok_or_else(|| self.unsupported(span, "a place a closure reads, which can't be renamed"))?;
                     }
                     if within {

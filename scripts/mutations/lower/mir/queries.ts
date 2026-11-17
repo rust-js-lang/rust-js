@@ -324,9 +324,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a place at a `const` index isn't settled, so its value is made in a `const value` first, no compound (ADR 0894, amended)",
     file: "src/lower/mir/queries.rs",
-    find: "                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name.word())))\n",
+    find: "                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))\n",
     replace:
-      "                && (index.is_constant() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name.word())))\n",
+      "                && (index.is_constant() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))\n",
     tests: [
       "test/lowering-bits.test.ts",
       "-t",

@@ -809,16 +809,16 @@ fn given_once(state: &State<'_, '_>, local: Local) -> bool {
 /// `lanes[index]` of a parameter `index` and a `const lanes`, which
 /// nothing evaluated meanwhile can make another place.
 pub(super) fn settled_place(state: &State<'_, '_>, place: &Expr) -> bool {
-    let settled = |name: &str| {
-        let named = || (state.locals.names.iter_enumerated()).filter(|&(_, n)| n.is(name));
+    let settled = |name: &js::Name| {
+        let named = || (state.locals.names.iter_enumerated()).filter(|&(_, n)| n == name);
         named().next().is_some() && named().all(|(local, _)| given_once(state, local))
     };
     match &place.kind {
-        js::ExprKind::Var(name) => settled(name.word()),
+        js::ExprKind::Var(name) => settled(name),
         js::ExprKind::Member(object, _) => settled_place(state, object),
         js::ExprKind::Index(object, index) => {
             settled_place(state, object)
-                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name.word())))
+                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))
         }
         _ => false,
     }
@@ -992,7 +992,7 @@ pub(super) fn str_part_of(place: &Expr) -> Option<(Expr, Vec<Expr>)> {
     let (js::ExprKind::Var(name), "value") = (&f.kind, field.as_str()) else {
         return None;
     };
-    let (js::ExprKind::Handle(whole, _), "$strPart") = (&args.first()?.kind, name.word()) else {
+    let (js::ExprKind::Handle(whole, _), Some("$strPart")) = (&args.first()?.kind, name.helper()) else {
         return None;
     };
     let bounds = args[1..].to_vec();

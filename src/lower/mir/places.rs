@@ -109,9 +109,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut value = if place.projection.is_empty() {
             let name = &state.locals.names[place.local];
-            match (state.in_place.get(&place.local), name.word()) {
+            match (state.in_place.get(&place.local), name.is_unnamed()) {
                 (Some(value), _) => value.clone(),
-                (None, "") => Expr::js_undefined(),
+                (None, true) => Expr::js_undefined(),
                 (None, _) => {
                     state.named.insert(place.local);
                     match state.facts.pointed().locals.contains(&place.local) {

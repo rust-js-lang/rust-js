@@ -30,7 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let stand_ins: Vec<js::Name> = (0..items.len())
             .map(|i| js::Name::declared(format!("_$argument{i}")))
             .collect();
-        let stand_in = |i: usize| stand_ins[i].word();
+
         let stood: Vec<Value<'tcx>> = (items.iter().enumerate())
             .map(|(i, item)| match item {
                 Value::Fmt(kind, ty, _) => Value::Fmt(*kind, *ty, Expr::var(&stand_ins[i])),
@@ -40,7 +40,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut formatted = false;
         for (part, _) in self.formatted_parts(&stood, template, &mut std::iter::empty(), span)? {
             let mut reads = false;
-            part.visit_vars(&mut |var| reads |= (0..items.len()).any(|i| effectful[i] && var == stand_in(i)));
+            part.visit_names(&mut |var| reads |= (0..items.len()).any(|i| effectful[i] && *var == stand_ins[i]));
             if reads && formatted {
                 return Ok(true);
             }

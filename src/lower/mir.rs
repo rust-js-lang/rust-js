@@ -1260,21 +1260,21 @@ fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
         StmtKind::Const(name, _) => Some(name.clone()),
         _ => None,
     };
-    let mut read: IndexSet<String> = IndexSet::default();
-    js::visit_stmts(body, &mut |v| _ = read.insert(v.to_string()));
+    let mut read: IndexSet<js::Name> = IndexSet::default();
+    js::visit_stmt_names(body, &mut |v| _ = read.insert(v.clone()));
     loop {
         let before = read.len();
         let called: Vec<&Stmt> = (hoisted.iter())
-            .filter(|def| name(def).is_some_and(|n| read.contains(n.word())))
+            .filter(|def| name(def).is_some_and(|n| read.contains(&n)))
             .collect();
         for def in called {
-            js::visit_stmts(std::slice::from_ref(def), &mut |v| _ = read.insert(v.to_string()));
+            js::visit_stmt_names(std::slice::from_ref(def), &mut |v| _ = read.insert(v.clone()));
         }
         if read.len() == before {
             break;
         }
     }
     (hoisted.into_iter())
-        .filter(|def| name(def).is_none_or(|n| read.contains(n.word())))
+        .filter(|def| name(def).is_none_or(|n| read.contains(&n)))
         .collect()
 }

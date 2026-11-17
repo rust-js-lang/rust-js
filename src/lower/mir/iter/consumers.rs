@@ -561,9 +561,9 @@ pub(super) fn unheld(held: Expr, result: Expr, made: &mut Vec<Stmt>) -> Expr {
     let Some(StmtKind::Const(spilled, value)) = made.last().map(|stmt| &stmt.kind) else {
         return result;
     };
-    fn first(e: &Expr, name: &str) -> bool {
+    fn first(e: &Expr, name: &js::Name) -> bool {
         match &e.kind {
-            js::ExprKind::Var(var) => var.is(name),
+            js::ExprKind::Var(var) => var == name,
             js::ExprKind::Call(callee, args) => {
                 !callee.has_effects() && args.first().is_some_and(|arg| first(arg, name))
             }
@@ -571,12 +571,12 @@ pub(super) fn unheld(held: Expr, result: Expr, made: &mut Vec<Stmt>) -> Expr {
         }
     }
     let mut reads = 0;
-    result.visit_vars(&mut |var| reads += usize::from(var == name.word()));
-    if spilled != name || reads != 1 || !first(&result, name.word()) {
+    result.visit_names(&mut |var| reads += usize::from(var == name));
+    if spilled != name || reads != 1 || !first(&result, name) {
         return result;
     }
     let value = value.clone();
-    let Some(put) = result.substitute(&|var| (var == name.word()).then(|| value.clone())) else {
+    let Some(put) = result.substitute_names(&|var| (var == name).then(|| value.clone())) else {
         return result;
     };
     made.pop();

@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// now, as `h.node = other` may follow (#988).
     fn reached_where_made(&mut self, e: Expr, out: &mut Vec<Stmt>) -> Expr {
         match &e.kind {
-            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name.word()) => {
+            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_name(name) => {
                 let name = name.clone();
                 self.spill(Base::Derived(&name), e, out)
             }
@@ -316,7 +316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) {
         let guard = state.locals.names[guard].clone();
-        self.settle(state, &[block], Some(guard.word()), out);
+        self.settle(state, &[block], Some(&guard), out);
     }
 
     /// As `block`'s switch branches, its test made, each value kept to be
@@ -353,17 +353,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each value kept to be read in place that reads through a shared
     /// reference, or `guard` alone where it's given, and is read past one of
     /// `drops`: assigned here.
-    fn settle(&mut self, state: &mut State<'_, 'tcx>, drops: &[BasicBlock], guard: Option<&str>, out: &mut Vec<Stmt>) {
+    fn settle(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        drops: &[BasicBlock],
+        guard: Option<&js::Name>,
+        out: &mut Vec<Stmt>,
+    ) {
         if drops.is_empty() {
             return;
         }
-        let references: IndexSet<&str> = match guard {
-            Some(guard) => IndexSet::from_iter([guard]),
+        let references: IndexSet<js::Name> = match guard {
+            Some(guard) => IndexSet::from_iter([guard.clone()]),
             None => (state.body.local_decls.iter_enumerated())
                 .filter(|(_, decl)| decl.ty.is_ref())
                 .map(|(local, _)| &state.locals.names[local])
                 .filter(|name| self.locals.mir.plain.contains(&js::Path::var(name)))
-                .map(js::Name::word)
+                .cloned()
                 .collect(),
         };
         let reads_reference = |e: &Expr| {
@@ -373,7 +379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return false;
             }
             let mut found = false;
-            e.visit_vars(&mut |name| found |= references.contains(name));
+            e.visit_names(&mut |name| found |= references.contains(name));
             found
         };
         let mut settled: Vec<Local> = state
@@ -580,8 +586,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(value));
         }
         let name = &state.locals.names[local];
-        match name.word() {
-            "" => Ok(Value::Expr(Expr::js_undefined())),
+        match name.is_unnamed() {
+            true => Ok(Value::Expr(Expr::js_undefined())),
             // A cell a pointer is taken to (ADR 0407): its `value`.
             _ if state.facts.pointed().locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),
             _ => Ok(Value::Expr(read_by_name(state, local, name))),
@@ -706,7 +712,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// nothing changes or a field of plain data in one, of type `ty`.
     pub(super) fn reads_same_anywhere(&self, e: &Expr, ty: Ty<'tcx>) -> bool {
         let alike = |e: &Expr| match &e.kind {
-            js::ExprKind::Var(name) => self.module_names.contains(name.word()) || self.alike_local(name),
+            js::ExprKind::Var(name) => self.module_name(name) || self.alike_local(name),
             js::ExprKind::Symbol(_) => true,
             // Of a plain variable, but not a read a getter may answer, which
             // may give another value each time (`Expr::reads_same`).
@@ -1060,5 +1066,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(place.projection.last(), Some(PlaceElem::Field(field, _))
             if state.facts.captured_field(place) == Some(*field)
                 && state.facts.captures()[field.as_usize()].1)
+    }
+}
+
+impl FnCx<'_, '_> {
+    /// Whether `name` is an item of the module's, which reads the same
+    /// anywhere: by its word, as a module's item's is its identity till each
+    /// has one `Name` (#2035).
+    fn module_name(&self, name: &js::Name) -> bool {
+        self.module_names.contains(name.word()) // word: a module's item's name, till #2035
     }
 }

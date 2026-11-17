@@ -539,9 +539,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<(Vec<Local>, js::Name)>> {
         let (aliases, name) = match (formatter, captures) {
             (Some((param, named)), _) => {
-                let name = match named.word() {
-                    "" => self.fresh(Role::F),
-                    _ => named.clone(),
+                let name = match named.is_unnamed() {
+                    true => self.fresh(Role::F),
+                    false => named.clone(),
                 };
                 (formatter_aliases(body, &[param], None), name)
             }
@@ -562,8 +562,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Is `name` the sink the writer being lowered writes its text
     /// through, which it lends as it is (#1637)?
-    pub(super) fn is_writers_sink(&self, state: &State<'_, 'tcx>, name: &str) -> bool {
-        self.writes_through_a_sink(state) && state.writer.as_ref().is_some_and(|(_, sink)| sink.is(name))
+    pub(super) fn is_writers_sink(&self, state: &State<'_, 'tcx>, name: &js::Name) -> bool {
+        self.writes_through_a_sink(state) && state.writer.as_ref().is_some_and(|(_, sink)| sink == name)
     }
 
     /// A writer's `Formatter`'s options, `options` its parameter of them,

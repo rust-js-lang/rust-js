@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "writer-sink-captured-as-a-copy",
     breaks: "a closure that writes its writer's sink, made in a closure that writes it too, takes the sink in a `const` of its own, `const f$1 = f` (#1637)",
     file: "src/lower/mir/closures.rs",
-    find: "                            || self.is_writers_sink(state, name.word())) =>\n",
+    find: "                            || self.is_writers_sink(state, name)) =>\n",
     replace: ") =>\n",
     tests: ["test/corpus.test.ts","-t","^closure_writes_captured_formatter.rs$"],
     snapshots: true,
