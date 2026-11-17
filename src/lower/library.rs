@@ -125,6 +125,16 @@ pub(super) fn reachable(tcx: TyCtxt<'_>, id: DefId) -> bool {
             .is_some_and(|local| tcx.effective_visibilities(()).is_reachable(local))
 }
 
+/// Whether another crate may use `id`, a local item, in ways this crate
+/// can't see: this crate is a library, `library`, whose consumers' code it
+/// doesn't compile, and `reachable` says one can reach it, a trait impl's
+/// method of a private type too, through a bound or a `dyn` (ADR 0100). The
+/// one answer each closed-world analysis asks of what escapes the crate
+/// (#2015); a JS caller's is the other boundary's, `js_facing`.
+pub(in crate::lower) fn escapes(tcx: TyCtxt<'_>, library: bool, id: DefId) -> bool {
+    library && reachable(tcx, id)
+}
+
 /// What each function's contract says, of what a consumer can't work out
 /// from its types: the drops it takes (ADR 0098), whether it may fail
 /// (ADR 0187), the drops it takes none of (ADR 0190), and what it asks of

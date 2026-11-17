@@ -139,7 +139,7 @@ pub(super) fn back_stepped<'tcx>(
         for body in all_bodies {
             let Some(local) = body.def_id.as_local() else { continue };
             if !matches!(tcx.def_kind(body.def_id), DefKind::Fn | DefKind::AssocFn)
-                || !tcx.effective_visibilities(()).is_reachable(local)
+                || !crate::lower::library::escapes(tcx, library, local.to_def_id())
             {
                 continue;
             }

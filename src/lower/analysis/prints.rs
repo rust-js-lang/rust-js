@@ -309,7 +309,7 @@ fn written_into_writers<'tcx>(
     // `fmtInto` (the impl's `written_into` marks, #1712). And each of its
     // types an `impl Trait` it gives out hides, through a private
     // function's too, which a consumer writes as that type (#1743).
-    let reachable = |id: rustc_span::def_id::LocalDefId| tcx.effective_visibilities(()).is_reachable(id);
+    let reachable = |id: rustc_span::def_id::LocalDefId| crate::lower::library::escapes(tcx, library, id.to_def_id());
     let hidden: IndexSet<DefId> = match library {
         true => (tcx.hir_crate_items(()).opaques())
             // Not a trait's declared method's, which hides nothing.
