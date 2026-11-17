@@ -138,8 +138,9 @@ fn shadow_of(
         Some(at) => (Some(at), declaring(&stmts[at]).into_iter().rev().find(|n| kin(n))?),
         None => (None, heads.iter().rev().find(|n| kin(n))?.clone()),
     };
-    // Both the program's own, which kin by the Rust identifier is already
-    // but for a closure's copy of a variable, which carries its source too.
+    // Both the program's own: a closure's copy of a variable carries its
+    // Rust identifier too, and made one with it, a clone of the closure and
+    // the closure would share one variable, `closure_cloned_in_a_holder`.
     if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(&binding) {
         return None;
     }

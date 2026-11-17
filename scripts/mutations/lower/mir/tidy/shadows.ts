@@ -5,6 +5,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "shadow-of-a-copy-made-one",
+    breaks:
+      "a closure's copy of a variable, of its Rust identifier, is made one with the variable, so a clone of the closure and the closure share it: `1 2` where native Rust prints `1 1`",
+    file: "src/lower/mir/tidy/shadows.rs",
+    find: "    if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(&binding) {\n",
+    replace: "    if captured.contains(&binding) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(closure_cloned_in_a_holder|copied_closure_bound).rs$"],
+  },
+  {
     name: "shadow-set-in-a-branch-that-does-more-apart",
     breaks:
       "a shadow set in an `if` branch that does more than give the binding stays apart, React's createWorkInProgress `const workInProgress = ..; let workInProgress$1;` (ADR 0650, amended)",
