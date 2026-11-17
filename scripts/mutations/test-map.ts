@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "(?:(?:unsafe|auto)\\s+)*(?:trait)\\b|macro_rules!",
     tests: ["test/test-map.test.ts", "-t", "a new module of items"],
   },
+  {
+    name: "selector-use-new-name-runs-all",
+    breaks: "a name no item declared, added to a `use`, selects everything, as 4ba38fa64's `ImportNames` in src/js.rs's `pub use` did",
+    file: "scripts/testMap.ts",
+    find: "      if (holding(file, from).length === 0 && newNamesUsed(file, from, count, added, removed)) continue;\n",
+    replace: "",
+    tests: ["test/test-map.test.ts", "-t", "a name no item declared"],
+  },
+  {
+    name: "selector-use-declared-name-skipped",
+    breaks: "a name an item already declared, added to a `use`, selects nothing, where it may shadow a glob's and change what code no change names reads",
+    file: "scripts/testMap.ts",
+    find: "    return fresh.length > 0 && fresh.every((word) => sources.naming(word).every(",
+    replace: "    return fresh.length > 0 && fresh.every((word) => [].every(",
+    tests: ["test/test-map.test.ts", "-t", "a name no item declared"],
+  },
 ];

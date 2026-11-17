@@ -138,11 +138,15 @@ export function sourcesAt(commit: string): Sources {
 /** A `const` or `static` item's declaration line, its name the second group. */
 const constItem = /^\s*(?:pub(?:\([^)]*\))?\s+)?(const|static)\s+(?:mut\s+)?([A-Z_][A-Z0-9_]*)\s*:/;
 
-/** Of `lines` (1-based), the `const` or `static` item whose lines, from its
- * declaration to its `;`, hold `from` to `to`: its name and its lines. */
-export function constHolding(lines: string[], from: number, to: number): { name: string; start: number; end: number } | undefined {
+/** A `use` item's first line. */
+const useItem = /^\s*(?:pub(?:\([^)]*\))?\s+)?use\s+()/;
+
+/** Of `lines` (1-based), the `const` or `static` item, or of `item` another
+ * kind's, whose lines, from its first to its `;`, hold `from` to `to`: its
+ * name and its lines. */
+export function constHolding(lines: string[], from: number, to: number, item = constItem): { name: string; start: number; end: number } | undefined {
   for (let start = Math.min(from, lines.length); start >= 1; start--) {
-    const m = constItem.exec(lines[start - 1]!);
+    const m = item.exec(lines[start - 1]!);
     if (!m) continue;
     let depth = 0;
     for (let end = start; end <= lines.length; end++) {
@@ -381,6 +385,22 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     }
     return readers;
   };
+  // Names added to a `use`, `imports::{Import, ImportNames}` for
+  // `imports::{Import}`, of what no item at the map's commit declared: a
+  // name that didn't exist shadows none a glob gave, so it changes nothing
+  // but the code changed to use it (4ba38fa64's src/js.rs:43).
+  const newNamesUsed = (file: string, from: number, count: number, added: string[], removed: string[] | undefined): boolean => {
+    if (removed === undefined || count === 0 || removed.length !== added.length) return false;
+    const text = sources.text(file);
+    if (text === undefined || constHolding(text.split("\n"), from, from + count - 1, useItem) === undefined) return false;
+    const words = (lines: string[]) => new Set(lines.join(" ").replace(/\/\/.*$/gm, "").match(/\b[A-Za-z_]\w*\b/g) ?? []);
+    const before = words(removed);
+    const after = words(added);
+    if ([...before].some((word) => !after.has(word))) return false;
+    const fresh = [...after].filter((word) => !before.has(word));
+    const declares = (word: string) => new RegExp(`\\b(?:struct|enum|union|trait|type|fn|const|static|mod|macro_rules!)\\s+${word}\\b`);
+    return fresh.length > 0 && fresh.every((word) => sources.naming(word).every((site) => !declares(word).test((sources.text(site.file) ?? "").split("\n")[site.line - 1] ?? "")));
+  };
   for (const { file, hunks } of changes) {
     const sites = map.includes[file];
     if (sites !== undefined && hunks !== "new") {
@@ -417,6 +437,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
           continue;
         }
       }
+      if (holding(file, from).length === 0 && newNamesUsed(file, from, count, added, removed)) continue;
       const readers = holding(file, from).length === 0 ? constValue(file, from, count, added, removed) : undefined;
       if (readers !== undefined) {
         for (const f of readers) touched.add(f);

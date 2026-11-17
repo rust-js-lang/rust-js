@@ -156,6 +156,25 @@ test("a new module of items nothing refers to selects nothing but what its users
   expect(pick(map, [{ file: "src/not-there.rs", hunks: "new" }], files, cases).kind).toBe("all");
 });
 
+test("a name no item declared, added to a `use`, changes nothing but the code changed to use it (4ba38fa64's src/js.rs:43)", () => {
+  const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  text[21] = "pub use self::{";
+  text[22] = "    imports::{Import, Package},";
+  text[23] = "    walk::*,";
+  text[24] = "};";
+  const sources = (declared: boolean): Sources => ({
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : file === "src/b.rs" ? "pub struct ImportNames;" : undefined),
+    naming: (word) => (word === "ImportNames" && declared ? [{ file: "src/b.rs", line: 1 }] : []),
+  });
+  const added: Change = { file: "src/a.rs", hunks: [[23, 1, ["    imports::{Import, ImportNames, Package},"], ["    imports::{Import, Package},"]]] };
+  expect(pick(map, [added], files, cases, sources(false))).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"], cases: [] });
+  // A name some item declared at the map's commit may shadow a glob's: everything.
+  expect(pick(map, [added], files, cases, sources(true)).kind).toBe("all");
+  // A name taken out of a `use`: everything.
+  const taken: Change = { file: "src/a.rs", hunks: [[23, 1, ["    imports::{Import},"], ["    imports::{Import, Package},"]]] };
+  expect(pick(map, [taken], files, cases, sources(false)).kind).toBe("all");
+});
+
 test("a file read by `include_str!` is the line that reads it", () => {
   expect(pick(map, [{ file: "src/runtime/helper.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"], forms: [] });
   const outside = { ...map, includes: { "src/runtime/helper.js": [{ file: "src/runtime.rs", line: 12 }] } };

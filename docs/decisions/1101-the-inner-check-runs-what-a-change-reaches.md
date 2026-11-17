@@ -667,3 +667,18 @@ files to 5. Each interaction is still 291 to 362 files: both sides change
 functions every test reaches (`lower_crate`, src/output.rs's), which the
 hubs' region coverage is to narrow.
 
+### Amended: a name no item declared, added to a `use`, is no change of its own (2026-11-17)
+
+4ba38fa64 selected everything for src/js.rs:43, `imports::{Import,
+ImportFrom, Package, Reexport}` given `ImportNames`, a type the same change
+declared. A `use` stays everything where it may shadow a glob's name, which
+only a name some item declares can: so a hunk within a `use` item that
+only adds names (`newNamesUsed`), none of which any item declared at the
+map's commit (`git grep -w`), changes nothing but the code changed to use
+them. A name taken out, or one an item declared, is everything still.
+
+4ba38fa64 from the map at afebe11b2, after: the next hunk selects
+everything, `pub import_names: ImportNames` added to `Module`, which
+derives `PartialEq`: a new field changes what equality compares wherever
+it's asked, so a field's addition stays everything.
+
