@@ -182,7 +182,7 @@ export function createUndoStack(initial, options) {
       if (history.index === 0) {
         return;
       }
-      history.index = (history.index - 1) >>> 0;
+      history.index--;
       return $rcClone($index(history.entries, history.index));
     },
     () => {

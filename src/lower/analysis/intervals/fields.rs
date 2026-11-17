@@ -5,6 +5,8 @@
 //! keeps its length (`called_on`).
 
 use super::*;
+use crate::lower::body_queries::made_once;
+use crate::lower::recognition::deref_call;
 
 /// `body` with each field of a struct a reference parameter points to, a
 /// local of its own: `(*self).at`, `at`. Of a parameter only ever read
@@ -107,6 +109,166 @@ pub(super) fn fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Op
     Rewrite {
         tcx,
         field: &field,
+        locals: &locals,
+    }
+    .visit_body(&mut rewritten);
+    Some(rewritten)
+}
+
+/// `body` with each field of a struct a `RefCell` guard lends, a local of
+/// its own (#1815): `h.index` of `let mut h = history.borrow_mut()`, read
+/// through each `Deref` and `DerefMut` of the guard, which give the same
+/// struct while the guard lives. Nothing else reaches it then, as another
+/// borrow of a `RefMut`'s cell panics and nothing writes a `Ref`'s, so
+/// what's known of a field holds till the guard's dropped. Its local is
+/// known of nothing where the guard's made, as no path before it writes
+/// it: a guard made each turn of a loop knows nothing of the last turn's.
+/// Of a guard made at one place, by `borrow()` or `borrow_mut()`, of a
+/// struct; never one lent past its own `Deref`s, `step(&mut guard)`. A
+/// field that holds a cell, which another `Ref` may change, is a local
+/// that holds one: the walk knows nothing of what a cell holds but a
+/// length, which `cells` forgets at a call or a `borrow_mut()` as it does
+/// any cell's. None where no guard is so.
+pub(super) fn guard_fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Option<Body<'tcx>> {
+    use rustc_middle::mir::visit::{MutVisitor, PlaceContext, Visitor};
+    // Each guard.
+    let mut guards: IndexSet<Local> = IndexSet::default();
+    for data in body.basic_blocks.iter() {
+        if let TerminatorKind::Call { func, destination, .. } = &data.terminator().kind
+            && destination.projection.is_empty()
+            && let Some((callee, _)) = func.const_fn_def()
+            && refcell_borrow(tcx, callee).is_some()
+            && let ty::Adt(_, args) = body.local_decls[destination.local].ty.kind()
+            && (args.types().next()).is_some_and(|held| matches!(held.kind(), ty::Adt(adt, _) if adt.is_struct()))
+        {
+            guards.insert(destination.local);
+        }
+    }
+    // Each made at one place alone, so each is one guard's, or one
+    // reference's or pointer's of one guard: what one borrow knows of its
+    // fields isn't the next's, `h = other.borrow_mut()`.
+    let made = made_once(body);
+    let once = |local: &Local| made.contains(local);
+    guards.retain(|guard| once(guard));
+    if guards.is_empty() {
+        return None;
+    }
+    // Each reference to a guard, `&g` or `&mut g`, and each `Deref` of
+    // one, its pointer to the struct, by the guard and where it's made.
+    let mut lent: IndexMap<Local, (Local, Location)> = IndexMap::default();
+    let mut pointers: IndexMap<Local, (Local, Location)> = IndexMap::default();
+    for (block, data) in body.basic_blocks.iter_enumerated() {
+        for (statement_index, statement) in data.statements.iter().enumerate() {
+            if let StatementKind::Assign(assign) = &statement.kind
+                && let Rvalue::Ref(_, _, of) = &assign.1
+                && of.projection.is_empty()
+                && guards.contains(&of.local)
+                && assign.0.projection.is_empty()
+                && once(&assign.0.local)
+            {
+                lent.insert(assign.0.local, (of.local, Location { block, statement_index }));
+            }
+        }
+    }
+    for (block, data) in body.basic_blocks.iter_enumerated() {
+        if let TerminatorKind::Call {
+            func,
+            args,
+            destination,
+            ..
+        } = &data.terminator().kind
+            && let Some((callee, _)) = func.const_fn_def()
+            && deref_call(tcx, callee)
+            && let [arg] = &args[..]
+            && let Some(place) = arg.node.place()
+            && place.projection.is_empty()
+            && let Some(&(guard, _)) = lent.get(&place.local)
+            && destination.projection.is_empty()
+            && once(&destination.local)
+        {
+            pointers.insert(destination.local, (guard, body.terminator_loc(block)));
+        }
+    }
+    // Each use of a reference to a guard and of a pointer it gives: none
+    // but its `Deref` and a field's, else the guard's struct may be
+    // reached otherwise, `step(&mut guard)`. A use of the guard itself is
+    // a move or a drop, past which borrowck lets none of its pointers be
+    // used.
+    struct Uses<'a, 'tcx> {
+        lent: &'a IndexMap<Local, (Local, Location)>,
+        pointers: &'a IndexMap<Local, (Local, Location)>,
+        whole: IndexSet<Local>,
+        fields: IndexMap<(Local, usize), Ty<'tcx>>,
+    }
+    impl<'tcx> Visitor<'tcx> for Uses<'_, 'tcx> {
+        fn visit_place(&mut self, place: &mir::Place<'tcx>, context: PlaceContext, location: Location) {
+            if matches!(context, PlaceContext::NonUse(_)) {
+                return;
+            }
+            if let Some(&(guard, at)) = self.lent.get(&place.local) {
+                let derefs = (self.pointers.values()).any(|&(of, from)| of == guard && from == location);
+                if at != location && !derefs {
+                    self.whole.insert(guard);
+                }
+            } else if let Some(&(guard, at)) = self.pointers.get(&place.local) {
+                if at == location && place.projection.is_empty() {
+                    return;
+                }
+                match place.projection.as_slice() {
+                    [mir::PlaceElem::Deref, mir::PlaceElem::Field(k, ty), ..] => {
+                        self.fields.insert((guard, k.index()), *ty);
+                    }
+                    _ => {
+                        self.whole.insert(guard);
+                    }
+                }
+            }
+        }
+    }
+    let mut uses = Uses {
+        lent: &lent,
+        pointers: &pointers,
+        whole: IndexSet::default(),
+        fields: IndexMap::default(),
+    };
+    uses.visit_body(body);
+    let Uses { whole, mut fields, .. } = uses;
+    fields.retain(|(guard, _), _| !whole.contains(guard));
+    if fields.is_empty() {
+        return None;
+    }
+    let mut rewritten = body.clone();
+    let locals: IndexMap<(Local, usize), Local> = (fields.iter())
+        .map(|(&at, &ty)| (at, rewritten.local_decls.push(mir::LocalDecl::new(ty, body.span))))
+        .collect();
+    struct Rewrite<'a, 'tcx> {
+        tcx: TyCtxt<'tcx>,
+        pointers: &'a IndexMap<Local, (Local, Location)>,
+        locals: &'a IndexMap<(Local, usize), Local>,
+    }
+    impl<'tcx> MutVisitor<'tcx> for Rewrite<'_, 'tcx> {
+        fn tcx(&self) -> TyCtxt<'tcx> {
+            self.tcx
+        }
+        fn visit_place(&mut self, place: &mut mir::Place<'tcx>, _: PlaceContext, _: Location) {
+            let Some(&(guard, _)) = self.pointers.get(&place.local) else {
+                return;
+            };
+            let [mir::PlaceElem::Deref, mir::PlaceElem::Field(k, _), ..] = place.projection.as_slice() else {
+                return;
+            };
+            let Some(&local) = self.locals.get(&(guard, k.index())) else {
+                return;
+            };
+            *place = mir::Place {
+                local,
+                projection: self.tcx.mk_place_elems(&place.projection[2..]),
+            };
+        }
+    }
+    Rewrite {
+        tcx,
+        pointers: &pointers,
         locals: &locals,
     }
     .visit_body(&mut rewritten);

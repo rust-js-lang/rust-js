@@ -1,9 +1,11 @@
 // Mutations of src/lower/analysis/intervals/fields.rs, a struct's fields a
-// reference parameter is read through as locals (ADR 1137, #1672 M3, step 5).
+// reference parameter is read through, or a `RefCell` guard lends, as
+// locals (ADR 1137, #1672 M3, step 5, #1815).
 import type { Mutation } from "../../../../mutations";
 
 const file = "src/lower/analysis/intervals/fields.rs";
 const tests = ["test/intervals-shadow.test.ts", "-t", "a struct's fields read through"];
+const guardTests = ["test/corpus.test.ts", "-t", "refcell_guard_fields"];
 
 export const mutations: Mutation[] = [
   {
@@ -46,4 +48,38 @@ export const mutations: Mutation[] = [
     replace: "            if false && place.projection.is_empty() && context.is_mutating_use() {\n",
     tests: ["test/bounds-matrix.test.ts", "-t", "slice_field, tested below"],
   },
+  {
+    name: "guard-fields-not-locals",
+    breaks: "a `RefCell` guard's fields aren't locals, so the undo stack's `history.index -= 1` under `history.index != 0` keeps its wrap, `(history.index - 1) >>> 0`, not `history.index--` (#1815)",
+    file,
+    find: "    if guards.is_empty() {\n",
+    replace: "    if true || guards.is_empty() {\n",
+    tests: guardTests,
+    snapshots: true,
+  },
+  {
+    name: "guard-fields-of-a-guard-made-twice",
+    breaks: "a guard's local made another cell's guard, `history = second.borrow_mut()`, keeps what the first borrow knew of its fields, so `history.index -= 1` past it gives -1 where Rust wraps to 4294967295 (#1815)",
+    file,
+    find: "    guards.retain(|guard| once(guard));\n",
+    replace: "    guards.retain(|_| true);\n",
+    tests: guardTests,
+  },
+  {
+    name: "guard-fields-of-a-guard-lent-whole",
+    breaks: "a guard lent whole to a function, `step(&mut history)`, which sets its index, keeps its fields locals, so `history.index -= 1` past it gives -1 where Rust wraps to 4294967295 (#1815)",
+    file,
+    find: "                if at != location && !derefs {\n",
+    replace: "                if false && at != location && !derefs {\n",
+    tests: guardTests,
+  },
+  {
+    name: "guard-fields-of-a-pointer-lent-whole",
+    breaks: "a guard's `DerefMut` given whole to a method, `history.rewind()`, which sets its index, keeps its fields locals, so `history.index -= 1` past it gives -1 where Rust wraps to 4294967295 (#1815)",
+    file,
+    find: "                    _ => {\n                        self.whole.insert(guard);\n                    }\n",
+    replace: "                    _ => {}\n",
+    tests: guardTests,
+  },
+
 ];

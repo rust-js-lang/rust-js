@@ -1132,3 +1132,52 @@ React's port: 117 `$index` to 114, the three Flight loaders'
 called, given `&mut` itself, kept by the crate's `Keeper::keep`, and kept
 by generic code's `K::keep`, against native; each kept one panics as Rust's
 does, where its unkept form would read `undefined`.
+
+## Amendment: a guard's fields as locals (2026-11-18, #1815)
+
+The undo stack's `undo` read `history.index = (history.index - 1) >>> 0`
+under `if (history.index === 0) return;`: its history is an
+`Rc<RefCell<History>>` the stack's closures capture, so each field is read
+through a `borrow_mut()` guard's `Deref` or `DerefMut`, a new pointer each
+time, and the walk knew a struct's fields only through a reference
+parameter (`fields_as_locals`).
+
+`guard_fields_as_locals` makes each field a guard lends a local of its
+own, before the walk, as `fields_as_locals` does a parameter's. Every
+`Deref` and `DerefMut` of a guard gives the same struct while it lives,
+and nothing else reaches it: another borrow of a `RefMut`'s cell panics,
+and nothing writes a `Ref`'s. The local is unknown where the guard's made,
+as no path before it writes it, so a guard made each turn of a loop knows
+nothing of the last turn's, which a call between the turns may have
+changed. Not of:
+- a guard whose local is made at more than one place, `history =
+  second.borrow_mut()`, which is another borrow's past it;
+- a guard a reference to which is used past its own `Deref`s,
+  `step(&mut history)`, or a pointer of which is used past its fields,
+  `history.rewind()`.
+
+A use of the guard itself is a move or a drop, and borrowck ends its
+pointers' uses before either, so it isn't counted. A guard `RefMut::map`
+consumes isn't a struct's guard, and keeps its checks. A field that holds
+a cell, `count: Cell<u32>`, which another `Ref` of the struct may set, is
+a local that holds one: the walk knows nothing of what a cell holds but a
+length, which `cells` forgets at any call or `borrow_mut()` as it does
+any cell's, so no field is left out for its cell (a `Freeze` condition
+was measured to decide nothing, its mutation surviving).
+
+Three corpus cases move, each a proof: two undo stacks' `undo`, now
+`history.index--`, and `rc_field_of_a_parameter_beside_an_untagged_rc`'s
+`entries.remove(0)` right past `entries.push(state)`, in bounds as the
+push leaves at least one, now `history.entries.shift()`. React's port
+doesn't move.
+
+The undo stack's `undo` is `history.index--`; its other checks would
+need the struct's invariant, `index < entries.len()`, across its closures
+(#1815's second step). That invariant doesn't hold: `map` gives its
+borrow back before calling `update`, which may use the stack, and a
+`record` there pushes an entry that `map`'s write of the shorter list
+then leaves `index` past, so `redo` panics `index out of bounds: the len
+is 1 but the index is 2`, and its checks stay (corpus case
+`undo_stack_map_reentered`, as #1815's port writes it). Corpus case
+`refcell_guard_fields` holds each case above against native, each kept
+check wrapping as Rust does where its unkept form would give -1.

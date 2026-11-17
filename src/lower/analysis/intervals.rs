@@ -193,6 +193,11 @@ fn walk<'a, 'tcx>(
         Some(rewritten) => std::borrow::Cow::Owned(rewritten),
         None => body,
     };
+    // And a struct's fields a `RefCell` guard lends, while it lives (#1815).
+    let body = match fields::guard_fields_as_locals(tcx, &body) {
+        Some(rewritten) => std::borrow::Cow::Owned(rewritten),
+        None => body,
+    };
     let called_on::CalledOn {
         holders: called_on,
         closures: called_on_code,

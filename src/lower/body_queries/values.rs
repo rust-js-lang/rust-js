@@ -8,7 +8,7 @@
 //! wrapper's field; a body's THIR asks `changes`, which reaches a variable
 //! through any deref.
 
-use crate::collections::IndexMap;
+use crate::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{self, Local, Place, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty::{Ty, TyCtxt};
 
@@ -48,7 +48,8 @@ pub(in crate::lower) fn indirect<'tcx>(tcx: TyCtxt<'tcx>, decls: &mir::LocalDecl
 /// Each local a statement assigns, and what it's assigned where that's
 /// once: `None` of one assigned again, or written through its box, `*b =
 /// v`, which assigns it as `b = v` does. Not a call's result, a
-/// terminator's.
+/// terminator's: this asks what value a statement builds a local of;
+/// whether one write alone, a call's too, makes a local is `made_once`'s.
 pub(in crate::lower) fn assigned_once<'b, 'tcx>(
     body: &'b mir::Body<'tcx>,
 ) -> IndexMap<Local, Option<&'b Rvalue<'tcx>>> {
@@ -64,4 +65,47 @@ pub(in crate::lower) fn assigned_once<'b, 'tcx>(
         assigned.insert(local, once.then_some(&assign.1));
     }
     assigned
+}
+
+/// Each local one write alone makes: `assigned_once`'s, where no
+/// terminator's result is it too, or one terminator's, a call's, where no
+/// statement assigns it; through its box as `assigned_once` counts. Where
+/// `assigned_once` asks what a statement builds a local of, this asks
+/// whether it holds one value all its life, a `RefCell`'s guard a
+/// `borrow_mut()` gives, never another's past it (#1815).
+pub(in crate::lower) fn made_once(body: &mir::Body<'_>) -> IndexSet<Local> {
+    use rustc_middle::mir::visit::{MutatingUseContext, PlaceContext, Visitor};
+    struct Results<'a, 'tcx> {
+        decls: &'a mir::LocalDecls<'tcx>,
+        counts: IndexMap<Local, usize>,
+    }
+    impl<'tcx> Visitor<'tcx> for Results<'_, 'tcx> {
+        fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: mir::Location) {
+            let result = matches!(
+                context,
+                PlaceContext::MutatingUse(
+                    MutatingUseContext::Call | MutatingUseContext::Yield | MutatingUseContext::AsmOutput
+                )
+            );
+            if result && let Some(local) = value_local(self.decls, place) {
+                *self.counts.entry(local).or_default() += 1;
+            }
+        }
+    }
+    let mut results = Results {
+        decls: &body.local_decls,
+        counts: IndexMap::default(),
+    };
+    for (block, data) in body.basic_blocks.iter_enumerated() {
+        results.visit_terminator(data.terminator(), body.terminator_loc(block));
+    }
+    let assigned = assigned_once(body);
+    (body.local_decls.indices())
+        .filter(|local| {
+            matches!(
+                (assigned.get(local), results.counts.get(local)),
+                (Some(Some(_)), None) | (None, Some(1))
+            )
+        })
+        .collect()
 }

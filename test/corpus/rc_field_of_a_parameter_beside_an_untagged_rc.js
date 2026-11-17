@@ -7,7 +7,6 @@ import {
   $index,
   $rcClone,
   $rcDrop,
-  $removeOutOfBounds,
   $truncate,
   $unwrap,
 } from "@rust-js/std";
@@ -69,11 +68,7 @@ export function stack(initial, settings) {
       }
       history.entries.push(state);
       if (history.entries.length > limit + 1) {
-        const result = history.entries;
-        if (0 >= result.length) {
-          $removeOutOfBounds(result, 0);
-        }
-        $rcDrop(result.splice(0, 1)[0]);
+        $rcDrop(history.entries.shift());
       }
       history.index = (history.entries.length - 1) >>> 0;
     },
@@ -99,7 +94,7 @@ export function stack(initial, settings) {
       if (history$1.index === 0) {
         return;
       }
-      history$1.index = (history$1.index - 1) >>> 0;
+      history$1.index--;
       return $rcClone($index(history$1.entries, history$1.index));
     },
     () => {

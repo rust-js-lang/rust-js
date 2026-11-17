@@ -22,7 +22,7 @@ function stepper(history) {
       if (history$1.index === 0) {
         return;
       }
-      history$1.index = (history$1.index - 1) >>> 0;
+      history$1.index--;
       return $rcClone($index(history$1.entries, history$1.index));
     },
     () => {
