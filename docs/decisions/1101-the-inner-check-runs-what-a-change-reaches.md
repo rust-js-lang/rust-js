@@ -682,3 +682,33 @@ everything, `pub import_names: ImportNames` added to `Module`, which
 derives `PartialEq`: a new field changes what equality compares wherever
 it's asked, so a field's addition stays everything.
 
+### Amended: the hubs' regions are recorded beside the map (2026-11-17)
+
+A function most tests reach selects them all wherever a hunk lies in it:
+`lower_crate` and src/output.rs's functions made the interaction sanity's
+three examples (2905d5cdc, d0ce7d1ab, 336483fa0) 291 to 362 files. Of map
+2905d5cdc's 22,775 functions, 5,026 are reached by 90% or more of its 5,563
+tests, 3,544 by 99%. Their code regions, of llvm-cov's export, number
+78,912; one export of every function's regions of one compile takes 0.10 s
+here, about 0.4 s a test with the parse, some 37 CPU-minutes a recording.
+
+The recording keeps, beside the map, of each function `hubShare` (0.9) of
+the tests reach, each code region whose run neither nearly every test nor
+nearly none shares (`varyingShare`, 1% to 99%), and each test's bits over
+those (`hubRegions`): its own file, `<map>.regions-v1`, of its own layout,
+so the map and its readers are as they were. The unit hook
+(testMapCompiler.ts) exports each compile's regions of the functions it
+ran; the merge says how many regions it kept and both files' sizes,
+gzipped too. Kept and pruned with its map (`pruneMaps`), within the map
+store's cap (scripts/disk.ts).
+
+The selector reads none of it until one CI recording says the kept regions'
+count and size and the three examples' would-be selections. Its rules
+then: a hunk maps to the hub's kept regions whose lines it lies inside, read
+through the rebase's line mapping as the function rule's are; a hunk in no
+kept region, a new statement, a signature, a match arm's pattern, or one
+in a file changed since the map with no mapping, is its whole function's.
+
+Proof: test/test-map.test.ts's "a recording keeps, of each hub"; mutations
+`hub-regions-keep-every-region` and `hub-regions-every-function`.
+

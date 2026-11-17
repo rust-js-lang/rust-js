@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: "    return fresh.length > 0 && fresh.every((word) => [].every(",
     tests: ["test/test-map.test.ts", "-t", "a name no item declared"],
   },
+  {
+    name: "hub-regions-keep-every-region",
+    breaks: "a recording keeps every region of the hubs, those every test runs too, which narrow nothing and multiply the map's size (ADR 1101, amended)",
+    file: "scripts/testMap.ts",
+    find: "      if (n > varyingShare * total && n < (1 - varyingShare) * total) kept.push(",
+    replace: "      if (n >= 0) kept.push(",
+    tests: ["test/test-map.test.ts", "-t", "a recording keeps, of each hub"],
+  },
+  {
+    name: "hub-regions-every-function",
+    breaks: "a recording keeps the regions of functions few tests reach, which their function's bit already narrows (ADR 1101, amended)",
+    file: "scripts/testMap.ts",
+    find: "  const hubs = [...reaching.keys()].filter((f) => total > 0 && reaching[f]! >= hubShare * total);\n",
+    replace: "  const hubs = [...reaching.keys()];\n",
+    tests: ["test/test-map.test.ts", "-t", "a recording keeps, of each hub"],
+  },
 ];

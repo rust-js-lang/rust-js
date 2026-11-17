@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
+import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, hubRegions, unreferencedModule, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -173,6 +173,25 @@ test("a name no item declared, added to a `use`, changes nothing but the code ch
   // A name taken out of a `use`: everything.
   const taken: Change = { file: "src/a.rs", hunks: [[23, 1, ["    imports::{Import},"], ["    imports::{Import, Package},"]]] };
   expect(pick(map, [taken], files, cases, sources(false)).kind).toBe("all");
+});
+
+test("a recording keeps, of each hub a share of the tests reach, the regions some of them run and some not, and each test's bits over those", () => {
+  // Function 0 every test runs, its region 0 by every test, its region 1 by
+  // half; function 1 by one test of the hundred: no hub.
+  const plan = { commit: "c0", names: ["f0", "f1"], regions: [[[1, 2], [3, 5]], [[10, 12]]] as [number, number][][] };
+  const units: Record<string, string | null> = {};
+  const regionBits = new Map<string, Uint8Array>();
+  for (let t = 0; t < 100; t++) {
+    const unit = `test/t${t}.test.ts`;
+    units[unit] = Buffer.from([t === 0 ? 0b11 : 0b01]).toString("base64");
+    regionBits.set(unit, new Uint8Array([0b001 | (t % 2 === 0 ? 0b010 : 0) | (t === 0 ? 0b100 : 0)]));
+  }
+  units["test/failed.test.ts"] = null;
+  const kept = hubRegions(plan, units, regionBits);
+  expect([kept.counted, kept.regions]).toEqual([{ hubs: 1, hubRegions: 2, kept: 1 }, [{ at: 0, lines: [3, 5] }]]);
+  // Each test's bit of the one kept, the even tests'; a failed test has none.
+  expect([kept.units["test/t0.test.ts"], kept.units["test/t1.test.ts"]]).toEqual([Buffer.from([1]).toString("base64"), Buffer.from([0]).toString("base64")]);
+  expect("test/failed.test.ts" in kept.units).toBe(false);
 });
 
 test("a file read by `include_str!` is the line that reads it", () => {
@@ -372,6 +391,7 @@ test("the merge of a recording's parts is the map of one part's recording", () =
     parts: shards * perShard,
     names,
     functions: names.map((_, i) => ({ file: "src/a.rs", spans: [[i * 10 + 1, i * 10 + 5]] })),
+    regions: names.map((_, i) => [[i * 10 + 1, i * 10 + 2], [i * 10 + 3, i * 10 + 5]]),
     files,
     caseNames,
     readsSources: ["test/reads.test.ts"],
