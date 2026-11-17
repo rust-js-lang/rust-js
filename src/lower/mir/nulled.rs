@@ -464,6 +464,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.proved_by(state, local, Self::present_edge, state.at) {
             return true;
         }
+        if self.ended_present(state, local) {
+            return true;
+        }
         let Some([Write::Assign(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _))]) =
             self.whole_writes(state, local).as_deref()
         else {
@@ -478,6 +481,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && state.locals.writes[local] == 1
             && local.as_usize() > state.body.arg_count
             && written.is_some_and(|at| self.proved_by(state, of.local, Self::present_edge, at))
+    }
+
+    /// Whether `local`, an `Option`, is written once, never lent, by a
+    /// slice's `first()` or `last()` of one MIR proves not empty there
+    /// (`present_proved`): `Some` wherever it's read, a read in place too,
+    /// `keys.at(-1)` (#1860).
+    pub(super) fn ended_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
+        matches!(self.whole_writes(state, local).as_deref(), Some([Write::Call(block, ..)])
+            if crate::lower::analysis::present_proved(self.tcx, state.body, *block))
     }
 
     /// Whether `local` is proved there by a test whose edge `edge` says,

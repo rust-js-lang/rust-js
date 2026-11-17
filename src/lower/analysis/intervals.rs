@@ -99,6 +99,9 @@ pub(in crate::lower) struct Proofs {
     /// against its receiver's length, each known in bounds there: a
     /// `Vec`'s `v[i]`, `swap`, `remove` (`call_indexes`, #1672 M3, step 5).
     pub(in crate::lower) call_bounds: IndexSet<BasicBlock>,
+    /// The blocks whose terminator is a slice's `first()` or `last()` of
+    /// one known not empty there, each `Some` (#1860).
+    pub(in crate::lower) present: IndexSet<BasicBlock>,
 }
 
 struct Walk<'a, 'tcx> {
@@ -330,6 +333,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             below,
             below_past: IndexSet::default(),
             least: IndexMap::default(),
+            splits: IndexSet::default(),
             empties: IndexMap::default(),
             ranges: IndexMap::default(),
             sums: IndexMap::default(),

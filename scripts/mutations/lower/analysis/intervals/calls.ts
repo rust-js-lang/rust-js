@@ -135,4 +135,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
     snapshots: true,
   },
+  {
+    name: "split-collected-least-unknown",
+    breaks: "a `split` collected into a `Vec` straight from its making isn't known not empty, so its `last().unwrap()` keeps `$unwrap` (#1860)",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: "            after.splits.insert(local);\n",
+    replace: "",
+    tests: ["test/lowering-collections.test.ts", "-t", "a split collected straight"],
+  },
 ];

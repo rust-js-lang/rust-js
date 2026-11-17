@@ -24,6 +24,22 @@ test("an entry's and_modify then or_insert reads its map and key", () => {
   expect(js).not.toContain("$mutGet(counts, c);");
 });
 
+// A `split` collected straight from its making is never empty, so its
+// `last()` and `first()` are `Some` with no check; one stepped first, or a
+// `split_terminator`'s, keeps it (#1860).
+test("a split collected straight from its making is never empty, its last() unchecked", () => {
+  const dir = fixture("split-collected");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(root, "test/corpus/split_collected_is_never_empty.rs"), "utf8").replace("fn main()", "pub fn main()"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const body = (name: string) => js.slice(js.indexOf(`function ${name}(`)).split("\n}\n")[0];
+  expect(body("lastKey")).toContain("return keys.at(-1);");
+  expect(body("firstWord")).toContain("return words[0];");
+  expect(body("steppedLast")).toContain("$unwrap(");
+  expect(body("terminatedLast")).toContain("$unwrap(");
+  expect(body("emptiedLast")).toContain("$unwrap(");
+});
+
 // An array's `map` by the identity in JS is the array: no `.map((s) => s)`,
 // and a copy only where a `Copy` array mapped may be told apart from its
 // result (#1882).

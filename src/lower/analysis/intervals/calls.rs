@@ -3,6 +3,7 @@
 //! what else the walk knows a call's value to be, by recognition.
 
 use super::*;
+use crate::lower::recognition::{collects_into_vec, makes_a_split};
 use rustc_span::Spanned;
 
 impl<'tcx> Walk<'_, 'tcx> {
@@ -56,6 +57,25 @@ impl<'tcx> Walk<'_, 'tcx> {
                 }
                 _ => {}
             }
+        }
+        // A `str::split` or `rsplit` made: until it's stepped, a `&mut` of
+        // it lent, which forgets it, what it gives is never empty, a text
+        // without its separator, `""` too, given whole. Its `collect()` into
+        // a `Vec`, given it straight, holds one item at least (#1860). Not a
+        // `split_terminator`'s, a `split_inclusive`'s or a `splitn`'s, which
+        // may give none.
+        if let Some((callee, _)) = func.const_fn_def()
+            && makes_a_split(self.tcx, callee)
+        {
+            after.splits.insert(local);
+        }
+        if let Some((callee, _)) = func.const_fn_def()
+            && collects_into_vec(self.tcx, callee, self.body.local_decls[local].ty)
+            && let Some(Operand::Move(split)) = args.first().map(|arg| &arg.node)
+            && let Some(split) = split.as_local()
+            && state.splits.contains(&split)
+        {
+            after.least.insert(local, 1);
         }
         // A `Vec`'s `push`: what it's given a `&mut` of holds an item at
         // least (`pushes`); and its `len()`, of one that does, is at least

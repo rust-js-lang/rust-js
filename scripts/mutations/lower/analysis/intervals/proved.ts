@@ -102,4 +102,12 @@ export const mutations: Mutation[] = [
     replace: "                || false && (state.below.iter()).any(|&(x, y, first)| {\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges"],
   },
+  {
+    name: "slice-end-present-of-any",
+    breaks: "a slice's `last()` is proved `Some` though nothing knows the slice not empty, so an emptied `Vec`'s `last().unwrap()` gives `undefined` where native Rust panics (#1860)",
+    file: "src/lower/analysis/intervals/proved.rs",
+    find: "                && self.least_known(&state, slice) >= 1\n",
+    replace: "                && self.least_known(&state, slice) >= 0\n",
+    tests: ["test/corpus.test.ts", "-t", "^split_collected_is_never_empty.rs$"],
+  },
 ];

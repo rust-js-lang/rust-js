@@ -416,8 +416,8 @@ export const mutations: Mutation[] = [
     name: "field-read-never-proved",
     breaks: "a `RefCell` field read where a test of it proved it is `$unwrap(node.sibling)`, where `node.sibling` (#1933)",
     file: "src/lower/mir/operands.rs",
-    find: "                    && self.field_read_proved(state, place.local) =>\n",
-    replace: "                    && false =>\n",
+    find: "                    && (self.field_read_proved(state, place.local)\n",
+    replace: "                    && (false\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
   },
   {
@@ -427,5 +427,13 @@ export const mutations: Mutation[] = [
     find: "                    && self.proved_defined(state, place.local) =>\n",
     replace: "                    && false =>\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "proved defined"],
+  },
+  {
+    name: "ended-present-unmarked-in-place",
+    breaks: "a `last()` proved `Some`, read in place, `keys.at(-1)`, isn't marked proved, so its `unwrap()` keeps `$unwrap` (#1860)",
+    file: "src/lower/mir/operands.rs",
+    find: "                        || self.ended_present(state, place.local)) =>\n",
+    replace: "                        || false) =>\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "a split collected straight"],
   },
 ];

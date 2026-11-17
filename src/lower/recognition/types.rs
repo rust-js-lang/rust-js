@@ -912,8 +912,9 @@ pub(crate) fn is_err_variant(tcx: TyCtxt<'_>, variant: DefId) -> bool {
 
 /// What a function asks of a `Vec`'s or a slice's length, or does to it,
 /// as the MIR intervals read it (ADR 1137): its `len()`, its `is_empty()`,
-/// an index `v[i]` or `&mut v[i]` of a `Vec`, below it, and a `Vec`'s
-/// `push`, one more. What a call's indexes and a range's end ask of it,
+/// an index `v[i]` or `&mut v[i]` of a `Vec`, below it, a `Vec`'s
+/// `push`, one more, and a slice's `first()` or `last()`, `Some` where it
+/// isn't empty (#1860). What a call's indexes and a range's end ask of it,
 /// `swap(i, j)`, `remove(i)`, `&v[a..b]`, `drain(a..b)`, `call_indexes` and
 /// `range_index` answer (#1672).
 #[derive(Clone, Copy, PartialEq)]
@@ -922,6 +923,9 @@ pub(in crate::lower) enum SliceLength {
     IsEmpty,
     Index,
     Push,
+    /// A slice's `first()` or `last()`: `Some` wherever it isn't empty
+    /// (#1860).
+    End,
 }
 
 pub(in crate::lower) fn slice_length<'tcx>(
@@ -956,8 +960,23 @@ pub(in crate::lower) fn slice_length<'tcx>(
         "len" => Some(SliceLength::Len),
         "is_empty" => Some(SliceLength::IsEmpty),
         "push" if vec(owner) => Some(SliceLength::Push),
+        "first" | "last" if owner.is_slice() => Some(SliceLength::End),
         _ => None,
     }
+}
+
+/// Whether `def_id` is `str::split` or `rsplit`, whose iterator gives the
+/// whole text where its separator isn't there, `""` too: never nothing
+/// till it's stepped (#1860). Not `split_terminator`, `split_inclusive` nor
+/// `splitn`, which may give none.
+pub(in crate::lower) fn makes_a_split(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    is_std_path(tcx, def_id, StdPath::StrSplitFn) || is_std_path(tcx, def_id, StdPath::StrRSplitFn)
+}
+
+/// Whether `def_id` is `Iterator::collect` into `into`, a `Vec` (#1860).
+pub(in crate::lower) fn collects_into_vec<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, into: Ty<'tcx>) -> bool {
+    def_id == super::trait_method(tcx, super::std_item(tcx, StdItem::Iterator), "collect")
+        && matches!(into.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Vec, adt.did()))
 }
 
 /// What a function asks of a std map's key, a `HashMap`'s or a

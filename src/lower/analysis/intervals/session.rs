@@ -58,8 +58,9 @@ pub(in crate::lower) fn body_proofs<'tcx>(
 ) -> ProofsScope<'tcx> {
     let caches = crate::lower::session::caches(tcx);
     let given = (caches.intervals.borrow().given.get(&body.source.def_id()).cloned()).unwrap_or_default();
-    // Of a body with no bounds check, no index of a map, no `+`, `-` or `*`
-    // and no integer cast, nothing to prove, its walk left out.
+    // Of a body with no bounds check, no index of a map, no `+`, `-` or `*`,
+    // no integer cast and no slice's `first()` or `last()` (#1860),
+    // nothing to prove, its walk left out.
     let asks = (body.basic_blocks.iter()).any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Assert { msg, .. } if matches!(**msg, AssertKind::BoundsCheck { .. }))
             || matches!(&data.terminator().kind, TerminatorKind::Call { func, .. }
@@ -67,6 +68,7 @@ pub(in crate::lower) fn body_proofs<'tcx>(
                     call_indexes(tcx, callee, args).is_some()
                         || range_index(tcx, callee, args).is_some()
                         || map_key(tcx, callee, args) == Some(MapKey::Index)
+                        || slice_length(tcx, callee, args) == Some(SliceLength::End)
                 }))
             || (data.statements.iter()).any(|statement| {
                 matches!(&statement.kind, StatementKind::Assign(assign)
@@ -209,6 +211,16 @@ pub(in crate::lower) fn call_bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, blo
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
         && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.call_bounds.contains(&block))
+}
+
+/// Whether MIR proves the `first()` or `last()` ending `block` of `body` is
+/// of a slice not empty there, so `Some` (#1860): none of a body not the one
+/// being lowered.
+pub(in crate::lower) fn present_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
+    let caches = crate::lower::session::caches(tcx);
+    let intervals = caches.intervals.borrow();
+    intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
+        && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.present.contains(&block))
 }
 
 /// Whether MIR proves the `OnceCell` the `set` ending `block` of `body` sets

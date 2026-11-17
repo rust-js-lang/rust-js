@@ -85,6 +85,9 @@ pub(super) struct State {
     /// `best = index` in it (#1814).
     pub(super) below_past: IndexSet<(Local, Local, i128)>,
     pub(super) least: IndexMap<Local, i128>,
+    /// Each `str::split` or `rsplit` a local holds as it was made, nothing
+    /// having stepped it: what it gives collected is never empty (#1860).
+    pub(super) splits: IndexSet<Local>,
     pub(super) empties: IndexMap<Local, Local>,
     /// A `for` loop's range of integers, by the local holding it, a `&mut`
     /// of it, or the `Option` its `next()` gave.
@@ -235,6 +238,10 @@ impl State {
             below: self.below_joined(other),
             below_past: self.below_past_joined(other),
             least,
+            splits: (self.splits.iter())
+                .filter(|s| other.splits.contains(*s))
+                .copied()
+                .collect(),
             empties: both(&self.empties, &other.empties),
             ranges,
             sums: (self.sums.iter())
@@ -378,6 +385,7 @@ impl State {
             .retain(|&(x, y, _)| x != local && y != Term::Len(local) && y != Term::Int(local));
         self.below_past.retain(|&(x, slice, _)| x != local && slice != local);
         self.least.shift_remove(&local);
+        self.splits.shift_remove(&local);
         self.empties.retain(|&holder, &mut of| holder != local && of != local);
         self.ranges.shift_remove(&local);
         self.ranges.retain(|_, ranged| !ranged.end.of(local));

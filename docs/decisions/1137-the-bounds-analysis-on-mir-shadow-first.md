@@ -1181,3 +1181,41 @@ is 1 but the index is 2`, and its checks stay (corpus case
 `undo_stack_map_reentered`, as #1815's port writes it). Corpus case
 `refcell_guard_fields` holds each case above against native, each kept
 check wrapping as Rust does where its unkept form would give -1.
+
+## Amendment (2026-11-18, #1860): a `split` collected is never empty, so its `last()` is `Some`
+
+`path.split('.').collect::<Vec<_>>().last().unwrap()` kept `$unwrap(keys.at(-1))`,
+though a `split` gives the whole text where its separator isn't there,
+`""` too: what it gives collected is never empty. Two facts of the walk,
+and one proof:
+- **A `split` made** (`calls.rs`): a `str::split` or `rsplit` call's
+  local, in `State::splits`, until it's written or a `&mut` of it is
+  lent, as `s.next()` lends one, which forgets it.
+- **Collected straight** (`calls.rs`): `Iterator::collect` into a `Vec`
+  of such a local, moved there, gives the `Vec` a least of one
+  (`State::least`), beside `vec![x; n]`'s. Not a `split_terminator`'s,
+  a `split_inclusive`'s or a `splitn(0, ..)`'s, which may give none, as no
+  other call makes a `split`. A `clear()` or any `&mut` of the `Vec`
+  forgets its least.
+- **Proved present** (`proved.rs`, `Proofs::present`): a slice's
+  `first()` or `last()` (`SliceLength::End`) of one whose least is one or
+  more, as `least_known` says, the least `index_below` reads too, now one
+  function. Its `Option` is `Some`: `ended_present` (`mir/nulled.rs`) says
+  so, `proved_present` of a variable's read and `field_read_marked` of a
+  temporary read in place, `keys.at(-1)`, the two places a read is marked
+  proved, so `unwrap()` gives it with no check (#1933's path). Such a call
+  is a reason to walk a body (`body_proofs`). Which call makes a `split`
+  and which collects into a `Vec` are recognition's, `makes_a_split` and
+  `collects_into_vec`.
+
+Case C of ADR 0262: a check left where the `Vec` may be empty keeps
+Rust's panic. Corpus case `split_collected_is_never_empty` runs against
+native in both builds: `split` and `rsplit` collected, of text with and
+without the separator and of `""`; a `split` stepped before its `collect`;
+a `Vec` emptied after it, whose `unwrap()` panics as native Rust's, under
+`catch_unwind`; and `split_terminator` and `splitn(0, ..)`.
+test/lowering-collections.test.ts holds the JS: `return keys.at(-1);`,
+`return words[0];`, and `$unwrap(` kept where stepped, emptied or
+terminated. Mutations `split-collected-least-unknown`,
+`slice-end-present-of-any` and `ended-present-unmarked-in-place` are
+caught.

@@ -74,6 +74,20 @@ impl<'tcx> Walk<'_, 'tcx> {
             {
                 proofs.call_bounds.insert(block);
             }
+            // A slice's `first()` or `last()` of one known not empty: `Some`
+            // (#1860).
+            if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((callee, callee_args)) = func.const_fn_def()
+                && slice_length(self.tcx, callee, callee_args) == Some(SliceLength::End)
+                && let Some(slice) = (args.first())
+                    .and_then(|arg| arg.node.place())
+                    .and_then(|p| p.as_local())
+                    .filter(|l| !self.lent.contains(l))
+                    .map(|l| state.root(l))
+                && self.least_known(&state, slice) >= 1
+            {
+                proofs.present.insert(block);
+            }
             if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
                 && let Some((callee, callee_args)) = func.const_fn_def()
                 && let Some(at) = range_index(self.tcx, callee, callee_args)
@@ -152,12 +166,12 @@ impl<'tcx> Walk<'_, 'tcx> {
         by_intervals || related
     }
 
-    fn index_below(&self, state: &State, slice: Local, index: &Operand<'tcx>, strict: bool) -> bool {
+    /// The least `slice`'s length is: what's known of it, or an array's
+    /// own, `[i32; 11]`'s 11; of each slice as long, its least, and the
+    /// least of what holds its length, `height` of `vec![row; height]`.
+    fn least_known(&self, state: &State, slice: Local) -> i128 {
         let slices = state.as_long_as(slice);
-        // At least what's known of it, or an array's own, `[i32; 11]`'s 11.
         let typed = (self.length(self.body.local_decls[slice].ty)).map_or(0, |n| n.lo);
-        // Of each as long, its least, and the least of what holds its
-        // length, `height` of `vec![row; height]`.
         let held = (state.lens.iter())
             .filter(|(_, s)| slices.contains(s))
             .filter_map(|(&w, _)| state.intervals[w].map(|n| n.lo));
@@ -166,7 +180,12 @@ impl<'tcx> Walk<'_, 'tcx> {
             .chain(held)
             .max()
             .unwrap_or(0);
-        let least = known.max(typed);
+        known.max(typed)
+    }
+
+    fn index_below(&self, state: &State, slice: Local, index: &Operand<'tcx>, strict: bool) -> bool {
+        let slices = state.as_long_as(slice);
+        let least = self.least_known(state, slice);
         let in_least = (self.operand(index, state))
             .is_some_and(|i| 0 <= i.lo && if strict { i.hi < least } else { i.hi <= least });
         let local = index.place().and_then(|p| p.as_local()).map(|i| state.root(i));

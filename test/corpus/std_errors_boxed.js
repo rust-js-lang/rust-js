@@ -60,7 +60,7 @@ function parsePositive(s) {
 
 function settings(text) {
   const parts = text.split(",");
-  const result = $parseF64($index(parts, 0));
+  const result = $parseF64(parts[0]);
   if (result.TAG !== "Err") {
     const scale = result._0;
     const result$1 = $parseBool($index(parts, 1));

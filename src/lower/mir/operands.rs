@@ -140,9 +140,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `read`, of `operand`, an `Option` a temporary or a variable holds
     /// of a struct's `RefCell` field, `node.sibling.borrow().clone()`,
     /// read where a test of the same field proved it (`field_read_proved`,
-    /// #1933 step 1(b)): `Known::Proved`, which tidy forgets, as
-    /// `proved_present`'s is; read as a variable, or where it's made,
-    /// `node.sibling`, a temporary's read (`take_operands`).
+    /// #1933 step 1(b)), or one a slice's `first()` or `last()` gave of
+    /// one MIR proves not empty (`ended_present`, #1860): `Known::Proved`,
+    /// which tidy forgets, as `proved_present`'s is; read as a variable, or
+    /// where it's made, `node.sibling`, a temporary's read (`take_operands`).
     pub(super) fn field_read_marked(
         &self,
         state: &State<'_, 'tcx>,
@@ -154,7 +155,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(place) = operand.place()
                     && place.projection.is_empty()
                     && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
-                    && self.field_read_proved(state, place.local) =>
+                    && (self.field_read_proved(state, place.local)
+                        // Or a slice's `first()` or `last()` of one MIR
+                        // proves not empty, read in place, `keys.at(-1)`
+                        // (`ended_present`, #1860).
+                        || self.ended_present(state, place.local)) =>
             {
                 Value::Expr(e.proved())
             }

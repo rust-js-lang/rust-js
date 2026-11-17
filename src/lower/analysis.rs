@@ -73,7 +73,7 @@ mod throwing;
 pub(in crate::lower) use intervals::shadow_report as intervals_shadow_report;
 pub(in crate::lower) use intervals::{
     Intervals, Proof, Shadow, body_proofs, bounds_proved, call_bounds_proved, cast_proved, empty_set_proved,
-    exact_proved, given_parameters, shadow_check,
+    exact_proved, given_parameters, present_proved, shadow_check,
 };
 mod unwinding;
 pub(in crate::lower) use unwinding::{never_unwinds_given, std_call_never_unwinds, std_quiet};
