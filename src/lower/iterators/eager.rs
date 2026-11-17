@@ -69,7 +69,6 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
 
 /// `(x, i) => [i, x]`, which `enumerate()` maps each item with.
 fn is_enumerate_pairing(e: &Expr) -> bool {
-    let var = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v.is(name));
     let js::ExprKind::Arrow(params, body) = &e.kind else {
         return false;
     };
@@ -83,7 +82,8 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
     let js::ExprKind::Array(parts) = &pair.kind else {
         return false;
     };
-    (x.word(), i.word()) == ("x", "i") && matches!(&parts[..], [first, second] if var(first, "i") && var(second, "x"))
+    let read = |e: &Expr, name: &js::Name| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
+    matches!(&parts[..], [first, second] if read(first, i) && read(second, x))
 }
 
 /// Whether `items` is an array made here, which nothing else holds: an
@@ -108,30 +108,32 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "splice",
             ]
             .contains(&name.as_str()),
-            js::ExprKind::Var(name) => [
-                "$range",
-                "$zip",
-                "$windows",
-                "$chunks",
-                "$chunksExact",
-                "$rchunks",
-                "$rchunksMut",
-                "$splitBy",
-                "$lines",
-                "$splitWhitespace",
-                "$rest",
-                "$drain",
-                "$splitOff",
-                "$setAlgebra",
-                "$sortedEntries",
-                "$sortedKeys",
-                "$args",
-                "$vars",
-                "$pathParts",
-                "$pathAncestors",
-                "$pathComponents",
-            ]
-            .contains(&name.word()),
+            js::ExprKind::Var(name) => {
+                let list = [
+                    "$range",
+                    "$zip",
+                    "$windows",
+                    "$chunks",
+                    "$chunksExact",
+                    "$rchunks",
+                    "$rchunksMut",
+                    "$splitBy",
+                    "$lines",
+                    "$splitWhitespace",
+                    "$rest",
+                    "$drain",
+                    "$splitOff",
+                    "$setAlgebra",
+                    "$sortedEntries",
+                    "$sortedKeys",
+                    "$args",
+                    "$vars",
+                    "$pathParts",
+                    "$pathAncestors",
+                    "$pathComponents",
+                ];
+                name.helper().is_some_and(|helper| list.contains(&helper))
+            }
             _ => false,
         },
         _ => false,

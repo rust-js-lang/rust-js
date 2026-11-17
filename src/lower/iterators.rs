@@ -682,8 +682,8 @@ pub(in crate::lower) fn lazily_mapped(e: &Expr) -> bool {
 }
 
 /// `it.map(f)`, a map of what a variable holds, made and not yet stepped:
-/// the variable's name.
-pub(in crate::lower) fn mapped_var(e: &Expr) -> Option<&str> {
+/// the variable.
+pub(in crate::lower) fn mapped_var(e: &Expr) -> Option<&js::Name> {
     match &e.kind {
         js::ExprKind::Call(callee, args)
             if let [f] = args.as_slice()
@@ -692,7 +692,7 @@ pub(in crate::lower) fn mapped_var(e: &Expr) -> Option<&str> {
                 && method == "map"
                 && f.reads_only_vars() =>
         {
-            Some(name.word())
+            Some(name)
         }
         _ => None,
     }

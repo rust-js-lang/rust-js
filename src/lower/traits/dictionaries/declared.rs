@@ -129,18 +129,18 @@ pub(super) fn is_impl_call(e: &Expr) -> bool {
 /// Whether `e` reads only what its body's top can: the runtime's helpers,
 /// the program's items, the names its own functions bind, and `given`,
 /// what the function was given (`given_names`, ADR 0979, amended).
-pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
-    let mut bound: Vec<String> = Vec::new();
+pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<js::Name>) -> bool {
+    let mut bound: Vec<js::Name> = Vec::new();
     let mut each = e.clone();
     each.each_mut(&mut |part| {
         if let js::ExprKind::Arrow(params, body) = &mut part.kind {
             for param in params {
-                param.each_name_mut(&mut |name| bound.push(name.to_string()));
+                param.each_name_mut(&mut |name| bound.push(name.clone()));
             }
             // And what its body declares, a std `Extend`'s `const it` (#1511).
             for stmt in body.iter() {
                 if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                    bound.push(name.to_string());
+                    bound.push(name.clone());
                 }
             }
         }
@@ -152,10 +152,10 @@ pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
             // A JS global, `Array` of `Array.from`, which no local's name
             // is (ADR 0352), as a helper is: read the same at the top (#1239).
             only &= part.helper_name().is_some()
-                || crate::names::is_js_global(name.word())
+                || name.is_global()
                 || part.facts.has(js::Known::Item)
-                || bound.iter().any(|b| name.is(b))
-                || given.contains(name.word());
+                || bound.contains(name)
+                || given.contains(name);
         }
     });
     only
@@ -167,8 +167,8 @@ pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
 /// order they're written, each once.
 fn entries_to_declare(
     body: &mut [js::Stmt],
-    given: &IndexSet<String>,
-    present: &IndexSet<String>,
+    given: &IndexSet<js::Name>,
+    present: &IndexSet<js::Name>,
 ) -> Vec<(String, Expr)> {
     let mut found: Vec<(String, Expr)> = Vec::new();
     js::each_expr_mut(body, &mut |e: &mut Expr| {
@@ -188,9 +188,9 @@ fn entries_to_declare(
 
 /// The name of the dictionary an entry call is of, through each entry
 /// before it, `S` of `S.A().B()`.
-fn root_name(e: &Expr) -> Option<&str> {
+fn root_name(e: &Expr) -> Option<&js::Name> {
     match &e.kind {
-        js::ExprKind::Var(name) => Some(name.word()),
+        js::ExprKind::Var(name) => Some(name),
         js::ExprKind::Call(callee, _) => root_name(callee),
         js::ExprKind::Member(object, _) => root_name(object),
         _ => None,
@@ -202,8 +202,8 @@ mod tests {
     use super::*;
 
     /// `S.Pairs()`, an entry of a given dictionary, called.
-    fn entry(of: &str, name: &str) -> Expr {
-        Expr::call(Expr::member(Expr::var(of), name), Vec::new()).evidence()
+    fn entry(of: &js::Name, name: &str) -> Expr {
+        Expr::call(Expr::member(Expr::var(of.clone()), name), Vec::new()).evidence()
     }
 
     fn body_writing(e: Expr) -> Vec<js::Stmt> {
@@ -215,8 +215,9 @@ mod tests {
 
     #[test]
     fn an_always_given_dictionarys_entry_is_declared() {
-        let given = IndexSet::from_iter(["S".to_string()]);
-        let mut body = body_writing(entry("S", "PairsIntoIterator"));
+        let s = js::Name::declared("S".to_string());
+        let given = IndexSet::from_iter([s.clone()]);
+        let mut body = body_writing(entry(&s, "PairsIntoIterator"));
         let found = entries_to_declare(&mut body, &given, &given);
         assert_eq!(
             found.iter().map(|(name, _)| name.as_str()).collect::<Vec<_>>(),
@@ -229,8 +230,9 @@ mod tests {
     /// read at the top, where it would throw (#1355).
     #[test]
     fn a_dictionary_that_may_be_undefined_keeps_its_entry_inline() {
-        let given = IndexSet::from_iter(["TCopy".to_string()]);
-        let mut body = body_writing(entry("TCopy", "Clone"));
+        let t = js::Name::declared("TCopy".to_string());
+        let given = IndexSet::from_iter([t.clone()]);
+        let mut body = body_writing(entry(&t, "Clone"));
         assert!(entries_to_declare(&mut body, &given, &IndexSet::default()).is_empty());
     }
 }

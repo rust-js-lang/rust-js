@@ -75,7 +75,7 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
         fewest_iterator_args(given);
         return;
     }
-    let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.word()) == fuse);
+    let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.word()) == fuse); // word: an import's local, `fuse`, kept as its `use` names it (rd650)
     let replacement = match callee.helper_name() {
         Some("$intoIter") if by_for => given[0].clone(),
         Some("$intoIter") => Expr::call(Expr::member(Expr::global("Iterator"), "from"), given.clone()),

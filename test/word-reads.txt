@@ -17,9 +17,6 @@ src/lower/calls.rs	1
 src/lower/classes/defaults.rs	1
 src/lower/classes/member_functions.rs	2
 src/lower/classes/prototypes.rs	1
-src/lower/iterators.rs	1
-src/lower/iterators/eager.rs	3
-src/lower/iterators/in_place.rs	1
 src/lower/jsx.rs	1
 src/lower/library.rs	3
 src/lower/mir.rs	2
@@ -58,4 +55,3 @@ src/lower/mir/tidy/values/handles.rs	1
 src/lower/mir/writer.rs	1
 src/lower/pipeline/load_cycles.rs	1
 src/lower/temporary_names.rs	1
-src/lower/traits/dictionaries/declared.rs	3

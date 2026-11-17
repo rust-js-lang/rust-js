@@ -978,7 +978,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let of_held_items = || {
             crate::lower::iterators::mapped_var(&expr).is_some_and(|name| {
                 (state.locals.names.iter_enumerated())
-                    .find(|(_, n)| n.is(name))
+                    .find(|(_, n)| *n == name)
                     .is_some_and(|(source, _)| self.steps_an_array(state.body.local_decls[source].ty))
             })
         };

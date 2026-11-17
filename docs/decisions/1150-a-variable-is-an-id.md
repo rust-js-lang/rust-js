@@ -1297,3 +1297,16 @@ reads `prevDebugInfo` as upstream does. Native and JS agree on every
 corpus case, with rows for a binding sharing its word with variables in
 scope, a variable written after the guard's made, a panic between, and
 guards named as globals.
+
+Slice 9's (2026-11-17): what a function was given, the dictionaries and
+values its top can read, is a set of `Name`s, not of words
+(`FnCx::given_names`, `given_dictionaries`), asked of each read by its id
+(`reads_only_at_top`, `entries_to_declare`), a JS global's by its form,
+`Name::is_global`, not by a list of words; a map of a variable's items is
+of the variable (`iterators::mapped_var`); `enumerate()`'s pairing is
+`(x, i) => [i, x]` by its parameters' ids, not their words; an array a
+runtime helper made is the helper's by `Name::helper`; `Iterator::fuse`'s
+import, its word as its `use` names it (rd650), is read so, marked. Each
+old and new answer probed over the corpus, the tests and React's port,
+none differing; byte-identical.
+
