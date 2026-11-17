@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "forwarding-function-loaded",
     breaks: "a function the module's load calls is a variable set after, read before it's set",
     file: "src/prepare/forwarding.rs",
-    find: "    js::mentions_in(&loaded, name) > 0 || module.default_export.as_deref() == Some(name)\n",
-    replace: "    module.default_export.as_deref() == Some(name)\n",
+    find: "    js::mentions_of(&loaded, name) > 0 || module.default_export.as_deref() == Some(name.word())\n",
+    replace: "    module.default_export.as_deref() == Some(name.word())\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
   },
   {
@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     name: "forwarding-fields-exported",
     breaks: "a thread-local another module reads, `export const wide`, is taken apart, its importer's `wide` gone (#533)",
     file: "src/prepare/forwarding.rs",
-    find: "if c.name.is(&value) && !c.export && c.fields.is_empty())",
-    replace: "if c.name.is(&value) && c.fields.is_empty())",
+    find: "if c.name == value && !c.export && c.fields.is_empty())",
+    replace: "if c.name == value && c.fields.is_empty())",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
   },
   {
@@ -147,8 +147,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a JS object's method, which may read its `this`, is read apart from it, `const { getTime } = new Date(0)`, whose call throws (#561)",
     file: "src/prepare/forwarding.rs",
-    find: "    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v.is(value))).then_some(member)\n",
-    replace: "    matches!(&of.kind, ExprKind::Var(v) if v.is(value)).then_some(member)\n",
+    find: "    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
+    replace: "    matches!(&of.kind, ExprKind::Var(v) if v == value).then_some(member)\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
   },
   {
@@ -156,8 +156,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const` struct of a fn field, read only to call it, is taken apart, `const { react_stack_bottom_frame } = {..}`, where upstream keeps `createFakeCallStack.react_stack_bottom_frame(..)` (#584)",
     file: "src/prepare/forwarding.rs",
-    find: "    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v.is(value))).then_some(member)\n",
-    replace: "    (e.facts.has(js::Known::ThisUnread) && matches!(&of.kind, ExprKind::Var(v) if v.is(value))).then_some(member)\n",
+    find: "    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
+    replace: "    (e.facts.has(js::Known::ThisUnread) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a const struct of fields read only to call them keeps its name"],
   },
   {

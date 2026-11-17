@@ -95,7 +95,7 @@ pub(super) fn functions(module: &mut js::Module) {
             i += 1;
             continue;
         }
-        if called_where_loaded(module, name.word()) {
+        if called_where_loaded(module, &name) {
             i += 1;
             continue;
         }
@@ -139,7 +139,7 @@ pub(super) fn functions(module: &mut js::Module) {
 /// Whether the module's load may call `name`, by a constant's value or its
 /// code, which a declaration's hoisting lets run before a variable is set;
 /// or it's the module's default.
-fn called_where_loaded(module: &js::Module, name: &str) -> bool {
+fn called_where_loaded(module: &js::Module, name: &Name) -> bool {
     let mut loaded = Vec::new();
     for item in &module.items {
         match item {
@@ -159,7 +159,7 @@ fn called_where_loaded(module: &js::Module, name: &str) -> bool {
             _ => {}
         }
     }
-    js::mentions_in(&loaded, name) > 0 || module.default_export.as_deref() == Some(name)
+    js::mentions_of(&loaded, name) > 0 || module.default_export.as_deref() == Some(name.word())
 }
 
 /// Whether the function at `at` is the module's own, not exported by its
@@ -173,7 +173,7 @@ fn called_only_privately(module: &js::Module, at: usize) -> bool {
     };
     !function.export
         && !module.aliases.iter().any(|(local, _)| function.name.is(local))
-        && only_called(&module.items, at, function.name.word(), function.params.len())
+        && only_called(&module.items, at, &function.name, function.params.len())
 }
 
 /// `function link(dep, sub, version) { system.link(dep, sub, version);
@@ -194,7 +194,7 @@ pub(super) fn fields(module: &mut js::Module) {
     // Each such function, by the constant it reads: where it is, the field
     // and its name.
     type Taken = (usize, String, Name);
-    let mut by_value: Vec<(String, Vec<Taken>)> = Vec::new();
+    let mut by_value: Vec<(Name, Vec<Taken>)> = Vec::new();
     for (i, item) in module.items.iter().enumerate() {
         let js::Item::Function(function) = item else {
             continue;
@@ -227,22 +227,23 @@ pub(super) fn fields(module: &mut js::Module) {
             continue;
         }
         let taken = (i, field.clone(), function.name.clone());
-        match by_value.iter_mut().find(|(v, _)| value.is(v)) {
+        match by_value.iter_mut().find(|(v, _)| v == value) {
             Some((_, fields)) => fields.push(taken),
-            None => by_value.push((value.to_string(), vec![taken])),
+            None => by_value.push((value.clone(), vec![taken])),
         }
     }
     let mut gone = IndexSet::default();
     for (value, fields) in by_value {
-        let at = module.items.iter().position(
-            |item| matches!(item, js::Item::Const(c) if c.name.is(&value) && !c.export && c.fields.is_empty()),
-        );
+        let at = module
+            .items
+            .iter()
+            .position(|item| matches!(item, js::Item::Const(c) if c.name == value && !c.export && c.fields.is_empty()));
         // Read by none but those functions, each once by its call, of all of
         // a call of each count too, whose every count reads it (#1890).
         let mut reads = 0;
         for (i, item) in module.items.iter().enumerate() {
             if !fields.iter().any(|&(taken, ..)| taken == i) {
-                item.visit_vars(&mut |v| reads += usize::from(v == value));
+                item.visit_names(&mut |v| reads += usize::from(*v == value));
             }
         }
         let Some(at) = at.filter(|_| reads == 0) else {
@@ -337,13 +338,13 @@ pub(super) fn members(module: &mut js::Module) {
         }
         let mut reads = 0;
         for item in &module.items {
-            item.visit_vars(&mut |v| reads += usize::from(value.is(v)));
+            item.visit_names(&mut |v| reads += usize::from(*v == value));
         }
         // Each member it's called through, in the order they're first called.
         let mut members: Vec<String> = Vec::new();
         let mut calls = 0;
         js::each_item_expr_mut(&mut module.items, &mut |e| {
-            if let Some(member) = member_called(e, value.word()) {
+            if let Some(member) = member_called(e, &value) {
                 calls += 1;
                 if !members.iter().any(|m| m == member) {
                     members.push(member.to_string());
@@ -359,7 +360,7 @@ pub(super) fn members(module: &mut js::Module) {
             continue;
         }
         js::each_item_expr_mut(&mut module.items, &mut |e| {
-            if let Some(member) = member_called(e, value.word()).map(str::to_string)
+            if let Some(member) = member_called(e, &value).map(str::to_string)
                 && let ExprKind::Call(callee, _) = &mut e.kind
             {
                 **callee = Expr::module(&member);
@@ -383,31 +384,31 @@ pub(super) fn members(module: &mut js::Module) {
 
 /// The member of `value` that `e` calls, `value.member(..)`, where it's a
 /// namespace's method, its module's function (`Known::NamespaceMethod`).
-fn member_called<'e>(e: &'e Expr, value: &str) -> Option<&'e str> {
+fn member_called<'e>(e: &'e Expr, value: &Name) -> Option<&'e str> {
     let ExprKind::Call(callee, _) = &e.kind else {
         return None;
     };
     let ExprKind::Member(of, member) = &callee.kind else {
         return None;
     };
-    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v.is(value))).then_some(member)
+    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)
 }
 
 /// Whether each read of `name` in `items` but the function at `at` is a
 /// call of it by at most `arity` arguments: one that leaves its last
 /// `undefined`s out, `unlink(sub)`, gives what the function gives on, as
 /// a call of them would, only `arguments.length` telling (ADR 0313).
-fn only_called(items: &[js::Item], at: usize, name: &str, arity: usize) -> bool {
+fn only_called(items: &[js::Item], at: usize, name: &Name, arity: usize) -> bool {
     let (mut reads, mut calls) = (0, 0);
     let mut each = |e: &Expr| {
         calls += usize::from(matches!(&e.kind, ExprKind::Call(callee, args)
-            if args.len() <= arity && matches!(&callee.kind, ExprKind::Var(v) if v.is(name))));
+            if args.len() <= arity && matches!(&callee.kind, ExprKind::Var(v) if v == name)));
     };
     for (j, item) in items.iter().enumerate() {
         if j == at {
             continue;
         }
-        item.visit_vars(&mut |v| reads += usize::from(v == name));
+        item.visit_names(&mut |v| reads += usize::from(v == name));
         match item {
             js::Item::Function(function) => js::each_expr(&function.body, &mut each),
             js::Item::Statements(stmts) => js::each_expr(stmts, &mut each),

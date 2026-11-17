@@ -62,7 +62,6 @@ function main() {
   );
   const intoVec = { value: [], impl: $vecWriter };
   shout(intoVec, "vec");
-  const value = undefined;
   const written = $printBytes([119, 114, 111, 116, 101, 10], 0);
   $print(`${written}\n`);
   $printBytes($utf8Bytes("é whole\n"), 0);

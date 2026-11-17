@@ -45,7 +45,6 @@ function assignment() {
       tmp = value;
     },
   };
-  const value = 2;
   let tmp$1 = 3;
   const x$1 = x;
   x = {

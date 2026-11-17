@@ -44,7 +44,7 @@ pub(super) fn try_catches(body: &mut Vec<Stmt>, ends: bool) {
         // reads it.
         if let Some(flagged) = flagged_try(&body[i], &body[i + 1])
             && let StmtKind::Const(result, _) = &body[i].kind
-            && js::mentions_in(&body[i + 2..], result.word()) == 0
+            && js::mentions_of(&body[i + 2..], result) == 0
         {
             body.splice(i..i + 2, [flagged]);
             i += 1;
@@ -173,7 +173,7 @@ fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
         false => Expr::unary(js::UnaryOp::Not, Expr::var(result)),
     };
     let ok = [StmtKind::If(flag, then.clone(), None).at(tested.span)];
-    let (tried, _) = arms_where_returned(body, result.word(), &ok)?;
+    let (tried, _) = arms_where_returned(body, result, &ok)?;
     // Where the closure is made, which its body, the `try`'s, is after, so
     // a comment in it is in the `try` (rd634); and a comment right above
     // the `if` it folds, `// Fall through ..\n if let Ok(true) = r`, whose
@@ -196,10 +196,10 @@ fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
 /// can't throw, which the `try`'s `catch` would catch, where the `Ok` arm's
 /// throw is the function's; and of a value returned in more places than
 /// one, is one jump, `return 0;`, not statements written twice.
-fn arms_where_returned<'o>(body: &[Stmt], value: &str, ok: &'o [Stmt]) -> Option<(Vec<Stmt>, &'o [Stmt])> {
+fn arms_where_returned<'o>(body: &[Stmt], value: &Name, ok: &'o [Stmt]) -> Option<(Vec<Stmt>, &'o [Stmt])> {
     let reads = ok
         .iter()
-        .rposition(|s| js::mentions_in(std::slice::from_ref(s), value) > 0)?;
+        .rposition(|s| js::mentions_of(std::slice::from_ref(s), value) > 0)?;
     let (tested, after) = ok.split_at(reads + 1);
     let mut returned = Vec::new();
     returned_values(body, &mut returned);
@@ -251,10 +251,10 @@ fn returned_values(stmts: &[Stmt], out: &mut Vec<Expr>) {
 /// What `ok`, statements that test `value`, do where it's `v`, a literal:
 /// each `if` of it its branch that runs, up to what ends; `None` where
 /// `ok` reads `value` otherwise.
-fn arm_of(ok: &[Stmt], value: &str, v: &Expr) -> Option<Vec<Stmt>> {
+fn arm_of(ok: &[Stmt], value: &Name, v: &Expr) -> Option<Vec<Stmt>> {
     let mut out = Vec::new();
     for stmt in ok {
-        if js::mentions_in(std::slice::from_ref(stmt), value) == 0 {
+        if js::mentions_of(std::slice::from_ref(stmt), value) == 0 {
             out.push(stmt.clone());
         } else {
             let StmtKind::If(test, then, otherwise) = &stmt.kind else {
@@ -285,8 +285,8 @@ fn arm_of(ok: &[Stmt], value: &str, v: &Expr) -> Option<Vec<Stmt>> {
 
 /// Whether `test` holds where `value` is `v`, a literal: of `value`, `!`
 /// of it, and `===` or `!==` of it and a literal; `None` otherwise.
-fn holds(test: &Expr, value: &str, v: &Expr) -> Option<bool> {
-    let is_value = |e: &Expr| matches!(&e.kind, ExprKind::Var(name) if name.is(value));
+fn holds(test: &Expr, value: &Name, v: &Expr) -> Option<bool> {
+    let is_value = |e: &Expr| matches!(&e.kind, ExprKind::Var(name) if name == value);
     match &test.kind {
         _ if is_value(test) => match v.kind {
             ExprKind::Bool(b) => Some(b),
@@ -425,7 +425,7 @@ fn chained_try_catch(
     let StmtKind::Const(result, _) = &made.kind else {
         return None;
     };
-    let (tested, otherwise) = unchained(result.word(), tested)?;
+    let (tested, otherwise) = unchained(result, tested)?;
     let rest: Vec<Stmt> = otherwise.iter().chain(rest).cloned().collect();
     let (mut caught, taken) = try_catch(made, &tested, before, &rest, ends)?;
     // What it took of the `else` first, then of what followed the `if`.
@@ -439,7 +439,7 @@ fn chained_try_catch(
 /// the arm sets the payload's binding to first, `let e = result._0; e =
 /// e.error;`, before `c`, which reads neither. `None` where it's no such
 /// chain, or its `else` runs where its arm doesn't leave.
-fn unchained(result: &str, tested: &Stmt) -> Option<(Stmt, Vec<Stmt>)> {
+fn unchained(result: &Name, tested: &Stmt) -> Option<(Stmt, Vec<Stmt>)> {
     let span = tested.span;
     let (test, then, otherwise) = match &tested.kind {
         StmtKind::If(test, then, otherwise) => (test, then.clone(), otherwise.clone()),
@@ -458,12 +458,12 @@ fn unchained(result: &str, tested: &Stmt) -> Option<(Stmt, Vec<Stmt>)> {
     };
     let (of, ok, eq) = js::result::tested(&head)?;
     let leaves = then.last().is_some_and(js::ends);
-    if ok == eq || !matches!(&of.kind, ExprKind::Var(v) if v.is(result)) || (otherwise.is_some() && !leaves) {
+    if ok == eq || !matches!(&of.kind, ExprKind::Var(v) if v == result) || (otherwise.is_some() && !leaves) {
         return None;
     }
     let bound = match then.first().map(|s| &s.kind) {
         Some(StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)))
-            if js::result::reads_held(value, result) =>
+            if js::result::reads_held(value, result.word()) =>
         {
             Some(name.clone())
         }
@@ -472,7 +472,7 @@ fn unchained(result: &str, tested: &Stmt) -> Option<(Stmt, Vec<Stmt>)> {
     // What `c` reads is as it was where it's read: what's moved before it
     // sets none of it.
     let hoisted = match &bound {
-        Some(name) if js::mentions_in(&[StmtKind::Expr(chained.clone()).at(span)], name.word()) == 0 => {
+        Some(name) if js::mentions_of(&[StmtKind::Expr(chained.clone()).at(span)], name) == 0 => {
             1 + (then[1..].iter())
                 .take_while(|s| {
                     matches!(&s.kind, StmtKind::Assign(to, _) if matches!(&to.kind, ExprKind::Var(v) if v == name))
@@ -576,7 +576,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         // the `Err` arm's, the `catch`'s, as of a `let Err(x)` (ADR 0830),
         // and what's after it after the `try`, which runs where the call
         // threw as it ran after the `match` (ADR 0637, amended).
-        (true, None) if let Some(n) = caught_run(result.word(), rest) => (then, &rest[..n], n),
+        (true, None) if let Some(n) = caught_run(result, rest) => (then, &rest[..n], n),
         // An `Err` arm of only comments, `Err(_) => { // .. }`, whose block
         // MIR's `else` held, tidy put after the `if` (ADR 0753): the
         // `catch`'s, as commitMount's `} catch (x) { // If
@@ -633,16 +633,14 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // binds the whole value, `if (f) { return f; }`, else by the result's.
     let read_in_place;
     let (value_name, ok) = match value_name {
-        None if held_reads(ok, result.word()) > 0
-            && held_reads(ok, result.word()) == js::mentions_in(ok, result.word()) =>
-        {
+        None if held_reads(ok, result) > 0 && held_reads(ok, result) == js::mentions_of(ok, result) => {
             let mut ok = ok.to_vec();
             js::each_expr_mut(&mut ok, &mut |e| {
                 if js::result::reads_held(e, result.word()) {
                     *e = Expr::var(result).or_at(e.span);
                 }
             });
-            let name = match whole_binding(&ok, result.word(), &call) {
+            let name = match whole_binding(&ok, result, &call) {
                 Some(binding) => {
                     js::statement_lists(&mut ok, &mut |stmts| {
                         stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(name, _) if *name == binding));
@@ -701,11 +699,11 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     };
     // Nothing else reads the `Result`: the `Ok` arm reads its value, where
     // that's by the result's name.
-    let ok_reads = match value_name.as_ref().map(|n| n.word()) == Some(result.word()) {
+    let ok_reads = match value_name.as_ref() == Some(result) {
         true => 0,
-        false => js::mentions_in(ok, result.word()),
+        false => js::mentions_of(ok, result),
     };
-    let reads = ok_reads + js::mentions_in(err, result.word()) + js::mentions_in(after, result.word());
+    let reads = ok_reads + js::mentions_of(err, result) + js::mentions_of(after, result);
     if reads != usize::from(held.is_some() && value_name.is_none()) {
         return None;
     }
@@ -814,9 +812,9 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // the `Ok` arms test, `Ok(true) => return 0`: each arm where the closure
     // returns its value, the rest of the arm after the `try` where the
     // `catch` leaves, else in it where it can't throw (ADR 0706, amended).
-    if value_name.as_ref().map(|n| n.word()) == Some(result.word())
+    if value_name.as_ref() == Some(result)
         && let Some(body) = js::called_body(&call)
-        && let Some((mut tried, rest)) = arms_where_returned(body, result.word(), ok)
+        && let Some((mut tried, rest)) = arms_where_returned(body, result, ok)
         && (leaves(err) || rest.iter().all(cannot_throw))
     {
         let after = match leaves(err) {
@@ -839,10 +837,8 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     }
     // Else after it, where the `Err` arm leaves, its value set by the `try`:
     // a `let` of a name nothing else here reads or declares.
-    let unread = |name: &Name| {
-        js::mentions_in(before, name.word()) + js::mentions_in(err, name.word()) + js::mentions_in(after, name.word())
-            == 0
-    };
+    let unread =
+        |name: &Name| js::mentions_of(before, name) + js::mentions_of(err, name) + js::mentions_of(after, name) == 0;
     if !leaves(err) || !value_name.as_ref().is_none_or(unread) {
         return None;
     }
@@ -935,16 +931,16 @@ fn cannot_throw(stmt: &Stmt) -> bool {
 /// which the `try` runs first, neither reads nor declares, nor one given
 /// apart from it, `picked$1`, which it would keep from being that name
 /// (ADR 0352).
-fn whole_binding(ok: &[Stmt], result: &str, call: &Expr) -> Option<Name> {
+fn whole_binding(ok: &[Stmt], result: &Name, call: &Expr) -> Option<Name> {
     let mut found = None;
     let mut aliases = 0;
     js::each_list(ok, &mut |list| {
         for (at, stmt) in list.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
-                && matches!(&value.kind, ExprKind::Var(v) if v.is(result))
+                && matches!(&value.kind, ExprKind::Var(v) if v == result)
             {
                 aliases += 1;
-                found = Some((name.clone(), js::mentions_in(&list[at + 1..], name.word())));
+                found = Some((name.clone(), js::mentions_of(&list[at + 1..], name)));
             }
         }
     });
@@ -958,13 +954,15 @@ fn whole_binding(ok: &[Stmt], result: &str, call: &Expr) -> Option<Name> {
     js::visit_stmt_names(&of_call, &mut |n| clashes |= is_name(n));
     js::each_declared_name(&of_call, &mut |n| clashes |= is_name(n));
     let unclashed = !clashes;
-    (declared == 1 && read_after == js::mentions_in(ok, name.word()) && unclashed).then_some(name)
+    (declared == 1 && read_after == js::mentions_of(ok, &name) && unclashed).then_some(name)
 }
 
 /// How often `stmts` read `result._0`, the value a `Result` holds.
-fn held_reads(stmts: &[Stmt], result: &str) -> usize {
+fn held_reads(stmts: &[Stmt], result: &Name) -> usize {
     let mut reads = 0;
-    js::each_expr(stmts, &mut |e| reads += usize::from(js::result::reads_held(e, result)));
+    js::each_expr(stmts, &mut |e| {
+        reads += usize::from(js::result::reads_held(e, result.word()))
+    });
     reads
 }
 
@@ -1003,7 +1001,7 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
         },
         (StmtKind::Const(result, value), Some(StmtKind::Const(payload, read))) => match &read.kind {
             ExprKind::Member(of, key)
-                if matches!(&of.kind, ExprKind::Var(v) if v == result) && js::mentions_in(rest, result.word()) == 1 =>
+                if matches!(&of.kind, ExprKind::Var(v) if v == result) && js::mentions_of(rest, result) == 1 =>
             {
                 (key.as_str(), payload, false, value, &rest[1..], 1)
             }
@@ -1025,12 +1023,12 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
     if key != "_0" || !never_returns {
         return None;
     }
-    let caught = caught_run(payload.word(), rest)?;
+    let caught = caught_run(payload, rest)?;
     // A function the `catch` would declare that's called before it, where
     // JS hoists it, stays where it is.
     let hoisted = rest[..caught]
         .iter()
-        .any(|s| matches!(&s.kind, StmtKind::Function(function) if js::mentions_in(before, function.name.word()) > 0));
+        .any(|s| matches!(&s.kind, StmtKind::Function(function) if js::mentions_of(before, &function.name) > 0));
     if hoisted {
         return None;
     }
@@ -1056,14 +1054,14 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
 /// first, that hold each mention of `payload` and of every name they
 /// declare, so nothing after them reads what the `catch` declares (ADR
 /// 0830). `None` where none mentions `payload`.
-fn caught_run(payload: &str, rest: &[Stmt]) -> Option<usize> {
-    let mut names = IndexSet::from_iter([payload.to_string()]);
+fn caught_run(payload: &Name, rest: &[Stmt]) -> Option<usize> {
+    let mut names = IndexSet::from_iter([payload.clone()]);
     let mut taken = 0;
     loop {
         let mentioned = |s: &Stmt| {
             names
                 .iter()
-                .any(|name| js::mentions_in(std::slice::from_ref(s), name) > 0)
+                .any(|name| js::mentions_of(std::slice::from_ref(s), name) > 0)
         };
         let Some(last) = rest.iter().rposition(mentioned) else {
             return (taken > 0).then_some(taken);
@@ -1072,8 +1070,8 @@ fn caught_run(payload: &str, rest: &[Stmt]) -> Option<usize> {
             return Some(taken);
         }
         taken = last + 1;
-        js::each_declared(&rest[..taken], &mut |name| {
-            names.insert(name.to_string());
+        js::each_declared_name(&rest[..taken], &mut |name| {
+            names.insert(name.clone());
         });
     }
 }
@@ -1142,7 +1140,7 @@ fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, V
         && error
             .thrown_error_of()
             .is_some_and(|of| matches!(&of.kind, ExprKind::Var(v) if v == payload))
-        && js::mentions_in(rest, thrown.word()) == 0
+        && js::mentions_of(rest, &thrown) == 0
     {
         return (Some(payload.clone()), rest.to_vec());
     }
@@ -1174,11 +1172,8 @@ fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, V
     });
     let mut declared = 0;
     js::each_declared(&rest, &mut |name| declared += usize::from(payload.is(name)));
-    if js::mentions_in(&rest, payload.word()) > 0 || declared > 0 {
-        return (
-            Some(thrown),
-            unwound_where_read(handler[0].clone(), payload.word(), rest),
-        );
+    if js::mentions_of(&rest, &payload) > 0 || declared > 0 {
+        return (Some(thrown), unwound_where_read(handler[0].clone(), &payload, rest));
     }
     js::each_expr_mut(&mut rest, &mut |e| {
         if matches!(&e.kind, ExprKind::Var(v) if *v == thrown) {
@@ -1196,10 +1191,10 @@ fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, V
 /// statement's span, where a comment before it is before it. A function
 /// declared before it reads none of the payload, as a nested `fn` captures
 /// nothing, and a closure that reads it is declared after it.
-fn unwound_where_read(made: Stmt, payload: &str, mut rest: Vec<Stmt>) -> Vec<Stmt> {
+fn unwound_where_read(made: Stmt, payload: &Name, mut rest: Vec<Stmt>) -> Vec<Stmt> {
     let first = rest
         .iter()
-        .position(|s| js::mentions_in(std::slice::from_ref(s), payload) > 0);
+        .position(|s| js::mentions_of(std::slice::from_ref(s), payload) > 0);
     match first {
         Some(at) if at > 0 => {
             let span = rest[at].span;

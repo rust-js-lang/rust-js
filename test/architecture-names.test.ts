@@ -235,7 +235,7 @@ test("a name's word is read outside preparation and printing only as the ratchet
 // ids (ADR 1150).
 // Change 3's last slice deletes them. A file's own function of one of
 // those names is its own.
-const WORD_WALKS = 161;
+const WORD_WALKS = 128;
 test("a variable is asked of the walks by its word only as counted", () => {
   const free = ["mentions_in", "visit_stmts", "each_declared", "names_in", "renamed", "merged",
     "read_as_this", "this_outside_accessors"];
