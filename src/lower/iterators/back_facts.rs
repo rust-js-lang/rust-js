@@ -51,7 +51,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .get(&(self.frame.owner, local))
                 .copied()
                 .unwrap_or(local);
-            self.krate.back_stepped.counted.contains(&(self.frame.owner, local))
+            self.asked_of(local).len == Some(crate::lower::analysis::LengthAsked::Counted)
         });
         crate::decisions::record("back-counted", if counted { "counted" } else { "uncounted" });
         counted
@@ -80,6 +80,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || r::reversed_source(self.tcx, ty).is_some()
     }
 
+    /// What the crate's later uses ask of `local`'s value, of the body
+    /// being lowered, by its maker's MIR identity (`BackStepped::asked_of`):
+    /// its back and its length, the one answer of each, which its maker
+    /// makes it knowing (#814, #1795).
+    pub(in crate::lower) fn asked_of(&self, local: rustc_middle::mir::Local) -> crate::lower::analysis::Asked {
+        self.krate.back_stepped.asked_of(self.frame.owner, local)
+    }
+
     /// Whether `local`, of the body being lowered, holds what the crate
     /// steps from its back (back_stepped's `stepped_locals`, #814): by the
     /// MIR identity of what holds a value, not its type, which another value
@@ -89,9 +97,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         local: rustc_middle::mir::Local,
     ) -> Option<crate::lower::analysis::SteppedLocal> {
-        let stepped = (self.krate.back_stepped.locals)
-            .get(&(self.frame.owner, local))
-            .copied();
+        let stepped = self.asked_of(local).back;
         let answer = match stepped {
             Some(crate::lower::analysis::SteppedLocal::Lent) => "lent",
             Some(crate::lower::analysis::SteppedLocal::Given) => "given",

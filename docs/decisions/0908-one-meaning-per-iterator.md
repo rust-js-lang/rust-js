@@ -76,4 +76,5 @@ where each part's is: a source whose own is std's, or std's compiled
 adapter of such ones (`compiled_hint_is_stds`). New corpus
 `vec_grown_by_a_chain_of_an_inspect_where_capacity_is_read`, in this
 suite's cases; mutation `compiled-chain-hint-unknown`, caught. The plain
-build's held form of it stays refused (#1744).
+build's held form of it, refused here (#1744), compiles since
+[1170](1170-a-held-adapters-length-asked-where-its-made.md).

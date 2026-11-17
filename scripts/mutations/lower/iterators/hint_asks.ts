@@ -430,4 +430,12 @@ export const mutations: Mutation[] = [
     replace: "        if kept && !exact {\n",
     tests: ["test/vec-capacity.test.ts", "-t", "compiled flat_map of a map's iterators"],
   },
+  {
+    name: "held-chain-parts-unread",
+    breaks: "a held chain made knowing its parts' lengths is taken apart again where a `Vec` is grown by it, which a variable's form can't be, so it's refused (#1744)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        if crate::lower::iterators::was_made_knowing_its_length(&it) {\n            return Ok(it);\n",
+    replace: "        if false {\n            return Ok(it);\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_whose_length_a_capacity_asks.rs$"],
+  },
 ];

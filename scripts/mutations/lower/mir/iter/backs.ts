@@ -768,8 +768,8 @@ export const mutations: Mutation[] = [
     name: "back-stepped-temporary-made-unknowing",
     breaks: "a temporary a back step takes, lent or whole, written to a variable is made as it is, `$iter(v).take(2)`, not knowing its back, and its `nth_back` is refused (#718, #811)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            Some(crate::lower::analysis::SteppedLocal::Lent) => self.made_knowing_where_held(value, ty, span),\n",
-    replace: "            Some(crate::lower::analysis::SteppedLocal::Lent) if false => self.made_knowing_where_held(value, ty, span),\n",
+    find: "            Some(crate::lower::analysis::SteppedLocal::Lent) => self.made_knowing_where_held(value, ty, span)?,\n",
+    replace: "            Some(crate::lower::analysis::SteppedLocal::Lent) if false => self.made_knowing_where_held(value, ty, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_and_take_stepped_from_their_back_in_place.rs$"],
   },
   {
@@ -875,5 +875,21 @@ export const mutations: Mutation[] = [
     find: "        if !stepped.contains(&(e as *const Expr)) {\n",
     replace: "        if stepped.len() < usize::MAX {\n",
     tests: ["test/corpus.test.ts", "-t", "^reversed_map_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "held-length-unmade",
+    breaks: "a variable asked its length isn't made knowing it as it's written, `const d = v.values().map(f)`, which the growth of a `Vec` by `d.inspect(g)` refuses (#1795)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            true => self.made_as_growth_asks(value, ty, span),\n",
+    replace: "            true => Ok(value),\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_whose_length_a_capacity_asks.rs$"],
+  },
+  {
+    name: "held-length-remade-back",
+    breaks: "a variable its maker made to step from its back, `$skipping` of a `skip(1)`, is made again as a growth asks its length, which loses the back its `rev()` steps: refused (#1795)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            && asked.back.is_none()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
   },
 ];

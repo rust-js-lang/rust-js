@@ -38,7 +38,7 @@ pub(super) fn of_crate<'tcx>(
     cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> BackStepped<'tcx> {
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
-    let (locals, fields, typed_sources, counted) =
+    let (locals, fields, typed_sources, lengths) =
         stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), given, cloned);
     typed.extend(typed_sources);
     BackStepped {
@@ -46,7 +46,7 @@ pub(super) fn of_crate<'tcx>(
         borrows: borrows(all_bodies),
         locals,
         fields,
-        counted,
+        lengths,
     }
 }
 
@@ -417,17 +417,56 @@ pub(in crate::lower) struct BackStepped<'tcx> {
     /// each value MIR moves into it marked `Given` (`stepped_locals`'s): a
     /// read of it is of a value made knowing its back (#851).
     pub(in crate::lower) fields: IndexSet<SteppedField>,
-    /// Each local an enumeration stepped from its back is made of, which
-    /// counts it there, made knowing its length where it's made (#1354).
-    pub(in crate::lower) counted: IndexSet<(rustc_span::def_id::DefId, rustc_middle::mir::Local)>,
+    /// Each local whose length is asked, made knowing it where it's made,
+    /// and how (`LengthAsked`).
+    pub(in crate::lower) lengths: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), LengthAsked>,
+}
+
+/// How a local whose length the crate asks is made knowing it
+/// (`BackStepped::lengths`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum LengthAsked {
+    /// Counted by its maker, which makes it knowing its length
+    /// (`made_counted_from_its_back`): what an enumeration stepped from its
+    /// back is made of, which counts it there (#1354), and a counted
+    /// adapter's temporary a `Vec` is grown by (#1317).
+    Counted,
+    /// A variable that holds what's made in place, whose length, or whose
+    /// parts', the growth of a `Vec` by what it's made into asks
+    /// (`lengths_asked`): made knowing it as it's written
+    /// (`written_as_asked`, #1795, #1744).
+    Held,
+}
+
+/// What the crate's later uses ask of a local's value, by its maker's MIR
+/// identity (`BackStepped::asked_of`): its back, and how it's held where
+/// it's stepped so, and its length. Its maker makes it knowing each.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub(in crate::lower) struct Asked {
+    pub(in crate::lower) back: Option<SteppedLocal>,
+    pub(in crate::lower) len: Option<LengthAsked>,
 }
 
 impl<'tcx> BackStepped<'tcx> {
+    /// What's asked of `local`'s value, of `owner`'s body: the one answer of
+    /// its back and its length, which its maker reads.
+    pub(in crate::lower) fn asked_of(
+        &self,
+        owner: rustc_span::def_id::DefId,
+        local: rustc_middle::mir::Local,
+    ) -> Asked {
+        Asked {
+            back: self.locals.get(&(owner, local)).copied(),
+            len: self.lengths.get(&(owner, local)).copied(),
+        }
+    }
+
     /// Whether a value of type `ty`, in `owner`'s body `mir`, is made knowing
     /// its back or its length where it's made: of a type whose question is a
     /// type's, or of the type of a local this body steps from its back or
-    /// counts there. The one answer of what's stepped from its back, which
-    /// the held flip asks of a chain's source (`decide_held`, #1681).
+    /// counts there (`LengthAsked::Counted`). The one answer of what's
+    /// stepped from its back, which the held flip asks of a chain's source
+    /// (`decide_held`, #1681).
     pub(in crate::lower) fn made_knowing(
         &self,
         recognition: Recognition<'_, 'tcx>,
@@ -438,7 +477,13 @@ impl<'tcx> BackStepped<'tcx> {
         let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
         let ty = erased(ty);
         self.typed.contains(&ty)
-            || (self.locals.keys().chain(&self.counted))
+            || (self.locals.keys())
+                .chain(
+                    self.lengths
+                        .iter()
+                        .filter(|(_, how)| **how == LengthAsked::Counted)
+                        .map(|(at, _)| at),
+                )
                 .any(|&(of, local)| of == owner && erased(mir.local_decls[local].ty) == ty)
     }
 }
@@ -457,12 +502,13 @@ pub(in crate::lower) fn made_by<'tcx>(
 }
 
 /// What `stepped_locals` finds: each local stepped from its back, each
-/// field, and the types a std struct holding them asks by type alone.
+/// field, the types a std struct holding them asks by type alone, and each
+/// local whose length is asked.
 type SteppedValues<'tcx> = (
     IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
     IndexSet<SteppedField>,
     IndexSet<Ty<'tcx>>,
-    IndexSet<(rustc_span::def_id::DefId, rustc_middle::mir::Local)>,
+    IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), LengthAsked>,
 );
 
 /// A field of a struct or an enum's variant: its ADT, its variant and its
@@ -538,7 +584,7 @@ pub(super) fn stepped_locals<'tcx>(
     // its maker (#851).
     let mut stepped_fields: IndexSet<SteppedField> = IndexSet::default();
     let mut typed_sources: IndexSet<Ty<'tcx>> = IndexSet::default();
-    let mut counted: IndexSet<(rustc_span::def_id::DefId, mir::Local)> = IndexSet::default();
+    let mut counted: IndexMap<(rustc_span::def_id::DefId, mir::Local), LengthAsked> = IndexMap::default();
     let mark = |stepped: &mut IndexMap<_, _>, at, how| {
         // `Given` wins: its maker makes it, wherever it's lent besides.
         let held = stepped.entry(at).or_insert(how);
@@ -841,10 +887,25 @@ pub(super) fn stepped_locals<'tcx>(
                 // it, as one an enumeration counts from its back is (#1317).
                 if keeps_capacity {
                     let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(owner));
-                    if let Some(grown) = recognition.vec_grown_by(callee, generic_args, typing_env)
-                        && let grown = erased(grown)
+                    let grown = (recognition.vec_grown_by(callee, generic_args, typing_env))
+                        .map(erased)
+                        .filter(|&grown| !crate::lower::recognition::is_trusted_len(tcx, typing_env, grown));
+                    // And each variable whose value it's made of, `let d =
+                    // v.iter().map(f)` grown by `d.inspect(g)`, or a chain a
+                    // variable holds whose parts' lengths std's sums: the
+                    // length that growth asks, of it or of its parts, asked
+                    // of the variable, made knowing it where it's made, as
+                    // what's made in place is where it's grown (#1795, #1744).
+                    if let Some(grown) = grown {
+                        let asked = lengths_asked(recognition, grown);
+                        for (local, decl) in mir.local_decls.iter_enumerated() {
+                            if user_variable(decl) && asked.contains(&erased(decl.ty)) {
+                                counted.entry((owner, local)).or_insert(LengthAsked::Held);
+                            }
+                        }
+                    }
+                    if let Some(grown) = grown
                         && recognition.grows_by_exact_len(grown)
-                        && !crate::lower::recognition::is_trusted_len(tcx, typing_env, grown)
                     {
                         if zipped_sources(tcx, grown).is_some() {
                             for &(local, lent, ty, _) in &given {
@@ -858,7 +919,7 @@ pub(super) fn stepped_locals<'tcx>(
                             if counted_source(tcx, ty).is_some() {
                                 for (local, decl) in mir.local_decls.iter_enumerated() {
                                     if !user_variable(decl) && erased(decl.ty) == ty {
-                                        counted.insert((owner, local));
+                                        counted.insert((owner, local), LengthAsked::Counted);
                                     }
                                 }
                             }
@@ -1028,7 +1089,7 @@ pub(super) fn stepped_locals<'tcx>(
                             // An enumeration's source, counted from its back:
                             // its index there is its length less one (#1354).
                             if made_asked && enumerated_source(tcx, made).is_some() {
-                                counted.insert((owner, local));
+                                counted.insert((owner, local), LengthAsked::Counted);
                             }
                             if held_by_struct {
                                 typed_sources.insert(ty);
@@ -1084,6 +1145,35 @@ pub(super) fn stepped_locals<'tcx>(
             return (stepped, stepped_fields, typed_sources, counted);
         }
     }
+}
+
+/// The types the growth of a `Vec` by an iterator of type `grown` asks
+/// the length of, in a crate that keeps capacities (lowering's `grown_ask`):
+/// of an `ExactSizeIterator`, its own, and its source's that it passes on,
+/// a map's (`length_kept_source`); of a chain or a zip whose hint is its
+/// parts', or a copy of one, each part's so (`lower_bound_kept_by_parts`,
+/// #1216). None of another.
+fn lengths_asked<'tcx>(recognition: Recognition<'_, 'tcx>, grown: Ty<'tcx>) -> IndexSet<Ty<'tcx>> {
+    let tcx = recognition.tcx;
+    let mut asked = IndexSet::default();
+    if !recognition.grows_by_exact_len(grown) && !recognition.lower_bound_kept_by_parts(grown) {
+        return asked;
+    }
+    let mut at = vec![grown];
+    while let Some(ty) = at.pop() {
+        let ty = tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
+        if !asked.insert(ty) {
+            continue;
+        }
+        if recognition.grows_by_exact_len(ty) {
+            at.extend(crate::lower::recognition::length_kept_source(tcx, ty));
+        } else if let Some(source) = copied_source(tcx, ty) {
+            at.push(source);
+        } else if let Some((a, b)) = chained_sources(tcx, ty).or_else(|| zipped_sources(tcx, ty)) {
+            at.extend([a, b]);
+        }
+    }
+    asked
 }
 
 /// Whether `mir` holds what's made or lent at `from`, a block and the first

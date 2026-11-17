@@ -458,21 +458,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// destructor, and marked so (`made_knowing_its_back`), its mark carried
     /// by its local. Another as it is: one held, `$held` or closed to drop
     /// what it holds, std's struct (#718).
-    /// `value`, written to `local` of type `ty`, a temporary given to what
+    /// `value`, written to `local` of type `ty`, made knowing what the
+    /// crate's later uses ask of it (`asked_of`). A temporary given to what
     /// steps it from its back, back_stepped's `SteppedLocal::Lent`, made in
     /// place, which MIR holds to lend it or across what an argument runs
     /// before the step: made knowing its back where it's made, `$taking` or
-    /// `$mapEnds` say, and marked so for its read (#718, #814, #811). Another
-    /// as it is.
-    pub(in crate::lower::mir) fn written_knowing_its_back(
+    /// `$mapEnds` say, and marked so for its read (#718, #814, #811). A
+    /// variable whose length a `Vec` grown by what it's made into asks,
+    /// made in place: made knowing it as that growth makes what's made in
+    /// place (`made_as_growth_asks`, #1795, #1744). Another as it is.
+    pub(in crate::lower::mir) fn written_as_asked(
         &mut self,
         local: rustc_middle::mir::Local,
         (value, ty): (Expr, Ty<'tcx>),
         span: Span,
     ) -> R<Expr> {
-        match self.local_stepped_from_its_back(local) {
-            Some(crate::lower::analysis::SteppedLocal::Lent) => self.made_knowing_where_held(value, ty, span),
-            _ => Ok(value),
+        let asked = self.asked_of(local);
+        let value = match asked.back {
+            Some(crate::lower::analysis::SteppedLocal::Lent) => self.made_knowing_where_held(value, ty, span)?,
+            _ => value,
+        };
+        // Not one made knowing it already, nor one its maker made to step
+        // from its back, a `skip(n)` made `$skipping`, as that step asks.
+        let made_unknowing = crate::lower::iterators::made_in_place(&value)
+            && asked.back.is_none()
+            && !self.knows_its_length_of(&value, ty);
+        match asked.len == Some(crate::lower::analysis::LengthAsked::Held) && made_unknowing {
+            true => self.made_as_growth_asks(value, ty, span),
+            false => Ok(value),
         }
     }
 

@@ -913,7 +913,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let expr = self.value_expr(value, span)?;
         let expr = match place.projection.is_empty() {
-            true => self.written_knowing_its_back(local, (expr, state.body.local_decls[local].ty), span)?,
+            true => self.written_as_asked(local, (expr, state.body.local_decls[local].ty), span)?,
             false => expr,
         };
         let js_span = self.js_span(span);

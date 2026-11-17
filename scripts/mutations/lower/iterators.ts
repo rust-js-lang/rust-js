@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators.rs",
     find: "    match hintless(value) {\n        true => marks.with(js::Known::IterHintless),\n",
     replace: "    match false {\n        true => marks.with(js::Known::IterHintless),\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a held map's inspect collected where its capacity is read"],
+    tests: ["test/corpus.test.ts", "-t", "^(inspect_of_a_slice_collected_where_capacity_is_read|extend_by_an_inspect_of_a_slice_where_capacity_is_read|held_adapters_whose_length_a_capacity_asks).rs$"],
   },
   {
     name: "deque-range-copied-as-a-part",

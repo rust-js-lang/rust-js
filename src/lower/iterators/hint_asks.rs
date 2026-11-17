@@ -544,6 +544,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// lower bound is std's as it is stays; another is refused.
     fn parts_knowing_lengths(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = ty.peel_refs();
+        // A variable's its maker made so, as this growth asked of it
+        // (`made_as_growth_asks`, #1744).
+        if crate::lower::iterators::was_made_knowing_its_length(&it) {
+            return Ok(it);
+        }
         // What's made knowing its hint where it's made, as `hint_asked.rs`
         // asks of this collect's parts, down to its source.
         if self.hint_known_by_its_parts(ty) {
@@ -590,6 +595,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "a `Vec` grown by a `{ty}` in a crate that reads a `Vec`'s capacity, which std grows by that iterator's `size_hint()`, whose lower bound JS's doesn't have"
             ),
         ))
+    }
+
+    /// `it`, of type `ty`, made in place where a variable holds it, made
+    /// knowing what the growth of a `Vec` by what it's made into asks
+    /// (back_stepped's `lengths_asked`), as `grown_by_hint` makes one made
+    /// in place where it's grown: its length, `as_exact_size`'s, or its
+    /// parts', `parts_knowing_lengths`'; marked so, as the variable that
+    /// holds it keeps, for that growth's read (#1795, #1744).
+    pub(in crate::lower) fn made_as_growth_asks(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let made = match self.recognition().grows_by_exact_len(ty.peel_refs()) {
+            true => self.as_exact_size(it, ty, false, span)?,
+            false => self.parts_knowing_lengths(it, ty, span)?,
+        };
+        Ok(crate::lower::iterators::made_knowing_its_length(made).in_place())
     }
 
     /// Whether an iterator of type `ty`, std's compiled struct's part,

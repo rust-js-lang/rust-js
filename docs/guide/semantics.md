@@ -1068,7 +1068,12 @@ What's refused is in [the limitations](limitations.md).
   lower bound as it fills, `$grownVec` and `$grownBy`, a `GenericShunt`'s
   none, generic code's into the `Vec` its caller gives as `B:
   FromIterator` too, by the way std collects what its caller gives
-  (`IVecCollect`, #1263); a `collect()` std makes in place, its items as
+  (`IVecCollect`, #1263), and an adapter a variable holds that it's made
+  of, `let d = v.iter().map(f)` grown by `d.inspect(g)`, made knowing the
+  length that growth asks where it's made, `$mapEnds($iter(v), f)`, or a
+  held chain's parts their lengths
+  ([1170](../decisions/1170-a-held-adapters-length-asked-where-its-made.md),
+  #1795, #1744); a `collect()` std makes in place, its items as
   aligned as its source's and no larger, its source's buffer's,
   `src_cap * src_size / dst_size`, `$inPlaceCapacity(w, v, 8, 4)` of a
   `v.into_iter()` chain of the body's variable `v`, or of the `Vec` generic

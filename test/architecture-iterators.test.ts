@@ -464,7 +464,7 @@ test("what's stepped from its back is its value's, no type's set", () => {
   const crossChecks = loweringSources().filter((file) => read(file).includes("BACK_STEPPED_CROSS_CHECK"));
   expect([owned("a type's set of what's stepped from its back"), fields, returns, crossChecks]).toEqual([
     owned("a type's set of what's stepped from its back"),
-    ["typed", "borrows", "locals", "fields", "counted"],
+    ["typed", "borrows", "locals", "fields", "lengths"],
     "IndexSet<Ty<'tcx>>",
     [],
   ]);
