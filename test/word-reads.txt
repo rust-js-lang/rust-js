@@ -4,15 +4,13 @@
 # question of a variable asks its `Name`; a word read here is one the
 # spelling step hasn't moved yet. Step done when only diagnostics are left.
 src/js.rs	2
-src/js/applied.rs	4
-src/js/applied/tried.rs	1
+src/js/applied.rs	3
 src/js/expr_walk.rs	5
 src/js/pattern.rs	1
 src/js/stmt_walk.rs	1
 src/js/validate.rs	2
 src/lower.rs	1
 src/lower/binding_calls.rs	1
-src/lower/calls.rs	1
 src/lower/classes/defaults.rs	1
 src/lower/classes/member_functions.rs	2
 src/lower/classes/prototypes.rs	1

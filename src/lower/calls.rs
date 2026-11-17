@@ -388,9 +388,9 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
 /// `item.a.b`. `None` of a pattern no part reads as it binds, a default's
 /// or a rest's. The one reading of a pattern as its argument's parts, a
 /// closure inlined where it's called and an `Option`'s `map` (#1900).
-pub(super) fn pattern_parts<'p>(pattern: &'p js::Pattern, arg: &Expr) -> Option<Vec<(&'p str, Expr)>> {
+pub(super) fn pattern_parts<'p>(pattern: &'p js::Pattern, arg: &Expr) -> Option<Vec<(&'p js::Name, Expr)>> {
     match pattern {
-        js::Pattern::Name(name) => Some(vec![(name.word(), arg.clone())]),
+        js::Pattern::Name(name) => Some(vec![(name, arg.clone())]),
         js::Pattern::Array(items) => {
             let mut parts = Vec::new();
             for (i, item) in items.iter().enumerate() {
@@ -418,12 +418,14 @@ fn inlined(params: &[js::Pattern], args: &[Expr], value: &Expr) -> Option<Expr> 
     if params.len() <= args.len() && args.iter().all(Expr::reads_same) {
         // Each variable a parameter binds, and the part of its argument it
         // is (`pattern_parts`).
-        let parts: Option<Vec<(&str, Expr)>> = (params.iter().zip(args))
+        let parts: Option<Vec<(&js::Name, Expr)>> = (params.iter().zip(args))
             .map(|(p, arg)| pattern_parts(p, arg))
             .collect::<Option<Vec<_>>>()
             .map(|parts| parts.into_iter().flatten().collect());
         return parts.and_then(|parts| {
-            value.substitute(&|name: &str| parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone()))
+            value.substitute_names(&|name: &js::Name| {
+                parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone())
+            })
         });
     }
     // A thread-local made where it's first used, `x()` (ADR 0037, amended),

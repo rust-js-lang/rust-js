@@ -459,7 +459,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         None => Vec::new(),
                         Some(param) => crate::lower::calls::pattern_parts(param, &option)?,
                     };
-                    body.substitute(&|name: &str| parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone()))
+                    body.substitute_names(&|name: &js::Name| parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone()))
                 });
                 let value = match value {
                     Some(value) => value,

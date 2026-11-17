@@ -197,7 +197,7 @@ fn set_at(try_catch: &mut Stmt, made: usize, set: usize) {
     };
     let into = into.clone();
     tried[made].kind = StmtKind::Assign(to, value.clone());
-    merged(&mut tried[made + 1..set], value_name.word(), &into);
+    crate::js::stmt_walk::replaced(&mut tried[made + 1..set], &value_name, &into);
 }
 
 /// Of a `try`'s `tried` and its `catch`, the `const` of the value made, the

@@ -591,7 +591,7 @@ fn in_place(
         let of = given.unwrap_or(param);
         let to = Name::derived_apart(of, &mentioned);
         let mut after = body.split_off(first + 1);
-        merged(&mut after, param.word(), &to);
+        super::stmt_walk::replaced(&mut after, param, &to);
         let again = Writes::sets(&after, &to);
         body[first].kind = match again {
             true => StmtKind::Let(to, Some(value)),

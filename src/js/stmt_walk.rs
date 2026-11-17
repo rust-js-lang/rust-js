@@ -592,18 +592,10 @@ pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
     each_named(stmts, from, &mut |name| name.respell(to));
 }
 
-/// `stmts` with each declaration and read of the name `from` made `into`,
-/// another variable's, where a pass makes the two one, a shadow its binding
-/// or a value its variable: each is that variable then, not one spelled as
-/// it, as names are ids (ADR 1150). `renamed` respells one variable.
-pub fn merged(stmts: &mut [Stmt], from: &str, into: &Name) {
-    each_named(stmts, from, &mut |name| *name = into.clone());
-}
-
 /// `stmts` with each declaration and read of the variable `from`, by its
 /// id, a closure's in them too, made `to`: one variable made another, a
 /// shadow its binding or a value its variable, or, `to` being `from`
-/// respelled, one respelled (ADR 1150). `renamed` and `merged` asked it of
+/// respelled, one respelled (ADR 1150). `renamed` asks it of
 /// a word.
 pub fn replaced(stmts: &mut [Stmt], from: &Name, to: &Name) {
     each_name(stmts, false, &mut |name| {

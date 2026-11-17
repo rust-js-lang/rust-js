@@ -146,24 +146,25 @@ fn set_prototypes(
         };
         // What the module makes, which isn't made yet right after the
         // constructor: a function too, which may read it.
-        let made: IndexSet<&str> = (items.iter())
+        let made: IndexSet<&js::Name> = (items.iter())
             .filter_map(|item| match item {
-                js::Item::Function(function) => Some(function.name.word()),
-                item => item.declared(),
+                js::Item::Function(function) => Some(&function.name),
+                item => item.declared_name(),
             })
-            .filter(|&name| name != owner)
+            .filter(|name| !name.is(owner))
             .collect();
         let mut read = None;
         if let js::Item::Statements(stmts) = &items[set] {
-            js::visit_stmts(stmts, &mut |name| {
+            js::visit_stmt_names(stmts, &mut |name| {
                 if read.is_none() && made.contains(name) {
-                    read = Some(name.to_owned());
+                    read = Some(name.clone());
                 }
             });
         }
         if let Some(name) = read {
             refuse(format!(
-                "of `{name}`, its module's: set right after its constructor, before its methods, it's made of globals and imports alone"
+                "of `{}`, its module's: set right after its constructor, before its methods, it's made of globals and imports alone",
+                name.word()
             ));
             continue;
         }
