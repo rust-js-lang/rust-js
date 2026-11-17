@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "async-arg-named",
+    breaks:
+      "`__arg0`, rustc's name of an `async fn`'s parameter of a pattern, is a name the program wrote, kept, `const { params } = __arg0`, not taken apart where it's given",
+    file: "src/lower/mir/locals.rs",
+    find: "                && !rustc_made_arg(info.name)\n",
+    replace: "",
+    tests: ["test/lowering-matches.test.ts", "-t", "an async fn's parameter pattern from MIR"],
+  },
+  {
     name: "collects-at-one-span-of-sources-apart",
     breaks:
       "two `collect()`s a macro's repetition writes at one span, of sources `a` and `b`, each take one source's capacity, `1 3` where Rust's first is `1 10`, as MIR's call at the span takes any collect's there (#1788, ADR 1151)",

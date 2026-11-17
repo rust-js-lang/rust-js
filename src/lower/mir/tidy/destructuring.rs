@@ -359,15 +359,15 @@ pub(super) fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
 /// and reads nowhere else, `(_2) => { const i = _2[0]; const c = _2[1]; … }`:
 /// taken apart where it's given, `([i, c]) => …`.
 pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
-    // An `async fn`'s too, `__arg0`, which its body's `let` takes apart,
-    // of the copy its body holds, `__arg0$1`.
-    let unnamed = |name: &js::Name| {
-        let arg = name.word().split('$').next().and_then(|n| n.strip_prefix("__arg"));
-        is_temporary(name) || arg.is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
-    };
+    // An `async fn`'s too, of a pattern, which rustc binds as `__arg0` and
+    // lowering takes for a temporary (`mir_locals`), of the copy its body
+    // holds.
+    // Each parameter's name, as it's given: an `async fn`'s body copies each
+    // first, `const n$1 = n;`, which `copied_params` makes the parameter.
+    let given: Vec<js::Name> = params.iter().flat_map(|p| p.bound()).cloned().collect();
     for param in params.iter_mut() {
         let js::Pattern::Name(name) = param else { continue };
-        if !unnamed(name) {
+        if !is_temporary(name) {
             continue;
         }
         let mut name = name.clone();
@@ -383,32 +383,20 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             *param = js::Pattern::Name(name.clone());
             body.remove(0);
         }
-        if !unnamed(&name) {
-            continue;
-        }
-        // Taken apart already, `const { params } = __arg0;`: that pattern.
-        if let Some(Stmt {
-            kind:
-                StmtKind::Destructure {
-                    pattern,
-                    value,
-                    mutable: false,
-                },
-            ..
-        }) = body.first()
-            && matches!(&value.kind, ExprKind::Var(v) if *v == name)
-            && js::mentions_of(&body[1..], &name) == 0
-        {
-            *param = pattern.clone();
-            body.remove(0);
+        if !is_temporary(&name) {
             continue;
         }
         // Read after the constants the body declares first, its drop flags.
         constants_first(body, 0, 0, &name);
+        // And after another parameter's copy, `const n$1 = n;`.
         let start = (body.iter())
-            .take_while(
-                |stmt| matches!(&stmt.kind, StmtKind::Let(bound, Some(value)) if value.is_constant() && *bound != name),
-            )
+            .take_while(|stmt| match &stmt.kind {
+                StmtKind::Let(bound, Some(value)) => value.is_constant() && *bound != name,
+                StmtKind::Const(bound, value) => {
+                    *bound != name && matches!(&value.kind, ExprKind::Var(v) if *v != name && given.contains(v))
+                }
+                _ => false,
+            })
             .count();
         let read = nested_parts(&body[start..], &name);
         let count = read.len();

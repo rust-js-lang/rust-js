@@ -1067,3 +1067,19 @@ reads goes, but never names it for what it holds, `const _ = borrow[i]` of
 port's, which a probe of the old answer against the new held over all of
 them.
 
+## rustc's `__arg0` is no name the program gives (2026-11-17)
+
+An `async fn`'s parameter of a pattern, `Ctx { params, .. }: Ctx`, rustc
+binds as `__arg0`, which the program never wrote; it was a name the
+program gave, `Of::Program`, and taking a parameter apart where it's given
+asked its word for `__arg`. Now `mir_locals` takes rustc's own, `__arg`
+and its index, at the boundary where lowering reads rustc's identifiers, for
+none the program names: a temporary, which a parameter of a pattern is in
+a function that isn't `async`, so `destructured_params` asks `is_temporary`
+alone. Taken apart where it's given as a function's is, one after another
+parameter is too, past the copy the body holds of that one first, `const
+n$1 = n;`: `async function total(n, [a, b])`, where it stayed `const a =
+_2[0]` (`test/lowering-async.test.ts`). Its parts taken apart in its body
+first, `const { params } = __arg0;`, no longer happen, and that branch went:
+none of the corpus, the tests or React's port reached it.
+

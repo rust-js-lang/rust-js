@@ -66,7 +66,7 @@ export async function latentSurvivors(
   if (survived.length === 0) return [];
   const { latent, ours } = latentOf(results, await resultsAt(root, work, base, survived));
   writeFileSync(join(work, "latent.json"), JSON.stringify({ base, latent: latent.map((name) => ({ name, breaks: breaks(name) })) }, null, 2) + "\n");
-  if (latent.length > 0) console.log(`latent, surviving at ${base.slice(0, 9)} too, not this push's: ${latent.join(", ")}`);
+  if (latent.length > 0) console.log(`latent, surviving at ${base} too, not this push's: ${latent.join(", ")}`);
   if (ours.length > 0) console.log(`this push's, caught at ${base.slice(0, 9)} or not run there: ${ours.join(", ")}`);
   return latent;
 }

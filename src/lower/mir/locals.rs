@@ -144,6 +144,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|owner| crate::lower::bindings::given_let_names(self.tcx, owner))
             .unwrap_or_default();
         for info in &body.var_debug_info {
+            // Nor an `async fn`'s parameter of a pattern, `Ctx { params, .. }:
+            // Ctx`, which rustc binds as `__arg0` and its body takes apart:
+            // a temporary, `_1`, as the program names it nothing.
             // A variable a std macro makes, `format_args!`'s `args`, isn't one
             // the program names, nor `.await`'s `result`; a derived impl's
             // parameters, its `self` and its `f`, are.
@@ -152,6 +155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && user[place.local].is_none()
                 && (!info.source_info.span.in_external_macro(sm) || body.local_kind(place.local) == LocalKind::Arg)
                 && !info.source_info.span.is_desugaring(rustc_span::DesugaringKind::Await)
+                && !rustc_made_arg(info.name)
                 && !continued.contains(&place.local)
             {
                 // A method's `self`, named after its type, `counter` for a
@@ -530,4 +534,13 @@ impl<'tcx> mir::visit::Visitor<'tcx> for Uses {
             self.0.push(local);
         }
     }
+}
+
+/// Whether rustc made `name`, of an `async fn`'s parameter whose pattern
+/// isn't an identifier, `__arg0` of `Ctx { params, .. }: Ctx`: rustc's
+/// lowering names each such one `__arg` and its index, which no program can
+/// write, Rust reserving no `__` but its own lowering making these alone.
+fn rustc_made_arg(name: rustc_span::Symbol) -> bool {
+    let name = name.as_str();
+    name.len() > "__arg".len() && name.starts_with("__arg") && name["__arg".len()..].bytes().all(|b| b.is_ascii_digit())
 }

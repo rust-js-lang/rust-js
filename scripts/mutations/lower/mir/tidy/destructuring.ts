@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "async-parts-before-other-copies",
+    breaks:
+      "an `async fn`'s pattern parameter after another, `(n, (a, b))`, isn't taken apart where it's given, its body's copy of `n` first: `const a = _2[0]; const b = _2[1];`",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "                    *bound != name && matches!(&value.kind, ExprKind::Var(v) if *v != name && given.contains(v))\n",
+    replace: "                    false\n",
+    tests: ["test/lowering-async.test.ts", "-t", "pattern parameter after another"],
+  },
+  {
     name: "tuple-part-read-after-its-object-set",
     breaks: "`match (v.pop(), x.0)`'s `x.0` is read where an arm binds it, after a guard's `x.0 += 10` (#1035)",
     file: "src/lower/mir/tidy/destructuring.rs",
@@ -155,19 +164,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "async-arg-named",
-    breaks:
-      "`__arg0`, an `async fn`'s parameter, is a name the program wrote, kept",
-    file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        is_temporary(name) || arg.is_some_and(",
-    replace: "        is_temporary(name) || false && arg.is_some_and(",
-    tests: [
-      "test/lowering-matches.test.ts",
-      "-t",
-      "an async fn's parameter pattern from MIR",
-    ],
-  },
-  {
     name: "one-field-pattern-kept-apart",
     breaks:
       "a `let` pattern of one field of a named variable is `const message = error.message;`",
@@ -178,19 +174,6 @@ export const mutations: Mutation[] = [
       "test/lowering-matches.test.ts",
       "-t",
       "a let pattern of a named variable takes it apart",
-    ],
-  },
-  {
-    name: "destructured-param-kept",
-    breaks:
-      "an `async fn`'s parameter taken apart in its body stays `(__arg0) { const { params } = __arg0;`",
-    file: "src/lower/mir/tidy/destructuring.rs",
-    find: "            *param = pattern.clone();\n            body.remove(0);\n            continue;\n",
-    replace: "            let _ = pattern;\n",
-    tests: [
-      "test/lowering-matches.test.ts",
-      "-t",
-      "an async fn's parameter pattern from MIR",
     ],
   },
   {
@@ -298,8 +281,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter's parts after its drop flags aren't its pattern: it's `_1`",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "                |stmt| matches!(&stmt.kind, StmtKind::Let(bound, Some(value)) if value.is_constant() && *bound != name),\n",
-    replace: "                |_| false,\n",
+    find: "                StmtKind::Let(bound, Some(value)) => value.is_constant() && *bound != name,\n",
+    replace: "                StmtKind::Let(..) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
     snapshots: true,
   },

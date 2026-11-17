@@ -165,3 +165,20 @@ pub async fn report() -> String {
   const hung = new Promise((resolve) => setTimeout(() => resolve("hung"), 1000));
   expect(await Promise.race([(await import(join(dir, "lib.js"))).report(), hung])).toBe("6 6 true 4");
 });
+
+// An `async fn`'s parameter of a pattern after another parameter, `n`, is
+// taken apart where it's given, past the copy its body holds of that one
+// first, `const n$1 = n;`: `(n, [a, b])`, as a function's is; rustc binds
+// it as `__arg1`, which the program never names.
+test("an async fn's pattern parameter after another is taken apart where it's given", async () => {
+  const dir = fixture("async-param-pattern-after");
+  writeFileSync(join(dir, "lib.rs"), `pub async fn total(n: u32, (a, b): (u32, u32)) -> u32 {
+    n + a + b
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("export async function total(n, [a, b]) {\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(await lib.total(1, [2, 3])).toBe(6);
+});
