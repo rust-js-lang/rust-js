@@ -363,4 +363,20 @@ export const mutations: Mutation[] = [
     replace: "                    true || crate::lower::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
     tests: ["test/effect-cleanup-drops.test.ts", "-t", "memo gives back"],
   },
+  {
+    name: "moved-once-closures-unread",
+    breaks: "a closure called by `&`, bound by `let` and moved once into an `F: FnOnce`, isn't taken as called once, so it's refused where its body could drop what it took (#995)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        let moved_once = all_bodies.iter().flat_map(|body| moved_once(tcx, &body.thir)).collect();\n",
+    replace: "        let moved_once = all_bodies.iter().flat_map(|body| moved_once(tcx, &body.thir)).filter(|_| false).collect();\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_once_callee.rs$"],
+  },
+  {
+    name: "moved-once-other-uses-ignored",
+    breaks: "a closure called by `&` before it's moved into an `F: FnOnce` is taken as called once, so its first call drops what it took, and the second reads it dropped (#995)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        .filter(|var| uses.get(var) == Some(&1))\n",
+    replace: "        .filter(|var| uses.get(var).is_some())\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_closure_called_then_moved_into_a_once_callee_refused.rs$"],
+  },
 ];

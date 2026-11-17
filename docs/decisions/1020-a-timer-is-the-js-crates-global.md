@@ -234,3 +234,37 @@ closures; and the memo's refusal. Mutations returned-once-closure-refused
 any-binding-result-called-once (`analysis/closures.rs`);
 closure-made-anywhere and returned-closure-made-refused retargeted.
 
+## Amendment: a closure moved once into an `F: FnOnce` is called once too (#995, 2026-11-17)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, Rust's behavior
+kept; a refusal lifted.
+
+A closure rustc infers `Fn`, holding a value with a destructor, bound by
+`let` and then moved into a generic `F: FnOnce`, `let f = move || ..;
+call_once(f)`, was refused: "giving `call_once`, which calls it once, a
+function called by `&` that holds a value with a destructor". The same
+closure written in place compiled, since rustc infers that one `FnOnce`
+from the bound.
+
+**Its body is its `call_once`'s too** (`moved_once`,
+`analysis/closures.rs`), as one JS calls once is. It qualifies where the
+variable's one use, by its own id, so a shadow of its name is another,
+is that move into a parameter the callee calls by `FnOnce` alone. That's
+`calls_param_once`, the reading `check_called_once` asks, however many
+bounds deep (#2031). Rust's `FnOnce` of it calls it by `&` and drops it,
+as the call ends or unwinds. Where the callee never calls it, its drop is
+the `dropF` it's given. It's a fact of its own, `ClosureFacts::moved_once`,
+and its body takes that shape only where it drops something. One that
+drops nothing keeps its own body and its early `return`s, as React's
+`reject` in ReactFlightClient.js does: a first draft reshaped it into
+nested `if`s. Called or borrowed besides, it stays refused:
+carrying the drop at its body's end would drop what it took at its first
+call.
+
+Corpus case `fn_closure_moved_into_a_once_callee` covers called,
+uncalled, forwarded through a second generic `FnOnce`, given as an
+`I: Is<F>`, a shadow of its name, and a panic, in plain, ITERATOR_FORMS
+and METAMORPHIC=all. Compile-fail case
+`fn_closure_called_then_moved_into_a_once_callee_refused`. Mutations
+`moved-once-closures-unread` and `moved-once-other-uses-ignored`
+(`lower/analysis/closures.ts`).

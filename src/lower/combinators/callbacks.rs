@@ -132,7 +132,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (&ty, &input) in tys.iter().zip(inputs) {
             let kind = crate::lower::recognition::function_kind(self.tcx, self.frame.owner, ty);
             if kind.is_some_and(|kind| kind != ty::ClosureKind::FnOnce)
-                && !matches!(*ty.kind(), ty::Closure(id, _) if self.krate.closure_facts.called_once(id))
+                && !matches!(*ty.kind(), ty::Closure(id, _)
+                    if self.krate.closure_facts.called_once(id) || self.krate.closure_facts.moved_once(id))
                 && calls_param_once(self.tcx, callee, input)
                 && self.drops_function(ty)
             {

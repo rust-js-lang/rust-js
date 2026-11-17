@@ -145,9 +145,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (None, None) => mir,
         };
         // One rustc infers `Fn` or `FnMut` that a binding calls once, as its
-        // `call_once` runs it, dropping what it took (ADR 1020).
+        // `call_once` runs it, dropping what it took (ADR 1020); or one moved
+        // once into an `F: FnOnce`, where it drops something (#995): one
+        // that drops nothing keeps its own body, its early `return`s.
         let once;
-        let mir = match self.krate.closure_facts.called_once(def_id) {
+        let called_once = self.krate.closure_facts.called_once(def_id)
+            || (self.krate.closure_facts.moved_once(def_id) && self.drops(ty) != crate::lower::drops::Drops::Nothing);
+        let mir = match called_once {
             true => {
                 once = (mir.called_once(self.tcx))
                     .ok_or_else(|| self.unsupported(span, "a closure called once that reads itself whole"))?;

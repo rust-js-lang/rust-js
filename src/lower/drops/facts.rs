@@ -211,7 +211,8 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     && args.iter().any(|&a| {
                         let ty = self.thir[a].ty;
                         self.borrowing_closure(ty)
-                            && !matches!(*ty.kind(), ty::Closure(id, _) if self.cx.closure_facts.called_once(id))
+                            && !matches!(*ty.kind(), ty::Closure(id, _)
+                                if self.cx.closure_facts.called_once(id) || self.cx.closure_facts.moved_once(id))
                     }) =>
             {
                 self.problem(
@@ -232,7 +233,8 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     let at = adt.args.iter().position(|arg| arg.as_type() == Some(value));
                     self.moved_variable(field.expr)
                         && self.borrowing_closure(value)
-                        && !matches!(*value.kind(), ty::Closure(id, _) if self.cx.closure_facts.called_once(id))
+                        && !matches!(*value.kind(), ty::Closure(id, _)
+                            if self.cx.closure_facts.called_once(id) || self.cx.closure_facts.moved_once(id))
                         && at.is_some_and(|at| {
                             crate::lower::combinators::adt_param_called_once(
                                 self.cx.recognition.tcx,

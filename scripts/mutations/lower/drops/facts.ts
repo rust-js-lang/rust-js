@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure rustc infers `Fn` that holds a value with a destructor, given where it's made to a binding that calls it once, is refused as one given away without being called once (ADR 1020)",
     file: "src/lower/drops/facts.rs",
-    find: "                            && !matches!(*ty.kind(), ty::Closure(id, _) if self.cx.closure_facts.called_once(id))\n",
+    find: "                            && !matches!(*ty.kind(), ty::Closure(id, _)\n                                if self.cx.closure_facts.called_once(id) || self.cx.closure_facts.moved_once(id))\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",

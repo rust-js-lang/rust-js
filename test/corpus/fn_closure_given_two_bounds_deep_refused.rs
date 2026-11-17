@@ -1,8 +1,10 @@
 //@ compile-fail: giving `via`, which calls it once, a function called by `&` that holds a value with a destructor
-// A closure rustc infers `Fn`, holding a value with a destructor, given to
-// a function whose parameter is an `impl Wrapped<I>` of an `I: Is<F>` of
-// an `F: FnOnce`, two bounds from the `FnOnce` that calls it (#2031): that
-// call drops none of it, so it's refused, as one bound deep is (#966).
+// A closure rustc infers `Fn`, holding a value with a destructor, called by
+// `&` and then given to a function whose parameter is an `impl Wrapped<I>`
+// of an `I: Is<F>` of an `F: FnOnce`, two bounds from the `FnOnce` that
+// calls it (#2031): that call drops none of it, and its own body can't, as
+// its first call would (#995), so it's refused, as one bound deep is
+// (#966).
 struct Loud(&'static str);
 
 impl Drop for Loud {
@@ -42,5 +44,6 @@ fn main() {
         println!("in {}", held.0);
         6
     };
+    println!("{}", h());
     println!("{}", via(h));
 }
