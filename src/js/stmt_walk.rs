@@ -166,7 +166,7 @@ pub fn passes_on_after<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool
     let (callee, args) = passing_call(body, statement)?;
     let (leading, given) = args.split_at(args.len().checked_sub(params.len())?);
     let names = given_names(params, given)?;
-    (!names.iter().any(|name| callee.mentions_var(name))).then_some((callee, leading))
+    (!names.iter().any(|name| callee.mentions_name(name))).then_some((callee, leading))
 }
 
 /// `passes_on`, of a call given values after what the function's given,
@@ -177,7 +177,7 @@ pub fn passes_on_before<'e>(params: &[Pattern], body: &'e [Stmt], statement: boo
     let (callee, args) = passing_call(body, statement)?;
     let (given, trailing) = (args.len() >= params.len()).then(|| args.split_at(params.len()))?;
     let names = given_names(params, given)?;
-    let named = |e: &Expr| names.iter().any(|name| e.mentions_var(name));
+    let named = |e: &Expr| names.iter().any(|name| e.mentions_name(name));
     (!named(callee) && !trailing.iter().any(named)).then_some((callee, trailing))
 }
 
@@ -207,13 +207,13 @@ fn passing_call(body: &[Stmt], statement: bool) -> Option<(&Expr, &[Expr])> {
 
 /// The names of `params` where `given` passes each on in order, a rest
 /// parameter spread.
-fn given_names<'p>(params: &'p [Pattern], given: &[Expr]) -> Option<Vec<&'p str>> {
+fn given_names<'p>(params: &'p [Pattern], given: &[Expr]) -> Option<Vec<&'p Name>> {
     (params.iter())
         .zip(given)
         .map(|(param, arg)| match (param, &arg.kind) {
-            (Pattern::Name(name), ExprKind::Var(v)) if v == name => Some(name.word()),
+            (Pattern::Name(name), ExprKind::Var(v)) if v == name => Some(name),
             (Pattern::Rest(name), ExprKind::Spread(spread)) if matches!(&spread.kind, ExprKind::Var(v) if v == name) => {
-                Some(name.word())
+                Some(name)
             }
             _ => None,
         })
@@ -528,13 +528,13 @@ fn canonical(stmts: &[Stmt], facts: bool) -> Vec<Stmt> {
     unspan(&mut stmts);
     let mut declared = Vec::new();
     binders(&mut stmts, &mut declared);
-    let names: IndexMap<String, String> = (declared.into_iter().enumerate())
+    let names: IndexMap<Name, String> = (declared.into_iter().enumerate())
         .map(|(i, name)| (name, format!("${i}")))
         .collect();
     // Each binder the name of its number alone, its id let go, so two made
     // apart compare alike (#1681 change 3).
     let rename = |name: &mut Name| {
-        if let Some(to) = names.get(name.word()) {
+        if let Some(to) = names.get(name) {
             *name = Name::default();
             name.respell(to.clone());
         }
@@ -600,6 +600,19 @@ pub fn merged(stmts: &mut [Stmt], from: &str, into: &Name) {
     each_named(stmts, from, &mut |name| *name = into.clone());
 }
 
+/// `stmts` with each declaration and read of the variable `from`, by its
+/// id, a closure's in them too, made `to`: one variable made another, a
+/// shadow its binding or a value its variable, or, `to` being `from`
+/// respelled, one respelled (ADR 1150). `renamed` and `merged` asked it of
+/// a word.
+pub fn replaced(stmts: &mut [Stmt], from: &Name, to: &Name) {
+    each_name(stmts, false, &mut |name| {
+        if name == from {
+            *name = to.clone();
+        }
+    });
+}
+
 /// `items` with each declaration and read of `variable`, by its id,
 /// spelled `to`: one variable respelled wherever it is in a module, a local
 /// given apart from a name of the module's its scope reads (ADR 1150).
@@ -661,7 +674,7 @@ pub fn rebound(stmts: &mut [Stmt]) {
 pub fn spellings(stmts: &[Stmt]) -> Vec<String> {
     let mut words = Vec::new();
     each_name(&mut stmts.to_vec(), false, &mut |name| {
-        words.push(name.word().to_string())
+        words.push(name.word().to_string()) // word: the spelling itself, what it compares
     });
     words
 }
@@ -741,7 +754,10 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
 /// around them: anywhere, where their own blocks declare a `name`, or in a
 /// closure or function of theirs that takes or declares its own, which
 /// it reads there (`outside_shadows`). A closure's own `value` that reads
-/// nothing of `read` is no other `value` to it (rd514).
+/// nothing of `read` is no other `value` to it (rd514). Asked of their
+/// words: a closure's own `value`, another variable, is spelled `value`
+/// still, which preparation keeps as the program wrote it, so a read of
+/// the outer `value` put in it would read the closure's (`Problem::Captured`).
 pub fn read_where_other(stmts: &[Stmt], read: &str, name: &str) -> bool {
     if declares_own(stmts, name) {
         return mentions_in(stmts, read) > 0;
@@ -818,17 +834,24 @@ pub fn read_as_this(stmts: &mut [Stmt], name: &str) -> bool {
 pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
     let mut taken = IndexSet::default();
     names_in(body, &mut taken);
+    this_outside_accessors_of(body, &Name::declared(crate::names::fresh_in(&mut taken, name)))
+}
+
+/// `this_outside_accessors`, its `const` the variable `instance`, which
+/// preparation spells apart from what the body names (ADR 1150).
+pub fn this_outside_accessors_of(body: &mut Vec<Stmt>, instance: &Name) -> bool {
     // Each nested function's body set aside, a mark of which in its place,
     // then put back where its mark is.
-    let mark = |k: usize| StmtKind::Expr(Expr::var(format!("\u{0}nested{k}"))).at(Span::NONE);
+    let mut marks: Vec<Name> = Vec::new();
     let mut nested: Vec<Vec<Stmt>> = Vec::new();
     each_expr_mut(body, &mut |e| {
         if let ExprKind::Function(function) = &mut e.kind {
-            let marked = vec![mark(nested.len())];
+            let mark = Name::declared(format!("\u{0}nested{}", marks.len()));
+            let marked = vec![StmtKind::Expr(Expr::var(&mark)).at(Span::NONE)];
+            marks.push(mark);
             nested.push(std::mem::replace(&mut function.body, marked));
         }
     });
-    let instance = Name::declared(crate::names::fresh_in(&mut taken, name));
     let mut kept = false;
     each_expr_mut(body, &mut |e| {
         if let ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) = &mut e.kind {
@@ -850,16 +873,13 @@ pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
                 },
             ] = function.body.as_slice()
             && let ExprKind::Var(marked) = &marked.kind
-            && let Some(k) = marked
-                .word()
-                .strip_prefix("\u{0}nested")
-                .and_then(|k| k.parse::<usize>().ok())
+            && let Some(k) = marks.iter().position(|mark| mark == marked)
         {
             function.body = nested[k].take().expect("each nested function's body, put back once");
         }
     });
     if kept {
-        body.insert(0, StmtKind::Const(instance, Expr::this()).at(Span::NONE));
+        body.insert(0, StmtKind::Const(instance.clone(), Expr::this()).at(Span::NONE));
     }
     kept
 }
@@ -896,25 +916,25 @@ pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {
     each_expr_mut(&mut stmts, &mut |e| {
         if let ExprKind::Function(function) = &mut e.kind {
             for param in function.params.iter_mut() {
-                param.each_name_mut(&mut |n| declared.push(n.to_string()));
+                param.each_name_mut(&mut |n| declared.push(n.clone()));
             }
         }
     });
-    declared
+    declared.iter().map(ToString::to_string).collect()
 }
 
 /// The names `stmts` declare, in order, an arrow's in them too.
-fn binders(stmts: &mut [Stmt], declared: &mut Vec<String>) {
-    rename_binders(stmts, &mut |name| declared.push(name.to_string()));
+fn binders(stmts: &mut [Stmt], declared: &mut Vec<Name>) {
+    rename_binders(stmts, &mut |name| declared.push(name.clone()));
     each_expr_mut(stmts, &mut |e| match &mut e.kind {
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             params
                 .iter_mut()
-                .for_each(|p| p.each_name_mut(&mut |n| declared.push(n.to_string())));
-            rename_binders(body, &mut |n: &mut Name| declared.push(n.to_string()));
+                .for_each(|p| p.each_name_mut(&mut |n| declared.push(n.clone())));
+            rename_binders(body, &mut |n: &mut Name| declared.push(n.clone()));
         }
         ExprKind::Function(function) => {
-            rename_binders(&mut function.body, &mut |n: &mut Name| declared.push(n.to_string()))
+            rename_binders(&mut function.body, &mut |n: &mut Name| declared.push(n.clone()))
         }
         _ => {}
     });
@@ -1104,28 +1124,28 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
 
     let order = {
         let items: Vec<&Item> = items.iter().flatten().collect();
-        let declaring: IndexMap<&str, usize> = (items.iter().enumerate())
-            .filter_map(|(i, item)| Some((item.declared()?, i)))
+        let declaring: IndexMap<&Name, usize> = (items.iter().enumerate())
+            .filter_map(|(i, item)| Some((item.declared_name()?, i)))
             .collect();
-        let called: IndexMap<&str, &Item> = (items.iter())
+        let called: IndexMap<&Name, &Item> = (items.iter())
             .filter_map(|item| match item {
-                Item::Function(function) => Some((function.name.word(), *item)),
-                Item::Namespace(namespace) => Some((namespace.name.word(), *item)),
+                Item::Function(function) => Some((&function.name, *item)),
+                Item::Namespace(namespace) => Some((&namespace.name, *item)),
                 Item::Const(_) | Item::Statements(_) => None,
             })
             .collect();
         // What each `const` holds, a function its value may be, which what
         // reads it may call (ADR 0306, amended).
-        let holds: IndexMap<&str, Vec<&str>> = (items.iter())
+        let holds: IndexMap<&Name, Vec<&Name>> = (items.iter())
             .filter_map(|item| match item {
                 Item::Const(constant) => {
                     let mut held = Vec::new();
-                    (constant.value).visit_held_vars(&mut |v, only_held| {
+                    (constant.value).visit_held_names(&mut |v, only_held| {
                         if only_held {
                             held.push(v);
                         }
                     });
-                    Some((constant.name.word(), held))
+                    Some((&constant.name, held))
                 }
                 _ => None,
             })
@@ -1146,13 +1166,13 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
                     Item::Const(constant) => vec![&constant.value],
                     Item::Namespace(namespace) => namespace.constants.iter().map(|c| &c.value).collect(),
                     Item::Statements(stmts) => {
-                        visit_stmts(stmts, &mut |v| work.push(v));
+                        visit_stmt_names(stmts, &mut |v| work.push(v));
                         Vec::new()
                     }
                     Item::Function(_) => Vec::new(),
                 };
                 for value in values {
-                    value.visit_held_vars(&mut |v, only_held| match only_held {
+                    value.visit_held_names(&mut |v, only_held| match only_held {
                         true => _ = seen.insert(v),
                         false => work.push(v),
                     });
@@ -1162,7 +1182,7 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
                     seen.insert(name);
                     if ran.insert(name) {
                         if let Some(item) = called.get(name) {
-                            item.visit_vars(&mut |v| work.push(v));
+                            item.visit_names(&mut |v| work.push(v));
                         }
                         work.extend(holds.get(name).into_iter().flatten());
                     }

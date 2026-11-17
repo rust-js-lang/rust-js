@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`const x = t ? v : undefined; if (x)` is `if (t)` of a `v` that may be `None` itself, so `maybe(None, true)` reads `undefined.name` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v.word());\n",
+    find: "    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);\n",
     replace: "    let present = true;\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "filtered-temporary-unnamed",
     breaks: "a `filter`'s temporary keeps its own name where it's tested where it's made, `const option = chunks.get(id); if (option == null || ..)`, not the program's binding's, `chunk`, as upstream writes it (#1619)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "                js::renamed(&mut stmts[i - 1..], v.word(), x.word());\n",
+    find: "                js::replaced(&mut stmts[i - 1..], &v, &x);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^filter_then_let_else_tests_one_value.rs$"],
     snapshots: true,

@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "declared-name-of-none",
+    breaks: "a `const` declares no variable another item reads, so a thread-local's `const` read by one made before it is made after it, which JS throws on (ADR 0306)",
+    file: "src/js.rs",
+    find: "            Item::Namespace(Namespace { name, .. }) | Item::Const(Const { name, .. }) => Some(name),\n",
+    replace: "            Item::Namespace(_) | Item::Const(_) => None,\n",
+    tests: ["test/modules.test.ts", "-t", "in source order, each after what it reads"],
+  },
+  {
     name: "load-statements-unread",
     breaks: "the helpers what a module runs when it's loaded reads, `$index`, aren't imported",
     file: "src/js.rs",

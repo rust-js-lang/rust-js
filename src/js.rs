@@ -246,8 +246,14 @@ impl Item {
     /// The variable it declares at its module's top that another item can
     /// read: a `const`'s, a type's.
     pub fn declared(&self) -> Option<&str> {
+        self.declared_name().map(|name| name.word())
+    }
+
+    /// The variable it declares at its module's top that another item can
+    /// read, `declared`'s, as its `Name`, so its id (ADR 1150).
+    pub fn declared_name(&self) -> Option<&Name> {
         match self {
-            Item::Namespace(Namespace { name, .. }) | Item::Const(Const { name, .. }) => Some(name.word()),
+            Item::Namespace(Namespace { name, .. }) | Item::Const(Const { name, .. }) => Some(name),
             Item::Statements(_) | Item::Function(_) => None,
         }
     }

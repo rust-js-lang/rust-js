@@ -115,49 +115,49 @@ impl Expr {
         }
     }
 
-    /// Each variable this reads, as `visit_vars` gives them, and whether
+    /// Each variable this reads, as `visit_names` gives them, and whether
     /// its value is only held, in what this evaluates to, neither called nor
     /// read into when this is: this itself, a conditional's branch, an
     /// `||`'s, `&&`'s or `??`'s operand, an array's item or an object's
     /// field, `clz32Fallback` of `Math.clz32 ? Math.clz32 : clz32Fallback`
     /// (ADR 0306, amended).
-    pub fn visit_held_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str, bool)) {
+    pub fn visit_held_names<'a>(&'a self, read: &mut dyn FnMut(&'a Name, bool)) {
         match &self.kind {
-            ExprKind::Var(name) => read(name.word(), true),
+            ExprKind::Var(name) => read(name, true),
             ExprKind::Cond(test, a, b) => {
-                test.visit_vars(&mut |v| read(v, false));
-                a.visit_held_vars(read);
-                b.visit_held_vars(read);
+                test.visit_names(&mut |v| read(v, false));
+                a.visit_held_names(read);
+                b.visit_held_names(read);
             }
             ExprKind::Binary(Op::Or | Op::And | Op::Coalesce, a, b) => {
-                a.visit_held_vars(read);
-                b.visit_held_vars(read);
+                a.visit_held_names(read);
+                b.visit_held_names(read);
             }
-            ExprKind::Array(items) => items.iter().for_each(|item| item.visit_held_vars(read)),
+            ExprKind::Array(items) => items.iter().for_each(|item| item.visit_held_names(read)),
             // A call that runs no code but its own (`Known::RunsNothing`)
             // only holds what it's given: React's `ReactFlightClient({ ..,
             // checkEvalAvailabilityOnceDev })` runs none of it as it's made
             // (#604).
             ExprKind::Call(callee, args) if self.facts.has(crate::js::Known::RunsNothing) => {
-                callee.visit_vars(&mut |v| read(v, false));
-                args.iter().for_each(|arg| arg.visit_held_vars(read));
+                callee.visit_names(&mut |v| read(v, false));
+                args.iter().for_each(|arg| arg.visit_held_names(read));
             }
             ExprKind::Object(props, ..) => {
                 for prop in props {
                     match prop {
-                        Prop::Field(_, value) => value.visit_held_vars(read),
+                        Prop::Field(_, value) => value.visit_held_names(read),
                         Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
-                            key.visit_vars(&mut |v| read(v, false));
-                            value.visit_held_vars(read);
+                            key.visit_names(&mut |v| read(v, false));
+                            value.visit_held_names(read);
                         }
                         Prop::Spread(value)
                         | Prop::Getter(_, value)
                         | Prop::Setter(_, value)
-                        | Prop::Method(_, value) => value.visit_vars(&mut |v| read(v, false)),
+                        | Prop::Method(_, value) => value.visit_names(&mut |v| read(v, false)),
                     }
                 }
             }
-            _ => self.visit_vars(&mut |v| read(v, false)),
+            _ => self.visit_names(&mut |v| read(v, false)),
         }
     }
 
@@ -773,7 +773,8 @@ impl Expr {
             ExprKind::Call(callee, args)
                 if let ExprKind::Member(of, name) = &callee.kind
                     && let ExprKind::Var(global) = &of.kind
-                    && match global.word() {
+                    && let global = global.word() // word: a global, which JS reads by its word
+                    && match global {
                         "BigInt" => matches!(name.as_str(), "asIntN" | "asUintN"),
                         "Math" => name != "random",
                         // A registered symbol of its key, and the key of one,

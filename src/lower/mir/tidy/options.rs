@@ -42,7 +42,7 @@ pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Name
                 && !user.contains(&v)
                 && js::mentions_of(&stmts[i - 1..], &x) == 0
             {
-                js::renamed(&mut stmts[i - 1..], v.word(), x.word());
+                js::replaced(&mut stmts[i - 1..], &v, &x);
             }
         }
         i += 1;
@@ -51,13 +51,13 @@ pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Name
 
 /// Whether `test`, a chain of `&&`, tests first that `v` is there, `v !=
 /// null && ..`: where it holds, `v` is.
-fn tests_present_first(test: &Expr, v: &str) -> bool {
+fn tests_present_first(test: &Expr, v: &js::Name) -> bool {
     let mut first = test;
     while let ExprKind::Binary(js::Op::And, left, _) = &first.kind {
         first = left;
     }
     !std::ptr::eq(first, test)
-        && js::null_test(first, true).is_some_and(|tested| matches!(&tested.kind, ExprKind::Var(n) if n.is(v)))
+        && js::null_test(first, true).is_some_and(|tested| matches!(&tested.kind, ExprKind::Var(n) if n == v))
 }
 
 /// Of `const x = v != null && .. ? v : undefined`, a filter's `Option`,
@@ -70,7 +70,7 @@ fn filtered_names(made: &Stmt) -> Option<(js::Name, js::Name)> {
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    tests_present_first(test, v.word()).then(|| (x.clone(), v.clone()))
+    tests_present_first(test, v).then(|| (x.clone(), v.clone()))
 }
 
 /// `tested_options`'s rewrite of `made`, the `Option`'s `const`, and
@@ -89,7 +89,7 @@ fn tested_option(
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v.word());
+    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);
     if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v) {
         return None;
     }

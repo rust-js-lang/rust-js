@@ -6,11 +6,10 @@
 src/js.rs	2
 src/js/applied.rs	4
 src/js/applied/tried.rs	1
-src/js/expr_walk.rs	7
+src/js/expr_walk.rs	5
 src/js/make.rs	1
 src/js/pattern.rs	1
-src/js/stmt_walk.rs	9
-src/js/storage.rs	1
+src/js/stmt_walk.rs	1
 src/js/validate.rs	2
 src/lower.rs	1
 src/lower/binding_calls.rs	1
@@ -36,7 +35,7 @@ src/lower/mir/rvalues.rs	1
 src/lower/mir/scopes.rs	4
 src/lower/mir/std_calls/fmt_parts.rs	1
 src/lower/mir/temporaries.rs	4
-src/lower/mir/tidy/bindings.rs	15
+src/lower/mir/tidy/bindings.rs	12
 src/lower/mir/tidy/bindings/temporaries.rs	4
 src/lower/mir/tidy/branches.rs	2
 src/lower/mir/tidy/case_rests.rs	1
@@ -53,10 +52,10 @@ src/lower/mir/tidy/logicals.rs	5
 src/lower/mir/tidy/loop_labels.rs	2
 src/lower/mir/tidy/loops.rs	3
 src/lower/mir/tidy/moves.rs	3
-src/lower/mir/tidy/options.rs	6
+src/lower/mir/tidy/options.rs	2
 src/lower/mir/tidy/shadows.rs	1
 src/lower/mir/tidy/switches.rs	2
-src/lower/mir/tidy/values.rs	2
+src/lower/mir/tidy/values.rs	1
 src/lower/mir/tidy/values/handles.rs	1
 src/lower/mir/writer.rs	1
 src/lower/pipeline/load_cycles.rs	1

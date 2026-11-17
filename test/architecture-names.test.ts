@@ -221,3 +221,33 @@ test("a name's word is read outside preparation and printing only as the ratchet
     .filter(([, n]) => n > 0);
   expect(counted.filter(([file, n]) => n > (allowed[file] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${allowed[file] ?? 0}`)).toEqual([]);
 });
+
+// `WORD_WALKS`, which only falls, to none: the calls of the walks that ask
+// a variable by its word, `mentions_in`, `Expr::mentions_var`,
+// `visit_stmts`, `visit_vars`, `each_declared`, `names_in`, `renamed`,
+// `merged`, `outside_shadows`, `read_where_other`, `read_as_this` and
+// `this_outside_accessors`, each with a twin that asks it by its `Name`
+// (`mentions_of`, `mentions_name`, `visit_stmt_names`, `visit_names`,
+// `each_declared_name`, `replaced`, ..), as names are ids (ADR 1150).
+// Change 3's last slice deletes them. A file's own function of one of
+// those names is its own.
+const WORD_WALKS = 236;
+test("a variable is asked of the walks by its word only as counted", () => {
+  const free = ["mentions_in", "visit_stmts", "each_declared", "names_in", "renamed", "merged", "outside_shadows",
+    "read_where_other", "read_as_this", "this_outside_accessors"];
+  const methods = ["mentions_var", "visit_vars"];
+  const walks = (file: string) => {
+    const text = read(file);
+    const lines = text.split("\n");
+    const of = (f: string) => {
+      const own = !file.startsWith("src/js/") && new RegExp(`\\bfn ${f}\\b`).test(text);
+      return lines.filter((line) => !new RegExp(`\\bfn ${f}\\b`).test(line))
+        .flatMap((line) => [...line.matchAll(new RegExp(`(?<![\\w.])(js::)?${f}\\(`, "g"))])
+        .filter((call) => call[1] !== undefined || !own).length;
+    };
+    const ofMethod = (m: string) => lines.filter((line) => !new RegExp(`\\bfn ${m}\\b`).test(line))
+      .reduce((n, line) => n + [...line.matchAll(new RegExp(`\\.${m}\\(`, "g"))].length, 0);
+    return free.reduce((n, f) => n + of(f), 0) + methods.reduce((n, m) => n + ofMethod(m), 0);
+  };
+  expect(sources.reduce((n, file) => n + walks(file), 0)).toBeLessThanOrEqual(WORD_WALKS);
+});
