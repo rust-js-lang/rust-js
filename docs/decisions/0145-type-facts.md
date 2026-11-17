@@ -724,3 +724,42 @@ would have to give it is. A refusal, not a crash. Held by
 type nested past its contract is refused" (the metamorphic `library`
 rewrite of `map_keyed_by_a_tuple_of_a_type_parameter_derived_default_copy`);
 mutation `unsayable-slot-given`, caught.
+
+## Amendment: what a default asks of `Self` itself, each copy asks (2026-11-17, #2011, #1956)
+
+#1313 relayed to each copying impl what a default's collects ask and what
+its calls ask. What the default's own body asks of `Self` directly was
+still asked of the default alone. That includes a std call's specialization
+facts (`fact_specialization`), `Fuse`'s `Fused` and a zip's
+`TrustedRandomAccess`, `TrustedRandomAccessNoCoerce` and `TrustedLen`. The
+copy in `impl<T: Iterator> Tools for T`, the one its callers call, was
+given none of these:
+
+- A `fuse()` of `Self` took ADR 0543's "none says", `false`, and guarded
+  the `Fuse` as it ended. Std passes a `FusedIterator`'s `next` through,
+  so a `FusedIterator` that gives an item after a `None` printed
+  `[None, None, None, None]` where Rust prints `[None, Some(2), None,
+  Some(4)]`. This is a wrong answer (#2011, P0; ADR 0262: results change,
+  Rust's kept).
+- With std's iterator structs, a zip of `Self` was refused: "whether it's
+  a `TrustedRandomAccess` of a type parameter" (#1956).
+
+The calls' fixpoint now takes each default's own ask of its trait's
+parameters, `Self`, through the same translation, `copies_of_default`.
+Each copying impl asks it of its own slot, `T`, which its dictionary is
+given. Only slots are relayed, as for #1313. A library's default compiled
+over `Self` (`instance_over_self`) has no copies, so it asks its callers as
+a function does, as before.
+
+Three plain snapshots now pass `TFused` where they passed `false`. These are
+defaults that flatten `Self`: `flat_map_of_a_where_clause_into_iterator`,
+`flatten_grows_a_vec_as_stds` and
+`trait_default_flat_map_of_arrays_collects_trusted`.
+
+New corpus `trait_default_given_its_callers_facts_of_self` covers a fused
+`Self` that gives after a `None`, an unfused one, a `Vec`'s items, one with
+a destructor, and a `flatten()`. It matches native in the plain build,
+with std's iterator structs, and through every metamorphic rewrite.
+`zip_of_sides_only_callers_know` comes off `iterator-forms`' `differs`
+list, matching native in that build too. Mutation
+`default-self-asks-unrelayed` is caught.

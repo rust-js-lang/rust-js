@@ -522,4 +522,12 @@ export const mutations: Mutation[] = [
     replace: "                        ty::Alias(..) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^type_name_of_an_associated_type_within.rs$"],
   },
+  {
+    name: "default-self-asks-unrelayed",
+    breaks: "a trait's default's own ask of `Self` isn't relayed to the impl that copies it, so `impl<T: Iterator> Tools for T`'s dictionary isn't given `TFused` and the default's `fuse()` guards a `FusedIterator` std passes through: `[None, None, None, None]` where Rust gives `[None, Some(2), None, Some(4)]` (#2011, #1956)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "        for (default, index, fact) in of_defaults {\n",
+    replace: "        for (default, index, fact) in of_defaults.into_iter().filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_given_its_callers_facts_of_self.rs$"],
+  },
 ];

@@ -35,8 +35,8 @@ export function entry() {
 
 const $tExt = new WeakMap();
 
-export function tExt(TIterator, TTrustedLen, TItemConstSize, TItemItemSize) {
-  return $traitImpl($tExt, [TIterator, TTrustedLen, TItemConstSize, TItemItemSize], () => ({
+export function tExt(TIterator, TFused, TTrustedLen, TItemConstSize, TItemItemSize) {
+  return $traitImpl($tExt, [TIterator, TFused, TTrustedLen, TItemConstSize, TItemItemSize], () => ({
     flat: (self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) =>
       $grownVec(
         $roomForHint(
@@ -45,7 +45,7 @@ export function tExt(TIterator, TTrustedLen, TItemConstSize, TItemItemSize) {
             (x) => x,
             TIterator,
             SelfItemIntoIterator,
-            false,
+            TFused,
             TItemConstSize,
             SelfItemIntoIterOneShot,
           ),
@@ -95,7 +95,7 @@ function main() {
         ends,
       ),
   };
-  const vecs = tExt({ next: $next }, true, undefined, 4).flat(
+  const vecs = tExt({ next: $next }, true, true, undefined, 4).flat(
     $iter([[1, 2, 3]]),
     intoIterator,
     undefined,

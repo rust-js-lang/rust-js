@@ -375,6 +375,38 @@ pub(super) fn type_fact_params<'tcx>(
         for fact in lifted {
             changed |= asked.insert(fact);
         }
+        // A trait's default's own ask of its trait's parameters, `Self`'s
+        // `TrustedRandomAccess` of a `self.zip(..)`: each of the crate's
+        // impls that copies it asks it of its own, in its terms, whose
+        // dictionary gives it, as the default's collects and calls are
+        // (`copies_of_default`, #1313, #1956). A library's default compiled
+        // over `Self`, which asks its callers as a function does, has none.
+        let of_defaults: Vec<_> = (asked.iter())
+            .filter(|&&(id, index, _)| {
+                tcx.trait_of_assoc(id).is_some()
+                    && tcx.defaultness(id).has_value()
+                    && (index as usize) < tcx.generics_of(id).parent_count
+            })
+            .copied()
+            .collect();
+        for (default, index, fact) in of_defaults {
+            let slot = tcx.mk_param_from_def(tcx.generics_of(default).param_at(index as usize, tcx));
+            let Some(slot) = slot.as_type() else { continue };
+            let identity = ty::GenericArgs::identity_for_item(tcx, default);
+            for collects::DefaultCopy {
+                imp,
+                args,
+                typing_env: impl_env,
+                ..
+            } in copies_of_default(tcx, default, identity)
+            {
+                for each in asked_of_caller(tcx, foreign, impl_env, (imp, args), (slot, fact)) {
+                    if matches!(each, Asked::Slot(..)) {
+                        changed |= ask((&mut asked, &mut built, &mut carried), imp, each);
+                    }
+                }
+            }
+        }
         // And the layout of a type built of the impl's parameters alone,
         // quickcheck's `(K, V)` of a `Vec<(K, V)>` its `BTreeMap<K, V>`'s
         // `arbitrary` makes (#1420).

@@ -253,8 +253,6 @@ const chosen = which === "corpus" ? caseShard(cases) : few;
  * with why: what's left to do, which only shrinks. One that runs as Rust
  * does is taken off. */
 const differs: Record<string, string> = {
-  "zip_of_sides_only_callers_know.rs":
-    "#1956: std's `Zip` in a trait's default over `Self` asks whether `Self` is `TrustedRandomAccess`, a fact no caller gives a default",
   "reversed_map_stepped_from_its_back.rs":
     "#1864: its `try_rfold` of an `Option`, `Rev::try_rfold`'s compiled body, needs the `Option`'s `Try` given to std's generic code",
 };

@@ -28,10 +28,18 @@ function dDrop_drop(d) {
 
 const $tExt = new WeakMap();
 
-function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTItemIntoIter) {
+function tExt(
+  TIterator,
+  TFused,
+  TItemItemSize,
+  dropT,
+  dropTItem,
+  dropTItemItem,
+  dropTItemIntoIter,
+) {
   return $traitImpl(
     $tExt,
-    [TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
+    [TIterator, TFused, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
       flat(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
         return $collectDropping(
@@ -41,7 +49,7 @@ function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTIt
               (x) => x,
               TIterator,
               SelfItemIntoIterator,
-              false,
+              TFused,
               SelfItemConstSize,
               SelfItemIntoIterOneShot,
               dropT,
@@ -67,7 +75,7 @@ function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTIt
               self,
               TIterator,
               SelfItemIntoIterator,
-              false,
+              TFused,
               SelfItemConstSize,
               SelfItemIntoIterOneShot,
               dropT,
@@ -91,7 +99,7 @@ function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTIt
             (x) => x,
             TIterator,
             SelfItemIntoIterator,
-            false,
+            TFused,
             SelfItemConstSize,
             SelfItemIntoIterOneShot,
             dropT,
@@ -136,6 +144,7 @@ function main() {
   };
   const IntoIterExt = tExt(
     { next: $next, advanceBy: $advanceSlice },
+    true,
     4,
     $dropEach($dropEach(dDrop_drop)),
     $dropEach(dDrop_drop),
@@ -251,7 +260,7 @@ function main() {
       }
     }
   }
-  const sums = tExt({ next: $next }, 4).flat(
+  const sums = tExt({ next: $next }, true, 4).flat(
     $iter([[1, 2], [3]]),
     { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
     undefined,

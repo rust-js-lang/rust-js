@@ -22,8 +22,8 @@ export function entry() {
 
 const $tExt = new WeakMap();
 
-export function tExt(TIterator, TTrustedLen, TItemConstSize, TItemItemSize) {
-  return $traitImpl($tExt, [TIterator, TTrustedLen, TItemConstSize, TItemItemSize], () => ({
+export function tExt(TIterator, TFused, TTrustedLen, TItemConstSize, TItemItemSize) {
+  return $traitImpl($tExt, [TIterator, TFused, TTrustedLen, TItemConstSize, TItemItemSize], () => ({
     flat: (self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) =>
       $grownVec(
         $roomForHint(
@@ -32,7 +32,7 @@ export function tExt(TIterator, TTrustedLen, TItemConstSize, TItemItemSize) {
             (x) => x,
             TIterator,
             SelfItemIntoIterator,
-            false,
+            TFused,
             TItemConstSize,
             SelfItemIntoIterOneShot,
           ),
@@ -62,15 +62,15 @@ function chained(it, ITrustedLen) {
 }
 
 function main() {
-  const IterExt = tExt({ next: $next }, true, 3, 4);
   const intoIterator = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),
   };
+  const IterExt = tExt({ next: $next }, true, true, 3, 4);
   const one = IterExt.flat($iter([[1, 2, 3]]), intoIterator, 3, false);
   const arg = $capacity(one, 4);
   console.log(`${one.length} ${arg}`);
-  const two = tExt({ next: $next }, true, 2, 4).flat(
+  const two = tExt({ next: $next }, true, true, 2, 4).flat(
     $iter([
       [1, 2],
       [3, 4],
@@ -84,7 +84,7 @@ function main() {
   const refs = IterExt.flat($iter([[5, 6, 7]]), intoIterator, 3, false);
   const arg$2 = $capacity(refs, 4);
   console.log(`${refs.length} ${arg$2}`);
-  const vecs = tExt({ next: $next }, true, undefined, 4).flat(
+  const vecs = tExt({ next: $next }, true, true, undefined, 4).flat(
     $iter([[1, 2, 3]]),
     intoIterator,
     undefined,
@@ -92,7 +92,7 @@ function main() {
   );
   const arg$3 = $capacity(vecs, 4);
   console.log(`${vecs.length} ${arg$3}`);
-  const filtered = tExt({ next: $next, fold: $foldOf }, false, 3, 4).flat(
+  const filtered = tExt({ next: $next, fold: $foldOf }, true, false, 3, 4).flat(
     iterator_filter($iter([[1, 2, 3]]), () => true),
     intoIterator,
     3,
