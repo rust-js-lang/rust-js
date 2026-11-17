@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "  return \"run\";\n",
     tests: ["test/ci.test.ts", "-t", "a push's React gate runs again"],
   },
+  {
+    name: "push-remakes-any-conflict",
+    breaks: "a rebase's conflict in hand-written code, `src/lower/analysis.rs`'s re-exports say, is resolved as main's, and the change's own side is lost",
+    file: "scripts/push.ts",
+    find: "  return conflicts.every((file) => file in regenerated);\n",
+    replace: "  return true;\n",
+    tests: ["test/ci.test.ts", "-t", "a rebase's conflict in a blessed baseline alone is made again"],
+  },
+  {
+    name: "push-remakes-no-conflict",
+    breaks: "a rebase's conflict in a blessed baseline alone stops the push, as two pushes that each blessed one did (2 of m3-max's 5 failed pushes)",
+    file: "scripts/push.ts",
+    find: "  return conflicts.every((file) => file in regenerated);\n",
+    replace: "  return false;\n",
+    tests: ["test/ci.test.ts", "-t", "a rebase's conflict in a blessed baseline alone is made again"],
+  },
 ];

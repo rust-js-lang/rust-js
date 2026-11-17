@@ -160,11 +160,11 @@ function main() {
     // The base an earlier round's React gate passed at, where one did.
     let reactBase: string | undefined;
     for (;;) {
-      rebase(bless);
+      const remade = rebase();
       phase("rebase");
       const base = git("rev-parse", "origin/main").out.trim();
       if (checked === "" || git("rev-parse", "HEAD").out.trim() !== checked) {
-        if (bless) blessReadability();
+        for (const file of new Set([...remade, ...(bless ? ["docs/readability.txt"] : [])])) regenerate(file);
         run("build", ["cargo", "build", "--quiet"]);
         phase("build");
         run("std", ["bun", "run", "std"]);
@@ -251,35 +251,63 @@ function run(name: Phase, cmd: string[]) {
   if (p.status !== 0) throw new Refused(`${name} failed: ${cmd.join(" ")}`);
 }
 
-/** Onto origin/main; a conflict aborts it. Of docs/readability.txt alone, a
- * blessed baseline (`merge=binary`), with `--bless-readability`: main's, then
- * blessed again from the rebased tree (DEVELOPMENT.md, "Landing a branch").
- * Whether it stopped on a conflict, resolved so. */
-function rebase(bless: boolean): boolean {
+/** The blessed baselines, each made again by its test's bless from the
+ * tree it's of: what .gitattributes merges as `merge=binary`, a total over
+ * its rows that a line-by-line merge would get wrong (test/push.test.ts
+ * holds the two lists alike). */
+export const regenerated: Record<string, string> = {
+  "docs/readability.txt": "test/readability.test.ts",
+  "docs/std-coverage.txt": "test/std-coverage.test.ts",
+  "builtins/coverage.txt": "test/builtins-coverage.test.ts",
+  "next/coverage.txt": "test/next-coverage.test.ts",
+  "node/coverage.txt": "test/node-coverage.test.ts",
+  "react/coverage.txt": "test/react-coverage.test.ts",
+  "webapi/coverage.txt": "test/webapi-coverage.test.ts",
+};
+
+/** Whether a rebase's `conflicts` are each a blessed baseline's, which it
+ * resolves by making them again; any other, hand-written code's too, stops
+ * it. */
+export function remakeable(conflicts: string[]): boolean {
+  return conflicts.every((file) => file in regenerated);
+}
+
+/** Onto origin/main. A conflict in a blessed baseline alone (`regenerated`)
+ * is resolved as main's, and made again from the rebased tree: two pushes
+ * that each blessed one stopped the second's rebase (2 of m3-max's 5
+ * failed pushes of 2026-11-17). Any other conflict aborts it, hand-written
+ * code's too. The baselines it resolved so. */
+function rebase(): string[] {
   git("fetch", "-q", "origin");
-  if (git("rebase", "origin/main").code === 0) return false;
+  if (git("rebase", "origin/main").code === 0) return [];
+  const remade = new Set<string>();
   for (;;) {
     const conflicts = lines(git("diff", "--name-only", "--diff-filter=U").out);
     if (conflicts.length === 0) break;
-    if (!(bless && conflicts.length === 1 && conflicts[0] === "docs/readability.txt")) {
+    if (!remakeable(conflicts)) {
       git("rebase", "--abort");
       throw new Refused(`the rebase stopped on a conflict, aborted: ${conflicts.join(", ")}`);
     }
-    git("checkout", "--ours", "docs/readability.txt");
-    git("add", "docs/readability.txt");
+    for (const file of conflicts) {
+      git("checkout", "--ours", file);
+      git("add", file);
+      remade.add(file);
+    }
     if (sh(["git", "-c", "core.editor=true", "rebase", "--continue"], true).code === 0) break;
   }
-  return true;
+  return [...remade];
 }
 
-/** docs/readability.txt blessed from this tree, its diff printed, and the top
- * commit amended with it where it changed (`--bless-readability`). */
-function blessReadability() {
-  spawnSync("bun", ["test", "test/readability.test.ts"], { stdio: "ignore", env: { ...process.env, BLESS: "1" } });
-  const diff = git("diff", "--", "docs/readability.txt").out;
+/** `file`, a blessed baseline, made again from this tree by its test's
+ * bless, its diff printed, and the top commit amended with it where it
+ * changed: after a rebase resolved it as main's, and of
+ * docs/readability.txt with `--bless-readability`. */
+function regenerate(file: string) {
+  spawnSync("bun", ["test", regenerated[file]!], { stdio: "ignore", env: { ...process.env, BLESS: "1" } });
+  const diff = git("diff", "--", file).out;
   if (diff.trim() === "") return;
-  console.log(`push: docs/readability.txt blessed:\n${diff}`);
-  git("add", "docs/readability.txt");
+  console.log(`push: ${file} blessed:\n${diff}`);
+  git("add", file);
   git("commit", "-q", "--amend", "--no-edit");
 }
 

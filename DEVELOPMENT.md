@@ -826,9 +826,14 @@ checked:
   `select some (N files, M cases)`, `select capped …` or `select none`, the
   map's commit and how far behind it is. Each machine's sessions set
   `RUST_JS_MACHINE` and `RUST_JS_AGENT`, which name its lines.
-  A tracked change not committed is refused. `--bless-readability` blesses
-  `docs/readability.txt` first, printing what changed and amending the top
-  commit; without it a readability failure stops the push like any other.
+  A tracked change not committed is refused. A rebase whose conflicts are
+  each a blessed baseline's, a file .gitattributes merges as
+  `merge=binary` (`regenerated` in scripts/push.ts), takes main's and
+  blesses it again from the rebased tree, printing what changed and
+  amending the top commit; any other conflict, hand-written code's too,
+  stops the push. `--bless-readability` blesses `docs/readability.txt`
+  first without a conflict; without it a readability failure stops the
+  push like any other.
   Each phase's time is printed, and one line of them is appended to the
   machine's log of times, outside the repository (`RUST_JS_DEV_TIMES`,
   `~/rust-js-dev-times.log` unless given; `RUST_JS_MACHINE` and

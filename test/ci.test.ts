@@ -13,7 +13,7 @@ import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
 import { evaluateIf, heldJobs, mostAtOnce, NIGHTLY_RUNNERS, scheduled } from "../scripts/runners";
-import { reactGate } from "../scripts/push";
+import { reactGate, regenerated, remakeable } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, drivesBrowser } from "../scripts/shard";
@@ -1214,4 +1214,26 @@ test("a slice's report says what ran it, beside where its JUnit is written", () 
   } finally {
     rmSync(into, { recursive: true, force: true });
   }
+});
+
+// A rebase's conflict in a blessed baseline alone is resolved by making it
+// again from the rebased tree (`bun run push`, scripts/push.ts), where it
+// stopped the second of two pushes that each blessed one (2 of m3-max's 5
+// failed pushes of 2026-11-17); one in hand-written code still stops it.
+// The baselines are those .gitattributes merges as `merge=binary`, each
+// with the test whose bless makes it.
+test("a rebase's conflict in a blessed baseline alone is made again, any other stops it", () => {
+  const binary = readFileSync(join(root, ".gitattributes"), "utf8").split("\n").flatMap((line) => {
+    const m = line.match(/^(\S+) merge=binary$/);
+    return m ? [m[1]!] : [];
+  });
+  expect(Object.keys(regenerated).sort()).toEqual(binary.sort());
+  for (const [file, test] of Object.entries(regenerated)) {
+    const source = readFileSync(join(root, test), "utf8");
+    expect([file, source.includes(file) && /\bBLESS\b/.test(source)]).toEqual([file, true]);
+  }
+  expect(remakeable(["docs/readability.txt"])).toBe(true);
+  expect(remakeable(["docs/readability.txt", "react/coverage.txt"])).toBe(true);
+  expect(remakeable(["docs/readability.txt", "src/lower/analysis.rs"])).toBe(false);
+  expect(remakeable(["src/lower/analysis.rs"])).toBe(false);
 });
