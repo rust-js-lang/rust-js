@@ -21,8 +21,8 @@ export function buildReactNative(): string {
       .concat(compiler);
     const outputs = ["react_native", "js"].map((lib) => join(dir, `lib${lib}.rmeta`));
     once(join(target, "tests-react-native", thisRun()), () =>
-      unlessUnchanged(join(dir, "libreact_native.stamp"), inputs, outputs, () =>
-        run(["react-native/build.sh", "-o", join(dir, "libreact_native.rmeta")]),
+      unlessUnchanged(join(dir, "libreact_native.stamp"), inputs, outputs, (into) =>
+        run(["react-native/build.sh", "-o", join(into, "libreact_native.rmeta")]),
       ),
     );
     reactNative = dir;

@@ -23,7 +23,7 @@ export function buildNode(): string {
       .concat(compiler);
     const outputs = ["node", "webapi", "js"].map((lib) => join(dir, `lib${lib}.rmeta`));
     once(join(target, "tests-node", thisRun()), () =>
-      unlessUnchanged(join(dir, "libnode.stamp"), inputs, outputs, () => run(["node/build.sh", "-o", join(dir, "libnode.rmeta")])),
+      unlessUnchanged(join(dir, "libnode.stamp"), inputs, outputs, (into) => run(["node/build.sh", "-o", join(into, "libnode.rmeta")])),
     );
     node = dir;
   }

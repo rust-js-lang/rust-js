@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, linkSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 import { tempRoot } from "./bounded";
@@ -846,13 +846,27 @@ function digest(paths: string[]): string {
 }
 
 /** Run `work` unless what it made from `inputs` is still there: each of
- * `outputs`, and `stamp` saying it was made from what `inputs` hold now.
- * Whether it ran. */
-export function unlessUnchanged(stamp: string, inputs: string[], outputs: string[], work: () => unknown): boolean {
+ * `outputs`, files of one directory, and `stamp` saying it was made from
+ * what `inputs` hold now. Whether it ran. `work` writes them into a
+ * directory of its own, `into`, and each is moved into place by a rename,
+ * so another test run reading them as this one builds them reads each
+ * whole, the one before or this one, never one gone or half written: CI's
+ * suite and its corpus parts are test runs of their own, each building the
+ * react crate's metadata once, and a JSX test of the one found
+ * `target/libreact.rmeta` gone as another wrote it (check 44024336584). */
+export function unlessUnchanged(stamp: string, inputs: string[], outputs: string[], work: (into: string) => unknown): boolean {
   const now = digest(inputs);
   if (outputs.every((output) => existsSync(output)) && readIfThere(stamp) === now) return false;
   rmSync(stamp, { force: true });
-  work();
+  const dir = dirname(outputs[0]!);
+  mkdirSync(dir, { recursive: true });
+  const into = mkdtempSync(join(dir, ".building-"));
+  try {
+    work(into);
+    for (const output of outputs) renameSync(join(into, basename(output)), output);
+  } finally {
+    rmSync(into, { recursive: true, force: true });
+  }
   writeFileSync(stamp, now);
   return true;
 }
@@ -873,7 +887,7 @@ export function buildReact() {
     ].map((path) => join(root, path)).concat(compiler);
     const outputs = reactLibs.map((lib) => join(target, `lib${lib}.rmeta`));
     once(join(target, "tests-react", thisRun()), () =>
-      unlessUnchanged(join(target, "libreact.stamp"), inputs, outputs, () => run(["react/build.sh", "-o", join(target, "libreact.rmeta")])),
+      unlessUnchanged(join(target, "libreact.stamp"), inputs, outputs, (into) => run(["react/build.sh", "-o", join(into, "libreact.rmeta")])),
     );
     react = true;
   }

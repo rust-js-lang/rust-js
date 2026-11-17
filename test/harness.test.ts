@@ -5,7 +5,7 @@
 // Each must fail the run, or say it's incomplete, with what it saw.
 
 import { beforeAll, expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { ratchet, runTest, type Shard } from "../scripts/rustc-suite";
@@ -210,16 +210,23 @@ test("what's built from unchanged inputs isn't built again", () => {
   const input = join(dir, "input"), output = join(dir, "output"), stamp = join(dir, "stamp");
   writeFileSync(input, "a");
   let runs = 0;
-  const work = () => {
+  const work = (into: string) => {
     runs += 1;
-    writeFileSync(output, readFileSync(input));
+    writeFileSync(join(into, "output"), readFileSync(input));
+    // What another run reads as this one builds: the output before, whole,
+    // never gone or half written (check 44024336584).
+    if (runs > 1) expect(readFileSync(output, "utf8")).toBe("a");
   };
   const step = () => unlessUnchanged(stamp, [input], [output], work);
   expect([step(), step()]).toEqual([true, false]);
   writeFileSync(input, "b");
   expect(step()).toBe(true);
   rmSync(output);
-  expect([step(), runs, readFileSync(output, "utf8")]).toEqual([true, 3, "b"]);
+  writeFileSync(output, "a");
+  writeFileSync(input, "c");
+  expect([step(), runs, readFileSync(output, "utf8")]).toEqual([true, 3, "c"]);
+  // Nothing of a build's own directory is left.
+  expect(readdirSync(dir).filter((name) => name.startsWith(".building-"))).toEqual([]);
 });
 
 // rust-js is built as a shell builds it, with `.cargo/config.toml`'s
