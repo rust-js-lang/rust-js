@@ -6,7 +6,7 @@
 src/js.rs	2
 src/js/applied.rs	4
 src/js/applied/tried.rs	7
-src/js/expr_walk.rs	9
+src/js/expr_walk.rs	7
 src/js/make.rs	4
 src/js/pattern.rs	1
 src/js/stmt_walk.rs	9
@@ -65,7 +65,7 @@ src/lower/mir/tidy/moves.rs	3
 src/lower/mir/tidy/options.rs	6
 src/lower/mir/tidy/shadows.rs	4
 src/lower/mir/tidy/switches.rs	2
-src/lower/mir/tidy/values.rs	9
+src/lower/mir/tidy/values.rs	2
 src/lower/mir/tidy/values/handles.rs	1
 src/lower/mir/writer.rs	1
 src/lower/ordering.rs	4

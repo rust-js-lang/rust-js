@@ -296,14 +296,14 @@ pub(super) fn spread_spreads(e: &mut Expr) {
 /// lazily_mapped`), which `next_back` or `rfind` made again: lazy, so
 /// making it runs nothing, never an array's eager `map` (#805).
 pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
-    let mut read = IndexSet::default();
-    js::visit_stmts(body, &mut |name| {
-        read.insert(name.to_string());
+    let mut read: IndexSet<js::Name> = IndexSet::default();
+    js::visit_stmt_names(body, &mut |name| {
+        read.insert(name.clone());
     });
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(|s| {
             !matches!(&s.kind, StmtKind::Const(name, value)
-                if !read.contains(name.word()) && (iterators::is_items_map(value) || iterators::lazily_mapped(value)))
+                if !read.contains(name) && (iterators::is_items_map(value) || iterators::lazily_mapped(value)))
         });
     });
     // And MIR's `let` and the assignment a call's `try` holds, `let _5; try
@@ -315,20 +315,20 @@ pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
                 && let ExprKind::Var(name) = &target.kind
                 && iterators::lazily_mapped(value)
             {
-                assigned.push(name.to_string());
+                assigned.push(name.clone());
             }
         }
     });
-    let gone: IndexSet<String> = (assigned.into_iter())
-        .filter(|name| js::mentions_in(body, name) == 1)
+    let gone: IndexSet<js::Name> = (assigned.into_iter())
+        .filter(|name| js::mentions_of(body, name) == 1)
         .collect();
     if gone.is_empty() {
         return;
     }
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(|s| match &s.kind {
-            StmtKind::Assign(target, _) => !matches!(&target.kind, ExprKind::Var(name) if gone.contains(name.word())),
-            StmtKind::Let(name, None) => !gone.contains(name.word()),
+            StmtKind::Assign(target, _) => !matches!(&target.kind, ExprKind::Var(name) if gone.contains(name)),
+            StmtKind::Let(name, None) => !gone.contains(name),
             _ => true,
         });
     });
@@ -579,26 +579,26 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
 /// handle is made on it, nor where a `finally` reads it, which runs after
 /// the `return`. Case none (ADR 0262): no program can tell it was written.
 pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
-    let mut declared: IndexMap<String, usize> = IndexMap::default();
-    js::each_declared(body, &mut |name| *declared.entry(name.to_string()).or_default() += 1);
-    let lets: IndexSet<&str> = (body.iter())
+    let mut declared: IndexMap<js::Name, usize> = IndexMap::default();
+    js::each_declared_name(body, &mut |name| *declared.entry(name.clone()).or_default() += 1);
+    let lets: IndexSet<&js::Name> = (body.iter())
         .filter_map(|stmt| match &stmt.kind {
-            StmtKind::Let(name, _) if declared.get(name.word()) == Some(&1) => Some(name.word()),
+            StmtKind::Let(name, _) if declared.get(name) == Some(&1) => Some(name),
             _ => None,
         })
         .collect();
     if lets.is_empty() {
         return;
     }
-    let mut mentions: IndexMap<String, usize> = IndexMap::default();
-    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
+    let mut mentions: IndexMap<js::Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *mentions.entry(name.clone()).or_default() += 1);
     // Each reset returned, the variable's name and whether the take left
     // text or a number, which an append reads only to write.
     let mut resets: Vec<(js::Name, bool)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for window in stmts.windows(3) {
             if let Some((name, reset)) = returned_reset(window, &mentions)
-                && lets.contains(name.word())
+                && lets.contains(name)
             {
                 let appended = matches!(
                     reset.kind,
@@ -651,7 +651,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
 
 /// `const old = x; x = c; return old;` of a constant `c`, `old` read
 /// nowhere else: `x`, and `c`.
-fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> Option<(&'a js::Name, &'a Expr)> {
+fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<js::Name, usize>) -> Option<(&'a js::Name, &'a Expr)> {
     let [read, written, returned] = stmts else { return None };
     let StmtKind::Const(old, value) = &read.kind else {
         return None;
@@ -664,7 +664,7 @@ fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> 
         return None;
     };
     let same = matches!(&target.kind, ExprKind::Var(v) if v == name) && name != old;
-    let read_once = matches!(&of.kind, ExprKind::Var(v) if v == old) && mentions.get(old.word()) == Some(&1);
+    let read_once = matches!(&of.kind, ExprKind::Var(v) if v == old) && mentions.get(old) == Some(&1);
     (same && read_once && reset.is_constant()).then_some((name, reset))
 }
 

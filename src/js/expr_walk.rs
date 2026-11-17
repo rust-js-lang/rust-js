@@ -837,20 +837,26 @@ pub fn names_in(stmts: &[Stmt], names: &mut IndexSet<String>) {
 
 /// Each name `stmts` declare, once for each declaration: a `let`, a
 /// `const`, a pattern's, a `catch`'s, a function and its closures' and
-/// functions' parameters.
+/// functions' parameters; its word (`each_declared_name`'s spelled).
 pub fn each_declared(stmts: &[Stmt], f: &mut dyn FnMut(&str)) {
+    each_declared_name(stmts, &mut |name| f(name.word()));
+}
+
+/// Each variable `stmts` declare, once for each declaration, as
+/// `each_declared` says: its `Name`, so its id (ADR 1150).
+pub fn each_declared_name(stmts: &[Stmt], f: &mut dyn FnMut(&Name)) {
     let mut stmts = stmts.to_vec();
-    let params = |params: &[Pattern], f: &mut dyn FnMut(&str)| params.iter().flat_map(|p| p.names()).for_each(&mut *f);
+    let params = |params: &[Pattern], f: &mut dyn FnMut(&Name)| params.iter().flat_map(|p| p.bound()).for_each(&mut *f);
     each_block_mut(&mut stmts, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => f(name.word()),
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => f(name),
                 StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
-                    pattern.names().into_iter().for_each(&mut *f)
+                    pattern.bound().into_iter().for_each(&mut *f)
                 }
-                StmtKind::TryCatch(_, Some(name), _) => f(name.word()),
+                StmtKind::TryCatch(_, Some(name), _) => f(name),
                 StmtKind::Function(function) => {
-                    f(function.name.word());
+                    f(&function.name);
                     params(&function.params, f);
                 }
                 _ => {}
