@@ -784,11 +784,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its own late-bound lifetimes erased, as codegen's are: a
             // method's `impl Trait` result, `Map<slice::Iter<'_, u32>, _>`,
             // holds one, which no query takes (#2022).
-            let declared_output = (self.tcx)
-                .instantiate_bound_regions_with_erased(
-                    self.tcx.fn_sig(item.def_id).instantiate_identity().skip_normalization(),
-                )
-                .output();
+            let declared_output = crate::lower::traits::erased_sig(self.tcx, item.def_id).output();
             // As the impl makes it, `<Tens as Source>::Iter` its `Map`, an
             // `impl`'s hidden type std's struct it hides (#1292), and its
             // form, in the method's own environment (`method_env`): `fn

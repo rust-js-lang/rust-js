@@ -73,3 +73,20 @@ test("instance resolution is asked through `traits::resolve` alone", () => {
   );
   expect(callers).toEqual([]);
 });
+
+// A function's signature read by skipping its binder, `fn_sig(..)` ..
+// `.skip_binder()`, leaves its late-bound lifetimes bound, and a query
+// asked of a type holding one panics (#2022): `traits::erased_sig` reads
+// it as a query takes it. test/sig-binders.txt counts each file's skips,
+// a ratchet that only falls, none in a file it doesn't list.
+test("a signature's binder is skipped only as the ratchet allows", () => {
+  const allowed: Record<string, number> = Object.fromEntries(
+    read("test/sig-binders.txt").split("\n").filter((line) => line && !line.startsWith("#"))
+      .map((line) => line.split("\t")).map(([file, n]) => [file, Number(n)]),
+  );
+  const sources = [...new Bun.Glob("src/**/*.rs").scanSync(root)].filter((file) => file !== "src/lower/traits.rs").sort();
+  const counted = sources
+    .map((file) => [file, (read(file).match(/fn_sig\([^;]*?\.skip_binder\(\)/gs) ?? []).length] as const)
+    .filter(([, n]) => n > 0);
+  expect(counted.filter(([file, n]) => n > (allowed[file] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${allowed[file] ?? 0}`)).toEqual([]);
+});

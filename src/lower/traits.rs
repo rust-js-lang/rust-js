@@ -242,6 +242,16 @@ pub(in crate::lower) fn resolve<'tcx>(
     ty::Instance::try_resolve(tcx, typing_env, def_id, args)
 }
 
+/// `def_id`'s signature as a query takes it, its own late-bound lifetimes
+/// erased, as codegen's are: `fn_sig(..).skip_binder()` leaves them bound,
+/// and a type holding one panics the query asked of it, `has escaping bound
+/// vars` (#2022, the class of #460, #1111, #1201, #1224). Each read of a
+/// signature that skips its binder is counted by test/sig-binders.txt, a
+/// ratchet that only falls.
+pub(in crate::lower) fn erased_sig<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> ty::FnSig<'tcx> {
+    tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(def_id).instantiate_identity().skip_normalization())
+}
+
 /// The impl whose dictionary is the evidence of `tr`, and its arguments: a
 /// user's, the crate's or another's, as `codegen_select_candidate` selects
 /// it, where `tr` isn't a built-in one, a `dyn`'s.
