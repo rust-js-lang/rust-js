@@ -14,6 +14,7 @@ import {
   $rangeNthBack,
   $rev,
   $sizeHint,
+  $slice,
   iterator_map,
   iterator_rev,
   iterator_take,
@@ -42,6 +43,22 @@ function mappedLen(it) {
 
 function takenLen(it) {
   return $exactLen($sizeHint(iterator_take(Iterator.from(it), 2, $jsIteratorSome)));
+}
+
+function zippedLen(it, v) {
+  return Math.min(it.len(), v.length);
+}
+
+function zippedAfter(it, v) {
+  return Math.min(v.length, it.len());
+}
+
+function copiesTaken(it) {
+  return Math.min(it.len(), 2);
+}
+
+function copiesSkipped(it) {
+  return Math.max(it.len() - 1, 0);
 }
 
 function main() {
@@ -84,6 +101,15 @@ function main() {
     )} ${mappedLen(
       $iterator({ start: 4, end: 9 }, $rangeNext, false, undefined, $rangeLen),
     )} ${takenLen($iterator({ start: 0, end: 1 }, $rangeNext, false, undefined, $rangeLen))}`,
+  );
+  console.log(
+    `${zippedLen($iter(v), $slice(v, 1))} ${zippedAfter(
+      $iterator({ start: 3, end: 9 }, $rangeNext, false, undefined, $rangeLen),
+      v,
+    )} ${copiesTaken($iter(v))} ${copiesSkipped($iter($slice(v, 4)))}`,
+  );
+  console.log(
+    `${zippedLen($iter([]), v)} ${zippedAfter($iter([7]), [])} ${copiesTaken($iter([]))} ${copiesSkipped($iter([]))}`,
   );
 }
 //# sourceMappingURL=case.js.map

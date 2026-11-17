@@ -198,3 +198,14 @@ Corpus case `len_of_a_reversed_copy_of_a_map` holds:
 - each shape above, at each length to 6 and a step known only at run time.
 It matches native in each build and through every metamorphic rewrite. Mutations
 `map-ends-parts-unread` and `clone-as-its-source-uncounted` are caught.
+
+Rows of generic exact-size code (#1979) hold a generic iterator's own
+`len()` where a zip of it with a slice's items, or a `take(n)` or `skip(n)`
+of its copies, counts it in place. They make `len-in-place-generic-unread`
+and `len-in-place-generic-wrapped` caught. docs/readability.txt is blessed
+with them. The check failed only at these rows, `$iter`'s share past its
+84.9 in 10,000 lines, and the baseline now reads 85.5, its rows caught up
+with the cases landed since its last bless. The growth comes only from
+new programs, these rows' generic code lifting a JS iterator by `$iter`
+as this ADR requires. Running the check over the stack's snapshots one
+commit at a time showed no existing program's output got worse.
