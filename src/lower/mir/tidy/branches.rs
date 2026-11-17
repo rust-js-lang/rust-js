@@ -359,7 +359,7 @@ pub(super) fn branch_values(
                         .rev()
                         .reduce(|b, a| Expr::bin(Op::And, a, b))
                         .expect("one");
-                    StmtKind::Assign(Expr::var(&x), conditional(test, yes, no, booleans, false))
+                    StmtKind::Assign(Expr::var(x), conditional(test, yes, no, booleans, false))
                 }
                 None => StmtKind::Labeled(label, body),
             },
@@ -536,7 +536,7 @@ pub(super) fn assigned_only(stmts: &[Stmt]) -> Option<(&js::Name, &Expr)> {
 
 /// Of `l: { if (a) { if (b) { x = t; break l; } } x = f; }`: its tests,
 /// `[a, b]`, `x`, `t` and `f`.
-pub(super) fn chain(body: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, String, Expr, Expr)> {
+pub(super) fn chain(body: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, js::Name, Expr, Expr)> {
     let [
         Stmt {
             kind: StmtKind::If(test, inner, None),
@@ -549,11 +549,11 @@ pub(super) fn chain(body: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, Strin
     };
     let (x, no) = assigned_only(std::slice::from_ref(last))?;
     let (mut tests, y, yes) = inner_chain(inner, label)?;
-    if !x.is(&y) {
+    if *x != y {
         return None;
     }
     tests.insert(0, test.clone());
-    Some((tests, x.to_string(), yes, no.clone()))
+    Some((tests, x.clone(), yes, no.clone()))
 }
 
 /// `!e` of a chain of tests, part by part, `!!a || b !== c` of `!a && b ===
@@ -782,7 +782,7 @@ pub(super) fn or_all(a: Expr, b: Expr) -> Expr {
 }
 
 /// Of `if (b) { x = t; break l; }`, nested: its tests, `x` and `t`.
-pub(super) fn inner_chain(stmts: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, String, Expr)> {
+pub(super) fn inner_chain(stmts: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, js::Name, Expr)> {
     match stmts {
         [
             assign,
@@ -792,7 +792,7 @@ pub(super) fn inner_chain(stmts: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>
             },
         ] if l == label => {
             let (x, yes) = assigned_only(std::slice::from_ref(assign))?;
-            Some((Vec::new(), x.to_string(), yes.clone()))
+            Some((Vec::new(), x.clone(), yes.clone()))
         }
         [
             Stmt {

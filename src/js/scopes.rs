@@ -193,16 +193,18 @@ impl Tree {
 
     /// Each word read where JS's scopes resolve it to another variable
     /// than the one it is, by their ids: a declaration spelled as it is
-    /// nearer than its own (`Problem::Captured`). Of variables with ids
-    /// of their own; one made of its word alone is that word.
+    /// nearer than its own (`Problem::Captured`). Of variables told apart
+    /// from any other of their spelling, by an id or as a body's item
+    /// (`Name::is_identified`): the compiler makes no local of its word
+    /// alone (#2034).
     pub(crate) fn captured(&self) -> Vec<String> {
         let mut captured = Vec::new();
         for (word, reads) in &self.reads {
             for read in reads {
                 if let (Some(of), Some(name)) = (read.of, &read.name)
                     && let Some(declared) = self.scopes[of].bound.get(word)
-                    && name.has_id()
-                    && declared.has_id()
+                    && name.is_identified()
+                    && declared.is_identified()
                     && declared != name
                     && !captured.contains(word)
                 {

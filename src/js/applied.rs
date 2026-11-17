@@ -609,7 +609,7 @@ fn in_place(
     for s in &body {
         match &s.kind {
             StmtKind::Const(name, _) | StmtKind::Let(name, _) => declared.push(name.clone()),
-            StmtKind::Destructure { pattern, .. } => declared.extend(pattern.names().into_iter().map(Name::from)),
+            StmtKind::Destructure { pattern, .. } => declared.extend(pattern.bound().into_iter().cloned()),
             StmtKind::Function(function) => declared.push(function.name.clone()),
             _ => {}
         }

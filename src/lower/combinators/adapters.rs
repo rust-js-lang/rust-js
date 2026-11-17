@@ -221,13 +221,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `Result`'s is read twice, its tag and its value: a variable.
         let twice = self.is_std_type(inner, crate::lower::recognition::StdItem::Result);
         let held = (twice && !matches!(value.kind, js::ExprKind::Var(_))).then(|| value.clone());
-        let read = if held.is_some() { Expr::var("inner") } else { value };
+        let inner_name = self.unspelled("inner");
+        let read = if held.is_some() {
+            Expr::var(inner_name.clone())
+        } else {
+            value
+        };
         let Some(iterable) = self.inner_iterable(read, inner, span)? else {
             return Ok(None);
         };
         let mut body = Vec::new();
         if let Some(held) = held {
-            body.push(StmtKind::Const("inner".into(), held).at(js::Span::NONE));
+            body.push(StmtKind::Const(inner_name, held).at(js::Span::NONE));
         }
         body.push(StmtKind::Return(Some(iterable)).at(js::Span::NONE));
         let mut each = Expr::arrow(vec![param.into()], body);

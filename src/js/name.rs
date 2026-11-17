@@ -193,6 +193,15 @@ impl Name {
         (self.is_module() && crate::runtime::exports(&self.0)).then_some(self.0.as_str())
     }
 
+    /// Whether it's one variable apart from any other of its spelling: by
+    /// an id of its own, or, a body's item, by the item and copy it is
+    /// (`Name::item`), as `==` tells them. What `js::validate` asks a read's
+    /// capture of (`Problem::Captured`, #2034); a global's and a module's
+    /// name, of their word, are asked otherwise.
+    pub fn is_identified(&self) -> bool {
+        self.has_id() || matches!(self.1, Of::BodyItem(..))
+    }
+
     /// Whether it has an id of its own, a variable's, not one its word
     /// says, made of the word alone (`Id::WORD`).
     pub fn has_id(&self) -> bool {
@@ -559,18 +568,30 @@ impl From<&Name> for Name {
     }
 }
 
+// A variable made of its word alone, no id of its own, which no scope
+// tells from another of its spelling (`js::validate`'s `Captured` asks ids):
+// a test's, never the compiler's (#2034).
+#[cfg(test)]
 impl From<&str> for Name {
     fn from(word: &str) -> Name {
         Name(word.to_string(), Of::Item, Id::WORD, Id::WORD)
     }
 }
 
+// A variable made of its word alone, no id of its own, which no scope
+// tells from another of its spelling (`js::validate`'s `Captured` asks ids):
+// a test's, never the compiler's (#2034).
+#[cfg(test)]
 impl From<String> for Name {
     fn from(word: String) -> Name {
         Name(word, Of::Item, Id::WORD, Id::WORD)
     }
 }
 
+// A variable made of its word alone, no id of its own, which no scope
+// tells from another of its spelling (`js::validate`'s `Captured` asks ids):
+// a test's, never the compiler's (#2034).
+#[cfg(test)]
 impl From<&String> for Name {
     fn from(word: &String) -> Name {
         Name(word.clone(), Of::Item, Id::WORD, Id::WORD)

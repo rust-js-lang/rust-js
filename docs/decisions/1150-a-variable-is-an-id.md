@@ -1339,3 +1339,20 @@ own: a copy of a variable made of its word alone, which neither tells
 from another of its spelling, isn't folded. `outside_shadows`, with no
 caller left, goes; `written_back`'s fold, whose copy no closure reads
 (`read_later`), asks nothing more. Byte-identical.
+
+## Every local the compiler makes is told apart (#2034, 2026-11-17)
+
+`js::validate`'s capture check (`Problem::Captured`) asked only names with
+ids of their own, so a local made of its word alone, which `From<&str>`
+for `Name` made, and a body's item (`Name::item`), had no check that a
+read of it isn't another's of its spelling: a wrong answer where a pass
+put one there. The compiler makes neither now: the eleven places that made
+a name of a word name the variable they are, a pattern's bound names, a
+held value unspelled, a chain's variable by its `Name`, a parameter
+respelled keeping its id, an arrow's parameters declared; and the check
+asks `Name::is_identified`, an id or a body item's item and copy, so it
+covers every local. `From<&str>`, `From<String>` and `From<&String>` for
+`Name`, and `Pattern`'s, are a test-only fixture (`#[cfg(test)]`): some
+270 unit tests build their trees of words, a shape the compiler can't
+make; they go when those tests make identified names.
+

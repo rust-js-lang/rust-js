@@ -180,7 +180,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
         for param in &mut function.params {
             param.each_name_mut(&mut |name| {
                 if name.is(&to) {
-                    *name = apart.clone().into();
+                    name.respell(apart.clone());
                 }
             });
         }

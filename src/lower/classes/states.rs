@@ -125,13 +125,17 @@ pub(crate) fn new_of_state(class: Expr, mut args: Vec<Expr>, at: usize, keys: &[
         None => {
             // Each argument a parameter, so each is computed in its order.
             args.insert(at, state);
-            let names: Vec<String> = (0..args.len())
-                .map(|i| if i == at { "state".into() } else { format!("arg{i}") })
+            let names: Vec<js::Name> = (0..args.len())
+                .map(|i| js::Name::declared(if i == at { "state".into() } else { format!("arg{i}") }))
                 .collect();
-            let mut inner: Vec<Expr> = names.iter().map(Expr::var).collect();
-            inner.splice(at..=at, keys.iter().map(|key| Expr::member(Expr::var("state"), key)));
+            let mut inner: Vec<Expr> = names.iter().map(|name| Expr::var(name.clone())).collect();
+            let state = names[at].clone();
+            inner.splice(
+                at..=at,
+                keys.iter().map(|key| Expr::member(Expr::var(state.clone()), key)),
+            );
             let made = Expr::arrow(
-                names.iter().map(|name| name.as_str().into()).collect(),
+                names.into_iter().map(js::Pattern::Name).collect(),
                 vec![StmtKind::Return(Some(Expr::new_(class, inner))).at(js::Span::NONE)],
             );
             Expr::call(made, args)

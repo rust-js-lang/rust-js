@@ -4,6 +4,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "body-item-not-identified",
+    breaks: "a body's item, a `fn` the body declares, is asked no capture: a read of it where a nearer local of its spelling takes it isn't refused, a wrong answer unrefused (#2034)",
+    file: "src/js/name.rs",
+    find: "        self.has_id() || matches!(self.1, Of::BodyItem(..))\n",
+    replace: "        self.has_id()\n",
+    unitTests: "js::validate::tests::a_read_of_a_body_item_is_of_that_item",
+  },
+  {
     name: "made-k-not-free",
     breaks: "two guards' fields of one key in a function, `name`, are made one name, `name#1`, which preparation spells as one variable, declared twice (`Name::free_made_k`, ADR 1150)",
     file: "src/js/name.rs",

@@ -430,6 +430,30 @@ mod tests {
         assert_eq!(of(body(&outer)), vec![Problem::Captured("x".into())]);
     }
 
+    // A body's item, a `fn` the body declares, is one variable by the item
+    // it is, though it has no id: a read of it where a nearer local of its
+    // spelling would take it is refused as one of a variable's (#2034).
+    #[test]
+    fn a_read_of_a_body_item_is_of_that_item() {
+        let item = Name::item("f", 7, None);
+        let local = Name::declared("f".to_string());
+        let body = |name: &Name| {
+            vec![
+                stmt(StmtKind::Const(item.clone(), Expr::num(1.0))),
+                stmt(StmtKind::If(
+                    Expr::var(&item),
+                    vec![
+                        stmt(StmtKind::Const(local.clone(), Expr::num(2.0))),
+                        read(Expr::var(name)),
+                    ],
+                    None,
+                )),
+            ]
+        };
+        assert_eq!(of(body(&local)), vec![]);
+        assert_eq!(of(body(&item)), vec![Problem::Captured("f".into())]);
+    }
+
     // A read resolves to what's declared, a global made so, or a helper;
     // nothing else, whatever its name (#1681).
     #[test]
