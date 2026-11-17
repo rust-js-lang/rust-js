@@ -32,6 +32,7 @@ import { acquire, holdLease, ownShare } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
 import { latentSurvivors, type Results } from "./latent-survivors";
 import { binaryHash, builtBinary, freshShare, unapplied, verdictKind } from "./mutant-builds";
+import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from "./crate-corpus";
 
 const root = join(import.meta.dir, "..");
 
@@ -1156,7 +1157,12 @@ export const retiredTrailer = "Retired-mutation";
  * the suite refused 5 of the port's Flight entries in `js::validate`, and
  * only a regen by hand caught it. The port's control, the compiler as it
  * is, regenerates first: where it differs, the port says nothing either
- * way, and the retirement is refused until the pin is fixed. Where each
+ * way, and the retirement is refused until the pin is fixed. And crates.io's
+ * corpus, every row, each crate's verdict held to the compiler's as it is,
+ * a fall or a rise (`verdictsDiffer`), its control first, held to the rows'
+ * bars as the port's is to its pin: check:fast's suite runs none of it with
+ * another compiler, and a fallback itertools reaches was called unreached.
+ * Where each
  * passes, the evidence, a trailer for the commit that removes it;
  * otherwise each test that failed with it, which holds its code and
  * becomes its row. Twice in a day a mutation was called unreachable after
@@ -1199,8 +1205,12 @@ async function retire(mutation: Mutation): Promise<void> {
   rmSync(portControl, { force: true });
   cpSync(asItIs, portControl);
   const controlDiffers = await portDiffers(portControl);
-  rmSync(portControl, { force: true });
   if (controlDiffers.length > 0) throw new Error(`port control fails: ${controlDiffers.join(", ")}; fix the pin first: React's port at its pin regenerates otherwise than it committed with the compiler as it is, so it says nothing of ${mutation.name}`);
+  // The crate corpus as the compiler is, held to its rows' bars: what the
+  // mutant's verdicts are held to.
+  const crateControl = await crateVerdicts(portControl, true);
+  rmSync(portControl, { force: true });
+  if (typeof crateControl === "string") throw new Error(`crate corpus control fails: ${crateControl}; fix it first: crates.io's corpus isn't what docs/crate-corpus.md says with the compiler as it is, so it says nothing of ${mutation.name}`);
   const unitCaught = [...unit.failed].filter((name) => !unitControl.failed.has(name)).map((name) => `cargo test: ${name}`);
   const unitSilent = [...unit.failed].filter((name) => unitControl.failed.has(name)).map((name) => `cargo test: ${name}`);
   // Its own target and runtime, as a mutant's tests have (`test`).
@@ -1214,6 +1224,9 @@ async function retire(mutation: Mutation): Promise<void> {
   rmSync(own, { recursive: true, force: true });
   console.log(`${mutation.name}: React's port at its pin regenerated with it`);
   const portCaught = (await portDiffers(mutant)).map((file) => `react-in-rust regen: ${file}`);
+  console.log(`${mutation.name}: the crate corpus, every row, measured with it`);
+  const crates = await crateVerdicts(mutant, false);
+  const crateCaught = typeof crates === "string" ? [`crate corpus: failed with it: ${crates}`] : verdictsDiffer(crateControl, crates);
   rmSync(mutant, { force: true });
   const output = suite.stdout + suite.stderr;
   if (stopped(suite, retireTimeout)) throw new Error(`check:fast with ${mutation.name} ${stopped(suite, retireTimeout)}: it says nothing\n${output.slice(-3000)}`);
@@ -1223,12 +1236,12 @@ async function retire(mutation: Mutation): Promise<void> {
   const { caught: suiteCaught, silent: suiteSilent } = byControl(failed, control);
   const silent = [...unitSilent, ...suiteSilent];
   if (silent.length > 0) console.log(`\nthese fail as the compiler is too, in a mutant's environment, and say nothing of it:\n${silent.map((name) => `  ${name}`).join("\n")}`);
-  const caught = [...unitCaught, ...suiteCaught, ...portCaught];
+  const caught = [...unitCaught, ...suiteCaught, ...portCaught, ...crateCaught];
   if (caught.length === 0) {
     const head = runSync(["git", "rev-parse", "--short=9", "HEAD"], root, 10_000).stdout.trim();
     const ran = output.match(/^(?:all passed: |\d+ failed in )(.*)$/m)?.[1] ?? "check:fast";
     console.log(`\n${mutation.name} can be retired: nothing tests what it changes. The evidence, a trailer of the commit that removes it:\n`);
-    console.log(`${retiredTrailer}: ${mutation.name}: with it, at ${head}, the compiler's ${unit.passed} unit tests passed, and check:fast's suite, every test file and the corpus whole with its snapshots (${ran})${silent.length > 0 ? `, but ${silent.length} that fail as the compiler is too` : ""}, and React's port at its pin regenerated as it committed`);
+    console.log(`${retiredTrailer}: ${mutation.name}: with it, at ${head}, the compiler's ${unit.passed} unit tests passed, and check:fast's suite, every test file and the corpus whole with its snapshots (${ran})${silent.length > 0 ? `, but ${silent.length} that fail as the compiler is too` : ""}, React's port at its pin regenerated as it committed, and the crate corpus's ${crateControl.size} rows each as the compiler is`);
     return;
   }
   console.log(`\n${mutation.name} can't be retired: these tests failed with it, and pass as the compiler is, each a row that holds what it changes:`);
@@ -1293,6 +1306,35 @@ export function regenDiffers(said: string): string[] {
   const compiled = !/^### react-in-rust at \w+ doesn't compile/m.test(said);
   return [...(compiled ? [] : ["its crates didn't compile"]), ...files];
 }
+
+/** Of crates.io's corpus measured with `compiler`, every row (`bun
+ * scripts/crate-corpus.ts`), each crate's verdict (`verdictOf`); with
+ * `check`, held to docs/crate-corpus.md's bars. Or, where the run failed,
+ * what it said last. What `--retire` holds a mutant to, beside the suite
+ * and React's port: a fallback whose retirement passed both, which
+ * itertools reaches, was called unreached; check:fast's suite runs no
+ * crate of the corpus with another compiler. */
+async function crateVerdicts(compiler: string, check: boolean): Promise<Map<string, Verdict> | string> {
+  const p = await run(["bun", "scripts/crate-corpus.ts", ...(check ? ["--check"] : [])], root, crateTimeout, { RUST_JS_COMPILER: compiler });
+  if (stopped(p, crateTimeout)) throw new Error(`the crate corpus with ${compiler} ${stopped(p, crateTimeout)}: it says nothing`);
+  if (p.code !== 0) return (p.stdout + p.stderr).trim().split("\n").slice(-3).join(" ");
+  const results = JSON.parse(readFileSync(join(root, resultsFile), "utf8")) as CrateResult[];
+  return new Map(results.map((result) => [result.name, verdictOf(result)]));
+}
+
+/** Of the crate corpus's verdicts with a mutant, each crate's that isn't
+ * what it is with the compiler as it is, `control`'s: one that falls, and
+ * one that rises, a refused crate the mutant compiles, which reaches the
+ * code too. */
+export function verdictsDiffer(control: Map<string, Verdict>, mutant: Map<string, Verdict>): string[] {
+  return [...control]
+    .filter(([name, verdict]) => mutant.get(name) !== verdict)
+    .map(([name, verdict]) => `crate corpus: ${name} ${mutant.get(name) ?? "unmeasured"} with it, ${verdict} as the compiler is`);
+}
+
+/** What the crate corpus's every row may take: twice a run's here with a
+ * compiler of a new build, whose crates Cargo compiles again. */
+const crateTimeout = 15 * 60_000;
 
 /** What a regen of React's port may take: twice one after a change to the
  * compiler, some 100 s, and its fetch. */

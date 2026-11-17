@@ -68,7 +68,7 @@ export function boundCrateProjects({ dir = crateProjects, cap = crateProjectsCap
   return evict(kept, { cap, free, floor: floorBytes });
 }
 
-type Verdict = "runs" | "compiles" | "refused" | "blocked";
+export type Verdict = "runs" | "compiles" | "refused" | "blocked";
 
 /** A crate of the corpus, as its row in docs/crate-corpus.md says: its exact
  * release; the features it's built with, its default ones off, where the
@@ -163,7 +163,7 @@ export function crashes(stderr: string): { name: string; how: string }[] {
 }
 
 type Refusal = { crate: string; error: string };
-type Result = {
+export type Result = {
   name: string;
   version: string;
   compiled: string[];
@@ -179,6 +179,17 @@ type Result = {
   // they differ, or why the probe didn't compile or run.
   runs?: string;
 };
+
+/** What a crate measured does, its row's verdict: `runs` where it compiles
+ * and its probe's JS reports what native Rust does, else whether it
+ * compiles. `--check` holds it to the row's bar, and `--retire` a mutant's
+ * to the compiler's as it is (scripts/mutations.ts). */
+export function verdictOf(result: Result): Verdict {
+  return result.own === "compiles" && result.runs === "same" ? "runs" : result.own;
+}
+
+/** Where a run writes what it measured of each crate, of the checkout. */
+export const resultsFile = "target/crate-corpus.json";
 
 /** `text` written to `path`, unless it's there already: a file written
  * again has a new date, which Cargo takes for a change (#998). */
@@ -390,7 +401,7 @@ async function main() {
     if (result.runs) console.log(`  runs: ${result.runs}`);
   }
 
-  writeFileSync(join(root, "target/crate-corpus.json"), JSON.stringify(results, null, 2));
+  writeFileSync(join(root, resultsFile), JSON.stringify(results, null, 2));
   boundCrateProjects();
 
   // `--check`, the nightly's: what docs/crate-corpus.md records of each
@@ -401,11 +412,10 @@ async function main() {
   // with the issue.
   if (check) {
     const rank: Record<Verdict, number> = { runs: 3, compiles: 2, refused: 1, blocked: 1 };
-    const verdict = (r: Result): Verdict => (r.own === "compiles" && r.runs === "same" ? "runs" : r.own);
     const failed: string[] = [];
     for (const r of results) {
       const row = chosen.find((c) => c.name === r.name)!;
-      const got = verdict(r);
+      const got = verdictOf(r);
       if (row.open && got === row.open.now) console.log(`${r.name}: ${got}, as ${row.open.issue} says, where it ${row.bar}`);
       else if (row.open && rank[got] > rank[row.open.now]) failed.push(`${r.name}: ${got}, better than ${row.open.issue} says: write \`${got}\` in its row`);
       else if (rank[got] < rank[row.open?.now ?? row.bar]) failed.push(`${r.name}: ${got}, where docs/crate-corpus.md says ${row.open?.now ?? row.bar}`);

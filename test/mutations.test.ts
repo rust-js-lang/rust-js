@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { byControl, crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed } from "../scripts/mutations";
+import { byControl, crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -330,8 +330,29 @@ test("--retire regenerates React's port with the mutant, held to its control", (
   expect(control).toBeGreaterThan(0);
   expect(control).toBeLessThan(retire.indexOf("scripts/checkFast.ts"));
   expect(retire).toContain("port control fails: ");
-  expect(retire).toContain("...portCaught]");
+  expect(retire).toContain("...portCaught, ...crateCaught]");
   expect(retire).toContain("React's port at its pin regenerated as it committed");
+});
+
+// And crates.io's corpus, every row, which check:fast's suite runs with no
+// other compiler: a fallback whose retirement passed the suite and the
+// port is reached by itertools. Each crate's verdict is held to the
+// compiler's as it is, one that falls and one that rises, and its control
+// first, held to the rows' bars, or the retirement is refused.
+test("--retire measures the crate corpus with the mutant, held to its control", () => {
+  const control = new Map<string, "runs" | "compiles" | "refused" | "blocked">([["itertools", "runs"], ["nom", "refused"], ["semver", "compiles"]]);
+  expect(verdictsDiffer(control, new Map(control))).toEqual([]);
+  expect(verdictsDiffer(control, new Map([["itertools", "compiles"], ["nom", "compiles"]]))).toEqual([
+    "crate corpus: itertools compiles with it, runs as the compiler is",
+    "crate corpus: nom compiles with it, refused as the compiler is",
+    "crate corpus: semver unmeasured with it, compiles as the compiler is",
+  ]);
+  const retire = readFileSync(join(root, "scripts/mutations.ts"), "utf8").match(/\nasync function retire\([\s\S]*?\n}\n/)![0];
+  const control$ = retire.indexOf("await crateVerdicts(portControl, true)");
+  expect(control$).toBeGreaterThan(0);
+  expect(control$).toBeLessThan(retire.indexOf("scripts/checkFast.ts"));
+  expect(retire).toContain("crate corpus control fails: ");
+  expect(retire).toContain("await crateVerdicts(mutant, false)");
 });
 
 test("each mutation list names one existing source file", () => {

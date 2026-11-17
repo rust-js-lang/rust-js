@@ -1008,3 +1008,30 @@ are as before. Measuring which of the Nightly's check jobs a passed push
 check had already run at the same commit found 0 to 17 runner-minutes a
 night, under 1%, so the Nightly doesn't skip them: a job a push's selection
 skipped isn't a pass, and the Nightly audits that selector.
+
+## Amendment: a retirement's evidence holds the crate corpus too (2026-11-18)
+
+`--retire` ran check:fast's suite with the mutant, and check:fast keeps
+only its `bun test` jobs when it's given another compiler, so crates.io's
+corpus ran with no mutant. A fallback's retirement passed the suite and
+React's port while itertools, a row of the corpus, reaches that code:
+"nothing tests it" was false for the library crates.
+
+So `--retire` also measures the crate corpus, every row
+(`bun scripts/crate-corpus.ts` with the mutant as `RUST_JS_COMPILER`), and
+holds each crate's verdict (`verdictOf`: `runs`, `compiles`, `refused`,
+`blocked`) to the compiler's as it is (`verdictsDiffer`). Each crate whose
+verdict differs is a row that caught it, `crate corpus: <crate> <verdict>
+with it, <verdict> as the compiler is`: one that falls, and one that rises,
+a refused crate the mutant compiles, which reaches the code too. A run that
+fails is caught too, with what it said last. Its control runs first, beside
+the port's: the corpus with the compiler as it is, `--check`, held to
+docs/crate-corpus.md's bars; where it fails, `--retire` refuses with
+`crate corpus control fails: ..; fix it first`. Verdicts, not refusal
+messages: which refusal a crate's graph reports first varies run to run.
+The trailer names the rows measured.
+
+Cost on the Mac mini: the whole corpus, 100 rows, 123 s with the compiler
+as it is after a rebuild and 69 s warm; with a mutant, a build of its own,
+under two minutes. The first trial, `async-param-copy-unheld`, ran whole in 777 s,
+about three minutes of it the crate corpus.
