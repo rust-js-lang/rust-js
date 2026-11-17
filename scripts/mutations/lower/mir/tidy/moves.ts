@@ -592,7 +592,7 @@ export const mutations: Mutation[] = [
     breaks: "a `let` read by a keyed method call past another statement is read there, `noted(\"between\"); props.fill.applyFill(instance)`, its getter run after the statement between where Rust runs it before (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
     find: "    let Some(StmtKind::Expr(call)) = rest.first_mut().map(|s| &mut s.kind) else {\n",
-    replace: "    let Some(StmtKind::Expr(call)) = rest.iter_mut().find(|s| js::mentions_in(std::slice::from_ref(s), name.word()) > 0).map(|s| &mut s.kind) else {\n",
+    replace: "    let Some(StmtKind::Expr(call)) = rest.iter_mut().find(|s| js::mentions_of(std::slice::from_ref(s), name) > 0).map(|s| &mut s.kind) else {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {

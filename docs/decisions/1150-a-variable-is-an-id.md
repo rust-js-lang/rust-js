@@ -1445,3 +1445,42 @@ its scope declares or reads. One spelling rule, the speller's: `error_`,
 the one spelling no other made name had, is `error$1` (no case in the
 corpus, the tests or React's port had it; lowering-unwind-arms pins it);
 `thrown$1` and `this$$1` are as they were, byte-identical.
+
+
+## Amendment: the word walks' last callers outside tidy's temporaries (#1681 change 3, its last step)
+
+Each caller of a walk that asked a variable by its word, in `js/*` and
+lowering outside the temporaries m3-max's step 2 moves, asks one of
+three things now:
+
+- **A variable, by its `Name`.** `mentions_of`, `visit_names`,
+  `visit_stmt_names`, `substitute_names`, `declared_here` (now `&Name`s):
+  a drop function inlined, a guard's alias, a `$some` held for
+  `is_some_and`, a `&mut`'s held place, tidy's moves, chains and loops.
+  Where the word and the id disagreed, the word was wrong: tidy's
+  `moves` replaced reads of another temporary spelled as the one moved,
+  `_330` of a copy (124 times over the corpus, React's port and the
+  tests), never changing the JS; by its id it replaces only the moved one.
+  A class's `const counted = this;` is a made name (`Name::made_apart`),
+  spelled by preparation, as `this$` is.
+- **JS's scoping, by ids.** Whether a tested flag's branches, put where
+  the closure returns, or a guard's alias, read as its cell, still read
+  what they read is `js::scopes::not_read_as_themselves` of the tree they
+  make, not whether a word declared there is one read there: the
+  architecture rule keeps `js::scopes`' word answers (`spelled`,
+  `declared_spelled`) to preparation and validation. A local spelled as a
+  copy's or a thread-local's name is respelled by its id
+  (`js::declared_variables`, `js::respelled_in`).
+- **A naming table's words.** A pass that still picks a spelling of its
+  own, a holder's (`applied`), an `Error`'s held field, an unread
+  parameter's `_`, a map entry's `current`, a cell's `old`, a drop flag's,
+  a handle's state, a copy's local, the on_load table, reads the words of
+  `js::names_of` (the `Name` walk of what `names_in` collected), each such
+  read marked `// word:`: pickers to move to preparation's speller, as
+  tidy's temporaries are.
+
+`renamed`, `mentions_in`, `Expr::substitute` and the `&str`
+`this_outside_accessors` are gone; `WORD_WALKS` is 10, the temporaries'
+and the walks' own definitions, which go with step 2. Byte-identical: the
+suite, the corpus, the crate corpus and React's port, each answer probed
+old against new.

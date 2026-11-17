@@ -332,12 +332,7 @@ mod tests {
         assert_eq!(names(&writes.changed), ["c", "g", "o"]);
         assert_eq!(Writes::count(&stmts, &"a".into()), 1);
         let places = Writes::places(&stmts);
-        let written = |of: &str| {
-            places
-                .iter()
-                .filter(|p| mentions_in(&[StmtKind::Expr((*p).clone()).at(Span::NONE)], of) > 0)
-                .count()
-        };
+        let written = |of: &str| places.iter().filter(|p| p.mentions_name(&Name::from(of))).count();
         assert_eq!(places.len(), 5);
         assert_eq!(["a", "o", "g", "c", "h"].map(written), [1; 5]);
     }

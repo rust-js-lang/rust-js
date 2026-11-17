@@ -23,18 +23,18 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<St
     // body is where its value's dropped before the drops it calls are, each
     // guard taken apart where it's made; among those, in the module's order,
     // never a set's, which would change the JS from one build to the next.
-    let mut left: Vec<String> = (items.iter())
+    let mut left: Vec<js::Name> = (items.iter())
         .filter_map(|item| match item {
-            Item::Function(f) if drops.contains(f.name.word()) => Some(f.name.word().to_string()), // word: a module's drop function, by its item's name
+            Item::Function(f) if drops.contains(f.name.word()) => Some(f.name.clone()), // word: a module's drop function, by its item's name
             _ => None,
         })
         .collect();
     while !left.is_empty() {
-        let called = |name: &String| {
+        let called = |name: &js::Name| {
             (left.iter()).any(|other| {
                 other != name
                     && (items.iter()).any(
-                        |item| matches!(item, Item::Function(f) if f.name.is(other) && js::mentions_in(&f.body, name) > 0),
+                        |item| matches!(item, Item::Function(f) if f.name == *other && js::mentions_of(&f.body, name) > 0),
                     )
             })
         };
@@ -45,9 +45,9 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<St
 }
 
 /// `inlined_drops`' of the drop `name`.
-fn inline_drop(items: &mut Vec<Item>, name: &str) {
+fn inline_drop(items: &mut Vec<Item>, name: &js::Name) {
     let Some(at) = items.iter().position(
-        |item| matches!(item, Item::Function(f) if f.name.is(name) && matches!(f.params.as_slice(), [Pattern::Name(_), ..])),
+        |item| matches!(item, Item::Function(f) if f.name == *name && matches!(f.params.as_slice(), [Pattern::Name(_), ..])),
     ) else {
         return;
     };
@@ -57,12 +57,12 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
     let (params, body) = (drop.params.clone(), drop.body.clone());
     // One whose body drops a value of its own type calls itself: written
     // at each call, it would make another call to write, never done (#229).
-    if js::mentions_in(&body, name) > 0 {
+    if js::mentions_of(&body, name) > 0 {
         return;
     }
     let mentions: usize = (items.iter().enumerate())
         .map(|(i, item)| match i == at {
-            true => js::mentions_in(&body, name),
+            true => js::mentions_of(&body, name),
             false => mentions_in_item(item, name),
         })
         .sum();
@@ -77,7 +77,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
             continue;
         }
         each_function(item, &mut |own_params, own_body| {
-            if js::mentions_in(own_body, name) == 0 {
+            if js::mentions_of(own_body, name) == 0 {
                 return;
             }
             let mut made = own_body.clone();
@@ -135,7 +135,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &str) {
             continue;
         }
         each_function(item, &mut |_, body| {
-            if js::mentions_in(body, name) > 0 {
+            if js::mentions_of(body, name) > 0 {
                 *body = bodies.next().expect("one made of each");
                 // A scope its body left nothing to drop in, none (#1594).
                 js::each_block_mut(body, &mut crate::lower::drops::emptied_scopes);
@@ -429,18 +429,18 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::N
 }
 
 /// How often `item` names `name`.
-fn mentions_in_item(item: &Item, name: &str) -> usize {
-    let value = |e: &Expr| js::mentions_in(&[StmtKind::Expr(e.clone()).at(e.span)], name);
+fn mentions_in_item(item: &Item, name: &js::Name) -> usize {
+    let value = |e: &Expr| js::mentions_of(&[StmtKind::Expr(e.clone()).at(e.span)], name);
     match item {
         Item::Namespace(namespace) => {
             (namespace.constants.iter()).map(|c| value(&c.value)).sum::<usize>()
                 + (namespace.methods.iter())
-                    .map(|f| js::mentions_in(&f.body, name))
+                    .map(|f| js::mentions_of(&f.body, name))
                     .sum::<usize>()
         }
         Item::Const(constant) => value(&constant.value),
-        Item::Statements(stmts) => js::mentions_in(stmts, name),
-        Item::Function(function) => js::mentions_in(&function.body, name),
+        Item::Statements(stmts) => js::mentions_of(stmts, name),
+        Item::Function(function) => js::mentions_of(&function.body, name),
     }
 }
 
@@ -495,10 +495,10 @@ fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
 
 /// Whether `stmt` is `name(guard, ..);`, the guard and what else a generic
 /// `Drop` is given, its type parameters' drops (ADR 0163).
-fn calls(stmt: &Stmt, name: &str) -> bool {
+fn calls(stmt: &Stmt, name: &js::Name) -> bool {
     matches!(&stmt.kind, StmtKind::Expr(e)
         if matches!(&e.kind, ExprKind::Call(callee, args)
-            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v.is(name))))
+            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v == name)))
 }
 
 /// The variable `f(guard);` gives.

@@ -112,14 +112,22 @@ pub fn borrow_checks_first(stmts: &mut Vec<Stmt>) {
         i += n;
         if let Some((name, cell)) = alias {
             let rest = &stmts[i + 1..];
-            let mut declared = false;
-            each_declared(rest, &mut |d| declared |= cell.is(d) || name.is(d));
-            if !declared && !Writes::sets(rest, &cell) && !Writes::sets(rest, &name) {
-                each_expr_mut(&mut stmts[i + 1..], &mut |e| {
-                    if matches!(&e.kind, ExprKind::Var(v) if *v == name) {
-                        e.kind = ExprKind::Var(cell.clone());
-                    }
-                });
+            let mut read = rest.to_vec();
+            each_expr_mut(&mut read, &mut |e| {
+                if matches!(&e.kind, ExprKind::Var(v) if *v == name) {
+                    e.kind = ExprKind::Var(cell.clone());
+                }
+            });
+            // Nothing after declares either again, nor sets them, and each
+            // read of the cell there is of it, none a declaration spelled
+            // as it takes, as JS's scopes say.
+            if !declares(rest, &cell)
+                && !declares(rest, &name)
+                && !Writes::sets(rest, &cell)
+                && !Writes::sets(rest, &name)
+                && super::scopes::not_read_as_themselves(&read, &[&cell]).is_empty()
+            {
+                stmts.splice(i + 1.., read);
                 stmts.remove(i);
                 continue;
             }
@@ -175,5 +183,34 @@ fn taken_first(e: &mut Expr) -> Taken {
     match stops || e.has_effects() {
         true => Taken::Stopped,
         false => Taken::Nothing,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // `const borrowMut = $borrowMut(nodes); if (c) { const nodes = 1;
+    // f(borrowMut, nodes); }`: the alias is the cell where nothing after
+    // takes the cell's word, as `f(nodes)` there would read the block's.
+    #[test]
+    fn an_alias_is_its_cell_but_where_a_block_declares_the_cells_word() {
+        let checked = |shadowed: bool| {
+            let (cell, alias) = (Name::declared("nodes".into()), Name::declared("borrowMut".into()));
+            let inner = Name::declared(if shadowed { "nodes" } else { "count" }.into());
+            let call = Expr::call(Expr::var("f"), vec![Expr::var(&alias), Expr::var(&inner)]);
+            let block = vec![
+                StmtKind::Const(inner.clone(), Expr::int(1)).at(Span::NONE),
+                StmtKind::Expr(call).at(Span::NONE),
+            ];
+            let mut stmts = vec![
+                StmtKind::Const(alias.clone(), Expr::momentary_borrow(Expr::var(&cell), true)).at(Span::NONE),
+                StmtKind::If(Expr::var("c"), block, None).at(Span::NONE),
+            ];
+            borrow_checks_first(&mut stmts);
+            (stmts.iter()).any(|s| matches!(&s.kind, StmtKind::Const(name, _) if *name == alias))
+        };
+        assert!(!checked(false));
+        assert!(checked(true));
     }
 }

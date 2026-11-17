@@ -263,8 +263,10 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
             i += 2;
             continue;
         }
-        let mut names = IndexSet::default();
-        js::names_in(stmts, &mut names);
+        let mut names: IndexSet<String> = IndexSet::default();
+        for name in js::names_of(stmts) {
+            names.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
+        }
         // What it held, named apart from what's here: declared once.
         let old = js::Name::declared(crate::lower::fresh_in(&mut names, "old"));
         let slot = match &mut stmts[i].kind {
@@ -303,32 +305,27 @@ fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOn
                 _ => false,
             })
     };
-    let rename = |items: &mut [js::Item], from: &str, to: &str| {
-        for function in items.iter_mut().flat_map(js::Item::functions_mut).filter(|f| own(f)) {
-            for param in function.params.iter_mut() {
-                param.each_name_mut(&mut |n| {
-                    if n.is(from) {
-                        n.respell(to);
-                    }
-                });
-            }
-            js::renamed(&mut function.body, from, to);
-        }
-    };
-    rename(items, name, APART);
+    for function in items.iter_mut().flat_map(js::Item::functions_mut).filter(|f| own(f)) {
+        respelled_locals(function, name, APART);
+    }
     let made = change(items);
     // Back: `APART` is only in what was set apart.
     for function in items.iter_mut().flat_map(js::Item::functions_mut) {
-        for param in function.params.iter_mut() {
-            param.each_name_mut(&mut |n| {
-                if n.is(APART) {
-                    n.respell(name);
-                }
-            });
-        }
-        js::renamed(&mut function.body, APART, name);
+        respelled_locals(function, APART, name);
     }
     made
+}
+
+/// `function` with each of its variables spelled `from`, by its id, its
+/// declaration and reads, spelled `to`: what `outside_own_bindings` sets
+/// apart.
+fn respelled_locals(function: &mut js::Function, from: &str, to: &str) {
+    for local in js::declared_variables(function)
+        .into_iter()
+        .filter(|local| local.is(from))
+    {
+        js::respelled_in(function, &local, to);
+    }
 }
 
 /// Whether a function of `items`, or what the module runs when it's

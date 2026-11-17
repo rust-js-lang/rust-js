@@ -44,12 +44,17 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
     };
     // The item, taken apart as it was, `({ name }, i)`; `_` where only the
     // index is read, or `__` where the accumulator is `_` already, JS
-    // binding a name once in a parameter list.
+    // binding a name once in a parameter list, and none of the body's,
+    // which it would take.
     let unread = || {
         let named = |n: &str| leading.iter().any(|p| matches!(p, js::Pattern::Name(l) if l.is(n)));
+        let mut taken: crate::collections::IndexSet<String> = Default::default();
+        for name in js::names_of(body) {
+            taken.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
+        }
         (1..)
             .map(|k| "_".repeat(k))
-            .find(|n| !named(n) && js::mentions_in(body, n) == 0)
+            .find(|n| !named(n) && !taken.contains(n))
             .expect("a name")
     };
     let mut params = leading.to_vec();

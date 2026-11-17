@@ -252,7 +252,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         false if leads(expr, name, guard, &passes) == Some(true) => Why::ReadFirst,
         false => return None,
     };
-    let mut replaced = expr.substitute(&|v| name.is(v).then(|| value.clone()))?;
+    let mut replaced = expr.substitute_names(&|v| (v == name).then(|| value.clone()))?;
     // A cell made in its place and read, `{ value: x }.value`, a struct's
     // field made of one: what it holds, as `Expr::member` reads one where
     // it's made, and its key then left out where that's `undefined` (ADR
@@ -542,11 +542,11 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<js::Name>) -> Option
     }
     let place = place_read(value, name);
     let mut tested = 0;
-    test.visit_vars(&mut |v| tested += usize::from(name.is(v)));
+    test.visit_names(&mut |v| tested += usize::from(v == name));
     if !place || tested == 0 || test.has_effects() {
         return None;
     }
-    let substituted = |e: &Expr| e.substitute(&|v| name.is(v).then(|| value.clone()));
+    let substituted = |e: &Expr| e.substitute_names(&|v| (v == name).then(|| value.clone()));
     // Read once more by the `then`'s first statement, nothing it
     // evaluates first doing anything.
     if js::mentions_of(rest, name) - tested != 1 {
@@ -637,7 +637,7 @@ fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<js::Name>) -
     if !fallback || leads(expr, name, None, &|_| false) != Some(true) {
         return false;
     }
-    let Some(replaced) = expr.substitute(&|v| name.is(v).then(|| value.clone())) else {
+    let Some(replaced) = expr.substitute_names(&|v| (v == name).then(|| value.clone())) else {
         return false;
     };
     *read.of_mut(&mut stmts[at + 1]) = replaced;
@@ -742,7 +742,7 @@ pub(super) fn read_again(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {
         return false;
     }
-    let Some(replaced) = read.of(next).substitute(&|v| name.is(v).then(|| value.clone())) else {
+    let Some(replaced) = read.of(next).substitute_names(&|v| (v == name).then(|| value.clone())) else {
         return false;
     };
     *read.of_mut(&mut stmts[at + 1]) = replaced;
@@ -774,10 +774,10 @@ pub(super) fn set_where_read(stmts: &mut Vec<Stmt>, at: usize) -> bool {
         return false;
     };
     let mut reads = 0;
-    test.visit_vars(&mut |v| reads += usize::from(name.is(v)));
+    test.visit_names(&mut |v| reads += usize::from(v == name));
     let set = Expr::assigned(Expr::var(name), value.clone());
     let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))
-        .then(|| test.substitute(&|v| name.is(v).then(|| set.clone())))
+        .then(|| test.substitute_names(&|v| (v == name).then(|| set.clone())))
         .flatten();
     let tested = in_place.unwrap_or_else(|| Expr::sequence(vec![set.clone(), test.clone()]));
     if let StmtKind::If(test, ..) = &mut stmts[at + 1].kind {

@@ -439,7 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             held_as: Default::default(),
         };
         let hole = StmtKind::Expr(hole).at(js::Span::NONE);
-        let name = &self.krate.fns[&id].name;
+        let name = self.krate.item_name(id, None, &self.krate.fns[&id].name);
         let constant = self.krate.local_consts.get(&id);
         // What reads it: its name, or, of a `const`, a hole of a function
         // written here that reads it, filled later.
@@ -447,7 +447,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|reader| reader.index.as_u32())
             .collect();
         let reads = |stmts: &[Stmt]| {
-            let mut found = js::mentions_in(stmts, name);
+            let mut found = js::mentions_of(stmts, &name);
             js::each_expr(stmts, &mut |e| {
                 found += usize::from(
                     matches!(e.kind, js::ExprKind::Hole(js::Hole::Item(index)) if readers.contains(&index)),

@@ -72,8 +72,10 @@ pub(in crate::lower::mir::tidy) fn handles_in_place(body: &mut Vec<Stmt>) {
 /// stages run again, after `handles_in_place` (#779, #784).
 fn written_whole_in_place(body: &mut Vec<Stmt>) {
     // Each a name of its own, as two such writes may be in one list (#687).
-    let mut taken = IndexSet::default();
-    js::names_in(body, &mut taken);
+    let mut taken: IndexSet<String> = IndexSet::default();
+    for name in js::names_of(body) {
+        taken.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
+    }
     // A closure's write too (#482).
     js::each_block_mut(body, &mut |stmts| {
         let mut out = Vec::with_capacity(stmts.len());

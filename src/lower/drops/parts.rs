@@ -667,13 +667,14 @@ pub(in crate::lower) fn emptied_scopes(stmts: &mut Vec<Stmt>) {
             ] if is_aborting(body) => inner,
             _ => body,
         };
-        let others = |name: &str| {
+        let others = |name: &js::Name| {
             (stmts.iter().enumerate())
                 .filter(|&(i, _)| i != at)
-                .any(|(_, s)| js::mentions_in(std::slice::from_ref(s), name) > 0)
+                .any(|(_, s)| js::mentions_of(std::slice::from_ref(s), name) > 0)
         };
-        let apart = (left.iter())
-            .all(|s| !matches!(s.kind, StmtKind::Function(_)) && js::declared_here(s).iter().all(|name| !others(name)));
+        let apart = (left.iter()).all(|s| {
+            !matches!(s.kind, StmtKind::Function(_)) && js::declared_here(s).into_iter().all(|name| !others(name))
+        });
         if !nothing || !apart {
             at += 1;
             continue;
@@ -746,7 +747,9 @@ pub(in crate::lower) fn poisoned_and_released(drop: &Stmt) -> Option<(Stmt, Stmt
 /// only `$cleanup` tells (`runtime::asks_unwinding`).
 fn asks_unwinding(stmts: &[Stmt]) -> bool {
     let mut asks = false;
-    js::visit_stmts(stmts, &mut |name| asks |= crate::runtime::asks_unwinding(name));
+    js::visit_stmt_names(stmts, &mut |name| {
+        asks |= name.helper().is_some_and(crate::runtime::asks_unwinding)
+    });
     asks
 }
 

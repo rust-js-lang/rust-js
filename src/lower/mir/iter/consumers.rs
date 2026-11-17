@@ -601,7 +601,8 @@ mod tests {
         let put = unheld(Expr::var("iter"), result, &mut made);
         assert!(made.is_empty());
         let (expected, _) = held(None);
-        let expected = expected.substitute(&|var| (var == "iter").then(|| Expr::call(Expr::var("made"), vec![])));
+        let iter = js::Name::from("iter");
+        let expected = expected.substitute_names(&|var| (var == &iter).then(|| Expr::call(Expr::var("made"), vec![])));
         assert!(Some(put) == expected);
     }
 

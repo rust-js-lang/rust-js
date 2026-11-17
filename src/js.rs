@@ -1122,13 +1122,13 @@ mod tests {
         assert!(literals.facts.has(Known::Literal));
         assert!(!literals.has_effects() && literals.reads_only_vars());
         let mut read = Vec::new();
-        literals.visit_vars(&mut |name| read.push(name));
+        literals.visit_names(&mut |name| read.push(name));
         assert!(read.is_empty());
         let held = Expr::literal_array(vec![Expr::int(1), Expr::var("x")]);
         assert!(!held.facts.has(Known::Literal));
         let mut read = Vec::new();
-        held.visit_vars(&mut |name| read.push(name));
-        assert_eq!(read, ["x"]);
+        held.visit_names(&mut |name| read.push(name));
+        assert_eq!(read, [&Name::from("x")]);
     }
 
     fn module_of(value: Expr) -> Module {
@@ -1181,12 +1181,13 @@ mod tests {
     // What an expression reads is one walk's answer: a template's, an
     // object's part too, which `t = `${t}x`` reads `t` in.
     #[test]
-    fn mentions_var_finds_every_read() {
-        let template = Expr::template(vec![String::new(), "x".into()], vec![Expr::var("t")]);
-        assert!(template.mentions_var("t"));
-        let object = Expr::object(vec![Prop::Field("a".into(), Expr::var("t"))]);
-        assert!(object.mentions_var("t"));
-        assert!(!object.mentions_var("u"));
+    fn mentions_name_finds_every_read() {
+        let (t, u) = (Name::from("t"), Name::from("u"));
+        let template = Expr::template(vec![String::new(), "x".into()], vec![Expr::var(&t)]);
+        assert!(template.mentions_name(&t));
+        let object = Expr::object(vec![Prop::Field("a".into(), Expr::var(&t))]);
+        assert!(object.mentions_name(&t));
+        assert!(!object.mentions_name(&u));
     }
 
     // A test of being set is one however `null` is spelled, and its `==`
@@ -1238,9 +1239,10 @@ mod tests {
         assert_eq!(lists, 3);
     }
 
-    // A new name is none a function declared in a block has, or takes.
+    // A new name is none a function declared in a block has, or takes:
+    // each JS's scopes spell in them.
     #[test]
-    fn names_in_finds_functions_and_their_params() {
+    fn spelled_finds_functions_and_their_params() {
         let inner = Function {
             name: "inner".into(),
             params: vec![Pattern::Name("x".into())],
@@ -1253,8 +1255,7 @@ mod tests {
             param_spans: Vec::new(),
             set_apart: false,
         };
-        let mut names = IndexSet::default();
-        names_in(&[StmtKind::Function(Box::new(inner)).at(Span::NONE)], &mut names);
+        let names = scopes::spelled(&[StmtKind::Function(Box::new(inner)).at(Span::NONE)]);
         for name in ["inner", "x", "y"] {
             assert!(names.contains(name), "{name}");
         }

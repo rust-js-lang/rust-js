@@ -580,13 +580,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.flush(state, out)?;
         let held = self.spill(Base::Derived(&name), Expr::var(&name), out);
-        // A place holds no closure, so `substitute` renames it; else it's
+        // A place holds no closure, so `substitute_names` renames it; else it's
         // refused, never left reading the variable the snapshot stands for
         // (#1525).
         let span = state.body.source_info(at).span;
         for (l, target) in (state.refs.iter_mut()).chain(state.in_place.iter_mut()) {
             if read.contains(l) {
-                *target = (target.substitute(&|v| name.is(v).then(|| held.clone())))
+                *target = (target.substitute_names(&|v| (v == &name).then(|| held.clone())))
                     .ok_or_else(|| self.unsupported(span, "a place a closure reads, which can't be renamed"))?;
             }
         }

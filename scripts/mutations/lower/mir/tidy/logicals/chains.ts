@@ -37,8 +37,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding moved into its body is read by the test before it's declared, `if (a && r != null) { const r = ..`",
     file: "src/lower/mir/tidy/logicals/chains.rs",
-    find: "    if let Some(tested) = test.substitute(&read) {\n",
-    replace: "    if let Some(tested) = None::<Expr> {\n",
+    find: "        if let Some(tested) = test.substitute_names(&read) {\n",
+    replace: "        if let Some(tested) = None::<Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
   },
   {

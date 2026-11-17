@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an exported thread-local cell beside a function's own local of its name, `const tickPair = tickPair$1()`, is taken to be rebound there, kept a box and refused, though that function never reads it (#1555)",
     file: "src/lower/std_types/cell/variables.rs",
-    find: "    rename(items, name, APART);\n",
+    find: "        respelled_locals(function, name, APART);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exported_cell_beside_a_local_of_its_name.rs$"],
   },

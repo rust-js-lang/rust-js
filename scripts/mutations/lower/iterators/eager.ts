@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`fold(0, |_, (i, _)| i)` is `reduce((_, _, i) => i, 0)`, a SyntaxError: `_` bound twice",
     file: "src/lower/iterators/eager.rs",
-    find: "            .find(|n| !named(n) && js::mentions_in(body, n) == 0)\n",
-    replace: "            .find(|n| js::mentions_in(body, n) == 0)\n",
+    find: "            .find(|n| !named(n) && !taken.contains(n))\n",
+    replace: "            .find(|n| !taken.contains(n))\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
   },
   {

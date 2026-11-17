@@ -1141,7 +1141,7 @@ pub(super) fn filled_lazily(stmts: &mut Vec<Stmt>) {
             else {
                 unreachable!("the `if` `lazily_filled` matched")
             };
-            let test = (test.substitute(&|v| read.is(v).then(|| Expr::var(var.clone()))))
+            let test = (test.substitute_names(&|v| (v == &read).then(|| Expr::var(var.clone()))))
                 .expect("`lazily_filled` renames the test");
             stmts[i + 2].kind = match gives_read(&otherwise, &var, &read) {
                 true => StmtKind::If(test, then, None),
@@ -1171,9 +1171,11 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(js::Name, js::Name)> {
     };
     // What's read named as the variable is, given apart: not a binding of
     // the program's own name, `fnNode`, which stays.
-    // Nor where a closure in the test reads it, which `substitute` can't
+    // Nor where a closure in the test reads it, which `substitute_names` can't
     // rename, so the test would read a `const` no longer declared (#1525).
-    let renamed = test.substitute(&|v| read.is(v).then(|| Expr::var(var))).is_some();
+    let renamed = test
+        .substitute_names(&|v| (v == read).then(|| Expr::var(var)))
+        .is_some();
     let kept = !read.given_apart_of(var)
         || test.mentions_name(var)
         || js::mentions_of(other, read) > 0
@@ -1197,7 +1199,7 @@ pub(super) fn kept_declarations(moved: &[Stmt], after: &[Stmt]) -> Option<Vec<js
     let mut kept = Vec::new();
     for stmt in moved {
         for name in js::declared_here(stmt) {
-            if js::mentions_in(after, &name) == 0 {
+            if js::mentions_of(after, name) == 0 {
                 continue;
             }
             match &stmt.kind {

@@ -115,9 +115,8 @@ fn in_place<'tcx>(
         let Some(callee) = super::super::passed_on::forwarded_call(&functions[at], output.is_unit()) else {
             continue;
         };
-        callee.visit_vars(&mut |name| {
-            reads.insert(name.to_string());
-        });
+        // What the call reads, by the words a module imports them by.
+        callee.visit_names(&mut |name| _ = reads.insert(name.word().to_owned())); // word: an import's
         functions.remove(at);
         confirmed.insert(function, target);
     }

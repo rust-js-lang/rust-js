@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a name an earlier `on_load!` body destructures is declared again by a later one",
     file: "src/js/stmt_walk.rs",
-    find: "        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),\n",
+    find: "        StmtKind::Destructure { pattern, .. } => pattern.bound(),\n",
     replace: "",
     tests: [
       "test/lowering-bindings.test.ts",

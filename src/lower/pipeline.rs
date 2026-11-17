@@ -531,7 +531,8 @@ pub fn lower_crate<'tcx>(
             let earlier = lowered_items
                 .iter()
                 .filter(|(id, _)| super::bindings::is_on_load(tcx, *id) && fns[id].module == module);
-            names.extend(earlier.flat_map(|(_, item)| item.function.body.iter().flat_map(js::declared_here)));
+            let declared = earlier.flat_map(|(_, item)| item.function.body.iter().flat_map(js::declared_here));
+            names.extend(declared.map(|name| name.word().to_owned())); // word: a naming table's, of what the module's top declares
         }
         // A function's scope struct's methods, functions declared in it, by
         // names none of its variables hide (ADR 1043).

@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Drop` whose body drops a value of its own type is written at each of its calls, which makes another to write: the compiler never finishes (#229)",
     file: "src/lower/drops/inlined.rs",
-    find: "    if js::mentions_in(&body, name) > 0 {\n        return;\n    }\n",
+    find: "    if js::mentions_of(&body, name) > 0 {\n        return;\n    }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_of_its_own_type.rs$"],
   },
@@ -374,8 +374,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic `Drop`'s call given its type parameter's drop too, `wrapperDrop_drop(value, (value) => { .. })`, isn't found as its drop, so a `Drop` dropped so is never its body there (#501)",
     file: "src/lower/drops/inlined.rs",
-    find: "            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v.is(name))))\n",
-    replace: "            if args.len() == 1 && matches!(&callee.kind, ExprKind::Var(v) if v.is(name))))\n",
+    find: "            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v == name)))\n",
+    replace: "            if args.len() == 1 && matches!(&callee.kind, ExprKind::Var(v) if v == name)))\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
     snapshots: true,
   },

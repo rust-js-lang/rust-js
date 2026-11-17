@@ -1319,7 +1319,7 @@ pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
         {
             let name = (std::iter::once("current".to_string()))
                 .chain((1..).map(|n| format!("current${n}")))
-                .find(|n| js::mentions_in(stmts, n) == 0)
+                .find(|n| !js::names_of(stmts).iter().any(|name| name.is(n)))
                 .expect("a name");
             let name = js::Name::declared(name);
             let mut value = vec![StmtKind::Expr(value.clone()).at(js::Span::NONE)];

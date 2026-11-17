@@ -986,8 +986,8 @@ fn unseen_by_drops(stmt: &Stmt) -> bool {
 /// the drop, only a write gives it a value again.
 fn names_dropped(stmt: &Stmt, drop: &Stmt) -> bool {
     let mut named = false;
-    js::visit_stmts(std::slice::from_ref(drop), &mut |var| {
-        named |= js::mentions_in(std::slice::from_ref(stmt), var) > 0;
+    js::visit_stmt_names(std::slice::from_ref(drop), &mut |var| {
+        named |= js::mentions_of(std::slice::from_ref(stmt), var) > 0;
     });
     named
 }

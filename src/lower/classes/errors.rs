@@ -86,8 +86,11 @@ pub(super) fn super_of_fields(
         matches!(&stmt.kind, StmtKind::Assign(Expr { kind: ExprKind::Member(object, key), .. }, _)
             if key == name && matches!(object.kind, ExprKind::This))
     };
-    let mut names = IndexSet::default();
-    js::names_in(body, &mut names);
+    // A held value's name is none of the body's.
+    let mut names: IndexSet<String> = IndexSet::default();
+    for name in js::names_of(body) {
+        names.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
+    }
     let (mut message, mut cause) = (None, None);
     let mut before = Vec::new();
     let mut after = Vec::new();

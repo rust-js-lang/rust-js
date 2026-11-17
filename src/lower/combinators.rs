@@ -835,11 +835,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return result::unwrapped_made(subject, values);
         }
         if comb == Comb::IsSomeAnd && !boxed && self.option_of(subject_ty).is_some() {
-            let compared = compared_with(&values[0])?;
-            // `HELD_SOME` is mentioned once, outside any closure
+            let (compared, held) = compared_with(&values[0])?;
+            // `held` is mentioned once, outside any closure
             // (`compared_with`); where it weren't, the combinator's own form,
             // never the placeholder left undeclared (#1525).
-            return compared.substitute(&|v| (v == HELD_SOME).then(|| subject.clone()));
+            return compared.substitute_names(&|v| (v == &held).then(|| subject.clone()));
         }
         None
     }
@@ -949,16 +949,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// What `p`, an `is_some_and`'s predicate, is of its argument where it's a
-/// comparison of it with what's not it, `x === task`, the argument written
-/// `HELD_SOME`: the `===`, `HELD_SOME === task`.
-fn compared_with(p: &Expr) -> Option<Expr> {
-    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(js::Name::declared(HELD_SOME.to_string()))]);
+/// comparison of it with what's not it, `x === task`, the argument the
+/// variable `HELD_SOME` it's given with it: the `===`, `HELD_SOME === task`.
+fn compared_with(p: &Expr) -> Option<(Expr, js::Name)> {
+    let given = js::Name::declared(HELD_SOME.to_string());
+    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(&given)]);
     let js::ExprKind::Binary(Op::Eq, a, b) = &applied.kind else {
         return None;
     };
-    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if v.is(HELD_SOME));
-    let mentions = js::mentions_in(&[StmtKind::Expr(applied.clone()).at(applied.span)], HELD_SOME);
-    ((held(a) || held(b)) && mentions == 1).then_some(applied)
+    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if *v == given);
+    let mentions = js::mentions_of(&[StmtKind::Expr(applied.clone()).at(applied.span)], &given);
+    ((held(a) || held(b)) && mentions == 1).then_some((applied, given))
 }
 
 /// Whether `p`, a `filter`'s predicate, is the truth of its argument itself,
@@ -966,9 +967,10 @@ fn compared_with(p: &Expr) -> Option<Expr> {
 /// empty, `$some !== ""` (`Expr::text_truth`): as JS's `||` tests what it's
 /// given (ADR 0635).
 fn tests_its_truth(p: &Expr) -> bool {
-    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(js::Name::declared(HELD_SOME.to_string()))]);
+    let given = js::Name::declared(HELD_SOME.to_string());
+    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(&given)]);
     let tested = applied.text_truth().cloned().unwrap_or_else(|| applied.tested());
-    matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME))
+    matches!(&tested.kind, js::ExprKind::Var(v) if *v == given)
 }
 
 /// The argument `compared_with` and `tests_its_truth` give a predicate: a

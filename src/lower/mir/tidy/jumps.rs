@@ -382,7 +382,7 @@ pub(super) fn early_return(stmt: &mut Stmt, elses: &[(js::Span, js::Span, js::Sp
     };
     let mut inside = false;
     if let StmtKind::Return(Some(value)) = &exit.kind {
-        value.visit_vars(&mut |v| inside |= declared(body).any(|d| d == v));
+        value.visit_names(&mut |v| inside |= declared_names(body).any(|d| d == v));
     }
     let goes_on = then.last().is_some_and(continues);
     // The `return` after the loop: of no other way out of it, so nothing

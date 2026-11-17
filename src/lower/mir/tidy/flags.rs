@@ -44,8 +44,10 @@ fn unread_gone(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
 /// MIR's local, `_12$0$live` (#841).
 pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
     unread_gone(body, flags);
-    let mut taken = IndexSet::default();
-    js::names_in(body, &mut taken);
+    let mut taken: IndexSet<String> = IndexSet::default();
+    for name in js::names_of(body) {
+        taken.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
+    }
     // In the order they're declared, so each build names them alike.
     let mut declared = Vec::new();
     js::statement_lists(body, &mut |list| {

@@ -217,13 +217,13 @@ fn sunk(stmt: &mut Stmt, mut carried: Vec<Stmt>) {
     }
     carried.extend(then.drain(..k));
     if let StmtKind::If(test, ..) = &mut then[0].kind {
-        let read = |n: &str| {
+        let read = |n: &js::Name| {
             (carried.iter()).rev().find_map(|c| match &c.kind {
-                StmtKind::Const(name, value) if name.is(n) => Some(value.clone()),
+                StmtKind::Const(name, value) if name == n => Some(value.clone()),
                 _ => None,
             })
         };
-        if let Some(tested) = test.substitute(&read) {
+        if let Some(tested) = test.substitute_names(&read) {
             *test = tested;
         }
     }

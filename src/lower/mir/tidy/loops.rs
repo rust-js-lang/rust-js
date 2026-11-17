@@ -1134,7 +1134,7 @@ fn copy_tested_first(stmt: &mut Stmt) -> Option<Vec<Stmt>> {
     {
         return None;
     }
-    let tested = test.substitute(&|name| copy.is(name).then(|| value.clone()))?;
+    let tested = test.substitute_names(&|name| (name == copy).then(|| value.clone()))?;
     let original = body.clone();
     if let StmtKind::If(test, ..) = &mut body[1].kind {
         *test = tested;

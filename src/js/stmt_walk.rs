@@ -335,19 +335,6 @@ pub fn mentions_of(stmts: &[Stmt], name: &Name) -> usize {
     count
 }
 
-/// How many times `stmts` name a variable spelled `name`, read or written:
-/// what JS reads by the word, preparation's question (`mentions_of` asks
-/// of a variable).
-pub fn mentions_in(stmts: &[Stmt], name: &str) -> usize {
-    let mut count = 0;
-    visit_stmts(stmts, &mut |var| {
-        if var == name {
-            count += 1;
-        }
-    });
-    count
-}
-
 /// The word of each variable `stmts` read, `visit_stmt_names`' spelled.
 pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
     visit_stmt_names(stmts, &mut |name| read(name.word()));
@@ -585,18 +572,10 @@ pub fn declares(stmts: &[Stmt], name: &Name) -> bool {
     found
 }
 
-/// `stmts` with each declaration and read of the name `from`, a closure's
-/// in them too, of `to`, which none of them mentions: the same program,
-/// where `from` is one `stmts` declare at their top.
-pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
-    each_named(stmts, from, &mut |name| name.respell(to));
-}
-
 /// `stmts` with each declaration and read of the variable `from`, by its
 /// id, a closure's in them too, made `to`: one variable made another, a
 /// shadow its binding or a value its variable, or, `to` being `from`
-/// respelled, one respelled (ADR 1150). `renamed` asks it of
-/// a word.
+/// respelled, one respelled (ADR 1150).
 pub fn replaced(stmts: &mut [Stmt], from: &Name, to: &Name) {
     each_name(stmts, false, &mut |name| {
         if name == from {
@@ -614,10 +593,7 @@ pub fn respelled(items: &mut [Item], variable: &Name, to: &str) {
             name.respell(to);
         }
     };
-    let of_function = |function: &mut Function, change: &mut dyn FnMut(&mut Name)| {
-        (function.params.iter_mut()).for_each(|param| param.each_name_mut(&mut |n| change(n)));
-        each_name(&mut function.body, false, change);
-    };
+    let of_function = each_function_name;
     let of_value = |value: &mut Expr, change: &mut dyn FnMut(&mut Name)| {
         let mut stmts = vec![StmtKind::Expr(value.clone()).at(super::Span::NONE)];
         each_name(&mut stmts, false, change);
@@ -640,6 +616,35 @@ pub fn respelled(items: &mut [Item], variable: &Name, to: &str) {
             Item::Statements(stmts) => each_name(stmts, false, &mut change),
         }
     }
+}
+
+/// `function` with each declaration and read of `variable`, by its id,
+/// spelled `to`: `respelled`'s, of one function.
+pub fn respelled_in(function: &mut Function, variable: &Name, to: &str) {
+    each_function_name(function, &mut |name| {
+        if name == variable {
+            name.respell(to);
+        }
+    });
+}
+
+/// `change` of each of `function`'s parameters' names, and each
+/// declaration and read in its body.
+fn each_function_name(function: &mut Function, change: &mut dyn FnMut(&mut Name)) {
+    (function.params.iter_mut()).for_each(|param| param.each_name_mut(&mut |n| change(n)));
+    each_name(&mut function.body, false, change);
+}
+
+/// Each variable `function` declares, once: a parameter, or one its body
+/// declares, its closures' and functions' too.
+pub fn declared_variables(function: &Function) -> Vec<Name> {
+    let mut declared: Vec<Name> = function.params.iter().flat_map(Pattern::bound).cloned().collect();
+    each_declared_name(&function.body, &mut |name| {
+        if !declared.contains(name) {
+            declared.push(name.clone());
+        }
+    });
+    declared
 }
 
 /// `stmts`, a tree used again, a body applied in place once more, each
@@ -669,16 +674,6 @@ pub fn spellings(stmts: &[Stmt]) -> Vec<String> {
         words.push(name.word().to_string()) // word: the spelling itself, what it compares
     });
     words
-}
-
-/// `change` of each declaration and read in `stmts` of the name `from`, a
-/// closure's in them too.
-fn each_named(stmts: &mut [Stmt], from: &str, change: &mut dyn FnMut(&mut Name)) {
-    each_name(stmts, false, &mut |name| {
-        if name.is(from) {
-            change(name);
-        }
-    });
 }
 
 /// `change` of each declaration in `stmts`, a closure's in them too, and
@@ -736,17 +731,10 @@ pub fn read_as_this_of(stmts: &mut [Stmt], name: &Name) -> bool {
 /// `this.reads`, which preparation writes as an object whose getter and
 /// setter read the place, `{ get value() { return this.reads; }, .. }`,
 /// whose `this` would be that object, reads the function's through a
-/// `const` of it before them, `const counted = this;`, named `name` or
-/// apart from what the body names (#359, #449). Not a function nested in
-/// it, whose `this` is its own. Whether one did.
-pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
-    let mut taken = IndexSet::default();
-    names_in(body, &mut taken);
-    this_outside_accessors_of(body, &Name::declared(crate::names::fresh_in(&mut taken, name)))
-}
-
-/// `this_outside_accessors`, its `const` the variable `instance`, which
-/// preparation spells apart from what the body names (ADR 1150).
+/// `const` of it before them, `const counted = this;`, the variable
+/// `instance`, which preparation spells apart from what the body names
+/// (#359, #449, ADR 1150). Not a function nested in it, whose `this` is its
+/// own. Whether one did.
 pub fn this_outside_accessors_of(body: &mut Vec<Stmt>, instance: &Name) -> bool {
     // Each nested function's body set aside, a mark of which in its place,
     // then put back where its mark is.
@@ -807,10 +795,10 @@ pub fn reads_this(stmts: &[Stmt]) -> bool {
 }
 
 /// The variables a statement declares where it is: `const x`, `let [a, b]`.
-pub fn declared_here(statement: &Stmt) -> Vec<String> {
+pub fn declared_here(statement: &Stmt) -> Vec<&Name> {
     match &statement.kind {
-        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.word().to_string()],
-        StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name],
+        StmtKind::Destructure { pattern, .. } => pattern.bound(),
         _ => Vec::new(),
     }
 }

@@ -29,7 +29,7 @@ pub(in crate::lower) fn as_member(
         Member::Constructor => {
             spread_state(tcx, def_id, function)?;
             set_this(&mut function.body)?;
-            this_outside_accessors(class, &mut function.body);
+            instance_outside_accessors(class, &mut function.body);
             // Of a class that extends one, its superclass constructs `this` first,
             // `super(props);`, at its name: a comment its body starts with follows.
             // Of `Error`'s, the fields its constructor sets, `super(message,
@@ -49,7 +49,7 @@ pub(in crate::lower) fn as_member(
             Ok(())
         }
         Member::Method | Member::Getter => {
-            this_outside_accessors(class, &mut function.body);
+            instance_outside_accessors(class, &mut function.body);
             Ok(())
         }
         // Named as its struct is, its function of no type's; exported only
@@ -57,7 +57,7 @@ pub(in crate::lower) fn as_member(
         Member::Own => {
             let object =
                 object_of(tcx, def_id).map_or_else(|| "object".to_owned(), |adt| tcx.item_name(adt).to_string());
-            this_outside_accessors(&object, &mut function.body);
+            instance_outside_accessors(&object, &mut function.body);
             function.export = false;
             Ok(())
         }
@@ -85,12 +85,13 @@ pub(in crate::lower) fn place((member, forwarding): (Member, bool), class: &mut 
 
 /// Of `body`, a class's method's: each handle kept on a place of `this`
 /// on the instance named before it, `const counted = this;`,
-/// `counted.reads` (#359, `js::this_outside_accessors`). Named as its class
-/// is, as a method's `self` is.
-fn this_outside_accessors(class: &str, body: &mut Vec<Stmt>) {
+/// `counted.reads` (#359, `js::this_outside_accessors_of`). Named as its
+/// class is, as a method's `self` is, a made name preparation spells apart
+/// from what the body names (`prepare::reclaim::spelled`, ADR 1150).
+fn instance_outside_accessors(class: &str, body: &mut Vec<Stmt>) {
     let mut instance = class.to_owned();
     instance[..1].make_ascii_lowercase();
-    js::this_outside_accessors(body, &instance);
+    js::this_outside_accessors_of(body, &js::Name::made_apart(&instance));
 }
 
 /// Of `function`, a class's method, its `self` parameter, `this` in its
@@ -114,9 +115,7 @@ pub(in crate::lower) fn receiver_as_this(
         let Some(Pattern::Name(receiver)) = params.first() else {
             return Err("a method whose `self` is no parameter");
         };
-        let mut read = false;
-        js::visit_stmts(body, &mut |name| read |= receiver.is(name));
-        if read {
+        if js::mentions_of(body, receiver) > 0 {
             return Err(
                 "`#[rust_js::namespace]` method that reads `self` only to call its functions, `self.update_container(..)`: its module has no value of its own (ADR 1037)",
             );

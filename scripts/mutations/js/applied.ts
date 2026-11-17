@@ -81,9 +81,17 @@ export const mutations: Mutation[] = [
     name: "applied-param-unread",
     breaks: "a closure's parameter, called with what's another name, is left unread, so its body reads a variable that isn't",
     file: "src/js/applied.rs",
-    find: "        && !substituted(&mut body, &|v| param.is(v).then(|| read.clone()))\n",
+    find: "        && !substituted(&mut body, &|v| (v == param).then(|| read.clone()))\n",
     replace: "        && false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
+  },
+  {
+    name: "applied-branch-read-taken",
+    breaks: "a tested flag's closure is in place though a block of its body declares a word its branch reads, `return n` reading the block's `n`, not the function's (#1681 change 3)",
+    file: "src/js/applied.rs",
+    find: "    super::scopes::not_read_as_themselves(&replaced, &read)\n        .is_empty()\n        .then_some(replaced)\n",
+    replace: "    Some(replaced)\n",
+    unitTests: "js::applied::tests::a_tested_flag_is_in_place_but_where_a_block_shadows_what_its_branch_reads",
   },
   {
     name: "applied-shadow-kept",
@@ -393,8 +401,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a branch with a closure reading the binding, `const count = () => set.size;`, loses its binding, so the closure reads a name nothing declares (rd723)",
     file: "src/js/applied.rs",
-    find: "            if !substituted(&mut read, &|v| set.is(v).then(|| value.clone())) {\n                continue;\n            }\n",
-    replace: "            substituted(&mut read, &|v| set.is(v).then(|| value.clone()));\n",
+    find: "            if !substituted(&mut read, &|v| (v == set).then(|| value.clone())) {\n                continue;\n            }\n",
+    replace: "            substituted(&mut read, &|v| (v == set).then(|| value.clone()));\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
   },
   {

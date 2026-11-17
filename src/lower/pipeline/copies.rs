@@ -172,24 +172,28 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
             called.insert(to.clone());
         }
     });
+    // The words its locals are spelled, and every word it names, which one
+    // named apart mustn't be.
     let mut declared = IndexSet::default();
-    (function.params.iter()).for_each(|p| declared.extend(p.names().into_iter().map(str::to_string)));
-    js::each_declared(&function.body, &mut |name| _ = declared.insert(name.to_string()));
+    for local in js::declared_variables(function) {
+        declared.insert(local.word().to_owned()); // word: a local spelled as a copy's name, which JS would read
+    }
     let mut taken: IndexSet<String> = declared.clone();
-    js::names_in(&function.body, &mut taken);
+    for name in js::names_of(&function.body) {
+        taken.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
+    }
     taken.extend(renamed.values().map(|(to, _)| to.clone()));
     let mut called: Vec<String> = called.into_iter().filter(|to| declared.contains(to)).collect();
     called.sort();
     for to in called {
         let apart = crate::names::fresh_in(&mut taken, &to);
-        for param in &mut function.params {
-            param.each_name_mut(&mut |name| {
-                if name.is(&to) {
-                    name.respell(apart.clone());
-                }
-            });
+        // Each local spelled so, by its id, its declaration and reads.
+        for local in js::declared_variables(function)
+            .into_iter()
+            .filter(|local| local.is(&to))
+        {
+            js::respelled_in(function, &local, &apart);
         }
-        js::renamed(&mut function.body, &to, &apart);
     }
 }
 

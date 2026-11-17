@@ -315,19 +315,19 @@ fn tested_of(stmts: &[Stmt], at: usize, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     }
     let beside = StmtKind::Const(name.clone(), Expr::js_undefined()).at(stmts[at].span);
     let inlined = in_place(&stmts[at], whole, &[beside], (params, args), body.clone(), true)?;
-    // What the branches read, none of which a block of the body declares.
-    let mut read = IndexSet::default();
-    names_in(&[yes.as_slice(), no.as_slice()].concat(), &mut read);
-    let mut shadows = false;
-    each_declared(&inlined, &mut |declared| shadows |= read.contains(declared));
-    if shadows {
-        return None;
-    }
-    returns_replaced(&inlined, &|value, _| match value.kind {
+    let replaced = returns_replaced(&inlined, &|value, _| match value.kind {
         ExprKind::Bool(true) => Some(yes.clone()),
         ExprKind::Bool(false) => Some(no.clone()),
         _ => None,
-    })
+    })?;
+    // Each variable the branches read, read as itself where they're put:
+    // none a block of the body declares takes it, as JS's scopes say.
+    let branches = [yes.as_slice(), no.as_slice()].concat();
+    let mut read = Vec::new();
+    visit_stmt_names(&branches, &mut |name| read.push(name));
+    super::scopes::not_read_as_themselves(&replaced, &read)
+        .is_empty()
+        .then_some(replaced)
 }
 
 /// `const x = ((d) => { if (..) { ..; return a; } ..; return b; })(d);`,
@@ -539,12 +539,13 @@ fn in_place(
     let names = || {
         let mut others = whole.to_vec();
         statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
-        let mut names: IndexSet<String> = given.into_iter().cloned().map(Name::into_word).collect();
-        names_in(&others, &mut names);
-        names_in(beside, &mut names);
+        let mut named = names_of(&others);
+        named.extend(names_of(beside));
         if held && let Some((_, arg)) = parameter {
-            arg.visit_vars(&mut |name| _ = names.insert(name.to_string()));
+            arg.visit_names(&mut |name| _ = named.insert(name.clone()));
         }
+        let mut names: IndexSet<String> = given.into_iter().cloned().map(Name::into_word).collect();
+        names.extend(named.iter().map(|name| name.word().to_owned())); // word: a naming table's, a holder's
         names
     };
     // A parameter the body sets, where a shadow of it was, `let held =
@@ -572,7 +573,7 @@ fn in_place(
         }
         let value = value.clone();
         let mut mentioned = names();
-        names_in(&body, &mut mentioned);
+        mentioned.extend(names_of(&body).iter().map(|name| name.word().to_owned())); // word: a naming table's, a holder's
         // Of the parameter, by its id, spelled by preparation apart from
         // it, `held$1` of `held`, as lowering names a holder (`derived`,
         // ADR 1150), its word its own in the function.
@@ -641,7 +642,7 @@ fn in_place(
     read.each_mut(&mut |e| e.span = Span::NONE);
     if !held
         && !matches!(&arg.kind, ExprKind::Var(v) if v == param)
-        && !substituted(&mut body, &|v| param.is(v).then(|| read.clone()))
+        && !substituted(&mut body, &|v| (v == param).then(|| read.clone()))
     {
         return None;
     }
@@ -690,7 +691,7 @@ fn set_values_held(body: &mut Vec<Stmt>, handle: &Name) {
                 continue;
             }
             let mut read = rest.to_vec();
-            if !substituted(&mut read, &|v| set.is(v).then(|| value.clone())) {
+            if !substituted(&mut read, &|v| (v == set).then(|| value.clone())) {
                 continue;
             }
             // What's said where it was, said there still.
@@ -914,11 +915,11 @@ pub fn returns(stmts: &[Stmt]) -> (bool, bool) {
     found
 }
 
-/// `stmts` with each variable `with` names read as its expression, each of
-/// their own expressions once; whether each could be, none with a closure
-/// whose names could shadow one.
-fn substituted(stmts: &mut [Stmt], with: &dyn Fn(&str) -> Option<Expr>) -> bool {
-    let one = |e: &mut Expr| match e.substitute(with) {
+/// `stmts` with each variable `with` names, by its `Name`, so its id,
+/// read as its expression, each of their own expressions once; whether
+/// each could be, none with a closure whose names could shadow one.
+fn substituted(stmts: &mut [Stmt], with: &dyn Fn(&Name) -> Option<Expr>) -> bool {
+    let one = |e: &mut Expr| match e.substitute_names(with) {
         Some(read) => {
             *e = read;
             true
@@ -1058,14 +1059,16 @@ mod tests {
     fn a_tested_flag_is_in_place_but_where_a_block_shadows_what_its_branch_reads() {
         // `const flag = ((d) => { if (c) { const n = 1; if (n) { return
         // true; } } return false; })(d); if (flag) { return <read>; }`.
+        // The block's `n`, a variable of its own beside the function's.
+        let n = Name::declared("n".into());
         let tested = |read: Expr| {
             let inner = StmtKind::If(
-                Expr::var("n"),
+                Expr::var(&n),
                 vec![StmtKind::Return(Some(Expr::bool(true))).at(Span::NONE)],
                 None,
             );
             let block = vec![
-                StmtKind::Const("n".into(), Expr::int(1)).at(Span::NONE),
+                StmtKind::Const(n.clone(), Expr::int(1)).at(Span::NONE),
                 inner.at(Span::NONE),
             ];
             let body = vec![

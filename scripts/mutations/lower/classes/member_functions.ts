@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a handle on a constructor's instance's field, `bump(&fiber.reads)`, reads the instance by preparation's `this$`, `const this$ = this; .. return this$.reads;`, not by its class's name, `fiber` (#449's `prepare::this_handles` keeps its `this` right)",
     file: "src/lower/classes/member_functions.rs",
-    find: "            set_this(&mut function.body)?;\n            this_outside_accessors(class, &mut function.body);\n",
+    find: "            set_this(&mut function.body)?;\n            instance_outside_accessors(class, &mut function.body);\n",
     replace: "            set_this(&mut function.body)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^class_constructor_statements.rs$"],
     snapshots: true,

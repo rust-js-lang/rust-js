@@ -161,12 +161,6 @@ impl Expr {
         }
     }
 
-    /// This with each variable whose word `with` names replaced by its
-    /// expression, `substitute_names`' asked by its word.
-    pub fn substitute(&self, with: &dyn Fn(&str) -> Option<Expr>) -> Option<Expr> {
-        self.replace(&|name| with(name.word()), false)
-    }
-
     /// This with each variable that `with` names, by its `Name`, so its id
     /// (ADR 1150), replaced by its expression: a closure's parameter by its
     /// argument, to put its body in place. `None` if there's a closure
@@ -175,9 +169,9 @@ impl Expr {
         self.replace(with, false)
     }
 
-    /// `substitute`, going into the closures inside that only return, as
-    /// `map`'s callbacks do, if none of their parameters is a name replaced
-    /// or one the replacements read. Only for callbacks that run at once: in
+    /// `substitute_names` asked by a word, going into the closures inside
+    /// that only return, as `map`'s callbacks do, if none of their
+    /// parameters is a name replaced or one the replacements read. Only for callbacks that run at once: in
     /// one that runs later, a variable would be read later.
     pub fn substitute_in_callbacks(&self, with: &dyn Fn(&str) -> Option<Expr>) -> Option<Expr> {
         self.replace(&|name| with(name.word()), true)
@@ -840,6 +834,16 @@ pub fn names_in(stmts: &[Stmt], names: &mut IndexSet<String>) {
     each_declared(stmts, &mut |name| {
         names.insert(name.to_string());
     });
+}
+
+/// Each variable `stmts` read or declare, their closures', functions' and
+/// parameters' too, by its `Name`, so its id: what a new name of a
+/// pass's own naming table mustn't be spelled as (`names_in`'s words).
+pub fn names_of(stmts: &[Stmt]) -> IndexSet<Name> {
+    let mut names = IndexSet::default();
+    visit_stmt_names(stmts, &mut |name| _ = names.insert(name.clone()));
+    each_declared_name(stmts, &mut |name| _ = names.insert(name.clone()));
+    names
 }
 
 /// Each name `stmts` declare, once for each declaration: a `let`, a

@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `filter` of any predicate is `o || undefined`: `filter(|v| !js::truthy(Some(*v)))` keeps what's truthy",
     file: "src/lower/combinators.rs",
-    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME))\n",
-    replace: "    applied.mentions_var(HELD_SOME)\n",
+    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if *v == given)\n",
+    replace: "    applied.mentions_name(&given)\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -109,9 +109,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`filter(|v| js::truthy(Some(v.name)))`, a part's truth, is `o || undefined`, the `Option`'s own",
     file: "src/lower/combinators.rs",
-    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME))\n",
+    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if *v == given)\n",
     replace:
-      "    matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME)) || matches!(&tested.kind, js::ExprKind::Member(..))\n",
+      "    matches!(&tested.kind, js::ExprKind::Var(v) if *v == given) || matches!(&tested.kind, js::ExprKind::Member(..))\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -598,8 +598,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`is_some_and(|_| n == 5)` of a `None` is `n === 5`, its predicate run where Rust's isn't",
     file: "src/lower/combinators.rs",
-    find: "    ((held(a) || held(b)) && mentions == 1).then_some(applied)\n",
-    replace: "    (mentions <= 1).then_some(applied)\n",
+    find: "    ((held(a) || held(b)) && mentions == 1).then_some((applied, given))\n",
+    replace: "    (mentions <= 1).then_some((applied, given))\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
