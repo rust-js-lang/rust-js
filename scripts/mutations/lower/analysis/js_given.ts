@@ -45,8 +45,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's function the crate compiles itself is exported, `export function createContext`, as if JS or another crate could call it (ADR 0914)",
     file: "src/lower/analysis/js_given.rs",
-    find: "        && !foreign.is_instance(id)\n",
-    replace: "",
+    find: "    !foreign.is_instance(id) && exported_function(tcx, id)\n",
+    replace: "    exported_function(tcx, id)\n",
     tests: [
       "test/crates-compiled-here.test.ts",
       "-t",

@@ -259,9 +259,16 @@ pub(in crate::lower) fn js_facing(
     foreign: &crate::lower::library::Foreign<'_, '_>,
     id: DefId,
 ) -> bool {
+    !foreign.is_instance(id) && exported_function(tcx, id)
+}
+
+/// `js_facing`'s rule of a function the crate writes itself, which no
+/// library compiled here is: a function, or an inherent impl's method,
+/// that's `pub`; what a check that runs before the crate's libraries are
+/// read, `collect_bodies`', asks (#2015).
+pub(in crate::lower) fn exported_function(tcx: TyCtxt<'_>, id: DefId) -> bool {
     matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
         && tcx.visibility(id).is_public()
-        && !foreign.is_instance(id)
         && (tcx.def_kind(id) != DefKind::AssocFn || tcx.inherent_impl_of_assoc(id).is_some())
 }
 

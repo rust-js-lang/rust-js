@@ -126,6 +126,10 @@ impl<'tcx> FnPointers<'tcx> {
                 let sig = tcx.instantiate_bound_regions_with_erased(
                     tcx.fn_sig(owner).instantiate_identity().skip_normalization(),
                 );
+                // Whether a consumer can name the type is rustc's own answer
+                // still, a program's as a library's, until one owner says what JS
+                // can name, `seen_outside`'s type half (#2024): #2015's one
+                // listed exception.
                 // A trait's method of a type no consumer can name is given the
                 // program's own values, which hold no JS function it wasn't
                 // given elsewhere (rd579); a pointer they hold may be any, as

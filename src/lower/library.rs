@@ -135,6 +135,13 @@ pub(in crate::lower) fn escapes(tcx: TyCtxt<'_>, library: bool, id: DefId) -> bo
     library && reachable(tcx, id)
 }
 
+/// Whether code rust-js doesn't compile may call `id`, a function the
+/// crate writes: another crate's, where it's a library (`escapes`), or
+/// JS's, which its module exports it to (`js_facing`'s rule) (#2015).
+pub(in crate::lower) fn seen_outside(tcx: TyCtxt<'_>, library: bool, id: DefId) -> bool {
+    escapes(tcx, library, id) || super::analysis::exported_function(tcx, id)
+}
+
 /// What each function's contract says, of what a consumer can't work out
 /// from its types: the drops it takes (ADR 0098), whether it may fail
 /// (ADR 0187), the drops it takes none of (ADR 0190), and what it asks of

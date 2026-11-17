@@ -13,7 +13,7 @@ use super::*;
 /// the THIR, so this is our only chance to read it. Which adapters each
 /// makes in place is decided once the crate's `Recognition` exists
 /// (`decide_in_place`).
-pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
+pub fn collect_bodies(tcx: TyCtxt<'_>, library: bool) -> Vec<Body<'_>> {
     crate::lower::recognition::std_paths_if_first(tcx);
     let mut bodies = lowered_bodies(tcx);
     // What `{:?}` shows of std's adapters compiled as their meaning alone,
@@ -21,7 +21,7 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     crate::lower::recognition::note_debug_shown(tcx, &bodies);
     crate::lower::body_queries::across_bodies(tcx, &mut bodies);
     // What only an unlowered impl reaches is no JS either (ADR 0425).
-    let unreached = reached_only_unlowered(tcx, &bodies);
+    let unreached = reached_only_unlowered(tcx, &bodies, library);
     bodies.retain(|body| !unreached.contains(&tcx.typeck_root_def_id(body.def_id)));
     bodies
 }
@@ -108,7 +108,7 @@ fn lowered_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
 /// (ADR 0425), a type's own `io::Read`'s helpers, or only what's found so:
 /// what no JS calls, and so never lowered. One a consumer may call, or none
 /// calls, is lowered as it was.
-fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>]) -> IndexSet<DefId> {
+fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>], library: bool) -> IndexSet<DefId> {
     // Each function's callers, by the function each call is in.
     let mut callers: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
     let mut calls_in = |caller: DefId, thir: &rustc_middle::thir::Thir<'_>| {
@@ -142,7 +142,7 @@ fn reached_only_unlowered(tcx: TyCtxt<'_>, bodies: &[Body<'_>]) -> IndexSet<DefI
             .filter(|&(callee, by)| {
                 !unreached.contains(callee)
                     && matches!(tcx.def_kind(*callee), DefKind::Fn | DefKind::AssocFn)
-                    && !tcx.effective_visibilities(()).is_reachable(callee.expect_local())
+                    && !crate::lower::library::seen_outside(tcx, library, *callee)
                     && by
                         .iter()
                         .all(|caller| unlowered.contains(caller) || unreached.contains(caller))
