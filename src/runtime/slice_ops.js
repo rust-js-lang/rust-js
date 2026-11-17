@@ -147,18 +147,21 @@ function $copyWithin(v, start, end, dest, inclusive) {
 // it, `last` then `curr` though that drop panics. Where two are out of
 // order, `curr` dropped, then what drops with `f`, as `all` ends, then
 // `last`, then what's left of `items` closed, as `is_sorted_by`'s frame
-// drops them, and so as `f` or a step panics (#776).
+// drops them, and so as `f` or a step panics (#776). Held while it's
+// stepped, so what it steps isn't closed at its end, a `take` at its limit
+// or a `$closing` done, but after `last` is dropped, as std drops
+// `is_sorted_by`'s `self` after the `all` that holds `last` (#2027,
+// ADR 0570): `$steppedHeld`.
 function $isSortedBy(items, f, ends, drop) {
   if (drop !== undefined) {
-    const it = Iterator.from(items);
+    const it = $steppedHeld(items);
     let last;
     let holding = false;
-    let done = false;
     const end = () =>
       $inTurn(
         ends,
         () => holding && ((holding = false), drop(last)),
-        () => done || it.return?.(),
+        () => it.return?.(),
       );
     let sorted = true;
     try {
@@ -185,7 +188,6 @@ function $isSortedBy(items, f, ends, drop) {
           drop(replaced);
         }
       }
-      done = step.done;
     } catch (error) {
       try {
         end();

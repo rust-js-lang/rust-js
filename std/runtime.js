@@ -4303,6 +4303,20 @@ export function $stepsOf(items) {
   return Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
 }
 
+// What a consumer steps that drops something it holds after `items` end,
+// before Rust drops the iterator, `is_sorted_by`'s `last`: `items` as it
+// is (`$stepsOf`, never `Iterator.from`, which arms a `$Steps` to close
+// itself at its end), held, so nothing in it closes at its end, a `take` at
+// its limit or a `$closing` done. The consumer closes it, `return()`, once
+// what it holds is dropped, as Rust drops the iterator after: ADR 0570's
+// held past the end (#2027). A `$lent` one's hold stops at it, so its
+// lender's goes on as it was.
+export function $steppedHeld(items) {
+  const it = $stepsOf(items);
+  it.hold?.();
+  return it;
+}
+
 // `it.filter(keep)` of items with a destructor, each it doesn't keep
 // dropped by `drop`: `$Steps`' own `filter`, which drops it past the fold
 // closure's result, as `$kept` says, of a JS iterator too, whose own
@@ -9691,18 +9705,21 @@ export function $copyWithin(v, start, end, dest, inclusive) {
 // it, `last` then `curr` though that drop panics. Where two are out of
 // order, `curr` dropped, then what drops with `f`, as `all` ends, then
 // `last`, then what's left of `items` closed, as `is_sorted_by`'s frame
-// drops them, and so as `f` or a step panics (#776).
+// drops them, and so as `f` or a step panics (#776). Held while it's
+// stepped, so what it steps isn't closed at its end, a `take` at its limit
+// or a `$closing` done, but after `last` is dropped, as std drops
+// `is_sorted_by`'s `self` after the `all` that holds `last` (#2027,
+// ADR 0570): `$steppedHeld`.
 export function $isSortedBy(items, f, ends, drop) {
   if (drop !== undefined) {
-    const it = Iterator.from(items);
+    const it = $steppedHeld(items);
     let last;
     let holding = false;
-    let done = false;
     const end = () =>
       $inTurn(
         ends,
         () => holding && ((holding = false), drop(last)),
-        () => done || it.return?.(),
+        () => it.return?.(),
       );
     let sorted = true;
     try {
@@ -9729,7 +9746,6 @@ export function $isSortedBy(items, f, ends, drop) {
           drop(replaced);
         }
       }
-      done = step.done;
     } catch (error) {
       try {
         end();

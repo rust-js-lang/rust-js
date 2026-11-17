@@ -427,3 +427,50 @@ fallible collect closes only what isn't the crate's own.
 against native Rust in both builds, of items that drop nothing and of
 items that drop, stopped by a `None` and not. Mutation
 `fallible-collect-closes-own-iterator-twice` (`lower/mir/iter/collect.ts`).
+
+## Amendment: held past the end
+
+A consumer that drops something it holds after its source's end, before
+Rust drops the iterator, dropped it after the source (#2027).
+`repeat(L(7)).take(3).is_sorted_by_key(|l| K(l.0))` printed `drop 7` before
+`dropk 107`. std's `is_sorted_by` holds `last` in the closure its `all`
+takes by `&mut self`, drops it as `all` returns, and only then drops
+`self`, and with it the `Take` and its source. The JS closed the source
+twice before that:
+
+- **At the `take`'s limit:** `$taking` closes what it steps at its limit
+  unless it's held.
+- **At the chain's end:** `Iterator.from(items)` calls a `$Steps`'
+  `[Symbol.iterator]()`, which arms it to close itself at its end.
+
+**The rule.** Such a consumer steps its source by `$steppedHeld(items)`:
+- the source is taken as it is (`$stepsOf`), never `Iterator.from`;
+- it's held, so nothing in it closes at its end;
+- the consumer closes it, `return()`, once what it holds is dropped.
+
+A `$lent` source's hold stops at the `$lent`, so its lender's iterator goes
+on as it was.
+
+**Who uses it.** `$isSortedBy` with keys or items to drop uses it now.
+
+**Who will.** The other consumers that drop something past the end are
+refused today with items that have a destructor:
+- `is_sorted` and `is_sorted_by` (#948);
+- the comparison family, `cmp`, `partial_cmp` and `lt`, of an iterator that
+  ends first while the other gives one more;
+- `eq` of two iterators whose lengths std asks first.
+
+Each takes this helper when it's lifted.
+
+**Agreeing with native.** A probe found `zip` of a shorter `take` agrees.
+#2027's own report found `max`, `last`, `all`, `any`, `for_each` and `fold`
+agree too: they give back what they hold, or hold their closure's drop
+apart.
+
+Held by `test/corpus/sorted_keys_dropped_before_their_source.rs`:
+- a `repeat`'s value;
+- a `Vec`'s rest past the limit;
+- a `take` moved in from a variable;
+- an out-of-order run.
+
+Mutations `stepped-held-unheld` and `is-sorted-by-steps-armed`.

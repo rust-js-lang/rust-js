@@ -4,6 +4,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "stepped-held-unheld",
+    breaks:
+      "a consumer that drops what it holds past its source's end steps it unheld, so a `take` at its limit closes the source, `drop 7` before the last key's `dropk 107` (#2027)",
+    file: "src/runtime/steps.js",
+    find: "  const it = $stepsOf(items);\n  it.hold?.();\n  return it;\n",
+    replace: "  const it = $stepsOf(items);\n  return it;\n",
+    tests: ["test/corpus.test.ts", "-t", "sorted_keys_dropped_before_their_source"],
+  },
+  {
     name: "steps-base-global",
     breaks: "`$Steps` extends the `Iterator` global itself, which a bundler can't tell is there, so it keeps the class, and every helper it calls, in a module that imports none (rd274)",
     file: "src/runtime/steps.js",

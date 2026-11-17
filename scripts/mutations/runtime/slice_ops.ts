@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "is-sorted-by-steps-armed",
+    breaks:
+      "`$isSortedBy` of keys with a destructor steps `Iterator.from(items)`, which arms a `$Steps` to close at its end, so the source is dropped before the last key (#2027)",
+    file: "src/runtime/slice_ops.js",
+    find: "    const it = $steppedHeld(items);\n",
+    replace: "    const it = Iterator.from(items);\n",
+    tests: ["test/corpus.test.ts", "-t", "sorted_keys_dropped_before_their_source"],
+  },
+  {
     name: "fill-shares",
     breaks: "`fill` puts one object in each slot, which a change to one changes in all",
     file: "src/runtime/slice_ops.js",

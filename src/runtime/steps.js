@@ -304,6 +304,20 @@ function $stepsOf(items) {
   return Array.isArray(items) ? $iter(items) : items[Symbol.iterator]();
 }
 
+// What a consumer steps that drops something it holds after `items` end,
+// before Rust drops the iterator, `is_sorted_by`'s `last`: `items` as it
+// is (`$stepsOf`, never `Iterator.from`, which arms a `$Steps` to close
+// itself at its end), held, so nothing in it closes at its end, a `take` at
+// its limit or a `$closing` done. The consumer closes it, `return()`, once
+// what it holds is dropped, as Rust drops the iterator after: ADR 0570's
+// held past the end (#2027). A `$lent` one's hold stops at it, so its
+// lender's goes on as it was.
+function $steppedHeld(items) {
+  const it = $stepsOf(items);
+  it.hold?.();
+  return it;
+}
+
 // `it.filter(keep)` of items with a destructor, each it doesn't keep
 // dropped by `drop`: `$Steps`' own `filter`, which drops it past the fold
 // closure's result, as `$kept` says, of a JS iterator too, whose own
