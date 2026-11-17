@@ -20,7 +20,10 @@ mod prefixes {
         "webkit".to_owned()
     }
 
-    pub fn prefixed(name: &str) -> String {
+    // `pub(crate)`: a `pub fn` here is its module's JS export, which JS
+    // may call after the modules load, changing the cache, so a `pub`
+    // thread-local that reads it would be refused (#2025).
+    pub(crate) fn prefixed(name: &str) -> String {
         if let Some(prefixed) = PREFIXED.with_borrow(|prefixed| prefixed.get(name).cloned()) {
             return prefixed;
         }

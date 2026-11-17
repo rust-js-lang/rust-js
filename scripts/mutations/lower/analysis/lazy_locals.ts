@@ -7,6 +7,15 @@ const throughCopy = ["test/corpus.test.ts", "-t", "^thread_local_written_through
 
 export const mutations: Mutation[] = [
   {
+    name: "exported-thread-local-js-caller-unnamed",
+    breaks:
+      "a `pub` thread-local refused for what a function JS may call changes doesn't say to make that function `pub(crate)` where JS shouldn't call it (#2025)",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "Shows::Reads(_, by) => (super::exported_function(tcx, tcx.typeck_root_def_id(by)))",
+    replace: "Shows::Reads(_, by) => (false && super::exported_function(tcx, tcx.typeck_root_def_id(by)))",
+    tests: ["test/diagnostics.test.ts", "-t", "#2025"],
+  },
+  {
     name: "eager-key-includes-lazy-initializers",
     breaks: "lazy initializers are incorrectly supplied as already initialized to effect analysis",
     file: "src/lower/analysis/lazy_locals.rs",

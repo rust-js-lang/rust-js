@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "only-called-js-caller-unseen",
+    breaks:
+      "a `pub fn` of a private module, its module's JS export, is taken for one only the crate calls, its parameters what the crate gives, so a JS caller's `u8` sum goes unwrapped (#2025)",
+    file: "src/lower/analysis/only_called.rs",
+    find: "            && !crate::lower::library::seen_outside(tcx, library, def_id)\n",
+    replace: "            && !crate::lower::library::escapes(tcx, library, def_id)\n",
+    tests: ["test/js-callers-of-modules.test.ts"],
+  },
+  {
     name: "named-as-value-only-called",
     breaks:
       "a function named as a value, `map(double)`, is taken as only its calls give it values, so `n * 2` doesn't wrap",
@@ -16,9 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function a JS caller sees is taken as only the crate's calls give it values, so `half(0)` doesn't wrap",
     file: "src/lower/analysis/only_called.rs",
-    find: "        def_id.as_local().is_some_and(|local| !visibilities.is_exported(local))",
-    replace:
-      "        def_id.as_local().is_some_and(|_| visibilities.is_exported(def_id.expect_local()) || true)",
+    find: "            && !crate::lower::library::seen_outside(tcx, library, def_id)\n",
+    replace: "            && true\n",
     tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {

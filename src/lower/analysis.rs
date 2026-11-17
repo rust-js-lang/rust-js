@@ -458,7 +458,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The functions only calls reach, by their calls, of the graph's names
     // (ADRs 0577, 1148): asked by the MIR intervals, the thread-locals'
     // loading, the throwing functions and the own callbacks.
-    let only_called = std::rc::Rc::new(only_called::only_called(tcx, calls.names()));
+    let only_called = std::rc::Rc::new(only_called::only_called(tcx, calls.names(), library));
     // And kept for the own callbacks, found as the crate is lowered.
     let _ = crate::lower::session::caches(tcx).only_called.set(only_called.clone());
     let closures: IndexMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();

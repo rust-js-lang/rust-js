@@ -28,7 +28,6 @@ const rustcReach: Record<string, string> = {
   "src/lower/library.rs": "the owner",
   "src/lower/analysis/fn_pointers.rs": "#2024: a type JS can name",
   "src/lower/analysis/collected.rs": "#2024: an inherent impl's constant JS can name (`exported_value_const`)",
-  "src/lower/analysis/only_called.rs": "#2015: a function only the crate calls, `seen_outside`'s next",
 };
 
 // What an analysis asks of an item, a type, a field, a `static` or a key,

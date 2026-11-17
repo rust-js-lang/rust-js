@@ -1089,6 +1089,8 @@ fn refuse_exported(tcx: TyCtxt<'_>, key: LocalDefId, why: Shows) {
         Shows::Ordered(by, Ordered::Panics) => {
             format!("a `pub` thread-local whose initializer may panic, in `{}`", name(by))
         }
+        // One JS may call, its module's export, whatever the crate's own
+        // calls do: so, where JS shouldn't call it, `pub(crate)` (#2025).
         Shows::Reads(state, by) => format!(
             "a `pub` thread-local whose initializer reads `{}`, which `{}` may change after the modules load",
             name(state),
@@ -1100,6 +1102,21 @@ fn refuse_exported(tcx: TyCtxt<'_>, key: LocalDefId, why: Shows) {
             name(by)
         ),
     };
-    let why = "JS's importers read it as an `export const`, made as its module loads, where Rust makes it at its first use: make it `pub(crate)`, made where it's first used, and export a `pub fn` that reads it (ADR 1006)";
-    crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(&what, why));
+    // What changes it is a function JS may call, its module's export,
+    // whatever the crate's own calls do: `pub(crate)` where JS shouldn't
+    // call it (#2025).
+    let js_calls = match why {
+        Shows::Reads(_, by) => (super::exported_function(tcx, tcx.typeck_root_def_id(by))).then(|| {
+            format!(
+                ", or, as JS may call `{}` then, its module exporting it, make that `pub(crate)` where JS shouldn't",
+                name(by)
+            )
+        }),
+        _ => None,
+    };
+    let why = format!(
+        "JS's importers read it as an `export const`, made as its module loads, where Rust makes it at its first use: make it `pub(crate)`, made where it's first used, and export a `pub fn` that reads it{} (ADR 1006)",
+        js_calls.unwrap_or_default()
+    );
+    crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(&what, &why));
 }

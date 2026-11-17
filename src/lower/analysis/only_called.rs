@@ -20,7 +20,7 @@ pub(in crate::lower) type Call = (DefId, Span);
 
 /// Each function only calls reach, by its calls (`Call`), one entry a call. The bodies are those the crate emits, each body's
 /// names once (`Names`): a call in a body never lowered never runs.
-pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>, names: &Names<'_>) -> IndexMap<DefId, Vec<Call>> {
+pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>, names: &Names<'_>, library: bool) -> IndexMap<DefId, Vec<Call>> {
     let mut calls: IndexMap<DefId, Vec<Call>> = IndexMap::default();
     let mut values: IndexSet<DefId> = IndexSet::default();
     // Of each body the crate emits, none a constant only rustc evaluates,
@@ -37,14 +37,17 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>, names: &Names<'_>) -> Index
             }
         }
     }
-    let visibilities = tcx.effective_visibilities(());
     // A module's default export JS imports, though Rust's `pub` doesn't
     // say so: `js::export_default!(page)` of a private `fn page`.
     let defaults: IndexSet<DefId> = (crate::lower::default_exports::defaults(tcx).into_iter())
         .map(|(_, item)| item)
         .collect();
     calls.retain(|&def_id, _| {
-        def_id.as_local().is_some_and(|local| !visibilities.is_exported(local))
+        // Not one code rust-js doesn't compile may call, another crate or
+        // JS, whose module exports a `pub fn` though its module is private:
+        // its parameters are what that code gives too (#2025).
+        def_id.is_local()
+            && !crate::lower::library::seen_outside(tcx, library, def_id)
             && !values.contains(&def_id)
             && !defaults.contains(&def_id)
             && (tcx.def_kind(def_id) == DefKind::Fn
