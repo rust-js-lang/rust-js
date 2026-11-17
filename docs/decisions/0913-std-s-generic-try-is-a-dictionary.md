@@ -104,3 +104,46 @@ own iterator, a collection's `IntoIter` or a type parameter's, has no
 doesn't take is refused. No case of the corpus, either build, reached it,
 and `closing-count-unforwarded` survived every run, so the code went, and
 its mutation with it.
+
+## Amendment: an `Option`'s and a `Result`'s `Try` (2026-11-17, #1864)
+
+With std's iterator structs, a `try_fold` or `try_rfold` of a compiled
+adapter whose closure gives an `Option` or a `Result` was refused: "the
+`Try` of a `std::option::Option<u32>` given to std's generic code". The
+plain build ran it as native Rust does. `Rev::try_rfold`'s body is
+`self.iter.try_fold(init, f)`, generic over `R: Try`, and only
+`ControlFlow`'s and `NeverShortCircuit`'s dictionaries were given.
+
+`try_kind` gains two rows, and `try_by.js` two dictionaries of the same
+shape, `{ fromOutput, branch, fromResidual, FromResidual }`:
+
+- `$optionTry`: `Some(x)` is generic code's `$some(x)`, boxed where `x`
+  looks like `None` (ADR 0051). Its residual, `None`, is `undefined`. One
+  dictionary covers `Option<()>` and `Option<Option<T>>`, since the
+  generic representation is the one a value takes at std's generic code.
+- `$resultTry`: an `Ok`'s value is its output, and an `Err` is its
+  residual as it is. In std's generic code, `R` is one type throughout a
+  `try_fold`, so `from_residual` only takes `R`'s own residual, by
+  `From<E> for E`: the identity. A closure whose `?` converts one error
+  type into another by `From` does so in its own concrete code, before the
+  dictionary sees it.
+
+`ControlFlow`'s stays `$controlFlowTry`. Corpus
+`try_fold_into_an_option_or_a_result_through_adapters` holds all of these
+against native Rust in the plain build, with std's iterator structs, and
+through every metamorphic rewrite:
+
+- `Some` and an overflowing `None`;
+- an empty one, whose `init` comes back as its output;
+- `Some(None)`;
+- `Option<()>`;
+- an `Err` of a type with a destructor, the rest unstepped;
+- a closure's `?` from `Small` to `Big`;
+- a `ControlFlow`.
+
+`reversed_map_stepped_from_its_back` comes off `iterator-forms`' `differs`
+list. Mutations `option-try-never-breaks`, `option-try-output-unboxed`,
+`result-try-never-breaks` and `result-try-output-bare` are caught.
+
+The next user of these dictionaries is #1592, std's fallible collect
+through `try_process`.

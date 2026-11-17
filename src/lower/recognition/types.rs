@@ -811,11 +811,15 @@ pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// Std's `Try` of a type std's own generic code is given, as its dictionary
 /// is in JS (ADR 0913): a `ControlFlow`'s, whose `Continue` is its output
 /// and `Break` its residual; a `NeverShortCircuit`'s, which is its value, a
-/// `#[repr(transparent)]` struct (ADR 0584), and never breaks.
+/// `#[repr(transparent)]` struct (ADR 0584), and never breaks; an
+/// `Option`'s, whose `Some` is its output and `None` its residual; a
+/// `Result`'s, whose `Ok` is its output and an `Err` its residual (#1864).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum TryKind {
     ControlFlow,
     NeverShortCircuit,
+    Option,
+    Result,
 }
 
 /// `ty`'s `TryKind`, of one std's generic code is given.
@@ -826,6 +830,8 @@ pub(crate) fn try_kind(tcx: TyCtxt<'_>, ty: Ty<'_>) -> Option<TryKind> {
         _ if is_std_crate(tcx, adt.did()) && tcx.item_name(adt.did()).as_str() == "NeverShortCircuit" => {
             Some(TryKind::NeverShortCircuit)
         }
+        _ if tcx.is_lang_item(adt.did(), LangItem::Option) => Some(TryKind::Option),
+        _ if is_std_def(tcx, adt.did(), StdItem::Result) => Some(TryKind::Result),
         _ => None,
     }
 }

@@ -337,6 +337,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return match crate::lower::recognition::try_kind(self.tcx, tr.self_ty()) {
                 Some(TryKind::ControlFlow) => Ok(Expr::helper("$controlFlowTry")),
                 Some(TryKind::NeverShortCircuit) => Ok(Expr::helper("$neverShortCircuitTry")),
+                Some(TryKind::Option) => Ok(Expr::helper("$optionTry")),
+                Some(TryKind::Result) => Ok(Expr::helper("$resultTry")),
                 None => Err(self.unsupported(
                     span,
                     &format!("the `Try` of a `{}` given to std's generic code", tr.self_ty()),

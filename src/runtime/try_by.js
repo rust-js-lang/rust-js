@@ -20,6 +20,26 @@ const $neverShortCircuitTry = {
   FromResidual: () => $neverShortCircuitTry,
 };
 
+// An `Option`'s, as generic code holds it (ADR 0051): `Some(x)` is
+// `$some(x)`, boxed where `x` looks like `None`; its residual, `None`,
+// `undefined` (#1864).
+const $optionTry = {
+  fromOutput: (output) => $some(output),
+  branch: (o) => (o != null ? { TAG: "Continue", _0: $someValue(o) } : { TAG: "Break", _0: undefined }),
+  fromResidual: () => undefined,
+  FromResidual: () => $optionTry,
+};
+
+// A `Result`'s: its `Ok`'s value is its output, and an `Err` its residual
+// as it is, which std's generic code gives back to the same `R`, by
+// `From<E> for E` (#1864).
+const $resultTry = {
+  fromOutput: (output) => ({ TAG: "Ok", _0: output }),
+  branch: (r) => (r.TAG === "Ok" ? { TAG: "Continue", _0: r._0 } : { TAG: "Break", _0: r }),
+  fromResidual: (r) => r,
+  FromResidual: () => $resultTry,
+};
+
 // What a JS iterator's `tryFold(init, f, broke)` folds into, any `R`, as a
 // `Try`: what it's made so far is its output, and a value `broke` says
 // stops it its residual, as it is, so std's compiled `try_fold` given this
