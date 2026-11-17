@@ -9,6 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                if !destination.projection.is_empty() || !stepped.contains_key(&at) && !asked.contains(&at) {\n",
     replace: "                if !destination.projection.is_empty() || !stepped.contains_key(&at) {\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^filter_given_back_stepped_from_its_back.rs$"],
   },
   {
@@ -18,7 +19,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                if callee == rev\n",
     replace: "                if false\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_revs_of_lazy_sources.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(cycled_reversed_ranges|enumerate_of_own_iterator_folded_from_its_back|std_rev|own_iterator_flattened_from_its_back).rs$"],
   },
   {
     name: "reborrow-lends-nothing",
@@ -27,7 +29,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                            if matches!(of.projection.as_slice(), [mir::ProjectionElem::Deref])\n                                && let Some(&lends) = lent.get(&of.local) =>\n",
     replace: "                            if false\n                                && let Some(&lends) = lent.get(&of.local) =>\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(rev_own_back_methods|own_iterator_dropped_from_back|own_iterator_dropped_through_adapters).rs$"],
   },
   {
     name: "values-given-beside-unmet",
@@ -36,7 +39,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                        if !other_lent && Some(other) != local && other_ty == ty {\n",
     replace: "                        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
   },
   {
     name: "struct-held-source-untyped",
@@ -45,7 +49,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                                typed_sources.insert(ty);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^back_stepped_adapter_sources.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_of_known_length|cloned_chains_and_cycles|chain_stepped_from_its_back_elsewhere).rs$"],
   },
   {
     name: "return-place-unstepped",
@@ -54,6 +59,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                    mark(&mut stepped, (made_by, mir::RETURN_PLACE), SteppedLocal::Given);\n",
     replace: "",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^filter_given_back_stepped_from_its_back.rs$"],
   },
 
@@ -390,15 +396,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                let beside: Vec<(Option<mir::Local>, Ty<'tcx>)> =\n                    lent_stepped_locals.chain(lent_stepped_fields).collect();\n",
     replace: "                let beside: Vec<(Option<mir::Local>, Ty<'tcx>)> =\n                    lent_stepped_locals.chain(lent_stepped_fields.filter(|_| false)).collect();\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
-  },
-  {
-    name: "field-reborrow-lends-nothing",
-    breaks: "a reborrow of a `&mut` of a field, `&mut (*_r)`, isn't taken for the field it lends, so a value given beside it isn't made knowing its back (#1013)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                                && let Some(&field) = lent_field.get(&of.local) =>\n",
-    replace: "                                && let Some(&field) = lent_field.get(&of.local).filter(|_| false) =>\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
   },
   {
     name: "library-impl-backs-unmade",
@@ -484,14 +483,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_given_to_generic_backs.rs$"],
   },
   {
-    name: "cloned-chain-asked-unmarked",
-    breaks: "a chain cloned apart beneath a map stepped from its back isn't made knowing its back, so the map is refused beside a case that clones that chain's type (#1002)",
-    file: "src/lower/analysis/back_stepped.rs",
-    find: "                if !made_stepped && cloned_chain(owner, made) {\n",
-    replace: "                if !made_stepped && cloned_chain(owner, made) && false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^cloned_chain_stepped_from_its_back.rs$"],
-  },
-  {
     name: "chain-made-here-backless",
     breaks:
       "a chain made where it's lent to its own `nth_back`, `next_back` or `rfind`, `a.chain(b).nth_back(1)`, isn't made knowing its back, so it's refused, in generic code and of ranges alike (#1118)",
@@ -515,6 +506,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                        .or_else(|| recognition.flattened_options(made).map(|(source, ..)| source))\n",
     replace: "",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
   },
   {
@@ -564,7 +556,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                    typed_sources.insert(erased(mir.local_decls[origin(local)].ty));\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^reversed_filter_map_given_to_a_compiled_adapter.rs$"],
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_flattened_from_its_back.rs$"],
   },
   {
     name: "given-back-never-back-stepped",

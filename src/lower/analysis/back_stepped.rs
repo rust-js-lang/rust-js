@@ -35,11 +35,10 @@ pub(super) fn of_crate<'tcx>(
     all_bodies: &[&Body<'tcx>],
     (library, drops, keeps_capacity): (bool, impl Fn(Ty<'tcx>) -> bool + Copy, bool),
     given: (bool, Option<&GivenADrop<'_>>),
-    cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> BackStepped<'tcx> {
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
     let (locals, fields, typed_sources, lengths) =
-        stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), given, cloned);
+        stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), given);
     typed.extend(typed_sources);
     BackStepped {
         typed,
@@ -551,7 +550,6 @@ pub(super) fn stepped_locals<'tcx>(
     all_bodies: &[&Body<'tcx>],
     (drops, keeps_capacity): (impl Fn(Ty<'tcx>) -> bool, bool),
     (params_may_drop, given_a_drop): (bool, Option<&GivenADrop<'_>>),
-    cloned: &crate::lower::analysis::Cloned<'tcx>,
 ) -> SteppedValues<'tcx> {
     use rustc_middle::mir;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
@@ -561,14 +559,6 @@ pub(super) fn stepped_locals<'tcx>(
         return Default::default();
     };
     let mut stepped: IndexMap<(rustc_span::def_id::DefId, mir::Local), SteppedLocal> = IndexMap::default();
-    // A chain cloned apart, made by a function of its sides (ADR 0525), no
-    // form of which a step reads: made knowing its back by that function
-    // where it's stepped so, lent or asked beneath an adapter (#1002).
-    // Of the body `owner` makes it in, whose bounds say what it can be (#955).
-    let cloned_chain = |owner: rustc_span::def_id::DefId, ty: Ty<'tcx>| {
-        let made_in = (tcx, ty::TypingEnv::post_analysis(tcx, owner));
-        chained_sources(tcx, ty).is_some() && crate::lower::iterators::cloned_apart(made_in, cloned, ty, owner)
-    };
     // Each temporary given whole to what asks its back, made in place,
     // whose form its step reads: not made knowing it itself, but what it
     // holds beneath is, a variable's value an adapter made in place holds
@@ -665,13 +655,6 @@ pub(super) fn stepped_locals<'tcx>(
                         {
                             lent.insert(to.local, lends);
                             lent_at.insert(to.local, (block, at + 1));
-                        }
-                        // And of a field's, what that lends (#1013).
-                        mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
-                            if matches!(of.projection.as_slice(), [mir::ProjectionElem::Deref])
-                                && let Some(&field) = lent_field.get(&of.local) =>
-                        {
-                            lent_field.insert(to.local, field);
                         }
                         mir::Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) => {
                             lent_field.insert(to.local, *of);
@@ -1118,10 +1101,6 @@ pub(super) fn stepped_locals<'tcx>(
                 let made_asked = made_stepped || asked.contains(&(owner, destination.local));
                 if !made_asked {
                     continue;
-                }
-                // A chain cloned apart asked beneath an adapter (`cloned_chain`).
-                if !made_stepped && cloned_chain(owner, made) {
-                    mark(&mut stepped, (owner, destination.local), SteppedLocal::Given);
                 }
                 // An adapter of what it's given, stepped from its back where
                 // it is: a chain's sides, which `$lazyChain` steps from their
