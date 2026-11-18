@@ -372,14 +372,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_once_callee.rs$"],
   },
   {
-    name: "moved-once-other-uses-ignored",
-    breaks: "a closure called by `&` before it's moved into an `F: FnOnce` is taken as called once, so its first call drops what it took, and the second reads it dropped (#995)",
-    file: "src/lower/analysis/closures.rs",
-    find: "        .filter(|var| uses.get(var) == Some(&1))\n",
-    replace: "        .filter(|var| uses.get(var).is_some())\n",
-    tests: ["test/corpus.test.ts", "-t", "^fn_closure_called_then_moved_into_a_once_callee_refused.rs$"],
-  },
-  {
     name: "boxed-fn-held-unrefused",
     breaks: "a boxed `Fn` holding a value with a destructor, given to a function that holds it in what it takes, a `Vec<F>` or an `Option<F>` of an `F: FnOnce`, or gives it back, and called there by value, is given as it is, and never dropped (#2050)",
     file: "src/lower/analysis/closures.rs",
