@@ -1,7 +1,7 @@
 // How many of GitHub's runners a workflow can hold at once: the free plan
 // runs 20 jobs at once across the account, and a scheduled workflow, the
 // Nightly, holds at most `NIGHTLY_RUNNERS` of them, so the pushes' checks,
-// their attribution and the test map's recordings keep the rest (ci.test.ts
+// their attribution and the test map's recordings keep the rest (runners.test.ts
 // holds it). The bound is the workflow's worst case, not a measurement:
 // the heaviest set of jobs no `needs` path orders, its called workflows'
 // jobs inlined, each matrix job as many at once as its `max-parallel`

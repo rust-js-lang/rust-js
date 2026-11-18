@@ -3,7 +3,7 @@
 // no `needs` orders.
 import type { Mutation } from "../mutations";
 
-const bound = ["test/ci.test.ts", "-t", "the runners' bound reads"];
+const bound = ["test/runners.test.ts", "-t", "the runners' bound reads"];
 
 export const mutations: Mutation[] = [
   {
@@ -44,6 +44,6 @@ export const mutations: Mutation[] = [
     file: "scripts/runners.ts",
     find: "      const called = heldJobs(job.uses.slice(\"./.github/workflows/\".length), given, `${name}/`, read);\n",
     replace: "      const called = heldJobs(job.uses.slice(\"./.github/workflows/\".length), {}, `${name}/`, read);\n",
-    tests: ["test/ci.test.ts", "-t", "a scheduled workflow holds at most NIGHTLY_RUNNERS"],
+    tests: ["test/runners.test.ts", "-t", "a scheduled workflow holds at most NIGHTLY_RUNNERS"],
   },
 ];

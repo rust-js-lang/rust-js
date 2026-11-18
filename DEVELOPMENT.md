@@ -1039,7 +1039,7 @@ at a load of 15–60, 2026-11-04). It holds at most 14 of the Free plan's
 20 runners, so a push's check keeps 6: its jobs run in lanes, each
 `needs` the one before it, and each matrix has a `max-parallel`. The
 bound is its YAML's worst case, `bun scripts/runners.ts nightly.yml`,
-which `test/ci.test.ts` holds to `NIGHTLY_RUNNERS` (ADR 0093, amended).
+which `test/runners.test.ts` holds to `NIGHTLY_RUNNERS` (ADR 0093, amended).
 It's a group of its own, so it neither cancels nor waits for a push's
 check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to
