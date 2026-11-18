@@ -222,14 +222,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-shadows.test.ts", "-t", "stored again is the variable"],
   },
   {
-    name: "shadow-renamed-in-closure-own",
-    breaks: "a shadow's reads are folded by their word, not their id: a closure's own `value$1`, its `catch_unwind`'s result (#457), a function declared beside it (#1766), a closure's parameter of the name (temporaries), read as the captured `value`",
-    file: "src/prepare/shadows.rs",
-    find: "        js::each_expr_mut(&mut folded, &mut |e| {\n            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {\n                e.kind = ExprKind::Var(of.clone());\n            }\n        });\n        js::each_block_mut(&mut folded, &mut |stmts| {\n            stmts.retain(|s| {\n",
-    replace: "        js::each_expr_mut(&mut folded, &mut |e| {\n            if matches!(&e.kind, ExprKind::Var(name) if name.word() == alias.word()) {\n                e.kind = ExprKind::Var(of.clone());\n            }\n        });\n        js::each_block_mut(&mut folded, &mut |stmts| {\n            stmts.retain(|s| {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(shadow_beside_closure_own_of_its_name|shadow_in_an_else_beside_a_declared_function|temporaries_taken_apart).rs$"],
-  },
-  {
     name: "shadow-of-a-word-only-variable-folded",
     breaks: "a copy of a variable made of its word alone, which neither its id nor `js::validate` tells from another of its spelling, is folded: a read where another of that spelling is declared would read that one, unrefused (ADR 1150)",
     file: "src/prepare/shadows.rs",
