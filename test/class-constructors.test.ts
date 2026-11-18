@@ -305,3 +305,45 @@ pub fn shared() -> Rc<Counter> {
   const made = shared();
   expect([made instanceof Counter, made.count, made.owned()]).toEqual([true, 1, 1]);
 });
+
+test("a constructor field keeps a counter step in its assignment", async () => {
+  const { js, dir } = compiled("constructor-counter-step", `use std::cell::Cell;
+
+thread_local! {
+    static STAGE_ID: Cell<f64> = const { Cell::new(0.0) };
+}
+
+#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct Stage {
+    pub id: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Stage {
+    pub fn new() -> Self {
+        Self {
+            id: STAGE_ID.replace(STAGE_ID.get() + 1.0),
+        }
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct Pair {
+    pub first: f64,
+    pub second: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Pair {
+    pub fn new() -> Self {
+        let first = STAGE_ID.replace(STAGE_ID.get() + 1.0);
+        Self { first, second: first }
+    }
+}
+`);
+  expect(js).toContain("this.id = stageId++;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([new lib.Stage().id, new lib.Stage().id]).toEqual([0, 1]);
+  expect(new lib.Pair()).toMatchObject({ first: 2, second: 2 });
+  expect(new lib.Stage().id).toBe(3);
+});

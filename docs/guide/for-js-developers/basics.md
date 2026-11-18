@@ -338,8 +338,11 @@ export function ways(stairs) {
   `flags |= UPDATE | LAYOUT` (ADR 0631, amended); a
   value read and then stepped, `let id = n; n = id + 1.0;`, is `const id
   = n++;`
-  ([ADR 0948](../../decisions/0948-a-value-read-then-stepped-is-plus-plus.md)). An
-  integer's keeps its wrap, `n = (n + 1) >>> 0`, unless what comes before
+  ([ADR 0948](../../decisions/0948-a-value-read-then-stepped-is-plus-plus.md)).
+  Taking and incrementing a numeric thread-local with
+  `ID.replace(ID.get() + 1.0)` can be a postfix update too. When an ES
+  constructor uses its old value once to set a field, it writes
+  `this.id = id++`. An integer's keeps its wrap, `n = (n + 1) >>> 0`, unless what comes before
   shows it can't wrap: below a length, `i < xs.len()` or `i + 1 <
   js::string::length(s)`, or a constant, `i <= LIMIT`, `i += 1` is
   `i++`, in a labeled block too
