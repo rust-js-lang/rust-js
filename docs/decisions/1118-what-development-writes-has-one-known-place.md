@@ -143,3 +143,24 @@ the caps' row names the store as `test/kept.ts` places it.
 test/compiles.test.ts holds a kept compile's name against its blocks, and
 a store pruned to its cap at or under it on the disk. Mutation
 `kept-compile-counted-by-lengths` is caught.
+
+## Amendment: every other name in the store is a dot-name, and what's being built counts (#2107, 2026-11-18)
+
+A key's mark of a compile rust-js can't record was a file named
+`unrecordable` beside the kept compiles, `<key>-<bytes>`. The store's own
+readers skip a name with no size, but the test of what a compile is kept
+as read every entry new since it began in the shared store, and under
+check:fast's load met another job's mark there, its size `NaN`. The mark is
+`.unrecordable` now: every name in the store that isn't a kept compile is a
+dot-name, as a writer's `.building-..` already was, which no reader takes
+for one. That test reads its own compile alone, the entry that read its
+`lib.rs`.
+
+And what's being built, a `.building-..` of a writer at work or of one that
+ended before it finished, is on the disk: `prune` counts it in the store's
+size, never evicting it as a kept compile, and removes it an hour on, as
+before, before it counts (`buildingBytes`). Rows: "the store's other names
+are dot-names, which pruning neither counts nor removes as kept compiles"
+and "a compile being built counts in the store's size till a prune an hour
+on removes it". Mutations `building-uncounted` and
+`building-counted-before-cleanup`.

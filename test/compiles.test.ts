@@ -6,7 +6,7 @@
 
 import { beforeAll, expect, test } from "bun:test";
 import { chmodSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import type { Exit } from "./child";
 import { bytesOf, freeBytes } from "../tooling/bounded.js";
@@ -266,7 +266,18 @@ test("a kept compile is counted by its blocks on the disk, so a store pruned to 
       .filter((build) => !build.startsWith("."))
       .flatMap((build) => readdirSync(join(store, build)).flatMap((key) => readdirSync(join(store, build, key)).map((name) => join(store, build, key, name))))
       .filter((at) => !at.split("/").at(-1)!.startsWith("."));
-  const kept = entries(join(compileCache, "v2")).filter((at) => statSync(at).mtimeMs >= started);
+  // Its own compile's alone, the entry that read its `lib.rs`: the store is
+  // shared with what else runs, whose entries come and go as it's read
+  // (#2107).
+  const ownEntry = (at: string) => {
+    try {
+      const read: [string, string][] = JSON.parse(readFileSync(join(at, "entry.json"), "utf8")).read;
+      return read.some(([file]) => resolve(root, file) === join(dir, "lib.rs"));
+    } catch {
+      return false;
+    }
+  };
+  const kept = entries(join(compileCache, "v2")).filter((at) => statSync(at).mtimeMs >= started && ownEntry(at));
   expect(kept.length).toBeGreaterThan(0);
   for (const at of kept) expect(Number(/-(\d+)$/.exec(at)?.[1])).toBe(bytesOf(at));
   // Five of it in a store of its own, pruned to the room of two and a half:
@@ -315,6 +326,41 @@ test("what's kept is bounded: another build's dropped, then the least recently u
   // The default cap.
   expect(capBytes()).toBe(Number(process.env.RUST_JS_COMPILE_CACHE_MB ?? 2048) * 2 ** 20);
   expect(compileCache).toStartWith(join(root, "target"));
+});
+
+// Every name in the store that isn't a kept compile is a dot-name, which no
+// reader takes for one: a key's mark of a compile it can't record,
+// `.unrecordable`, and what a writer's building, `.building-..`. A mark
+// named otherwise was read as a kept compile with no size, `NaN` (#2107).
+test("the store's other names are dot-names, which pruning neither counts nor removes as kept compiles", () => {
+  const cache = join(fixture("dot-names"), "compile-cache");
+  const key = join(cache, "v2", "current", "k");
+  const kept = join(key, "a-100");
+  mkdirSync(kept, { recursive: true });
+  writeFileSync(join(kept, "0"), Buffer.alloc(100));
+  writeFileSync(join(key, ".unrecordable"), "");
+  expect(prune({ root: cache, current: "current", cap: 1_000, free: () => Infinity })).toEqual({ removed: 0, size: 100, builds: 0 });
+  expect([kept, join(key, ".unrecordable")].map(existsSync)).toEqual([true, true]);
+  expect(prune({ root: cache, current: "current", cap: 0, free: () => Infinity }).removed).toBe(1);
+  expect(existsSync(join(key, ".unrecordable"))).toBe(true);
+});
+
+// What a writer is building, or a writer that ended before it finished
+// left, is on the disk: counted in what's kept, never evicted as a kept
+// compile is, till a prune an hour on removes what's left (#2107).
+test("a compile being built counts in the store's size till a prune an hour on removes it", () => {
+  const cache = join(fixture("building-counted"), "compile-cache");
+  const key = join(cache, "v2", "current", "k");
+  const building = join(key, ".building-1-young");
+  mkdirSync(building, { recursive: true });
+  writeFileSync(join(building, "0"), Buffer.alloc(8192));
+  const bytes = bytesOf(building);
+  expect(prune({ root: cache, current: "current", cap: 1_000_000, free: () => Infinity })).toEqual({ removed: 0, size: bytes, builds: 0 });
+  expect(existsSync(building)).toBe(true);
+  const hourAgo = (Date.now() - 2 * 60 * 60 * 1000) / 1000;
+  utimesSync(building, hourAgo, hourAgo);
+  expect(prune({ root: cache, current: "current", cap: 1_000_000, free: () => Infinity })).toEqual({ removed: 0, size: 0, builds: 0 });
+  expect(existsSync(building)).toBe(false);
 });
 
 test("what the key leaves out of the environment, the compiler never reads", () => {

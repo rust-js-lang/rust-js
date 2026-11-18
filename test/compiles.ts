@@ -340,19 +340,23 @@ function settle(p: Exit, planned: NonNullable<ReturnType<typeof plan>>, cwd: str
 // rust-js's refusal to record a build it can't say all of, which is then
 // run as it was asked for.
 const unrecordable = "--emit=dep-info can't say all a build reads";
+// Where a key's compile was refused that, marked so it's run as asked
+// again: a dot-name, as every name in the store that isn't a kept compile
+// is, so no reader of the store takes it for one (#2107).
+const unrecordableMark = ".unrecordable";
 
 /** `cmd` run by `compile`, through the cache where it's a compile it keeps. */
 export function keptCompile(cmd: string[], cwd: string, env: Record<string, string | undefined>, compile: Compile, free: Free = diskFree): Exit {
   const planned = plan(cmd, cwd, env);
   if (!planned) return compile(cmd);
-  if (existsSync(join(planned.dir, "unrecordable"))) return compile(cmd);
+  if (existsSync(join(planned.dir, unrecordableMark))) return compile(cmd);
   const hit = found(planned.dir, cwd, planned.manifest);
   if (hit) return hit;
   mkdirSync(join(store, ".records"), { recursive: true });
   const p = compile(planned.recorded);
   if (p.code !== 0 && p.stderr.includes(unrecordable)) {
     mkdirSync(planned.dir, { recursive: true });
-    writeFileSync(join(planned.dir, "unrecordable"), "");
+    writeFileSync(join(planned.dir, unrecordableMark), "");
     return compile(cmd);
   }
   settle(p, planned, cwd, free);
@@ -369,14 +373,14 @@ export async function keptCompileAsync(
 ): Promise<Exit> {
   const planned = plan(cmd, cwd, env);
   if (!planned) return compile(cmd);
-  if (existsSync(join(planned.dir, "unrecordable"))) return compile(cmd);
+  if (existsSync(join(planned.dir, unrecordableMark))) return compile(cmd);
   const hit = found(planned.dir, cwd, planned.manifest);
   if (hit) return hit;
   mkdirSync(join(store, ".records"), { recursive: true });
   const p = await compile(planned.recorded);
   if (p.code !== 0 && p.stderr.includes(unrecordable)) {
     mkdirSync(planned.dir, { recursive: true });
-    writeFileSync(join(planned.dir, "unrecordable"), "");
+    writeFileSync(join(planned.dir, unrecordableMark), "");
     return compile(cmd);
   }
   settle(p, planned, cwd, free);
@@ -416,6 +420,27 @@ function entries(store: string): { path: string; bytes: number; used: number }[]
   return all;
 }
 
+/** The bytes of each `.building-` directory under `store`'s keys, a
+ * compile being kept, or one a writer that ended left (`keep`). */
+function buildingBytes(store: string): number {
+  const names = (dir: string) => {
+    try {
+      return readdirSync(dir);
+    } catch {
+      return [];
+    }
+  };
+  let bytes = 0;
+  for (const build of names(store).filter((name) => !name.startsWith("."))) {
+    for (const key of names(join(store, build))) {
+      for (const name of names(join(store, build, key))) {
+        if (name.startsWith(".building-")) bytes += bytesOf(join(store, build, key, name));
+      }
+    }
+  }
+  return bytes;
+}
+
 /** Bound what's kept in `root`: of a build other than `current`, all of
  * it, as it's never found again; of a layout before this one, all of it;
  * then the least recently used until what's left is under `cap`, and,
@@ -439,7 +464,14 @@ export function prune({ cap = capBytes(), current, free, root = compileCache }: 
       builds++;
     }
   }
-  const { removed, size } = evict(entries(store), { cap, free: free ?? (() => freeBytes(existsSync(root) ? root : target)), floor: floorBytes });
+  // What a writer is building, or one that ended before it finished left
+  // within the hour (`entries` removed it after): on the disk, so counted
+  // in what's kept, never evicted as a kept compile is (#2107).
+  const all = entries(store);
+  const building = buildingBytes(store);
+  const kept = evict(all, { cap: cap - building, free: free ?? (() => freeBytes(existsSync(root) ? root : target)), floor: floorBytes });
+  const { removed } = kept;
+  const size = kept.size + building;
   if (existsSync(store)) writeFileSync(join(root, "size"), String(size));
   return { removed, size, builds };
 }
