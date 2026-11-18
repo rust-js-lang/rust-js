@@ -103,6 +103,34 @@ pub fn known() -> (WeekInfo, WeekInfo, Option<TextDirection>, Option<TextDirecti
   expect(NAMES["Intl.TextInfo.direction"].rust).toBe("TextDirection");
 });
 
+// A host that hasn't ESNext's `getWeekInfo`, an older browser's, is told by
+// `js::is_function((locale, Locale::get_week_info))`, `typeof
+// locale.getWeekInfo === "function"`: nothing called to find out, no
+// `TypeError` caught, the locale itself the receiver (#1831).
+test("a locale's week info where the host has it, and none where it hasn't", async () => {
+  const { lib, js } = await compiled(
+    "intl-locale-week-detected",
+    `use js::intl::{locale, Locale};
+pub fn first_day(tag: &str) -> Option<f64> {
+    let locale = locale::new(tag, None).ok()?;
+    if js::is_function((locale, Locale::get_week_info)) {
+        return Some(locale.get_week_info().first_day);
+    }
+    None
+}
+`,
+  );
+  expect(js).toContain('if (typeof locale.getWeekInfo === "function") {\n    return locale.getWeekInfo().firstDay;');
+  expect([lib.firstDay("en-US"), lib.firstDay("de-DE")]).toEqual([7, 1]);
+  const own = Object.getOwnPropertyDescriptor(Intl.Locale.prototype, "getWeekInfo")!;
+  delete (Intl.Locale.prototype as any).getWeekInfo;
+  try {
+    expect(lib.firstDay("en-US")).toBeUndefined();
+  } finally {
+    Object.defineProperty(Intl.Locale.prototype, "getWeekInfo", own);
+  }
+});
+
 // A strict TypeScript caller of what rust-js declares of them: the
 // library's own types, `Intl.Locale` and `Intl.WeekInfo`, given and read.
 test("a strict TypeScript caller of the generated locale", async () => {

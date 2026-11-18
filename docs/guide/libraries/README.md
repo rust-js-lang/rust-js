@@ -211,7 +211,9 @@ What it has:
   tag text or another locale, its options `None`, a tag that isn't one the
   `RangeError` it throws, `Err`. What it reads back, `region()`, is `None`
   where it wasn't given; `get_week_info()`, `get_text_info()` and
-  `get_time_zones()` are ESNext's, written from TypeScript's library
+  `get_time_zones()` are ESNext's, written from TypeScript's library: where
+  a host may lack one, `js::is_function((locale, Locale::get_week_info))` is
+  `typeof locale.getWeekInfo === "function"`, asked before it's called
   ([ADR 1172](../../decisions/1172-the-js-crates-builtins-written-from-typescripts-library.md)).
 - **The rest of the ES library:** `Date`, `Intl`'s formatters, typed arrays
   and `ArrayBuffer`, `Atomics`, `Symbol`, `WeakMap`, `WeakRef`,
