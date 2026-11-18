@@ -137,3 +137,30 @@ read or an effect stays in the body, so all parameters are initialized
 before that read and eager Rust evaluation still happens. The test
 in `test/arguments.test.ts` covers arity, both kinds of absence, and
 nonliteral fallbacks. Case of ADR 0262: the Rust values behave as before.
+
+## Amendment: the literal default decided from the Rust (2026-11-18, #2081)
+
+The amendment above found the default after lowering, in the JS: the
+body's first statements `width = width ?? <literal>`, moved into the
+parameter list. A decision of the Rust's, recovered from the JS's shape.
+It's now the parameters' owner's, `literal_defaults` in
+src/lower/signatures.rs beside `Form::Undefinable`: of the body's MIR,
+each parameter marked `none_undefined` whose entry, before any other
+effect, calls `Option::unwrap_or` of it, of a temporary copy of it, or
+of a `map` of it that's the option itself in JS (`maps_to_itself`),
+with a constant of a number or a `bool`, finite, and that's read nowhere
+else: createDetails' `cancelable.map(js::boolean).unwrap_or(true)` is
+`cancelable = true`. Chained, `let a = a.unwrap_or(3); let b =
+b.unwrap_or(true);` is `pair(a = 3, b = true)`; one read again past it, `width.is_some()` after
+`let w = width.unwrap_or(4.0)`, keeps its `undefined`, and its
+`unwrap_or` stays `??`. Two consumers ask it: the parameter's pattern,
+`Pattern::Defaulted` (`mir_param`), and the call, whose `Option` is
+read as present there (`defaulted_present`, which `proved_present`
+asks), so its `unwrap_or` is the value. The JS matcher is gone.
+
+A `null` a JS caller gives such a parameter is the value: outside its
+declared `number | undefined`, it has no guaranteed meaning, the user's
+decision under ADR 0262 (2026-11-18), the guide's difference 61.
+Mutations `undefined-literal-default-unpromoted`, `-unmarked`,
+`-read-again`, `-first-alone`, `-lets-stop`, `-copy-unseen` and
+`-identity-map-unseen` are caught.

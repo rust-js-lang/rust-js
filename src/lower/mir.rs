@@ -14,7 +14,6 @@
 
 mod made;
 use crate::collections::{IndexMap, IndexSet};
-use crate::js::ExprKind;
 use crate::lower::temporary_names::{Base, Role};
 pub(super) use made::Made;
 mod alternatives;
@@ -511,53 +510,6 @@ enum Taken {
     Streamed(js::Name),
 }
 
-/// Promotes a leading literal fallback for an undefined-only parameter
-/// to its formal parameter. Its marker names a JS input whose absence
-/// is undefined alone, as a formal default expects (ADR 1161).
-fn literal_defaults(
-    tcx: rustc_middle::ty::TyCtxt<'_>,
-    def: rustc_span::def_id::DefId,
-    params: &mut [js::Pattern],
-    body: &mut Vec<Stmt>,
-) {
-    let marked = super::bindings::undefined_params(tcx, def);
-    if marked.is_empty() {
-        return;
-    }
-    let Some(written) = def.as_local().and_then(|local| tcx.hir_maybe_body_owned_by(local)) else {
-        return;
-    };
-    if written.params.len() != params.len() {
-        return;
-    }
-    while let Some(Stmt {
-        kind: StmtKind::Assign(target, value),
-        ..
-    }) = body.first()
-    {
-        let (ExprKind::Var(name), ExprKind::Binary(js::Op::Coalesce, before, fallback)) = (&target.kind, &value.kind)
-        else {
-            break;
-        };
-        let literal = match fallback.kind {
-            ExprKind::Num(number) => number.is_finite(),
-            ExprKind::BigInt(_) | ExprKind::BigUint(_) | ExprKind::Bool(_) | ExprKind::Str(_) | ExprKind::Null => true,
-            _ => false,
-        };
-        if !matches!(&before.kind, ExprKind::Var(other) if other == name) || !literal {
-            break;
-        }
-        let Some(index) = params.iter().zip(written.params).position(|(param, input)| {
-            matches!(param, js::Pattern::Name(param) if param == name)
-                && matches!(input.pat.kind, rustc_hir::PatKind::Binding(_, _, ident, None) if marked.contains(&ident.name))
-        }) else {
-            break;
-        };
-        params[index] = js::Pattern::Defaulted(name.clone(), (**fallback).clone());
-        body.remove(0);
-    }
-}
-
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn lower_fn_mir(&mut self, body: &Body<'tcx>, mir: &Mir<'tcx>) -> R<LoweredFn> {
         let def_id = body.def_id;
@@ -578,7 +530,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let evidence = self.evidence_params(def_id);
         let mut out = Vec::new();
         let (mut params, is_async) = self.mir_signature(body, mir, &mut out)?;
-        literal_defaults(self.tcx, def_id, &mut params, &mut out);
         // A function whose ABI can't unwind, `extern "C"`'s: a panic out of
         // it aborts the process, as Rust's does, past any `catch_unwind`
         // (#1582).
@@ -835,7 +786,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (mir_body, local, closure): (&mir::Body<'tcx>, Local, bool),
         boxes: &mut IndexSet<js::Name>,
         cell_params: &mut Vec<(js::Name, js::Name)>,
-    ) -> js::Pattern {
+    ) -> R<js::Pattern> {
         state.locals.declared[local] = true;
         // One the program names nothing and reads nowhere, `_: Ref`,
         // is `_`.
@@ -866,9 +817,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let cell = self.fresh(Base::Derived(&name));
             state.locals.names[local] = cell.clone();
             cell_params.push((cell, name.clone()));
-            return js::Pattern::Name(name);
+            return Ok(js::Pattern::Name(name));
         }
-        js::Pattern::Name(name)
+        // One its first act gives a literal default, `let width =
+        // width.unwrap_or(4.0);`: that default, `width = 4`, which JS gives
+        // where it's `undefined` or left out (`literal_defaults`, #2081).
+        if let Some(literal) = self.literal_defaults(mir_body).get(&local) {
+            return Ok(js::Pattern::Defaulted(name, self.mir_const(state, literal)?));
+        }
+        Ok(js::Pattern::Name(name))
     }
 
     /// A function's last parameters, as JS takes them. A C-variadic
@@ -1091,7 +1048,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     &mut cell_params,
                 )
             })
-            .collect();
+            .collect::<R<_>>()?;
         // Where each part a pattern binds is a local MIR moves out of the
         // parameter, once, and that's all it reads of it: the pattern.
         for (i, pattern, named) in patterns {

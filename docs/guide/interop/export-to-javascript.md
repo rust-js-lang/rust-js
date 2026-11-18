@@ -489,6 +489,9 @@ A leading `let limit = limit.unwrap_or(4.0);` for a parameter marked
 The fallback must be a literal, so its evaluation as a parameter cannot
 read a later parameter or skip an effect the Rust would run. The formal
 default triggers for `undefined` and JavaScript’s `Function.length` counts parameters before the first default.
+A `null` given there is the value, not `None`: outside the declared
+`number | undefined`, it has no guaranteed meaning
+([difference 61](../semantics.md)).
 
 ## Rest parameters
 

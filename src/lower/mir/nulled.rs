@@ -462,7 +462,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// read, React's Flight client's `*value = deferred`, its `deferred`
     /// moved into a temporary under `deferred.is_some()` (#1933's removal).
     pub(super) fn proved_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
-        if self.proved_by(state, local, Self::present_edge, state.at) {
+        if self.proved_by(state, local, Self::present_edge, state.at) || self.defaulted_present(state.body, local) {
             return true;
         }
         if self.ended_present(state, local) || self.present_on_all_paths(state, local, state.at) {

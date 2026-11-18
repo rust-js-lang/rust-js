@@ -479,6 +479,18 @@ react.dev's TopNav passes the same closure instead.
   of its own in its place, nor add a getter to one**, which would be read
   where Rust reads it once, `undefined` where Rust's value is `Some`.
   Listed in the guide's differences (`semantics.md`, 60).
+- **A value outside a parameter's declared type has no guaranteed
+  meaning**, the second case's, which the user decided (Tu, 2026-11-18,
+  #2081, ADR 1161, amended): a parameter marked `none_undefined`, declared
+  `number | undefined`, whose body first gives it a literal default,
+  `let width = width.unwrap_or(4.0);`, is the JS parameter `width = 4`,
+  as Three.js writes `getVectorLength(count, vectorLength = 4)`. JS
+  applies it to `undefined` alone, so a `null` a caller gives, which the
+  declaration doesn't take, is the value: `padded(3, null)` is `0`, where
+  the body's `??` took it for `None`, and where another reading of such a
+  parameter, `is_none()`, still does. Only a JS caller outside the
+  declared types sees it. Listed in the guide's differences
+  (`semantics.md`, 61).
 
 ## Amendment: the stack's depth
 

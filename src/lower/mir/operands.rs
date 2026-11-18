@@ -534,7 +534,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    fn mir_const(&mut self, state: &State<'_, 'tcx>, c: &ConstOperand<'tcx>) -> R<Expr> {
+    pub(super) fn mir_const(&mut self, state: &State<'_, 'tcx>, c: &ConstOperand<'tcx>) -> R<Expr> {
         let ty = c.ty();
         if ty.is_unit() || matches!(ty.kind(), ty::FnDef(..)) {
             return Ok(Expr::js_undefined());

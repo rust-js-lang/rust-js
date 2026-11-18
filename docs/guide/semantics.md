@@ -2544,3 +2544,12 @@ React and JSX are [their own pages](README.md#react).
     `js::cast`'s, a binding's result or a WebIDL dictionary, is read anew
     (ADR 0262, the user's decision, 2026-11-15, #1950; [ADR 1022](../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
     amended).
+61. A parameter marked `none_undefined` whose body first gives it a
+    literal default, `let width = width.unwrap_or(4.0);`, is the JS
+    parameter `width = 4`, which JS applies to `undefined` alone: `null`,
+    which its declared `number | undefined` doesn't take, is the value,
+    `padded(3, null)` `0`, where another reading of such a parameter, its
+    `is_none()`, takes `null` for `None`. A value outside a parameter's
+    declared type has no guaranteed meaning (ADR 0262, the user's
+    decision, 2026-11-18, #2081; [ADR 1161](../decisions/1161-a-present-slot-and-a-results-undefined.md),
+    amended).

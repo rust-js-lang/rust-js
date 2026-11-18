@@ -290,10 +290,26 @@ pub fn eager(width: Option<f64>, fallback: fn() -> f64) -> f64 {
     let width = width.unwrap_or(fallback());
     width + 1.0
 }
+
+#[cfg_attr(rust_js, rust_js::none_undefined(width))]
+pub fn read_again(count: f64, width: Option<f64>) -> f64 {
+    let w = width.unwrap_or(4.0);
+    if width.is_some() { w * count } else { -w }
+}
+
+#[cfg_attr(rust_js, rust_js::none_undefined(a, b))]
+pub fn pair(a: Option<u32>, b: Option<bool>) -> u32 {
+    let a = a.unwrap_or(3);
+    let b = b.unwrap_or(true);
+    if b { a + 1 } else { a }
+}
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const emitted = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(emitted).toContain("export function padded(count, width = 4)");
+  // Decided from the Rust, the parameter's first act (\`literal_defaults\`,
+  // #2081): the default is JS's own, and the body's \`unwrap_or\` is gone.
+  expect(emitted).toContain("export function padded(count, width = 4) {\n  return width * count;\n}");
+  expect(emitted).toContain("export function pair(a = 3, b = true) {");
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("padded(count: number, width?: number | undefined)");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.padded.length).toBe(1);
@@ -305,4 +321,10 @@ pub fn eager(width: Option<f64>, fallback: fn() -> f64) -> f64 {
   let calls = 0;
   expect(lib.eager(5, () => { calls++; return 2; })).toBe(6);
   expect(calls).toBe(1);
+  // Read again past its default: its \`None\` is still \`undefined\` there,
+  // so it has no JS default.
+  expect(lib.readAgain.length).toBe(2);
+  expect([lib.readAgain(3), lib.readAgain(3, 2)]).toEqual([-4, 6]);
+  expect(lib.pair.length).toBe(0);
+  expect([lib.pair(), lib.pair(1), lib.pair(1, false), lib.pair(undefined, false)]).toEqual([4, 2, 1, 3]);
 });

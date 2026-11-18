@@ -4,39 +4,11 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "undefined-literal-default-unpromoted",
-    breaks: "an undefined-only parameter's leading literal fallback leaves the JS function's arity unchanged",
-    find: "        literal_defaults(self.tcx, def_id, &mut params, &mut out);\n",
-    replace: "",
+    breaks: "an undefined-only parameter's leading literal default isn't its JS parameter's default, though its \`unwrap_or\` is read as present, so \`padded(3)\` is \`NaN\` (#2081)",
     file: "src/lower/mir.rs",
-    tests: [
-      "test/arguments.test.ts",
-      "-t",
-      "entry literal default"
-    ]
-  },
-  {
-    name: "undefined-literal-default-unmarked",
-    breaks: "a nullish parameter is given a formal default because a different parameter is marked undefined-only",
-    find: "&& matches!(input.pat.kind, rustc_hir::PatKind::Binding(_, _, ident, None) if marked.contains(&ident.name))",
-    replace: "&& matches!(input.pat.kind, rustc_hir::PatKind::Binding(_, _, _, None))",
-    file: "src/lower/mir.rs",
-    tests: [
-      "test/arguments.test.ts",
-      "-t",
-      "entry literal default"
-    ]
-  },
-  {
-    name: "undefined-literal-default-variable",
-    breaks: "moves a fallback's read of a later parameter into its earlier default's scope",
-    find: "if !matches!(&before.kind, ExprKind::Var(other) if other == name) || !literal {",
-    replace: "if !matches!(&before.kind, ExprKind::Var(other) if other == name) {",
-    file: "src/lower/mir.rs",
-    tests: [
-      "test/arguments.test.ts",
-      "-t",
-      "entry literal default"
-    ]
+    find: "        if let Some(literal) = self.literal_defaults(mir_body).get(&local) {\n",
+    replace: "        if let Some(literal) = self.literal_defaults(mir_body).get(&local).filter(|_| false) {\n",
+    tests: ["test/arguments.test.ts", "-t", "entry literal default"],
   },
   {
     name: "mir-drop-uses-unnoted",

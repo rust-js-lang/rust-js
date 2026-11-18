@@ -8,9 +8,10 @@
 //! name (`parameter_name`). A declaration prints it, and says nothing a
 //! function takes on its own (#549, #559, #560).
 
-use crate::collections::IndexSet;
+use crate::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
+use rustc_middle::mir;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Ident;
 use rustc_span::def_id::DefId;
@@ -167,6 +168,130 @@ impl<'tcx> JsSignature<'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Of `body`, each parameter whose `None` is `undefined` alone
+    /// (`Form::Undefinable`, `#[rust_js::none_undefined(..)]`) that its
+    /// first act gives a literal default, `let width = width.unwrap_or(4.0);`,
+    /// and that literal: its JS parameter's own default, `width = 4`, as
+    /// upstream writes one, applied by JS where the argument is `undefined`
+    /// or left out (#2077, #2081, ADR 1161, amended). The entry's calls
+    /// before any other effect, each an `unwrap_or` of one such parameter,
+    /// or of a temporary copy of it, with a constant of a number or a
+    /// `bool`, its JS a literal; a
+    /// parameter read anywhere else isn't one, as its `None` would be the
+    /// default there. The one answer both its parameter's pattern and the
+    /// call's lowering ask (`mir_param`, `defaulted_present`).
+    pub(in crate::lower) fn literal_defaults(
+        &self,
+        body: &mir::Body<'tcx>,
+    ) -> IndexMap<mir::Local, mir::ConstOperand<'tcx>> {
+        let mut found = IndexMap::default();
+        let marked = super::bindings::undefined_params(self.tcx, body.source.def_id());
+        if marked.is_empty() {
+            return found;
+        }
+        let params: IndexSet<mir::Local> = (body.var_debug_info.iter())
+            .filter_map(|info| match info.value {
+                mir::VarDebugInfoContents::Place(place)
+                    if place.projection.is_empty()
+                        && (1..=body.arg_count).contains(&place.local.as_usize())
+                        && marked.contains(&info.name) =>
+                {
+                    Some(place.local)
+                }
+                _ => None,
+            })
+            .collect();
+        // Each temporary that copies one of them before its `unwrap_or`, to it.
+        let mut copies: IndexMap<mir::Local, mir::Local> = IndexMap::default();
+        let mut block = mir::START_BLOCK;
+        loop {
+            let data = &body.basic_blocks[block];
+            for statement in &data.statements {
+                match &statement.kind {
+                    // What does nothing: a `let`'s markers of what it binds.
+                    mir::StatementKind::StorageLive(_)
+                    | mir::StatementKind::StorageDead(_)
+                    | mir::StatementKind::FakeRead(_)
+                    | mir::StatementKind::PlaceMention(_)
+                    | mir::StatementKind::AscribeUserType(..)
+                    | mir::StatementKind::Coverage(_)
+                    | mir::StatementKind::Nop => {}
+                    mir::StatementKind::Assign(assign)
+                        if let (dest, mir::Rvalue::Use(mir::Operand::Copy(of) | mir::Operand::Move(of), _)) =
+                            &**assign
+                            && dest.projection.is_empty()
+                            && of.projection.is_empty()
+                            && dest.local.as_usize() > body.arg_count
+                            && params.contains(&of.local) =>
+                    {
+                        copies.insert(dest.local, of.local);
+                    }
+                    _ => return found,
+                }
+            }
+            let mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                target: Some(next),
+                ..
+            } = &data.terminator().kind
+            else {
+                return found;
+            };
+            let Some((id, generic)) = super::fn_def(func.ty(&body.local_decls, self.tcx)) else {
+                return found;
+            };
+            // A `map` of one that's the option itself in JS,
+            // `cancelable.map(js::boolean)` (`maps_to_itself`): what it
+            // gives is the parameter as a copy is.
+            if let [option, f] = &args[..]
+                && let mir::Operand::Copy(given) | mir::Operand::Move(given) = &option.node
+                && let Some(&param) = copies.get(&given.local).or(params.get(&given.local))
+                && destination.projection.is_empty()
+                && self.recognition().classify(id, generic) == Some(super::recognition::Std::OptionMap)
+                && let (Some(from), Some(to)) = (
+                    self.option_of(option.node.ty(body, self.tcx)),
+                    self.option_of(destination.ty(body, self.tcx).ty),
+                )
+                && self.maps_to_itself(f.node.ty(body, self.tcx), (from, to))
+            {
+                copies.insert(destination.local, param);
+                block = *next;
+                continue;
+            }
+            let [option, default] = &args[..] else {
+                return found;
+            };
+            let (mir::Operand::Copy(given) | mir::Operand::Move(given), mir::Operand::Constant(literal)) =
+                (&option.node, &default.node)
+            else {
+                return found;
+            };
+            let param = copies.get(&given.local).copied().unwrap_or(given.local);
+            let literal_ty = literal.ty();
+            if self.recognition().classify(id, generic) != Some(super::recognition::Std::UnwrapOr)
+                || !given.projection.is_empty()
+                || !params.contains(&param)
+                || found.contains_key(&param)
+                || !(literal_ty.is_bool() || literal_ty.is_integral() || literal_ty.is_floating_point())
+                || !finite(literal)
+                || uses(body, param) != 1
+            {
+                return found;
+            }
+            found.insert(param, **literal);
+            block = *next;
+        }
+    }
+
+    /// Whether `local` of `body` is a parameter a literal default made a
+    /// value (`literal_defaults`), read by its `unwrap_or` alone, so it's
+    /// present there, its `unwrap_or` the value (`proved_present`, #2081).
+    pub(in crate::lower) fn defaulted_present(&self, body: &mir::Body<'tcx>, local: mir::Local) -> bool {
+        self.literal_defaults(body).contains_key(&local)
+    }
+
     /// How many parameters an impl's method's JS function declares, as
     /// `mir_signature` and `lower_fn_mir` write them: one for each of its
     /// Rust inputs but a `self` its body takes as `this` or not at all
@@ -392,4 +517,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         callables
     }
+}
+
+/// Whether `literal`, a float, is finite, its JS a number literal, not
+/// `Infinity` or `NaN`; any other constant is.
+fn finite(literal: &mir::ConstOperand<'_>) -> bool {
+    let mir::Const::Val(mir::ConstValue::Scalar(mir::interpret::Scalar::Int(bits)), ty) = literal.const_ else {
+        return !literal.ty().is_floating_point();
+    };
+    match ty.kind() {
+        ty::Float(ty::FloatTy::F64) => f64::from_bits(bits.to_bits(bits.size()) as u64).is_finite(),
+        ty::Float(ty::FloatTy::F32) => f32::from_bits(bits.to_bits(bits.size()) as u32).is_finite(),
+        ty::Float(_) => false,
+        _ => true,
+    }
+}
+
+/// How many times `body` reads or writes `local`, but its storage's
+/// markers and its debug info.
+fn uses(body: &mir::Body<'_>, local: mir::Local) -> usize {
+    struct Uses(mir::Local, usize);
+    impl<'tcx> mir::visit::Visitor<'tcx> for Uses {
+        fn visit_local(&mut self, local: mir::Local, context: mir::visit::PlaceContext, _: mir::Location) {
+            if local == self.0 && !matches!(context, mir::visit::PlaceContext::NonUse(_)) {
+                self.1 += 1;
+            }
+        }
+    }
+    let mut counted = Uses(local, 0);
+    mir::visit::Visitor::visit_body(&mut counted, body);
+    counted.1
 }
