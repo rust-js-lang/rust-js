@@ -122,6 +122,18 @@ pub(in crate::lower) fn needed<'tcx>(
                 crate::lower::classes::refuse_through(tcx, callee, span, !other);
             }
         }
+        // A library's impl whose trait's method's own `where` the contract
+        // can't answer of what the call gives: compiled here, with its
+        // methods (`where_unsaid`).
+        for &(callee, args) in &by_name {
+            if let Some(imp) = where_unsaid(&calls, caller, (callee, args))
+                && !instances.contains(tcx, imp)
+                && !more.iter().any(|&(id, _)| id == imp)
+            {
+                let module = crate::lower::body_module(tcx, instances, body.def_id);
+                more.extend(super::asked(tcx, vec![(imp, module)]));
+            }
+        }
         for &(callee, args) in &by_name {
             if !compiled_here(foreign, tcx, callee)
                 || instances.contains(tcx, callee)
@@ -151,6 +163,50 @@ pub(in crate::lower) fn needed<'tcx>(
         }
     }
     more
+}
+
+/// The library's impl a call of its trait's method, `callee` of `args`,
+/// is of, where the method's own `where` bounds what the caller gives of
+/// its type parameters by an iterator's trait, `fn last_of(self) where
+/// Self: DoubleEndedIterator` of an `I` of `ends<I: DoubleEndedIterator>`:
+/// whether its export steps it by that trait, which says whether the caller
+/// is given that dictionary to give it (ADR 0548), no contract says of a
+/// trait's method, so the crate compiles the impl itself, which its own
+/// analysis then answers (ADR 0914, amended; #2112's change D). Of a
+/// type the caller knows, its dictionary is made where it's called.
+fn where_unsaid<'tcx>(
+    calls: &Calls<'_, 'tcx>,
+    caller: DefId,
+    (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+) -> Option<DefId> {
+    let tcx = calls.tcx;
+    let trait_id = tcx.trait_of_assoc(callee)?;
+    let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
+    let own = ty::TraitRef::new_from_args(tcx, trait_id, args.truncate_to(tcx, tcx.generics_of(trait_id)));
+    let (imp, _) = crate::lower::traits::evidence_impl(tcx, typing_env, own)?;
+    if imp.is_local() || !calls.foreign.is_library(imp.krate) || calls.foreign.item(imp).is_none() {
+        return None;
+    }
+    let iterator = |tr: DefId| {
+        crate::lower::recognition::is_std_def(tcx, tr, crate::lower::recognition::StdItem::Iterator)
+            || crate::lower::recognition::is_iterator_extension(tcx, tr)
+    };
+    // Its own, not its trait's, `Self: Tools` and `Tools: Iterator`'s,
+    // which the impl's dictionary is made of (#1409).
+    let of_trait: Vec<_> = (tcx.clauses_of(trait_id).instantiate_identity(tcx).into_iter())
+        .map(|(clause, _)| clause.skip_normalization())
+        .collect();
+    let own_clauses = (tcx.clauses_of(callee).instantiate_identity(tcx).into_iter())
+        .zip(tcx.clauses_of(callee).instantiate(tcx, args))
+        .filter(|((declared, _), _)| !of_trait.contains(&declared.skip_normalization()))
+        .map(|(_, given)| given);
+    let asks = own_clauses.into_iter().any(|(clause, _)| {
+        clause.skip_normalization().as_trait_clause().is_some_and(|bound| {
+            iterator(bound.def_id())
+                && crate::lower::generic_facts::type_parameter(bound.self_ty().skip_binder().peel_refs()).is_some()
+        })
+    });
+    asks.then_some(imp)
 }
 
 /// A call of a namespace's method through a value: the method, its generic

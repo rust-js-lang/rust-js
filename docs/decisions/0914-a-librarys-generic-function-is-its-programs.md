@@ -2059,3 +2059,34 @@ Two kinds stay refused, as before:
 Exported, a consumer's copy of a `fetch_add` assigned the import, a
 `TypeError` (test/crates-compiled-here's `identity_merged_reads_private_state`,
 still refused). Lifting it, a setter exported beside the binding, is #2030.
+
+## Amendment: a trait method's own `where` of a caller's parameter compiles its impl (2026-11-19, #2112's change D)
+
+A library's contract says what each function and impl steps of its type
+parameters (ADR 0548), which says whether a caller's own parameter given
+as it is is given an iterator dictionary to hand on. It has no item of a
+trait's method, so what a method's own `where` asks of `Self` or of its
+own parameters, `fn last_of(self, n) where Self: DoubleEndedIterator` of
+itertools-style `impl<T: Iterator + ?Sized> Tools for T`, no contract
+says. A consumer's `ends<I: DoubleEndedIterator>(it: I)` calling
+`it.last_of(1)` was given no `IDoubleEndedIterator`, and its call was
+refused, "the `DoubleEndedIterator` of a `I`", where the library's
+`lastOf` takes it.
+
+So a call of a library trait's method whose own `where` bounds what the
+caller gives of its type parameters by an iterator's trait now compiles
+the impl it's of in the crate (`needed::where_unsaid`), whose own
+analysis then says what it steps, as of the crate's own impls (#1409,
+above). One of a type the caller knows needs none: its dictionary is
+made where it's called.
+
+Until now the copy scan's guess about a blanket impl's `Self` (`default_copies`,
+#1927) compiled these impls whenever the consumer changed anything in
+place, which hid the gap: the pair below, which changes nothing, was
+refused.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no output of a
+compile that wasn't refused changes; a refusal lifted. Held by crate pair
+`library_trait_method_where_steps_param` against native Rust, and #1409's
+`library_instance_impl_asks_its_defaults_facts`; mutation
+`trait-method-where-unsaid`.

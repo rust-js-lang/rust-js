@@ -323,4 +323,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "impl_iterator_of_a_library"],
   },
+  {
+    name: "trait-method-where-unsaid",
+    breaks: "a consumer's `trimmed<I: DoubleEndedIterator>` calling a library trait's `all_but_last`, whose own `where` asks `Self: DoubleEndedIterator`, is given no `IDoubleEndedIterator`, as no contract says what a trait's method steps, and is refused (#2112's change D)",
+    file: "src/lower/instances/needed.rs",
+    find: "    asks.then_some(imp)\n",
+    replace: "    asks.then_some(imp).filter(|_| false)\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_trait_method_where_steps_param"],
+  },
 ];
