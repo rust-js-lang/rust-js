@@ -234,7 +234,8 @@ pub(super) fn reexports(
             // A class, its constructor function (ADR 0761): the crate's,
             // from its module; a library's, from its file.
             Some(Res::Def(DefKind::Struct, class)) if super::classes::is_class(tcx, class) => {
-                let constructor = super::classes::constructor_of(tcx, class);
+                let constructor = super::classes::constructor_of(tcx, class)
+                    .or_else(|| super::classes::implicit_constructor_member(tcx, class));
                 if constructor
                     .and_then(|c| fns.get(&c))
                     .is_some_and(|info| info.module == module)

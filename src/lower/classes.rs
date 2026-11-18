@@ -483,14 +483,38 @@ pub(crate) fn constructor_of(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
         .find(|&item| member(tcx, item) == Some(Member::Constructor))
 }
 
+/// A member that names a fieldless ES class with an implicit constructor.
+pub(crate) fn implicit_constructor_member(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
+    if !is_es_class(tcx, adt)
+        || !tcx.adt_def(adt).non_enum_variant().fields.is_empty()
+        || superclass(tcx, adt).is_some()
+        || constructor_of(tcx, adt).is_some()
+    {
+        return None;
+    }
+    (tcx.inherent_impls(adt).iter())
+        .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
+        .find(|&item| member(tcx, item) == Some(Member::Static))
+}
+
+/// The struct's module owns a class with an implicit constructor.
+pub(crate) fn implicit_constructor_home(tcx: TyCtxt<'_>, adt: DefId) -> Option<rustc_span::def_id::LocalModId> {
+    let local = adt.as_local()?;
+    implicit_constructor_member(tcx, adt)?;
+    Some(tcx.parent_module_from_def_id(local))
+}
+
 /// The module a class `adt`, the crate's, is in: its constructor
 /// function's, its `fn new`'s impl's, where its declaration is too, though
 /// its struct is another module's, React's `Fiber` of ReactInternalTypes
-/// made in ReactFiber (ADR 0761, amended); `None` of what's no class.
+/// made in ReactFiber (ADR 0761, amended). With an implicit constructor,
+/// it is declared with its struct.
 pub(crate) fn home(tcx: TyCtxt<'_>, adt: DefId) -> Option<rustc_span::def_id::LocalModId> {
     // Of one React constructs, where its impl of the class it extends is (rd331).
-    let made = constructor_of(tcx, adt).or_else(|| superclass(tcx, adt).map(|(imp, _)| imp))?;
-    Some(tcx.parent_module_from_def_id(made.as_local()?))
+    let made = constructor_of(tcx, adt).or_else(|| superclass(tcx, adt).map(|(imp, _)| imp));
+    made.and_then(DefId::as_local)
+        .map(|local| tcx.parent_module_from_def_id(local))
+        .or_else(|| implicit_constructor_home(tcx, adt))
 }
 
 /// The class `module`'s item `item` declares: a class's struct, where its
@@ -589,6 +613,7 @@ pub(super) fn reject_misuse<'tcx>(
                 }
                 match constructor_of(tcx, id) {
                     None if errors::extends_error(tcx, id) => {}
+                    None if implicit_constructor_member(tcx, id).is_some() => {}
                     None if extends.is_empty() => refuse(
                         span,
                         "is made by its constructor, `fn new(..) -> Self`, in its impl, or by the class it extends, a binding's it implements, `impl Component<P> for Surface`",

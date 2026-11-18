@@ -939,7 +939,13 @@ impl is marked `#[rust_js::class]` alone, as its struct says its form;
 its prototype replaced, which JS doesn't let be written, is refused, and
 so is `class(es)` of a class that extends a binding's, an ES class
 already ([ADR 0761](../../decisions/0761-a-rust-js-class-is-a-constructor-function-and-its-prototype.md),
-amended, rd682). As a webpack plugin is written:
+amended, rd682). A fieldless ES class with a static method can omit
+`fn new`. For example, `struct LoaderUtils {}` and its static methods
+emit `class LoaderUtils { static ... }`, with the implicit empty
+JavaScript constructor. To construct the class directly in Rust, define
+`fn new` and construct the struct inside it.
+
+As a webpack plugin is written:
 
 ```rust
 /// A webpack plugin, as upstream writes it.

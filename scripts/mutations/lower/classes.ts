@@ -92,6 +92,22 @@ export const mutations: Mutation[] = [
     tests: refusals,
   },
   {
+    name: "static-es-class-requires-constructor",
+    breaks: "a fieldless ES class with static methods is refused without an explicit constructor",
+    file,
+    find: "                    None if implicit_constructor_member(tcx, id).is_some() => {}\n",
+    replace: "",
+    tests: ["test/es-classes.test.ts", "-t", "implicit JavaScript constructor"],
+  },
+  {
+    name: "static-es-class-in-impl-module",
+    breaks: "a fieldless ES class is emitted beside its impl, while its declaration and re-export point to the struct's module",
+    file: "src/lower.rs",
+    find: "classes::class_of(tcx, def_id).and_then(|class| classes::implicit_constructor_home(tcx, class))",
+    replace: "classes::class_of(tcx, def_id).and_then(|_| None)",
+    tests: ["test/es-classes.test.ts", "-t", "implicit constructor lives with its struct"],
+  },
+  {
     name: "class-impl-unmarked-allowed",
     breaks:
       "a class's impl not marked `#[rust_js::class]` compiles, the attribute on one half of the class",
@@ -416,8 +432,8 @@ export const mutations: Mutation[] = [
     name: "subclass-homeless",
     breaks: "a class component React constructs, of no `new`, is in no module: its superclass imported nowhere",
     file: "src/lower/classes.rs",
-    find: "    let made = constructor_of(tcx, adt).or_else(|| superclass(tcx, adt).map(|(imp, _)| imp))?;\n",
-    replace: "    let made = constructor_of(tcx, adt)?;\n",
+    find: "    let made = constructor_of(tcx, adt).or_else(|| superclass(tcx, adt).map(|(imp, _)| imp));\n",
+    replace: "    let made = constructor_of(tcx, adt);\n",
     tests: [
       "test/class-components.test.ts",
       "-t",

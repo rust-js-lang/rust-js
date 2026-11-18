@@ -149,6 +149,77 @@ console.log(JSON.stringify([...said, thrown]));`,
   expect(ran.stdout).toBe('made loud\nmade early\n["early applied to early","HI","LOUD APPLIED TO JS",1,3,"HI","limit",true,"name,applied","TypeError"]\n');
 });
 
+test("a fieldless ES class with statics uses the implicit JavaScript constructor", async () => {
+  const { js, ts, dir } = compiled("es-class-implicit-constructor", `/// Loader helpers.
+#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct LoaderUtils {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl LoaderUtils {
+    pub fn relative_prefix() -> &'static str {
+        "./"
+    }
+}
+
+pub fn relative() -> &'static str {
+    LoaderUtils::relative_prefix()
+}
+`);
+  expect(js).toContain(`/** Loader helpers. */
+export class LoaderUtils {
+  static relativePrefix() {
+    return "./";
+  }
+}`);
+  expect(js).toContain("return LoaderUtils.relativePrefix();");
+  expect(ts).toContain("export declare class LoaderUtils");
+  expect(ts).toContain("static relativePrefix(): string;");
+  expect(ts).not.toContain("constructor(");
+
+  const { LoaderUtils, relative } = await import(join(dir, "lib.js"));
+  expect(relative()).toBe("./");
+  expect(Object.getOwnPropertyDescriptor(LoaderUtils, "relativePrefix")?.enumerable).toBe(false);
+  expect(Object.getPrototypeOf(new LoaderUtils())).toBe(LoaderUtils.prototype);
+  expect(Reflect.ownKeys(new LoaderUtils())).toEqual([]);
+  expect(() => LoaderUtils()).toThrow(TypeError);
+});
+
+test("an ES class with an implicit constructor lives with its struct", async () => {
+  const dir = fixture("es-class-implicit-constructor-module");
+  writeFileSync(join(dir, "lib.rs"), `pub mod loader;
+mod methods;
+
+pub use loader::LoaderUtils as Utils;
+`);
+  writeFileSync(join(dir, "loader.rs"), `#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct LoaderUtils {}
+
+impl js::Classed for LoaderUtils {
+    type Constructor = js::AnyConstructor;
+}
+
+pub fn loader_class() -> &'static js::Class {
+    js::class::<LoaderUtils>()
+}
+`);
+  writeFileSync(join(dir, "methods.rs"), `use super::loader::LoaderUtils;
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl LoaderUtils {
+    pub fn relative_prefix() -> &'static str {
+        "./"
+    }
+}
+`);
+  run([compiler, ...flags(dir)]);
+  expect(readFileSync(join(dir, "loader.d.ts"), "utf8")).toContain("export declare class LoaderUtils");
+  const { LoaderUtils, loaderClass } = await import(join(dir, "loader.js"));
+  const { Utils } = await import(join(dir, "lib.js"));
+  expect(Utils).toBe(LoaderUtils);
+  expect(loaderClass()).toBe(LoaderUtils);
+  expect(Utils.relativePrefix()).toBe("./");
+});
+
 // What an ES class can't be is refused, saying what to write: one that
 // extends a binding's class is one already; the form is its struct's, not
 // its impl's; a word that's no form; and its prototype replaced, which JS
@@ -156,6 +227,21 @@ console.log(JSON.stringify([...said, thrown]));`,
 test("what an ES class is refused says what to write", () => {
   const unmarked = plugin.replace("js::export_default!(Plugin);\n", "");
   const cases: [string, string, string][] = [
+    ["es-class-unmade-with-field", `#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct LoaderUtils { pub path: String }
+#[cfg_attr(rust_js, rust_js::class)]
+impl LoaderUtils { pub fn relative() -> &'static str { "./" } }
+`, "is made by its constructor, `fn new(..) -> Self`, in its impl"],
+    ["es-class-unmade-without-static", `#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct LoaderUtils {}
+#[cfg_attr(rust_js, rust_js::class)]
+impl LoaderUtils { pub fn relative(&self) -> &'static str { "./" } }
+`, "is made by its constructor, `fn new(..) -> Self`, in its impl"],
+    ["function-class-unmade-with-static", `#[cfg_attr(rust_js, rust_js::class)]
+pub struct LoaderUtils {}
+#[cfg_attr(rust_js, rust_js::class)]
+impl LoaderUtils { pub fn relative() -> &'static str { "./" } }
+`, "is made by its constructor, `fn new(..) -> Self`, in its impl"],
     ["es-class-on-impl", unmarked.replace("#[cfg_attr(rust_js, rust_js::class)]\nimpl Plugin", "#[cfg_attr(rust_js, rust_js::class(es, fields))]\nimpl Plugin"), "impl is marked `#[rust_js::class]` alone: its struct's attribute says its form, `#[rust_js::class(es)]`"],
     ["es-class-of-another-word", unmarked.replace("rust_js::class(es, fields))]\npub struct", "rust_js::class(function))]\npub struct"), "is a constructor function, `#[rust_js::class]`, an ES class, `#[rust_js::class(es)]`, or one that declares its fields, `#[rust_js::class(es, fields)]`"],
     [
