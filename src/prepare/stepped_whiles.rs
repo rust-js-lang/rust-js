@@ -114,7 +114,7 @@ pub(super) fn counters(module: &mut js::Module) {
     let mut each = |stmts: &mut Vec<Stmt>| {
         let mut i = 0;
         while i + 1 < stmts.len() {
-            let step = counter_step(&stmts[i], &stmts[i + 1]);
+            let step = counter_step(&stmts[i], &stmts[i + 1], false);
             if let Some(op) = step
                 && let StmtKind::Const(_, read) | StmtKind::Let(_, Some(read)) = &mut stmts[i].kind
             {
@@ -142,7 +142,12 @@ pub(super) fn counters(module: &mut js::Module) {
     }
 }
 
-fn counter_step(read: &Stmt, write: &Stmt) -> Option<Op> {
+/// Of `read`, `const a = x;`, and `write`, `x = a + 1;`, the step, up or
+/// down; with `compound`, `x++` or `x += 1` too, which only an ES
+/// constructor's field assignment takes in (`inline_constructor_steps`):
+/// elsewhere the program's `const a = x; x++;` stays as it wrote it, as
+/// React's `act` does (#2079, ADR 0948, amended).
+fn counter_step(read: &Stmt, write: &Stmt, compound: bool) -> Option<Op> {
     let (name, read) = match &read.kind {
         StmtKind::Const(name, read) | StmtKind::Let(name, Some(read)) => (name, read),
         _ => return None,
@@ -156,7 +161,9 @@ fn counter_step(read: &Stmt, write: &Stmt) -> Option<Op> {
         },
         // A plain variable has no getter. Its second read sees the old
         // value too, so a previously formed compound can give that value.
-        StmtKind::Compound(op, target, amount) if matches!(read.kind, ExprKind::Var(_)) => (*op, target, amount),
+        StmtKind::Compound(op, target, amount) if compound && matches!(read.kind, ExprKind::Var(_)) => {
+            (*op, target, amount)
+        }
         _ => return None,
     };
     (matches!(op, Op::Add | Op::Sub)
@@ -172,6 +179,24 @@ fn counter_step(read: &Stmt, write: &Stmt) -> Option<Op> {
 fn inline_constructor_steps(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
+        // Its compound step, `const a = x; x++; this.id = a;`, is the
+        // field's: `this.id = x++;`, here alone (#2079).
+        if i + 2 < stmts.len()
+            && let Some(op) = counter_step(&stmts[i], &stmts[i + 1], true)
+            && let StmtKind::Const(name, _) = &stmts[i].kind
+            && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
+            && matches!(&target.kind, ExprKind::Member(receiver, _) if matches!(receiver.kind, ExprKind::This))
+            && matches!(&value.kind, ExprKind::Var(read) if read == name)
+            && js::mentions_of(&stmts[i + 3..], name) == 0
+            && let StmtKind::Const(_, read) = &stmts[i].kind
+        {
+            let stepped = Expr::stepped(op, read.clone()).or_at(read.span);
+            if let StmtKind::Assign(_, value) = &mut stmts[i + 2].kind {
+                *value = stepped;
+            }
+            stmts.drain(i..i + 2);
+            continue;
+        }
         let step = match (&stmts[i].kind, &stmts[i + 1].kind) {
             (StmtKind::Const(name, step), StmtKind::Assign(target, value))
                 if matches!(step.kind, ExprKind::Stepped(..))

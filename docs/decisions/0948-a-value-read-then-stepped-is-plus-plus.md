@@ -60,3 +60,17 @@ effects. The case of ADR 0262 remains N.
 
 The constructor test checks the emitted assignment and the counter
 sequence, including a constructor that uses its old value twice.
+
+Amended (2026-11-18, the lead): the compound step is a postfix update in
+that field alone. As #2079 first landed, `counters` took `x++` and `x +=
+1` as a step everywhere, so a program's own `const a = x; x++;` became
+`const a = x++;`: React's `act` printed `const prevActScopeDepth =
+actScopeDepth++;` where upstream writes the two statements, and four
+corpus snapshots moved. Now `counters` reads only `x = a + 1`, as this ADR
+decided, and `inline_constructor_steps` takes `const a = x; x++; this.id
+= a;` into `this.id = x++;` itself (`counter_step`'s `compound`). Rows:
+test/class-constructors.test.ts' "a constructor field keeps a counter step
+in its assignment", with `act`'s shape kept two statements and a
+constructor of the `get` and `set` form whose old value is read twice.
+Mutations `compound-counter-folded-everywhere` and
+`post-step-constructor-compound-reused`, caught.

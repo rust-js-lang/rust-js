@@ -4,7 +4,7 @@ Changed on 2026-11-18: the constructor binding regression checks direct JavaScri
 
 Changed on 2026-11-18: the argument regression checks JavaScript default syntax, arity, null, undefined, and fallbacks that read later arguments or have effects.
 
-Changed on 2026-11-18: the constructor counter regression holds a postfix increment beside its field assignment and preserves the old value when another field needs it.
+Changed on 2026-11-18: the constructor counter regression holds a postfix increment beside its field assignment and preserves the old value when another field needs it; it also holds a function's own read-then-step as two statements, React's `act`, and a constructor of the `get`/`set` form whose old value is read twice.
 
 Changed on 2026-11-18: the constructor field-comment regression holds the original JSDoc beside each emitted assignment in an ES class.
 

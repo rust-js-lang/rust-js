@@ -83,8 +83,8 @@ export const mutations: Mutation[] = [
     name: "post-step-compound-unrecognized",
     breaks: "a counter increment formed from Cell::replace keeps its separate read and write",
     file: "src/prepare/stepped_whiles.rs",
-    find: "        StmtKind::Compound(op, target, amount) if matches!(read.kind, ExprKind::Var(_)) => (*op, target, amount),\n",
-    replace: "",
+    find: "        StmtKind::Compound(op, target, amount) if compound && matches!(read.kind, ExprKind::Var(_)) => {\n",
+    replace: "        StmtKind::Compound(op, target, amount) if false => {\n",
     tests: ["test/class-constructors.test.ts", "-t", "keeps a counter step"],
   },
   {
@@ -94,5 +94,21 @@ export const mutations: Mutation[] = [
     find: "                    && js::mentions_of(&stmts[i + 2..], name) == 0 =>\n",
     replace: "                    =>\n",
     tests: ["test/class-constructors.test.ts", "-t", "keeps a counter step"],
+  },
+  {
+    name: "compound-counter-folded-everywhere",
+    breaks: "a program's own `const a = x; x++;` is folded to `const a = x++;` outside a constructor's field, as React's `act` printed `const prevActScopeDepth = actScopeDepth++;` where upstream writes the two statements (#2079's fold, the constructor's alone)",
+    file: "src/prepare/stepped_whiles.rs",
+    find: "            let step = counter_step(&stmts[i], &stmts[i + 1], false);\n",
+    replace: "            let step = counter_step(&stmts[i], &stmts[i + 1], true);\n",
+    tests: ["test/class-constructors.test.ts", "-t", "counter step"],
+  },
+  {
+    name: "post-step-constructor-compound-reused",
+    breaks: "a constructor takes a compound step into its field where the old value is read again, `let first = ID.replace(..); Self { first, second: first }`, whose `second` would read the variable stepped (#2079)",
+    file: "src/prepare/stepped_whiles.rs",
+    find: "            && js::mentions_of(&stmts[i + 3..], name) == 0\n",
+    replace: "",
+    tests: ["test/class-constructors.test.ts", "-t", "counter step"],
   },
 ];

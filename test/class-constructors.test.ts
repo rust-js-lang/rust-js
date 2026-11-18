@@ -340,10 +340,40 @@ impl Pair {
         Self { first, second: first }
     }
 }
+
+// Read, then set one more, a counter's \`x++\` itself (ADR 0948), its old
+// value read twice.
+#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct Twice {
+    pub a: f64,
+    pub b: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Twice {
+    pub fn new() -> Self {
+        let a = STAGE_ID.get();
+        STAGE_ID.set(a + 1.0);
+        Self { a, b: a }
+    }
+}
+
+// React's \`act\`: a function's own read, then step, as written.
+pub fn entered() -> f64 {
+    let prev_depth = STAGE_ID.get();
+    STAGE_ID.set(STAGE_ID.get() + 1.0);
+    prev_depth * 10.0
+}
 `);
   expect(js).toContain("this.id = stageId++;");
+  // Only a constructor's field takes the compound step: React's \`act\`
+  // keeps \`const prevActScopeDepth = actScopeDepth; actScopeDepth++;\`.
+  expect(js).toContain("  const prevDepth = stageId;\n  stageId++;\n");
   const lib = await import(join(dir, "lib.js"));
   expect([new lib.Stage().id, new lib.Stage().id]).toEqual([0, 1]);
   expect(new lib.Pair()).toMatchObject({ first: 2, second: 2 });
   expect(new lib.Stage().id).toBe(3);
+  expect([lib.entered(), new lib.Stage().id]).toEqual([40, 5]);
+  expect(new lib.Twice()).toMatchObject({ a: 6, b: 6 });
+  expect(new lib.Stage().id).toBe(7);
 });
