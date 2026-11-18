@@ -7,7 +7,6 @@
 //! property JS makes, which no `Object.keys` lists, where `this.message =`
 //! would make one it does. Every other field is set after, in Rust's order.
 
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Prop, Stmt, StmtKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
@@ -86,11 +85,6 @@ pub(super) fn super_of_fields(
         matches!(&stmt.kind, StmtKind::Assign(Expr { kind: ExprKind::Member(object, key), .. }, _)
             if key == name && matches!(object.kind, ExprKind::This))
     };
-    // A held value's name is none of the body's.
-    let mut names: IndexSet<String> = IndexSet::default();
-    for name in js::names_of(body) {
-        names.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
-    }
     let (mut message, mut cause) = (None, None);
     let mut before = Vec::new();
     let mut after = Vec::new();
@@ -121,7 +115,13 @@ pub(super) fn super_of_fields(
             ExprKind::Member(_, key) if key == MESSAGE => message = Some(value),
             ExprKind::Member(_, key) if key == CAUSE => cause = Some(value),
             ExprKind::Member(_, key) if value.has_effects() => {
-                let held = js::Name::declared(fresh(&mut names, key));
+                // Named after the field, `code`, else `code1` .. `code7`,
+                // else given apart, `code$1`, as preparation spells it
+                // apart from the body's names (`Name::suggested`, #2048).
+                let preferred = std::iter::once(key.clone())
+                    .chain((1..8).map(|n| format!("{key}{n}")))
+                    .collect();
+                let held = js::Name::declared(key.clone()).suggested(preferred, key);
                 before.push(StmtKind::Const(held.clone(), value).at(span));
                 after.push(StmtKind::Assign(target, Expr::var(&held)).at(span));
             }
@@ -151,17 +151,4 @@ pub(super) fn super_of_fields(
 fn sets_this(stmt: &Stmt) -> bool {
     matches!(&stmt.kind, StmtKind::Assign(Expr { kind: ExprKind::Member(object, _), .. }, _)
         if matches!(object.kind, ExprKind::This))
-}
-
-/// A name of `base` no other in `names` is, now taken.
-fn fresh(names: &mut IndexSet<String>, base: &str) -> String {
-    let name = (0..)
-        .map(|n| match n {
-            0 => base.to_owned(),
-            n => format!("{base}{n}"),
-        })
-        .find(|name| !names.contains(name))
-        .expect("a free name");
-    names.insert(name.clone());
-    name
 }

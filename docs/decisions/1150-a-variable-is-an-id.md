@@ -1516,3 +1516,41 @@ either
 word, asks by `Name` now; its two callers compare ids, an answer probed
 old against new at both over `check:fast --all` and React's port: 55,440
 calls over the corpus alone, none disagreeing.
+
+## Amendment (2026-11-18): the last pickers of a word before preparation (#2048)
+
+Lowering still picked a JS word itself, from a table of the words around
+it, in eight places. Each now makes a name not spelled yet that preparation
+spells under JS's scopes, and its table goes:
+
+- `Name::spelled_apart`: a name again, not spelled yet, its `k` its own id,
+  its form kept, a JS keyword escaped as `fresh_in` escaped it (`eval$`);
+  `made_apart` is one line of it.
+- A scope struct's method's function (`Scopes::function_names`): the
+  program's, `spelled_apart`. Its word stays in lowering's own table, which
+  `FnCx::fresh` keeps, so no local lowering names after a call takes it.
+- An applied body's holder: `Name::derived_apart(of)`, its `k` a fresh id,
+  no table; `in_place` no longer takes what's `beside` the body, which only
+  that table read.
+- A drop flag named again (`suffixed_again`): its `k` a fresh id, no table,
+  in tidy and in `prepare::temporaries` alike.
+- A held field of an error's constructor: `suggested([code, code1 ..
+  code7], code)`; an unread parameter of an eager iterator: `suggested(["_",
+  "__", ..], "_")`; what a `take()` held, `old`, and a flattened state's
+  written part: `spelled_apart`.
+- A copy's local named for its call (`keep_apart`): gone, as preparation's
+  names keep it apart; its mutation retired, nothing testing it.
+
+The program's names outrank a made one: `prepare::temporaries` counts the
+program's names not spelled yet as the words they'll take. Not changed: an `on_load!` body's locals, the
+program's, which lowering spells beside an earlier body's at the module's
+top, keep that table (the design had dropped it; two bodies binding one
+name then declared it twice).
+
+No corpus snapshot moves. Mutations: `spelled-apart-keyword-unescaped`,
+`scope-function-words-untaken`,
+`temporary-takes-the-programs-unspelled-word`; re-anchored to the forms
+that replace the tables: `scope-function-names-unreserved`,
+`in-place-spills-share-a-name`, `enumerate-unread-item-named-as-accumulator`,
+`temporary-takes-a-word-reclaimed`, `temporary-flags-of-the-old-word`,
+`applied-imported-refused`.

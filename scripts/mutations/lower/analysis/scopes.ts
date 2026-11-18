@@ -138,4 +138,22 @@ export const mutations: Mutation[] = [
     replace: "    if (def.all_fields())",
     tests: scopes,
   },
+  {
+    name: "scope-function-names-unreserved",
+    breaks: "a scope struct's method's function is named as its method, not spelled by preparation apart from what its scope reads: its JS keyword unescaped, `function eval(..)`, which JS can't bind (#2048), and a variable of its function, `resolve`, could hide it",
+    file: "src/lower/analysis/scopes.rs",
+    find: "                (method, crate::js::Name::program(word, 0).spelled_apart())\n",
+    replace: "                (method, crate::js::Name::program(word, 0))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(scope_struct.*|interpreter)\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "scope-function-words-untaken",
+    breaks: "a scope struct's functions' words aren't in lowering's table, so a local named after a call takes one, `const named$1 = named(\"a\")`, `function resolve$1` beside `const resolve`, the program's pushed apart (#2048)",
+    file: "src/lower/analysis/scopes.rs",
+    find: "                taken.insert(crate::names::js_ident(&word)); // word: a naming table's, lowering's, its scope's functions'\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(mut_ref_held_written_whole|scope_struct_functions)\\.rs$"],
+    snapshots: true,
+  },
 ];

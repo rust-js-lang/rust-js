@@ -113,6 +113,28 @@ impl<'tcx> Scopes<'tcx> {
         self.scopes.iter().filter(move |s| s.function == function)
     }
 
+    /// Each method of `function`'s scope structs, a function the program
+    /// declares in it (ADR 1043), named `name_of` it and spelled by
+    /// preparation apart from what its scope reads (`Name::spelled_apart`),
+    /// so none of its variables hides it; its word in `taken`, the table of
+    /// words lowering picks a local's apart from, so none takes it, which
+    /// the program's would then push apart (#2048).
+    pub(crate) fn function_names(
+        &self,
+        function: DefId,
+        name_of: impl Fn(DefId) -> String,
+        taken: &mut IndexSet<String>,
+    ) -> IndexMap<DefId, crate::js::Name> {
+        (self.of_function(function))
+            .flat_map(|scope| scope.methods.iter())
+            .map(|&method| {
+                let word = name_of(method);
+                taken.insert(crate::names::js_ident(&word)); // word: a naming table's, lowering's, its scope's functions'
+                (method, crate::js::Name::program(word, 0).spelled_apart())
+            })
+            .collect()
+    }
+
     /// The scope `method` is a method of, if any.
     pub(crate) fn of_method(&self, method: DefId) -> Option<&Scope<'tcx>> {
         self.scopes.iter().find(|s| s.methods.contains(&method))

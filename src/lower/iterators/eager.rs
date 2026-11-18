@@ -46,22 +46,14 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
     // index is read, or `__` where the accumulator is `_` already, JS
     // binding a name once in a parameter list, and none of the body's,
     // which it would take.
+    // Spelled by preparation apart from the body's names and the others
+    // the list binds, `_`, else `__`, .. (`Name::suggested`, #2048).
     let unread = || {
-        let named = |n: &str| leading.iter().any(|p| matches!(p, js::Pattern::Name(l) if l.is(n)));
-        let mut taken: crate::collections::IndexSet<String> = Default::default();
-        for name in js::names_of(body) {
-            taken.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
-        }
-        (1..)
-            .map(|k| "_".repeat(k))
-            .find(|n| !named(n) && !taken.contains(n))
-            .expect("a name")
+        let preferred = (1..7).map(|k| "_".repeat(k)).collect();
+        js::Name::declared("_".to_string()).suggested(preferred, "_")
     };
     let mut params = leading.to_vec();
-    params.push(
-        item.clone()
-            .unwrap_or_else(|| js::Pattern::Name(js::Name::declared(unread()))),
-    );
+    params.push(item.clone().unwrap_or_else(|| js::Pattern::Name(unread())));
     params.extend(index.map(js::Pattern::Name));
     Ok((
         (**source).clone(),

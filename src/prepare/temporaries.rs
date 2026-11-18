@@ -69,7 +69,13 @@ pub(super) fn spelled(module: &mut js::Module) {
                     tree.as_ref().is_some_and(|tree| {
                         !tree.shadows(from, to)
                             && tree.renames(from, to)
-                            && !tree.reclaims_to(from, &|name| name.apart_of().is_some_and(|(of, _)| of == to))
+                            && !tree.reclaims_to(from, &|name| {
+                                name.apart_of().is_some_and(|(of, _)| of == to)
+                                    // And one of the program's not spelled
+                                    // yet, a scope's function, which it's
+                                    // spelled (#2048).
+                                    || (name.is_the_programs() && name.made_base() == Some(to))
+                            })
                     }) && !reclaimed.contains(to)
                 });
             let to = match (to, &mut tree) {
@@ -105,9 +111,7 @@ pub(super) fn spelled(module: &mut js::Module) {
                 && !flags.contains_key(name)
                 && let Some(source) = respelled.iter().find(|source| source.is_origin_of(name))
             {
-                let to = name.suffixed_again(source, &words);
-                words.insert(to.word().to_string());
-                flags.insert(name.clone(), to);
+                flags.insert(name.clone(), name.suffixed_again(source));
             }
         });
         names_mut(item, true, &mut |name| {

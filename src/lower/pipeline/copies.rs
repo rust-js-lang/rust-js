@@ -105,7 +105,6 @@ pub(super) fn settle(
     let lowered = (items.iter_mut()).chain(made.iter_mut()).map(|(id, item)| (*id, item));
     for (id, item) in lowered {
         if !renamed.is_empty() {
-            keep_apart(&mut item.function, fns[&id].module, &renamed);
             rename(&mut item.function, fns[&id].module, &renamed);
         }
         // A call of one made alike another, a call of that one, imported by
@@ -155,46 +154,6 @@ fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, 
 /// A module's function as `renamed` has it, by its word.
 fn named(module: LocalModId, name: &js::Name) -> Named {
     (module, None, name.word().to_string()) // word: a module's function, which its word names
-}
-
-/// Each local of `function`, of a module's `module`, of the name a copy it
-/// calls is `renamed` to, named apart, so the call reads the function it's
-/// alike, not the local: chrono's `parse` named its result for its call of
-/// `parseInternalUnboxed` (ADR 0569) before that became `parseInternal`,
-/// `const parseInternal = parseInternal(..)`, which threw where it's made
-/// (#467). One named apart is `parseInternal$1`, as tidy names one.
-fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) {
-    let mut called = IndexSet::default();
-    js::function_exprs_mut(function, &mut |e| {
-        if let ExprKind::Var(name) = &e.kind
-            && let Some((to, _)) = renamed.get(&named(module, name))
-        {
-            called.insert(to.clone());
-        }
-    });
-    // The words its locals are spelled, and every word it names, which one
-    // named apart mustn't be.
-    let mut declared = IndexSet::default();
-    for local in js::declared_variables(function) {
-        declared.insert(local.word().to_owned()); // word: a local spelled as a copy's name, which JS would read
-    }
-    let mut taken: IndexSet<String> = declared.clone();
-    for name in js::names_of(&function.body) {
-        taken.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
-    }
-    taken.extend(renamed.values().map(|(to, _)| to.clone()));
-    let mut called: Vec<String> = called.into_iter().filter(|to| declared.contains(to)).collect();
-    called.sort();
-    for to in called {
-        let apart = crate::names::fresh_in(&mut taken, &to);
-        // Each local spelled so, by its id, its declaration and reads.
-        for local in js::declared_variables(function)
-            .into_iter()
-            .filter(|local| local.is(&to))
-        {
-            js::respelled_in(function, &local, &apart);
-        }
-    }
 }
 
 /// Each call of a copy in `function`, of a module's `module`, named as the

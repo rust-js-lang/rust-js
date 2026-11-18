@@ -71,11 +71,8 @@ pub(in crate::lower::mir::tidy) fn handles_in_place(body: &mut Vec<Stmt>) {
 /// `read_handles`' where it makes one of a declared handle where tidy's
 /// stages run again, after `handles_in_place` (#779, #784).
 fn written_whole_in_place(body: &mut Vec<Stmt>) {
-    // Each a name of its own, as two such writes may be in one list (#687).
-    let mut taken: IndexSet<String> = IndexSet::default();
-    for name in js::names_of(body) {
-        taken.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
-    }
+    // Each a name of its own, as two such writes may be in one list (#687),
+    // spelled by preparation apart from what its scope reads (#2048).
     // A closure's write too (#482).
     js::each_block_mut(body, &mut |stmts| {
         let mut out = Vec::with_capacity(stmts.len());
@@ -88,7 +85,7 @@ fn written_whole_in_place(body: &mut Vec<Stmt>) {
                     place,
                     value.clone(),
                     &mut |name, value, out| {
-                        let fresh = js::Name::declared(crate::names::fresh_in(&mut taken, name));
+                        let fresh = js::Name::declared(name.to_string()).spelled_apart();
                         out.push(StmtKind::Const(fresh.clone(), value).at(stmt.span));
                         Expr::var(fresh)
                     },

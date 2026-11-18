@@ -301,8 +301,22 @@ impl Name {
     /// its item has, so preparation spells it alone, apart from what its
     /// scope reads (`prepare::reclaim::spelled`, ADR 1150).
     pub fn made_apart(base: &str) -> Name {
+        Name::declared(base.to_string()).spelled_apart()
+    }
+
+    /// It again, of its form, not spelled yet, `old#12` of `old`: its `k`
+    /// its own id, which no other made name of its item has, so
+    /// preparation spells it, its word where its scope lets it be, else
+    /// given apart, `old$1`, as it spells any name a pass made, where a
+    /// pass picked one from a table of words before (`prepare::reclaim::
+    /// spelled`, ADR 1150). Of the program's form, its reclaimed names
+    /// outrank it, as theirs, as a scope's function's (#2048).
+    pub fn spelled_apart(&self) -> Name {
         let id = Id::fresh();
-        Name(crate::names::made(base, id.0 as usize), Of::Item, id, Id::WORD, None)
+        // A JS keyword as JS can bind it, `eval$` of `eval`, as `fresh_in`
+        // spelled it.
+        let base = crate::names::js_ident(crate::names::made_base(&self.0).unwrap_or(&self.0));
+        Name(crate::names::made(&base, id.0 as usize), self.1, id, Id::WORD, None)
     }
 
     /// It again, not spelled yet, `value#12` of its role's word `base`,
@@ -445,10 +459,11 @@ impl Name {
         Name(word, Of::Suffixed(suffix), Id::fresh(), origin, None)
     }
 
-    /// It again, of `source`, its parts and suffix as they are, the first
-    /// whose word none of `taken` is: a flag named for the variable its
-    /// drop is of once tidy knows it (`suffixed`).
-    pub fn suffixed_again(&self, source: &Name, taken: &crate::collections::IndexSet<String>) -> Name {
+    /// It again, of `source`, its parts and suffix as they are, its `k` its
+    /// own id, which no other made name of its item has: a flag named for
+    /// the variable its drop is of once tidy knows it (`suffixed`), which
+    /// preparation spells (#2048).
+    pub fn suffixed_again(&self, source: &Name) -> Name {
         let Of::Suffixed(suffix) = self.1 else {
             unreachable!("a suffixed name")
         };
@@ -458,10 +473,11 @@ impl Name {
             .filter(|part| !part.is_empty())
             .map(str::to_string)
             .collect();
-        (1..)
-            .map(|k| Name::suffixed(Ok(source), &parts, suffix, k))
-            .find(|name| !taken.contains(&name.0))
-            .expect("a word nothing has")
+        let id = Id::fresh();
+        Name {
+            2: id,
+            ..Name::suffixed(Ok(source), &parts, suffix, id.0 as usize)
+        }
     }
 
     /// What a name `suffixed` makes of it begins with: what it's of, without
@@ -491,13 +507,15 @@ impl Name {
         self.3 != Id::WORD
     }
 
-    /// The first holder of `source` (`derived`) whose word none of `taken`
-    /// is: one of a tree's own, outside lowering's naming table.
-    pub fn derived_apart(source: &Name, taken: &crate::collections::IndexSet<String>) -> Name {
-        (1..)
-            .map(|k| Name::derived(source, k))
-            .find(|name| !taken.contains(&name.0))
-            .expect("a word nothing has")
+    /// A holder of `source` (`derived`), its `k` its own id, which no other
+    /// made name of its item has, so preparation spells it apart from what
+    /// its scope reads, with no table of words (#2048).
+    pub fn derived_apart(source: &Name) -> Name {
+        let id = Id::fresh();
+        Name {
+            2: id,
+            ..Name::derived(source, id.0 as usize)
+        }
     }
 
     /// Whether `derived` was made of it (`derived`): by its id, or of a name

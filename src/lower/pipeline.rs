@@ -522,10 +522,12 @@ pub fn lower_crate<'tcx>(
         let module = fns[&def_id].module;
         // Locals must never shadow a function or an import of this file; an
         // `on_load!` body's are at its top, beside an earlier body's, which
-        // they mustn't be either (ADR 0267). Not its recursive types'
-        // functions' (`recursive_fns`), made after: a local of one's word
-        // that reads it is given apart from it where the module is prepared,
-        // as from any of the module's names its scope reads (ADR 1150).
+        // they mustn't be either (ADR 0267): the program's locals, which
+        // lowering spells, not names preparation spells apart (#2048). Not
+        // its recursive types' functions' (`recursive_fns`), made after: a
+        // local of one's word that reads it is given apart from it where the
+        // module is prepared, as from any of the module's names its scope
+        // reads (ADR 1150).
         let mut names = taken[&module].clone();
         if super::bindings::is_on_load(tcx, def_id) {
             let earlier = lowered_items
@@ -534,17 +536,8 @@ pub fn lower_crate<'tcx>(
             let declared = earlier.flat_map(|(_, item)| item.function.body.iter().flat_map(js::declared_here));
             names.extend(declared.map(|name| name.word().to_owned())); // word: a naming table's, of what the module's top declares
         }
-        // A function's scope struct's methods, functions declared in it, by
-        // names none of its variables hide (ADR 1043).
-        let scope_functions: IndexMap<DefId, js::Name> = (scopes.of_function(def_id))
-            .flat_map(|scope| scope.methods.iter())
-            .map(|&method| {
-                (
-                    method,
-                    js::Name::program(crate::names::fresh_in(&mut names, &fns[&method].name), 0),
-                )
-            })
-            .collect();
+        // A function's scope struct's methods, functions declared in it (ADR 1043).
+        let scope_functions = scopes.function_names(def_id, |method| fns[&method].name.clone(), &mut names);
         let mut cx = contexts::fn_cx(
             (&shared, &settled),
             (def_id, body, copy),

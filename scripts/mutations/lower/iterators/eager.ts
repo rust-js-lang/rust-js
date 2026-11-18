@@ -27,9 +27,10 @@ export const mutations: Mutation[] = [
     breaks:
       "`fold(0, |_, (i, _)| i)` is `reduce((_, _, i) => i, 0)`, a SyntaxError: `_` bound twice",
     file: "src/lower/iterators/eager.rs",
-    find: "            .find(|n| !named(n) && !taken.contains(n))\n",
-    replace: "            .find(|n| !taken.contains(n))\n",
+    find: "        let preferred = (1..7).map(|k| \"_\".repeat(k)).collect();\n        js::Name::declared(\"_\".to_string()).suggested(preferred, \"_\")\n",
+    replace: "        js::Name::declared(\"_\".to_string())\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_fold.rs$"],
+    snapshots: true,
   },
   {
     name: "map-for-each-nothing-kept",

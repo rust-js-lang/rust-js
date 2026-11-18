@@ -52,15 +52,6 @@ export const mutations: Mutation[] = [
     tests: ["test/namespaces.test.ts", "-t", "unlike its own JS"],
   },
   {
-    name: "copy-target-shadowed",
-    breaks:
-      "a local named for its call of a copy (ADR 0569), `parseInternal` of `parseInternalUnboxed(..)`, keeps its name once the call is of the function the copy is alike, `const parseInternal = parseInternal(..)`, which throws where it's made, chrono's `parse` (#467)",
-    file: "src/lower/pipeline/copies.rs",
-    find: "            keep_apart(&mut item.function, fns[&id].module, &renamed);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^copy_call_named_for_its_function\\.rs$"],
-  },
-  {
     name: "merged-copy-read-by-local-name",
     breaks: "a copy alike its function's own JS, read through its module's namespace, is renamed to the function's name in its module, `Lazy.new$`, not what the module exports it as, `new`, so the call throws, \"Lazy.new$ is not a function\" (#1390)",
     file: "src/lower/pipeline/copies.rs",

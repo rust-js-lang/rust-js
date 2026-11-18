@@ -111,4 +111,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
     snapshots: true,
   },
+  {
+    name: "spelled-apart-keyword-unescaped",
+    breaks: "a name made apart of a JS keyword's word, a scope struct's `eval` method, is spelled `eval$1` where `fresh_in` wrote `eval$`, JS's binding of it (#2048)",
+    file: "src/js/name.rs",
+    find: "        let base = crate::names::js_ident(crate::names::made_base(&self.0).unwrap_or(&self.0));\n",
+    replace: "        let base = crate::names::made_base(&self.0).unwrap_or(&self.0).to_string();\n",
+    tests: ["test/corpus.test.ts", "-t", "^interpreter\\.rs$"],
+    snapshots: true,
+  },
 ];

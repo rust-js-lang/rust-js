@@ -263,12 +263,9 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
             i += 2;
             continue;
         }
-        let mut names: IndexSet<String> = IndexSet::default();
-        for name in js::names_of(stmts) {
-            names.insert(name.word().to_owned()); // word: a naming table's, which picks a spelling
-        }
-        // What it held, named apart from what's here: declared once.
-        let old = js::Name::declared(crate::lower::fresh_in(&mut names, "old"));
+        // What it held, spelled by preparation apart from what's here,
+        // `old`, else `old$1`: declared once (#2048).
+        let old = js::Name::declared("old".to_string()).spelled_apart();
         let slot = match &mut stmts[i].kind {
             StmtKind::Return(Some(e)) | StmtKind::Expr(e) | StmtKind::Assign(_, e) => e,
             StmtKind::ForOf { iterable, .. } => iterable,

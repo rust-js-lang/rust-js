@@ -4,7 +4,6 @@
 //! 0840).
 
 use super::*;
-use crate::collections::IndexSet;
 
 mod tried;
 pub use tried::{applied_tried, tried_extent, tried_set_where_made};
@@ -200,7 +199,7 @@ fn block_of(stmt: &Stmt, whole: &[Stmt], tail: bool, hold: bool, leaves: bool) -
         }
         body = broken;
     }
-    in_place(stmt, whole, &[], (params, args), body, hold)
+    in_place(stmt, whole, (params, args), body, hold)
 }
 
 /// `return ((d) => { .. return v; .. })(x);`, a closure called where it's
@@ -220,7 +219,7 @@ fn returned_block(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     let ExprKind::Arrow(params, body) = &callee.kind else {
         return None;
     };
-    in_place(stmt, whole, &[], (params, args), body.clone(), true)
+    in_place(stmt, whole, (params, args), body.clone(), true)
 }
 
 /// The statements `stmt` is, in `whole`, the function's body, where what
@@ -244,13 +243,7 @@ fn value_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     if !matches!(last.kind, StmtKind::Return(Some(_))) || returns(before).0 {
         return None;
     }
-    // What else the statement reads or declares, which what the body
-    // declares beside it mustn't be either: `const x` of `const x = v`.
-    let mut beside = stmt.clone();
-    if let Some(call) = first_call(&mut beside) {
-        *call = Expr::js_undefined();
-    }
-    let mut inlined = in_place(stmt, whole, &[beside], (params, args), body.clone(), true)?;
+    let mut inlined = in_place(stmt, whole, (params, args), body.clone(), true)?;
     let Some(Stmt {
         kind: StmtKind::Return(Some(value)),
         ..
@@ -313,8 +306,7 @@ fn tested_of(stmts: &[Stmt], at: usize, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     if !leaves(&yes) || !leaves(&no) || mentions_of(whole, name) != 1 {
         return None;
     }
-    let beside = StmtKind::Const(name.clone(), Expr::js_undefined()).at(stmts[at].span);
-    let inlined = in_place(&stmts[at], whole, &[beside], (params, args), body.clone(), true)?;
+    let inlined = in_place(&stmts[at], whole, (params, args), body.clone(), true)?;
     let replaced = returns_replaced(&inlined, &|value, _| match value.kind {
         ExprKind::Bool(true) => Some(yes.clone()),
         ExprKind::Bool(false) => Some(no.clone()),
@@ -357,14 +349,7 @@ fn set_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
         return None;
     }
     let declared = StmtKind::Let(name.clone(), None).at(stmt.span);
-    let inlined = in_place(
-        stmt,
-        whole,
-        std::slice::from_ref(&declared),
-        (params, args),
-        body.clone(),
-        true,
-    )?;
+    let inlined = in_place(stmt, whole, (params, args), body.clone(), true)?;
     // Not where the body names `x`, a block's own, which its sets would
     // be of: lowering names such a block's `x` apart, `x$1`, as JS's `const
     // x` isn't made until the call's done.
@@ -464,16 +449,14 @@ pub fn read_where_made(stmts: &mut Vec<Stmt>, name: &Name) {
 /// `body`, of a closure of `params` called with `args` where `stmt` is in
 /// `whole`, the function's body, in the call's place: its parameter read
 /// as what it's given, a variable or a path of one that reads the same;
-/// `None` where what it declares at its top is another name of the
-/// function's, or of what's `beside` it in `stmt`, or the variable given,
-/// or the parameter can't be read so. A closure of none, called with
+/// `None` where the parameter can't be read so; what it declares at its
+/// top is spelled by preparation apart from what its scope has (#2048). A closure of none, called with
 /// nothing, is its body as it is; and a parameter after the first that the
 /// body never reads, a generic `Drop`'s drop of its `F` (ADR 0163), is
 /// given nothing, of what's given it of no effects (ADR 0608, amended).
 fn in_place(
     stmt: &Stmt,
     whole: &[Stmt],
-    beside: &[Stmt],
     (params, args): (&[Pattern], &[Expr]),
     mut body: Vec<Stmt>,
     hold: bool,
@@ -499,55 +482,34 @@ fn in_place(
     // Or, of a closure called where it's made, a thread-local made where
     // it's first used, `x()` (ADR 0037, amended): held first, `const cell =
     // x();`, as the call reads it before its body runs.
-    let (given, held) = match parameter {
-        None => (None, false),
+    let held = match parameter {
+        None => false,
         Some((param, arg)) => match &arg.kind {
-            ExprKind::Var(name) => (Some(name), false),
-            ExprKind::Member(of, _)
-                if arg.reads_same()
-                    && let ExprKind::Var(name) = &of.kind =>
-            {
-                (Some(name), false)
-            }
-            ExprKind::Symbol(_) => (None, false),
-            ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => (None, false),
+            ExprKind::Var(_) => false,
+            ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Var(_)) => false,
+            ExprKind::Symbol(_) => false,
+            ExprKind::Member(of, _) if arg.reads_same() && matches!(of.kind, ExprKind::Symbol(_)) => false,
             // A handle on such a place, a nullable thread-local's what a
             // `with_borrow_mut` lends (#541): its place where its `value`
             // is read, and written as the handle stores it.
             ExprKind::Handle(place, _)
                 if place.reads_same()
                     && let ExprKind::Member(of, _) = &place.kind
-                    && let ExprKind::Var(name) = &of.kind =>
+                    && matches!(of.kind, ExprKind::Var(_)) =>
             {
-                (Some(name), false)
+                false
             }
-            ExprKind::Call(callee, called) if hold && called.is_empty() && callee.is_named() => (None, true),
+            ExprKind::Call(callee, called) if hold && called.is_empty() && callee.is_named() => true,
             // What a body that never reads its parameter is given, of no
             // effects: nothing, `finishDrop({ value: _finish })` of a unit
             // struct's `Drop`, which reads no `self` (ADR 0608, amended).
-            _ if !arg.has_effects() && mentions_of(&body, param) == 0 => (None, false),
+            _ if !arg.has_effects() && mentions_of(&body, param) == 0 => false,
             _ => return None,
         },
     };
     if held && let Some((param, arg)) = parameter {
         body.insert(0, StmtKind::Const(param.clone(), arg.clone()).at(stmt.span));
     }
-    // The names beside the body in its place, which what it declares
-    // mustn't be: the function's others, what's beside it in `stmt`, the
-    // variable it's given, and what a held argument reads, `const x$1 =
-    // x();`, not `x`.
-    let names = || {
-        let mut others = whole.to_vec();
-        statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
-        let mut named = names_of(&others);
-        named.extend(names_of(beside));
-        if held && let Some((_, arg)) = parameter {
-            arg.visit_names(&mut |name| _ = named.insert(name.clone()));
-        }
-        let mut names: IndexSet<String> = given.into_iter().cloned().map(Name::into_word).collect(); // word: a naming table's
-        names.extend(named.iter().map(|name| name.word().to_owned())); // word: a naming table's, a holder's
-        names
-    };
     // A parameter the body sets, where a shadow of it was, `let held =
     // held.as_ref().unwrap();`, which tidy's `shadows` made `held =
     // $unwrap(held);` (ADR 0352): from that set on, a name of its own, as
@@ -572,8 +534,6 @@ fn in_place(
             return None;
         }
         let value = value.clone();
-        let mut mentioned = names();
-        mentioned.extend(names_of(&body).iter().map(|name| name.word().to_owned())); // word: a naming table's, a holder's
         // Of the parameter, by its id, spelled by preparation apart from
         // it, `held$1` of `held`, as lowering names a holder (`derived`,
         // ADR 1150), its word its own in the function.
@@ -590,7 +550,7 @@ fn in_place(
             _ => None,
         };
         let of = given.unwrap_or(param);
-        let to = Name::derived_apart(of, &mentioned);
+        let to = Name::derived_apart(of);
         let mut after = body.split_off(first + 1);
         super::stmt_walk::replaced(&mut after, param, &to);
         let again = Writes::sets(&after, &to);

@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary takes `next` beside the `next$7` lowering spelled, which reclaiming would make `next`: the program's names outrank a made one (ADR 0357, #1681)",
     file: "src/prepare/temporaries.rs",
-    find: "                            && !tree.reclaims_to(from, &|name| name.apart_of().is_some_and(|(of, _)| of == to))\n",
-    replace: "",
+    find: "                                name.apart_of().is_some_and(|(of, _)| of == to)\n",
+    replace: "                                false\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
     snapshots: true,
   },
@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a spilled value's drop flag keeps the word it was made of, `value$0$live` beside `tryLock`, not `tryLock$0$live` (#841)",
     file: "src/prepare/temporaries.rs",
-    find: "                flags.insert(name.clone(), to);\n",
-    replace: "                let _ = to;\n",
+    find: "                flags.insert(name.clone(), name.suffixed_again(source));\n",
+    replace: "                let _ = source;\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
     snapshots: true,
   },
@@ -79,5 +79,14 @@ export const mutations: Mutation[] = [
     find: "        apart_where_declared_again(item);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(drop_body_inlined_twice_in_a_block|field_drops_inlined_in_one_block)\\.rs$"],
+  },
+  {
+    name: "temporary-takes-the-programs-unspelled-word",
+    breaks: "a temporary takes the word a name of the program's not spelled yet, a scope's function, will be spelled, which then pushes it apart (#2048)",
+    file: "src/prepare/temporaries.rs",
+    find: "                                    || (name.is_the_programs() && name.made_base() == Some(to))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(format_args_order|scope_struct_functions|mut_ref_held_written_whole)\\.rs$"],
+    snapshots: true,
   },
 ];
