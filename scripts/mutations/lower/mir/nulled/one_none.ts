@@ -7,6 +7,14 @@ const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 
 export const mutations: Mutation[] = [
   {
+    name: "js-nones-outer-result-unread",
+    breaks: "optional contents of an object normalize a separately written outer null",
+    file: "src/lower/mir/nulled/one_none.rs",
+    find: " || self.local_has_stated_option(state, read, 0)",
+    replace: "",
+    tests: ["test/none-given.test.ts", "-t", "undefined-only object lookup"],
+  },
+  {
     name: "none-trusted-of-any-write",
     breaks: "a variable a call writes is taken to hold Rust's `None` as one only `Some(..)` or `None` writes does, so what the crate's function returns of JS's `null` is given on as it is (#1840)",
     file: "src/lower/mir/nulled/one_none.rs",

@@ -768,3 +768,49 @@ pub fn removed_or(has_entry: bool) -> f64 {
   expect([lib.missing(false), lib.missing(true)]).toEqual([true, true]);
   expect([lib.removedOr(false), lib.removedOr(true)]).toEqual([-1, 12]);
 });
+
+test("a return keeps written null beside an undefined-only object lookup", async () => {
+  const dir = fixture("written-null-and-object-lookup");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Dict, Unknown};
+
+type Data = Dict<Option<&'static Unknown>>;
+
+#[cfg_attr(rust_js, rust_js::link_name = "testLookup")]
+#[cfg_attr(rust_js, rust_js::none_undefined)]
+fn lookup() -> Option<&'static Data> {
+    unreachable!()
+}
+
+pub fn removed(has_entry: bool, post_lookup: fn()) -> Option<&'static Data> {
+    let mut value = js::null();
+    if has_entry {
+        value = lookup();
+        post_lookup();
+    }
+    value
+}
+
+pub fn is_missing(has_entry: bool, post_lookup: fn()) -> bool {
+    removed(has_entry, post_lookup).is_none()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const output = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(output).toContain("  return value;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const lookup = globalThis as typeof globalThis & { testLookup?: () => unknown };
+  const entry = { active: null };
+  try {
+    lookup.testLookup = () => { throw new Error("must not look up"); };
+    expect(lib.removed(false, () => {})).toBeNull();
+    expect(lib.isMissing(false, () => {})).toBe(true);
+    lookup.testLookup = () => undefined;
+    expect(lib.removed(true, () => {})).toBeUndefined();
+    expect(lib.isMissing(true, () => {})).toBe(true);
+    lookup.testLookup = () => entry;
+    expect(lib.removed(true, () => {})).toBe(entry);
+    expect(lib.isMissing(true, () => {})).toBe(false);
+  } finally {
+    delete lookup.testLookup;
+  }
+});

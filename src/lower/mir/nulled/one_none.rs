@@ -182,11 +182,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .nulled_params
                 .js_nones()
                 .holds_written_null(self.tcx, state.body, read)
+                || self.local_has_stated_option(state, read, 0)
         }) {
             return Ok(value);
         }
         let value = self.value_expr(value, span)?;
         Ok(Value::Expr(self.one_none_given(state, operand, value)))
+    }
+
+    /// Each whole write has a known outer representation. A binding may
+    /// give an object with optional fields even when its own outer option
+    /// has only an undefined missing value. Preserve that distinction at
+    /// the return without weakening the analysis of the object's contents.
+    fn local_has_stated_option(&self, state: &State<'_, 'tcx>, place: Place<'tcx>, depth: usize) -> bool {
+        if depth > 8
+            || (1..=state.body.arg_count).contains(&place.local.as_usize())
+            || !place.projection.is_empty()
+            || state.locals.changed[place.local]
+        {
+            return false;
+        }
+        if self.made_some_or_none(state, place, (0, false)) {
+            return true;
+        }
+        self.whole_writes(state, place.local).is_some_and(|writes| {
+            !writes.is_empty()
+                && writes.iter().all(|write| match write {
+                    Write::Call(_, function, _) => function.const_fn_def().is_some_and(|(id, _)| {
+                        bindings::is_js_null(self.tcx, id) || bindings::none_undefined_result(self.tcx, id)
+                    }),
+                    Write::Assign(Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _)) => {
+                        self.local_has_stated_option(state, *read, depth + 1)
+                    }
+                    _ => false,
+                })
+        })
     }
 
     /// `value`, what `operand` gives `place`, a struct's plain `Option`

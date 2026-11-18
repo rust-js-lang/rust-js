@@ -301,3 +301,10 @@ to Rust, the results-change case of ADR 0262.
 
 `test/none-given.test.ts` checks all three outcomes and the existing
 normalization of a null received from the caller.
+
+A binding that declares an undefined-only result can give an object
+with optional fields. At the return of a local that holds such a result
+next to an explicit null, the compiler checks each whole write of the
+outer option. The analysis of the object’s fields is unchanged. The
+object-lookup regression in `test/none-given.test.ts` checks both missing
+values and the identity of a present object.
