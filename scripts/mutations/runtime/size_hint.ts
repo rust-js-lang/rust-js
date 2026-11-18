@@ -56,7 +56,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/size_hint.js",
     find: "  return [0, $sizeHint(source)[1]];\n",
     replace: "  return [0, undefined];\n",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
+    snapshots: true,
   },
   {
     name: "take-zero-asks-source",

@@ -56,7 +56,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_range.js",
     find: "      if (passed > 0) at = Number(at) + passed * step;\n      return m - passed;\n",
     replace: "      for (let k = 0; k < passed; k++) at = Number(at) + step;\n      return m - passed;\n",
-    tests: ["test/corpus.test.ts", "-t", "^range_advanced_by_its_bounds\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^lazy_range_nth_given_to_generic_code.rs$"],
+    snapshots: true,
   },
   {
     name: "lazy-range-advanced-each",

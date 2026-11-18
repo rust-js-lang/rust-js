@@ -8,7 +8,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/cycle.js",
     find: "  const cycled = new $Steps(\n",
     replace: "  const cycled = ((next, close) => Iterator.from({ next, return: () => (close(), { done: true }) }))(\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^hint_kept_through_rev_take_and_cycle.rs$"],
+    snapshots: true,
   },
   {
     name: "cycle-of-none-gives-one",

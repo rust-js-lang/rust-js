@@ -41,7 +41,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/flat_map.js",
     find: "  $forward(flat, it, { fold, tryFold, count });\n",
     replace: "  $forward(flat, it, { tryFold, count });\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
+    snapshots: true,
   },
   {
     name: "flat-map-source-kept-at-its-end",

@@ -48,7 +48,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "      it.ownFold,\n      ends,\n",
     replace: "      false,\n      ends,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
+    snapshots: true,
   },
   {
     name: "closing-fold-steps",
@@ -80,7 +81,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "    rfold: it.rfold !== undefined ? rfold : undefined,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
+    snapshots: true,
   },
   {
     name: "closing-own-rfold-dropped-again",
@@ -88,7 +90,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "unwound(() => it.rfold(init, f, unwind, ends), it.ownRfold, ends)",
     replace: "unwound(() => it.rfold(init, f, unwind, ends), false, ends)",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
+    snapshots: true,
   },
   {
     name: "closing-held-closed-when-done",
@@ -96,7 +99,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "    if (step.done && !closing.held) close();\n",
     replace: "    if (step.done) close();\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fuse_holds_its_source_in_generic_code.rs$"],
+    snapshots: true,
   },
   {
     name: "closing-slice-from-back",
@@ -144,7 +148,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "    last: it.ownLast || intoIter ? last : undefined,\n",
     replace: "    last: intoIter ? last : undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^last_takes_its_source.rs$"],
+    snapshots: true,
   },
   {
     name: "closing-nth-drop-unpassed",
@@ -152,7 +157,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: " ? (k, dropItem) => done(it.nth(k, dropItem)) :",
     replace: " ? (k) => done(it.nth(k)) :",
-    tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_hides_own_iterator.rs$"],
+    snapshots: true,
   },
   {
     name: "closing-own-count-unforwarded",
@@ -160,7 +166,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "    count: it.ownCount || intoIter ? count : undefined,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
+    snapshots: true,
   },
   {
     name: "advance-slice-stops-at-a-panic",

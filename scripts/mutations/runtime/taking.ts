@@ -16,7 +16,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "      taking.n--;\n      return taking.iter.next();\n",
     replace: "      return taking.iter.next();\n",
-    tests: ["test/corpus.test.ts", "-t", "^counted_adapters_given.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_of_a_borrowed_iterator_where_addresses_are_asked.rs$"],
+    snapshots: true,
   },
   {
     name: "taking-rfold-untrimmed",
@@ -123,7 +124,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "    if (taking.n > 0) {\n      const step = taking.iter.nth(taking.n - 1, dropItem);\n      taking.n = 0;\n      if (!step.done) dropItem?.(step.value);\n    }\n",
     replace: "    taking.n = 0;\n",
-    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
+    snapshots: true,
   },
   {
     name: "take-own-nth-needs-item-drop",
@@ -155,7 +157,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true), ends);\n",
     replace: "    const folded = $Steps.prototype.fold.call(taking, init, g, unwind, ends);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(skip_take_own_nth).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fold_whose_rest_panics_as_dropped_leaks_its_result.rs$"],
+    snapshots: true,
   },
   {
     name: "take-fold-source-kept",
@@ -195,7 +198,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "    const counted = k === 0 ? 0 : $consumed(taking, () => k - $advanceByOf(taking.iter, k, dropItem));\n",
     replace: "    const counted = taking.fold(0, (c) => c + 1);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(skip_take_own_nth).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_chains.rs$"],
+    snapshots: true,
   },
   {
     name: "take-count-unconsumed",
@@ -203,7 +207,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "    const counted = k === 0 ? 0 : $consumed(taking, () => k - $advanceByOf(taking.iter, k, dropItem));\n",
     replace: "    const counted = k === 0 ? 0 : k - $advanceByOf(taking.iter, k, dropItem);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(chain_side_panics_drops_the_other).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rev_take_count_drops_a_slice.rs$"],
+    snapshots: true,
   },
   {
     name: "take-held-limit-closes",
@@ -219,7 +224,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "    return taking.held ? done : $closed(taking.iter);\n  };",
     replace: "    return $closed(taking.iter);\n  };",
-    tests: ["test/corpus.test.ts", "-t", "^(consumer_drops_what_is_left).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^skip_of_short_take_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "take-hint-dropped",

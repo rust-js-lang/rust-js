@@ -8,7 +8,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "    const dropping = second.dropItem ?? drop;\n",
     replace: "    const dropping = undefined;\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_nth_drops_what_it_passes.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_hides_own_iterator.rs$"],
+    snapshots: true,
   },
   {
     name: "chain-nth-given-drop-unused",
@@ -16,7 +17,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "      const left = advanced(first, n, first.dropItem ?? drop);\n",
     replace: "      const left = advanced(first, n, first.dropItem);\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_nth_drops_what_it_passes.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_hides_own_iterator.rs$"],
+    snapshots: true,
   },
   {
     name: "chain-count-stepped",
@@ -40,7 +42,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });\n",
     replace: "  $forward(chained, first, { last, nth, tryFold, count, advanceBy });\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
+    snapshots: true,
   },
   {
     name: "chain-try-fold-by-next",

@@ -88,7 +88,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  const front = $filterDropping(it, p, drop);\n",
     replace: "  const front = $filterDropping(it, () => true, drop);\n",
-    tests: ["test/corpus.test.ts", "-t", "^back_predicate_unwinds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^collect_into_a_type_parameter_is_stds.rs$"],
+    snapshots: true,
   },
   {
     name: "filter-ends-backless",
@@ -169,7 +170,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  $forward(stepped, it, { nth, tryFold, fold });\n",
     replace: "  $forward(stepped, it, { tryFold, fold });\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_vec_iterator_skips_as_one_slice.rs$"],
+    snapshots: true,
   },
   {
     name: "step-by-fold-by-next",
@@ -177,7 +179,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  $forward(stepped, it, { nth, tryFold, fold });\n",
     replace: "  $forward(stepped, it, { nth, tryFold });\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    snapshots: true,
   },
   {
     name: "step-by-try-fold-by-next",
@@ -185,7 +188,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  $forward(stepped, it, { nth, tryFold, fold });\n",
     replace: "  $forward(stepped, it, { nth, fold });\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    snapshots: true,
   },
   {
     name: "step-by-nth-first-kept",
@@ -193,7 +197,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      if (n === 0) return head;\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "enumerate-nth-by-next",
@@ -314,7 +319,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "    const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind, ends), ends);\n    $closedAfter(ends, () => stepped.return());\n    return folded;\n",
     replace: "    const folded = $consumed(stepped, () => stepped.tryFold(init, f, () => false, unwind, ends), ends);\n    return folded;\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
+    snapshots: true,
   },
   {
     name: "step-by-back-each",
@@ -322,7 +328,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "    if (by === \"back\" && (drop === undefined || it.ownNthBack) && it.nthBack !== undefined) return it.nthBack(k);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "filter-ends-keeps-dropped",
@@ -330,7 +337,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  const front = $filterDropping(it, p, drop);\n",
     replace: "  const front = $filterDropping(it, p, undefined);\n",
-    tests: ["test/corpus.test.ts", "-t", "^back_predicate_unwinds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^splice_drops_and_fills_as_std.rs$"],
+    snapshots: true,
   },
   {
     name: "nth-back-slices-by-shape",
@@ -364,7 +372,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  $forward(stepped, it, { nthBack: (n) => stepped.skip(n * step + backIndex(), \"back\"), tryRfold, rfold });\n",
     replace: "  $forward(stepped, it, { tryRfold, rfold });\n",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_nth_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "advance-back-by-short",
@@ -406,7 +415,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  const tryFold = (init, f, broke, unwind, ends) => {\n    let folded = init;\n    const stepping = (run) => (unwind === undefined ? run() :",
     replace: "  const tryFold = (init, f, broke, unwind, ends) => {\n    let folded = init;\n    const stepping = (run) => (true ? run() :",
-    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_rfold_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_vec_iterator_skips_as_one_slice.rs$"],
+    snapshots: true,
   },
   {
     name: "back-filter-fold-unguarded",
@@ -447,7 +457,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  $forward(map, it, { fold: \"fold\", tryFold: \"tryFold\", rfold: \"rfold\", tryRfold: \"tryRfold\" }, folding);\n",
     replace: "  $forward(map, it, { tryFold: \"tryFold\", rfold: \"rfold\", tryRfold: \"tryRfold\" }, folding);\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
+    snapshots: true,
   },
   {
     name: "enumerate-fold-unwind-lost",
@@ -623,7 +634,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  map.sizeHint = () => $sizeHint(it);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(map_ends_size_hint|back_knowing_adapters_hint_and_try_fold).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
+    snapshots: true,
   },
   {
     name: "filter-ends-hint-dropped",
@@ -631,7 +643,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  filter.sizeHint = () => $upperOnly(it);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(map_ends_size_hint|back_knowing_adapters_hint_and_try_fold).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
+    snapshots: true,
   },
   {
     name: "filter-ends-count-hint-unasked",

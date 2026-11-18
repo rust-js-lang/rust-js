@@ -56,6 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/folded.js",
     find: "      it.return?.();\n      return { done: true, value: undefined };\n",
     replace: "      return { done: true, value: undefined };\n",
-    tests: ["test/corpus.test.ts", "-t", "^collect_string_of_a_panicking_chain_drops_its_source.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^consumer_closes_what_it_steps_on_a_panic.rs$"],
+    snapshots: true,
   },
 ];

@@ -34,7 +34,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "  map(f) {\n",
     replace: "  mapStepped(f) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^asked_length_overflow.rs$"],
+    snapshots: true,
   },
   {
     name: "steps-filter-ended",
@@ -42,7 +43,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "  filter(keep, drop) {\n",
     replace: "  filterStepped(keep, drop) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "steps-take-counts-no-none",
@@ -50,7 +52,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "  take(n) {\n",
     replace: "  takeStepped(n) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+    snapshots: true,
   },
   {
     name: "steps-drop-skips-past-none",
@@ -74,7 +77,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "      { fold: \"fold\", tryFold: \"tryFold\" },\n      (g, unwind) => (a, x) => ($kept(",
     replace: "      { tryFold: \"tryFold\" },\n      (g, unwind) => (a, x) => ($kept(",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^discarded_drop_leaks_the_accumulator.rs$"],
+    snapshots: true,
   },
   {
     name: "steps-reduce-steps",
@@ -189,7 +193,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "    for (const source of this.from ?? (this.iter === undefined ? [] : [this.iter])) source.hold?.();\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_iterator_dropped_by_its_owner.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^consumer_drops_what_is_left.rs$"],
+    snapshots: true,
   },
   {
     name: "steps-collected-unclosed",
@@ -197,7 +202,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "        if (step.done) this.return();\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(own_iterator_dropped_through_adapters|own_fold_through_adapters|held_iterator_dropped_by_its_owner).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^deque_into_iter_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "steps-of-js-protocol",

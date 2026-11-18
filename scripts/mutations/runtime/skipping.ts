@@ -160,7 +160,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "    count: iter.ownNth || iter.ownCount ? count : undefined,\n",
     replace: "    count: iter.ownNth ? count : undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
+    snapshots: true,
   },
   {
     name: "skip-first-step-init-undropped",
@@ -168,7 +169,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "  const skipped = (k, init, unwind, ends) =>\n    $stepHolding(() => passed(skipping.iter.nth(k - 1, drop), drop), init, unwind, ends);\n",
     replace: "  const skipped = (k, init, unwind, ends) => passed(skipping.iter.nth(k - 1, drop), drop);\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^nth_passed_drops_unwind.rs$"],
+    snapshots: true,
   },
   {
     name: "skip-fold-first-step-unclosed",
@@ -176,7 +178,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "      const step = $consumed(skipping, () => skipped(k, init, unwind, ends), ends);\n      if (step.done) {\n        $closedAfter(ends, () => skipping.return());\n        return init;\n",
     replace: "      const step = skipped(k, init, unwind, ends);\n      if (step.done) {\n        $closedAfter(ends, () => skipping.return());\n        return init;\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^nth_passed_drops_unwind.rs$"],
+    snapshots: true,
   },
   {
     name: "skip-passed-item-dropped-outside-its-step",
@@ -258,7 +261,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "    tryRfold: iter.tryRfold !== undefined || iter.back !== undefined ? tryRfold : undefined,\n",
     replace: "    tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_of_own_from_its_back_asks_len_once.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
+    snapshots: true,
   },
   {
     name: "skipping-own-nth-back-unmarked",

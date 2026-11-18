@@ -80,7 +80,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/rev.js",
     find: "    fold: \"rfold\",\n",
     replace: "    fold: it.rfold && ((init, f) => it.rfold(init, f)),\n",
-    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_rfold_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_folds_unwind.rs$"],
+    snapshots: true,
   },
   {
     name: "rev-try-fold-unwind-lost",
@@ -96,7 +97,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/rev.js",
     find: "    rfold: \"fold\",\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_folds_its_source.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_droppers_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "rev-bounds-unpassed",
