@@ -332,9 +332,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// use site can give what steps it by that (ADR 0561).
     pub(in crate::lower) fn compiled_step(&self, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str) -> bool {
         debug_assert!(
-            trait_id != std_item(self.tcx, StdItem::Iterator)
-                || crate::lower::recognition::STRUCT_STEPS.contains(&method),
-            "`{method}` is a step `type_facts` reads too (`STRUCT_STEPS`)"
+            crate::lower::recognition::is_read_step(self.tcx, trait_id, method),
+            "`{method}` is a step `type_facts` reads too (`STRUCT_STEPS`, `KNOWING_STEPS`)"
         );
         let ty = ty.peel_refs();
         if !crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
@@ -491,6 +490,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (trait_id, method): (DefId, &str),
         span: Span,
     ) -> R<Option<Expr>> {
+        debug_assert!(
+            crate::lower::recognition::is_read_step(self.tcx, trait_id, method),
+            "`{method}` is a step `type_facts` reads too (`STRUCT_STEPS`, `KNOWING_STEPS`)"
+        );
         let tcx = self.tcx;
         let Some(item) = self.iterator_item(ty) else {
             return Ok(None);
@@ -554,6 +557,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: ty::Ty<'tcx>,
         (trait_id, method): (DefId, &str),
     ) -> R<Option<(DefId, ty::GenericArgsRef<'tcx>)>> {
+        debug_assert!(
+            crate::lower::recognition::is_read_step(self.tcx, trait_id, method),
+            "`{method}` is a step `type_facts` reads too (`STRUCT_STEPS`, `KNOWING_STEPS`)"
+        );
         let Some(found) = self.fold_of(ty, (trait_id, method)) else {
             return Ok(None);
         };

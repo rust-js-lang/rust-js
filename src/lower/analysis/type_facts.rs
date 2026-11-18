@@ -21,10 +21,12 @@ use rustc_span::def_id::DefId;
 
 mod carried;
 mod collects;
+mod knowing;
 mod relay;
 pub(in crate::lower) use carried::{CarriedSuper, super_item_of};
 use carried::{carried_by, carried_by_every_impl, carries, default_super_item, slot_super_item};
 use collects::{collect_asks, copies_of_default};
+use knowing::knowing_asked;
 use relay::{Asked, BuiltAsks, ask, asked_of, asked_of_caller};
 
 /// The facts each of the crate's generic functions asks of its type
@@ -58,6 +60,7 @@ pub(super) fn type_fact_params<'tcx>(
     // What `std_iterator_steps` steps a compiled std iterator's struct by.
     let steps = crate::lower::recognition::STRUCT_STEPS.map(|name| trait_method(tcx, iterator, name));
     let collect = trait_method(tcx, iterator, "collect");
+    let knowing = crate::lower::recognition::knowing_steps(tcx);
     let compares = [trait_method(tcx, iterator, "eq"), trait_method(tcx, iterator, "ne")];
     let mut asking = Asking::default();
     for body in all_bodies {
@@ -85,6 +88,16 @@ pub(super) fn type_fact_params<'tcx>(
                         named.push((instance.def_id(), instance.args));
                     }
                 }
+            }
+            // And what a held compiled struct it gives a call is stepped by,
+            // made knowing its back and its length, as a body read from its
+            // THIR asks it (`knowing_asked`): a library's impl compiled here,
+            // itertools' `ZipLongest::rfold` (#2042).
+            let knowing_of: Vec<_> = (named.iter())
+                .flat_map(|&call| knowing_asked(tcx, typing_env, &knowing, call))
+                .collect();
+            for (step, step_args) in knowing_of {
+                asking.of_call(tcx, foreign, given, fns, typing_env, caller, step, step_args);
             }
             for (callee, args) in named {
                 for index in eq_asks(recognition, typing_env, caller, (callee, args), &compares) {
@@ -217,6 +230,15 @@ pub(super) fn type_fact_params<'tcx>(
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
+            // A compiled std struct given to a call as it's held, made
+            // elsewhere, `a.by_ref()` of a `Fuse<T>` field: what lowering
+            // steps it by where it's made knowing its back and its length
+            // (`KNOWING_STEPS`) asks what each asks, as `STRUCT_STEPS` of one
+            // a body makes do, `Fuse`'s `next_back` whether `T` is a
+            // `FusedIterator` (#2042).
+            for (step, step_args) in knowing_asked(tcx, typing_env, &knowing, (callee, args)) {
+                asking.of_call(tcx, foreign, given, fns, typing_env, caller, step, step_args);
+            }
             // A pointer or a reference to a type parameter's value
             // `transmute`d, to its address: the pointee's size (ADR 0562).
             if crate::lower::recognition::is_transmute(tcx, callee)

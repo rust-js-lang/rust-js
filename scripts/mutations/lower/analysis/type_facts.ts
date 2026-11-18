@@ -531,4 +531,20 @@ export const mutations: Mutation[] = [
     replace: "        for (default, index, fact) in of_defaults.into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^trait_default_given_its_callers_facts_of_self.rs$"],
   },
+  {
+    name: "knowing-steps-unasked",
+    breaks: "a compiled std struct a call is given as it's held, `a.by_ref()` of a `Fuse<T>` field stepped from its back, asks nothing of what lowering steps it by made knowing its back, so `Fuse`'s `next_back` asks `T`'s `Fused` no caller gives, refused (#2042)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            for (step, step_args) in knowing_asked(tcx, typing_env, &knowing, (callee, args)) {\n",
+    replace: "            for (step, step_args) in knowing_asked(tcx, typing_env, &knowing[..0], (callee, args)) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^fused_fact_of_an_impls_parameter_asked_through_std\\.rs$"],
+  },
+  {
+    name: "knowing-steps-of-mir-bodies-unasked",
+    breaks: "a body read from its MIR alone, a library's impl its consumer compiles, itertools' `ZipLongest::rfold`, asks nothing of what a held compiled struct it steps from its back is made knowing with, so `Fuse`'s `next_back` asks `T`'s `Fused` no caller gives, refused (#2042)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "            for (step, step_args) in knowing_of {\n",
+    replace: "            for (step, step_args) in knowing_of.into_iter().take(0) {\n",
+    tests: ["test/crates.test.ts", "-t", "fused_fact_of_a_librarys_impl"],
+  },
 ];

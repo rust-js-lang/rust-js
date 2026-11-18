@@ -156,15 +156,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_unstable_sorts.rs$"],
   },
   {
-    name: "fused-fact-unanswered",
-    breaks: "a type parameter's `Fused` no caller says is refused, not `false`",
-    file: "src/lower/std_types/number/generic.rs",
-    find: "                return Ok(self.fused_fact(param.index).unwrap_or_else(|| Expr::bool(false)));\n",
-    replace:
-      '                return self.fused_fact(param.index).ok_or_else(|| self.unsupported(span, "Fused"));\n',
-    tests: ["test/corpus.test.ts", "-t", "^(flat_map_of_a_where_clause_into_iterator|associated_iterator_steps).rs$"],
-  },
-  {
     name: "vec-to-array-err-empty",
     breaks:
       "a `Vec` refused as an array gives back nothing in its `Err`, not the `Vec`",

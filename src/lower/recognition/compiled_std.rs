@@ -448,6 +448,40 @@ pub(crate) const STRUCT_STEPS: [&str; 9] = [
     "__iterator_get_unchecked",
 ];
 
+/// The methods of `Iterator`'s extensions a compiled std struct held as
+/// it is is given where it's used, made knowing its back and its length
+/// (`knowing_held`, ADR 0561): what it asks of its caller is what these
+/// ask, as `STRUCT_STEPS`' of one a body makes; a body given one, `Fuse`'s
+/// `next_back` of its `a.by_ref().rev()`, asks it (#2042).
+pub(crate) const KNOWING_STEPS: &[(&str, &str)] = &[
+    ("DoubleEndedIterator", "next_back"),
+    ("DoubleEndedIterator", "rfold"),
+    ("DoubleEndedIterator", "nth_back"),
+    ("DoubleEndedIterator", "try_rfold"),
+    ("ExactSizeIterator", "len"),
+];
+
+/// `KNOWING_STEPS`, each its trait's method.
+pub(crate) fn knowing_steps(tcx: TyCtxt<'_>) -> Vec<(DefId, &'static str)> {
+    let extension = |name: &str| {
+        tcx.all_traits_including_private()
+            .find(|&id| super::is_iterator_extension(tcx, id) && tcx.item_name(id).as_str() == name)
+    };
+    (KNOWING_STEPS.iter())
+        .filter_map(|&(of, method)| Some((extension(of)?, method)))
+        .collect()
+}
+
+/// Whether a compiled std struct steps by `trait_id`'s `method`, one of the
+/// steps the analysis reads what they ask of (`STRUCT_STEPS`,
+/// `KNOWING_STEPS`): of another, its asks would reach no caller.
+pub(crate) fn is_read_step(tcx: TyCtxt<'_>, trait_id: DefId, method: &str) -> bool {
+    match trait_id == std_item(tcx, StdItem::Iterator) {
+        true => STRUCT_STEPS.contains(&method),
+        false => (KNOWING_STEPS.iter()).any(|&(of, step)| step == method && tcx.item_name(trait_id).as_str() == of),
+    }
+}
+
 /// Of those, the adapters std's struct is where they're held, by their
 /// type and the `Iterator` method that makes one: one a std iterator's
 /// method steps where it's made is what the recognizers make of it,

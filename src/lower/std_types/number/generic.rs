@@ -374,10 +374,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::int(i128::from(at)));
         }
         if let ty::Param(param) = of.kind() {
-            // Whether it's a `FusedIterator`, its caller's, or not where no
-            // caller says (ADR 0543).
+            // Whether it's a `FusedIterator`, its caller's (ADR 0543): every
+            // body that asks it is given it, so one that isn't is refused,
+            // never guessed (#2042).
             if fact == TypeFact::Fused {
-                return Ok(self.fused_fact(param.index).unwrap_or_else(|| Expr::bool(false)));
+                return (self.fused_fact(param.index))
+                    .ok_or_else(|| self.unsupported(span, &format!("{what} of `{of}`, which no caller gives")));
             }
             // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
             if fact == TypeFact::Id
