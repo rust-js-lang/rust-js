@@ -1,4 +1,4 @@
-//@ compile-fail: a closure that holds a value with a destructor, moved where it's called by `FnOnce`, which drops none of it
+//@ compile-fail: a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it
 // A closure rustc infers `Fn`, holding a value with a destructor, bound by
 // `let` and moved into a struct a free generic function takes, `Once<F>`
 // of an `F: FnOnce`, and calls that field of by `FnOnce` alone (#2031):

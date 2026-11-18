@@ -1,4 +1,4 @@
-//@ compile-fail: giving `call_once`, which calls it once, a function called by `&` that holds a value with a destructor
+//@ compile-fail: a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it
 // A closure rustc infers `Fn`, holding a value with a destructor, called by
 // `&` before it's moved into a generic function that calls it by `FnOnce`
 // (#995): its body can't drop what it took as it ends, which its first call

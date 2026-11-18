@@ -1,4 +1,4 @@
-//@ compile-fail: giving `via`, which calls it once, a function called by `&` that holds a value with a destructor
+//@ compile-fail: a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it
 // A closure rustc infers `Fn`, holding a value with a destructor, called by
 // `&` and then given to a function whose parameter is an `impl Wrapped<I>`
 // of an `I: Is<F>` of an `F: FnOnce`, two bounds from the `FnOnce` that

@@ -367,8 +367,8 @@ export const mutations: Mutation[] = [
     name: "moved-once-closures-unread",
     breaks: "a closure called by `&`, bound by `let` and moved once into an `F: FnOnce`, isn't taken as called once, so it's refused where its body could drop what it took (#995)",
     file: "src/lower/analysis/closures.rs",
-    find: "        let moved_once = all_bodies.iter().flat_map(|body| moved_once(tcx, &body.thir)).collect();\n",
-    replace: "        let moved_once = all_bodies.iter().flat_map(|body| moved_once(tcx, &body.thir)).filter(|_| false).collect();\n",
+    find: "            .flat_map(|body| moved_once(&body.thir))\n",
+    replace: "            .flat_map(|body| moved_once(&body.thir))\n            .filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_once_callee.rs$"],
   },
   {
@@ -378,5 +378,13 @@ export const mutations: Mutation[] = [
     find: "        .filter(|var| uses.get(var) == Some(&1))\n",
     replace: "        .filter(|var| uses.get(var).is_some())\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_closure_called_then_moved_into_a_once_callee_refused.rs$"],
+  },
+  {
+    name: "boxed-fn-held-unrefused",
+    breaks: "a boxed `Fn` holding a value with a destructor, given to a function that holds it in what it takes, a `Vec<F>` or an `Option<F>` of an `F: FnOnce`, or gives it back, and called there by value, is given as it is, and never dropped (#2050)",
+    file: "src/lower/analysis/closures.rs",
+    find: "            .filter(|&&(named, index, _)| !facts.gives_its_own(tcx, named, index))\n",
+    replace: "            .filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_fn_in_a_vec_called_once_refused.rs$"],
   },
 ];

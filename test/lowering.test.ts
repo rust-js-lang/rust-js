@@ -936,7 +936,7 @@ for (const [name, source, message] of [
   ["an untagged enum's variants of one kind, matched", "#[rust_js::untagged] pub enum E { A(&'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "which JS can't tell apart"],
   ["an Rc<dyn Iterator> of a value with a destructor", "pub struct D(u32);\nimpl Drop for D { fn drop(&mut self) {} }\nimpl Iterator for D { type Item = u32; fn next(&mut self) -> Option<u32> { None } }\npub fn f() -> usize { let b: std::rc::Rc<dyn Iterator<Item = u32>> = std::rc::Rc::new(D(1)); std::rc::Rc::strong_count(&b) }", "a `dyn` of a value with a destructor"],
   ["a new closure assigned through a &mut to one", "pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }", "assigning a whole value through a `&mut`"],
-  ["a Fn closure holding a destructor given away", "pub struct R; impl Drop for R { fn drop(&mut self) {} } fn g<F: FnOnce()>(f: F) { f() } pub fn f() { let r = R; let c = move || { let _r = &r; }; c(); g(c); }", "giving `g`, which calls it once, a function called by `&`"],
+  ["a Fn closure holding a destructor given away", "pub struct R; impl Drop for R { fn drop(&mut self) {} } fn g<F: FnOnce()>(f: F) { f() } pub fn f() { let r = R; let c = move || { let _r = &r; }; c(); g(c); }", "a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it"],
 ] as [string, string, string][]) {
   test(`MIR refuses ${name}`, () => {
     const dir = fixture("mir-refused");

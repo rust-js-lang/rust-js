@@ -48,7 +48,7 @@ src/lower/drops/ref_cells.rs	3
 src/lower/drops/scopes.rs	1
 src/lower/drops/types.rs	7
 src/lower/drops/uses.rs	1
-src/lower/instances.rs	5
+src/lower/instances.rs	9
 src/lower/instances/failing.rs	1
 src/lower/instances/needed.rs	7
 src/lower/iterators.rs	11

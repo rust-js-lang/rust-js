@@ -1,4 +1,4 @@
-//@ compile-fail: a closure that holds a value with a destructor, moved where it's called by `FnOnce`, which drops none of it
+//@ compile-fail: a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it
 // A closure rustc infers `Fn`, holding a value with a destructor, bound by
 // `let` and moved into a struct whose trait impl calls it by `FnOnce`
 // alone (#2031): Rust's `call_once` of it drops it after the call, which

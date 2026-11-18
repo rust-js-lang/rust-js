@@ -273,7 +273,7 @@ for (const [name, source, diagnostic] of [
   ["closure made in a block", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f() { let c = { let r = R; move || { let _r = &r; } }; c(); }`, null],
   // Not one made as a struct's field, where its drop can't see what it took.
   ["closure made in a struct", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub struct H<F: Fn()> { pub f: F } pub fn f() { let r = R; let h = H { f: move || { let _r = &r; } }; (h.f)(); }`, "a closure that holds a value with a destructor, made here"],
-  ["Fn closure given away", `pub struct R; impl Drop for R { fn drop(&mut self) {} } fn g<F: FnOnce()>(f: F) { f() } pub fn f() { let r = R; let c = move || { let _r = &r; }; c(); g(c); }`, "giving `g`, which calls it once, a function called by `&`"],
+  ["Fn closure given away", `pub struct R; impl Drop for R { fn drop(&mut self) {} } fn g<F: FnOnce()>(f: F) { f() } pub fn f() { let r = R; let c = move || { let _r = &r; }; c(); g(c); }`, "a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it"],
   ["closure assigned", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f() { let r = R; let c; c = move || drop(r); c(); }`, "assigning a closure that holds a value with a destructor"],
   // `Clone`, `Default` and `From` are supported (ADR 0052), but not all of them.
   // A `&dyn Debug` is the string it shows (ADR 0060): one made plain is shown plain (ADR 0137).

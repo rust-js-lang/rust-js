@@ -602,6 +602,14 @@ pub(in crate::lower) enum Fact<'f, 'a, 'tcx> {
     /// What a caller makes knowing, its hint (#1236): each caller the crate
     /// sees marks what it gives, whatever others do, which nothing marks.
     Marked,
+    /// How a closure the crate makes is called where generic code calls
+    /// what it's given, by `FnOnce` or by `&` (#2031): only the crate's own
+    /// calls give its closures, as `Marked`'s; and an impl's own parameter
+    /// is what's in its place in the impl's type: of an impl of the crate's
+    /// own trait, in what the namings of the trait's method give it; of
+    /// another crate's, which code the crate can't see may call, in each
+    /// type the crate's bodies hold, `Held` (`givings`).
+    Called(&'f Held<'tcx>),
 }
 
 /// Whether every caller of `owner`, a function or a trait, that may give
@@ -628,7 +636,7 @@ pub(in crate::lower) fn seen_whole(tcx: TyCtxt<'_>, owner: DefId, fact: Fact<'_,
         Fact::Counted { library } => {
             !library || !tcx.visibility(owner).is_public() || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))
         }
-        Fact::Marked => true,
+        Fact::Marked | Fact::Called(_) => true,
     }
 }
 
@@ -773,6 +781,42 @@ pub(super) fn calls_by_caller<'tcx>(
 /// it: by what, its body's owner, its generic arguments there, and where.
 pub(super) type Callers<'tcx> = IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span)>>;
 
+/// Each type the crate's bodies hold, its expressions' or its MIR's
+/// locals', of each of its ADTs, by the ADT, with the function whose body
+/// holds it: what an impl's own parameter of an impl of another crate's
+/// trait may be (`Fact::Called`, #2031).
+pub(super) type Held<'tcx> = IndexMap<DefId, IndexSet<(DefId, Ty<'tcx>)>>;
+
+/// The types `all_bodies` hold, `Held`'s.
+pub(super) fn held_of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Held<'tcx> {
+    let mut held: Held<'tcx> = IndexMap::default();
+    for body in all_bodies {
+        let owner = tcx.typeck_root_def_id(body.def_id);
+        let tys: Vec<Ty<'tcx>> = match body.root() {
+            Some(_) => body.thir.exprs.iter().map(|expr| expr.ty).collect(),
+            None => (body.mir.iter())
+                .flat_map(|mir| mir.body.local_decls.iter().map(|local| local.ty))
+                .collect(),
+        };
+        let mut seen: IndexSet<Ty<'tcx>> = IndexSet::default();
+        for ty in tys {
+            if !seen.insert(ty) {
+                continue;
+            }
+            for part in ty.walk() {
+                if let Some(part) = part.as_type()
+                    && let ty::Adt(adt, _) = *part.kind()
+                {
+                    held.entry(adt.did())
+                        .or_default()
+                        .insert((owner, tcx.erase_and_anonymize_regions(part)));
+                }
+            }
+        }
+    }
+    held
+}
+
 /// The callers' instances' one carrier (ADR 1115): each naming of each
 /// function `all_bodies` call or name as a value that's given its type
 /// parameters' values, `given_calls_of`'s, not one of rest arguments JS
@@ -835,38 +879,374 @@ fn given_on_the_way<'tcx>(
     (owner, index): (DefId, u32),
     (seen, made): TheWay<'_, 'tcx>,
 ) -> Option<IndexSet<Ty<'tcx>>> {
-    if !seen_whole(tcx, owner, fact) {
-        return None;
-    }
-    // Of a trait's method, or an impl's of one, each naming of the trait's
-    // too, its own parameter where the trait's has it.
-    let mut namings = vec![(owner, index)];
-    if let Some(declared) = tcx.trait_item_of(owner).or(tcx.trait_of_assoc(owner).map(|_| owner)) {
-        let own = index.checked_sub(tcx.generics_of(owner).parent_count as u32)?;
-        if !seen_whole(tcx, tcx.parent(declared), fact) {
-            return None;
-        }
-        if declared != owner {
-            namings.push((declared, tcx.generics_of(declared).parent_count as u32 + own));
-        }
-    }
     let mut given = IndexSet::default();
-    for (named, at) in namings {
-        for &(caller, args, _) in callers.get(&named).into_iter().flatten() {
-            let arg = tcx.erase_and_anonymize_regions(args.get(at as usize)?.as_type()?);
-            match *arg.kind() {
-                ty::Param(param) => {
-                    given.extend(given_types(tcx, (callers, fact), (caller, param.index), (seen, made))?)
-                }
-                _ if arg.has_non_region_param() => {
-                    made.insert((caller, arg));
-                    given.extend(instances_in(tcx, (callers, fact), (arg, caller), (seen, made))?);
-                }
-                _ => _ = given.insert(arg),
+    for giving in givings(tcx, (callers, fact), (owner, index))? {
+        let Giving::Given { caller, arg, .. } = giving else {
+            // An impl's own parameter, `Fact::Called`'s alone (`on_the_way`).
+            return None;
+        };
+        match *arg.kind() {
+            ty::Param(param) => given.extend(given_types(tcx, (callers, fact), (caller, param.index), (seen, made))?),
+            _ if arg.has_non_region_param() => {
+                made.insert((caller, arg));
+                given.extend(instances_in(tcx, (callers, fact), (arg, caller), (seen, made))?);
             }
+            _ => _ = given.insert(arg),
         }
     }
     Some(given)
+}
+
+/// What gives a type parameter of a function a type: a naming of it, its
+/// caller and what it gives there; or, of an impl's own parameter, of
+/// `Fact::Called`, what its caller holds of the impl's type and the impl's
+/// own type, `Once<F>` of `impl<F> Run for Once<F>`'s `Self`, which the
+/// parameter is matched in (#2031).
+enum Giving<'tcx> {
+    Given {
+        caller: DefId,
+        named: DefId,
+        arg: Ty<'tcx>,
+    },
+    Matched {
+        caller: DefId,
+        given: Ty<'tcx>,
+        pattern: Ty<'tcx>,
+    },
+}
+
+/// Each naming that gives `owner`'s type parameter `index` a type: of a
+/// trait's method, or an impl's of one, each naming of the trait's too, its
+/// own parameter where the trait's has it. Of `Fact::Called`, an impl's own
+/// parameter too: of an impl of the crate's own trait, which only the crate
+/// names, in what each naming of the trait's method gives the trait; of
+/// another crate's, which code the crate can't see may call, std's `Drop`
+/// or `Iterator`'s, in each type the crate's bodies hold of the impl's
+/// (`Held`); and a trait's own method's `Self`, the crate's own trait's, as
+/// its namings give it. `None` where one can't be seen, `seen_whole`'s.
+fn givings<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (callers, fact): (&Callers<'tcx>, Fact<'_, '_, 'tcx>),
+    (owner, index): (DefId, u32),
+) -> Option<Vec<Giving<'tcx>>> {
+    if !seen_whole(tcx, owner, fact) {
+        return None;
+    }
+    let mut givings = Vec::new();
+    let mut namings = vec![(owner, index)];
+    if let Some(declared) = tcx.trait_item_of(owner).or(tcx.trait_of_assoc(owner).map(|_| owner)) {
+        let own = index.checked_sub(tcx.generics_of(owner).parent_count as u32);
+        let held = match (own, fact) {
+            (Some(_), _) => None,
+            (None, Fact::Called(held)) => Some(held),
+            (None, _) => return None,
+        };
+        if !seen_whole(tcx, tcx.parent(declared), fact) {
+            return None;
+        }
+        match own {
+            Some(own) if declared != owner => {
+                namings.push((declared, tcx.generics_of(declared).parent_count as u32 + own));
+            }
+            Some(_) => {}
+            None => {
+                let imp = tcx.parent(owner);
+                let tr = tcx.parent(declared);
+                if declared == owner && tr.is_local() {
+                    return givings_of(tcx, callers, &namings, fact);
+                }
+                if declared == owner || !matches!(tcx.def_kind(imp), DefKind::Impl { of_trait: true }) {
+                    return None;
+                }
+                let param = ty::GenericArgs::identity_for_item(tcx, imp).type_at(index as usize);
+                let holds = |pattern: Ty<'tcx>| pattern.walk().any(|part| part.as_type() == Some(param));
+                if !tr.is_local() {
+                    // Of `&'a ChunkBy<K, I, F>`'s impl, each `ChunkBy` held.
+                    let pattern = tcx.type_of(imp).instantiate_identity().skip_normalization().peel_refs();
+                    let ty::Adt(adt, _) = *pattern.kind() else { return None };
+                    if !holds(pattern) {
+                        return None;
+                    }
+                    for &(caller, given) in held?.get(&adt.did()).into_iter().flatten() {
+                        givings.push(Giving::Matched { caller, given, pattern });
+                    }
+                    return Some(givings);
+                }
+                let implemented = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+                for (at, pattern) in implemented.args.iter().enumerate() {
+                    let Some(pattern) = pattern.as_type().filter(|&pattern| holds(pattern)) else {
+                        continue;
+                    };
+                    for &(caller, args, _) in callers.get(&declared).into_iter().flatten() {
+                        let given = tcx.erase_and_anonymize_regions(args.get(at)?.as_type()?);
+                        // A `dyn` of the trait hides which impl it is.
+                        if matches!(given.kind(), ty::Dynamic(..)) {
+                            return None;
+                        }
+                        givings.push(Giving::Matched { caller, given, pattern });
+                    }
+                }
+            }
+        }
+    }
+    givings.extend(givings_of(tcx, callers, &namings, fact)?);
+    Some(givings)
+}
+
+/// What each naming of each of `namings`, a function and its type
+/// parameter, gives it there, with its caller. A `dyn` given of
+/// `Fact::Called` hides the type it's made of: `None`.
+fn givings_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    callers: &Callers<'tcx>,
+    namings: &[(DefId, u32)],
+    fact: Fact<'_, '_, 'tcx>,
+) -> Option<Vec<Giving<'tcx>>> {
+    let mut givings = Vec::new();
+    for &(named, at) in namings {
+        for &(caller, args, _) in callers.get(&named).into_iter().flatten() {
+            let arg = tcx.erase_and_anonymize_regions(args.get(at as usize)?.as_type()?);
+            if matches!(fact, Fact::Called(_)) && matches!(arg.kind(), ty::Dynamic(..)) {
+                return None;
+            }
+            givings.push(Giving::Given { caller, named, arg });
+        }
+    }
+    Some(givings)
+}
+
+/// What matching `ty` with `pattern`, an impl's type of its own parameters,
+/// gives the impl's parameter `index`.
+enum Matching<'tcx> {
+    /// The type in its place.
+    Bound(Ty<'tcx>),
+    /// A part of `pattern` where `ty` has a caller's type parameter, of
+    /// that index, whose values are matched with it in turn.
+    Deferred(Ty<'tcx>, u32),
+}
+
+/// Matches `ty` with `pattern`, `out` what it gives parameter `index`:
+/// false where `ty` isn't of it, so isn't that impl's; `None` where it
+/// can't be told.
+fn match_in<'tcx>(pattern: Ty<'tcx>, ty: Ty<'tcx>, index: u32, out: &mut Vec<Matching<'tcx>>) -> Option<bool> {
+    let holds = |pattern: Ty<'tcx>| {
+        pattern
+            .walk()
+            .any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Param(param)) if param.index == index))
+    };
+    if !pattern.has_non_region_param() {
+        return Some(pattern == ty);
+    }
+    let all = |pairs: &mut dyn Iterator<Item = (Ty<'tcx>, Ty<'tcx>)>, out: &mut Vec<Matching<'tcx>>| {
+        let mut all = true;
+        for (pattern, ty) in pairs {
+            all &= match_in(pattern, ty, index, out)?;
+        }
+        Some(all)
+    };
+    match (*pattern.kind(), *ty.kind()) {
+        (ty::Param(param), _) => {
+            if param.index == index {
+                out.push(Matching::Bound(ty));
+            }
+            Some(true)
+        }
+        (_, ty::Param(param)) => {
+            if holds(pattern) {
+                out.push(Matching::Deferred(pattern, param.index));
+            }
+            Some(true)
+        }
+        (ty::Adt(of, pattern_args), ty::Adt(is, args)) => match of == is {
+            true => {
+                let mut pairs = (pattern_args.iter().zip(args.iter()))
+                    .filter_map(|(pattern, given)| Some((pattern.as_type()?, given.as_type()?)));
+                all(&mut pairs, out)
+            }
+            false => Some(false),
+        },
+        (ty::Tuple(patterns), ty::Tuple(tys)) => match patterns.len() == tys.len() {
+            true => all(&mut patterns.iter().zip(tys.iter()), out),
+            false => Some(false),
+        },
+        (ty::Ref(_, pattern, of), ty::Ref(_, ty, is)) => match of == is {
+            true => match_in(pattern, ty, index, out),
+            false => Some(false),
+        },
+        (ty::Array(pattern, _), ty::Array(ty, _)) | (ty::Slice(pattern), ty::Slice(ty)) => {
+            match_in(pattern, ty, index, out)
+        }
+        (ty::Adt(..) | ty::Tuple(_) | ty::Ref(..) | ty::Array(..) | ty::Slice(_), _) => Some(false),
+        _ if !holds(pattern) => Some(true),
+        _ => None,
+    }
+}
+
+/// What's on the way to a value, `on_the_way`'s: each function's type
+/// parameter whose value it is, and each closure it may be, called by
+/// value or by `&`.
+#[derive(Default)]
+pub(super) struct OnTheWay<'tcx> {
+    pub(super) params: [IndexSet<(DefId, u32)>; 2],
+    pub(super) closures: [IndexSet<DefId>; 2],
+    /// Of a call by value, each boxed `Fn` or `FnMut` given as the value of
+    /// a parameter a function's naming gives it, the function and the
+    /// parameter's index with its `dyn`'s type: where the call that gives
+    /// it gives it as one whose call drops it (#2033).
+    pub(super) boxes_given: IndexSet<(DefId, u32, Ty<'tcx>)>,
+    /// And each `dyn` of one given otherwise, in what a call's given, or
+    /// given back (#2050): no call gives it as one whose call drops it.
+    pub(super) boxes_held: IndexSet<Ty<'tcx>>,
+}
+
+/// How a value `on_the_way` meets is given: as the call's own argument,
+/// which the call's lowering gives as it is; as what a naming gives a
+/// function's parameter, the function and the parameter; or held in what
+/// it's given, or gives back.
+#[derive(Clone, Copy)]
+enum As {
+    Called,
+    Param(DefId, u32),
+    Held,
+}
+
+/// How deep impls' parameters, each matched in what's in its impl's type's
+/// place, `on_the_way` matches one in another, past which it can't tell.
+const MOST_MATCHED: usize = 4;
+
+/// What's on the way to `arg`, what `caller` gives a call by value, or by
+/// `&` where `by_ref`, into `on`, by index `by_ref as usize`: each of the
+/// crate's functions' type parameters whose value it is, given on as it is,
+/// in a `Box` or an `AssertUnwindSafe`, or by a reference, by which the
+/// call calls what's referred to by `&`; and each closure rustc infers `Fn`
+/// or `FnMut` it may be, carried through every generic caller by the
+/// carrier's namings (`givings` of `Fact::Called`, ADR 1115). A value given
+/// in a made type, `Once<F>` of an `F`, a call of the type's doesn't call,
+/// but an impl's own parameter matched in it, `impl<F> Run for Once<F>`'s
+/// `F`. Each parameter is followed once, not on each way to it, as
+/// `instances_of` does. False where a caller can't be seen (#2031).
+pub(super) fn on_the_way<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (callers, held): (&Callers<'tcx>, &Held<'tcx>),
+    (caller, arg): (DefId, Ty<'tcx>),
+    by_ref: bool,
+    on: &mut OnTheWay<'tcx>,
+) -> bool {
+    // A parameter's values, each matched in turn with what's pending, the
+    // last first: the impls' types whose own parameter is wanted of them.
+    type Task<'tcx> = (DefId, u32, bool, Vec<(Ty<'tcx>, u32)>);
+    let mut todo: Vec<Task<'tcx>> = Vec::new();
+    let mut met: IndexSet<Task<'tcx>> = IndexSet::default();
+    // What a value of `ty`, `caller`'s, is on the way.
+    let flow = |caller: DefId,
+                mut ty: Ty<'tcx>,
+                (mut by_ref, given): (bool, As),
+                pending: &[(Ty<'tcx>, u32)],
+                todo: &mut Vec<Task<'tcx>>,
+                on: &mut OnTheWay<'tcx>|
+     -> bool {
+        if let Some((&(pattern, index), rest)) = pending.split_last() {
+            let mut out = Vec::new();
+            if match_in(pattern, ty, index, &mut out).is_none() {
+                return false;
+            }
+            for matching in out {
+                match matching {
+                    Matching::Bound(ty) => todo.push((caller, u32::MAX, by_ref, [rest, &[(ty, u32::MAX)]].concat())),
+                    // Met again, an impl's type matched in its own: a type
+                    // that wraps itself, whose values the outer match follows.
+                    Matching::Deferred(part, _) if rest.contains(&(part, index)) => {}
+                    Matching::Deferred(part, param) => {
+                        todo.push((caller, param, by_ref, [rest, &[(part, index)]].concat()))
+                    }
+                }
+            }
+            return true;
+        }
+        let mut itself = true;
+        loop {
+            match *ty.kind() {
+                ty::Param(param) => todo.push((caller, param.index, by_ref, Vec::new())),
+                ty::Dynamic(predicates, ..)
+                    if !by_ref
+                        && (predicates.principal_def_id()).is_some_and(|tr| {
+                            matches!(
+                                tcx.fn_trait_kind_from_def_id(tr),
+                                Some(ty::ClosureKind::Fn | ty::ClosureKind::FnMut)
+                            )
+                        }) =>
+                {
+                    match given {
+                        As::Called if itself => {}
+                        As::Param(named, index) if itself => _ = on.boxes_given.insert((named, index, ty)),
+                        _ => _ = on.boxes_held.insert(ty),
+                    }
+                }
+                ty::Closure(id, args) if args.as_closure().kind() != ty::ClosureKind::FnOnce => {
+                    on.closures[by_ref as usize].insert(id);
+                }
+                ty::Ref(_, inner, _) => {
+                    (ty, by_ref) = (inner, true);
+                    continue;
+                }
+                ty::Adt(adt, args)
+                    if ty.is_box() || crate::lower::recognition::is_assert_unwind_safe(tcx, adt.did()) =>
+                {
+                    // A box in a box isn't what's given.
+                    itself &= !(ty.is_box() && args.type_at(0).is_box());
+                    ty = args.type_at(0);
+                    continue;
+                }
+                _ => {}
+            }
+            return true;
+        }
+    };
+    if !flow(caller, arg, (by_ref, As::Called), &[], &mut todo, on) {
+        return false;
+    }
+    while let Some(task) = todo.pop() {
+        if !met.insert(task.clone()) {
+            continue;
+        }
+        let (owner, index, by_ref, mut pending) = task;
+        if pending.len() > MOST_MATCHED {
+            return false;
+        }
+        // A bound type, matched with no further impl, flows as it is.
+        if index == u32::MAX {
+            let Some((ty, _)) = pending.pop() else { continue };
+            if !flow(owner, ty, (by_ref, As::Held), &pending, &mut todo, on) {
+                return false;
+            }
+            continue;
+        }
+        if pending.is_empty() {
+            on.params[by_ref as usize].insert((owner, index));
+        }
+        let Some(givings) = givings(tcx, (callers, Fact::Called(held)), (owner, index)) else {
+            return false;
+        };
+        for giving in givings {
+            let flowed = match giving {
+                Giving::Given { caller, named, arg } => {
+                    let given = match pending.is_empty() {
+                        true => As::Param(named, index),
+                        false => As::Held,
+                    };
+                    flow(caller, arg, (by_ref, given), &pending, &mut todo, on)
+                }
+                Giving::Matched { caller, given, pattern } => {
+                    let pending = [pending.as_slice(), &[(pattern, index)]].concat();
+                    flow(caller, given, (by_ref, As::Held), &pending, &mut todo, on)
+                }
+            };
+            if !flowed {
+                return false;
+            }
+        }
+    }
+    true
 }
 
 /// At most this many instances of one pointee, `Slot<T, U>`'s every pair of

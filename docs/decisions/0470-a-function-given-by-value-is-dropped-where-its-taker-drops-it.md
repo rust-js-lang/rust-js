@@ -511,3 +511,68 @@ forwarded through a second generic `FnOnce`, a `Box<dyn FnMut>`, and a
 panic. Found by METAMORPHIC=all's `dyn` transform of #995's case.
 Mutation `boxed-fn-given-once-undropped` (`lower/mir/dispatch.ts`).
 
+
+## Amended (2026-11-18, #2031, #2050): one owner of what generic code calls by value
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Wrong answers fixed;
+results otherwise as they were.
+
+The interim rule read bounds: a callee's `F: FnOnce`, followed through
+other bounds up to `MOST_BOUNDS` deep (`calls_param_once`), and the
+crate's functions that take a struct whose parameter they call so
+(`adt_param_called_once`). Each new shape needed another reading, and
+some had none: a closure in a guard std's `Drop` runs, a closure given to
+a blanket impl of the crate's own trait, a boxed `Fn` given back in a
+struct by an unbounded generic function (#2050).
+
+**What generic code calls by value is the callers' instances' carrier's
+answer** (ADR 1115, amended: `on_the_way`), read by
+`analysis/closures/called.rs` from each call by value: a naming, in any
+body the crate reads, of a function it has no body of, `FnOnce`'s
+`call_once`, std's or a binding's, that calls what it's given there by
+`FnOnce` alone, of a type parameter its caller calls so too, or, a
+binding's or a function trait's or one rust-js compiles, of anything.
+
+- **A closure** rustc infers `Fn` or `FnMut`, holding a value with a
+  destructor, that a call by value may call is refused where it's made,
+  "a closure that holds a value with a destructor, called by `FnOnce`,
+  which drops none of it", unless its body is its `call_once`'s: one a
+  binding calls once (ADR 1020) or a `let`'s moved once into a call, which
+  a call by value calls and none by `&` (`moved_once`, #995, now of the
+  owner's answer, not the callee's bound). `check_called_once`, the
+  refusal at each call, folds into it; `calls_param_once`,
+  `adt_param_called_once` and `MOST_BOUNDS` are gone.
+- **A boxed `Fn`** keeps #2033's form at each call: given as one whose
+  call drops it, `$droppingOnce`, where the callee's type parameter it's
+  given for is called by value and never by `&`
+  (`ClosureFacts::param_called_once`), as its bound says or as the owner
+  finds. Where a call by value reaches it held in what's given, a
+  `Vec<F>`, an `Option<F>`, a struct, or given back, no call can give it
+  so: the closure made that `dyn Fn` is refused, "a closure that holds a
+  value with a destructor, made a `dyn Fn` called by `FnOnce` where nothing
+  drops it after" (#2050). Boxes only called by `&` are left alone.
+
+Measured before landing: over the corpus, the crate corpus and every test
+file, no case or crate that compiled is refused, and the unseen fallback
+reached none. Shapes the interim's readings didn't reach are refused now
+(by reading its rules: a guard whose `Drop` calls its closure by value, a
+closure given to the crate's blanket impl, a box given back in a struct).
+
+Corpus cases: the six refusals the interim pinned, at their making now;
+`fn_closure_through_a_blanket_impl_refused`,
+`fn_closure_moved_through_a_blanket_impl_drops` (a `let`'s moved once
+runs and drops), `fn_closure_moved_on_to_a_std_once_drops`,
+`fn_closure_moved_into_std_map_called_by_ref` (left alone),
+`fn_closure_run_by_a_guards_drop_refused`,
+`boxed_fn_moved_into_a_struct_called_once_refused`,
+`boxed_fn_given_back_in_a_struct_called_once_refused` (#2050's repro),
+`boxed_fn_in_a_vec_called_once_refused`,
+`boxed_fn_in_an_option_called_once_refused`, and
+`boxed_fns_in_a_vec_called_by_ref` (left alone). Mutations
+`call-by-value-unread`, `call-by-ref-taken-by-value`,
+`called-own-trait-impl-unmatched`, `called-held-impl-unmatched`,
+`called-matched-param-undeferred`, `called-box-held-taken-as-given`,
+`boxed-fn-held-unrefused` and `held-fn-dyn-unrefused`; the interim's seven
+bound-reading mutations go with the code they mutated, and
+`moved-once-closures-unread`, `closure-moved-into-a-once-type-unchecked`
+and `boxed-fn-given-once-undropped` are retargeted.

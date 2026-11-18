@@ -40,6 +40,7 @@
 //! | where an object of it is stored (#1114) | Instances | `src/lower/analysis/stored_places.rs instances` |
 //! | whether every caller's `Some` of it is unboxed (ADR 0051, amended) | Instances | `src/lower/analysis/mutation.rs unboxed_params` |
 //! | what JS gives a function JS calls (ADR 0051, amended) | Instances | `src/lower/instances.rs given_calls_of` |
+//! | whether a closure, or a boxed `Fn`, given for it is called by value, `FnOnce`'s `call_once`, or by `&`, through every generic caller, an impl's own parameter matched in its type (#2031, #2050) | Instances | `src/lower/instances.rs on_the_way` |
 //! | what std decides by its type, `eq` of `TrustedLen`s, a zip's fold (ADR 1014) | Instances | `src/lower/analysis/callers_decide.rs refuse_what_callers_decide` |
 //! | whether it's shown with a `Formatter`'s options, pretty or in hex, so each caller's type it's given has a writer that takes them (#1331) | Instances | `src/lower/analysis/shown_params.rs shown_params` |
 //! | whether an iterator built of type parameters a `Vec` is collected of is `TrustedLen`, which std's room and its fold of it ask, its parts' facts and its items' `ConstSize` (#1614) | Given | `src/lower/generic_facts.rs trusted_len_asked` |

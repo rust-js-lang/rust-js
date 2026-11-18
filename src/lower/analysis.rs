@@ -707,7 +707,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The kinds of adapters the crate's types hold (ADR 0542), of which a
     // `Cycle`'s is asked (`held_cycle`).
     let explicit_adapters = held_adapters::held_adapters(tcx);
-    let mut closure_facts = ClosureFacts::new(tcx, all_bodies, &cloned, library);
+    let compiled = |id| foreign.compiled(id);
+    let mut closure_facts = ClosureFacts::new(tcx, (all_bodies, calls.names()), &cloned, (library, &compiled));
     let (mut counted, given) = counted_with(&closure_facts);
     // Whether the crate makes a `dyn Fn` of a function holding a value with
     // a destructor, or a library hands it one whose contract says its own

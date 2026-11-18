@@ -268,3 +268,13 @@ and METAMORPHIC=all. Compile-fail case
 `fn_closure_called_then_moved_into_a_once_callee_refused`. Mutations
 `moved-once-closures-unread` and `moved-once-other-uses-ignored`
 (`lower/analysis/closures.ts`).
+
+## Amended (2026-11-18, #2031): a `let`'s closure moved once is the owner's
+
+A closure rustc infers `Fn` or `FnMut` bound by `let` and moved once into
+a call (#995) is its `call_once`'s, its body dropping what it took, where
+what generic code calls by value calls it and nothing calls it by `&`
+(ADR 0470, amended: `analysis/closures/called.rs`), not where the
+callee's bound reads `FnOnce`. Through a blanket impl of the crate's own
+trait, `impl<F: FnOnce() -> u32> Thunk for F`, it now runs and drops
+(`fn_closure_moved_through_a_blanket_impl_drops`).

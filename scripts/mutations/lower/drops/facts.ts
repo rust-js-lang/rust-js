@@ -426,8 +426,16 @@ export const mutations: Mutation[] = [
     name: "closure-moved-into-a-once-type-unchecked",
     breaks: "a closure that holds a value with a destructor, moved into a struct whose impl calls it by `FnOnce`, compiles, its captures never dropped (#2031)",
     file: "src/lower/drops/facts.rs",
-    find: "                    self.moved_variable(field.expr)\n",
-    replace: "                    false && self.moved_variable(field.expr)\n",
+    find: "                        && self.cx.closure_facts.called_by_value(closure)\n",
+    replace: "                        && false && self.cx.closure_facts.called_by_value(closure)\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_closure_moved_into_a_struct_called_once_refused.rs$"],
+  },
+  {
+    name: "held-fn-dyn-unrefused",
+    breaks: "a closure made a `dyn Fn` that a call by value calls where it's held in what's given, an `Option<F>` of an `F: FnOnce`, is given as it is, so what it holds is never dropped (#2050)",
+    file: "src/lower/drops/facts.rs",
+    find: "                        && self.cx.closure_facts.held_fn_dyn(c.closure_id.to_def_id())\n",
+    replace: "                        && false && self.cx.closure_facts.held_fn_dyn(c.closure_id.to_def_id())\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_fn_in_an_option_called_once_refused.rs$"],
   },
 ];

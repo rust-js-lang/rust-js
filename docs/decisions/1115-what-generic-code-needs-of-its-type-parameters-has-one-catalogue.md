@@ -291,3 +291,42 @@ once `TOrd.PartialOrd().lt`; generic_mut_lent_by_std's and
 loop_exit_tested_after_the_loop's `===` and `!==`; option_some_mut's
 `read(o, v)`, given no `$strictlyEqual`; and the versions example's `x >
 best`.
+
+## Amended (2026-11-18, #2031, #2050): how generic code calls what it's given, `on_the_way`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. A wrong answer's owner.
+
+A closure rustc infers `Fn` or `FnMut` drops nothing as JS calls it; Rust's
+`FnOnce::call_once` of it runs it and then drops it. Whether generic code
+calls one by value is an **Instances** fact, its catalogue's row: each call
+by value's type parameter, of every caller, through every generic caller.
+The carrier answers it with one worklist beside `instances_of`,
+`on_the_way`, sharing its namings, `givings`, which `given_on_the_way`
+now reads too, its answers for the other facts as they were:
+
+- **`on_the_way(caller, arg)`** follows a call's argument back through
+  every naming that gives it: each function's type parameter whose value
+  it is, given on as itself, in a `Box` or an `AssertUnwindSafe`, or by a
+  reference (a call by value of a reference calls by `&`), and each
+  closure it may be. Each parameter is followed once, where
+  `instances_of` follows each way to it: answered so, the facts of
+  itertools' adapters took more than nine minutes to compile one crate.
+- **`Fact::Called(&Held)`**, its namings: only the crate's own calls give
+  its closures, as `Marked`'s. And an impl's own parameter, which every
+  other fact takes as any type (a dictionary's), is what's in its place in
+  the impl's type, matched (`match_in`): of an impl of the crate's own
+  trait, in what each naming of the trait's method gives the trait,
+  `Once<{closure}>` with `Once<F>`; of another crate's, which code the
+  crate can't see calls, std's `Drop` or `Iterator`, in each type the
+  crate's bodies hold of the impl's (`held_of`). A caller's own parameter
+  met in the impl's type is matched in its values in turn; one met again
+  on that way, an adapter that wraps itself, is the outer match's. A
+  `dyn` of the trait hides its impl, as do the patterns `match_in` can't
+  read: those, and a trait's own method's `Self` of another crate's
+  trait, are `None`, and the closures given to generic code are then taken
+  as called by value. Over the corpus, the crate corpus and every test
+  file, none was.
+- A boxed `Fn` the walk meets is said apart: given as the value of a
+  parameter a naming gives, the call that gives it can give it as one
+  whose call drops it (ADR 0470, #2033); held in what's given, or given
+  back, none can, and it's refused (#2050).

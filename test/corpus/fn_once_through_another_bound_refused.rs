@@ -1,4 +1,4 @@
-//@ compile-fail: which calls it once, a function called by `&` that holds a value with a destructor
+//@ compile-fail: a closure that holds a value with a destructor, called by `FnOnce`, which drops none of it
 // A closure called by `&` that holds a value with a destructor, given
 // through `impl Is<F>` to generic code that calls `F: FnOnce()` once, is
 // refused as it is given to `F` itself: that call drops none of it, where

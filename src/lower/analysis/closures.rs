@@ -3,6 +3,8 @@
 //! 0521), and which are cloned apart (ADR 0522); and, as a `dyn Fn`'s, of
 //! a `dyn Any`, whether a value with a destructor is made one (ADR 0691).
 
+mod called;
+
 use crate::collections::IndexSet;
 use crate::lower::generic_facts::GivenADrop;
 use crate::lower::passed_on::Taker;
@@ -109,6 +111,14 @@ pub struct ClosureFacts<'tcx> {
     /// Those rustc infers `Fn` or `FnMut` moved once into an `F: FnOnce`
     /// (`moved_once`, #995).
     moved_once: IndexSet<DefId>,
+    /// What generic code calls by value and by `&` of what it's given:
+    /// the closures and the type parameters (#2031).
+    called: called::Called<'tcx>,
+    /// The closures made a `dyn Fn` or `dyn FnMut` that a call by value
+    /// calls where no call gives it as one whose call drops it: held in
+    /// what's given, or given back, or given where it's called by `&` too
+    /// (#2050).
+    held_fn_dyns: IndexSet<DefId>,
     /// The closures given back, as its value, by a closure a binding takes
     /// whose result it calls once, an effect's cleanup, `C: Cleanup`'s
     /// `FnOnce` member (#1881, ADR 1020 amended): JS calls each once, so
@@ -125,9 +135,9 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// `library`.
     pub(super) fn new(
         tcx: TyCtxt<'tcx>,
-        all_bodies: &[&Body<'tcx>],
+        (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
         cloned: &IndexSet<Ty<'tcx>>,
-        library: bool,
+        (library, compiled): (bool, &dyn Fn(DefId) -> bool),
     ) -> ClosureFacts<'tcx> {
         let closure_of = |ty: Ty<'tcx>| match ty.kind() {
             ty::Closure(id, _) => Some(*id),
@@ -136,12 +146,17 @@ impl<'tcx> ClosureFacts<'tcx> {
         let (handed, made): (Vec<_>, Vec<_>) = (all_bodies.iter())
             .flat_map(|body| fn_dyn_sources(tcx, body))
             .partition(|&(_, _, handed, _)| handed);
-        let made_fn_dyns: IndexSet<DefId> = made.into_iter().filter_map(|(_, ty, _, _)| closure_of(ty)).collect();
+        let made_fn_dyns: IndexSet<DefId> = made.iter().filter_map(|&(_, ty, _, _)| closure_of(ty)).collect();
         let mut called_once: IndexSet<DefId> = (all_bodies.iter())
             .flat_map(|body| called_once_by_js(tcx, &body.thir))
             .collect();
-        // Each moved, its only use, where a callee calls it once (#995).
-        let moved_once = all_bodies.iter().flat_map(|body| moved_once(tcx, &body.thir)).collect();
+        let called = called::called(tcx, all_bodies, names, compiled);
+        // Each moved, its only use, into a call that calls it by value and
+        // nothing calls by `&` (#995, #2031).
+        let moved_once = (all_bodies.iter())
+            .flat_map(|body| moved_once(&body.thir))
+            .filter(|closure| called.by_value.contains(closure) && !called.by_ref.contains(closure))
+            .collect();
         // What a closure JS calls gives back where JS calls that once (#1881).
         let giving: IndexSet<DefId> = (all_bodies.iter())
             .flat_map(|body| giving_back_once(tcx, &body.thir))
@@ -165,7 +180,7 @@ impl<'tcx> ClosureFacts<'tcx> {
                     .collect::<Vec<_>>()
             })
             .collect();
-        ClosureFacts {
+        let mut facts = ClosureFacts {
             fn_dyns_drop: FnDynDrops::default(),
             any_dyns_drop: false,
             error_dyns_drop: false,
@@ -176,9 +191,25 @@ impl<'tcx> ClosureFacts<'tcx> {
             cloned_apart: IndexSet::default(),
             called_once,
             moved_once,
+            called,
+            held_fn_dyns: IndexSet::default(),
             returned_once,
             library,
-        }
+        };
+        // A boxed `Fn` a call by value calls, where what it's given to
+        // doesn't take it as its own parameter's value, called by value
+        // alone, which the call gives as one whose call drops it
+        // (`boxes_called_once`, #2033), can't carry its drop (#2050).
+        let held: IndexSet<Ty<'tcx>> = (facts.called.boxes_given.iter())
+            .filter(|&&(named, index, _)| !facts.gives_its_own(tcx, named, index))
+            .map(|&(_, _, ty)| ty)
+            .chain(facts.called.boxes_held.iter().copied())
+            .collect();
+        facts.held_fn_dyns = (made.iter())
+            .filter(|&&(_, _, _, to)| held.contains(&tcx.erase_and_anonymize_regions(to)))
+            .filter_map(|&(_, ty, _, _)| closure_of(ty))
+            .collect();
+        facts
     }
 
     /// Of the closures cloned, those a clone of which `shares` says isn't
@@ -218,6 +249,52 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// something, as one a binding calls once is (#995).
     pub(in crate::lower) fn moved_once(&self, closure: DefId) -> bool {
         self.moved_once.contains(&closure)
+    }
+
+    /// Whether the closure `closure`, which rustc infers `Fn` or `FnMut`, may
+    /// be called by value, by `FnOnce`'s `call_once`, which drops it once
+    /// it's run, where JS's call of it drops none of what it holds (#2031):
+    /// what generic code calls so, of every instance its callers give.
+    pub(in crate::lower) fn called_by_value(&self, closure: DefId) -> bool {
+        self.called.by_value.contains(&closure)
+    }
+
+    /// Whether the closure `closure`, made a `dyn Fn` or a `dyn FnMut`, is
+    /// called by value where nothing drops it after (#2050).
+    pub(in crate::lower) fn held_fn_dyn(&self, closure: DefId) -> bool {
+        self.held_fn_dyns.contains(&closure)
+    }
+
+    /// Whether a call of `callee` gives its type parameter `index` as one of
+    /// its arguments, whose call by value alone a boxed `Fn` given there is
+    /// given as one that drops it for (`param_called_once`).
+    fn gives_its_own(&self, tcx: TyCtxt<'tcx>, callee: DefId, index: u32) -> bool {
+        let Some(param) = ty::GenericArgs::identity_for_item(tcx, callee)
+            .get(index as usize)
+            .and_then(|p| p.as_type())
+        else {
+            return false;
+        };
+        let sig =
+            tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(callee).instantiate_identity().skip_normalization());
+        sig.inputs().contains(&param) && self.param_called_once(tcx, callee, index)
+    }
+
+    /// Whether `callee` calls what its type parameter `index` holds by
+    /// value, and never by `&`: its bound says it's called by `FnOnce`
+    /// alone, which no other bound adds to, or a call by value calls its
+    /// value, and no call by `&` does (#2031, #2033).
+    pub(in crate::lower) fn param_called_once(&self, tcx: TyCtxt<'tcx>, callee: DefId, index: u32) -> bool {
+        let Some(param) = ty::GenericArgs::identity_for_item(tcx, callee)
+            .get(index as usize)
+            .and_then(|p| p.as_type())
+        else {
+            return false;
+        };
+        let kind = crate::lower::recognition::function_kind(tcx, callee, param);
+        !matches!(kind, Some(ty::ClosureKind::Fn | ty::ClosureKind::FnMut))
+            && !self.called.params_by_ref.contains(&(callee, index))
+            && (kind == Some(ty::ClosureKind::FnOnce) || self.called.params_by_value.contains(&(callee, index)))
     }
 
     /// Whether the closure `closure`, which rustc infers `Fn` or `FnMut`, is
@@ -803,13 +880,13 @@ fn called_once_by_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
 
 /// The closures in `thir` rustc infers `Fn` or `FnMut`, each a `let`'s
 /// whose variable's one use, by its own id, so not a shadow's of its name,
-/// is its move into a callee's parameter it calls by `FnOnce` alone
-/// (`calls_param_once`): an `F: FnOnce`, or through `impl Is<F>`. Rust's
-/// `FnOnce` of it calls it by `&` and then drops it, as its call ends or
-/// unwinds, so its body is its `call_once`'s; called or borrowed besides,
-/// it isn't, as a drop at its body's end would drop it at its first call
-/// (#995).
-fn moved_once(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
+/// is its move into a callee's call, which `ClosureFacts::new` keeps where
+/// a call by value calls it and none by `&` (`Called`): an `F: FnOnce`, or
+/// through `impl Is<F>`. Rust's `FnOnce` of it calls it by `&` and then
+/// drops it, as its call ends or unwinds, so its body is its `call_once`'s;
+/// called or borrowed besides, it isn't, as a drop at its body's end would
+/// drop it at its first call (#995, #2031).
+fn moved_once(thir: &Thir<'_>) -> Vec<DefId> {
     use crate::collections::IndexMap;
     use rustc_middle::thir::{LocalVarId, PatKind, StmtKind};
     let through = |mut e: ExprId| {
@@ -864,16 +941,12 @@ fn moved_once(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;
         };
-        let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
+        if !matches!(thir[fun].ty.kind(), ty::FnDef(..)) {
             continue;
-        };
-        let sig =
-            tcx.instantiate_bound_regions_with_erased(tcx.fn_sig(callee).instantiate_identity().skip_normalization());
-        let inputs = sig.inputs();
-        for (&arg, &input) in args.iter().zip(inputs) {
+        }
+        for &arg in args.iter() {
             if let ExprKind::VarRef { id } = thir[through(arg)].kind
                 && made.contains_key(&id)
-                && crate::lower::combinators::calls_param_once(tcx, callee, input)
             {
                 moved.push(id);
             }
