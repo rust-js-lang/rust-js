@@ -2,10 +2,8 @@
 
 import {
   $cleanup,
-  $foldOf,
+  $jsIterator,
   $live,
-  $next,
-  $nth,
   $tryOf,
   $unwindsOn,
   iterator_map,
@@ -99,14 +97,14 @@ function main() {
           countDrop_drop,
         ),
         (x) => (x * 2) | 0,
-        { next: $next, fold: $foldOf, nth: $nth },
+        $jsIterator,
         (skip) => {
           skip.return();
         },
       ),
       0,
       (a, x) => (a + x) | 0,
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
       {
         next_back: (iterator) =>
           skipDoubleEndedIterator_nextBack(

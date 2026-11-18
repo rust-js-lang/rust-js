@@ -5,6 +5,7 @@ import {
   $exactLen,
   $foldOf,
   $held,
+  $jsIterator,
   $lent,
   $live,
   $next,
@@ -235,7 +236,7 @@ function main() {
         rev.return();
       },
     ),
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
     {
       next_back: (iterator) =>
         skipDoubleEndedIterator_nextBack(
@@ -455,7 +456,7 @@ function main() {
           rev.return();
         },
       ),
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
       {
         next_back: (iterator) =>
           skipDoubleEndedIterator_nextBack(

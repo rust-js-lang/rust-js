@@ -9,6 +9,8 @@ import {
   $held,
   $iter,
   $iterator,
+  $jsIterator,
+  $last,
   $live,
   $next,
   $nth,
@@ -338,7 +340,7 @@ function main() {
             ownDrop_drop,
           ),
           () => {},
-          { next: $next, fold: $foldOf, nth: $nth },
+          $jsIterator,
           (skip) => {
             skip.return();
           },
@@ -379,7 +381,7 @@ function main() {
         false,
         ownDrop_drop,
       ),
-      { next: $next, fold: $foldOf },
+      { next: $next, fold: $foldOf, last: $last, count: $count },
       false,
       (flatMap) => {
         flatMap.return();

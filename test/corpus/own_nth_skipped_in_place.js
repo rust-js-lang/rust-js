@@ -3,6 +3,7 @@
 import {
   $foldOf,
   $iterator,
+  $jsIterator,
   $lazyChain,
   $lent,
   $next,
@@ -222,7 +223,7 @@ function main() {
             loudDrop_drop,
           ),
           3,
-          { next: $next, fold: $foldOf, nth: $nth },
+          $jsIterator,
           undefined,
           loudDrop_drop,
         ),

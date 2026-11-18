@@ -19,6 +19,7 @@ import {
   $tryOf,
   flatMapDoubleEndedIterator_advanceBackBy,
   flatMapDoubleEndedIterator_nextBack,
+  flatMapDoubleEndedIterator_rfold,
   flatMapDoubleEndedIterator_tryRfold,
   iterator_flatMap,
 } from "@rust-js/std";
@@ -110,7 +111,22 @@ function reversed(SSource) {
               false,
             ),
           undefined,
-          undefined,
+          (iterator, init, f, unwind, ends) =>
+            flatMapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              PairsIntoIterator,
+              PairsIntoIterDoubleEndedIterator,
+              false,
+              undefined,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
           undefined,
           (iterator, init, f, broke, unwind, ends) =>
             flatMapDoubleEndedIterator_tryRfold(

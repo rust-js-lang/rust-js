@@ -3,6 +3,7 @@
 import {
   $advanceSlice,
   $cleanup,
+  $count,
   $dropEach,
   $exactLen,
   $filterEnds,
@@ -146,7 +147,7 @@ function main() {
       undefined,
       dDrop_drop,
     ),
-    { next: $next, fold: $foldOf },
+    { next: $next, fold: $foldOf, count: $count },
     (filter) => {
       filter.return();
     },

@@ -150,9 +150,9 @@ function zero(guard) {
 function reachingItsOwnFold() {
   let g$live = true;
   const g = ["f"];
-  let take;
+  let iter;
   try {
-    take = iterator_take(
+    iter = iterator_take(
       own(4, "own"),
       3,
       { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
@@ -170,9 +170,19 @@ function reachingItsOwnFold() {
     throw error;
   }
   const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-  let n = $consume(take, "fold", 0, f, undefined, () => {
-    dDrop_drop(g);
-  });
+  let result;
+  try {
+    result = $consume(iter, "fold", 0, f, undefined, () => {
+      dDrop_drop(g);
+    });
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  let n = result;
   console.log(`take ${n}`);
   let g$live$1 = true;
   const g$1 = ["f"];

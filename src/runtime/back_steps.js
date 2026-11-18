@@ -142,6 +142,34 @@ function $mapEnds(it, f) {
   return map;
 }
 
+// Std's `Copied` of `it`, each item copied by `f`: its map, `$mapEnds`,
+// that passes on what std's does too, its source's `nth`, `advance_by`,
+// `last`, `count` and `advance_back_by`, each the crate's own where it
+// writes one, where a map's are its fold's (copied.rs, #2122). Its items
+// are `Copy`: nothing it passes over has a drop.
+function $copied(it, f) {
+  const copied = $mapEnds(it, f);
+  const mapped = (step) => (step.done ? step : { done: false, value: f(step.value) });
+  $forward(copied, it, {
+    nth: it.nth === undefined ? undefined : (k) => mapped(it.nth(k)),
+    last: it.last === undefined ? undefined : () => mapped(it.last()),
+    advanceBy: "advanceBy",
+    count: "count",
+    advanceBackBy: "advanceBackBy",
+  });
+  return $ownsAs(copied, it, "nth", "last");
+}
+
+// Std's `Cloned` of what generic code was given, of items whose clone is
+// the item: `it` itself where none of the steps std's `Cloned` leaves to
+// its fold, `nth`, `last`, `count` and `nth_back`, is its own, so an
+// array's is still read by index (ADR 0975); else its map, `$mapEnds`,
+// which asks its source's folds alone, as std's `Cloned` does (#2122).
+function $cloned(it) {
+  if (!["nth", "last", "count", "nthBack"].some((step) => it[$ownStep(step)])) return it;
+  return $mapEnds(it, (item) => item);
+}
+
 // `it.step_by(step)`, as Rust's `StepBy` steps: its first item, then
 // each `step`th, a skip stopped by a `None`, which it gives, and stepped on
 // after, as std's `nth` is; each passed over dropped, `drop`, where items

@@ -5,6 +5,7 @@ import {
   $collectOptions,
   $collectResults,
   $foldOf,
+  $jsIterator,
   $live,
   $next,
   $nth,
@@ -53,7 +54,7 @@ function main() {
       countingDrop_drop,
     ),
     (value) => value,
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
     (skip) => {
       skip.return();
     },

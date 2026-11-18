@@ -39,3 +39,13 @@ each dropped where Rust drops it, against native Rust.
   iterators draft's analysis would choose.
 - Mutations leave them unclosed, hold no source, drop nothing consumed,
   and map a clone of what needs none.
+
+## Amendment: a clone is its source only where it hides nothing (2026-11-19, #2122, #2131)
+
+A `cloned()` of what needs no clone is its source in JS only where
+std's `Cloned` asks each of the crate's own steps its source reaches
+(`is_its_source`, by `reaches_as_its_source`, std's catalog). `Cloned`
+leaves `nth`, `last` and `count` to its `fold`, so one of an iterator that
+writes them is a map of it, and one of what generic code is given is
+`$cloned(it)`, which chooses at run time. A `copied()` stays its source
+(#2130). See ADR 1092's step 1b.

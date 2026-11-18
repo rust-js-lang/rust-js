@@ -3,6 +3,7 @@
 import {
   $count,
   $foldOf,
+  $jsIterator,
   $last,
   $lazyChain,
   $lent,
@@ -74,7 +75,7 @@ function main() {
         nth: countIterator_nth,
       }),
       (x) => x < 3,
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   const value = Array.from(
@@ -86,7 +87,7 @@ function main() {
           nth: countIterator_nth,
         }),
         (x) => (x * 2) | 0,
-        { next: $next, fold: $foldOf, nth: $nth },
+        $jsIterator,
       ),
     )
       .drop(1)
@@ -117,7 +118,7 @@ function main() {
           fold: countIterator_fold,
           nth: countIterator_nth,
         }),
-        { next: $next, fold: $foldOf, nth: $nth },
+        $jsIterator,
         false,
       ),
     ),
@@ -242,7 +243,7 @@ function main() {
         nth: countIterator_nth,
       }),
       (x) => x < 7,
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
     ),
   );
   console.log(`${last == null ? "None" : `Some(${last})`}`);
@@ -258,7 +259,7 @@ function main() {
         s.value = (s.value + x) | 0;
         return s.value;
       },
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
     ).reduce((n) => n + 1, 0)}`,
   );
   const value$3 = $last(

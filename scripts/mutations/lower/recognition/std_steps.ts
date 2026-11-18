@@ -28,4 +28,24 @@ export const mutations: Mutation[] = [
     replace: "            Wrapper::MutRefUnsized => \"&mut I\",\n",
     unitTests: "lower::recognition::std_steps::tests::wrappers_pass_on_as_std_does",
   },
+  {
+    name: "asks-of-one-run-alone",
+    breaks:
+      "what std's adapter asks of what it holds is read from the catalog's first run alone, so a step asked only where its source is longer, a `skip`'s `last`'s `nth`, is taken as unasked (#2112)",
+    file: "src/lower/recognition/std_steps.rs",
+    find: "        .into_iter()\n        .flatten()\n    {\n",
+    replace: "        .into_iter()\n        .flatten()\n        .take(1)\n    {\n",
+    tests: ["test/corpus.test.ts", "-t", "^repeat_n_hint_held.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "asks-of-a-default-step",
+    breaks:
+      "a step std's adapter doesn't write, the trait's default, is taken to ask what its own steps ask of its source, so a `map()`'s `last`, its `fold`'s, reaches the crate's own `fold` as its `last` (#2112)",
+    file: "src/lower/recognition/std_steps.rs",
+    find: "    if !writes(name, step) {\n        return asked;\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    snapshots: true,
+  },
 ];

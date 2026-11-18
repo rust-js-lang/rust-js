@@ -10,6 +10,7 @@ import {
   $folded,
   $held,
   $iter,
+  $jsIterator,
   $last,
   $lastDropping,
   $lazyTakeWhile,
@@ -229,7 +230,7 @@ function main() {
       dDrop_drop(d);
       return result$2;
     },
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
     (skip) => {
       skip.return();
     },
@@ -270,7 +271,7 @@ function main() {
       dDrop_drop,
     ),
     (d) => [1, d],
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
     (skip) => {
       skip.return();
     },

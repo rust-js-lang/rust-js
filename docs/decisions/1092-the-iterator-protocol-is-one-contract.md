@@ -1661,3 +1661,76 @@ std's, that `advance_back_by(n)` then the next from its back, where it
 stepped each (`$nthBack`, `$nthBackOf`): in the build of std's structs
 `rev().nth(4)` of a flatten of `Vec`s dropped `12, 11, 10`. Mutation
 `nth-back-default-steps-each`.
+
+**Step 1b, what an adapter asks of what it holds is the catalog's (#2122,
+#2131).** `OwnStep::asked_of` reads `std_steps::asks`: each step std's impl
+writes, and every step it asks of its source, its second side or each
+inner iterator in any of the probe's runs. A step it doesn't write is the
+trait's default, which asks the adapter's own steps, so it asks nothing
+of the source. `reaches_its_own` follows each ask except a fold's `nth`. A
+`skip`'s or a `step_by`'s `fold` reaching the crate's own `nth` is
+`nth_folded_sources`' question, and that one folds by it. The hand table
+goes, and with it the 27 mutations of its rows. Their rules are std's data
+now, held to native by test/std-steps.test.ts. The derivation's mutations
+replace them: `asks-of-one-run-alone`, `asks-of-a-default-step`,
+`asks-of-other-as-of-src`, `asks-of-inner-as-of-src` and
+`fold-reaches-its-own-nth`. The table had `Copied` and `Cloned` swapped
+against std (#2122): std's `Copied` passes `nth`, `last`, `count` and
+`advance_by` on to its source; `Cloned` writes none of them, so it steps
+its `fold`. The corpus moves this made fall into three classes:
+
+- **`$jsIterator` dictionaries** where a hand row over-claimed an own
+  step. The output reads closer to what a person writes.
+- **`copied()`'s and `cloned()`'s `count` and `last`**, each now std's.
+- **A `$consume` of a `take()`'s fold becomes a `try`/`finally` close.** The
+  table over-claimed `Take`'s fold, and std's closes what it takes as it
+  ends. Forced by correctness; the output reads further from hand-written
+  JS.
+
+Then each consumer and each form asks the catalog through
+`reaches_its_own`:
+
+- **`count()`** gives `$count` where the receiver's own type, not what a
+  `by_ref()` lends, reaches the crate's own (`counted`).
+- **A `copied()` or a `cloned()` is its source in JS** (`is_its_source`,
+  ADR 0547) only where it reaches each of the crate's own steps its
+  source reaches (`reaches_as_its_source`). A `copied()` is its source
+  still, as `as_double_ended`'s copied arm assumes, though std's `Copied`
+  doesn't pass `nth_back` on (#2130); so is std's compiled struct, in the
+  build of std's structs.
+- **Otherwise a `cloned()` is `.map` or `$mapEnds`**, which asks its
+  source's folds alone, as std's `Cloned` does.
+- **A `cloned()` of what generic code is given is `$cloned(it)`.** That
+  value carries its caller's own steps (`ownNth`, `ownLast`, `ownCount`),
+  so the choice is made at run time: `it` itself where none of the steps
+  `Cloned` hides is its own, so an array's is still read by index where a
+  zip reads it so (ADR 0975); a `$mapEnds` of it otherwise. With the plain
+  form, generic `i.cloned().skip(1).count()`, `.fuse().last()`,
+  `.chain(..).count()` and `.take(3).nth(1)` reached the crate's own
+  (#2131).
+- **A `copied()` of `Copy` structs, each its own object, is `$copied(it,
+  copy)`** where it reaches the crate's own `nth`, `last` or `count`.
+  That is `$mapEnds` plus its source's `nth`, `advance_by`, `last`,
+  `count` and `advance_back_by`, each item copied. Before, a map of each
+  copy counted its source's `next` where std's `Copied` asks its `count`.
+
+The net holds `$copied`, and `Cloned`'s `$mapEnds` and `$Steps.map`, to
+the catalog's trace.
+
+Two more moves, each away from what a person writes and each run as
+before. A `cloned()` of `repeat`, which writes `count` and `last` itself,
+is `.map((item) => item)` even where its consumer asks neither (#2128
+chooses the form by what the consumer asks). And `count()` asks only the
+catalog now, a type parameter's included: a generic `&mut I`'s, whose
+`count` is std's default, is a `.reduce` that drops each item, where it
+was `$count($lent(..), drop)`. These two are the readability baseline's
+growth in role fallbacks (249.7 to 249.8).
+
+Case (ADR 0262): R. Which of the crate's steps std calls is observable.
+Corpus cases `copied_and_cloned_ask_what_std_does`,
+`cloned_of_generic_codes_source_asks_what_std_does` and
+`copied_structs_ask_their_sources_own_steps` run as native in both builds.
+Mutations: `cloned-as-its-source-whatever-it-hides`, `count-reached-unasked`,
+`count-reached-of-the-lent`, `cloned-of-generic-source-mapped`,
+`copied-passes-nothing-on`, `cloned-hides-nothing`, `cloned-always-mapped`,
+`copied-count-by-fold` and `copied-last-by-fold`.

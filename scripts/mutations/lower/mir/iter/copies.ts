@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     name: "cloned-mapped-anyway",
     breaks: "a `cloned()` of what needs no clone is mapped as one that does",
     file: "src/lower/mir/iter/copies.rs",
-    find: "            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())\n",
-    replace: "            )\n",
+    find: "            .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))\n            .is_some_and(|source| item() && self.asks_as_its_source(ty, source))\n",
+    replace: "            .is_some_and(|source| item() && self.asks_as_its_source(ty, source))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -29,9 +29,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`copied()` is the iterator it copies, its `Copy` structs the same objects, so changing a copy changes the slice's",
     file: "src/lower/mir/iter/copies.rs",
-    find: "            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())\n            && item()",
+    find: "            .is_some_and(|source| item() && self.asks_as_its_source(ty, source))\n",
     replace:
-      "            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())\n            && (crate::lower::recognition::copied_source(self.tcx, ty).is_some() || item())",
+      "            .is_some_and(|source| (crate::lower::recognition::copied_source(self.tcx, ty).is_some() || item()) && self.asks_as_its_source(ty, source))\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
@@ -74,5 +74,23 @@ export const mutations: Mutation[] = [
     find: "            Some(_) => self.copy_if_needed(Expr::var(&x), pointee),\n",
     replace: "            Some(_) => self.clone_value(Expr::var(&x), pointee, span, &mut body)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
+  {
+    name: "cloned-of-generic-source-mapped",
+    breaks:
+      "a `cloned()` in generic code is a map of what it's given, so a zip moved through generic code reads a slice's by index from the map, which has none: `NaN` (#2131)",
+    file: "src/lower/mir/iter/copies.rs",
+    find: "            && !self.asks_as_its_source(output, source)\n        {\n",
+    replace: "            && false\n        {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_of_generic_codes_source_asks_what_std_does.rs$"],
+  },
+  {
+    name: "copied-passes-nothing-on",
+    breaks:
+      "a `copied()` of `Copy` structs is a map of each one's copy, whose `count`, `last` and `nth` step its source's `next`, where std's `Copied` asks its source's own (#2122)",
+    file: "src/lower/mir/iter/copies.rs",
+    find: "            (true, _) => Expr::call_helper(\"$copied\", vec![it, copy]),\n",
+    replace: "            (true, _) => Expr::call_helper(\"$mapEnds\", vec![it, copy]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_structs_ask_their_sources_own_steps.rs$"],
   },
 ];

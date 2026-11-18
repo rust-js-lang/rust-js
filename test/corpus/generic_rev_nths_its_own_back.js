@@ -8,6 +8,7 @@ import {
   $foldOf,
   $iter,
   $iterator,
+  $jsIterator,
   $lastDropping,
   $next,
   $nth,
@@ -243,7 +244,7 @@ function main() {
           dDrop_drop(d);
           return result;
         },
-        { next: $next, fold: $foldOf, nth: $nth },
+        $jsIterator,
         (skip) => {
           skip.return();
         },

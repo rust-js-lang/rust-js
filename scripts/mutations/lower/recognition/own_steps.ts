@@ -3,41 +3,12 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "lasts-its-own-not-through-skip",
-    breaks:
-      "`skip(n).last()` of the crate's iterator with its own `last` folds, not `nth(n - 1)` then its `last`",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Last, \"Skip\" | \"Fuse\" | \"Peekable\" | \"Copied\" | \"Cloned\") => own,\n",
-    replace: "            (Last, \"Fuse\" | \"Peekable\" | \"Copied\" | \"Cloned\") => own,\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "lasts-its-own-not-through-chain",
-    breaks:
-      "a chain's `last` of the crate's iterators with their own `last` folds, not each side's `last`",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Last, \"Chain\") => &[(0, Last), (1, Last)],\n",
-    replace: "            (Last, \"Chain\") => &[],\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
-    snapshots: true,
-  },
-  {
     name: "lasts-its-own-not-generic",
     breaks: "generic code's `last()` steps its iterator to its end, never asking the type's own `last` (#496)",
     file: "src/lower/recognition/own_steps.rs",
     find: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count)\n",
     replace: "        matches!(self, OwnStep::Nth | OwnStep::Count)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_own_last.rs$"],
-  },
-  {
-    name: "counts-its-own-not-through-adapters",
-    breaks: "std's compiled `Peekable` of the crate's iterator with its own `count` is given a dictionary with none, so its `count` steps it (#505)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Count, \"Skip\" | \"Fuse\" | \"Peekable\" | \"Enumerate\" | \"Copied\" | \"Cloned\") => own,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint.rs$"],
-    snapshots: true,
   },
   {
     name: "may-fold-its-own-not-generic",
@@ -60,16 +31,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "folds-its-own-not-through-chain",
-    breaks:
-      "`last()` of a `chain` of the crate's iterator steps it by `next`, not by each side's own `fold`",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Fold, \"Chain\") => &[(0, Fold), (1, Fold)],\n",
-    replace: "            (Fold, \"Chain\") => &[],\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
-    snapshots: true,
-  },
-  {
     name: "folds-its-own-never",
     breaks:
       "`collect` into a string or a hash map, and `last()`, of the crate's iterator step it by `next`, not by its own `fold`",
@@ -87,136 +48,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
   },
   {
-    name: "nths-its-own-no-take",
-    breaks: "take's nth is its source's",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
-    replace: "            (Nth, \"Skip\" | \"StepBy\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
     name: "nths-its-own-no-mut-ref",
     breaks: "&mut I's nth is I's",
     file: "src/lower/recognition/own_steps.rs",
     find: "            return step.through_a_mut_ref() && self.reaches_its_own(*inner, step, reach);\n",
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "folds-by-own-nth-never",
-    breaks: "a skip's fold asks its source's nth",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "        if matches!(adapter, \"Skip\" | \"StepBy\") {\n",
-    replace: "        if matches!(adapter, \"Never\") {\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "folds-by-own-nth-not-through-map",
-    breaks: "a map's fold is its source's",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "                sources.extend(self.nth_folded_sources(source));\n",
-    replace: "                let _ = source;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
-    name: "try-rfolds-not-through-fuse",
-    breaks:
-      "a `fuse()`'s `try_rfold` isn't said to be its source's, so a `take(3).fuse().skip(1).rev()` collected into a `String` steps by `next`, dropping 4 before 5 (#697)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: '            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Fuse" | "Peekable") => own,\n',
-    replace: '            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Peekable") => own,\n',
-    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
-  },
-  {
-    name: "try-rfolds-not-through-peekable",
-    breaks:
-      "a `peekable()`'s `try_rfold` isn't said to be its source's, so a `take(3).peekable().skip(1).rev()` collected into a `String` steps by `next`, dropping 4 before 5 (#697)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: '            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Fuse" | "Peekable") => own,\n',
-    replace: '            (TryRfold, "Map" | "Filter" | "Enumerate" | "Skip" | "Fuse") => own,\n',
-    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
-  },
-  {
-    name: "rfolds-not-through-peekable",
-    breaks:
-      "a `peekable()`'s `rfold` isn't said to be its source's, so generic code's `src.take(3).peekable().rev()` collected into a `Vec` steps by `next`, dropping 4 before 5 (#697)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: '            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse" | "Peekable" | "FlatMap" | "Flatten") => own,\n',
-    replace: '            (Rfold, "Map" | "Filter" | "Enumerate" | "Fuse" | "FlatMap" | "Flatten") => own,\n',
-    tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
-  },
-  {
-    name: "nths-its-own-no-peekable",
-    breaks:
-      "a `peekable()`'s `nth` isn't said to be its source's, so a `step_by` of a `Peekable` of a reversed `Vec` is a `filter`, which drops each item it passes, back to front, not as `nth_back`'s one slice (#261)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
-    replace: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\") => own,\n",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
-  },
-  {
-    name: "nths-its-own-no-enumerate",
-    breaks: "enumerate's nth is its source's",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
-    replace: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Fuse\" | \"Peekable\") => own,\n",
-    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|step_by_compiled_source_nth).rs$"],
-  },
-  {
-    name: "nths-its-own-no-fuse",
-    breaks:
-      "`fuse().nth(k)` of the crate's iterator with its own `nth` is `.drop(k).take(1)`, not `$nth(it, k)`",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\" | \"Peekable\") => own,\n",
-    replace: "            (Nth, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Peekable\") => own,\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(own_last_and_nth_passed_on|step_by_compiled_source_nth).rs$"],
-  },
-  {
-    name: "take-folds-unseen",
-    breaks:
-      "`last()` of a `Take` isn't by its fold, so a `Skip` inside asks the crate's own `nth(n)`, not `nth(n - 1)` (#213)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\" | \"TakeWhile\" | \"Scan\" | \"MapWhile\",\n",
-    replace: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"TakeWhile\" | \"Scan\" | \"MapWhile\",\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_take_own_nth.rs$"],
-  },
-  {
-    name: "take-while-folds-unseen",
-    breaks:
-      "`last()` of a `take_while` isn't by its fold, so a `skip` inside asks the crate's own `nth(n)`, not `nth(n - 1)` (#214)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\" | \"TakeWhile\" | \"Scan\" | \"MapWhile\",\n",
-    replace: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\" | \"Scan\" | \"MapWhile\",\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
-  },
-  {
-    name: "chain-nths-unseen",
-    breaks:
-      "a `chain`'s `nth` isn't said to reach its second side's own, so `chain(c()).step_by(2)` is a filter of indices that asks none (#214)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Nth, \"Chain\") => &[(1, Nth)],\n",
-    replace: "            (Nth, \"Chain\") => &[],\n",
-    tests: ["test/corpus.test.ts", "-t", "^(adapters_own_nth_fold|step_by_of_own_nth_that_never_unwinds).rs$"],
-    snapshots: true,
-  },
-  {
-    name: "scan-folds-unseen",
-    breaks:
-      "`last()` of a `scan` or a `map_while` isn't by its fold, so a `step_by` inside asks the crate's own `nth(0)` first (#216)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\" | \"TakeWhile\" | \"Scan\" | \"MapWhile\",\n",
-    replace: "                \"Map\" | \"Filter\" | \"FilterMap\" | \"Enumerate\" | \"Inspect\" | \"Skip\" | \"SkipWhile\" | \"Copied\" | \"Cloned\"\n                | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\" | \"Take\" | \"TakeWhile\",\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
-  },
-  {
-    name: "folds-its-own-not-reversed",
-    breaks:
-      "`rev().last()` of the crate's iterator steps it by `next_back`, not its own `rfold` (#217)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Fold, \"Rev\") => &[(0, Rfold)],\n",
-    replace: "            (Fold, \"Rev\") => &[],\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
   {
     name: "folds-its-own-reversed-through-mut-ref",
@@ -229,51 +66,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "nths-its-own-not-reversed",
-    breaks:
-      "`rev().nth(n)` of the crate's iterator reads as a JS iterator's `drop(n)`, not its own `nth_back`, `$nth` (#217)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Nth, \"Rev\") => &[(0, NthBack)],\n",
-    replace: "            (Nth, \"Rev\") => &[],\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "reversed-user-iterator-any-adapter",
-    breaks:
-      "an adapter of the crate's iterator, not only its `rev()`, folds by its `rfold` (#217)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Fold, \"Rev\") => &[(0, Rfold)],\n",
-    replace: "            (Fold, _) => &[(0, Rfold)],\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
-    snapshots: true,
-  },
-  {
     name: "rfolds-its-own-never",
     breaks:
       "`last()` of a `rev()` of a map of the crate's iterator steps it by `next_back`, not its own `rfold` (#220)",
     file: "src/lower/recognition/own_steps.rs",
     find: "            return own.is_some();\n",
     replace: "            return own.is_some() && step != OwnStep::Rfold;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
-  },
-  {
-    name: "rfolds-its-own-no-take",
-    breaks:
-      "a `take`'s `rfold` isn't said to trim by its source's own `nth_back` (#220)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Rfold, \"Take\") => &[(0, Rfold), (0, NthBack)],\n",
-    replace: "            (Rfold, \"Take\") => &[(0, Rfold)],\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "rfolds-its-own-no-skip",
-    breaks:
-      "a `skip`'s `rfold`, its `try_rfold`, isn't said to reach a `take`'s trim by the crate's `nth_back` (#220)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Rfold, \"Skip\") => &[(0, TryRfold)],\n",
-    replace: "            (Rfold, \"Skip\") => &[],\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
@@ -285,15 +83,6 @@ export const mutations: Mutation[] = [
     replace: "            return own.is_some() && step != OwnStep::NthBack;\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
     snapshots: true,
-  },
-  {
-    name: "rfolds-its-own-no-fuse",
-    breaks:
-      "a `fuse()`'s `rfold` isn't said to be its source's, so `rev().last()` of one doesn't fold by the crate's own (#224)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Rfold, \"Map\" | \"Filter\" | \"Enumerate\" | \"Fuse\" | \"Peekable\" | \"FlatMap\" | \"Flatten\") => own,\n",
-    replace: "            (Rfold, \"Map\" | \"Filter\" | \"Enumerate\" | \"Peekable\" | \"FlatMap\" | \"Flatten\") => own,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
     name: "nths-its-own-not-generic",
@@ -308,36 +97,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "flatten-count-asks-no-inner",
-    breaks: "a flatten's `count` asks nothing of its inner iterators, so it's JS's `flatMap` counted by `next`, not each inner iterator's own `count` as std's `FlattenCompat::count` asks (#736)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Count, \"Flatten\" | \"FlatMap\") => &[(INNERS, Count)],\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
-  },
-  {
     name: "flatten-inners-are-its-source",
     breaks: "what a flatten asks of its inner iterators is asked of its source, whose `count` is std's, so a flatten's `count` never reaches each inner one's own (#736)",
     file: "src/lower/recognition/own_steps.rs",
     find: "            INNERS => self.flattened_inner(ty),\n",
     replace: "            INNERS => args.types().next(),\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
-  },
-  {
-    name: "step-by-rfold-asks-no-nth-back",
-    breaks: "the catalog says a `StepBy`'s `rfold` and `try_rfold` ask nothing of its source, where std's ask its `nth_back` (#834)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (Rfold | TryRfold, \"StepBy\") => &[(0, NthBack)],\n",
-    replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^step_by_folded_from_its_back_as_std with"],
-  },
-  {
-    name: "step-by-nth-back-unowned",
-    breaks: "the catalog says a `StepBy`'s `nth_back` asks nothing of its source, where std's asks its `nth_back` (#834)",
-    file: "src/lower/recognition/own_steps.rs",
-    find: "            (NthBack, \"Skip\" | \"Take\" | \"StepBy\" | \"Enumerate\" | \"Fuse\") => own,\n",
-    replace: "            (NthBack, \"Skip\" | \"Take\" | \"Enumerate\" | \"Fuse\") => own,\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^step_by_folded_from_its_back_as_std with"],
   },
   {
     name: "repeat-n-own-steps-unknown",
@@ -381,12 +146,38 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_consumer_of_an_into_iter_takes_it.rs$"],
   },
   {
-    name: "flatten-last-asks-no-inner",
-    breaks:
-      "std's `Flatten::last` is taken to ask nothing of its inner iterators, so a flatten of the crate's iterators that write `last` is JS's `flatMap`, whose last never asks theirs (#2123)",
+    name: "asks-of-other-as-of-src",
+    breaks: "what a chain or a zip asks of its second side is taken as asked of its first, so a chain's `last` never reaches its second side's own (#2112)",
     file: "src/lower/recognition/own_steps.rs",
-    find: '            (Last, "Flatten" | "FlatMap") => &[(INNERS, Last)],\n',
+    find: '                    "other" => 1,\n',
+    replace: '                    "other" => 0,\n',
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_of_a_reference_given_to_generic_code.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "asks-of-inner-as-of-src",
+    breaks: "what a flatten asks of each inner iterator is taken as asked of its source, so a flatten's `count` never reaches its inners' own (#2112)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: '                    "inner" => INNERS,\n',
+    replace: '                    "inner" => 0,\n',
+    tests: ["test/corpus.test.ts", "-t", "^(flatten_count_takes_each_inner_count|flatten_steps_its_inners_as_std).rs$"],
+  },
+  {
+    name: "fold-reaches-its-own-nth",
+    breaks:
+      "a `step_by`'s or a `skip`'s `fold` is taken to reach the crate's own as its `nth` does, which `nth_folded_sources` answers, so a fold that drops what it folds is refused (#2112)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            .filter(|&(_, asked)| !(matches!(step, OwnStep::Fold) && matches!(asked, OwnStep::Nth)))\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(folded_functions_drop_before_the_rest|own_nth_through_adapters|adapters_own_nth_fold).rs$"],
+  },
+  {
+    name: "cloned-as-its-source-whatever-it-hides",
+    breaks:
+      "a `cloned()` of the crate's iterator that writes `count` or `last` is that iterator in JS, so its `count` is the crate's own, where std's `Cloned` steps its `fold` (#2122)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            .all(|step| !self.reaches_its_own(source, step, Reach::Sure) || self.reaches_its_own(ty, step, Reach::Sure))\n",
+    replace: "            .all(|_| true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_and_cloned_ask_what_std_does.rs$"],
   },
 ];

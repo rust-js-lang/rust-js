@@ -3,8 +3,8 @@
 import {
   $count,
   $extend,
-  $foldOf,
   $held,
+  $jsIterator,
   $last,
   $lent,
   $live,
@@ -47,14 +47,14 @@ function main() {
   const held = iterator_take(
     iterator_skip(counted(5), 1, { next: countIterator_next, nth: countIterator_nth }),
     3,
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
   );
   console.log(`sum ${held.reduce((a, b) => (a + b) | 0, 0)}`);
 
   const stepped = iterator_take(
     iterator_skip(counted(5), 2, { next: countIterator_next, nth: countIterator_nth }),
     2,
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
   );
   const sizeHint = $sizeHint(stepped);
   console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
@@ -72,7 +72,7 @@ function main() {
   const tried = iterator_take(
     iterator_skip(counted(9), 1, { next: countIterator_next, nth: countIterator_nth }),
     5,
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
   );
   const first = $tryFoldSome(tried, 0, (a, x) => {
     if (x < 4) {
@@ -87,7 +87,7 @@ function main() {
   const counting = iterator_take(
     iterator_skip(counted(9), 2, { next: countIterator_next, nth: countIterator_nth }),
     3,
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
   );
   console.log(`count ${$count(counting)}`);
 

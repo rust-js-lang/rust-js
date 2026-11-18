@@ -176,7 +176,17 @@ function main() {
     ).length;
   });
   check("copied", () => Array.from($roomForHint($repeating(3), 1, true)).length);
-  check("cloned", () => Array.from($roomForHint($repeating(3), 1, true)).length);
+  check(
+    "cloned",
+    () =>
+      Array.from(
+        $roomForHint(
+          $repeating(3).map((item) => item),
+          1,
+          true,
+        ),
+      ).length,
+  );
   check(
     "chars",
     () => Array.from($roomForHint($iterator({ start: "a" }, $rangeFromNext), 4, true)).length,

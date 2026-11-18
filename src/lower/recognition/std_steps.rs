@@ -4,7 +4,8 @@
 //! (#2000, #2112). It's std_steps.txt, which test/std-steps.test.ts makes
 //! from std alone: what each impl writes, read from rust-src, and what each
 //! step asks, run natively over sources that print each step they're asked
-//! (test/std-steps.rs). The lowering asks it here, `Wrapper::passes`.
+//! (test/std-steps.rs). The lowering asks it here, `Wrapper::passes` and
+//! `asks`.
 
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
@@ -94,6 +95,29 @@ pub(in crate::lower) fn back_steps() -> Vec<&'static str> {
 #[cfg(test)]
 pub(in crate::lower) fn written(name: &str) -> &'static [&'static str] {
     catalog().get(name).map_or(&[], |steps| steps.writes.as_slice())
+}
+
+/// What std's `step` of `name` asks of what it holds, in any of the
+/// probe's runs, each once; none where std's impls don't write `step`, the
+/// trait's default, which asks the adapter's own steps, not its sources'.
+pub(in crate::lower) fn asks(name: &str, step: &str) -> Vec<Asked> {
+    let mut asked: Vec<Asked> = Vec::new();
+    if !writes(name, step) {
+        return asked;
+    }
+    for run in catalog()
+        .get(name)
+        .and_then(|steps| steps.runs.get(step))
+        .into_iter()
+        .flatten()
+    {
+        for &one in run {
+            if !asked.contains(&one) {
+                asked.push(one);
+            }
+        }
+    }
+    asked
 }
 
 /// A wrapper std's impls step the iterator it holds through: a `&mut I` of

@@ -4,12 +4,10 @@ import {
   $collectDropping,
   $collectVec,
   $collectsInPlace,
-  $count,
-  $foldOf,
   $given,
   $givenClone,
   $iterator,
-  $last,
+  $jsIterator,
   $max,
   $next,
   $roomForHint,
@@ -70,7 +68,7 @@ function passedOn(it, IIterator, IClone, ITrustedLen, IInPlace) {
   $next(copied);
   return both(
     copied,
-    { next: $next, fold: $foldOf, last: $last, count: $count },
+    $jsIterator,
     { clone: (value) => $givenClone(value, IClone.clone) },
     $vecCollectWay($collectsInPlace(IInPlace, 4, 4), ITrustedLen, IInPlace),
   );

@@ -2,13 +2,14 @@
 
 import {
   $collectDropping,
+  $copied,
   $exactLen,
   $given,
   $givenClone,
   $iter,
   $lent,
-  $mapEnds,
   $next,
+  $nth,
   $roomForHint,
   $unwrap,
   iterator_take,
@@ -62,14 +63,14 @@ function pointDebug_fmt(point) {
 }
 
 function moved(it, IIterator, IExactSizeIterator, IClone) {
-  const copied = $mapEnds(it, (item) => ({ ...item }));
+  const copied = $copied(it, (item) => ({ ...item }));
   const first = $unwrap($next(copied));
   first.x = (first.x + 10) >>> 0;
   return [{ ...first }, copied.len(), $collectDropping($roomForHint(copied, 4, false))];
 }
 
 function movedPlain(it) {
-  const copied = $mapEnds(Iterator.from(it), (item) => ({ ...item }));
+  const copied = $copied(Iterator.from(it), (item) => ({ ...item }));
   const first = $unwrap($next(copied));
   first.x = (first.x + 10) >>> 0;
   return [{ ...first }, copied.len(), $collectDropping($roomForHint(copied, 4, false))];
@@ -82,7 +83,7 @@ function lenOf(j) {
 }
 
 function movedOn(it) {
-  const copied = $mapEnds(Iterator.from(it), (item) => ({ ...item }));
+  const copied = $copied(Iterator.from(it), (item) => ({ ...item }));
   const first = $unwrap($next(copied));
   first.x = (first.x + 20) >>> 0;
   return [{ ...first }, lenOf(copied)];
@@ -100,7 +101,9 @@ function lent(it, IIterator, IExactSizeIterator, IClone) {
 function lentPlain(it) {
   const copied = $lent(it);
   const n = copied.len();
-  const first = $collectDropping($roomForHint(iterator_take(copied, 1), 4, false));
+  const first = $collectDropping(
+    $roomForHint(iterator_take(copied, 1, { next: $next, nth: $nth }), 4, false),
+  );
   return [n, first, $next(it)];
 }
 

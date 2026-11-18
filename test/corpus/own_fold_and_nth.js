@@ -133,7 +133,7 @@ function main() {
         nth: upIterator_nth,
       }),
       (x) => (x + 1) >>> 0,
-      { next: $next, fold: $foldOf },
+      { next: $next, fold: $foldOf, count: $count },
     ).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(

@@ -8,7 +8,9 @@ use super::*;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether an adapter of type `ty` is its source itself in JS: a
     /// `copied()`, or a `cloned()` of what needs no clone, each item as it
-    /// is (ADR 0547). The one answer, of what's made and what's dropped.
+    /// is (ADR 0547), where it asks the crate's own steps as its source
+    /// does (`asks_as_its_source`). The one answer, of what's made and
+    /// what's dropped.
     pub(in crate::lower) fn is_its_source(&self, ty: Ty<'tcx>) -> bool {
         let item = || {
             self.iterator_item(ty)
@@ -16,9 +18,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // A copy of a `Copy` item is a clone of it too, a struct's an object
         // of its own where something changes one in place.
-        (crate::lower::recognition::copied_source(self.tcx, ty).is_some()
-            || crate::lower::recognition::cloned_source(self.tcx, ty).is_some())
-            && item()
+        (crate::lower::recognition::copied_source(self.tcx, ty))
+            .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))
+            .is_some_and(|source| item() && self.asks_as_its_source(ty, source))
+    }
+
+    /// Whether a `copied()` or a `cloned()` of type `ty` of a `source` asks
+    /// the crate's own steps as its source does, so its JS may be its
+    /// source's: as std's catalog says (`reaches_as_its_source`), not a
+    /// `cloned()` of one that writes `count`, which std's `Cloned` leaves
+    /// to its `fold` (#2122); a `copied()`, which is its source in JS (ADR
+    /// 0480), as std's `Copied` passes each step on but `nth_back`
+    /// (#2130); or std's compiled struct, made of its source where what
+    /// steps it asks it (`knowing_held`), which asks what std's does.
+    fn asks_as_its_source(&self, ty: Ty<'tcx>, source: Ty<'tcx>) -> bool {
+        crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
+            || crate::lower::recognition::copied_source(self.tcx, ty).is_some()
+            || self.recognition().reaches_as_its_source(ty, source)
     }
 
     /// `it.copied()` or `it.cloned()`, `method`, of `item`s whose copy isn't
@@ -73,6 +89,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ends = back;
         let source = crate::lower::recognition::copied_source(self.tcx, output)
             .or_else(|| crate::lower::recognition::cloned_source(self.tcx, output));
+        // Of what generic code was given, whose steps its caller's value
+        // says, a `cloned()` of items whose clone is the item, `$cloned`,
+        // which is it where it has none of its own that std's `Cloned`
+        // hides, as it's made (#2122).
+        if let Some(source) = crate::lower::recognition::cloned_source(self.tcx, output)
+            && self.is_unknown(source.peel_refs())
+            && !self.needs_clone(item.peel_refs())
+            && !self.asks_as_its_source(output, source)
+        {
+            return Ok(Expr::call_helper("$cloned", vec![it]));
+        }
         let it = match source {
             Some(source) if back => self.as_double_ended(it, source.peel_refs(), span)?,
             _ => it,
@@ -90,14 +117,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => self.copy_if_needed(Expr::var(&x), pointee),
             None => self.clone_value(Expr::var(&x), pointee, span, &mut body)?,
         };
-        if body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if *v == x) {
+        // Its source itself, of items whose copy is the item, where it asks
+        // the crate's own steps as its source does (`asks_as_its_source`):
+        // a `copied()`'s, which passes each on, not a `cloned()`'s of one
+        // that writes `count` or `last`, which std's `Cloned` leaves to its
+        // `fold` (#2122).
+        let as_its_source = source.is_none_or(|source| self.asks_as_its_source(output, source));
+        let recognition = self.recognition();
+        if body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if *v == x) && as_its_source {
             return Ok(it);
         }
+        // A `copied()` that reaches the crate's own `nth`, `last` or `count`,
+        // which std's `Copied` asks of its source, `$copied`, which does
+        // too; else a map, as std's `Cloned` steps as its `Map` does.
+        let passes_on = [OwnStep::Nth, OwnStep::Last, OwnStep::Count]
+            .into_iter()
+            .any(|step| recognition.reaches_its_own(output, step, Reach::Sure));
+        let copied = crate::lower::recognition::copied_source(self.tcx, output).is_some() && passes_on;
         body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
         let copy = Expr::arrow(vec![x.into()], body);
-        Ok(match ends {
-            true => Expr::call_helper("$mapEnds", vec![it, copy]),
-            false => Expr::builtin(it, "map", vec![copy]),
+        Ok(match (copied, ends) {
+            (true, _) => Expr::call_helper("$copied", vec![it, copy]),
+            (false, true) => Expr::call_helper("$mapEnds", vec![it, copy]),
+            (false, false) => Expr::builtin(it, "map", vec![copy]),
         })
     }
 }

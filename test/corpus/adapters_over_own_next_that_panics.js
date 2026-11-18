@@ -563,27 +563,33 @@ function main() {
     return result.length;
   });
   run("take fold", () => {
-    const fold = $foldDropping(
-      iterator_take(
-        own({ start: 70, end: 75 }, 72),
-        4,
-        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
-        (own) => {
-          console.log("drop own");
-          for (const item of own.items) {
-            dDrop_drop(item);
-          }
-        },
-        dDrop_drop,
-      ),
-      [],
-      push,
-      $dropEach(dDrop_drop),
+    const iter = iterator_take(
+      own({ start: 70, end: 75 }, 72),
+      4,
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+      (own) => {
+        console.log("drop own");
+        for (const item of own.items) {
+          dDrop_drop(item);
+        }
+      },
+      dDrop_drop,
     );
-    for (const item of fold) {
+    const value = [];
+    let result;
+    try {
+      result = $foldDropping(iter, value, push, $dropEach(dDrop_drop));
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+    for (const item of result) {
       dDrop_drop(item);
     }
-    return fold.length;
+    return result.length;
   });
   run("chain fold", () => {
     const value = own({ start: 80, end: 82 }, 99);

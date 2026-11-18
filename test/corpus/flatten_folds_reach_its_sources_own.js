@@ -5,6 +5,7 @@ import {
   $catchUnwind,
   $cleanup,
   $closing,
+  $count,
   $dropEach,
   $flatMap,
   $flattenEnds,
@@ -14,6 +15,7 @@ import {
   $iter,
   $iterator,
   $jsIterator,
+  $last,
   $live,
   $next,
   $nextBack,
@@ -444,7 +446,7 @@ function main() {
         dDrop_drop,
         $dropEach(dDrop_drop),
       ),
-      { next: $next, fold: $foldOf },
+      { next: $next, fold: $foldOf, last: $last, count: $count },
       {
         next_back: (iterator) =>
           flattenDoubleEndedIterator_nextBack(
@@ -555,7 +557,7 @@ function main() {
           dDrop_drop,
           $dropEach(dDrop_drop),
         ),
-        { next: $next, fold: $foldOf },
+        { next: $next, fold: $foldOf, last: $last, count: $count },
         {
           next_back: (iterator) =>
             flattenDoubleEndedIterator_nextBack(
@@ -642,7 +644,7 @@ function main() {
       ),
       0,
       sum,
-      { next: $next, fold: $foldOf },
+      { next: $next, fold: $foldOf, last: $last, count: $count },
       (flatten) => {
         flatten.return();
       },

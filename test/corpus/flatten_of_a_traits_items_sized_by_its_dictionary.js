@@ -17,6 +17,7 @@ import {
   $tryOf,
   flatMapDoubleEndedIterator_advanceBackBy,
   flatMapDoubleEndedIterator_nextBack,
+  flatMapDoubleEndedIterator_rfold,
   flatMapDoubleEndedIterator_tryRfold,
   iterator_flatMap,
   iterator_map,
@@ -134,7 +135,22 @@ function back(SSource) {
               SSource.IterOneShot,
             ),
           undefined,
-          undefined,
+          (iterator, init, f, unwind, ends) =>
+            flatMapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              { intoIter: (items) => items, IntoIterIterator: () => $jsIterator },
+              IterDoubleEndedIterator,
+              SSource.IterOneShot,
+              undefined,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
           undefined,
           (iterator, init, f, broke, unwind, ends) =>
             flatMapDoubleEndedIterator_tryRfold(
@@ -199,7 +215,22 @@ function hiddenBack(SSource) {
               SSource.HiddenOneShot,
             ),
           undefined,
-          undefined,
+          (iterator, init, f, unwind, ends) =>
+            flatMapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              { intoIter: (items) => items, IntoIterIterator: () => $jsIterator },
+              HiddenDoubleEndedIterator,
+              SSource.HiddenOneShot,
+              undefined,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
           undefined,
           (iterator, init, f, broke, unwind, ends) =>
             flatMapDoubleEndedIterator_tryRfold(

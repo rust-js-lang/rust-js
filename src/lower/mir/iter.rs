@@ -1091,7 +1091,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Fold) => self.folded((it, def_id), (Some(arg()), arg()), (arg_tys, item), span)?,
             Some(IterMethod::Reduce) => self.folded((it, def_id), (None, arg()), (arg_tys, item), span)?,
             Some(m) if m.tries() => self.try_folded(it, m, &mut arg, (own, output), arg_tys, span)?,
-            Some(IterMethod::Count) => self.counted(it, item, (def_id, iter_ty), span)?,
+            Some(IterMethod::Count) => self.counted(it, item, (def_id, iter_ty, receiver_ty), span)?,
             Some(IterMethod::Sum | IterMethod::Product) => {
                 let sum = std_method == Some(IterMethod::Sum);
                 self.accumulated((it, def_id), (output, item), sum, span)?
@@ -1137,7 +1137,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         it: Expr,
         item: Option<Ty<'tcx>>,
-        (def_id, iter_ty): (DefId, Ty<'tcx>),
+        (def_id, iter_ty, receiver_ty): (DefId, Ty<'tcx>, Ty<'tcx>),
         span: Span,
     ) -> R<Expr> {
         if crate::lower::recognition::counts_utf16_units(self.tcx, def_id, iter_ty)
@@ -1180,7 +1180,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // And a std source's own, `repeat_n`'s, its length, which clones
         // none (#1124).
         let source_own = self.recognition().source_writes(iter_ty, OwnStep::Count);
-        let own_count = self.is_unknown(iter_ty)
+        // And what std's catalog says reaches the crate's own, a `copied()`'s
+        // of one that writes `count`, which `Copied::count` asks, where a
+        // `cloned()`'s, std's default of its `fold`, doesn't (#2122); of the
+        // receiver as it is, a `by_ref()`'s, whose `count` is std's default;
+        // and a type generic code doesn't know, whose caller's may have one.
+        let reached = !in_place_flatten
+            && self
+                .recognition()
+                .reaches_its_own(receiver_ty, OwnStep::Count, Reach::Sure);
+        let own_count = reached
             || filter_asks
             || slice_count
             || source_own

@@ -717,6 +717,7 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 
 /// The runtime's helpers that make a JS iterator: `$iterator`, `$given`, `$intoIter`, `$cycleOf`, `$repeating` and `$repeatingN` (ADR 0513),
 /// `$rev` (ADR 0516), `$closing` (ADR 0518), `$holding` (#710), `$mapEnds` (ADR 0455),
+/// std's `Copied` and `Cloned`, `$copied` and `$cloned` (#2122),
 /// `$filterEnds` (ADR 0526), `$filterDropping` (#651), `$enumerate` (ADR 0528), `$taking` and
 /// `$skipping` (ADR 0542), `$memchrIter` (ADR 0529), `$stdIterator` (ADR
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, a B-tree
@@ -737,13 +738,15 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// `$stepsOf`, never armed to close itself at its end (#2039),
 /// and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 57] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 59] = [
     "$stdIterator",
     "$stepsOf",
     "$chars",
     "$charIndices",
     "$memchrIter",
     "$mapEnds",
+    "$copied",
+    "$cloned",
     "$flattenEnds",
     "$filterEnds",
     "$filterDropping",

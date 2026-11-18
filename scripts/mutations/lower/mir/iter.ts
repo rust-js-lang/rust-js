@@ -372,8 +372,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Skip::count` counts its `Take` by folding it, not its own `count`, so a reversed `Vec`'s items are dropped back to front, not as one slice (ADR 0913)",
     file: "src/lower/mir/iter.rs",
-    find: "        let own_count = self.is_unknown(iter_ty)\n",
-    replace: "        let own_count = false && self.is_unknown(iter_ty)\n",
+    find: "        let own_count = reached\n",
+    replace: "        let own_count = false && reached\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -857,8 +857,8 @@ export const mutations: Mutation[] = [
     name: "into-iter-count-reduced",
     breaks: "generic code's `count()` of a `T::IntoIter` is folded by `reduce`, a type parameter's alone its own `count`: the crate's own `count` never runs and the iterator is never dropped (#1602)",
     file: "src/lower/mir/iter.rs",
-    find: "        let own_count = self.is_unknown(iter_ty)\n",
-    replace: "        let own_count = matches!(iter_ty.kind(), ty::Param(_))\n",
+    find: "        let own_count = reached\n",
+    replace: "        let own_count = (reached && !matches!(iter_ty.kind(), ty::Alias(..)))\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_count_of_an_into_iter_by_its_own.rs$"],
   },
 
@@ -870,5 +870,24 @@ export const mutations: Mutation[] = [
     find: "                && (filtered.is_none() || self.compiled_struct(iter_ty, &it))\n",
     replace: "                && (filtered.is_none() || true)\n",
     tests: ["test/react.test.ts", "-t", "React components are hand-written JSX"],
+  },
+  {
+    name: "count-reached-unasked",
+    breaks:
+      "`count()` never asks whether std's catalog reaches the crate's own, so a `copied()`'s of an iterator that writes `count` steps its `next`, where std's `Copied` asks its source's `count` (#2122)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let reached = !in_place_flatten\n",
+    replace: "        let reached = false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(copied_and_cloned_ask_what_std_does|copied_structs_ask_their_sources_own_steps).rs$"],
+  },
+  {
+    name: "count-reached-of-the-lent",
+    breaks:
+      "`by_ref().count()` is asked of what it lends, whose own `count` it takes for its own, where std's `&mut I` counts by its default (#2122)",
+    file: "src/lower/mir/iter.rs",
+    find: "                .reaches_its_own(receiver_ty, OwnStep::Count, Reach::Sure);\n",
+    replace: "                .reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);\n",
+    tests: ["test/corpus.test.ts", "-t", "^(mut_of_an_iterator_passes_on_what_std_does|own_count_through_adapters).rs$"],
+    snapshots: true,
   },
 ];

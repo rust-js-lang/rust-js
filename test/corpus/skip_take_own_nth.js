@@ -2,11 +2,9 @@
 
 import {
   $count,
-  $foldOf,
+  $jsIterator,
   $last,
   $max,
-  $next,
-  $nth,
   $roomForHint,
   iterator_skip,
   iterator_take,
@@ -38,14 +36,14 @@ function main() {
     `sum ${iterator_take(
       iterator_skip(counted(5), 1, { next: countIterator_next, nth: countIterator_nth }),
       3,
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
     `fold ${iterator_take(
       iterator_skip(counted(5), 2, { next: countIterator_next, nth: countIterator_nth }),
       2,
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
     ).reduce((a) => (a + 1) | 0, 0)}`,
   );
   console.log(
@@ -53,7 +51,7 @@ function main() {
       iterator_take(
         iterator_skip(counted(5), 2, { next: countIterator_next, nth: countIterator_nth }),
         2,
-        { next: $next, fold: $foldOf, nth: $nth },
+        $jsIterator,
       ),
     )}`,
   );
@@ -62,7 +60,7 @@ function main() {
       iterator_take(
         iterator_skip(counted(9), 2, { next: countIterator_next, nth: countIterator_nth }),
         9,
-        { next: $next, fold: $foldOf, nth: $nth },
+        $jsIterator,
       ),
     )}`,
   );
@@ -70,14 +68,14 @@ function main() {
     iterator_take(
       iterator_skip(counted(9), 3, { next: countIterator_next, nth: countIterator_nth }),
       2,
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
     ),
   );
   console.log(`last ${last == null ? "None" : `Some(${last})`}`);
   iterator_take(
     iterator_skip(counted(9), 2, { next: countIterator_next, nth: countIterator_nth }),
     1,
-    { next: $next, fold: $foldOf, nth: $nth },
+    $jsIterator,
   ).forEach((x) => {
     console.log(`each ${x}`);
   });
@@ -87,7 +85,7 @@ function main() {
         iterator_take(
           iterator_skip(counted(5), 1, { next: countIterator_next, nth: countIterator_nth }),
           3,
-          { next: $next, fold: $foldOf, nth: $nth },
+          $jsIterator,
         ),
         4,
         false,
@@ -98,7 +96,7 @@ function main() {
     iterator_take(
       iterator_skip(counted(5), 1, { next: countIterator_next, nth: countIterator_nth }),
       3,
-      { next: $next, fold: $foldOf, nth: $nth },
+      $jsIterator,
     ),
   );
   console.log(`max ${max == null ? "None" : `Some(${max})`}`);

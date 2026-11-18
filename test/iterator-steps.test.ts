@@ -291,6 +291,9 @@ const same = (x: unknown) => x;
 const forms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["Map", "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
   ["Map", "$Steps.map", (s) => s.src().map(same)],
+  ["Copied", "$copied", (s) => std.$copied(s.src(), same)],
+  ["Cloned", "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
+  ["Cloned", "$Steps.map", (s) => s.src().map(same)],
   ["Filter", "$filterEnds", (s) => std.$filterEnds(s.src(), (x: number) => x % 2 === 1)],
   ["Filter", "$Steps.filter", (s) => s.src().filter((x: number) => x % 2 === 1)],
   ["Enumerate", "$enumerate", (s) => std.$enumerate(s.src())],
