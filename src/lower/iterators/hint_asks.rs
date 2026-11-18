@@ -554,8 +554,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.hint_known_by_its_parts(ty) {
             return Ok(it);
         }
-        // A copy of one, which it is.
-        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty) {
+        // A copy of one, which it is where it's its source in JS
+        // (`is_its_source`, #2130); another is made knowing its length as
+        // a map is, by `as_exact_size`.
+        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty)
+            && self.is_its_source(ty)
+        {
             return self.parts_knowing_lengths(it, source, span);
         }
         if self.recognition().grows_by_exact_len(ty) && !self.compiled_struct(ty, &it) {

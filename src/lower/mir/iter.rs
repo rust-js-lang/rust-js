@@ -342,6 +342,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let parted = crate::lower::recognition::cloned_parts(self.tcx, output);
+        // A `copied()` or a `cloned()`, made of what its source is, never of
+        // the JS iterator made of it (`copied_cloned_apart`, #2130).
+        if let (Some((Parted::Copied, ..)), [receiver_ty], [_]) = (parted, arg_tys, values.as_slice())
+            && let Some(method @ (IterMethod::Copied | IterMethod::Cloned)) = self.recognition().iterator_method(def_id)
+            && self.iterator_cloned_apart(output)
+            && let Some(item) = self.iterator_item(receiver_ty.peel_refs())
+        {
+            let receiver = values.into_iter().next().expect("the receiver");
+            let tys = (receiver_ty.peel_refs(), *receiver_ty, output);
+            return self
+                .copied_cloned_apart((receiver, method, item), tys, span, made)
+                .map(Some);
+        }
         let (Some((parted @ (Parted::Map | Parted::Filter | Parted::Chain), _, _)), [receiver_ty, other_ty, ..]) =
             (parted, arg_tys)
         else {
@@ -1097,8 +1110,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.accumulated((it, def_id), (output, item), sum, span)?
             }
             Some(IterMethod::Copied | IterMethod::Cloned) if self.is_its_source(output) => it,
-            Some(m @ (IterMethod::Copied | IterMethod::Cloned)) => match item {
-                Some(item) => self.copied_called((it, m, item), (iter_ty, receiver_ty, output), span, made)?,
+            Some(IterMethod::Copied | IterMethod::Cloned) => match item {
+                Some(item) => self.copied_items(it, item, output, span)?,
                 None => return Ok(None),
             },
             // Of its items as they come, which the helper steps (#179).
@@ -1177,10 +1190,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // then what it has left dropped as one slice, where its items have
         // a drop, which the default would drop each as it's folded (#862).
         let slice_count = !body.is_empty() && self.recognition().drops_passed_as_slice(iter_ty);
-        // And a std source's own, `repeat_n`'s, its length, which clones
-        // none (#1124).
-        let source_own = self.recognition().source_writes(iter_ty, OwnStep::Count);
-        // And what std's catalog says reaches the crate's own, a `copied()`'s
+        // And what std's catalog says reaches the crate's own, or a std
+        // source's, `repeat_n`'s, its length, which clones none (#1124,
+        // `source_writes`); a `copied()`'s
         // of one that writes `count`, which `Copied::count` asks, where a
         // `cloned()`'s, std's default of its `fold`, doesn't (#2122); of the
         // receiver as it is, a `by_ref()`'s, whose `count` is std's default;
@@ -1192,7 +1204,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own_count = reached
             || filter_asks
             || slice_count
-            || source_own
             // Std's compiled one, but of a filter made in place, a JS iterator
             // of a type std's is held as, `v.iter().filter(f)` counted where
             // it's made, `v.filter(f).length`, as it was before its flip

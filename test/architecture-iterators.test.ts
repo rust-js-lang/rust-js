@@ -874,3 +874,30 @@ test("each MEANING_ONLY entry is on its way, of an issue, or kept, of an ADR and
   }
   expect(problems).toEqual([]);
 });
+
+// Whether a `copied()` is its source in JS is `is_its_source`'s alone
+// (mir/iter/copies.rs, ADR 0480, revised for #2130): std's `Copied` doesn't
+// pass `nth_back` on, so a copy of what writes it is a map of it. Each other
+// reader of `recognition::copied_source` asks a question of the type that
+// holds of a map too (its hint, its length, what steps it from its back),
+// or asks `is_its_source` first; listed per file with its reason. A new
+// reader fails, and so does a gone one until its row goes too.
+test("whether a copy is its source is asked of is_its_source alone", () => {
+  const allowed: Record<string, [number, string]> = {
+    "src/lower/mir/iter/copies.rs": [5, "the owner: `is_its_source`, `copied_given` and the copy's maker"],
+    "src/lower/iterators/knowing.rs": [2, "made knowing its back or its length: of its source where `is_its_source`, else `copy_made_knowing`"],
+    "src/lower/iterators/hint_asks.rs": [2, "its hint's parts, of its source where `is_its_source`; whether its hint is its parts', which a map's is too"],
+    "src/lower/mir/iter/sources.rs": [2, "`counted_in_place`, a copy's count its source's, as std's `Copied::count` asks it; `steps_an_array`, where `is_its_source`"],
+    "src/lower/std_impls/clones.rs": [1, "its clone, `copied_clone`, which asks `is_its_source`"],
+    "src/lower/analysis/back_stepped.rs": [3, "what steps it from its back, a copy as a map"],
+    "src/lower/analysis/hint_asked.rs": [2, "whether its hint is asked, as a map's"],
+    "src/lower/recognition/lengths.rs": [2, "its hint's lower bound, its source's, as a map's"],
+    "src/lower/iterators/back_facts.rs": [1, "made knowing its back by its maker, as a map is"],
+  };
+  const found: Record<string, [number, string]> = {};
+  for (const file of files("src/lower").filter((file) => file.endsWith(".rs"))) {
+    const count = (read(file).match(/copied_source\((self\.)?tcx/g) ?? []).length;
+    if (count > 0) found[file] = [count, allowed[file]?.[1] ?? "unlisted"];
+  }
+  expect(found).toEqual(allowed);
+});

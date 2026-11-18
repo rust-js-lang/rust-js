@@ -314,4 +314,12 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "^enumerate_advanced_from_its_back_by_its_source with std's iterator structs$"],
     env: { ITERATOR_FORMS: "corpus" },
   },
+  {
+    name: "given-clone-of-a-copy-whole",
+    breaks: "`$givenClone` of a `$copiedGiven` clones the copy, not what it's made of (#2130)",
+    file: "src/runtime/iterator.js",
+    find: "  if (it.cloneBy !== undefined) return it.cloneBy(clone);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_hides_its_sources_own_nth_back.rs$"],
+  },
 ];

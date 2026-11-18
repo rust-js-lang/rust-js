@@ -2,6 +2,7 @@
 
 import {
   $collectDropping,
+  $copiedGiven,
   $foldBack,
   $given,
   $givenClone,
@@ -21,7 +22,9 @@ function dup(it, IClone) {
 }
 
 function cloned(src, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone) {
-  const a = $given(src, IIterator, false, IDoubleEndedIterator, IExactSizeIterator.len);
+  const a = $copiedGiven(
+    $given(src, IIterator, false, IDoubleEndedIterator, IExactSizeIterator.len),
+  );
   const next = $next(a);
   console.log(`a next ${next == null ? "None" : `Some(${next})`}`);
   const b = $givenClone(a, IClone.clone);
@@ -33,7 +36,9 @@ function cloned(src, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone
 }
 
 function duped(src, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone) {
-  const a = $given(src, IIterator, false, IDoubleEndedIterator, IExactSizeIterator.len);
+  const a = $copiedGiven(
+    $given(src, IIterator, false, IDoubleEndedIterator, IExactSizeIterator.len),
+  );
   const next = $next(a);
   console.log(`a next ${next == null ? "None" : `Some(${next})`}`);
   const b = dup(a, { clone: (value) => $givenClone(value, IClone.clone) });

@@ -35,7 +35,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         // A copy of items something changes in place, `source.map((item) =>
         // ({ ...item }))`, a JS iterator of JS's, which nothing makes again.
-        if !self.is_its_source(ty) {
+        if !self.is_its_source(ty) && !self.copied_given(ty) {
             return Err(self.unsupported(span, &format!("cloning a `{ty}`, whose items are copied as it steps")));
         }
         if self.copy_is_its_source(source) {

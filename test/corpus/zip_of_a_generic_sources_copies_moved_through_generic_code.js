@@ -3,6 +3,7 @@
 import {
   $cloned,
   $collectDropping,
+  $copiedGiven,
   $count,
   $foldOf,
   $given,
@@ -55,7 +56,7 @@ function zippedCloned(src, IIterator, IClone, IRandomAccess, IRandomAccessNoCoer
 
 function zippedCopied(src, IIterator, IClone, IRandomAccess, IRandomAccessNoCoerce, ITrustedLen) {
   const a = iterator_zip(
-    $given(src, IIterator),
+    $copiedGiven($given(src, IIterator)),
     { start: 20, end: 24 },
     $jsIterator,
     { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
@@ -143,7 +144,7 @@ function zippedEnumerated(
   ITrustedLen,
 ) {
   const a = iterator_zip(
-    iterator_enumerate($given(src, IIterator), $jsIterator),
+    iterator_enumerate($copiedGiven($given(src, IIterator)), $jsIterator),
     { start: 10, end: 13 },
     {
       next: $next,
@@ -182,7 +183,7 @@ function zippedOnTheRight(
 ) {
   const a = iterator_zip(
     { start: 10, end: 13 },
-    $given(src, IIterator),
+    $copiedGiven($given(src, IIterator)),
     { next: $rangeNext },
     { intoIter: (items) => items, IntoIterIterator: () => $jsIterator },
     true,

@@ -27,8 +27,8 @@ const INNERS: usize = usize::MAX;
 /// What a type parameter's answer is, whose caller's type may write the
 /// step: `Sure`, of what drops nothing after, or gives a compiled body
 /// nothing, as the crate's own took it, which says no but of a step whose
-/// helper asks the iterator itself, `nth`'s, `last`'s and `count`'s (#496,
-/// #505); `May`, of what asks the iterator itself at run time, `$foldOf`
+/// helper asks the iterator itself, `nth`'s, `last`'s, `count`'s and a
+/// double-ended one's `nth_back`'s (#496, #505, #2134); `May`, of what asks the iterator itself at run time, `$foldOf`
 /// and `$foldBack`, which says yes of each (#521, #649).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(in crate::lower) enum Reach {
@@ -77,11 +77,11 @@ impl OwnStep {
             .all(|w| w.passes(self.method()) == Passed::Own)
     }
 
-    /// Whether the helper that takes it, `$nth`, `$last` or `$count`, asks
-    /// the iterator itself, so a type parameter may be said to have it
-    /// wherever it's asked.
+    /// Whether the helper that takes it, `$nth`, `$last`, `$count` or
+    /// `$nthBack`, asks the iterator itself, so a type parameter may be
+    /// said to have it wherever it's asked (#2134).
     fn asked_at_run_time(self) -> bool {
-        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count)
+        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count | OwnStep::NthBack)
     }
 
     /// The step of std's name `method`, of those the crate's iterator may
@@ -151,7 +151,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return own.is_some();
         }
         let ty::Adt(adt, args) = ty.kind() else {
-            return self.is_unknown(ty) && (reach == Reach::May || step.asked_at_run_time());
+            return self.is_unknown(ty)
+                && (reach == Reach::May || step.asked_at_run_time() && self.may_write(ty, step));
         };
         if self.source_writes(ty, step) {
             return true;
@@ -166,6 +167,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 self.asked_source(ty, args, at)
                     .is_some_and(|source| self.reaches_its_own(source, asked, reach))
             })
+    }
+
+    /// Whether a type generic code doesn't know, `ty`, may be given an
+    /// iterator that writes `step`: a `DoubleEndedIterator`'s step only of
+    /// one its bounds say is double-ended, as no other is stepped from its
+    /// back.
+    fn may_write(&self, ty: Ty<'tcx>, step: OwnStep) -> bool {
+        !step.is_double_ended()
+            || (self.declared_bounds(ty, self.typing_env.param_env).into_iter())
+                .any(|bound| super::is_double_ended(self.tcx, bound))
     }
 
     /// Whether std's adapter of type `ty` reaches each of the crate's own

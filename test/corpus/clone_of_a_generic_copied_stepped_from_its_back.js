@@ -2,6 +2,7 @@
 
 import {
   $collectDropping,
+  $copiedGiven,
   $given,
   $givenClone,
   $iter,
@@ -15,7 +16,9 @@ export function entry() {
 }
 
 function cloned(src, IIterator, IDoubleEndedIterator, IExactSizeIterator, IClone) {
-  const a = $given(src, IIterator, false, IDoubleEndedIterator, IExactSizeIterator.len);
+  const a = $copiedGiven(
+    $given(src, IIterator, false, IDoubleEndedIterator, IExactSizeIterator.len),
+  );
   const b = $givenClone(a, IClone.clone);
   const nextBack = $nextBack(b);
   console.log(

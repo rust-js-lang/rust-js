@@ -13,6 +13,7 @@ import {
   $nextBack,
   $nextIf,
   $nth,
+  $nthBack,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -38,11 +39,19 @@ function firstTwo(it) {
 function fromBack(it) {
   const p = iterator_peekable($stepsOf(it), $jsIterator);
   const out = [
-    peekableDoubleEndedIterator_nextBack(p, { next_back: $nextBack, rfold: $foldBack }) ?? 0,
+    peekableDoubleEndedIterator_nextBack(p, {
+      next_back: $nextBack,
+      rfold: $foldBack,
+      nthBack: $nthBack,
+    }) ?? 0,
   ];
   out.push($next(p) ?? 0);
   out.push(
-    peekableDoubleEndedIterator_nextBack(p, { next_back: $nextBack, rfold: $foldBack }) ?? 0,
+    peekableDoubleEndedIterator_nextBack(p, {
+      next_back: $nextBack,
+      rfold: $foldBack,
+      nthBack: $nthBack,
+    }) ?? 0,
   );
   return out;
 }

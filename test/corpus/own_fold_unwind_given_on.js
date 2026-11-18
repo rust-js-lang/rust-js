@@ -3,6 +3,7 @@
 import {
   $catchUnwind,
   $cleanup,
+  $copiedGiven,
   $dropEach,
   $exactLen,
   $foldDropping,
@@ -117,7 +118,7 @@ function copiedFold(it, IIterator, IExactSizeIterator, IClone) {
 function backFold(it, IIterator, IDoubleEndedIterator, IClone) {
   const nextBack = IDoubleEndedIterator.next_back(it);
   console.log(`back ${nextBack == null ? "None" : `Some(${nextBack})`}`);
-  const fold = $foldDropping($given(it, IIterator), [], push, $dropEach(dDrop_drop));
+  const fold = $foldDropping($copiedGiven($given(it, IIterator)), [], push, $dropEach(dDrop_drop));
   for (const item of fold) {
     dDrop_drop(item);
   }

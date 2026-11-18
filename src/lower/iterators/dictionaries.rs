@@ -227,10 +227,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // steps it from its back by `nth_back`, a held `Rev`'s `nth`
             // (ADR 0871), never steps each number.
             let numbers = self.range_index(ty).and_then(Num::of).is_some();
+            // And of one that may reach the crate's own, a type parameter's
+            // or std's adapter's over one, `$nthBack`, which asks the value,
+            // as std's `nth_back` of it asks its own (#2134); `$nthBackSome`
+            // of items that may look like `None` (ADR 0051).
+            let reaches_own = || (self.recognition()).reaches_its_own(ty, OwnStep::NthBack, Reach::Sure);
+            let boxed_items = || self.iterator_item(ty).is_none_or(|item| self.boxed_payload(item));
             let nth_back = match (self.is_user_iterator(ty), self.range_kind(ty)) {
                 (true, _) => self.own_methods(ty, false, span)?.nth_back,
                 (false, Some(RangeKind::Exclusive)) if numbers => Some(Expr::helper("$rangeNthBack")),
                 (false, Some(RangeKind::Inclusive)) if numbers => Some(Expr::helper("$rangeInclusiveNthBack")),
+                (false, _) if reaches_own() => Some(Expr::helper(match boxed_items() {
+                    true => "$nthBackSome",
+                    false => "$nthBack",
+                })),
                 (false, _) => None,
             };
             // Of a sized `&mut` to the crate's iterator, its `try_rfold` is the

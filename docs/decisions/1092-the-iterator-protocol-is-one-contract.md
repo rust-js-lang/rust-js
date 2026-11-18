@@ -1734,3 +1734,14 @@ Mutations: `cloned-as-its-source-whatever-it-hides`, `count-reached-unasked`,
 `count-reached-of-the-lent`, `cloned-of-generic-source-mapped`,
 `copied-passes-nothing-on`, `cloned-hides-nothing`, `cloned-always-mapped`,
 `copied-count-by-fold` and `copied-last-by-fold`.
+
+## Amendment: `Copied` doesn't pass `nth_back` on (2026-11-19, #2130, #2134)
+
+Step 1b kept a `copied()` as its source in JS, an exception to the
+catalog's rule. That exception is gone: a copy is its source only where
+std's `Copied` reaches each of the crate's own steps that its source
+reaches, and it doesn't reach `nth_back`. A type parameter bound by
+`DoubleEndedIterator` may reach its caller's own `nth_back`, as with
+`nth`, `last` and `count`. Its dictionary, where it's given as it is,
+carries `nthBack: $nthBack`. ADR 0480's revision has the forms:
+`$copiedGiven`, and a copy the crate clones made of its source's value.

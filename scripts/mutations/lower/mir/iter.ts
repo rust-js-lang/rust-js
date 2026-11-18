@@ -724,14 +724,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "source-own-count-unasked",
-    breaks: "`repeat_n(x, n).count()` is counted by `reduce`, cloning each, not by its own `count`, its length (#1124)",
-    file: "src/lower/mir/iter.rs",
-    find: "        let source_own = self.recognition().source_writes(iter_ty, OwnStep::Count);\n",
-    replace: "        let source_own = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^repeat_own_steps_clone_none.rs$"],
-  },
-  {
     name: "chars-count-reduced",
     breaks: "a count of a string's `chars()` made here reads `s[Symbol.iterator]().reduce((n) => n + 1, 0)`, not `Array.from(s).length`",
     file: "src/lower/mir/iter.rs",
@@ -889,5 +881,13 @@ export const mutations: Mutation[] = [
     replace: "                .reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);\n",
     tests: ["test/corpus.test.ts", "-t", "^(mut_of_an_iterator_passes_on_what_std_does|own_count_through_adapters).rs$"],
     snapshots: true,
+  },
+  {
+    name: "copied-made-unparted",
+    breaks: "generic code's `copied()` the crate clones isn't made by a function of its source, so its clone is `$clone` of a map that carries none, and throws (#1181)",
+    file: "src/lower/mir/iter.rs",
+    find: "        if let (Some((Parted::Copied, ..)), [receiver_ty], [_]) = (parted, arg_tys, values.as_slice())\n",
+    replace: "        if let (Some((Parted::Copied, ..)), [receiver_ty], [_]) = (parted, arg_tys, values.as_slice())\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_copied_cloned|copied_structs_stepped_from_their_back).rs$"],
   },
 ];

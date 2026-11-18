@@ -10,6 +10,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $nthBack,
   $rangeNext,
   $rangeNextBack,
   $rev,
@@ -52,11 +53,13 @@ function bothEnds(it) {
     filterDoubleEndedIterator_nextBack(kept, $jsIterator, {
       next_back: $nextBack,
       rfold: $foldBack,
+      nthBack: $nthBack,
     }),
     $next(kept),
     filterDoubleEndedIterator_nextBack(kept, $jsIterator, {
       next_back: $nextBack,
       rfold: $foldBack,
+      nthBack: $nthBack,
     }),
   ];
 }

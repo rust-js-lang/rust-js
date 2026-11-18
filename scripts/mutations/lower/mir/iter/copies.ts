@@ -6,17 +6,16 @@ export const mutations: Mutation[] = [
     name: "cloned-strings-mapped",
     breaks: "`cloned()` of strings maps each to itself",
     file: "src/lower/mir/iter/copies.rs",
-    find: "                .is_some_and(|item| !self.needs_clone(item.peel_refs()))\n",
-    replace:
-      "                .is_some_and(|item| self.is_copy(item.peel_refs()))\n",
+    find: "            .is_some_and(|item| !self.needs_clone(item.peel_refs()))\n",
+    replace: "            .is_some_and(|item| self.is_copy(item.peel_refs()))\n",
     tests: ["test/corpus.test.ts", "-t", "^(copied_structs_apart).rs$"],
   },
   {
     name: "cloned-mapped-anyway",
     breaks: "a `cloned()` of what needs no clone is mapped as one that does",
     file: "src/lower/mir/iter/copies.rs",
-    find: "            .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))\n            .is_some_and(|source| item() && self.asks_as_its_source(ty, source))\n",
-    replace: "            .is_some_and(|source| item() && self.asks_as_its_source(ty, source))\n",
+    find: "            .or_else(|| crate::lower::recognition::cloned_source(self.tcx, ty))\n            .is_some_and(|source| self.copies_its_items_as_they_are(ty) && self.asks_as_its_source(ty, source))\n",
+    replace: "            .is_some_and(|source| self.copies_its_items_as_they_are(ty) && self.asks_as_its_source(ty, source))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -29,9 +28,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`copied()` is the iterator it copies, its `Copy` structs the same objects, so changing a copy changes the slice's",
     file: "src/lower/mir/iter/copies.rs",
-    find: "            .is_some_and(|source| item() && self.asks_as_its_source(ty, source))\n",
-    replace:
-      "            .is_some_and(|source| (crate::lower::recognition::copied_source(self.tcx, ty).is_some() || item()) && self.asks_as_its_source(ty, source))\n",
+    find: "            .is_some_and(|source| self.copies_its_items_as_they_are(ty) && self.asks_as_its_source(ty, source))\n",
+    replace: "            .is_some_and(|source| (crate::lower::recognition::copied_source(self.tcx, ty).is_some() || self.copies_its_items_as_they_are(ty)) && self.asks_as_its_source(ty, source))\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
@@ -60,14 +58,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copies_of_forward_forms_stepped_from_their_back.rs$"],
   },
   {
-    name: "copied-made-unparted",
-    breaks: "generic code's `copied()` the crate clones isn't made by a function of its source, so its clone is `$clone` of a map that carries none, and throws (#1181)",
-    file: "src/lower/mir/iter/copies.rs",
-    find: "        if !self.iterator_cloned_apart(output) {\n            return self.copied_items(it, item, output, span);\n",
-    replace: "        if true {\n            return self.copied_items(it, item, output, span);\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_copied_cloned.rs$"],
-  },
-  {
     name: "copied-calls-its-clone",
     breaks: "`copied()` of a `Copy` type with a hand-written `Clone` calls that `clone` for each item, which std's `Copied` never does",
     file: "src/lower/mir/iter/copies.rs",
@@ -92,5 +82,29 @@ export const mutations: Mutation[] = [
     find: "            (true, _) => Expr::call_helper(\"$copied\", vec![it, copy]),\n",
     replace: "            (true, _) => Expr::call_helper(\"$mapEnds\", vec![it, copy]),\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_ask_their_sources_own_steps.rs$"],
+  },
+  {
+    name: "copied-is-its-source-anyway",
+    breaks: "a `copied()` is its source in JS though its source writes `nth_back`, which std's `Copied` doesn't pass on (#2130)",
+    file: "src/lower/mir/iter/copies.rs",
+    find: "            || self.recognition().reaches_as_its_source(ty, source)\n",
+    replace: "            || crate::lower::recognition::copied_source(self.tcx, ty).is_some()\n            || self.recognition().reaches_as_its_source(ty, source)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_hides_its_sources_own_nth_back.rs$"],
+  },
+  {
+    name: "copied-given-as-it-is",
+    breaks: "generic code's `copied()` of what its caller gives is that value itself, whose own `nth_back` std's `Copied` doesn't ask (#2130)",
+    file: "src/lower/mir/iter/copies.rs",
+    find: "            return Ok(Expr::call_helper(\"$copiedGiven\", vec![it]));\n",
+    replace: "            return Ok(it);\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_hides_its_sources_own_nth_back.rs$"],
+  },
+  {
+    name: "copied-apart-backless",
+    breaks: "a `copied()` the crate clones, of its own iterator, is made knowing its back only where its type says it's stepped from it, so a `rev()` of it past its maker is refused (#2130)",
+    file: "src/lower/mir/iter/copies.rs",
+    find: "        self.user_double_ended(source)\n            && (self",
+    replace: "        false\n            && (self",
+    tests: ["test/corpus.test.ts", "-t", "^copied_hides_its_sources_own_nth_back.rs$"],
   },
 ];

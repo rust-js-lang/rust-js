@@ -468,8 +468,8 @@ export const mutations: Mutation[] = [
     name: "copied-source-cloned-apart",
     breaks: "a `copied()` whose copy is its source, of numbers a generic or the crate's own source gives, is taken as cloned apart, made as its source, and its clone `$clone` of what carries none throws (#1181)",
     file: "src/lower/iterators/stepping.rs",
-    find: "        ) && !self.is_its_source(ty)\n",
-    replace: "        )\n",
+    find: "        self.iterator_cloned(ty) && !self.is_its_source(ty) && !self.copied_given(ty)\n",
+    replace: "        self.iterator_cloned(ty) && !self.copied_given(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^(copied_clone_of_its_own|lazy_iterator_clone|generic_copied_cloned).rs$"],
   },
   {

@@ -9,6 +9,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $nthBack,
   $stepsOf,
   enumerateDoubleEndedIterator_nextBack,
   enumerateExactSizeIterator_len,
@@ -32,7 +33,7 @@ function backs(it) {
   const back = enumerateDoubleEndedIterator_nextBack(
     e,
     { len: (iterator) => iterator.len() },
-    { next_back: $nextBack, rfold: $foldBack },
+    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
   );
   return [enumerateExactSizeIterator_len(e, { len: (iterator) => iterator.len() }), back];
 }

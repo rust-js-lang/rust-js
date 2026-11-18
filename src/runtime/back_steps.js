@@ -29,6 +29,12 @@ function $nthBack(it, n, found = (item) => item, drop) {
   return undefined;
 }
 
+// `it.nth_back(n)` of items that look like `None`: its `Some` boxed (ADR
+// 0051), as a dictionary's of a type parameter's value gives it (#2134).
+function $nthBackSome(it, n) {
+  return $nthBack(it, n, $some);
+}
+
 // `it.advance_back_by(m)`, as std's own bodies call it, given as `$nthBack`
 // is: its own, `advanceBackBy`, a `Vec`'s as one slice (`$slicing`, #234);
 // else each `next_back`, given to `drop`, a `Drain`'s (#704). `Ok(())`, or
@@ -168,6 +174,18 @@ function $copied(it, f) {
 function $cloned(it) {
   if (!["nth", "last", "count", "nthBack"].some((step) => it[$ownStep(step)])) return it;
   return $mapEnds(it, (item) => item);
+}
+
+// Std's `Copied` of what generic code was given, of items whose copy is
+// the item: `it` itself unless its `nth_back` is its own, which std's
+// `Copied` doesn't pass on, its default its source's `advance_back_by`;
+// else `$copied` of it, which passes on each step std's `Copied` does
+// (#2130). A clone of it, `$givenClone`'s, is one of a clone of `it`.
+function $copiedGiven(it) {
+  if (!it[$ownStep("nthBack")]) return it;
+  const copied = $copied(it, (item) => item);
+  copied.cloneBy = (clone) => $copiedGiven($givenClone(it, clone));
+  return copied;
 }
 
 // `it.step_by(step)`, as Rust's `StepBy` steps: its first item, then

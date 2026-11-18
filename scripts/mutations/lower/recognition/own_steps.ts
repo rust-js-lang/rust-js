@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "lasts-its-own-not-generic",
     breaks: "generic code's `last()` steps its iterator to its end, never asking the type's own `last` (#496)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count)\n",
-    replace: "        matches!(self, OwnStep::Nth | OwnStep::Count)\n",
+    find: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count | OwnStep::NthBack)\n",
+    replace: "        matches!(self, OwnStep::Nth | OwnStep::Count | OwnStep::NthBack)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_own_last.rs$"],
   },
   {
@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `collect()` into a `String`, a `HashSet` or a `HashMap` steps its iterator by `next`, never asking the type's own `fold` (#521)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "            return self.is_unknown(ty) && (reach == Reach::May || step.asked_at_run_time());\n",
-    replace: "            return self.is_unknown(ty) && step.asked_at_run_time();\n",
+    find: "                && (reach == Reach::May || step.asked_at_run_time() && self.may_write(ty, step));\n",
+    replace: "                && (step.asked_at_run_time() && self.may_write(ty, step));\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint.rs$"],
     snapshots: true,
   },
@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     name: "nths-its-own-not-generic",
     breaks: "generic code's dictionary of its iterator gives std's compiled `Fuse` no `nth`, so a fuse's `nth` never asks the type's own (#496)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count)\n",
-    replace: "        matches!(self, OwnStep::Last | OwnStep::Count)\n",
+    find: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count | OwnStep::NthBack)\n",
+    replace: "        matches!(self, OwnStep::Last | OwnStep::Count | OwnStep::NthBack)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_own_last.rs$"],
     // The runtime asks the value's own `nth` either way, so it's how the
     // JS reads that's checked: `$nthSome(it, 1)`, not a `drop(1).take(1)`
@@ -141,8 +141,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `fuse()` of a `T::IntoIter` is given a dictionary with no `fold`, so std's compiled `Fuse` folds by the crate's own, which drops it, and then drops it again: `drop Up 1` twice (#1595)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "            return self.is_unknown(ty) && (reach == Reach::May || step.asked_at_run_time());\n",
-    replace: "            return matches!(ty.kind(), ty::Param(_)) && (reach == Reach::May || step.asked_at_run_time());\n",
+    find: "            return self.is_unknown(ty)\n                && (reach == Reach::May",
+    replace: "            return matches!(ty.kind(), ty::Param(_))\n                && (reach == Reach::May",
     tests: ["test/corpus.test.ts", "-t", "^generic_consumer_of_an_into_iter_takes_it.rs$"],
   },
   {
@@ -179,5 +179,13 @@ export const mutations: Mutation[] = [
     find: "            .all(|step| !self.reaches_its_own(source, step, Reach::Sure) || self.reaches_its_own(ty, step, Reach::Sure))\n",
     replace: "            .all(|_| true)\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_and_cloned_ask_what_std_does.rs$"],
+  },
+  {
+    name: "param-nth-back-unreached",
+    breaks: "a type parameter's `nth_back` is never said to reach its caller's own, so generic `by_ref().rev().nth(0)` steps `next_back` (#2134)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count | OwnStep::NthBack)\n",
+    replace: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_nth_back_reaches_what_its_given.rs$"],
   },
 ];

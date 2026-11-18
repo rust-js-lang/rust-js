@@ -2,7 +2,6 @@
 
 import {
   $advanceSlice,
-  $cleanup,
   $closing,
   $collectDropping,
   $dropEach,
@@ -16,6 +15,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $nthBack,
   $range,
   $rev,
   $roomForHint,
@@ -70,44 +70,27 @@ function chained(src, dropI) {
 }
 
 function taken(src, dropI) {
-  const iter = $mapEnds($taking($closing(Iterator.from(src), dropI, false), 3, dDrop_drop), (d) => {
-    const result = (d[0] + 1) >>> 0;
-    dDrop_drop(d);
-    return result;
-  });
-  let result;
-  try {
-    result = $foldBack(iter, 0, (sum, x) => (((sum * 2) >>> 0) + x) >>> 0);
-  } catch (error) {
-    $cleanup(() => {
-      iter.return();
-    }, error);
-    throw error;
-  }
-  iter.return();
-  return result;
+  return $foldBack(
+    $mapEnds($taking($closing(Iterator.from(src), dropI, false), 3, dDrop_drop), (d) => {
+      const result = (d[0] + 1) >>> 0;
+      dDrop_drop(d);
+      return result;
+    }),
+    0,
+    (sum, x) => (((sum * 2) >>> 0) + x) >>> 0,
+  );
 }
 
 function stepped(src, dropI) {
-  const iter = $mapEnds(
-    $stepByEnds($closing(Iterator.from(src), dropI, false), 2, dDrop_drop),
-    (d) => {
+  return $foldBack(
+    $mapEnds($stepByEnds($closing(Iterator.from(src), dropI, false), 2, dDrop_drop), (d) => {
       const result = d[0];
       dDrop_drop(d);
       return result;
-    },
+    }),
+    0,
+    (sum, x) => (((sum * 3) >>> 0) + x) >>> 0,
   );
-  let result;
-  try {
-    result = $foldBack(iter, 0, (sum, x) => (((sum * 3) >>> 0) + x) >>> 0);
-  } catch (error) {
-    $cleanup(() => {
-      iter.return();
-    }, error);
-    throw error;
-  }
-  iter.return();
-  return result;
 }
 
 function flattened(src, IFused, dropI) {
@@ -155,7 +138,7 @@ function flattened(src, IFused, dropI) {
                 next_back: (iterator) =>
                   flattenDoubleEndedIterator_nextBack(
                     iterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -177,7 +160,7 @@ function flattened(src, IFused, dropI) {
                     init,
                     f,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -200,7 +183,7 @@ function flattened(src, IFused, dropI) {
                     init,
                     f,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -225,7 +208,7 @@ function flattened(src, IFused, dropI) {
                     iterator,
                     n,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -259,7 +242,7 @@ function flattened(src, IFused, dropI) {
                 next_back: (iterator) =>
                   flattenDoubleEndedIterator_nextBack(
                     iterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -281,7 +264,7 @@ function flattened(src, IFused, dropI) {
                     init,
                     f,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -304,7 +287,7 @@ function flattened(src, IFused, dropI) {
                     init,
                     f,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -329,7 +312,7 @@ function flattened(src, IFused, dropI) {
                     iterator,
                     n,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -365,7 +348,7 @@ function flattened(src, IFused, dropI) {
                 next_back: (iterator) =>
                   flattenDoubleEndedIterator_nextBack(
                     iterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -387,7 +370,7 @@ function flattened(src, IFused, dropI) {
                     init,
                     f,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -410,7 +393,7 @@ function flattened(src, IFused, dropI) {
                     init,
                     f,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -435,7 +418,7 @@ function flattened(src, IFused, dropI) {
                     iterator,
                     n,
                     $jsIterator,
-                    { next_back: $nextBack, rfold: $foldBack },
+                    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
                     {
                       intoIter: (items) => $iter(items),
                       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),

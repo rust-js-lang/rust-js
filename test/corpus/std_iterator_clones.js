@@ -11,6 +11,7 @@ import {
   $jsIterator,
   $next,
   $nextBack,
+  $nthBack,
   $range,
   $rest,
   $rev,
@@ -37,7 +38,11 @@ function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
 }
 
 function backLen(it) {
-  const back = iterator_rev($stepsOf(it), $jsIterator, { next_back: $nextBack, rfold: $foldBack });
+  const back = iterator_rev($stepsOf(it), $jsIterator, {
+    next_back: $nextBack,
+    rfold: $foldBack,
+    nthBack: $nthBack,
+  });
   $next(back);
   return revExactSizeIterator_len(back, { len: (iterator) => iterator.len() });
 }

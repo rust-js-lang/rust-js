@@ -109,7 +109,7 @@ function ends(it, dropI) {
     iterator_rev(
       $stepsOf(it),
       $jsIterator,
-      { next_back: $nextBack, rfold: $foldBack },
+      { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
       dropI,
       dDrop_drop,
     ),

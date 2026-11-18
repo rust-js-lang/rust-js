@@ -201,6 +201,7 @@ function $askedStep(step, boxed = false) {
   if (step === $foldBack) return "rfold";
   if (step === $nth || (boxed && step === $nthSome)) return "nth";
   if (step === $last || (boxed && step === $lastSome)) return "last";
+  if (step === $nthBack || (boxed && step === $nthBackSome)) return "nthBack";
   if (step === $count) return "count";
   if (step === $advanceSlice) return "advanceBy";
   return undefined;
@@ -239,8 +240,10 @@ function $givenDrop(drop) {
 // A clone of `it`, what generic code's `copied()` of a value it was given
 // is, `$given`'s, by `clone`, the value's `Clone` (#384): where `$given`
 // made a JS iterator of the value, another of the value's clone, stepped
-// as it is; else the value itself, `clone`'s.
+// as it is; of a `$copiedGiven` of one, that of a clone of it (#2130);
+// else the value itself, `clone`'s.
 function $givenClone(it, clone) {
+  if (it.cloneBy !== undefined) return it.cloneBy(clone);
   if (it.given !== true) return clone(it);
   const again = it.with(clone(it.of));
   again.given = true;

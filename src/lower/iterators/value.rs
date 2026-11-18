@@ -473,7 +473,10 @@ pub(in crate::lower) fn count_bound(e: &Expr) -> Option<i128> {
                 (n, bound) => n.or(bound),
             };
         }
-        (Some("$rev" | "$knowing" | "$enumerate" | "$lent" | "$mapEnds" | "$copied" | "$cloned"), [source, ..]) => {
+        (
+            Some("$rev" | "$knowing" | "$enumerate" | "$lent" | "$mapEnds" | "$copied" | "$cloned" | "$copiedGiven"),
+            [source, ..],
+        ) => {
             return count_bound(source);
         }
         (Some("$lazyChain"), [a, b, ..]) => return Some(count_bound(a)? + count_bound(b)?),
@@ -740,8 +743,8 @@ pub(in crate::lower) fn knows_its_back_by_form(e: &Expr) -> bool {
     match callee.helper_name() {
         Some("$rev" | "$zipEnds" | "$trustedZipEnds" | "$flattenEnds" | "$chars" | "$charIndices") => true,
         Some(
-            "$mapEnds" | "$copied" | "$cloned" | "$filterEnds" | "$enumerate" | "$lent" | "$closing" | "$held"
-            | "$taking" | "$skipping" | "$stepByEnds",
+            "$mapEnds" | "$copied" | "$cloned" | "$copiedGiven" | "$filterEnds" | "$enumerate" | "$lent" | "$closing"
+            | "$held" | "$taking" | "$skipping" | "$stepByEnds",
         ) => args.first().is_some_and(knows_its_back_by_form),
         Some("$lazyChain") => matches!(&args[..], [a, b, ..] if knows_its_back_by_form(a) && knows_its_back_by_form(b)),
         Some("$iterator" | "$given") => args.get(3).is_some_and(|back| *back != Expr::js_undefined()),
@@ -760,9 +763,8 @@ pub(in crate::lower) fn back_source(e: &Expr) -> Option<(&Expr, bool)> {
     };
     let same = match callee.helper_name()? {
         "$held" | "$lent" | "$closing" => true,
-        "$mapEnds" | "$copied" | "$cloned" | "$filterEnds" | "$enumerate" | "$taking" | "$skipping" | "$stepByEnds" => {
-            false
-        }
+        "$mapEnds" | "$copied" | "$cloned" | "$copiedGiven" | "$filterEnds" | "$enumerate" | "$taking"
+        | "$skipping" | "$stepByEnds" => false,
         _ => return None,
     };
     args.first().map(|source| (source, same))
@@ -781,7 +783,9 @@ pub(in crate::lower) fn passes_its_length_on(e: &Expr) -> Option<(&Expr, bool)> 
         return None;
     };
     match callee.helper_name()? {
-        "$held" | "$lent" | "$closing" | "$mapEnds" | "$copied" | "$cloned" | "$enumerate" => back_source(e),
+        "$held" | "$lent" | "$closing" | "$mapEnds" | "$copied" | "$cloned" | "$copiedGiven" | "$enumerate" => {
+            back_source(e)
+        }
         _ => None,
     }
 }
@@ -830,8 +834,8 @@ pub(in crate::lower) fn form_lacks_a_back(e: &Expr) -> bool {
     };
     match callee.helper_name() {
         Some(
-            "$mapEnds" | "$copied" | "$cloned" | "$filterEnds" | "$enumerate" | "$lent" | "$closing" | "$held"
-            | "$taking" | "$skipping",
+            "$mapEnds" | "$copied" | "$cloned" | "$copiedGiven" | "$filterEnds" | "$enumerate" | "$lent" | "$closing"
+            | "$held" | "$taking" | "$skipping",
         ) => args.first().is_some_and(form_lacks_a_back),
         _ => false,
     }

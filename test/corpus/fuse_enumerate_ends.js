@@ -13,6 +13,7 @@ import {
   $knowing,
   $next,
   $nextBack,
+  $nthBack,
   $rangeNext,
   $rangeNextBack,
   $rev,
@@ -44,7 +45,7 @@ function ends(it) {
   const last = enumerateDoubleEndedIterator_nextBack(
     e,
     { len: (iterator) => iterator.len() },
-    { next_back: $nextBack, rfold: $foldBack },
+    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
   );
   return [first, last, enumerateExactSizeIterator_len(e, { len: (iterator) => iterator.len() })];
 }
@@ -60,7 +61,7 @@ function fusedBack(it, IFused) {
   const f = iterator_fuse($stepsOf(it), $jsIterator, IFused);
   const last = fuseDoubleEndedIterator_nextBack(
     f,
-    { next_back: $nextBack, rfold: $foldBack },
+    { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
     IFused,
   );
   const rest = $collectDropping(
@@ -71,7 +72,7 @@ function fusedBack(it, IFused) {
           (iterator) =>
             fuseDoubleEndedIterator_nextBack(
               iterator,
-              { next_back: $nextBack, rfold: $foldBack },
+              { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
               IFused,
             ),
           undefined,
@@ -81,7 +82,7 @@ function fusedBack(it, IFused) {
               init,
               f,
               $jsIterator,
-              { next_back: $nextBack, rfold: $foldBack },
+              { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
               undefined,
               unwind,
               ends,
@@ -91,7 +92,7 @@ function fusedBack(it, IFused) {
               iterator,
               k,
               $jsIterator,
-              { next_back: $nextBack, rfold: $foldBack },
+              { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
               IFused,
             ),
           (iterator, init, f, broke, unwind, ends) =>
@@ -100,7 +101,7 @@ function fusedBack(it, IFused) {
               init,
               f,
               $jsIterator,
-              { next_back: $nextBack, rfold: $foldBack },
+              { next_back: $nextBack, rfold: $foldBack, nthBack: $nthBack },
               $tryOf(broke),
               IFused,
               undefined,

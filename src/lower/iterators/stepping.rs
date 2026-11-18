@@ -920,12 +920,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made of a map of each item's copy, a struct's or generic code's
     /// (#1181).
     pub(in crate::lower) fn iterator_cloned_apart(&self, ty: ty::Ty<'tcx>) -> bool {
+        self.iterator_cloned(ty) && !self.is_its_source(ty) && !self.copied_given(ty)
+    }
+
+    /// Whether the crate clones an iterator of type `ty` (`cloned_apart`'s
+    /// analysis), however its clone is made.
+    pub(in crate::lower) fn iterator_cloned(&self, ty: ty::Ty<'tcx>) -> bool {
         cloned_apart(
             (self.tcx, self.recognition().typing_env),
             self.krate.cloned,
             ty,
             self.frame.owner,
-        ) && !self.is_its_source(ty)
+        )
     }
 
     /// `value` of type `ty`, a `step_by(n)` made here, `src.filter((_, i) =>

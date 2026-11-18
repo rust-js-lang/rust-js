@@ -561,8 +561,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(it) = self.given_js_iterator(value.clone(), ty, back, true) {
             return Ok(it);
         }
-        // A copy of one, which it is (ADR 0480).
+        // A copy of one, which it is (ADR 0480). Another, a map of it, is
+        // made knowing where it's made, by `copied_items`, wherever its type
+        // is stepped from its back: never taken for its source, as one was
+        // past its maker (a `TypeError`), but refused where no maker made it
+        // so, as none found does (#2130).
         if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty) {
+            if !self.is_its_source(ty) {
+                return Err(self.unsupported(span, &format!("stepping a `{ty}` from its back past where it's made")));
+            }
             return self.as_exact_size(value, source, back, span);
         }
         // A range's, `$rangeLen` of `a..b`, `$rangeInclusiveLen` of `a..=b`,
@@ -951,8 +958,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(it) = self.given_js_iterator(value.clone(), ty, true, false) {
             return Ok(it);
         }
-        // A copy of one, which it is (ADR 0480).
+        // A copy of one, which it is (ADR 0480). Another, a map of it, is
+        // made knowing where it's made, by `copied_items`, wherever its type
+        // is stepped from its back: never taken for its source, as one was
+        // past its maker (a `TypeError`), but refused where no maker made it
+        // so, as none found does (#2130).
         if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty) {
+            if !self.is_its_source(ty) {
+                return Err(self.unsupported(span, &format!("stepping a `{ty}` from its back past where it's made")));
+            }
             return self.as_double_ended(value, source, span);
         }
         if let Some(kind) = self.range_kind(ty)

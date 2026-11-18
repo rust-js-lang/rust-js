@@ -255,8 +255,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Copied` of a slice's iterator, given as a `DoubleEndedIterator`, is refused",
     file: "src/lower/iterators/knowing.rs",
-    find: "        // A copy of one, which it is (ADR 0480).\n        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty) {\n            return self.as_double_ended(value, source, span);\n        }\n",
-    replace: "",
+    find: "            return self.as_double_ended(value, source, span);\n        }\n        if let Some(kind) = self.range_kind(ty)",
+    replace: "            return Ok(value);\n        }\n        if let Some(kind) = self.range_kind(ty)",
     tests: ["test/corpus.test.ts", "-t", "^associated_double_ended.rs$"],
   },
   {

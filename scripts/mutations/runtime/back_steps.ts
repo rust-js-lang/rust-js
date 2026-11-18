@@ -829,4 +829,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_ask_their_sources_own_steps.rs$"],
   },
+  {
+    name: "copied-given-passes-nth-back",
+    breaks: "`$copiedGiven` is the value it's given though its `nth_back` is its own, which std's `Copied` doesn't ask (#2130)",
+    file: "src/runtime/back_steps.js",
+    find: "  if (!it[$ownStep(\"nthBack\")]) return it;\n",
+    replace: "  return it;\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_hides_its_sources_own_nth_back.rs$"],
+  },
 ];

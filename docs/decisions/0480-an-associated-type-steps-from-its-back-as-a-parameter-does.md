@@ -87,3 +87,59 @@ native Rust gives `Some(3)`, and `len_of`'s `len()` threw
 `t.into_iter()` on to an `I: DoubleEndedIterator` or an
 `I: ExactSizeIterator`, of the crate's iterator and of a `Vec`. It runs
 against native Rust in both builds.
+
+## Revised: a copy is its source only where it asks what its source does (2026-11-19, #2130, #2134)
+
+std's `Copied` passes every step on to its source except `nth_back`. Its
+`nth_back` is the trait's default, so it calls its source's
+`advance_back_by` and then `next_back`. A `copied()` taken as its source
+therefore answered `nth_back` with the crate's own.
+`Refs(&items).copied().nth_back(1)` printed `own nth_back 1` where native
+Rust steps `back back`, both directly and through `rev().nth(1)`, in
+generic code too.
+
+- **A `copied()` is its source in JS only where std's `Copied` reaches
+  each of the crate's own steps that its source reaches**
+  (`is_its_source`, `reaches_as_its_source`). That's every step but
+  `nth_back`, so only a source that writes `nth_back` loses it. `is_its_source`
+  is the one answer: each reader of `copied_source` for a question about
+  the copy's form asks it first, and an architecture row lists the rest,
+  which ask a question about the type that also holds of a map.
+- **Another copy is a map of its source**: `$copied` where it reaches the
+  crate's own `nth`, `last` or `count`, and `$mapEnds` or `.map` otherwise.
+  Its maker, `copied_items`, makes it knowing its back wherever its type
+  is stepped from it, with its source made knowing it underneath. Where it
+  isn't its source, nothing past its maker takes it for its source: on
+  main, a copy of `Copy` structs stepped through `rev()` threw a
+  `TypeError` that way. Such a copy is refused there, and no case found
+  reaches that refusal.
+- **Generic code's copy of a `DoubleEndedIterator` type parameter is
+  `$copiedGiven(it)`**: `it` itself unless the value its caller gives
+  writes its own `nth_back`, and `$copied` of it if it does. A clone of one,
+  `$givenClone`'s, is one of a clone of what it's made of. An
+  `Iterator`-only parameter's copy stays its source, because nothing steps
+  it from its back.
+- **A type parameter bound by `DoubleEndedIterator` may reach its caller's
+  own `nth_back`** (`Reach::Sure`), as with `nth`, `last` and `count`. Its
+  helper, `$nthBack`, asks the value itself. Its dictionary, where it's
+  given as it is, carries `nthBack: $nthBack`, or `$nthBackSome` of
+  boxed items, beside `rfold: $foldBack`. So generic `by_ref().rev().nth(0)`
+  and `&mut I`'s `rev().nth(1)` call the caller's own (#2134); the second
+  was wrong only in the build of std's structs.
+- **A copy the crate clones is made of its source's value** (`makeCopied`),
+  never of the JS iterator made of it. Its clone took that iterator for the
+  value, and threw. Where it's double-ended over the crate's own iterator,
+  it's made knowing its back, because nothing past its maker can.
+
+Case (ADR 0262): R. Which of the crate's steps std calls is observable.
+Corpus cases `copied_hides_its_sources_own_nth_back`,
+`copied_structs_stepped_from_their_back` and
+`generic_nth_back_reaches_what_its_given` run as native in both builds.
+Mutations: `copied-is-its-source-anyway`, `copied-given-as-it-is`,
+`copied-apart-backless`, `param-nth-back-unreached`,
+`copied-given-passes-nth-back` and `given-clone-of-a-copy-whole`;
+`copied-made-unparted` moved to the maker's new place, and nine
+retargeted. `source-own-count-unasked` went with its code: since #2112's
+step 1b, `count()` asks the catalog, whose `reaches_its_own` asks
+`source_writes` itself. So `repeat_n`'s own `count` was a second answer,
+one that also said yes of a `by_ref()`'s, whose `count` is std's default.
