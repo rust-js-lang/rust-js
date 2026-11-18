@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/held.rs",
     find: "    if reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if *var == name) {\n",
     replace: "    if true || reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if *var == name) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^combinator_subject_read_in_place.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^arrays_changed_through_slices.rs$"],
     snapshots: true,
   },  {
     name: "own-field-read-once-always",
@@ -35,7 +35,6 @@ export const mutations: Mutation[] = [
     find: "        subject.reads_alike_twice() || self.plain_field(subject) || subject.facts.has(js::Known::Own)\n",
     replace: "        subject.reads_alike_twice() || self.plain_field(subject)\n",
     tests: ["test/corpus.test.ts", "-t", "^undo_stack_map_reentered\\.rs$"],
-    snapshots: true,
   },
 
   {

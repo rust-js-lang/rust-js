@@ -128,7 +128,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      return step.done ? step : pair(step, enumerated.count++);\n",
     replace: "      return step.done ? step : pair(step, enumerated.count);\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cell_of_an_iterator_std_runs.rs$"],
+    snapshots: true,
   },
   {
     name: "map-ends-unclosed",
@@ -208,7 +209,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "    fold: iter.fold === undefined ? undefined : fold,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^own_steps_behind_adapters_unwind.rs$"],
+    snapshots: true,
   },
   {
     name: "enumerate-try-fold-by-next",
@@ -386,7 +388,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "    unwind === undefined ? (a, x) => g(a, f(x)) :",
     replace: "    true ? (a, x) => g(a, f(x)) :",
-    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_rfold_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_from_iter_in_place.rs$"],
+    snapshots: true,
   },
   {
     name: "step-by-fold-unclosed",
@@ -411,7 +414,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "  const folding = (f, unwind) => (a, x) => ($kept(p, drop, x, undefined, a, unwind) ? f(a, x) : a);",
     replace: "  const folding = (f, unwind) => (a, x) => ($kept(p, drop, x, undefined, a) ? f(a, x) : a);",
-    tests: ["test/corpus.test.ts", "-t", "^panic_in_own_rfold_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "fold-back-step-unwinds-nothing",

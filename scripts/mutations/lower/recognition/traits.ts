@@ -607,7 +607,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/traits.rs",
     find: "                    || self.foreign.has_impl(imp.impl_def_id) && super::compiled_for(self.tcx, tr.self_ty()) =>\n",
     replace: "                    || self.foreign.has_impl(imp.impl_def_id) =>\n",
-    tests: ["test/corpus.test.ts", "-t", "^debug_of_adapters_compiled_as_their_meaning.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^clone_of_a_compiled_adapter_knowing_its_back.rs$"],
     snapshots: true,
   },
   {

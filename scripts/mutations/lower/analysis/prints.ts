@@ -380,7 +380,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "                    Some(principal) => dyn_traits.extend(ty::elaborate::supertrait_def_ids(tcx, principal)),\n",
     replace: "                    Some(_) => any = true,\n",
-    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_made_dyn\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_made_dyn.rs$"],
+    snapshots: true,
   },
   {
     name: "printing-types-without-fmt-into",

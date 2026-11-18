@@ -17,7 +17,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/adapter_types.rs",
     find: "                    StdPath::IterMap\n                        | StdPath::IterFilter\n                        | StdPath::IterFilterMap\n                        | StdPath::IterCopied\n                        | StdPath::IterCloned\n                        | StdPath::IterInspect\n",
     replace: "                    StdPath::IterMap\n                        | StdPath::IterFilter\n                        | StdPath::IterCopied\n                        | StdPath::IterCloned\n                        | StdPath::IterInspect\n",
-    tests: ["test/corpus.test.ts", "-t", "^(filter_ends|held_filter_map_from_its_back).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_given_back_stepped_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "map-back-unknown",

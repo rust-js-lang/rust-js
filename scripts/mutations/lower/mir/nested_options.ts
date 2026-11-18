@@ -121,7 +121,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/nested_options.rs",
     find: "                                | Rvalue::CopyForDeref(of) => of.local == held && its_payload(of),\n",
     replace: "                                | Rvalue::CopyForDeref(of) => of.local == held,\n",
-    tests: ["test/lowering-nested-options.test.ts", "-t", "gives on is undefined"],
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_inner_none.rs$"],
+    snapshots: true,
   },
   {
     name: "nested-inner-test-boxed",

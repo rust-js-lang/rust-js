@@ -141,12 +141,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/compiled_steps.rs",
     find: "            fold: forward.rfold,\n",
     replace: "            fold: None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_provided_methods_given_through_bounds.rs$"],
     snapshots: true,
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(rev_in_place_through_adapters|own_back_through_adapters).rs$",
-    ],
   },
   {
     name: "compiled-fold-untaken",

@@ -55,7 +55,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/types.rs",
     find: "        let key = (ty, self.params_none, self.guards_none);\n",
     replace: "        let key = (ty, false, false);\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "drops-itself-revisits",

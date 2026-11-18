@@ -447,7 +447,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::Step(StepOp::Cycle)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_an_items_iterator_clones_its_item.rs$"],
+    snapshots: true,
   },
   {
     name: "boxed-pop-front-refused",

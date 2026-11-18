@@ -71,7 +71,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/back_facts.rs",
     find: "        } else if (self.krate.hinted.knowing_in).contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty)) {\n",
     replace: "        } else if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
+    snapshots: true,
   },
   {
     name: "counted-in-its-maker-unread",
