@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => root.facts.has(Known::Item),\n",
     replace: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => false,\n",
-    tests: ["test/corpus.test.ts", "-t", "^thread_local_written_through_copy.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^lazy_cell_reentrant.rs$"],
     snapshots: true,
   },
 ];

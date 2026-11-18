@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/vec.rs",
     find: "            _ => crate::lower::iterators::owned_items(items),\n",
     replace: "                    _ => Expr::call(Expr::member(items, \"slice\"), vec![]),\n",
-    tests: ["test/corpus.test.ts", "-t", "^deque_range_mut.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^vec_deque_retain_swaps.rs$"],
     snapshots: true,
   },
   {
