@@ -6,7 +6,6 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { agree, compileJs, runJs, runNative, runtimes } from "./programs";
 import { buildSerde } from "./serde-crate";
 import { buildCompiler, compiler, fixture, root } from "./support";
 import { underLoad } from "../scripts/timing";
@@ -21,30 +20,7 @@ function shadowOf(source: string): string[] {
   writeFileSync(log, "");
   const out = runSync([compiler, "--intervals-shadow", log, input, "-o", join(dir, "case.js"), "--", "--edition=2024"], dir, 60_000);
   expect(out.code, out.stderr).toBe(0);
-  return readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("proved-")).map((line) => line.split("\t").slice(0, 2).join(" "));
-}
-
-// The effects query's shadow (#2112 B, step 2): of each corpus case named,
-// each fact the walk's forgetting rules forget at a write that the query
-// would keep, its `effects-keeps` lines, a write the query can't see. Not
-// one the rules forget where a pointer is made, a borrow, `assign ref mut`,
-// or std's `iter_mut`, `index_mut` or `deref_mut`, which write nothing:
-// the query forgets it at the write the pointer makes. Nor one a `RefCell`
-// guard held there covers, which no code run past it writes but through it.
-function keptByTheQuery(names: string[], underAGuard: string[] = []): string[] {
-  const dir = fixture("effects-shadow");
-  return names.flatMap((name) => {
-    const log = join(dir, `${name}.txt`);
-    writeFileSync(log, "");
-    const out = runSync([compiler, "--intervals-shadow", log, join(root, "test/corpus", name), "-o", join(dir, `${name}.js`)], dir, 120_000);
-    expect(out.code, out.stderr).toBe(0);
-    const kept = readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("effects-keeps\t"));
-    underAGuard.push(...kept.filter((line) => line.endsWith(" under a guard")).map((line) => `${name}: ${line.split("\t")[1]}`));
-    return kept
-      .filter((line) => !/\tassign (ref|raw)|\tcall .*::(iter_mut|index_mut|deref_mut)$| under a guard$/.test(line))
-      .map((line) => line.split("\t"))
-      .map(([, owner, , , what]) => `${name}: ${owner} at ${what}`);
-  });
+  return readFileSync(log, "utf8").split("\n").filter(Boolean).map((line) => line.split("\t").slice(0, 2).join(" "));
 }
 
 test("an array's index in a loop to its length is proved by MIR's intervals", () => {
@@ -521,6 +497,10 @@ pub fn main() {
 // given, `elsewhere(queue, other)` another's.
 // MIR proves `take_first`'s `items[i]` too, below the loop's range's end,
 // the guard's length.
+// Not `settle`'s, past the drop of the `Rc<dyn Fn>` its store replaces,
+// code that can't be named run under a guard made for the store alone
+// (#2112 B: the effects query covers a guard so only where `cell_borrows`
+// counts it); `settle_after`'s `drain` is, its store an item's.
 test("a `RefCell`'s guard keeps its cell's length until it drops, but past what its `&mut` is given to", () => {
   expect(shadowOf(`use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
@@ -620,7 +600,7 @@ pub fn main() {
     println!("{}", after_its_guard(&queue, &|| other.borrow_mut().clear(), 5));
     println!("{}", stored(&RefCell::new(vec![1]), 0));
 }
-`)).toEqual(["proved-call-bounds take_first", "proved-call-bounds take_first", "proved-call-bounds settle", "proved-call-bounds settle", "proved-call-bounds settle_after"]);
+`)).toEqual(["proved-call-bounds take_first", "proved-call-bounds take_first", "proved-call-bounds settle_after"]);
 });
 
 // #1839: an `Rc`'s `Deref` of a local neither reassigned nor lent `&mut`
@@ -971,115 +951,4 @@ pub fn main() {
     println!("{} {}", find(&node).children.len(), reset_first(&mut node));
 }
 `)).toEqual(["proved-call-bounds find"]);
-});
-
-// What the forgetting rules forget at a write, the effects query forgets
-// too (#2112 B): a write through a raw pointer a closure or a call keeps,
-// one through a static's pointer, std's `NonNull` of one, a `RefMut`'s
-// `truncate`, `*guard = ..` and `remove`, a cell a parameter's field
-// holds that a call of the crate's may change, each `Vec` a call keeps
-// lent past it, a `Box`'s cell a closure clears. Each of #2112's C3
-// shapes whose rules were each a P0. The one fact kept: `Rc::clone` of
-// another `Rc`, which changes no cell, where the rules forget every
-// cell at a call that doesn't read one, was one till the query took an
-// `Rc<RefCell<_>>` for the cell it points to (#2112 B step 3a).
-// The shadow says where the query keeps what the rules forget: where a
-// borrow is made, the rules forget the integer it lends, `&mut n` (#1782),
-// and the query keeps it till the write the borrow makes.
-test("the effects shadow says where the query keeps what the rules forget", () => {
-  const dir = fixture("effects-shadow-said");
-  const log = join(dir, "shadow.txt");
-  writeFileSync(log, "");
-  const out = runSync([compiler, "--intervals-shadow", log, join(root, "test/corpus/raw_pointer_written_after_its_owner_reads.rs"), "-o", join(dir, "case.js")], dir, 120_000);
-  expect(out.code, out.stderr).toBe(0);
-  const kept = readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("effects-keeps\t"));
-  expect(kept.some((line) => /\tinterval .*\[n\]\tassign ref mut$/.test(line))).toBe(true);
-});
-
-test("the effects query keeps nothing the forgetting rules forget at a write", () => {
-  const underAGuard: string[] = [];
-  expect([
-    ...new Set(keptByTheQuery([
-      "raw_pointer_written_after_its_owner_reads.rs",
-      "vec_lent_to_code_that_keeps_a_pointer.rs",
-      "vec_lent_through_a_dyn_to_code_that_keeps_a_pointer.rs",
-      "table_rows_resized_unseen.rs",
-      "refcell_drained_in_a_loop.rs",
-      "split_collected_is_never_empty.rs",
-      "refcell_guard_bounds.rs",
-      "inner_while_exit_in_catch.rs",
-      "rc_refcell_bounds.rs",
-    ], underAGuard)),
-  ]).toEqual([]);
-  // What a held guard alone keeps, a `Ref` of a segment's chunks held across
-  // the crate's `write_chunk` and `flush_segment`: nowhere a guard's dropped.
-  expect([...new Set(underAGuard)]).toEqual(["inner_while_exit_in_catch.rs: flush_subtree", "inner_while_exit_in_catch.rs: flush_until"]);
-}, 600_000);
-
-// What the forgetting rules prove, the transfer that asks the effects query
-// too proves of what no write reaches (#2112 B step 3a,
-// `--intervals-by-effects`): a table's items written, a scalar into a row,
-// `board[r][c] = x`, its rows as long; a slice's `swap`, its length; a
-// `push`, `x < len` past it; a range's `next()`, its end; a `Vec` whose
-// items hold cells read through a shared reference, its length. Each of
-// them a class the query once forgot (8.9% of the corpus's proofs).
-test("the effects query keeps what the rules prove of what no write reaches", () => {
-  const dir = fixture("effects-proofs");
-  const proved = (name: string, flags: string[]) => {
-    const log = join(dir, `${name}.${flags.length}.txt`);
-    writeFileSync(log, "");
-    const out = runSync([compiler, "--intervals-shadow", log, ...flags, join(root, "test/corpus", name), "-o", join(dir, `${name}.${flags.length}.js`)], dir, 120_000);
-    expect(out.code, out.stderr).toBe(0);
-    return readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("proved-"));
-  };
-  for (const name of [
-    "table_rows.rs",
-    "table_rows_resized_unseen.rs",
-    "same_length_tables.rs",
-    "heap_halves_bound_their_children.rs",
-    "length_shifted_past_a_push.rs",
-    "bounds_by_a_value.rs",
-    "loop_ending_branch_loop.rs",
-    "refcell_guard_bounds.rs",
-  ]) {
-    expect([name, proved(name, ["--intervals-by-effects"])]).toEqual([name, proved(name, [])]);
-  }
-}, 600_000);
-
-// A `RefCell` guard held across code that writes its cell through another
-// `Rc` of it (#2112 B, the lead's condition on the guard rule): with the
-// transfer that asks the query, the JS runs as native Rust does, panicking
-// where Rust's second borrow does, or keeping the check where the code is
-// what `cell_borrows` can't name.
-test("a guard held across code that writes its cell through a clone runs as Rust does, asking the query", () => {
-  // And past a guard's drop, a call that clears the cell through another
-  // `Rc`, `after_its_guard`: the guard covers nothing once it's dropped.
-  for (const name of ["refcell_written_through_a_clone_under_its_guard.rs", "refcell_guard_bounds.rs"]) {
-    const dir = fixture(`effects-guard-${name}`);
-    const file = join(root, "test/corpus", name);
-    const native = runNative(file, dir);
-    if (typeof native === "string") throw new Error(native);
-    const compiled = compileJs(file, dir, "2024", false, {}, ["--intervals-by-effects"]);
-    if (!("js" in compiled)) throw new Error(compiled.error);
-    const ran = runJs(runtimes[0][1], compiled.js, dir, "by-effects");
-    expect([name, agree(ran, native)]).toEqual([name, true]);
-  }
-}, 300_000);
-
-// What a held `RefCell` guard alone keeps, of the case of a cell written
-// through a clone (#2112 B): where a guard is held across the code, a
-// `borrow()`'s, `impl Fn`'s or `&dyn Fn`'s; never past a guard's drop,
-// `after_a_dropped_guard`'s, where the code clears the cell.
-test("a guard keeps what it covers only while it's held", () => {
-  const dir = fixture("effects-guard-kept");
-  const log = join(dir, "shadow.txt");
-  writeFileSync(log, "");
-  const file = join(root, "test/corpus/refcell_written_through_a_clone_under_its_guard.rs");
-  const out = runSync([compiler, "--intervals-shadow", log, file, "-o", join(dir, "case.js")], dir, 120_000);
-  expect(out.code, out.stderr).toBe(0);
-  const guarded = readFileSync(log, "utf8")
-    .split("\n")
-    .filter((line) => line.startsWith("effects-keeps\t") && line.endsWith(" under a guard"))
-    .map((line) => line.split("\t")[1]);
-  expect([...new Set(guarded)]).toEqual(["read_under", "read_under_dyn"]);
 });

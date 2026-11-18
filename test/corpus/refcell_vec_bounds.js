@@ -8,6 +8,7 @@ import {
   $borrowMut,
   $catchable,
   $cleanup,
+  $drain,
   $dropItems,
   $index,
   $live,
@@ -89,11 +90,14 @@ function settleTask(queue, at, task) {
     $alreadyMutablyBorrowed();
   }
   if (at < queue.length) {
-    $borrowMut(queue)[at] = task;
     if (queue.borrows) {
       $alreadyBorrowed();
     }
-    queue.splice(0, at);
+    queue[$at(queue, at)] = task;
+    if (queue.borrows) {
+      $alreadyBorrowed();
+    }
+    $drain(queue, 0, at);
   }
   if (queue.borrows < 0) {
     $alreadyMutablyBorrowed();

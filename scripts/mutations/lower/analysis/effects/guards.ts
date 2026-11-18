@@ -2,8 +2,6 @@
 import type { Mutation } from "../../../../mutations";
 
 const file = "src/lower/analysis/effects/guards.rs";
-const tests = ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"];
-const proofs = ["test/intervals-shadow.test.ts", "-t", "keeps what the rules prove"];
 
 export const mutations: Mutation[] = [
   {
@@ -13,6 +11,15 @@ export const mutations: Mutation[] = [
     file,
     find: "            if !covered.is_empty() {\n",
     replace: "            if false {\n",
-    tests: proofs,
+    tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps its cell's length until it drops"],
+  },
+  {
+    name: "effects-guard-outlives-its-drop",
+    breaks:
+      "a guard is still held past its drop, so code that clears the cell through another `Rc` once it's dropped keeps its length, and `after_a_dropped_guard`'s index reads past the end where Rust panics (the unsound direction)",
+    file,
+    find: "    for local in ended {\n        held.shift_remove(&local);\n    }\n",
+    replace: "    let _ = (ended, held);\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_written_through_a_clone_under_its_guard.rs$"],
   },
 ];

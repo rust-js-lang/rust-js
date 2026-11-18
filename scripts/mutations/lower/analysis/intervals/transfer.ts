@@ -3,7 +3,6 @@
 import type { Mutation } from "../../../../mutations";
 
 const file = "src/lower/analysis/intervals/transfer.rs";
-const proofs = ["test/intervals-shadow.test.ts", "-t", "keeps what the rules prove"];
 
 export const mutations: Mutation[] = [
   {
@@ -13,7 +12,8 @@ export const mutations: Mutation[] = [
     file,
     find: "                self.lens.retain(|_, &mut of| of != local);\n",
     replace: "                self.forget(local);\n",
-    tests: proofs,
+    tests: ["test/corpus.test.ts", "-t", "^length_shifted_past_a_push.rs$"],
+    snapshots: true,
   },
   {
     name: "transfer-items-forget-all",
@@ -22,6 +22,7 @@ export const mutations: Mutation[] = [
     file,
     find: "            Written::Items => self.rows.retain(|&table, _| table != local),\n",
     replace: "            Written::Items => self.forget(local),\n",
-    tests: proofs,
+    tests: ["test/corpus.test.ts", "-t", "^table_rows.rs$"],
+    snapshots: true,
   },
 ];

@@ -101,7 +101,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             (args.get(at))
                 .and_then(|a| a.node.place())
                 .and_then(|p| p.as_local())
-                .filter(|l| !self.lent.contains(l))
                 .map(|l| state.root(l))
         };
         // A call given a table's `&mut`, or its slice's, may write a row

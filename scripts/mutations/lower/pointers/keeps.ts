@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pointers/keeps.rs",
     find: "                closure_may_keep(tcx, typing_env, libraries, (closure, closure_args), upvar)\n",
     replace: "                false\n",
-    tests: ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"],
+    tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
   },
   {
     name: "pointer-kept-closures-unwalked",

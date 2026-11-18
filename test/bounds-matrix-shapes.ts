@@ -807,6 +807,87 @@ fn past_the_end(batch: &RefCell<Vec<u32>>) -> u32 {
 `,
     calls: [`check("walked", || walked(&[1, 2, 3]))`],
   },
+  // What std's code writes (#2112 B 3b): a `&mut Vec` std's `push`
+  // stores into another `Vec`, cleared through it, its length forgotten;
+  // and the crate's `Ord`, which std's `sort` and `max` run by their
+  // bound `T: Ord`, clearing a cell a thread-local shares with a
+  // parameter: each runs as native does only where what std's code does is
+  // asked of it.
+  std_code_writes: {
+    fns: `use std::cmp::Ordering;
+use std::rc::Rc;
+
+thread_local! {
+    static HELD: RefCell<Option<Rc<RefCell<Vec<u32>>>>> = const { RefCell::new(None) };
+}
+
+fn clear_held() {
+    HELD.with(|h| {
+        if let Some(c) = &*h.borrow() {
+            c.borrow_mut().clear();
+        }
+    });
+}
+
+#[derive(PartialEq, Eq)]
+struct Key(u32);
+
+impl Ord for Key {
+    fn cmp(&self, other: &Self) -> Ordering {
+        clear_held();
+        self.0.cmp(&other.0)
+    }
+}
+
+impl PartialOrd for Key {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn stored_cleared(k: usize) -> u32 {
+    let mut x = vec![1u32, 2, 3];
+    if k >= x.len() {
+        return 0;
+    }
+    {
+        let mut v: Vec<&mut Vec<u32>> = Vec::new();
+        v.push(&mut x);
+        v[0].clear();
+    }
+    x[k]
+}
+
+fn sorted_clears(cell: &RefCell<Vec<u32>>, k: usize) -> u32 {
+    if k >= cell.borrow().len() {
+        return 0;
+    }
+    let mut keys = vec![Key(2), Key(1)];
+    keys.sort();
+    cell.borrow()[k]
+}
+
+fn max_clears(cell: &RefCell<Vec<u32>>, k: usize) -> u32 {
+    if k >= cell.borrow().len() {
+        return 0;
+    }
+    let m = std::cmp::max(Key(1), Key(2));
+    cell.borrow()[k] + m.0
+}
+
+fn shared() -> Rc<RefCell<Vec<u32>>> {
+    let cell = Rc::new(RefCell::new(vec![1u32, 2, 3]));
+    HELD.with(|h| *h.borrow_mut() = Some(Rc::clone(&cell)));
+    cell
+}
+`,
+    calls: [
+      `check("stored_cleared 0", || stored_cleared(0))`,
+      `check("stored_cleared 1", || stored_cleared(1))`,
+      `check("sorted_clears 1", || sorted_clears(&shared(), 1))`,
+      `check("max_clears 1", || max_clears(&shared(), 1))`,
+    ],
+  },
 };
 
 /** The shape family's programs, `shape_<name>`. */

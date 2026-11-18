@@ -51,7 +51,7 @@ function heldGrown(batch) {
   const end = batch.length;
   for (let i = 0; i < end; i += 2) {
     batch.push(9);
-    total = (total + $index(batch, i)) >>> 0;
+    total = (total + batch[i]) >>> 0;
   }
   return total;
 }
@@ -106,7 +106,7 @@ function grownInTheLoop(batch) {
       if (batch.borrows < 0) {
         $alreadyMutablyBorrowed();
       }
-      total = (total + $index(batch, i)) >>> 0;
+      total = (total + batch[i]) >>> 0;
       if (batch.borrows) {
         $alreadyBorrowed();
       }

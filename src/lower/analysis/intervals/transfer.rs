@@ -1,8 +1,7 @@
-//! What the MIR intervals keep through a statement or a terminator: what
-//! the forgetting rules keep, and, where the session asks the effects
-//! query too (`--intervals-by-effects`, #2112 B step 3a), nothing of a
-//! local it says may be written there (`analysis::Effects::stale`). Step 3b
-//! makes the query the transfer's alone and deletes the rules.
+//! What the MIR intervals keep through a statement or a terminator: nothing
+//! of a local the effects query says may be written there
+//! (`analysis::Effects::stale`, #2112 B), as what's written does to it
+//! (`Written`); what each statement or call gives, its own transfer's.
 
 use super::*;
 use crate::lower::analysis::Written;
@@ -57,7 +56,7 @@ impl<'tcx> Walk<'_, 'tcx> {
 
     /// The effects query, where the session asks it of the transfer.
     fn by_effects(&self) -> Option<&crate::lower::analysis::Effects> {
-        (self.effects.as_ref()).filter(|_| crate::lower::session::caches(self.tcx).intervals_by_effects)
+        self.effects.as_ref()
     }
 }
 
@@ -72,13 +71,24 @@ pub(super) fn forget_stale(stale: IndexMap<Local, Written>, assigned: Option<Loc
 }
 
 impl State {
+    /// All that's known of `local` forgotten, a write the query says may
+    /// replace it: what `forget` forgets, and what it's an iterator of, a
+    /// `push` made it hold, what it lends (#2112 B).
+    pub(super) fn forget_all_about(&mut self, local: Local) {
+        self.forget(local);
+        self.iterates
+            .retain(|&iterator, &mut slice| iterator != local && slice != local);
+        self.pushed.shift_remove(&local);
+        self.lending.retain(|&lend, &mut of| lend != local && of != local);
+    }
+
     /// `local` written, as `written` says: replaced, nothing of it known;
     /// grown, a `push`, what's known of its length but that it's at least
     /// as long, `x < len` and its least holding; its items written, of a
     /// table, how long its rows are.
     pub(super) fn written(&mut self, local: Local, written: Written) {
         match written {
-            Written::Whole => self.forget(local),
+            Written::Whole => self.forget_all_about(local),
             Written::Grows => {
                 self.lens.retain(|_, &mut of| of != local);
                 self.empties.retain(|_, &mut of| of != local);

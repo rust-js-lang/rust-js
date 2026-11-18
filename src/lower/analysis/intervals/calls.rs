@@ -22,7 +22,6 @@ impl<'tcx> Walk<'_, 'tcx> {
         let of = (args.first())
             .and_then(|arg| arg.node.place())
             .and_then(|p| p.as_local())
-            .filter(|of| !self.lent.contains(of))
             .map(|of| state.root(of));
         // A `RefCell`'s `borrow()` and a `Ref`'s `Deref`, copies of the cell
         // (`cells`, #1741).
@@ -50,7 +49,6 @@ impl<'tcx> Walk<'_, 'tcx> {
                     if let Some(i) = (args.get(1))
                         .and_then(|arg| arg.node.place())
                         .and_then(|p| p.as_local())
-                        .filter(|i| !self.lent.contains(i))
                     {
                         after.related(i, Term::Len(of), true);
                     }
@@ -139,7 +137,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 },
             });
             let relations = |o: &Operand<'tcx>| -> IndexSet<(Term, bool)> {
-                let Some(x) = o.place().and_then(|p| p.as_local()).filter(|x| !self.lent.contains(x)) else {
+                let Some(x) = o.place().and_then(|p| p.as_local()) else {
                     return IndexSet::default();
                 };
                 let x = state.root(x);
@@ -176,11 +174,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             && (self.tcx.trait_of_assoc(callee)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Deref))
             && let [given] = args
             && is_rest_value(self.tcx, given.node.ty(&*self.body, self.tcx))
-            && let Some(of) = given
-                .node
-                .place()
-                .and_then(|p| p.as_local())
-                .filter(|of| !self.lent.contains(of))
+            && let Some(of) = given.node.place().and_then(|p| p.as_local())
         {
             after.copies.insert(local, state.root(of));
         }
@@ -191,7 +185,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             && let Some(of) = (args.first())
                 .and_then(|arg| arg.node.place())
                 .and_then(|p| p.as_local())
-                .filter(|of| !self.lent.contains(of))
         {
             after.iterates.insert(local, state.root(of));
         }
@@ -203,7 +196,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             && let Some(of) = (args.first())
                 .and_then(|arg| arg.node.place())
                 .and_then(|p| p.as_local())
-                .filter(|of| !self.lent.contains(of))
         {
             after.ranges.insert(
                 local,
@@ -229,11 +221,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         if let Some((callee, callee_args)) = func.const_fn_def()
             && slice_get(self.tcx, callee, callee_args)
             && let [slice, index] = args
-            && let Some(index) = index
-                .node
-                .place()
-                .and_then(|p| p.as_local())
-                .filter(|i| !self.lent.contains(i))
+            && let Some(index) = index.node.place().and_then(|p| p.as_local())
             && let Some(most) = self.length_of_collection(slice.node.ty(&*self.body, self.tcx))
         {
             after.gets.insert(local, (state.root(index), most.hi - 1));
@@ -248,7 +236,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             && let Some((made, referred)) = self.made_closure(closure)
             && let Some((field, most)) = closure_result(self.tcx, made)
             && let Some(&Some(index)) = referred.get(field)
-            && !self.lent.contains(&index)
         {
             after.gets.insert(local, (state.root(index), most));
         }

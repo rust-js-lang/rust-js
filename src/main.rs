@@ -155,8 +155,6 @@ struct RustJs {
     without_mutated: Vec<String>,
     /// `--without-intervals`, nothing MIR's intervals prove taken (#2112 B).
     without_intervals: bool,
-    /// `--intervals-by-effects` (#2112 B step 3a).
-    intervals_by_effects: bool,
     /// `--intervals-shadow <file>`, where to write the checks THIR leaves out
     /// that MIR doesn't prove (#1672).
     intervals_shadow: Option<PathBuf>,
@@ -352,7 +350,6 @@ impl Callbacks for RustJs {
                 without_recognizers: std::mem::take(&mut self.without_recognizers),
                 without_mutated: std::mem::take(&mut self.without_mutated),
                 without_intervals: self.without_intervals,
-                intervals_by_effects: self.intervals_by_effects,
                 records_recognized: self.recognizers_found.is_some(),
                 records_intervals_shadow: self.intervals_shadow.is_some(),
             },
@@ -731,7 +728,6 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         props_replayed,
         without_mutated,
         without_intervals,
-        intervals_by_effects,
         intervals_shadow,
         std_iterators,
         js_made_all,
@@ -800,7 +796,6 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         recognizers_found,
         without_mutated,
         without_intervals,
-        intervals_by_effects,
         intervals_shadow,
         cargo,
         panics_abort: false,

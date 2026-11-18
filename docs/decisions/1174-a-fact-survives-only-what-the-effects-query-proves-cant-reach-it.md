@@ -197,3 +197,84 @@ guard keeps what it covers only while it's held"; the shadow saying a keep
 `effects-guards-cover-nothing`. A guard kept past its drop shows only once
 the rules are gone, where they forget first now: step 3b's native row
 holds it.
+
+## Amendment (2026-11-19, step 3b): the query is the transfer's alone
+
+Each walk of the MIR intervals, a body's, its callers' and its closures',
+asks the query (`intervals/transfer.rs`): a statement's or a call's own
+transfer, then each local `stale` says may be written forgotten as what's
+written does to it, a replace by `State::forget_all_about`. The shape
+rules are gone, one at a time, the corpus run against native and its
+snapshots compared at each:
+
+| rule deleted | snapshots moved |
+|---|---|
+| (the query asked beside the rules) | 23 |
+| a write through a raw pointer, `forget_escaped` with it | 0 |
+| a write through a reference, `forget_lengths(root)` | 0 |
+| an integer lent `&mut`, `lent_where_borrowed`, `lent_away` | 0 |
+| the cells' at a call and a drop, `may_write_cells`, `guard_call` | 3 |
+| `may_write_escaped`, `called_on_mut`, `escaped` | 0 |
+| `guard_lent` | 0 |
+| `lent`, each fact of a local lent anywhere unknown | 1 |
+| `unpush` of a call's destination | 0 |
+
+With them went what only they read: `called_on`'s holders, `cells`'
+cells, `guards`' lends, `formats_code`, `pointer_may_keep_behind`, and
+`State`'s `lent_away`, `escaped` and `guarded`; 40 mutations of their
+code with them, whose code went too. The flags went, `--intervals-by-effects`
+and the shadow of the rules against the query (`intervals/shadowed.rs`,
+`scripts/effects-shadow.ts`); `--intervals-shadow` keeps its `proved-*`.
+
+What a call writes is asked of what it is, not of the names of the
+types it's given:
+
+- std's generic code runs a type argument's code only through a bound on
+  it that gives a method, its own or a supertrait's (`clauses_of`), or
+  its drop, so `Vec::<&Element>::remove` runs none of an `Element`'s
+  and `keys.sort()` runs a crate's `Ord`; what it's given otherwise
+  holds code only where it can't be named, a `dyn`, a fn pointer,
+  `fmt::Arguments`;
+- a projection std names, an index of a `Vec`'s, its `Deref`, a
+  `RefCell`'s `borrow()` or `borrow_mut()`, a guard's or an `Rc`'s
+  `Deref`, points into what its first argument points to, one or two
+  pointers down, past memory whose pointers the map doesn't know staying
+  where it is, and stores nothing; other std code that runs none stores
+  into what it's given only what else it's given, `v.push(&mut x)`'s
+  `x`;
+- a reference to what holds no pointer, of another type than its target
+  and what its pointers and cell hold, changes the target's items at
+  most; a collection is no cell itself; a `push` through a pointer into
+  a table's items changes an item;
+- `reachable` and `stale` are kept per pass and per location: a
+  121-line closure took 96 s, now 1 s.
+
+Measured, the corpus's proofs, the rules alone (3db58a4b4) against the
+query alone: 2,253 to 2,261, 2 lost in 1 case, `refcell_vec_bounds`'
+`settle_task`, a `dyn` drop under a guard made for the store alone
+(the fallback where `cell_borrows` doesn't count it), and 10 regained in
+6 (the cells' blanket forgetting at a call that reads, a local lent once
+known again past the borrow, a guard's `drain` past an item's store):
+net 8 more. Outside the corpus the examples' and the ports' JS is as it
+was, the React scheduler's min-heap's `heap[i]` and its swaps unchecked.
+The 7 cases whose JS moved each run as native Rust does; the whole
+corpus without the intervals runs as native
+(`TIDY_VARIANTS=intervals`); 200 generated programs, seeds 1 to 200, run
+as native; the bounds matrix's new `shape_std_code_writes` holds a
+`&mut Vec` std's `push` stores and the crate's `Ord` std's `sort` and
+`max` run, against native.
+
+Found on the way, each fixed and a mutation: a drop through a pointer
+writes what it reaches, not the pointer, `(*s)[1]`'s item; a typed
+reference into a cell is to what the cell holds, `&mut u32` of a
+`RefCell<Vec<u32>>`'s item its items alone; and the bounds matrix's
+`shape_unsound_directions` found a raw pointer a parameter holds pointing
+into another parameter's `RefCell`, `*p = empty` past `i <
+cell.borrow().len()`, which read `undefined` where Rust panics: a raw
+pointer from outside the body may point where what's escaped is.
+
+What ends a guard is said in one place (`effects/guards.rs`'
+`end_guards`), its drop, a move of it, its storage's end, so a guard kept
+past its drop is one mutation, `effects-guard-outlives-its-drop`, caught
+by `refcell_written_through_a_clone_under_its_guard`'s
+`after_a_dropped_guard`, run against native.

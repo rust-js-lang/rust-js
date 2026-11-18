@@ -35,20 +35,6 @@ impl<'tcx> Flow<'_, 'tcx> {
         if guards.is_empty() {
             return IndexMap::default();
         }
-        // What ends a guard: its drop, a move of it, its storage's end.
-        let ends = |kind: &StatementKind<'tcx>, held: &mut IndexSet<Local>| match kind {
-            StatementKind::StorageDead(local) => {
-                held.shift_remove(local);
-            }
-            StatementKind::Assign(assign) => {
-                if let Rvalue::Use(Operand::Move(place), _) = &assign.1
-                    && place.projection.is_empty()
-                {
-                    held.shift_remove(&place.local);
-                }
-            }
-            _ => {}
-        };
         // Held before each block, on every way to it: `None` of none reached.
         let mut before: IndexVec<BasicBlock, Option<IndexSet<Local>>> = IndexVec::from_elem(None, blocks);
         before[mir::START_BLOCK] = Some(IndexSet::default());
@@ -60,22 +46,10 @@ impl<'tcx> Flow<'_, 'tcx> {
                     continue;
                 };
                 for statement in &blocks[block].statements {
-                    ends(&statement.kind, &mut held);
+                    end_guards(Some(&statement.kind), None, &mut held);
                 }
                 let terminator = blocks[block].terminator();
-                match &terminator.kind {
-                    TerminatorKind::Drop { place, .. } => {
-                        held.shift_remove(&place.local);
-                    }
-                    TerminatorKind::Call { args, .. } => {
-                        for arg in args.iter() {
-                            if let Operand::Move(place) = &arg.node {
-                                held.shift_remove(&place.local);
-                            }
-                        }
-                    }
-                    _ => {}
-                }
+                end_guards(None, Some(&terminator.kind), &mut held);
                 let made = match &terminator.kind {
                     TerminatorKind::Call {
                         destination,
@@ -111,7 +85,7 @@ impl<'tcx> Flow<'_, 'tcx> {
                 continue;
             };
             for statement in &data.statements {
-                ends(&statement.kind, &mut held);
+                end_guards(Some(&statement.kind), None, &mut held);
             }
             let unseen = match &data.terminator().kind {
                 TerminatorKind::Call { func, args, .. } => match func.const_fn_def() {
@@ -174,5 +148,40 @@ pub(super) fn may_be_unnamed<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
         ty::Tuple(items) => items.iter().any(|t| may_be_unnamed(tcx, t)),
         ty::Adt(_, args) => args.types().any(|t| may_be_unnamed(tcx, t)),
         _ => false,
+    }
+}
+
+/// The guards a statement or a terminator ends, of `held`, the one place a
+/// guard's end is said: its storage's end, a move of it, its drop, a call
+/// it's moved into.
+fn end_guards(
+    statement: Option<&StatementKind<'_>>,
+    terminator: Option<&TerminatorKind<'_>>,
+    held: &mut IndexSet<Local>,
+) {
+    let mut ended: Vec<Local> = Vec::new();
+    match statement {
+        Some(StatementKind::StorageDead(local)) => ended.push(*local),
+        Some(StatementKind::Assign(assign)) => {
+            if let Rvalue::Use(Operand::Move(place), _) = &assign.1
+                && place.projection.is_empty()
+            {
+                ended.push(place.local);
+            }
+        }
+        _ => {}
+    }
+    match terminator {
+        Some(TerminatorKind::Drop { place, .. }) => ended.push(place.local),
+        Some(TerminatorKind::Call { args, .. }) => {
+            ended.extend(args.iter().filter_map(|arg| match &arg.node {
+                Operand::Move(place) => Some(place.local),
+                _ => None,
+            }));
+        }
+        _ => {}
+    }
+    for local in ended {
+        held.shift_remove(&local);
     }
 }

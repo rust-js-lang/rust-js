@@ -63,7 +63,13 @@ pub(super) fn capture_intervals<'tcx>(
             })
             .collect();
         let typing_env = ty::TypingEnv::post_analysis(tcx, maker);
-        let walk = walk(tcx, typing_env, body, given.get(&maker).cloned().unwrap_or_default());
+        let walk = walk(
+            tcx,
+            typing_env,
+            body,
+            given.get(&maker).cloned().unwrap_or_default(),
+            (None, None),
+        );
         for (location, state) in sites.iter().zip(walk.at(&sites)) {
             let StatementKind::Assign(assign) =
                 &walk.body.basic_blocks[location.block].statements[location.statement_index].kind
@@ -121,7 +127,7 @@ pub(super) fn closure_results<'tcx>(
             .map(|(block, _)| block)
             .collect();
         let typing_env = ty::TypingEnv::post_analysis(tcx, closure);
-        let walk = walk(tcx, typing_env, body, Given::default());
+        let walk = walk(tcx, typing_env, body, Given::default(), (None, None));
         let ends = walk.ends(&returns);
         // The capture each return's `Some` knows below a length, one at
         // every return, and the most of them.
