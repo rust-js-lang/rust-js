@@ -203,3 +203,47 @@ Held by `test/js-globals.test.ts`'s "an AggregateError is made of its
 options, and a constructor bound as a value", and
 `test/classes-flattened-state.test.ts`, whose throw in a borrow counts
 nothing.
+
+## Amendment (2026-11-18): the js crate's builtins, marked from their spec (#2082)
+
+The vercel-ui SDK's memo of a locale's first day, `CACHE.with_borrow_mut(|cache|
+*cache.entry(key).or_insert_with(|| resolve_first_day(locale)))`, kept
+`$withBorrowMut(cache, .., true)` around its cache, as its maker calls
+`Intl.Locale`, `Intl.DateTimeFormat` and a `RegExp`, which said nothing of
+what they run. They run none of the program's code, given what their Rust
+types allow, of builtins as the host has them (as `Map.get`'s mark
+assumes).
+
+The js crate's `intl.rs` is generated (`builtins/intl.ts`, `writeClass` of
+TypeScript's library, #1904), so its marks are `builtins/policy.ts`' `RUNS`,
+beside `NAMES` and `THROWS`, each with its ECMA-402 or Intl Locale Info step
+and its proof: `runs_nothing` of `Intl.Locale`'s `maximize`, `minimize`,
+`toString`, `getCalendars`, `getCollations`, `getHourCycles`,
+`getNumberingSystems`, `getTimeZones`, `getTextInfo` and `getWeekInfo`, and
+of each formatter's `resolvedOptions`, which read only their own internal
+slots; and `runs_only_given` (ADR 0898) of `new Intl.Locale` and of the
+`Collator`, `NumberFormat`, `DateTimeFormat`, `PluralRules`,
+`RelativeTimeFormat` and `ListFormat` constructors, which read their
+locales and options. `RegExp`'s `new`, `test` and `exec`, in the handwritten
+`lib.rs`, take only strings: `runs_nothing` there, by hand.
+
+Unmarked, as they may run the program's code given what their types allow,
+or weren't shown not to: each formatter's `format`, `formatToParts`,
+`formatRange`, `compare`, `select` and the like (a `Date` or a number
+object's `valueOf`), `supportedLocalesOf`, `DisplayNames` and `Segmenter`,
+`String`'s `replace` given a replacer, and every method given a callback.
+
+A `runs_only_given` constructor is still counted where its options' type
+is an object a JS caller could hand over, as `value_runs_nothing` reads
+types (ADR 0898); the call's own arguments, `None`, are #2082's second
+step.
+
+Rows: test/builtins-runs-nothing.test.ts, compiled and run: a memo whose
+maker tests a regex, and one whose maker reads a given locale's own,
+`maximize().toString()`, read their caches plainly; one whose maker calls
+the program back keeps its check, and its re-entry panics "already
+borrowed". Mutation `library-methods-run-unmarked`, caught. The regex's
+mark was shown by hand, as the mutation harness can't yet run a mutation
+of `builtins/src` (`string-replace-all-is-first-only`'s too): with it
+removed, the regex row fails.
+

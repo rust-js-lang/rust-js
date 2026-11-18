@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#2082): test/builtins-runs-nothing.test.ts, three tests, holds the js crate's builtins that run none of the program's code: a memo's borrow over a regex or a locale's own reads plain, and one over a callback checked.
+
 Changed on 2026-11-18: the ES class suite checks static methods, declarations, and JavaScript's implicit constructor on a fieldless class.
 
 Changed on 2026-11-18: the comment placement suite checks that a wrapped template initializer keeps its annotation outside the string.

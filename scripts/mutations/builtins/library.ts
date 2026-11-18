@@ -41,4 +41,12 @@ export const mutations: Mutation[] = [
     tests: test("the generator refuses a form it doesn't bind"),
   },
 
+  {
+    name: "library-methods-run-unmarked",
+    breaks: "a class's method `RUNS` says runs nothing, `Intl.Locale.prototype.maximize`, is written without `runs_nothing`, so what's committed of intl.rs isn't what it writes (#2082)",
+    file,
+    find: "    const quiet = runs(`${name}.prototype.${member.name}`);\n",
+    replace: "    const quiet: string[] = [];\n",
+    tests: written,
+  },
 ];

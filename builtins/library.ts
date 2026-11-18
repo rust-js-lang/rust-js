@@ -9,7 +9,7 @@
 
 import { open } from "@rust-js/typescript";
 import { snake } from "../scripts/rust-names";
-import { NAMES, THROWS } from "./policy";
+import { NAMES, runs, THROWS } from "./policy";
 import { argument, classed, close, line, method, options, page, record, union } from "./render";
 
 /** A declaration and the library file it's in. */
@@ -215,7 +215,8 @@ export function writeClass(w: Writing, name: string, receiver: string) {
   }
   for (const { member } of methods) {
     const ty = results.get(member.name)!;
-    method(`[\`${receiver}.${member.name}()\`](${mdn(member.name)}).`, member.name, `${snake(member.name)}(&self) -> ${ty}`, "    ", ty.startsWith("Option<") ? ["none_undefined"] : []);
+    const quiet = runs(`${name}.prototype.${member.name}`);
+    method(`[\`${receiver}.${member.name}()\`](${mdn(member.name)}).`, member.name, `${snake(member.name)}(&self) -> ${ty}`, "    ", [...(ty.startsWith("Option<") ? ["none_undefined"] : []), ...quiet]);
   }
   close();
   line("}");
@@ -230,6 +231,8 @@ export function writeClass(w: Writing, name: string, receiver: string) {
     `[\`${js}(${params.map((p: any) => p.js).join(", ")})\`](${mdn(short)})${throws ? `, or the \`${throws.error}\` it throws` : ""}.`,
     js,
     `new(${params.map((p: any) => p.rust).join(", ")}) -> ${throws ? `Result<${made}, &'static JsError>` : made}`,
+    "    ",
+    runs(js),
   );
   close();
   line("}");

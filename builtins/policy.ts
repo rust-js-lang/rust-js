@@ -43,3 +43,56 @@ export const THROWS: Record<string, Throws> = {
     proof: "test/intl-locale.test.ts -t \"a locale of a tag or of another locale\"",
   },
 };
+
+/** What a builtin runs of the program's code, which TypeScript's library
+ * doesn't say: none, `runs_nothing` (ADR 0867), or only what it's given,
+ * `runs_only_given` (ADR 0898), whose arguments the borrow analysis checks
+ * as JS reads them. A `RefCell` borrowed across its call isn't counted
+ * (#2082). Each by its JS, `new Intl.Locale` or `Intl.Locale.prototype.x`,
+ * with the ECMA-402 steps that show it, of builtins as the host has them. */
+export type Runs = { attribute: "runs_nothing" | "runs_only_given"; spec: string; proof: string };
+
+const formatterRuns = (name: string, create: string): Record<string, Runs> => ({
+  [`new Intl.${name}`]: {
+    attribute: "runs_only_given",
+    spec: `ECMA-402 ${create}: CanonicalizeLocaleList(locales), which reads a string or a Locale's [[Locale]], and GetOption of options' properties, what it's given`,
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  [`Intl.${name}.prototype.resolvedOptions`]: {
+    attribute: "runs_nothing",
+    spec: `ECMA-402 Intl.${name}.prototype.resolvedOptions: reads its own internal slots`,
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+});
+
+const localeReads = (method: string, spec: string): Record<string, Runs> => ({
+  [`Intl.Locale.prototype.${method}`]: { attribute: "runs_nothing", spec, proof: "test/builtins-runs-nothing.test.ts" },
+});
+
+export const RUNS: Record<string, Runs> = {
+  "new Intl.Locale": {
+    attribute: "runs_only_given",
+    spec: "ECMA-402 Intl.Locale ( tag [ , options ] ): ToString of a tag that isn't an Intl.Locale, else its [[Locale]], and GetOption of options' properties, what it's given",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  ...localeReads("maximize", "ECMA-402 Intl.Locale.prototype.maximize: Add Likely Subtags of its [[Locale]]"),
+  ...localeReads("minimize", "ECMA-402 Intl.Locale.prototype.minimize: Remove Likely Subtags of its [[Locale]]"),
+  ...localeReads("toString", "ECMA-402 Intl.Locale.prototype.toString: its [[Locale]]"),
+  ...localeReads("getCalendars", "Intl Locale Info: CalendarsOfLocale of its [[Locale]]"),
+  ...localeReads("getCollations", "Intl Locale Info: CollationsOfLocale of its [[Locale]]"),
+  ...localeReads("getHourCycles", "Intl Locale Info: HourCyclesOfLocale of its [[Locale]]"),
+  ...localeReads("getNumberingSystems", "Intl Locale Info: NumberingSystemsOfLocale of its [[Locale]]"),
+  ...localeReads("getTimeZones", "Intl Locale Info: TimeZonesOfLocale of its [[Locale]]"),
+  ...localeReads("getTextInfo", "Intl Locale Info: TextInfoOfLocale of its [[Locale]]"),
+  ...localeReads("getWeekInfo", "Intl Locale Info: WeekInfoOfLocale of its [[Locale]]"),
+  ...formatterRuns("Collator", "InitializeCollator"),
+  ...formatterRuns("NumberFormat", "InitializeNumberFormat"),
+  ...formatterRuns("DateTimeFormat", "CreateDateTimeFormat"),
+  ...formatterRuns("PluralRules", "InitializePluralRules"),
+  ...formatterRuns("RelativeTimeFormat", "InitializeRelativeTimeFormat"),
+  ...formatterRuns("ListFormat", "Intl.ListFormat ( [ locales [ , options ] ] )"),
+};
+
+/** `js`'s attribute of what it runs, `RUNS`', none of one not there. */
+export const runs = (js: string): string[] => (RUNS[js] ? [RUNS[js].attribute] : []);
+

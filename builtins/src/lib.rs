@@ -2374,13 +2374,19 @@ pub struct RegExp(PhantomData<JsObject>);
 
 impl RegExp {
     /// [`regexp.test(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/test): whether it matches `text`, from its `last_index` of a `g` or `y` pattern.
+    /// It runs no code of the program's (`runs_nothing`, #2082): ECMA-262's
+    /// RegExpExec of a string, its `lastIndex` its own (ADR 0867).
     #[cfg_attr(rust_js, rust_js::link_name = "test")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn test(&self, text: &str) -> bool {
         unreachable!()
     }
 
     /// [`regexp.exec(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec): its match in `text`, from its `last_index` of a `g` or `y` pattern.
+    /// It runs no code of the program's (`runs_nothing`, #2082): ECMA-262's
+    /// RegExpBuiltinExec of a string (ADR 0867).
     #[cfg_attr(rust_js, rust_js::link_name = "exec")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn exec(&self, text: &str) -> Option<&'static RegExpMatch> {
         unreachable!()
     }
@@ -2571,7 +2577,10 @@ pub mod reg_exp {
     /// `new RegExp(pattern, flags)`: flags like `"gm"`.
     /// Of a pattern and flags written as they are, it's their literal,
     /// `/%s/g`, as JS writes one.
+    /// It runs no code of the program's (`runs_nothing`, #2082): ECMA-262's
+    /// RegExpCreate of two strings (ADR 0867).
     #[cfg_attr(rust_js, rust_js::link_name = "new RegExp")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn new(pattern: &str, flags: &str) -> &'static RegExp {
         unreachable!()
     }

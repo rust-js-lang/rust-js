@@ -252,6 +252,7 @@ impl Collator {
 
     /// [`collator.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn resolved_options(&self) -> ResolvedCollatorOptions {
         unreachable!()
     }
@@ -262,6 +263,7 @@ pub mod collator {
 
     /// [`new Intl.Collator(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator/Collator): one of the first of `locales` it has, or the user's of none, as `options` say.
     #[cfg_attr(rust_js, rust_js::link_name = "new Intl.Collator")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn new(locales: Option<&dyn IntoLocalesArgument>, options: Option<&CollatorOptions<'_>>) -> &'static Collator {
         unreachable!()
     }
@@ -572,6 +574,7 @@ impl NumberFormat {
 
     /// [`numberformat.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn resolved_options(&self) -> ResolvedNumberFormatOptions {
         unreachable!()
     }
@@ -582,6 +585,7 @@ pub mod number_format {
 
     /// [`new Intl.NumberFormat(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/NumberFormat): one of the first of `locales` it has, or the user's of none, as `options` say.
     #[cfg_attr(rust_js, rust_js::link_name = "new Intl.NumberFormat")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn new(locales: Option<&dyn IntoLocalesArgument>, options: Option<&NumberFormatOptions<'_>>) -> &'static NumberFormat {
         unreachable!()
     }
@@ -794,6 +798,7 @@ impl DateTimeFormat {
 
     /// [`datetimeformat.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn resolved_options(&self) -> ResolvedDateTimeFormatOptions {
         unreachable!()
     }
@@ -804,6 +809,7 @@ pub mod date_time_format {
 
     /// [`new Intl.DateTimeFormat(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat): one of the first of `locales` it has, or the user's of none, as `options` say.
     #[cfg_attr(rust_js, rust_js::link_name = "new Intl.DateTimeFormat")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn new(locales: Option<&dyn IntoLocalesArgument>, options: Option<&DateTimeFormatOptions<'_>>) -> &'static DateTimeFormat {
         unreachable!()
     }
@@ -890,6 +896,7 @@ impl PluralRules {
 
     /// [`pluralrules.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn resolved_options(&self) -> ResolvedPluralRulesOptions {
         unreachable!()
     }
@@ -900,6 +907,7 @@ pub mod plural_rules {
 
     /// [`new Intl.PluralRules(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules/PluralRules): one of the first of `locales` it has, or the user's of none, as `options` say.
     #[cfg_attr(rust_js, rust_js::link_name = "new Intl.PluralRules")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn new(locales: Option<&dyn IntoLocalesArgument>, options: Option<&PluralRulesOptions>) -> &'static PluralRules {
         unreachable!()
     }
@@ -997,6 +1005,7 @@ impl RelativeTimeFormat {
 
     /// [`relativetimeformat.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn resolved_options(&self) -> ResolvedRelativeTimeFormatOptions {
         unreachable!()
     }
@@ -1007,6 +1016,7 @@ pub mod relative_time_format {
 
     /// [`new Intl.RelativeTimeFormat(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/RelativeTimeFormat): one of the first of `locales` it has, or the user's of none, as `options` say.
     #[cfg_attr(rust_js, rust_js::link_name = "new Intl.RelativeTimeFormat")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn new(locales: Option<&dyn IntoLocalesArgument>, options: Option<&RelativeTimeFormatOptions>) -> &'static RelativeTimeFormat {
         unreachable!()
     }
@@ -1092,6 +1102,7 @@ impl ListFormat {
 
     /// [`listformat.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/ListFormat/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn resolved_options(&self) -> ResolvedListFormatOptions {
         unreachable!()
     }
@@ -1102,6 +1113,7 @@ pub mod list_format {
 
     /// [`new Intl.ListFormat(locales, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/ListFormat/ListFormat): one of the first of `locales` it has, or the user's of none, as `options` say.
     #[cfg_attr(rust_js, rust_js::link_name = "new Intl.ListFormat")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn new(locales: Option<&dyn IntoLocalesArgument>, options: Option<&ListFormatOptions>) -> &'static ListFormat {
         unreachable!()
     }
@@ -1349,48 +1361,56 @@ impl Locale {
 
     /// [`locale.maximize()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/maximize).
     #[cfg_attr(rust_js, rust_js::link_name = "maximize")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn maximize(&self) -> &'static Locale {
         unreachable!()
     }
 
     /// [`locale.minimize()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/minimize).
     #[cfg_attr(rust_js, rust_js::link_name = "minimize")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn minimize(&self) -> &'static Locale {
         unreachable!()
     }
 
     /// [`locale.toString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/toString).
     #[cfg_attr(rust_js, rust_js::link_name = "toString")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn to_string(&self) -> String {
         unreachable!()
     }
 
     /// [`locale.getCalendars()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getCalendars).
     #[cfg_attr(rust_js, rust_js::link_name = "getCalendars")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get_calendars(&self) -> Vec<String> {
         unreachable!()
     }
 
     /// [`locale.getCollations()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getCollations).
     #[cfg_attr(rust_js, rust_js::link_name = "getCollations")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get_collations(&self) -> Vec<String> {
         unreachable!()
     }
 
     /// [`locale.getHourCycles()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getHourCycles).
     #[cfg_attr(rust_js, rust_js::link_name = "getHourCycles")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get_hour_cycles(&self) -> Vec<String> {
         unreachable!()
     }
 
     /// [`locale.getNumberingSystems()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getNumberingSystems).
     #[cfg_attr(rust_js, rust_js::link_name = "getNumberingSystems")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get_numbering_systems(&self) -> Vec<String> {
         unreachable!()
     }
 
     /// [`locale.getTextInfo()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo).
     #[cfg_attr(rust_js, rust_js::link_name = "getTextInfo")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get_text_info(&self) -> TextInfo {
         unreachable!()
     }
@@ -1398,12 +1418,14 @@ impl Locale {
     /// [`locale.getTimeZones()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTimeZones).
     #[cfg_attr(rust_js, rust_js::link_name = "getTimeZones")]
     #[cfg_attr(rust_js, rust_js::none_undefined)]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get_time_zones(&self) -> Option<Vec<String>> {
         unreachable!()
     }
 
     /// [`locale.getWeekInfo()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getWeekInfo).
     #[cfg_attr(rust_js, rust_js::link_name = "getWeekInfo")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn get_week_info(&self) -> WeekInfo {
         unreachable!()
     }
@@ -1414,6 +1436,7 @@ pub mod locale {
 
     /// [`new Intl.Locale(tag, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/Locale), or the `RangeError` it throws.
     #[cfg_attr(rust_js, rust_js::link_name = "new Intl.Locale")]
+    #[cfg_attr(rust_js, rust_js::runs_only_given)]
     pub fn new(tag: impl IntoLocaleTag, options: Option<&LocaleOptions<'_>>) -> Result<&'static Locale, &'static JsError> {
         unreachable!()
     }
