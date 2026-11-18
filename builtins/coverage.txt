@@ -1,5 +1,5 @@
 # The js crate against TypeScript's engine-selected ESNext library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts
-# members: 749 of 1083 (69.2%)
+# members: 756 of 1083 (69.8%)
 AggregateError.cause
 AggregateError.constructor
 AggregateError.errors
@@ -422,6 +422,13 @@ Intl.Locale.calendar
 Intl.Locale.caseFirst
 Intl.Locale.collation
 Intl.Locale.constructor
+Intl.Locale.getCalendars
+Intl.Locale.getCollations
+Intl.Locale.getHourCycles
+Intl.Locale.getNumberingSystems
+Intl.Locale.getTextInfo
+Intl.Locale.getTimeZones
+Intl.Locale.getWeekInfo
 Intl.Locale.hourCycle
 Intl.Locale.language
 Intl.Locale.maximize

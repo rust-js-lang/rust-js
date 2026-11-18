@@ -8,7 +8,7 @@ import {runSync} from "./child";
 import {buildReact, compiler, fixture, root, run, target} from "./support";
 
 beforeAll(buildReact, 600_000);
-const source = `use js::intl::{self, DateTimeFormatOptions, IntoLocalesArgument, IntoStrOrStrList, IntoDateOrNumber, IntoBigIntOrDateOrNumber, LocaleElement, LocaleOptions};
+const source = `use js::intl::{self, DateTimeFormatOptions, IntoLocalesArgument, IntoStrOrStrList, IntoDateOrNumber, IntoBigIntOrDateOrNumber, LocaleElement};
 use js::{Date, JsError};
 pub fn locales(value: Option<&dyn IntoStrOrStrList>) -> Result<Vec<String>, &'static JsError> {
     intl::get_canonical_locales(value)
@@ -27,7 +27,7 @@ pub fn range_parts(start: impl IntoBigIntOrDateOrNumber, end: impl IntoBigIntOrD
     intl::date_time_format::new(Some(&"en-US"), Some(&DateTimeFormatOptions { time_zone: Some("UTC"), ..Default::default() })).format_range_to_parts(start, end)
 }
 pub fn rust_forms(date: &Date) -> Vec<String> {
-    let locale = intl::locale::new("de-DE", &LocaleOptions::default()).unwrap();
+    let locale = intl::locale::new("de-DE", None).unwrap();
     let mixed = [LocaleElement::Text("en-US"), LocaleElement::Locale(locale)];
     let owned = vec![String::from("fr-FR")];
     let formatter = intl::date_time_format::new(Some(&mixed), None);

@@ -110,7 +110,7 @@ export async function intlArgumentCases(): Promise<{ source: string; cases: numb
       }
       const alias = aliases.get(type.name) ?? aliases.get("Intl." + type.name);
       if (alias) return values(alias);
-      if (type.name === "Locale") return ['intl::locale::new("de-DE", &intl::LocaleOptions::default()).unwrap()'];
+      if (type.name === "Locale") return ['intl::locale::new("de-DE", None).unwrap()'];
       if (type.name === "Date") return ['js::date::new(Some(&0.0))'];
     }
     if (type.kind === "keyword") {

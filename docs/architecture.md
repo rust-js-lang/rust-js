@@ -60,6 +60,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Host manifest validation and file publication | `tooling/manifest.js`, `tooling/publish.js` |
 | npm/Cargo integration and shipped binding catalog; rust-js's own wasm-bindgen, js-sys and web-sys for an app's dependencies, its catalog `tooling/compat/`'s folders, patched while Cargo's graph has one and they serve each crate that uses one (`settleCompat`, `tooling/compat/covered.txt`), and refused for an app's own crate or a pin (`compatRefused`, `packaged`); `#[wasm_bindgen]`'s ABI table, `tooling/compat/wasm-bindgen-macro/src/abi.rs` (ADR 1112) | `tooling/patch.js`, `tooling/crates.js`, `tooling/compat/`, `tooling/cargo.js` |
 | Shipped JS, web, React, Node, Next.js and React Native bindings | `builtins/`, `webapi/`, `react/`, `node/`, `next/`, `react-native/`; the authoritative list is `tooling/crates.js` |
+| The js crate's builtins from TypeScript's library | `builtins/library.ts` reads a root from the engine's ESNext graph and writes it; `builtins/render.ts` owns each binding form the hand specs and it write by; `builtins/policy.ts` what TypeScript doesn't say, each entry citing its test (ADR 1172) |
 | External crates used by compiler tests | `serde/` builds crates.io dependencies; it is not a shipped binding crate |
 | WASI compiler build | `wasm/Cargo.toml`, `wasm/build.sh`, `wasm/patches/` |
 | Playground UI and in-browser compiler host | `wasm/web/rust/`, `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js`, `wasm/web/frame-report.js` |

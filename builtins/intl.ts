@@ -8,98 +8,9 @@
 //
 //   bun builtins/intl.ts [out]   writes src/intl.rs, or `out`
 
-const page = (path: string) => `https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/${path}`;
-import { needsJsName, snake } from "../scripts/rust-names";
-/** A JS value's Rust variant: `"best fit"` `BestFit`, `"2-digit"` `TwoDigit`. */
-const variant = (js: string) =>
-  js.replace(/^2-/, "two-").split(/[^A-Za-z0-9]+/).map((w) => w[0].toUpperCase() + w.slice(1)).join("");
-
-const out: string[] = [];
-const line = (s = "") => out.push(s);
-const close = () => {
-  if (out.at(-1) === "") out.pop();
-};
-
-const stringUnions = new Map<string, string[]>();
-
-/** An enum of a string union's values, each its JS. */
-const union = (name: string, doc: string, values: string[]) => {
-  stringUnions.set(name, values);
-  line(`/// ${doc}`);
-  line(`#[derive(Clone, Copy, Debug, PartialEq, Eq)]`);
-  line(`pub enum ${name} {`);
-  for (const v of values) {
-    line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(v)})]`);
-    line(`    ${variant(v)},`);
-  }
-  line("}");
-  line();
-};
-
-/** A field: its JS name, and its Rust type. */
-type Field = [js: string, ty: string];
-const field = ([js, ty]: Field) => {
-  const name = snake(js);
-  if (needsJsName(name, js)) line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(js)})]`);
-  line(`    pub ${name}: ${ty},`);
-};
-/** What's given: each field an `Option`, `None` not given, as JS reads
- * an `undefined` option. A field given as required isn't. */
-/** The options structs that borrow text, `<'a>`. */
-const borrowing = new Set<string>();
-const options = (name: string, doc: string, fields: Field[], required: string[] = [], types: string | null = `Intl.${name}`) => {
-  const lifetime = fields.some(([, ty]) => ty.includes("'a"));
-  if (lifetime) borrowing.add(name);
-  line(`/// ${doc}`);
-  line(`/// A JS object of these fields, a \`None\` one not given${required.length ? "" : ": `..Default::default()` the rest"}.`);
-  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(types ?? anonymous(fields, required))})]`);
-  if (!required.length) line("#[derive(Default)]");
-  line(`pub struct ${name}${lifetime ? "<'a>" : ""} {`);
-  for (const [js, ty] of fields) field([js, required.includes(js) ? ty : `Option<${ty}>`]);
-  line("}");
-  line();
-};
-/** An anonymous native record, from the same fields that write its Rust.
- * Intl has no names for SupportedLocalesOptions or ListFormat's part. */
-const anonymous = (fields: Field[], required: string[]) => "{ " + fields.map(([js, rust]) => {
-  const optional = rust.startsWith("Option<");
-  const type = optional ? rust.slice(7, -1) : rust;
-  const union = stringUnions.get(type);
-  const value = type === "String" || /^&(?:'\w+ )?str$/.test(type) ? "string"
-    : union ? union.map(value => JSON.stringify(value)).join(" | ")
-    : undefined;
-  if (!value) throw new Error("anonymous Intl field type is not supported: " + rust);
-  return js + (optional || !required.includes(js) ? "?" : "") + ": " + value;
-}).join("; ") + " }";
-
-/** What's read: a JS object's fields as it gives them. */
-const record = (name: string, doc: string, fields: Field[], types: string | null = `Intl.${name}`) => {
-  line(`/// ${doc}`);
-  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(types ?? anonymous(fields, fields.map(([name]) => name)))})]`);
-  line(`#[derive(Clone, Debug, PartialEq)]`);
-  line(`pub struct ${name} {`);
-  for (const f of fields) field(f);
-  line("}");
-  line();
-};
-
-/** A method: its doc, its JS, its Rust signature. */
-const method = (doc: string, js: string, signature: string, indent = "    ") => {
-  line(`${indent}/// ${doc}`);
-  line(`${indent}#[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`);
-  line(`${indent}pub fn ${signature} {`);
-  line(`${indent}    unreachable!()`);
-  line(`${indent}}`);
-  line();
-};
-
-/** `name`'s class, which `js::class::<T>()` names, held: made by its
- * module's constructor (ADR 1049). */
-const classed = (name: string) => {
-  line(`impl super::Classed for ${name} {`);
-  line("    type Constructor = super::AnyConstructor;");
-  line("}");
-};
+import { readLibrary, writeClass, writeUnion, writing } from "./library";
+import { argument, borrowing, classed, close, type Field, line, method, options, out, page, record, union } from "./render";
+import { snake } from "../scripts/rust-names";
 
 /** A formatter: its type, its methods, and its module's constructor and
  * `supportedLocalesOf`. */
@@ -156,29 +67,6 @@ line();
 line("use super::{BigInt, Date, JsError, JsObject};");
 line();
 
-// Argument membership is written once here; sealed implementations and the
-// public erased input trait are derived from it (ADRs 0229, 0443).
-const argument = (name: string, type: string, members: string[], lists = false) => {
-  const module = snake(name);
-  line(`mod ${module} {`);
-  if (members.some(member => /Date|Locale|BigInt/.test(member))) line("    use super::*;");
-  line("    pub trait Sealed {}");
-  if (lists) line("    pub trait Element {}");
-  for (const member of members) {
-    line(`    impl Sealed for ${member} {}`);
-    if (lists) line(`    impl Element for ${member} {}`);
-  }
-  if (lists) {
-    for (const member of ["&[T]", "Vec<T>", "&Vec<T>"]) line(`    impl<T: Element> Sealed for ${member} {}`);
-    for (const member of ["[T; N]", "&[T; N]"]) line(`    impl<T: Element, const N: usize> Sealed for ${member} {}`);
-  }
-  line("}");
-  line(`/// A \`${type}\` input: each member as it is, without a wrapper.`);
-  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(type)})]`);
-  line(`pub trait ${name}: ${module}::Sealed {}`);
-  line(`impl<T: ${module}::Sealed> ${name} for T {}`);
-  line();
-};
 // typescript-es 5.9.3 lib.es2020.intl.d.ts:98 (LocalesArgument).
 line("/// A member of a mixed locales list, a string or Intl.Locale.");
 line("#[cfg_attr(rust_js, rust_js::untagged)]");
@@ -201,8 +89,11 @@ argument("IntoBigIntOrDateOrNumber", "bigint | Date | number", [...dateMembers, 
 
 union("LocaleMatcher", "How a locale is matched to `locales`: `localeMatcher`.", ["lookup", "best fit"]);
 union("Style", "How wide a word is written: `\"long\"`, `\"short\"` or `\"narrow\"`.", ["long", "short", "narrow"]);
-union("CaseFirst", "Which of upper and lower case is ordered first: `caseFirst`.", ["upper", "lower", "false"]);
-union("HourCycle", "How hours are counted: `hourCycle`, `\"h23\"` from 0 to 23.", ["h11", "h12", "h23", "h24"]);
+// `Intl.Locale`'s, which the collator's and the date formatter's options
+// share: written from TypeScript's library (#1904).
+const library = writing(await readLibrary());
+writeUnion(library, "Intl.LocaleCollationCaseFirst");
+writeUnion(library, "Intl.LocaleHourCycleKey");
 union("RangeSource", "Which of a range's ends a part is of: `source`.", ["startRange", "endRange", "shared"]);
 // These two shapes are anonymous in the pinned lib; refer to their actual owner.
 options("SupportedLocalesOptions", "What `supported_locales_of` is given.", [["localeMatcher", "LocaleMatcher"]], [], null);
@@ -379,39 +270,9 @@ formatter("DisplayNames", "languages, regions, currencies and scripts named as a
 
 // ── Locale ──────────────────────────────────────────────────────────────
 
-options("LocaleOptions", "What [`locale::new`] is given: each a part of the locale it makes, over its tag's.", [
-  ["calendar", "&'a str"], ["caseFirst", "CaseFirst"], ["collation", "&'a str"], ["hourCycle", "HourCycle"], ["language", "&'a str"],
-  ["numberingSystem", "&'a str"], ["numeric", "bool"], ["region", "&'a str"], ["script", "&'a str"],
-]);
-line(`/// [\`Intl.Locale\`](${page("Locale")}): a locale and its parts, \`en-Latn-US\`.`);
-line(`#[cfg_attr(rust_js, rust_js::name = "Intl.Locale")]`);
-line(`#[cfg_attr(rust_js, rust_js::types = "Intl.Locale")]`);
-line("pub struct Locale(PhantomData<JsObject>);");
-line();
-classed("Locale");
-line();
-line("impl Locale {");
-const lp = (m: string) => page(`Locale/${m}`);
-for (const [js, ty, d] of [
-  ["baseName", "String", "its language, script and region, `en-Latn-US`"], ["language", "String", "its language, `en`"],
-  ["script", "Option<String>", "its script, `Latn`"], ["region", "Option<String>", "its region, `US`"],
-  ["calendar", "Option<String>", "its calendar"], ["caseFirst", "Option<CaseFirst>", "which case it orders first"],
-  ["collation", "Option<String>", "how it orders text"], ["hourCycle", "Option<HourCycle>", "how it counts hours"],
-  ["numberingSystem", "Option<String>", "its digits"], ["numeric", "bool", "whether it orders numbers in text by their value"],
-]) method(`[\`locale.${js}\`](${lp(js)}): ${d}.`, `get ${js}`, `${snake(js)}(&self) -> ${ty}`);
-method(`[\`locale.maximize()\`](${lp("maximize")}): with the script and region most likely of its language, \`en\` \`en-Latn-US\`.`, "maximize", "maximize(&self) -> &'static Locale");
-method(`[\`locale.minimize()\`](${lp("minimize")}): without what \`maximize\` would add.`, "minimize", "minimize(&self) -> &'static Locale");
-method(`[\`locale.toString()\`](${lp("toString")}): its tag.`, "toString", "to_string(&self) -> String");
-close();
-line("}");
-line();
-line("pub mod locale {");
-line("    use super::*;");
-line();
-method(`[\`new Intl.Locale(tag, options)\`](${lp("Locale")}): the locale of \`tag\`, \`"en-US"\`, as \`options\` change it, or the \`RangeError\` of a tag that isn't one.`, "new Intl.Locale", "new(tag: &str, options: &LocaleOptions<'_>) -> Result<&'static Locale, &'static JsError>");
-close();
-line("}");
-line();
+// Written from TypeScript's library: its options, what its methods give,
+// itself and its constructor (#1904).
+writeClass(library, "Intl.Locale", "locale");
 
 // ── Segmenter ───────────────────────────────────────────────────────────
 

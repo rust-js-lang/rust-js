@@ -1,5 +1,10 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#1904): test/intl-locale.test.ts, five tests, holds
+`Intl.Locale` as it's written from TypeScript's library: Rust callers of
+each member on Bun, a strict TypeScript caller, and the generator's refusal
+of a form it doesn't bind.
+
 Changed on 2026-11-18 (#1903): test/definitions.test.ts, four tests, holds
 the definitions update's release policy (stable first, a prerelease only for
 a capability that names its test), one TypeScript pin for the parser and the

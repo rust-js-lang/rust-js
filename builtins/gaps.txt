@@ -35,12 +35,5 @@ JSON.static:rawJSON	#2046
 Promise.static:allKeyed	#2046
 Promise.static:allSettledKeyed	#2046
 Intl.DurationFormat.*	#2047
-Intl.Locale.getCalendars	#1904
-Intl.Locale.getCollations	#1904
-Intl.Locale.getHourCycles	#1904
-Intl.Locale.getNumberingSystems	#1904
-Intl.Locale.getTextInfo	#1904
-Intl.Locale.getTimeZones	#1904
-Intl.Locale.getWeekInfo	#1904
 Temporal.*	#1918
 Date.toTemporalInstant	#1918

@@ -110,7 +110,7 @@ pub enum Style {
     Narrow,
 }
 
-/// Which of upper and lower case is ordered first: `caseFirst`.
+/// The values of `Intl.LocaleCollationCaseFirst`, each as JS writes it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CaseFirst {
     #[cfg_attr(rust_js, rust_js::name = "upper")]
@@ -121,15 +121,15 @@ pub enum CaseFirst {
     False,
 }
 
-/// How hours are counted: `hourCycle`, `"h23"` from 0 to 23.
+/// The values of `Intl.LocaleHourCycleKey`, each as JS writes it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HourCycle {
-    #[cfg_attr(rust_js, rust_js::name = "h11")]
-    H11,
     #[cfg_attr(rust_js, rust_js::name = "h12")]
     H12,
     #[cfg_attr(rust_js, rust_js::name = "h23")]
     H23,
+    #[cfg_attr(rust_js, rust_js::name = "h11")]
+    H11,
     #[cfg_attr(rust_js, rust_js::name = "h24")]
     H24,
 }
@@ -1191,11 +1191,25 @@ pub mod display_names {
     }
 }
 
-/// What [`locale::new`] is given: each a part of the locale it makes, over its tag's.
+mod into_locale_tag {
+    use super::*;
+    pub trait Sealed {}
+    impl Sealed for &str {}
+    impl Sealed for String {}
+    impl Sealed for &String {}
+    impl Sealed for &Locale {}
+}
+/// A `string | Intl.Locale` input: each member as it is, without a wrapper.
+#[cfg_attr(rust_js, rust_js::types = "string | Intl.Locale")]
+pub trait IntoLocaleTag: into_locale_tag::Sealed {}
+impl<T: into_locale_tag::Sealed> IntoLocaleTag for T {}
+
+/// What `Intl.LocaleOptions` is given: each a part, `None` not given.
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[cfg_attr(rust_js, rust_js::types = "Intl.LocaleOptions")]
 #[derive(Default)]
 pub struct LocaleOptions<'a> {
+    pub base_name: Option<&'a str>,
     pub calendar: Option<&'a str>,
     pub case_first: Option<CaseFirst>,
     pub collation: Option<&'a str>,
@@ -1207,7 +1221,31 @@ pub struct LocaleOptions<'a> {
     pub script: Option<&'a str>,
 }
 
-/// [`Intl.Locale`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale): a locale and its parts, `en-Latn-US`.
+/// The values of `Intl.TextInfo.direction`, each as JS writes it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextDirection {
+    #[cfg_attr(rust_js, rust_js::name = "ltr")]
+    Ltr,
+    #[cfg_attr(rust_js, rust_js::name = "rtl")]
+    Rtl,
+}
+
+/// What `Intl.TextInfo` is: its fields as JS gives them.
+#[cfg_attr(rust_js, rust_js::types = "Intl.TextInfo")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextInfo {
+    pub direction: Option<TextDirection>,
+}
+
+/// What `Intl.WeekInfo` is: its fields as JS gives them.
+#[cfg_attr(rust_js, rust_js::types = "Intl.WeekInfo")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct WeekInfo {
+    pub first_day: f64,
+    pub weekend: Vec<f64>,
+}
+
+/// [`Intl.Locale`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale), as TypeScript's library declares it.
 #[cfg_attr(rust_js, rust_js::name = "Intl.Locale")]
 #[cfg_attr(rust_js, rust_js::types = "Intl.Locale")]
 pub struct Locale(PhantomData<JsObject>);
@@ -1217,81 +1255,132 @@ impl super::Classed for Locale {
 }
 
 impl Locale {
-    /// [`locale.baseName`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/baseName): its language, script and region, `en-Latn-US`.
+    /// [`locale.baseName`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/baseName).
     #[cfg_attr(rust_js, rust_js::link_name = "get baseName")]
     pub fn base_name(&self) -> String {
         unreachable!()
     }
 
-    /// [`locale.language`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/language): its language, `en`.
+    /// [`locale.language`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/language).
     #[cfg_attr(rust_js, rust_js::link_name = "get language")]
     pub fn language(&self) -> String {
         unreachable!()
     }
 
-    /// [`locale.script`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/script): its script, `Latn`.
-    #[cfg_attr(rust_js, rust_js::link_name = "get script")]
-    pub fn script(&self) -> Option<String> {
-        unreachable!()
-    }
-
-    /// [`locale.region`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/region): its region, `US`.
-    #[cfg_attr(rust_js, rust_js::link_name = "get region")]
-    pub fn region(&self) -> Option<String> {
-        unreachable!()
-    }
-
-    /// [`locale.calendar`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/calendar): its calendar.
+    /// [`locale.calendar`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/calendar).
     #[cfg_attr(rust_js, rust_js::link_name = "get calendar")]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn calendar(&self) -> Option<String> {
         unreachable!()
     }
 
-    /// [`locale.caseFirst`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/caseFirst): which case it orders first.
+    /// [`locale.caseFirst`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/caseFirst).
     #[cfg_attr(rust_js, rust_js::link_name = "get caseFirst")]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn case_first(&self) -> Option<CaseFirst> {
         unreachable!()
     }
 
-    /// [`locale.collation`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/collation): how it orders text.
+    /// [`locale.collation`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/collation).
     #[cfg_attr(rust_js, rust_js::link_name = "get collation")]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn collation(&self) -> Option<String> {
         unreachable!()
     }
 
-    /// [`locale.hourCycle`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/hourCycle): how it counts hours.
+    /// [`locale.hourCycle`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/hourCycle).
     #[cfg_attr(rust_js, rust_js::link_name = "get hourCycle")]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn hour_cycle(&self) -> Option<HourCycle> {
         unreachable!()
     }
 
-    /// [`locale.numberingSystem`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/numberingSystem): its digits.
+    /// [`locale.numberingSystem`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/numberingSystem).
     #[cfg_attr(rust_js, rust_js::link_name = "get numberingSystem")]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn numbering_system(&self) -> Option<String> {
         unreachable!()
     }
 
-    /// [`locale.numeric`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/numeric): whether it orders numbers in text by their value.
+    /// [`locale.numeric`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/numeric).
     #[cfg_attr(rust_js, rust_js::link_name = "get numeric")]
-    pub fn numeric(&self) -> bool {
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
+    pub fn numeric(&self) -> Option<bool> {
         unreachable!()
     }
 
-    /// [`locale.maximize()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/maximize): with the script and region most likely of its language, `en` `en-Latn-US`.
+    /// [`locale.region`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/region).
+    #[cfg_attr(rust_js, rust_js::link_name = "get region")]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
+    pub fn region(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [`locale.script`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/script).
+    #[cfg_attr(rust_js, rust_js::link_name = "get script")]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
+    pub fn script(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// [`locale.maximize()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/maximize).
     #[cfg_attr(rust_js, rust_js::link_name = "maximize")]
     pub fn maximize(&self) -> &'static Locale {
         unreachable!()
     }
 
-    /// [`locale.minimize()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/minimize): without what `maximize` would add.
+    /// [`locale.minimize()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/minimize).
     #[cfg_attr(rust_js, rust_js::link_name = "minimize")]
     pub fn minimize(&self) -> &'static Locale {
         unreachable!()
     }
 
-    /// [`locale.toString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/toString): its tag.
+    /// [`locale.toString()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/toString).
     #[cfg_attr(rust_js, rust_js::link_name = "toString")]
     pub fn to_string(&self) -> String {
+        unreachable!()
+    }
+
+    /// [`locale.getCalendars()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getCalendars).
+    #[cfg_attr(rust_js, rust_js::link_name = "getCalendars")]
+    pub fn get_calendars(&self) -> Vec<String> {
+        unreachable!()
+    }
+
+    /// [`locale.getCollations()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getCollations).
+    #[cfg_attr(rust_js, rust_js::link_name = "getCollations")]
+    pub fn get_collations(&self) -> Vec<String> {
+        unreachable!()
+    }
+
+    /// [`locale.getHourCycles()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getHourCycles).
+    #[cfg_attr(rust_js, rust_js::link_name = "getHourCycles")]
+    pub fn get_hour_cycles(&self) -> Vec<String> {
+        unreachable!()
+    }
+
+    /// [`locale.getNumberingSystems()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getNumberingSystems).
+    #[cfg_attr(rust_js, rust_js::link_name = "getNumberingSystems")]
+    pub fn get_numbering_systems(&self) -> Vec<String> {
+        unreachable!()
+    }
+
+    /// [`locale.getTextInfo()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo).
+    #[cfg_attr(rust_js, rust_js::link_name = "getTextInfo")]
+    pub fn get_text_info(&self) -> TextInfo {
+        unreachable!()
+    }
+
+    /// [`locale.getTimeZones()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTimeZones).
+    #[cfg_attr(rust_js, rust_js::link_name = "getTimeZones")]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
+    pub fn get_time_zones(&self) -> Option<Vec<String>> {
+        unreachable!()
+    }
+
+    /// [`locale.getWeekInfo()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getWeekInfo).
+    #[cfg_attr(rust_js, rust_js::link_name = "getWeekInfo")]
+    pub fn get_week_info(&self) -> WeekInfo {
         unreachable!()
     }
 }
@@ -1299,9 +1388,9 @@ impl Locale {
 pub mod locale {
     use super::*;
 
-    /// [`new Intl.Locale(tag, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/Locale): the locale of `tag`, `"en-US"`, as `options` change it, or the `RangeError` of a tag that isn't one.
+    /// [`new Intl.Locale(tag, options)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/Locale), or the `RangeError` it throws.
     #[cfg_attr(rust_js, rust_js::link_name = "new Intl.Locale")]
-    pub fn new(tag: &str, options: &LocaleOptions<'_>) -> Result<&'static Locale, &'static JsError> {
+    pub fn new(tag: impl IntoLocaleTag, options: Option<&LocaleOptions<'_>>) -> Result<&'static Locale, &'static JsError> {
         unreachable!()
     }
 }

@@ -1,6 +1,6 @@
 # 0283. The js crate covers TypeScript's ES library, and a test holds it
 
-Status: Accepted. Amended by [0994](0994-a-number-a-binding-takes-is-typescripts-number.md): a typed array takes numbers, `f64`s, and to `set` and `from` any `ArrayLike` of them. Extends [0102](0102-js-and-webapi.md) and [0281](0281-webapi-covers-typescripts-dom.md).
+Status: Accepted. Amended by [1172](1172-the-js-crates-builtins-written-from-typescripts-library.md): a group of builtins is written from TypeScript's library, `Intl.Locale` first. Amended by [0994](0994-a-number-a-binding-takes-is-typescripts-number.md): a typed array takes numbers, `f64`s, and to `set` and `from` any `ArrayLike` of them. Extends [0102](0102-js-and-webapi.md) and [0281](0281-webapi-covers-typescripts-dom.md).
 Amended by [0741](0741-an-array-buffer-view-is-what-each-view-derefs-to.md): each view
 derefs to an `ArrayBufferView`, and `isView` takes any value.
 Amended by [0698](0698-a-catch-handler-gives-a-value-or-a-promise.md): `catch`'s handler
@@ -536,3 +536,11 @@ they are: nothing in the tree moves.
 This is case N: the declaration authority changes, not JavaScript or Rust
 semantics. Generating the builtins from this library is #1904; each
 group's hand-written spec stays its authority until migrated.
+
+## Amendment (2026-11-18): groups written from the library (#1904)
+
+A group of the crate's builtins is now written from TypeScript's library
+itself, its hand spec deleted as it moves: `Intl.Locale` first, its seven
+ESNext getters bound and their gaps gone, 756 of 1,083. See
+[ADR 1172](1172-the-js-crates-builtins-written-from-typescripts-library.md).
+

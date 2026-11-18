@@ -398,9 +398,9 @@ pub fn words() -> (Vec<String>, PluralCategory, String, String, Option<String>, 
     (files.iter().map(|f| f.to_string()).collect(), ordinal.select(2.0), ago.format(-1.0, RelativeTimeUnit::Day), list.format(&["a", "b"]), names.of("US"), count)
 }
 pub fn locales() -> (String, bool, Vec<String>, bool) {
-    let maximal = locale::new("en", &LocaleOptions::default()).map(|l| l.maximize().to_string()).unwrap_or_default();
+    let maximal = locale::new("en", None).map(|l| l.maximize().to_string()).unwrap_or_default();
     let canonical = intl::get_canonical_locales(Some(&["EN-us"])).unwrap_or_default();
-    (maximal, locale::new("not a tag!", &LocaleOptions::default()).is_err(), canonical, intl::supported_values_of(SupportedValuesKey::Currency).len() > 10)
+    (maximal, locale::new("not a tag!", None).is_err(), canonical, intl::supported_values_of(SupportedValuesKey::Currency).len() > 10)
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);

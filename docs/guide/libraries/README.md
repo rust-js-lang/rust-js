@@ -207,6 +207,12 @@ What it has:
   DateTimeFormat, NumberFormat and RelativeTimeFormat; other formatters
   use SupportedLocalesOptions with a LocaleMatcher enum.
   Native formatter records remain typed when exported from Rust.
+  `js::intl::locale::new("en-US", None)` is `new Intl.Locale("en-US")`, its
+  tag text or another locale, its options `None`, a tag that isn't one the
+  `RangeError` it throws, `Err`. What it reads back, `region()`, is `None`
+  where it wasn't given; `get_week_info()`, `get_text_info()` and
+  `get_time_zones()` are ESNext's, written from TypeScript's library
+  ([ADR 1172](../../decisions/1172-the-js-crates-builtins-written-from-typescripts-library.md)).
 - **The rest of the ES library:** `Date`, `Intl`'s formatters, typed arrays
   and `ArrayBuffer`, `Atomics`, `Symbol`, `WeakMap`, `WeakRef`,
   `FinalizationRegistry`, `Proxy`, `Reflect`, `encode_uri_component` and
