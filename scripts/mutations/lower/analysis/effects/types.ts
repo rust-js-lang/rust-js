@@ -2,7 +2,6 @@
 import type { Mutation } from "../../../../mutations";
 
 const file = "src/lower/analysis/effects/types.rs";
-const tests = ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"];
 
 export const mutations: Mutation[] = [
   {
@@ -12,7 +11,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                if args.regions().next().is_some() {\n",
     replace: "                if false {\n",
-    tests,
+    tests: ["test/corpus.test.ts", "-t", "^refcell_guard_bounds.rs$"],
   },
   {
     name: "effects-box-holds-nothing",
@@ -21,7 +20,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                if raw_pointee(tcx, ty).is_some() || ty.is_box() {\n",
     replace: "                if raw_pointee(tcx, ty).is_some() {\n",
-    tests,
+    tests: ["test/corpus.test.ts", "-t", "^rc_refcell_bounds.rs$"],
   },
   {
     name: "effects-nonnull-holds-nothing",
@@ -30,7 +29,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                if raw_pointee(tcx, ty).is_some() || ty.is_box() {\n",
     replace: "                if ty.is_box() {\n",
-    tests,
+    tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
   },
   {
     name: "effects-shared-cells-unwritable",
@@ -39,6 +38,6 @@ export const mutations: Mutation[] = [
     file,
     find: "                if !ty.is_freeze(tcx, typing_env) || raw_pointee(tcx, ty).is_some() {\n",
     replace: "                if raw_pointee(tcx, ty).is_some() {\n",
-    tests,
+    tests: ["test/corpus.test.ts", "-t", "^refcell_guard_bounds.rs$"],
   },
 ];

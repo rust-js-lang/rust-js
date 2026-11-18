@@ -59,9 +59,9 @@ fn read_under_dyn(items: &RefCell<Vec<u32>>, f: &dyn Fn(), i: usize) -> u32 {
     0
 }
 
-/// A guard held in a scope of its own, dropped, then code that clears the
-/// cell through a clone: the length known before the scope is no longer
-/// so, and the index panics as Rust's does.
+/// A guard dropped, then code that clears the cell through a clone: the
+/// length the guard showed is no longer so, and the index panics as Rust's
+/// does.
 fn after_a_dropped_guard(items: &RefCell<Vec<u32>>, f: &dyn Fn(), i: usize) -> u32 {
     if i >= items.borrow().len() {
         return 0;
@@ -72,6 +72,20 @@ fn after_a_dropped_guard(items: &RefCell<Vec<u32>>, f: &dyn Fn(), i: usize) -> u
     }
     f();
     items.borrow()[i]
+}
+
+/// A cell a parameter's struct holds, read past code that clears it through
+/// a clone, no guard held: the index panics as Rust's does.
+struct Queue {
+    items: Rc<RefCell<Vec<u32>>>,
+}
+
+fn field_after_code(queue: &Queue, f: &dyn Fn(), i: usize) -> u32 {
+    if i < queue.items.borrow().len() {
+        f();
+        return queue.items.borrow()[i];
+    }
+    0
 }
 
 fn main() {
@@ -85,5 +99,8 @@ fn main() {
     check("read dyn, cleared through a clone", || read_under_dyn(&items, &|| clone.borrow_mut().clear(), 2));
     items.borrow_mut().extend([4, 5, 6]);
     check("after a dropped guard, cleared through a clone", || after_a_dropped_guard(&items, &|| clone.borrow_mut().clear(), 1));
+    items.borrow_mut().extend([7, 8, 9]);
+    let queue = Queue { items: Rc::clone(&items) };
+    check("a field's cell, cleared through a clone", || field_after_code(&queue, &|| clone.borrow_mut().clear(), 1));
     println!("items: {:?}", items.borrow());
 }

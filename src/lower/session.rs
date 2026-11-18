@@ -63,9 +63,6 @@ pub(crate) struct Caches {
     /// That this session takes nothing MIR's intervals prove,
     /// `--without-intervals`'s (#2112 B).
     pub without_intervals: bool,
-    /// That what MIR's intervals keep is asked of the effects query too,
-    /// `--intervals-by-effects`'s (#2112 B step 3a).
-    pub intervals_by_effects: bool,
     /// Each check THIR's facts leave out that MIR doesn't prove, where the
     /// session records them, `--intervals-shadow`'s (#1672).
     pub intervals_shadow: Option<RefCell<super::analysis::Shadow>>,
@@ -175,8 +172,6 @@ pub(crate) struct Flags {
     pub without_mutated: Vec<String>,
     /// Whether nothing MIR's intervals prove is taken.
     pub without_intervals: bool,
-    /// Whether what they keep is asked of the effects query too.
-    pub intervals_by_effects: bool,
     /// Whether the functions a recogniser takes are recorded.
     pub records_recognized: bool,
     /// Whether the checks THIR leaves out that MIR doesn't prove are.
@@ -228,7 +223,6 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             without_recognizers: flags.without_recognizers.into_iter().collect(),
             without_mutated: flags.without_mutated.into_iter().collect(),
             without_intervals: flags.without_intervals,
-            intervals_by_effects: flags.intervals_by_effects,
             intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
             drops_shadow: flags.records_drops_shadow.then(RefCell::default),
             intervals: RefCell::default(),

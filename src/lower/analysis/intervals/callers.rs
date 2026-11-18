@@ -164,7 +164,7 @@ fn passes<'tcx>(
         return Vec::new();
     }
     let typing_env = ty::TypingEnv::post_analysis(tcx, function);
-    let walk = walk(tcx, typing_env, body, own);
+    let walk = walk(tcx, typing_env, body, own, (None, None));
     let ends = walk.ends(&reaching);
     let mut found = Vec::new();
     for call in graph.calls.get(&function).into_iter().flatten() {

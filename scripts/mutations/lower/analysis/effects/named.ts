@@ -2,7 +2,6 @@
 import type { Mutation } from "../../../../mutations";
 
 const file = "src/lower/analysis/effects/named.rs";
-const tests = ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"];
 
 export const mutations: Mutation[] = [
   {

@@ -4,6 +4,8 @@
 //! may change.
 
 use super::*;
+use crate::lower::recognition::{StdItem, is_std_def};
+use rustc_middle::ty::elaborate::supertrait_def_ids;
 
 /// Whether `ty` is a cell, or a pointer to one however many down, a
 /// reference, a `Box`, an `Rc`: what's not `Freeze` past its pointers.
@@ -15,6 +17,31 @@ pub(super) fn is_a_cell<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>
         }
     }
     true
+}
+
+/// What a cell `ty` holds, past its pointers, `RefCell<Vec<u32>>`'s or
+/// `Rc<RefCell<Vec<u32>>>`'s `Vec<u32>`: of std's type that isn't `Freeze`
+/// itself, its one type argument; none of what isn't a cell, or can't be
+/// said.
+pub(super) fn cell_holds<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    mut ty: Ty<'tcx>,
+) -> Option<Ty<'tcx>> {
+    for _ in 0..8 {
+        match ty.builtin_deref(true).or_else(|| rc_pointee(tcx, ty)) {
+            Some(to) => ty = to,
+            None => break,
+        }
+    }
+    match ty.kind() {
+        ty::Adt(adt, args)
+            if is_std_crate(tcx, adt.did()) && !ty.is_freeze(tcx, typing_env) && args.types().count() == 1 =>
+        {
+            args.types().next()
+        }
+        _ => None,
+    }
 }
 
 /// Whether a value of `ty` is a scalar, or made of scalars alone, which
@@ -32,6 +59,55 @@ pub(super) fn scalar(ty: Ty<'_>) -> bool {
 /// array, a `str`.
 pub(super) fn fixed_length(ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Slice(_) | ty::Array(..) | ty::Str)
+}
+
+/// The generic parameters of `callee`, by index, its own and its impl's,
+/// a bound on which gives a method, its own or a supertrait's: `T: Clone`,
+/// `F: FnMut(&T)`, `T: Copy`, not `T: Sized`, `T: Send`.
+pub(super) fn bounded_params(tcx: TyCtxt<'_>, callee: DefId) -> IndexSet<usize> {
+    // Each parameter as the callee's own generic code names it, by index.
+    let own = ty::GenericArgs::identity_for_item(tcx, callee);
+    let mut bounded = IndexSet::default();
+    for clause in tcx.clauses_of(callee).instantiate_identity(tcx).clauses {
+        let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+            continue;
+        };
+        let gives = supertrait_def_ids(tcx, bound.def_id()).any(|t| tcx.associated_items(t).len() > 0);
+        if !gives {
+            continue;
+        }
+        let of = bound.skip_binder().self_ty();
+        bounded.extend(
+            (own.iter().enumerate())
+                .filter(|(_, param)| of.walk().any(|part| part == *param))
+                .map(|(i, _)| i),
+        );
+    }
+    bounded
+}
+
+/// Whether `ty` holds code that isn't a type argument's: a `dyn`, a fn
+/// pointer, an opaque or a foreign type, std's `fmt::Arguments`.
+pub(super) fn holds_unnamed_code<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    ty.walk().any(|part| {
+        part.as_type().is_some_and(|t| match t.kind() {
+            ty::Dynamic(..) | ty::FnPtr(..) | ty::Alias(..) | ty::Foreign(_) => true,
+            ty::Adt(adt, _) => {
+                is_std_crate(tcx, adt.did())
+                    && crate::lower::analysis::carries_code(tcx, Ty::new_adt(tcx, *adt, ty::List::empty()), true)
+            }
+            _ => false,
+        })
+    })
+}
+
+/// Whether `ty` is a collection, a `Vec`, a `VecDeque`, a slice, an
+/// array, a `str`: never a cell itself, what its items are as they may
+/// be, so through a shared reference its items change, not its length.
+pub(super) fn is_a_collection<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    fixed_length(ty)
+        || matches!(ty.kind(), ty::Adt(adt, _)
+            if is_std_def(tcx, adt.did(), StdItem::Vec) || is_std_def(tcx, adt.did(), StdItem::VecDeque))
 }
 
 /// Whether `ty` is a pointer itself, whose facts are of what it points to:

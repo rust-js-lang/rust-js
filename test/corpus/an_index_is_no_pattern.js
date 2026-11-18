@@ -7,7 +7,6 @@ import {
   $borrowMut,
   $byteLen,
   $catchUnwind,
-  $index,
   $unborrow,
 } from "@rust-js/std";
 
@@ -45,7 +44,7 @@ function firstAndLast(boundary) {
   if (segments.borrows < 0) {
     $alreadyMutablyBorrowed();
   }
-  const last = $byteLen($index(segments, 1));
+  const last = $byteLen(segments[1]);
   return [first, last];
 }
 

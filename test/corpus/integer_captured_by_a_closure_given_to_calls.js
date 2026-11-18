@@ -18,7 +18,7 @@ function marked(text, marks) {
   let next = 0;
   let last = 0;
   readAll(text, (at) => {
-    if (next < marks.length && $index(marks, next) === at) {
+    if (next < marks.length && marks[next] === at) {
       next++;
     }
     last = at;
@@ -48,7 +48,7 @@ function twice(text, marks) {
   const seen = new Array(n).fill(0);
   let next = 0;
   function step(at) {
-    if (next < marks.length && $index(marks, next) === at) {
+    if (next < marks.length && marks[next] === at) {
       next++;
     }
   }

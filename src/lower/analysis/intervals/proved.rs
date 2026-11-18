@@ -60,7 +60,6 @@ impl<'tcx> Walk<'_, 'tcx> {
                 && let Some(holder) = (args.first())
                     .and_then(|arg| arg.node.place())
                     .and_then(|p| p.as_local())
-                    .filter(|l| !self.lent.contains(l))
                     .map(|l| state.root(l))
                 && (indexes.iter()).all(|&(at, strict)| {
                     args.get(at)
@@ -82,7 +81,6 @@ impl<'tcx> Walk<'_, 'tcx> {
                 && let Some(slice) = (args.first())
                     .and_then(|arg| arg.node.place())
                     .and_then(|p| p.as_local())
-                    .filter(|l| !self.lent.contains(l))
                     .map(|l| state.root(l))
                 && self.least_known(&state, slice) >= 1
             {
@@ -94,7 +92,6 @@ impl<'tcx> Walk<'_, 'tcx> {
                 && let Some(holder) = (args.first())
                     .and_then(|arg| arg.node.place())
                     .and_then(|p| p.as_local())
-                    .filter(|l| !self.lent.contains(l))
                     .map(|l| state.root(l))
                 && args
                     .get(at)

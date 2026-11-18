@@ -42,7 +42,7 @@ function flushSubtree(out, segment) {
         // Write all the chunks up until the next child.
         while (chunkIdx < nextChild.index) {
           writeChunk(out, $index(chunks, chunkIdx));
-          chunkIdx = (chunkIdx + 1) >>> 0;
+          chunkIdx++;
         }
         r = flushSegment(out, nextChild);
       }
@@ -78,7 +78,7 @@ function flushUntil(out, segment, stop) {
             break;
           }
           writeChunk(out, chunks[chunkIdx]);
-          chunkIdx = (chunkIdx + 1) >>> 0;
+          chunkIdx++;
         }
         flushSegment(out, nextChild);
       }

@@ -26,7 +26,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             (args.get(at))
                 .and_then(|arg| arg.node.place())
                 .and_then(|p| p.as_local())
-                .filter(|l| !self.lent.contains(l))
                 .map(|l| state.root(l))
         };
         // A key whose lookup reads the same until it's written, and the

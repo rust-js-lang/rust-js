@@ -33,7 +33,6 @@ use std::collections::BTreeSet;
 
 mod arithmetic;
 mod called_on;
-mod shadowed;
 mod transfer;
 pub(in crate::lower) use called_on::carries_code;
 mod callers;
@@ -112,8 +111,6 @@ struct Walk<'a, 'tcx> {
     typing_env: ty::TypingEnv<'tcx>,
     /// The body, of a closure's its captures each a local (`as_locals`).
     body: std::borrow::Cow<'a, Body<'tcx>>,
-    /// The locals whose place is lent `&mut` or as a raw pointer.
-    lent: IndexSet<Local>,
     /// The ranges of integers only their `next()` steps (`stepped_ranges`).
     stepped: IndexSet<Local>,
     /// What its callers give each of its parameters, of a function only
@@ -122,29 +119,15 @@ struct Walk<'a, 'tcx> {
     /// The locals a raw pointer is made of, which a push's length is never
     /// known of (`pushes`).
     pointed: IndexSet<Local>,
-    /// The locals that hold or lend a `RefCell`, whose lengths a call may
-    /// write (`cells`, #1741).
-    cells: IndexSet<Local>,
     /// Of a closure's body, each capture's local given what it was made
     /// with, by field (`as_locals`, #1701).
     captured: Vec<(usize, Local)>,
-    /// Each `&mut` of a `Vec` or an integer a local holds, lent only to the
-    /// calls it's given to, by the local holding it (`called_on`).
-    called_on: called_on::Holders,
-    /// Of each such holder that is or holds a closure, that closure's code
-    /// (`called_on`, #1947).
-    called_on_code: IndexMap<Local, (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>)>,
     /// The `borrow_mut()` guards held while they live (`guards`).
     guards: guards::Guards,
     /// The row types of tables no `&mut` resizes (`tables::rows_kept`).
     kept_rows: IndexSet<Ty<'tcx>>,
-    /// Whether the body's formatting may run code (`formats_code`).
-    formats_code: bool,
-    /// The crate's libraries, which `pointer_may_keep` asks, where the
-    /// walk lowers a body; none of a walk for what callers give (#1947).
-    libraries: Option<Libraries<'a, 'tcx>>,
-    /// What each statement may write, where the session records the
-    /// shadow: the query the rules are compared with (`shadowed`).
+    /// What each statement may write, the one answer of what nothing known
+    /// of may survive it (`analysis::Effects`, #2112 B).
     effects: Option<crate::lower::analysis::Effects>,
     /// Each statement's location, by its address, which the transfer asks
     /// the query of (`transfer`).
@@ -171,54 +154,24 @@ fn proofs<'a, 'tcx>(
     libraries: Option<Libraries<'a, 'tcx>>,
     cells: Option<&crate::lower::analysis::CellBorrows<'tcx>>,
 ) -> Proofs {
-    let mut walk = walk(tcx, typing_env, body, given);
-    walk.libraries = libraries;
-    let caches = crate::lower::session::caches(tcx);
-    if caches.intervals_shadow.is_some() || caches.intervals_by_effects {
-        let made = body.local_decls.len();
-        walk.effects = Some(crate::lower::analysis::Effects::of(
-            tcx,
-            typing_env,
-            &walk.body,
-            libraries,
-            made,
-            cells
-                .map(|cells| move |ty| cells.unnamed_may_borrow(tcx, ty))
-                .as_ref()
-                .map(|f| f as &dyn Fn(Ty<'tcx>) -> bool),
-        ));
-        walk.located = (walk.body.basic_blocks.iter_enumerated())
-            .flat_map(|(block, data)| {
-                (data.statements.iter().enumerate()).map(move |(statement_index, s)| {
-                    (std::ptr::from_ref(s).addr(), Location { block, statement_index })
-                })
-            })
-            .collect();
-    }
-    walk.run()
+    walk(tcx, typing_env, body, given, (libraries, cells)).run()
 }
 
-/// Whether `place`, lent `&mut`, is an integer local the walk forgets
-/// where it's lent, not in the whole body: borrowck holds that it's never
-/// assigned while the borrow lives, so once it's assigned again it's what
-/// that gave, `k` of `k += 1` before a later `&mut k`. Not one a raw pointer
-/// is made of, which may write it after.
-fn lent_where_borrowed(body: &Body<'_>, place: &mir::Place<'_>) -> bool {
-    let pointed = (body.basic_blocks.iter())
-        .flat_map(|data| &data.statements)
-        .any(|statement| {
-            matches!(&statement.kind, StatementKind::Assign(assign)
-            if matches!(&assign.1, Rvalue::RawPtr(_, of) if of.local == place.local))
-        });
-    place.projection.is_empty() && body.local_decls[place.local].ty.is_integral() && !pointed
-}
-
+/// A walk of `body`, its transfer asking what each statement may write of
+/// the effects query (`analysis::Effects`), which asks `libraries` what a
+/// call may keep and `cells` what a held guard covers, where the body's
+/// lowering has them; of none, what can't be seen may.
 fn walk<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     body: &'a Body<'tcx>,
     given: Given,
+    (libraries, cell_borrows): (
+        Option<Libraries<'a, 'tcx>>,
+        Option<&crate::lower::analysis::CellBorrows<'tcx>>,
+    ),
 ) -> Walk<'a, 'tcx> {
+    let made = body.local_decls.len();
     let (body, captured) = match captures::as_locals(tcx, body) {
         Some((rewritten, captured)) => (std::borrow::Cow::Owned(rewritten), captured),
         None => (std::borrow::Cow::Borrowed(body), Vec::new()),
@@ -233,71 +186,39 @@ fn walk<'a, 'tcx>(
         Some(rewritten) => std::borrow::Cow::Owned(rewritten),
         None => body,
     };
-    let called_on::CalledOn {
-        holders: called_on,
-        closures: called_on_code,
-    } = called_on::called_on(tcx, &body);
     let guards = guards::guards(tcx, &body);
     let kept_rows = tables::rows_kept(tcx, &body);
-    let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on, (&guards, &kept_rows));
-    let formats_code = called_on::formats_code(tcx, &body);
-    Walk {
+    let (stepped, pointed) = facts(tcx, &body);
+    let mut walk = Walk {
         tcx,
         typing_env,
         body,
-        lent,
         stepped,
         from_callers: given,
         pointed,
-        cells,
         captured,
-        called_on,
-        called_on_code,
         guards,
         kept_rows,
-        formats_code,
-        libraries: None,
         effects: None,
         located: IndexMap::default(),
-    }
+    };
+    let unnamed = cell_borrows.map(|cells| move |ty| cells.unnamed_may_borrow(tcx, ty));
+    let unnamed = unnamed.as_ref().map(|f| f as &dyn Fn(Ty<'tcx>) -> bool);
+    walk.effects = Some(crate::lower::analysis::Effects::of(
+        tcx, typing_env, &walk.body, libraries, made, unnamed,
+    ));
+    walk.located = (walk.body.basic_blocks.iter_enumerated())
+        .flat_map(|(block, data)| {
+            (data.statements.iter().enumerate())
+                .map(move |(statement_index, s)| (std::ptr::from_ref(s).addr(), Location { block, statement_index }))
+        })
+        .collect();
+    walk
 }
 
-/// What a walk of `body` knows before it starts: the locals lent, the
-/// ranges only their `next()` steps, the locals a raw pointer is made of,
-/// and those that hold or lend a `RefCell`.
-fn facts<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    body: &Body<'tcx>,
-    called_on: &called_on::Holders,
-    (guards, kept_rows): (&guards::Guards, &IndexSet<Ty<'tcx>>),
-) -> (IndexSet<Local>, IndexSet<Local>, IndexSet<Local>, IndexSet<Local>) {
-    // A local whose own place is lent; not a reference to a slice, an
-    // array or text whose pointee is, `&mut (*heap)` of `heap.swap(..)`,
-    // which no write through changes the length of.
-    let fixed_length = |local: Local| {
-        let ty = body.local_decls[local].ty;
-        ty.builtin_deref(true)
-            .is_some_and(|pointee| matches!(pointee.kind(), ty::Slice(_) | ty::Str | ty::Array(..)))
-    };
-    let lent = (body.basic_blocks.iter())
-        .flat_map(|data| &data.statements)
-        .filter_map(|statement| match &statement.kind {
-            StatementKind::Assign(assign) => match &assign.1 {
-                Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, place) | Rvalue::RawPtr(_, place) => Some(place),
-                _ => None,
-            },
-            _ => None,
-        })
-        .filter(|place| !(matches!(place.projection.first(), Some(mir::PlaceElem::Deref)) && fixed_length(place.local)))
-        .filter(|place| !lent_where_borrowed(body, place))
-        // A `Vec` lent only to the calls it's given to, and those `&mut`s.
-        .filter(|place| !called_on.contains_key(&place.local) && !called_on.values().flatten().any(|&of| of == place.local))
-        // A held guard, lent only to its `deref_mut`, and what that lends.
-        .filter(|place| !guards.held.contains(&place.local) && !guards.lends.contains(&place.local))
-        // A row's `&mut` of a table whose rows nothing resizes (`rows_kept`).
-        .filter(|place| !matches!(*body.local_decls[place.local].ty.kind(), ty::Ref(_, row, ty::Mutability::Mut) if kept_rows.contains(&row)))
-        .map(|place| place.local)
-        .collect();
+/// What a walk of `body` knows before it starts: the ranges only their
+/// `next()` steps, and the locals a raw pointer is made of.
+fn facts<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> (IndexSet<Local>, IndexSet<Local>) {
     let stepped = stepped_ranges(tcx, body);
     let pointed = (body.basic_blocks.iter())
         .flat_map(|data| &data.statements)
@@ -309,17 +230,12 @@ fn facts<'tcx>(
             _ => None,
         })
         .collect();
-    (lent, stepped, pointed, cells::cells(tcx, body))
+    (stepped, pointed)
 }
 
 impl<'tcx> Walk<'_, 'tcx> {
     fn run(&self) -> Proofs {
         let entry = self.entries();
-        if let Some(effects) = &self.effects
-            && !crate::lower::session::caches(self.tcx).intervals_by_effects
-        {
-            self.shadow_effects(effects, &entry);
-        }
         self.proved(&entry)
     }
 
@@ -349,18 +265,15 @@ impl<'tcx> Walk<'_, 'tcx> {
         let mut intervals: IndexVec<Local, Option<Interval>> = IndexVec::from_elem_n(None, self.body.local_decls.len());
         for (at, &interval) in self.from_callers.intervals.iter().enumerate() {
             let param = Local::from_usize(at + 1);
-            if at < self.body.arg_count && !self.lent.contains(&param) {
+            if at < self.body.arg_count {
                 intervals[param] = interval;
             }
         }
         // Of a closure's, each capture given what it was made with (#1701).
         for &(field, local) in &self.captured {
-            if !self.lent.contains(&local) {
-                intervals[local] = self.from_callers.captures.get(field).copied().flatten();
-            }
+            intervals[local] = self.from_callers.captures.get(field).copied().flatten();
         }
-        let param =
-            |at: usize| Some(Local::from_usize(at + 1)).filter(|p| at < self.body.arg_count && !self.lent.contains(p));
+        let param = |at: usize| (at < self.body.arg_count).then(|| Local::from_usize(at + 1));
         let below: IndexSet<(Local, Term, bool)> = (self.from_callers.below.iter())
             .filter_map(|&(index, of, strict)| Some((param(index)?, Term::Len(param(of)?), strict)))
             .collect();
@@ -381,9 +294,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             iterates: IndexMap::default(),
             pushed: IndexSet::default(),
             lending: IndexMap::default(),
-            lent_away: IndexSet::default(),
-            escaped: IndexSet::default(),
-            guarded: IndexMap::default(),
             keys: IndexSet::default(),
             has_keys: IndexMap::default(),
             equal_lens: IndexSet::default(),
@@ -572,7 +482,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             Operand::Copy(place) | Operand::Move(place) => {
                 let range = self.range(place.ty(&self.body.local_decls, self.tcx).ty)?;
                 Some(match place.as_local() {
-                    Some(local) if !self.lent.contains(&local) => {
+                    Some(local) => {
                         let known = state.intervals[local].unwrap_or(range);
                         // At most what it's below is at most, a length's
                         // what an allocation holds: `i + 1` of `i < len`.
@@ -624,7 +534,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             },
             Operand::Copy(place) | Operand::Move(place) => place
                 .as_local()
-                .filter(|local| !self.lent.contains(local))
                 .map(|local| Value::Local(state.copies.get(&local).copied().unwrap_or(local))),
             Operand::RuntimeChecks(_) => None,
         }
@@ -634,71 +543,16 @@ impl<'tcx> Walk<'_, 'tcx> {
     /// before it, then the local written forgotten and set.
     fn statement_rules(&self, statement: &mir::Statement<'tcx>, state: &mut State) {
         self.pushes(statement, state);
-        // A write through a raw pointer, which may reach a cell's value with
-        // no call (`cells`, #1741), or an escaped `Vec` (#1966).
-        if let StatementKind::Assign(assign) = &statement.kind
-            && self.written_through_a_pointer(&assign.0)
-        {
-            self.cells.iter().for_each(|&cell| state.forget_lengths(cell));
-            state.forget_escaped();
-        }
-        // A `&mut` or a raw pointer made through a raw pointer, `&mut
-        // (*p)` of `(*STASH).truncate(0)`, which std's code writes through
-        // running none of the crate's: an escaped `Vec` it may reach
-        // (#1966).
-        if let StatementKind::Assign(assign) = &statement.kind
-            && let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) | Rvalue::RawPtr(_, of) = &assign.1
-            && self.written_through_a_pointer(of)
-        {
-            state.forget_escaped();
-        }
         let StatementKind::Assign(assign) = &statement.kind else {
             return;
         };
         let (place, rvalue) = &**assign;
-        // A write through a reference, `*v = Vec::new()`: what's known of
-        // the length it reaches forgotten (#1877). Not an item's, `v[i] = x`
-        // of a `&mut [T]`, which keeps the length; a table's rows are
-        // reached by `Vec`'s `IndexMut` alone, never a place's index.
-        if let Some(deref) = place.projection.iter().position(|elem| elem == mir::PlaceElem::Deref)
-            && !place.projection[deref..].iter().any(|elem| {
-                matches!(
-                    elem,
-                    mir::PlaceElem::Index(_) | mir::PlaceElem::ConstantIndex { .. } | mir::PlaceElem::Subslice { .. }
-                )
-            })
-        {
-            state.forget_lengths(state.root(place.local));
-        }
         let Some(local) = place.as_local() else {
             return;
         };
-        // An integer local lent `&mut` where the walk forgets it, not lent in
-        // the whole body (`lent_where_borrowed`): what it held may be
-        // written through the borrow, until it's assigned again. Not one
-        // lent only to calls, a closure's capture given only to them, which
-        // each such call forgets (`called_on_mut`, #1947).
-        if let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) = rvalue
-            && let Some(of) = of.as_local()
-            && lent_where_borrowed(&self.body, &mir::Place::from(of))
-            && !self.called_on.values().flatten().any(|&lent| lent == of)
-        {
-            state.forget(of);
-            state.lent_away.insert(of);
-        }
         let ranged = self.ranged(rvalue, state);
-        if self.lent.contains(&local) {
-            state.forget(local);
-            state.ranges.extend(
-                ranged
-                    .filter(|r| r.held != Held::Range || self.stepped.contains(&local))
-                    .map(|ranged| (local, ranged)),
-            );
-            return;
-        }
         let range = self.range(place.ty(&self.body.local_decls, self.tcx).ty);
         let fits = |r: &Interval| range.is_some_and(|t| t.lo <= r.lo && r.hi <= t.hi);
-        let unlent = |of: &mir::Place<'tcx>| of.as_local().filter(|of| !self.lent.contains(of));
         let (mut comparison, mut copy_of, mut length_of) = (None, None, None);
         // What its arithmetic tells of it: each relation, and the sum it is
         // (`derived`).
@@ -780,7 +634,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             }
             Rvalue::Use(operand, _) => {
                 if let Operand::Copy(of) | Operand::Move(of) = operand {
-                    copy_of = unlent(of).map(|of| state.root(of));
+                    copy_of = of.as_local().map(|of| state.root(of));
                 }
                 self.operand(operand, state)
             }
@@ -789,9 +643,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             Rvalue::Ref(_, _, of) | Rvalue::RawPtr(_, of)
                 if matches!(of.projection.as_slice(), [] | [mir::PlaceElem::Deref]) =>
             {
-                copy_of = Some(of.local)
-                    .filter(|of| !self.lent.contains(of))
-                    .map(|of| state.root(of));
+                copy_of = Some(of.local).map(|of| state.root(of));
                 None
             }
             Rvalue::BinaryOp(
@@ -829,13 +681,13 @@ impl<'tcx> Walk<'_, 'tcx> {
                 if kept.is_some()
                     && let Operand::Copy(of) | Operand::Move(of) = operand
                 {
-                    copy_of = unlent(of).map(|of| state.root(of));
+                    copy_of = of.as_local().map(|of| state.root(of));
                 }
                 kept
             }
             Rvalue::UnaryOp(mir::UnOp::PtrMetadata, operand) => {
                 if let Operand::Copy(of) | Operand::Move(of) = operand {
-                    length_of = unlent(of).map(|of| state.root(of));
+                    length_of = of.as_local().map(|of| state.root(of));
                 }
                 self.length(operand.ty(&*self.body, self.tcx))
             }
@@ -1109,20 +961,6 @@ impl<'tcx> Walk<'_, 'tcx> {
                 ..
             } => {
                 let mut after = state.clone();
-                after.unpush(destination.local);
-                // A call that may write a cell: what's known of each cell's
-                // length forgotten (`cells`, #1741), but of one a held guard
-                // guards, and at none of a held guard's own (`guards`).
-                if !self.cells.is_empty() && self.may_write_cells(func) && !self.guard_call(func, args, destination) {
-                    (self.cells.iter())
-                        .filter(|&&cell| !state.is_guarded(cell))
-                        .for_each(|&cell| after.forget_lengths(cell));
-                }
-                if self.may_write_escaped(func, args) {
-                    after.forget_escaped();
-                }
-                self.called_on_mut(func, args, state, &mut after);
-                self.guard_lent(func, args, state, &mut after);
                 if let Some(local) = destination.as_local() {
                     after.forget(local);
                     self.called(func, args, local, state, &mut after);
@@ -1137,26 +975,6 @@ impl<'tcx> Walk<'_, 'tcx> {
             // alone, the imaginary one no run takes.
             TerminatorKind::FalseEdge { real_target, .. } | TerminatorKind::FalseUnwind { real_target, .. } => {
                 vec![(*real_target, state.clone())]
-            }
-            // A held guard's drop, which runs none of the crate's code: its
-            // cell no longer guarded (`guards`).
-            TerminatorKind::Drop { place, .. } if place.as_local().is_some_and(|g| self.guards.held.contains(&g)) => {
-                let mut after = state.clone();
-                after.guarded.shift_remove(&place.local);
-                terminator.successors().map(|t| (t, after.clone())).collect()
-            }
-            // A drop that may run code: of each cell but one a held guard
-            // guards, and of each escaped `Vec`, what's known of its length
-            // forgotten.
-            TerminatorKind::Drop { place, .. }
-                if (!self.cells.is_empty() || !state.escaped.is_empty()) && self.drop_may_write_cells(place) =>
-            {
-                let mut after = state.clone();
-                after.forget_escaped();
-                (self.cells.iter())
-                    .filter(|&&cell| !state.is_guarded(cell))
-                    .for_each(|&cell| after.forget_lengths(cell));
-                terminator.successors().map(|t| (t, after.clone())).collect()
             }
             _ => terminator.successors().map(|t| (t, state.clone())).collect(),
         }

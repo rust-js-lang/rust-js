@@ -53,10 +53,10 @@ use rustc_span::def_id::DefId;
 mod guards;
 mod named;
 mod types;
+pub(in crate::lower) use named::keeps_vec_length;
 use named::writes_nothing;
-pub(in crate::lower) use named::{keeps_vec_length, reads_only};
 pub(in crate::lower) use types::changes_through_shared;
-use types::{fixed_length, is_a_cell, is_a_pointer, pointee, pointers_in, scalar};
+use types::{cell_holds, fixed_length, is_a_cell, is_a_collection, is_a_pointer, pointee, pointers_in, scalar};
 
 /// What a pointer may point into: a local's own storage, or what a local
 /// that holds a pointer points to.
@@ -157,6 +157,8 @@ pub(in crate::lower) struct Effects {
     /// an array's, a `str`'s, whose items alone a write changes.
     cells: IndexSet<Target>,
     fixed_length: IndexSet<Target>,
+    /// What `stale` gave of each location asked.
+    stale: std::cell::RefCell<IndexMap<Location, IndexMap<Local, Written>>>,
     /// Of each location that runs code, what a `RefCell` guard held there
     /// points to: no code but through the guard writes it, as another
     /// borrow of the cell panics, in JS too, where `cell_borrows` counts
@@ -188,6 +190,8 @@ impl Effects {
             libraries,
             writes: IndexMap::default(),
             reaches: IndexMap::default(),
+            cell: Default::default(),
+            reached: Default::default(),
         };
         flow.seed(made);
         while flow.pass() {}
@@ -223,6 +227,7 @@ impl Effects {
             cells,
             fixed_length,
             guarded,
+            stale: Default::default(),
         }
     }
 
@@ -230,12 +235,12 @@ impl Effects {
     /// whose own storage it may replace, or, of a pointer, what it points
     /// to.
     pub(in crate::lower) fn stale(&self, location: Location) -> IndexMap<Local, Written> {
-        self.stale_guarded(location, true)
-    }
-
-    /// `stale`, but of no guard held: what the shadow says a guard keeps.
-    pub(in crate::lower) fn stale_unguarded(&self, location: Location) -> IndexMap<Local, Written> {
-        self.stale_guarded(location, false)
+        if let Some(stale) = self.stale.borrow().get(&location) {
+            return stale.clone();
+        }
+        let stale = self.stale_guarded(location, true);
+        self.stale.borrow_mut().insert(location, stale.clone());
+        stale
     }
 
     fn stale_guarded(&self, location: Location, guards: bool) -> IndexMap<Local, Written> {
@@ -268,13 +273,19 @@ impl Effects {
             }
         }
         for (local, of) in self.of.iter_enumerated() {
+            // Of a pointer to what's as long as it'll ever be, a slice, a
+            // `str`, an array, its items alone, whatever reaches them.
+            let cap = |extent: Written| match self.fixed_length.contains(&Target::Pointee(local)) {
+                true => extent.min(Written::Items),
+                false => extent,
+            };
             for t in [Target::Pointee(local)].iter().chain(of.places.keys()) {
                 if let Some(&extent) = written.get(t) {
-                    add(local, extent);
+                    add(local, cap(extent));
                 }
             }
             if of.unknown && escaped_written {
-                add(local, Written::Whole);
+                add(local, cap(Written::Whole));
             }
         }
         stale
@@ -361,13 +372,34 @@ struct Flow<'a, 'tcx> {
     /// what they point to; and `reaches`, of any pointer.
     writes: IndexMap<Target, Targets>,
     reaches: IndexMap<Target, Targets>,
+    /// Of each target asked, whether it's a cell, its type's `Freeze` asked
+    /// once (`is_a_cell`).
+    cell: std::cell::RefCell<IndexMap<Target, bool>>,
+    /// What `reachable` gave of each target since the pass began: a pass
+    /// that changes nothing leaves it what the maps reach, the fixed
+    /// point's; one that does sees what the pass before it did, its own
+    /// stores the next pass's, as the maps only grow.
+    reached: std::cell::RefCell<IndexMap<(Target, bool), Targets>>,
 }
 
 impl<'tcx> Flow<'_, 'tcx> {
+    /// Whether `target` is a cell, or can't be said not to be.
+    fn is_cell(&self, target: Target) -> bool {
+        if let Some(&cell) = self.cell.borrow().get(&target) {
+            return cell;
+        }
+        let cell = self
+            .type_of(target)
+            .is_none_or(|ty| is_a_cell(self.tcx, self.typing_env, ty));
+        self.cell.borrow_mut().insert(target, cell);
+        cell
+    }
+
     /// Each local that is a pointer points to what it points to; and each
     /// that holds one and whose value comes from outside the body, a
     /// parameter, a local the rewrites made from `made` on, to what that
-    /// holds. What else holds a pointer holds what the body put in it.
+    /// holds, and of a raw pointer, to what's escaped. What else holds a
+    /// pointer holds what the body put in it.
     fn seed(&mut self, made: usize) {
         for local in self.body.local_decls.indices() {
             let ty = self.body.local_decls[local].ty;
@@ -382,6 +414,13 @@ impl<'tcx> Flow<'_, 'tcx> {
             if held.writes {
                 let cap = if held.replaces { WHOLE } else { INSIDE };
                 (self.writes.entry(Target::Whole(local)).or_default().places).insert(Target::Pointee(local), cap);
+            }
+            // A raw pointer from outside the body may point where its caller
+            // can reach, into another parameter's cell too, `*p = empty` of a
+            // `*mut Vec` into what a `&RefCell` holds: where what's escaped is.
+            if outside && crate::lower::mut_refs::holds_a_raw_pointer(self.tcx, ty, &mut Vec::new()) {
+                self.writes.entry(Target::Whole(local)).or_default().unknown = true;
+                self.reaches.entry(Target::Whole(local)).or_default().unknown = true;
             }
         }
     }
@@ -409,7 +448,7 @@ impl<'tcx> Flow<'_, 'tcx> {
             })
             .filter(|&t| {
                 self.type_of(t)
-                    .is_none_or(|ty| is_a_cell(self.tcx, self.typing_env, ty))
+                    .is_none_or(|ty| is_a_cell(self.tcx, self.typing_env, ty) && !is_a_collection(self.tcx, ty))
             })
             .collect()
     }
@@ -433,17 +472,42 @@ impl<'tcx> Flow<'_, 'tcx> {
         // its length, but where it's a cell.
         let mut writes = writes.clone();
         if let Target::Whole(local) = target
-            && let ty::Ref(_, to, _) = *self.body.local_decls[local].ty.kind()
-            && !known_by_bounds(to)
-            && !to.is_trait()
+            && let ty::Ref(_, to, mutability) = *self.body.local_decls[local].ty.kind()
         {
-            for (t, cap) in writes.places.iter_mut() {
-                let of = self.type_of(*t);
-                let cell = of.is_none_or(|ty| is_a_cell(self.tcx, self.typing_env, ty));
-                if !cell && of.is_some_and(|ty| ty != to) {
-                    *cap = (*cap).min(ITEMS);
+            // Of what can't be seen, a type parameter, a `dyn`, it's not what
+            // it may be, but what holds it, `&T` of a `Vec<T>`'s, isn't it.
+            // Of a pointer, an `Rc` whose heap is its target too, what it
+            // points to is what the reference is to as well; of a cell, what
+            // it holds: `&mut Vec<u32>` of a `RefCell<Vec<u32>>` replaces
+            // it, a `&mut u32` of one of its items doesn't.
+            let unseen = known_by_bounds(to) || to.is_trait();
+            let other = |ty: Ty<'tcx>| {
+                let mut at = Some(ty);
+                let mut levels = Vec::new();
+                while let Some(level) = at.filter(|_| levels.len() < 8) {
+                    levels.push(level);
+                    at = level.builtin_deref(true).or_else(|| rc_pointee(self.tcx, level));
                 }
-            }
+                let held = cell_holds(self.tcx, self.typing_env, ty).unwrap_or(ty);
+                !levels.contains(&to) && held != to && (!unseen || ty.walk().any(|part| part.as_type() == Some(to)))
+            };
+            // What holds no pointer is only itself: through a reference to
+            // it, of what's of another type, a part changes, where it may,
+            // and nothing else; not a cell it's in, `&Element` of a
+            // `RefCell<Vec<&Element>>`'s.
+            let alone = !pointers_in(self.tcx, self.typing_env, to).holds;
+            let changes = mutability.is_mut() || changes_through_shared(self.tcx, self.typing_env, to);
+            writes.places.retain(|t, cap| {
+                if self.type_of(*t).is_some_and(other) {
+                    *cap = match alone {
+                        true => ITEMS,
+                        false => (*cap).min(ITEMS),
+                    };
+                    !alone || changes
+                } else {
+                    true
+                }
+            });
         }
         self.writes.entry(target).or_default().extend(&writes) | self.reaches.entry(target).or_default().extend(reaches)
     }
@@ -461,6 +525,7 @@ impl<'tcx> Flow<'_, 'tcx> {
 
     /// One pass over the body: whether anything changed.
     fn pass(&mut self) -> bool {
+        self.reached.borrow_mut().clear();
         let mut changed = false;
         for data in self.body.basic_blocks.iter() {
             for statement in &data.statements {
@@ -488,32 +553,98 @@ impl<'tcx> Flow<'_, 'tcx> {
                 ..
             } = &data.terminator().kind
             {
+                // A projection std's named, `&v[i]`, `cell.borrow_mut()`, a
+                // guard's `deref`: a pointer into what its first argument
+                // points to, so many pointers down, and nothing stored.
+                let projected = func.const_fn_def().and_then(|(callee, generic)| {
+                    let depth = named::projection_depth(self.tcx, callee, generic)?;
+                    let given = args.first()?.node.place()?;
+                    Some(self.projected(given, depth, destination.ty(self.body, self.tcx).ty))
+                });
+                if let Some(value) = projected {
+                    changed |= self.store(destination, &value);
+                    continue;
+                }
                 // What it's given, however many pointers down, its result may
                 // hold, `deref_mut(&mut guard)`'s, and it may write into what
                 // else it's given, `v.push(&mut x)`. Of code not std's, a
                 // pointer to what's escaped, which it may have kept.
                 let mut value = self.deep(self.operands(args.iter().map(|a| &a.node)));
-                if call_runs_code(
+                let code = call_runs_code(
                     self.tcx,
+                    self.typing_env,
                     func.const_fn_def(),
                     args.iter().map(|a| a.node.ty(self.body, self.tcx)),
-                ) {
+                );
+                if code {
                     let held = pointers_in(self.tcx, self.typing_env, destination.ty(self.body, self.tcx).ty);
                     value.0.unknown |= held.writes;
                     value.1.unknown |= held.holds;
                 }
                 changed |= self.store(destination, &value);
-                for arg in args.iter() {
+                for (i, arg) in args.iter().enumerate() {
                     if let Some(place) = arg.node.place()
                         && place.ty(self.body, self.tcx).ty.builtin_deref(true).is_some()
                     {
                         let deref = place.project_deeper(&[mir::PlaceElem::Deref], self.tcx);
-                        changed |= self.store(&deref, &value);
+                        // Std's code stores into what it's given what else
+                        // it's given, `v.push(&mut x)`'s `x`, not where what
+                        // it's given leads back into it, `v.remove(i)`'s.
+                        let stored = match code {
+                            true => value.clone(),
+                            false => self.deep(
+                                self.operands((args.iter().enumerate()).filter(|&(j, _)| j != i).map(|(_, a)| &a.node)),
+                            ),
+                        };
+                        changed |= self.store(&deref, &stored);
                     }
                 }
             }
         }
         changed
+    }
+
+    /// What a projection of `given`, `depth` pointers down, gives, a
+    /// value of type `ty`: a pointer to what's there, that may write it as
+    /// `ty`'s pointers may. Where what's on the way holds no pointer the map
+    /// knows, an `Rc` whose heap isn't a target of its own, it's what's
+    /// there: the pointer is into it.
+    fn projected(&self, given: Place<'tcx>, depth: usize, ty: Ty<'tcx>) -> (Targets, Targets) {
+        let at = |held: &IndexMap<Target, Targets>| {
+            let mut at = through(held, None, &given);
+            for _ in 0..depth {
+                let mut next = Targets {
+                    places: IndexMap::default(),
+                    unknown: at.unknown,
+                };
+                for (&t, &cap) in &at.places {
+                    match held.get(&t).filter(|h| !h.places.is_empty() || h.unknown) {
+                        Some(h) if cap >= ITEMS => {
+                            next.extend(h);
+                        }
+                        Some(h) => {
+                            next.extend(&h.clone().inside());
+                        }
+                        None => {
+                            next.extend(&Targets {
+                                places: IndexMap::from_iter([(t, cap)]),
+                                unknown: false,
+                            });
+                        }
+                    }
+                }
+                at = next;
+            }
+            at
+        };
+        let (writes, reaches) = (at(&self.writes), at(&self.reaches));
+        let held = pointers_in(self.tcx, self.typing_env, ty);
+        let writes = match (held.writes, held.replaces) {
+            (false, _) => Targets::default(),
+            (true, false) => writes.inside(),
+            (true, true) => writes,
+        };
+        (writes, reaches)
     }
 
     /// `value` and each target reachable from its pointers, however many
@@ -626,6 +757,16 @@ impl<'tcx> Flow<'_, 'tcx> {
     /// through those that may write, of `writing`, each replaced where each
     /// pointer to it may, or it's reached through a cell; else any.
     fn reachable(&self, target: Target, writing: bool) -> Targets {
+        if let Some(reached) = self.reached.borrow().get(&(target, writing)) {
+            return reached.clone();
+        }
+        let reached = self.walk_reachable(target, writing);
+        self.reached.borrow_mut().insert((target, writing), reached.clone());
+        reached
+    }
+
+    /// `reachable`'s walk.
+    fn walk_reachable(&self, target: Target, writing: bool) -> Targets {
         let map = if writing { &self.writes } else { &self.reaches };
         let mut reached = Targets::default();
         let mut work = vec![(target, WHOLE)];
@@ -640,16 +781,11 @@ impl<'tcx> Flow<'_, 'tcx> {
             reached.unknown |= held.unknown;
             // What may write its items may write through the pointers they
             // are; what may change only inside a cell, only so, but of a cell.
-            let mutable = cap >= ITEMS
-                || self
-                    .type_of(t)
-                    .is_none_or(|ty| is_a_cell(self.tcx, self.typing_env, ty));
+            let mutable = cap >= ITEMS || self.is_cell(t);
             for (&next, &next_cap) in &held.places {
                 let cap = if mutable { next_cap } else { INSIDE };
-                reached.extend(&Targets {
-                    places: IndexMap::from_iter([(next, cap)]),
-                    unknown: false,
-                });
+                let at = reached.places.entry(next).or_insert(cap);
+                *at = (*at).max(cap);
                 work.push((next, cap));
             }
         }
@@ -704,7 +840,12 @@ impl<'tcx> Flow<'_, 'tcx> {
             } => {
                 self.write_place(destination, (cells, borrowed), &mut written);
                 let callee = func.const_fn_def();
-                code = call_runs_code(self.tcx, callee, args.iter().map(|a| a.node.ty(self.body, self.tcx)));
+                code = call_runs_code(
+                    self.tcx,
+                    self.typing_env,
+                    callee,
+                    args.iter().map(|a| a.node.ty(self.body, self.tcx)),
+                );
                 // A `Vec`'s `push`, std's, grows what its `&mut` points to,
                 // what its signature can't say: `x < len` holds past it.
                 let pushed = !code
@@ -717,13 +858,18 @@ impl<'tcx> Flow<'_, 'tcx> {
                         Some(cells),
                         &vec.project_deeper(&[mir::PlaceElem::Deref], self.tcx),
                     );
-                    grows.extend(
-                        only_borrowed(into, borrowed)
-                            .places
-                            .into_iter()
-                            .filter(|&(_, cap)| cap >= ITEMS)
-                            .map(|(t, _)| t),
-                    );
+                    // What it points to whole grows; what it points into the
+                    // items of, `adj[a].push(x)`'s `adj`, has an item changed.
+                    for (t, cap) in only_borrowed(into, borrowed).places {
+                        if cap == WHOLE {
+                            grows.insert(t);
+                        } else if cap == ITEMS {
+                            written.extend(&Targets {
+                                places: IndexMap::from_iter([(t, ITEMS)]),
+                                unknown: false,
+                            });
+                        }
+                    }
                 } else if code || !callee.is_some_and(|(callee, args)| writes_nothing(self.tcx, callee, args)) {
                     for arg in args.iter() {
                         if let Some(place) = arg.node.place() {
@@ -733,7 +879,9 @@ impl<'tcx> Flow<'_, 'tcx> {
                 }
             }
             TerminatorKind::Drop { place, .. } => {
-                written.places.insert(Target::Whole(place.local), WHOLE);
+                // What it drops, a local or what a pointer reaches, as a write
+                // of it: `(*s)[1]`'s item of what `s` points to, not `s`.
+                self.write_place(place, (cells, borrowed), &mut written);
                 code =
                     crate::lower::analysis::drop_runs_code(self.tcx, self.typing_env, place.ty(self.body, self.tcx).ty);
                 if code {
@@ -972,7 +1120,7 @@ impl<'tcx> Flow<'_, 'tcx> {
         if held.places.keys().all(|&t| t == Target::Whole(place.local)) && !held.unknown {
             return false;
         }
-        if !call_runs_code(self.tcx, callee, given) {
+        if !call_runs_code(self.tcx, self.typing_env, callee, given) {
             return false;
         }
         let (Some(call), Some(libraries)) = (callee, &self.libraries) else {
@@ -1004,7 +1152,13 @@ fn only_borrowed(mut targets: Targets, borrowed: Option<&DenseBitSet<Local>>) ->
 /// replaces it however it's reached; else, through a shared reference,
 /// nothing a fact is of.
 fn extent_of(target: Target, cap: Cap, cells: &IndexSet<Target>, fixed: &IndexSet<Target>) -> Option<Written> {
-    let cap = if cells.contains(&target) { WHOLE } else { cap };
+    // A cell reached through a shared reference may be replaced, its
+    // `borrow_mut()` or `replace`: through a typed one, as its type says.
+    let cap = if cells.contains(&target) && cap == INSIDE {
+        WHOLE
+    } else {
+        cap
+    };
     match cap {
         WHOLE if fixed.contains(&target) => Some(Written::Items),
         WHOLE => Some(Written::Whole),
@@ -1019,15 +1173,35 @@ fn extent_of(target: Target, cap: Cap, cells: &IndexSet<Target>, fixed: &IndexSe
 /// type of the crate's or a parameter.
 fn call_runs_code<'tcx>(
     tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
     callee: Option<(DefId, ty::GenericArgsRef<'tcx>)>,
     mut given: impl Iterator<Item = Ty<'tcx>>,
 ) -> bool {
     let Some((callee, args)) = callee else {
         return true;
     };
-    !is_std_crate(tcx, callee)
-        || args.types().any(|t| crate::lower::analysis::carries_code(tcx, t, true))
-        || given.any(|t| crate::lower::analysis::carries_code(tcx, t, true))
+    // Of rust-js's rest arguments, std's code given them runs none
+    // (`named::is_a_rest`); nor of what it holds a call std's named runs
+    // none of (`named::runs_none_of_what_it_holds`), whatever it is.
+    let code = |t: Ty<'tcx>| crate::lower::analysis::carries_code(tcx, t, true) && !named::is_a_rest(tcx, t);
+    if !is_std_crate(tcx, callee) {
+        return true;
+    }
+    if named::runs_none_of_what_it_holds(tcx, callee, args) {
+        return false;
+    }
+    // Std's generic code runs a type argument's only through a bound on it
+    // that gives a method, `T: Clone`, `F: FnMut(&T)`, or its drop:
+    // `Vec::<&Element>::remove` runs none of an `Element`'s. What it's
+    // given is made of its type arguments, but what can't be named, a
+    // `dyn`, a fn pointer, and std's `fmt::Arguments`.
+    let bounded = types::bounded_params(tcx, callee);
+    let generic = (args.iter().enumerate()).any(|(i, arg)| {
+        arg.as_type().is_some_and(|t| {
+            code(t) && (bounded.contains(&i) || crate::lower::analysis::drop_runs_code(tcx, typing_env, t))
+        })
+    });
+    generic || given.any(|t| code(t) && types::holds_unnamed_code(tcx, t))
 }
 
 /// Of each location that may write through a pointer, call or drop, the

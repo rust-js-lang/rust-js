@@ -106,7 +106,6 @@ impl<'tcx> Walk<'_, 'tcx> {
         let mut sum: Option<(Local, i128, bool)> = None;
         if let Rvalue::BinaryOp(BinOp::Add, operands) = rvalue
             && let Some(x) = operands.0.place().and_then(|p| p.as_local())
-            && !self.lent.contains(&x)
             && let Some(c) = self.operand(&operands.1, state).filter(|c| c.lo == c.hi && c.lo >= 1)
         {
             let exact = (self.arithmetic(BinOp::Add, &operands.0, &operands.1, state)).is_some_and(|i| fits(&i));

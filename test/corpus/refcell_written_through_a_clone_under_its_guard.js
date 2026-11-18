@@ -52,7 +52,7 @@ function readUnder(items, f, i) {
   try {
     if (i < held.length) {
       f();
-      return $index(held, i);
+      return held[i];
     }
   } finally {
     $unborrow(held);
@@ -81,7 +81,7 @@ function readUnderDyn(items, f, i) {
   try {
     if (i < held.length) {
       f();
-      return $index(held, i);
+      return held[i];
     }
   } finally {
     $unborrow(held);
@@ -90,9 +90,9 @@ function readUnderDyn(items, f, i) {
 }
 
 /**
- * A guard held in a scope of its own, dropped, then code that clears the
- * cell through a clone: the length known before the scope is no longer
- * so, and the index panics as Rust's does.
+ * A guard dropped, then code that clears the cell through a clone: the
+ * length the guard showed is no longer so, and the index panics as Rust's
+ * does.
  */
 function afterADroppedGuard(items, f, i) {
   if (items.borrows < 0) {
@@ -110,6 +110,20 @@ function afterADroppedGuard(items, f, i) {
     $alreadyMutablyBorrowed();
   }
   return $index(items, i);
+}
+
+function fieldAfterCode(queue, f, i) {
+  if (queue.items.borrows < 0) {
+    $alreadyMutablyBorrowed();
+  }
+  if (i < queue.items.length) {
+    f();
+    if (queue.items.borrows < 0) {
+      $alreadyMutablyBorrowed();
+    }
+    return $index(queue.items, i);
+  }
+  return 0;
 }
 
 function main() {
@@ -189,6 +203,23 @@ function main() {
     () =>
       afterADroppedGuard(
         items,
+        () => {
+          $borrowMut(items).length = 0;
+        },
+        1,
+      ),
+    u32Debug,
+  );
+  if (items.borrows) {
+    $alreadyBorrowed();
+  }
+  items.push(7, 8, 9);
+  const queue = { items };
+  check(
+    "a field's cell, cleared through a clone",
+    () =>
+      fieldAfterCode(
+        queue,
         () => {
           $borrowMut(items).length = 0;
         },

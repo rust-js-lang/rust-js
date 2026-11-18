@@ -116,22 +116,6 @@ pub(super) struct State {
     /// Each `&mut` of a `Vec` whole, `&mut _1` or `&mut (*_1)`, by the
     /// local it's held in: what it lends, a `push` of it makes pushed.
     pub(super) lending: IndexMap<Local, Local>,
-    /// Each integer local lent `&mut` where the walk forgets it
-    /// (`lent_where_borrowed`), until it's assigned again: what the borrow
-    /// lends may have become a raw pointer that writes it after, as a read
-    /// through it leaves the pointer able to, so no test of it, nor any
-    /// relation, tells what it is (#1782).
-    pub(super) lent_away: IndexSet<Local>,
-    /// Each `Vec` given `&mut` to code that may keep a raw pointer to it
-    /// (`called_on_mut`), until it's assigned again: a call that may write,
-    /// a drop that runs code or a write through a raw pointer may change
-    /// its length, as a cell's, so a test of it holds only until one
-    /// (#1966).
-    pub(super) escaped: IndexSet<Local>,
-    /// Each held guard's cell, by the guard, from its `borrow_mut()` to
-    /// its drop: no code but through the guard changes it (`guards`,
-    /// #1815).
-    pub(super) guarded: IndexMap<Local, Local>,
     /// Each map and key, by their roots, the map holds the key of (`keys`).
     pub(super) keys: IndexSet<(Local, Local)>,
     /// Each `bool` a `contains_key` gave, by the map and the key it asks.
@@ -260,14 +244,11 @@ impl State {
                 .filter(|&(k, v)| other.iterates.get(k) == Some(v))
                 .map(|(&k, &v)| (k, v))
                 .collect(),
-            lent_away: self.lent_away.union(&other.lent_away).copied().collect(),
-            escaped: self.escaped.union(&other.escaped).copied().collect(),
             pushed: (self.pushed.iter())
                 .filter(|l| other.pushed.contains(*l))
                 .copied()
                 .collect(),
             lending: both(&self.lending, &other.lending),
-            guarded: both(&self.guarded, &other.guarded),
             keys: self.keys.intersection(&other.keys).copied().collect(),
             has_keys: (self.has_keys.iter())
                 .filter(|&(k, v)| other.has_keys.get(k) == Some(v))
@@ -373,8 +354,6 @@ impl State {
 
     /// `local` written: what it held, and each comparison of it, forgotten.
     pub(super) fn forget(&mut self, local: Local) {
-        self.lent_away.shift_remove(&local);
-        self.escaped.shift_remove(&local);
         self.intervals[local] = None;
         self.comparisons.shift_remove(&local);
         self.comparisons
@@ -394,7 +373,6 @@ impl State {
             .retain(|&gave, &mut (index, _)| gave != local && index != local);
         self.positions
             .retain(|&gave, &mut (slice, _)| gave != local && slice != local);
-        self.guarded.retain(|&guard, &mut cell| guard != local && cell != local);
         self.keys.retain(|&(map, key)| map != local && key != local);
         self.has_keys
             .retain(|&gave, &mut (map, key)| gave != local && map != local && key != local);
@@ -404,11 +382,6 @@ impl State {
             .retain(|&half, &mut of| half != local && of != Term::Len(local) && of != Term::Int(local));
         self.doubled
             .retain(|&twice, &mut of| twice != local && of != Term::Len(local) && of != Term::Int(local));
-    }
-
-    /// Whether a held guard guards `cell`.
-    pub(super) fn is_guarded(&self, cell: Local) -> bool {
-        self.guarded.values().any(|&c| c == cell)
     }
 
     /// The comparison a `bool` holds, or what it copies holds: a test held
@@ -429,9 +402,6 @@ impl State {
     /// though the comparison is of `start`, what `i` copies.
     pub(super) fn narrowed_to(&mut self, local: Local, interval: Interval) {
         let root = self.root(local);
-        if self.lent_away.contains(&root) {
-            return;
-        }
         let copies: Vec<Local> = (self.copies.iter())
             .filter(|&(_, &of)| of == root)
             .map(|(&copy, _)| copy)
@@ -444,10 +414,6 @@ impl State {
     /// `x` below `y`, strictly or not: of what `x` copies and of each copy
     /// of that too, as a comparison of one tells of them all.
     pub(super) fn related(&mut self, x: Local, y: Term, strict: bool) {
-        if self.lent_away.contains(&self.root(x)) || matches!(y, Term::Int(l) if self.lent_away.contains(&self.root(l)))
-        {
-            return;
-        }
         let root = self.root(x);
         let copies: Vec<Local> = (self.copies.iter())
             .filter(|&(_, &of)| of == root)

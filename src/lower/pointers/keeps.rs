@@ -100,23 +100,6 @@ pub(in crate::lower) fn argument_may_keep<'tcx>(
     }
 }
 
-/// `pointer_may_keep` of a call given a `&mut dyn Fn*`, `given`, whose
-/// code is known to be the closure `behind`: a call of it through what
-/// it's given runs that closure, which is walked as the rest is, where
-/// `pointer_may_keep` can't follow a `dyn` and fails closed (#1947). It
-/// says whether the call may keep a pointer to the closure; what the
-/// closure itself may keep is `closure_may_keep`'s.
-pub(in crate::lower) fn pointer_may_keep_behind<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
-    libraries: &Libraries<'_, 'tcx>,
-    call: (DefId, ty::GenericArgsRef<'tcx>),
-    given: Ty<'tcx>,
-    behind: (DefId, ty::GenericArgsRef<'tcx>),
-) -> bool {
-    may_keep(tcx, typing_env, libraries, Start::Call(call), given, Some(behind))
-}
-
 /// Whether the closure `closure`, of its maker's `typing_env`, may keep a
 /// raw pointer to what a `&mut` it captures, `given`, refers to, past its
 /// call: its body walked as `pointer_may_keep` walks a function's, what
