@@ -1435,7 +1435,9 @@ pub fn delete<K: PropertyKey + ?Sized>(this: impl IntoUnknown, key: &K) -> bool 
 /// of `js::new(ctor, (react_name, ..))`. Of a value of any shape, a
 /// function JS gives, as TypeScript's `new` is of an `any`'s, its
 /// arguments a rest parameter's, a tuple of them, `()` of none, or a slice
-/// spread, and what it makes a value of any shape (ADR 0695, amended). Not
+/// spread, and what it makes a value of any shape (ADR 0695, amended).
+/// A property read, `&js::get(value, "constructor")`, supplies the value
+/// directly; JavaScript's `new` throws if that value is absent. Not
 /// of an untyped `Class`, a binding's global class or a crate's held,
 /// `js::class::<T>()`, which its constructor's binding makes,
 /// [`Class::call_static`], typed by it (ADR 1027, amended). A
@@ -1464,6 +1466,10 @@ pub trait Construct<A> {
 }
 
 impl<A: Rest<dyn IntoUnknown>> Construct<A> for Unknown {
+    type Instance = &'static Unknown;
+}
+
+impl<A: Rest<dyn IntoUnknown>> Construct<A> for Option<&Unknown> {
     type Instance = &'static Unknown;
 }
 

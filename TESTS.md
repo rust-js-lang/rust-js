@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-18: the constructor binding regression checks direct JavaScript construction from a property read, getter order, and TypeError for invalid targets.
+
 Changed on 2026-11-18: the argument regression checks JavaScript default syntax, arity, null, undefined, and fallbacks that read later arguments or have effects.
 
 Changed on 2026-11-18: the constructor counter regression holds a postfix increment beside its field assignment and preserves the old value when another field needs it.

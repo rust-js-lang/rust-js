@@ -221,6 +221,32 @@ test("a typed class is declared as its constructor's type", () => {
   );
 });
 
+test("new of a constructor read from a property uses the value directly", async () => {
+  const { js, lib } = await compiled("constructor-from-property", `use js::Unknown;
+
+pub fn copy(source: &'static Unknown) -> &'static Unknown {
+    js::object::assign(js::new(&js::get(source, "constructor"), ()), (source,))
+}
+`);
+  expect(js).toContain("return Object.assign(new source.constructor(), source);");
+  const calls: string[] = [];
+  class Derived {
+    constructor() { calls.push("construct"); }
+  }
+  const source = {
+    value: 7,
+    get constructor() { calls.push("read"); return Derived; },
+  };
+  Object.defineProperty(source, "constructor", { enumerable: false });
+  const copy = lib.copy(source);
+  expect(copy).toBeInstanceOf(Derived);
+  expect(copy.value).toBe(7);
+  expect(calls).toEqual(["read", "construct"]);
+  for (const invalid of [undefined, null, 1]) {
+    expect(() => lib.copy({ constructor: invalid })).toThrow(TypeError);
+  }
+});
+
 // ADR 1027, amended: a class held, an untyped `Class`, a binding's or the
 // crate's, is made by its constructor's binding, `call_static`, the one way;
 // rustc refuses `js::new` of it, naming that.

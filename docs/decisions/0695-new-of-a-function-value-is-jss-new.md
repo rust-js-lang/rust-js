@@ -83,3 +83,16 @@ each argument rustc's to check, and gives a `&'static T`; of an untyped
 is held as a `Class`, `Class::of(&f)`: `js::new(js::unknown(&f), ..)` is
 refused, naming it, and `js::new(js::unknown(class), ..)` of a `Class`,
 naming `js::new(class, ..)`.
+
+## Amendment: a constructor read from a property
+
+Three.js clones a binding with `Object.assign(new this.constructor(), this)`.
+Its constructor can come from a subclass, an own property, or a getter.
+`js::get` returns an `Option<&Unknown>`, so `js::new` accepts a borrow of
+that option too. It passes the property value directly to JavaScript's
+`new`, preserving a single property read and JavaScript's `TypeError`
+for values that cannot be constructed. This follows the first case of
+ADR 0262.
+
+`test/js-constructors.test.ts` checks the emitted expression, a constructor
+returned by a getter, and invalid constructors.
