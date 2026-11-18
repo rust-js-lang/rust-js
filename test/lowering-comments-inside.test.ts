@@ -1223,3 +1223,17 @@ pub fn typed(n: u32) -> u32 {
   expect(log).toEqual([0, 7, 0, 3]);
   expect((lib.blocked as (n: number) => number)(3)).toBe(7);
 });
+
+// A block comment between an initializer's `=` and its value, where
+// rustfmt moves a raw string onto the next line, stays outside the
+// template literal it's printed as: the string is the Rust one.
+test("a block comment before a wrapped initializer stays outside its template", async () => {
+  const { js, lib } = await compiled("comment-before-wrapped-template", `#[cfg_attr(rust_js, rust_js::name = "vertex")]
+pub const VERTEX: &str = /* glsl */
+    r#"
+varying vec2 vUv;
+"#;
+`);
+  expect<unknown>(lib.vertex).toBe("\nvarying vec2 vUv;\n");
+  expect(js).toContain("export const vertex = /* glsl */ `\nvarying vec2 vUv;\n`;");
+});

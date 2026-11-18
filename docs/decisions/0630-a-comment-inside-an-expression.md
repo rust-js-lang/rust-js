@@ -72,8 +72,9 @@ the declaration's, and the comment was after `export`: `export /* .. */
 const NoMode = 0b0000000;`, `const /*  */ mode = ..` of a `let`.
 
 **A block comment right after an `=`, a declaration's or an
-assignment's, with code after it on its line, is before the value: after
-the `=` of the JS of its line**, its text as written, spaces and all:
+assignment's, stays before the value**, even when the initializer starts
+on the next Rust line. It follows the `=` in JavaScript, with the
+comment text preserved:
 
 ```js
 export const NoMode = /*                         */ 0b0000000;
@@ -81,6 +82,10 @@ const mode = /*  */ (given | ConcurrentMode) >>> 0;
 last = /* again */ (last | ((mode + 1) >>> 0)) >>> 0;
 let count = /* none yet */ 0;
 ```
+
+Three.js shader annotations use this placement before a multiline template.
+The annotation stays outside the template so its string value stays equal
+to Rust's (ADR 0262).
 
 - **Which `=`**: the one before the JS the map places of the code nearest
   after the comment on its line, the value's; where there's none before

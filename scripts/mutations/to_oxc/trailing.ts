@@ -35,6 +35,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
   },
   {
+    name: "wrapped-value-comment-goes-at-line-end",
+    breaks: "a block comment after `=` becomes part of a multiline string where the initializer begins on the next line",
+    file: "src/to_oxc/trailing.rs",
+    find: '            && comment.text.starts_with("/*")\n',
+    replace: '            && comment.text.starts_with("/*")\n            && comment.inside\n',
+    tests: ["test/lowering-comments-inside.test.ts", "-t", "before a wrapped initializer"],
+  },
+  {
     name: "line-comment-after-the-line",
     breaks: "a line comment a later line's JS follows on its JS line is after all of it, `// ellipsis // ellipsis`",
     file: "src/to_oxc/trailing.rs",
