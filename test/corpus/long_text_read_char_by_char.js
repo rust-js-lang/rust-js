@@ -41,8 +41,7 @@ function words(text) {
   let longest = 0;
   while (pos < $byteLen(text)) {
     const rest = $strSlice(text, pos);
-    const charIndices = $charIndices(rest);
-    const end = charIndices.find(([, c]) => c === " ")?.[0] ?? $byteLen(rest);
+    const end = $charIndices(rest).find(([, c]) => c === " ")?.[0] ?? $byteLen(rest);
     if (end > 0) {
       count = (count + 1) >>> 0;
       longest = Math.max(longest, end);

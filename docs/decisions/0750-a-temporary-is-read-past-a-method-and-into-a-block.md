@@ -361,3 +361,35 @@ after it's read: native `1 7 107 107`) and the mutation
 `plain-field-of-a-struct-beside-a-cell-not-read-past-calls`.
 `nullable_written_through_borrows`' `fiber.owner === null`, a plain field
 of a struct with a `RefCell` beside it, is read in place too.
+
+## Amendment (2026-11-18): an optional chain's object is read first, and `leads` names every kind (the vercel-ui SDK's port, G5)
+
+`leads` answered `Some(false)`, not read first, of each kind it had no arm
+for, `_ => Some(false)`. `?.[i]` and `?.(x)` were two of them, so a
+temporary read as an optional chain's object stayed held wherever
+something that acts followed it: the SDK's
+`js::reg_exp::new(..).exec(&tag.to_string()).and_then(|m| m.get(1))`
+printed `const regExp = /re/i; regExp.exec(tag.toString())?.[1]`, where
+upstream writes `/re/i.exec(tag.toString())?.[1]`. JS evaluates an
+optional chain's object first, then what's past its `?.` only where the
+object holds a value, as Rust evaluates a method's receiver before its
+arguments: ADR 0262's first case, no difference to see. So
+`OptionalIndex(a, _)` and `OptionalCall(a, _)` are `a`'s, as `&&`'s test
+is, and what's past the `?.` is never read first.
+
+`leads` now has an arm for every `ExprKind`, and no `_`: a kind added
+later states its evaluation order or doesn't compile. Of the others, `(0,
+f)` is `f`'s; a `Sequence` each in turn; a closure, a `&mut`'s handle or
+pair, a drop function and what preparation alone makes, `(t = v)` and
+`t++`, aren't read first; and what reads no variable never gets here.
+Checked as they were: `a?.b` is `a`'s, its property read only where `a`
+holds one; `a ? b : c` and `a ?? b` read `a` first, `b` and `c` only as
+it says.
+
+Rows: corpus case `long_text_read_char_by_char`, whose
+`$charIndices(rest).find(..)?.[0]` is no longer held, the only snapshot
+that moves; unit test `moves::tests::optional_chains_lead_by_their_object`.
+Mutations `optional-index-not-led-by-its-object`,
+`optional-call-not-led-by-its-callee` and
+`optional-chain-past-its-object-led`, caught.
+

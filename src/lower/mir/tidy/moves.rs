@@ -385,10 +385,14 @@ pub(super) fn leads(e: &Expr, name: &js::Name, guard: Option<&Expr>, passes: &dy
         {
             leads(b, name, guard, passes)
         }
-        // What runs only as a test says is `b`, `c` of `a ? b : c`.
-        ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _) | ExprKind::Cond(a, ..) => {
-            leads(a, name, guard, passes).or(Some(false))
-        }
+        // What runs only as a test says is `b`, `c` of `a ? b : c`; of an
+        // optional chain, `a?.[i]` and `a?.(x)`, what runs only where `a`
+        // holds a value, after it: `/re/i.exec(tag.toString())?.[1]` reads
+        // `/re/i` first (the vercel-ui SDK's port, G5). `a?.b` is `a`'s.
+        ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _)
+        | ExprKind::Cond(a, ..)
+        | ExprKind::OptionalIndex(a, _)
+        | ExprKind::OptionalCall(a, _) => leads(a, name, guard, passes).or(Some(false)),
         ExprKind::Binary(_, a, b) => in_order(&mut [&**a, &**b].into_iter()),
         ExprKind::Array(items) | ExprKind::Template(_, items, _) => in_order(&mut items.iter()),
         // A binding's method of a JS value, `obj.send(_5, ..)`: looked up
@@ -459,7 +463,38 @@ pub(super) fn leads(e: &Expr, name: &js::Name, guard: Option<&Expr>, passes: &dy
             }
             in_order(&mut tag.into_iter().chain(props).chain(&jsx.children))
         }
-        _ => Some(false),
+        // `(0, f)` is `f`'s; `(a, b)` each in turn.
+        ExprKind::Unbound(a) => leads(a, name, guard, passes),
+        ExprKind::Sequence(items) => in_order(&mut items.iter()),
+        // What's read when it's called, a closure's body, or a `&mut`'s
+        // place each time it's read or written, not where it's made; a
+        // drop function until the pipeline settles it; and what
+        // preparation alone makes, `(t = v)`, `t++`, which tidy never sees.
+        ExprKind::Arrow(..)
+        | ExprKind::AsyncArrow(..)
+        | ExprKind::Function(_)
+        | ExprKind::Handle(..)
+        | ExprKind::Pair(..)
+        | ExprKind::DropArgument(..)
+        | ExprKind::Assigned(..)
+        | ExprKind::Stepped(..) => Some(false),
+        // What reads no variable: never here, as it doesn't read `name`.
+        ExprKind::Num(_)
+        | ExprKind::BigInt(_)
+        | ExprKind::BigUint(_)
+        | ExprKind::Bool(_)
+        | ExprKind::Str(_)
+        | ExprKind::Written(_)
+        | ExprKind::Undefined
+        | ExprKind::GivenUndefined
+        | ExprKind::Null
+        | ExprKind::This
+        | ExprKind::Super
+        | ExprKind::Symbol(_)
+        | ExprKind::Hole(_)
+        | ExprKind::Import(_)
+        | ExprKind::Specifier(_)
+        | ExprKind::Regex(_) => None,
     }
 }
 
@@ -974,5 +1009,25 @@ mod tests {
             stmt(StmtKind::Expr(call("g", vec![Expr::var("name")]))),
         ];
         assert_eq!(decided(&body), None);
+    }
+
+    // An optional chain reads its object first, then what's past its `?.`
+    // only where the object holds a value: `/re/i.exec(tag.toString())?.[1]`
+    // reads `/re/i` first, `_1?.(x)` `_1`; an argument or an index past
+    // `?.` isn't read first (the vercel-ui SDK's port, G5).
+    #[test]
+    fn optional_chains_lead_by_their_object() {
+        let passes = |e: &Expr| !e.has_effects();
+        let acts = Expr::call(Expr::member(Expr::var("tag"), "toString"), vec![]);
+        let exec = Expr::call(Expr::member(Expr::var(t1()), "exec"), vec![acts.clone()]);
+        let indexed = Expr::optional_index(exec, Expr::num(1));
+        assert_eq!(leads(&indexed, &t1(), None, &passes), Some(true));
+        let called = Expr::optional_call(Expr::var(t1()), vec![Expr::var("x")]);
+        assert!(matches!(called.kind, ExprKind::OptionalCall(..)));
+        assert_eq!(leads(&called, &t1(), None, &passes), Some(true));
+        let index_past = Expr::optional_index(acts, Expr::var(t1()));
+        assert_eq!(leads(&index_past, &t1(), None, &passes), Some(false));
+        let argument_past = Expr::optional_call(Expr::var("f"), vec![Expr::var(t1())]);
+        assert_eq!(leads(&argument_past, &t1(), None, &passes), Some(false));
     }
 }
