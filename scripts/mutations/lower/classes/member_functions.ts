@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a constructor that makes its instance, `let fiber = Fiber { .. }; ..; fiber`, is refused, React's `FiberNode` its object form",
     file: "src/lower/classes/member_functions.rs",
-    find: "    instance_as_this(body)?;\n",
+    find: "    instance_as_this(body, docs.as_deref_mut())?;\n",
     replace: "",
     tests: ["test/class-constructors.test.ts", "-t", "constructor's statements set this"],
   },
@@ -123,10 +123,26 @@ export const mutations: Mutation[] = [
     breaks:
       "a handle on a constructor's instance's field, `bump(&fiber.reads)`, reads the instance by preparation's `this$`, `const this$ = this; .. return this$.reads;`, not by its class's name, `fiber` (#449's `prepare::this_handles` keeps its `this` right)",
     file: "src/lower/classes/member_functions.rs",
-    find: "            set_this(&mut function.body)?;\n            instance_outside_accessors(class, &mut function.body);\n",
-    replace: "            set_this(&mut function.body)?;\n",
+    find: "            instance_outside_accessors(class, &mut function.body);\n            // Of a class that extends one",
+    replace: "            // Of a class that extends one",
     tests: ["test/corpus.test.ts", "-t", "^class_constructor_statements.rs$"],
     snapshots: true,
+  },
+  {
+    name: "constructor-field-docs-lost",
+    breaks: "a constructor's field assignment loses the field's JSDoc",
+    file: "src/lower/classes/member_functions.rs",
+    find: "                    docs.push((written.lo, doc.to_owned()));\n",
+    replace: "                    let _ = (docs, doc);\n",
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a constructor assignment keeps"],
+  },
+  {
+    name: "declared-field-documented-in-constructor",
+    breaks: "a class that declares its fields prints their JSDoc in its constructor",
+    file: "src/lower/classes/member_functions.rs",
+    find: ".is_some_and(|adt| !super::declares_fields(tcx, adt))",
+    replace: ".is_some()",
+    tests: ["test/lowering-comment-fields.test.ts", "-t", "a constructor assignment keeps"],
   },
   {
     name: "class-instance-return-kept",

@@ -19,6 +19,7 @@ pub(in crate::lower) fn as_member(
     def_id: DefId,
     class: &str,
     function: &mut js::Function,
+    constructor_field_docs: &mut Vec<(u32, String)>,
 ) -> Result<(), &'static str> {
     let Some(member) = member(tcx, def_id) else {
         return Ok(());
@@ -28,15 +29,19 @@ pub(in crate::lower) fn as_member(
         // a method's `this` (#359).
         Member::Constructor => {
             spread_state(tcx, def_id, function)?;
-            set_this(&mut function.body)?;
+            let adt = class_of(tcx, def_id);
+            let assignment_docs = adt
+                .is_some_and(|adt| !super::declares_fields(tcx, adt))
+                .then_some(constructor_field_docs);
+            set_this(&mut function.body, assignment_docs)?;
             instance_outside_accessors(class, &mut function.body);
             // Of a class that extends one, its superclass constructs `this` first,
             // `super(props);`, at its name: a comment its body starts with follows.
             // Of `Error`'s, the fields its constructor sets, `super(message,
             // { cause })` (#1808).
-            if let Some(adt) = class_of(tcx, def_id).filter(|&adt| super::extends_error(tcx, adt)) {
+            if let Some(adt) = adt.filter(|&adt| super::extends_error(tcx, adt)) {
                 super::errors::super_of_fields(tcx, adt, &mut function.body, function.name_span)?;
-            } else if class_of(tcx, def_id).is_some_and(|adt| superclass(tcx, adt).is_some()) {
+            } else if adt.is_some_and(|adt| superclass(tcx, adt).is_some()) {
                 let given = (function.params.iter())
                     .map(|param| match param {
                         Pattern::Name(name) => Ok(Expr::var(name)),
@@ -153,7 +158,12 @@ pub(in crate::lower) fn receiver_as_this(
 /// `this.a = a;`, each where its value is, or at `span`: not of a field
 /// that's `undefined`, a `None`, which an object leaves out (ADR 0280), as
 /// JS's constructor function sets no property it hasn't a value of.
-fn fields_set(props: Vec<Prop>, layout: &js::ObjectLayout, span: js::Span) -> Result<Vec<Stmt>, &'static str> {
+fn fields_set(
+    props: Vec<Prop>,
+    layout: &js::ObjectLayout,
+    span: js::Span,
+    mut docs: Option<&mut Vec<(u32, String)>>,
+) -> Result<Vec<Stmt>, &'static str> {
     let mut props = props;
     js::undefined_keys::left_out(&mut props, layout);
     let mut out = Vec::with_capacity(props.len());
@@ -161,7 +171,16 @@ fn fields_set(props: Vec<Prop>, layout: &js::ObjectLayout, span: js::Span) -> Re
         match prop {
             Prop::Field(name, value) => {
                 // Where its value is, which its comment is before.
-                let at = if value.span.is_none() { span } else { value.span };
+                let at = if let Some(docs) = docs.as_deref_mut()
+                    && let Some((written, doc)) = layout.written(&name).zip(layout.doc(&name))
+                {
+                    docs.push((written.lo, doc.to_owned()));
+                    written
+                } else if value.span.is_none() {
+                    span
+                } else {
+                    value.span
+                };
                 out.push(StmtKind::Assign(Expr::member(Expr::this(), name), value).at(at));
             }
             _ => return Err("a constructor whose struct literal has a field of no name"),
@@ -189,7 +208,7 @@ fn literal_given(value: &Expr) -> Option<(&Expr, bool)> {
 
 /// The fields of what `literal_given` found set on `this`, then, of a
 /// counted one, `this` counted, `$countedInstance(this)` (#1228).
-fn given_set(value: Expr, span: js::Span) -> Result<Vec<Stmt>, &'static str> {
+fn given_set(value: Expr, span: js::Span, docs: Option<&mut Vec<(u32, String)>>) -> Result<Vec<Stmt>, &'static str> {
     let counted = literal_given(&value).is_some_and(|(_, counted)| counted);
     let literal = match counted {
         true => crate::lower::std_types::rc::counted_instance_made(&value)
@@ -200,14 +219,14 @@ fn given_set(value: Expr, span: js::Span) -> Result<Vec<Stmt>, &'static str> {
     let ExprKind::Object(props, layout) = literal.kind else {
         unreachable!("a struct literal")
     };
-    let mut fields = fields_set(props, &layout, span)?;
+    let mut fields = fields_set(props, &layout, span, docs)?;
     if counted {
         fields.push(StmtKind::Expr(crate::lower::std_types::rc::counted_instance(Expr::this())).at(span));
     }
     Ok(fields)
 }
 
-fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
+fn instance_as_this(body: &mut Vec<Stmt>, docs: Option<&mut Vec<(u32, String)>>) -> Result<(), &'static str> {
     let Some(Stmt {
         kind: StmtKind::Return(Some(Expr {
             kind: ExprKind::Var(instance),
@@ -233,7 +252,7 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
     let (StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))) = made.kind else {
         unreachable!("the instance's declaration")
     };
-    let fields = given_set(value, made.span)?;
+    let fields = given_set(value, made.span, docs)?;
     body.splice(at..at, fields);
     body.pop();
     js::statement_lists(body, &mut |list| {
@@ -253,8 +272,8 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
 /// a; this.b = b;`, and `return;` where it's not the body's last; not a
 /// closure's, whose `return` is its own. Or the instance a variable holds,
 /// `instance_as_this`.
-fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
-    instance_as_this(body)?;
+fn set_this(body: &mut Vec<Stmt>, mut docs: Option<&mut Vec<(u32, String)>>) -> Result<(), &'static str> {
+    instance_as_this(body, docs.as_deref_mut())?;
     let mut fine = Ok(());
     let mut outermost = true;
     js::statement_lists(body, &mut |list| {
@@ -272,7 +291,7 @@ fn set_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
             let StmtKind::Return(Some(value)) = stmt.kind else {
                 unreachable!("a struct literal returned")
             };
-            match given_set(value, span) {
+            match given_set(value, span, docs.as_deref_mut()) {
                 Ok(fields) => out.extend(fields),
                 Err(why) => fine = Err(why),
             }

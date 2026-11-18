@@ -1206,3 +1206,21 @@ mutations `comment-above-a-let-of-a-value-lost`,
 `comment-above-a-let-of-a-block-lost` (`to_oxc.ts`),
 `let-value-past-a-types-equals` and `let-value-past-the-whole-line`
 (`to_oxc/openings.ts`).
+
+## Amendment: a constructor assignment keeps its field's JSDoc (2026-11-18)
+
+Three.js's `Pipeline` puts JSDoc before `this.cacheKey = cacheKey;` and
+`this.usedTimes = 0;`. The Rust field documentation already reaches the
+one struct literal through `ObjectLayout`. Constructor lowering now
+carries that documentation to the corresponding assignment at its
+literal field's span. The printer uses the same field-comment placement
+for object literals and constructor assignments.
+
+A class with explicit field declarations keeps its constructor
+assignments free of field JSDoc.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): comments change
+neither evaluation nor results. The constructor test in
+`test/lowering-comment-fields.test.ts` holds both forms and the
+`constructor-field-docs-lost` and `declared-field-documented-in-constructor`
+mutations exercise both directions.

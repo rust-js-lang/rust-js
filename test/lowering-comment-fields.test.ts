@@ -586,6 +586,49 @@ pub fn two() -> Twice {
   expect((lib.prototype() as unknown as { isPersistent: () => boolean }).isPersistent()).toBe(true);
 });
 
+test("a constructor assignment keeps its field's doc comment", async () => {
+  const { js } = await compiled("class-field-doc", `#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct Pipeline {
+    /// The key used to cache this pipeline.
+    pub cache_key: String,
+    /// The number of renderers using the pipeline.
+    pub used_times: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Pipeline {
+    pub fn new(cache_key: String) -> Self {
+        Self {
+            cache_key,
+            used_times: 0.0,
+        }
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class(es, fields))]
+pub struct DeclaredPipeline {
+    /// A declared cache key.
+    pub cache_key: String,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl DeclaredPipeline {
+    pub fn new(cache_key: String) -> Self {
+        Self { cache_key }
+    }
+}
+`);
+  expect(js).toContain(`  constructor(cacheKey) {
+    /** The key used to cache this pipeline. */
+    this.cacheKey = cacheKey;
+    /** The number of renderers using the pipeline. */
+    this.usedTimes = 0;
+  }`);
+  expect(js.split("export class DeclaredPipeline")[1]).toContain(`  constructor(cacheKey) {
+    this.cacheKey = cacheKey;
+  }`);
+});
+
 // The playground's `Loaded { module: module.await, crates: crate_files, .. }`:
 // a field's value MIR moves through a temporary, `_5 = crate_files`, is the
 // variable read where the temporary was, so the field's doc comment, which

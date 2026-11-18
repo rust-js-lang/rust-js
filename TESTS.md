@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-18: the constructor field-comment regression holds the original JSDoc beside each emitted assignment in an ES class.
+
 Changed on 2026-11-18 (#2070): test/on-load-names.test.ts, two tests, holds
 an `on_load!` body's top-level local beside a function and an import of its
 word, given apart and run.

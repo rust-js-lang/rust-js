@@ -1222,12 +1222,11 @@ fn owned(i: usize) -> u32 {
     u32::MAX - i as u32
 }
 
-/// Where each object literal's field's value starts whose struct's field
-/// has a doc comment, the crate's one literal of it, and its JSDoc
-/// (`ObjectLayout::docs`, ADR 0444, amended).
+/// Where each documented field is written, in its struct's one literal
+/// or a constructor assignment made from it (ADR 0444, amended).
 fn field_docs(module: &Module) -> IndexMap<u32, String> {
     let mut docs = IndexMap::default();
-    let mut of = |mut stmts: Vec<js::Stmt>| {
+    let of = |docs: &mut IndexMap<u32, String>, mut stmts: Vec<js::Stmt>| {
         js::each_expr_mut(&mut stmts, &mut |e| {
             let ExprKind::Object(props, layout) = &e.kind else {
                 return;
@@ -1245,10 +1244,15 @@ fn field_docs(module: &Module) -> IndexMap<u32, String> {
     };
     for item in &module.items {
         match item {
-            js::Item::Const(c) => of(vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
-            js::Item::Statements(stmts) => of(stmts.clone()),
-            js::Item::Function(f) => of(f.body.clone()),
-            js::Item::Namespace(n) => n.methods.iter().for_each(|method| of(method.body.clone())),
+            js::Item::Const(c) => of(&mut docs, vec![StmtKind::Expr(c.value.clone()).at(js::Span::NONE)]),
+            js::Item::Statements(stmts) => of(&mut docs, stmts.clone()),
+            js::Item::Function(f) => of(&mut docs, f.body.clone()),
+            js::Item::Namespace(n) => {
+                if let Some(class) = &n.class {
+                    docs.extend(class.constructor_field_docs.iter().cloned());
+                }
+                n.methods.iter().for_each(|method| of(&mut docs, method.body.clone()));
+            }
         }
     }
     docs
