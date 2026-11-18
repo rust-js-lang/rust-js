@@ -688,7 +688,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => crate::lower::combinators::Comb::ResultIterMut,
                 false => crate::lower::combinators::Comb::ResultIter,
             };
-            return self.comb_values(comb, (vec![value], &[ty]), false, none, span, out);
+            return self.comb_values(comb, (vec![value], &[ty]), (false, false), none, span, out);
         }
         if self.range_kind(ty).is_some() || self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty) {
             return self.as_js_iterator(value, ty, span);

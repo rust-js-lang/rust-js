@@ -83,7 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Std::Comb(comb) => self.comb_values(
                         comb,
                         (vec![collection.clone(), items], &given),
-                        false,
+                        (false, false),
                         none,
                         span,
                         &mut body,

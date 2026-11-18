@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "        (comb == Comb::AsDeref).then_some(pointee)",
     tests: ["test/corpus.test.ts", "-t", "^option_of_a_mut_ref_read_by_value.rs$"],
   },
+  {
+    name: "and-then-found-index-none-undefined",
+    breaks: "an `and_then` whose `Option` is a found index gives `undefined` for its `None`, which its test, `day !== -1`, takes for an index (#2074)",
+    file: "src/lower/combinators/values.rs",
+    find: "            return Ok((self.call_with(f, vec![value], Role::Then, out), Expr::num(-1)));\n",
+    replace: "            return Ok((self.call_with(f, vec![value], Role::Then, out), Expr::js_undefined()));\n",
+    tests: ["test/corpus.test.ts", "-t", "^position_through_and_then\\.rs$"],
+  },
 ];

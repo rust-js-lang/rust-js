@@ -612,6 +612,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Comb(comb) => {
                 let values: Vec<Expr> = values.collect();
                 let made = matches!(values[0].kind, crate::js::ExprKind::Call(..));
+                let made = (made, call.found_index);
                 return self.comb_values(comb, (values, tys), made, generic_args, call.span, out);
             }
             _ => {}

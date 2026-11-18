@@ -272,12 +272,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An `Option`'s or a `Result`'s combinator, of its arguments' values,
     /// `tys` their types (ADR 0364).
     /// `made`: whether the subject was just made by a call, so no other
-    /// variable shares it.
+    /// variable shares it; and of an `and_then`, whether its `Option` is a
+    /// found index, `-1` its `None` (`FoundIndexes::through`, #2074).
     pub(in crate::lower) fn comb_values(
         &mut self,
         comb: Comb,
         (mut values, tys): (Vec<Expr>, &[Ty<'tcx>]),
-        made: bool,
+        (made, found_index): (bool, bool),
         generic_args: ty::GenericArgsRef<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -479,8 +480,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(tag(true), mapped, fallback)
             }
             Comb::AndThen => {
-                let then = self.call_with(next(), vec![value], Role::Then, out);
-                let (then, none) = super::calls::and_then_given(self.tcx, tys[1], then);
+                let (then, none) = self.and_then_parts(next(), value, (tys[1], found_index), span, out)?;
                 Expr::cond(some, then, none)
             }
             // A value with a destructor its test doesn't keep is dropped once

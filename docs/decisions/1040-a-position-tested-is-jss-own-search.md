@@ -102,3 +102,33 @@ The mutation that let `iter_mut()` in survived main's check: the array
 of its places, `$mutItems(xs)`, is searched as rightly, so it's taken
 too, one recognizer, a slice's items.
 
+## Amendment (2026-11-18): through an `Option`'s `and_then` (#2074)
+
+The vercel-ui SDK's first day of a week reads `extension.and_then(|extension|
+EXTENSION_DAYS.iter().position(|&day| day == extension))`, then tests it,
+`if let Some(day) = ..`. The `position` is its closure's value, in the
+closure's own MIR body, and the found-index fact is the body's, so it
+printed `extension != null ? $position(extensionDays, (day) => day ===
+extension) : undefined` where upstream searches the array, `indexOf`.
+
+Now an `and_then` whose closure gives a slice's `position` as it is (the
+closure's return place written by it, of a slice's `iter()` made for it,
+`gives_a_position`), and whose own `Option` the body only tests and takes
+the index of, is a found index too (`FoundIndexes::through`): its closure's
+search is JS's own (`found_index_closure`, `found_index`'s of its value),
+and its `None` `-1`, `ext != null ? DAYS.indexOf(ext) : -1`, then `day !==
+-1`. The fact reaches the combinator as the call's (`Call::found_index`),
+as `in_bounds` does. ADR 0262's first case, as the `Option` never leaves
+the body. One that leaves it, or of another iterator, `skip(1)`'s,
+`rev()`'s, stays `$position`'s `Option`.
+
+Upstream writes `extensionDays.includes(e)` and then `indexOf(e)`, two
+searches; this is one, tested by `-1`, as this ADR decided for `position`.
+
+Corpus case `position_through_and_then`, against native: `indexOf`,
+`findIndex`, one given back, `skip(1)`'s and `rev()`'s. No other snapshot
+moves. Mutations `and-then-position-not-found`,
+`and-then-position-escaping-found`, `and-then-position-of-any-iterator`
+and `and-then-found-index-none-undefined`, caught; `found-index-escaping`
+re-anchored, caught.
+

@@ -242,6 +242,13 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
         self.found_indexes.call(block)
     }
 
+    /// Whether the call that ends `block` is an `Option`'s `and_then`
+    /// whose closure gives such a `position`, its `Option` `-1` where it's
+    /// `None` (#2074).
+    pub(super) fn found_index_through(&self, block: BasicBlock) -> bool {
+        self.found_indexes.through(block)
+    }
+
     /// Whether the call that ends `block` is the `iter()` of a slice such
     /// a `position` searches: the array itself (rd316).
     pub(super) fn found_index_items(&self, block: BasicBlock) -> bool {

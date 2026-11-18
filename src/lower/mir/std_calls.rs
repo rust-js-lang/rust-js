@@ -94,6 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             written_whole: self.uninit_written_whole(state.body, state.at),
             fresh_string: self.fresh_string_read_into(state),
             in_bounds: crate::lower::analysis::call_bounds_proved(self.tcx, state.body, state.at),
+            found_index: state.facts.found_index_through(state.at),
         }
     }
 

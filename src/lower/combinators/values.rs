@@ -148,6 +148,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// An `and_then`'s value where its `Option` is `Some`, `f(value)`, and
+    /// its `None`, of `f` of type `f_ty` (`calls::and_then_given`); of one
+    /// whose `Option` is a found index, its closure giving a slice's
+    /// `position`, JS's own search and `-1`, `ext != null ?
+    /// DAYS.indexOf(ext) : -1` (`FoundIndexes::through`, #2074).
+    pub(super) fn and_then_parts(
+        &mut self,
+        f: Expr,
+        value: Expr,
+        (f_ty, found_index): (Ty<'tcx>, bool),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<(Expr, Expr)> {
+        if found_index {
+            let f = self.found_index_closure(f, span)?;
+            return Ok((self.call_with(f, vec![value], Role::Then, out), Expr::num(-1)));
+        }
+        let then = self.call_with(f, vec![value], Role::Then, out);
+        Ok(super::super::calls::and_then_given(self.tcx, f_ty, then))
+    }
+
     /// `f(given)`, `inspect`'s call of its closure, `f_ty`, and what it was
     /// given, a `held`, dropped as `f` unwinds where it may and `held` has a
     /// destructor, as std's `inspect` owns what it gives back (#903).

@@ -62,6 +62,10 @@ pub(super) struct Call<'c, 'tcx> {
     /// Whether MIR proves the call's indexes in bounds, a `Vec`'s, a
     /// range's or a map's key held (`call_bounds_proved`, #1672 M3).
     pub(super) in_bounds: bool,
+    /// Of an `Option`'s `and_then` whose closure gives a slice's
+    /// `position`, whether its `Option` is a found index, only tested and
+    /// its index taken: `-1` its `None` (`FoundIndexes::through`, #2074).
+    pub(super) found_index: bool,
     pub(super) span: Span,
 }
 
@@ -83,6 +87,8 @@ pub(super) struct Given<'c> {
     pub(super) fresh_string: bool,
     /// Whether MIR proves the call's indexes in bounds (`call_bounds_proved`).
     pub(super) in_bounds: bool,
+    /// Whether it's an `and_then` whose `Option` is a found index.
+    pub(super) found_index: bool,
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
@@ -106,6 +112,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             written_whole,
             fresh_string,
             in_bounds,
+            found_index,
         } = given;
         Call {
             def_id,
@@ -122,6 +129,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             written_whole,
             fresh_string,
             in_bounds,
+            found_index,
             span,
         }
     }
