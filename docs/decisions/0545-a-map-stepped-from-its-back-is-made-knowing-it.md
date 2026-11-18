@@ -1882,3 +1882,23 @@ by_ref | next_back`, refused before). All 222 of the copy matrix's cells
 under #1981 run as native Rust does and leave its known list. Corpus case
 `adapter_given_back_stepped_from_its_back.rs`; mutations
 `given-back-never-back-stepped` and `closing-given-back-of-the-closing`.
+
+### Amended: a copy of the crate's own iterator, or a library's, is made knowing its back where it's made (2026-11-18)
+
+A copy's or a clone's maker (`back_kept`'s `Copied | Cloned` arm) gave
+its source its back only where that was std's adapter or compiled struct;
+of the crate's own iterator, or a library's, it gave its `next` alone.
+Where the copy is given to a library's `fn f<I: DoubleEndedIterator>`,
+whose body the crate can't see, its local is stepped from its back
+(`stepped_locals`), and a value written to it is marked made knowing its
+back by its maker (`made_knowing_its_back_by_its_maker`, which lists a
+copy), so `as_double_ended` trusted the mark and the library's `rfind`
+threw `it.back is not a function` (#2068, the metamorphic net's `library`
+rewrite of associated_double_ended.rs). The arm now takes the crate's and a
+library's own iterator too, given its own `next_back`, as the map's and
+the filter's arms do. That the mark's list and each maker's arm decide the
+same question twice is filed to be made one answer (#2069).
+
+Test: test/cross-crate-iterators.test.ts, "an adapter of a library's
+iterator given to its double-ended function steps from its back";
+mutation `copied-user-iterator-unknowing`.

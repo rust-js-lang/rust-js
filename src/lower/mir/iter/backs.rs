@@ -276,12 +276,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && self.knows_its_back(output)
                     && !self.has_a_back(iter_ty, receiver)
                     && (self.recognition().is_iter_adapter(iter_ty)
-                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>
+                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)
+                        || self.is_user_iterator(iter_ty)) =>
             {
                 // Of std's compiled struct, a `fuse()`'s or a
                 // `peekable()`'s, given its compiled back where it's made
                 // (`knowing_held`), not the `next` alone its dictionary
-                // has (#778).
+                // has (#778). Of the crate's own iterator, or a library's,
+                // its own `next_back` (#2068).
                 self.as_double_ended(receiver.clone(), iter_ty, span)?
             }
             // A map of one that knows its length, too (ADR 0456).

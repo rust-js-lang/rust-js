@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "copied-user-iterator-unknowing",
+    breaks:
+      "a copy of a library's own iterator given to its `I: DoubleEndedIterator` function is given its source's `next` alone, its local marked as made knowing its back, and the library's `rfind` throws `it.back is not a function` (#2068)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)\n                        || self.is_user_iterator(iter_ty)) =>\n",
+    replace: "                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>\n",
+    tests: ["test/cross-crate-iterators.test.ts", "-t", "an adapter of a library's iterator given to its double-ended function"],
+  },
+  {
     name: "compiled-map-reversed-unknowing",
     breaks:
       "a compiled `Map` of items with a destructor given back by a call is reversed as it is, `$rev(it)`, which finds no back (#999)",
@@ -682,8 +691,8 @@ export const mutations: Mutation[] = [
     name: "copy-of-compiled-struct-backless",
     breaks: "a `copied()` that's its source, of std's compiled `fuse()` or `peekable()`, stepped from its back, is the struct given `next` alone: `nums.iter().fuse().copied().rfold(..)` throws `it.back is not a function` (#778)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>\n",
-    replace: "                        || false && crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) =>\n",
+    find: "                        || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)\n",
+    replace: "                        || false && crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^back_folds_of_sources_made_knowing_their_back.rs$"],
   },
   {
