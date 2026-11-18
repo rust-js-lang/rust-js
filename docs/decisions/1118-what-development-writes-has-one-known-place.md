@@ -115,3 +115,31 @@ The store "rustc's notes at the root" stays, for what older commits'
 runs and a plain `rustc` run by hand leave. `test/diagnostics.test.ts`'s
 "a long type's name is printed in its error" holds the first; mutation
 `long-types-written-where-it-runs`.
+
+## Amendment: a kept compile is counted by its blocks, and the cache's tests ask it as a build does (2026-11-18)
+
+The compile cache (test/compiles.ts) held 13.7 GiB against its 2 GiB cap,
+and `bun run disk --prune --inside` left 5.1. Its writers didn't bypass
+the bound; `prune` counted wrongly. `keep` named each kept compile by its
+files' lengths and its output's, and `prune` trusted the name. What a
+kept compile takes is its files' blocks and `entry.json`'s, which holds
+every path the compile read: an entry named `-5062` took 16 KiB. The
+counted 2.00 GiB took 5.12 on the disk.
+
+`keep` writes an entry, then names it by `bytesOf` of it, as every
+store of the loop's is counted (`tooling/bounded.js`), and asks `room`
+with that. One way to count a store's bytes. The layout's version is 2,
+so the miscounted store is dropped as any older layout is.
+
+The cache's tests failed in a mutant's environment, mutant or not:
+- the runner sets `RUST_JS_MUTANT`, which keeps none of a mutant's
+  compiles, so four tests counted a compile more than they kept;
+- a mutant's own target puts the verified runs in `corpus-cache`, so
+  support's row of the stores' caps named the wrong one.
+Each `--retire` had said them failing as the compiler is too. The cache's
+tests now clear `RUST_JS_MUTANT`, as they clear `RUST_JS_DECISIONS`, and
+the caps' row names the store as `test/kept.ts` places it.
+
+test/compiles.test.ts holds a kept compile's name against its blocks, and
+a store pruned to its cap at or under it on the disk. Mutation
+`kept-compile-counted-by-lengths` is caught.

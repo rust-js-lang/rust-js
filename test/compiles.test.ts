@@ -5,11 +5,11 @@
 // bounded: another build's dropped, the least recently used past the cap.
 
 import { beforeAll, expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { Exit } from "./child";
-import { freeBytes } from "../tooling/bounded.js";
+import { bytesOf, freeBytes } from "../tooling/bounded.js";
 import { floorBytes } from "./bounded";
 import { capBytes, compileCache, currentBuild, keptCompile, parseRecord, prune, unread } from "./compiles";
 import { target } from "./packages-of";
@@ -21,6 +21,10 @@ beforeAll(buildCompiler, 600_000);
 // decisions (ADR 1124), as every one of the nightly's is, is never kept:
 // they count none, but the one that says it isn't.
 delete process.env.RUST_JS_DECISIONS;
+// Nor a mutant's, whose runner keeps none of its compiles: these test what
+// the cache does, so in a mutant's environment too, a `--retire`'s, they
+// ask it as a build does, or each counts a compile more than it keeps.
+delete process.env.RUST_JS_MUTANT;
 
 /** `cmd` run as it is, each run counted; and an environment of this run's
  * own, so what an earlier run kept, in the same fixture, isn't found. */
@@ -246,10 +250,46 @@ test("a file's record of its build says what it wrote and all it read, and chang
   expect(hooked.stderr.toString()).toContain("--emit=dep-info can't say all a build reads whose crate has hooks");
 });
 
+// A kept compile is named by its size as it lies on the disk, every file's
+// blocks, `entry.json`'s too, as every store of the loop's is counted
+// (`bytesOf`): its files' lengths alone counted 2.0 GiB of a store that
+// took 5.1, which `prune` then held to its cap only on paper.
+test("a kept compile is counted by its blocks on the disk, so a store pruned to its cap is at or under it", () => {
+  const dir = fixture("kept-blocks");
+  writeFileSync(join(dir, "lib.rs"), lib);
+  writeFileSync(join(dir, "text.txt"), "blocks");
+  const { compile, own } = counting();
+  const started = Date.now() - 1000;
+  expect(keptCompile([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "-Awarnings"], root, own, compile, room).code).toBe(0);
+  const entries = (store: string) =>
+    readdirSync(store)
+      .filter((build) => !build.startsWith("."))
+      .flatMap((build) => readdirSync(join(store, build)).flatMap((key) => readdirSync(join(store, build, key)).map((name) => join(store, build, key, name))))
+      .filter((at) => !at.split("/").at(-1)!.startsWith("."));
+  const kept = entries(join(compileCache, "v2")).filter((at) => statSync(at).mtimeMs >= started);
+  expect(kept.length).toBeGreaterThan(0);
+  for (const at of kept) expect(Number(/-(\d+)$/.exec(at)?.[1])).toBe(bytesOf(at));
+  // Five of it in a store of its own, pruned to the room of two and a half:
+  // what's left, as the disk measures it, is at or under the cap.
+  const cache = join(fixture("kept-blocks-store"), "compile-cache");
+  const each = bytesOf(kept[0]!);
+  const name = kept[0]!.split("/").at(-1)!;
+  for (let i = 0; i < 5; i++) {
+    const at = join(cache, "v2", "current", `k${i}`, name);
+    cpSync(kept[0]!, at, { recursive: true });
+    utimesSync(at, 1_000 + i, 1_000 + i);
+  }
+  const cap = Math.floor(2.5 * each);
+  expect(prune({ root: cache, current: "current", cap, free: () => Infinity }).removed).toBe(3);
+  const left = entries(join(cache, "v2"));
+  expect(left.length).toBe(2);
+  expect(left.reduce((sum, at) => sum + bytesOf(at), 0)).toBeLessThanOrEqual(cap);
+});
+
 test("what's kept is bounded: another build's dropped, then the least recently used past the cap", () => {
   const cache = join(fixture("bounded"), "compile-cache");
   const entry = (build: string, key: string, name: string, bytes: number, used: number) => {
-    const at = join(cache, "v1", build, key, `${name}-${bytes}`);
+    const at = join(cache, "v2", build, key, `${name}-${bytes}`);
     mkdirSync(at, { recursive: true });
     writeFileSync(join(at, "0"), Buffer.alloc(bytes));
     utimesSync(at, used, used);
@@ -260,7 +300,7 @@ test("what's kept is bounded: another build's dropped, then the least recently u
   const older = entry("current", "k2", "b", 400, 3_000);
   const newer = entry("current", "k2", "c", 400, 4_000);
   const newest = entry("current", "k3", "d", 400, 5_000);
-  const layout = join(cache, "v0");
+  const layout = join(cache, "v1");
   mkdirSync(layout);
   const pruned = prune({ root: cache, current: "current", cap: 1_000, free: () => Infinity });
   expect(pruned).toEqual({ removed: 2, size: 800, builds: 1 });

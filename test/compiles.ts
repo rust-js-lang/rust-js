@@ -29,7 +29,7 @@ import { createHash } from "node:crypto";
 import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
-import { evict, freeBytes } from "../tooling/bounded.js";
+import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes } from "./bounded";
 import type { Exit } from "./child";
 import { target } from "./packages-of";
@@ -38,7 +38,7 @@ import { compiler as testsCompiler } from "./support";
 /** Where compiles are kept, and the layout's version, which a change to
  * the layout or the key bumps. */
 export const compileCache = join(target, "compile-cache");
-const VERSION = 1;
+const VERSION = 2;
 const store = join(compileCache, `v${VERSION}`);
 
 /** The most it keeps: 2 GB, or `RUST_JS_COMPILE_CACHE_MB`; 0 keeps none,
@@ -263,17 +263,23 @@ function room(bytes: number, freeNow: Free): boolean {
  * half of one; one kept at the same time by another is the same. */
 function keep(dir: string, read: [string, string][], wrote: string[], cwd: string, p: Exit, free: Free) {
   const files = wrote.map((file) => readFileSync(resolve(cwd, file)));
-  const bytes = files.reduce((sum, file) => sum + file.length, 0) + p.bytes.stdout.length + p.bytes.stderr.length;
-  if (!room(bytes, free)) return;
-  const name = `${sha(JSON.stringify(read)).slice(0, 24)}-${bytes}`;
-  if (existsSync(join(dir, name))) return;
+  const key = sha(JSON.stringify(read)).slice(0, 24);
+  if (existsSync(dir) && readdirSync(dir).some((name) => name.startsWith(`${key}-`))) return;
   const building = join(dir, `.building-${process.pid}-${Math.random().toString(36).slice(2)}`);
   mkdirSync(building, { recursive: true });
   files.forEach((file, i) => writeFileSync(join(building, String(i)), file));
   const entry: Entry = { read, wrote: wrote.map((file, i) => [file, i]), stdout: p.bytes.stdout.toString("base64"), stderr: p.bytes.stderr.toString("base64") };
   writeFileSync(join(building, "entry.json"), JSON.stringify(entry));
+  // Its size as it lies on the disk, every file's blocks, `entry.json`'s
+  // too, `bytesOf`'s, as every store of the loop's is counted: its files'
+  // lengths alone counted 2.0 GiB of what took 5.1 (ADR 1118, amended).
+  const bytes = bytesOf(building);
+  if (!room(bytes, free)) {
+    rmSync(building, { recursive: true, force: true });
+    return;
+  }
   try {
-    renameSync(building, join(dir, name));
+    renameSync(building, join(dir, `${key}-${bytes}`));
   } catch {
     rmSync(building, { recursive: true, force: true });
   }

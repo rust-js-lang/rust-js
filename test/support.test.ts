@@ -10,7 +10,7 @@ import { basename, dirname, join, relative } from "node:path";
 import { bytesOf } from "../tooling/bounded.js";
 import { floorBytes, mainCheckoutOf } from "./bounded";
 import { boundEntries, pinnedToolchains, unpinnedToolchains } from "../scripts/disk";
-import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores } from "./kept";
+import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
@@ -290,7 +290,7 @@ test("a kept cache is held to its cap, the least recently used first, and to the
   expect(keptStores.map(({ dir, cap }) => [basename(dir), cap / 2 ** 20])).toEqual([
     ["native-cache", 10240],
     ["native-sources", 64],
-    ["verified-runs", 512],
+    [basename(verifiedRuns), 512],
     ["native-outcomes", 256],
   ]);
 });
