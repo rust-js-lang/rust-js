@@ -31,6 +31,14 @@ export const mutations: Mutation[] = [
     tests: bound,
   },
   {
+    name: "runners-string-cap-taken",
+    breaks: "a `max-parallel` that reads an input without `fromJSON` is taken as its number, though GitHub, given a string, creates none of the matrix's jobs",
+    file: "scripts/runners.ts",
+    find: "  if (/\\binputs\\./.test(expr)) throw new Error(",
+    replace: "  if (/\\binputs\\./.test(expr)) return Number(valueOf(value, inputs));\n  if (false) throw new Error(",
+    tests: bound,
+  },
+  {
     name: "runners-chains-unmerged",
     breaks: "the most at once is every job's runners summed, as though no `needs` ordered any",
     file: "scripts/runners.ts",

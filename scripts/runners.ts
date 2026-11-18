@@ -105,7 +105,7 @@ export function evaluateIf(expr: string, inputs: Record<string, unknown>): true 
   return truth(or());
 }
 
-/** A value a caller's `with:` or a job's `max-parallel` gives, of `inputs`:
+/** A value a caller's `with:` gives, of `inputs`:
  * a literal, or `${{ inputs.x || <literal> }}`; otherwise unknown. */
 function valueOf(value: unknown, inputs: Record<string, unknown>): unknown {
   if (typeof value !== "string") return value;
@@ -116,6 +116,22 @@ function valueOf(value: unknown, inputs: Record<string, unknown>): unknown {
   const input = expr.match(/^inputs\.([\w-]+)$/);
   if (input) return inputs[input[1]!];
   return undefined;
+}
+
+/** A matrix job's `max-parallel`, of `inputs`: a number, or an input read
+ * through `fromJSON`, `${{ fromJSON(inputs.x || '<n>') }}`; NaN where only
+ * the run can say. An input is a string, and a `max-parallel` that's a
+ * string makes GitHub create none of the matrix's jobs, with no error:
+ * nightly 44216138054's suite, rustc tests, test map and mutations, whose
+ * caps were `${{ inputs.max_parallel || <n> }}` given '2' and '9'. */
+function capOf(value: unknown, inputs: Record<string, unknown>): number {
+  if (typeof value !== "string") return Number(value);
+  const expr = value.match(/^\$\{\{\s*([\s\S]*?)\s*\}\}$/)?.[1];
+  if (expr === undefined) return Number(value);
+  const parsed = expr.match(/^fromJSON\(([\s\S]*)\)$/)?.[1];
+  if (parsed !== undefined) return Number(valueOf(`\${{ ${parsed} }}`, inputs));
+  if (/\binputs\./.test(expr)) throw new Error(`\`max-parallel: ${value}\` reads an input, a string, and GitHub creates no job of a matrix whose \`max-parallel\` is a string: write \`\${{ fromJSON(inputs.<name> || '<n>') }}\``);
+  return Number.NaN;
 }
 
 type Job = { if?: unknown; uses?: string; needs?: string | string[]; with?: Record<string, unknown>; strategy?: { matrix?: unknown; "max-parallel"?: unknown } };
@@ -160,7 +176,7 @@ export function heldJobs(file: string, inputs: Record<string, unknown> = {}, pre
       continue;
     }
     const size = matrixSize(job.strategy?.matrix);
-    const cap = job.strategy?.["max-parallel"] === undefined ? undefined : Number(valueOf(job.strategy["max-parallel"], inputs));
+    const cap = job.strategy?.["max-parallel"] === undefined ? undefined : capOf(job.strategy["max-parallel"], inputs);
     const capped = cap === undefined || Number.isNaN(cap) ? undefined : cap;
     const at = size === undefined ? capped : capped === undefined ? size : Math.min(size, capped);
     held.push(at === undefined ? { id: name, at: Number.POSITIVE_INFINITY, why: "a matrix of a size known only as it runs, and no `max-parallel` its caller's inputs say" } : { id: name, at });

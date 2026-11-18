@@ -151,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
-      max-parallel: ${{ inputs.max_parallel || 20 }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '20') }}
       matrix:
         part: ${{ fromJSON(needs.test-map.outputs.parts) }}
     steps:

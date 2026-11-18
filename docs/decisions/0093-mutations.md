@@ -1119,3 +1119,23 @@ Two changes, so a run never blames its environment on a mutant:
 
 test/mutations.test.ts holds both. Mutations `retire-judges-below-the-floor`
 and `retire-control-rerun-apart` are caught.
+
+## Amendment: a matrix's cap reads its input through `fromJSON` (2026-11-18)
+
+Nightly 44216138054, the first since the lanes, ran none of its suite's
+test shards, rustc tests' shards, fuzz seeds, test map parts or mutation
+shards, and so made no `mutation-timings-merged`. A workflow's input is a
+string: the callers' `max_parallel`, '1', '2' and '9', made each
+`max-parallel: ${{ inputs.max_parallel || <n> }}` a string, and GitHub
+created none of that matrix's jobs, with no error and no job listed; what
+needed them was skipped. A push passes none, so its default, a number,
+served, and its checks ran as before.
+
+Each of the 7 caps is `${{ fromJSON(inputs.max_parallel || '<n>') }}`.
+scripts/runners.ts's `capOf` reads that form, and refuses a
+`max-parallel` that reads an input without `fromJSON`, naming the form to
+write, so test/runners.test.ts's bound fails on one. The bound is 14 as
+before. Mutation `runners-string-cap-taken` is caught. No artifact is
+new: the night's test map parts and mutation shards upload and download
+what they did before the lanes (the test map's build, 23.5 MB, once up
+and once down by each of its 8 parts).

@@ -41,7 +41,7 @@ test("the runners' bound reads `if:` of inputs alone, and counts jobs no need or
   a: { runs-on: x, if: "\${{ inputs.go }}" }
   b: { runs-on: x, needs: a }
   c: { runs-on: x, needs: a, if: "always()" }
-  d: { runs-on: x, strategy: { max-parallel: "\${{ inputs.wide || 3 }}", matrix: { n: [1, 2, 3, 4] } } }
+  d: { runs-on: x, strategy: { max-parallel: "\${{ fromJSON(inputs.wide || '3') }}", matrix: { n: [1, 2, 3, 4] } } }
   e: { runs-on: x, needs: d, strategy: { matrix: { n: "\${{ fromJSON(needs.d.outputs.n) }}" } } }
 `,
   };
@@ -49,6 +49,11 @@ test("the runners' bound reads `if:` of inputs alone, and counts jobs no need or
   const held = (inputs: Record<string, unknown>) => Object.fromEntries(heldJobs("w.yml", inputs, "", read).jobs.map((job) => [job.id, job.at]));
   expect(held({ go: false, wide: "2" })).toEqual({ a: 0, b: 0, c: 1, d: 2, e: Number.POSITIVE_INFINITY });
   expect(held({ go: true })).toEqual({ a: 1, b: 1, c: 1, d: 3, e: Number.POSITIVE_INFINITY });
+  // An input is a string, and a matrix whose `max-parallel` is a string
+  // gets no job, with no error: nightly 44216138054 ran none of its
+  // suite's, rustc tests', test map's or mutations' matrices.
+  const bare: Record<string, string> = { "v.yml": "jobs:\n  d: { runs-on: x, strategy: { max-parallel: \"${{ inputs.wide || 3 }}\", matrix: { n: [1, 2] } } }\n" };
+  expect(() => heldJobs("v.yml", { wide: "2" }, "", (name) => bare[name]!)).toThrow("write `${{ fromJSON(inputs.<name> || '<n>') }}`");
   const job = (id: string, at: number) => ({ id, at });
   expect(mostAtOnce([job("a", 1), job("b", 1), job("c", 1)], [["a", "b"], ["b", "c"]])).toBe(1);
   expect(mostAtOnce([job("a", 2), job("b", 3)], [])).toBe(5);

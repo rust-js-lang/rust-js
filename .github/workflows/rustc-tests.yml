@@ -173,7 +173,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel || 6 }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '6') }}
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     steps:
@@ -250,7 +250,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel || 6 }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '6') }}
       matrix:
         part: [1, 2, 3, 4, 5, 6]
     steps:
@@ -388,7 +388,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel || 16 }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '16') }}
       matrix:
         shard: ${{ fromJSON(inputs.mutation_shards == '16' && '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]' || inputs.mutation_shards == '8' && '[1, 2, 3, 4, 5, 6, 7, 8]' || inputs.mutation_shards == '4' && '[1, 2, 3, 4]' || inputs.mutation_shards == '2' && '[1, 2]' || '[1]') }}
     steps:
@@ -601,7 +601,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel || 16 }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '16') }}
       matrix:
         shard: ${{ fromJSON(inputs.ablation_shards == '16' && '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]' || inputs.ablation_shards == '8' && '[1, 2, 3, 4, 5, 6, 7, 8]' || inputs.ablation_shards == '4' && '[1, 2, 3, 4]' || inputs.ablation_shards == '2' && '[1, 2]' || '[1]') }}
     steps:

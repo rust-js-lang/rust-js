@@ -401,7 +401,7 @@ jobs:
       actions: read
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel || 4 }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '4') }}
       matrix:
         shard: ${{ fromJSON((inputs.test_shards || needs.plan.outputs.test_shards) == '4' && '[1, 2, 3, 4]' || (inputs.test_shards || needs.plan.outputs.test_shards || '2') == '2' && '[1, 2]' || '[1]') }}
     steps:
@@ -542,7 +542,7 @@ jobs:
     timeout-minutes: 40
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel || 20 }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '20') }}
       matrix:
         commit: ${{ fromJSON(needs.attribute-plan.outputs.commits) }}
     steps:
