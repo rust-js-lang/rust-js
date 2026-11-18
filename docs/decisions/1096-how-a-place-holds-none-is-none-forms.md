@@ -168,3 +168,38 @@ programs); and #959 (P3), the refusal of `optional` of a nested field
 names a `#[rust_js::nullable]` field as what it needs, which it is.
 `wrong` and `refused` list them, keyed `<build>:<program>`, so they only
 shrink.
+
+## Amendment: a local's `None` is decided once (2026-11-19, #2112)
+
+Change C's second step (S1) of the second architecture campaign. A body's
+`Option` locals had two answers of their `None`, two analyses of one
+local, each read alone: `OptionWrites::null_nones` (`mir_null_nones`,
+ADRs 0275, 0861), which locals the body makes `null` where they're made,
+and `OptionWrites::nones` (`mir_nones`, ADR 0298), what each read of a
+local may trust, stamped on it as `Known::NoneUndefined` or
+`Known::NoneNull`, which makes its test `x !== undefined` or `x !==
+null`. They disagreed: over the corpus, 70 locals the body makes `null`
+were also said to hold only `undefined`, each read stamped
+`NoneUndefined`, whose test is true of the `null` stored. Nothing printed
+a wrong answer (the corpus ran as native, and no corpus or React port JS
+tests a variable made `: null` against `undefined`), because the first
+analysis's restrictions, that such a local is read only by a nullable
+place or by a test that reads `null` and `undefined` alike, kept the
+second's fact unread: a latent wrong answer, held off by another
+analysis's rules.
+
+Now one owner answers both, `mir/none_forms.rs`'s `NoneForms`, built once
+per body from the two analyses, which are its inputs alone: `OptionWrites`
+keeps only `none_forms`, so no consumer reads either half
+(`assign.rs`, `nulled.rs`, `operands.rs::none_read`, `places.rs` ask
+`made_null` and `read`). A local made `null` is trusted to hold `null`
+alone, `NoneNull`, or nothing, never `undefined` alone, by construction:
+`NoneForms::of` drops `NoneUndefined` of it. Case (ADR 0262): none; no
+output moves, every corpus and snapshot JS and React's port byte-identical.
+The unit test `lower::mir::none_forms::tests` holds the invariant; the
+mutations `made-null-read-as-undefined` and `made-null-unread` are caught
+by it. test/architecture-nones.test.ts reads a `matches!` of a fact as a
+read and leaves unit tests' fixtures out. Parameters' forms
+(`own_param_none_form`) and fields' (`NonePlace::Field`) stay where they
+are, the owner of def-keyed forms; Change C's later steps (#2112) fold
+the taint (`js_nones`) and the `Known`-fact halves into this owner.

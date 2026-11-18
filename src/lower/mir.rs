@@ -38,6 +38,7 @@ mod keyed_writes;
 mod local_facts;
 pub(in crate::lower) mod locals;
 mod nested_options;
+mod none_forms;
 mod noted;
 mod nulled;
 mod offsets;
@@ -321,16 +322,9 @@ fn unnamed(locals: &Locals, local: Local) -> bool {
 /// What a body's writes say of its `Option`s.
 #[derive(Default)]
 struct OptionWrites {
-    /// The `Option`s made only `Some(..)` or `None` and read only by
-    /// `#[rust_js::nullable]` fields, parameters and thread-locals: their
-    /// `None` is `null` where it's made, `c ? v : null` (ADRs 0275, 0861,
-    /// amended).
-    null_nones: IndexSet<Local>,
-    /// The `Option`s whose `None` is only `undefined`, or only `null`, as
-    /// each of their writes gives (`mir_nones`): each read of one says so,
-    /// `Known::NoneUndefined`, and its test is `x !== undefined` (ADR 0298,
-    /// amended).
-    nones: IndexMap<Local, js::Known>,
+    /// How each `Option` local holds its `None`, made `null` or read as
+    /// one kind, decided once (`none_forms`, #2112).
+    none_forms: none_forms::NoneForms,
     /// The locals only ever `Some(..)`, and shared references to one: never
     /// `None`, so `==` to one is `===` (`strictly_equal`).
     made_some: IndexSet<Local>,

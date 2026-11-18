@@ -157,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `None` only nullable fields read: `null` (ADR 0275).
         if place.projection.is_empty()
-            && state.facts.options().null_nones.contains(&place.local)
+            && state.facts.options().none_forms.made_null(place.local)
             && let Rvalue::Aggregate(kind, _) = rvalue
             && let AggregateKind::Adt(_, variant, ..) = **kind
             && variant.as_u32() == 0
@@ -482,7 +482,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let read_nullable = place.projection.is_empty()
             && place.local != mir::RETURN_PLACE
-            && state.facts.options().null_nones.contains(&place.local);
+            && state.facts.options().none_forms.made_null(place.local);
         use crate::lower::representation::NoneForm;
         // A nullable thread-local's read, or the function's result.
         let form = match read_nullable {

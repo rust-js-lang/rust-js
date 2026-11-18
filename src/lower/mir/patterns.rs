@@ -284,8 +284,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> OptionWrites {
         let (nested, held_results) = self.mir_nested(body, &locals.writes, result_held);
         OptionWrites {
-            null_nones: self.mir_null_nones(body, promoted, locals),
-            nones: self.mir_nones(body, locals),
+            none_forms: super::none_forms::NoneForms::of(
+                self.mir_null_nones(body, promoted, locals),
+                self.mir_nones(body, locals),
+            ),
             made_some: self.mir_made_some(body, promoted, locals),
             nested,
             registered: self.mir_registered(body),

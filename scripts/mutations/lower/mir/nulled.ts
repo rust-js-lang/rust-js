@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field of an `Option` made `null` where it's `None` is `?? null` again",
     file: "src/lower/mir/nulled.rs",
-    find: "        if state.facts.options().null_nones.contains(&place.local) {\n",
+    find: "        if state.facts.options().none_forms.made_null(place.local) {\n",
     replace: "        if false {\n",
     tests: [
       "test/lowering-options.test.ts",

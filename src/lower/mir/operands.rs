@@ -969,7 +969,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(super) fn none_read<'tcx>(state: &State<'_, 'tcx>, operand: &Operand<'tcx>, read: Value<'tcx>) -> Value<'tcx> {
     let none = (operand.place())
         .filter(|place| matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]))
-        .and_then(|place| state.facts.options().nones.get(&place.local).copied());
+        .and_then(|place| state.facts.options().none_forms.read(place.local));
     let said = |e: Expr, none| Expr {
         facts: e.facts.with(none),
         ..e

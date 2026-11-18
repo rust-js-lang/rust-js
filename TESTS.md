@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-19 (#2112, Change C's second step): a unit test, `lower::mir::none_forms::tests`, holds that a local made `null` is never read as `undefined` alone.
+
 Changed on 2026-11-19 (#2135): test/builtins-runs-nothing.test.ts gains three tests, of a generic read under its own body's guard.
 
 Changed on 2026-11-19 (#2115): test/builtins-runs-nothing.test.ts gains three tests, of a tuple struct its constructor builds.

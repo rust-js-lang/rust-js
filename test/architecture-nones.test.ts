@@ -30,7 +30,8 @@ test("whether a `None` is `null` is none_form's alone", () => {
   const owner = "src/lower/representation/nones.rs";
   const lowering = files("src/lower").filter((file) =>
     file.endsWith(".rs") && file !== owner && file !== "src/lower/bindings.rs" && !file.startsWith("src/lower/bindings/"));
-  const code = (file: string) => read(file).split("\n").filter((line) => !/^\s*\/\//.test(line));
+  // Its code, not its comments, nor its unit tests, whose fixtures make facts.
+  const code = (file: string) => read(file).split("#[cfg(test)]")[0].split("\n").filter((line) => !/^\s*\/\//.test(line));
   const predicates = "is_nullable|null_where_made|declared_null_or_value|nullable_local|nullable_local_cell|nullable_local_option|null_result|nullable_result|optional_result|nullable_params|takes_nullable|takes_nullable_entries|holds_none_as_null|nullable_init|nulled_param";
   const asking = lowering.flatMap((file) =>
     code(file)
@@ -38,8 +39,9 @@ test("whether a `None` is `null` is none_form's alone", () => {
       .map((line) => `${file}: ${line.trim()}`));
   expect(asking).toEqual([]);
   // What's made of them: a reader's match of a storage or a test of a
-  // fact reads it; anything else makes it.
-  const reads = [/\.has\((?:js::)?Known::/, /== Some\((?:js::)?Known::/, /matches!\(.*Storage::NullForNone/, /Handle\([^)]*Storage::NullForNone\)\s*=>/];
+  // fact, `matches!(none, Known::NoneNull)` too, reads it; anything else
+  // makes it.
+  const reads = [/\.has\((?:js::)?Known::/, /== Some\((?:js::)?Known::/, /matches!\(\w+, (?:js::)?Known::None(?:Null|Undefined)\)/, /matches!\(.*Storage::NullForNone/, /Handle\([^)]*Storage::NullForNone\)\s*=>/];
   const making = lowering.flatMap((file) =>
     code(file)
       .filter((line) => /\b(?:Storage::NullForNone|Known::NoneNull|Known::NoneUndefined)\b/.test(line) && !reads.some((read) => read.test(line)))

@@ -52,7 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // its own or through a reference to it: its read says which (ADR
         // 0298, amended).
         if matches!(place.projection.as_slice(), [] | [PlaceElem::Deref])
-            && let Some(&none) = state.facts.options().nones.get(&place.local)
+            && let Some(none) = state.facts.options().none_forms.read(place.local)
         {
             e.facts = e.facts.with(none);
         }

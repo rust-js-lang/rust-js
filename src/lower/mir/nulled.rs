@@ -369,7 +369,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !place.projection.is_empty() {
             return (Given::Unknown, None);
         }
-        if state.facts.options().null_nones.contains(&place.local) {
+        if state.facts.options().none_forms.made_null(place.local) {
             return (Given::Nulled, None);
         }
         // Any other parameter holds what its caller gave as well as what
