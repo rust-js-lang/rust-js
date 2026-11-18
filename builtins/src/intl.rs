@@ -236,6 +236,9 @@ pub struct ResolvedCollatorOptions {
 #[cfg_attr(rust_js, rust_js::types = "Intl.Collator")]
 pub struct Collator(PhantomData<JsObject>);
 
+unsafe impl super::Defined for Collator {}
+unsafe impl super::WeakKey for Collator {}
+
 impl super::Classed for Collator {
     type Constructor = super::AnyConstructor;
 }
@@ -523,6 +526,9 @@ pub struct NumberRangeFormatPart {
 #[cfg_attr(rust_js, rust_js::types = "Intl.NumberFormat")]
 pub struct NumberFormat(PhantomData<JsObject>);
 
+unsafe impl super::Defined for NumberFormat {}
+unsafe impl super::WeakKey for NumberFormat {}
+
 impl super::Classed for NumberFormat {
     type Constructor = super::AnyConstructor;
 }
@@ -754,6 +760,9 @@ pub struct DateTimeRangeFormatPart {
 #[cfg_attr(rust_js, rust_js::types = "Intl.DateTimeFormat")]
 pub struct DateTimeFormat(PhantomData<JsObject>);
 
+unsafe impl super::Defined for DateTimeFormat {}
+unsafe impl super::WeakKey for DateTimeFormat {}
+
 impl super::Classed for DateTimeFormat {
     type Constructor = super::AnyConstructor;
 }
@@ -865,6 +874,9 @@ pub struct ResolvedPluralRulesOptions {
 #[cfg_attr(rust_js, rust_js::types = "Intl.PluralRules")]
 pub struct PluralRules(PhantomData<JsObject>);
 
+unsafe impl super::Defined for PluralRules {}
+unsafe impl super::WeakKey for PluralRules {}
+
 impl super::Classed for PluralRules {
     type Constructor = super::AnyConstructor;
 }
@@ -963,6 +975,9 @@ pub struct RelativeTimeFormatPart {
 #[cfg_attr(rust_js, rust_js::types = "Intl.RelativeTimeFormat")]
 pub struct RelativeTimeFormat(PhantomData<JsObject>);
 
+unsafe impl super::Defined for RelativeTimeFormat {}
+unsafe impl super::WeakKey for RelativeTimeFormat {}
+
 impl super::Classed for RelativeTimeFormat {
     type Constructor = super::AnyConstructor;
 }
@@ -1054,6 +1069,9 @@ pub struct ListFormatPart {
 #[cfg_attr(rust_js, rust_js::name = "Intl.ListFormat")]
 #[cfg_attr(rust_js, rust_js::types = "Intl.ListFormat")]
 pub struct ListFormat(PhantomData<JsObject>);
+
+unsafe impl super::Defined for ListFormat {}
+unsafe impl super::WeakKey for ListFormat {}
 
 impl super::Classed for ListFormat {
     type Constructor = super::AnyConstructor;
@@ -1157,6 +1175,9 @@ pub struct ResolvedDisplayNamesOptions {
 #[cfg_attr(rust_js, rust_js::types = "Intl.DisplayNames")]
 pub struct DisplayNames(PhantomData<JsObject>);
 
+unsafe impl super::Defined for DisplayNames {}
+unsafe impl super::WeakKey for DisplayNames {}
+
 impl super::Classed for DisplayNames {
     type Constructor = super::AnyConstructor;
 }
@@ -1249,6 +1270,9 @@ pub struct WeekInfo {
 #[cfg_attr(rust_js, rust_js::name = "Intl.Locale")]
 #[cfg_attr(rust_js, rust_js::types = "Intl.Locale")]
 pub struct Locale(PhantomData<JsObject>);
+
+unsafe impl super::Defined for Locale {}
+unsafe impl super::WeakKey for Locale {}
 
 impl super::Classed for Locale {
     type Constructor = super::AnyConstructor;
@@ -1458,6 +1482,9 @@ pub mod segments {
 #[cfg_attr(rust_js, rust_js::name = "Intl.Segmenter")]
 #[cfg_attr(rust_js, rust_js::types = "Intl.Segmenter")]
 pub struct Segmenter(PhantomData<JsObject>);
+
+unsafe impl super::Defined for Segmenter {}
+unsafe impl super::WeakKey for Segmenter {}
 
 impl super::Classed for Segmenter {
     type Constructor = super::AnyConstructor;

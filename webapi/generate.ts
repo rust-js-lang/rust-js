@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 
 import idl from "@webref/idl";
 import { typescript, typescriptEventMaps, typescriptInterfaces, typescriptNamespaces, typescriptNames } from "./coverage";
+import { objectMarkers } from "../scripts/object-markers";
 import { identifier, needsJsName, plain, snake, snakeWords } from "../scripts/rust-names";
 
 /** A record of each spec's, by its name, in order: what @webref lists in
@@ -2713,8 +2714,7 @@ for (const name of namespaces.keys()) {
     line(`pub struct ${value}(PhantomData<JsObject>);`);
     // An object, never nullish, as each interface's is (rd577).
     line();
-    line(`unsafe impl Defined for ${value} {}`);
-    line(`unsafe impl js::WeakKey for ${value} {}`);
+    for (const marker of objectMarkers(value, "js::")) line(marker);
   }
   for (const t of TYPES_BY_HAND[name] ?? []) {
     line();
@@ -3295,8 +3295,7 @@ line();
 for (const name of INTERFACES) {
   const serializable = read.some((d) => d.type === "interface" && d.name === name && (d.extAttrs ?? []).some((a) => a.name === "Serializable"));
   if (serializable) line(`unsafe impl StructuredClone for ${typeName(name)} {}`);
-  line(`unsafe impl Defined for ${typeName(name)} {}`);
-  line(`unsafe impl js::WeakKey for ${typeName(name)} {}`);
+  for (const marker of objectMarkers(typeName(name), "js::")) line(marker);
 }
 
 // Each interface the page has as a global, `js::class::<T>()`'s class,

@@ -3,6 +3,7 @@
 // what's generated from TypeScript's own library, `builtins/library.ts`,
 // both write by (#1904). One file is written per run, its lines in `out`.
 
+import { objectMarkers } from "../scripts/object-markers";
 import { needsJsName, snake } from "../scripts/rust-names";
 
 export const page = (path: string) => `https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/${path}`;
@@ -91,8 +92,10 @@ export const method = (doc: string, js: string, signature: string, indent = "   
 };
 
 /** `name`'s class, which `js::class::<T>()` names, held: made by its
- * module's constructor (ADR 1049). */
+ * module's constructor (ADR 1049); its instances objects (`objectMarkers`). */
 export const classed = (name: string) => {
+  for (const marker of objectMarkers(name, "super::")) line(marker);
+  line();
   line(`impl super::Classed for ${name} {`);
   line("    type Constructor = super::AnyConstructor;");
   line("}");

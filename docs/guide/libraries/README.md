@@ -215,6 +215,9 @@ What it has:
   a host may lack one, `js::is_function((locale, Locale::get_week_info))` is
   `typeof locale.getWeekInfo === "function"`, asked before it's called
   ([ADR 1172](../../decisions/1172-the-js-crates-builtins-written-from-typescripts-library.md)).
+  Each `Intl` object, a locale or a formatter, is an object as every
+  class's instance is: a value of any shape, `js::unknown(locale)`, an
+  `Option` of one the object itself, and a `js::WeakMap`'s key.
 - **The rest of the ES library:** `Date`, `Intl`'s formatters, typed arrays
   and `ArrayBuffer`, `Atomics`, `Symbol`, `WeakMap`, `WeakRef`,
   `FinalizationRegistry`, `Proxy`, `Reflect`, `encode_uri_component` and

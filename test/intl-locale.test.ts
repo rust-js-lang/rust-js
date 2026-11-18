@@ -131,6 +131,45 @@ pub fn first_day(tag: &str) -> Option<f64> {
   }
 });
 
+// An `Intl` object is an object, as each class's instances are, never
+// `undefined` nor `null`, and what a `WeakMap` holds (`objectMarkers`, ADR
+// 1172, amended): a value of any shape, `js::unknown(locale)`, cast to what
+// an older host's locale has, the vercel-ui SDK's `tag as Intl.Locale & {
+// weekInfo?: .. }`, and a `WeakMap`'s key, an `Option` of one the locale
+// itself.
+test("an Intl object is an object: a value of any shape, a weak key", async () => {
+  const { lib, js } = await compiled(
+    "intl-locale-object",
+    `use js::intl::{locale, Locale, WeekInfo};
+struct Legacy {
+    week_info: Option<WeekInfo>,
+}
+pub fn legacy_first_day(tag: &str) -> Option<f64> {
+    let tag = locale::new(tag, None).ok()?;
+    let legacy: &Legacy = unsafe { js::cast(Some(js::unknown(tag))) };
+    legacy.week_info.as_ref().map(|info| info.first_day)
+}
+pub fn counted(tag: &str) -> (u32, bool) {
+    let held: &Locale = locale::new(tag, None).unwrap();
+    let other: Option<&Locale> = locale::new(tag, None).ok();
+    let counts: &js::WeakMap<Locale, u32> = js::weak_map::new();
+    counts.set(held, 2);
+    (counts.get(held).unwrap_or(0), other.is_some_and(|other| counts.has(other)))
+}
+`,
+  );
+  expect(js).toContain("  return tag$1.weekInfo?.firstDay;\n");
+  expect(js).toContain("  return [counts.get(held) ?? 0, other != null && counts.has(other)];\n");
+  expect(lib.legacyFirstDay("en-US")).toBeUndefined();
+  Object.defineProperty(Intl.Locale.prototype, "weekInfo", { configurable: true, get: () => ({ firstDay: 6, weekend: [5, 6] }) });
+  try {
+    expect([lib.legacyFirstDay("ar-EG"), lib.legacyFirstDay("not a tag!")]).toEqual([6, undefined]);
+  } finally {
+    delete (Intl.Locale.prototype as any).weekInfo;
+  }
+  expect(lib.counted("de-DE")).toEqual([2, false]);
+});
+
 // A strict TypeScript caller of what rust-js declares of them: the
 // library's own types, `Intl.Locale` and `Intl.WeekInfo`, given and read.
 test("a strict TypeScript caller of the generated locale", async () => {

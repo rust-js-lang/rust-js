@@ -1895,7 +1895,7 @@ macro_rules! cloned {
 }
 
 cloned!(bool, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, f32, f64, char, str, String);
-cloned!(Unknown, ArrayBuffer, Json<'_>);
+cloned!(Unknown, Json<'_>);
 // `()`, `undefined`, which a clone copies as it is, `postMessage(undefined)`:
 // never `Defined`, so `Some(())` isn't one, as `None` is it too (ADR 0225).
 unsafe impl StructuredClone for () {}
@@ -3495,23 +3495,14 @@ unsafe impl WeakKey for Error {}
 unsafe impl WeakKey for AggregateError {}
 unsafe impl WeakKey for Date {}
 unsafe impl WeakKey for Symbol {}
-unsafe impl WeakKey for ArrayBuffer {}
-unsafe impl WeakKey for SharedArrayBuffer {}
-unsafe impl<B> WeakKey for ArrayBufferView<B> {}
-unsafe impl<B> WeakKey for DataView<B> {}
-unsafe impl<B> WeakKey for Int8Array<B> {}
-unsafe impl<B> WeakKey for Uint8Array<B> {}
-unsafe impl<B> WeakKey for Uint8ClampedArray<B> {}
-unsafe impl<B> WeakKey for Int16Array<B> {}
-unsafe impl<B> WeakKey for Uint16Array<B> {}
-unsafe impl<B> WeakKey for Int32Array<B> {}
-unsafe impl<B> WeakKey for Uint32Array<B> {}
-unsafe impl<B> WeakKey for Float32Array<B> {}
-unsafe impl<B> WeakKey for Float64Array<B> {}
-unsafe impl<B> WeakKey for BigInt64Array<B> {}
-unsafe impl<B> WeakKey for BigUint64Array<B> {}
 unsafe impl<T> WeakKey for Dict<T> {}
 unsafe impl<T> WeakKey for Promise<T> {}
+unsafe impl<K: ?Sized, V> WeakKey for Map<K, V> {}
+unsafe impl<T: ?Sized> WeakKey for Set<T> {}
+unsafe impl<K: WeakKey + ?Sized, V> WeakKey for WeakMap<K, V> {}
+unsafe impl<T: WeakKey + ?Sized> WeakKey for WeakSet<T> {}
+unsafe impl<T: WeakKey + ?Sized + 'static> WeakKey for WeakRef<T> {}
+unsafe impl<T> WeakKey for FinalizationRegistry<T> {}
 
 // The crate's objects, never `undefined` nor `null`: each a value of any
 // shape, `js::unknown(js::set::new(Some(&[wakeable])))`, `new

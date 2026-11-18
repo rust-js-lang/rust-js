@@ -1,5 +1,10 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#1904's markers): test/object-markers.test.ts, two
+tests, holds every binding crate's `Classed` type to what an object's
+binding is, `Defined` and `WeakKey`; test/intl-locale.test.ts's sixth, an
+`Intl` object a value of any shape and a weak key.
+
 Changed on 2026-11-18 (#1904): test/intl-locale.test.ts, five tests, holds
 `Intl.Locale` as it's written from TypeScript's library: Rust callers of
 each member on Bun, a strict TypeScript caller, and the generator's refusal

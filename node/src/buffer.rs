@@ -19,6 +19,7 @@ pub struct Buffer(PhantomData<JsObject>);
 
 // An object, never `undefined` nor `null`: a value of any shape.
 unsafe impl js::Defined for Buffer {}
+unsafe impl js::WeakKey for Buffer {}
 
 // A global class, `js::class::<Buffer>()`'s, held (ADR 1049).
 impl js::Classed for Buffer {

@@ -94,3 +94,32 @@ caught by what's committed being what the generator writes or by a row.
 
 This is case N of ADR 0262: the bindings' authority changes, not what JS
 does.
+
+## Amendment (2026-11-18): each class is an object's binding, by one owner
+
+The vercel-ui SDK's port reads an older host's `weekInfo` as upstream does,
+`tag as Intl.Locale & { weekInfo?: .. }`, `unsafe { js::cast(Some(
+js::unknown(tag))) }`, and rustc refused it: no `Intl` class this
+generator wrote was `Defined`, which `js::unknown` takes, nor `WeakKey`, so
+no `WeakMap` could hold a locale or a formatter. webapi's generator wrote
+both of each interface by a loop of its own, the typed arrays' template
+`Defined` alone, and `lib.rs` a hand list of `WeakKey`s; `Map`, `Set`, the
+weak types and node's `Buffer` had no `WeakKey`. Nothing said what a class
+binding is, so a new generator could miss it, as this one did.
+
+A class's instances are objects, so a binding of one is what every
+object's is: `scripts/object-markers.ts`'s `OBJECT_MARKERS`, `Defined` and
+`WeakKey`. webapi's generator and the builtins' (`render.ts`'s `classed`,
+the typed arrays' template, which now writes the buffers' and the views'
+`WeakKey` the hand list did and `ArrayBuffer`'s `StructuredClone` beside
+them) write them by `objectMarkers`; test/object-markers.test.ts holds each
+crate's `Classed` type to them, those written by hand too, and the hand
+ones missing were added. webapi's lines are now `js::Defined`, the one
+form.
+
+`Defined` changes what an `Option` of an `Intl` object is: the object
+itself or `undefined`, no box, as every object's is (ADR 0051); an object
+is never `undefined` nor `null`, so nothing reads otherwise (ADR 0262's
+first case). Row: test/intl-locale.test.ts's "an Intl object is an object",
+`js::unknown(locale)` cast and a `WeakMap<Locale, u32>`, run on Bun.
+Mutations `object-markers-weak-key-forgotten` and `classed-not-an-object`.
