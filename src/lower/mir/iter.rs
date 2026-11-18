@@ -244,16 +244,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of the crate's own, its `$iterator`'s, which has its impl's
         // `size_hint` where it writes one, else std's `(0, None)`.
         let known = match mapped {
-            true => {
-                // Or of a type parameter's, its JS iterator's, `$given`'s, which
-                // has its dictionary's `size_hint` (#385), or of std's adapter
-                // of one whose hint is std's (`adapted_hint_known`). Or where a
-                // `map` made of another adapter, an `enumerate()`'s, passes on
-                // its source's, as that adapter does (#733).
-                crate::lower::iterators::is_stepped_items(&it)
-                    || source_ty.is_none() && self.adapted_hint_known(iter_ty)
-                    || source_ty.is_some_and(|ty| self.adapted_hint_known(ty))
-            }
+            // Or of a type parameter's, its JS iterator's, `$given`'s, which
+            // has its dictionary's `size_hint` (#385). A map of std's adapter
+            // of one whose hint is std's is its `$Steps`, the `false` arm's,
+            // or a JS adapter `in_place_adapter_hint` answers (ADR 0093's
+            // unreached sites, 2026-11-18).
+            true => crate::lower::iterators::is_stepped_items(&it),
             // Or of std's adapters of those, each a `$Steps` with std's
             // hint (#733).
             false => own || self.hint_known_as_made(iter_ty),

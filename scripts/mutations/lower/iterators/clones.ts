@@ -17,15 +17,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "in-place-part-copied-held",
-    breaks:
-      "a `copied()` of a `Map` made in place, part of a `filter` cloned apart, clones the `Map` as std's struct",
-    file: "src/lower/iterators/clones.rs",
-    find: "            return self.clone_in_place(place, source, span, out);\n",
-    replace: "            return self.clone_value(place, source, span, out);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(lazy_iterator_clone).rs$"],
-  },
-  {
     name: "copied-own-clone-spread",
     breaks:
       "a clone of a `copied()` of the crate's own iterator clones the JS iterator made of it as the iterator's struct, `{ ...copied }`, whose items `Array.from(again)` reads none of, an empty array (#384)",

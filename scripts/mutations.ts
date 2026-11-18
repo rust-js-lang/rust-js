@@ -1589,9 +1589,11 @@ export function removedOfCrate(before: string, after: string, source: (file: str
 }
 
 /** Of a commit's message, the mutations it says are retired, each with
- * `--retire`'s evidence. */
+ * its evidence: `--retire`'s, `<name>: with it, at <commit>, ..`, or a run
+ * that executed none of its site, `<name>: unreached, at <commit>, by ..`,
+ * a coverage build's or a marker build's (ADR 0093, amended). */
 export function retiredBy(message: string): Set<string> {
-  return new Set([...message.matchAll(new RegExp(`^${retiredTrailer}: ([^:\\s]+): with it, at [0-9a-f]+, `, "gm"))].map((m) => m[1]!));
+  return new Set([...message.matchAll(new RegExp(`^${retiredTrailer}: ([^:\\s]+): (?:with it|unreached), at [0-9a-f]+, `, "gm"))].map((m) => m[1]!));
 }
 
 

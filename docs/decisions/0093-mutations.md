@@ -1139,3 +1139,53 @@ before. Mutation `runners-string-cap-taken` is caught. No artifact is
 new: the night's test map parts and mutation shards upload and download
 what they did before the lanes (the test map's build, 23.5 MB, once up
 and once down by each of its 8 parts).
+
+## Amendment: a site no run executes goes with its code, by a coverage or marker build (2026-11-18)
+
+`--retire` builds and runs one mutant at a time, 13–28 minutes each. The
+survivors of #1979 and the nightly, 206, were first sorted by one run of
+a compiler built with `-C instrument-coverage` over what `--retire` runs:
+check:fast's suite with it as the tests' compiler, React's port
+regenerated at its pin, the crate corpus and the compiler's unit tests.
+A survivor whose site no region of that run executed is caught by nothing
+because nothing reaches it, and its code is dead as the suite stands.
+
+So a site no run executes is evidence too, of the code's removal, not
+the mutation's alone: its code goes with its mutation, as dead code does,
+and the commit says so in one fixed form, which `retiredBy` reads as it
+reads `--retire`'s:
+
+`Retired-mutation: <name>: unreached, at <commit>, by <the build and its runs>`
+
+Two limits, each met in the first sweep:
+
+- **A site with no region of its own says nothing.** Coverage is counted
+  by region, and an alternative of a match arm, `"TakeWhile"` among an
+  arm's eighteen, or a type of a `matches!`, shares its arm's counter: a
+  line of it has no count, and "no instrumented line" isn't unreached.
+  Such a site is measured by a marker build instead: the compiler with
+  each site made a block that appends its name to a file before it
+  answers, over the same runs. The three of the first sweep,
+  `take-while-folds-unseen`, `scan-folds-unseen` and
+  `filter-map-not-back-stepped`, ran hundreds of times
+  (`held_filter_map_from_its_back.rs` and `filter_ends.rs` reach the last):
+  survivors of reached code, not dead.
+- **check:fast with `--compiler` runs the suite whole, but not every
+  net.** The corpus with std's iterator structs (`forms`) follows the
+  change's selection, which a marker build, itself a change, narrowed to
+  1,009 of 2,772 cases; and the std, async, numbers and format nets are
+  CI's. The run that says a site is unreached runs each of them whole
+  (`bun scripts/iteratorSlice.ts run <net> <parts>`) beside check:fast.
+
+The first sweep removed three sites, each silent in every run above, at
+a1b0d7aac, and in rustc's `iterators/`, `for-loop-while/`,
+`array-slice-vec/` and `closures/` (179 that pass): `mapped-adapter-hint-refused` and `mapped-hint-refused`
+(src/lower/mir/iter.rs, a map's `size_hint()` of std's adapter of a
+source whose hint is std's: each such map is now a `$Steps`, the unmapped
+arm's, or a JS adapter `in_place_adapter_hint` answers, so an unknown one
+is refused, as any other), and `in-place-part-copied-held`
+(src/lower/iterators/clones.rs, a `copied()` cloned in place: a
+`cycle()` of one is refused before it, "`cycle()` of a
+`Copied<Map<..>>`", and a part cloned apart is std's compiled struct).
+`own-bindings-of-its-name-counted`, the fourth of the coverage run, was
+already retired. Mutation `unreached-trailer-refused` is caught.

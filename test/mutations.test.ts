@@ -313,6 +313,9 @@ test("a removed mutation is told from one renamed or moved, and its trailer is -
   expect(removedOfCrate(quoted, "", () => '    it("x"),\n')).toEqual(["single"]);
   expect([...retiredBy(`fix: x\n\n${retiredTrailer}: gone: with it, at 0123abcde, the compiler's 900 unit tests passed, and check:fast's suite\n`)]).toEqual(["gone"]);
   expect([...retiredBy(`fix: x\n\n${retiredTrailer}: gone\n`)]).toEqual([]);
+  // Or a run that executed none of its site, a coverage or marker build's.
+  expect([...retiredBy(`fix: x\n\n${retiredTrailer}: dead: unreached, at 0123abcde, by a marker build: check:fast --all\n`)]).toEqual(["dead"]);
+  expect([...retiredBy(`fix: x\n\n${retiredTrailer}: dead: unreached\n`)]).toEqual([]);
   // A test that fails as the compiler is too, in a mutant's environment,
   // says nothing: it's no row of the mutation's.
   const failed = [{ file: "test/corpus.test.ts", test: "untagged_enums.rs" }, { file: "test/compiles.test.ts", test: "a compile is kept" }];

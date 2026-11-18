@@ -609,14 +609,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "mapped-adapter-hint-refused",
-    breaks: "`size_hint()` of an `enumerate()` of the crate's iterator, made a `map`, is refused (#733)",
-    file: "src/lower/mir/iter.rs",
-    find: "                    || source_ty.is_none() && self.adapted_hint_known(iter_ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
-  },
-  {
     name: "chars-hint-counted",
     breaks: "`size_hint()` of a map of a string's `chars()` is how many it has, `(5, Some(5))`, where Rust's is of its bytes, `(2, Some(6))` (#733)",
     file: "src/lower/mir/iter.rs",
@@ -640,14 +632,6 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(generic_map_folded_and_rfolded|map_ends_size_hint).rs$"],
     snapshots: true,
-  },
-  {
-    name: "mapped-hint-refused",
-    breaks: "`size_hint()` of a map of the crate's iterator, or of what's given as it is, `I: Clone`'s, is refused (#385, #733)",
-    file: "src/lower/mir/iter.rs",
-    find: "                    || source_ty.is_some_and(|ty| self.adapted_hint_known(ty))\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$|^adapter_size_hints.rs$"],
   },
   {
     name: "keyed-extreme-dropped-after",

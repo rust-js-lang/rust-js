@@ -54,8 +54,16 @@ export const mutations: Mutation[] = [
     name: "retired-trailer-without-evidence",
     breaks: "a bare `Retired-mutation: <name>` trailer, without `--retire`'s evidence, retires a mutation",
     file: "scripts/mutations.ts",
-    find: "  return new Set([...message.matchAll(new RegExp(`^${retiredTrailer}: ([^:\\\\s]+): with it, at [0-9a-f]+, `, \"gm\"))].map((m) => m[1]!));\n",
+    find: "  return new Set([...message.matchAll(new RegExp(`^${retiredTrailer}: ([^:\\\\s]+): (?:with it|unreached), at [0-9a-f]+, `, \"gm\"))].map((m) => m[1]!));\n",
     replace: "  return new Set([...message.matchAll(new RegExp(`^${retiredTrailer}: ([^:\\\\s]+)`, \"gm\"))].map((m) => m[1]!));\n",
+    tests: ["test/mutations.test.ts", "-t", "a removed mutation is told from one renamed or moved"],
+  },
+  {
+    name: "unreached-trailer-refused",
+    breaks: "a `Retired-mutation: <name>: unreached, at <commit>, by ..` trailer, a run that executed none of its site, isn't read as evidence",
+    file: "scripts/mutations.ts",
+    find: "  return new Set([...message.matchAll(new RegExp(`^${retiredTrailer}: ([^:\\\\s]+): (?:with it|unreached), at [0-9a-f]+, `, \"gm\"))].map((m) => m[1]!));\n",
+    replace: "  return new Set([...message.matchAll(new RegExp(`^${retiredTrailer}: ([^:\\\\s]+): with it, at [0-9a-f]+, `, \"gm\"))].map((m) => m[1]!));\n",
     tests: ["test/mutations.test.ts", "-t", "a removed mutation is told from one renamed or moved"],
   },
   {

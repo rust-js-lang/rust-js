@@ -14,11 +14,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        if let Some(source) = crate::lower::recognition::copied_source(self.tcx, ty)
-            && self.copy_is_its_source(source)
-        {
-            return self.clone_in_place(place, source, span, out);
-        }
         match self.iterator_cloned_apart(ty) {
             true => Ok(Expr::call_helper("$clone", vec![place])),
             false => self.clone_value(place, ty, span, out),
