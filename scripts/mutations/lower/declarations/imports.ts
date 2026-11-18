@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations/imports.rs",
     find: "    for (from, names, default) in of_modules(packages) {\n        declarations.extend(type_imports(json!({ \"specifier\": from }), names, default));\n",
     replace: "    for (from, names, default) in of_modules(packages) {\n        declarations.extend(type_imports(json!({ \"from\": from }), names, default));\n",
-    tests: ["test/declarations.test.ts", "-t", "a relative binding type"],
+    tests: ["test/declarations-relative-imports.test.ts", "-t", "a relative binding type"],
   },
   {
     name: "type-reexport-undocumented",
