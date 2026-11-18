@@ -462,7 +462,14 @@ What keeps them there:
 - **rust-js is built with one `RUSTC_BOOTSTRAP`**, `.cargo/config.toml`'s,
   by the tests as by a shell. `.env.test` gives the tests' programs `1`,
   and a build with it rebuilt every dependency, 22 s, and the next one
-  without it again.
+  without it again. test/harness.test.ts holds the tests' build
+  environment (`compilerBuild`) to a shell's in each variable cargo tracks.
+- **A test's own `bun test` runs through `bunTest`** (test/support.ts),
+  which gives the child none of its parent's run modes (`runModes`:
+  `BLESS`, `RUST_JS_SNAPSHOTS`, `RUST_JS_CASES`, each part's setting): a
+  check's "Bless what differs" step once blessed a fake compiler's JS in
+  harness.test.ts's corpus child (#2066). test/part-settings.test.ts
+  refuses any other spawn of `bun test` in test/.
 - **`@rust-js/std` is generated**: `bun run std` after a change to a
   helper or to what std's bodies lower to, then a rebuild, which
   builds its manifest in; `test/std-package.test.ts` holds it (ADR 0561).

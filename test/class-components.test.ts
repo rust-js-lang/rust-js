@@ -8,7 +8,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
@@ -35,9 +35,9 @@ function refused(name: string, rust: string): string {
 /** `driver`, a bun test of the module in `dir`, run with a DOM: how many of its tests passed, or what it printed. */
 function rendered(dir: string, driver: string) {
   writeFileSync(join(dir, "driver.test.jsx"), driver);
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(dir, "driver.test.jsx")], { cwd: root, stderr: "pipe" });
-  const output = p.stdout.toString() + p.stderr.toString();
-  return { code: p.exitCode, passed: output.match(/(\d+) pass/)?.[1], output };
+  const p = bunTest(["--preload", "./test/happydom.js", join(dir, "driver.test.jsx")]);
+  const output = p.stdout + p.stderr;
+  return { code: p.code, passed: output.match(/(\d+) pass/)?.[1], output };
 }
 
 // Upstream's Surface and Text, as a class component's lifecycle has them:

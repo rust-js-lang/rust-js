@@ -9,7 +9,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, wr
 import { join } from "node:path";
 
 import { ratchet, runTest, type Shard } from "../scripts/rustc-suite";
-import { buildCompiler, compiler, fixture, root, target, unlessUnchanged } from "./support";
+import { buildCompiler, bunTest, compiler, compilerBuild, fixture, root, target, unlessUnchanged } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler);
@@ -23,9 +23,9 @@ function fake(name: string, script: string): string {
 }
 
 /** `bun test` of `files`, as another process, with `env`. */
-function bunTest(args: string[], env: Record<string, string>) {
-  const p = Bun.spawnSync([process.execPath, "test", ...args], { cwd: root, env: { ...process.env, ...env }, stdout: "pipe", stderr: "pipe" });
-  return { code: p.exitCode, output: p.stdout.toString() + p.stderr.toString() };
+function tested(args: string[], env: Record<string, string>) {
+  const p = bunTest(args, { env });
+  return { code: p.code, output: p.stdout + p.stderr };
 }
 
 test("a compiler that crashes after the rejection a case expects fails it", () => {
@@ -33,7 +33,7 @@ test("a compiler that crashes after the rejection a case expects fails it", () =
     "crash",
     `echo "error: rust-js does not support raw addresses of statics yet" >&2\necho "thread 'rustc' panicked at src/lower.rs:1:1:" >&2\nexit 101`,
   );
-  const run = bunTest(["test/corpus.test.ts", "-t", "static_raw_address"], { RUST_JS_COMPILER: crashing });
+  const run = tested(["test/corpus.test.ts", "-t", "static_raw_address"], { RUST_JS_COMPILER: crashing });
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("rust-js crashed: thread 'rustc' panicked at src/lower.rs:1:1:");
   expect(run.output).toContain("`compile-fail` expects a rejection");
@@ -41,7 +41,7 @@ test("a compiler that crashes after the rejection a case expects fails it", () =
 
 test("a compiler that never ends is stopped, and fails the case", () => {
   const hanging = fake("hang", "sleep 60");
-  const run = bunTest(["test/corpus.test.ts", "-t", "index_out_of_bounds"], { RUST_JS_COMPILER: hanging, RUST_JS_COMPILE_TIMEOUT: "1000" });
+  const run = tested(["test/corpus.test.ts", "-t", "index_out_of_bounds"], { RUST_JS_COMPILER: hanging, RUST_JS_COMPILE_TIMEOUT: "1000" });
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("rust-js crashed: didn't finish in 1s");
 }, underLoad(120_000));
@@ -52,7 +52,7 @@ const onlyUnbundled = () =>
   fake("unbundled-only", `"${compiler}" "$@" || exit $?\necho 'if (import.meta.url.endsWith("/case.js")) console.log("only unbundled");' >> "$3"`);
 
 test("JS that's wrong in one way it's run only fails the case", () => {
-  const run = bunTest(["test/corpus.test.ts", "-t", "index_out_of_bounds"], { RUST_JS_COMPILER: onlyUnbundled() });
+  const run = tested(["test/corpus.test.ts", "-t", "index_out_of_bounds"], { RUST_JS_COMPILER: onlyUnbundled() });
   expect(run.code).not.toBe(0);
   expect(run.output).toMatch(/node stdout:\n\+ only unbundled/);
   expect(run.output).not.toContain("node, minified stdout:");
@@ -60,7 +60,7 @@ test("JS that's wrong in one way it's run only fails the case", () => {
 
 test("a failing generated program is kept before it's reduced, and a reduction cut short says so", () => {
   const out = join(target, "fuzz");
-  const run = bunTest(["test/fuzz.test.ts"], { RUST_JS_COMPILER: onlyUnbundled(), FUZZ_START: "3", FUZZ_SEEDS: "1", FUZZ_REDUCE_BUDGET: "1" });
+  const run = tested(["test/fuzz.test.ts"], { RUST_JS_COMPILER: onlyUnbundled(), FUZZ_START: "3", FUZZ_SEEDS: "1", FUZZ_REDUCE_BUDGET: "1" });
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("differs, reduced for 0.001s, not to the end,");
   const evidence = JSON.parse(readFileSync(join(out, "seed-3.json"), "utf8"));
@@ -129,11 +129,11 @@ test("fuzz settings that aren't whole numbers fail the run", () => {
     ["FUZZ_START", "9007199254740992"],
     ["FUZZ_START", "4294967296"],
   ]) {
-    const run = bunTest(["test/fuzz.test.ts"], { FUZZ_START: "1", FUZZ_SEEDS: "1", [name]: value });
+    const run = tested(["test/fuzz.test.ts"], { FUZZ_START: "1", FUZZ_SEEDS: "1", [name]: value });
     expect([name, run.code]).toEqual([name, 1]);
     expect(run.output).toContain(`${name}=${value}: `);
   }
-  const past = bunTest(["test/fuzz.test.ts"], { FUZZ_START: "4294967290", FUZZ_SEEDS: "10" });
+  const past = tested(["test/fuzz.test.ts"], { FUZZ_START: "4294967290", FUZZ_SEEDS: "10" });
   expect(past.code).toBe(1);
   expect(past.output).toContain("FUZZ_START=4294967290 FUZZ_SEEDS=10: the seeds end past 4294967296");
 }, underLoad(120_000));
@@ -168,7 +168,7 @@ function notUtf8(): string {
 // Found in review: `agree` compared bytes, but the corpus's own checks,
 // rustc's tests', and whether native Rust prints what changes, text.
 test("JS that prints other bytes than native Rust, reading the same, fails the case", () => {
-  const run = bunTest(["test/corpus.test.ts", "-t", "replacement_character"], { RUST_JS_COMPILER: notUtf8(), RUST_JS_SNAPSHOTS: "ignore" });
+  const run = tested(["test/corpus.test.ts", "-t", "replacement_character"], { RUST_JS_COMPILER: notUtf8(), RUST_JS_SNAPSHOTS: "ignore" });
   expect(run.code).not.toBe(0);
   expect(run.output).toContain("node stdout:");
   expect(run.output).not.toContain("stderr:");
@@ -179,11 +179,11 @@ test("JS that prints other bytes than native Rust, reading the same, fails the c
 // a case whose JS isn't its snapshot fails, and the compiler as it is
 // passes, with no run of it natively or as JS.
 test("a case's JS alone fails where it isn't its snapshot, and isn't run", () => {
-  const other = bunTest(["test/corpus.test.ts", "-t", "^replacement_character.rs$"], { RUST_JS_COMPILER: notUtf8(), RUST_JS_SNAPSHOTS: "only" });
+  const other = tested(["test/corpus.test.ts", "-t", "^replacement_character.rs$"], { RUST_JS_COMPILER: notUtf8(), RUST_JS_SNAPSHOTS: "only" });
   expect(other.code).not.toBe(0);
   expect(other.output).toContain("its JS isn't its snapshot, replacement_character.js");
   expect(other.output).not.toContain("node stdout:");
-  const same = bunTest(["test/corpus.test.ts", "-t", "^replacement_character.rs$"], { RUST_JS_COMPILER: compiler, RUST_JS_SNAPSHOTS: "only" });
+  const same = tested(["test/corpus.test.ts", "-t", "^replacement_character.rs$"], { RUST_JS_COMPILER: compiler, RUST_JS_SNAPSHOTS: "only" });
   expect(same.output).toContain(" 1 pass");
   expect(same.code).toBe(0);
 }, underLoad(120_000));
@@ -232,11 +232,26 @@ test("what's built from unchanged inputs isn't built again", () => {
 // rust-js is built as a shell builds it, with `.cargo/config.toml`'s
 // `RUSTC_BOOTSTRAP`, not the one `.env.test` gives the tests' programs:
 // cargo, building it after the other, rebuilt every dependency, twenty
-// seconds of the next build's (DEVELOPMENT.md).
+// seconds of the next build's (DEVELOPMENT.md). So the tests' build
+// environment is a shell's in each variable cargo tracks: its own, those
+// build.rs reruns on and those the crate reads as it's compiled. Asked of
+// the environments, not of a build: CI's jobs restore the compiler's binary
+// alone, so a build there was a whole one, past the test's time (#2066).
 test("the tests build rust-js as a shell does", () => {
-  const { RUSTC_BOOTSTRAP: _, NODE_ENV: __, ...env } = process.env;
-  const p = Bun.spawnSync(["cargo", "build", "--locked", "-v"], { cwd: root, env, stdout: "pipe", stderr: "pipe" });
-  expect(p.stderr.toString().split("\n").filter((line) => line.includes("Dirty"))).toEqual([]);
+  // A shell's environment: the tests', less what bun gives them.
+  const given = [...readFileSync(join(root, ".env.test"), "utf8").matchAll(/^([A-Z_][A-Z0-9_]*)=/gm)].map((m) => m[1]!);
+  const shell = Object.fromEntries(Object.entries(process.env).filter(([name]) => name !== "NODE_ENV" && !given.includes(name)));
+  const tests = Object.fromEntries(Object.entries({ ...process.env, ...compilerBuild.env }).filter(([, value]) => value !== undefined));
+  const read = (file: string, of: RegExp) => [...readFileSync(join(root, file), "utf8").matchAll(of)].map((m) => m[1]!);
+  const rerun = read("build.rs", /rerun-if-env-changed=(\w+)/g);
+  const compiled = readdirSync(join(root, "src"), { recursive: true, encoding: "utf8" })
+    .filter((file) => file.endsWith(".rs"))
+    .flatMap((file) => read(join("src", file), /\b(?:option_)?env!\("(\w+)"\)/g));
+  const tracked = (name: string) => /^(RUSTC\w*|RUSTFLAGS|RUSTDOCFLAGS|CARGO_\w+)$/.test(name) || rerun.includes(name) || compiled.includes(name);
+  expect(given).toContain("RUSTC_BOOTSTRAP");
+  expect(rerun).toContain("RUSTC");
+  const names = [...new Set([...Object.keys(shell), ...Object.keys(tests)])].filter(tracked);
+  expect(names.filter((name) => shell[name] !== tests[name])).toEqual([]);
 });
 
 // And loading the rustc suite leaves the environment as it was: each

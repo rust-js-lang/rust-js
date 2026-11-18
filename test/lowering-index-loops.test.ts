@@ -7,7 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -121,9 +121,9 @@ test("as for…of steps them", () => {
   expect(found(made())).toBe(2);
 });
 `);
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(dir, "driver.test.js")], { cwd: root, stderr: "pipe" });
-  const output = p.stdout.toString() + p.stderr.toString();
-  expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
+  const p = bunTest(["--preload", "./test/happydom.js", join(dir, "driver.test.js")]);
+  const output = p.stdout + p.stderr;
+  expect([p.code, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
 });
 
 // The fact is of a binding's struct, the list's type: of anything else it
@@ -191,9 +191,9 @@ test("as Rust's extend", () => {
   expect(huge(300000)).toBe(300000);
 });
 `);
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(dir, "driver.test.js")], { cwd: root, stderr: "pipe" });
-  const output = p.stdout.toString() + p.stderr.toString();
-  expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
+  const p = bunTest(["--preload", "./test/happydom.js", join(dir, "driver.test.js")]);
+  const output = p.stdout + p.stderr;
+  expect([p.code, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
 });
 
 // React DOM's setInitialProperties: a comment above a thread-local's

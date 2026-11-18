@@ -11,7 +11,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -102,9 +102,9 @@ test("mounted then unmounted, each cleanup once, each guard dropped as it ends",
   expect(said).toEqual(["listening", "dropped second", "cleanup dropping", "dropped dropping", "after dropping", "dropped first", "cleanup reads second", "cleanup holding", "dropped holding"]);
 });
 `);
-  const ran = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(dir, "driver.test.jsx")], { cwd: root, stderr: "pipe" });
-  const output = ran.stdout.toString() + ran.stderr.toString();
-  expect([ran.exitCode, output.match(/(\d+) pass/)?.[1], output.includes("(fail)") ? output : ""]).toEqual([0, "1", ""]);
+  const ran = bunTest(["--preload", "./test/happydom.js", join(dir, "driver.test.jsx")]);
+  const output = ran.stdout + ran.stderr;
+  expect([ran.code, output.match(/(\d+) pass/)?.[1], output.includes("(fail)") ? output : ""]).toEqual([0, "1", ""]);
   expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("return () => {");
 });
 

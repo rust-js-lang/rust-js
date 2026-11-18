@@ -1,7 +1,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { join } from "node:path";
 import { copyFileSync } from "node:fs";
-import { root, target, run, buildCompiler, buildReact, compiler } from "./support";
+import { root, target, run, buildCompiler, buildReact, compiler, bunTest } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildCompiler, 600_000);
@@ -42,9 +42,9 @@ test("React components are hand-written JSX, and React runs them", () => {
   // `!` of a `&bool`, which rustc writes as `Not::not`.
   expect(js).toContain("setDark((d) => !d)");
   copyFileSync(join(root, "test", "react_app.jsx"), join(out, "react_app.test.jsx"));
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(out, "react_app.test.jsx")], { cwd: root, stderr: "pipe" });
-  const output = p.stdout.toString() + p.stderr.toString();
-  expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "3"]);
+  const p = bunTest(["--preload", "./test/happydom.js", join(out, "react_app.test.jsx")]);
+  const output = p.stdout + p.stderr;
+  expect([p.code, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "3"]);
 }, underLoad(60_000));
 
 test("JSX preparation preserves evaluation order, conditional execution and text", async () => {
@@ -193,9 +193,9 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   expect(js).toContain('const LazyCard = lazy(() => import("./lazy-card.jsx"));');
   Bun.write(join(out, "lazy-card.jsx"), 'export default function LazyCard() {\n  return <em className="lazy">lazy card</em>;\n}\n');
   copyFileSync(join(root, "test", "apis.jsx"), join(out, "apis.test.jsx"));
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(out, "apis.test.jsx")], { cwd: root, stderr: "pipe" });
-  const output = p.stdout.toString() + p.stderr.toString();
-  expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "8"]);
+  const p = bunTest(["--preload", "./test/happydom.js", join(out, "apis.test.jsx")]);
+  const output = p.stdout + p.stderr;
+  expect([p.code, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "8"]);
 }, underLoad(120_000));
 
 // ADR 0573: every name is camelCase in JS, React's and Rust's own alike: a

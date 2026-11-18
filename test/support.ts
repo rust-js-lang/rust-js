@@ -4,10 +4,10 @@ import { cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, read
 import { basename, dirname, join, resolve } from "node:path";
 
 import { tempRoot } from "./bounded";
-import { runSync, stopped } from "./child";
+import { type Exit, runSync, stopped } from "./child";
 import { keptApps, markUsed, mayKeep, nativeCache, pruneKeptApps } from "./kept";
 import { reactLibs } from "../tooling/crates.js";
-import { shard } from "../scripts/shard";
+import { parts, shard } from "../scripts/shard";
 import { checkoutTarget, helpersModule, stdDir, target } from "./packages-of";
 
 export const root = join(import.meta.dir, "..");
@@ -389,6 +389,28 @@ function ownPackages() {
   packagesOwn = true;
 }
 
+/** How the tests build the compiler: as a shell builds it, with
+ * `.cargo/config.toml`'s `RUSTC_BOOTSTRAP`, not `.env.test`'s for the tests'
+ * programs: built with the other, cargo rebuilds every dependency, and
+ * again the next time (DEVELOPMENT.md). test/harness.test.ts holds its
+ * environment to a shell's in each variable cargo tracks. */
+export const compilerBuild: { cmd: string[]; env: Record<string, string | undefined> } = { cmd: ["cargo", "build", "--quiet"], env: { RUSTC_BOOTSTRAP: undefined } };
+
+/** The settings that say what a `bun test` run does rather than what it
+ * runs against: `BLESS`, which writes what differs instead of failing,
+ * `RUST_JS_SNAPSHOTS`, `RUST_JS_CASES`, and each that selects a part
+ * (scripts/shard.ts's `parts`). A test's own `bun test` child is given none
+ * of its parent's: a check's "Bless what differs" step ran harness.test.ts
+ * with `BLESS=1`, and its corpus child blessed a fake compiler's JS where
+ * it was to fail (#2066). */
+export const runModes = ["BLESS", "RUST_JS_SNAPSHOTS", "RUST_JS_CASES", ...new Set(parts.map((part) => part.setting))];
+
+/** `bun test args` in `cwd`, the one way a test runs a `bun test` of its
+ * own: its environment this process's, less `runModes`, and `env`. */
+export function bunTest(args: string[], { cwd = root, env = {}, timeout = 600_000 }: { cwd?: string; env?: Record<string, string | undefined>; timeout?: number } = {}): Exit {
+  return runSync([process.execPath, "test", ...args], cwd, timeout, { ...Object.fromEntries(runModes.map((name) => [name, undefined])), ...env });
+}
+
 /**
  * This checkout's compiler, built once for the run, whichever file asks
  * first, however many run side by side (`bun test --parallel`): a build
@@ -402,10 +424,7 @@ function ownPackages() {
 export function buildCompiler() {
   ownPackages();
   if (built || given) return;
-  // As a shell builds it, with `.cargo/config.toml`'s `RUSTC_BOOTSTRAP`, not
-  // `.env.test`'s for the tests' programs: built with the other, cargo
-  // rebuilds every dependency, and again the next time (DEVELOPMENT.md).
-  once(join(target, "tests-build", thisRun()), () => run(["cargo", "build", "--quiet"], 600_000, { RUSTC_BOOTSTRAP: undefined }));
+  once(join(target, "tests-build", thisRun()), () => run(compilerBuild.cmd, 600_000, compilerBuild.env));
   process.env.RUST_JS_COMPILER = compiler;
   built = true;
 }

@@ -3,13 +3,13 @@
 // `part-settings.ts`).
 
 import { expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { parts } from "../scripts/shard";
 import { readersOf, unreadMessage, unreadSettings } from "./part-settings";
 import { underLoad } from "../scripts/timing";
-import { root } from "./support";
+import { bunTest, fixture, root, runModes } from "./support";
 
 const settings = [...new Set(parts.map((part) => part.setting))];
 
@@ -34,11 +34,42 @@ test("each setting that selects a part is read through `partSetting`, so a run c
 });
 
 test("`METAMORPHIC=all` of a file that runs no rewrite fails the run", () => {
-  const env: Record<string, string> = {};
-  for (const [key, value] of Object.entries(process.env)) if (value !== undefined && !settings.includes(key)) env[key] = value;
-  const run = (extra: Record<string, string>) => Bun.spawnSync([process.execPath, "test", "test/node-surface.test.ts"], { cwd: root, env: { ...env, ...extra }, stderr: "pipe", stdout: "pipe" });
+  const run = (env: Record<string, string>) => bunTest(["test/node-surface.test.ts"], { env });
   const unread = run({ METAMORPHIC: "all" });
-  expect(unread.exitCode).not.toBe(0);
-  expect(unread.stderr.toString()).toContain("METAMORPHIC=all selects a part of test/metamorphic.test.ts, which this run didn't run");
-  expect(run({}).exitCode).toBe(0);
+  expect(unread.code).not.toBe(0);
+  expect(unread.stderr).toContain("METAMORPHIC=all selects a part of test/metamorphic.test.ts, which this run didn't run");
+  expect(run({}).code).toBe(0);
 }, underLoad(120_000));
+
+// A test's own `bun test` child is given none of its parent's run modes:
+// `BLESS=1` of a check's "Bless what differs" step blessed a fake compiler's
+// JS in harness.test.ts's corpus child (#2066).
+test("a test's own `bun test` child runs without its parent's run modes", () => {
+  const dir = fixture("run-modes-child");
+  const parent: Record<string, string> = { BLESS: "1", METAMORPHIC: "all", KEPT: "1" };
+  writeFileSync(
+    join(dir, "modes.test.ts"),
+    `import { expect, test } from "bun:test";\ntest("modes", () => expect(Object.fromEntries(${JSON.stringify([...Object.keys(parent), "RUST_JS_SNAPSHOTS"])}.map((name) => [name, process.env[name]]))).toEqual({ KEPT: "1", RUST_JS_SNAPSHOTS: "only" }));\n`,
+  );
+  const was = Object.fromEntries(Object.keys(parent).map((name) => [name, process.env[name]]));
+  Object.assign(process.env, parent);
+  try {
+    const ran = bunTest([join(dir, "modes.test.ts")], { env: { RUST_JS_SNAPSHOTS: "only" } });
+    expect([ran.code, ran.stdout + ran.stderr]).toEqual([0, expect.stringContaining("1 pass")]);
+  } finally {
+    for (const [name, value] of Object.entries(was)) if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+  expect(runModes).toEqual(expect.arrayContaining(["BLESS", ...settings]));
+}, underLoad(60_000));
+
+// A test's own `bun test` child runs through support.ts's `bunTest`, which
+// gives it none of its parent's run modes (`runModes`): a check's "Bless
+// what differs" step ran harness.test.ts with `BLESS=1`, and its corpus
+// child blessed a fake compiler's JS where it was to fail (#2066).
+test("a test runs `bun test` of its own through `bunTest` alone", () => {
+  const spawns = readdirSync(join(root, "test"))
+    .filter((file) => /\.tsx?$/.test(file) && file !== "support.ts")
+    .filter((file) => /(process\.execPath|"bun")\s*,\s*\[?\s*"test"/.test(readFileSync(join(root, "test", file), "utf8")));
+  expect(spawns).toEqual([]);
+});

@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createElement, Fragment } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -217,7 +217,7 @@ test("it renders Rust's answer under StrictMode", () => {
   expect(at).toEqual({ x: 1 });
 });
 `);
-  const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.js", join(dir, "driver.test.jsx")], { cwd: root, stderr: "pipe" });
-  const output = p.stdout.toString() + p.stderr.toString();
-  expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
+  const p = bunTest(["--preload", "./test/happydom.js", join(dir, "driver.test.jsx")]);
+  const output = p.stdout + p.stderr;
+  expect([p.code, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
 });

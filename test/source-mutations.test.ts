@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { fixture } from "./support";
+import { bunTest, fixture } from "./support";
 import {
   makeSourceWorkspace,
   markSourceLoad,
@@ -10,7 +10,7 @@ import {
 import { existsSync } from "node:fs";
 import { sourceMutation } from "../scripts/source-mutations";
 import { judgeTwice, mutate, type Mutation } from "../scripts/mutations";
-import { run, stopped } from "./child";
+import { stopped } from "./child";
 import { passed, summary } from "../scripts/test-summary";
 
 // A workspace alias must resolve inside the independent copy, while a normal
@@ -114,12 +114,7 @@ async function executeSource(
     example.work,
     example.files,
     async (workspace, env, tests = own.tests!) => {
-      const exit = await run(
-        [process.execPath, "test", ...tests],
-        workspace,
-        10000,
-        env,
-      );
+      const exit = bunTest(tests, { cwd: workspace, env, timeout: 10000 });
       const output = exit.stdout + exit.stderr;
       const counts = summary(output);
       return {
