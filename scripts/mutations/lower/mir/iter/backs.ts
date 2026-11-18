@@ -639,7 +639,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "                self.lent_iterator(back, held)\n",
     replace: "                back\n",
-    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_lends.rs$"],
+    snapshots: true,
   },
   {
     name: "rfold-of-mut-unlent",
