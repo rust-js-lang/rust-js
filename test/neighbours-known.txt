@@ -17,6 +17,7 @@ plain std identity_inside_keys.rs beside rc_of_an_impls_param_dropped_last.rs
 #1060 P2 (neighbours): untagged_in_untagged.rs refused beside guard_deref_dictionary.rs + rc_from_box.rs: an Rc variant can't be told apart
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
 plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
+plain eq_of_identities_inside.rs beside drop_impl_indirect.rs owner_handle_returns_another.rs
 
 #1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
 plain std panic_mid_fold_drops.rs beside mut_assoc_through_dictionary.rs pointer_offset_from.rs scope_struct_of_type_parameters.rs
@@ -24,6 +25,10 @@ plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs te
 plain std generic_from_iter_in_place.rs beside identity_partial_eq.rs text_bytes_pointer_within.rs
 plain std option_slot_iterators.rs beside address_of_a_nested_field_through_a_deref.rs
 plain std mut_ref_fields_of_a_type_parameter.rs beside thread_local_lazy_where_observable.rs user_fmt_traits.rs
+plain generic_count_of_an_into_iter_by_its_own.rs beside address_of_a_tuple_item_asked_first.rs
+plain heap_pop_of_a_param.rs beside pointer_addresses.rs
+plain mut_ref_fields_of_a_type_parameter.rs beside unwrap_dropping.rs user_fmt_traits.rs
+plain untagged_variant_mapped_into_a_nullable_field.rs beside raw_pointers.rs
 
 #1513 P2 (pointers): a lent object std keeps in a $some box (OnceCell<Option<T>>, Peekable of Options) or lends in generic code is refused in a crate that asks its address
 plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a_reference.rs reference_given_as_its_pointer.rs
@@ -35,6 +40,14 @@ plain std dyn_fn_addresses_of_rcs.rs beside rc_fn_ptr_eq_of_param.rs
 
 #1892 P2 (neighbours): a Vec grown by an iterator rust-js can't count is refused in a crate that reads a Vec's capacity
 plain boxed_iterator_stepped_as_what_it_boxes.rs beside vec_set_len.rs
+plain cloned_chains_and_cycles.rs beside vec_capacity.rs
+plain string_iterator_lent_by_a_macro_where_it_is_made.rs beside hint_kept_through_rev_take_and_cycle.rs
 
 #1898 P2 (neighbours): LocalKey<RefCell<T>>::with_borrow_mut of a value with a destructor is refused beside a Drop impl
 plain std rc_dyn_fn_counted_by_its_signature.rs beside drop_impl_indirect.rs
+
+#2062 P2 (neighbours): cases refused beside a neighbour (an ExactSizeIterator count, iterator clones, TrustedLen of a parameter)
+plain mut_ref_of_a_boxed_iterator_is_the_iterators.rs beside trait_default_flat_map_of_arrays_collects_trusted.rs
+plain enumerate_of_take_from_back.rs beside generic_map_cloned_beside_another_bound.rs
+plain zip_sides_dropped_with_it.rs beside generic_map_beside_a_cloned_one_of_other_bounds.rs
+plain in_place_collect_of_a_built_type_relayed.rs beside repeat_drops.rs

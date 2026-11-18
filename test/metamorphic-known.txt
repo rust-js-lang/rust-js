@@ -11,6 +11,7 @@
 #1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
 plain std generic maybe_uninit_array_written_through_its_pointer.rs
 plain std generic pointer_relayout.rs
+plain std generic bytes_through_pointers.rs
 
 #difference 39 a guard that's only a call's receiver is held while the call runs, of what its arguments run only a borrow rust-js sees asking (ADR 0863, gap rd360): a library's `total(&held)` doesn't
 plain std library ref_cell_borrowed_by_a_callback_a_function_runs.rs
@@ -18,7 +19,7 @@ plain std library refcell_borrow_while_mut.rs
 
 #1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
 plain std boxed address_of_an_option_payload.rs
-plain std fact-addresses mut_kept_by_what_a_call_gives_back.rs
+std fact-addresses mut_kept_by_what_a_call_gives_back.rs
 plain std fact-stored mut_kept_by_what_a_call_gives_back.rs
 
 #difference 2 a `usize` is 32 bits, as rustc checks programs for wasm32 (ADR 0090): a collect into a `Vec` std makes in place, by its items' layout, on wasm32 and not natively, drops what it collected before what's left of its source as a closure panics, where natively it drops them the other way (the user's decision, #1651)
@@ -111,3 +112,39 @@ plain std loud-drop thread_local_with_nested.rs
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
 
+#2051 P0 (iterators): five generic-instances rewrites run otherwise than native: drop orders and an nth step through generic code
+plain generic-instances flatten_last_takes_each_inner_last.rs
+plain generic-instances last_fold_gives_back_what_it_kept.rs
+plain std generic-instances shunt_steps_by_try_fold.rs
+std generic-instances closure_stages_that_never_unwind_past_adapters.rs
+std generic-instances in_place_collect_leaks_what_a_discard_strands.rs
+
+#2052 P0 (iterators): boxed as_is_map_stepped_from_its_back throws 'enumerated.iter.len is not a function' where native runs
+plain boxed as_is_map_stepped_from_its_back.rs
+
+#2053 P0 (mut-refs): dyn-ref vec_lent_to_code_that_keeps_a_pointer prints -3 for a u32 and misses native's bounds panic
+plain std dyn-ref vec_lent_to_code_that_keeps_a_pointer.rs
+
+#2054 P0 (mut-refs): generic contains_guarded_float ends normally where native panics 'RefCell already borrowed'
+plain std generic contains_guarded_float.rs
+
+#2055 P0 (nullability): library nulled_returns_given_on throws reading 'id' of undefined where native runs
+plain std library nulled_returns_given_on.rs
+
+#2056 P0 (drops): loud-drop collected_in_place_leaked_past_a_filters_drop drops in another order before its abort
+plain loud-drop collected_in_place_leaked_past_a_filters_drop.rs
+
+#2059 P2 (validation): 'a read of x is of another variable spelled so, nearer' of two metamorphic rewrites
+plain std fact-write-fails recursive_eq.rs
+plain std dyn-ref shadow_beside_closure_own_of_its_name.rs
+plain std impl-ref shadow_beside_closure_own_of_its_name.rs
+
+#2060 P2 (validation): 'x is read, and nothing declares it' as lowered and by names reclaimed
+plain std loud else_break_ends_loop.rs
+plain std loud-drop else_break_ends_loop.rs
+plain std loud-step else_break_ends_loop.rs
+plain std fact-rc-counts else_break_ends_loop.rs
+
+#2061 P2 (crash): a rustc ICE compiling metamorphic field rewrites of closure_mut_ref and held_enumerate
+plain std field closure_mut_ref.rs
+plain std field held_enumerate.rs

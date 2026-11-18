@@ -12,3 +12,7 @@ refused custom-mir a `&mut` of a number kept or given, from its MIR
 # A `*mut` through a shared reference, `addr_of_mut!((*r))` of an `&u128`, E0596 in Rust;
 # ordinary code's own refusal of it is #1283's.
 refused custom-mir addressable memory yet: a raw pointer to this place
+refused #2063 addressable memory yet: a raw pointer to what a `&mut` refers to
+#
+# Crashed.
+crashed #2060 is read, and nothing declares it nor made it a global
