@@ -835,11 +835,14 @@ prints or changes; only a load that can't make it first refuses it.
 
 Differences:
 
-- **A JS getter that calls back into Rust while a cell is borrowed isn't
-  seen:** where a binding reads a property, rust-js takes it to run no
-  Rust, so a borrow such a getter makes of a held cell passes, where
-  Rust's would panic. No binding rust-js ships does it
-  ([0580](../decisions/0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md)).
+- **A JS getter of a forged Rust struct isn't seen while a cell is
+  borrowed:** a property read of a JS object counts as code that may call
+  back unless a builtin made the object ([1173](../decisions/1173-a-property-read-runs-nothing-only-of-what-a-builtin-made.md)),
+  but one of the program's own struct, cast to a JS value or read through
+  a type parameter, still runs nothing, though a JS caller may hand over
+  an object of that type with a getter where an exported function takes
+  one. A borrow such a getter makes of a held cell passes, where Rust's
+  would panic (#2109).
 
 What's refused is in [the limitations](limitations.md).
 

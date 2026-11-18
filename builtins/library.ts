@@ -9,7 +9,7 @@
 
 import { open } from "@rust-js/typescript";
 import { snake } from "../scripts/rust-names";
-import { NAMES, runs, THROWS } from "./policy";
+import { attributesOf, NAMES, runs, THROWS } from "./policy";
 import { argument, classed, close, line, method, options, page, record, union } from "./render";
 
 /** A declaration and the library file it's in. */
@@ -215,7 +215,7 @@ export function writeClass(w: Writing, name: string, receiver: string) {
   }
   for (const { member } of methods) {
     const ty = results.get(member.name)!;
-    const quiet = runs(`${name}.prototype.${member.name}`);
+    const quiet = attributesOf(`${name}.prototype.${member.name}`);
     method(`[\`${receiver}.${member.name}()\`](${mdn(member.name)}).`, member.name, `${snake(member.name)}(&self) -> ${ty}`, "    ", [...(ty.startsWith("Option<") ? ["none_undefined"] : []), ...quiet]);
   }
   close();

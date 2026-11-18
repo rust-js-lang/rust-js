@@ -2016,7 +2016,9 @@ impl Json<'static> {
     /// [`JSON.parse(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse):
     /// the value `text` is, `None` of `null`, or what it threw for text that
     /// isn't JSON (ADR 0035).
+    /// What it gives is a value it makes, of no getters (`creates`, #2106).
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn parse(text: &str) -> Result<Option<Json<'static>>, &'static JsError> {
         unreachable!()
     }
@@ -2385,7 +2387,9 @@ impl RegExp {
     /// [`regexp.exec(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec): its match in `text`, from its `last_index` of a `g` or `y` pattern.
     /// It runs no code of the program's (`runs_nothing`, #2082): ECMA-262's
     /// RegExpBuiltinExec of a string (ADR 0867).
+    /// What it gives is a match it makes (`creates`, #2106).
     #[cfg_attr(rust_js, rust_js::link_name = "exec")]
+    #[cfg_attr(rust_js, rust_js::creates)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn exec(&self, text: &str) -> Option<&'static RegExpMatch> {
         unreachable!()
@@ -2955,7 +2959,9 @@ pub mod json {
     /// [`JSON.parse(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse):
     /// the value `text` is, `None` of `null`, or what it threw for JSON
     /// that isn't (ADR 0035).
+    /// What it gives is a value it makes, of no getters (`creates`, #2106).
     #[cfg_attr(rust_js, rust_js::link_name = "JSON.parse")]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn parse(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
         unreachable!()
     }

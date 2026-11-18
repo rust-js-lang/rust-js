@@ -96,3 +96,23 @@ export const RUNS: Record<string, Runs> = {
 /** `js`'s attribute of what it runs, `RUNS`', none of one not there. */
 export const runs = (js: string): string[] => (RUNS[js] ? [RUNS[js].attribute] : []);
 
+/** Which builtins' results are objects they make, `#[rust_js::creates]`
+ * (#2106): a property read off one meets no getter of the program's. Never
+ * one handed back from storage a JS caller fills, `Map.get`'s, an element's
+ * or a promise's. A constructor's result is one by its form. */
+export type Creates = { spec: string; proof: string };
+
+export const CREATES: Record<string, Creates> = {
+  "Intl.Locale.prototype.maximize": {
+    spec: "ECMA-402 Intl.Locale.prototype.maximize: Construct(%Intl.Locale%, maximal) of its [[Locale]]",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  "Intl.Locale.prototype.minimize": {
+    spec: "ECMA-402 Intl.Locale.prototype.minimize: Construct(%Intl.Locale%, minimal) of its [[Locale]]",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+};
+
+/** `js`'s attributes of what it runs and makes, `RUNS`' and `CREATES`'. */
+export const attributesOf = (js: string): string[] => [...runs(js), ...(CREATES[js] ? ["creates"] : [])];
+

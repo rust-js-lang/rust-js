@@ -1,6 +1,6 @@
 # 0580. A call asks of a cell only what it may borrow
 
-Status: Accepted. Extends [0328](0328-refcell-borrow-counts.md), whose
+Status: Accepted. Amended by [1173](1173-a-property-read-runs-nothing-only-of-what-a-builtin-made.md): a property read runs nothing only of what a builtin made. Extends [0328](0328-refcell-borrow-counts.md), whose
 "nothing can ask" counted any call of the crate's as one that may, and
 [0270](0270-module-variables.md)'s plain thread-locals.
 Amended by [0863](0863-a-refcell-of-an-object-is-the-object.md): std's code
@@ -95,8 +95,13 @@ const timerQueue = [];
 
 - No corpus case's JS changes; React's scheduler's queues are its arrays.
 - A JS getter that calls back into Rust, borrowing a cell held where a
-  property is read, isn't seen: its borrow passes where Rust's panics.
-  No binding rust-js has does it.
+  property is read, isn't seen only of the program's own Rust struct, read
+  through a cast to a JS value, `js::get(js::unknown(&**chunk), "reason")`,
+  or a type parameter, which a JS caller may forge with a getter where an
+  exported function takes one: its borrow passes where Rust's panics
+  (#2109). Of a JS object's type it's seen since
+  [1173](1173-a-property-read-runs-nothing-only-of-what-a-builtin-made.md)
+  (#2106): a property read runs nothing only of a value a builtin made.
 
 ## What holds it
 

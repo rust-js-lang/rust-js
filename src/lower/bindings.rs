@@ -33,7 +33,7 @@ mod value_only;
 mod whole;
 
 pub(super) use effects::{
-    called_constructs, calls_with_resolvers, cannot_throw, gives_again, gives_back, gives_plain_data,
+    called_constructs, calls_with_resolvers, cannot_throw, creates, gives_again, gives_back, gives_plain_data,
     iterates_receiver, keeps_in_collection, reads_only_its_parameters, reject_unkept_collections,
     reject_unread_parameters, runs_nothing, runs_only_given,
 };

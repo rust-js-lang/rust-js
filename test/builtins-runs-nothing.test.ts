@@ -130,3 +130,131 @@ test("a memo whose maker calls a method optionally, unchecked, keeps its borrow 
   expect(js).toContain("$withBorrowMut");
 });
 
+// A property read, `tag.region`, runs nothing only of a value a builtin
+// made, at hand: of a JS caller's, whose getter may call back into the
+// program, it's counted (#2106); of a regex's match `exec` made, passed to
+// `and_then`'s closure, it isn't; of what a `Map` kept, a JS caller's value
+// whatever made the map, it's counted.
+test("a memo whose maker reads a JS caller's locale keeps its borrow checked", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-given-locale",
+    memo("tag.region().map_or(0.0, |region| region.len() as f64)", "tag: &js::intl::Locale", "tag"),
+  );
+  expect(js).toContain("$withBorrowMut");
+  expect(lib.memo(new Intl.Locale("en-GB"))).toBe(2);
+});
+
+test("a memo whose maker reads the match exec made reads its cache plainly", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-exec-match",
+    memo(`js::reg_exp::new("^(de)", "i").exec(key).and_then(|matched| matched.get(1)).map_or(0.0, |part| part.len() as f64)`),
+  );
+  expect(js).not.toContain("$withBorrowMut");
+  expect([lib.memo("de-DE"), lib.memo("en")]).toEqual([2, 0]);
+});
+
+test("a memo whose maker reads what a map kept keeps its borrow checked", async () => {
+  const { js } = await compiled(
+    "runs-nothing-map-kept",
+    memo(
+      "kept.get(key).and_then(|tag| tag.region()).map_or(0.0, |region| region.len() as f64)",
+      "key: &str, kept: &js::Map<str, &js::intl::Locale>",
+    ),
+  );
+  expect(js).toContain("$withBorrowMut");
+});
+
+test("a guard held over a JS caller's locale's read keeps its borrow checked", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-guard-given-locale",
+    `use std::cell::RefCell;
+
+pub struct Seen {
+    regions: RefCell<Vec<f64>>,
+}
+
+impl Seen {
+    pub fn new() -> Seen {
+        Seen { regions: RefCell::new(Vec::new()) }
+    }
+
+    pub fn note(&self, tag: &js::intl::Locale) -> usize {
+        let mut regions = self.regions.borrow_mut();
+        regions.push(tag.region().map_or(0.0, |region| region.len() as f64));
+        regions.len()
+    }
+}
+`,
+  );
+  expect(js).toContain("$borrowMut");
+  const seen = lib.Seen.new();
+  expect(lib.Seen.note(seen, new Intl.Locale("en-GB"))).toBe(1);
+});
+
+// Of the program's own Rust struct, cast to a JS value, a property read
+// still runs nothing (#2109's case: a JS caller may forge one with a getter
+// where an exported function takes one); of a JS value a caller gave, it's
+// counted (#2106).
+test("a read of the program's own struct, cast to a JS value, is plain until #2109", async () => {
+  const { js, lib } = await compiled("runs-nothing-own-struct", `use std::cell::RefCell;
+
+pub struct Chunk {
+    pub reason: String,
+}
+
+// SAFETY: a struct of the program's is a JS object, never \`undefined\`.
+unsafe impl js::Defined for Chunk {}
+
+pub struct Seen {
+    notes: RefCell<Vec<f64>>,
+}
+
+impl Seen {
+    pub fn new() -> Seen {
+        Seen { notes: RefCell::new(Vec::new()) }
+    }
+
+    pub fn note(&self, chunk: &Chunk) -> usize {
+        let mut notes = self.notes.borrow_mut();
+        if js::truthy(js::get(js::unknown(chunk), "reason")) {
+            notes.push(1.0);
+        }
+        notes.len()
+    }
+}
+`);
+  expect(js).not.toContain("$borrowMut");
+  expect(lib.Seen.note(lib.Seen.new(), { reason: "x" })).toBe(1);
+});
+
+test("a read of a JS value a caller gave, under a guard, keeps its borrow checked", async () => {
+  const { js } = await compiled("runs-nothing-given-unknown", `use std::cell::RefCell;
+
+pub struct Chunk {
+    pub reason: String,
+}
+
+// SAFETY: a struct of the program's is a JS object, never \`undefined\`.
+unsafe impl js::Defined for Chunk {}
+
+pub struct Seen {
+    notes: RefCell<Vec<f64>>,
+}
+
+impl Seen {
+    pub fn new() -> Seen {
+        Seen { notes: RefCell::new(Vec::new()) }
+    }
+
+    pub fn note(&self, chunk: &js::Unknown) -> usize {
+        let mut notes = self.notes.borrow_mut();
+        if js::truthy(js::get(chunk, "reason")) {
+            notes.push(1.0);
+        }
+        notes.len()
+    }
+}
+`);
+  expect(js).toContain("$borrowMut");
+});
+

@@ -17,4 +17,12 @@ export const mutations: Mutation[] = [
     replace: '#[cfg_attr(rust_js, rust_js::link_name = "test")]\n',
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "runs only a regex"],
   },
+  {
+    name: "regexp-exec-not-creating",
+    breaks: "a regex's `exec` loses `creates`, so a property read of its match, `matched.get(1)`, keeps a memo's borrow checked (#2106)",
+    file: "builtins/src/lib.rs",
+    find: '#[cfg_attr(rust_js, rust_js::link_name = "exec")]\n    #[cfg_attr(rust_js, rust_js::creates)]\n',
+    replace: '#[cfg_attr(rust_js, rust_js::link_name = "exec")]\n',
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "the match exec made"],
+  },
 ];

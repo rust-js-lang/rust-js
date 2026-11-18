@@ -1,6 +1,6 @@
 # Tests at a glance
 
-Changed on 2026-11-18 (#2082): test/builtins-runs-nothing.test.ts, three tests, holds the js crate's builtins that run none of the program's code: a memo's borrow over a regex or a locale's own reads plain, and one over a callback checked.
+Changed on 2026-11-18 (#2082, #2106): test/builtins-runs-nothing.test.ts, twelve tests, holds the js crate's builtins that run none of the program's code, and property reads that run nothing only of what a builtin made: a memo's borrow over a regex, a locale's own or an `exec` match reads plain; over a callback, a JS caller's locale or a map's kept value it's checked.
 
 Changed on 2026-11-18: the ES class suite checks static methods, declarations, and JavaScript's implicit constructor on a fieldless class.
 

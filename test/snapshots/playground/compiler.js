@@ -28,7 +28,15 @@ import {
   PreopenDirectory,
   WASI,
 } from "@bjorn3/browser_wasi_shim";
-import { $rsplitOnce, $stripPrefix, $try, $unwrap } from "@rust-js/std";
+import {
+  $alreadyBorrowed,
+  $borrow,
+  $rsplitOnce,
+  $stripPrefix,
+  $try,
+  $unborrow,
+  $unwrap,
+} from "@rust-js/std";
 
 // The rest of the WASI shim (@bjorn3/browser_wasi_shim), for `compile`.
 export function ms(t) {
@@ -210,9 +218,15 @@ export async function compile(loaded, sources, rootFile, test) {
   const fds = [
     new OpenFile(new File([])), // stdin
     ConsoleStdout.lineBuffered((line) => {
+      if (stderr.borrows) {
+        $alreadyBorrowed();
+      }
       stderr.push(line);
     }), // stdout
     ConsoleStdout.lineBuffered((line) => {
+      if (stderr.borrows) {
+        $alreadyBorrowed();
+      }
       stderr.push(line);
     }), // stderr
     new PreopenDirectory("/in", directoryOf(sources)),
@@ -316,6 +330,19 @@ export async function compile(loaded, sources, rootFile, test) {
     }
   }
   const memory = instance.exports.memory.buffer;
+  const borrow = $borrow(stderr, true);
+  let stderr$1;
+  let instantiate;
+  let run;
+  let memory$1;
+  try {
+    stderr$1 = borrow.join("\n");
+    instantiate = t1 - t0;
+    run = t2 - t1;
+    memory$1 = memory.byteLength;
+  } finally {
+    $unborrow(borrow);
+  }
   return {
     exit,
     ok,
@@ -330,10 +357,10 @@ export async function compile(loaded, sources, rootFile, test) {
      * `test` from.
      */
     tests,
-    stderr: stderr.join("\n"),
-    instantiate: t1 - t0,
-    run: t2 - t1,
-    memory: memory.byteLength,
+    stderr: stderr$1,
+    instantiate,
+    run,
+    memory: memory$1,
   };
 }
 //# sourceMappingURL=compiler.js.map

@@ -22,6 +22,7 @@ use rustc_span::def_id::DefId;
 
 mod runs_nothing;
 mod std_given;
+use runs_nothing::{AtHand, CallArgs};
 pub(in crate::lower) use runs_nothing::{
     binding_call_runs_nothing, binding_runs_nothing, call_runs_nothing, resolve_runs_nothing,
 };
@@ -101,6 +102,9 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     /// call and what they run that rust-js sees (`seen`): of a cell only
     /// the crate's code reaches, only those (rd482). `None`, anything.
     unseen: Option<IndexSet<Borrow<'tcx>>>,
+    /// What of the crate is a value a builtin made, whose property reads
+    /// meet no getter of the program's (#2106).
+    at_hand: AtHand,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
@@ -169,6 +173,8 @@ impl<'tcx> CellBorrows<'tcx> {
         // Which cells each borrow can be of, which each body's borrows are
         // classed by: of std's code, what `std_runs` says of its impls.
         found.flow = super::cell_flow::CellFlow::of_crate(recognition, &found, bodies);
+        let thirs: Vec<(DefId, &Thir<'tcx>)> = bodies.iter().map(|body| (body.def_id, &body.thir)).collect();
+        found.at_hand = AtHand::of_crate(recognition, &thirs);
         let direct: IndexMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
             .map(|body| {
@@ -181,7 +187,7 @@ impl<'tcx> CellBorrows<'tcx> {
                     body.def_id,
                     direct(
                         &recognition,
-                        (&found.impls, &found.pointers, &found.flow),
+                        (&found.impls, &found.pointers, &found.flow, &found.at_hand),
                         (body.def_id, &body.thir),
                         (drops, &itself),
                     ),
@@ -307,7 +313,11 @@ impl<'tcx> CellBorrows<'tcx> {
         let tcx = recognition.tcx;
         let itself = |ty| self.clones_itself(recognition, owner, ty);
         let one = receiver.map(|(_, r)| [r]);
-        let given = receiver.zip(one.as_ref()).map(|((thir, _), one)| (thir, &one[..]));
+        let given = (receiver.zip(one.as_ref())).map(|((thir, _), one)| CallArgs {
+            thir,
+            args: &one[..],
+            at_hand: &self.at_hand,
+        });
         match called(recognition, def_id, args, given, &itself) {
             // Of code rust-js can't see, a binding's or a library's, what
             // it calls back isn't asked (ADR 0863, amended); of what may be
@@ -416,7 +426,11 @@ impl<'tcx> CellBorrows<'tcx> {
         let tcx = recognition.tcx;
         let itself = |ty| self.clones_itself(recognition, owner, ty);
         let one = receiver.map(|(_, r)| [r]);
-        let given = receiver.zip(one.as_ref()).map(|((thir, _), one)| (thir, &one[..]));
+        let given = (receiver.zip(one.as_ref())).map(|((thir, _), one)| CallArgs {
+            thir,
+            args: &one[..],
+            at_hand: &self.at_hand,
+        });
         match called(recognition, def_id, args, given, &itself) {
             Called::Nothing => false,
             Called::Cell(theirs) => self.cell_call_asks(recognition, (def_id, args), theirs, held, drops),
@@ -797,7 +811,14 @@ pub(in crate::lower) fn borrowed<'tcx>(
         return None;
     };
     let (id, generic_args) = fn_def(thir[fun].ty)?;
-    match called(recognition, id, generic_args, Some((thir, &args[..])), &|_| false) {
+    // Of a borrow's own call, which reads no property: no value at hand asked.
+    let at_hand = AtHand::default();
+    let given = CallArgs {
+        thir,
+        args: &args[..],
+        at_hand: &at_hand,
+    };
+    match called(recognition, id, generic_args, Some(given), &|_| false) {
         Called::Cell(cell) => Some(cell),
         _ => None,
     }
@@ -833,11 +854,11 @@ fn called<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
-    given: Option<(&Thir<'tcx>, &[ExprId])>,
+    given: Option<CallArgs<'_, 'tcx>>,
     clones_itself: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> Called<'tcx> {
     let tcx = recognition.tcx;
-    let receiver = given.and_then(|(thir, given)| Some((thir, *given.first()?)));
+    let receiver = given.and_then(|given| Some((given.thir, *given.args.first()?)));
     // A clone of what's its own clone, a type parameter's whose `Clone`
     // bound takes no dictionary, is the value: it runs nothing (ADR 0914,
     // amended).
@@ -942,10 +963,11 @@ fn called<'tcx>(
 /// it may drop, whose destructor runs.
 fn direct<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    (impls, pointers, flow): (
+    (impls, pointers, flow, at_hand): (
         &Impls,
         &super::fn_pointers::FnPointers<'tcx>,
         &super::cell_flow::CellFlow,
+        &AtHand,
     ),
     (body, thir): (DefId, &Thir<'tcx>),
     (drops, clones_itself): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> bool),
@@ -992,7 +1014,12 @@ fn direct<'tcx>(
         match e.kind {
             ExprKind::Call { fun, ref args, .. } => match fn_def(thir[fun].ty) {
                 Some((id, generic_args)) => {
-                    let called = called(recognition, id, generic_args, Some((thir, &args[..])), clones_itself);
+                    let given = CallArgs {
+                        thir,
+                        args: &args[..],
+                        at_hand,
+                    };
+                    let called = called(recognition, id, generic_args, Some(given), clones_itself);
                     // A borrow of a cell of a type, of its class by its
                     // flow (rd482).
                     let called = match called {

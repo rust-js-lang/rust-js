@@ -45,8 +45,16 @@ export const mutations: Mutation[] = [
     name: "library-methods-run-unmarked",
     breaks: "a class's method `RUNS` says runs nothing, `Intl.Locale.prototype.maximize`, is written without `runs_nothing`, so what's committed of intl.rs isn't what it writes (#2082)",
     file,
-    find: "    const quiet = runs(`${name}.prototype.${member.name}`);\n",
+    find: "    const quiet = attributesOf(`${name}.prototype.${member.name}`);\n",
     replace: "    const quiet: string[] = [];\n",
+    tests: written,
+  },
+  {
+    name: "library-methods-create-unmarked",
+    breaks: "a class's method `CREATES` says creates its result, `Intl.Locale.prototype.maximize`, is written without `creates`, so what's committed of intl.rs isn't what it writes (#2106)",
+    file,
+    find: "    const quiet = attributesOf(`${name}.prototype.${member.name}`);\n",
+    replace: "    const quiet = runs(`${name}.prototype.${member.name}`);\n",
     tests: written,
   },
 ];

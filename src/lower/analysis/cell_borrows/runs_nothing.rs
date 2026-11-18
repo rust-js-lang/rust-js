@@ -4,18 +4,18 @@
 //! object's `Deref`, an untagged enum's `From`, and a promise's resolve
 //! given what JS reads with no code. `cell_borrows`' answers, apart.
 
-use crate::lower::bindings::{JsForm, is_binding, js_form, runs_nothing, runs_only_given};
+use crate::collections::IndexSet;
+use crate::lower::bindings::{JsForm, creates, is_binding, js_form, runs_nothing, runs_only_given};
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{Recognition, StdItem, is_js_object_deref};
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::thir::{ExprId, ExprKind, Thir};
+use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
 /// Whether a binding runs no code of the crate's: what makes a JSX element
 /// or an object, or casts a value, a component given called when React
-/// renders it; a read of a property, `node.sortIndex`, `in` or
-/// `instanceof`, but by a JS getter that calls back into Rust; whether the
+/// renders it; `in` or `instanceof`; whether the
 /// host has a global, `typeof X !== "undefined"`; JS's `null`, `js::null()`;
 /// a function made of a closure, `function::with_this`, which runs it only
 /// where it's called, a call of a `dyn Fn` (ADR 1009); and one that says it
@@ -28,8 +28,6 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
                 | JsForm::Prop(_)
                 | JsForm::Object(_)
                 | JsForm::This
-                | JsForm::Get(_)
-                | JsForm::GetIndex
                 | JsForm::In
                 | JsForm::InstanceOf(_)
                 | JsForm::InstanceOfGiven
@@ -69,7 +67,7 @@ fn given_what_runs_nothing<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
-    given: Option<(&Thir<'tcx>, &[ExprId])>,
+    given: Option<CallArgs<'_, 'tcx>>,
 ) -> bool {
     let tcx = recognition.tcx;
     if !is_binding(tcx, def_id) || !runs_only_given(tcx, def_id) {
@@ -77,10 +75,11 @@ fn given_what_runs_nothing<'tcx>(
     }
     let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
     let written_none = |at: usize| {
-        given.is_some_and(|(thir, given)| {
+        given.is_some_and(|given| {
             given
+                .args
                 .get(at)
-                .is_some_and(|&arg| is_none_written(recognition, thir, arg))
+                .is_some_and(|&arg| is_none_written(recognition, given.thir, arg))
         })
     };
     (sig.skip_binder().inputs().iter().enumerate())
@@ -147,16 +146,28 @@ pub(in crate::lower) fn resolve_runs_nothing<'tcx>(
 /// (`given_what_runs_nothing`). So a borrow held across it meets no other,
 /// and it sets none of the crate's variables, which lowering marks its
 /// call so (`Known::RunsNothing`, ADR 0277, amended).
-/// `given`, where the caller has them, the call's arguments, each `None`
-/// of which runs nothing whatever its type (`given_what_runs_nothing`);
-/// lowering's, which has none, asks of the types alone.
+/// What's known of a call: its arguments in `thir`, the first its receiver,
+/// and what of the crate is a value at hand (`AtHand`).
+#[derive(Clone, Copy)]
+pub(in crate::lower) struct CallArgs<'a, 'tcx> {
+    pub(in crate::lower) thir: &'a Thir<'tcx>,
+    pub(in crate::lower) args: &'a [ExprId],
+    pub(in crate::lower) at_hand: &'a AtHand,
+}
+
+/// `given`, where the caller has it, the call's arguments, each `None`
+/// of which runs nothing whatever its type (`given_what_runs_nothing`),
+/// and its receiver, of which a property read runs nothing where it's at
+/// hand (`read_of_what_is_at_hand`); lowering's, which has none, asks of
+/// the types alone, and takes no property read to run nothing.
 pub(in crate::lower) fn binding_call_runs_nothing<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
-    given: Option<(&Thir<'tcx>, &[ExprId])>,
+    given: Option<CallArgs<'_, 'tcx>>,
 ) -> bool {
     binding_runs_nothing(recognition.tcx, def_id)
+        || read_of_what_is_at_hand(recognition, def_id, given)
         || given_what_runs_nothing(recognition, def_id, args, given)
         || optional_call_runs_nothing(recognition, def_id, args)
 }
@@ -182,4 +193,193 @@ fn optional_call_runs_nothing<'tcx>(
     };
     let method = path.iter().find_map(crate::lower::fn_def);
     method.is_some_and(|(method, method_args)| binding_call_runs_nothing(recognition, method, method_args, None))
+}
+
+/// Whether `def_id` is a property read, `this.name` or `this[key]`, of a
+/// value at hand, whose getters are none of the program's (#2106): one a
+/// builtin made, `AtHand`'s. A value a JS caller could have handed over, a
+/// parameter's, a field's or what a collection kept, may answer it by a
+/// getter that calls back into the program, a borrow it meets counted.
+fn read_of_what_is_at_hand<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    def_id: DefId,
+    given: Option<CallArgs<'_, 'tcx>>,
+) -> bool {
+    let tcx = recognition.tcx;
+    if !is_binding(tcx, def_id) || !matches!(js_form(tcx, def_id), JsForm::Get(_) | JsForm::GetIndex) {
+        return false;
+    }
+    let Some(given) = given else {
+        return false;
+    };
+    let Some(&receiver) = given.args.first() else {
+        return false;
+    };
+    // Of what isn't a JS object's type, the program's own Rust struct cast
+    // to `Unknown`, `js::get(js::unknown(&**chunk), "reason")`, or a type
+    // parameter's: as before #2106, nothing, though a JS caller may forge
+    // such a struct with a getter, #2109's (ADR 1173).
+    !recognition.is_js_object(read_of(recognition, given.thir, receiver))
+        || given.at_hand.holds(recognition, given.thir, receiver)
+}
+
+/// The type of what `receiver`, in `thir`, reads: through a borrow, a
+/// deref and a cast to a JS value, `js::unknown(x)`'s, `x`'s own.
+fn read_of<'tcx>(recognition: &Recognition<'_, 'tcx>, thir: &Thir<'tcx>, receiver: ExprId) -> Ty<'tcx> {
+    let tcx = recognition.tcx;
+    let mut at = crate::lower::body_queries::strip(thir, receiver);
+    loop {
+        match &thir[at].kind {
+            ExprKind::Deref { arg } | ExprKind::Borrow { arg, .. } => {
+                at = crate::lower::body_queries::strip(thir, *arg)
+            }
+            ExprKind::Call { fun, args, .. }
+                if let Some((callee, _)) = crate::lower::fn_def(thir[*fun].ty)
+                    && is_binding(tcx, callee)
+                    && matches!(js_form(tcx, callee), JsForm::This)
+                    && let Some(&of) = args.first() =>
+            {
+                at = crate::lower::body_queries::strip(thir, of);
+            }
+            _ => return thir[at].ty.peel_refs(),
+        }
+    }
+}
+
+/// The crate's variables whose value is one a builtin made, at hand (#2106):
+/// what a constructor makes, `new X`, or a binding that `creates` its
+/// result, `regExp.exec(s)`; through `unwrap`, `expect`, `clone` and `?`,
+/// a `let`, an `if let` or a `match` of one, and the parameter of an
+/// `Option`'s or a `Result`'s combinator's closure given one's payload,
+/// `.and_then(|matched| matched.get(1))`, a closure's capture of one too.
+/// Never what a builtin hands back from what a JS caller stored, `Map.get`'s.
+#[derive(Default)]
+pub(in crate::lower) struct AtHand {
+    vars: IndexSet<LocalVarId>,
+}
+
+/// The combinators whose closure is given the payload of what they're of.
+const PAYLOAD_COMBINATORS: [&str; 9] = [
+    "and_then",
+    "map",
+    "map_or",
+    "map_or_else",
+    "is_some_and",
+    "is_none_or",
+    "is_ok_and",
+    "filter",
+    "inspect",
+];
+
+impl AtHand {
+    /// Of each of the crate's bodies, `(def_id, thir)`, until it holds.
+    pub(in crate::lower) fn of_crate<'tcx>(
+        recognition: &Recognition<'_, 'tcx>,
+        bodies: &[(DefId, &Thir<'tcx>)],
+    ) -> Self {
+        let mut at_hand = AtHand::default();
+        let thir_of = |id: DefId| bodies.iter().find(|(body, _)| *body == id).map(|(_, thir)| *thir);
+        let bind = |pattern: &rustc_middle::thir::Pat<'tcx>, found: &mut Vec<LocalVarId>| {
+            pattern.walk_always(|p| {
+                if let PatKind::Binding { var, .. } = p.kind {
+                    found.push(var);
+                }
+            });
+        };
+        loop {
+            let mut found = Vec::new();
+            for &(_, thir) in bodies {
+                for stmt in thir.stmts.iter() {
+                    if let StmtKind::Let {
+                        pattern,
+                        initializer: Some(value),
+                        ..
+                    } = &stmt.kind
+                        && at_hand.holds(recognition, thir, *value)
+                    {
+                        bind(pattern, &mut found);
+                    }
+                }
+                for e in thir.exprs.iter() {
+                    match &e.kind {
+                        ExprKind::Let { expr, pat } if at_hand.holds(recognition, thir, *expr) => bind(pat, &mut found),
+                        ExprKind::Match { scrutinee, arms, .. } if at_hand.holds(recognition, thir, *scrutinee) => {
+                            for &arm in arms.iter() {
+                                bind(&thir[arm].pattern, &mut found);
+                            }
+                        }
+                        ExprKind::Call { fun, args, .. } => {
+                            if let Some(pattern) = at_hand.payload_parameter(recognition, thir, (*fun, args), &thir_of)
+                            {
+                                bind(pattern, &mut found);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            let before = at_hand.vars.len();
+            at_hand.vars.extend(found);
+            if at_hand.vars.len() == before {
+                return at_hand;
+            }
+        }
+    }
+
+    /// Of a call, in `thir`, of an `Option`'s or a `Result`'s combinator
+    /// whose subject is at hand: its closure's parameter, given the payload.
+    fn payload_parameter<'a, 'tcx>(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        thir: &Thir<'tcx>,
+        (fun, args): (ExprId, &[ExprId]),
+        thir_of: &dyn Fn(DefId) -> Option<&'a Thir<'tcx>>,
+    ) -> Option<&'a rustc_middle::thir::Pat<'tcx>> {
+        let (callee, _) = crate::lower::fn_def(thir[fun].ty)?;
+        let [subject, .., last] = args else {
+            return None;
+        };
+        let of = thir[*subject].ty.peel_refs();
+        let combinator = PAYLOAD_COMBINATORS.contains(&recognition.tcx.item_name(callee).as_str())
+            && (recognition.is_lang_adt(of, LangItem::Option) || recognition.is_std_type(of, StdItem::Result));
+        if !combinator || !self.holds(recognition, thir, *subject) {
+            return None;
+        }
+        let ExprKind::Closure(closure) = &thir[crate::lower::body_queries::strip(thir, *last)].kind else {
+            return None;
+        };
+        let closure_thir = thir_of(closure.closure_id.to_def_id())?;
+        (closure_thir.params.iter())
+            .find(|param| param.self_kind.is_none() && param.pat.is_some())
+            .and_then(|param| param.pat.as_deref())
+    }
+
+    /// Whether `e`, in `thir`, is a value at hand.
+    pub(in crate::lower) fn holds<'tcx>(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        thir: &Thir<'tcx>,
+        e: ExprId,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let e = crate::lower::body_queries::strip(thir, e);
+        match &thir[e].kind {
+            ExprKind::Deref { arg } | ExprKind::Borrow { arg, .. } => self.holds(recognition, thir, *arg),
+            ExprKind::VarRef { id } => self.vars.contains(id),
+            ExprKind::UpvarRef { var_hir_id, .. } => self.vars.contains(var_hir_id),
+            ExprKind::Call { fun, args, .. } => match crate::lower::fn_def(thir[*fun].ty) {
+                Some((callee, _)) if is_binding(tcx, callee) => {
+                    matches!(js_form(tcx, callee), JsForm::New(_)) || creates(tcx, callee)
+                }
+                Some((callee, _)) => {
+                    matches!(
+                        tcx.item_name(callee).as_str(),
+                        "unwrap" | "expect" | "unwrap_unchecked" | "clone" | "branch"
+                    ) && args.first().is_some_and(|&of| self.holds(recognition, thir, of))
+                }
+                None => false,
+            },
+            _ => false,
+        }
+    }
 }

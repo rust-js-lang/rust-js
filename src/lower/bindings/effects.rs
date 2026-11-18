@@ -26,6 +26,16 @@ pub(in crate::lower) fn runs_nothing(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// `#[rust_js::creates]`: a builtin whose result is an object it makes,
+/// `regExp.exec(s)`'s match or `JSON.parse(s)`'s, never one it hands back
+/// from what a JS caller stored, as `Map.get` does: a property read off it
+/// meets no getter of the program's (#2106). A constructor's result is
+/// one by its form, `new X`.
+pub(in crate::lower) fn creates(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("creates")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// `#[rust_js::runs_only_given]`: a binding that runs no code but its own
 /// and what it's given, as `console.error(..)` and `Math.max(..)` do: a
 /// getter, `toString` or a proxy's trap of a value it reads (ADR 0898).

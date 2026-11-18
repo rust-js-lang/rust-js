@@ -1362,6 +1362,7 @@ impl Locale {
     /// [`locale.maximize()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/maximize).
     #[cfg_attr(rust_js, rust_js::link_name = "maximize")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn maximize(&self) -> &'static Locale {
         unreachable!()
     }
@@ -1369,6 +1370,7 @@ impl Locale {
     /// [`locale.minimize()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/minimize).
     #[cfg_attr(rust_js, rust_js::link_name = "minimize")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn minimize(&self) -> &'static Locale {
         unreachable!()
     }
