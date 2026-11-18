@@ -213,4 +213,13 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(adt, args) if false && adt.is_fundamental() => args.types().next()?,\n",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
   },
+  {
+    name: "generic-fmt-result-unnormalized",
+    breaks:
+      "a trait's `Result<Self::Output, Self::Err>` is taken as a `fmt::Result` only as written, not with the impl's projections resolved, so `finish`'s `Ok(())` is given generic code as `undefined`, whose `TAG` it reads (#2057)",
+    file: "src/lower/recognition/fmt.rs",
+    find: "    let given = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(given))).unwrap_or(given);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^visitor_err_a_fmt_error_driven_by_generic_code.rs$"],
+  },
 ];

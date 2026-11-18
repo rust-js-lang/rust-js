@@ -223,3 +223,33 @@ The result changes, so Rust's behavior is kept (ADR 0262). Corpus case
 whose drop prints, and a writer that prints and gives its `Formatter` to
 generic code and to a struct. Found by the metamorphic net's `loud`
 rewrite of `fmt_to_held_formatter` and `formatter_sink`.
+
+## Amendment: a trait's `fmt::Result` is known by its normalized type, a default's too (2026-11-18, #2057)
+
+regex-syntax's printer, `impl<W: fmt::Write> Visitor for Writer<W>` with
+`type Output = ()` and `type Err = fmt::Error`, threw in each of its 16
+printer tests: generic code, `visit<V: Visitor>`, reads `Result<(),
+V::Err>` and `Result<V::Output, V::Err>` as `{ TAG }`, and the dictionary
+gave three of the impl's methods as a write's result, `undefined`. Two
+entries weren't tagged:
+
+- `finish(self) -> Result<Self::Output, Self::Err>`. A generic `fmt::Result`
+  was recognised only as written, `Result<(), E>` of a generic `E`.
+  `is_generic_fmt_result` now takes the declared `Result` whole: generic,
+  and `fmt::Result` once the impl's arguments are given and its
+  projections normalized. It adds no second written shape.
+- A default the impl doesn't write, `visit_concat_in`'s `Ok(())`, inlined
+  in the dictionary with `Self` the impl's type. Its body gave what the
+  impl's own method would, a write's result, and nothing tagged it. Each
+  entry, a written method's and a default's, now asks one decider,
+  `entry_writes_tagged`, and is wrapped by one maker, `tagged_write`:
+  `$writeResult(() => { body })`.
+
+Results changed (a throw where Rust prints), so this follows ADR 0262's
+"preserve Rust's behavior". Pinned by
+test/corpus/visitor_err_a_fmt_error_driven_by_generic_code.rs, whose
+`Limited` writer fails partway so an `Err` crosses too. Mutations
+`generic-fmt-result-unnormalized` and `fmt-result-default-untagged` are
+caught, and `fmt-result-not-generic` is retargeted to the decider. Small
+Crater's regex-syntax: 16 printer tests now run as native. Its other 5
+wrong answers are #2064's.

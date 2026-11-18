@@ -536,34 +536,31 @@ pub(crate) fn is_fmt_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool 
     fmt_result(tcx).is_some_and(|result| tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(result))
 }
 
-/// Is a result of `declared` type, a generic one, `Result<(), S::Error>`, a
-/// `fmt::Result` once `args` are given, in `typing_env`? Generic code has it
-/// as a `Result`, `{ TAG }`, where a `fmt::Result` is `undefined` or its error
-/// thrown (ADRs 0187, 0461).
+/// Is a result of `declared` type, a generic one, `Result<(), S::Error>` or
+/// `Result<Self::Output, Self::Err>`, a `fmt::Result` once `args` are given
+/// and its projections normalized, in `typing_env`? Generic code has it as
+/// a `Result`, `{ TAG }`, where a `fmt::Result` is `undefined` or its error
+/// thrown (ADRs 0187, 0461; #2057).
 pub(crate) fn is_generic_fmt_result<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     declared: Ty<'tcx>,
     args: ty::GenericArgsRef<'tcx>,
 ) -> bool {
-    // A `Result<(), E>` of a generic `E`: its `E` given `args`, a `fmt::Error`.
-    let Some(ty::Adt(result, result_args)) = fmt_result(tcx).map(|result| *result.kind()) else {
+    let Some(result) = fmt_result(tcx) else {
         return false;
     };
-    let ty::Adt(adt, declared_args) = *declared.kind() else {
+    let (ty::Adt(result_adt, _), ty::Adt(adt, _)) = (*result.kind(), *declared.kind()) else {
         return false;
     };
-    if adt != result
-        || !declared_args.type_at(0).is_unit()
-        || !ty::TypeVisitableExt::has_param(&declared_args.type_at(1))
-    {
+    if adt != result_adt || !ty::TypeVisitableExt::has_param(&declared) {
         return false;
     }
-    let error = ty::EarlyBinder::bind(tcx, declared_args.type_at(1))
+    let given = ty::EarlyBinder::bind(tcx, declared)
         .instantiate(tcx, args)
         .skip_normalization();
-    let error = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(error))).unwrap_or(error);
-    tcx.erase_and_anonymize_regions(error) == tcx.erase_and_anonymize_regions(result_args.type_at(1))
+    let given = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(given))).unwrap_or(given);
+    tcx.erase_and_anonymize_regions(given) == tcx.erase_and_anonymize_regions(result)
 }
 
 /// `fmt::Result`, what `Display::fmt` gives, if std's `Display` is loaded.

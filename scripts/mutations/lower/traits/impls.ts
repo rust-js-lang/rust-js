@@ -425,10 +425,18 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl's `fmt::Result` given where generic code has a `Result<(), Self::Error>` is `undefined`, whose `TAG` it reads",
     file: "src/lower/traits/impls.rs",
-    find: "            let call = match self.generic_fmt_result(declared_output, args) {\n",
-    replace:
-      "            let call = match false && self.generic_fmt_result(declared_output, args) {\n",
+    find: "            let call = match self.entry_writes_tagged(item.def_id, args) {\n",
+    replace: "            let call = match false && self.entry_writes_tagged(item.def_id, args) {\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_sink.rs$"],
+  },
+  {
+    name: "fmt-result-default-untagged",
+    breaks:
+      "a trait's default an impl doesn't write, inlined in its dictionary, gives its `fmt::Result` as a write's, `undefined`, where generic code reads `Result<(), Self::Err>`'s `TAG` (#2057)",
+    file: "src/lower/traits/impls.rs",
+    find: "                    js::ExprKind::Arrow(params, body) if self.entry_writes_tagged(item.def_id, args) => Expr::arrow(\n",
+    replace: "                    js::ExprKind::Arrow(params, body) if false && self.entry_writes_tagged(item.def_id, args) => Expr::arrow(\n",
+    tests: ["test/corpus.test.ts", "-t", "^visitor_err_a_fmt_error_driven_by_generic_code.rs$"],
   },
   {
     name: "hasher-dictionary-unfilled",

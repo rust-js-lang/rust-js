@@ -610,6 +610,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && self.tcx.trait_of_assoc(method).is_some()
             {
                 let value = self.default_method(id, method, instance.args)?;
+                // Its body gives what any method of the impl gives, so it's
+                // tagged as theirs are (`entry_writes_tagged`, #2057).
+                let value = match value.kind {
+                    js::ExprKind::Arrow(params, body) if self.entry_writes_tagged(item.def_id, args) => Expr::arrow(
+                        params,
+                        vec![StmtKind::Return(Some(tagged_write(body))).at(js::Span::NONE)],
+                    ),
+                    kind => Expr { kind, ..value },
+                };
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));
                 continue;
             }
@@ -853,19 +862,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )?),
                 false => call,
             };
-            // A `fmt::Result` the trait's signature has as a `Result`, `fn
-            // write(&mut self) -> Result<(), Self::Error>`'s of an impl whose
-            // `Error` is `fmt::Error`: one (ADR 0461).
-            let call = match self.generic_fmt_result(declared_output, args) {
+            // A `fmt::Result` the trait's signature has as a `Result` (ADR 0461).
+            let call = match self.entry_writes_tagged(item.def_id, args) {
                 true => {
                     let made = call.unwrap_or_else(|| Expr::call(callee.clone(), values.clone()));
-                    Some(Expr::call_helper(
-                        "$writeResult",
-                        vec![Expr::arrow(
-                            Vec::new(),
-                            vec![js::StmtKind::Return(Some(made)).at(js::Span::NONE)],
-                        )],
-                    ))
+                    Some(tagged_write(vec![js::StmtKind::Return(Some(made)).at(js::Span::NONE)]))
                 }
                 false => call,
             };
@@ -1185,6 +1186,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether the dictionary's entry for `item`, a trait method given
+    /// `args`, gives its result tagged, `{ TAG }`: the trait's signature has a
+    /// `Result` of its type parameters that's a `fmt::Result` in this impl,
+    /// `Result<(), Self::Error>` or `Result<Self::Output, Self::Err>` of an
+    /// impl whose `Err` is `fmt::Error`, which the method gives as a write's,
+    /// `undefined` or its error (ADR 0461). The one answer of each entry, a
+    /// written method's and a default's (#2057).
+    fn entry_writes_tagged(&self, item: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        let declared_output = crate::lower::traits::erased_sig(self.tcx, item).output();
+        self.generic_fmt_result(declared_output, args)
+    }
+
     /// Of `method`, a trait's, for its `args`, given `count` values: where it
     /// resolves to a library's impl's method that its JS reaches only
     /// through the impl's dictionary, the method resolved and that entry,
@@ -1266,4 +1279,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let called = Expr::call(self.fn_ref(instance.def_id()), values);
         Ok(self.fmt_result_value(instance.def_id(), instance.args, called))
     }
+}
+
+/// `body`, a dictionary entry's that gives a `fmt::Result` as a write's,
+/// given back tagged: `$writeResult(() => { body })`, `{ TAG: "Ok" }` or
+/// the `Err` of the error it threw (ADR 0461).
+fn tagged_write(body: Vec<js::Stmt>) -> Expr {
+    Expr::call_helper("$writeResult", vec![Expr::arrow(Vec::new(), body)])
 }
