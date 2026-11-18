@@ -34,6 +34,8 @@ import { latentSurvivors, type Results } from "./latent-survivors";
 import { binaryHash, builtBinary, freshShare, unapplied, verdictKind } from "./mutant-builds";
 import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from "./crate-corpus";
 import { devTimes, ownsTimes } from "./devTimes";
+import { floorBytes } from "../test/bounded";
+import { freeBytes } from "../tooling/bounded.js";
 
 const root = join(import.meta.dir, "..");
 
@@ -1249,6 +1251,8 @@ export const retiredTrailer = "Retired-mutation";
  * mutant then runs alone against them, its own verdict and trailer. */
 async function retire(chosen: Mutation[]): Promise<void> {
   const names = chosen.map((m) => m.name).join(", ");
+  const low = belowFloor(freeBytes(root));
+  if (low) throw new Error(`--retire of ${names} judges nothing: ${low}`);
   const unmutatedUnits = await build(undefined, 0, true);
   if (typeof unmutatedUnits !== "string") throw new Error(`the unit tests as the crate is ${unmutatedUnits.problem}`);
   const unitControl = await unitFailures(unmutatedUnits);
@@ -1273,14 +1277,15 @@ async function retire(chosen: Mutation[]): Promise<void> {
     console.log(`\n${mutation.name} says nothing: ${error instanceof Error ? error.message : error}`);
     process.exitCode = 1;
   };
-  // Each mutant's suite in turn, and its port, crate corpus and failures'
-  // controls beside the next one's suite, which builds and runs nothing
-  // they share: the crate corpus's phase leaves half the cores free.
+  // Each mutant's suite in turn, its failures' reruns and their controls
+  // back to back after it (`pairedReruns`); and its port and crate corpus
+  // beside the next one's suite, which builds and runs nothing they share:
+  // the crate corpus's phase leaves half the cores free.
   let judged: Promise<void> = Promise.resolve();
   for (const mutation of chosen) {
     let suite: RetireSuite;
     try {
-      suite = await retireSuite(mutation, unitControl);
+      suite = await retireSuite(mutation, unitControl, asItIs);
     } catch (error) {
       saysNothing(mutation, error);
       continue;
@@ -1289,7 +1294,7 @@ async function retire(chosen: Mutation[]): Promise<void> {
     judged = (async () => {
       await before;
       try {
-        const trailer = await retireVerdict(mutation, suite, crateControl, asItIs);
+        const trailer = await retireVerdict(mutation, suite, crateControl);
         if (trailer === undefined) process.exitCode = 1;
         else trailers.push(trailer);
       } catch (error) {
@@ -1309,12 +1314,36 @@ async function unitFailures(binary: string): Promise<{ failed: Set<string>; pass
   return { failed: new Set([...p.stdout.matchAll(/^test (\S+) \.\.\. FAILED$/gm)].map((m) => m[1]!)), passed: Number(p.stdout.match(/^test result: \w+\. (\d+) passed;/m)?.[1] ?? 0) };
 }
 
-/** What `retireSuite` found of a mutant, which `retireVerdict` judges. */
-type RetireSuite = { mutant: string; unit: { passed: number }; unitCaught: string[]; unitSilent: string[]; suite: Exit };
+/** What `retireSuite` found of a mutant, which `retireVerdict` judges:
+ * each suite test that failed with it, and of those, which failed again with
+ * it and which fail as the compiler is, run back to back (`pairedReruns`). */
+type RetireSuite = {
+  mutant: string;
+  unit: { passed: number };
+  unitCaught: string[];
+  unitSilent: string[];
+  ran: string;
+  failed: { file: string; test: string }[];
+  again: Set<string>;
+  control: Set<string>;
+};
+
+/** Why a run with `free` bytes on the disk judges nothing of a mutant, or
+ * nothing where it's at or above `floor`, the disk's floor of the loop's
+ * stores (test/bounded.ts). Below it the stores keep nothing, and tests
+ * fail with any compiler: source-mutations' "would cross the development
+ * disk floor", native-outcomes' kept runs. A retirement's control, run at
+ * another time with more free, passed them, and they were blamed on the
+ * mutant (2026-11-18). */
+export function belowFloor(free: number, floor = floorBytes): string | undefined {
+  if (free >= floor) return undefined;
+  const gib = (bytes: number) => `${(bytes / 2 ** 30).toFixed(1)} GiB`;
+  return `the disk has ${gib(free)} free, below its floor of ${gib(floor)}, where the loop's stores keep nothing and tests fail with any compiler: free some, and run it again`;
+}
 
 /** `retire`'s of one mutant, its suite: built, its unit tests held to
  * theirs as the crate is, and check:fast's suite run with it. */
-async function retireSuite(mutation: Mutation, unitControl: { failed: Set<string> }): Promise<RetireSuite> {
+async function retireSuite(mutation: Mutation, unitControl: { failed: Set<string> }, unmutated: string): Promise<RetireSuite> {
   const files = schema([{ mutation }], crateText);
   if (!(files instanceof Map)) throw new Error(`${mutation.name}: ${files.problem}`);
   const built = await build(files, 0);
@@ -1344,40 +1373,67 @@ async function retireSuite(mutation: Mutation, unitControl: { failed: Set<string
   const unasked = await ownRuntime(mutant, own);
   if (unasked) throw new Error(`${mutation.name}'s runtime couldn't be asked: ${endedAs(unasked)}\n${unasked.stderr}`);
   console.log(`${mutation.name}: ${unitCaught.length === 0 ? "the compiler's unit tests passed" : `${unitCaught.length} of the compiler's unit tests failed`}; check:fast's suite with it, which takes some minutes`);
+  // Each judged where the disk is above its floor, before and after: below
+  // it, what fails says nothing of the mutant.
+  const lowBefore = belowFloor(freeBytes(root));
+  if (lowBefore) throw new Error(lowBefore);
   const suite = await run(["bun", "scripts/checkFast.ts", `--compiler=${mutant}`], root, retireTimeout, testsEnv(mutant, own, true));
   rmSync(own, { recursive: true, force: true });
-  return { mutant, unit, unitCaught, unitSilent, suite };
+  const lowAfter = belowFloor(freeBytes(root));
+  if (lowAfter) throw new Error(`its suite ran into the floor: ${lowAfter}`);
+  const output = suite.stdout + suite.stderr;
+  if (stopped(suite, retireTimeout)) throw new Error(`check:fast with ${mutation.name} ${stopped(suite, retireTimeout)}: it says nothing\n${output.slice(-3000)}`);
+  const failed = [...output.matchAll(/^failed with it: (\S+)\t(.*)$/gm)].map((m) => ({ file: m[1]!, test: m[2]! }));
+  if (suite.code !== 0 && failed.length === 0) throw new Error(`check:fast with ${mutation.name} failed, naming no test: it says nothing of it\n${output.slice(-3000)}`);
+  const ran = output.match(/^(?:all passed: |\d+ failed in )(.*)$/m)?.[1] ?? "check:fast";
+  // Each that failed, run again with it, and as the compiler is, back to
+  // back, here, so the load and the disk are one for both: a catch fails
+  // both times with it and passes as it is (`judgeTwice`, `byControl`).
+  const { again, control } = await pairedReruns(failed, mutant, unmutated);
+  return { mutant, unit, unitCaught, unitSilent, ran, failed, again, control };
+}
+
+/** Of `failed`, a suite's tests that failed with `mutant`, each file's run
+ * again with it and then at once with `unmutated`, the compiler as it is,
+ * as a copy the next mutant's build may not replace: those that failed
+ * again with it, and those that fail as it is, by `file\ttest`
+ * (`failingWith`). Back to back, so a test that fails with any compiler
+ * under the load or the disk it met fails both, and says nothing; each
+ * pair where the disk is above its floor (`belowFloor`). */
+async function pairedReruns(failed: { file: string; test: string }[], mutant: string, unmutated: string): Promise<{ again: Set<string>; control: Set<string> }> {
+  const again = new Set<string>();
+  const control = new Set<string>();
+  if (failed.length === 0) return { again, control };
+  const unmutatedCopy = join(work, "bin", "retire-control");
+  mkdirSync(dirname(unmutatedCopy), { recursive: true });
+  rmSync(unmutatedCopy, { force: true });
+  cpSync(unmutated, unmutatedCopy);
+  for (const file of new Set(failed.map((f) => f.file))) {
+    const low = belowFloor(freeBytes(root));
+    if (low) throw new Error(`its failures' reruns met the floor: ${low}`);
+    const ofFile = failed.filter((f) => f.file === file);
+    for (const test of await failingWith(ofFile, mutant, failures)) again.add(test);
+    for (const test of await failingWith(ofFile, unmutatedCopy, failedTests)) control.add(test);
+  }
+  rmSync(unmutatedCopy, { force: true });
+  return { again, control };
 }
 
 /** `retire`'s verdict of one mutant whose suite ran (`retireSuite`): React's
- * port and the crate corpus with it, held to the controls, and each suite
- * test that failed run again with `unmutated`, the compiler as it is: its
- * trailer where nothing caught it, or none, each test that did printed. */
+ * port and the crate corpus with it, held to the controls, and its suite's
+ * failures by their paired reruns: its trailer where nothing caught it, or
+ * none, each test that did printed. */
 async function retireVerdict(
   mutation: Mutation,
-  { mutant, unit, unitCaught, unitSilent, suite }: RetireSuite,
+  { mutant, unit, unitCaught, unitSilent, ran, failed, again, control }: RetireSuite,
   crateControl: Map<string, Verdict>,
-  unmutated: string,
 ): Promise<string | undefined> {
   console.log(`${mutation.name}: React's port at its pin regenerated with it`);
   const portCaught = (await portDiffers(mutant)).map((file) => `react-in-rust regen: ${file}`);
   console.log(`${mutation.name}: the crate corpus, every row, measured with it`);
   const crates = await crateVerdicts(mutant, false);
   const crateCaught = typeof crates === "string" ? [`crate corpus: failed with it: ${crates}`] : verdictsDiffer(crateControl, crates);
-  const output = suite.stdout + suite.stderr;
-  if (stopped(suite, retireTimeout)) throw new Error(`check:fast with ${mutation.name} ${stopped(suite, retireTimeout)}: it says nothing\n${output.slice(-3000)}`);
-  const failed = [...output.matchAll(/^failed with it: (\S+)\t(.*)$/gm)].map((m) => ({ file: m[1]!, test: m[2]! }));
-  if (suite.code !== 0 && failed.length === 0) throw new Error(`check:fast with ${mutation.name} failed, naming no test: it says nothing of it\n${output.slice(-3000)}`);
-  // Each that failed, run again with it, and as the compiler is: a catch
-  // fails both times with it and passes as it is (`judgeTwice`).
-  const again = await failingWith(failed, mutant, failures);
   rmSync(mutant, { force: true });
-  const unmutatedCopy = join(work, "bin", "retire-control");
-  mkdirSync(dirname(unmutatedCopy), { recursive: true });
-  rmSync(unmutatedCopy, { force: true });
-  cpSync(unmutated, unmutatedCopy);
-  const control = await failingWith(failed, unmutatedCopy, failedTests);
-  rmSync(unmutatedCopy, { force: true });
   const { caught: suiteCaught, silent: suiteSilent, flaked } = byControl(failed, again, control);
   const silent = [...unitSilent, ...suiteSilent];
   if (silent.length > 0) console.log(`\nthese fail as the compiler is too, in a mutant's environment, and say nothing of it:\n${silent.map((name) => `  ${name}`).join("\n")}`);
@@ -1387,7 +1443,6 @@ async function retireVerdict(
   if (caught.length === 0 && flaked.length > 0) throw new Error(`only flakes failed with it, which say nothing of it: fix them, and run \`--retire=${mutation.name}\` again`);
   if (caught.length === 0) {
     const head = runSync(["git", "rev-parse", "--short=9", "HEAD"], root, 10_000).stdout.trim();
-    const ran = output.match(/^(?:all passed: |\d+ failed in )(.*)$/m)?.[1] ?? "check:fast";
     console.log(`\n${mutation.name} can be retired: nothing tests what it changes. The evidence, a trailer of the commit that removes it:\n`);
     const trailer = `${retiredTrailer}: ${mutation.name}: with it, at ${head}, the compiler's ${unit.passed} unit tests passed, and check:fast's suite, every test file and the corpus whole with its snapshots (${ran})${silent.length > 0 ? `, but ${silent.length} that fail as the compiler is too` : ""}, React's port at its pin regenerated as it committed, and the crate corpus's ${crateControl.size} rows each as the compiler is`;
     console.log(trailer);

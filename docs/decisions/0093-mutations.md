@@ -1092,3 +1092,30 @@ survivor does: a flake named and fixed, rather than a survivor hidden as a
 catch or a flake passed over in silence. A test that ran out of time
 still says nothing (`failures`, the one reader of a run's failures, which
 `judge` asks too).
+
+## Amendment: a retirement judges nothing below the disk's floor, and runs each control beside its mutant (2026-11-18)
+
+A `--retire` of `guard-named-twice-kept-whole` and
+`guard-closure-beside-itself` ran with the disk at its floor, 40 GiB
+free (`floorBytes`, test/bounded.ts). There the loop's stores keep
+nothing and some tests fail with any compiler: 6 of
+test/source-mutations.test.ts ("a source mutation workspace would cross
+the development disk floor") and 4 of test/native-outcomes.test.ts. Each
+failed with both mutants. Their control, the compiler as it is, ran after
+the port and the crate corpus, about an hour later with more free, and
+passed. So each mutant was said caught by tests that say nothing of it.
+
+Two changes, so a run never blames its environment on a mutant:
+- **The floor.** `belowFloor` is checked before the controls, before and
+  after each mutant's suite, and before each pair of reruns. Below it, the
+  run judges nothing and says why, naming the free and the floor: the
+  whole run where it starts there, and the one mutant, which says
+  nothing, where its suite meets it.
+- **The control beside the mutant.** Each file whose tests failed with the
+  mutant is run again with it and at once as the compiler is
+  (`pairedReruns`), in the suite's step, not after the port and the crate
+  corpus. A test that fails under the load or the disk it met fails both,
+  and says nothing (`byControl`, as before).
+
+test/mutations.test.ts holds both. Mutations `retire-judges-below-the-floor`
+and `retire-control-rerun-apart` are caught.

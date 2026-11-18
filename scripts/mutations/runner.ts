@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     replace: "  return args.every((arg) => arg.startsWith(\"--\"));\n",
     tests: ["test/mutations.test.ts", "-t", "a run of every mutation confirms its catches"],
   },
+  {
+    name: "retire-judges-below-the-floor",
+    breaks: "`--retire` judges a mutant with the disk below its floor, where source-mutations' and native-outcomes' tests fail with any compiler and a later control may pass them, blaming the disk on the mutant (2026-11-18)",
+    file: "scripts/mutations.ts",
+    find: "  if (free >= floor) return undefined;\n",
+    replace: "  if (free >= 0) return undefined;\n",
+    tests: ["test/mutations.test.ts", "-t", "judges nothing below the disk's floor"],
+  },
+  {
+    name: "retire-control-rerun-apart",
+    breaks: "`--retire` reruns a failed test's control after the mutant's reruns of every file, not right after its own, so the load and the disk differ between them (2026-11-18)",
+    file: "scripts/mutations.ts",
+    find: "    for (const test of await failingWith(ofFile, mutant, failures)) again.add(test);\n    for (const test of await failingWith(ofFile, unmutatedCopy, failedTests)) control.add(test);\n  }\n",
+    replace: "    for (const test of await failingWith(ofFile, mutant, failures)) again.add(test);\n  }\n  for (const test of await failingWith(failed, unmutatedCopy, failedTests)) control.add(test);\n",
+    tests: ["test/mutations.test.ts", "-t", "judges nothing below the disk's floor"],
+  },
 ];

@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { betweenTests, byControl, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { belowFloor, betweenTests, byControl, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -340,6 +340,36 @@ test("--retire regenerates React's port with the mutant, held to its control", (
   expect(retire).toContain("port control fails: ");
   expect(retire).toContain("...portCaught, ...crateCaught]");
   expect(retire).toContain("React's port at its pin regenerated as it committed");
+});
+
+// A retirement judges nothing below the disk's floor, where the loop's
+// stores keep nothing and tests fail with any compiler; and each failure's
+// control runs right after the mutant's rerun of it, so the load and the
+// disk are one for both. A retirement at the floor blamed source-mutations'
+// and native-outcomes' tests on two mutants, their control run an hour
+// later with more free (2026-11-18).
+test("--retire judges nothing below the disk's floor, and reruns each failure's control beside the mutant's", () => {
+  const gib = 2 ** 30;
+  expect(belowFloor(50 * gib, 40 * gib)).toBeUndefined();
+  expect(belowFloor(40 * gib, 40 * gib)).toBeUndefined();
+  expect(belowFloor(39.5 * gib, 40 * gib)).toBe("the disk has 39.5 GiB free, below its floor of 40.0 GiB, where the loop's stores keep nothing and tests fail with any compiler: free some, and run it again");
+  const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
+  const of = (name: string) => source.match(new RegExp(`\\nasync function ${name}\\([\\s\\S]*?\\n}\\n`))![0];
+  // Before the controls and before each suite, and after it.
+  expect(of("retire").indexOf("belowFloor(freeBytes(root))")).toBeLessThan(of("retire").indexOf("await build("));
+  const suite = of("retireSuite");
+  const checkFast = suite.indexOf("scripts/checkFast.ts");
+  expect(suite.indexOf("belowFloor(freeBytes(root))")).toBeLessThan(checkFast);
+  expect(suite.lastIndexOf("belowFloor(freeBytes(root))")).toBeGreaterThan(checkFast);
+  // The reruns follow the suite, in it, and the verdict runs none.
+  expect(suite.indexOf("await pairedReruns(failed, mutant, unmutated)")).toBeGreaterThan(checkFast);
+  expect(of("retireVerdict")).not.toContain("failingWith(");
+  // Of each file, the mutant's rerun, then at once the control's, each
+  // pair above the floor.
+  const paired = of("pairedReruns");
+  const loop = paired.slice(paired.indexOf("for (const file of"));
+  expect(loop.indexOf("belowFloor(freeBytes(root))")).toBeLessThan(loop.indexOf("failingWith(ofFile, mutant, failures)"));
+  expect(loop.indexOf("failingWith(ofFile, mutant, failures)")).toBeLessThan(loop.indexOf("failingWith(ofFile, unmutatedCopy, failedTests)"));
 });
 
 // Several retired at once share their controls (#2043): each flag's names,
