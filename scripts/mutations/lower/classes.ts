@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "class-default-impl-refused",
     breaks: "a class cannot implement the static Default trait",
     file,
-    find: "                    && !tcx.is_diagnostic_item(rustc_span::sym::Default, trait_id)\n",
+    find: "                    && !super::recognition::is_std_def(tcx, trait_id, super::recognition::StdItem::Default)\n",
     replace: "",
     tests: ["test/classes.test.ts", "-t", "ES class implementing Default"],
   },
