@@ -5,15 +5,11 @@ export const mutations: Mutation[] = [
   {
     name: "library-changed-unwritten",
     breaks:
-      "a library's contract says it changes nothing in place, so a consumer that changes what it does compiles its own of each exported function that copies one, `firstNotch` (rd606)",
+      "a library's contract says it changes nothing in place, so a crate shares the library's types it reads, which that library changes, where another crate's JS changes them too (ADR 0100, amended, #1871); what a library's functions leave out is `Library.elided`'s, held by `elided-of-changed`",
     file: "src/lower/library/exports.rs",
     find: "        changed: shapes(tcx, changed.mutated.iter().chain(changed.vecs).copied()),\n",
     replace: "        changed: shapes(tcx, changed.vecs.iter().copied().filter(|_| false)),\n",
-    tests: [
-      "test/crates-compiled-here.test.ts",
-      "-t",
-      "a library's generic function is its program's",
-    ],
+    tests: ["test/crates.test.ts", "-t", "three crates: library_type_changed_by_another_library"],
   },
   {
     name: "library-default-type-imported-by-name",
