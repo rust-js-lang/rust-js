@@ -134,9 +134,9 @@ export const mutations: Mutation[] = [
     name: "class-given-props-companion",
     breaks: "a `#[rust_js::class]` struct is given a props companion beside its class's own macro, its name defined twice, E0428 (#1794)",
     file: "src/jsx_syntax/props.rs",
-    find: "        if attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"class\")) {\n            return None;\n        }\n",
+    find: "    if attrs.iter().any(|attr| super::is_rust_js_attr(attr, \"class\")) {\n        return None;\n    }\n",
     replace: "",
-    tests: ["test/class-components.test.ts"],
+    tests: ["test/class-components.test.ts", "test/classes.test.ts"],
   },
   {
     name: "sysroot-props-companioned",

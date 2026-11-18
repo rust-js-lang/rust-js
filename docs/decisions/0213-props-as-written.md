@@ -109,6 +109,13 @@ error: missing prop `href` of `ButtonLinkProps`
 
 ## Since
 
+- **A JS class owns its JSX companion even when it implements `Default`.**
+  A class and a props structure otherwise generated two macros with its
+  name. The class keeps its own JSX behavior, and `Default` remains an
+  ordinary Rust implementation. The class test covers construction from
+  JavaScript and through Rust's `Default`. This follows ADR 0262's first
+  case because the class's runtime behavior is unchanged.
+
 - **Children of a type parameter left out are React's empty node**
   (2026-10-10), `Element`'s default, `undefined`: `<Head />` of
   next/document's `HeadProps<C>`, whose `C` a `Default::default()` left

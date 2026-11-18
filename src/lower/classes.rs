@@ -841,7 +841,9 @@ pub(super) fn reject_misuse<'tcx>(
             // a `PartialEq` and a `Hash` of its address, `ptr::eq` and
             // `ptr::hash`, of one equal only to itself, which JS's `===` and
             // a `Set` are of an object, with no JS of their own (ADR 0864;
-            // ADR 0761, amended).
+            // ADR 0761, amended). `Default::default` is an associated
+            // function, compiled as an ordinary trait call, with no receiver
+            // or prototype member.
             DefKind::Impl { of_trait: true } if displayed_class(tcx, id).is_none() => {
                 let self_ty = tcx.type_of(id).instantiate_identity().skip_normalization();
                 let trait_id = tcx.impl_trait_id(id);
@@ -852,6 +854,7 @@ pub(super) fn reject_misuse<'tcx>(
                     && is_class(tcx, adt.did())
                     && (tcx.associated_item_def_ids(id).iter()).any(|&item| tcx.def_kind(item) != DefKind::AssocTy)
                     && !identity
+                    && !tcx.is_diagnostic_item(rustc_span::sym::Default, trait_id)
                 {
                     let name = tcx.def_path_str(tcx.impl_trait_id(id));
                     refuse(

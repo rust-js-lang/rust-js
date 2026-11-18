@@ -1087,3 +1087,35 @@ pub fn subclass() {
     "replacing the prototype of `ReactPromise`, a `#[rust_js::class]` with prototype methods, where a function runs, which drops them: replace it in a `js::on_load!` of its own (#448)",
   );
 });
+
+test("an ES class implementing Default has only its class companion", async () => {
+  const { js, dir } = compiled("class-with-default", `
+#[cfg_attr(rust_js, rust_js::class(es))]
+pub struct Container {
+    pub value: f64,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Container {
+    pub fn new() -> Self {
+        Self { value: 7.0 }
+    }
+}
+
+impl Default for Container {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+pub fn create() -> Container {
+    Container::default()
+}
+`);
+  expect(js).toContain("export class Container");
+  const lib = await import(join(dir, "lib.js"));
+  expect(new lib.Container().value).toBe(7);
+  expect(lib.create()).toBeInstanceOf(lib.Container);
+  expect(Object.hasOwn(lib.Container, "default")).toBe(false);
+  expect(Object.hasOwn(lib.Container.prototype, "default")).toBe(false);
+});
