@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "    fold,\n    count:",
     replace: "    count:",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
   },
   {
     name: "closing-nth-by-next",

@@ -492,7 +492,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "                    true if self.cell_field_read_defined(ty, i) => {\n                        self.nullable_cell_handle(field.defined(), def, fields[i].1)\n",
     replace: "                    true if self.cell_field_read_defined(ty, i) => {\n                        self.nullable_cell_handle(field, def, fields[i].1)\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_a_mapped_option.rs$"],
+    snapshots: true,
   },
   {
     name: "optional-nullable-read-defined",
