@@ -604,8 +604,9 @@ A closure, `Box<dyn Fn(u32) -> u32>`, is a JS function, not a pair. A
 field that's a closure of statements is a method, `then(resolve,
 reject) { .. }`, as JS writes a thenable, and so is each function beside
 it, as an object of methods is written; one of a value alone in an object
-of no method stays an arrow, `{ double: (x) => x * 2 }`. A method and an
-arrow differ only in their `this`, which a Rust closure never reads; one
+of no method stays an arrow, `{ double: (x) => x * 2 }`. Function fields
+in a literal with an object spread stay arrows, `{ ...given, cancel: () => { .. } }`.
+A method and an arrow differ in their receiver and JS source text. One
 that reads a class's `this` stays an arrow
 ([ADR 0882](../../decisions/0882-a-field-of-statements-is-a-method.md),
 amended):

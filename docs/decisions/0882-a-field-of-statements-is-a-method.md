@@ -277,3 +277,16 @@ Held by `test/lowering-arrows.test.ts`'s `shifted`, the mutation
 `test/react-compiler/listener_shadowing_its_local.rs` ([1142](1142-the-react-compiler-net.md)),
 whose known entry is gone.
 
+
+## Amendment: object spreads preserve closure properties
+
+A literal that still contains an object spread keeps its arrow-valued
+fields. This is the data-record shape `{ ...input, cancel: () => { .. } }`,
+with the spread, property evaluation order and live getters intact.
+Literals without a spread keep the method rule above. Preparation decides
+both forms in the same pass.
+
+This changes the source a JavaScript caller observes through
+`Function.prototype.toString` (#1931), while preserving the Rust closure's
+behavior and the property descriptor. The createDetails contract checks
+both the source and the behavior, including detaching the callback.
