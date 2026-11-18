@@ -107,12 +107,14 @@ pub(crate) fn superclass(tcx: TyCtxt<'_>, adt: DefId) -> Option<(DefId, BaseClas
 /// A function of class `adt` its reference names, `Surface` of
 /// `Surface.prototype.render`'s: its constructor, or, of one React
 /// constructs, which has none, a method of its impl of the class it
-/// extends (rd331i); `None` of what's no class.
+/// extends (rd331i), or a static of a class with an implicit constructor.
 pub(crate) fn member_naming(tcx: TyCtxt<'_>, adt: DefId) -> Option<DefId> {
-    super::constructor_of(tcx, adt).or_else(|| {
-        let (imp, _) = superclass(tcx, adt)?;
-        tcx.associated_item_def_ids(imp).first().copied()
-    })
+    super::constructor_of(tcx, adt)
+        .or_else(|| {
+            let (imp, _) = superclass(tcx, adt)?;
+            tcx.associated_item_def_ids(imp).first().copied()
+        })
+        .or_else(|| super::implicit_constructor_member(tcx, adt))
 }
 
 /// Is `field` one a value is of before it's set, `undefined`: an `Option`,

@@ -187,6 +187,14 @@ where Rust meets JS, so it's an attribute, as a binding's
 
 ## Consequences
 
+- A fieldless ES class with a static method can omit `fn new`. JavaScript
+  supplies the empty constructor, as it does for Three.js's
+  `LoaderUtils`. The generated class and its declaration omit the
+  constructor and live in the struct's module. Direct Rust construction
+  still uses an explicit `fn new` so that the compiler can preserve the
+  class prototype. JavaScript's
+  default constructor suffices because there are no fields to initialize
+  (ADR 0262, no observable difference).
 - An instance of a class is no plain object: `{ ..c }` copies its own
   fields, not its prototype's methods, so a class implements no `Clone`.
 - A read of the class's constant in Rust reads the prototype's,

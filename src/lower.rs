@@ -178,6 +178,11 @@ impl FnInfo {
 /// answer to where a body goes.
 pub(crate) fn body_module(tcx: TyCtxt<'_>, instances: &Instances, def_id: DefId) -> LocalModId {
     if let Some(local) = def_id.as_local() {
+        if let Some(module) =
+            classes::class_of(tcx, def_id).and_then(|class| classes::implicit_constructor_home(tcx, class))
+        {
+            return module;
+        }
         return tcx.parent_module_from_def_id(local);
     }
     // A library's function the crate compiles itself is beside its first

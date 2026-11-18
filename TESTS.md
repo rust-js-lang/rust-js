@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-18: the ES class suite checks static methods, declarations, and JavaScript's implicit constructor on a fieldless class.
+
 Changed on 2026-11-18: the comment placement suite checks that a wrapped template initializer keeps its annotation outside the string.
 
 Changed on 2026-11-18: the None regression holds a return of a locally written null beside undefined and a present value in a single variable. It checks JavaScript behavior and TypeScript declarations. It also checks a binding whose outer option is undefined-only but whose object contains optional fields.
