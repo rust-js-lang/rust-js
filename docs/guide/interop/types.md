@@ -2653,6 +2653,10 @@ export function made(class$, name) {
   return new class$(name, 1);
 }
 ```
+
+For a constructor read from a property, `js::new(&js::get(value,
+"constructor"), ())` is `new value.constructor()`. The property is read
+once and JavaScript throws a `TypeError` when the value isn't constructible.
 - `js::delete(value, key)` is `delete value[key]`, whether it's gone
   ([ADR 0697](../../decisions/0697-delete-is-jss-delete.md)):
 
