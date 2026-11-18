@@ -18,7 +18,7 @@ import { appendFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFile
 import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
-import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
+import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
 import { changedSince, mutations } from "./mutations";
 import { outcome, type Selection, selectChange } from "./select";
 import { downloaded } from "./artifacts";
@@ -296,6 +296,7 @@ async function plan(given?: string) {
   console.log(`crates=${touchesCrates(changed)}`);
   console.log(`port=${touchesPort(changed)}`);
   console.log(`memory=${touchesMemory(changed)}`);
+  console.log(`intervals=${touchesIntervals(changed)}`);
   console.log(`mutations=${mutating}`);
   console.log(`mutation_timings=${plannedMutationTimings()}`);
   console.log(`test_timings=${plannedTestTimings()}`);

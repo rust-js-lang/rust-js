@@ -7,6 +7,14 @@ const tests = ["test/intervals-shadow.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "without-intervals-forgets-nothing",
+    breaks: "`--without-intervals` takes what MIR proves still, so the readability net's intervals variant is each case's build and tries no check the intervals leave out (#2112 B)",
+    file: "src/lower/analysis/intervals/session.rs",
+    find: "    if caches.without_intervals {\n        proofs = Proofs::default();\n    }\n",
+    replace: "",
+    tests: ["test/tidy-stages.test.ts", "-t", "without the intervals keeps"],
+  },
+  {
     name: "intervals-proofs-unreported",
     breaks: "what MIR proves isn't in the shadow, so a mutation that takes proofs away shows nothing in what `ablate.ts` counts (#1672 M4)",
     file: "src/lower/analysis/intervals/session.rs",

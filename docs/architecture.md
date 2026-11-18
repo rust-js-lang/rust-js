@@ -296,7 +296,12 @@ and each std function's recogniser is left out in turn,
 ([ADR 1128](decisions/1128-what-no-recogniser-takes-is-refused-or-right.md));
 and tidy is told nothing of where the program writes its constructs,
 `--no-thir-hints` (`mir/hints.rs`), the program running the same
-([ADR 1144](decisions/1144-the-structurer-keeps-what-it-knows-if-measured-so.md), amended). The printer owns spelling and layout, including
+([ADR 1144](decisions/1144-the-structurer-keeps-what-it-knows-if-measured-so.md), amended);
+and nothing MIR's intervals prove is taken, `--without-intervals`
+(`analysis/intervals/session.rs`), every check and wrap kept, the program
+running the same, a family of variants of its own that a change to the
+intervals, the pointers' code or a `&mut`'s runs per push
+([ADR 1137](decisions/1137-the-bounds-analysis-on-mir-shadow-first.md), amended, #2112 B). The printer owns spelling and layout, including
 expression forms determined while converting to oxc; Rust decisions stay upstream.
 
 ### Semantic owners

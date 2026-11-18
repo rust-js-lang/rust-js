@@ -12,7 +12,7 @@ import { readersOf } from "./part-settings";
 import { downloaded } from "../scripts/artifacts";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import { mutations, refusedFlags, site } from "../scripts/mutations";
-import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
+import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability, variantFamilies } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
 import { portRefusal, reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
@@ -291,7 +291,7 @@ test("each push's lint job checks std/ is what its sources make, after the compi
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code, the numbers' and the pointers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs", "src/lower/mir/awaits.rs", "src/lower/unions.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs", "src/lower/mir/awaits.rs", "src/lower/unions.rs", "src/lower/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 // The readability passes' oracles run of a change to tidy, preparation or
@@ -308,6 +308,21 @@ test("the readability passes run where readability-passes.yml's paths say, of --
   expect(named({ all: false, changed: ["test/getter-reads/counts.rs"], branch: [] })).toBe(true);
   expect(touchesReadability(["src/lower/mir/tidying.rs", "docs/guide/README.md"])).toBe(false);
   expect(() => readabilityPaths("on:\n  push:\n")).toThrow("no `on.push.paths`");
+});
+
+// Each family of tidy-stages' variants runs of its own paths: the
+// intervals' of a change to the facts MIR's intervals keep or to what
+// writes past them, never of tidy's, nor tidy's of theirs (#2112 B).
+test("the intervals' variant runs where intervalsPaths say, and the readability passes don't", () => {
+  const named = (changed: string[]) => jobs({ all: true, changed, branch: [], added: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
+  const intervals = named(["src/lower/analysis/intervals/state.rs"]);
+  expect(intervals).toContain("the intervals' variant");
+  expect(intervals).not.toContain("readability passes");
+  expect(named(["src/lower/pointers/keeps.rs"])).toContain("the intervals' variant");
+  const tidy = named(["src/lower/mir/tidy/exits.rs"]);
+  expect(tidy).toContain("readability passes");
+  expect(tidy).not.toContain("the intervals' variant");
+  expect(variantFamilies.intervals(["src/lower/copies.rs"])).toBe(false);
 });
 
 // `--all` runs the metamorphic net's push sample in parts, as the corpus's,
@@ -1007,7 +1022,7 @@ test("the WASM build takes rustc's crates as built where the cache holds the sam
 // by its step's name, and its summary names each (dev-loop change 3).
 test("the short nets are the nets job's steps, each where its change runs it, each failure named", () => {
   const listed = nets();
-  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "copies", "format", "numbers", "memory", "declarations", "async", "consumers", "std", "twins", "metamorphic", "crates", "port"]);
+  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "copies", "format", "numbers", "memory", "intervals", "declarations", "async", "consumers", "std", "twins", "metamorphic", "crates", "port"]);
   type Step = { id?: string; if?: string; background?: boolean; "wait-all"?: null };
   const workflow = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { if?: string; steps: Step[] }> };
   const job = workflow.jobs.nets!;

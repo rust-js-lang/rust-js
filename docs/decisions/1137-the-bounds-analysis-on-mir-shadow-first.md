@@ -1272,3 +1272,32 @@ to what the `dyn` gives out, one kept to the `dyn` itself, each cleared
 past a length test, and an index past it that panics, against native.
 Main gives `-3` and no panic. Mutation `dyn-pointee-keeps-only-its-own-type`
 is caught.
+
+## Amendment (2026-11-18, #2112 B step 1): each case runs the same without the intervals
+
+A fact the intervals keep past a write that reached it is a wrong answer
+(the 14 of #2112's C3), and the corpus found each only where a case
+happened to write that shape. So the intervals get a net of their own
+before their forgetting rules are replaced: `rust-js --without-intervals`
+takes nothing they prove (`body_proofs` gives every body empty `Proofs`),
+so every bounds check, wrap, cast, `OnceCell` set and `first()`/`last()`
+they'd leave out is kept. A program's run without them is the run with
+them, or a proof was wrong.
+
+It is a variant of `test/tidy-stages.test.ts`, the mechanism the
+readability passes' variants already are (ADRs 0659, 1087), run against
+native Rust. A case whose JS the flag doesn't change isn't run again.
+Each variant is now of a family, whose own paths run it per push
+(`scripts/checkFast.ts`' `variantFamilies`): the readability passes' of
+tidy's and preparation's, as before, and the intervals' of
+`intervalsPaths`, the intervals, the pointers' code and a `&mut`'s. Their
+push slice, `TIDY_VARIANTS=intervals`, is 8 cases each of a P0 this
+shape once was, in check.yml's `nets`. The nightly's `stages`, every
+case and the night's programs, runs every family.
+
+The first run, the whole corpus: 2,694 cases, 552 of them with JS the
+flag changes, each running as native Rust does; and generated programs
+seeds 1 to 200, each the same. No hole.
+
+Mutation `without-intervals-forgets-nothing` is caught by "a case's JS
+without the intervals keeps the checks they leave out".

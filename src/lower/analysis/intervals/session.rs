@@ -87,6 +87,11 @@ pub(in crate::lower) fn body_proofs<'tcx>(
     if sets {
         proofs.empty_sets = crate::lower::analysis::empty_sets(tcx, typing_env, body);
     }
+    // Of `--without-intervals`, none: each check and wrap is kept, so a
+    // case that runs otherwise names a fact kept past a write (#2112 B).
+    if caches.without_intervals {
+        proofs = Proofs::default();
+    }
     let mut exact: IndexMap<Span, bool> = IndexMap::default();
     if caches.intervals_shadow.is_some() {
         for (block, data) in body.basic_blocks.iter_enumerated() {

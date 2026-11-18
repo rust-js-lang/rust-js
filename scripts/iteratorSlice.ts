@@ -203,6 +203,31 @@ export function touchesMemory(files: string[]): boolean {
   return files.some((file) => memoryGlobs.some((glob) => glob.match(file)));
 }
 
+/** The facts MIR's intervals keep and what may write past them, as globs
+ * of the repository's paths: the intervals, the pointers' code and what a
+ * `&mut` is, whose change runs the intervals' variant of
+ * test/tidy-stages.test.ts, each case without their proofs (#2112 B). */
+export const intervalsPaths = [
+  "src/lower/analysis/intervals.rs",
+  "src/lower/analysis/intervals/**",
+  "src/lower/pointers.rs",
+  "src/lower/pointers/**",
+  "src/lower/mut_refs.rs",
+  "src/lower/mut_refs/**",
+];
+
+const intervalsGlobs = intervalsPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches the facts MIR's intervals keep. */
+export function touchesIntervals(files: string[]): boolean {
+  return files.some((file) => intervalsGlobs.some((glob) => glob.match(file)));
+}
+
+/** The families of test/tidy-stages.test.ts' variants, each run by a push
+ * of its own code (scripts/checkFast.ts' `variantFamilies`). */
+export const families = ["readability", "intervals"] as const;
+export type Family = (typeof families)[number];
+
 /** What drops, and what drops as a panic unwinds, as globs of the
  * repository's paths: the drops and their unwinding's owners. */
 const dropPaths = ["src/lower/drops/**", "src/lower/analysis/unwinding.rs"];
@@ -446,6 +471,9 @@ export const runs = {
   // The slice's seeds, each a program of unsafe Rust over plain data, Miri
   // where it's installed: some 30 s in 8 parts.
   memory: [{ name: "the memory net's slice", file: "test/memory-net.test.ts", env: {} }],
+  // test/tidy-stages.test.ts' intervals family: its few cases, each
+  // without MIR's intervals' proofs, against native Rust (#2112 B).
+  intervals: [{ name: "the intervals' variant", file: "test/tidy-stages.test.ts", env: { TIDY_VARIANTS: "intervals" } }],
   // Each table against std's own bodies, no native run (#1205): each
   // table's slice, as a push's run of it against native Rust takes, the
   // whole net 9 min on CI's machine; `twinsAll`, all of each but the
@@ -599,7 +627,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|twins|twinsAll|rows [parts [cases]] | metamorphic [parts [since]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|intervals|twins|twinsAll|rows [parts [cases]] | metamorphic [parts [since]]");
   const parts = count === undefined ? caseParts(machine().cores * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

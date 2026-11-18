@@ -25,11 +25,23 @@
 // does the same. What rust-js does of a call no recogniser takes is then
 // never a wrong answer: a missing case of a recogniser is a refusal.
 //
+// And what MIR's intervals prove (ADR 1137): a program compiled with none
+// of it, `--without-intervals`, every bounds check, wrap and cast kept,
+// does the same. One that does otherwise names a fact the intervals kept
+// past a write that reached it, a wrong answer (#2112 B).
+//
+// Each variant is of a family, whose code a push changes to run it
+// (scripts/checkFast.ts' `variantFamilies`): the readability passes', and
+// the intervals'. `TIDY_VARIANTS=intervals` makes a run's variants and its
+// few cases that family's alone; the nightly's, unset, every family's.
+//
 //   case.rs ─┬─ rustc ──► native ──────────────────────────────────────────────────────────┐
 //            └─ rust-js --tidy-until <stage> | --prepare-without <r> | --without-known <k> | --no-thir-hints ──► node ─┴─► the same?
 //            └─ rust-js --without-recognizer <std fn> ──► refused, or node ──────────────────────────┴─► the same?
+//            └─ rust-js --without-intervals ──► node ─────────────────────────────────────────────────┴─► the same?
 //
 //   bun test test/tidy-stages.test.ts                                        # a few cases, every variant
+//   TIDY_VARIANTS=intervals bun test test/tidy-stages.test.ts                # the intervals' few cases and variant
 //   TIDY_STAGES=corpus RUST_JS_CASES=1/6 bun test test/tidy-stages.test.ts   # the corpus, a sixth of it
 //   TIDY_STAGES=programs FUZZ_START=1000 FUZZ_SEEDS=100 bun test test/tidy-stages.test.ts   # generated programs (ADR 0092)
 
@@ -45,6 +57,7 @@ import { buildCompiler, caseShard, compiler, contentDirectory, fixture, run, tar
 import { machine } from "../scripts/shard";
 import { record, runKey, shared, verified } from "./verified-runs";
 import { partSetting } from "./part-settings";
+import { type Family, families } from "../scripts/iteratorSlice";
 
 beforeAll(() => {
   buildCompiler();
@@ -92,6 +105,34 @@ const few = [
   // contract still reads it (ADR 1127).
   "flattened_state_got_mut.rs",
 ];
+// Of the intervals' variant: cases whose proofs leave a check out, each
+// of a fact a write once reached unforgotten, a raw pointer's (#1782,
+// #1966, #2053), a table's rows' (#1849), a `RefCell`'s drain (#1885), a
+// split's (#1860), a macro's repeated index (#1672) and a port's (#1943).
+const fewIntervals = [
+  "raw_pointer_written_after_its_owner_reads.rs",
+  "vec_lent_to_code_that_keeps_a_pointer.rs",
+  "vec_lent_through_a_dyn_to_code_that_keeps_a_pointer.rs",
+  "table_rows_resized_unseen.rs",
+  "refcell_drained_in_a_loop.rs",
+  "split_collected_is_never_empty.rs",
+  "macro_repeated_index_keeps_each_check.rs",
+  "bridged_port_shapes.rs",
+];
+
+/** The families whose variants this run makes: `TIDY_VARIANTS`' one, or
+ * every family. */
+const familiesRun: Family[] = (() => {
+  const named = partSetting("TIDY_VARIANTS");
+  if (named === undefined) return [...families];
+  if (!(families as readonly string[]).includes(named)) throw new Error(`TIDY_VARIANTS=${named}: one of ${families.join(", ")}, or unset for every family`);
+  return [named as Family];
+})();
+
+/** A test of a family's variants, run where its family's are. */
+const readabilityTest = test.if(familiesRun.includes("readability"));
+const intervalsTest = test.if(familiesRun.includes("intervals"));
+
 const which = partSetting("TIDY_STAGES");
 if (which !== undefined && which !== "corpus" && which !== "programs") {
   throw new Error(`TIDY_STAGES=${which}: \`corpus\`, \`programs\`, or unset for a few cases`);
@@ -106,7 +147,8 @@ function whole(name: string, otherwise: number): number {
   return Number(value);
 }
 
-const chosen = which === "corpus" ? caseShard(cases) : which === "programs" ? [] : few;
+const fewOf: Record<Family, string[]> = { readability: few, intervals: fewIntervals };
+const chosen = which === "corpus" ? caseShard(cases) : which === "programs" ? [] : [...new Set(familiesRun.flatMap((family) => fewOf[family]))];
 const start = whole("FUZZ_START", 1);
 const seeds = which === "programs" ? Array.from({ length: whole("FUZZ_SEEDS", 12) }, (_, i) => start + i) : [];
 
@@ -148,8 +190,9 @@ function forgettable(): string[] {
  * made of one. A list that only shrinks: a name leaves it with its fix. */
 const unrecognizedDiffers: Record<string, string> = {};
 
-/** A way to compile a program: its name, and rust-js's flags for it. */
-type Variant = { name: string; flags: string[] };
+/** A way to compile a program: its name, rust-js's flags for it, and the
+ * family whose code a push changes to make it. */
+type Variant = { name: string; flags: string[]; family: Family };
 
 /** A program's variants, of those of preparation's rewrites that changed
  * it, `fired`, the facts a reader found in it, `found`, and the std
@@ -157,19 +200,22 @@ type Variant = { name: string; flags: string[] };
  * stage; preparation without each of those, as one that changed nothing
  * leaves the JS as it is; each of those facts the JS is right without
  * forgotten, as one no reader found changes nothing; each of those
- * functions' recognisers left out; and tidy and preparation both at their
- * least, the last. */
+ * functions' recognisers left out; nothing MIR's intervals prove taken; and
+ * tidy and preparation both at their least, the last. */
 function variants(fired: string[], found: string[], recognized: string[] = []): Variant[] {
   const all = preparePasses();
+  const family: Family = "readability";
   return [
-    ...stageEnds().map((end) => ({ name: `after ${end}`, flags: ["--tidy-until", end] })),
-    ...fired.map((pass) => ({ name: `without preparation's ${pass}`, flags: ["--prepare-without", pass] })),
-    ...(forgettable().filter((known) => found.includes(known))).map((known) => ({ name: `without knowing ${known}`, flags: ["--without-known", known] })),
-    ...(recognized.filter((path) => unrecognizedDiffers[path] === undefined)).map((path) => ({ name: `without the recogniser of ${path}`, flags: ["--without-recognizer", path] })),
-    { name: "without the THIR hints", flags: ["--no-thir-hints"] },
+    ...stageEnds().map((end) => ({ name: `after ${end}`, flags: ["--tidy-until", end], family })),
+    ...fired.map((pass) => ({ name: `without preparation's ${pass}`, flags: ["--prepare-without", pass], family })),
+    ...(forgettable().filter((known) => found.includes(known))).map((known) => ({ name: `without knowing ${known}`, flags: ["--without-known", known], family })),
+    ...(recognized.filter((path) => unrecognizedDiffers[path] === undefined)).map((path) => ({ name: `without the recogniser of ${path}`, flags: ["--without-recognizer", path], family })),
+    { name: "without the THIR hints", flags: ["--no-thir-hints"], family },
+    { name: "without the intervals", flags: ["--without-intervals"], family: "intervals" },
     {
       name: `after ${stageEnds()[0]}, without any of preparation's rewrites`,
       flags: ["--tidy-until", stageEnds()[0], ...all.flatMap((pass) => ["--prepare-without", pass])],
+      family,
     },
   ];
 }
@@ -254,7 +300,8 @@ async function differences(file: string, dir: string, edition: string, native: R
   const finalEnd = stageEnds().at(-1);
   const least = variants([], []).at(-1)!.name;
   const listed = leastDiffers[basename(file)];
-  const chosen = variants(fired, found, recognized).filter((variant) => only === undefined || variant.name === only);
+  const chosen = (variants(fired, found, recognized))
+    .filter((variant) => (only === undefined ? familiesRun.includes(variant.family) : variant.name === only));
   const made = await eachAtOnce(chosen, ({ flags }) => compile(file, dir, edition, flags));
   for (const [at, { name, flags }] of chosen.entries()) {
     const compiled = made[at];
@@ -280,6 +327,9 @@ async function differences(file: string, dir: string, edition: string, native: R
       problems.push(`${name}: rust-js failed: ${compiled.error.split("\n").slice(0, 6).join("\n")}`);
       continue;
     }
+    // Without the intervals, the JS a build makes is the build's, which
+    // the corpus runs: of a case whose proofs left nothing out, no run.
+    if (flags[0] === "--without-intervals" && code(compiled.js) === code(full.js)) continue;
     // The same JS, of any variant, runs the same: it's run once.
     const key = runKey(["readability variant", code(compiled.js), native.bytes.stdout, native.bytes.stderr, show(native.outcome), shared()]);
     if (verified(key)) continue;
@@ -297,10 +347,27 @@ async function differences(file: string, dir: string, edition: string, native: R
 }
 
 test("the cases a run of a few names are the corpus's", () => {
-  for (const name of few) expect(cases).toContain(name);
+  for (const name of [...few, ...fewIntervals]) expect(cases).toContain(name);
 });
 
-test("a stage's end is the last of its passes", () => {
+// A compile without the intervals takes none of their proofs, so the
+// variant above tries what they leave out (#2112 B): a case whose proofs
+// leave checks out has them back, its rows' bounds, and a case's JS with
+// none to leave out is its build's.
+intervalsTest("a case's JS without the intervals keeps the checks they leave out", async () => {
+  buildCompiler();
+  const at = async (name: string, flags: string[]) => {
+    const compiled = await compile(join(corpus, name), caseDir(name), "2024", flags);
+    if (!("js" in compiled)) throw new Error(compiled.error);
+    return code(compiled.js);
+  };
+  const name = "table_rows_resized_unseen.rs";
+  const [built, without] = await Promise.all([at(name, []), at(name, ["--without-intervals"])]);
+  expect(without).not.toBe(built);
+  expect(await at("calculator.rs", ["--without-intervals"])).toBe(await at("calculator.rs", []));
+});
+
+readabilityTest("a stage's end is the last of its passes", () => {
   buildCompiler();
   const ends = stageEnds();
   expect(ends.length).toBeGreaterThan(10);
@@ -311,7 +378,7 @@ test("a stage's end is the last of its passes", () => {
 // A variant is made only of a rewrite that fired, so one that didn't must
 // leave the JS as it is: what `--prepare-fired` says is each that changed
 // anything, or a rewrite's variant would go unchecked.
-test("a rewrite of preparation's that fired nowhere leaves a case's JS as it is", () => {
+readabilityTest("a rewrite of preparation's that fired nowhere leaves a case's JS as it is", () => {
   buildCompiler();
   const dir = fixture("stages-unfired");
   // Of a case whose rewrites of blocks and modules fire, every rewrite;
@@ -342,7 +409,7 @@ test("a rewrite of preparation's that fired nowhere leaves a case's JS as it is"
 // `--tidy-passes` names, in its order, some of them and far from all, each
 // of bodies it changed; and a compile that records them writes the JS
 // one that doesn't writes.
-test("what --tidy-fired says of a case is passes tidy runs, some and far from all, each of bodies it changed", () => {
+readabilityTest("what --tidy-fired says of a case is passes tidy runs, some and far from all, each of bodies it changed", () => {
   buildCompiler();
   const dir = fixture("stages-tidy-fired");
   const file = join(corpus, "calculator.rs");
@@ -370,7 +437,7 @@ test("what --tidy-fired says of a case is passes tidy runs, some and far from al
 // that changes its form isn't its JS with it; what `--knowns-found` says is
 // each fact a reader found, a form's too, and none that's forgotten; and a
 // name that's no fact is refused.
-test("a case's JS without a fact a reader found isn't its JS with it", async () => {
+readabilityTest("a case's JS without a fact a reader found isn't its JS with it", async () => {
   buildCompiler();
   const name = "calculator.rs";
   const dir = caseDir(name);
@@ -396,7 +463,7 @@ test("a case's JS without a fact a reader found isn't its JS with it", async () 
 // JS otherwise, so the variant of each case without them tries what it
 // says (ADR 1144, amended): `calculator`'s `if`s and `match`es, read by
 // where they're written, are written apart.
-test("a case's JS without the THIR hints isn't its JS with them", async () => {
+readabilityTest("a case's JS without the THIR hints isn't its JS with them", async () => {
   buildCompiler();
   const name = "calculator.rs";
   const dir = caseDir(name);
@@ -413,7 +480,7 @@ test("a case's JS without the THIR hints isn't its JS with them", async () => {
 // it; what `--recognizers-found` says is each function a recogniser took,
 // and none that's left out; and one the list of known differences names
 // has no variant.
-test("a std function's call without its recogniser is refused, and what a compile recognised is listed", async () => {
+readabilityTest("a std function's call without its recogniser is refused, and what a compile recognised is listed", async () => {
   buildCompiler();
   const name = "calculator.rs";
   const dir = caseDir(name);
@@ -435,7 +502,7 @@ test("a std function's call without its recogniser is refused, and what a compil
 // impl of a std trait that a recogniser takes, `Whole`'s own `read_to_end`
 // and `Text`'s `seek`, has no std path, and isn't listed, nor left out by
 // `--without-recognizer` (std_crates.rs's `std_path`, ADR 1054).
-test("what a compile recognised is std's functions, never the crate's own impls", async () => {
+readabilityTest("what a compile recognised is std's functions, never the crate's own impls", async () => {
   buildCompiler();
   const recognised = async (name: string) => {
     const { compiled, recognized } = await compileFull(join(corpus, name), caseDir(name), "2024");
@@ -452,7 +519,7 @@ test("what a compile recognised is std's functions, never the crate's own impls"
 // call generic code makes, to a dictionary that reads a `&mut` as generic
 // code's box, where the type known here gives its object, and ran otherwise:
 // a `Hasher`'s writes, a `BorrowMut`'s and a reader's (#1487, #1477).
-test("a known type's call that gives std's dictionary a &mut is refused without its recogniser", async () => {
+readabilityTest("a known type's call that gives std's dictionary a &mut is refused without its recogniser", async () => {
   buildCompiler();
   for (const [name, path] of [
     ["hash_hashers.rs", "std::hash::Hasher::write"],
@@ -470,7 +537,7 @@ test("a known type's call that gives std's dictionary a &mut is refused without 
 // dictionary's entry gives the value's text, no `Formatter`, so what no
 // recogniser takes is refused, never that call, which wrote into the held
 // formatter's place what it gave back (#1477).
-test("a formatting trait's fmt is refused without its recogniser, never the trait call", async () => {
+readabilityTest("a formatting trait's fmt is refused without its recogniser, never the trait call", async () => {
   buildCompiler();
   const name = "fmt_to_held_formatter.rs";
   const path = "std::fmt::Debug::fmt";
@@ -484,7 +551,7 @@ test("a formatting trait's fmt is refused without its recogniser, never the trai
 // given, its type, not by the recogniser of `into_iter`: a `&mut` to a
 // sequence a handle on each item, `$mutItems(v)`, a `&mut Result`
 // `iter_mut()`'s handle, each without that recogniser too (#1477).
-test("a &mut given to an IntoIterator bound is adapted by its type, without into_iter's recogniser", async () => {
+readabilityTest("a &mut given to an IntoIterator bound is adapted by its type, without into_iter's recogniser", async () => {
   buildCompiler();
   for (const name of ["iterables_given_to_generics.rs", "result_given_as_items.rs"]) {
     const file = join(corpus, name);
@@ -503,7 +570,7 @@ test("a &mut given to an IntoIterator bound is adapted by its type, without into
 // dictionary's `writeFmt` takes, without `write_fmt`'s recogniser too: the
 // call's the trait's, whatever a recogniser made of it. Given its text, it
 // threw `make is not a function` (#1891).
-test("a write! into a writer a dictionary says gives it the Arguments' function, without write_fmt's recogniser", async () => {
+readabilityTest("a write! into a writer a dictionary says gives it the Arguments' function, without write_fmt's recogniser", async () => {
   buildCompiler();
   for (const name of ["generic_writers.rs", "arguments_given_to_a_generic_writer.rs", "references_given_to_generics.rs"]) {
     const file = join(corpus, name);
@@ -536,7 +603,7 @@ for (const name of chosen.filter((name) => cases.includes(name))) {
 // stopped after its first stage leaves a body as no later stage does; and
 // so is preparation's without a rewrite it made. After the cases, whose
 // compiles of these it reads, made once (#808).
-test("a case's JS after tidy's first stage isn't its JS after the last, nor without a rewrite that fired", async () => {
+readabilityTest("a case's JS after tidy's first stage isn't its JS after the last, nor without a rewrite that fired", async () => {
   buildCompiler();
   const [first, ...rest] = stageEnds();
   const at = async (name: string, flags: string[]) => {

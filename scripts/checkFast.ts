@@ -23,7 +23,7 @@ import { cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import {childWarnings} from "../test/child";
-import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
+import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
 import { outcome, readOnly, recordSanity, selectChange, selectionFile, suiteFiles } from "./select";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, pooledParts } from "./shard";
 import { said, strays } from "./strays";
@@ -195,6 +195,15 @@ export function touchesReadability(files: string[], paths = readabilityPaths()):
   return files.some((file) => globs.some((glob) => glob.match(file)));
 }
 
+/** Of each family of test/tidy-stages.test.ts' variants, whether a change
+ * of `files` runs it: the readability passes' of tidy's and preparation's
+ * paths, the intervals' of the facts they keep and what writes past them
+ * (#2112 B). */
+export const variantFamilies: Record<Family, (files: string[]) => boolean> = {
+  readability: (files) => touchesReadability(files),
+  intervals: touchesIntervals,
+};
+
 /** The check's jobs, through the pool at once: of `--all`, or a change the
  * selector can't say, what a push's check runs (check.yml); else the test
  * files and cases it selected, and the nets and builds its paths run. */
@@ -220,7 +229,11 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   // the read cases (ADRs 0659, 1087): of `--all` too only then, as a push's
   // CI runs them, readability-passes.yml's paths, the nightly every case
   // (the user, #998: 28–34 core-seconds of every compiler change's check).
-  const tidy = touchesReadability(touched);
+  const tidy = variantFamilies.readability(touched);
+  // A change to the facts MIR's intervals keep, or to what writes past
+  // them, runs the intervals' variant of the same cases' net: its few
+  // cases without their proofs (#2112 B), of `--all` too only then.
+  const intervals = variantFamilies.intervals(touched);
   // A change to what a `&mut` is, or to an operation on one, runs the `&mut`
   // matrix's sample against native Rust (ADR 1086).
   const mutRefs = all || touched.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
@@ -369,7 +382,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
         : []),
       ...inParts("corpus", "test/corpus.test.ts"),
       ...everyFile,
-      ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], { weight: 2 })] : []),
+      ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], { weight: 2, env: { TIDY_VARIANTS: "readability" } })] : []),
+      ...(intervals ? [job(runs.intervals[0].name, ["bun", "scripts/iteratorSlice.ts", "run", "intervals", "1"], { ci: "bun scripts/iteratorSlice.ts run intervals" })] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
       // In a part a core, `RUST_JS_CASES=i/n`: one `bun test` of its 321
       // programs, one after another, took 270 s.

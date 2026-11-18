@@ -84,6 +84,7 @@ jobs:
       formatting: ${{ steps.plan.outputs.formatting }}
       numbers: ${{ steps.plan.outputs.numbers }}
       memory: ${{ steps.plan.outputs.memory }}
+      intervals: ${{ steps.plan.outputs.intervals }}
       declarations: ${{ steps.plan.outputs.declarations }}
       async: ${{ steps.plan.outputs.async }}
       consumers: ${{ steps.plan.outputs.consumers }}
@@ -190,7 +191,7 @@ jobs:
     needs: [plan, build]
     if: >-
       ${{ !inputs.nightly && (needs.plan.outputs.iterators == 'true' || needs.plan.outputs.formatting == 'true' ||
-      needs.plan.outputs.numbers == 'true' || needs.plan.outputs.memory == 'true' || needs.plan.outputs.declarations == 'true' ||
+      needs.plan.outputs.numbers == 'true' || needs.plan.outputs.memory == 'true' || needs.plan.outputs.intervals == 'true' || needs.plan.outputs.declarations == 'true' ||
       needs.plan.outputs.async == 'true' || needs.plan.outputs.consumers == 'true' || needs.plan.outputs.std == 'true' ||
       needs.plan.outputs.twins == 'true' || needs.plan.outputs.cases == 'true' || needs.plan.outputs.crates == 'true' ||
       needs.plan.outputs.port == 'true') }}
@@ -258,6 +259,16 @@ jobs:
         if: needs.plan.outputs.memory == 'true'
         background: true
         run: bun scripts/iteratorSlice.ts run memory 1
+      # The intervals' variant of the readability passes' net
+      # (test/tidy-stages.test.ts, #2112 B), of a change to the facts MIR's
+      # intervals keep or what writes past them (`intervalsPaths`): its few
+      # cases without the intervals' proofs, against native Rust. The
+      # nightly's `stages` runs every case's.
+      - name: intervals' variant
+        id: intervals
+        if: needs.plan.outputs.intervals == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run intervals 1
       # Every TypeScript caller of the declarations (#822), of a change to
       # what a `None` is at the JS boundary (`declarationPaths`).
       - name: declarations' TypeScript callers

@@ -60,6 +60,9 @@ pub(crate) struct Caches {
     /// The types this session forgets of what's changed in place, as
     /// `{ty}` prints them, `--without-mutated`'s (#1665).
     pub without_mutated: IndexSet<String>,
+    /// That this session takes nothing MIR's intervals prove,
+    /// `--without-intervals`'s (#2112 B).
+    pub without_intervals: bool,
     /// Each check THIR's facts leave out that MIR doesn't prove, where the
     /// session records them, `--intervals-shadow`'s (#1672).
     pub intervals_shadow: Option<RefCell<super::analysis::Shadow>>,
@@ -145,6 +148,8 @@ pub(crate) struct Flags {
     pub without_recognizers: Vec<String>,
     /// The types forgotten of what's changed in place.
     pub without_mutated: Vec<String>,
+    /// Whether nothing MIR's intervals prove is taken.
+    pub without_intervals: bool,
     /// Whether the functions a recogniser takes are recorded.
     pub records_recognized: bool,
     /// Whether the checks THIR leaves out that MIR doesn't prove are.
@@ -193,6 +198,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             debug_shown: OnceCell::new(),
             without_recognizers: flags.without_recognizers.into_iter().collect(),
             without_mutated: flags.without_mutated.into_iter().collect(),
+            without_intervals: flags.without_intervals,
             intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
             intervals: RefCell::default(),
             recognized: flags.records_recognized.then(RefCell::default),

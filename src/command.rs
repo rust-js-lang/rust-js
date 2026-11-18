@@ -113,6 +113,12 @@ pub(crate) struct Build {
     /// changed in place, to see that a write in place refuses where its
     /// copies are left out (#1665).
     pub without_mutated: Vec<String>,
+    /// `--without-intervals`: the crate compiled with nothing MIR's
+    /// intervals prove, every bounds check, wrap and cast they'd leave out
+    /// kept, to see that each case runs the same: a run that differs is a
+    /// fact the intervals kept past a write (#2112 B). A test hook, not a
+    /// way to build: `test/tidy-stages.test.ts`' variant.
+    pub without_intervals: bool,
     /// `--intervals-shadow <file>`: where to write each check THIR's ranges
     /// leave out that MIR's intervals don't prove, a line each (#1672).
     pub intervals_shadow: Option<PathBuf>,
@@ -225,6 +231,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let std_iterators = flag(&mut ours, "--std-iterators");
     let js_made_all = flag(&mut ours, "--js-made-all");
     let no_thir_hints = flag(&mut ours, "--no-thir-hints");
+    let without_intervals = flag(&mut ours, "--without-intervals");
     let std_paths_first = flag(&mut ours, "--std-paths-first");
     let mut dependencies = Vec::new();
     while let Some(path) = valued(&mut ours, "--dependency", "a manifest path")? {
@@ -311,6 +318,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         knowns_found,
         without_recognizers,
         without_mutated,
+        without_intervals,
         intervals_shadow,
         recognizers_found,
         props_replayed,

@@ -52,11 +52,13 @@ jobs:
       - name: The few cases and the read cases
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+          TIDY_VARIANTS: readability
         run: bun test --timeout=600000 test/tidy-stages.test.ts test/getter-reads.test.ts
       # The first seeds, which `fuzz.test.ts`'s own run compiles.
       - name: A few generated programs
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+          TIDY_VARIANTS: readability
           TIDY_STAGES: programs
           FUZZ_START: '1'
           FUZZ_SEEDS: '6'

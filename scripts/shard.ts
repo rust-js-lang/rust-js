@@ -418,6 +418,10 @@ export const parts: Part[] = [
     why: "every operation beyond iterators at each of its panic points, 58 batches, about 5 CPU-minutes: a push's gate is #818's to choose",
   },
   { setting: "TIDY_STAGES", value: "programs", runs: "push", by: ".github/workflows/readability-passes.yml" },
+  // Of a change to tidy or preparation, their variants alone; of one to
+  // the facts MIR's intervals keep, theirs (#2112 B).
+  { setting: "TIDY_VARIANTS", value: "readability", runs: "push", by: ".github/workflows/readability-passes.yml" },
+  { setting: "TIDY_VARIANTS", value: "intervals", runs: "push", by: "scripts/iteratorSlice.ts" },
   { setting: "FUZZ_START", value: "1", runs: "push", by: ".github/workflows/readability-passes.yml" },
   { setting: "FUZZ_SEEDS", value: "6", runs: "push", by: ".github/workflows/readability-passes.yml" },
   { setting: "FUZZ_MIRI", value: "1", runs: "nightly", by: ".github/workflows/rustc-tests.yml", why: "each generated program run under Miri first, which needs the nightly toolchain's Miri, which the batch's job installs (#1085)" },
