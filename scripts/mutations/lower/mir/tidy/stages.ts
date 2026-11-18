@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     find: "            pass(\"read handles\", |b, h| read_handles(b, false, h.lets, h.again.running())),\n",
     replace: "",
     tests: [
-      "test/lowering-cells.test.ts",
+      "test/lowering-cells-from-mir.test.ts",
       "-t",
       "a cell field a let pattern binds",
     ],

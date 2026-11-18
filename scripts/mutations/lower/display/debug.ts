@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     find: "        if counting {\n",
     replace: "        if false && counting {\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variant is its number",
     ],

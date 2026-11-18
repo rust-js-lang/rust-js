@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
     find: "        ) && else_ifs.contains(otherwise)\n",
     replace: "        ) && false\n",
     tests: [
-      "test/lowering-written-branches.test.ts",
+      "test/lowering-written-arms.test.ts",
       "-t",
       "an else after a branch that returns stays",
     ],
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
     find: "                let more = rest[k..].iter().any(|s| !place(s).is_none());\n",
     replace: "                let more = false;\n",
     tests: [
-      "test/lowering-written-branches.test.ts",
+      "test/lowering-written-arms.test.ts",
       "-t",
       "an else after a branch that returns stays",
     ],

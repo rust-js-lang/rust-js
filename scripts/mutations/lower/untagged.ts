@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(adt, _) if bindings::numbered(self.tcx, *adt) => Some(Kind::Number),\n",
     replace: "",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variant is its number",
     ],

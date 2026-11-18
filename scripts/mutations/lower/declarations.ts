@@ -162,7 +162,7 @@ export const mutations: Mutation[] = [
     find: "            items.extend(out.variant_constants(def_id));\n",
     replace: "",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variant is its number",
     ],

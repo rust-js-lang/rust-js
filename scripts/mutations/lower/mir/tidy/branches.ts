@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
     replace:
       "                    && let Some((y, folded)) = assigned_only(otherwise).filter(|_| false)\n",
     tests: [
-      "test/lowering-written-branches.test.ts",
+      "test/lowering-written-arms.test.ts",
       "-t",
       "a variable's value of three arms from MIR",
     ],
@@ -405,7 +405,7 @@ export const mutations: Mutation[] = [
     find: " || is_temporary(x) && then.len() > 1)",
     replace: ")",
     tests: [
-      "test/lowering-written-branches.test.ts",
+      "test/lowering-written-arms.test.ts",
       "-t",
       "a variable's value of three arms from MIR",
     ],
@@ -665,7 +665,7 @@ export const mutations: Mutation[] = [
     find: "                    && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))\n",
     replace:
       "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "four arms"],
+    tests: ["test/lowering-written-arms.test.ts", "-t", "four arms"],
   },
   {
     name: "plain-chain-written-order-ignored",
@@ -732,7 +732,7 @@ export const mutations: Mutation[] = [
     find: "                    && !written_as_statement(test, span, program)\n                    && let Some(value) = plain_chain_of(\n",
     replace:
       "                    && false\n                    && let Some(value) = plain_chain_of(\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "arms from MIR"],
+    tests: ["test/lowering-written-arms.test.ts", "-t", "arms from MIR"],
   },
   {
     name: "arrow-called-in-place-small",

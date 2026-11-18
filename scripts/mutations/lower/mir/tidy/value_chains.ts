@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "    let rest = match arms_of(x, r, at, written) {\n",
     replace: "    let rest = match None::<Vec<Stmt>> {\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "four arms"],
+    tests: ["test/lowering-written-arms.test.ts", "-t", "four arms"],
   },
   {
     name: "plain-arm-any-value",
@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Unary(UnaryOp::Neg, n) => matches!(n.kind, ExprKind::Num(_)),\n        _ => false,\n",
     replace:
       "        ExprKind::Unary(UnaryOp::Neg, n) => matches!(n.kind, ExprKind::Num(_)),\n        _ => true,\n",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "arms from MIR"],
+    tests: ["test/lowering-written-arms.test.ts", "-t", "arms from MIR"],
   },
   {
     name: "plain-chain-first-arm-any",
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "        (false, true, _) if plain(&yes) => ",
     replace: "        (false, true, _) => ",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "arms from MIR"],
+    tests: ["test/lowering-written-arms.test.ts", "-t", "arms from MIR"],
   },
   {
     name: "plain-chain-turned-then-last",
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/value_chains.rs",
     find: "        (true, false, _) if plain(&no) => ",
     replace: "        (true, false, _) if false => ",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "arms from MIR"],
+    tests: ["test/lowering-written-arms.test.ts", "-t", "arms from MIR"],
   },
   {
     name: "returned-chain-plain-unfolded",

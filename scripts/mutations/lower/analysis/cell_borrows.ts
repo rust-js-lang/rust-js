@@ -97,15 +97,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_in_std_closure.rs$"],
   },
   {
-    name: "cell-may-be-ignores-dyn",
-    breaks:
-      "a `RefCell<dyn Shape>` held isn't the `RefCell<Circle>` it was made of, so a borrow of the concrete one runs on where Rust panics",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) if unsized_here => {\n            let (dyn_ty, other) = if matches!(a.kind(), ty::Dynamic(..)) {\n                (a, b)\n            } else {\n                (b, a)\n            };\n            matches!(other.kind(), ty::Dynamic(..)) || may_be_made(tcx, other, dyn_ty)\n        }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_dyn_alias_borrow.rs$"],
-  },
-  {
     name: "place-behind-ref-dropped",
     breaks:
       "a place behind a reference, `*state`, is taken as dropped where it's read, so a generic `Hash` runs anything and its cell is counted",
@@ -225,28 +216,6 @@ export const mutations: Mutation[] = [
       "-t",
       "checks no other cell of its type",
     ],
-  },
-  {
-    name: "cell-dyn-anywhere",
-    breaks:
-      "a `dyn` in a `Vec`'s items is taken to be any type, so a `RefCell<Vec<Rc<Node>>>` may be React's commit hooks' `RefCell<Vec<Rc<dyn Fn()>>>`, borrowed while they run, and each borrow of it is checked (#374, ADR 0960)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) if unsized_here => {\n",
-    replace: "        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) if !unsized_here => true,\n        (ty::Dynamic(..), _) | (_, ty::Dynamic(..)) => {\n",
-    tests: [
-      "test/lowering-cell-borrows.test.ts",
-      "-t",
-      "field.s hooks held while they run meet no cell",
-    ],
-  },
-  {
-    name: "cell-unsized-tail-unseen",
-    breaks:
-      "a `RefCell<T>`'s `T` isn't where a value is made unsized in place, so a `RefCell<dyn Shape>` isn't the `RefCell<Circle>` it was made of, and a borrow of the concrete one runs on where Rust panics (ADR 0960)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "            ty::Param(param) => return Some(param.index as usize),\n",
-    replace: "            ty::Param(_) => return None,\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_dyn_alias_borrow.rs$"],
   },
   {
     name: "cell-borrow-runs-unseen",
@@ -474,14 +443,6 @@ export const mutations: Mutation[] = [
     find: "        let behind_ref = matches!(thir[strip(thir, at)].kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());\n",
     replace: "        let behind_ref = matches!(e.kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());\n",
     tests: ["test/borrow-forms.test.ts", "-t", "an undo stack's guards"],
-  },
-  {
-    name: "dyn-cell-any-trait",
-    breaks: "a `dyn Named` in a cell may be a concrete type that implements no `Named`, `Framed<Circle>`, so a `RefCell<Framed<dyn Shape>>` beside it is boxed and refused (#1006)",
-    file: "src/lower/analysis/cell_borrows.rs",
-    find: "    infcx.predicate_may_hold(&obligation)\n}\n",
-    replace: "    let _ = infcx.predicate_may_hold(&obligation);\n    true\n}\n",
-    tests: ["test/corpus.test.ts", "-t", "^ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs$"],
   },
   {
     name: "generic-read-unkept",

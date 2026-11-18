@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     find: "                    && self.is_rust_fn(def_id) =>\n",
     replace: "                    && self.krate.fns.contains_key(&def_id) =>\n",
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-static-muts.test.ts",
       "-t",
       "a library's static mut",
     ],

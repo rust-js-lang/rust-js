@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     find: "            js::each_item_block_mut(items, &mut |stmts| {\n                for stmt in stmts.iter() {\n                    if let StmtKind::Assign(target, _) = &stmt.kind\n",
     replace: "            js::each_item_block_mut(&mut [], &mut |stmts| {\n                for stmt in stmts.iter() {\n                    if let StmtKind::Assign(target, _) = &stmt.kind\n",
     tests: [
-      "test/lowering-cells.test.ts",
+      "test/lowering-cells-from-mir.test.ts",
       "-t",
       "thread-local only its module",
     ],

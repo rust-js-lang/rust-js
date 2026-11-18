@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
     replace:
       "        if !adt.is_enum() || adt.variants().iter().any(|variant| !variant.fields.is_empty()) {\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variant is its number",
     ],

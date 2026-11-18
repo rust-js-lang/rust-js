@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     find: "        if bindings::numbered(tcx, adt) {\n",
     replace: "        if false && bindings::numbered(tcx, adt) {\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variant is its number",
     ],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     find: "        match self.is_rust_fn(variant.def_id) && self.reads_by_name(variant.def_id) {\n",
     replace: "        match false && self.is_rust_fn(variant.def_id) {\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variants are its module's consts",
     ],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
     replace:
       "            true => Expr::bin(Op::Eq, subject, bindings::variant_tag(self.tcx, def)),\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variants are its module's consts",
     ],
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     find: "        const_js_by(\n            self.tcx,\n            value,\n            &Units {\n                unit: &unit,\n",
     replace: "        const_js_by(\n            self.tcx,\n            value,\n            &Units {\n                unit: &|adt, variant| bindings::unit_variant(self.tcx, adt, variant),\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variants are its module's consts",
     ],

@@ -592,7 +592,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare.rs",
     find: "            && !facts.has(js::Known::Else)\n",
     replace: "",
-    tests: ["test/lowering-written-branches.test.ts", "-t", "an else after a branch that returns stays"],
+    tests: ["test/lowering-written-arms.test.ts", "-t", "an else after a branch that returns stays"],
   },
   {
     name: "bitwise-chain-not-compound",

@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     replace:
       '                Some(_) if raw => Refused::Memory("raw addresses of statics"),\n',
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-static-muts.test.ts",
       "-t",
       "a static mut a pointer to is given on",
     ],

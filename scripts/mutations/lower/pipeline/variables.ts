@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     find: "    let (made, internal_made, boxed) = super::super::std_types::cell::plain_statics(\n        items,\n",
     replace: "    let (made, internal_made, boxed) = super::super::std_types::cell::plain_statics(\n        &mut Vec::new(),\n",
     tests: [
-      "test/lowering-cells.test.ts",
+      "test/lowering-cells-from-mir.test.ts",
       "-t",
       "thread-local only its module",
     ],
@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     replace:
       "        .map(|key| fns[&key.to_def_id()].name.as_str())\n",
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-static-muts.test.ts",
       "-t",
       "a pub static mut its module alone writes",
     ],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     replace:
       "        .filter_map(|&key| Some((fns.get(&key.to_def_id())?.name.as_str(), key)))\n",
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-static-muts.test.ts",
       "-t",
       "a static mut a pointer to is given on",
     ],
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/pipeline/variables.rs",
     find: "        .chain(&statics)\n        .filter_map(|key| {\n",
     replace: "        .filter_map(|key| {\n",
-    tests: ["test/lowering-module-variables.test.ts", "-t", "static mut"],
+    tests: ["test/lowering-static-muts.test.ts", "-t", "static mut"],
   },
   {
     name: "namespaced-library-variable-held",

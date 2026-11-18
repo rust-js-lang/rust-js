@@ -453,7 +453,7 @@ export const mutations: Mutation[] = [
     find: "    if !own_name || named.contains(name) {\n",
     replace: "    if true || named.contains(name) {\n",
     tests: [
-      "test/lowering-written-branches.test.ts",
+      "test/lowering-written-arms.test.ts",
       "-t",
       "an if let of a field by its own name",
     ],

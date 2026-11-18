@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     find: "    narrow\n        && adt.is_enum()\n",
     replace: "    false\n        && narrow\n        && adt.is_enum()\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variant is its number",
     ],
@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     replace:
       "        Some(IntegerType::Fixed(int, _)) => int.size().bits() <= 64,\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variant is its number",
     ],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     replace:
       "        && (adt.variants().iter()).all(|v| v.fields.is_empty() && given_name(tcx, v.def_id).is_none() && given_bool(tcx, v.def_id).is_none())\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variants are its module's consts",
     ],

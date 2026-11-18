@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/link.rs",
     find: "        .filter(|request| request.always || read.contains(&request.symbol))\n",
     replace: "",
-    tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
+    tests: ["test/lowering-repr-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
   },
   {
     name: "written-helper-unasked",

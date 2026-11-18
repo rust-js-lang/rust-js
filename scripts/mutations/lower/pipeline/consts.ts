@@ -19,7 +19,7 @@ export const mutations: Mutation[] = [
     find: "        if !export && !reached.contains(&id) {\n",
     replace: "        if !export {\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variants are its module's consts",
     ],
@@ -33,7 +33,7 @@ export const mutations: Mutation[] = [
     replace:
       "            tcx.visibility(id).is_public() || called_from_elsewhere.contains(&id);\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variants are its module's consts",
     ],

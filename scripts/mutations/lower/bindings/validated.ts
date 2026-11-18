@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     find: "                    && !crate::names::is_identifier(&given)\n",
     replace: "                    && given.is_empty()\n",
     tests: [
-      "test/lowering-structs-enums.test.ts",
+      "test/lowering-repr-enums.test.ts",
       "-t",
       "a repr enum's variants are its module's consts",
     ],

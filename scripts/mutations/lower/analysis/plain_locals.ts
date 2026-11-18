@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     replace:
       "            if let Some(def_id) = super::validation::static_of(thir, written).filter(|_| false)\n",
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-static-muts.test.ts",
       "-t",
       "write of a static mut is refused",
     ],
@@ -124,7 +124,7 @@ export const mutations: Mutation[] = [
     find: "                ExprKind::RawBorrow { arg, .. } => arg,\n",
     replace: "",
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-static-muts.test.ts",
       "-t",
       "write of a static mut is refused",
     ],
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     find: "        return !tcx.is_foreign_item(key);\n",
     replace: "        return false;\n",
     tests: [
-      "test/lowering-module-variables.test.ts",
+      "test/lowering-static-muts.test.ts",
       "-t",
       "a pub static mut its module alone writes",
     ],
