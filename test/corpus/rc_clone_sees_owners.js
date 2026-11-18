@@ -108,7 +108,7 @@ function main() {
             $withBorrowMut(
               kept,
               (kept) => {
-                const lone = $rcClone(shared);
+                const value = $rcClone(shared);
                 try {
                   if (kept.value != null) {
                     $rcDrop(kept.value, loneDrop_drop);
@@ -117,7 +117,7 @@ function main() {
                   throw $unwindsOn(error);
                 } finally {
                   if ($live()) {
-                    kept.value = lone;
+                    kept.value = value;
                   }
                 }
               },

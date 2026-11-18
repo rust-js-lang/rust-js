@@ -92,20 +92,20 @@ function dropping() {
     ),
   );
   try {
-    const value = $sizeHint(s);
-    console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-    const loud = $next(s);
+    const sizeHint = $sizeHint(s);
+    console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
+    const next = $next(s);
     try {
       const value = $sizeHint(s);
       console.log(
-        `${loud == null ? "None" : `Some(${loudDebug_fmt(loud)})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
+        `${next == null ? "None" : `Some(${loudDebug_fmt(next)})`} (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
       );
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        if (loud != null) {
-          loudDrop_drop(loud);
+        if (next != null) {
+          loudDrop_drop(next);
         }
       }
     }
@@ -129,8 +129,8 @@ function dropping() {
   let first;
   let stopped;
   try {
-    const value = $sizeHint(t);
-    console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
+    const sizeHint = $sizeHint(t);
+    console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
     first = $next(t);
     let arg;
     try {
@@ -205,18 +205,18 @@ function dropping() {
     try {
       const e = $held(evens(louds([11, 12])));
       try {
-        const value = $sizeHint(e);
-        const value$1 = $next(e);
+        const sizeHint = $sizeHint(e);
+        const next = $next(e);
         try {
           console.log(
-            `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${value$1 == null ? "None" : `Some(${loudDebug_fmt(value$1)})`}`,
+            `(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) ${next == null ? "None" : `Some(${loudDebug_fmt(next)})`}`,
           );
         } catch (error) {
           throw $unwindsOn(error);
         } finally {
           if ($live()) {
-            if (value$1 != null) {
-              loudDrop_drop(value$1);
+            if (next != null) {
+              loudDrop_drop(next);
             }
           }
         }

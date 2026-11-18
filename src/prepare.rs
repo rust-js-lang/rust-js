@@ -21,6 +21,7 @@ mod passes;
 mod reclaim;
 mod shadows;
 mod stepped_whiles;
+mod temporaries;
 mod this_handles;
 mod typeofs;
 
@@ -87,6 +88,9 @@ fn prepared_module(module: &mut js::Module) {
     each_block(Pass::AssignedBreaks, module, &mut |stmts| {
         assigned_breaks::assigned_breaks(stmts)
     });
+    // Nor these: each temporary's, of the words its body suggests, then the
+    // names lowering made (ADR 0569, #1681 change 3).
+    temporaries::spelled(module);
     reclaim::spelled(module);
     passes::run(Pass::NamesReclaimed, module, reclaim::module);
     // Not one of the passes `--prepare-without` leaves out: a module is

@@ -29,10 +29,10 @@ function main() {
     );
   }
   for (const x of [0, 1, 200]) {
-    const value = $checked(-x, 0, 255);
-    const value$1 = [-x & 255, x !== 0];
+    const checkedNeg = $checked(-x, 0, 255);
+    const value = [-x & 255, x !== 0];
     console.log(
-      `${value == null ? "None" : `Some(${value})`} ${-x & 255} (${value$1[0]}, ${value$1[1]})`,
+      `${checkedNeg == null ? "None" : `Some(${checkedNeg})`} ${-x & 255} (${value[0]}, ${value[1]})`,
     );
   }
   const checkedAbs = $bigChecked(

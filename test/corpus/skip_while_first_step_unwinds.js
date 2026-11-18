@@ -56,11 +56,11 @@ function main() {
     let g$live = true;
     const g = ["f"];
     let calls = 0;
-    const value$1 = [1, 2, 3];
+    const value = [1, 2, 3];
     let skipWhile;
     let d;
     try {
-      skipWhile = $lazySkipWhile($iter(value$1), (x) => {
+      skipWhile = $lazySkipWhile($iter(value), (x) => {
         const calls$1 = { value: calls };
         try {
           return skipping(x, calls$1);
@@ -83,10 +83,10 @@ function main() {
       throw error;
     }
     const f = (a) => a;
-    const value = $consume(skipWhile, "fold", d, f, dDrop_drop, () => {
+    const value$1 = $consume(skipWhile, "fold", d, f, dDrop_drop, () => {
       dDrop_drop(g);
     });
-    dDrop_drop(value);
+    dDrop_drop(value$1);
   });
   console.log(`fold panicked ${r.TAG === "Err"}`);
 
@@ -455,9 +455,9 @@ function main() {
   // accumulator first.
   r = $catchUnwind(() => {
     const g = ["f"];
-    let map;
+    let tmp;
     try {
-      map = $lazyRange(1, 4).map((x) => {
+      tmp = $lazyRange(1, 4).map((x) => {
         if (x === 2) {
           throw new Error("map");
         }
@@ -471,7 +471,7 @@ function main() {
     }
     const f = (a) => a;
     const value = $tryFoldSome(
-      map,
+      tmp,
       ["acc"],
       (a, b) => f(a, b),
       dDrop_drop,

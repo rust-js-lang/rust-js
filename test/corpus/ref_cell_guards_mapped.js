@@ -88,9 +88,9 @@ function main() {
     console.log(`ok ${r._0.value}`);
     $unborrow(r._0);
   } else {
-    let tmp;
+    let tryBorrowMut;
     try {
-      tmp = $tryBorrow(c, true);
+      tryBorrowMut = $tryBorrow(c, true);
     } catch (error) {
       $unborrow(r._0);
       if (r.TAG === "Ok") {
@@ -98,10 +98,10 @@ function main() {
       }
       throw error;
     }
-    console.log(`err ${r._0.x} ${tmp.TAG === "Ok"}`);
+    console.log(`err ${r._0.x} ${tryBorrowMut.TAG === "Ok"}`);
     try {
-      if (tmp.TAG === "Ok") {
-        $unborrow(tmp._0);
+      if (tryBorrowMut.TAG === "Ok") {
+        $unborrow(tryBorrowMut._0);
       }
     } catch (error) {
       $unborrow(r._0);
@@ -115,10 +115,10 @@ function main() {
   // map_split: both halves hold it, released when the second drops.
   // (c) Nested maps, and a map of one of `map_split`'s halves.
   try {
-    const value = $tryBorrow(c, true);
-    console.log(`${value.TAG === "Ok"}`);
-    if (value.TAG === "Ok") {
-      $unborrow(value._0);
+    const tryBorrowMut = $tryBorrow(c, true);
+    console.log(`${tryBorrowMut.TAG === "Ok"}`);
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
     const guard = $borrow(c, true);
     const [x, name] = $guardMapSplit(guard, () => [guard.x, guard.name], "value", "value");
@@ -132,10 +132,10 @@ function main() {
     } finally {
       $unborrow(name);
     }
-    const value$1 = $tryBorrow(c, true);
-    console.log(`${value$1.TAG === "Ok"}`);
-    if (value$1.TAG === "Ok") {
-      $unborrow(value$1._0);
+    const value = $tryBorrow(c, true);
+    console.log(`${value.TAG === "Ok"}`);
+    if (value.TAG === "Ok") {
+      $unborrow(value._0);
     }
     // A panicking closure releases what it was given.
     const caught = $catchUnwind(() => {
@@ -150,10 +150,10 @@ function main() {
       $unborrow(_g);
     });
     const isErr = caught.TAG === "Err";
-    const value$2 = $tryBorrow(c, true);
-    console.log(`${isErr} ${value$2.TAG === "Ok"}`);
-    if (value$2.TAG === "Ok") {
-      $unborrow(value$2._0);
+    const value$1 = $tryBorrow(c, true);
+    console.log(`${isErr} ${value$1.TAG === "Ok"}`);
+    if (value$1.TAG === "Ok") {
+      $unborrow(value$1._0);
     }
 
     const outer = { items: [1, 2], count: 0 };
@@ -174,10 +174,10 @@ function main() {
     } finally {
       $unborrow(n);
     }
-    const value$3 = $tryBorrow(outer, true);
-    console.log(`${value$3.TAG === "Ok"}`);
-    if (value$3.TAG === "Ok") {
-      $unborrow(value$3._0);
+    const value$2 = $tryBorrow(outer, true);
+    console.log(`${value$2.TAG === "Ok"}`);
+    if (value$2.TAG === "Ok") {
+      $unborrow(value$2._0);
     }
     const guard$3 = $borrow(c, true);
     const [x$1, guard$4] = $guardMapSplit(
@@ -201,10 +201,10 @@ function main() {
     } finally {
       $unborrow(len);
     }
-    const value$4 = $tryBorrow(c, true);
-    console.log(`${value$4.TAG === "Ok"}`);
-    if (value$4.TAG === "Ok") {
-      $unborrow(value$4._0);
+    const value$3 = $tryBorrow(c, true);
+    console.log(`${value$3.TAG === "Ok"}`);
+    if (value$3.TAG === "Ok") {
+      $unborrow(value$3._0);
     }
 
     // (d) Two shared maps of one cell to one object.
@@ -230,10 +230,10 @@ function main() {
     } finally {
       $unborrow(b);
     }
-    const value$5 = $tryBorrow(v, true);
-    console.log(`${value$5.TAG === "Ok"}`);
-    if (value$5.TAG === "Ok") {
-      $unborrow(value$5._0);
+    const value$4 = $tryBorrow(v, true);
+    console.log(`${value$4.TAG === "Ok"}`);
+    if (value$4.TAG === "Ok") {
+      $unborrow(value$4._0);
     }
   } finally {
     if (r.TAG === "Ok") {

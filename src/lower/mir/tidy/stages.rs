@@ -708,9 +708,7 @@ pub(super) const STAGES: &[Stage] = &[
             // ..)(f())`.
             pass("applied values", |b, h| {
                 let set = js::Writes::of(b).by_closures();
-                let mut taken = IndexSet::default();
-                js::names_in(b, &mut taken);
-                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))
+                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain))
             }),
             // A `let` declared first, in the body or a block of it, that
             // nothing's left to assign or read; or only a block that
@@ -980,7 +978,7 @@ pub(super) const STAGES: &[Stage] = &[
             // its `let` is (#769).
             pass("closures out of tries", |b, _| values::arrows_out_of_tries(b)),
             pass("temporaries named", |b, h| {
-                bindings::readable_temporaries(&h.params.borrow(), b, (h.suggested, &h.made.spilled, h.items_read))
+                bindings::readable_temporaries(b, h.suggested)
             }),
             pass("flags named", |b, h| flags::named_flags(b, h.flags)),
             // A match's tree MIR's block still holds, every other pass done:

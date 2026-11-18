@@ -745,11 +745,11 @@ pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
             let arrow = matches!(&target.kind, ExprKind::Var(v) if *v == name)
                 && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..));
             // What the `try` declares, which the closure mustn't read.
-            let mut declared: Vec<String> = Vec::new();
+            let mut declared: Vec<js::Name> = Vec::new();
             let mut others = block.clone();
             others.remove(k);
-            js::each_declared(&others, &mut |n| declared.push(n.to_string()));
-            if !arrow || declared.iter().any(|d| value.mentions_var(d)) {
+            js::each_declared_name(&others, &mut |n| declared.push(n.clone()));
+            if !arrow || declared.iter().any(|d| value.mentions_name(d)) {
                 i += 1;
                 continue;
             }
@@ -875,19 +875,10 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
 /// `readable_temporaries` then names. Of each statement, in the order it
 /// evaluates what it's made of, while what it evaluates first may be read
 /// after it, `read_past_calls`; not where a test decides whether it runs.
-pub(super) fn applied_values(
-    stmts: &mut Vec<Stmt>,
-    set: &IndexSet<js::Name>,
-    plain: &IndexSet<js::Path>,
-    taken: &mut IndexSet<String>,
-) {
+pub(super) fn applied_values(stmts: &mut Vec<Stmt>, set: &IndexSet<js::Name>, plain: &IndexSet<js::Path>) {
     let mut i = 0;
     while i < stmts.len() {
-        let name = (1..)
-            .map(|k| format!("_${k}"))
-            .find(|n| !taken.contains(n))
-            .map(js::Name::temporary)
-            .expect("a free name");
+        let name = js::Name::made_temporary("value");
         // What's evaluated first: an assignment's target, which `out += ..`
         // reads, then the value.
         let (root, mut before) = match &mut stmts[i].kind {
@@ -917,8 +908,7 @@ pub(super) fn applied_values(
         // Taken out, and the statement looked at again, for the next.
         if let Some(value) = first_applied(root, &mut before, &name, set, plain) {
             let span = stmts[i].span;
-            stmts.insert(i, StmtKind::Const(name.clone(), value).at(span));
-            taken.insert(name.into_word()); // word: a temporary's, `_$k`, in the table it's picked apart in
+            stmts.insert(i, StmtKind::Const(name, value).at(span));
         }
         i += 1;
     }

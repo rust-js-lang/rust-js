@@ -398,20 +398,6 @@ impl Base<'_> {
     }
 }
 
-/// A temporary's name, of the names what made it suggests, first to last,
-/// and its role: the first no other name in its function has, else its
-/// role's word, given apart where it must be, `value$1`. The one pick.
-pub(in crate::lower) fn pick(
-    suggestions: Vec<String>,
-    role: Role,
-    taken: &mut crate::collections::IndexSet<String>,
-) -> String {
-    let base = (suggestions.into_iter())
-        .find(|name| !taken.contains(name))
-        .unwrap_or_else(|| role.text().to_string());
-    crate::names::fresh_in(taken, &base)
-}
-
 /// What rust-analyzer names a call's result: a method's name without a
 /// conversion's prefix, `uppercase` of `to_uppercase`, and none of a
 /// method that names nothing; a function's without a constructor's

@@ -335,11 +335,6 @@ pub fn mentions_of(stmts: &[Stmt], name: &Name) -> usize {
     count
 }
 
-/// The word of each variable `stmts` read, `visit_stmt_names`' spelled.
-pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
-    visit_stmt_names(stmts, &mut |name| read(name.word()));
-}
-
 /// Each variable `stmts` read, in every statement and expression: its
 /// `Name`, so its id (ADR 1150).
 pub fn visit_stmt_names<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a Name)) {

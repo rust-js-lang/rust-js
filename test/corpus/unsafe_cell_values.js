@@ -44,8 +44,8 @@ function main() {
   const counter = { hits: { value: 0 }, log: { value: [] } };
 
   function hit(what) {
-    const hits = counter.hits;
-    hits.value = (hits.value + 1) >>> 0;
+    const value = counter.hits;
+    value.value = (value.value + 1) >>> 0;
     counter.log.value.push(what);
     return counter.hits.value;
   }

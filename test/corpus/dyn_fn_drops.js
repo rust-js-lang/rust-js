@@ -44,17 +44,17 @@ function main() {
   }
   $dispose(f);
   console.log("after scope");
-  const value$1 = adder("first", 2);
+  const value = adder("first", 2);
   let tmp;
   try {
     tmp = adder("second", 3);
   } catch (error) {
     $cleanup(() => {
-      $dispose(value$1);
+      $dispose(value);
     }, error);
     throw error;
   }
-  const handlers = [value$1, tmp];
+  const handlers = [value, tmp];
   const plain = (x) => (x * 2) >>> 0;
   try {
     handlers.push(plain);
@@ -191,10 +191,10 @@ function main() {
     }, error);
     throw error;
   }
-  let value;
+  let remove;
   try {
-    value = handlers.splice(0, 1)[0];
-    $dispose(value);
+    remove = handlers.splice(0, 1)[0];
+    $dispose(remove);
   } catch (error) {
     $cleanup(() => {
       for (const item of named.values()) {

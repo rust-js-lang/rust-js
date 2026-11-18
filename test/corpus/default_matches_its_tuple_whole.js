@@ -51,21 +51,21 @@ function _A__A_Tuple_taken(it, dropA, dropI) {
   const next = $nextSome(it);
   let result;
   if (next != null) {
-    const value = $someValue(next);
-    let value$1;
+    const value$1 = $someValue(next);
+    let value;
     try {
-      value$1 = $nextSome(it);
+      value = $nextSome(it);
     } catch (error) {
       $cleanup(() => {
-        dropA?.(value);
+        dropA?.(value$1);
       }, error);
       throw error;
     }
-    if (value$1 != null) {
-      return [value, $someValue(value$1)];
+    if (value != null) {
+      return [value$1, $someValue(value)];
     }
     result = undefined;
-    dropA?.(value);
+    dropA?.(value$1);
   } else {
     result = undefined;
   }

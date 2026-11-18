@@ -763,10 +763,10 @@ function reversedWithoutAPanic() {
   console.log(`flat_map rfold ${n}`);
   let g$live$3 = true;
   const g$3 = ["f"];
-  const value$4 = [[1, 2], [3]];
+  const value$3 = [[1, 2], [3]];
   let flatten;
   try {
-    flatten = $flattenEnds($iter(value$4), (item) => $iter(item));
+    flatten = $flattenEnds($iter(value$3), (item) => $iter(item));
     g$live$3 = false;
   } catch (error) {
     $cleanup(() => {
@@ -777,9 +777,9 @@ function reversedWithoutAPanic() {
     throw error;
   }
   const f$3 = (a, x) => (((a + x) >>> 0) + zero(g$3)) >>> 0;
-  let value$3;
+  let value$4;
   try {
-    value$3 = $foldBack(flatten, 0, f$3);
+    value$4 = $foldBack(flatten, 0, f$3);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -787,7 +787,7 @@ function reversedWithoutAPanic() {
       dDrop_drop(g$3);
     }
   }
-  n = value$3;
+  n = value$4;
   console.log(`flatten rfold ${n}`);
 }
 

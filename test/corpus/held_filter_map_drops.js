@@ -61,8 +61,8 @@ function main() {
     ),
   );
   try {
-    const value = $next(m);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(m);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

@@ -80,8 +80,8 @@ function main() {
       }),
   );
   try {
-    const value = $next(value$1);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(value$1);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

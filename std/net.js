@@ -517,16 +517,16 @@ export function ipAddrClone_clone(ipAddr) {
 }
 
 export function ipAddrPartialEq_eq(ipAddr, other) {
-  const value$2 = ipAddr.TAG === "V4" ? 0 : 1;
-  if (value$2 === (other.TAG === "V4" ? 0 : 1)) {
-    if (value$2 === 0) {
-      const value$2 = ipAddr._0.octets.slice();
-      const value = other._0.octets.slice();
-      return $fromBytes(value$2, 4, true, false) === $fromBytes(value, 4, true, false);
+  const value = ipAddr.TAG === "V4" ? 0 : 1;
+  if (value === (other.TAG === "V4" ? 0 : 1)) {
+    if (value === 0) {
+      const value = ipAddr._0.octets.slice();
+      const value$1 = other._0.octets.slice();
+      return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
     }
-    const value = ipAddr._0.octets.slice();
-    const value$1 = other._0.octets.slice();
-    return $fromBytes(value, 16, true, false) === $fromBytes(value$1, 16, true, false);
+    const value$1 = ipAddr._0.octets.slice();
+    const value$2 = other._0.octets.slice();
+    return $fromBytes(value$1, 16, true, false) === $fromBytes(value$2, 16, true, false);
   }
   return false;
 }

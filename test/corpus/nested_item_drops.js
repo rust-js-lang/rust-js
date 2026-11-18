@@ -234,36 +234,36 @@ function groupsFirstOfNext_firstOfNext(
   dropIItemItem,
   dropIItemIntoIter,
 ) {
-  const value$1 = IIterator.next(groups[0]);
+  const value = IIterator.next(groups[0]);
   let value$0$live = true;
   let result;
-  if (value$1 != null) {
+  if (value != null) {
     value$0$live = false;
-    const inner = $someValue(value$1);
-    const value$2 = $held(IItemIntoIterator.intoIter(inner));
+    const inner = $someValue(value);
+    const value$1 = $held(IItemIntoIterator.intoIter(inner));
     let next;
-    let value;
+    let value$2;
     function map(_2) {
       dropIItemItem?.(_2);
       return 1;
     }
     try {
-      next = IItemIntoIterator.IntoIterIterator().next(value$2);
-      value = $someValue(next);
-      result = next != null ? map(value) : 0;
+      next = IItemIntoIterator.IntoIterIterator().next(value$1);
+      value$2 = $someValue(next);
+      result = next != null ? map(value$2) : 0;
     } catch (error) {
       $cleanup(() => {
-        dropIItemIntoIter?.(value$2);
+        dropIItemIntoIter?.(value$1);
       }, error);
       throw error;
     }
-    dropIItemIntoIter?.(value$2);
+    dropIItemIntoIter?.(value$1);
   } else {
     result = 0;
   }
-  if (value$1 != null) {
+  if (value != null) {
     if (value$0$live) {
-      dropIItem?.($someValue(value$1));
+      dropIItem?.($someValue(value));
     }
   }
   return result;

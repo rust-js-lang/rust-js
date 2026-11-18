@@ -1404,12 +1404,12 @@ function main() {
       $writingInto(f, fieldsDebug_fmt, { first: -1, second: "s" });
     });
     const pretty = [0, n, ""];
-    const value = [1];
+    const value$3 = [1];
     const p = $writeTry(() => {
       const f = $writerSink(pretty, nthWrite_writeStr, nthWrite_writeStr);
       $writeDebugList(
         f,
-        value,
+        value$3,
         (f, value) => {
           $writeDebugOption(
             f,

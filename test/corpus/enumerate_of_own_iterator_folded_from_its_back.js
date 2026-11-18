@@ -308,21 +308,21 @@ function main() {
     }
   }
   v = $range(1, 9).map((value) => [value]);
-  const value = $held($stepByEnds($closing($iter(v), $dropEach(dDrop_drop)), 3, dDrop_drop));
+  const value$1 = $held($stepByEnds($closing($iter(v), $dropEach(dDrop_drop)), 3, dDrop_drop));
   try {
-    const nthBack = $nthBack(value, 1, undefined, dDrop_drop);
+    const nthBack = $nthBack(value$1, 1, undefined, dDrop_drop);
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value$1 = nthBack != null ? map(nthBack) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = nthBack != null ? map(nthBack) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value.return();
+      value$1.return();
     }
   }
   const own = $held(

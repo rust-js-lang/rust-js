@@ -43,17 +43,17 @@ function most(items, TOrd) {
 
 function unwraps(a, r) {
   const value = $someValue(a);
-  const value$1 = $someValue(a);
-  const value$3 = $someValue(
+  const value$3 = $someValue(a);
+  const value$2 = $someValue(
     $unwrap(a == null ? a : $some(value == null ? value : $some($someValue(value)))),
   );
-  const value$2 = $someValue(a);
-  const option = a == null ? a : $some(value$2 == null ? value$2 : $some($someValue(value$2)));
+  const value$1 = $someValue(a);
+  const option = a == null ? a : $some(value$1 == null ? value$1 : $some($someValue(value$1)));
   const result = r.TAG === "Ok" ? { ...r, _0: r._0 == null ? r._0 : $some($someValue(r._0)) } : r;
   return [
-    value$3,
+    value$2,
     $someValue(
-      (a == null ? a : $some(value$1 == null ? value$1 : $some($someValue(value$1)))) ??
+      (a == null ? a : $some(value$3 == null ? value$3 : $some($someValue(value$3)))) ??
         $some(undefined),
     ),
     option != null ? $someValue(option) : undefined,

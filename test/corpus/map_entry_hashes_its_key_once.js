@@ -189,9 +189,9 @@ function entries(
     const there = value$1._0;
     const getMut = $entryGet(there, true);
     getMut.value += "o";
-    const value = there[1];
+    const key = there[1];
     const get = $entryGet(there);
-    console.log(`${TDebug.fmt(value)} ${$debugStr(get)}`);
+    console.log(`${TDebug.fmt(key)} ${$debugStr(get)}`);
   }
   hashed("an occupied entry's get_mut");
   for (const name of $mapGetDisjointMut(names, [a, c], true)

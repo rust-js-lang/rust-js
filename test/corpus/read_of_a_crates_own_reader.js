@@ -145,9 +145,9 @@ function main() {
     $roomFor(room, 1);
     const v = $withCapacity(room);
     const read = countedRead.readToEnd({ value: counted(left, 99) }, v);
-    const value = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
+    const mapErr = read.TAG === "Err" ? { TAG: "Err", _0: read._0.kind } : read;
     $print(
-      ` = ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} len ${v.length} cap ${$capacity(v, 1)}\n`,
+      ` = ${mapErr.TAG === "Ok" ? `Ok(${mapErr._0})` : `Err(${mapErr._0})`} len ${v.length} cap ${$capacity(v, 1)}\n`,
     );
   }
   $print("read_to_string:");

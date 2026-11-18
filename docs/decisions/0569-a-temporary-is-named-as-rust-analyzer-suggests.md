@@ -450,3 +450,70 @@ same.
 
 Held by the twelve snapshots, `set_once_in_a_try`, and mutation
 `arms-binding-one-name-apart`, re-anchored.
+
+## Amendment: preparation spells a temporary's name, tidy suggests it (#1681 change 3)
+
+Tidy named each temporary itself: `readable_temporaries` picked the first
+suggestion no other name of its body had, from a word table of that body
+(`temporary_names::pick`). `applied_values` kept a second table for its
+`_$k`. A second speller beside preparation's, as loops' counters had been
+(#2032). Now tidy suggests and preparation spells:
+
+- **Tidy** keeps the analysis: what an element gives a temporary as, the
+  field it reads, a copy's field, MIR's suggestion, its call's name. It
+  makes each temporary `Name::suggested(words, role)`, a name not spelled
+  yet of the item's form, carrying its words. Lowering's `spill` suggests
+  a role's value its call's name where it spills it. Gone: tidy's tables
+  (`taken`, `nested`, `declared`, `items_read`, the imports' words),
+  `pick`, `note_spilled` and the spilled table. `applied_values` makes a
+  `Name::made_temporary` with no table.
+- **Preparation** (`prepare::temporaries`, before the names lowering made
+  are spelled and the program's reclaimed) spells each, in the order the
+  program first reads them (ADR 0705), the first of its words, then its
+  role's word given apart, `value$1`, that JS's scopes let it be. The rule,
+  the lead's:
+  1. It shadows nothing around it, an import or package of its module
+     among them (`Tree::of_in`), and nothing inside shadows it.
+  2. Each read stays of what it's of (`renames`).
+  3. Not a word a variable spelled already reclaims to, where reclaiming it
+     is what this would stop: `next` beside the `next$7` lowering spelled
+     (`Tree::reclaims_to`). The program's names outrank a made one, as
+     reclaiming prefers them (ADR 0357).
+  4. Not the word an import given apart at the top reclaims to,
+     `createContainer` of `createContainer$1`.
+
+  A temporary its tree doesn't see, an object's method's, or of an item
+  with no tree, takes the first word no name of its item has, as tidy's
+  table did. A suggested temporary's flag is respelled from its spelled
+  word, `tryLock$0$live`, as tidy's flags were once it was named.
+
+What moves, against the per-body tables:
+
+| | count |
+|---|---|
+| corpus snapshots changed | 122 of ~2,750, run checks passing |
+| spellings renumbered, `value$1` ↔ `value` | 666 |
+| a generic word made a name, `value` → `next`, `sizeHint`, `key`, `receiver` | 259 |
+| a name made generic | 91 |
+| a name made another, mostly `loud` → `next`, the call's own | 80 |
+
+Each of the 91 has a reason:
+
+- **It would shadow a variable of an enclosing function's.** Tidy's
+  per-body table didn't see it. This includes exchanges: `main`'s own
+  temporary, read first, takes `fails` or `chain` that inner closures had.
+- **A read of another variable of that word would be captured.** Tidy took
+  the word only because the other was spelled otherwise then, or lived in
+  another body.
+- **A program variable's reclaimed spelling outranks it** (rule 3).
+
+React's port, against upstream React: fifteen files move. Ten toward
+upstream: `readPartialStringChunk` and `busboyStream`, each an import that
+keeps its own name, where a temporary named after it had pushed it apart
+(rd582's gap). Five are neutral. None moves away.
+
+Held by `temporary_beside_an_import_of_its_name` (rule 4, the port's
+shape) and the corpus. Mutations of `prepare/temporaries.rs`:
+`temporary-takes-a-word-reclaimed`, `temporary-takes-an-import-reclaimed`,
+`temporary-flags-of-the-old-word`; and of `Name::suggested`'s form,
+`suggested-keeps-a-temporarys-form`.

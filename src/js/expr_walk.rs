@@ -16,11 +16,6 @@ const READS: &[&str] = &[
 ];
 
 impl Expr {
-    /// The word of each variable this reads, `visit_names`' spelled.
-    pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
-        self.visit_names(&mut |name| read(name.word()));
-    }
-
     /// Each variable this reads, closures' bodies too, but not a string's
     /// or a regular expression's text, nor a property's name: its `Name`,
     /// so its id, the one walk of what an expression reads (ADR 1150).
@@ -317,14 +312,6 @@ impl Expr {
     pub fn mentions_name(&self, name: &Name) -> bool {
         let mut found = false;
         self.visit_names(&mut |var| found |= var == name);
-        found
-    }
-
-    /// Does this name a variable spelled `name` anywhere in it, as
-    /// `mentions_name` does of a variable: what JS reads by the word.
-    pub fn mentions_var(&self, name: &str) -> bool {
-        let mut found = false;
-        self.visit_vars(&mut |var| found |= var == name);
         found
     }
 
@@ -825,20 +812,9 @@ impl Expr {
     }
 }
 
-/// Each name `stmts` read or declare, their closures', functions' and
-/// parameters' too: what a new name must not be.
-pub fn names_in(stmts: &[Stmt], names: &mut IndexSet<String>) {
-    visit_stmts(stmts, &mut |name| {
-        names.insert(name.to_string());
-    });
-    each_declared(stmts, &mut |name| {
-        names.insert(name.to_string());
-    });
-}
-
 /// Each variable `stmts` read or declare, their closures', functions' and
 /// parameters' too, by its `Name`, so its id: what a new name of a
-/// pass's own naming table mustn't be spelled as (`names_in`'s words).
+/// pass's own naming table mustn't be spelled as.
 pub fn names_of(stmts: &[Stmt]) -> IndexSet<Name> {
     let mut names = IndexSet::default();
     visit_stmt_names(stmts, &mut |name| _ = names.insert(name.clone()));
@@ -846,15 +822,9 @@ pub fn names_of(stmts: &[Stmt]) -> IndexSet<Name> {
     names
 }
 
-/// Each name `stmts` declare, once for each declaration: a `let`, a
+/// Each variable `stmts` declare, once for each declaration: a `let`, a
 /// `const`, a pattern's, a `catch`'s, a function and its closures' and
-/// functions' parameters; its word (`each_declared_name`'s spelled).
-pub fn each_declared(stmts: &[Stmt], f: &mut dyn FnMut(&str)) {
-    each_declared_name(stmts, &mut |name| f(name.word()));
-}
-
-/// Each variable `stmts` declare, once for each declaration, as
-/// `each_declared` says: its `Name`, so its id (ADR 1150).
+/// functions' parameters: its `Name`, so its id (ADR 1150).
 pub fn each_declared_name(stmts: &[Stmt], f: &mut dyn FnMut(&Name)) {
     let mut stmts = stmts.to_vec();
     let params = |params: &[Pattern], f: &mut dyn FnMut(&Name)| params.iter().flat_map(|p| p.bound()).for_each(&mut *f);

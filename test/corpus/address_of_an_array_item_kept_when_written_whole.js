@@ -21,49 +21,49 @@ function main() {
   ];
   $stored($ptr(items, 0), 8);
   const first = $addr($ptr(items, 0), 8);
-  const value$3 = at(1);
-  if (value$3 >= 2) {
-    throw new Error(`index out of bounds: the len is 2 but the index is ${value$3}`);
+  const value = at(1);
+  if (value >= 2) {
+    throw new Error(`index out of bounds: the len is 2 but the index is ${value}`);
   }
-  $stored($ptr(items, value$3), 8);
-  const second = $ptr(items, value$3);
-  const value = [
+  $stored($ptr(items, value), 8);
+  const second = $ptr(items, value);
+  const value$1 = [
     [34, 35],
     [36, 37],
-  ];
-  $assign(items[0], value[0]);
-  value[0] = items[0];
-  $assign(items[1], value[1]);
-  value[1] = items[1];
-  $assign(items, value);
-  $stored($ptr(items, 0), 8);
-  $storedItems(items, 8);
-  const arg = first === $addr($ptr(items, 0), 8);
-  $storedItems(items, 8);
-  console.log(`${arg} [${items.map((item) => nDebug_fmt(item)).join(", ")}]`);
-  console.log(`${nDebug_fmt(second.value)}`);
-  const value$1 = [
-    [38, 39],
-    [40, 41],
   ];
   $assign(items[0], value$1[0]);
   value$1[0] = items[0];
   $assign(items[1], value$1[1]);
   value$1[1] = items[1];
   $assign(items, value$1);
+  $stored($ptr(items, 0), 8);
   $storedItems(items, 8);
+  const arg = first === $addr($ptr(items, 0), 8);
   $storedItems(items, 8);
-  console.log(`${nDebug_fmt(second.value)} [${items.map((item) => nDebug_fmt(item)).join(", ")}]`);
-  const moved = items.map((item) => [item[0], item[1]]);
+  console.log(`${arg} [${items.map((item) => nDebug_fmt(item)).join(", ")}]`);
+  console.log(`${nDebug_fmt(second.value)}`);
   const value$2 = [
-    [42, 43],
-    [44, 45],
+    [38, 39],
+    [40, 41],
   ];
   $assign(items[0], value$2[0]);
   value$2[0] = items[0];
   $assign(items[1], value$2[1]);
   value$2[1] = items[1];
   $assign(items, value$2);
+  $storedItems(items, 8);
+  $storedItems(items, 8);
+  console.log(`${nDebug_fmt(second.value)} [${items.map((item) => nDebug_fmt(item)).join(", ")}]`);
+  const moved = items.map((item) => [item[0], item[1]]);
+  const value$3 = [
+    [42, 43],
+    [44, 45],
+  ];
+  $assign(items[0], value$3[0]);
+  value$3[0] = items[0];
+  $assign(items[1], value$3[1]);
+  value$3[1] = items[1];
+  $assign(items, value$3);
   $storedItems(moved, 8);
   $storedItems(items, 8);
   $storedItems(moved, 8);

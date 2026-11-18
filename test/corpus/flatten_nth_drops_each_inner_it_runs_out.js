@@ -73,8 +73,8 @@ function main() {
     ),
   );
   try {
-    const value = Array.from($lent(h).drop(4).take(1))[0];
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const nth = Array.from($lent(h).drop(4).take(1))[0];
+    console.log(`${nth == null ? "None" : `Some(${nth})`}`);
     console.log("held");
   } catch (error) {
     throw $unwindsOn(error);

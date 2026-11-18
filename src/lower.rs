@@ -1098,8 +1098,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `const <base> = value;`, so it's evaluated here, then its name, which
     /// keeps what's known of an iterator's value (`iterators::marks_kept`).
-    /// A role's name is the body's naming table's (`note_spilled`), which
-    /// tidy picks again, a call's name first (#890).
+    /// Of a role that says nothing of it, `value`, the name its call gives
+    /// first, `pullTwo`, which preparation spells where its scope lets it be
+    /// (`Name::suggested`, #890).
     fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let base = base.into();
         let name = match base {
@@ -1107,10 +1108,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Base::Derived(_) | Base::HeldArg | Base::Suffixed(..) => self.fresh(base),
             _ => self.fresh(Base::Named(&unhyphenated(&base.text()))),
         };
-        // Of a role's, named again by tidy once the code is placed (#890).
-        if let Base::Role(role) = base {
-            self.note_spilled(name.word(), role); // word: tidy's readable names, a naming table of words (`readable_temporaries`)
-        }
+        let name = match base {
+            Base::Role(role) if role.says_nothing() => name.suggested(mir::held_names(&value), role.text()),
+            _ => name,
+        };
         let (span, marks) = (value.span, iterators::marks_kept(&value));
         out.push(StmtKind::Const(name.clone(), value).at(span));
         let mut held = Expr::var(&name);

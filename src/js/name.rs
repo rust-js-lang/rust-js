@@ -305,6 +305,40 @@ impl Name {
         Name(crate::names::made(base, id.0 as usize), Of::Item, id, Id::WORD, None)
     }
 
+    /// It again, not spelled yet, `value#12` of its role's word `base`,
+    /// carrying the words its body suggests of it, `routes` of
+    /// `tree.routes`, its call's name, what an element's given it as:
+    /// preparation spells it the first of those its scope lets it be,
+    /// plain, else of `base`, `value$1` (`prepare::temporaries`, ADR 0569,
+    /// ADR 1150). A temporary named so is a variable of the item's, no
+    /// temporary now, so a flag of it is of it by its id (`suffixed`), as
+    /// tidy's names were (`declared`).
+    pub fn suggested(&self, preferred: Vec<String>, base: &str) -> Name {
+        let id = Id::fresh();
+        Name(
+            crate::names::made(base, id.0 as usize),
+            Of::Item,
+            id,
+            self.3,
+            Some(preferred.into()),
+        )
+    }
+
+    /// Whether it carries words suggested of it (`suggested`), even none.
+    pub fn is_suggested(&self) -> bool {
+        self.4.is_some()
+    }
+
+    /// A temporary a pass makes, `value#12` of `base`, not spelled yet: its
+    /// id its own, which tidy names after what it holds (`suggested`) and
+    /// preparation spells (`made_apart`'s, of a temporary's form).
+    pub fn made_temporary(base: &str) -> Name {
+        Name {
+            1: Of::Temporary,
+            ..Name::made_apart(base)
+        }
+    }
+
     /// The words it's suggested to be, first to last (`suggested`); none
     /// of another name.
     pub fn preferred(&self) -> &[String] {
@@ -357,7 +391,13 @@ impl Name {
     pub fn spelled_later_apart<'n>(&self, names: impl IntoIterator<Item = &'n Name>) -> Name {
         let base = crate::names::made_base(&self.0).unwrap_or(&self.0);
         let k = Name::free_made_k(names, base);
-        Name(crate::names::made(base, k), self.1, Id::fresh(), Id::WORD, None)
+        Name(
+            crate::names::made(base, k),
+            self.1,
+            Id::fresh(),
+            Id::WORD,
+            self.4.clone(),
+        )
     }
 
     /// A variable lowering makes of `source`, a holder of its value, the
@@ -550,7 +590,7 @@ impl Name {
     pub fn rebound(&self) -> Name {
         match self.2 == Id::WORD {
             true => self.clone(),
-            false => Name(self.0.clone(), self.1, Id::fresh(), self.3, None),
+            false => Name(self.0.clone(), self.1, Id::fresh(), self.3, self.4.clone()),
         }
     }
 
@@ -570,7 +610,7 @@ impl Name {
             self.1,
             Id::fresh(),
             self.kin(),
-            None,
+            self.4.clone(),
         )
     }
 

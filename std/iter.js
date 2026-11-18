@@ -3979,20 +3979,20 @@ export function clonedIterator_fold(
   const captured = (arg0) => TClone.clone(arg0);
   const value = $dropping(
     (acc, elt) => {
-      let tmp$1 = true;
-      let tmp;
+      let tmp = true;
+      let tmp$1;
       try {
-        tmp = captured(elt);
-        tmp$1 = false;
+        tmp$1 = captured(elt);
+        tmp = false;
       } catch (error) {
         $cleanup(() => {
-          if (tmp$1) {
+          if (tmp) {
             dropAcc?.(acc);
           }
         }, error);
         throw error;
       }
-      return f(acc, tmp);
+      return f(acc, tmp$1);
     },
     () => {
       dropF?.(f);
@@ -4108,20 +4108,20 @@ export function clonedDoubleEndedIterator_rfold(
   const captured = (arg0) => TClone.clone(arg0);
   const value = $dropping(
     (acc, elt) => {
-      let tmp$1 = true;
-      let tmp;
+      let tmp = true;
+      let tmp$1;
       try {
-        tmp = captured(elt);
-        tmp$1 = false;
+        tmp$1 = captured(elt);
+        tmp = false;
       } catch (error) {
         $cleanup(() => {
-          if (tmp$1) {
+          if (tmp) {
             dropAcc?.(acc);
           }
         }, error);
         throw error;
       }
-      return f(acc, tmp);
+      return f(acc, tmp$1);
     },
     () => {
       dropF?.(f);
@@ -4622,7 +4622,7 @@ export function takeWhileIterator_tryFold(
     return result;
   }
   const p = takeWhile.predicate;
-  const value$1 = $dropping(
+  const value = $dropping(
     (acc, x) => {
       let tmp$1 = true;
       let tmp;
@@ -4662,20 +4662,20 @@ export function takeWhileIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  const value = $tryFoldInto(
+  const value$1 = $tryFoldInto(
     $given(takeWhile.iter, IIterator, true),
     init,
-    (a, b) => value$1(a, b),
+    (a, b) => value(a, b),
     $controlFlowTry,
     dropAcc,
     () => {
-      $dispose(value$1);
+      $dispose(value);
     },
   );
-  if (value.TAG === "Continue") {
-    return RTry.fromOutput(value._0);
+  if (value$1.TAG === "Continue") {
+    return RTry.fromOutput(value$1._0);
   }
-  return value._0;
+  return value$1._0;
 }
 
 export function takeWhileIterator_fold(
@@ -5310,7 +5310,7 @@ export function scanIterator_fold(
       dropFFF?.(fold);
     },
   );
-  const value$1 = $dropping(
+  const value = $dropping(
     (acc, x) => {
       let tmp;
       try {
@@ -5335,30 +5335,30 @@ export function scanIterator_fold(
         return { TAG: "Break", _0: $neverShortCircuitTry.fromOutput(acc) };
       }
       x = $someValue(tmp);
-      const value = $neverShortCircuitTry.branch(captured$1(acc, x));
-      if (value.TAG === "Continue") {
-        return { TAG: "Continue", _0: value._0 };
+      const value$1 = $neverShortCircuitTry.branch(captured$1(acc, x));
+      if (value$1.TAG === "Continue") {
+        return { TAG: "Continue", _0: value$1._0 };
       }
-      return { TAG: "Break", _0: $neverShortCircuitTry.fromResidual(value._0) };
+      return { TAG: "Break", _0: $neverShortCircuitTry.fromResidual(value$1._0) };
     },
     () => {
       $dispose(captured$1);
     },
   );
-  let value;
+  let value$1;
   let tryFold;
   try {
-    value = $tryFoldInto(
+    value$1 = $tryFoldInto(
       $given(scan.iter, IIterator, true),
       init,
-      (a, b) => value$1(a, b),
+      (a, b) => value(a, b),
       $controlFlowTry,
       dropAAA,
       () => {
-        $dispose(value$1);
+        $dispose(value);
       },
     );
-    tryFold = value;
+    tryFold = value$1;
   } catch (error) {
     $cleanup(() => {
       scan.return();
@@ -7310,37 +7310,37 @@ export function skipDoubleEndedIterator_tryRfold(
       tmp$3 = false;
       tmp$4 = false;
       let tmp = value$1;
-      const value$2 = $dropping(
+      const value = $dropping(
         (acc, x) => {
           tmp = (tmp - 1) >>> 0;
           const r = fold(acc, x);
           if (tmp === 0) {
             return { TAG: "Break", _0: r };
           }
-          const value = RTry.branch(r);
-          if (value.TAG === "Continue") {
-            return { TAG: "Continue", _0: value._0 };
+          const value$2 = RTry.branch(r);
+          if (value$2.TAG === "Continue") {
+            return { TAG: "Continue", _0: value$2._0 };
           }
-          return { TAG: "Break", _0: RTry.FromResidual().fromResidual(value._0) };
+          return { TAG: "Break", _0: RTry.FromResidual().fromResidual(value$2._0) };
         },
         () => {
           dropFold?.(fold);
         },
       );
-      const value = $tryFoldInto(
+      const value$2 = $tryFoldInto(
         $rev($given(skip.iter, IIterator, true, IDoubleEndedIterator)),
         init,
-        (a, b) => value$2(a, b),
+        (a, b) => value(a, b),
         $controlFlowTry,
         dropAcc,
         () => {
-          $dispose(value$2);
+          $dispose(value);
         },
       );
-      if (value.TAG === "Continue") {
-        return RTry.fromOutput(value._0);
+      if (value$2.TAG === "Continue") {
+        return RTry.fromOutput(value$2._0);
       }
-      return value._0;
+      return value$2._0;
     }
   }
   try {
@@ -7556,7 +7556,7 @@ export function takeIterator_tryFold(
     dropFold?.(fold);
     return result;
   }
-  const value$1 = $dropping(
+  const value = $dropping(
     (acc, x) => {
       take.n = (take.n - 1) >>> 0;
       const r = fold(acc, x);
@@ -7573,20 +7573,20 @@ export function takeIterator_tryFold(
       dropFold?.(fold);
     },
   );
-  const value = $tryFoldInto(
+  const value$1 = $tryFoldInto(
     $given(take.iter, IIterator, true),
     init,
-    (a, b) => value$1(a, b),
+    (a, b) => value(a, b),
     $controlFlowTry,
     dropAcc,
     () => {
-      $dispose(value$1);
+      $dispose(value);
     },
   );
-  if (value.TAG === "Continue") {
-    return RTry.fromOutput(value._0);
+  if (value$1.TAG === "Continue") {
+    return RTry.fromOutput(value$1._0);
   }
-  return value._0;
+  return value$1._0;
 }
 
 export function takeIDoubleEndedIterator_nextBack(
@@ -11878,15 +11878,15 @@ export function flattenCompatIUIterator_sizeHint(
   dropIItem,
   dropUItem,
 ) {
-  const value$2 =
+  const value =
     flattenCompat.frontiter == null ? undefined : $some($someValue(flattenCompat.frontiter));
-  const value$3 = [0, 0];
-  const value = $someValue(value$2);
-  const [flo, fhi] = value$2 != null ? $sizeHint(value, UIterator) : [value$3[0], value$3[1]];
-  const value$4 =
+  const value$2 = [0, 0];
+  const value$1 = $someValue(value);
+  const [flo, fhi] = value != null ? $sizeHint(value$1, UIterator) : [value$2[0], value$2[1]];
+  const value$3 =
     flattenCompat.backiter == null ? undefined : $some($someValue(flattenCompat.backiter));
-  const value$1 = $someValue(value$4);
-  const [blo, bhi] = value$4 != null ? $sizeHint(value$1, UIterator) : value$3;
+  const value$4 = $someValue(value$3);
+  const [blo, bhi] = value$3 != null ? $sizeHint(value$4, UIterator) : value$2;
   const lo = Math.min(flo + blo, 4294967295);
   if (IItemConstSize != null) {
     let [lower, upper] =
@@ -12044,8 +12044,8 @@ export function flattenCompatIUIterator2_fold(
   dropIItem,
   dropUItem,
 ) {
-  const value$1 = flattenCompat.iter;
-  const value$2 = $dropping(
+  const value = flattenCompat.iter;
+  const value$1 = $dropping(
     (acc, inner) => {
       let tmp$1 = true;
       let tmp;
@@ -12100,14 +12100,14 @@ export function flattenCompatIUIterator2_fold(
     },
   );
   let result;
-  if (value$1.iter != null) {
-    const iter = $someValue(value$1.iter);
+  if (value.iter != null) {
+    const iter = $someValue(value.iter);
     let result$1;
-    let value;
+    let value$2;
     try {
       try {
-        result$1 = $consume($given(iter, IIterator, true), "fold", init, value$2, dropAcc, () => {
-          $dispose(value$2);
+        result$1 = $consume($given(iter, IIterator, true), "fold", init, value$1, dropAcc, () => {
+          $dispose(value$1);
         });
       } catch (error) {
         $cleanup(() => {
@@ -12120,7 +12120,7 @@ export function flattenCompatIUIterator2_fold(
       if (!$took(IIterator.fold, iter)) {
         dropI?.(iter);
       }
-      value = result$1;
+      value$2 = result$1;
     } catch (error) {
       $cleanup(() => {
         if (flattenCompat.frontiter != null) {
@@ -12132,12 +12132,12 @@ export function flattenCompatIUIterator2_fold(
       }, error);
       throw error;
     }
-    init = value;
+    init = value$2;
     result = init;
   } else {
     result = init;
     try {
-      $dispose(value$2);
+      $dispose(value$1);
     } catch (error) {
       $cleanup(() => {
         if (flattenCompat.frontiter != null) {
@@ -12820,8 +12820,8 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
   dropIItem,
   dropUItem,
 ) {
-  const value$1 = flattenCompat.iter;
-  const value$2 = $dropping(
+  const value = flattenCompat.iter;
+  const value$1 = $dropping(
     (acc, inner) => {
       let tmp$1 = true;
       let tmp;
@@ -12876,20 +12876,20 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
     },
   );
   let result;
-  if (value$1.iter != null) {
-    const iter = $someValue(value$1.iter);
+  if (value.iter != null) {
+    const iter = $someValue(value.iter);
     let result$1;
-    let value;
+    let value$2;
     try {
       try {
         result$1 = $consume(
           $given(iter, IIterator, true, IDoubleEndedIterator),
           "rfold",
           init,
-          value$2,
+          value$1,
           dropAcc,
           () => {
-            $dispose(value$2);
+            $dispose(value$1);
           },
         );
       } catch (error) {
@@ -12903,7 +12903,7 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
       if (!$took(IDoubleEndedIterator.rfold, iter)) {
         dropI?.(iter);
       }
-      value = result$1;
+      value$2 = result$1;
     } catch (error) {
       $cleanup(() => {
         if (flattenCompat.frontiter != null) {
@@ -12915,12 +12915,12 @@ export function flattenCompatIUDoubleEndedIterator2_rfold(
       }, error);
       throw error;
     }
-    init = value;
+    init = value$2;
     result = init;
   } else {
     result = init;
     try {
-      $dispose(value$2);
+      $dispose(value$1);
     } catch (error) {
       $cleanup(() => {
         if (flattenCompat.frontiter != null) {
@@ -13299,16 +13299,16 @@ export function stepByStepByImplI_specNth(
       n = (n - divStep) >>> 0;
       nthN = nthStep;
     }
-    const value = $nthDropping(
+    const nth = $nthDropping(
       $lent($given(stepBy.iter, IIterator, true)),
       (nthN - 1) >>> 0,
       dropIItem,
       true,
     );
-    if (value == null) {
+    if (nth == null) {
       return;
     }
-    dropIItem?.($someValue(value));
+    dropIItem?.($someValue(nth));
   }
 }
 
@@ -13466,13 +13466,13 @@ export function stepByStepByImplI_specTryFold(
   }
   const captured = stepBy.iter;
   const captured$1 = stepBy.stepMinusOne;
-  const value$1 = $fromFn(
+  const value = $fromFn(
     () => $nthDropping($lent($given(captured, IIterator, true)), captured$1, dropIItem, true),
     true,
   );
   tmp = false;
-  const value = $tryFoldInto(
-    value$1,
+  const value$1 = $tryFoldInto(
+    value,
     acc,
     (a, b) => f(a, b),
     RTry,
@@ -13481,7 +13481,7 @@ export function stepByStepByImplI_specTryFold(
       dropF?.(f);
     },
   );
-  return value;
+  return value$1;
 }
 
 export function stepByStepByBackImplI_specNextBack(
@@ -13669,10 +13669,10 @@ export function stepByStepByBackImplI_specTryRfold(
     throw error;
   }
   if (tmp.TAG === "Continue") {
-    const value$2 = tmp._0;
+    const value$1 = tmp._0;
     const captured = stepBy.iter;
     const captured$1 = stepBy.stepMinusOne;
-    const value$1 = $fromFn(
+    const value = $fromFn(
       () =>
         $nthBack(
           $given(captured, IIterator, true, IDoubleEndedIterator),
@@ -13683,9 +13683,9 @@ export function stepByStepByBackImplI_specTryRfold(
       true,
     );
     tmp$1 = false;
-    const value = $tryFoldInto(
+    const value$2 = $tryFoldInto(
+      value,
       value$1,
-      value$2,
       (a, b) => f(a, b),
       RTry,
       dropAcc,
@@ -13693,7 +13693,7 @@ export function stepByStepByBackImplI_specTryRfold(
         dropF?.(f);
       },
     );
-    return value;
+    return value$2;
   }
   try {
     result = RTry.FromResidual().fromResidual(tmp._0);
@@ -14270,9 +14270,9 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
               break;
             }
             iter = (iter + 1) >>> 0;
-            const value = BDoubleEndedIterator.next_back(zip.b);
-            if (value != null) {
-              dropBItem?.($someValue(value));
+            const nextBack = BDoubleEndedIterator.next_back(zip.b);
+            if (nextBack != null) {
+              dropBItem?.($someValue(nextBack));
             }
           }
         }

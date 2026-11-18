@@ -174,9 +174,9 @@ function main() {
   }
   iter = $iter([["m1"], ["m2"]]);
   try {
-    let value;
-    while ((value = $next(iter)) != null) {
-      let n = value;
+    let noisy;
+    while ((noisy = $next(iter)) != null) {
+      let n = noisy;
       if (n[0] === "m1") {
         noisyDrop_drop(n);
         n = ["m1b"];

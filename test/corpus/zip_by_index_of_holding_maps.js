@@ -518,9 +518,9 @@ function main() {
     let a$live = false;
     const iter = $trustedZip(a, b);
     while (true) {
-      let tmp$2;
+      let tmp;
       try {
-        tmp$2 = $next(iter);
+        tmp = $next(iter);
       } catch (error) {
         $cleanup(() => {
           iter.return();
@@ -533,14 +533,14 @@ function main() {
         }, error);
         throw error;
       }
-      if (tmp$2 == null) {
+      if (tmp == null) {
         iter.return();
         a$live = false;
         gb$live = false;
         return;
       }
-      const x = tmp$2[0];
-      const y = tmp$2[1];
+      const x = tmp[0];
+      const y = tmp[1];
       console.log(`for ${x} ${y}`);
     }
   });

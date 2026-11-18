@@ -18,13 +18,13 @@ function main() {
     $alreadyMutablyBorrowed();
   }
   console.log(`${next.value == null ? "None" : `Some(${next.value})`}`);
-  const value = $borrow(next, true);
+  const borrow = $borrow(next, true);
   try {
-    if (value.value != null) {
-      $borrowMut(next).value = (value.value + 1) | 0;
+    if (borrow.value != null) {
+      $borrowMut(next).value = (borrow.value + 1) | 0;
     }
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
   if (next.borrows < 0) {
     $alreadyMutablyBorrowed();

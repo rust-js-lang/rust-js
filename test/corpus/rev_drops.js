@@ -54,9 +54,9 @@ function main() {
   console.log("end");
   try {
     const held = $iter([[10], [11], [12], [13]]);
-    let loud;
+    let next;
     try {
-      loud = $next(held);
+      next = $next(held);
     } catch (error) {
       $cleanup(() => {
         for (const item of held) {
@@ -66,8 +66,8 @@ function main() {
       throw error;
     }
     try {
-      if (loud != null) {
-        loudDrop_drop(loud);
+      if (next != null) {
+        loudDrop_drop(next);
       }
     } catch (error) {
       $cleanup(() => {

@@ -102,12 +102,23 @@ function main() {
       if (kept != null) {
         dDrop_drop(kept[0]);
       }
-      const value = keepIf(make(4), false, dDrop_drop);
+      const d = keepIf(make(4), false, dDrop_drop);
+      console.log(`${d == null}`);
+      if (d != null) {
+        dDrop_drop(d);
+      }
+      const value = keepIf($some(make(5)), false, (option) => {
+        if (option != null) {
+          dDrop_drop(option);
+        }
+      });
       console.log(`${value == null}`);
       if (value != null) {
-        dDrop_drop(value);
+        if ($someValue(value) != null) {
+          dDrop_drop($someValue(value));
+        }
       }
-      const value$1 = keepIf($some(make(5)), false, (option) => {
+      const value$1 = keepIf($some(make(0)), false, (option) => {
         if (option != null) {
           dDrop_drop(option);
         }
@@ -116,17 +127,6 @@ function main() {
       if (value$1 != null) {
         if ($someValue(value$1) != null) {
           dDrop_drop($someValue(value$1));
-        }
-      }
-      const value$2 = keepIf($some(make(0)), false, (option) => {
-        if (option != null) {
-          dDrop_drop(option);
-        }
-      });
-      console.log(`${value$2 == null}`);
-      if (value$2 != null) {
-        if ($someValue(value$2) != null) {
-          dDrop_drop($someValue(value$2));
         }
       }
       const nested = keepIf($some(make(6)), true, (option) => {

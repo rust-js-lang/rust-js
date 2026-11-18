@@ -29,21 +29,21 @@ function main() {
   }
   const value$1 = at(0);
   grid[value][value$1] = (grid[value][$at(grid[value], value$1)] + 10) | 0;
-  const value$4 = at(3) | 0;
-  const value$2 = at(0);
-  if (value$2 >= 2) {
-    throw new Error(`index out of bounds: the len is 2 but the index is ${value$2}`);
+  const value$2 = at(3) | 0;
+  const value$3 = at(0);
+  if (value$3 >= 2) {
+    throw new Error(`index out of bounds: the len is 2 but the index is ${value$3}`);
   }
-  const value$3 = at(1);
-  grid[value$2][value$3] = Math.imul(grid[value$2][$at(grid[value$2], value$3)], value$4);
+  const value$4 = at(1);
+  grid[value$3][value$4] = Math.imul(grid[value$3][$at(grid[value$3], value$4)], value$2);
   const p = $index(ps, at(1));
   p.x = (p.x + 5) | 0;
-  const value$6 = at(2) | 0;
-  const value$5 = at(0);
-  if (value$5 >= 2) {
-    throw new Error(`index out of bounds: the len is 2 but the index is ${value$5}`);
+  const value$5 = at(2) | 0;
+  const value$6 = at(0);
+  if (value$6 >= 2) {
+    throw new Error(`index out of bounds: the len is 2 but the index is ${value$6}`);
   }
-  arr[value$5].x = (arr[value$5].x - value$6) | 0;
+  arr[value$6].x = (arr[value$6].x - value$5) | 0;
   const index = at(2);
   $index(v, index);
   const value$7 = {

@@ -134,24 +134,29 @@ function main() {
   run("map try_fold result", () => {
     const value = $iter(ds({ start: 70, end: 74 }));
     const value$1 = boom(72);
-    const map = $held($mapEnds($closing(value, $dropEach(dDrop_drop)), value$1));
+    const value$2 = $held($mapEnds($closing(value, $dropEach(dDrop_drop)), value$1));
     let r;
     try {
-      r = $tryFoldOk(map, [], (acc, d) => ({ TAG: "Ok", _0: push(acc, d) }), $dropEach(dDrop_drop));
+      r = $tryFoldOk(
+        value$2,
+        [],
+        (acc, d) => ({ TAG: "Ok", _0: push(acc, d) }),
+        $dropEach(dDrop_drop),
+      );
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        map.return();
+        value$2.return();
       }
     }
-    function map$1(v) {
+    function map(v) {
       for (const item of v) {
         dDrop_drop(item);
       }
       return v.length;
     }
-    return r.TAG === "Ok" ? map$1(r._0) : 0;
+    return r.TAG === "Ok" ? map(r._0) : 0;
   });
   run("enumerate try_fold", () => {
     const value = $iter(ds({ start: 80, end: 84 }));

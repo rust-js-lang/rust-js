@@ -56,12 +56,12 @@ function main() {
       $borrowMut(empty).value = 5;
       const value = $borrow(empty, true);
       try {
-        const value$1 = $tryBorrow(empty, true);
+        const tryBorrowMut = $tryBorrow(empty, true);
         console.log(
-          `${value.value == null ? "None" : `Some(${value.value})`} ${value$1.TAG === "Ok"}`,
+          `${value.value == null ? "None" : `Some(${value.value})`} ${tryBorrowMut.TAG === "Ok"}`,
         );
-        if (value$1.TAG === "Ok") {
-          $unborrow(value$1._0);
+        if (tryBorrowMut.TAG === "Ok") {
+          $unborrow(tryBorrowMut._0);
         }
       } finally {
         $unborrow(value);

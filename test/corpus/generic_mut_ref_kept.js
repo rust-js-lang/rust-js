@@ -123,7 +123,7 @@ function main() {
   const refs = toRefs(list);
   let tmp = 1;
   let tmp$1 = 2;
-  const value$1 = [
+  const value = [
     {
       get value() {
         return tmp;
@@ -141,14 +141,14 @@ function main() {
       },
     },
   ];
-  console.log(`[${refs.map((item) => String(item.value)).join(", ")}] ${$eq(refs, value$1)}`);
+  console.log(`[${refs.map((item) => String(item.value)).join(", ")}] ${$eq(refs, value)}`);
   setAll(refs, 7);
   const second = list.next != null ? list.next.value : 0;
   console.log(`${list.value} ${second}`);
 
   let a = 1;
   let b = 2;
-  const value$2 = pick(
+  const value$1 = pick(
     true,
     {
       get value() {
@@ -167,8 +167,8 @@ function main() {
       },
     },
   );
-  value$2.value = (value$2.value + 10) | 0;
-  const value$3 = pick(
+  value$1.value = (value$1.value + 10) | 0;
+  const value$2 = pick(
     false,
     {
       get value() {
@@ -187,7 +187,7 @@ function main() {
       },
     },
   );
-  value$3.value = (value$3.value + 20) | 0;
+  value$2.value = (value$2.value + 20) | 0;
   let r = pick(
     true,
     {
@@ -211,7 +211,7 @@ function main() {
   console.log(`${a} ${b}`);
 
   const s = ["x", "y"];
-  const value = pick(
+  const value$3 = pick(
     false,
     {
       get value() {
@@ -230,7 +230,7 @@ function main() {
       },
     },
   );
-  value.value += "!";
+  value$3.value += "!";
   console.log(`(${$debugStr(s[0])}, ${$debugStr(s[1])})`);
 
   const c = { n: 1 };

@@ -19,11 +19,11 @@ function parseInternal(s, items, BBorrowU8) {
 }
 
 export function parse(s, items, BBorrowU8) {
-  const parseInternal$1 = parseInternal(s, items, BBorrowU8);
-  if (parseInternal$1.TAG === "Ok") {
-    return parseInternal$1._0 === "" ? { TAG: "Ok" } : { TAG: "Err", _0: 2 };
+  const value = parseInternal(s, items, BBorrowU8);
+  if (value.TAG === "Ok") {
+    return value._0 === "" ? { TAG: "Ok" } : { TAG: "Err", _0: 2 };
   }
-  const e = parseInternal$1._0[1];
+  const e = value._0[1];
   return { TAG: "Err", _0: e };
 }
 

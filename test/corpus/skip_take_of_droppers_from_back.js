@@ -118,7 +118,7 @@ function inPlace() {
       rev.return();
     }
   }
-  const value = $held(
+  const value$1 = $held(
     $rev(
       $skipping(
         $closing($iter(ds((value) => [value], 4, pDrop_drop)), $dropEach(pDrop_drop)),
@@ -128,19 +128,19 @@ function inPlace() {
     ),
   );
   try {
-    const nth = $nthDropping($lent(value), 5, pDrop_drop, false);
+    const nth = $nthDropping($lent(value$1), 5, pDrop_drop, false);
     function map(d) {
       const result = d[0];
       pDrop_drop(d);
       return result;
     }
-    const value$1 = nth != null ? map(nth) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = nth != null ? map(nth) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value.return();
+      value$1.return();
     }
   }
 }

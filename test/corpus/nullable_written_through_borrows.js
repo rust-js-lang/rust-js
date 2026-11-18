@@ -112,12 +112,12 @@ function reportFiber(what, fiber) {
 function main() {
   reset();
   CURRENT = noneOf(1) ?? null;
-  const value$1 = noneOf(1);
-  $borrowMut(target).value = value$1;
+  const value = noneOf(1);
+  $borrowMut(target).value = value;
   const guard = $borrow(COUNTED, true);
   $unborrow(guard);
-  const value$2 = noneOf(1);
-  $borrowMut(COUNTED).value = value$2;
+  const value$1 = noneOf(1);
+  $borrowMut(COUNTED).value = value$1;
   report("with, set");
 
   reset();
@@ -282,8 +282,8 @@ function main() {
   reportFiber("generic swap", fiber);
 
   fiber.owner = 3;
-  const value = noneOf(1);
-  fiber.owner = value ?? null;
+  const value$2 = noneOf(1);
+  fiber.owner = value$2 ?? null;
   reportFiber("through a let", fiber);
 
   console.log(`parameters: ${paramCleared(3)} ${paramSwapped(3)}`);

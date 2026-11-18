@@ -29,9 +29,9 @@ function iPicks(IIterator, dropI, dropIItem) {
   return $traitImpl($iPicks, [IIterator, dropI, dropIItem], () => ({
     second(self) {
       $held(self);
-      let value;
+      let next;
       try {
-        value = IIterator.next(self);
+        next = IIterator.next(self);
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
@@ -39,24 +39,24 @@ function iPicks(IIterator, dropI, dropIItem) {
         throw error;
       }
       let result;
-      if (value == null) {
+      if (next == null) {
         result = undefined;
         dropI?.(self);
         return result;
       }
-      const value$2 = $someValue(value);
-      let value$1;
+      const value$1 = $someValue(next);
+      let value;
       try {
-        value$1 = IIterator.next(self);
+        value = IIterator.next(self);
       } catch (error) {
         $cleanup(() => {
-          dropIItem?.(value$2);
+          dropIItem?.(value$1);
           dropI?.(self);
         }, error);
         throw error;
       }
-      if (value$1 != null) {
-        const pair = [value$2, $someValue(value$1)];
+      if (value != null) {
+        const pair = [value$1, $someValue(value)];
         const b = pair[1];
         result = $some(b);
         try {
@@ -72,7 +72,7 @@ function iPicks(IIterator, dropI, dropIItem) {
       }
       result = undefined;
       try {
-        dropIItem?.(value$2);
+        dropIItem?.(value$1);
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
@@ -85,9 +85,9 @@ function iPicks(IIterator, dropI, dropIItem) {
     lastTwo(self) {
       $held(self);
       let value$live = false;
-      let value;
+      let next;
       try {
-        value = IIterator.next(self);
+        next = IIterator.next(self);
       } catch (error) {
         $cleanup(() => {
           dropI?.(self);
@@ -95,16 +95,16 @@ function iPicks(IIterator, dropI, dropIItem) {
         throw error;
       }
       let result;
-      if (value == null) {
+      if (next == null) {
         result = undefined;
         dropI?.(self);
         return result;
       }
-      const value$1 = $someValue(value);
+      const value$1 = $someValue(next);
       value$live = true;
-      let value$2;
+      let value;
       try {
-        value$2 = IIterator.next(self);
+        value = IIterator.next(self);
       } catch (error) {
         $cleanup(() => {
           dropIItem?.(value$1);
@@ -112,7 +112,7 @@ function iPicks(IIterator, dropI, dropIItem) {
         }, error);
         throw error;
       }
-      if (value$2 == null) {
+      if (value == null) {
         result = undefined;
         try {
           dropIItem?.(value$1);
@@ -126,10 +126,10 @@ function iPicks(IIterator, dropI, dropIItem) {
         dropI?.(self);
         return result;
       }
-      const value$3 = $someValue(value$2);
-      let value$4;
+      const value$3 = $someValue(value);
+      let value$2;
       try {
-        value$4 = IIterator.next(self);
+        value$2 = IIterator.next(self);
       } catch (error) {
         $cleanup(() => {
           dropIItem?.(value$3);
@@ -138,9 +138,9 @@ function iPicks(IIterator, dropI, dropIItem) {
         }, error);
         throw error;
       }
-      if (value$4 != null) {
+      if (value$2 != null) {
         value$live = false;
-        const three = [value$1, value$3, $someValue(value$4)];
+        const three = [value$1, value$3, $someValue(value$2)];
         const rest = three.slice(1, 3);
         result = rest;
         try {

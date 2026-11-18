@@ -27,8 +27,8 @@ function main() {
   const words = ["pear", "fig", "banana", "kiwi"];
 
   const byLen = (w) => $byteLen(w);
-  const value$3 = $maxByKey(words, byLen, $cmp);
-  console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`);
+  const value = $maxByKey(words, byLen, $cmp);
+  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   const negated = (x) => -x | 0;
   let negated$live = true;
   let tmp;
@@ -43,9 +43,9 @@ function main() {
     }, error);
     throw error;
   }
-  let value;
+  let value$1;
   try {
-    value = $maxByKey(tmp, negated, $cmp);
+    value$1 = $maxByKey(tmp, negated, $cmp);
   } catch (error) {
     $cleanup(() => {
       $dispose(negated);
@@ -53,7 +53,7 @@ function main() {
     throw error;
   }
   $dispose(negated);
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const last = (c) => c.codePointAt(0);
   const minByKey = $minByKey("rust"[Symbol.iterator](), last, $cmp);
   console.log(`${minByKey == null ? "None" : `Some(${$debugStr(minByKey, "'")})`}`);
@@ -77,12 +77,12 @@ function main() {
     calls = (calls + 1) | 0;
     return $index($utf8Bytes(w), 0);
   }
-  const value$4 = $minByKey(words, counted, $cmp);
-  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`);
+  const value$2 = $minByKey(words, counted, $cmp);
+  console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`);
   console.log(`${calls} calls`);
 
   let dropping = (x) => [(x % 7) | 0];
-  const value$5 = $maxByKey(
+  const value$3 = $maxByKey(
     [5, 9, 13, 2],
     dropping,
     (a, b) => $cmp(a[0], b[0]),
@@ -91,7 +91,7 @@ function main() {
     undefined,
     keyDrop_drop,
   );
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   dropping = (x) => [x];
   let dropping$live = true;
   let tmp$1;
@@ -106,7 +106,7 @@ function main() {
     }, error);
     throw error;
   }
-  const value$1 = $minByKey(
+  const value$4 = $minByKey(
     tmp$1,
     dropping,
     (a, b) => $cmp(a[0], b[0]),
@@ -117,7 +117,7 @@ function main() {
     },
     keyDrop_drop,
   );
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   const held = "the key's box";
   const dropping$1 = $dropping(
     (x) => (x % 4) | 0,
@@ -138,9 +138,9 @@ function main() {
     }, error);
     throw error;
   }
-  let value$2;
+  let value$5;
   try {
-    value$2 = $maxByKey(tmp$2, dropping$1, $cmp);
+    value$5 = $maxByKey(tmp$2, dropping$1, $cmp);
   } catch (error) {
     $cleanup(() => {
       $dispose(dropping$1);
@@ -148,7 +148,7 @@ function main() {
     throw error;
   }
   $dispose(dropping$1);
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

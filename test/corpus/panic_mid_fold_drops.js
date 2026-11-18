@@ -668,12 +668,12 @@ function main() {
     }
   });
   run("chain of a stage", () => {
-    function inspect$1(d) {
+    function inspect(d) {
       boom(d, 1);
     }
-    const inspect = $closing($iter(ds({ start: 0, end: 3 })), $dropEach(dDrop_drop)).map((item) => {
+    const value = $closing($iter(ds({ start: 0, end: 3 })), $dropEach(dDrop_drop)).map((item) => {
       try {
-        inspect$1(item);
+        inspect(item);
       } catch (error) {
         $cleanup(() => {
           dDrop_drop(item);
@@ -687,12 +687,12 @@ function main() {
       tmp = ds({ start: 3, end: 5 });
     } catch (error) {
       $cleanup(() => {
-        inspect.return();
+        value.return();
       }, error);
       throw error;
     }
     const x = $foldDropping(
-      $lazyChain(inspect, $closing($iter(tmp), $dropEach(dDrop_drop))),
+      $lazyChain(value, $closing($iter(tmp), $dropEach(dDrop_drop))),
       [],
       push,
       $dropEach(dDrop_drop),

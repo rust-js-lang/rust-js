@@ -12,6 +12,12 @@ pub(in crate::lower) fn held_name(value: &Expr) -> Option<&js::Held> {
     value.held_as.0.as_deref()
 }
 
+/// What made `value` suggests a `const` of it is named, its call's name,
+/// `pullTwo` of `RangePull.pullTwo(..)` (`held_name`).
+pub(in crate::lower) fn held_names(value: &Expr) -> Vec<String> {
+    held_name(value).into_iter().map(|held| held.name.clone()).collect()
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, a subject its call reads more than once, `o.map(f)`'s, in a
     /// `const` named after `base`, as `spill` holds it; but of a value read
@@ -40,14 +46,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         self.locals.mir.subjects.insert(held.clone());
         self.spill(Base::Named(&held), value, out)
-    }
-
-    /// Note `name`, which `spill` gave a value for `role` at once, in the
-    /// body's naming table (#890), for tidy's one pick to name again once
-    /// the code is placed: by what made the value suggests, its call's name
-    /// (`held_name`), else `role`'s word.
-    pub(in crate::lower) fn note_spilled(&mut self, name: &str, role: Role) {
-        (self.locals.mir.made.spilled).insert(name.to_string(), role);
     }
 
     /// `value` held in a `const` named after `name`, as `spill` holds it,

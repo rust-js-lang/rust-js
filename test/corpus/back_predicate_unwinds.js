@@ -422,10 +422,10 @@ function main() {
     );
     let result;
     try {
-      const nextBack = $nextBack(filter);
-      result = nextBack != null;
-      if (nextBack != null) {
-        dDrop_drop(nextBack);
+      const d = $nextBack(filter);
+      result = d != null;
+      if (d != null) {
+        dDrop_drop(d);
       }
     } catch (error) {
       throw $unwindsOn(error);

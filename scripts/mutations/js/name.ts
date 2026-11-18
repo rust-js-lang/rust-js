@@ -4,12 +4,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "suggested-keeps-a-temporarys-form",
+    breaks:
+      "a temporary named after what it holds is a temporary still, so a flag of it records no origin and keeps `value`, `value$0$0$live` beside `tryLock` (#841)",
+    file: "src/js/name.rs",
+    find: "            crate::names::made(base, id.0 as usize),\n            Of::Item,\n",
+    replace: "            crate::names::made(base, id.0 as usize),\n            self.1,\n",
+    tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
+    snapshots: true,
+  },
+  {
     name: "spelled-later-apart-of-the-item",
     breaks:
       "a closure's own `current`, applied where it's called, is no longer the program's, so an arm's `current` inside it takes the word, the outer `current$1` (ADR 1150)",
     file: "src/js/name.rs",
-    find: "        Name(crate::names::made(base, k), self.1, Id::fresh(), Id::WORD, None)\n",
-    replace: "        Name(crate::names::made(base, k), Of::Item, Id::fresh(), Id::WORD, None)\n",
+    find: "        Name(\n            crate::names::made(base, k),\n            self.1,\n            Id::fresh(),\n            Id::WORD,\n            self.4.clone(),\n        )\n",
+    replace: "        Name(\n            crate::names::made(base, k),\n            Of::Item,\n            Id::fresh(),\n            Id::WORD,\n            self.4.clone(),\n        )\n",
     tests: ["test/corpus.test.ts", "-t", "^applied_body_keeps_the_programs_name.rs$"],
     snapshots: true,
   },

@@ -13,16 +13,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "temporary-takes-a-name-items-read",
-    breaks:
-      "a temporary beside a function written in the body takes the name of the module's function that function reads, `note`, which preparation then gives apart, `const note$1 = id(k)`, not its own `value`, where it once threw `note is not a function` (ADR 1150)",
-    file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "    taken.extend(items_read.iter().cloned());\n",
-    replace: "    _ = items_read;\n",
-    tests: ["test/corpus.test.ts", "-t", "^temporaries_beside_items_written_in_the_body.rs$"],
-    snapshots: true,
-  },
-  {
     name: "held-prop-named-value",
     breaks:
       'what MIR holds for a prop is named `value`, not after the prop, `const href = made("h")`',
@@ -67,31 +57,11 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "temporary-takes-import-name",
-    breaks:
-      "a temporary is named after a function another module gives this one, so its import is renamed `prepare$1`",
-    file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "            taken.insert(symbol.export.clone());\n",
-    replace: "            let _ = symbol;\n",
-    tests: ["test/corpus.test.ts", "-t", "^temporary_names_imported.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "temporaries-named-by-nesting",
-    breaks:
-      "temporaries are named outer lists first, so a `let` set late takes `next` from one read first",
-    file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "    renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^loop_drops.rs$"],
-    snapshots: true,
-  },
-  {
     name: "held-arg-let-unnamed",
     breaks:
       "a held argument a `try` assigns, `let _arg; try { _arg = .. }`, keeps MIR's lowering's name, not `arg`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), Role::Arg)),\n",
+    find: "                StmtKind::Let(name, _) if is_held_arg(name) => {\n                    renames.push((name.clone(), name.suggested(Vec::new(), Role::Arg.text())))\n                }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
     snapshots: true,
@@ -111,28 +81,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary of a call's value, a `println!` argument's, is named by its role, `const value = RangePull.pullTwo(..)`, not its call's name, `pullTwo` (#890, #837)",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                        true => held_names(value),\n",
+    find: "                        true => crate::lower::mir::temporaries::held_names(value),\n",
     replace: "                        true => Vec::new(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
-    snapshots: true,
-  },
-  {
-    name: "spilled-not-named-by-its-call",
-    breaks:
-      "a value lowering spilled for a role keeps its role's word, `const result$2 = Parser.expr(parser)`, not its call's name, `expr` (#890)",
-    file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                    renames.push((name.clone(), held_names(value), **role));\n",
-    replace: "                    renames.push((name.clone(), Vec::new(), **role));\n",
-    tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
-    snapshots: true,
-  },
-  {
-    name: "spilled-renamed-to-its-role-anew",
-    breaks:
-      "a spilled value with no free suggestion is given its role's word apart anew, `result$3`, undoing the `result` tidy gave each arm apart (ADR 0352, #890)",
-    file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "        if spilled.iter().any(|(name, _)| from.is(name)) && names.iter().all(|name| taken.contains(name)) {\n",
-    replace: "        if spilled.iter().any(|(name, _)| from.is(name)) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
     snapshots: true,
   },

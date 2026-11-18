@@ -296,11 +296,11 @@ function main() {
     }
   });
   run("try_fold", () => {
-    const inspect$1 = (d) => boom(d, 22);
-    const inspect = $held(
+    const inspect = (d) => boom(d, 22);
+    const value = $held(
       $closing($iter(ds({ start: 20, end: 24 })), $dropEach(dDrop_drop)).map((item) => {
         try {
-          inspect$1(item);
+          inspect(item);
         } catch (error) {
           $cleanup(() => {
             dDrop_drop(item);
@@ -313,7 +313,7 @@ function main() {
     let x;
     try {
       x = $tryFoldInto(
-        inspect,
+        value,
         [],
         (acc, d) => {
           try {
@@ -335,7 +335,7 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        inspect.return();
+        value.return();
       }
     }
     console.log(`${x.TAG === "Continue"}`);

@@ -236,9 +236,9 @@ function main() {
       }, error);
       throw error;
     }
-    let value$4;
+    let value;
     try {
-      value$4 = $lent(tmp).some((item) => q(item));
+      value = $lent(tmp).some((item) => q(item));
     } catch (error) {
       $cleanup(() => {
         $dispose(q);
@@ -246,7 +246,7 @@ function main() {
       throw error;
     }
     $dispose(q);
-    return value$4;
+    return value;
   });
   console.log(`unwound ${r.TAG === "Err"}`);
   console.log("end");

@@ -206,9 +206,9 @@ function main() {
     console.log(`payload_named ${payloadNamed(n)}`);
     const log = { value: 0 };
     const ended$1 = $catchUnwind(() => ended(n, log, 9));
-    const value = ended$1.TAG === "Err" ? { TAG: "Err", _0: messageOf(ended$1._0) } : ended$1;
+    const mapErr = ended$1.TAG === "Err" ? { TAG: "Err", _0: messageOf(ended$1._0) } : ended$1;
     console.log(
-      `ended ${value.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(value._0)})`} ${log.value}`,
+      `ended ${mapErr.TAG === "Ok" ? "Ok(())" : `Err(${$debugStr(mapErr._0)})`} ${log.value}`,
     );
     let log$1 = { value: 0 };
     console.log(`kept ${kept(n, log$1)} ${log$1.value}`);

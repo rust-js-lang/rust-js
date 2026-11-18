@@ -12,16 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-async.test.ts", "-t", "an async closure's ignored argument is no parameter"],
   },
   {
-    name: "temporary-name-taken-suffixed",
-    breaks:
-      "a temporary whose suggested names are taken is given one apart, `point$1`, not `value`",
-    file: "src/lower/temporary_names.rs",
-    find: "        .find(|name| !taken.contains(name))\n",
-    replace: "        .next()\n",
-    tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
-    snapshots: true,
-  },
-  {
     name: "temporary-named-by-keyword",
     breaks: "a temporary is named `mut`, of `as_mut()`, a keyword's name",
     file: "src/lower/temporary_names.rs",

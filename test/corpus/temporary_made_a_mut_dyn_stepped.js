@@ -48,8 +48,8 @@ function main() {
       get value() {
         return count;
       },
-      set value(value) {
-        $assign(count, value);
+      set value(newValue) {
+        $assign(count, newValue);
       },
     }).join(", ")}]`,
   );

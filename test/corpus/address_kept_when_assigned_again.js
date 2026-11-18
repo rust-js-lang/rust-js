@@ -89,9 +89,9 @@ function main() {
   const kept = { ...m };
   $assign(m, { a: 2, b: 2 });
   // The whole, a pointer into a field of it taken.
-  const value$3 = $ptrEq(at, $ptrTo(m), 8);
+  const value = $ptrEq(at, $ptrTo(m), 8);
   try {
-    console.log(`moved ${value$3} ${pDebug_fmt(kept)} ${pDebug_fmt(m)}`);
+    console.log(`moved ${value} ${pDebug_fmt(kept)} ${pDebug_fmt(m)}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -99,17 +99,17 @@ function main() {
     throw error;
   }
   at = $ptr(s.f, "b", 0, s, 0);
-  const value = {
+  const value$1 = {
     f: { a: 8, b: 9 },
     n: 1,
   };
-  $assign(s.f, value.f);
-  value.f = s.f;
-  $assign(s, value);
+  $assign(s.f, value$1.f);
+  value$1.f = s.f;
+  $assign(s, value$1);
   // A call's result.
-  const value$4 = $ptrEq(at, $ptr(s.f, "b", 0, s, 0), 4);
+  const value$2 = $ptrEq(at, $ptr(s.f, "b", 0, s, 0), 4);
   try {
-    console.log(`whole ${value$4} ${at.value} ${sDebug_fmt(s)}`);
+    console.log(`whole ${value$2} ${at.value} ${sDebug_fmt(s)}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -127,9 +127,9 @@ function main() {
     }, error);
     throw error;
   }
-  const value$5 = $ptrEq(at, $ptrTo(p), 8);
+  const value$3 = $ptrEq(at, $ptrTo(p), 8);
   try {
-    console.log(`call ${value$5} ${pDebug_fmt({ ...at.value })}`);
+    console.log(`call ${value$3} ${pDebug_fmt({ ...at.value })}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -162,15 +162,15 @@ function main() {
   const t2 = { r: [1, 2] };
   at = $ptr(t2.r, 1, 0, t2, 0);
   const seen = [t2.r[0], t2.r[1]];
-  const value$1 = { r: [3, 4] };
-  $assign(t2.r, value$1.r);
-  value$1.r = t2.r;
-  $assign(t2, value$1);
+  const value$4 = { r: [3, 4] };
+  $assign(t2.r, value$4.r);
+  value$4.r = t2.r;
+  $assign(t2, value$4);
   // An item of an array, a field of it a pointer is into.
-  const value$6 = at.value;
-  const value$7 = $ptrEq(at, $ptr(t2.r, 1, 0, t2, 0), 2);
+  const value$5 = at.value;
+  const value$6 = $ptrEq(at, $ptr(t2.r, 1, 0, t2, 0), 2);
   try {
-    console.log(`copied ${rDebug_fmt(seen)} ${value$6} ${value$7}`);
+    console.log(`copied ${rDebug_fmt(seen)} ${value$5} ${value$6}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -184,13 +184,13 @@ function main() {
     },
   ];
   at = $ptr(items[0].f, "b", 0, items, 0);
-  const value$2 = {
+  const value$7 = {
     f: { a: 2, b: 3 },
     n: 4,
   };
-  $assign(items[0].f, value$2.f);
-  value$2.f = items[0].f;
-  $assign(items[0], value$2);
+  $assign(items[0].f, value$7.f);
+  value$7.f = items[0].f;
+  $assign(items[0], value$7);
   // Dropped at each assignment, in a loop.
   const value$8 = $ptrEq(at, $ptr(items[0].f, "b", 0, items, 0), 4);
   try {

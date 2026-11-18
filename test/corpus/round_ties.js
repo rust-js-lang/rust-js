@@ -15,9 +15,9 @@ function main() {
     console.log(`${$debugF64(x)} ${$debugF64(roundTiesEven)} ${$debugF64(arg)}`);
   }
   for (const x of [0.5, 2.5, -2.5, 4.5, 8388610, Math.fround(-0.4)]) {
-    const value = $roundTiesEven(x);
+    const roundTiesEven = $roundTiesEven(x);
     const arg = $round(x);
-    console.log(`${$debugF32(x)} ${$debugF32(value)} ${$debugF32(arg)}`);
+    console.log(`${$debugF32(x)} ${$debugF32(roundTiesEven)} ${$debugF32(arg)}`);
   }
 }
 //# sourceMappingURL=case.js.map

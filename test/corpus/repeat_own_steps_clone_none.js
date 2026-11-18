@@ -160,21 +160,21 @@ function main() {
       repeatN.return();
     }
   }
-  const value = $held($repeatingN([80], 3, (value) => lClone_clone(value), lDrop_drop));
+  const value$1 = $held($repeatingN([80], 3, (value) => lClone_clone(value), lDrop_drop));
   try {
-    const nth = $nthDropping($lent(value), 5, lDrop_drop, false);
+    const nth = $nthDropping($lent(value$1), 5, lDrop_drop, false);
     function map(l) {
       const result = l[0];
       lDrop_drop(l);
       return result;
     }
-    const value$1 = nth != null ? map(nth) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = nth != null ? map(nth) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value.return();
+      value$1.return();
     }
   }
   const last = $lastDropping(
@@ -186,8 +186,8 @@ function main() {
     lDrop_drop(l);
     return result;
   }
-  const value$1 = last != null ? map(last) : undefined;
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value = last != null ? map(last) : undefined;
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$2 = $held(
     $skipping(
       $repeatingN([100], 3, (value) => lClone_clone(value), lDrop_drop),

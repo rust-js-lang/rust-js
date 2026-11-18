@@ -105,16 +105,16 @@ function main() {
   }
   const past = $held($repeatingN([2], 2, (value) => lClone_clone(value), lDrop_drop));
   try {
-    const l = $nthDropping($lent(past), 4, lDrop_drop, false);
+    const nth = $nthDropping($lent(past), 4, lDrop_drop, false);
     try {
       const len = past.len();
-      console.log(`${l == null ? "None" : `Some(${lDebug_fmt(l)})`} ${len}`);
+      console.log(`${nth == null ? "None" : `Some(${lDebug_fmt(nth)})`} ${len}`);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        if (l != null) {
-          lDrop_drop(l);
+        if (nth != null) {
+          lDrop_drop(nth);
         }
       }
     }

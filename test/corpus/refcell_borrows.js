@@ -97,19 +97,19 @@ function main() {
   }
   shared.value += "b";
   for (let i = 0; i < 2; i++) {
-    let tmp;
+    let borrowMut;
     try {
       if (shared.borrows) {
         $alreadyBorrowed();
       }
-      tmp = shared;
+      borrowMut = shared;
     } catch (error) {
       if (writing$live) {
         $unborrow(writing);
       }
       throw error;
     }
-    tmp.value += "c";
+    borrowMut.value += "c";
   }
   let borrow;
   try {

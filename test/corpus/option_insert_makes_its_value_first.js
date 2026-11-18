@@ -191,9 +191,9 @@ function main() {
           }
         }
         const m = new Map();
-        let noisy;
+        let insert;
         try {
-          noisy = $insert(m, 1, [3]);
+          insert = $insert(m, 1, [3]);
         } catch (error) {
           $cleanup(() => {
             for (const item of m.values()) {
@@ -203,8 +203,8 @@ function main() {
           throw error;
         }
         try {
-          if (noisy != null) {
-            noisyDrop_drop(noisy);
+          if (insert != null) {
+            noisyDrop_drop(insert);
           }
         } catch (error) {
           $cleanup(() => {
@@ -236,9 +236,9 @@ function main() {
           }, error);
           throw error;
         }
-        let tmp;
+        let noisy;
         try {
-          tmp = $insert(t, 1, [4]);
+          noisy = $insert(t, 1, [4]);
         } catch (error) {
           $cleanup(() => {
             for (const [, value] of $sortedEntries(t, $cmp)) {
@@ -251,8 +251,8 @@ function main() {
           throw error;
         }
         try {
-          if (tmp != null) {
-            noisyDrop_drop(tmp);
+          if (noisy != null) {
+            noisyDrop_drop(noisy);
           }
         } catch (error) {
           $cleanup(() => {
@@ -297,10 +297,10 @@ function main() {
           throw error;
         }
         const slot$2 = { value: slot };
-        let tmp$1;
+        let tmp;
         try {
           try {
-            tmp$1 = getOrInsert(slot$2);
+            tmp = getOrInsert(slot$2);
           } catch (error) {
             throw $unwindsOn(error);
           } finally {
@@ -322,7 +322,7 @@ function main() {
           }, error);
           throw error;
         }
-        console.log(`get_or_insert ${tmp$1}`);
+        console.log(`get_or_insert ${tmp}`);
         const p = [[16], 0];
         try {
           field(p);

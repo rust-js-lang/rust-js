@@ -16,10 +16,10 @@ function main() {
     const b = [2];
     const c = [3];
     const d = [4];
-    const value$1 = [1, 2];
+    const value = [1, 2];
     let tmp;
     try {
-      tmp = $iter(value$1);
+      tmp = $iter(value);
       a$live = false;
       b$live = false;
       c$live = false;
@@ -55,9 +55,9 @@ function main() {
     }
     const f = (sum, x) =>
       (((((((((sum + x) >>> 0) + a[0]) >>> 0) + b[0]) >>> 0) + c[0]) >>> 0) + d[0]) >>> 0;
-    let value;
+    let value$1;
     try {
-      value = tmp.reduce(f, 0);
+      value$1 = tmp.reduce(f, 0);
     } catch (error) {
       $cleanup(() => {
         try {
@@ -179,7 +179,7 @@ function main() {
       throw new Error(`part ${d[0]} panics`);
     }
     console.log(`drop ${d[0]}`);
-    const total = value;
+    const total = value$1;
     console.log(`total ${total}`);
   });
   console.log(`never ${r.TAG === "Err"}`);

@@ -488,10 +488,10 @@ function main() {
   });
   run("for", () => {
     const iter = $iter(ds({ start: 180, end: 184 }));
-    let d;
+    let tmp;
     while (true) {
       try {
-        d = $next(iter);
+        tmp = $next(iter);
       } catch (error) {
         $cleanup(() => {
           for (const item of iter) {
@@ -500,25 +500,25 @@ function main() {
         }, error);
         throw error;
       }
-      if (d == null) {
+      if (tmp == null) {
         for (const item of iter) {
           dDrop_drop(item);
         }
         return;
       }
-      const d$1 = d;
+      const d = tmp;
       try {
-        boom(d$1, 182);
+        boom(d, 182);
       } catch (error) {
         $cleanup(() => {
-          dDrop_drop(d$1);
+          dDrop_drop(d);
           for (const item of iter) {
             dDrop_drop(item);
           }
         }, error);
         throw error;
       }
-      dDrop_drop(d$1);
+      dDrop_drop(d);
     }
   });
   run("chain", () => {
@@ -746,13 +746,13 @@ function main() {
     }
   });
   run("zip of a stage", () => {
-    function inspect$1(d) {
+    function inspect(d) {
       boom(d, 222);
     }
-    const inspect = $closing($iter(ds({ start: 220, end: 224 })), $dropEach(dDrop_drop)).map(
+    const value = $closing($iter(ds({ start: 220, end: 224 })), $dropEach(dDrop_drop)).map(
       (item) => {
         try {
-          inspect$1(item);
+          inspect(item);
         } catch (error) {
           $cleanup(() => {
             dDrop_drop(item);
@@ -767,12 +767,12 @@ function main() {
       tmp = ds({ start: 230, end: 234 });
     } catch (error) {
       $cleanup(() => {
-        inspect.return();
+        value.return();
       }, error);
       throw error;
     }
     const x = $collectDropping(
-      $lazyZip(inspect, $closing($iter(tmp), $dropEach(dDrop_drop)), dDrop_drop),
+      $lazyZip(value, $closing($iter(tmp), $dropEach(dDrop_drop)), dDrop_drop),
       (value) => {
         dDrop_drop(value[0]);
         dDrop_drop(value[1]);

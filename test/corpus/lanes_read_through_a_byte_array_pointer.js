@@ -67,18 +67,18 @@ function readBe(input) {
 
 function writeLe(x, out) {
   const length = out.length;
-  const value$1 = 16;
-  if (length !== value$1) {
-    $assertFailed("Eq", String(length), String(value$1));
+  const value = 16;
+  if (length !== value) {
+    $assertFailed("Eq", String(length), String(value));
   }
   x = [x[0].slice()];
-  const value$2 = $ptrRetyped($ptr(out, 0), 16, "bytes");
-  const value = [x[0].slice()];
-  value$2.value = [
-    ...$toBytes(value[0][0], 4, true),
-    ...$toBytes(value[0][1], 4, true),
-    ...$toBytes(value[0][2], 4, true),
-    ...$toBytes(value[0][3], 4, true),
+  const value$1 = $ptrRetyped($ptr(out, 0), 16, "bytes");
+  const value$2 = [x[0].slice()];
+  value$1.value = [
+    ...$toBytes(value$2[0][0], 4, true),
+    ...$toBytes(value$2[0][1], 4, true),
+    ...$toBytes(value$2[0][2], 4, true),
+    ...$toBytes(value$2[0][3], 4, true),
   ];
 }
 

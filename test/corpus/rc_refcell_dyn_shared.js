@@ -90,11 +90,11 @@ function main() {
   const borrow = $borrow(logger, true);
   try {
     const count = loggerListener_count(borrow.value);
-    const value = $borrow($index(listeners, 1), true);
+    const receiver = $borrow($index(listeners, 1), true);
     try {
-      console.log(`${count} ${value.impl.count(value.value)}`);
+      console.log(`${count} ${receiver.impl.count(receiver.value)}`);
     } finally {
-      $unborrow(value);
+      $unborrow(receiver);
     }
   } finally {
     $unborrow(borrow);
