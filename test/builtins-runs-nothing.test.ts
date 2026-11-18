@@ -83,3 +83,50 @@ test("a memo whose maker gives a locale a JS caller's options keeps its borrow c
   expect(lib.memo("en", { region: "GB" })).toBe("en-GB".length);
 });
 
+// `js::optional_call((tag, Locale::get_week_info), ())`, `tag.getWeekInfo?.()`,
+// runs what its method runs: nothing, of a locale the program made or a JS
+// caller handed over, as a property read off any object runs nothing
+// (`JsForm::Get`); not a method that isn't marked, a formatter's `format`.
+test("a memo whose maker calls a locale's method optionally reads its cache plainly", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-optional-call",
+    memo(
+      "js::optional_call((tag, js::intl::Locale::get_week_info), ()).map_or(0.0, |info| info.first_day)",
+      "tag: &js::intl::Locale",
+      "tag",
+    ),
+  );
+  expect(js).not.toContain("$withBorrowMut");
+  const tag = new Intl.Locale("en-US") as any;
+  const expected = tag.getWeekInfo?.()?.firstDay ?? 0;
+  expect(lib.memo(tag)).toBe(expected);
+  // A JS caller's subclass, read as any object's property is.
+  class Hand extends Intl.Locale {}
+  expect(lib.memo(new Hand("de-DE"))).toBe((new Intl.Locale("de-DE") as any).getWeekInfo?.()?.firstDay ?? 0);
+});
+
+test("a memo whose maker calls a method not marked optionally keeps its borrow checked", async () => {
+  const { js } = await compiled(
+    "runs-nothing-optional-call-given",
+    memo(
+      "js::optional_call((format, js::intl::DateTimeFormat::format), (Some(&now as &dyn js::intl::IntoDateOrNumber),)).map_or(0.0, |text| text.len() as f64)",
+      "key: &str, format: &js::intl::DateTimeFormat, now: f64",
+    ),
+  );
+  expect(js).toContain("$withBorrowMut");
+});
+
+// `optional_call_unchecked`'s value is asserted of another contract, so the
+// method its path names may not be the binding's: its call is counted.
+test("a memo whose maker calls a method optionally, unchecked, keeps its borrow checked", async () => {
+  const { js } = await compiled(
+    "runs-nothing-optional-call-unchecked",
+    memo(
+      "unsafe { js::optional_call_unchecked((tag, js::intl::Locale::get_week_info), ()) }.map_or(0.0, |info| info.first_day)",
+      "tag: &js::intl::Locale",
+      "tag",
+    ),
+  );
+  expect(js).toContain("$withBorrowMut");
+});
+

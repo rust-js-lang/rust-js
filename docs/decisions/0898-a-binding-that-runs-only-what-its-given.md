@@ -250,6 +250,28 @@ None)` and `Intl.DateTimeFormat(None, None)` reads its cache plainly, and
 one given a JS caller's `Some(options)` keeps its check. Mutations
 `none-written-not-read` and `none-written-of-any-option`, caught;
 `runs-only-given-ignored` and lowering's re-anchored, caught. The vercel-ui
-SDK's memo still keeps its check for `js::optional_call((tag,
+SDK's memo still kept its check for `js::optional_call((tag,
 Locale::get_week_info), ())`, which may run the method its path names.
+
+### An optional call runs what its method runs (#2082's third step)
+
+`js::optional_call(path, args)`, `value.method?.(args)` (ADR 1156), runs
+what the method its path names runs, as a call of it would, of its
+arguments' types (`optional_call_runs_nothing`, in
+`binding_call_runs_nothing`): the path's type carries the method's `FnDef`.
+What it reads first, the method off its value, is a property read, which
+`JsForm::Get` already says runs nothing of any object, one a JS caller
+handed over included, as builtins are taken unpatched: so a JS caller's
+`Intl.Locale` subclass is read so too, and `tag.getWeekInfo?.()` runs
+nothing where `getWeekInfo` does. Not `optional_call_unchecked`, whose value
+is asserted of another contract, so its method may not be the binding's:
+counted. The vercel-ui SDK's memo now reads `if (!cache.has(key)) {
+cache.set(key, resolveFirstDay(locale)); } return cache.get(key);`, as upstream
+does but for the has/set/get form (ADR 0059).
+
+Rows: test/builtins-runs-nothing.test.ts' optional call of a locale's
+method, of a locale made and of a JS caller's subclass, read plainly; of a
+formatter's unmarked `format`, and an unchecked one, counted. Mutations
+`optional-call-counted` and `optional-call-unchecked-trusted`, caught;
+`runs-only-given-ignored` re-anchored, caught.
 

@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding that runs only what it's given, `console.error(..)` of text, may run anything, so a borrow held across it is counted, `$borrowMut(root.expirationTimes, true)`",
     file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
-    find: "    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args, given)\n",
-    replace: "    binding_runs_nothing(recognition.tcx, def_id)\n",
+    find: "        || given_what_runs_nothing(recognition, def_id, args, given)\n",
+    replace: "",
     tests: ["test/lowering-cell-borrows.test.ts"],
   },
   {
@@ -151,5 +151,21 @@ export const mutations: Mutation[] = [
     find: "            && adt.variant_index.as_u32() == 0\n            && adt.fields.is_empty())\n",
     replace: ")\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a JS caller's options"],
+  },
+  {
+    name: "optional-call-counted",
+    breaks: "`js::optional_call((tag, Locale::get_week_info), ())`, `tag.getWeekInfo?.()`, is counted though its method runs nothing, so the vercel-ui SDK's memo keeps `$withBorrowMut` (#2082)",
+    file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
+    find: "        || optional_call_runs_nothing(recognition, def_id, args)\n",
+    replace: "",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "calls a locale's method optionally"],
+  },
+  {
+    name: "optional-call-unchecked-trusted",
+    breaks: "`optional_call_unchecked`, whose value is asserted of another contract, is taken to run what its path's binding runs, though its method may not be the binding's (#2082)",
+    file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
+    find: "JsForm::OptionalCall { unchecked: false }",
+    replace: "JsForm::OptionalCall { .. }",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "optionally, unchecked"],
   },
 ];

@@ -156,5 +156,30 @@ pub(in crate::lower) fn binding_call_runs_nothing<'tcx>(
     args: ty::GenericArgsRef<'tcx>,
     given: Option<(&Thir<'tcx>, &[ExprId])>,
 ) -> bool {
-    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args, given)
+    binding_runs_nothing(recognition.tcx, def_id)
+        || given_what_runs_nothing(recognition, def_id, args, given)
+        || optional_call_runs_nothing(recognition, def_id, args)
+}
+
+/// Whether `def_id`, `js::optional_call`, `value.method?.(args)` (ADR
+/// 1156), runs nothing: what the method its path names runs, of its
+/// arguments' types, as a call of it would (#2082), the method read off
+/// the value as a property read is, `JsForm::Get`'s, which runs nothing of
+/// any object, one a JS caller handed over too. Not
+/// `optional_call_unchecked`'s, whose value is asserted of another
+/// contract, so its method may not be the binding's.
+fn optional_call_runs_nothing<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    let tcx = recognition.tcx;
+    if !is_binding(tcx, def_id) || !matches!(js_form(tcx, def_id), JsForm::OptionalCall { unchecked: false }) {
+        return false;
+    }
+    let Some(ty::Tuple(path)) = args.types().next().map(|path| path.kind()) else {
+        return false;
+    };
+    let method = path.iter().find_map(crate::lower::fn_def);
+    method.is_some_and(|(method, method_args)| binding_call_runs_nothing(recognition, method, method_args, None))
 }
