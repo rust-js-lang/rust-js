@@ -127,6 +127,10 @@ pub(crate) struct Build {
     /// `--intervals-shadow <file>`: where to write each check THIR's ranges
     /// leave out that MIR's intervals don't prove, a line each (#1672).
     pub intervals_shadow: Option<PathBuf>,
+    /// `--drops-shadow <file>`: where to write, of each `Drop` of the
+    /// crate's bodies, whether rust-js's elaboration drops what rustc's
+    /// does, a line each (#2112's change D).
+    pub drops_shadow: Option<PathBuf>,
     /// `--recognizers-found <file>`: where to write which std functions a
     /// recogniser took, a line each (ADR 1128).
     pub recognizers_found: Option<PathBuf>,
@@ -284,6 +288,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let recognizers_found = valued(&mut ours, "--recognizers-found", "a path")?.map(PathBuf::from);
     let props_replayed = valued(&mut ours, "--props-replayed", "a path")?.map(PathBuf::from);
     let intervals_shadow = valued(&mut ours, "--intervals-shadow", "a path")?.map(PathBuf::from);
+    let drops_shadow = valued(&mut ours, "--drops-shadow", "a path")?.map(PathBuf::from);
     let mut without_mutated = Vec::new();
     while let Some(ty) = valued(&mut ours, "--without-mutated", "a type, as rustc prints it")? {
         without_mutated.push(ty);
@@ -327,6 +332,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_intervals,
         intervals_by_effects,
         intervals_shadow,
+        drops_shadow,
         recognizers_found,
         props_replayed,
         std_iterators,

@@ -160,6 +160,9 @@ struct RustJs {
     /// `--intervals-shadow <file>`, where to write the checks THIR leaves out
     /// that MIR doesn't prove (#1672).
     intervals_shadow: Option<PathBuf>,
+    /// `--drops-shadow <file>`, where to write each `Drop`'s comparison
+    /// with rustc's elaboration (#2112's change D).
+    drops_shadow: Option<PathBuf>,
     /// Cargo's build (ADR 0101), which is told what `RUST_JS_APPS` was.
     cargo: bool,
     /// `-C panic=abort`, which rust-js unwinds (ADR 0090): unwinding is
@@ -355,6 +358,7 @@ impl Callbacks for RustJs {
                 intervals_by_effects: self.intervals_by_effects,
                 records_recognized: self.recognizers_found.is_some(),
                 records_intervals_shadow: self.intervals_shadow.is_some(),
+                records_drops_shadow: self.drops_shadow.is_some(),
             },
         );
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
@@ -426,6 +430,12 @@ impl Callbacks for RustJs {
         // Each check THIR's ranges leave out that MIR doesn't prove (#1672).
         if let Some(path) = &self.intervals_shadow
             && let Err(error) = std::fs::write(path, lower::session::intervals_shadow(tcx))
+        {
+            tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
+        }
+        // Each `Drop` compared with rustc's elaboration (#2112's change D).
+        if let Some(path) = &self.drops_shadow
+            && let Err(error) = std::fs::write(path, lower::session::drops_shadow(tcx))
         {
             tcx.dcx().err(format!("rust-js: writing {}: {error}", path.display()));
         }
@@ -733,6 +743,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         without_intervals,
         intervals_by_effects,
         intervals_shadow,
+        drops_shadow,
         std_iterators,
         js_made_all,
         no_thir_hints,
@@ -777,6 +788,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         &props_replayed,
         &tidy_fired,
         &intervals_shadow,
+        &drops_shadow,
     ]
     .into_iter()
     .flatten()
@@ -802,6 +814,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         without_intervals,
         intervals_by_effects,
         intervals_shadow,
+        drops_shadow,
         cargo,
         panics_abort: false,
         local_js: output::LocalJs::new(&plan),

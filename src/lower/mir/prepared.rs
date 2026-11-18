@@ -19,6 +19,9 @@ pub struct Mir<'tcx> {
     /// each block an arm goes on to its case through, and where the
     /// `match` is written, whose comments are before the case.
     pub(in crate::lower) cases: IndexMap<BasicBlock, Span>,
+    /// rustc's own body of it, its drops elaborated, where the session
+    /// compares them with rust-js's (`--drops-shadow`, `elaborated.rs`).
+    pub(in crate::lower) elaborated: Option<mir::Body<'tcx>>,
 }
 
 impl<'tcx> Mir<'tcx> {
@@ -35,6 +38,7 @@ impl<'tcx> Mir<'tcx> {
             promoted: self.promoted.iter().map(of).collect(),
             awaits: self.awaits.clone(),
             cases: self.cases.clone(),
+            elaborated: self.elaborated.as_ref().map(of),
         }
     }
 
@@ -136,6 +140,7 @@ impl<'tcx> Mir<'tcx> {
             promoted,
             awaits,
             cases: IndexMap::default(),
+            elaborated: None,
         }
     }
 
@@ -221,6 +226,7 @@ impl<'tcx> Mir<'tcx> {
             promoted: self.promoted.clone(),
             awaits: self.awaits.clone(),
             cases: self.cases.clone(),
+            elaborated: None,
         })
     }
 }

@@ -74,3 +74,13 @@ test("an Arguments' text or function is `mir::arguments_use`'s answer alone", ()
   expect(asking).toEqual(["src/lower/mir/arguments_use.rs", "src/lower/mir/given_arguments.rs", "src/lower/mir/std_calls/written_into.rs", "src/lower/mir/std_calls.rs"]);
   expect(read("src/lower/mir/dispatch.rs")).toContain("self.makes_arguments_given_on(state, known, destination)");
 });
+
+// rustc's own drop elaboration of a body is read in one place,
+// `mir/elaborated.rs` (#2112's change D): the shadow that compares it
+// with rust-js's, `--drops-shadow`, and what will consume it.
+test("rustc's elaborated body is read by `mir/elaborated.rs` alone", () => {
+  const reading = ["src/lower.rs", ...files("src/lower")]
+    .filter((file) => file.endsWith(".rs") && file !== "src/lower/mir/elaborated.rs")
+    .filter((file) => /\bmir_drops_elaborated_and_const_checked\b/.test(read(file)));
+  expect(reading).toEqual([]);
+});

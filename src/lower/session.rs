@@ -69,6 +69,10 @@ pub(crate) struct Caches {
     /// Each check THIR's facts leave out that MIR doesn't prove, where the
     /// session records them, `--intervals-shadow`'s (#1672).
     pub intervals_shadow: Option<RefCell<super::analysis::Shadow>>,
+    /// Of each `Drop` of the crate's bodies, its comparison with rustc's
+    /// elaboration, a line each, where the session records them,
+    /// `--drops-shadow`'s (#2112's change D).
+    pub drops_shadow: Option<RefCell<Vec<String>>>,
     /// What MIR proves of the bodies being lowered, and what each function
     /// only calls reach is given (#1672, ADR 1137).
     pub intervals: RefCell<super::analysis::Intervals>,
@@ -104,6 +108,18 @@ pub(crate) fn recognized(tcx: TyCtxt<'_>) -> String {
 /// line each: what `--intervals-shadow` writes (#1672).
 pub(crate) fn intervals_shadow(tcx: TyCtxt<'_>) -> String {
     super::analysis::intervals_shadow_report(tcx)
+}
+
+/// Each `Drop` of the crate's bodies compared with rustc's elaboration, a
+/// line each: what `--drops-shadow` writes (#2112's change D).
+pub(crate) fn drops_shadow(tcx: TyCtxt<'_>) -> String {
+    let caches = caches(tcx);
+    let Some(lines) = &caches.drops_shadow else {
+        return String::new();
+    };
+    let lines = lines.borrow();
+    let unique: IndexSet<&String> = lines.iter().collect();
+    unique.into_iter().map(|line| format!("{line}\n")).collect()
 }
 
 /// Records which of tidy's passes change a body, for the rest of the
@@ -165,6 +181,8 @@ pub(crate) struct Flags {
     pub records_recognized: bool,
     /// Whether the checks THIR leaves out that MIR doesn't prove are.
     pub records_intervals_shadow: bool,
+    /// Whether each `Drop`'s comparison with rustc's elaboration is.
+    pub records_drops_shadow: bool,
 }
 
 /// Holds a session's caches in place; dropped, it takes them away, as the
@@ -212,6 +230,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             without_intervals: flags.without_intervals,
             intervals_by_effects: flags.intervals_by_effects,
             intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
+            drops_shadow: flags.records_drops_shadow.then(RefCell::default),
             intervals: RefCell::default(),
             recognized: flags.records_recognized.then(RefCell::default),
             elided: RefCell::default(),

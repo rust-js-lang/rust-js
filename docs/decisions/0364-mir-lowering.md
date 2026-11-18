@@ -1752,3 +1752,41 @@ the `match`, an `if let` whose `else` moves the value whole, and a `let
 else`'s. Mutation `open-drop-otherwise-unflagged` is caught. Small
 Crater's regex-syntax: 128 of 147 as native, 17 refused, 2 not of
 wasm32, none wrong.
+
+## Amendment: rustc's own drop elaboration, beside rust-js's (2026-11-19, #2112's change D, step 1)
+
+rust-js lowers the built MIR and elaborates its drops itself
+(`mir/drops.rs`), of the parts JS drops, on rustc's dataflow of what's
+there. rustc's `ElaborateDrops` is crate-private, and runs after passes that
+renumber the blocks, `SimplifyCfg::PostAnalysis` and `CriticalCallEdges`
+among them, so its answers can't be asked of it drop by drop. Wrong drops
+have been found where rust-js's own steps differed from rustc's, #2064's
+ladder of an enum moved in part and whole.
+
+So, first as a shadow: `--drops-shadow <file>` keeps rustc's elaborated body
+of each function beside the built one (`mir_drops_elaborated_and_const_checked`,
+read by `mir/elaborated.rs` alone, which test/architecture-mir.test.ts
+holds), finds each `Drop` again in it by where it's written (span, scope,
+and whether it unwinds), and compares what each side drops of each part
+there, never, always or as a flag says, reading rustc's ladders through
+their tests of discriminants and flags. A line each: `agree`, `disagree`,
+`flag-ours` or `flag-theirs` (only one side asks a flag), or `unmatched`
+(found twice, behind a pointer Derefer renames, or not found), a
+cleanup's apart from the normal path's.
+
+Measured over the corpus's 2,785 cases: on the normal path 7,356 agree,
+none disagree, 10 `flag-ours`, 185 unmatched. Each `flag-ours` is a flag
+the built MIR's imaginary edges (`falseEdge`, `falseUnwind`) ask, which
+rustc's `CleanupPostBorrowck` removes before it elaborates: never run, so
+the flag holds rustc's answer. On cleanup paths, rust-js's body has no
+unwinding of what can't throw (ADR 0301), whose cleanups rustc's reaches,
+and keeps a dead drop's unwinding rustc's `compute_dead_unwinds` removes, so
+the two aren't compared one to one there. Under 1% more compile time over
+the corpus with the shadow on. Next, under the same issue: the dataflow
+without imaginary edges; matching through Derefer's temporaries and by the
+block a drop leaves from; then a normal path's disagreement refused.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no output
+changes. Held by test/drops-shadow.test.ts and four mutations of
+`mir/elaborated.rs`, caught.
+

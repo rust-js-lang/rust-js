@@ -54,6 +54,12 @@ pub(super) struct Elaboration<'tcx> {
 }
 
 impl<'tcx> Elaboration<'tcx> {
+    /// Before the `Drop` ending `block`, whether `path` may be there, and
+    /// whether it may not be, as rustc's dataflow says.
+    pub(super) fn presence(&self, block: BasicBlock, path: MovePathIndex) -> (bool, bool) {
+        self.states.get(&(block, path)).copied().unwrap_or((false, false))
+    }
+
     /// Whether the `Drop` ending `block` drops `place`, or may.
     pub(super) fn drops(&self, block: BasicBlock, place: Place<'tcx>) -> bool {
         match self.move_data.rev_lookup.find(place.as_ref()) {
@@ -356,13 +362,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// so no flag says it and it reads nothing, as where no cell of its
     /// type is counted (`QuietCells::unchecked_guards`, ADR 0863, amended;
     /// #700).
-    pub(super) fn mir_elaboration(
-        &self,
-        body: &mir::Body<'tcx>,
-        promoted: &IndexVec<mir::Promoted, mir::Body<'tcx>>,
-    ) -> (Option<Elaboration<'tcx>>, QuietCells) {
-        let cells = self.mir_quiet_cells(body, promoted);
-        (self.elaborated(body, &cells.unchecked_guards()), cells)
+    /// And compared with rustc's own, where the session records it
+    /// (`--drops-shadow`, `elaborated.rs`).
+    pub(super) fn mir_elaboration(&self, mir: &super::prepared::Mir<'tcx>) -> (Option<Elaboration<'tcx>>, QuietCells) {
+        let cells = self.mir_quiet_cells(&mir.body, &mir.promoted);
+        let elaboration = self.elaborated(&mir.body, &cells.unchecked_guards());
+        self.shadow_drops(mir, elaboration.as_ref(), &cells.unchecked_guards());
+        (elaboration, cells)
     }
 
     /// `mir_elaboration`'s drops, but those of `quiet_guards`.

@@ -27,7 +27,9 @@ mod cfg;
 mod closures;
 mod dispatch;
 mod drops;
+mod elaborated;
 pub(in crate::lower) use drops::dead_drops;
+pub(in crate::lower) use elaborated::with_elaborated;
 mod entries;
 mod fields_read;
 mod given_arguments;
@@ -955,7 +957,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer_falsy = std::mem::take(&mut self.locals.mir.falsy);
         let outer_tested = std::mem::take(&mut self.locals.mir.tested);
         let outer_made = std::mem::take(&mut self.locals.mir.made);
-        let (drops, quiet) = self.mir_elaboration(mir_body, &mir.promoted);
+        let (drops, quiet) = self.mir_elaboration(mir);
         let patterns = match captures {
             None => self.mir_param_patterns(mir_body),
             Some(_) => Vec::new(),
