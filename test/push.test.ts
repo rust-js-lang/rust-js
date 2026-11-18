@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { appendedBoth, lineSet, lowerRatchets, mergedLineSet, ratchets, regenerated, remakeable } from "../scripts/push";
+import { appendedBoth, lineSet, lowerRatchets, mergedChanges, mergedLineSet, ratchets, regenerated, remakeable } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -68,6 +68,48 @@ test("a rebase's conflict in an ADR both sides only appended to keeps both amend
   expect(remakeable(["docs/decisions/1150-names-are-ids.md", "test/sig-binders.txt"])).toBe(true);
   expect(remakeable(["docs/decisions/README.md"])).toBe(false);
   expect(remakeable(["docs/guide/README.md"])).toBe(false);
+});
+
+// TESTS.md's top, a `Changed on ..` line each change adds, conflicts on
+// almost every two pushes at once (a dozen PR merges by hand, 2026-11-18):
+// merged as git merges it (`git merge-file --diff3`), each conflict of
+// those lines alone keeping both sides' new lines, the replayed change's
+// first, newest; one in the table still stops.
+test("a rebase's conflict in TESTS.md's `Changed on` lines keeps both sides' new lines, newest first", () => {
+  const dir = fixture("push-tests-md");
+  const merged = (base: string[], ours: string[], theirs: string[]) => {
+    const files = Object.entries({ ours, base, theirs }).map(([name, lines]) => {
+      writeFileSync(join(dir, name), [...lines, ""].join("\n"));
+      return join(dir, name);
+    });
+    const p = spawnSync("git", ["merge-file", "-p", "--diff3", ...files], { encoding: "utf8" });
+    expect(p.status).toBeGreaterThan(0);
+    return mergedChanges(p.stdout)?.split("\n").slice(0, -1);
+  };
+  const head = ["# Tests at a glance", ""];
+  const base = [...head, "Changed on 1: a", "", "| Suite | Tests |", "| corpus | 2 |"];
+  // Two pushes each added its line.
+  expect(merged(base, [...head, "Changed on 2: main's", "", ...base.slice(2)], [...head, "Changed on 2: mine", "", ...base.slice(2)])).toEqual([
+    ...head,
+    "Changed on 2: mine",
+    "",
+    "Changed on 2: main's",
+    "",
+    ...base.slice(2),
+  ]);
+  // Main rewrote a line, a count raised, that the replayed change kept and
+  // added its own before: its own, then main's rewrite, never the old line.
+  expect(merged(base, [...head, "Changed on 1: a, raised", "", ...base.slice(4)], [...head, "Changed on 2: mine", "", ...base.slice(2)])).toEqual([
+    ...head,
+    "Changed on 2: mine",
+    "",
+    "Changed on 1: a, raised",
+    "",
+    ...base.slice(4),
+  ]);
+  // A conflict in the table is its author's to merge.
+  expect(merged(base, [...base.slice(0, 5), "| corpus | 3 |"], [...base.slice(0, 5), "| corpus | 4 |"])).toBeUndefined();
+  expect(remakeable(["TESTS.md"])).toBe(true);
 });
 
 // Two changes that each took a line off a known list conflict where the

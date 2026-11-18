@@ -387,12 +387,57 @@ export function mergedLineSet(text: string): string | undefined {
   return out.join("\n");
 }
 
+/** TESTS.md, whose top a change adds a `Changed on ..` line to, which
+ * almost every two pushes at once both do (a dozen PR merges by hand,
+ * 2026-11-18). */
+const changesLog = (file: string) => file === "TESTS.md";
+
+/** `text`, TESTS.md merged with git's diff3 conflict markers, each
+ * conflict of its `Changed on ..` lines alone resolved by keeping both
+ * sides' new lines, newest first: what the replayed change, theirs, added
+ * that the base hadn't, then ours, the commit the rebase is onto, whole, a
+ * line it rewrote, a count it raised, as it rewrote it. Undefined where a
+ * conflict has no base section, or holds a line that isn't a `Changed on`
+ * one or blank, the table's or prose, which stays the change's author's to
+ * merge. */
+export function mergedChanges(text: string): string | undefined {
+  const out: string[] = [];
+  const lines = text.split("\n");
+  const change = (line: string) => line === "" || line.startsWith("Changed on ");
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i]!.startsWith("<<<<<<< ")) {
+      out.push(lines[i]!);
+      continue;
+    }
+    const sides: [string[], string[], string[]] = [[], [], []];
+    let side: 0 | 1 | 2 = 0;
+    let based = false;
+    for (i++; i < lines.length && !lines[i]!.startsWith(">>>>>>> "); i++) {
+      const line = lines[i]!;
+      if (line.startsWith("||||||| ")) (side = 1), (based = true);
+      else if (line === "=======") side = 2;
+      else sides[side].push(line);
+    }
+    if (!based) return undefined;
+    const [ours, base, theirs] = sides;
+    if (![...ours, ...base, ...theirs].every(change)) return undefined;
+    const added = theirs.filter((line) => line !== "" && !base.includes(line));
+    const kept = ours.filter((line) => line !== "");
+    out.push(...[...added, ...kept].flatMap((line, at) => (at === 0 ? [line] : ["", line])));
+    // The blank line that parts the last from what follows, where the
+    // conflict took it.
+    if ((ours.at(-1) ?? "") === "" && (theirs.at(-1) ?? "") === "") out.push("");
+  }
+  return out.join("\n");
+}
+
 /** Whether a rebase's `conflicts` are each a blessed baseline's, which it
  * resolves by making them again, a ratchet's, by the lower count, an
- * ADR's, by both sides' amendments (`appendedBoth`), or a line set's, as
- * a set (`mergedLineSet`); any other, hand-written code's too, stops it. */
+ * ADR's, by both sides' amendments (`appendedBoth`), a line set's, as
+ * a set (`mergedLineSet`), or TESTS.md's `Changed on` lines, both sides'
+ * (`mergedChanges`); any other, hand-written code's too, stops it. */
 export function remakeable(conflicts: string[]): boolean {
-  return conflicts.every((file) => file in regenerated || ratchets.includes(file) || decision(file) || lineSet(file));
+  return conflicts.every((file) => file in regenerated || ratchets.includes(file) || decision(file) || lineSet(file) || changesLog(file));
 }
 
 /** An ADR, docs/decisions/<n>-<name>.md, which a change amends by
@@ -445,6 +490,16 @@ function rebase(): string[] {
         if (merged === undefined) {
           git("rebase", "--abort");
           throw new Refused(`the rebase stopped on a conflict in ${file} where each side changed a line, aborted`);
+        }
+        writeFileSync(file, merged);
+        git("add", file);
+        continue;
+      }
+      if (changesLog(file)) {
+        const merged = mergedChanges(spawnSync("git", ["merge-file", "-p", "--diff3", "--object-id", `:2:${file}`, `:1:${file}`, `:3:${file}`], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 }).stdout);
+        if (merged === undefined) {
+          git("rebase", "--abort");
+          throw new Refused(`the rebase stopped on a conflict in ${file} beyond its \`Changed on\` lines, aborted`);
         }
         writeFileSync(file, merged);
         git("add", file);
