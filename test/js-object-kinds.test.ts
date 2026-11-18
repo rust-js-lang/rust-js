@@ -156,6 +156,20 @@ pub fn resolve_read(value: Option<&'static Unknown>, log: &dyn Fn(&str), then: &
     }
     false
 }
+
+pub fn resolve_own(value: Option<&'static Unknown>, log: &dyn Fn(&str), then: &dyn Fn(&dyn Fn(Option<&'static Unknown>))) -> bool {
+    if let Some(object) = js::classify(value).object() {
+        then(&move |part| {
+            let value = checked(part);
+            match value {
+                Ok(text) => log(&(text + &js::type_of(js::get(object, "x")))),
+                Err(reason) => log(&reason),
+            }
+        });
+        return true;
+    }
+    false
+}
 `);
   expect(js).toContain('export function resolve(value, log, then) {\n  if (typeof value === "object" && value !== null) {\n    log(typeof value.x);\n');
   // The closure's own spelled apart from it, `value$1`, by preparation's
@@ -168,4 +182,14 @@ pub fn resolve_read(value: Option<&'static Unknown>, log: &dyn Fn(&str), then: &
   const then = (f: (part: unknown) => void) => { f(1); f(null); };
   expect([lib.resolve({ x: 1 }, log, then), lib.resolve(2, log, then), lib.resolveRead({ x: "s" }, log, then)]).toEqual([true, false, true]);
   expect(seen).toEqual(["number", "ok", "null!", "okstring", "null"]);
+  // The closure's own `value`, the program's, beside the tested one: it's
+  // spelled apart, and the object is still the tested `value`, read where
+  // it's tested.
+  const own = js.slice(js.indexOf("export function resolveOwn"));
+  expect(own).not.toContain("const object =");
+  expect(own).toContain("      const value$1 = checked(part);\n");
+  expect(own).toContain("        log(value$1._0 + typeof value.x);\n");
+  seen.length = 0;
+  expect([lib.resolveOwn({ x: true }, log, then), lib.resolveOwn(null, log, then)]).toEqual([true, false]);
+  expect(seen).toEqual(["okboolean", "null"]);
 });

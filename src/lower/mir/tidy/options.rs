@@ -120,11 +120,6 @@ fn tested_option(
             *e = (**value).clone();
         }
     });
-    // `v` read where `x` was is `v` there, not a closure's own spelled as
-    // it, which preparation keeps as the program wrote it (rd514).
-    if !js::scopes::not_read_as_themselves(&reads, &[v]).is_empty() {
-        return None;
-    }
     Some(match set {
         true => (StmtKind::If((**test).clone(), reads, otherwise.clone()), None),
         false => (

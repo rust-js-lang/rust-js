@@ -63,22 +63,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
   {
-    name: "tested-option-read-where-another",
-    breaks: "an `Option` made where it's tested is read as its value inside a closure of its own `value`, `log(value._0 + typeof value.x)`, the closure's `Result` (rd514)",
-    file: "src/lower/mir/tidy/options.rs",
-    find: "    if !js::scopes::not_read_as_themselves(&reads, &[v]).is_empty() {\n        return None;\n    }\n",
-    replace: "",
-    tests: ["test/js-object-kinds.test.ts", "-t", "beside a closure's own of its name"],
-  },
-  {
-    name: "tested-option-scopes-of-unmoved",
-    breaks: "what JS's scopes resolve a read of `v` to is asked where `x` is still read, not `v`, so a closure's own `value` takes the read put in its place (rd514)",
-    file: "src/lower/mir/tidy/options.rs",
-    find: "    if !js::scopes::not_read_as_themselves(&reads, &[v]).is_empty() {\n",
-    replace: "    if !js::scopes::not_read_as_themselves(&reads, &[x]).is_empty() {\n",
-    tests: ["test/js-object-kinds.test.ts", "-t", "beside a closure's own of its name"],
-  },
-  {
     name: "overwritten-any-write",
     breaks:
       "a write the program makes twice, `slot.count = 1; slot.count = 2;`, loses its first, which no take wrote (rd524)",
