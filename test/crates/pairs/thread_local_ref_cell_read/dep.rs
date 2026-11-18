@@ -12,6 +12,12 @@ thread_local! {
     pub static CURRENT: RefCell<Option<Rc<Fiber>>> = const { RefCell::new(None) };
 }
 
+/// A fiber, as React's reconciler makes each (`createFiber`): its fields
+/// are this crate's data, which JS gives back as it was given.
+pub fn create_fiber(tag: u32) -> Rc<Fiber> {
+    Rc::new(Fiber { tag })
+}
+
 pub fn set_current(fiber: Option<Rc<Fiber>>) {
     CURRENT.set(fiber);
 }

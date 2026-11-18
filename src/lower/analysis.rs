@@ -16,7 +16,7 @@ mod cell_flow;
 mod chars_asked;
 mod vec_uses;
 pub(super) use cell_borrows::{
-    Borrow, Cell, CellBorrows, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell,
+    Borrow, Cell, CellBorrows, Receiver, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell,
     resolve_runs_nothing, unsized_in_place,
 };
 pub(super) use cell_flow::CellClass;
@@ -890,7 +890,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             trait_impls: &trait_impls,
             foreign: &foreign,
         },
-        (all_bodies, &clones),
+        (all_bodies, &clones, &thread_local_inits),
         &|ty| dropping.runs(recognition.typing_env, ty),
     );
     let wholes = Wholes::of_crate(tcx, all_bodies, &thread_local_inits, &|adt| {
@@ -938,12 +938,21 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             .is_std(id)
             .then(|| cell_borrows.std_runs(&recognition, id, args))
     };
+    let runs_nothing = |id, args| {
+        let recognition = Recognition {
+            tcx,
+            typing_env: ty::TypingEnv::fully_monomorphized(),
+            trait_impls: &trait_impls,
+            foreign: &foreign,
+        };
+        cell_borrows::call_runs_nothing(&recognition, (id, args), cell_borrows::Receiver::Unasked)
+    };
     let runs = may_run::Runs::new(
         tcx,
         all_bodies,
         (&thread_local_inits, closures::handed_fn_dyns(tcx, all_bodies)),
         (cell_borrows.pointers(), &std_runs, &runs_settled),
-        &foreign,
+        &runs_nothing,
     );
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,

@@ -465,6 +465,12 @@ pub struct Fiber {
     pub tag: u8,
 }
 
+// As React's reconciler makes each fiber: its fields are this crate's
+// data, which JS gives back as it was given (ADR 0262's difference 60).
+pub fn create_fiber(tag: u8) -> Rc<Fiber> {
+    Rc::new(Fiber { tag })
+}
+
 thread_local! {
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub static CURRENT: RefCell<Option<Rc<Fiber>>> = const { RefCell::new(None) };
@@ -509,6 +515,40 @@ pub fn current_tag() -> Option<u8> {
   expect([lib.currentTag(), lib.owner]).toEqual([3, "App"]);
   lib.reset();
   expect([lib.current, lib.owner, lib.currentTag()]).toEqual([null, null, undefined]);
+});
+
+// The same, of a fiber the crate only takes: a JS caller may hand over its
+// own, whose `tag` getter sets `CURRENT` while its `with_borrow` holds it
+// (#2113), so the module needs the cell itself, and its export is refused.
+test("a nullable thread-local of what a JS caller may give, read in its borrow, is refused as an export", () => {
+  const dir = fixture("nullable-thread-local-given");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub static CURRENT: RefCell<Option<Rc<Fiber>>> = const { RefCell::new(None) };
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(fiber))]
+pub fn set_current_fiber(fiber: Option<Rc<Fiber>>) {
+    CURRENT.set(fiber);
+}
+
+pub fn current_tag() -> Option<u8> {
+    CURRENT.with_borrow(|current| current.as_ref().map(|fiber| fiber.tag))
+}
+`,
+  );
+  const out = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js], root, 120_000);
+  expect(out.code).not.toBe(0);
+  expect(out.stderr).toContain("`CURRENT` is exported, so a JS module imports it as what its cell holds");
 });
 
 // A binding's type parameter `#[rust_js::nullable(..)]` names: its `None`

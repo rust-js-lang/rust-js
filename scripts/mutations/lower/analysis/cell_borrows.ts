@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows.rs",
     find: "            return Called::Bodies(may_be);\n",
     replace: "            return Called::Any;\n",
-    tests: ["test/classes-traits.test.ts", "-t", "prototype's"],
+    tests: ["test/classes-traits.test.ts", "-t", "under a guard runs what its classes"],
   },
   {
     name: "class-trait-call-asks-nothing",
@@ -459,5 +459,13 @@ export const mutations: Mutation[] = [
     find: "            false if reads(ty) => return None,\n",
     replace: "            false if false => return None,\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a task a JS caller gives"],
+  },
+  {
+    name: "field-access-not-summarized",
+    breaks: "a function's field read of a JS caller's struct isn't in its summary, so a caller holding a borrow across `has_reason(value)` passes where Rust panics (#2113)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "                if let Some(ty) = field_access_may_run(recognition, given, lhs) {",
+    replace: "                if let Some(ty) = field_access_may_run(recognition, given, lhs).filter(|_| false) {",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "a field read in a helper"],
   },
 ];

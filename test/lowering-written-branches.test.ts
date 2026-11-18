@@ -607,6 +607,12 @@ pub struct Fiber {
     pub parent: RefCell<Option<Rc<Fiber>>>,
 }
 
+// As React's reconciler makes each fiber: its fields are this crate's
+// data, which JS gives back as it was given (ADR 0262's difference 60).
+pub fn create_fiber(depth: u32, parent: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { depth, parent: RefCell::new(parent) })
+}
+
 #[cfg_attr(rust_js, rust_js::nullable)]
 pub fn root_name(fiber: &Fiber) -> Option<String> {
     match fiber.depth {

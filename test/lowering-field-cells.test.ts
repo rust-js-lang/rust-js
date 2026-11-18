@@ -22,6 +22,12 @@ pub struct Root {
     pub times: RefCell<Vec<f64>>,
 }
 
+// As the program makes each: its fields are this crate's data, which JS
+// gives back as it was given (ADR 0262's difference 60).
+pub fn create_root() -> Root {
+    Root { times: RefCell::new(Vec::new()) }
+}
+
 pub fn mark(root: &Root, index: usize) {
     let mut times = root.times.borrow_mut();
     times[index] = 1.0;
@@ -42,6 +48,12 @@ pub struct Cursor<T> {
     pub current: RefCell<T>,
 }
 
+// As the program makes each: its fields are this crate's data, which JS
+// gives back as it was given (ADR 0262's difference 60).
+pub fn create_cursor<T>(current: T) -> Cursor<T> {
+    Cursor { current: RefCell::new(current) }
+}
+
 pub fn read<T: Clone>(cursor: &Cursor<T>) -> T {
     cursor.current.borrow().clone()
 }
@@ -55,6 +67,12 @@ pub struct Fiber {
     pub tag: u8,
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub r#return: RefCell<Option<Rc<Fiber>>>,
+}
+
+// As the program makes each: its fields are this crate's data, which JS
+// gives back as it was given (ADR 0262's difference 60).
+pub fn create_fiber(tag: u8) -> Rc<Fiber> {
+    Rc::new(Fiber { tag, r#return: RefCell::new(None) })
 }
 
 thread_local! {
@@ -197,6 +215,12 @@ pub struct Fiber {
     pub r#return: RefCell<Option<Rc<Fiber>>>,
 }
 
+// As the program makes each: its fields are this crate's data, which JS
+// gives back as it was given (ADR 0262's difference 60).
+pub fn create_fiber(tag: u8, name: String) -> Rc<Fiber> {
+    Rc::new(Fiber { tag, name, r#return: RefCell::new(None) })
+}
+
 pub fn get_component_name_from_fiber(fiber: &Fiber) -> Option<String> {
     if fiber.tag == 0 {
         return None;
@@ -223,6 +247,43 @@ pub fn get_parent_name(fiber: &Fiber) -> Option<String> {
   const app = { tag: 1, name: "App", return: root };
   const child = { tag: 1, name: "Child", return: app };
   expect([lib.getParentName(child), lib.getParentName(app), lib.getParentName(root)]).toEqual(["Root", "Root", undefined]);
+});
+
+// The same, of a fiber the crate only takes: a JS caller may hand over its
+// own, whose `tag` getter may borrow `return` while the parent's is
+// held (#2113), so the field's borrows are checked.
+test("a nullable RefCell field of what a JS caller may give, read in its borrow, is checked", async () => {
+  const dir = fixture("refcell-field-shared-across-given");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub tag: u8,
+    pub name: String,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub r#return: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub fn get_component_name_from_fiber(fiber: &Fiber) -> Option<String> {
+    if fiber.tag == 0 {
+        return None;
+    }
+    match &*fiber.r#return.borrow() {
+        Some(parent) if parent.tag == 9 => Some(parent.name.clone()),
+        _ => Some(fiber.name.clone()),
+    }
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("$borrow");
+  const lib = await import(join(dir, "lib.js"));
+  const root = { tag: 9, name: "Root", return: null };
+  const app = { tag: 1, name: "App", return: root };
+  expect(lib.getComponentNameFromFiber(app)).toBe("Root");
 });
 
 // React's createFiberFromElement writes `const type = element.type; const

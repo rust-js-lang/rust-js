@@ -111,4 +111,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_after_a_call.rs$"],
     snapshots: true,
   },
+  {
+    name: "quiet-field-unread",
+    breaks: "a field read of a JS caller's struct while a guard is held isn't counted, so its getter's re-entry passes where Rust panics (#2113)",
+    file: "src/lower/drops/facts/quiet.rs",
+    find: "                (self.borrows).field_access_asks(&self.cx.recognition, (self.thir, lhs), self.cell)",
+    replace: "                false",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "a field read of a JS caller's value cast"],
+  },
+  {
+    name: "quiet-own-place-walked",
+    breaks: "the place a borrow is of is taken as running while its guard is held, so `form.action.borrow()` of a JS caller's struct gets a checked borrow (#2113)",
+    file: "src/lower/drops/facts/quiet.rs",
+    find: "        if matches!(expr.kind, ExprKind::Call { fun, .. } if fun == self.own) {",
+    replace: "        if false && matches!(expr.kind, ExprKind::Call { fun, .. } if fun == self.own) {",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "cell field holds its guard plainly"],
+  },
 ];

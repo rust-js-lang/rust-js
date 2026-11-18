@@ -112,6 +112,7 @@ new one is m6-react's to see first (#1462).
 | `ItemFact::Lazy` | summary | a thread-local made where it's first used, read by calling it | |
 | `ItemFact::Variable` | summary | its module's variable, read by its name | |
 | `ItemFact::ReturnsJs` | summary | its JS gives back the JS iterator of its `impl Iterator`: a consumer's Rust call calls a copy of its own (#1999) | |
+| `ItemFact::AtHand` | summary | a thread-local whose value a builtin made, never replaced: its methods are the builtin's (#2111) | |
 | `ParamFact::Drop` | summary | it's given what drops a value of it | |
 | `ParamFact::Copy` | summary | it's given what copies a value of it | |
 | `ParamFact::Clone` | summary | it's given its `Clone` dictionary | |

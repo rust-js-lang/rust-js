@@ -18,7 +18,7 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
-use rustc_span::def_id::DefId;
+use rustc_span::def_id::{DefId, LocalDefId};
 
 mod at_hand;
 mod may_be_cell;
@@ -27,7 +27,8 @@ mod std_given;
 mod unnamed;
 use at_hand::AtHand;
 pub(in crate::lower) use may_be_cell::{may_be_cell, unsized_in_place};
-use runs_nothing::{CallArgs, generic_read, read_may_run};
+pub(in crate::lower) use runs_nothing::Receiver;
+use runs_nothing::{CallArgs, field_access_may_run, generic_read, read_may_run};
 pub(in crate::lower) use runs_nothing::{
     binding_call_runs_nothing, binding_runs_nothing, call_runs_nothing, resolve_runs_nothing,
 };
@@ -155,13 +156,16 @@ impl Reach {
     }
 }
 
+/// Each thread-local's initializer, to its key.
+type ThreadLocalInits = IndexMap<LocalDefId, LocalDefId>;
+
 impl<'tcx> CellBorrows<'tcx> {
     /// Each body's, until what each runs holds; `drops` says whether
     /// dropping a type runs a destructor (ADR 0320).
     pub(in crate::lower) fn of_crate(
         tcx: TyCtxt<'tcx>,
         recognition: &Recognition<'_, 'tcx>,
-        (bodies, clones): (&[&Body<'tcx>], &IndexSet<(DefId, u32)>),
+        (bodies, clones, inits): (&[&Body<'tcx>], &IndexSet<(DefId, u32)>, &ThreadLocalInits),
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> Self {
         let mut impls: Impls = IndexMap::default();
@@ -181,8 +185,7 @@ impl<'tcx> CellBorrows<'tcx> {
         // Which cells each borrow can be of, which each body's borrows are
         // classed by: of std's code, what `std_runs` says of its impls.
         found.flow = super::cell_flow::CellFlow::of_crate(recognition, &found, bodies);
-        let thirs: Vec<(DefId, &Thir<'tcx>)> = bodies.iter().map(|body| (body.def_id, &body.thir)).collect();
-        found.at_hand = AtHand::of_crate(recognition, &thirs);
+        found.at_hand = AtHand::of_crate(recognition, bodies, inits);
         let direct: IndexMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
             .map(|body| {
@@ -618,6 +621,29 @@ impl<'tcx> CellBorrows<'tcx> {
     }
 
     /// What each fn pointer the crate calls may be (ADR 0907), its owner's
+    /// Whether a field's read or write of `lhs`, in `thir`, may ask of
+    /// `held`: a getter or a setter of the program's answering it, of a
+    /// struct JS may make or give (`field_access_may_run`, #2113).
+    pub(in crate::lower) fn field_access_asks(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        (thir, lhs): (&Thir<'tcx>, ExprId),
+        held: Borrow<'tcx>,
+    ) -> bool {
+        let given = CallArgs {
+            thir,
+            args: &[],
+            at_hand: &self.at_hand,
+            pointers: Some(&self.pointers),
+        };
+        field_access_may_run(recognition, given, lhs).is_some() && self.anything_asks(recognition.tcx, held)
+    }
+
+    /// What of the crate is a value at hand, a builtin's (#2106, #2111).
+    pub(in crate::lower) fn at_hand(&self) -> &AtHand {
+        &self.at_hand
+    }
+
     /// answers, for another analysis to ask.
     pub(in crate::lower) fn pointers(&self) -> &super::fn_pointers::FnPointers<'tcx> {
         &self.pointers
@@ -912,11 +938,11 @@ fn called<'tcx>(
     if tcx.is_lang_item(def_id, LangItem::CloneFn) && args.types().next().is_some_and(clones_itself) {
         return Called::Nothing;
     }
-    if let Some(read) = generic_read(recognition, def_id, given) {
+    if let Some(read) = generic_read(recognition, def_id, args, given) {
         return Called::Read(read);
     }
     // A trait's binding, of a type parameter its bound reads (ADR 0307).
-    if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args, given) {
+    if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(given)) {
         return Called::Nothing;
     }
     let instance = match crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, def_id, args) {
@@ -993,7 +1019,7 @@ fn called<'tcx>(
             class: None,
         });
     }
-    if call_runs_nothing(recognition.foreign, id) {
+    if call_runs_nothing(recognition, (id, instance.args), Receiver::Asked(given)) {
         return Called::Nothing;
     }
     // A method std derives, `Clone::clone` of `#[derive(Clone)]`, runs what
@@ -1102,6 +1128,23 @@ fn direct<'tcx>(
                     None => found.reach.and(Reach::Anything),
                 },
             },
+            // A field's read or write of a struct JS may make or give, which
+            // a getter or a setter of the program's may answer (#2113).
+            ExprKind::Field { lhs, .. } => {
+                let given = CallArgs {
+                    thir,
+                    args: &[],
+                    at_hand,
+                    pointers: Some(pointers),
+                };
+                if let Some(ty) = field_access_may_run(recognition, given, lhs) {
+                    let called = match crate::lower::generic_facts::may_be_any_type(ty) {
+                        true => Called::Read(ty),
+                        false => Called::Any,
+                    };
+                    runs(&mut found, called);
+                }
+            }
             // Of the body's own parameters, as it is.
             ExprKind::Closure(ref closure) => {
                 let id = closure.closure_id.to_def_id();

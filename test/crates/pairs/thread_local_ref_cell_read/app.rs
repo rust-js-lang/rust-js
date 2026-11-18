@@ -8,7 +8,7 @@ fn child() -> Option<Rc<Fiber>> {
 
 pub fn main() {
     println!("{:?}", child().map(|fiber| fiber.tag));
-    dep::set_current(Some(Rc::new(Fiber { tag: 5 })));
+    dep::set_current(Some(dep::create_fiber(5)));
     let child = child();
     println!("{:?} {:?}", child.as_ref().map(|fiber| fiber.tag), dep::current_tag());
     dep::set_current(None);

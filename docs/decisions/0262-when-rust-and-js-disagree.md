@@ -263,8 +263,14 @@ react.dev's TopNav passes the same closure instead.
   web's streams call back later, on `drain`, not in `write`. No compiler
   change: the mark is the port's. Held by
   `test/lowering-cell-borrows.test.ts`'s "a write binding marked as running
-  nothing leaves a flushed array unchecked". Listed in the guide's
-  differences (`semantics.md`, 38).
+  nothing leaves a flushed array unchecked". A method so marked is taken
+  at its word only of a receiver a builtin made (#2111, ADR 1173): a JS
+  caller's subclass may override it, so of one a JS caller handed over the
+  call counts. What's left of this case there: an own property JS adds to
+  an object a builtin made, `tag.maximize = ..`, after the program handed
+  it over, is patching the builtin, which rust-js takes no builtin to be
+  (the lead's decision, 2026-11-18, logged for the user's review). Listed
+  in the guide's differences (`semantics.md`, 38).
 - **A guard that's only a call's receiver is held after the call's
   arguments run**, the second case's, which the user decided (2026-11-01,
   gap rd360, ADR 0863, amended): `target.borrow_mut().push(show(value));` is

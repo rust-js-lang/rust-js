@@ -125,7 +125,9 @@ pub use dependencies::Dependencies;
 /// 44: `internal`, its private state a function a consumer may compile
 /// itself reads, which its JS exports by an internal name, `$$LIMIT`
 /// (#2017): an older library, listing none, would be read as having none.
-pub const VERSION: u32 = 44;
+/// 45: `AtHand`, a thread-local whose value a builtin made, never replaced,
+/// whose methods a consumer's call takes at their word (#2111).
+pub const VERSION: u32 = 45;
 
 /// What begins the name a library's JS exports its private state by, for
 /// its consumers' compiles of its functions, `$$LIMIT` of `LIMIT` (#2017,
@@ -251,6 +253,12 @@ pub enum ItemFact {
     /// a JS caller steps (ADR 1169, #1999): a consumer's Rust call, which
     /// reads what it reveals, calls a copy of its own.
     ReturnsJs,
+    /// It's a thread-local whose value is one a builtin made, never
+    /// replaced: a `&'static T` its initializer gives at hand,
+    /// `js::map::new(None)`'s (`AtHand`, #2111), so a consumer's
+    /// `KEY.with(|values| ..)` is given a value no JS caller handed over,
+    /// whose own methods are the builtin's.
+    AtHand,
 }
 
 impl Calling {

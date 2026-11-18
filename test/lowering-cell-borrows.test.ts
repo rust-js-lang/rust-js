@@ -1128,7 +1128,10 @@ pub fn flush(segment: &Segment, destination: &Destination) {
 // \`append\`, holds no counted borrow while it runs, React's Fizz
 // \`formData.append('$ACTION_KEY', nextPostbackStateKey)\` of a key a cell
 // keeps (ADR 0867, amended): \`QUIET\` in webapi/generate.ts names each.
-test("a borrow held while FormData appends isn't counted", async () => {
+// A JS caller's \`FormData\` may be a subclass whose \`append\` calls back
+// into the program (#2111): a borrow held across it is counted, its
+// re-entry throwing as Rust's panics.
+test("a borrow held while a JS caller's FormData appends is counted", async () => {
   const dir = fixture("form-data-quiet");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
 use std::rc::Rc;
@@ -1148,12 +1151,19 @@ pub fn forget(key: &Rc<RefCell<Option<String>>>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  key.value ??= made();\n  formData.append(\"$ACTION_KEY\", $unwrap(key.value));\n}");
-  expect(js).not.toContain("$borrow");
+  expect(js).toContain("$borrow");
   const lib = await import(join(dir, "lib.js"));
   const form = new FormData();
-  const key = { value: undefined };
+  const key = { value: undefined, borrows: 0 };
   lib.keyed(form, key, () => "k1");
   lib.keyed(form, key, () => "k2");
   expect(form.getAll("$ACTION_KEY")).toEqual(["k1", "k1"]);
+  class Hand extends FormData {
+    append(name: string, value: string | Blob, filename?: string) {
+      lib.forget(key);
+      if (typeof value === "string") super.append(name, value);
+      else super.append(name, value, filename);
+    }
+  }
+  expect(() => lib.keyed(new Hand(), key, () => "k3")).toThrow(/already/);
 });

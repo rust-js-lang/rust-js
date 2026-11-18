@@ -51,6 +51,7 @@ pub(in crate::lower) fn exports<'tcx>(
         ref_cells: _,
         fields: _,
         lazy_locals: _,
+        at_hand_keys: _,
         variables,
         identities,
         keyed,
@@ -113,6 +114,7 @@ pub(in crate::lower) fn exports<'tcx>(
                     ),
                     (ItemFact::Variable, variables.contains(&id)),
                     (ItemFact::ReturnsJs, contracts.given.js_given.main(tcx, id).returns_js),
+                    (ItemFact::AtHand, contracts.at_hand_keys.contains(&id)),
                 ]
                 .into_iter()
                 .filter_map(|(fact, holds)| holds.then_some(fact))
@@ -152,6 +154,7 @@ pub(in crate::lower) fn exports<'tcx>(
                                 .is_some_and(|local| contracts.lazy_locals.contains(&local)),
                         ),
                         (ItemFact::Variable, *variable || variables.contains(id)),
+                        (ItemFact::AtHand, contracts.at_hand_keys.contains(id)),
                     ]
                     .into_iter()
                     .filter_map(|(fact, holds)| holds.then_some(fact))

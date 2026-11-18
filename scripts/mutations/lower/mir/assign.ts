@@ -894,7 +894,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "        if !(last_written && self.most_items(ty).is_some_and(|most| most <= len)) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "grown and shrunk in place"],
   },
   {
     name: "kept-items-length-always-written",
@@ -903,7 +903,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "        if !(last_written && self.most_items(ty).is_some_and(|most| most <= len)) {\n",
     replace: "        if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "grown and shrunk in place"],
     snapshots: true,
   },
   {
@@ -913,7 +913,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "            let item = match item.reads_only_vars() || item.is_constant() {\n",
     replace: "            let item = match true {\n",
-    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "grown and shrunk in place"],
   },
   {
     name: "kept-items-unwritten",
@@ -922,7 +922,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/assign.rs",
     find: "        if !items.iter().enumerate().any(|(i, item)| kept(i, item)) {\n",
     replace: "        if true {\n",
-    tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "grown and shrunk in place"],
     snapshots: true,
   },
   {

@@ -9,7 +9,7 @@ use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtKind, Thir};
-use rustc_span::def_id::DefId;
+use rustc_span::def_id::{DefId, LocalDefId};
 
 /// The crate's variables whose value is one a builtin made, at hand (#2106):
 /// what a constructor makes, `new X`, or a binding that `creates` its
@@ -20,10 +20,19 @@ use rustc_span::def_id::DefId;
 /// Never what a builtin hands back from what a JS caller stored, `Map.get`'s.
 /// A variable is at hand only where every write of it is: its binding's
 /// and each assignment's, to it or to a closure's capture of it; one lent
-/// `&mut` or bound `ref mut`, whose writes aren't seen, never is.
+/// `&mut` or bound `ref mut`, whose writes aren't seen, never is. And
+/// what's passed on (#2111): a cast of one, `js::cast(Some(js::unknown(x)))`;
+/// a parameter of a crate-private function that never escapes, where every
+/// call gives one; and what `KEY.with(|value| ..)` gives of a thread-local
+/// whose initializer makes one, never replaced, the
+/// crate's own or a library's that its contract says so of
+/// (`ItemFact::AtHand`).
 #[derive(Default)]
 pub(in crate::lower) struct AtHand {
     vars: IndexSet<LocalVarId>,
+    /// The crate's thread-locals whose value is at hand, which its
+    /// contract says of them (`ItemFact::AtHand`).
+    keys: IndexSet<DefId>,
 }
 
 /// The combinators whose closure is given the payload of what they're of.
@@ -40,14 +49,29 @@ const PAYLOAD_COMBINATORS: [&str; 9] = [
 ];
 
 impl AtHand {
-    /// Of each of the crate's bodies, `(def_id, thir)`, until it holds.
+    /// Of each of the crate's bodies, until it holds; `inits`, each
+    /// thread-local's initializer to its key.
     pub(in crate::lower) fn of_crate<'tcx>(
         recognition: &Recognition<'_, 'tcx>,
-        bodies: &[(DefId, &Thir<'tcx>)],
+        whole: &[&crate::lower::Body<'tcx>],
+        inits: &IndexMap<LocalDefId, LocalDefId>,
     ) -> Self {
+        let tcx = recognition.tcx;
         let mut at_hand = AtHand::default();
+        let bodies: Vec<(DefId, &Thir<'tcx>)> = whole.iter().map(|body| (body.def_id, &body.thir)).collect();
+        let bodies = &bodies[..];
         let thir_of = |id: DefId| bodies.iter().find(|(body, _)| *body == id).map(|(_, thir)| *thir);
         let (assigned, lent) = writes(bodies);
+        let calls = Calls::of(tcx, bodies);
+        // Each of the crate's thread-locals, by its initializer's root: one
+        // whose value is at hand is one no code replaces, as what's at hand
+        // is never a `Cell`'s nor a `RefCell`'s.
+        let inits: Vec<(DefId, &Thir<'tcx>, ExprId)> = (inits.iter())
+            .filter_map(|(&init, &key)| {
+                let body = whole.iter().find(|body| body.def_id == init.to_def_id())?;
+                Some((key.to_def_id(), &body.thir, body.root()?))
+            })
+            .collect();
         let bind = |pattern: &Pat<'tcx>, found: &mut Vec<LocalVarId>| {
             pattern.walk_always(|p| {
                 if let PatKind::Binding { var, .. } = p.kind {
@@ -84,6 +108,34 @@ impl AtHand {
                             }
                         }
                         _ => {}
+                    }
+                }
+            }
+            // A thread-local whose initializer makes what's at hand.
+            for &(key, thir, root) in &inits {
+                if !at_hand.keys.contains(&key) && at_hand.holds(recognition, thir, root) {
+                    at_hand.keys.insert(key);
+                }
+            }
+            // What `KEY.with(|value| ..)` gives, of a key at hand; and a
+            // parameter of a function every call of which gives one.
+            for &(_, thir) in bodies {
+                for e in thir.exprs.iter() {
+                    if let ExprKind::Call { fun, args, .. } = &e.kind
+                        && let Some(pattern) = at_hand.given_by_key(recognition, thir, (*fun, args), &thir_of)
+                    {
+                        bind(pattern, &mut found);
+                    }
+                }
+            }
+            for (&callee, sites) in &calls.sites {
+                let Some(callee_thir) = thir_of(callee) else { continue };
+                for (at, param) in callee_thir.params.iter().enumerate() {
+                    let Some(pattern) = param.pat.as_deref() else { continue };
+                    if (sites.iter())
+                        .all(|&(thir, args)| args.get(at).is_some_and(|&arg| at_hand.holds(recognition, thir, arg)))
+                    {
+                        bind(pattern, &mut found);
                     }
                 }
             }
@@ -131,6 +183,54 @@ impl AtHand {
             .and_then(|param| param.pat.as_deref())
     }
 
+    /// Of a call, in `thir`, of a thread-local's `with` whose key is at
+    /// hand, the crate's (`keys`) or a library's (`ItemFact::AtHand`): its
+    /// closure's parameter, given the value.
+    fn given_by_key<'a, 'tcx>(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        thir: &Thir<'tcx>,
+        (fun, args): (ExprId, &[ExprId]),
+        thir_of: &dyn Fn(DefId) -> Option<&'a Thir<'tcx>>,
+    ) -> Option<&'a Pat<'tcx>> {
+        let tcx = recognition.tcx;
+        let (callee, _) = crate::lower::fn_def(thir[fun].ty)?;
+        let [key, closure] = args else {
+            return None;
+        };
+        if tcx.item_name(callee).as_str() != "with"
+            || !recognition.is_std_type(thir[*key].ty.peel_refs(), StdItem::LocalKey)
+        {
+            return None;
+        }
+        let ExprKind::Borrow { arg, .. } = thir[crate::lower::body_queries::strip(thir, *key)].kind else {
+            return None;
+        };
+        let ExprKind::NamedConst { def_id: key, .. } = thir[crate::lower::body_queries::strip(thir, arg)].kind else {
+            return None;
+        };
+        let at_hand = self.keys.contains(&key)
+            || (!key.is_local()
+                && (recognition.foreign.item(key))
+                    .is_some_and(|item| item.calling.has(crate::library::ItemFact::AtHand)));
+        if !at_hand {
+            return None;
+        }
+        let ExprKind::Closure(closure) = &thir[crate::lower::body_queries::strip(thir, *closure)].kind else {
+            return None;
+        };
+        let closure_thir = thir_of(closure.closure_id.to_def_id())?;
+        (closure_thir.params.iter())
+            .find(|param| param.self_kind.is_none() && param.pat.is_some())
+            .and_then(|param| param.pat.as_deref())
+    }
+
+    /// The crate's thread-locals whose value is at hand, which its contract
+    /// says of them (`ItemFact::AtHand`).
+    pub(in crate::lower) fn keys(&self) -> impl Iterator<Item = DefId> + '_ {
+        self.keys.iter().copied()
+    }
+
     /// Whether `e`, in `thir`, is a value at hand.
     pub(in crate::lower) fn holds<'tcx>(
         &self,
@@ -143,8 +243,21 @@ impl AtHand {
         match &thir[e].kind {
             ExprKind::Deref { arg } | ExprKind::Borrow { arg, .. } => self.holds(recognition, thir, *arg),
             ExprKind::VarRef { id } => self.vars.contains(id),
+            // `Some(x)` of what's at hand, as a cast is given it.
+            ExprKind::Adt(adt) if recognition.is_lang_adt(thir[e].ty, LangItem::Option) && adt.fields.len() == 1 => {
+                self.holds(recognition, thir, adt.fields[0].expr)
+            }
+            // A block's value, a thread-local initializer's.
+            ExprKind::Block { block } => thir[*block]
+                .expr
+                .is_some_and(|value| self.holds(recognition, thir, value)),
             ExprKind::UpvarRef { var_hir_id, .. } => self.vars.contains(var_hir_id),
             ExprKind::Call { fun, args, .. } => match crate::lower::fn_def(thir[*fun].ty) {
+                // A cast of what's at hand is the value passed on,
+                // `js::cast(Some(js::unknown(tag)))` (#2111).
+                Some((callee, _)) if is_binding(tcx, callee) && matches!(js_form(tcx, callee), JsForm::This) => {
+                    args.first().is_some_and(|&of| self.holds(recognition, thir, of))
+                }
                 Some((callee, _)) if is_binding(tcx, callee) => {
                     matches!(js_form(tcx, callee), JsForm::New(_)) || creates(tcx, callee)
                 }
@@ -242,5 +355,33 @@ fn root_written(thir: &Thir<'_>, e: ExprId) -> Option<(LocalVarId, bool)> {
             root(thir, *of).map(|var| (var, false))
         }
         _ => None,
+    }
+}
+
+/// The crate's calls of its functions whose every call it sees (#2111):
+/// each call's arguments, by the function called.
+struct Calls<'a, 'tcx> {
+    sites: IndexMap<DefId, Vec<(&'a Thir<'tcx>, &'a [ExprId])>>,
+}
+
+impl<'a, 'tcx> Calls<'a, 'tcx> {
+    /// Of `bodies`: each call of a function only calls reach, `only_called`'s
+    /// (ADR 0577), the one owner of whose callers are all known: no JS
+    /// caller nor another crate sees it, nor is it named as a value or a
+    /// trait's method. What each call here gives it is all it's given.
+    fn of(tcx: rustc_middle::ty::TyCtxt<'tcx>, bodies: &[(DefId, &'a Thir<'tcx>)]) -> Self {
+        let only_called = (crate::lower::session::caches(tcx).only_called.get().cloned()).unwrap_or_default();
+        let mut sites: IndexMap<DefId, Vec<(&'a Thir<'tcx>, &'a [ExprId])>> = IndexMap::default();
+        for &(_, thir) in bodies {
+            for e in thir.exprs.iter() {
+                if let ExprKind::Call { fun, args, .. } = &e.kind
+                    && let Some((callee, _)) = crate::lower::fn_def(thir[*fun].ty)
+                    && only_called.contains_key(&callee)
+                {
+                    sites.entry(callee).or_default().push((thir, &args[..]));
+                }
+            }
+        }
+        Calls { sites }
     }
 }

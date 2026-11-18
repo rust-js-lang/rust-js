@@ -383,11 +383,13 @@ pub fn listed(set: &Set<str>) -> Vec<String> {
     out
 }
 `);
+  // A set read back out of the cell isn't at hand, so its `add` may be a
+  // JS caller's override, and the cell's borrow is checked across it
+  // (#2111); #2114, a cell's contents a builtin made, makes it plain again.
   expect(js).toContain(
-    "  const transitionLanesMap = root.transitionLanes;\n  const transitions = $index(transitionLanesMap, index) ?? new Set();\n  transitions.add(transition);\n",
+    "  const transitionLanesMap = $borrowMut(root.transitionLanes, true);\n  try {\n    const transitions = $index(transitionLanesMap, index) ?? new Set();\n    transitions.add(transition);\n",
   );
   expect(js).toContain("    transitions.forEach((transition) => {\n      transitionsForLanes.push(transition);\n    });\n");
-  expect(js).not.toContain("$borrow");
   expect(dts).toContain("export function listed(set: Set<string>): string[];");
   const out = ran(dir, `const lib = await import("./lib.js");
 const root = lib.root();

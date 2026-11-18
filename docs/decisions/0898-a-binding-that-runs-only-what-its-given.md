@@ -259,11 +259,13 @@ Locale::get_week_info), ())`, which may run the method its path names.
 what the method its path names runs, as a call of it would, of its
 arguments' types (`optional_call_runs_nothing`, in
 `binding_call_runs_nothing`): the path's type carries the method's `FnDef`.
-What it reads first, the method off its value, is a property read, which
-`JsForm::Get` already says runs nothing of any object, one a JS caller
-handed over included, as builtins are taken unpatched: so a JS caller's
-`Intl.Locale` subclass is read so too, and `tag.getWeekInfo?.()` runs
-nothing where `getWeekInfo` does. Not `optional_call_unchecked`, whose value
+What it reads first, the method off its value, is the lookup a plain
+call of the method makes: of a receiver a builtin made, `getWeekInfo`
+itself, so `tag.getWeekInfo?.()` runs nothing where `getWeekInfo` does;
+of one a JS caller handed over, whose subclass may override it, counted,
+as a plain call of it is (#2111, ADR 1173; this paragraph first said a
+JS caller's subclass was read so too, as a property read then ran
+nothing of any object, which #2106 and #2111 retired). Not `optional_call_unchecked`, whose value
 is asserted of another contract, so its method may not be the binding's:
 counted. The vercel-ui SDK's memo now reads `if (!cache.has(key)) {
 cache.set(key, resolveFirstDay(locale)); } return cache.get(key);`, as upstream

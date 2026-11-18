@@ -5,7 +5,6 @@
 //! given what JS reads with no code. `cell_borrows`' answers, apart.
 
 use crate::lower::bindings::{JsForm, is_binding, js_form, runs_nothing, runs_only_given};
-use crate::lower::library::Foreign;
 use crate::lower::recognition::{Recognition, StdItem, is_js_object_deref};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
@@ -52,11 +51,17 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
 /// (rd535; `untagged::from_gives_its_argument`, #1775). The one answer a
 /// borrow held across it and a thread-local made as its module loads ask
 /// (`may_run::may_run`, ADR 1006, amended).
-pub(in crate::lower) fn call_runs_nothing(foreign: &Foreign<'_, '_>, id: DefId) -> bool {
-    let tcx = foreign.tcx();
-    binding_runs_nothing(tcx, id)
+/// A binding's method is its own only of a receiver no JS caller handed
+/// over (`receiver_runs_its_own`, #2111), where `receiver` asks it.
+pub(in crate::lower) fn call_runs_nothing<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    (id, args): (DefId, ty::GenericArgsRef<'tcx>),
+    receiver: Receiver<'_, 'tcx>,
+) -> bool {
+    let tcx = recognition.tcx;
+    (binding_runs_nothing(tcx, id) && receiver.runs_its_own(recognition, (id, args)))
         || is_js_object_deref(tcx, tcx.parent(id))
-        || crate::lower::untagged::from_gives_its_argument(foreign, id)
+        || crate::lower::untagged::from_gives_its_argument(recognition.foreign, id)
 }
 
 /// Whether `def_id`, a binding that runs no code but its own and what it's
@@ -168,19 +173,114 @@ pub(in crate::lower) fn binding_call_runs_nothing<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
+    receiver: Receiver<'_, 'tcx>,
+) -> bool {
+    let given = match receiver {
+        Receiver::Asked(given) => given,
+        Receiver::Unasked => None,
+    };
+    (runs_nothing_but_its_receiver(recognition, def_id, args, given)
+        && receiver.runs_its_own(recognition, (def_id, args)))
+        || read_of_what_is_at_hand(recognition, def_id, given)
+}
+
+/// Whether a binding's method's receiver is asked of where its word is
+/// (#2111): the borrow analysis asks, of the call's arguments where it has
+/// them, `Asked`. Two askers don't: lowering's `Known::RunsNothing`, which
+/// lowers from MIR, with no call's arguments nor `AtHand`, until each
+/// call's answer is carried to it (#2118); and `may_run`, whose model has
+/// no binding let JS call the crate's exports back (its doc, #2119).
+#[derive(Clone, Copy)]
+pub(in crate::lower) enum Receiver<'a, 'tcx> {
+    Asked(Option<CallArgs<'a, 'tcx>>),
+    Unasked,
+}
+
+impl<'tcx> Receiver<'_, 'tcx> {
+    /// Whether the call runs the binding's own method (`receiver_runs_its_own`),
+    /// or, where it isn't asked, is taken to.
+    fn runs_its_own(self, recognition: &Recognition<'_, 'tcx>, call: (DefId, ty::GenericArgsRef<'tcx>)) -> bool {
+        match self {
+            Receiver::Asked(given) => receiver_runs_its_own(recognition, call, given),
+            Receiver::Unasked => true,
+        }
+    }
+}
+
+/// What a binding says it runs, of what it's given: nothing
+/// (`binding_runs_nothing`), only what it's given, given only what runs
+/// nothing (`given_what_runs_nothing`), or what its method does, an
+/// optional call's (`optional_call_runs_nothing`). Of a method, its own
+/// method's word, which `receiver_runs_its_own` says it is.
+fn runs_nothing_but_its_receiver<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
     given: Option<CallArgs<'_, 'tcx>>,
 ) -> bool {
     binding_runs_nothing(recognition.tcx, def_id)
-        || read_of_what_is_at_hand(recognition, def_id, given)
         || given_what_runs_nothing(recognition, def_id, args, given)
         || optional_call_runs_nothing(recognition, def_id, args)
 }
 
+/// Whether a binding's method call, `this.name(..)`, `this[key](..)` or
+/// `this.name?.(..)`, calls the binding's own method, which its word is
+/// of, not one a JS caller's object answers it with, a subclass's override
+/// or a getter of the name, which may call back into the program (#2111):
+/// of a receiver no JS caller may have handed over, by its type
+/// (`read_may_run`), or one at hand (`AtHand`), which a builtin made. Of
+/// a call whose arguments aren't known, lowering's or a load's, by its
+/// declared `this` alone. What isn't a method call has no receiver to ask.
+fn receiver_runs_its_own<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+    given: Option<CallArgs<'_, 'tcx>>,
+) -> bool {
+    let tcx = recognition.tcx;
+    if !is_binding(tcx, def_id) {
+        return true;
+    }
+    let (receiver, declared) = match js_form(tcx, def_id) {
+        JsForm::Call(_) | JsForm::CallKeyed(_) if crate::lower::bindings::is_method(tcx, def_id) => {
+            let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
+            (
+                given.and_then(|given| Some((given, *given.args.first()?))),
+                sig.skip_binder().inputs().first().copied(),
+            )
+        }
+        // `js::optional_call((value, method), args)`: its path's value.
+        JsForm::OptionalCall { .. } => (
+            given.and_then(|given| {
+                let path = crate::lower::body_queries::strip(given.thir, *given.args.first()?);
+                match &given.thir[path].kind {
+                    ExprKind::Tuple { fields } => Some((given, *fields.first()?)),
+                    _ => None,
+                }
+            }),
+            args.types()
+                .next()
+                .and_then(|path| path.tuple_fields().first().copied()),
+        ),
+        _ => return true,
+    };
+    match (receiver, declared) {
+        (Some((given, receiver)), _) => {
+            let read = read_of(recognition, given.thir, receiver);
+            (!crate::lower::generic_facts::may_be_any_type(read) && !read_may_run(recognition, given.pointers, read))
+                || given.at_hand.holds(recognition, given.thir, receiver)
+        }
+        (None, Some(this)) => {
+            !crate::lower::generic_facts::may_be_any_type(this) && !read_may_run(recognition, None, this)
+        }
+        (None, None) => false,
+    }
+}
+
 /// Whether `def_id`, `js::optional_call`, `value.method?.(args)` (ADR
 /// 1156), runs nothing: what the method its path names runs, of its
-/// arguments' types, as a call of it would (#2082), the method read off
-/// the value as a property read is, `JsForm::Get`'s, which runs nothing of
-/// any object, one a JS caller handed over too. Not
+/// arguments' types, as a call of it would (#2082), of a receiver whose
+/// method is the binding's own, as a plain call's (`receiver_runs_its_own`,
+/// #2111). Not
 /// `optional_call_unchecked`'s, whose value is asserted of another
 /// contract, so its method may not be the binding's.
 fn optional_call_runs_nothing<'tcx>(
@@ -196,7 +296,7 @@ fn optional_call_runs_nothing<'tcx>(
         return false;
     };
     let method = path.iter().find_map(crate::lower::fn_def);
-    method.is_some_and(|(method, method_args)| binding_call_runs_nothing(recognition, method, method_args, None))
+    method.is_some_and(|(method, method_args)| runs_nothing_but_its_receiver(recognition, method, method_args, None))
 }
 
 /// Whether `def_id` is a property read, `this.name` or `this[key]`, of a
@@ -229,19 +329,29 @@ fn read_of_what_is_at_hand<'tcx>(
 }
 
 /// Of a property read, `this.name` or `this[key]`, of what a type
-/// parameter's value is, `T: Node`'s `get sortIndex` of a heap's element:
+/// parameter's value is, `T: Node`'s `get sortIndex` of a heap's element,
+/// or a method call of one that's otherwise the binding's word (#2111):
 /// its type, which each caller's instantiation says may run code or not
 /// (`read_may_run`), as a drop of a type parameter's is its caller's.
 pub(in crate::lower) fn generic_read<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
     given: Option<CallArgs<'_, 'tcx>>,
 ) -> Option<Ty<'tcx>> {
     let tcx = recognition.tcx;
-    if !is_binding(tcx, def_id) || !matches!(js_form(tcx, def_id), JsForm::Get(_) | JsForm::GetIndex) {
+    if !is_binding(tcx, def_id) {
         return None;
     }
+    let method = match js_form(tcx, def_id) {
+        JsForm::Get(_) | JsForm::GetIndex => false,
+        JsForm::Call(_) | JsForm::CallKeyed(_) if crate::lower::bindings::is_method(tcx, def_id) => true,
+        _ => return None,
+    };
     let given = given?;
+    if method && !runs_nothing_but_its_receiver(recognition, def_id, args, Some(given)) {
+        return None;
+    }
     let read = read_of(recognition, given.thir, *given.args.first()?);
     crate::lower::generic_facts::may_be_any_type(read).then(|| tcx.erase_and_anonymize_regions(read))
 }
@@ -252,7 +362,8 @@ pub(in crate::lower) fn generic_read<'tcx>(
 /// `Box`, an `Rc` or an `Arc`; not of a struct only the crate constructs,
 /// which JS gives back as the crate gave it (ADR 0262's difference 60),
 /// nor of std's, a `String`'s, nor a number's or anything else with no
-/// getter of the program's. Where which structs JS may make isn't known, any may.
+/// getter of the program's. A struct's is by which struct it is; what else
+/// names a type parameter may be any. Where which structs JS may make isn't known, any may.
 pub(in crate::lower) fn read_may_run<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     pointers: Option<&FnPointers<'tcx>>,
@@ -264,10 +375,33 @@ pub(in crate::lower) fn read_may_run<'tcx>(
     {
         ty = args.type_at(0).peel_refs();
     }
+    if recognition.is_js_object(ty) {
+        return true;
+    }
+    // The program's own struct, by which it is, whatever its arguments.
+    if let ty::Adt(adt, _) = ty.kind()
+        && adt.is_struct()
+        && !recognition.is_std(adt.did())
+    {
+        return pointers.is_none_or(|pointers| pointers.js_may_make(adt.did()) || pointers.js_may_give(adt.did()));
+    }
     crate::lower::generic_facts::may_be_any_type(ty)
-        || recognition.is_js_object(ty)
-        || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && !recognition.is_std(adt.did())
-            && pointers.is_none_or(|pointers| pointers.js_may_make(adt.did()) || pointers.js_may_give(adt.did())))
+}
+
+/// Of a field's read or write, `chunk.reason`, of the place `lhs` in
+/// `given.thir`: JS's own property access, which a getter or a setter of
+/// the program's may answer where JS may make or give the struct
+/// (`read_may_run`, #2113), as a binding's read may, unless what it's of
+/// is at hand. `Some` of the struct's type where it may, which, naming a
+/// type parameter, each caller's instance settles.
+pub(in crate::lower) fn field_access_may_run<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    given: CallArgs<'_, 'tcx>,
+    lhs: ExprId,
+) -> Option<Ty<'tcx>> {
+    let read = read_of(recognition, given.thir, lhs);
+    (read_may_run(recognition, given.pointers, read) && !given.at_hand.holds(recognition, given.thir, lhs))
+        .then(|| recognition.tcx.erase_and_anonymize_regions(read))
 }
 
 /// The type of what `receiver`, in `thir`, reads: through a borrow, a

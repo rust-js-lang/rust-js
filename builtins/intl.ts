@@ -11,7 +11,7 @@
 import { readLibrary, writeClass, writeUnion, writing } from "./library";
 import { argument, borrowing, classed, close, type Field, line, method, options, out, page, record, union } from "./render";
 import { snake } from "../scripts/rust-names";
-import { runs } from "./policy";
+import { attributesOf } from "./policy";
 
 /** A formatter: its type, its methods, and its module's constructor and
  * `supportedLocalesOf`. */
@@ -29,7 +29,7 @@ const formatter = (name: string, doc: string, methods: [string, string, string][
   classed(name);
   line();
   line(`impl ${name} {`);
-  for (const [d, j, s] of methods) method(d, j, s, "    ", runs(`${js}.prototype.${j}`));
+  for (const [d, j, s] of methods) method(d, j, s, "    ", attributesOf(`${js}.prototype.${j}`));
   close();
   line("}");
   line();
@@ -41,7 +41,7 @@ const formatter = (name: string, doc: string, methods: [string, string, string][
     `new ${js}`,
     `new(locales: Option<&dyn IntoLocalesArgument>, options: ${name === "DisplayNames" ? "&" : "Option<&"}${ctor.options}${borrowing.has(ctor.options) ? "<'_>" : ""}${name === "DisplayNames" ? "" : ">"}) -> ${ctor.result ?? `&'static ${name}`}`,
     "    ",
-    runs(`new ${js}`),
+    attributesOf(`new ${js}`),
   );
   method(
     `[\`${js}.supportedLocalesOf(locales)\`](${page(`${name}/supportedLocalesOf`)}): those of \`locales\` it has, without falling back to the user's.`,

@@ -127,7 +127,13 @@ impl Drop for Tick<'_> {
 pub fn ticked(n: i8) -> u32 {
     let ticks = Cell::new(0);
     let ticked = Ticked { values: RefCell::new(vec![n]) };
-    ticked.values.borrow_mut().push(Tick(&ticks, n).1);
+    // A temporary dropped while the guard is held, its field unread: of a
+    // struct the runtime's cleanup is given, which #2115 takes JS to give,
+    // a field read would ask by itself.
+    ticked.values.borrow_mut().push({
+        Tick(&ticks, n);
+        n
+    });
     ticks.get() + ticked.values.borrow().len() as u32
 }
 

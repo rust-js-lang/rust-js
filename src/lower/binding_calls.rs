@@ -533,7 +533,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // weak set's, sets none of its variables (ADR 0277, amended).
         let value = match value.kind {
             js::ExprKind::Call(..) | js::ExprKind::New(..)
-                if super::analysis::binding_call_runs_nothing(&self.recognition(), def_id, generic_args, None) =>
+                if super::analysis::binding_call_runs_nothing(
+                    &self.recognition(),
+                    def_id,
+                    generic_args,
+                    super::analysis::Receiver::Unasked,
+                ) =>
             {
                 value.runs_nothing()
             }

@@ -111,6 +111,38 @@ export const CREATES: Record<string, Creates> = {
     spec: "ECMA-402 Intl.Locale.prototype.minimize: Construct(%Intl.Locale%, minimal) of its [[Locale]]",
     proof: "test/builtins-runs-nothing.test.ts",
   },
+  "Intl.Collator.prototype.resolvedOptions": {
+    spec: "ECMA-402 Intl.Collator.prototype.resolvedOptions: OrdinaryObjectCreate(%Object.prototype%) of its internal slots",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  "Intl.DateTimeFormat.prototype.resolvedOptions": {
+    spec: "ECMA-402 Intl.DateTimeFormat.prototype.resolvedOptions: OrdinaryObjectCreate(%Object.prototype%) of its internal slots",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  "Intl.DisplayNames.prototype.resolvedOptions": {
+    spec: "ECMA-402 Intl.DisplayNames.prototype.resolvedOptions: OrdinaryObjectCreate(%Object.prototype%) of its internal slots",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  "Intl.ListFormat.prototype.resolvedOptions": {
+    spec: "ECMA-402 Intl.ListFormat.prototype.resolvedOptions: OrdinaryObjectCreate(%Object.prototype%) of its internal slots",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  "Intl.NumberFormat.prototype.resolvedOptions": {
+    spec: "ECMA-402 Intl.NumberFormat.prototype.resolvedOptions: OrdinaryObjectCreate(%Object.prototype%) of its internal slots",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  "Intl.PluralRules.prototype.resolvedOptions": {
+    spec: "ECMA-402 Intl.PluralRules.prototype.resolvedOptions: OrdinaryObjectCreate(%Object.prototype%) of its internal slots",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  "Intl.RelativeTimeFormat.prototype.resolvedOptions": {
+    spec: "ECMA-402 Intl.RelativeTimeFormat.prototype.resolvedOptions: OrdinaryObjectCreate(%Object.prototype%) of its internal slots",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
+  "Intl.Segmenter.prototype.resolvedOptions": {
+    spec: "ECMA-402 Intl.Segmenter.prototype.resolvedOptions: OrdinaryObjectCreate(%Object.prototype%) of its internal slots",
+    proof: "test/builtins-runs-nothing.test.ts",
+  },
 };
 
 /** `js`'s attributes of what it runs and makes, `RUNS`' and `CREATES`'. */

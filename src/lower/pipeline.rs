@@ -1316,6 +1316,7 @@ pub fn lower_crate<'tcx>(
                         ref_cells: ref_cell_facts(),
                         fields: super::library::fields(tcx, ref_cells.get(), cell_borrows.pointers()),
                         lazy_locals: &lazy_locals,
+                        at_hand_keys: &cell_borrows.at_hand().keys().collect(),
                         variables: &variables,
                         identities: &identities,
                         keyed: &flattened.keyed,

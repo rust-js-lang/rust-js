@@ -136,6 +136,58 @@ pub fn render_both(a: &ReactDOMRoot, b: &ReactDOMHydrationRoot) -> f64 {
   expect(b.render(1)).toBe(1);
 });
 
+// A trait of classes' method called while a guard is held runs what one of
+// its classes' does, `extra`'s none, so the guard meets no borrow: its
+// cell is its field, read plainly, not a field cell.
+test("a trait of classes' method called under a guard runs what its classes' do", async () => {
+  const { js, lib } = await compiled(
+    "class-traits-under-a-guard",
+    `use std::cell::RefCell;
+
+pub trait Counted {
+    fn cell(&self) -> &RefCell<Option<f64>>;
+
+    fn extra(&self) -> f64 {
+        1.0
+    }
+
+    fn total(&self) -> f64 {
+        let values = self.cell().borrow();
+        values.unwrap_or(0.0) + self.extra()
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Tally {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub cell: RefCell<Option<f64>>,
+}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Tally {
+    pub fn new(first: f64) -> Self {
+        Tally {
+            cell: RefCell::new(Some(first)),
+        }
+    }
+}
+
+impl Counted for Tally {
+    fn cell(&self) -> &RefCell<Option<f64>> {
+        &self.cell
+    }
+}
+
+pub fn total_of(tally: &Tally) -> f64 {
+    tally.total()
+}
+`,
+  );
+  expect(js).not.toContain("$fieldCell");
+  const Tally = lib.Tally as new (first: number) => unknown;
+  expect((lib.totalOf as (tally: unknown) => number)(new Tally(2))).toBe(3);
+});
+
 test("a trait of classes bounds no type parameter and is no dyn's", () => {
   const generic = refused(
     "class-traits-generic",

@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `From` into an untagged enum is taken to run code rust-js can't see, so a borrow held across webapi's `BlobPart::from(chunk)` is counted, `$borrow(buffer, true)` and a `try`/`finally` (rd535)",
     file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
-    find: "        || crate::lower::untagged::from_gives_its_argument(foreign, id)\n",
+    find: "        || crate::lower::untagged::from_gives_its_argument(recognition.foreign, id)\n",
     replace: "",
     tests: ["test/webapi-objects.test.ts", "-t", "From into an untagged"],
   },
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
     find: "        || optional_call_runs_nothing(recognition, def_id, args)\n",
     replace: "",
-    tests: ["test/builtins-runs-nothing.test.ts", "-t", "calls a locale's method optionally"],
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "of a locale it made optionally"],
   },
   {
     name: "optional-call-unchecked-trusted",
@@ -207,5 +207,29 @@ export const mutations: Mutation[] = [
     find: "    crate::lower::generic_facts::may_be_any_type(read).then(",
     replace: "    (crate::lower::generic_facts::may_be_any_type(read) && false).then(",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a task only the crate constructs"],
+  },
+  {
+    name: "receiver-taken-at-its-word",
+    breaks: "a binding's method is taken at its word of any receiver, so a JS caller's `Intl.Locale` subclass whose `maximize` calls back into the memo passes its held borrow where Rust panics (#2111)",
+    file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
+    find: "        && receiver.runs_its_own(recognition, (def_id, args)))",
+    replace: "        && true)",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "a JS caller's locale's method keeps"],
+  },
+  {
+    name: "receiver-at-hand-unread",
+    breaks: "a binding's method is counted of a receiver a builtin made too, so a memo that makes its locale and maximizes it through a private function gets `$withBorrowMut` (#2111)",
+    file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
+    find: "            (!crate::lower::generic_facts::may_be_any_type(read) && !read_may_run(recognition, given.pointers, read))\n                || given.at_hand.holds(recognition, given.thir, receiver)",
+    replace: "            !crate::lower::generic_facts::may_be_any_type(read) && !read_may_run(recognition, given.pointers, read)",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "through a private function"],
+  },
+  {
+    name: "field-read-at-hand-unread",
+    breaks: "a field read of what's at hand is counted, so a locale the memo made, cast to the program's struct, gets `$withBorrowMut` (#2113)",
+    file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
+    find: "    (read_may_run(recognition, given.pointers, read) && !given.at_hand.holds(recognition, given.thir, lhs))",
+    replace: "    read_may_run(recognition, given.pointers, read)",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "a locale the memo made, cast"],
   },
 ];

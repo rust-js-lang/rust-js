@@ -9,7 +9,7 @@ fn execute_dispatch(event: &str, listener: &str, current_target: &str) -> String
 }
 
 pub fn main() {
-    let fiber = Rc::new(dep::Fiber { tag: 3 });
+    let fiber = dep::create_fiber(3);
     let tag = "b";
     let said = dep::run_with_fiber(
         Some(Rc::clone(&fiber)),

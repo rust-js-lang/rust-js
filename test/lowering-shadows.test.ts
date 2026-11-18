@@ -570,19 +570,92 @@ pub fn reset() {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain(`export function needsRemount(fiber, alternate) {
-  if (
-    failedBoundaries != null &&
-    (failedBoundaries.has(fiber) || (alternate != null && failedBoundaries.has(alternate)))
-  ) {`);
-  expect(js).toContain("  if (failedBoundaries != null) {\n    return failedBoundaries.has(fiber) && checked(failedBoundaries, fiber);\n  }\n");
-  expect(js).toContain("  const failedBoundaries$1 = failedBoundaries;\n  if (failedBoundaries$1 != null) {\n    before.call();\n");
+  // Until #2114: the set `get_or_insert_with` gives back out of the cell
+  // isn't at hand, so its `add` may be a JS caller's override, and the
+  // cell's borrows are checked (#2111): `failedBoundaries` is a cell, each
+  // function's copy of it its own. Once a cell's contents a builtin made
+  // are at hand, the module's variable is plain again, `failedBoundaries
+  // != null && (failedBoundaries.has(fiber) || ..)`, and only `remountsAfter`,
+  // which calls `before`, keeps a copy, `const failedBoundaries$1 =
+  // failedBoundaries;`: restore those asserts then.
+  expect(js).toContain("const failedBoundaries = $nullableCell(null);\n");
+  expect(js).toContain(
+    "  const failedBoundaries$1 = $withBorrow(failedBoundaries, (failedBoundaries) => failedBoundaries);\n  if (failedBoundaries$1 != null) {\n    before.call();\n    return failedBoundaries$1.has(fiber);\n",
+  );
   const lib = await import(join(dir, "lib.js"));
   const [fiber, alternate, other] = [{ tag: 1 }, { tag: 2 }, { tag: 3 }];
   expect(lib.needsRemount(fiber, undefined)).toBe(false);
   lib.fail(fiber);
   expect([lib.needsRemount(fiber, undefined), lib.needsRemount(alternate, fiber), lib.needsRemount(other, alternate)]).toEqual([true, true, false]);
   expect([lib.remountsChecked(fiber), lib.remountsChecked(other)]).toEqual([true, false]);
+  // What `before` sets, a new set, isn't what the copy holds.
+  expect(lib.remountsAfter(fiber, () => lib.reset())).toBe(true);
+  expect(lib.needsRemount(fiber, undefined)).toBe(false);
+});
+
+// The same, of a `Cell`, which no borrow asks of: the module's variable
+// stays plain whatever its set's methods may run (#2111), so its copy past
+// a call that runs nothing is the variable, and past one that may run the
+// program's code, `before.call()`, its own.
+test("a copy of a module's variable read past a call that runs nothing is the variable, of a Cell", async () => {
+  const dir = fixture("shadow-past-runs-nothing-cell");
+  const node = buildNode();
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Fiber {
+    pub tag: u32,
+}
+
+unsafe impl js::WeakKey for Fiber {}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static FAILED_BOUNDARIES: Cell<Option<&'static js::WeakSet<Fiber>>> = const { Cell::new(None) };
+}
+
+pub fn needs_remount(fiber: &Fiber, alternate: Option<&Fiber>) -> bool {
+    if let Some(failed_boundaries) = FAILED_BOUNDARIES.get()
+        && (failed_boundaries.has(fiber) || alternate.is_some_and(|alternate| failed_boundaries.has(alternate)))
+    {
+        return true;
+    }
+    false
+}
+
+pub fn remounts_after(fiber: &Fiber, before: &dyn Fn()) -> bool {
+    if let Some(failed_boundaries) = FAILED_BOUNDARIES.get() {
+        js::function::call(before, None, ());
+        return failed_boundaries.has(fiber);
+    }
+    false
+}
+
+pub fn fail(fiber: &'static Fiber) {
+    let failed_boundaries = FAILED_BOUNDARIES.get().unwrap_or_else(|| {
+        let made = js::weak_set::new();
+        FAILED_BOUNDARIES.set(Some(made));
+        made
+    });
+    failed_boundaries.add(fiber);
+}
+
+pub fn reset() {
+    FAILED_BOUNDARIES.set(Some(js::weak_set::new()));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`export function needsRemount(fiber, alternate) {
+  if (
+    failedBoundaries != null &&
+    (failedBoundaries.has(fiber) || (alternate != null && failedBoundaries.has(alternate)))
+  ) {`);
+  expect(js).toContain("  const failedBoundaries$1 = failedBoundaries;\n  if (failedBoundaries$1 != null) {\n    before.call();\n");
+  const lib = await import(join(dir, "lib.js"));
+  const [fiber, alternate, other] = [{ tag: 1 }, { tag: 2 }, { tag: 3 }];
+  expect(lib.needsRemount(fiber, undefined)).toBe(false);
+  lib.fail(fiber);
+  expect([lib.needsRemount(fiber, undefined), lib.needsRemount(alternate, fiber), lib.needsRemount(other, alternate)]).toEqual([true, true, false]);
   // What `before` sets, a new set, isn't what the copy holds.
   expect(lib.remountsAfter(fiber, () => lib.reset())).toBe(true);
   expect(lib.needsRemount(fiber, undefined)).toBe(false);

@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
     name: "intl-constructors-run-unmarked",
     breaks: "a formatter's constructor `RUNS` says runs only what it's given, `new Intl.DateTimeFormat`, is written without `runs_only_given`, so what's committed of intl.rs isn't what it writes (#2082)",
     file: "builtins/intl.ts",
-    find: "    runs(`new ${js}`),\n",
+    find: "    attributesOf(`new ${js}`),\n",
     replace: "    [],\n",
     tests: ["test/builtins-coverage.test.ts", "-t", "Intl is what its template writes"],
   },

@@ -211,6 +211,14 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
         if !self.quiet || ended(self.ids, self.ended, expr) {
             return;
         }
+        // `own`'s call itself, whose arguments, the cell's place, run before
+        // its guard is made: a field read of it, `custom_fields.action`, a
+        // getter may answer (#2113), but it can't meet the guard.
+        // What they make and drops after, a temporary's, is dropped after
+        // the guard, made after it, is: nothing there meets it.
+        if matches!(expr.kind, ExprKind::Call { fun, .. } if fun == self.own) {
+            return;
+        }
         // A borrow of a cell that can't be `own`'s here (`unmet_in`).
         if let ExprKind::If {
             cond, then, else_opt, ..
@@ -259,6 +267,11 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
                 (self.borrows).cell_call_asks(&self.cx.recognition, called, theirs, self.cell, &drops)
             }
             ExprKind::Call { fun, ref args, .. } if fun != self.own => self.call_asks(fun, args),
+            // A field's read or write a getter or setter of the program's
+            // may answer (#2113).
+            ExprKind::Field { lhs, .. } => {
+                (self.borrows).field_access_asks(&self.cx.recognition, (self.thir, lhs), self.cell)
+            }
             ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => true,
             _ => false,
         };

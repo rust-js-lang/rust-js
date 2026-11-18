@@ -253,6 +253,7 @@ impl Collator {
     /// [`collator.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn resolved_options(&self) -> ResolvedCollatorOptions {
         unreachable!()
     }
@@ -575,6 +576,7 @@ impl NumberFormat {
     /// [`numberformat.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn resolved_options(&self) -> ResolvedNumberFormatOptions {
         unreachable!()
     }
@@ -799,6 +801,7 @@ impl DateTimeFormat {
     /// [`datetimeformat.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn resolved_options(&self) -> ResolvedDateTimeFormatOptions {
         unreachable!()
     }
@@ -897,6 +900,7 @@ impl PluralRules {
     /// [`pluralrules.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn resolved_options(&self) -> ResolvedPluralRulesOptions {
         unreachable!()
     }
@@ -1006,6 +1010,7 @@ impl RelativeTimeFormat {
     /// [`relativetimeformat.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/RelativeTimeFormat/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn resolved_options(&self) -> ResolvedRelativeTimeFormatOptions {
         unreachable!()
     }
@@ -1103,6 +1108,7 @@ impl ListFormat {
     /// [`listformat.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/ListFormat/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn resolved_options(&self) -> ResolvedListFormatOptions {
         unreachable!()
     }
@@ -1203,6 +1209,7 @@ impl DisplayNames {
 
     /// [`displaynames.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DisplayNames/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn resolved_options(&self) -> ResolvedDisplayNamesOptions {
         unreachable!()
     }
@@ -1524,6 +1531,7 @@ impl Segmenter {
 
     /// [`segmenter.resolvedOptions()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter/resolvedOptions): the options it uses, as its locale resolved them.
     #[cfg_attr(rust_js, rust_js::link_name = "resolvedOptions")]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn resolved_options(&self) -> ResolvedSegmenterOptions {
         unreachable!()
     }

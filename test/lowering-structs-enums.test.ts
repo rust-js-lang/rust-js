@@ -258,6 +258,12 @@ pub struct Fiber {
     pub key: RefCell<Option<ReactKey>>,
 }
 
+// As React's reconciler makes each fiber: its fields are this crate's
+// data, which JS gives back as it was given (ADR 0262's difference 60).
+pub fn create_fiber(key: Option<ReactKey>) -> Fiber {
+    Fiber { key: RefCell::new(key) }
+}
+
 pub fn told(key: &ReactKey) -> String {
     match key {
         ReactKey::Optimistic(symbol) => format!("symbol {}", symbol.0),
@@ -1135,3 +1141,92 @@ pub fn flat(inner: &Inner) -> Outer<'_> {
   expect(lib.updated({ info: 7, log: 8, warn: 9 })).toEqual({ info: 7, log: 2, warn: 1 });
   expect(Object.keys(lib.flat({ a: 1, b: 2 }))).toEqual(["a", "b", "last", "first"]);
 });
+
+// React's Fizz server's replay node, as test/corpus/untagged_told_by_length.rs
+// has it, of nodes only the crate makes and never formats: grown in place
+// to a boundary's six items and shrunk back to four, `node.length = 4`,
+// what's read of the items it loses read first (rd490). The corpus case's
+// structs derive `Debug`, which #2115 takes JS to give, so there its
+// cell is checked and written whole until #2115.
+test("an untagged enum of arrays its holders share is grown and shrunk in place", async () => {
+  const dir = fixture("untagged-kept-items");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+struct Element(Option<String>, f64, Vec<f64>, Option<f64>);
+
+struct Boundary(Option<String>, f64, Vec<f64>, Option<f64>, Option<f64>, f64);
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+enum ReplayNode {
+    Element(Element),
+    Boundary(Boundary),
+}
+
+type Shared = Rc<RefCell<ReplayNode>>;
+
+fn track(node: &Shared, fallback: Option<f64>, id: f64) {
+    let mut node = node.borrow_mut();
+    if let ReplayNode::Element(Element(name, key, children, slots)) = &*node {
+        *node = ReplayNode::Boundary(Boundary(name.clone(), *key, children.clone(), *slots, fallback, id));
+    } else if let ReplayNode::Boundary(boundary) = &mut *node {
+        boundary.4 = fallback;
+        boundary.5 = id;
+    }
+}
+
+fn untrack(node: &Shared) {
+    let mut node = node.borrow_mut();
+    if let ReplayNode::Boundary(Boundary(name, key, ..)) = &*node {
+        *node = ReplayNode::Element(Element(name.clone(), *key, vec![], None));
+    }
+}
+
+fn demote(node: &Shared) {
+    let mut node = node.borrow_mut();
+    if let ReplayNode::Boundary(Boundary(name, key, _, _, fallback, _)) = &*node {
+        *node = ReplayNode::Element(Element(name.clone(), *key, vec![], *fallback));
+    }
+}
+
+fn shown(node: &Shared) -> String {
+    match &*node.borrow() {
+        ReplayNode::Element(Element(_, key, children, slots)) => format!("{key}:{}:{slots:?}", children.len()),
+        ReplayNode::Boundary(Boundary(_, key, _, _, fallback, id)) => format!("{key}@{id}:{fallback:?}"),
+    }
+}
+
+pub fn run() -> String {
+    let node: Shared = Rc::new(RefCell::new(ReplayNode::Element(Element(None, 1.0, vec![2.0], None))));
+    let held = Rc::clone(&node);
+    let mut seen = vec![shown(&held)];
+    track(&node, Some(7.0), 3.0);
+    seen.push(shown(&held));
+    track(&node, Some(8.0), 4.0);
+    seen.push(shown(&held));
+    untrack(&node);
+    seen.push(shown(&held));
+    track(&node, Some(9.0), 5.0);
+    demote(&node);
+    seen.push(shown(&held));
+    seen.join(" ")
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(
+    "function track(node, fallback, id) {\n  if (node.length === 4) {\n    node[4] = fallback;\n    node[5] = id;\n  } else if (node.length === 6) {\n    node[4] = fallback;\n    node[5] = id;\n  }\n}\n",
+  );
+  expect(js).toContain(
+    "function untrack(node) {\n  if (node.length === 6) {\n    node.length = 4;\n    node[2] = [];\n    node[3] = undefined;\n  }\n}\n",
+  );
+  expect(js).toContain(
+    "function demote(node) {\n  if (node.length === 6) {\n    const value = node[4];\n    node.length = 4;\n    node[2] = [];\n    node[3] = value;\n  }\n}\n",
+  );
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.run()).toBe("1:1:None 1@3:Some(7.0) 1@4:Some(8.0) 1:0:None 1:0:Some(9.0)");
+});
+

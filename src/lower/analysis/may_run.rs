@@ -38,10 +38,14 @@ pub(in crate::lower) struct Runs<'a, 'tcx> {
     pointers: &'a FnPointers<'tcx>,
     std_runs: &'a StdRuns<'a, 'tcx>,
     drop_runs: &'a DropRuns<'a, 'tcx>,
-    /// What the crate's libraries say of their functions: which `From` of
-    /// theirs runs nothing (`cell_borrows::call_runs_nothing`).
-    foreign: &'a crate::lower::library::Foreign<'a, 'tcx>,
+    /// Whether a call, of no arguments known, runs none of the crate's
+    /// code (`cell_borrows::call_runs_nothing`, the one answer).
+    runs_nothing: &'a RunsNothing<'a, 'tcx>,
 }
+
+/// Whether a call of a function, of its generic arguments, runs none of
+/// the crate's code, its arguments not known (`cell_borrows::call_runs_nothing`).
+pub(in crate::lower) type RunsNothing<'a, 'tcx> = dyn Fn(DefId, ty::GenericArgsRef<'tcx>) -> bool + 'a;
 
 impl<'a, 'tcx> Runs<'a, 'tcx> {
     /// What `bodies` may run, `inits` each thread-local's initializer, to
@@ -52,7 +56,7 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
         bodies: &[&'a Body<'tcx>],
         (inits, fn_dyns): (&IndexMap<LocalDefId, LocalDefId>, Vec<ty::Ty<'tcx>>),
         (pointers, std_runs, drop_runs): (&'a FnPointers<'tcx>, &'a StdRuns<'a, 'tcx>, &'a DropRuns<'a, 'tcx>),
-        foreign: &'a crate::lower::library::Foreign<'a, 'tcx>,
+        runs_nothing: &'a RunsNothing<'a, 'tcx>,
     ) -> Self {
         Runs {
             tcx,
@@ -65,7 +69,7 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
             pointers,
             std_runs,
             drop_runs,
-            foreign,
+            runs_nothing,
         }
     }
 
@@ -80,7 +84,7 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
         may_run(
             self.tcx,
             (&self.bodies, &self.made_of, &self.impls, &self.fn_dyns),
-            (self.pointers, self.std_runs, self.drop_runs, self.foreign),
+            (self.pointers, self.std_runs, self.drop_runs, self.runs_nothing),
             start,
         )
     }
@@ -135,6 +139,11 @@ impl Impls {
 /// crate's a value a drop drops holds, and what each of those runs in turn;
 /// each thread-local, `static` and `const` they read by its name, and what
 /// the initializer of a thread-local read runs, which may make it there.
+/// Its premise: a binding's JS, a callback it's given, a JS caller's
+/// override of a method or a getter, never calls the crate's exported
+/// functions back, so a `runs_nothing` method runs nothing whatever its
+/// receiver (`Receiver::Unasked`); not a recorded difference, the user's
+/// to decide (#2119).
 /// `None` where it may run what rust-js can't follow: a `dyn Fn`'s call but
 /// of what its call was given (`given_dyn`, rd542), a type parameter's call
 /// of what it's given, a fn pointer that may be anything (ADR 0907), a drop
@@ -150,11 +159,11 @@ fn may_run<'tcx>(
         &Impls,
         &[ty::Ty<'tcx>],
     ),
-    (pointers, std_runs, drop_runs, foreign): (
+    (pointers, std_runs, drop_runs, runs_nothing): (
         &FnPointers<'tcx>,
         &StdRuns<'_, 'tcx>,
         &DropRuns<'_, 'tcx>,
-        &crate::lower::library::Foreign<'_, 'tcx>,
+        &RunsNothing<'_, 'tcx>,
     ),
     start: DefId,
 ) -> Option<Vec<DefId>> {
@@ -340,7 +349,7 @@ fn may_run<'tcx>(
         // body runs of the crate's: std's, by the bounds it's called under;
         // a binding's that runs nothing, none; another's, what it's given.
         let runs_given = |callee: DefId, callee_args: ty::GenericArgsRef<'tcx>, work: &mut Vec<_>| {
-            if super::cell_borrows::call_runs_nothing(foreign, callee) {
+            if runs_nothing(callee, callee_args) {
                 return true;
             }
             match std_runs(callee, callee_args) {

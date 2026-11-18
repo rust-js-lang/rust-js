@@ -223,6 +223,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     pub(super) fields: Vec<crate::library::Field>,
     /// The thread-locals made where they're first used (ADR 0037, amended).
     pub(super) lazy_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
+    /// The thread-locals whose value a builtin made, never replaced
+    /// (`AtHand`, #2111).
+    pub(super) at_hand_keys: &'a IndexSet<DefId>,
     /// The exported thread-locals and `static mut`s that are their module's
     /// variables (ADRs 0270, 0096, amended).
     pub(super) variables: &'a IndexSet<DefId>,

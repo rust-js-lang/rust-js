@@ -5,6 +5,8 @@ Amended 2026-11-18 (#2110): a variable is at hand only where every write
 of it is. Amended 2026-11-18 (#2109): of the program's own structs, as
 `fn_pointers.rs` says JS may make or give them, and of a type parameter's
 value, as each caller's instantiation says.
+Amended 2026-11-18 (#2111, #2113): a binding's method is its own only
+of a receiver at hand, and a Rust field read is JS's property read.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 whose Consequence it narrows to ADR 0262's difference 60, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
@@ -88,6 +90,45 @@ program's then unseen. `binding_call_runs_nothing` is the one rule: the
 borrow analysis passes the call's THIR arguments and the crate's `AtHand`;
 lowering, which has none, takes no property read to run nothing.
 
+### A method's receiver, and a field read (#2111, #2113)
+
+A `runs_nothing` or `runs_only_given` binding's method call, `this.m(..)`,
+`this[k](..)` or `this.m?.(..)`, runs the binding's own method only of a
+receiver no JS caller handed over: a JS caller's object may be a
+subclass whose override, or a getter of the name, calls back into the
+program (#2111, the user's decision: fix, not accept). So
+`receiver_runs_its_own` (`runs_nothing.rs`), in `binding_call_runs_nothing`
+and `call_runs_nothing`, takes the word only of a receiver `read_may_run`
+says no JS caller may hand over, or one at hand; where the call's
+arguments aren't known, lowering's `Known::RunsNothing` and `may_run`'s
+walk, by the method's declared `this` alone; a type parameter's, by each
+caller's instance (`Called::Read`). What isn't a method call, React DOM's
+`writeChunk(destination, chunk)`, has no receiver to ask (ADR 0262's
+difference 38, which stays, with what's left of this case: an own
+property JS adds to an object a builtin made is patching it).
+
+A Rust field read or write of a struct JS may make or give, `chunk.reason`
+of a `js::cast`, is JS's own property access, which a getter or a setter
+may answer (#2113): `field_access_may_run` (`runs_nothing.rs`), asked in
+a body's summary (`direct`) and while a guard is held (`Quiet`), counts it
+as `read_may_run` does a binding's read, unless what it's of is at hand.
+A struct only the crate constructs stays plain data (difference 60). The
+place a borrow is of, `form.action.borrow()`'s `form.action`, runs before
+its guard is made, so `Quiet` doesn't walk a borrow's own arguments.
+
+`AtHand` follows what's passed on (#2111): a cast of a value at hand,
+`js::cast(Some(js::unknown(tag)))`, and `Some(x)`; a parameter of a
+function only calls reach, `only_called`'s (ADR 0577), the one owner of
+whose callers are all known, every call of which gives one (#2110's writes
+rule holds of parameters too); a block's value; and what
+`KEY.with(|value| ..)` gives of a thread-local whose initializer makes a
+value at hand, which no code replaces, as what's at hand is never a
+`Cell`'s, the crate's own, or a library's whose contract says so,
+`ItemFact::AtHand` (library ABI 45), which its own `AtHand` derives. The
+eight Intl formatters' `resolvedOptions()` create their result (ECMA-402's
+`OrdinaryObjectCreate`), `CREATES` in `builtins/policy.ts`, which
+`builtins/intl.ts` now writes through `attributesOf`, as `library.ts` does.
+
 ## Why
 
 ADR 0262's third case: where a getter calls back, the results change. A
@@ -121,6 +162,20 @@ day, `firstDayOfWeek`, has no borrow check.
   60's), so neither its port change for `_serverReferenceCache` nor any
   provenance of parameters or collections was needed.
 
+- #2111 and #2113 move 11 corpus cases and no snapshot; React's port 12
+  files and the vercel-ui SDK's week memo regain borrow checks, correct
+  by the rule, much of it noise the follow-ups remove (P1s, filed as
+  "output noise caused by a P0 fix"): a collection a builtin made kept in
+  a `RefCell` and read back, `failedBoundaries ??= new WeakSet()` (cell
+  contents' provenance); a struct only the program builds that its
+  formatter's runtime hands back (`fn_pointers`' runtime giving); a
+  `WeekInfo` returned through a private function (return values'
+  provenance, `getWeekInfo`'s `creates`).
+- Two port changes, correctness-forced (PORTING.md): Fizz hooks take the
+  `$ACTION_KEY` out of its cell before `formData.append`, and the Flight
+  server's `cleanupTaintQueue` takes its queue's values out before its
+  loop, where upstream clears it after.
+
 ## What holds it
 
 test/builtins-runs-nothing.test.ts: a JS caller's locale read in a memo's
@@ -146,3 +201,19 @@ Mutations `struct-js-reach-ignored`, `struct-crate-built-counted`,
 crate-built row; `impls-ask-nothing`, `unseen-never`,
 `class-trait-call-asks-nothing` and `any-call-asks-nothing-seen`
 re-anchored, caught.
+#2111's and #2113's rows: a JS caller's locale's method, plain and optional,
+keeps the check, a subclass's re-entering override throwing; a locale the
+memo made, through a private function, and optionally, reads plainly; a
+private function also used as a value keeps the check; a thread-local map
+`js::map::new` made reads plainly; a field read of a JS caller's value cast
+to the program's struct keeps the check, in the body and in a helper, its
+getter's re-entry throwing; of a struct the crate constructs, and of a
+locale the memo made cast to one, plain; a borrow of a JS caller's struct's
+cell field holds its guard plainly. Mutations `receiver-taken-at-its-word`,
+`receiver-at-hand-unread`, `field-read-at-hand-unread`,
+`at-hand-parameters-unread`, `at-hand-callers-unasked`,
+`at-hand-thread-local-unread`, `at-hand-cast-not-passed-on`,
+`field-access-not-summarized`, `quiet-field-unread` and
+`quiet-own-place-walked`, caught; `optional-call-counted`,
+`intl-constructors-run-unmarked`, `untagged-from-runs-code` and
+`at-load-binding-runs-nothing-followed` re-anchored, caught.

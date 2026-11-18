@@ -2370,7 +2370,14 @@ React and JSX are [their own pages](README.md#react).
     `write`, is so marked, and a borrow of the array it flushes isn't
     counted. A destination whose `write` pushes to that array at once
     passes, as upstream's does, where Rust panics `already borrowed`
-    (ADR 0262, the user's decision, 2026-11-01).
+    (ADR 0262, the user's decision, 2026-11-01). A method so marked,
+    `tag.maximize()`, is taken at its word only of a receiver a builtin
+    made: of one a JS caller handed over, whose subclass may override it,
+    the call counts as code that may call back (#2111). Of an object a
+    builtin made that the program hands to JS, an own property JS adds,
+    `tag.maximize = ..`, is patching the builtin, which rust-js takes no
+    builtin to be: its call is taken at the builtin's word (the lead's
+    decision, 2026-11-18, for the user's review).
 39. A guard that's only a call's receiver, `target.borrow_mut().push(
     show(value));`, is taken after the call's arguments run, as JS's
     `target.push(show(value))` runs them, where Rust takes it first. Only

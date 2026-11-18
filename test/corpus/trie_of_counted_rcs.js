@@ -68,16 +68,14 @@ function insert(root, word) {
     }
     let borrow;
     try {
-      if (cur.value.borrows < 0) {
-        $alreadyMutablyBorrowed();
-      }
-      borrow = cur.value;
+      borrow = $borrow(cur.value, true);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(cur, dropNode);
       }, error);
       throw error;
     }
+    $unborrow(borrow);
     label$live = true;
     const label = [borrow.label[0] + c];
     let borrowMut;
