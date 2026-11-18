@@ -47,6 +47,12 @@ pub(super) fn assigned_in_place(items: &mut [js::Item]) {
             )
         };
         if assigned.iter().any(declares) {
+            // Or one whose body makes a local and gives it, `const
+            // regionDays = new Map(); for (..) { .. } return regionDays;`:
+            // that local the module's, by the item's name (G1).
+            if let Some(stmts) = made_and_given(body, &constant.name) {
+                *item = js::Item::Statements(stmts);
+            }
             continue;
         }
         let span = constant.span;
@@ -54,6 +60,47 @@ pub(super) fn assigned_in_place(items: &mut [js::Item]) {
         stmts.extend(assigned);
         *item = js::Item::Statements(stmts);
     }
+}
+
+/// A closure's `body` that declares one name at its top, a `const` or a
+/// `let` of `local`, and ends giving it, `return local;`, its only
+/// `return`: its statements as the module's, `local` the item's `name`,
+/// `const regionDays = new Map(); for (..) { regionDays.set(..); }`, as
+/// the vercel-ui SDK writes a table its thread-local holds (the SDK port's
+/// G1; ADR 0601, amended). Nothing else enters the module's scope: what
+/// else it declares is its loops' and blocks' own. `None` of any other.
+fn made_and_given(body: &[Stmt], name: &js::Name) -> Option<Vec<Stmt>> {
+    let [
+        before @ ..,
+        Stmt {
+            kind: StmtKind::Return(Some(given)),
+            ..
+        },
+    ] = body
+    else {
+        return None;
+    };
+    let ExprKind::Var(local) = &given.kind else {
+        return None;
+    };
+    if js::returns(before).0 {
+        return None;
+    }
+    let mut declared = before.iter().filter(|s| {
+        matches!(
+            s.kind,
+            StmtKind::Const(..) | StmtKind::Let(..) | StmtKind::Destructure { .. } | StmtKind::Function(_)
+        )
+    });
+    let only = declared.next()?;
+    if declared.next().is_some()
+        || !matches!(&only.kind, StmtKind::Const(n, _) | StmtKind::Let(n, Some(_)) if n == local)
+    {
+        return None;
+    }
+    let mut stmts = before.to_vec();
+    js::replaced(&mut stmts, local, name);
+    Some(stmts)
 }
 
 /// A module's `const` a closure called where it's made makes, whose body
