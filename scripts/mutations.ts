@@ -981,7 +981,7 @@ const valued: Record<string, string> = {
   "--tests": "--tests=<n>",
   "--fresh": "--fresh=<share>",
   "--base": "--base=<commit>",
-  "--retire": "--retire=<name>",
+  "--retire": "--retire=<name>[,<name>..]",
   "--typecheck": "--typecheck=<base>",
 };
 
@@ -1143,6 +1143,16 @@ async function typecheck(base: string): Promise<void> {
   }
 }
 
+/** The mutations `--retire=a,b` names, each flag's, comma-separated, in
+ * order, once each; none where no flag asks a retirement. */
+export function retiringNames(args: string[]): string[] | undefined {
+  const flags = args.filter((arg) => arg.startsWith("--retire="));
+  if (flags.length === 0) return undefined;
+  const names = flags.flatMap((arg) => arg.slice("--retire=".length).split(",")).filter((name) => name.length > 0);
+  if (names.length === 0) throw new Error("--retire= names no mutation");
+  return [...new Set(names)];
+}
+
 /** The trailer a commit that removes a mutation of the crate carries, its
  * evidence: `bun scripts/mutations.ts --retire=<name>` prints it where the
  * mutant passed everything (ADR 0093, amended). */
@@ -1167,8 +1177,80 @@ export const retiredTrailer = "Retired-mutation";
  * otherwise each test that failed with it, which holds its code and
  * becomes its row. Twice in a day a mutation was called unreachable after
  * its own rows alone ran: a lent adapter's mark, and a shadow check whose
- * removal failed 8 corpus cases. */
-async function retire(mutation: Mutation): Promise<void> {
+ * removal failed 8 corpus cases.
+ *
+ * Several at once, `--retire=a,b,c`, share their controls, the unit tests,
+ * React's port and the crate corpus as the compiler is, run once before
+ * the first mutant (#2043): a failing control refuses them all, and each
+ * mutant then runs alone against them, its own verdict and trailer. */
+async function retire(chosen: Mutation[]): Promise<void> {
+  const names = chosen.map((m) => m.name).join(", ");
+  const unmutatedUnits = await build(undefined, 0, true);
+  if (typeof unmutatedUnits !== "string") throw new Error(`the unit tests as the crate is ${unmutatedUnits.problem}`);
+  const unitControl = await unitFailures(unmutatedUnits);
+  // React's port, as the compiler is: what each mutant's regen is held to.
+  const asItIs = await build();
+  if (typeof asItIs !== "string") throw new Error(`the compiler as it is ${asItIs.problem}`);
+  const portControl = join(work, "bin", "retire-port-control");
+  mkdirSync(dirname(portControl), { recursive: true });
+  rmSync(portControl, { force: true });
+  cpSync(asItIs, portControl);
+  const controlDiffers = await portDiffers(portControl);
+  if (controlDiffers.length > 0) throw new Error(`port control fails: ${controlDiffers.join(", ")}; fix the pin first: React's port at its pin regenerates otherwise than it committed with the compiler as it is, so it says nothing of ${names}`);
+  // The crate corpus as the compiler is, held to its rows' bars: what each
+  // mutant's verdicts are held to.
+  const crateControl = await crateVerdicts(portControl, true);
+  rmSync(portControl, { force: true });
+  if (typeof crateControl === "string") throw new Error(`crate corpus control fails: ${crateControl}; fix it first: crates.io's corpus isn't what docs/crate-corpus.md says with the compiler as it is, so it says nothing of ${names}`);
+  const trailers: string[] = [];
+  // One mutant that says nothing, its build or a run of its tests, leaves
+  // the others' verdicts as they are.
+  const saysNothing = (mutation: Mutation, error: unknown) => {
+    console.log(`\n${mutation.name} says nothing: ${error instanceof Error ? error.message : error}`);
+    process.exitCode = 1;
+  };
+  // Each mutant's suite in turn, and its port, crate corpus and failures'
+  // controls beside the next one's suite, which builds and runs nothing
+  // they share: the crate corpus's phase leaves half the cores free.
+  let judged: Promise<void> = Promise.resolve();
+  for (const mutation of chosen) {
+    let suite: RetireSuite;
+    try {
+      suite = await retireSuite(mutation, unitControl);
+    } catch (error) {
+      saysNothing(mutation, error);
+      continue;
+    }
+    const before = judged;
+    judged = (async () => {
+      await before;
+      try {
+        const trailer = await retireVerdict(mutation, suite, crateControl, asItIs);
+        if (trailer === undefined) process.exitCode = 1;
+        else trailers.push(trailer);
+      } catch (error) {
+        saysNothing(mutation, error);
+      }
+    })();
+  }
+  await judged;
+  if (chosen.length > 1 && trailers.length > 0) console.log(`\nThe evidence of each that can be retired, trailers of the commit that removes them:\n\n${trailers.join("\n")}`);
+}
+
+/** Of a compiler's unit tests, built as `binary`, those that failed and how
+ * many passed: a mutant's, or its control's as the crate is. */
+async function unitFailures(binary: string): Promise<{ failed: Set<string>; passed: number }> {
+  const p = await unitTest(binary, "");
+  if (judgeUnit(p) === "inconclusive") throw new Error(`the compiler's unit tests (${binary}) said nothing: ${endedAs(p)}\n${(p.stdout + p.stderr).slice(-1500)}`);
+  return { failed: new Set([...p.stdout.matchAll(/^test (\S+) \.\.\. FAILED$/gm)].map((m) => m[1]!)), passed: Number(p.stdout.match(/^test result: \w+\. (\d+) passed;/m)?.[1] ?? 0) };
+}
+
+/** What `retireSuite` found of a mutant, which `retireVerdict` judges. */
+type RetireSuite = { mutant: string; unit: { passed: number }; unitCaught: string[]; unitSilent: string[]; suite: Exit };
+
+/** `retire`'s of one mutant, its suite: built, its unit tests held to
+ * theirs as the crate is, and check:fast's suite run with it. */
+async function retireSuite(mutation: Mutation, unitControl: { failed: Set<string> }): Promise<RetireSuite> {
   const files = schema([{ mutation }], crateText);
   if (!(files instanceof Map)) throw new Error(`${mutation.name}: ${files.problem}`);
   const built = await build(files, 0);
@@ -1186,31 +1268,9 @@ async function retire(mutation: Mutation): Promise<void> {
   // Some fail there with any compiler, the compile cache's in a mutant's
   // own target say, and a unit test that reads the checkout's snapshots
   // from the crate's copy: they say nothing, and are said so.
-  const unitFailures = async (binary: string) => {
-    const p = await unitTest(binary, "");
-    if (judgeUnit(p) === "inconclusive") throw new Error(`the compiler's unit tests (${binary}) said nothing: ${endedAs(p)}\n${(p.stdout + p.stderr).slice(-1500)}`);
-    return { failed: new Set([...p.stdout.matchAll(/^test (\S+) \.\.\. FAILED$/gm)].map((m) => m[1]!)), passed: Number(p.stdout.match(/^test result: \w+\. (\d+) passed;/m)?.[1] ?? 0) };
-  };
   const units = await build(files, 0, true);
   if (typeof units !== "string") throw new Error(`${mutation.name}'s unit tests ${units.problem}`);
-  const unmutatedUnits = await build(undefined, 0, true);
-  if (typeof unmutatedUnits !== "string") throw new Error(`the unit tests as the crate is ${unmutatedUnits.problem}`);
   const unit = await unitFailures(units);
-  const unitControl = await unitFailures(unmutatedUnits);
-  // React's port, as the compiler is: what the mutant's regen is held to.
-  const asItIs = await build();
-  if (typeof asItIs !== "string") throw new Error(`the compiler as it is ${asItIs.problem}`);
-  const portControl = join(work, "bin", "retire-port-control");
-  mkdirSync(dirname(portControl), { recursive: true });
-  rmSync(portControl, { force: true });
-  cpSync(asItIs, portControl);
-  const controlDiffers = await portDiffers(portControl);
-  if (controlDiffers.length > 0) throw new Error(`port control fails: ${controlDiffers.join(", ")}; fix the pin first: React's port at its pin regenerates otherwise than it committed with the compiler as it is, so it says nothing of ${mutation.name}`);
-  // The crate corpus as the compiler is, held to its rows' bars: what the
-  // mutant's verdicts are held to.
-  const crateControl = await crateVerdicts(portControl, true);
-  rmSync(portControl, { force: true });
-  if (typeof crateControl === "string") throw new Error(`crate corpus control fails: ${crateControl}; fix it first: crates.io's corpus isn't what docs/crate-corpus.md says with the compiler as it is, so it says nothing of ${mutation.name}`);
   const unitCaught = [...unit.failed].filter((name) => !unitControl.failed.has(name)).map((name) => `cargo test: ${name}`);
   const unitSilent = [...unit.failed].filter((name) => unitControl.failed.has(name)).map((name) => `cargo test: ${name}`);
   // Its own target and runtime, as a mutant's tests have (`test`).
@@ -1222,6 +1282,19 @@ async function retire(mutation: Mutation): Promise<void> {
   console.log(`${mutation.name}: ${unitCaught.length === 0 ? "the compiler's unit tests passed" : `${unitCaught.length} of the compiler's unit tests failed`}; check:fast's suite with it, which takes some minutes`);
   const suite = await run(["bun", "scripts/checkFast.ts", `--compiler=${mutant}`], root, retireTimeout, testsEnv(mutant, own, true));
   rmSync(own, { recursive: true, force: true });
+  return { mutant, unit, unitCaught, unitSilent, suite };
+}
+
+/** `retire`'s verdict of one mutant whose suite ran (`retireSuite`): React's
+ * port and the crate corpus with it, held to the controls, and each suite
+ * test that failed run again with `unmutated`, the compiler as it is: its
+ * trailer where nothing caught it, or none, each test that did printed. */
+async function retireVerdict(
+  mutation: Mutation,
+  { mutant, unit, unitCaught, unitSilent, suite }: RetireSuite,
+  crateControl: Map<string, Verdict>,
+  unmutated: string,
+): Promise<string | undefined> {
   console.log(`${mutation.name}: React's port at its pin regenerated with it`);
   const portCaught = (await portDiffers(mutant)).map((file) => `react-in-rust regen: ${file}`);
   console.log(`${mutation.name}: the crate corpus, every row, measured with it`);
@@ -1232,7 +1305,7 @@ async function retire(mutation: Mutation): Promise<void> {
   if (stopped(suite, retireTimeout)) throw new Error(`check:fast with ${mutation.name} ${stopped(suite, retireTimeout)}: it says nothing\n${output.slice(-3000)}`);
   const failed = [...output.matchAll(/^failed with it: (\S+)\t(.*)$/gm)].map((m) => ({ file: m[1]!, test: m[2]! }));
   if (suite.code !== 0 && failed.length === 0) throw new Error(`check:fast with ${mutation.name} failed, naming no test: it says nothing of it\n${output.slice(-3000)}`);
-  const control = await failingAsItIs(failed);
+  const control = await failingAsItIs(failed, unmutated);
   const { caught: suiteCaught, silent: suiteSilent } = byControl(failed, control);
   const silent = [...unitSilent, ...suiteSilent];
   if (silent.length > 0) console.log(`\nthese fail as the compiler is too, in a mutant's environment, and say nothing of it:\n${silent.map((name) => `  ${name}`).join("\n")}`);
@@ -1241,12 +1314,13 @@ async function retire(mutation: Mutation): Promise<void> {
     const head = runSync(["git", "rev-parse", "--short=9", "HEAD"], root, 10_000).stdout.trim();
     const ran = output.match(/^(?:all passed: |\d+ failed in )(.*)$/m)?.[1] ?? "check:fast";
     console.log(`\n${mutation.name} can be retired: nothing tests what it changes. The evidence, a trailer of the commit that removes it:\n`);
-    console.log(`${retiredTrailer}: ${mutation.name}: with it, at ${head}, the compiler's ${unit.passed} unit tests passed, and check:fast's suite, every test file and the corpus whole with its snapshots (${ran})${silent.length > 0 ? `, but ${silent.length} that fail as the compiler is too` : ""}, React's port at its pin regenerated as it committed, and the crate corpus's ${crateControl.size} rows each as the compiler is`);
-    return;
+    const trailer = `${retiredTrailer}: ${mutation.name}: with it, at ${head}, the compiler's ${unit.passed} unit tests passed, and check:fast's suite, every test file and the corpus whole with its snapshots (${ran})${silent.length > 0 ? `, but ${silent.length} that fail as the compiler is too` : ""}, React's port at its pin regenerated as it committed, and the crate corpus's ${crateControl.size} rows each as the compiler is`;
+    console.log(trailer);
+    return trailer;
   }
   console.log(`\n${mutation.name} can't be retired: these tests failed with it, and pass as the compiler is, each a row that holds what it changes:`);
   for (const name of caught) console.log(`  ${name}`);
-  process.exitCode = 1;
+  return undefined;
 }
 
 /** Of the tests that failed with a mutant, those that caught it, which
@@ -1261,13 +1335,13 @@ export function byControl(failed: { file: string; test: string }[], control: Set
  * compiler is too, in a mutant's environment, by `file\ttest`: each file's
  * run again with the checkout's compiler, as a mutant's tests run it, by
  * their names, or whole where its setup failed. */
-async function failingAsItIs(failed: { file: string; test: string }[]): Promise<Set<string>> {
+async function failingAsItIs(failed: { file: string; test: string }[], asItIs: string): Promise<Set<string>> {
+  // Built by the controls, before any mutant: a build here would write the
+  // crate the next mutant builds in.
   const unmutated = join(work, "bin", "retire-control");
   mkdirSync(dirname(unmutated), { recursive: true });
   rmSync(unmutated, { force: true });
-  const built = await build();
-  if (typeof built !== "string") throw new Error(`the compiler as it is ${built.problem}`);
-  cpSync(built, unmutated);
+  cpSync(asItIs, unmutated);
   const own = join(work, "tests", "retire-control");
   const failing = new Set<string>();
   for (const file of new Set(failed.map((f) => f.file))) {
@@ -1406,16 +1480,18 @@ async function main() {
   const unknown = named.filter((name) => !mutations.some((m) => m.name === name));
   if (unknown.length > 0) throw new Error(`no mutation ${unknown.join(", ")}; there are ${mutations.map((m) => m.name).join(", ")}`);
   let chosen = named.length > 0 ? mutations.filter((m) => named.includes(m.name)) : mutations;
-  // A mutation to retire, its evidence asked (`retire`), no other run.
-  const retiring = args.find((arg) => arg.startsWith("--retire="))?.slice("--retire=".length);
+  // Mutations to retire, their evidence asked (`retire`), no other run.
+  const retiring = retiringNames(args);
   if (retiring !== undefined) {
-    const mutation = mutations.find((m) => m.name === retiring);
-    if (mutation === undefined) throw new Error(`no mutation ${retiring}`);
-    if (named.length > 0 || args.some((arg) => arg.startsWith("--") && !arg.startsWith("--retire="))) throw new Error("--retire=<name> runs alone: no other mutation or flag");
-    if (!ofCrate(mutation.file)) {
-      throw new Error(`${retiring} is a mutation of ${mutation.file}, a script, not the crate: its tests are its evidence, and the retirement's rule is the crate's (ADR 0093, amended)`);
-    }
-    chosen = [mutation];
+    if (named.length > 0 || args.some((arg) => arg.startsWith("--") && !arg.startsWith("--retire="))) throw new Error("--retire=<name>[,<name>..] runs alone: no other mutation or flag");
+    chosen = retiring.map((name) => {
+      const mutation = mutations.find((m) => m.name === name);
+      if (mutation === undefined) throw new Error(`no mutation ${name}`);
+      if (!ofCrate(mutation.file)) {
+        throw new Error(`${name} is a mutation of ${mutation.file}, a script, not the crate: its tests are its evidence, and the retirement's rule is the crate's (ADR 0093, amended)`);
+      }
+      return mutation;
+    });
   }
   const changed = args.find((arg) => arg.startsWith("--changed="))?.slice("--changed=".length);
   if (changed) {
@@ -1483,7 +1559,7 @@ async function main() {
   const given = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
   const buildsItself = buildsUnmutated({ crate: chosen.some(m => !sources.has(m)), harness, given: existsSync(given) });
   if (buildsItself) snapshotCrate(join(work, "snapshot"));
-  if (retiring !== undefined) return retire(chosen[0]!);
+  if (retiring !== undefined) return retire(chosen);
   const unmutated = buildsItself ? await build() : given;
   if (typeof unmutated !== "string") throw new Error(`the compiler as it is ${unmutated.problem}`);
   // And they use the compiler they're given: with one that compiles

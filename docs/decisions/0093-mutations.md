@@ -1035,3 +1035,18 @@ Cost on the Mac mini: the whole corpus, 100 rows, 123 s with the compiler
 as it is after a rebuild and 69 s warm; with a mutant, a build of its own,
 under two minutes. The first trial, `async-param-copy-unheld`, ran whole in 777 s,
 about three minutes of it the crate corpus.
+
+### Amendment: several retired at once share their controls (#2043)
+
+`--retire=a,b,c` (or the flag again) runs the controls once, the
+compiler's unit tests, React's port and the crate corpus as the compiler
+is, then each mutant against them, a verdict and a trailer of its own; a
+failing control refuses them all, and a mutant that says nothing, its
+build or a run, leaves the others' verdicts as they are. Each mutant's
+suite runs in turn, and its port regen, crate corpus and failures'
+controls beside the next one's suite: the crate corpus's phase left the
+machine half busy (load 4.5 on the M1's 8 cores), and nothing they run
+shares a crate, a target or a checkout with a suite (the unmutated
+compiler they compare with is the controls' build, copied, never built
+again where the next mutant builds). Serially, each retirement took
+13–28 minutes, about a third of it controls.

@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { byControl, crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { byControl, crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -325,13 +325,28 @@ test("--retire regenerates React's port with the mutant, held to its control", (
   expect(regenDiffers("### react-in-rust at 0123abcde: 2 file(s) differ from what it committed\n\n- ` M crates/flight/js/server.js`\n- `?? crates/flight/js/new.js`\n")).toEqual(["M crates/flight/js/server.js", "?? crates/flight/js/new.js"]);
   expect(regenDiffers("### react-in-rust at 0123abcde doesn't compile\n\n```\nerror\n```")).toEqual(["its crates didn't compile"]);
   expect(regenDiffers("something else")).toEqual([]);
-  const retire = readFileSync(join(root, "scripts/mutations.ts"), "utf8").match(/\nasync function retire\([\s\S]*?\n}\n/)![0];
+  const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
+  const retire = source.match(/\nasync function retire\([\s\S]*?\n}\n/)![0] + source.match(/\nasync function retireSuite\([\s\S]*?\n}\n/)![0]
+    + source.match(/\nasync function retireVerdict\([\s\S]*?\n}\n/)![0];
   const control = retire.indexOf("await portDiffers(portControl)");
   expect(control).toBeGreaterThan(0);
   expect(control).toBeLessThan(retire.indexOf("scripts/checkFast.ts"));
+  // Run once for all the mutations retired together, before the first
+  // mutant (#2043).
+  expect(control).toBeLessThan(retire.indexOf("for (const mutation of chosen)"));
+  expect(retire.indexOf("await crateVerdicts(portControl, true)")).toBeLessThan(retire.indexOf("for (const mutation of chosen)"));
   expect(retire).toContain("port control fails: ");
   expect(retire).toContain("...portCaught, ...crateCaught]");
   expect(retire).toContain("React's port at its pin regenerated as it committed");
+});
+
+// Several retired at once share their controls (#2043): each flag's names,
+// comma-separated, in order, once each.
+test("--retire names several mutations, each once", () => {
+  expect(retiringNames(["--changed=main"])).toBeUndefined();
+  expect(retiringNames(["--retire=a"])).toEqual(["a"]);
+  expect(retiringNames(["--retire=a,b", "--retire=c,a"])).toEqual(["a", "b", "c"]);
+  expect(() => retiringNames(["--retire="])).toThrow("names no mutation");
 });
 
 // And crates.io's corpus, every row, which check:fast's suite runs with no
@@ -347,7 +362,10 @@ test("--retire measures the crate corpus with the mutant, held to its control", 
     "crate corpus: nom compiles with it, refused as the compiler is",
     "crate corpus: semver unmeasured with it, compiles as the compiler is",
   ]);
-  const retire = readFileSync(join(root, "scripts/mutations.ts"), "utf8").match(/\nasync function retire\([\s\S]*?\n}\n/)![0];
+  const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
+  const retire = ["retire", "retireSuite", "retireVerdict"]
+    .map((name) => source.match(new RegExp(`\\nasync function ${name}\\([\\s\\S]*?\\n}\\n`))![0])
+    .join("");
   const control$ = retire.indexOf("await crateVerdicts(portControl, true)");
   expect(control$).toBeGreaterThan(0);
   expect(control$).toBeLessThan(retire.indexOf("scripts/checkFast.ts"));
