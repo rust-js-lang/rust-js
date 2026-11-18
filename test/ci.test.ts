@@ -14,9 +14,9 @@ import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, 
 import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
-import { reactGate } from "../scripts/push";
+import { portRefusal, reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
-import { changedCases, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
+import { changedCases, PORT_DOES_NOT_COMPILE, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, drivesBrowser, testFileSeconds } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, unparted, verdict } from "../scripts/parts";
@@ -1272,5 +1272,18 @@ test("each test file that compiles against the bindings' crates builds them firs
       return crates.test(text) && !/\bbuildReact\b/.test(text);
     });
   expect(unbuilt).toEqual([]);
+});
+
+// A React port crate that doesn't compile writes no JS, so the port's diff is
+// empty: regen exits with its own code, and the push says so, never "it
+// differs", which a reader of an empty diff took for no change (#2106's
+// measurement).
+test("a React port that doesn't compile is told from one that differs", () => {
+  expect(PORT_DOES_NOT_COMPILE).not.toBe(1);
+  expect(portRefusal(PORT_DOES_NOT_COMPILE, "log")).toContain("doesn't compile");
+  expect(portRefusal(1, "log")).toContain("differs at its pin");
+  const regen = readFileSync(join(root, "scripts/react-in-rust.ts"), "utf8");
+  expect(regen).toContain("process.exit(PORT_DOES_NOT_COMPILE);");
+  expect(regen.indexOf("process.exit(PORT_DOES_NOT_COMPILE);", regen.indexOf("if (failed.length) {"))).toBeLessThan(regen.indexOf("if (changed.length) process.exit(1);"));
 });
 

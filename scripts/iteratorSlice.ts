@@ -285,6 +285,11 @@ export const portPaths = ["src/**", "std/**", "vendor/**", "tooling/**", "builti
 
 const portGlobs = portPaths.map((path) => new Bun.Glob(path));
 
+/** The exit of `check` and `regen` where a crate of the port doesn't
+ * compile, apart from `regen`'s 1, where its JS differs: a crate that
+ * doesn't compile writes nothing to differ. */
+export const PORT_DOES_NOT_COMPILE = 3;
+
 /** Whether a change of `files` touches what compiles React's port. */
 export function touchesPort(files: string[]): boolean {
   return files.some((file) => portGlobs.some((glob) => glob.match(file)));

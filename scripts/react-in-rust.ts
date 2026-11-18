@@ -27,6 +27,7 @@
 // `rust-js build` keeps every app's (`holdTarget`, #1057), and keeps no
 // incremental cache, as each crate is compiled whole again whenever the
 // compiler changes.
+import { PORT_DOES_NOT_COMPILE } from "./iteratorSlice";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
@@ -217,7 +218,7 @@ if (!import.meta.main) {
   const errors = checked.out.split("\n").filter((line) => /\berror(\[E\d+\])?:/.test(line));
   if (!checked.ok) {
     report(`### react-in-rust at ${pin.slice(0, 9)} doesn't compile against this checkout's bindings\n\n\`\`\`\n${errors.join("\n").slice(0, 8000)}\n\`\`\`\n\nA binding's change broke the port: fix the binding, or tell its porter and move \`ports/react-in-rust.pin\` once the port has followed.`);
-    process.exit(1);
+    process.exit(PORT_DOES_NOT_COMPILE);
   }
   report(`react-in-rust at ${pin.slice(0, 9)}: its workspace compiles against this checkout's bindings.`);
 } else if (command === "regen") {
@@ -273,7 +274,13 @@ if (!import.meta.main) {
         "A change one of those commits intends (its ADR or `rd` gap says so) waits for the port's next regeneration, which moves `ports/react-in-rust.pin`; any other is a regression here, fixed or filed.",
     );
   }
-  if (failed.length || changed.length) process.exit(1);
+  // A crate that doesn't compile writes no JS, so its diff is empty: said
+  // last, and its own exit, so no reader takes it for "no file differs".
+  if (failed.length) {
+    console.error(`react-in-rust regen: ${failed.length} crate(s) don't compile, so their JS isn't there to compare`);
+    process.exit(PORT_DOES_NOT_COMPILE);
+  }
+  if (changed.length) process.exit(1);
   report(`react-in-rust at ${pin.slice(0, 9)}: every crate compiles, and its JS is what it committed.`);
 } else {
   console.error("usage: bun scripts/react-in-rust.ts check | regen [crate ..]");

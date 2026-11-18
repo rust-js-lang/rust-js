@@ -51,7 +51,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { selectionFile } from "./select";
 import { devTimes, ownsTimes } from "./devTimes";
-import { touchesPort } from "./iteratorSlice";
+import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
 
 /** The phases, in the order they run. */
 export const phases = ["rebase", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
@@ -69,6 +69,15 @@ export type Phase = (typeof phases)[number];
 export function reactGate(changed: string[], incoming: string[] | undefined): "run" | "reused" | "none" {
   if (!touchesPort(changed)) return "none";
   return incoming !== undefined && !touchesPort(incoming) ? "reused" : "run";
+}
+
+/** Why the push refuses where the React port's regen exits `code`: a
+ * crate that doesn't compile, which writes no JS and so no diff, or JS
+ * that differs from the pin's. */
+export function portRefusal(code: number, log: string): string {
+  return code === PORT_DOES_NOT_COMPILE
+    ? `the React port doesn't compile at its pin (its run's output in ${log}): its JS isn't there to compare; fix the compiler, or the port and its pin`
+    : `the React port differs at its pin (target/react-in-rust.diff; its run's output in ${log}): regenerate the port and move ports/react-in-rust.pin in this push`;
 }
 
 export function onlyPushedFiles(changed: string[], pushed: string[]): string[] {
@@ -179,9 +188,7 @@ async function main() {
         if (regen !== undefined) {
           const code = await regen.done;
           regen = undefined;
-          if (code !== 0) {
-            throw new Refused(`the React port differs at its pin (target/react-in-rust.diff; its run's output in ${reactLog}): regenerate the port and move ports/react-in-rust.pin in this push`);
-          }
+          if (code !== 0) throw new Refused(portRefusal(code, reactLog));
           reactBase = base;
         }
         phase("react");
