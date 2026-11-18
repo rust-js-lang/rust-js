@@ -468,4 +468,20 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(ty) = field_access_may_run(recognition, given, lhs).filter(|_| false) {",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a field read in a helper"],
   },
+  {
+    name: "lowered-call-takes-the-word",
+    breaks: "lowering's `Known::RunsNothing` takes a `runs_nothing` method at its word of any receiver, so a copy of a module's variable read past a JS caller's set's `has`, whose override sets the variable, is the variable, read anew where Rust reads its copy (#2118)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(given))\n",
+    replace: "        let _ = given;\n        binding_call_runs_nothing(recognition, def_id, args, Receiver::Unasked)\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a JS caller's set's method is its own"],
+  },
+  {
+    name: "lowered-call-arguments-lost",
+    breaks: "lowering asks a binding's call of no arguments, so its receiver is judged by its declared `this` alone, and a set the function made keeps a copy of the module's variable read past its `has` (#2118)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(given))\n",
+    replace: "        let _ = given;\n        binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(None))\n",
+    tests: ["test/lowering-shadows.test.ts", "-t", "a JS caller's set's method is its own"],
+  },
 ];

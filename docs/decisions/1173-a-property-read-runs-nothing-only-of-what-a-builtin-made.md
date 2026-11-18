@@ -7,6 +7,7 @@ of it is. Amended 2026-11-18 (#2109): of the program's own structs, as
 value, as each caller's instantiation says.
 Amended 2026-11-18 (#2111, #2113): a binding's method is its own only
 of a receiver at hand, and a Rust field read is JS's property read.
+Amended 2026-11-19 (#2118): lowering's `Known::RunsNothing` asks it too.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 whose Consequence it narrows to ADR 0262's difference 60, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
@@ -100,9 +101,15 @@ program (#2111, the user's decision: fix, not accept). So
 `receiver_runs_its_own` (`runs_nothing.rs`), in `binding_call_runs_nothing`
 and `call_runs_nothing`, takes the word only of a receiver `read_may_run`
 says no JS caller may hand over, or one at hand; where the call's
-arguments aren't known, lowering's `Known::RunsNothing` and `may_run`'s
-walk, by the method's declared `this` alone; a type parameter's, by each
-caller's instance (`Called::Read`). What isn't a method call, React DOM's
+arguments aren't known, by the method's declared `this` alone; a type
+parameter's, by each caller's instance (`Called::Read`). Who asks says so
+(`Receiver`): the borrow analysis, and lowering's `Known::RunsNothing`,
+which finds the THIR call its MIR call is (`thir_call`) and asks of its
+arguments (`CellBorrows::lowered_call_runs_nothing`, #2118): a copy of a
+module's variable read past a JS caller's set's `has` stays its own, as
+the override may set the variable. `may_run`'s walk takes the word
+(`Receiver::Unasked`): its model has no binding let JS call the crate's
+exports back, a premise for the user to decide (#2119). What isn't a method call, React DOM's
 `writeChunk(destination, chunk)`, has no receiver to ask (ADR 0262's
 difference 38, which stays, with what's left of this case: an own
 property JS adds to an object a builtin made is patching it).
@@ -217,3 +224,12 @@ cell field holds its guard plainly. Mutations `receiver-taken-at-its-word`,
 `quiet-own-place-walked`, caught; `optional-call-counted`,
 `intl-constructors-run-unmarked`, `untagged-from-runs-code` and
 `at-load-binding-runs-nothing-followed` re-anchored, caught.
+#2118's row: a copy of a module's variable read past a JS caller's set's
+`has`, whose override sets the variable, stays its own, run; past a set the
+function made, it's the variable. Mutations `lowered-call-takes-the-word`
+and `lowered-call-arguments-lost`, caught; `every-binding-call-runs-nothing`,
+`binding-call-runs-nothing-unmarked` and `runs-nothing-runs-code` moved to
+that row, caught. React's port: Fizz's `renderPhaseUpdates$1` copy returns,
+its `Map` read back out of a `Cell` (#2114's noise, as the set of
+lowering-shadows' `Cell` row is); the corpus, the snapshots and the
+vercel-ui SDK don't move.

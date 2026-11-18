@@ -16,8 +16,7 @@ mod cell_flow;
 mod chars_asked;
 mod vec_uses;
 pub(super) use cell_borrows::{
-    Borrow, Cell, CellBorrows, Receiver, binding_call_runs_nothing, binding_runs_nothing, borrowed, may_be_cell,
-    resolve_runs_nothing, unsized_in_place,
+    Borrow, Cell, CellBorrows, binding_runs_nothing, borrowed, may_be_cell, resolve_runs_nothing, unsized_in_place,
 };
 pub(super) use cell_flow::CellClass;
 mod clones;

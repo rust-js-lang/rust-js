@@ -532,15 +532,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A call that runs none of the crate's code, `set.has(fiber)` of a
         // weak set's, sets none of its variables (ADR 0277, amended).
         let value = match value.kind {
-            js::ExprKind::Call(..) | js::ExprKind::New(..)
-                if super::analysis::binding_call_runs_nothing(
+            js::ExprKind::Call(..) | js::ExprKind::New(..) => {
+                // Its receiver asked of the THIR call MIR's is, where there's
+                // one: a JS caller's object's override may set a variable
+                // (#2118).
+                let call = self.thir_call(def_id, span);
+                let call = call.as_ref().map(|(_, call_args)| (self.frame.thir, &call_args[..]));
+                match (self.krate.cell_borrows).lowered_call_runs_nothing(
                     &self.recognition(),
-                    def_id,
-                    generic_args,
-                    super::analysis::Receiver::Unasked,
-                ) =>
-            {
-                value.runs_nothing()
+                    (def_id, generic_args),
+                    call,
+                ) {
+                    true => value.runs_nothing(),
+                    false => value,
+                }
             }
             _ => value,
         };

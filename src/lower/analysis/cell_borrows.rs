@@ -620,7 +620,6 @@ impl<'tcx> CellBorrows<'tcx> {
         (!given.any).then_some(given.bodies)
     }
 
-    /// What each fn pointer the crate calls may be (ADR 0907), its owner's
     /// Whether a field's read or write of `lhs`, in `thir`, may ask of
     /// `held`: a getter or a setter of the program's answering it, of a
     /// struct JS may make or give (`field_access_may_run`, #2113).
@@ -644,6 +643,27 @@ impl<'tcx> CellBorrows<'tcx> {
         &self.at_hand
     }
 
+    /// Whether a binding's call runs none of the crate's code, so it sets
+    /// none of its variables (`Known::RunsNothing`, ADR 0277, amended):
+    /// `binding_call_runs_nothing`, its receiver asked of `call`, the call's
+    /// arguments in its body's THIR where lowering finds them, judged by
+    /// what's at hand there; of none, its declared `this` (#2118).
+    pub(in crate::lower) fn lowered_call_runs_nothing(
+        &self,
+        recognition: &Recognition<'_, 'tcx>,
+        (def_id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        call: Option<(&Thir<'tcx>, &[ExprId])>,
+    ) -> bool {
+        let given = call.map(|(thir, call_args)| CallArgs {
+            thir,
+            args: call_args,
+            at_hand: &self.at_hand,
+            pointers: Some(&self.pointers),
+        });
+        binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(given))
+    }
+
+    /// What each fn pointer the crate calls may be (ADR 0907), its owner's
     /// answers, for another analysis to ask.
     pub(in crate::lower) fn pointers(&self) -> &super::fn_pointers::FnPointers<'tcx> {
         &self.pointers

@@ -645,11 +645,14 @@ pub fn reset() {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
+  // Until #2114: the set read back out of the `Cell` isn't at hand, so its
+  // `has` may be a JS caller's override (#2118), and each function keeps
+  // its copy; then `needsRemount` reads the variable again,
+  // `failedBoundaries != null && (failedBoundaries.has(fiber) || ..)`.
   expect(js).toContain(`export function needsRemount(fiber, alternate) {
+  const failedBoundaries$1 = failedBoundaries;
   if (
-    failedBoundaries != null &&
-    (failedBoundaries.has(fiber) || (alternate != null && failedBoundaries.has(alternate)))
-  ) {`);
+    failedBoundaries$1 != null &&`);
   expect(js).toContain("  const failedBoundaries$1 = failedBoundaries;\n  if (failedBoundaries$1 != null) {\n    before.call();\n");
   const lib = await import(join(dir, "lib.js"));
   const [fiber, alternate, other] = [{ tag: 1 }, { tag: 2 }, { tag: 3 }];
@@ -659,6 +662,65 @@ pub fn reset() {
   // What `before` sets, a new set, isn't what the copy holds.
   expect(lib.remountsAfter(fiber, () => lib.reset())).toBe(true);
   expect(lib.needsRemount(fiber, undefined)).toBe(false);
+});
+
+// A builtin's method that runs nothing is its own only of a receiver a
+// builtin made (#2118): of a JS caller's set, whose subclass's `has` may
+// call back and set the module's variable, a copy read past the call is
+// its own; of a set the function made, the variable.
+test("a copy of a module's variable read past a JS caller's set's method is its own", async () => {
+  const dir = fixture("shadow-past-given-receiver");
+  const node = buildNode();
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::cell::Cell;
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static LABEL: Cell<Option<&'static str>> = const { Cell::new(None) };
+}
+
+pub fn set_label(label: &'static str) {
+    LABEL.set(Some(label));
+}
+
+pub fn labelled(set: &js::Set<str>) -> usize {
+    if let Some(label) = LABEL.get()
+        && set.has(label)
+    {
+        return label.len();
+    }
+    0
+}
+
+pub fn labelled_made() -> usize {
+    let set: &js::Set<str> = js::set::new(None);
+    set.add("x");
+    if let Some(label) = LABEL.get()
+        && set.has(label)
+    {
+        return label.len();
+    }
+    0
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  const label$1 = label;\n  if (label$1 != null && set.has(label$1)) {\n    return $byteLen(label$1);\n");
+  expect(js).toContain("  set.add(\"x\");\n  if (label != null && set.has(label)) {\n    return $byteLen(label);\n");
+  const lib = await import(join(dir, "lib.js"));
+  lib.setLabel("x");
+  class Hand extends Set<string> {
+    has(key: string) {
+      lib.setLabel("longer");
+      return super.has(key);
+    }
+  }
+  // Rust's copy is the label the test read, "x", whatever the call set.
+  expect(lib.labelled(new Hand(["x"]))).toBe(1);
+  lib.setLabel("x");
+  expect(lib.labelledMade()).toBe(1);
 });
 
 // ADR 0952: React's ReactStrictModeWarnings, closures `js::on_load!` sets:

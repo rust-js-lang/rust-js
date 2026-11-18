@@ -596,12 +596,12 @@ export const mutations: Mutation[] = [
     breaks:
       "a weak set's `has(fiber)` isn't marked as running none of the program's code, so a copy of a module's variable read past it is kept, `const failedBoundaries$1 = failedBoundaries;` (ADR 0277, amended)",
     file: "src/lower/binding_calls.rs",
-    find: "                value.runs_nothing()\n",
-    replace: "                value\n",
+    find: "                    true => value.runs_nothing(),\n",
+    replace: "                    true => value,\n",
     tests: [
       "test/lowering-shadows.test.ts",
       "-t",
-      "a copy of a module's variable read past a call that runs nothing",
+      "a JS caller's set's method is its own",
     ],
   },
   {
@@ -609,12 +609,12 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's call that may run the program's code, `before.call()`, is taken to run none, so a copy of a module's variable read past it is the variable, which the callback set (ADR 0277, amended)",
     file: "src/lower/binding_calls.rs",
-    find: "                if super::analysis::binding_call_runs_nothing(\n                    &self.recognition(),\n                    def_id,\n                    generic_args,\n                    super::analysis::Receiver::Unasked,\n                ) =>\n",
-    replace: "                if true =>\n",
+    find: "                match (self.krate.cell_borrows).lowered_call_runs_nothing(\n                    &self.recognition(),\n                    (def_id, generic_args),\n                    call,\n                ) {\n",
+    replace: "                match { let _ = call; true } {\n",
     tests: [
       "test/lowering-shadows.test.ts",
       "-t",
-      "a copy of a module's variable read past a call that runs nothing",
+      "a JS caller's set's method is its own",
     ],
   },
   {

@@ -186,10 +186,10 @@ pub(in crate::lower) fn binding_call_runs_nothing<'tcx>(
 
 /// Whether a binding's method's receiver is asked of where its word is
 /// (#2111): the borrow analysis asks, of the call's arguments where it has
-/// them, `Asked`. Two askers don't: lowering's `Known::RunsNothing`, which
-/// lowers from MIR, with no call's arguments nor `AtHand`, until each
-/// call's answer is carried to it (#2118); and `may_run`, whose model has
-/// no binding let JS call the crate's exports back (its doc, #2119).
+/// them, `Asked`, and lowering's `Known::RunsNothing` too, of the THIR
+/// call its MIR call is (`CellBorrows::lowered_call_runs_nothing`, #2118).
+/// One asker doesn't: `may_run`, whose model has no binding let JS call the
+/// crate's exports back (its doc, #2119).
 #[derive(Clone, Copy)]
 pub(in crate::lower) enum Receiver<'a, 'tcx> {
     Asked(Option<CallArgs<'a, 'tcx>>),

@@ -138,7 +138,7 @@ export const mutations: Mutation[] = [
     file: "src/prepare/shadows.rs",
     find: "            ExprKind::Call(..) | ExprKind::New(..) | ExprKind::OptionalCall(..) if !e.facts.has(js::Known::RunsNothing)\n",
     replace: "            ExprKind::Call(..) | ExprKind::New(..) | ExprKind::OptionalCall(..)\n",
-    tests: ["test/lowering-shadows.test.ts", "-t", "a copy of a module's variable read past a call that runs nothing"],
+    tests: ["test/lowering-shadows.test.ts", "-t", "a JS caller's set's method is its own"],
   },
   {
     name: "shadow-set-after-never-read-in-place",
