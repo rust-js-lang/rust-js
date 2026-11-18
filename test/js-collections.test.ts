@@ -848,3 +848,26 @@ test("a binding's dyn Iterator's size_hint is refused", () => {
   expect(made.code).not.toBe(0);
   expect(made.stderr).toContain("in a crate that takes a `dyn Iterator` from a library or a binding, which it can't see made knowing its hint (#1562)");
 });
+
+test("native map reads distinguish a missing key from a null value", async () => {
+  const { dir, js } = compiled("map-get-undefined", `use js::{JsObject, Map, Unknown, WeakMap};
+
+pub fn missing(map: &Map<JsObject, &'static Unknown>, key: &JsObject) -> bool {
+    map.get(key).is_none()
+}
+
+pub fn missing_weak(map: &WeakMap<JsObject, &'static Unknown>, key: &JsObject) -> bool {
+    map.get(key).is_none()
+}
+`);
+  expect(js.match(/map\.get\(key\) === undefined/g)).toHaveLength(2);
+  const lib = await import(join(dir, "lib.js"));
+  const key = {};
+  for (const [map, missing] of [[new Map(), lib.missing], [new WeakMap(), lib.missingWeak]]) {
+    expect(missing(map, key)).toBe(true);
+    map.set(key, null);
+    expect(missing(map, key)).toBe(false);
+    map.set(key, {});
+    expect(missing(map, key)).toBe(false);
+  }
+});

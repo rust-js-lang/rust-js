@@ -418,7 +418,9 @@ export function named(map) {
 ```
 
 - **A `js::Map`'s or a `js::WeakMap`'s value is any value**, as
-  TypeScript's `Map<K, V>` takes any `V` and a `js::Dict`'s is. An
+  TypeScript's `Map<K, V>` takes any `V` and a `js::Dict`'s is. With a
+  non-optional value, `map.get(key).is_none()` is
+  `map.get(key) === undefined`, the result of reading a key it lacks. An
   `Option`'s `None` it holds as `null`, TypeScript's `Map<K, V | null>`:
   `map.set(key, None)` is `map.set(key, null)`, and entries written where
   they're given, `map::new(Some(&[(key, None)]))`, `new Map([[key,
