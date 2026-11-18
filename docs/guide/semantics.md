@@ -167,7 +167,9 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   a case, U+A7DD, they answer differently (#1914).
 - **`split`, `lines`, `split_whitespace`, `strip_prefix`, `split_once`,
   `replace`, `starts_with`** and the other common methods behave as Rust's,
-  with an empty pattern too. A closure, a function such as
+  with an empty pattern too. Use `js::string::replace_all(text, pattern, replacement)`
+  for the host's `text.replaceAll(pattern, replacement)`, including templates
+  such as `  with an empty pattern too. A closure, a function such as` and UTF-16 positions for an empty pattern. A closure, a function such as
   `char::is_numeric`, or a set of `char`s, `[';', ',']`, is a pattern of
   every method that takes one: `find`, `split`, `rsplitn`, `match_indices`,
   `split_once`, `strip_suffix`, `replacen` and the rest

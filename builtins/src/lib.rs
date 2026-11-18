@@ -2703,6 +2703,13 @@ pub mod string {
         unreachable!()
     }
 
+    /// [`text.replaceAll(pattern, replacement)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/replaceAll):
+    /// every match of the literal `pattern`, with JavaScript's replacement templates.
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceAll")]
+    pub fn replace_all(this: &str, pattern: &str, replacement: &str) -> String {
+        unreachable!()
+    }
+
     /// [`text.split(separator)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/split):
     /// the text between each `separator`, an empty one each UTF-16 code unit.
     #[cfg_attr(rust_js, rust_js::link_name = "split")]
