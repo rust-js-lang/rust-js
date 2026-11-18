@@ -737,6 +737,18 @@ pub fn removed(has_entry: bool, remove: fn() -> f64) -> Option<f64> {
 pub fn passed(value: Option<f64>) -> Option<f64> {
     value
 }
+
+fn computed(x: f64) -> Option<f64> {
+    if x > 0.0 { Some(x) } else { None }
+}
+
+pub fn found(has_entry: bool, x: f64) -> Option<f64> {
+    let mut value = js::null();
+    if has_entry {
+        value = computed(x);
+    }
+    value
+}
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
   const output = readFileSync(join(dir, "lib.js"), "utf8");
@@ -748,6 +760,9 @@ pub fn passed(value: Option<f64>) -> Option<f64> {
   expect(lib.removed(true, () => 0)).toBeUndefined();
   expect(lib.removed(true, () => 12)).toBe(12);
   expect(lib.passed(null)).toBeUndefined();
+  // Its other write the crate's own function's result, whose \`None\` is
+  // Rust's: only the written null's source says the null is the program's.
+  expect([lib.found(false, 3), lib.found(true, 0), lib.found(true, 3)]).toEqual([null, undefined, 3]);
 });
 
 test("a return keeps written null beside an undefined-only object lookup", async () => {
