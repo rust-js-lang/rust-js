@@ -697,3 +697,13 @@ test("a flag that takes a value, given none, is refused with its form", () => {
   expect(refusedFlags(["--changed=0123abc", "--also=", "--base=0123abc"])).toEqual([]);
   expect(refusedFlags(["--also"])).toEqual(["--also takes a value: --also=<name>,<name>"]);
 });
+
+// A mutation's settings, `env`, are its tests' as the compiler is too:
+// `library-callee-taken-as-std`'s `METAMORPHIC=all` names a case the push's
+// sample leaves out, and its control ran the sample, matched nothing and
+// failed every mutation shard that put it back (check 44240449175).
+test("the control runs each set of tests with its mutation's settings", () => {
+  const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
+  expect(source).toContain("env: { ...run.env, ...(run.part ? { RUST_JS_CASES: run.part } : {}) }");
+  expect(source).toContain('m.snapshots ? "snapshots" : "", envKey(m.env)');
+});

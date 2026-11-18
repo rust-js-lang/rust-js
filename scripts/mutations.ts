@@ -1703,26 +1703,32 @@ async function main() {
   // runs of their own were most of a run's time (ADR 1031). The corpus in
   // parts, each a process, as the suite runs it; as many at once as there
   // are cores.
-  const sets = [...new Map(chosen.filter((m) => m.tests && !sources.has(m)).map((m) => [[m.snapshots ? "snapshots" : "", ...m.tests!].join("\0"), m])).values()].map((m) => ({
+  // A mutation's own settings, `env`, are its tests' as the compiler is
+  // too, `METAMORPHIC=all` of a case the push's sample leaves out: a set
+  // and its runs are of one mode, its snapshots and its settings.
+  const envKey = (env: Record<string, string> | undefined) => JSON.stringify(Object.entries(env ?? {}).sort());
+  const sets = [...new Map(chosen.filter((m) => m.tests && !sources.has(m)).map((m) => [[m.snapshots ? "snapshots" : "", envKey(m.env), ...m.tests!].join("\0"), m])).values()].map((m) => ({
     snapshots: m.snapshots === true,
+    env: m.env ?? {},
     tests: m.tests!,
     ...testSet(m.tests!),
   }));
-  type Run = { compiler: string; snapshots: boolean; file: string; pattern?: string; part?: string };
+  type Run = { compiler: string; snapshots: boolean; env: Record<string, string>; file: string; pattern?: string; part?: string };
   const runs: Run[] = [];
-  for (const snapshots of [false, true]) {
-    const ofMode = sets.filter((set) => set.snapshots === snapshots);
+  const modes = [...new Map(sets.map((set) => [`${set.snapshots}\0${envKey(set.env)}`, { snapshots: set.snapshots, env: set.env }])).values()];
+  for (const { snapshots, env } of modes) {
+    const ofMode = sets.filter((set) => set.snapshots === snapshots && envKey(set.env) === envKey(env));
     for (const file of new Set(ofMode.flatMap((set) => set.files))) {
       const naming = ofMode.filter((set) => set.files.includes(file));
       const pattern = naming.some((set) => set.pattern === undefined) ? undefined : naming.map((set) => `(?:${set.pattern})`).join("|");
       const parts = file === "test/corpus.test.ts" ? caseParts(machine().cores) : 1;
       for (const compiler of [unmutated, broken]) {
-        for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined });
+        for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, env, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined });
       }
     }
   }
   const ran = new Map<string, Map<string, Map<string, boolean>>>();
-  const ranOf = (run: Run) => `${run.compiler}\0${run.snapshots}`;
+  const ranOf = (run: { compiler: string; snapshots: boolean; env: Record<string, string> }) => `${run.compiler}\0${run.snapshots}\0${envKey(run.env)}`;
   let reports = 0;
   const printedBy = new Map<string, string>();
   await Promise.all(
@@ -1731,7 +1737,7 @@ async function main() {
         const report = join(work, "reports", `${++reports}.xml`);
         mkdirSync(dirname(report), { recursive: true });
         const args = [`--reporter=junit`, `--reporter-outfile=${report}`, run.file, ...(run.pattern === undefined ? [] : ["-t", run.pattern])];
-        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });
+        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: { ...run.env, ...(run.part ? { RUST_JS_CASES: run.part } : {}) } });
         const junit = existsSync(report) ? readFileSync(report, "utf8") : "";
         rmSync(report, { force: true });
         // What the run as the compiler is printed, of one that fails or runs
@@ -1739,7 +1745,7 @@ async function main() {
         // ended, a signal, its memory or its exit code, where it printed
         // nothing more than bun's header (#1368).
         if (run.compiler === unmutated) {
-          const key = `${run.snapshots}\0${run.file}`;
+          const key = `${run.snapshots}\0${envKey(run.env)}\0${run.file}`;
           printedBy.set(key, `${printedBy.get(key) ?? ""}${output.slice(-1500)}\n(${endedAs(exit)}${run.part ? `, part ${run.part}` : ""})\n`);
         }
         const byFile = ran.get(ranOf(run)) ?? new Map<string, Map<string, boolean>>();
@@ -1752,11 +1758,11 @@ async function main() {
   );
   const problems: string[] = [];
   for (const set of sets) {
-    const as = setPasses(set, ran.get(`${unmutated}\0${set.snapshots}`) ?? new Map());
+    const as = setPasses(set, ran.get(ranOf({ compiler: unmutated, ...set })) ?? new Map());
     if (as !== true) {
-      const printed = set.files.map((file) => printedBy.get(`${set.snapshots}\0${file}`) ?? "").join("\n");
+      const printed = set.files.map((file) => printedBy.get(`${set.snapshots}\0${envKey(set.env)}\0${file}`) ?? "").join("\n");
       problems.push(`\`bun test ${set.tests.join(" ")}\` ${as === undefined ? "runs nothing" : "doesn't pass"} as the compiler is:\n${printed.slice(-1500)}`);
-    } else if (setPasses(set, ran.get(`${broken}\0${set.snapshots}`) ?? new Map()) === true) {
+    } else if (setPasses(set, ran.get(ranOf({ compiler: broken, ...set })) ?? new Map()) === true) {
       problems.push(`\`bun test ${set.tests.join(" ")}\` passes with a compiler that compiles nothing: it isn't using the one it's given`);
     }
   }

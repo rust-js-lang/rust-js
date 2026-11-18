@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "    for (const test of await failingWith(ofFile, mutant, failures)) again.add(test);\n  }\n  for (const test of await failingWith(failed, unmutatedCopy, failedTests)) control.add(test);\n",
     tests: ["test/mutations.test.ts", "-t", "judges nothing below the disk's floor"],
   },
+  {
+    name: "control-settings-unset",
+    breaks: "the control runs each set of tests without its mutation's `env`, so a test only `METAMORPHIC=all` runs matches nothing and every shard fails (check 44240449175)",
+    file: "scripts/mutations.ts",
+    find: "        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: { ...run.env, ...(run.part ? { RUST_JS_CASES: run.part } : {}) } });\n",
+    replace: "        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });\n",
+    tests: ["test/mutations.test.ts", "-t", "the control runs each set of tests with its mutation's settings"],
+  },
 ];
