@@ -67,7 +67,8 @@ export const mutations: Mutation[] = [
     find: '            && args.len() == 2\n            && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })\n',
     replace:
       '            && args.len() == 99\n            && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })\n',
-    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
+    snapshots: true,
   },
   {
     name: "enumerate-back-of-arrays-only",
@@ -96,7 +97,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "                let range = self.as_double_ended(range.clone(), source, span)?;\n                crate::lower::iterators::reversed_by(range)\n",
     replace: "                let range = self.as_double_ended(range.clone(), source, span)?;\n                range\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_given_to_generic_code.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
+    snapshots: true,
   },
   {
     name: "exact-size-rev-unread",
@@ -227,7 +229,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            return self.knows_its_back(source) || self.stepped_from_its_back(ty);\n",
     replace: "            return self.knows_its_back(source);\n",
-    tests: ["test/corpus.test.ts", "-t", "^filters_held_double_ended.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_types.rs$"],
+    snapshots: true,
   },
   {
     name: "compiled-iterator-not-knowing",
@@ -393,11 +396,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            return self.reversed_user_knowing(value, source, (back, true), span);\n",
     replace: '            return Err(self.unsupported(span, ""));\n',
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(rev_in_place_through_adapters).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "flatten-of-iterators-unknowing",
@@ -501,11 +501,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: '        (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") => {\n',
     replace: '        (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") && false => {\n',
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(back_folds_of_sources_made_knowing_their_back|skip_take_of_droppers_from_back).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_own_iterator_folded_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "cloned-map-uncounted",
@@ -707,7 +704,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.recognition().never_double_ended(ty) {\n",
     replace: "        if false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
+    snapshots: true,
   },
   {
     name: "flatten-each-by-name-unknowing",

@@ -306,7 +306,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "            Some(StdPath::IterCycle) => sources.next().filter(|&source| self.array_source(source).is_none()),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+    snapshots: true,
   },
   {
     name: "flat-map-type-unclosed",
@@ -688,7 +689,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "            || boxed_dyn\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "library_filter_map_of_a_boxed_iterator"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_summed_drops_its_rest_after_the_total.rs$"],
+    snapshots: true,
   },
   {
     name: "slice-search-runs-no-code",

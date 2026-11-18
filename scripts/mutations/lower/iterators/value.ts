@@ -104,11 +104,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/value.rs",
     find: "    if super::made_in_place(e) {\n        return None;\n    }\n    steps(e).cloned()\n",
     replace: "    steps(e).cloned()\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(rev_in_place_through_adapters).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^as_is_map_stepped_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "rev-unmarked",

@@ -27,7 +27,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/clones.rs",
     find: "                    (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty)\n",
     replace: "                    ty\n",
-    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^closure_cloned_in_a_holder.rs$"],
+    snapshots: true,
   },
   {
     name: "clone-bound-unseen",

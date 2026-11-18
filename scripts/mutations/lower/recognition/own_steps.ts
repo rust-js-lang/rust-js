@@ -9,7 +9,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Last, \"Skip\" | \"Fuse\" | \"Peekable\" | \"Copied\" | \"Cloned\") => own,\n",
     replace: "            (Last, \"Fuse\" | \"Peekable\" | \"Copied\" | \"Cloned\") => own,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint.rs$"],
+    snapshots: true,
   },
   {
     name: "lasts-its-own-not-through-chain",
@@ -18,7 +19,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Last, \"Chain\") => &[(0, Last), (1, Last)],\n",
     replace: "            (Last, \"Chain\") => &[],\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_chains_cloned_by_their_instances.rs$"],
+    snapshots: true,
   },
   {
     name: "lasts-its-own-not-generic",
@@ -34,7 +36,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Count, \"Skip\" | \"Fuse\" | \"Peekable\" | \"Enumerate\" | \"Copied\" | \"Cloned\") => own,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint.rs$"],
+    snapshots: true,
   },
   {
     name: "may-fold-its-own-not-generic",
@@ -63,7 +66,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Fold, \"Chain\") => &[(0, Fold), (1, Fold)],\n",
     replace: "            (Fold, \"Chain\") => &[],\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+    snapshots: true,
   },
   {
     name: "folds-its-own-never",
@@ -241,11 +245,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/own_steps.rs",
     find: "            (Fold, \"Rev\") => &[(0, Rfold)],\n",
     replace: "            (Fold, _) => &[(0, Rfold)],\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(adapters_own_nth_fold|own_fold_through_adapters|rev_own_back_methods).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^adapters_over_own_next_that_panics.rs$"],
+    snapshots: true,
   },
   {
     name: "rfolds-its-own-never",

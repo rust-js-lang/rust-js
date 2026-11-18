@@ -84,11 +84,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "    for _ in 0..32 {\n",
     replace: "    for _ in 0..0 {\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^adapters_given_to_generic_backs.rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^copied_given_to_generic_backs.rs$"],
+    snapshots: true,
   },
   {
     name: "filter-of-items-native",
@@ -480,7 +477,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "    with_stepped_sources(tcx, typed)\n",
     replace: "    typed\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_given_to_generic_backs.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "chain-made-here-backless",

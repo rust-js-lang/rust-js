@@ -119,7 +119,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/closing.rs",
     find: "                    || self.is_user_iterator(ty) && self.drops(ty) != crate::lower::drops::Drops::Nothing",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_work_that_panics.rs$"],
+    snapshots: true,
   },
   {
     name: "eq-other-not-closing",
@@ -138,7 +139,8 @@ export const mutations: Mutation[] = [
     find: "        if method.is_some_and(IterMethod::holds_its_source) {\n",
     replace:
       "        if dropping.is_some() && method.is_some_and(IterMethod::holds_its_source) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapter_source_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^consumed_adapter_drops.rs$"],
+    snapshots: true,
   },
   {
     name: "given-next-back-refused",
@@ -163,11 +165,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/closing.rs",
     find: "                let stepped = self.is_user_iterator(ty) || self.iterator_given_as_it_is(ty);\n",
     replace: "                let stepped = self.is_user_iterator(ty);\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(generic_adapter_source_drops|adapter_of_a_value_given_as_it_is).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^collect_of_an_impls_own_associated_type.rs$"],
+    snapshots: true,
   },
   {
     name: "iter-partial-cmp-total",

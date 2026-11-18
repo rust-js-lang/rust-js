@@ -99,7 +99,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/std_calls/iterators.rs",
     find: "                this.cycled(it, arg_tys[0].peel_refs(), span)?\n",
     replace: '                return Err(this.unsupported(span, "cycle"));\n',
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
+    snapshots: true,
   },
   {
     name: "peek-mut-of-numbers-unhandled",

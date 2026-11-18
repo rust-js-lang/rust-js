@@ -11,8 +11,8 @@ export const mutations: Mutation[] = [
     find: "    !MEANING_ONLY.contains(&item) || crate::lower::session::caches(tcx).meaning.get()\n",
     replace:
       "    true || !MEANING_ONLY.contains(&item) || crate::lower::session::caches(tcx).meaning.get()\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_given_back_stepped_from_its_back.rs$"],
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
   },
   {
     name: "meaning-only-library-items-seen",
@@ -22,7 +22,8 @@ export const mutations: Mutation[] = [
     find: "    if crate::lower::session::caches(tcx).meaning.get() || id.is_local() {\n        return false;\n    }\n",
     replace:
       "    if true || crate::lower::session::caches(tcx).meaning.get() || id.is_local() {\n        return false;\n    }\n",
-    tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_given_back_stepped_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "private-callee-not-compiled",
@@ -199,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/compiled_std.rs",
     find: "        return is_compiled_std(tcx, id) && compiled_for(tcx, made);\n",
     replace: "        return is_compiled_std(tcx, id);\n",
-    tests: ["test/corpus.test.ts", "-t", "^debug_of_adapters_compiled_as_their_meaning.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^clone_of_a_compiled_adapter_knowing_its_back.rs$"],
     snapshots: true,
   },
   {

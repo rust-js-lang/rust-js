@@ -54,7 +54,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "                        || std_struct && !self.recognition().bounded_by_items(iter_ty)\n                        || reaches_own\n                        || kept)\n",
     replace: "                        || std_struct && !self.recognition().bounded_by_items(iter_ty)\n                        || kept)\n",
-    tests: ["test/corpus.test.ts", "-t", "^collect_asks_hint_as_it_grows.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_a_method_with_its_own_generics.rs$"],
+    snapshots: true,
   },
   {
     name: "linked-list-asks-room",
@@ -305,7 +306,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "        let seen = self.hint_reaches_own(given);\n",
     replace: "        let seen = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "extend-of-a-dyn-keeps-no-capacity",
@@ -394,7 +396,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/hint_asks.rs",
     find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;\n",
     replace: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty);\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_step_by_of_a_reversed_range_grows_as_std.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
+    snapshots: true,
   },
   {
     name: "compiled-chain-hint-unknown",

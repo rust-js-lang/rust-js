@@ -122,7 +122,8 @@ export const mutations: Mutation[] = [
     find: "        let drop = self.drop_function(ty, span)?;\n        let mut args = vec![it, clone, next];\n",
     replace:
       "        let drop: Option<Expr> = None;\n        let mut args = vec![it, clone, next];\n",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_an_items_iterator_clones_its_item.rs$"],
+    snapshots: true,
   },
   {
     name: "cycle-clone-wrapped",
@@ -131,7 +132,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let clone = passed_on(&clone, Taker::Made, &[]).unwrap_or(clone);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_chains_and_cycles.rs$"],
     snapshots: true,
   },
   {
@@ -140,7 +141,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/dictionaries.rs",
     find: "            None if self.steps_an_array(ty)\n                || self.iterator_cloned_apart(ty)\n",
     replace: "            None if false\n                || self.iterator_cloned_apart(ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_an_items_iterator_clones_its_item.rs$"],
+    snapshots: true,
   },
   {
     name: "own-hint-not-in-dictionary",

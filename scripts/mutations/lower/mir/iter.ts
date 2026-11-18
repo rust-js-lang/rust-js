@@ -235,7 +235,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                    || holds_function\n                    || closed\n            }\n",
     replace: "                    || holds_function\n            }\n",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^collect_of_an_impls_own_associated_type.rs$"],
+    snapshots: true,
   },
   {
     name: "cloned-strings-mapped",
@@ -365,7 +366,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {\n",
     replace: "        match f.is_identity() && drops_nothing {\n",
-    tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_own_nth.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^evidence_paths.rs$"],
+    snapshots: true,
   },
   {
     name: "copied-pointee-peeled",

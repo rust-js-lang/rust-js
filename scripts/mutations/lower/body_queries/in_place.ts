@@ -259,7 +259,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/in_place.rs",
     find: "                    _ if observed((callee, generic_args, index), thir[arg].ty) => true,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_collected_whose_own_hint_runs.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^binary_heap_keeps_its_vecs_capacity.rs$"],
+    snapshots: true,
   },
   {
     name: "std-iterators-ignored",
@@ -347,8 +348,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/in_place.rs",
     find: "                    _ => break,\n",
     replace: "                    _ => continue,\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^held_chain_mapped_past_a_link_not_compiled.rs$"],
   },
   {
     name: "in-place-given-to-a-node-of-a-shared-span",
@@ -469,7 +470,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/in_place.rs",
     find: "                    Some(link) if !given && !callers => _ = held.insert(link),\n",
     replace: "                    Some(link) if !given && (!callers || callers) => _ = held.insert(link),\n",
-    tests: ["test/corpus.test.ts", "-t", "^zip_of_sides_only_callers_know.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^fuse_holds_its_source_in_generic_code.rs$"],
+    snapshots: true,
   },
   {
     name: "flatten-not-flipped",

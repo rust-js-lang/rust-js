@@ -100,7 +100,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "        ((callee == self.size_hint || callee == self.collect) && rustc_middle::ty::TypeVisitableExt::has_param(&of))\n",
     replace: "        (callee == self.size_hint && rustc_middle::ty::TypeVisitableExt::has_param(&of))\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_of_its_callers_items_where_its_hint_is_seen.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_associated_types_items.rs$"],
+    snapshots: true,
   },
   {
     name: "given-hint-lost-unmarked",
@@ -187,6 +188,7 @@ export const mutations: Mutation[] = [
     find: "            hinted.insert(held);\n            takes = true;\n",
     replace: "            takes = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^take_of_an_iterator_with_no_upper_bound_hints_its_count.rs$"],
+    snapshots: true,
   },
   {
     name: "dyn-take-source-unseen",
@@ -195,6 +197,7 @@ export const mutations: Mutation[] = [
     find: "                .any(|part| part.is_trait())\n",
     replace: "                .any(|part| part.is_trait() && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^take_of_an_iterator_with_no_upper_bound_hints_its_count.rs$"],
+    snapshots: true,
   },
   {
     name: "held-hint-ask-unmarked",

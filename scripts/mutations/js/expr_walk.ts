@@ -166,7 +166,8 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: "        // (ADR 0672).\n        if self.facts.has(Known::Getter) {\n            return false;\n        }\n",
     replace: "",
-    tests: ["test/lowering-moves.test.ts", "-t", "a getter's Option a combinator reads more than once is read once"],
+    tests: ["test/corpus.test.ts", "-t", "^field_of_a_struct_js_made_captured.rs$"],
+    snapshots: true,
   },
   {
     name: "tested-coalesce-kept",

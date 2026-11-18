@@ -141,6 +141,7 @@ export const mutations: Mutation[] = [
     find: "        match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
     replace: "        match own {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
+    snapshots: true,
   },
   {
     name: "flatten-vecs-unclosed",
@@ -353,7 +354,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators/adapters.rs",
     find: "        if let Some(items) = self.items_by_dictionary(value.clone(), inner, span)? {\n            return Ok(Some(items));\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^into_iter_of_items.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "inspect-throw-keeps-item",

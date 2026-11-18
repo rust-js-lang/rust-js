@@ -804,7 +804,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "        let parameter = matches!(iter_ty.peel_refs().kind(), ty::Param(_));\n",
     replace: "        let parameter = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_made_type_parameter_collected.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
+    snapshots: true,
   },
   {
     name: "reversed-range-counted",
