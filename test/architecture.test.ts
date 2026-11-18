@@ -329,7 +329,7 @@ test("only the publisher and the driver write files", () => {
 // places wrote `new Error(..)` each, and `panic!("")` was `new Error("")`.
 test("a panic's Error is made in one place", () => {
   const made = /Expr::(?:var|global)\("Error"\)/;
-  expect(sources.filter(file => made.test(read(file)))).toEqual(["src/js/make.rs"]);
+  expect(sources.filter(file => made.test(read(file)))).toEqual(["src/js/make/unwinding.rs"]);
 });
 
 test("library recognition cannot access function emission state", () => {
