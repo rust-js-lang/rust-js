@@ -120,3 +120,48 @@ writes, a parameter's cell field and a `Box`'s cell, and mutations
 `effects-borrows-by-lifetime-hold-nothing`, `effects-box-holds-nothing`,
 `effects-nonnull-holds-nothing`, `effects-shared-cells-unwritable` and
 `effects-indirect-writes-unborrowed`, each caught.
+
+## Amendment (2026-11-19, step 3a): what a write does, and the transfer that asks the query
+
+The transfer asks the query now behind a test hook, `--intervals-by-effects`
+(`intervals/transfer.rs`): the forgetting rules first, then what the query
+says each stale local's write does. Measured against the rules alone over
+the corpus's 2,250 proofs (`proved-*` lines of `--intervals-shadow`), a
+query that forgot each written local whole lost 200 (8.9%), none gained.
+So a write says what it does to what it reaches (`Written`):
+
+- **Replaced** (`Whole`): a `&mut`, a raw pointer, a `Box`, of the type it
+  points to; or a cell, `RefCell<_>`, `Rc<RefCell<_>>`, however it's
+  reached: nothing of it known.
+- **Its items** (`Items`): a reference is typed, so one to what isn't of its
+  type, an item or a slice of a `Vec`, `&mut [T]` of `deref_mut`, changes
+  its items, never its length; nor is a slice's, an array's or a `str`'s
+  length changed by anything. A table's rows' lengths are forgotten, and
+  of a scalar written through an item, `board[r][c] = x`, nothing.
+- **Grown** (`Grows`): a `Vec`'s `push`, std's, what its signature can't
+  say: `x < len` and its least hold, its exact length doesn't.
+- **Nothing**, through a shared reference to what holds a cell but isn't
+  one, `&Vec<Rc<RefCell<_>>>`: no length changes.
+
+What std's signatures can't say is named in `effects.rs` alone: the reads
+`may_write_cells` listed (`reads_only`, which it asks now) and the
+pointers `keeps_vec_length` gives (moved here from `recognition`), with a
+`RefCell`'s `borrow_mut()`. A pointer a call of code not std's gives back
+may point to what's escaped; a pointer's own pointee is seeded only of a
+pointer, a parameter or a local the rewrites made.
+
+Measured again: 38 of 2,250 lost (1.7%) in 25 cases, none gained. About 22
+are a `RefCell` guard held while code runs (`take_first`'s `f(items[i])`,
+`position_index_of`, the undo stacks): the rules' `guards` know no other
+borrow can reach a cell a held `RefMut` guards; the query doesn't. The rest
+are single cases. Step 3b, the rules deleted, follows the lead's decision
+on the guards.
+
+Held by "the effects query keeps what the rules prove of what no write
+reaches", seven cases each of a class the query once forgot, and "the
+effects shadow says where the query keeps what the rules forget"; mutations
+`effects-replaced-taken-for-items` (the unsound direction, caught by the
+keeps row) and `effects-items-taken-for-replaced` (the lossy one, caught by
+the proofs row), `effects-references-untyped`,
+`effects-scalar-store-resizes-rows`, `effects-push-replaces`,
+`effects-shadow-keeps-unsaid`, each caught.

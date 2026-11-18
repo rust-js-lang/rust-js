@@ -18,7 +18,8 @@
 //! program that differs without it (ADR 0093).
 
 use super::*;
-use crate::lower::recognition::{StdItem, deref_call, deref_mut_call, is_std_def, keeps_vec_length};
+use crate::lower::analysis::keeps_vec_length;
+use crate::lower::recognition::{StdItem, deref_call, deref_mut_call, is_std_def};
 use rustc_middle::mir::visit::{PlaceContext, Visitor};
 
 /// Of a body, its held guards, each `&g` or `&mut g` a `deref` of one is

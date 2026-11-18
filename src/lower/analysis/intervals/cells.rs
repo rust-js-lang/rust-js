@@ -61,15 +61,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         let Some((callee, callee_args)) = func.const_fn_def() else {
             return true;
         };
-        let reads = refcell_borrow(self.tcx, callee) == Some(false)
-            || ref_deref(self.tcx, callee, callee_args)
-            || rc_deref(self.tcx, callee, callee_args)
-            || range_step(self.tcx, callee, callee_args).is_some()
-            || matches!(
-                slice_length(self.tcx, callee, callee_args),
-                Some(SliceLength::Len | SliceLength::IsEmpty | SliceLength::Index)
-            );
-        !reads
+        !crate::lower::analysis::reads_only(self.tcx, callee, callee_args)
     }
 
     /// Whether dropping `place` may run code that writes a cell. Not a

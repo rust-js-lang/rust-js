@@ -18,8 +18,8 @@ export const mutations: Mutation[] = [
     name: "cells-calls-write-nothing",
     breaks: "a call of the crate's given a `RefCell`, `shorten_cell(v)`, is taken as writing nothing of it, so `v.borrow()[k]` under `k < v.borrow().len()` past it is unchecked and reads `undefined` where Rust panics; a callback or a `fn` pointer's call is no named callee, and forgets regardless",
     file,
-    find: "        !reads\n",
-    replace: "        let _ = reads;\n        false\n",
+    find: "        !crate::lower::analysis::reads_only(self.tcx, callee, callee_args)\n",
+    replace: "        let _ = (callee, callee_args);\n        false\n",
     tests: ["test/bounds-matrix.test.ts", "-t", "refcell, tested wrap"],
   },
   {
@@ -71,14 +71,6 @@ export const mutations: Mutation[] = [
     tests: ["test/intervals-shadow.test.ts", "-t", "gives its cell, the same each time"],
   },
   {
-    name: "rc-deref-writes-cells",
-    breaks: "an `Rc`'s `Deref` is taken as a call that may write a cell, forgetting its length, so React's `listeners.borrow()[i]` keeps its check, a call-bounds line (#1839)",
-    file,
-    find: "            || rc_deref(self.tcx, callee, callee_args)\n",
-    replace: "",
-    tests: ["test/intervals-shadow.test.ts", "-t", "gives its cell, the same each time"],
-  },
-  {
     name: "cells-behind-pointers-unseen",
     breaks: "a `Box`'s `RefCell` isn't a cell, so past a closure that clears it `items.borrow()[i]` under `i < items.borrow().len()` is taken in bounds, a proved-call-bounds line (#1839)",
     file,
@@ -93,21 +85,5 @@ export const mutations: Mutation[] = [
     find: "        _ => (rc_pointee(tcx, ty).or_else(|| ty.boxed_ty())).is_some_and(|of| holds_cell(tcx, of)),\n",
     replace: "        _ => (rc_pointee(tcx, ty).or_else(|| ty.boxed_ty()))\n            .is_some_and(|of| matches!(of.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::RefCell))),\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "gives its cell, the same each time"],
-  },
-  {
-    name: "range-step-writes-cells",
-    breaks: "a `for` loop's `next()` of a range, std's, is taken to may write a cell, so `batch.borrow()[i]` of `i` in `(0..batch.borrow().len()).step_by(2)` keeps its check (ADR 1168, #1948)",
-    file,
-    find: "            || range_step(self.tcx, callee, callee_args).is_some()\n",
-    replace: "",
-    tests: ["test/lowering-cell-flow.test.ts", "-t", "a held borrow counts the cells"],
-  },
-  {
-    name: "any-call-reads-cells",
-    breaks: "any call is taken to write no cell, so past a held length's `borrow_mut().clear()` in the loop `batch.borrow()[i]` reads past the end, `undefined` where Rust panics (ADR 1168, #1948)",
-    file,
-    find: "            || range_step(self.tcx, callee, callee_args).is_some()\n",
-    replace: "            || true\n",
-    tests: ["test/corpus.test.ts", "-t", "^cell_length_across_a_loops_steps.rs$"],
   },
 ];

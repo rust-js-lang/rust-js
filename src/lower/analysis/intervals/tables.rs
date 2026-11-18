@@ -11,8 +11,9 @@
 
 use super::guards::{call_at, inert, uses};
 use super::*;
+use crate::lower::analysis::keeps_vec_length;
 use crate::lower::pointers::raw_pointee;
-use crate::lower::recognition::{StdItem, is_std_def, is_vec_from_elem, keeps_vec_length};
+use crate::lower::recognition::{StdItem, is_std_def, is_vec_from_elem};
 
 /// The rows of `body`'s tables, `vec![row; n]`'s, whose type no `&mut`
 /// in the body may resize: each local that's a `&mut` of one read only

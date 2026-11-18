@@ -13,12 +13,11 @@
 //! Vec` itself keeps none (#1966).
 
 use super::*;
+use crate::lower::analysis::keeps_vec_length;
 use crate::lower::generic_facts::is_type_parameter;
 use crate::lower::mut_refs::{holds_a_raw_pointer, lets_pointers_out_of};
 use crate::lower::pointers::{closure_may_keep, pointer_may_keep, pointer_may_keep_behind};
-use crate::lower::recognition::{
-    StdItem, StdPath, deref_call, is_std_crate, is_std_def, is_std_path, keeps_vec_length,
-};
+use crate::lower::recognition::{StdItem, StdPath, deref_call, is_std_crate, is_std_def, is_std_path};
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_span::def_id::DefId;
 

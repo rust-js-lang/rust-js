@@ -68,7 +68,7 @@ pub(super) use self_handles::SelfHandles;
 mod stored_places;
 pub(in crate::lower) use stored_places::StoredPlaces;
 mod effects;
-pub(in crate::lower) use effects::Effects;
+pub(in crate::lower) use effects::{Effects, Written, keeps_vec_length, reads_only};
 mod intervals;
 pub(in crate::lower) use intervals::carries_code;
 mod tests;

@@ -10,6 +10,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals/shadowed.rs",
     find: '                (false, true) => "effects-keeps",\n',
     replace: "",
-    tests: ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"],
+    tests: ["test/intervals-shadow.test.ts", "-t", "says where the query keeps"],
   },
 ];

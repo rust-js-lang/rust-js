@@ -172,7 +172,10 @@ impl<'tcx> Walk<'_, 'tcx> {
         afters: &[State],
         assigned: Option<Local>,
     ) {
-        let stale = effects.stale(&self.body, location);
+        let stale = effects.stale(location);
+        // What the query keeps: the transfer's forgetting of `before`.
+        let mut by_query = before.clone();
+        transfer::forget_stale(stale, assigned, &mut by_query);
         let what = self.what(location);
         let mut differ = Vec::new();
         for (l, known) in before.intervals.iter_enumerated() {
@@ -184,7 +187,8 @@ impl<'tcx> Walk<'_, 'tcx> {
             }
             let kept =
                 (afters.iter()).all(|after| after.intervals[l].is_some_and(|i| known.lo <= i.lo && i.hi <= known.hi));
-            differ.push((kept, !stale.contains(&l), format!("interval {l:?} {known:?}"), vec![l]));
+            let query = by_query.intervals[l] == Some(*known);
+            differ.push((kept, query, format!("interval {l:?} {known:?}"), vec![l]));
         }
         // A slice's least kept where it's as much or more after.
         for (&slice, &least) in &before.least {
@@ -194,11 +198,12 @@ impl<'tcx> Walk<'_, 'tcx> {
             let kept = (afters.iter()).all(|after| after.least.get(&slice).is_some_and(|&l| l >= least));
             differ.push((
                 kept,
-                !stale.contains(&slice),
+                by_query.least.get(&slice) == Some(&least),
                 format!("least {slice:?} {least}"),
                 vec![slice],
             ));
         }
+        let by_query_facts: IndexSet<String> = by_query.facts().into_iter().map(|f| f.name).collect();
         let after_facts: Vec<IndexSet<String>> = (afters.iter())
             .map(|after| after.facts().into_iter().map(|f| f.name).collect())
             .collect();
@@ -213,7 +218,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 .map(|relation| format!("{relation} true"));
             let kept = (after_facts.iter())
                 .all(|names| names.contains(&fact.name) || stronger.as_ref().is_some_and(|s| names.contains(s)));
-            let query = !fact.of.iter().any(|l| stale.contains(l));
+            let query = by_query_facts.contains(&fact.name);
             differ.push((kept, query, fact.name, fact.of));
         }
         for (kept, query, name, of) in differ {

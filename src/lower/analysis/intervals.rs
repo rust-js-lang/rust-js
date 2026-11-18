@@ -34,6 +34,7 @@ use std::collections::BTreeSet;
 mod arithmetic;
 mod called_on;
 mod shadowed;
+mod transfer;
 pub(in crate::lower) use called_on::carries_code;
 mod callers;
 mod calls;
@@ -145,6 +146,9 @@ struct Walk<'a, 'tcx> {
     /// What each statement may write, where the session records the
     /// shadow: the query the rules are compared with (`shadowed`).
     effects: Option<crate::lower::analysis::Effects>,
+    /// Each statement's location, by its address, which the transfer asks
+    /// the query of (`transfer`).
+    located: IndexMap<usize, Location>,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -168,11 +172,19 @@ fn proofs<'a, 'tcx>(
 ) -> Proofs {
     let mut walk = walk(tcx, typing_env, body, given);
     walk.libraries = libraries;
-    if crate::lower::session::caches(tcx).intervals_shadow.is_some() {
+    let caches = crate::lower::session::caches(tcx);
+    if caches.intervals_shadow.is_some() || caches.intervals_by_effects {
         let made = body.local_decls.len();
         walk.effects = Some(crate::lower::analysis::Effects::of(
             tcx, typing_env, &walk.body, libraries, made,
         ));
+        walk.located = (walk.body.basic_blocks.iter_enumerated())
+            .flat_map(|(block, data)| {
+                (data.statements.iter().enumerate()).map(move |(statement_index, s)| {
+                    (std::ptr::from_ref(s).addr(), Location { block, statement_index })
+                })
+            })
+            .collect();
     }
     walk.run()
 }
@@ -237,6 +249,7 @@ fn walk<'a, 'tcx>(
         formats_code,
         libraries: None,
         effects: None,
+        located: IndexMap::default(),
     }
 }
 
@@ -293,7 +306,9 @@ fn facts<'tcx>(
 impl<'tcx> Walk<'_, 'tcx> {
     fn run(&self) -> Proofs {
         let entry = self.entries();
-        if let Some(effects) = &self.effects {
+        if let Some(effects) = &self.effects
+            && !crate::lower::session::caches(self.tcx).intervals_by_effects
+        {
             self.shadow_effects(effects, &entry);
         }
         self.proved(&entry)
@@ -608,7 +623,7 @@ impl<'tcx> Walk<'_, 'tcx> {
 
     /// `statement`'s write, what it writes worked out first, of what's known
     /// before it, then the local written forgotten and set.
-    fn statement(&self, statement: &mir::Statement<'tcx>, state: &mut State) {
+    fn statement_rules(&self, statement: &mir::Statement<'tcx>, state: &mut State) {
         self.pushes(statement, state);
         // A write through a raw pointer, which may reach a cell's value with
         // no call (`cells`, #1741), or an escaped `Vec` (#1966).
@@ -972,7 +987,7 @@ impl<'tcx> Walk<'_, 'tcx> {
     /// Each edge out of `block`, and what's known along it: a switch of a
     /// comparison narrows its operands on each side, an `assert` of one on
     /// the side that goes on.
-    fn edges(&self, block: BasicBlock, state: &State) -> Vec<(BasicBlock, State)> {
+    fn edges_rules(&self, block: BasicBlock, state: &State) -> Vec<(BasicBlock, State)> {
         let terminator = self.body.basic_blocks[block].terminator();
         match &terminator.kind {
             TerminatorKind::SwitchInt { discr, targets } => {

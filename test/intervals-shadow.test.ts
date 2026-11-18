@@ -26,8 +26,9 @@ function shadowOf(source: string): string[] {
 // The effects query's shadow (#2112 B, step 2): of each corpus case named,
 // each fact the walk's forgetting rules forget at a write that the query
 // would keep, its `effects-keeps` lines, a write the query can't see. Not
-// one the rules forget where a borrow is made, `assign ref mut`, which
-// writes nothing: the query forgets it at the write the borrow makes.
+// one the rules forget where a pointer is made, a borrow, `assign ref mut`,
+// or std's `iter_mut`, `index_mut` or `deref_mut`, which write nothing:
+// the query forgets it at the write the pointer makes.
 function keptByTheQuery(names: string[]): string[] {
   const dir = fixture("effects-shadow");
   return names.flatMap((name) => {
@@ -38,7 +39,7 @@ function keptByTheQuery(names: string[]): string[] {
     return readFileSync(log, "utf8")
       .split("\n")
       .filter((line) => line.startsWith("effects-keeps\t"))
-      .filter((line) => !/\tassign (ref|raw)/.test(line))
+      .filter((line) => !/\tassign (ref|raw)|\tcall .*::(iter_mut|index_mut|deref_mut)$/.test(line))
       .map((line) => line.split("\t"))
       .map(([, owner, , , what]) => `${name}: ${owner} at ${what}`);
   });
@@ -978,7 +979,21 @@ pub fn main() {
 // lent past it, a `Box`'s cell a closure clears. Each of #2112's C3
 // shapes whose rules were each a P0. The one fact kept: `Rc::clone` of
 // another `Rc`, which changes no cell, where the rules forget every
-// cell at a call that doesn't read one.
+// cell at a call that doesn't read one, was one till the query took an
+// `Rc<RefCell<_>>` for the cell it points to (#2112 B step 3a).
+// The shadow says where the query keeps what the rules forget: where a
+// borrow is made, the rules forget the integer it lends, `&mut n` (#1782),
+// and the query keeps it till the write the borrow makes.
+test("the effects shadow says where the query keeps what the rules forget", () => {
+  const dir = fixture("effects-shadow-said");
+  const log = join(dir, "shadow.txt");
+  writeFileSync(log, "");
+  const out = runSync([compiler, "--intervals-shadow", log, join(root, "test/corpus/raw_pointer_written_after_its_owner_reads.rs"), "-o", join(dir, "case.js")], dir, 120_000);
+  expect(out.code, out.stderr).toBe(0);
+  const kept = readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("effects-keeps\t"));
+  expect(kept.some((line) => /\tinterval .*\[n\]\tassign ref mut$/.test(line))).toBe(true);
+});
+
 test("the effects query keeps nothing the forgetting rules forget at a write", () => {
   expect([
     ...new Set(keptByTheQuery([
@@ -992,5 +1007,34 @@ test("the effects query keeps nothing the forgetting rules forget at a write", (
       "inner_while_exit_in_catch.rs",
       "rc_refcell_bounds.rs",
     ])),
-  ]).toEqual(["rc_refcell_bounds.rs: reassigned at call std::clone::Clone::clone"]);
+  ]).toEqual([]);
+}, 600_000);
+
+// What the forgetting rules prove, the transfer that asks the effects query
+// too proves of what no write reaches (#2112 B step 3a,
+// `--intervals-by-effects`): a table's items written, a scalar into a row,
+// `board[r][c] = x`, its rows as long; a slice's `swap`, its length; a
+// `push`, `x < len` past it; a range's `next()`, its end; a `Vec` whose
+// items hold cells read through a shared reference, its length. Each of
+// them a class the query once forgot (8.9% of the corpus's proofs).
+test("the effects query keeps what the rules prove of what no write reaches", () => {
+  const dir = fixture("effects-proofs");
+  const proved = (name: string, flags: string[]) => {
+    const log = join(dir, `${name}.${flags.length}.txt`);
+    writeFileSync(log, "");
+    const out = runSync([compiler, "--intervals-shadow", log, ...flags, join(root, "test/corpus", name), "-o", join(dir, `${name}.${flags.length}.js`)], dir, 120_000);
+    expect(out.code, out.stderr).toBe(0);
+    return readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("proved-"));
+  };
+  for (const name of [
+    "table_rows.rs",
+    "table_rows_resized_unseen.rs",
+    "same_length_tables.rs",
+    "heap_halves_bound_their_children.rs",
+    "length_shifted_past_a_push.rs",
+    "bounds_by_a_value.rs",
+    "loop_ending_branch_loop.rs",
+  ]) {
+    expect([name, proved(name, ["--intervals-by-effects"])]).toEqual([name, proved(name, [])]);
+  }
 }, 600_000);

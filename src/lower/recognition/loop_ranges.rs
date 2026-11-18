@@ -263,14 +263,6 @@ pub(in crate::lower) fn range_index_bounds(tcx: TyCtxt<'_>, adt: DefId) -> Optio
     }
 }
 
-/// Whether a call keeps the length of the `Vec` it's given `&mut`:
-/// `IndexMut::index_mut`, `v[i] = x`, and `DerefMut::deref_mut`, a slice
-/// of its items (#1672 M3, step 5).
-pub(in crate::lower) fn keeps_vec_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    (tcx.trait_of_assoc(def_id)).is_some_and(|t| tcx.is_lang_item(t, LangItem::IndexMut))
-        || tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), def_id)
-}
-
 /// Whether a call is `DerefMut::deref_mut`.
 pub(in crate::lower) fn deref_mut_call(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), def_id)
