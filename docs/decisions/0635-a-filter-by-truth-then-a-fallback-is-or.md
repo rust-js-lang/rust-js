@@ -280,3 +280,21 @@ branch Rust's does: `test/corpus/option_chains_fused.rs` checks `None`,
 `Some("")` and a name against native Rust, and a number's `filter(|x| *x
 != 0.0)`, which isn't JS's truth of it, as `NaN` and `-0` show, stays a
 conditional.
+
+## Amendment (2026-11-18): text given on as it is, by a path or a closure (the vercel-ui SDK's port, G4)
+
+`map_or_else(g, f)` by an `f` that gives what it's given is `option ??
+g()`, as `maps_to_itself` says (#787). A closure's steps were asked whether
+each call is its argument by recognition's `Std::Same`, but a function given
+as a path wasn't, and `to_string` of text is `Std::ToString`, a `Display`,
+which no step took for the text itself. So the SDK's `locale.map_or_else(||
+.., str::to_string)` printed `locale != null ? locale : ..` where upstream
+writes `locale ?? ..`. Now one question, `call_gives_its_argument`, is asked
+of a path and of each closure's step alike: `Std::Same`, `Std::Pointee`, or
+`Std::ToString` of a `str` or a `String`, whose `Display` is itself. ADR
+0262's first case: a string's `toString` is the string.
+
+Corpus case `option_text_given_on_as_it_is`, against native; no other
+snapshot moves. Mutations `text-to-string-not-itself` and
+`path-to-itself-unasked`, caught.
+

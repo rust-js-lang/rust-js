@@ -35,10 +35,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ))
                     || self.constructs_payload(function, args)
                     || self.gives_its_argument(self.callee(function, args).0)
+                    || self.call_gives_its_argument(function, args)
             }
             None => self.closure_gives_its_argument(f),
         };
         itself && !self.boxed_payload(from) && !self.boxed_payload(to)
+    }
+
+    /// Whether a call of `function` given `args` is what it's given as the
+    /// same JS value: one that's the value itself (`Std::Same`,
+    /// `Std::Pointee`), or `to_string` of text, a `str`'s or a `String`'s,
+    /// whose `Display` is itself, `locale.map_or_else(runtime,
+    /// str::to_string)`'s `locale ?? runtime()` (the vercel-ui SDK's port,
+    /// G4).
+    fn call_gives_its_argument(&self, function: rustc_span::def_id::DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        match self.recognition().classify(function, args) {
+            Some(Std::Same | Std::Pointee) => true,
+            Some(Std::ToString) => args.types().next().is_some_and(|text| {
+                let text = text.peel_refs();
+                text.is_str() || self.recognition().is_lang_adt(text, LangItem::String)
+            }),
+            _ => false,
+        }
     }
 
     /// Whether `f` is a closure that captures nothing and does nothing but
@@ -106,10 +124,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | Ok(Rvalue::CopyForDeref(p))
                 | Ok(Rvalue::Ref(_, mir::BorrowKind::Shared, p)) => *p,
                 Err((func, [arg])) => {
-                    let known = (func.const_fn_def())
-                        .and_then(|(def_id, generic_args)| self.recognition().classify(def_id, generic_args));
-                    match (known, arg.node.place()) {
-                        (Some(Std::Same | Std::Pointee), Some(p)) => p,
+                    let gives = (func.const_fn_def())
+                        .is_some_and(|(def_id, generic_args)| self.call_gives_its_argument(def_id, generic_args));
+                    match (gives, arg.node.place()) {
+                        (true, Some(p)) => p,
                         _ => return false,
                     }
                 }

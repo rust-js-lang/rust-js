@@ -574,4 +574,22 @@ export const mutations: Mutation[] = [
     replace: "                if false\n                    && !default.has_effects()\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a &mut lend that never takes a Some away"],
   },
+  {
+    name: "text-to-string-not-itself",
+    breaks: "`to_string` of text isn't the text itself to `maps_to_itself`, so `locale.map_or_else(runtime, str::to_string)` is `locale != null ? locale : runtime()`, not `locale ?? runtime()`, and `map(str::to_string)` a conditional, where the vercel-ui SDK writes `??` (G4)",
+    file: "src/lower/std_types/option.rs",
+    find: "            Some(Std::ToString) => args.types().next().is_some_and(|text| {\n",
+    replace: "            Some(Std::ToString) => args.types().next().is_some_and(|text| false && {\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_text_given_on_as_it_is\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "path-to-itself-unasked",
+    breaks: "a function given as a path, `str::to_owned`, `String::from`, isn't asked whether its call is its argument, as a closure's steps are, so `map_or_else(g, String::from)` is a conditional, not `??` (G4)",
+    file: "src/lower/std_types/option.rs",
+    find: "                    || self.call_gives_its_argument(function, args)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^option_text_given_on_as_it_is\\.rs$"],
+    snapshots: true,
+  },
 ];
