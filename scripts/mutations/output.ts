@@ -239,16 +239,16 @@ export const mutations: Mutation[] = [
     name: "header-path-as-cargo-gives",
     breaks: "a module's header names its Rust as Cargo gave it, from the app, so a package's JS an app writes isn't its author's, `node_modules/.pnpm/..`",
     file: "src/output.rs",
-    find: "                |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
-    replace: "                |_| rust_path.to_path_buf(),\n",
+    find: "            |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
+    replace: "            |_| rust_path.to_path_buf(),\n",
     tests: ["test/libraries.test.ts", "-t", "from npm into"],
   },
   {
     name: "header-from-nearest-manifest",
     breaks: "a file compiled alone names its Rust from the nearest `Cargo.toml`, maybe another crate's, `web/rust/codemirror.rs` from the compiler's",
     file: "src/output.rs",
-    find: "            .zip(absolute(&self.settings.dir).ok().filter(|_| self.settings.cargo))\n",
-    replace: "            .zip(absolute(&self.settings.dir).ok())\n",
+    find: "            false => absolute(&self.input)\n                .ok()\n                .and_then(|input| input.parent().map(Path::to_path_buf)),\n",
+    replace: "            false => absolute(&self.settings.dir).ok(),\n",
     tests: ["test/jsx.test.ts", "-t", "forwarded refs"],
   },
   {
@@ -304,8 +304,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a Cargo build's header names a module a `#[path]` reaches through `..` as Cargo's working directory spells it, `server/set/../Runtime.rs`, where it's past its crate's directory (m6-wife's report, ADR 0414)",
     file: "src/output.rs",
-    find: "                |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
-    replace: "                |(file, dir)| file.strip_prefix(&dir).map_or_else(|_| rust_path.to_path_buf(), Path::to_path_buf),\n",
+    find: "            |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
+    replace: "            |(file, dir)| file.strip_prefix(&dir).map_or_else(|_| rust_path.to_path_buf(), Path::to_path_buf),\n",
     tests: ["test/cargo-in-source.test.ts", "-t", "through"],
   },
   {
@@ -447,5 +447,13 @@ export const mutations: Mutation[] = [
     find: "            .chain(packaged)\n            .chain(settings)\n",
     replace: "            .chain(packaged)\n",
     tests: ["test/rust-js-test-runners.test.ts", "test/compiles.test.ts", "-t", "alone is the next run|a file's record of its build"],
+  },
+  {
+    name: "alone-header-as-given",
+    breaks: "a file compiled alone names its Rust file in the header as it was given, an absolute path a fixture's or a build machine's, so the same crate built in two places isn't the same bytes (ADR 0414, amended)",
+    file: "src/output.rs",
+    find: "            false => absolute(&self.input)\n                .ok()\n                .and_then(|input| input.parent().map(Path::to_path_buf)),\n",
+    replace: "            false => None,\n",
+    tests: ["test/emission.test.ts", "-t", "no absolute path of the build"],
   },
 ];

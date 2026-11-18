@@ -512,19 +512,24 @@ impl OutputPlan {
         })
     }
 
-    /// The Rust file a module's JS says it's generated from: of a crate
-    /// Cargo builds, from its crate's directory, so a crate's JS is the
-    /// same whichever build wrote it, its author's or an app's of it from
-    /// npm (ADR 0414), the file itself, one a `#[path]` reaches through `..`
-    /// too, `../Runtime.rs` past it; a file compiled alone, as it's given.
+    /// The Rust file a module's JS says it's generated from, from its
+    /// crate's directory, so a crate's JS is the same whichever build wrote
+    /// it and wherever (ADR 0414): of a crate Cargo builds, its directory,
+    /// its author's build or an app's of it from npm; of a file compiled
+    /// alone, its crate root's own, `lib.rs` of `/…/fixtures/x/lib.rs`, not
+    /// the absolute path it was given. The file itself, one a `#[path]`
+    /// reaches through `..` too, `../Runtime.rs` past it.
     fn shown(&self, rust_path: &Path) -> PathBuf {
-        absolute(rust_path)
-            .ok()
-            .zip(absolute(&self.settings.dir).ok().filter(|_| self.settings.cargo))
-            .map_or_else(
-                || rust_path.to_path_buf(),
-                |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),
-            )
+        let dir = match self.settings.cargo {
+            true => absolute(&self.settings.dir).ok(),
+            false => absolute(&self.input)
+                .ok()
+                .and_then(|input| input.parent().map(Path::to_path_buf)),
+        };
+        absolute(rust_path).ok().zip(dir).map_or_else(
+            || rust_path.to_path_buf(),
+            |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),
+        )
     }
 
     /// Each of `tests` registered in `js_module`, a test file beside module

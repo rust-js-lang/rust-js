@@ -166,3 +166,28 @@ runtime (`output.rs`, `paths::relative_resolved` of the two, each
 resolved). Held by `test/cargo-in-source.test.ts`'s "a Cargo build's
 header names a module of a path through `..` as its file", a workspace's
 member; mutation `header-path-as-cargo-spells` (`output.ts`).
+
+## Amendment: a file compiled alone, from its crate root's directory (2026-11-18)
+
+The header named a file compiled alone as it was given: a fixture's
+absolute path, `/…/target/fixtures/xbe7565c0/chain-value-thread-local_0/lib.rs`,
+or a build machine's. So the same crate built in two places wasn't the
+same bytes. And two tests that asserted a word wasn't in the JS met it in
+that path: lowering-unwinds' `kept`, in a mutant's directory named for
+`guard-named-twice-kept-whole`, and lowering-bindings' `tmp`, in a
+worktree under `/private/tmp`.
+
+A file compiled alone is named from its crate root's own directory, as a
+Cargo build's is from its crate's: `lib.rs`, and a `#[path]` module's
+`parts/inner.rs`, or `../Runtime.rs` past it. The source map's `sources`
+were already relative to the JS. The browser's compiler, given the
+playground at `/wasm/web/rust/`, writes the same header as the native
+one, so the playground's test no longer evens it out. The 102 files of
+test/snapshots move in their header alone, those of the snapshots', the
+JSX and the scheduler's suites. The corpus's snapshots don't
+move: their test writes `test/corpus/<case>.rs` for whatever header
+they have.
+
+test/emission.test.ts holds a crate compiled by its absolute path,
+a `#[path]` module in it, `--declarations` too: no file it writes holds
+that path or the checkout's. Mutation `alone-header-as-given` is caught.
