@@ -113,9 +113,6 @@ plain std loud-call dyn_fn_handed_only.rs
 #2052 P0 (iterators): boxed as_is_map_stepped_from_its_back throws 'enumerated.iter.len is not a function' where native runs
 plain boxed as_is_map_stepped_from_its_back.rs
 
-#2053 P0 (mut-refs): dyn-ref vec_lent_to_code_that_keeps_a_pointer prints -3 for a u32 and misses native's bounds panic
-plain std dyn-ref vec_lent_to_code_that_keeps_a_pointer.rs
-
 #2054 P0 (mut-refs): generic contains_guarded_float ends normally where native panics 'RefCell already borrowed'
 plain std generic contains_guarded_float.rs
 

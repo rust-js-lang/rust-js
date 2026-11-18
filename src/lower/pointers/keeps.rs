@@ -108,11 +108,19 @@ fn may_keep<'tcx>(
     let Some(pointee) = given.builtin_deref(true).map(erased) else {
         return false;
     };
+    // Behind a `dyn` whose code isn't known, what its methods give out
+    // may be any type, the `&mut Vec<u32>` of `metamorph_get_mut(v)` from a
+    // `&mut dyn GetMut<Vec<u32>>`: a raw pointer to any type may be to it,
+    // and a reference to any may carry it (#2053). Not of a `dyn` of the
+    // `Fn` traits whose closure is known, `behind`: what that closure may
+    // keep of what it captures is `closure_may_keep`'s question, and this
+    // one asks only whether the call keeps a pointer to the closure.
+    let opaque = matches!(pointee.kind(), ty::Dynamic(..)) && behind.is_none();
     // A raw pointer to it, or, of generic code, to what a type parameter
     // may be.
     let pointer_to = |t: Ty<'tcx>, or_param: bool| {
         crate::lower::pointers::raw_pointee(tcx, t).is_some_and(|(to, _)| {
-            erased(to) == pointee || or_param && crate::lower::generic_facts::may_be_any_type(to)
+            erased(to) == pointee || opaque || or_param && crate::lower::generic_facts::may_be_any_type(to)
         })
     };
     let pointer_to_it = |ty: Ty<'tcx>| ty.walk().filter_map(|part| part.as_type()).any(|t| pointer_to(t, true));
@@ -121,7 +129,7 @@ fn may_keep<'tcx>(
     let carries = |ty: Ty<'tcx>| {
         ty.walk().filter_map(|part| part.as_type()).any(|t| {
             crate::lower::generic_facts::may_be_any_type(t)
-                || matches!(*t.kind(), ty::Ref(_, to, _) if erased(to) == pointee)
+                || matches!(*t.kind(), ty::Ref(_, to, _) if opaque || erased(to) == pointee)
                 || pointer_to(t, false)
         })
     };

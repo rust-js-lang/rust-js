@@ -1246,3 +1246,29 @@ index keeps its check and panics as Rust does. Mutations
 `guard-fields-of-a-guard-lent-shared-whole` (the proof lost) and
 `guard-fields-of-a-guard-lent-mut-as-shared` (the unsound direction, caught
 by `refcell_guard_fields`' `step(&mut history)`).
+
+## Amendment (2026-11-18, #2053): a `Vec` lent through a `dyn` escapes where the code keeps a pointer to what the `dyn` gives out
+
+`stash(v: &mut dyn Items)` that keeps `v.items() as *mut Vec<u32>` left
+the `Vec` it was given unescaped (#1966's rule). Its length stayed known
+past `clear_it()`, which cleared it through the pointer, so `len() - 3`
+past `len() > 2` was `-3`, and a later `v[0]` read `undefined` where Rust
+panics. The metamorphic net's `dyn-ref` rewrite of
+`vec_lent_to_code_that_keeps_a_pointer` found it. `pointer_may_keep`
+(`pointers/keeps.rs`) took a raw pointer to the given `&mut`'s pointee
+only, `*mut dyn Items`. But behind a `dyn` whose code isn't known, what
+its methods give out may be any type: of such a pointee, a raw pointer to
+any type may be to it, and a reference to any type given to a call it
+can't follow may carry it. That fails closed, as the walk does of what it
+can't see. Not of a `dyn` of the `Fn` traits whose closure is known
+(#1947's `behind`): there the question is only whether the call keeps a
+pointer to the closure, and what the closure keeps of its captures is
+`closure_may_keep`'s, asked apart. Widened there too, it added two checks
+to `integer_captured_by_a_closure_given_to_calls` that nothing needs.
+
+Case C of ADR 0262. Corpus case
+`vec_lent_through_a_dyn_to_code_that_keeps_a_pointer` holds a pointer kept
+to what the `dyn` gives out, one kept to the `dyn` itself, each cleared
+past a length test, and an index past it that panics, against native.
+Main gives `-3` and no panic. Mutation `dyn-pointee-keeps-only-its-own-type`
+is caught.

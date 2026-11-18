@@ -108,4 +108,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^integer_captured_by_a_closure_given_to_calls.rs$"],
     snapshots: true,
   },
+  {
+    name: "dyn-pointee-keeps-only-its-own-type",
+    breaks: "a call given `&mut dyn Trait` keeps a raw pointer only of the `dyn` type, so `stash(v: &mut dyn Items)` keeping `v.items() as *mut Vec<u32>` keeps nothing, the `Vec`'s length is known past `clear_it()`, and `len() - 3` is `-3` where Rust wraps (#2053)",
+    file: "src/lower/pointers/keeps.rs",
+    find: "    let opaque = matches!(pointee.kind(), ty::Dynamic(..)) && behind.is_none();\n",
+    replace: "    let opaque = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_lent_through_a_dyn_to_code_that_keeps_a_pointer.rs$"],
+  },
+  {
+    name: "dyn-behind-widened",
+    breaks: "of a `&mut dyn FnMut` whose closure is known, any raw pointer the walk finds may point at the closure, so a call given one keeps it and the integer it captures is lent away for good: `seen[next]` checked again (#2053, #1947)",
+    file: "src/lower/pointers/keeps.rs",
+    find: "    let opaque = matches!(pointee.kind(), ty::Dynamic(..)) && behind.is_none();\n",
+    replace: "    let opaque = matches!(pointee.kind(), ty::Dynamic(..));\n",
+    tests: ["test/corpus.test.ts", "-t", "^integer_captured_by_a_closure_given_to_calls.rs$"],
+    snapshots: true,
+  },
 ];
