@@ -244,6 +244,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        debug_assert!(
+            props.iter().skip(1).all(|prop| matches!(prop, js::Prop::Field(entry, _)
+                if BACK_ENTRIES.iter().any(|&method| crate::lower::bindings::trait_method_name(self.tcx, trait_id, method) == *entry))),
+            "an extension's dictionary carries its entry and `BACK_ENTRIES` alone"
+        );
         Ok(Expr::object(props))
     }
 
@@ -487,24 +492,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         entries_passed_on(of, passed)
     }
 
-    /// An extension's dictionary of a `&mut I`, of `I`'s, `of`: what std's
-    /// impl for it passes on to its `I`, `next_back`, `nth_back` and
-    /// `try_rfold` of a `DoubleEndedIterator`, `len` of an
-    /// `ExactSizeIterator`; not `rfold`, which it folds by `I`'s `try_rfold`
-    /// (ADRs 0928, 0937).
-    pub(in crate::lower) fn mut_ref_extension_dictionary(&self, trait_id: DefId, of: Expr) -> Expr {
-        // Its entry, `next_back` or `len`, keyed as the extension's own are,
-        // and the methods it passes on, by their names.
+    /// An extension's dictionary of a `&mut I` of type `ty`, of `I`'s, `of`: its entry, `next_back` or `len`,
+    /// and of `BACK_ENTRIES` those std's impl for it passes on to its `I`'s
+    /// own (`PASSED_ON`, #2000): of a sized `I`, `nth_back` and `try_rfold`,
+    /// not `rfold`, which it folds by `I`'s `try_rfold` (ADRs 0928, 0937); of
+    /// an unsized one, `nth_back` alone.
+    pub(in crate::lower) fn mut_ref_extension_dictionary(&self, trait_id: DefId, ty: ty::Ty<'tcx>, of: Expr) -> Expr {
+        use crate::lower::recognition::{Passed, Wrapper};
+        let wrapper = Wrapper::of(self.tcx, self.typing_env, ty).expect("a `&mut`");
         let others: &[&str] = match crate::lower::recognition::is_double_ended(self.tcx, trait_id) {
-            true => &["nth_back", "try_rfold"],
+            true => &BACK_ENTRIES,
             false => &[],
         };
         let entry = crate::lower::recognition::extension_entry(self.tcx, trait_id).to_string();
         let passed: Vec<String> = std::iter::once(entry)
             .chain(
-                others
-                    .iter()
-                    .map(|name| crate::lower::bindings::trait_method_name(self.tcx, trait_id, name)),
+                (others.iter())
+                    .filter(|&&method| wrapper.passes(method) == Passed::Own)
+                    .map(|method| crate::lower::bindings::trait_method_name(self.tcx, trait_id, method)),
             )
             .collect();
         entries_passed_on(of, passed)
@@ -544,6 +549,12 @@ fn folded_by_try(tried: Expr) -> Expr {
 
 /// The entries of a dictionary, `of`, a `&mut` to what it's of passes on,
 /// `passed`: of one made here, those; of one given, each read from it.
+/// What a `DoubleEndedIterator`'s dictionary carries past its entry,
+/// `next_back`, where they're its iterator's own: the one list, which
+/// `iterator_extension_dictionary` makes of each iterator and
+/// `mut_ref_extension_dictionary` passes on of a `&mut` by `PASSED_ON`.
+const BACK_ENTRIES: [&str; 3] = ["rfold", "nth_back", "try_rfold"];
+
 fn entries_passed_on(of: Expr, passed: Vec<String>) -> Expr {
     match of.kind {
         js::ExprKind::Object(props, _) => Expr::object(

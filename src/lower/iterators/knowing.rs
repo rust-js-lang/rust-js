@@ -693,10 +693,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Reversal::Chain => self.as_exact_size(value.clone(), source, back, span),
             };
         }
+        // A `&mut` of one no form above knows, `&mut r` of a range: what it
+        // lends made so (`passed_on_to`), stepped where it is, so its owner
+        // sees each step.
+        let asked: &[&str] = if back { &["len", "next_back"] } else { &["len"] };
+        if let Some(held) = self.passed_on_to(ty, asked) {
+            return self.as_exact_size(value, held, back, span);
+        }
         Err(self.unsupported(
             span,
             &format!("a `{ty}` as an `ExactSizeIterator`, which rust-js can't count"),
         ))
+    }
+
+    /// What a `&mut` of type `ty` holds, where std's impl for it passes each
+    /// of `steps` on to it as its own, `len` and `next_back` (`Wrapper::passes`,
+    /// #2075): the iterator generic code given it steps by them. Not a
+    /// `Box`'s: std's `Box<I>` isn't `TrustedLen` where `&mut I` is, so what
+    /// a `Vec` collects of it grows by its own room, which its form made
+    /// knowing would not say, refused till it's read (#1892).
+    fn passed_on_to(&self, ty: ty::Ty<'tcx>, steps: &[&str]) -> Option<ty::Ty<'tcx>> {
+        use crate::lower::recognition::{Passed, Wrapper};
+        let (wrapper, held) = Wrapper::holding(self.tcx, self.typing_env, ty)?;
+        let lent = matches!(wrapper, Wrapper::MutRefSized | Wrapper::MutRefUnsized);
+        (lent && steps.iter().all(|&step| wrapper.passes(step) == Passed::Own)).then_some(held)
     }
 
     pub(in crate::lower) fn as_double_ended(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
@@ -999,6 +1019,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // hint (#1240).
         if self.recognition().never_double_ended(ty) {
             return Ok(value);
+        }
+        // A `&mut` of one, as `as_exact_size` makes it (#2075).
+        if let Some(held) = self.passed_on_to(ty, &["next_back"]) {
+            return self.as_double_ended(value, held, span);
         }
         Err(self.unsupported(
             span,

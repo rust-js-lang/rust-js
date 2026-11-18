@@ -62,16 +62,26 @@ impl Wrapper {
         typing_env: ty::TypingEnv<'tcx>,
         ty: Ty<'tcx>,
     ) -> Option<Wrapper> {
+        Self::holding(tcx, typing_env, ty).map(|(wrapper, _)| wrapper)
+    }
+
+    /// `of`'s, and the iterator it holds.
+    pub(in crate::lower) fn holding<'tcx>(
+        tcx: TyCtxt<'tcx>,
+        typing_env: ty::TypingEnv<'tcx>,
+        ty: Ty<'tcx>,
+    ) -> Option<(Wrapper, Ty<'tcx>)> {
         let (held, boxed) = match *ty.kind() {
             ty::Ref(_, to, ty::Mutability::Mut) => (to, false),
             _ => (ty.boxed_ty()?, true),
         };
-        Some(match (boxed, held.is_sized(tcx, typing_env)) {
+        let wrapper = match (boxed, held.is_sized(tcx, typing_env)) {
             (false, true) => Wrapper::MutRefSized,
             (false, false) => Wrapper::MutRefUnsized,
             (true, true) => Wrapper::BoxSized,
             (true, false) => Wrapper::BoxUnsized,
-        })
+        };
+        Some((wrapper, held))
     }
 
     /// How its `method`, std's name, reaches its iterator's: the trait's

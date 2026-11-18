@@ -112,9 +112,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut R`'s `DoubleEndedIterator`, of a type parameter given one, isn't of the dictionary `R` was given: `self.inner.by_ref().map(f).rfold(..)` is refused, `the DoubleEndedIterator of a R` (ADR 0937)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                && self.is_unknown(*inner)\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));\n",
+    find: "                && self.is_unknown(*inner)\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, tr.self_ty(), of));\n",
     replace:
-      "                && false\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));\n",
+      "                && false\n            {\n                let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;\n                return Ok(self.mut_ref_extension_dictionary(tr.def_id, tr.self_ty(), of));\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^held_enumerate with"],
   },
   {

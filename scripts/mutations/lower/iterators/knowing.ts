@@ -919,4 +919,28 @@ export const mutations: Mutation[] = [
     replace: "        if false && crate::lower::iterators::form_lacks_a_length(&value)\n",
     tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_boxed_beside_an_enumeration_from_its_back\\.rs$"],
   },
+  {
+    name: "lent-range-length-unknown",
+    breaks: "a `&mut` to a range, given to generic code as an `ExactSizeIterator`, isn't made knowing its length as what it lends is: refused, where std's `&mut I` passes `len` on (#2075)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if let Some(held) = self.passed_on_to(ty, asked) {\n",
+    replace: "        if let Some(held) = self.passed_on_to(ty, asked).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^lent_range_made_knowing_for_generic_code\\.rs$"],
+  },
+  {
+    name: "lent-range-back-unknown",
+    breaks: "a `&mut` to a range, given to generic code as a `DoubleEndedIterator`, isn't made knowing its back as what it lends is: refused, where std's `&mut I` passes `next_back` on (#2075)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if let Some(held) = self.passed_on_to(ty, &[\"next_back\"]) {\n",
+    replace: "        if let Some(held) = self.passed_on_to(ty, &[\"next_back\"]).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^lent_range_made_knowing_for_generic_code\\.rs$"],
+  },
+  {
+    name: "boxed-range-made-knowing",
+    breaks: "a `Box` of a range given where its length is asked is made knowing it as the range is, so a `Vec` collected of the box grows by the range's exact hint, capacity 3 where std's `Box<I>`, no `TrustedLen`, gives 4 (#1892, #2075)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        let lent = matches!(wrapper, Wrapper::MutRefSized | Wrapper::MutRefUnsized);\n",
+    replace: "        let lent = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_range_taken_through_its_borrow\\.rs$"],
+  },
 ];

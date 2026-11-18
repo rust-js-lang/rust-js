@@ -353,7 +353,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && self.is_unknown(*inner)
             {
                 let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;
-                return Ok(self.mut_ref_extension_dictionary(tr.def_id, of));
+                return Ok(self.mut_ref_extension_dictionary(tr.def_id, tr.self_ty(), of));
             }
             return self.iterator_extension_dictionary(tr.def_id, tr.self_ty(), span);
         }
