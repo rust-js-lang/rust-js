@@ -37,6 +37,7 @@ mod projections;
 mod representation;
 pub(super) mod std_types;
 mod structures;
+pub(super) use type_maps::is_type_map;
 mod type_maps;
 mod written;
 
@@ -550,7 +551,17 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         .type_of(param.def_id)
                         .instantiate_identity()
                         .skip_normalization();
-                    declared["default"] = self.ts(default);
+                    let written = param
+                        .def_id
+                        .as_local()
+                        .and_then(|local| match self.tcx.hir_node_by_def_id(local) {
+                            hir::Node::GenericParam(param) => match param.kind {
+                                hir::GenericParamKind::Type { default, .. } => default,
+                                _ => None,
+                            },
+                            _ => None,
+                        });
+                    declared["default"] = self.as_written(written, |out| out.ts(default));
                 } else if let Some(default) = defaults_to(self.tcx, def_id, param.index) {
                     declared["default"] = self.ts(default);
                 }

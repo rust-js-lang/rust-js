@@ -6,12 +6,20 @@ const refused = ["test/js-predicates.test.ts", "-t", "is refused, saying what to
 
 export const mutations: Mutation[] = [
   {
+    name: "trusted-predicate-only-accepts-unknown",
+    breaks: "a trusted predicate on a typed parameter is refused as if it were a checked unknown predicate",
+    file: "src/lower/predicates.rs",
+    find: "&& (trusted || any_value(tcx, body.local_decls[local].ty))",
+    replace: "&& any_value(tcx, body.local_decls[local].ty)",
+    tests: ["test/js-predicates.test.ts", "-t", "trusted predicate"],
+  },
+  {
     name: "guard-of-a-changed-parameter",
     breaks:
       "a `js::Is::when` of a `mut` parameter, changed before it, is declared its predicate, `value is T` of what isn't the value given",
     file: "src/lower/predicates.rs",
-    find: "            body.local_decls[local].mutability == rustc_ast::Mutability::Not\n                && any_value(",
-    replace: "            any_value(",
+    find: "            body.local_decls[local].mutability == rustc_ast::Mutability::Not\n                && (trusted || any_value(",
+    replace: "            (trusted || any_value(",
     tests: refused,
   },
   {

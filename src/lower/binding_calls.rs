@@ -424,7 +424,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A value JS tells is a `T`, and its test, `typeof value ===
             // "string" && dateParts(value) !== undefined`, upstream's
             // predicate's body (#1828).
-            (JsForm::IsWhen, None) if args.len() == 2 => {
+            (JsForm::IsWhen { trusted: true }, None) if args.len() == 2 => {
+                let test = args.pop().expect("the test");
+                Expr::call(test, args)
+            }
+            (JsForm::IsWhen { trusted: false }, None) if args.len() == 2 => {
                 let ty = generic_args.type_at(0);
                 let test = args.pop().expect("the test");
                 let value = match args.pop().expect("the value") {
@@ -608,6 +612,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let surely_there = |arg: &Expr| {
             use js::ExprKind as K;
             matches!(arg.kind, K::Null)
+                || arg.has_null_fallback()
                 || (!arg.may_be_undefined()
                     && !arg.facts.has(js::Known::NoneNull)
                     && !matches!(arg.kind, K::Binary(Op::Coalesce | Op::Or | Op::And, ..) | K::Cond(..)))

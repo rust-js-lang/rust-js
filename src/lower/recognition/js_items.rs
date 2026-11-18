@@ -204,15 +204,20 @@ pub(in crate::lower) fn is_js_is(tcx: TyCtxt<'_>, did: DefId) -> bool {
         && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
 }
 
-/// Whether `did` is `js::Is::when`, the one way a `js::Is` is made.
-pub(in crate::lower) fn is_js_is_when(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    tcx.crate_name(did.krate).as_str() == "js"
-        && tcx.item_name(did).as_str() == "when"
+/// Whether `did` makes a predicate, and whether it trusts a typed test.
+pub(in crate::lower) fn trusted_js_predicate(tcx: TyCtxt<'_>, did: DefId) -> Option<bool> {
+    let trusted = match tcx.item_name(did).as_str() {
+        "when" => false,
+        "assert" => true,
+        _ => return None,
+    };
+    (tcx.crate_name(did.krate).as_str() == "js"
         && tcx.opt_parent(did).is_some_and(|imp| {
             tcx.def_kind(imp) == DefKind::Impl { of_trait: false }
                 && matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
                     ty::Adt(adt, _) if is_js_is(tcx, adt.did()))
-        })
+        }))
+    .then_some(trusted)
 }
 
 /// Whether `did` is `js::JsError`, whatever a JS function threw, of any

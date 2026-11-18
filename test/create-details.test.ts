@@ -63,6 +63,11 @@ test("createDetails' JS is upstream's body, of its three arguments", () => {
   expect(declarations).not.toContain("type Details");
 });
 
+test("the reason vocabulary adds no runtime exports", async () => {
+  const dir = compiled();
+  expect(Object.keys(await import(join(dir, "lib.js")))).toEqual(["createDetails"]);
+});
+
 test("createDetails runs Codex's contract as upstream's does", async () => {
   const dir = compiled();
   const ours = (await import(join(dir, "lib.js"))).createDetails as Factory;

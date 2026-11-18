@@ -844,3 +844,23 @@ pub fn removed_or(has_entry: bool) -> f64 {
   expect([lib.missing(false), lib.missing(true)]).toEqual([true, true]);
   expect([lib.removedOr(false), lib.removedOr(true)]).toEqual([-1, 12]);
 });
+
+test("an explicit null fallback stays a supplied callback argument", async () => {
+  const dir = fixture("callback-explicit-null-fallback");
+  writeFileSync(join(dir, "lib.rs"), `pub fn send(value: Option<f64>, callback: &dyn Fn(Option<f64>)) {
+    callback(value.or_else(js::null));
+}
+
+pub fn send_optional(value: Option<f64>, callback: &dyn Fn(Option<f64>)) {
+    callback(value);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const { send, sendOptional } = await import(join(dir, "lib.js"));
+  const received: unknown[][] = [];
+  const callback = (...args: unknown[]) => { received.push(args); };
+  for (const value of [undefined, null, 3]) send(value, callback);
+  for (const value of [undefined, null, 3]) sendOptional(value, callback);
+  expect(received).toEqual([[null], [null], [3], [], [], [3]]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("callback(value ?? null)");
+});

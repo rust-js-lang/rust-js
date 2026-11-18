@@ -2660,7 +2660,11 @@ doc comment; its `keys`, `keyof` that type; and its `lookup`, a key's
 value, of any other string the value of its impl for `&'static str`. So
 a vocabulary of reasons and the event each reports has one source, its
 impls, as upstream's `ReasonVocabulary` and `EventOf` are one. The
-trait's associated type of a reason `R` is its lookup's, `EventOf<R>`. A
+trait's associated type of a reason `R` is its lookup's, `EventOf<R>`.
+An associated type keeps its written TypeScript alias. A record with a field
+of a type-map key keeps that generic parameter, even when the field is its
+only use. A written generic default keeps its alias too. Runtime dictionaries
+are emitted when compiled code reads them. A
 generic struct marked `#[cfg_attr(rust_js, rust_js::distributive)]`, of one
 type parameter, is declared of each of a union's members, `R extends
 unknown ? { .. } : never`, so a TypeScript caller's check of its `reason`

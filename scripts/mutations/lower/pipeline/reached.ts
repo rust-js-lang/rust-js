@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "type-map-exports-unread-dictionary",
+    breaks: "a declaration-only type map exports its unused implementation dictionaries",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                || super::super::declarations::is_type_map(tcx, trait_id)\n",
+    replace: "",
+    tests: ["test/create-details.test.ts", "-t", "vocabulary adds no runtime exports"],
+  },
+  {
+    name: "typed-subtrait-exports-unread-dictionary",
+    breaks: "a typed marker subtrait and its inherited dictionary leak into the exports",
+    file: "src/lower/pipeline/reached.rs",
+    find: "                || type_only\n",
+    replace: "",
+    tests: ["test/create-details.test.ts", "-t", "vocabulary adds no runtime exports"],
+  },
+  {
     name: "marker-dictionary-written",
     breaks:
       "an impl of a marker trait, or of bindings, writes its empty dictionary though nothing reads it",

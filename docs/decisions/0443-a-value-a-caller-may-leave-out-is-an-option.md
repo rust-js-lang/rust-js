@@ -422,3 +422,10 @@ JS gave that count their arguments, given a `None` and a `Some`, `bind`'s
 of all and of some called of the rest, in Bun and in Chromium; the
 corpus's `none_given_to_an_optional_argument`, against native Rust; and
 mutations in `mir/dispatch.ts`, `mir/calls.ts` and `mir/nulled/one_none.ts`.
+
+## Amendment: an explicit null fallback supplies an argument
+
+A fallback such as `option.or_else(js::null)` sends its computed value to
+a JavaScript callback, including an explicit `null`, as one argument
+(#2092). A regular trailing `None` still leaves the argument out. The
+callback can observe the difference through `arguments.length`.

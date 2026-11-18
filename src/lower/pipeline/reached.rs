@@ -73,8 +73,12 @@ pub(super) fn written_where_reached<'tcx>(
         .iter()
         .filter(|&&id| {
             let trait_id = trait_of(id);
+            let type_only = tcx.associated_item_def_ids(trait_id).is_empty()
+                && super::super::declarations::written_types(tcx, trait_id).is_some();
             super::super::recognition::known_derive(tcx, id)
                 || super::super::traits::is_marker(tcx, foreign, trait_id)
+                || super::super::declarations::is_type_map(tcx, trait_id)
+                || type_only
                 || identity_eq(id, trait_id, false)
         })
         .flat_map(|&id| std::iter::once(id).chain(tcx.associated_item_def_ids(id).iter().copied()))

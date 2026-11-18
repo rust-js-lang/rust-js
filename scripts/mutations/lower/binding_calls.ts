@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "trailing-null-fallback-omitted",
+    breaks: "an explicit null fallback is omitted from a JavaScript callback",
+    file: "src/lower/binding_calls.rs",
+    find: "                || arg.has_null_fallback()\n",
+    replace: "",
+    tests: ["test/none-given.test.ts", "-t", "explicit null fallback"],
+  },
+  {
     name: "keyed-method-a-member",
     breaks:
       "a method keyed by a global's value, `[Symbol.asyncIterator]`, is read as a property of its name, `iterable.Symbol.asyncIterator()`, not React's `iterable[ASYNC_ITERATOR]()` (rd585)",
@@ -875,11 +883,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                    if !(self.frame.owner == self.item && super::bindings::is_on_load(self.tcx, self.item)) {\n",
     replace: "                    if false {\n",
-    tests: [
-      "test/classes.test.ts",
-      "-t",
-      "prototype replaced"
-    ]
+    tests: ["test/classes.test.ts", "-t", "prototype replaced"],
   },
   {
     name: "class-typed-of-a-crate-struct",

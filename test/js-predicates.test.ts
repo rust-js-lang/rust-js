@@ -127,3 +127,31 @@ pub fn is_date(value: Option<&js::Unknown>) -> js::Is<String> {
     expect(stderr).toContain("a `bool`, declared `boolean`");
   }
 });
+
+test("a trusted predicate on strings narrows both branches", async () => {
+  const dir = fixture("js-typed-predicate");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::types = "\\"primary\\" | \\"secondary\\"")]
+pub type Selection = &'static str;
+
+const SELECTIONS: &[&str] = &["primary", "secondary"];
+
+pub fn is_selection(value: &str) -> js::Is<Selection> {
+    // SAFETY: this list includes exactly the two declared names.
+    unsafe { js::Is::assert(value, |input| SELECTIONS.contains(&input)) }
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function isSelection(value: string): value is Selection;");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).not.toContain("typeof value");
+  const {isSelection} = await import(join(dir, "lib.js"));
+  expect(["primary", "secondary", "other", null].map(isSelection)).toEqual([true, true, false, false]);
+  writeFileSync(join(dir, "consumer.ts"), `import {isSelection, type Selection} from "./lib.js";
+declare const value: "primary" | "secondary" | "other";
+if (isSelection(value)) {
+  const selection: Selection = value;
+} else {
+  const other: "other" = value;
+}
+`);
+  expect(typeChecked(dir, "consumer.ts")).toEqual([]);
+});

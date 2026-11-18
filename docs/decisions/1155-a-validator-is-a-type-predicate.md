@@ -101,3 +101,12 @@ export function isISODate(value?: unknown): value is ISODate;
   predicate-made-elsewhere, is-when-untested, predicate-declared-any and
   predicate-of-the-type-resolved.
 - The declaration model and its printer have `predicate`.
+
+## Amendment: a trusted predicate over a typed parameter
+
+`unsafe { js::Is::assert(value, test) }` declares `value is T` for
+a typed, unchanged parameter of the current function. The caller must
+prove the test recognizes exactly the values of `T` within the
+parameter type, so both truth branches narrow correctly. The compiler
+emits the supplied test. `Is::when` remains the checked form for an
+unknown input, and includes its own kind test.

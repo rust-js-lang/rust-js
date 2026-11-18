@@ -989,7 +989,7 @@ pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
 
 /// Whether a value JS gave is a `T`, to TypeScript a type predicate,
 /// `value is T`, as upstream's `isISODate(value: unknown): value is
-/// ISODate` is: JS's boolean. Made only by [`Is::when`], which tests that
+/// ISODate` is: JS's boolean. [`Is::when`] tests that
 /// the value is a `T`, as `typeof` or `instanceof` tells one, before its
 /// own test, so it never says so of what isn't (#1828, ADR 1155).
 ///
@@ -1018,6 +1018,19 @@ impl<T: ?Sized> Is<T> {
     {
         let _ = (value, test);
         unreachable!()
+    }
+
+    /// A predicate proved by the caller, on an already typed value.
+    ///
+    /// # Safety
+    /// The test must recognize exactly the values whose declared type is T,
+    /// among the values of V. TypeScript narrows both branches based on the result.
+    #[cfg_attr(rust_js, rust_js::link_name = "is assert")]
+    pub unsafe fn assert<V>(value: V, test: impl FnOnce(V) -> bool) -> Is<T> {
+        Is {
+            holds: test(value),
+            of: PhantomData,
+        }
     }
 
     /// Whether it holds: the boolean itself.
