@@ -236,17 +236,12 @@ function popLoud() {
 
 const Shown = {
   show(shown, item, TDisplay) {
-    const borrowMut = $borrowMut($fieldCell(shown, "lines"), true);
-    try {
-      borrowMut.value.push(`<${TDisplay.fmt(item)}>`);
-    } finally {
-      $unborrow(borrowMut);
-    }
+    shown.lines.push(`<${TDisplay.fmt(item)}>`);
     shown.last = item;
   },
 
   joined(shown) {
-    return $borrow($fieldCell(shown, "lines")).value.join(" ");
+    return shown.lines.join(" ");
   },
 };
 

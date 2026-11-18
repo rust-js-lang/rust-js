@@ -778,3 +778,65 @@ test("a field read of a tuple struct only a JS caller gives keeps its borrow che
   };
   expect(() => lib.Seen.note(seen, forged)).toThrow(/already/);
 });
+
+// A property read of a type parameter's value in the generic body that
+// holds a guard is of each instance its callers make (#2135), where every
+// one is seen (`instances::instances_of`): of tasks only the crate
+// constructs, plain; of a task a JS caller gives, or of a `pub` generic
+// function, whose callers aren't all seen, counted.
+const held = (task: string, schedule: string, visibility = "") => `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub trait Node {
+    #[cfg_attr(rust_js, rust_js::link_name = "get sortIndex")]
+    fn sort_index(&self) -> f64 {
+        unreachable!()
+    }
+}
+
+pub struct Task {
+    pub sort_index: f64,
+}
+
+// SAFETY: a struct of the program's is a JS object, never \`undefined\`.
+unsafe impl js::Defined for Task {}
+
+impl Node for Rc<Task> {}
+
+${visibility}fn first_index<T: Node>(queue: &RefCell<Vec<T>>) -> f64 {
+    let held = queue.borrow();
+    held[0].sort_index()
+}
+
+thread_local! {
+    static QUEUE: RefCell<Vec<Rc<Task>>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn schedule(${schedule}) -> f64 {
+    QUEUE.with_borrow_mut(|queue| queue.insert(0, ${task}));
+    QUEUE.with(|queue| first_index(queue))
+}
+`;
+
+test("a generic read, under its own body's guard, of tasks only the crate constructs is plain", async () => {
+  const { js, lib } = await compiled("runs-nothing-held-built", held("Rc::new(Task { sort_index })", "sort_index: f64"));
+  expect(js).not.toMatch(/\$borrow\(queue/);
+  expect([lib.schedule(3), lib.schedule(1)]).toEqual([3, 1]);
+});
+
+test("a generic read, under its own body's guard, of a task a JS caller gives keeps its borrow checked", async () => {
+  const { js, lib } = await compiled("runs-nothing-held-given", held("task", "task: Rc<Task>"));
+  expect(js).toMatch(/\$borrow\(queue/);
+  expect(lib.schedule({ sortIndex: 3 })).toBe(3);
+  const forged = {
+    get sortIndex() {
+      return lib.schedule({ sortIndex: 1 });
+    },
+  };
+  expect(() => lib.schedule(forged)).toThrow(/already/);
+});
+
+test("a generic read, under its own body's guard, of a pub function keeps its borrow checked", async () => {
+  const { js } = await compiled("runs-nothing-held-pub", held("Rc::new(Task { sort_index })", "sort_index: f64", "pub "));
+  expect(js).toMatch(/\$borrow\(queue/);
+});

@@ -143,8 +143,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a borrow held while a library's code runs is taken to run only what rust-js sees, so a consumer holds one of a cell the library borrows unchecked (ADR 0863)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "            Called::Any | Called::Unseen | Called::Read(_) => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether a cell's own call",
-    replace: "            Called::Any | Called::Read(_) => self.anything_asks(tcx, held),\n            Called::Unseen => false,\n        }\n    }\n\n    /// Whether a cell's own call",
+    find: "            Called::Any | Called::Unseen => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether a cell's own call",
+    replace: "            Called::Any => self.anything_asks(tcx, held),\n            Called::Unseen => false,\n        }\n    }\n\n    /// Whether a cell's own call",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
@@ -483,5 +483,22 @@ export const mutations: Mutation[] = [
     find: "        binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(given))\n",
     replace: "        let _ = given;\n        binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(None))\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "a JS caller's set's method is its own"],
+  },
+  {
+    name: "held-read-instances-unasked",
+    breaks: "a generic read in the body that holds a guard isn't settled by the instances its callers make, so a task only the crate constructs, read under the guard, is counted as a JS caller's (#2135)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            Some(made) => made\n                .into_iter()\n                .any(|ty| read_may_run(recognition, Some(&self.pointers), ty)),\n",
+    replace: "            Some(_) => true,\n",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "of tasks only the crate constructs is plain"],
+  },
+  {
+    name: "held-field-read-unsettled",
+    breaks: "a field read in the body that holds a guard, `format!`'s own tuple's of a type parameter, isn't settled by its instances, so `Shown<T>`'s `lines` is counted across it (#2135)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: ".is_some_and(|read| self.read_asks(recognition, owner, read, held))",
+    replace: ".is_some_and(|_| { let _ = owner; self.anything_asks(recognition.tcx, held) })",
+    tests: ["test/corpus.test.ts", "-t", "scope_struct_of_type_parameters"],
+    snapshots: true,
   },
 ];

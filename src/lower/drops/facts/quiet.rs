@@ -270,7 +270,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
             // A field's read or write a getter or setter of the program's
             // may answer (#2113).
             ExprKind::Field { lhs, .. } => {
-                (self.borrows).field_access_asks(&self.cx.recognition, (self.thir, lhs), self.cell)
+                (self.borrows).field_access_asks(&self.cx.recognition, (self.owner, self.thir, lhs), self.cell)
             }
             ExprKind::InlineAsm(_) | ExprKind::Yield { .. } | ExprKind::Become { .. } => true,
             _ => false,

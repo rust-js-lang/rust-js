@@ -15,6 +15,8 @@ Amended 2026-11-19 (#2116): what a function returns, and what passes a
 value on, at hand where what it's made of is.
 Amended 2026-11-19 (#2115): a tuple or unit struct's constructor
 builds it, as a literal does.
+Amended 2026-11-19 (#2135): a generic read in the body that holds
+the guard is of each instance its callers make.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 whose Consequence it narrows to ADR 0262's difference 60, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
@@ -211,6 +213,24 @@ byte for byte. The issue's guess, that what rust-js's runtime gives back
 (a `Debug` formatter's value) made such a struct one JS may give, wasn't
 the cause: nothing reaches `js_given` there.
 
+### A generic read where the guard is held (#2135)
+
+A property read of a type parameter's value is its caller's to settle
+(#2109): a body's summary keeps it, `reads`, till a call's arguments make
+it a type. Where the body that reads it holds the guard itself, nothing
+did: a field's read (`Quiet`'s, #2113) or a binding's getter
+(`Called::Read`) there ran anything. `CellBorrows::read_asks` asks it of
+each instance the body's callers make, `instances::instances_of` over
+`callers_of` (ADR 1115's one carrier, as `clones` asks it), with
+`Fact::Shared`: where every caller is seen, the read may run only where an
+instance's may (`read_may_run`); where one isn't, a `pub` function's, a
+JS caller's or a consumer's, any type. `scope_struct_of_type_parameters`'s
+`Shown<T>`, whose `show` holds `lines` across `format!("<{item}>")`, the
+read of `format_args!`'s own tuple `(&&T,)`, comes back to its form
+before #2111, byte for byte, its instances `&str` and `i32`. A summary's
+`reads` left of a generic holder's callee, still of its parameters after
+its arguments, stay as they were, any: no case measured asks more.
+
 ## Why
 
 ADR 0262's third case: where a getter calls back, the results change. A
@@ -333,3 +353,8 @@ Mutations `returns-unread`, `returns-each-return-unasked`,
 struct its constructor builds, and one its constructor given as a function
 builds, plain; of one only a JS caller gives, counted, and a getter
 re-entering it panics. Mutation `constructor-not-building`, caught.
+#2135's rows (test/builtins-runs-nothing.test.ts): a generic read under its
+own body's guard of tasks only the crate constructs, plain; of a task a JS
+caller gives, counted, its getter's re-entry panicking; of a `pub`
+function, counted. Mutations `held-read-instances-unasked` and
+`held-field-read-unsettled` (corpus snapshot), caught.

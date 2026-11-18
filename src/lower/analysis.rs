@@ -890,7 +890,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             foreign: &foreign,
         },
         (all_bodies, &clones, &thread_local_inits),
-        &|ty| dropping.runs(recognition.typing_env, ty),
+        (calls.names(), &|ty| dropping.runs(recognition.typing_env, ty)),
     );
     let wholes = Wholes::of_crate(tcx, all_bodies, &thread_local_inits, &|adt| {
         cell_borrows.pointers().js_may_make(adt)

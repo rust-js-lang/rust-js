@@ -115,7 +115,7 @@ export const mutations: Mutation[] = [
     name: "quiet-field-unread",
     breaks: "a field read of a JS caller's struct while a guard is held isn't counted, so its getter's re-entry passes where Rust panics (#2113)",
     file: "src/lower/drops/facts/quiet.rs",
-    find: "                (self.borrows).field_access_asks(&self.cx.recognition, (self.thir, lhs), self.cell)",
+    find: "                (self.borrows).field_access_asks(&self.cx.recognition, (self.owner, self.thir, lhs), self.cell)",
     replace: "                false",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a field read of a JS caller's value cast"],
   },

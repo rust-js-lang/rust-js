@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-19 (#2135): test/builtins-runs-nothing.test.ts gains three tests, of a generic read under its own body's guard.
+
 Changed on 2026-11-19 (#2115): test/builtins-runs-nothing.test.ts gains three tests, of a tuple struct its constructor builds.
 
 Changed on 2026-11-19 (#2116): test/at-hand-returns.test.ts, six tests, holds what a function returns, and what passes a value on, at hand where what it's made of is.

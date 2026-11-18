@@ -114,6 +114,10 @@ pub(in crate::lower) struct CellBorrows<'tcx> {
     /// What of the crate is a value a builtin made, whose property reads
     /// meet no getter of the program's (#2106).
     at_hand: AtHand,
+    /// Each naming of each function the crate's bodies give its type
+    /// parameters' values (`instances::callers_of`, ADR 1115): what a type
+    /// a generic body reads may be, each instance its callers make (#2135).
+    callers: crate::lower::instances::Callers<'tcx>,
 }
 
 /// Each of the crate's ADTs' trait impls: the trait, and the impl.
@@ -166,7 +170,7 @@ impl<'tcx> CellBorrows<'tcx> {
         tcx: TyCtxt<'tcx>,
         recognition: &Recognition<'_, 'tcx>,
         (bodies, clones, inits): (&[&Body<'tcx>], &IndexSet<(DefId, u32)>, &ThreadLocalInits),
-        drops: &dyn Fn(Ty<'tcx>) -> bool,
+        (names, drops): (&crate::lower::call_graph::Names<'tcx>, &dyn Fn(Ty<'tcx>) -> bool),
     ) -> Self {
         let mut impls: Impls = IndexMap::default();
         for (trait_id, imp) in crate::lower::traits::declared_impls(tcx) {
@@ -180,6 +184,7 @@ impl<'tcx> CellBorrows<'tcx> {
             impls,
             pointers,
             clones: clones.clone(),
+            callers: crate::lower::instances::callers_of(tcx, names, bodies),
             ..CellBorrows::default()
         };
         // Which cells each borrow can be of, which each body's borrows are
@@ -459,7 +464,8 @@ impl<'tcx> CellBorrows<'tcx> {
                     || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
                     || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(recognition, body, args, held, drops))
             }
-            Called::Any | Called::Unseen | Called::Read(_) => self.anything_asks(tcx, held),
+            Called::Read(read) => self.read_asks(recognition, owner, read, held),
+            Called::Any | Called::Unseen => self.anything_asks(tcx, held),
         }
     }
 
@@ -626,7 +632,7 @@ impl<'tcx> CellBorrows<'tcx> {
     pub(in crate::lower) fn field_access_asks(
         &self,
         recognition: &Recognition<'_, 'tcx>,
-        (thir, lhs): (&Thir<'tcx>, ExprId),
+        (owner, thir, lhs): (DefId, &Thir<'tcx>, ExprId),
         held: Borrow<'tcx>,
     ) -> bool {
         let given = CallArgs {
@@ -635,7 +641,35 @@ impl<'tcx> CellBorrows<'tcx> {
             at_hand: &self.at_hand,
             pointers: Some(&self.pointers),
         };
-        field_access_may_run(recognition, given, lhs).is_some() && self.anything_asks(recognition.tcx, held)
+        (field_access_may_run(recognition, given, lhs))
+            .is_some_and(|read| self.read_asks(recognition, owner, read, held))
+    }
+
+    /// Whether a property read of a value of `read`, in `owner`'s body, may
+    /// ask of `held`: a getter of the program's may answer it
+    /// (`read_may_run`). Of a type naming `owner`'s type parameters, of each
+    /// instance its callers make where every one is seen
+    /// (`instances::instances_of`, as `clones` asks it), as a summary's
+    /// `reads` are of each caller's (#2109, #2135); else any type.
+    fn read_asks(&self, recognition: &Recognition<'_, 'tcx>, owner: DefId, read: Ty<'tcx>, held: Borrow<'tcx>) -> bool {
+        let tcx = recognition.tcx;
+        let instances = (crate::lower::generic_facts::may_be_any_type(read))
+            .then(|| {
+                crate::lower::instances::instances_of(
+                    tcx,
+                    (&self.callers, crate::lower::instances::Fact::Shared),
+                    read,
+                    tcx.typeck_root_def_id(owner),
+                )
+            })
+            .flatten();
+        let may_run = match instances {
+            Some(made) => made
+                .into_iter()
+                .any(|ty| read_may_run(recognition, Some(&self.pointers), ty)),
+            None => true,
+        };
+        may_run && self.anything_asks(tcx, held)
     }
 
     /// What of the crate is a value at hand, a builtin's (#2106, #2111).
