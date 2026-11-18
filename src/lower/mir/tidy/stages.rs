@@ -430,7 +430,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A closure read in place, called where it's made, of what reads
             // the same: its value of what it's given, `r._0.data`, as a call
             // of one made in place is (ADR 0449).
-            pass("applied arrows", |b, _| js::each_expr_mut(b, &mut applied_arrows)),
+            pass("applied arrows", |b, _| applied_arrows(b)),
             // An element's place checked, then set: the place the check gives.
             pass("checked sets", |b, _| js::statement_lists(b, &mut checked_sets)),
             // Two handles compared, each read in place now, of an item and an

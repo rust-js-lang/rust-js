@@ -162,7 +162,13 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // A temporary MIR made, or an element made ahead of a branch: what the
     // program didn't name.
     let element = facts.captured.contains(name);
-    if !is_temporary(name) && !element && !facts.fixed.contains(name) {
+    // Or a closure lowering held for a role, `const then = (e) => ..;`,
+    // not the program's: moved only into a call it's applied in place in,
+    // where its name goes with it (below; ADR 0705, amended). Not one that
+    // calls itself, `const make = (v) => $cloning(.., () => make(..))`,
+    // whose name its own body reads.
+    let role_arrow = matches!(value.kind, ExprKind::Arrow(..)) && !name.is_the_programs() && !value.mentions_name(name);
+    if !is_temporary(name) && !element && !facts.fixed.contains(name) && !role_arrow {
         return None;
     }
     // What may run before it's read: what does nothing, where it does
@@ -230,14 +236,18 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // where no guard's `try` is (ADR 0705).
     if let ExprKind::Arrow(..) = value.kind {
         let mut left_called = false;
+        let mut applied = false;
         expr.each(&mut |e| {
             if let ExprKind::Call(callee, args) = &e.kind
                 && matches!(&callee.kind, ExprKind::Var(v) if v == name)
             {
-                left_called |= applied_in_place(value, args).is_none();
+                let in_place = applied_in_place(value, args, facts.changing).is_some();
+                left_called |= !in_place;
+                applied |= in_place;
             }
         });
-        if left_called {
+        // A role's only where it's applied in place, its name gone with it.
+        if left_called || (role_arrow && !is_temporary(name) && !applied) {
             return None;
         }
     }

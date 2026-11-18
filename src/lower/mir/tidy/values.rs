@@ -175,24 +175,29 @@ pub(super) fn pairs_index(f: &Expr) -> bool {
 }
 
 /// `((e) => e.data)(r._0)`, an arrow called where it's made: what
-/// `calls::apply` makes of it, its value, where it can.
-pub(super) fn applied_arrows(e: &mut Expr) {
-    if let ExprKind::Call(callee, args) = &e.kind
-        && matches!(callee.kind, ExprKind::Arrow(..))
-        && let Some(applied) = applied_in_place(callee, args)
-    {
-        *e = Expr {
-            span: e.span,
-            ..applied
-        };
-    }
+/// `calls::applied` makes of it, its value, where it can, of what `body`
+/// changes as it is.
+pub(super) fn applied_arrows(body: &mut Vec<Stmt>) {
+    let changing = super::changing(body);
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Call(callee, args) = &e.kind
+            && matches!(callee.kind, ExprKind::Arrow(..))
+            && let Some(applied) = applied_in_place(callee, args, &changing)
+        {
+            *e = Expr {
+                span: e.span,
+                ..applied
+            };
+        }
+    });
 }
 
-/// `f`, an arrow, called with `args` where it's made, as `calls::apply`
-/// makes a value of it: none where it's left an arrow called, `((l) => {
-/// .. })(take)`, which no person writes.
-pub(super) fn applied_in_place(f: &Expr, args: &[Expr]) -> Option<Expr> {
-    let applied = crate::lower::calls::apply(f.clone(), args.to_vec());
+/// `f`, an arrow, called with `args` where it's made, as `calls::applied`
+/// makes a value of it, asked with what nothing in the body changes, not
+/// `changing`: none where it's left an arrow called, `((l) => { ..
+/// })(take)`, which no person writes.
+pub(super) fn applied_in_place(f: &Expr, args: &[Expr], changing: &IndexSet<js::Name>) -> Option<Expr> {
+    let applied = crate::lower::calls::applied(f.clone(), args.to_vec(), &|v| !changing.contains(v));
     let called = matches!(&applied.kind, ExprKind::Call(g, _) if matches!(g.kind, ExprKind::Arrow(..)));
     (!called).then_some(applied)
 }

@@ -108,7 +108,8 @@ pub fn joined(path: Vec<u32>, last: u32) -> Vec<u32> {
 pub fn bumped(ok: bool, items: Vec<u32>) -> Option<Vec<u32>> {
     ok.then(|| items.iter().map(|n| n + 1).collect())
 }
-// One that reads the value it's given is called: `x` is the argument.
+// One whose callback reads the value it's given, put in place: its
+// callback reads `by`, which nothing sets, whenever it runs (ADR 0705).
 pub fn shifted(by: Option<u32>, items: Vec<u32>) -> Option<Vec<u32>> {
     by.map(|x| items.iter().map(|n| n + x).collect())
 }

@@ -366,8 +366,22 @@ pub(super) fn spread_rest(args: &mut Vec<Expr>) {
 
 /// `f(args)`, with a closure that only returns put in place, its parameters
 /// the arguments: `((s) => s.value)(START)` is `START.value`. Only for
-/// arguments that read the same however often they're read.
+/// arguments that read the same however often they're read; of what
+/// lowering knows, which can't tell what changes later, not into a
+/// closure inside (`applied`).
 pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
+    applied(f, args, &|_| false)
+}
+
+/// `apply`'s one rule, asked with what's known never to change,
+/// `unchanging`: tidy's, of the body as it is (`changing`). Where each
+/// argument is a constant or a variable `unchanging` says nothing sets, a
+/// closure inside that reads a parameter, `(e) => $position(DAYS, (d) =>
+/// d === e)`, is put in place too, `$position(DAYS, (d) => d === e)`:
+/// whenever it runs, it reads the value the parameter was given (the
+/// vercel-ui SDK's port, G6; ADR 0705, amended). Else not, as one that
+/// runs later would read what the variable holds then.
+pub(super) fn applied(f: Expr, args: Vec<Expr>, unchanging: &dyn Fn(&js::Name) -> bool) -> Expr {
     if let js::ExprKind::Arrow(params, body) = &f.kind
         && let [
             js::Stmt {
@@ -375,7 +389,7 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
                 ..
             },
         ] = body.as_slice()
-        && let Some(inlined) = inlined(params, &args, value)
+        && let Some(inlined) = inlined(params, &args, value, unchanging)
     {
         return inlined;
     }
@@ -414,8 +428,15 @@ pub(super) fn pattern_parts<'p>(pattern: &'p js::Pattern, arg: &Expr) -> Option<
 
 /// `value`, of a closure of `params`, with each the part of `args` it
 /// binds, if each reads the same however often it's read.
-fn inlined(params: &[js::Pattern], args: &[Expr], value: &Expr) -> Option<Expr> {
+fn inlined(
+    params: &[js::Pattern],
+    args: &[Expr],
+    value: &Expr,
+    unchanging: &dyn Fn(&js::Name) -> bool,
+) -> Option<Expr> {
     if params.len() <= args.len() && args.iter().all(Expr::reads_same) {
+        let fixed = |arg: &Expr| arg.is_constant() || matches!(&arg.kind, js::ExprKind::Var(v) if unchanging(v));
+        let into_callbacks = args.iter().all(fixed);
         // Each variable a parameter binds, and the part of its argument it
         // is (`pattern_parts`).
         let parts: Option<Vec<(&js::Name, Expr)>> = (params.iter().zip(args))
@@ -423,9 +444,11 @@ fn inlined(params: &[js::Pattern], args: &[Expr], value: &Expr) -> Option<Expr> 
             .collect::<Option<Vec<_>>>()
             .map(|parts| parts.into_iter().flatten().collect());
         return parts.and_then(|parts| {
-            value.substitute_names(&|name: &js::Name| {
-                parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone())
-            })
+            let with = |name: &js::Name| parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone());
+            match into_callbacks {
+                true => value.substitute_in_callbacks(&with),
+                false => value.substitute_names(&with),
+            }
         });
     }
     // A thread-local made where it's first used, `x()` (ADR 0037, amended),

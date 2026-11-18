@@ -333,4 +333,21 @@ export const mutations: Mutation[] = [
     replace: "                    parts.extend(match item {\n                        js::Pattern::Name(n) => Some((n, Expr::index(arg.clone(), Expr::int(i as i128)))),\n                        _ => None,\n                    });\n",
     tests: ["test/corpus.test.ts", "-t", "^option_map_of_a_nested_pattern.rs$"],
   },
+  {
+    name: "applied-never-into-callbacks",
+    breaks: "a closure whose callback reads its parameter isn't put in place where what it's given never changes, so it's held, `const then = (e) => $position(DAYS, (day) => day === e); extension != null ? then(extension) : undefined`, where the vercel-ui SDK's port reads `$position(DAYS, (day) => day === extension)` (G6)",
+    file: "src/lower/calls.rs",
+    find: "        let into_callbacks = args.iter().all(fixed);\n",
+    replace: "        let into_callbacks = false && args.iter().all(fixed);\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "applied-into-callbacks-of-what-changes",
+    breaks: "a closure is put in place into a callback that runs later where what it's given is a variable set after, `given.map(|n| move |k| n + k)` then `given = Some(100)`: the callback reads 100, 101 where Rust gives 6 (G6)",
+    file: "src/lower/calls.rs",
+    find: "js::ExprKind::Var(v) if unchanging(v));\n",
+    replace: "js::ExprKind::Var(_));\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],
+  },
 ];

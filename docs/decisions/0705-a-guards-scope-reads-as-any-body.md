@@ -410,3 +410,46 @@ kept. Corpus case `raw_pointer_to_a_local_with_a_destructor_sees_its_writes`,
 failing before; mutation `guard-used-whole-writes-dropped`, caught. Found
 by the metamorphic net's `loud` rewrite of `raw_pointers.rs`, which gives
 `Node` a `Drop`.
+
+## Amendment (2026-11-18): a closure applied into its callbacks, of what never changes; one rule (the vercel-ui SDK's port, G6)
+
+`calls::apply` put a closure that only returns in place of its call,
+but not where a closure inside it reads a parameter: `substitute_names`
+gives up there, since a callback that runs later would read the argument's
+variable as it is then. So the SDK's `extension.and_then(|e|
+DAYS.iter().position(|&day| day == e))` printed `const then = (e) =>
+$position(DAYS, (day) => day === e); extension != null ? then(extension) :
+undefined`, where a person writes `$position(DAYS, (day) => day ===
+extension)`.
+
+Now `calls::applied` is the one rule, asked with what's known never to
+change: where each argument is a constant or a variable nothing sets, a
+callback inside reads the parameter's value whenever it runs, so the
+closure goes in place into it too (`substitute_in_callbacks`). Lowering,
+which can't tell what changes later, asks `apply`, which knows nothing
+unchanging, as before; tidy asks with the body's `changing` (`applied_in_place`,
+`applied_arrows`). And a closure lowering held for a role, `const then`,
+not the program's, is moved into the call that applies it in place, its
+name going with it, as a temporary is; not one read as a value, nor one
+that calls itself, `const make = (v) => $cloning(.., () => make(..))`.
+Preparation sets no variable tidy saw unchanged after a read: what it
+assigns anew is a `let` split from its first value before any read
+(`catches`, `initializers`) or a loop's own `let` (`do_whiles`).
+
+Of a callback whose own parameter has the argument's word, `|e|
+DAYS.iter().position(|&extension| extension == e)` of an `extension`, the
+speller keeps the two apart by their ids, `(extension$1) => extension$1 ===
+extension`, which reads what Rust does. Accepted as it is (the lead, 2026-11-18):
+it's correct and rare, only where Rust shadows inside the callback, and
+holding it would need a second decider, in preparation, where the words
+are known.
+
+Corpus case `closure_applied_into_its_callbacks`, against native: the
+SDK's shape; a closure whose callback runs after its argument's variable
+is set again, held still; and the shadowing callback. The example
+`combinators`' `shifted` moves, `by != null ? items.map((n) => (n + by) >>>
+0) : undefined`; no corpus snapshot. Mutations `applied-never-into-callbacks`,
+`applied-into-callbacks-of-what-changes`, `applied-arrows-ask-nothing-changes`,
+`role-arrows-held`, `role-arrow-calling-itself-moved` and
+`role-arrow-moved-unapplied`, caught.
+

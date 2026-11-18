@@ -146,10 +146,10 @@ export function joined(path, last) {
 export function bumped(ok, items) {
   return ok ? items.map((n) => (n + 1) >>> 0) : undefined;
 }
-// One that reads the value it's given is called: `x` is the argument.
+// One whose callback reads the value it's given, put in place: its
+// callback reads `by`, which nothing sets, whenever it runs (ADR 0705).
 export function shifted(by, items) {
-  const map = (x) => items.map((n) => (n + x) >>> 0);
-  return by != null ? map(by) : undefined;
+  return by != null ? items.map((n) => (n + by) >>> 0) : undefined;
 }
 // A field of what's there, or nothing: `named?.name`, as a person writes it.
 export function nameOf(named) {

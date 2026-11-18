@@ -18,8 +18,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what holds a place MIR's lowering fixed stays `const item = $unwrap(resource.state); return (item.loading & 4) === 0;`, an `&&` split around it, not read where it's read once (rd202)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name) {\n",
-    replace: "    if !is_temporary(name) && !element {\n",
+    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name) && !role_arrow {\n",
+    replace: "    if !is_temporary(name) && !element && !role_arrow {\n",
     tests: ["test/corpus.test.ts", "-t", "^(cell_reached_through_a_call|unwrapped_cell_in_a_chain).rs$"],
     snapshots: true,
   },
@@ -116,8 +116,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name) {\n",
-    replace: "    if !is_temporary(name) && !facts.fixed.contains(name) {\n",
+    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name) && !role_arrow {\n",
+    replace: "    if !is_temporary(name) && !facts.fixed.contains(name) && !role_arrow {\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure of statements is moved into its call, `x ? ((l) => { .. })(x) : undefined`, not called by its name",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "                left_called |= applied_in_place(value, args).is_none();\n",
+    find: "                left_called |= !in_place;\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -661,5 +661,31 @@ export const mutations: Mutation[] = [
     find: "        | ExprKind::OptionalCall(a, _) => leads(a, name, guard, passes).or(Some(false)),\n",
     replace: "        | ExprKind::OptionalCall(a, _) => leads(a, name, guard, passes).or(Some(true)),\n",
     unitTests: "lower::mir::tidy::moves::tests::optional_chains_lead_by_their_object",
+  },
+  {
+    name: "role-arrows-held",
+    breaks: "a closure lowering held for a role, `const then = (e) => ..;`, is never moved into the call that applies it in place, so it stays held where the vercel-ui SDK's port reads it in place (G6)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "    let role_arrow = matches!(value.kind, ExprKind::Arrow(..)) && !name.is_the_programs() && !value.mentions_name(name);\n",
+    replace: "    let role_arrow = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "role-arrow-calling-itself-moved",
+    breaks: "a role's closure that calls itself, `const make = (v) => $cloning(.., () => make(..))`, is moved into its one call outside, which leaves its own read of `make` declared nowhere (G6)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: " && !name.is_the_programs() && !value.mentions_name(name);\n",
+    replace: " && !name.is_the_programs();\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_once_cloned\\.rs$"],
+  },
+  {
+    name: "role-arrow-moved-unapplied",
+    breaks: "a role's closure is moved where it isn't applied in place, read as a value, so its name goes where the closure is kept whole (G6)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        if left_called || (role_arrow && !is_temporary(name) && !applied) {\n",
+    replace: "        if left_called {\n",
+    tests: ["test/corpus.test.ts"],
+    snapshots: true,
   },
 ];

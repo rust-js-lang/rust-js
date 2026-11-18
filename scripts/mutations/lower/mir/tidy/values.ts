@@ -119,8 +119,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure read in place is called where it's made, `((e) => e.data)(r._0)`, not its value",
     file: "src/lower/mir/tidy/values.rs",
-    find: "        *e = Expr {\n            span: e.span,\n            ..applied\n        };\n",
-    replace: "        let _ = applied;\n",
+    find: "            *e = Expr {\n                span: e.span,\n                ..applied\n            };\n",
+    replace: "            let _ = applied;\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -240,5 +240,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^take_of_own_nth_where_known_back.rs$"],
     snapshots: true,
+  },
+  {
+    name: "applied-arrows-ask-nothing-changes",
+    breaks: "tidy puts a closure in place into its callbacks of a variable the body sets after, as if nothing changed it, so a callback that runs later reads what it's set to, 101 where Rust gives 6 (G6)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "&|v| !changing.contains(v));\n",
+    replace: "&|_| true);\n",
+    tests: ["test/corpus.test.ts", "-t", "^closure_applied_into_its_callbacks\\.rs$"],
   },
 ];
