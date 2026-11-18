@@ -97,6 +97,11 @@ impl Reason for &'static str {
     type Event = &'static Event;
 }
 
+#[cfg_attr(rust_js, rust_js::types = "ChangeReason")]
+pub trait SharedReason: Reason {}
+
+impl SharedReason for EscapeKey {}
+
 /// What every change callback receives, one member per reason.
 #[cfg_attr(rust_js, rust_js::distributive)]
 pub struct ChangeDetails<R: Reason = &'static str> {

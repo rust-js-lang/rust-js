@@ -100,7 +100,7 @@ pub(in crate::lower) enum JsForm {
     /// `is when`: whether a value is its type argument's, as JS tells one,
     /// and a test holds of it, `typeof value === "string" && test(value)`,
     /// `js::Is::when`'s (#1828).
-    IsWhen,
+    IsWhen { trusted: bool },
     /// `null`: JS's `null`, an `Option` of any type's `None` where it's
     /// written, `js::null()`'s (ADR 0935, amended).
     Null,
@@ -190,7 +190,8 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "throw" if !of_self(tcx, def_id) => return JsForm::Throw,
         "class" => return JsForm::Class,
         "downcast" => return JsForm::Downcast,
-        "is when" => return JsForm::IsWhen,
+        "is when" => return JsForm::IsWhen { trusted: false },
+        "is assert" => return JsForm::IsWhen { trusted: true },
         "?.()" => return JsForm::OptionalCall { unchecked: false },
         "?.() unchecked" => return JsForm::OptionalCall { unchecked: true },
         "null" => return JsForm::Null,

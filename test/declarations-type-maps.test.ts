@@ -239,3 +239,23 @@ export const wrong: true = no();
   writeFileSync(join(dir, "run.mjs"), `import { cancels, yes } from "./lib.js";\nconsole.log(cancels(yes()), cancels(false));\n`);
   expect(run(["node", join(dir, "run.mjs")])).toBe("change commit\n");
 });
+
+test("a type map preserves written event aliases and a record's reason parameter", () => {
+  const dir = fixture("declaration-type-map-record");
+  const source = program.replace("impl Reason for EscapeKey {", `#[cfg_attr(rust_js, rust_js::types = "T | undefined")]
+pub type OptionalEvent<T> = Option<T>;
+
+#[cfg_attr(rust_js, rust_js::types = "\\"escape-key\\" | \\"trigger-press\\"")]
+pub type DefaultReason = &'static str;
+
+pub struct ChangeOptions<R: Reason = DefaultReason> {
+    pub reason: Option<R>,
+}
+
+impl Reason for EscapeKey {`).replace("type Event = &'static KeyboardEvent;", "type Event = OptionalEvent<&'static KeyboardEvent>;");
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('  "escape-key": OptionalEvent<KeyboardEvent>;');
+  expect(declarations).toContain("export interface ChangeOptions<R extends string = DefaultReason> {\n    reason?: R | undefined;");
+});

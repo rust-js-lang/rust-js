@@ -7,6 +7,30 @@ const tests = ["test/declarations-type-maps.test.ts", "-t", "its keys and its lo
 
 export const mutations: Mutation[] = [
   {
+    name: "type-map-associated-alias-erased",
+    breaks: "an event alias that excludes null is normalized to its underlying Option",
+    file: "src/lower/declarations/type_maps.rs",
+    find: "        Some(self.as_written(written, |out| out.ts(ty)))",
+    replace: "        Some(self.ts(ty))",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "written event aliases"],
+  },
+  {
+    name: "type-map-record-key-erased",
+    breaks: "a record's reason field is widened to string and the record loses its generic parameter",
+    file: "src/lower/declarations/bounds.rs",
+    find: " || fields > 0 && is_type_map(tcx, bound)",
+    replace: "",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "written event aliases"],
+  },
+  {
+    name: "generic-type-default-resolved",
+    breaks: "a written default type alias is expanded to its underlying Rust type",
+    file: "src/lower/declarations.rs",
+    find: "                    declared[\"default\"] = self.as_written(written, |out| out.ts(default));",
+    replace: "                    declared[\"default\"] = self.ts(default);",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "written event aliases"],
+  },
+  {
     name: "type-map-lookup-of-others-never",
     breaks: "a type map's lookup of a string no impl names is `never`, where the trait's `&'static str` impl gives it `Event`, upstream's `EventOf<\"anything\">`",
     file,

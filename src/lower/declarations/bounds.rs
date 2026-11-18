@@ -12,7 +12,7 @@ use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
-use super::written::written_types;
+use super::{type_maps::is_type_map, written::written_types};
 use crate::lower::generic_facts::{type_parameter_count, type_parameter_of};
 
 /// Each of `def_id`'s type parameters a binding trait that says what it
@@ -31,7 +31,7 @@ fn bounded<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(u32, ty::TraitRef<'tc
 /// identity the signature shows.
 pub(super) fn erasures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(u32, ty::TraitRef<'tcx>)> {
     (bounded(tcx, def_id).into_iter())
-        .filter(|&(index, _)| !identity_shows(tcx, def_id, index))
+        .filter(|&(index, bound)| !identity_shows(tcx, def_id, index, bound.def_id))
         .collect()
 }
 
@@ -39,14 +39,14 @@ pub(super) fn erasures<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(u32, ty::
 /// `T extends Element`, whose identity the signature shows.
 pub(super) fn constraints<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Vec<(u32, ty::TraitRef<'tcx>)> {
     (bounded(tcx, def_id).into_iter())
-        .filter(|&(index, _)| identity_shows(tcx, def_id, index))
+        .filter(|&(index, bound)| identity_shows(tcx, def_id, index, bound.def_id))
         .collect()
 }
 
 /// Whether type parameter `index`'s identity shows in `def_id`'s
 /// signature: in a function's result, or written more than once among its
 /// parameters, a struct's fields, or another parameter's bound.
-fn identity_shows(tcx: TyCtxt<'_>, def_id: DefId, index: u32) -> bool {
+fn identity_shows(tcx: TyCtxt<'_>, def_id: DefId, index: u32, bound: DefId) -> bool {
     let count = |ty: Ty<'_>| type_parameter_count(ty, index);
     // In what another of its parameters is bound by, `F: Fn(&T) -> R`'s
     // `&T`, which is declared with it, `(value: T) => R`: the bounds a
@@ -76,7 +76,7 @@ fn identity_shows(tcx: TyCtxt<'_>, def_id: DefId, index: u32) -> bool {
             let fields: usize = (tcx.adt_def(def_id).all_fields())
                 .map(|field| count(tcx.type_of(field.did).instantiate_identity().skip_normalization()))
                 .sum();
-            fields + in_bounds > 1
+            fields + in_bounds > 1 || fields > 0 && is_type_map(tcx, bound)
         }
         _ => false,
     }

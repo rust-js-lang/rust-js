@@ -10,6 +10,7 @@
 //! Reason extends ChangeReason ? ReasonVocabulary[Reason] : Event`. The
 //! impls are the one source of all three.
 
+use rustc_hir as hir;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
@@ -57,12 +58,16 @@ fn names(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<Result<Names, Span>> {
     }
 }
 
+/// Whether this trait owns a declaration type map.
+pub(in crate::lower) fn is_type_map(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
+    matches!(names(tcx, trait_id), Some(Ok(_)))
+}
+
 /// Whether `assoc` is the associated type of a `#[rust_js::type_map]`
 /// trait, whose projection is its lookup's, or its map's indexed by `Self`.
 pub(super) fn of_a_type_map(tcx: TyCtxt<'_>, assoc: DefId) -> bool {
-    tcx.opt_parent(assoc).is_some_and(|parent| {
-        tcx.def_kind(parent) == rustc_hir::def::DefKind::Trait && matches!(names(tcx, parent), Some(Ok(_)))
-    })
+    tcx.opt_parent(assoc)
+        .is_some_and(|parent| tcx.def_kind(parent) == rustc_hir::def::DefKind::Trait && is_type_map(tcx, parent))
 }
 
 impl<'tcx> Declarations<'_, 'tcx> {
@@ -180,6 +185,16 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .type_of(item.def_id)
             .instantiate_identity()
             .skip_normalization();
-        Some(self.ts(ty))
+        let written = item
+            .def_id
+            .as_local()
+            .and_then(|local| match self.tcx.hir_node_by_def_id(local) {
+                hir::Node::ImplItem(item) => match item.kind {
+                    hir::ImplItemKind::Type(ty) => Some(ty),
+                    _ => None,
+                },
+                _ => None,
+            });
+        Some(self.as_written(written, |out| out.ts(ty)))
     }
 }

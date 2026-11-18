@@ -212,3 +212,12 @@ decision, against a flattened `&'static G`).
   distributive-members-undocumented retargeted.
 - Guide: interop/export-to-javascript.md, TypeScript declarations;
   interop/types.md, `js::object::spread`.
+
+## Amendment: type maps describe declarations without rooting dictionaries
+
+A declaration type map and a typed trait that contributes no items of its
+own emit implementation dictionaries only when the compiler's reachability
+graph needs them (#2090). An erased value or generic call that reads a
+dictionary still reaches it. A type map member reads its associated type as
+written, and a record keeps a type-map key as a type parameter even when only
+one field uses it. A written generic default likewise keeps its alias.

@@ -3651,6 +3651,11 @@ export function isValid(name) {
 
 ### A validator TypeScript narrows by: `js::Is`
 
+For a typed parameter and a test that covers exactly the target type, use
+`unsafe { js::Is::assert(value, test) }`. The caller proves the test is
+complete in both directions. The declaration names the unchanged parameter
+and JavaScript runs the test as written.
+
 A function that tells whether a value JS gave is a `T` returns a
 `js::Is<T>`, made by `js::Is::when(value, test)`: JS's boolean, declared
 TypeScript's type predicate, `value is T`

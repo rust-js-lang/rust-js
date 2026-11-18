@@ -9,7 +9,7 @@ use rustc_middle::mir::{Body, Local, Operand, Rvalue, StatementKind, TerminatorK
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 
-use crate::lower::recognition::{is_js_is, is_js_is_when};
+use crate::lower::recognition::{is_js_is, trusted_js_predicate};
 
 /// Whether `ty` is a `js::Is<T>`, and its `T`.
 pub(in crate::lower) fn predicate_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
@@ -25,6 +25,8 @@ const REFUSED: &str = "rust-js: `js::Is::when` guards a parameter of the functio
     one TypeScript types `unknown`, `value: Option<&js::Unknown>`: TypeScript narrows a predicate's parameter both ways, \
     and of another type its false branch would say what isn't so. Of any other value, return a `bool`, declared `boolean`; \
     a predicate that narrows both ways is #1828's to reopen";
+
+const TRUSTED_REFUSED: &str = "rust-js: `js::Is::assert` guards an unchanged parameter of the function that gives it; of another value, return a `bool`, declared `boolean`";
 
 /// The parameter, by its index among `body`'s, each `js::Is::when` of it
 /// guards; `None` where it calls none; `Err` where one guards no parameter
@@ -45,19 +47,20 @@ pub(in crate::lower) fn guarded<'tcx>(
         let Some((did, _)) = func.const_fn_def() else {
             continue;
         };
-        if !is_js_is_when(tcx, did) {
+        let Some(trusted) = trusted_js_predicate(tcx, did) else {
             continue;
-        }
+        };
+        let refused = if trusted { TRUSTED_REFUSED } else { REFUSED };
         let param = args.first().and_then(|arg| passed(body, &arg.node)).filter(|&local| {
             body.local_decls[local].mutability == rustc_ast::Mutability::Not
-                && any_value(tcx, body.local_decls[local].ty)
+                && (trusted || any_value(tcx, body.local_decls[local].ty))
         });
         let Some(param) = param else {
-            return Err((*fn_span, REFUSED));
+            return Err((*fn_span, refused));
         };
         let index = param.as_usize() - 1;
         if guarded.is_some_and(|given| given != index) {
-            return Err((*fn_span, REFUSED));
+            return Err((*fn_span, refused));
         }
         guarded = Some(index);
     }

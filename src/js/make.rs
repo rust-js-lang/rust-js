@@ -74,6 +74,11 @@ impl Expr {
         self
     }
 
+    /// A null explicitly supplied by a fallback stays an argument.
+    pub fn has_null_fallback(&self) -> bool {
+        matches!(&self.kind, ExprKind::Binary(Op::Coalesce, _, fallback) if matches!(fallback.kind, ExprKind::Null))
+    }
+
     /// This, which lowering knows is never `undefined`, though maybe
     /// `null` (`Known::Defined`); one it knows otherwise of, a getter's
     /// read say, as it is. What it knows of the `None` it can be, of an
