@@ -25,7 +25,7 @@ impl Pattern {
 
     /// The variables it binds, their words.
     pub fn names(&self) -> Vec<&str> {
-        self.bound().into_iter().map(Name::word).collect()
+        self.bound().into_iter().map(Name::word).collect() // word: what it binds, as JS spells it
     }
 
     /// The variables it binds.

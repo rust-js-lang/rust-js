@@ -737,7 +737,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
             ] = body.as_slice()
             && value.reads_same()
-            && let Some(inlined) = result.substitute_in_callbacks(&|n: &str| name.is(n).then(|| value.clone()))
+            && let Some(inlined) = result.substitute_in_callbacks(&|n: &js::Name| (n == name).then(|| value.clone()))
         {
             return inlined;
         }

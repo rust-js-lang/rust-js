@@ -1026,7 +1026,7 @@ pub(super) fn declarations(body: &mut Vec<Stmt>) {
 /// The names `stmts` declare, a destructuring's too, not in blocks inside
 /// them, their words (`declared_names`).
 pub(super) fn declared(stmts: &[Stmt]) -> impl Iterator<Item = &str> {
-    declared_names(stmts).map(Name::word)
+    declared_names(stmts).map(Name::word) // word: two declarations clash by spelling, as JS's `let`s do
 }
 
 /// The names `stmts` declare, a destructuring's too, not in blocks inside

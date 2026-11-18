@@ -544,7 +544,7 @@ fn in_place(
         if held && let Some((_, arg)) = parameter {
             arg.visit_names(&mut |name| _ = named.insert(name.clone()));
         }
-        let mut names: IndexSet<String> = given.into_iter().cloned().map(Name::into_word).collect();
+        let mut names: IndexSet<String> = given.into_iter().cloned().map(Name::into_word).collect(); // word: a naming table's
         names.extend(named.iter().map(|name| name.word().to_owned())); // word: a naming table's, a holder's
         names
     };

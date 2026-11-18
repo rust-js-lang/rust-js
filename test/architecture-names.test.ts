@@ -205,25 +205,35 @@ test("a name's kinship and form are never asked by parsing its word outside its 
 
 // The spelling step (ADR 1150): a name's word is read where names are
 // spelled, preparation and printing, and asked of a `Name` everywhere
-// else. Each file's reads of a word outside them are at most
-// `test/word-reads.txt`'s, a ratchet that only falls, none in a file it
-// doesn't list.
-test("a name's word is read outside preparation and printing only as the ratchet allows", () => {
-  const allowed: Record<string, number> = Object.fromEntries(
-    read("test/word-reads.txt").split("\n").filter((line) => line && !line.startsWith("#"))
-      .map((line) => line.split("\t")).map(([file, n]) => [file, Number(n)]),
-  );
+// else. Outside them a read of one, `.word()`, `.into_word()` or a path to
+// either, `.map(Name::word)`, is one of two: a name JS sees as it's
+// written, on a line that says why, `// word: <reason>`, the one form an
+// exemption has; or a diagnostic's text, inside a `format!` or a
+// validation `Problem` it makes, which names what it refuses. No other.
+test("a name's word is read outside preparation and printing only where JS sees it or a diagnostic says it", () => {
   const outside = (file: string) => !file.startsWith("src/prepare/") && file !== "src/prepare.rs"
     && !file.startsWith("src/to_oxc") && file !== "src/js/name.rs" && file !== "src/js/scopes.rs";
-  // A line that says why it reads one, `// word: <reason>`, a name JS
-  // sees as it's written, isn't counted: the one form an exemption has.
-  const reads = (text: string) =>
-    text.split("\n").filter((line) => !line.includes("// word: "))
-      .reduce((n, line) => n + (line.match(/\.(?:into_)?word\(\)/g) ?? []).length, 0);
-  const counted = sources.filter(outside)
-    .map((file) => [file, reads(read(file))] as const)
-    .filter(([, n]) => n > 0);
-  expect(counted.filter(([file, n]) => n > (allowed[file] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${allowed[file] ?? 0}`)).toEqual([]);
+  // The spans of each `format!(..)` and `Problem::X(..)`, by their brackets.
+  const messages = (text: string) => [...text.matchAll(/format!\(|Problem::\w+\(/g)].map((m) => {
+    let depth = 0;
+    for (let i = m.index! + m[0].length - 1; i < text.length; i++) {
+      if (text[i] === "(") depth++;
+      else if (text[i] === ")" && --depth === 0) return [m.index!, i] as const;
+    }
+    return [m.index!, text.length] as const;
+  });
+  const unsaid = sources.filter(outside).flatMap((file) => {
+    const text = read(file);
+    const spans = messages(text);
+    const lines = text.split("\n");
+    const lineOf = (at: number) => text.slice(0, at).split("\n").length;
+    return [...text.matchAll(/\.(?:into_)?word\(\)|\bName::(?:into_)?word\b/g)]
+      .filter((m) => !lines[lineOf(m.index!) - 1].trim().startsWith("//"))
+      .filter((m) => !lines[lineOf(m.index!) - 1].includes("// word: "))
+      .filter((m) => !spans.some(([from, to]) => from < m.index! && m.index! < to))
+      .map((m) => `${file}:${lineOf(m.index!)}`);
+  });
+  expect(unsaid).toEqual([]);
 });
 
 // No walk asks a variable by its word: `mentions_in`, `Expr::mentions_var`,

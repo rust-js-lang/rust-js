@@ -270,7 +270,7 @@ export const regenerated: Record<string, string> = {
  * Two lowered at once conflict, each side's lower than the base, and the
  * lower of the two holds of the rebased tree, as each only removes what's
  * counted (ADR 1101, amended). */
-export const ratchets = ["test/word-reads.txt", "test/sig-binders.txt", "test/type-parameter-reads.txt", "test/architecture-names.test.ts"];
+export const ratchets = ["test/sig-binders.txt", "test/type-parameter-reads.txt", "test/architecture-names.test.ts"];
 
 /** `text`, a ratchet's with git's conflict markers, each conflict resolved
  * by the lower count of each key both sides name, and a key one side alone

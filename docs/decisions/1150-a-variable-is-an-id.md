@@ -1495,3 +1495,24 @@ longer a count that falls: a call of `mentions_in`, `Expr::mentions_var`,
 `names_in`, `renamed`, `merged`, `read_as_this` or `this_outside_accessors`,
 a walk brought back by its old name, fails it, naming the file. Each
 variable is asked by its `Name`.
+
+## Amendment: a word is read outside the spelling step only where JS sees it or a diagnostic says it (#1681 change 3)
+
+The word-reads ratchet, down to 15, held only `.word()` and
+`.into_word()`: six reads by path, `.map(Name::word)` and
+`Name::into_word`, slipped past it. The rule it was falling to is now the
+test (test/architecture-names.test.ts), with no ratchet file: outside
+preparation and printing, a read of a word, any of the three forms, is
+either
+
+- on a line that says why, `// word: <reason>`, a name JS sees as it's
+  written: a callback's parameter shadowing by spelling, what a module
+  reads and takes, what a pattern binds, a runtime helper's export, two
+  declarations clashing as JS's `let`s do, a naming table; or
+- a diagnostic's text, inside a `format!` or a validation `Problem` it
+  makes, which names what's refused, not a question of a variable.
+
+`substitute_in_callbacks`, the last walk that asked a variable by its
+word, asks by `Name` now; its two callers compare ids, an answer probed
+old against new at both over `check:fast --all` and React's port: 55,440
+calls over the corpus alone, none disagreeing.

@@ -941,7 +941,7 @@ fn first_applied(
         // Before what's evaluated before it: past what reads the same after
         // it, or, doing nothing itself, past what only reads.
         && (before.past || before.reads && !value.has_effects())
-        && let Some(read) = result.substitute_in_callbacks(&|n: &str| param.is(n).then(|| Expr::var(name)))
+        && let Some(read) = result.substitute_in_callbacks(&|n: &js::Name| (n == param).then(|| Expr::var(name)))
     {
         let value = value.clone();
         *e = Expr { span: e.span, ..read };

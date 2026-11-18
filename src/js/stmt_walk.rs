@@ -35,7 +35,7 @@ impl Module {
     /// imports of the package is the helpers among them (ADR 0103), found
     /// in its tree, not in its text, where a string can spell one.
     pub fn read_vars(&self) -> BTreeSet<&str> {
-        self.read_names().into_iter().map(Name::word).collect()
+        self.read_names().into_iter().map(Name::word).collect() // word: what a module reads, as JS spells it
     }
 
     /// Each variable its code reads: its `Name`, each once.
@@ -811,7 +811,7 @@ pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {
             }
         }
     });
-    declared.iter().map(|n| n.word().to_string()).collect()
+    declared.iter().map(|n| n.word().to_string()).collect() // word: the spellings a module takes
 }
 
 /// The names `stmts` declare, in order, an arrow's in them too.

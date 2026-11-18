@@ -480,7 +480,7 @@ impl OutputPlan {
         // a local the program named so, `rust_js::name = "$some"` (#2016).
         if let Some(name) = (js_module.read_names().into_iter())
             .filter(|name| !name.is_the_programs())
-            .map(js::Name::word)
+            .map(js::Name::word) // word: a runtime helper is its export, by its word
             .find(|name| crate::runtime::exports(name) && !js_module.helpers.contains(name))
         {
             return Err(format!(

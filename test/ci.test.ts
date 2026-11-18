@@ -1288,11 +1288,11 @@ test("a rebase's conflict in a ratchet is resolved by the lower count, anything 
   expect(lowerRatchets(conflict(["src/a.rs\t3"], ["src/a.rs\t2", "src/c.rs\t1"], ["src/a.rs\t9"]))).toBe(["# a ratchet", "src/a.rs\t2", "src/c.rs\t1", "src/z.rs\t1", ""].join("\n"));
   expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;"]))).toBe(["# a ratchet", "const KIN_PARSES = 10;", "src/z.rs\t1", ""].join("\n"));
   expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;", "test(\"x\", () => {});"]))).toBeUndefined();
-  expect(remakeable(["test/word-reads.txt", "docs/readability.txt"])).toBe(true);
+  expect(remakeable(["test/sig-binders.txt", "docs/readability.txt"])).toBe(true);
   expect(remakeable(["test/architecture-names.test.ts", "src/lower/analysis.rs"])).toBe(false);
   // WORD_WALKS lowered by two changes at once, d8eb74bd1's and another's:
   // the lower; anything else in the test's conflict, stopped.
-  expect(remakeable(["test/architecture-names.test.ts", "test/word-reads.txt"])).toBe(true);
+  expect(remakeable(["test/architecture-names.test.ts", "test/sig-binders.txt"])).toBe(true);
   expect(lowerRatchets(conflict(["const WORD_WALKS = 161;"], ["const WORD_WALKS = 137;"]))).toBe(["# a ratchet", "const WORD_WALKS = 137;", "src/z.rs\t1", ""].join("\n"));
   expect(lowerRatchets(conflict(["const WORD_WALKS = 161;", "  const free = [\"mentions_in\"];"], ["const WORD_WALKS = 137;"]))).toBeUndefined();
   for (const file of ratchets) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
@@ -1310,7 +1310,7 @@ test("a rebase's conflict in an ADR both sides only appended to keeps both amend
   expect(appendedBoth(base, `${base}X`, `${base}Y\n`)).toBe(`${base}X\nY\n`);
   expect(appendedBoth(base, ours.replace("The decision.", "The decision, amended."), theirs)).toBeUndefined();
   expect(appendedBoth(base, ours, theirs.replace("# ADR 1150", "# ADR 1150, renamed"))).toBeUndefined();
-  expect(remakeable(["docs/decisions/1150-names-are-ids.md", "test/word-reads.txt"])).toBe(true);
+  expect(remakeable(["docs/decisions/1150-names-are-ids.md", "test/sig-binders.txt"])).toBe(true);
   expect(remakeable(["docs/decisions/README.md"])).toBe(false);
   expect(remakeable(["docs/guide/README.md"])).toBe(false);
 });

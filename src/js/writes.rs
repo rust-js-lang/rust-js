@@ -211,7 +211,7 @@ mod tests {
     }
 
     fn names(set: &IndexSet<Name>) -> Vec<&str> {
-        let mut names: Vec<&str> = set.iter().map(Name::word).collect();
+        let mut names: Vec<&str> = set.iter().map(Name::word).collect(); // word: a test's expected spellings
         names.sort();
         names
     }

@@ -168,8 +168,8 @@ impl Expr {
     /// that only return, as `map`'s callbacks do, if none of their
     /// parameters is a name replaced or one the replacements read. Only for callbacks that run at once: in
     /// one that runs later, a variable would be read later.
-    pub fn substitute_in_callbacks(&self, with: &dyn Fn(&str) -> Option<Expr>) -> Option<Expr> {
-        self.replace(&|name| with(name.word()), true)
+    pub fn substitute_in_callbacks(&self, with: &dyn Fn(&Name) -> Option<Expr>) -> Option<Expr> {
+        self.replace(with, true)
     }
 
     fn replace(&self, with: &dyn Fn(&Name) -> Option<Expr>, callbacks: bool) -> Option<Expr> {
@@ -319,7 +319,7 @@ impl Expr {
     /// constant is known not to.
     fn mentions(&self, names: &[&str]) -> bool {
         match &self.kind {
-            ExprKind::Var(n) => names.contains(&n.word()),
+            ExprKind::Var(n) => names.contains(&n.word()), // word: a callback's parameter shadows by spelling
             ExprKind::Symbol(_) => false,
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.mentions(names),
             _ => !self.is_constant(),
@@ -866,7 +866,7 @@ mod tests {
             vec![StmtKind::Return(Some(Expr::var("value"))).at(Span::NONE)],
         );
         let e = Expr::call(Expr::var("f"), vec![callback.clone(), Expr::var("value")]);
-        let replaced = e.substitute_in_callbacks(&|n| (n == "value").then(|| Expr::var("x")));
+        let replaced = e.substitute_in_callbacks(&|n| n.is("value").then(|| Expr::var("x")));
         assert!(replaced == Some(Expr::call(Expr::var("f"), vec![callback, Expr::var("x")])));
     }
 
