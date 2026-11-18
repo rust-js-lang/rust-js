@@ -37,7 +37,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !crate::lower::recognition::is_js_strict_equals(self.tcx, callee) {
                     return None;
                 }
-                let tested = |side: &Operand<'tcx>| self.tested_local(state, side) == Some(local);
+                let tested = |side: &Operand<'tcx>| self.tested_local(state, side, Some(local)) == Some(local);
                 let none = |side: &Operand<'tcx>| self.made_none(state, side);
                 ((tested(&a.node) && none(&b.node)) || (none(&a.node) && tested(&b.node))).then_some(*no)
             }
@@ -69,7 +69,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let (callee, _) = func.const_fn_def()?;
         if !crate::lower::recognition::is_js_classify(self.tcx, callee)
-            || self.tested_local(state, &given.node)? != local
+            || self.tested_local(state, &given.node, Some(local))? != local
         {
             return None;
         }
@@ -118,7 +118,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// written once, `Option::None`, through the copies and references
     /// `tested_local` follows.
     fn made_none(&self, state: &State<'_, 'tcx>, side: &Operand<'tcx>) -> bool {
-        let Some(held) = self.tested_local(state, side) else {
+        let Some(held) = self.tested_local(state, side, None) else {
             return false;
         };
         matches!(self.whole_writes(state, held).as_deref(),

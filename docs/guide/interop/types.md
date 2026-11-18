@@ -1156,6 +1156,9 @@ export function ratio(a, b) {
   text; of a `RefCell`'s guard, `Option<Ref<'_, Vec<String>>>`, what it
   guards, the array itself, `types?.length`, and of a number's cell its
   `value` ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md), amended).
+  When every path has either proved this option present or assigned
+  `Some`, `unwrap()` compiles to a read of the value
+  ([ADR 0620](../../decisions/0620-an-option-a-test-says-is-there.md), amended).
 - **`#[rust_js::nullable]` makes a `None` `null`**: on a field, on a
   function for its result, or on a function for a parameter it names,
   `#[rust_js::nullable(range)]`, a binding's or the crate's own
