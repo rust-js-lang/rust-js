@@ -840,8 +840,13 @@ checked:
   blesses it again from the rebased tree, printing what changed and
   amending the top commit; one in a ratchet that only falls (`ratchets`:
   test/sig-binders.txt and test/type-parameter-reads.txt) takes the lower count of each, which holds of the
-  rebased tree as each side only removed what's counted; any other
-  conflict, hand-written code's too, stops the push. `--bless-readability` blesses `docs/readability.txt`
+  rebased tree as each side only removed what's counted; one in an ADR
+  both sides only appended an amendment to keeps both, main's first; one
+  in a line set (`lineSet`: each `test/*-known.txt` and the rustc suite's
+  three lists) is merged as a set, a line either side took off gone and
+  one either added kept, where a line each side changed still stops it
+  (test/push.test.ts); any other conflict, hand-written code's too, stops
+  the push. `--bless-readability` blesses `docs/readability.txt`
   first without a conflict; without it a readability failure stops the
   push like any other.
   Each phase's time is printed, and one line of them is appended to the

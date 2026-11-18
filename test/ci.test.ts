@@ -14,7 +14,7 @@ import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, 
 import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
-import { appendedBoth, lowerRatchets, ratchets, reactGate, regenerated, remakeable } from "../scripts/push";
+import { reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, drivesBrowser, testFileSeconds } from "../scripts/shard";
@@ -1174,28 +1174,6 @@ test("a slice's report says what ran it, beside where its JUnit is written", () 
   }
 });
 
-// A rebase's conflict in a blessed baseline alone is resolved by making it
-// again from the rebased tree (`bun run push`, scripts/push.ts), where it
-// stopped the second of two pushes that each blessed one (2 of m3-max's 5
-// failed pushes of 2026-11-17); one in hand-written code still stops it.
-// The baselines are those .gitattributes merges as `merge=binary`, each
-// with the test whose bless makes it.
-test("a rebase's conflict in a blessed baseline alone is made again, any other stops it", () => {
-  const binary = readFileSync(join(root, ".gitattributes"), "utf8").split("\n").flatMap((line) => {
-    const m = line.match(/^(\S+) merge=binary$/);
-    return m ? [m[1]!] : [];
-  });
-  expect(Object.keys(regenerated).sort()).toEqual(binary.sort());
-  for (const [file, test] of Object.entries(regenerated)) {
-    const source = readFileSync(join(root, test), "utf8");
-    expect([file, source.includes(file) && /\bBLESS\b/.test(source)]).toEqual([file, true]);
-  }
-  expect(remakeable(["docs/readability.txt"])).toBe(true);
-  expect(remakeable(["docs/readability.txt", "react/coverage.txt"])).toBe(true);
-  expect(remakeable(["docs/readability.txt", "src/lower/analysis.rs"])).toBe(false);
-  expect(remakeable(["src/lower/analysis.rs"])).toBe(false);
-});
-
 // A check's test shards are dealt by what each file took (`balanced`), not
 // by `bun test --shard`, which gave check 44022102403's shards 101 and 261
 // of 362 files, 1,127 and 1,894 measured seconds, and its second shard
@@ -1221,45 +1199,6 @@ test("a check's test shards are dealt by what each file took", () => {
   const suite = readFileSync(join(root, "scripts/test.ts"), "utf8");
   expect(suite).not.toContain("...shard,");
   expect(suite).toContain("const pageFiles = dealt(");
-});
-
-// A ratchet two changes lowered at once conflicts on rebase, and `bun run
-// push` resolves it by the lower count, which holds of the rebased tree as
-// each change only removed what's counted: KIN_PARSES, lowered 15 to 14 by
-// one change and to 10 by others, cost a hand rebase (2026-11-17).
-test("a rebase's conflict in a ratchet is resolved by the lower count, anything else in it stops", () => {
-  const conflict = (ours: string[], theirs: string[], base?: string[]) =>
-    ["# a ratchet", "<<<<<<< HEAD", ...ours, ...(base ? ["||||||| base", ...base] : []), "=======", ...theirs, ">>>>>>> theirs", "src/z.rs\t1", ""].join("\n");
-  expect(lowerRatchets(conflict(["src/a.rs\t3", "src/b.rs\t5"], ["src/a.rs\t4", "src/b.rs\t2"]))).toBe(["# a ratchet", "src/a.rs\t3", "src/b.rs\t2", "src/z.rs\t1", ""].join("\n"));
-  // A key one side alone names is kept as it says; a base section is read past.
-  expect(lowerRatchets(conflict(["src/a.rs\t3"], ["src/a.rs\t2", "src/c.rs\t1"], ["src/a.rs\t9"]))).toBe(["# a ratchet", "src/a.rs\t2", "src/c.rs\t1", "src/z.rs\t1", ""].join("\n"));
-  expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;"]))).toBe(["# a ratchet", "const KIN_PARSES = 10;", "src/z.rs\t1", ""].join("\n"));
-  expect(lowerRatchets(conflict(["const KIN_PARSES = 10;"], ["const KIN_PARSES = 14;", "test(\"x\", () => {});"]))).toBeUndefined();
-  expect(remakeable(["test/sig-binders.txt", "docs/readability.txt"])).toBe(true);
-  expect(remakeable(["test/architecture-names.test.ts", "src/lower/analysis.rs"])).toBe(false);
-  // WORD_WALKS lowered by two changes at once, d8eb74bd1's and another's:
-  // the lower; anything else in the test's conflict, stopped.
-  expect(remakeable(["test/architecture-names.test.ts", "test/sig-binders.txt"])).toBe(true);
-  expect(lowerRatchets(conflict(["const WORD_WALKS = 161;"], ["const WORD_WALKS = 137;"]))).toBe(["# a ratchet", "const WORD_WALKS = 137;", "src/z.rs\t1", ""].join("\n"));
-  expect(lowerRatchets(conflict(["const WORD_WALKS = 161;", "  const free = [\"mentions_in\"];"], ["const WORD_WALKS = 137;"]))).toBeUndefined();
-  for (const file of ratchets) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
-});
-
-// Two pushes amending one ADR at once each append to its end: m3-max's
-// stopped twice on ADR 1150 (2026-11-18). Both kept, main's first, each
-// whole; a change to the text they share still stops.
-test("a rebase's conflict in an ADR both sides only appended to keeps both amendments, any other stops", () => {
-  const base = "# ADR 1150\n\nThe decision.\n";
-  const ours = `${base}\n### Amended: one (m3-max)\n\nIts text.\n`;
-  const theirs = `${base}\n### Amended: another (ioCP)\n\nIts text.\n`;
-  expect(appendedBoth(base, ours, theirs)).toBe(`${base}\n### Amended: one (m3-max)\n\nIts text.\n\n### Amended: another (ioCP)\n\nIts text.\n`);
-  // One with no newline at its end is ended before the other's.
-  expect(appendedBoth(base, `${base}X`, `${base}Y\n`)).toBe(`${base}X\nY\n`);
-  expect(appendedBoth(base, ours.replace("The decision.", "The decision, amended."), theirs)).toBeUndefined();
-  expect(appendedBoth(base, ours, theirs.replace("# ADR 1150", "# ADR 1150, renamed"))).toBeUndefined();
-  expect(remakeable(["docs/decisions/1150-names-are-ids.md", "test/sig-binders.txt"])).toBe(true);
-  expect(remakeable(["docs/decisions/README.md"])).toBe(false);
-  expect(remakeable(["docs/guide/README.md"])).toBe(false);
 });
 
 // `gh api --paginate` runs its `--jq` on each page: one that makes an

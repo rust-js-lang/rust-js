@@ -843,3 +843,29 @@ check:fast's own cap are gone: `selectChange` owns the pass whole.
 Tests: test/select.test.ts, "a sanity pass runs what reaches most of the
 change first, within its budget"; mutations `sanity-budget-unranked`, `sanity-budget-dearer-first`,
 `sanity-budget-overrun`, `sanity-skipped-unrecorded`.
+
+### Amended: a known list's conflict on rebase is merged as a set (2026-11-18)
+
+Two pushes that each took a line off test/metamorphic-known.txt, m1-lisa's
+#2054 and m6-lily's #2056, conflicted where the lines were neighbours, and
+`bun run push` stopped the second, as it stops every conflict it can't
+resolve mechanically. A known list is a set of lines, each standing for
+itself in a block under its issue: whatever either side took off is gone
+from the merge, and whatever either added is in it. So a rebase's conflict
+in a line set (`lineSet` in scripts/push.ts: each `test/*-known.txt` and
+rustc's three lists) is merged as one: of git's own merge with its base
+(`git merge-file --diff3` of the rebase's three stages), each conflict's
+lines are counted, a line's count is ours' and theirs' less the base's,
+at most the larger side's, in ours' order with theirs' additions after the
+line before them in theirs (`mergedLineSet`). Where each side both added
+and took off lines in one conflict, a line each side changed (an id list of
+test/iterator-matrix-known.txt), no set says which is the list's, and the
+push still stops. The blessed baselines of totals, docs/readability.txt and
+the coverage lists, aren't line sets: they're made again by their bless, as
+before. One rule, `remakeable`, says which conflicts a push resolves.
+
+The tests of each merge moved with this to test/push.test.ts, "a rebase's
+conflict in a line set keeps what neither side took off and what either
+added, a line both changed stops"; mutations
+`line-set-conflict-stops-the-push`, `line-set-keeps-what-a-side-took-off`,
+`line-set-merges-a-line-both-changed`.

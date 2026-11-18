@@ -2,7 +2,9 @@
 // commits, rebased onto `origin/main`, checked as they'll land, then pushed.
 // In order, each phase timed:
 //
-//   rebase    onto origin/main; a conflict stops it, the rebase aborted
+//   rebase    onto origin/main; a conflict stops it, the rebase aborted, but
+//             one each side's change merges mechanically: a blessed baseline,
+//             a ratchet, an ADR's two amendments, a line set (`remakeable`)
 //   build     the compiler
 //   std       std/ made again (`bun run std`), refused where it differs from
 //             what's committed
@@ -308,12 +310,82 @@ export function lowerRatchets(text: string): string | undefined {
   return out.join("\n");
 }
 
+/** A list of lines a change adds to or takes from, each line standing for
+ * itself, its order the list's: a known list, `test/<net>-known.txt`, and
+ * the rustc suite's three (ADR 0089). Two changes that each took a line
+ * off one conflict on rebase where the lines are neighbours: m1-lisa's
+ * #2054 and m6-lily's #2056 off test/metamorphic-known.txt stopped a push
+ * (2026-11-18). */
+export const lineSet = (file: string) =>
+  /^test\/[\w-]+-known\.txt$/.test(file) || ["test/rustc-known-failures.txt", "test/rustc-native-failures.txt", "test/rustc-out-of-scope.txt"].includes(file);
+
+/** `text`, a line set's merged with git's diff3 conflict markers (`git
+ * merge-file --diff3`), each conflict resolved as a set: a line either
+ * side took off the base's is gone, one either side added is kept, once
+ * where both did, in ours' order, theirs' after the line before it in
+ * theirs. Undefined where a conflict has no base section, or where each
+ * side both added and took off lines, a line each side changed, which a
+ * set can't tell from two lines (an id list of test/iterator-matrix-known
+ * .txt edited by both), which stays the change's author's to merge. */
+export function mergedLineSet(text: string): string | undefined {
+  const out: string[] = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i]!.startsWith("<<<<<<< ")) {
+      out.push(lines[i]!);
+      continue;
+    }
+    const sides: [string[], string[], string[]] = [[], [], []];
+    let side: 0 | 1 | 2 = 0;
+    let based = false;
+    for (i++; i < lines.length && !lines[i]!.startsWith(">>>>>>> "); i++) {
+      const line = lines[i]!;
+      if (line.startsWith("||||||| ")) (side = 1), (based = true);
+      else if (line === "=======") side = 2;
+      else sides[side].push(line);
+    }
+    if (!based) return undefined;
+    const [ours, base, theirs] = sides;
+    const count = (of: string[]) => of.reduce((counts, line) => counts.set(line, (counts.get(line) ?? 0) + 1), new Map<string, number>());
+    const [o, b, t] = [count(ours), count(base), count(theirs)];
+    const edits = (side: Map<string, number>) => {
+      const keys = new Set([...side.keys(), ...b.keys()]);
+      const at = (line: string) => (side.get(line) ?? 0) - (b.get(line) ?? 0);
+      return { adds: [...keys].some((line) => at(line) > 0), takes: [...keys].some((line) => at(line) < 0) };
+    };
+    const [mine, yours] = [edits(o), edits(t)];
+    if (mine.adds && mine.takes && yours.adds && yours.takes) return undefined;
+    const left = new Map<string, number>();
+    for (const line of new Set([...o.keys(), ...t.keys()])) {
+      const [n, m] = [o.get(line) ?? 0, t.get(line) ?? 0];
+      left.set(line, Math.min(Math.max(n + m - (b.get(line) ?? 0), 0), Math.max(n, m)));
+    }
+    const merged: string[] = [];
+    for (const line of ours) {
+      if (left.get(line)! === 0) continue;
+      left.set(line, left.get(line)! - 1);
+      merged.push(line);
+    }
+    let after = -1;
+    for (const line of theirs) {
+      const found = merged.indexOf(line, after + 1);
+      if (found >= 0) after = found;
+      else if (left.get(line)! > 0) {
+        left.set(line, left.get(line)! - 1);
+        merged.splice(++after, 0, line);
+      }
+    }
+    out.push(...merged);
+  }
+  return out.join("\n");
+}
+
 /** Whether a rebase's `conflicts` are each a blessed baseline's, which it
- * resolves by making them again, a ratchet's, by the lower count, or an
- * ADR's, by both sides' amendments (`appendedBoth`); any other,
- * hand-written code's too, stops it. */
+ * resolves by making them again, a ratchet's, by the lower count, an
+ * ADR's, by both sides' amendments (`appendedBoth`), or a line set's, as
+ * a set (`mergedLineSet`); any other, hand-written code's too, stops it. */
 export function remakeable(conflicts: string[]): boolean {
-  return conflicts.every((file) => file in regenerated || ratchets.includes(file) || decision(file));
+  return conflicts.every((file) => file in regenerated || ratchets.includes(file) || decision(file) || lineSet(file));
 }
 
 /** An ADR, docs/decisions/<n>-<name>.md, which a change amends by
@@ -356,6 +428,16 @@ function rebase(): string[] {
         if (merged === undefined) {
           git("rebase", "--abort");
           throw new Refused(`the rebase stopped on a conflict in ${file} that isn't two amendments appended to its end, aborted`);
+        }
+        writeFileSync(file, merged);
+        git("add", file);
+        continue;
+      }
+      if (lineSet(file)) {
+        const merged = mergedLineSet(spawnSync("git", ["merge-file", "-p", "--diff3", "--object-id", `:2:${file}`, `:1:${file}`, `:3:${file}`], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 }).stdout);
+        if (merged === undefined) {
+          git("rebase", "--abort");
+          throw new Refused(`the rebase stopped on a conflict in ${file} where each side changed a line, aborted`);
         }
         writeFileSync(file, merged);
         git("add", file);
