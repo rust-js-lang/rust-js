@@ -879,13 +879,13 @@ fn called_once_by_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
 }
 
 /// The closures in `thir` rustc infers `Fn` or `FnMut`, each a `let`'s
-/// whose variable's one use, by its own id, so not a shadow's of its name,
-/// is its move into a callee's call, which `ClosureFacts::new` keeps where
-/// a call by value calls it and none by `&` (`Called`): an `F: FnOnce`, or
-/// through `impl Is<F>`. Rust's `FnOnce` of it calls it by `&` and then
-/// drops it, as its call ends or unwinds, so its body is its `call_once`'s;
-/// called or borrowed besides, it isn't, as a drop at its body's end would
-/// drop it at its first call (#995, #2031).
+/// whose variable, by its own id, so not a shadow's of its name, is moved
+/// into a callee's call, which `ClosureFacts::new` keeps where a call by
+/// value calls it and none by `&` (`Called`): an `F: FnOnce`, or through
+/// `impl Is<F>`. Rust's `FnOnce` of it calls it by `&` and then drops it, as
+/// its call ends or unwinds, so its body is its `call_once`'s; called by `&`
+/// besides, through itself, a reference or a clone, it isn't, as a drop at
+/// its body's end would drop it at its first call (#995, #2031).
 fn moved_once(thir: &Thir<'_>) -> Vec<DefId> {
     use crate::collections::IndexMap;
     use rustc_middle::thir::{LocalVarId, PatKind, StmtKind};
@@ -926,16 +926,7 @@ fn moved_once(thir: &Thir<'_>) -> Vec<DefId> {
     if made.is_empty() {
         return Vec::new();
     }
-    // Each read of one, and of those, each that's its move into a callee
-    // that calls it once.
-    let mut uses: IndexMap<LocalVarId, usize> = IndexMap::default();
-    for expr in thir.exprs.iter() {
-        if let ExprKind::VarRef { id } = expr.kind
-            && made.contains_key(&id)
-        {
-            *uses.entry(id).or_default() += 1;
-        }
-    }
+    // Each move of one into a callee's call.
     let mut moved: Vec<LocalVarId> = Vec::new();
     for expr in thir.exprs.iter() {
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
@@ -952,10 +943,7 @@ fn moved_once(thir: &Thir<'_>) -> Vec<DefId> {
             }
         }
     }
-    (moved.into_iter())
-        .filter(|var| uses.get(var) == Some(&1))
-        .filter_map(|var| made.get(&var).copied())
-        .collect()
+    (moved.into_iter()).filter_map(|var| made.get(&var).copied()).collect()
 }
 
 /// The closures in `thir` made where they're given to a binding's parameter

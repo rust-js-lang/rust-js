@@ -839,11 +839,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // The variants not taken apart: all of it, or nothing.
         let mut chain: Option<Vec<Stmt>> = match (otherwise, glue) {
+            // As its own flag says: a way that moved it whole, a `match`'s
+            // `other => keep(other)`, cleared it, as the variants taken
+            // apart's own flags say of them (#2064).
             (true, true) => {
                 let mut whole = Vec::new();
                 let whole_ty = branch.as_ref().map_or(ty, |(_, tried_ty)| *tried_ty);
                 self.drop_value(subject.clone(), whole_ty, span, &mut whole)?;
-                Some(whole)
+                Some(match &state.naming.flags()[path] {
+                    Some(flag) => vec![StmtKind::If(Expr::var(flag), whole, None).at(self.js_span(span))],
+                    None => whole,
+                })
             }
             (true, false) => Some(Vec::new()),
             // The last variant taken apart is what's left.

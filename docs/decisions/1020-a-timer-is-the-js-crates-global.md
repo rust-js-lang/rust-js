@@ -278,3 +278,14 @@ what generic code calls by value calls it and nothing calls it by `&`
 callee's bound reads `FnOnce`. Through a blanket impl of the crate's own
 trait, `impl<F: FnOnce() -> u32> Thunk for F`, it now runs and drops
 (`fn_closure_moved_through_a_blanket_impl_drops`).
+
+## Amendment: a moved closure's other uses are its calls by `&` (2026-11-18)
+
+`moved_once` asked that the variable's one use be its move. Since #2031's
+owner, it also asks that no call by `&` calls the closure (`called.by_ref`).
+That covers every use that calls it: `f()`, `let by = &f; by()`, and a
+clone's call, which is of the same closure type. A use that doesn't call
+it doesn't change what its `call_once` drops. The count of uses excluded
+nothing more, and its mutation, `moved-once-other-uses-ignored`, survived
+its case on main. It was retired with `--retire`'s evidence (ec1af1311),
+and the count is deleted.

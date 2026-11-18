@@ -1730,3 +1730,25 @@ corpus case still agrees with native Rust. The new corpus case prints the
 record/array argument read order. The regenerated readability report reduces
 renamed bindings from 16,184 to 16,090 and role fallbacks from 8,876 to 8,806;
 no readability shape regresses.
+
+## Amendment: an open drop's variants none takes apart, as the path's flag says (2026-11-18, #2064)
+
+`open_drop_variants`, rustc's `open_drop_for_multivariant`, drops an enum some
+of which has moved: each variant some of whose fields moved has what's
+left of it dropped, and each other variant is dropped whole. It dropped
+those others whatever the enum's own drop flag said. After `match kind {
+Kind::Text(bytes) => .., other => new.push(Node { kind: other }) }`, the
+catch-all had moved the value whole and cleared the flag, and JS dropped it
+anyway. In regex-syntax, `Hir::concat` and `Hir::alternation` pushed each
+`Hir` and then dropped it, and `Hir`'s `Drop` emptied its `kind`, so
+`lift_common_prefix` lost its captures and the literal extractor saw
+emptied nodes: 5 tests gave other values (#2064). The other variants are
+now dropped as the path's own flag says, `if (kind$live)`, where drop
+elaboration flags the path (`drops.flagged`, MIR's drop flags). An
+unflagged path is dropped as before. No other case's JS moved. Results
+changed (a double drop), so this follows ADR 0262's "preserve Rust's
+behavior". Pinned by test/corpus/match_binding_moves_what_a_partial_arm_keeps.rs:
+the `match`, an `if let` whose `else` moves the value whole, and a `let
+else`'s. Mutation `open-drop-otherwise-unflagged` is caught. Small
+Crater's regex-syntax: 128 of 147 as native, 17 refused, 2 not of
+wasm32, none wrong.

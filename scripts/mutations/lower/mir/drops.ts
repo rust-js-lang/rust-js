@@ -452,4 +452,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "open-drop-otherwise-unflagged",
+    breaks:
+      "after a `match` one arm of which moves part of an enum and another all of it, `other => keep(other)`, the variants none takes apart are dropped whatever its flag says, so what the catch-all moved drops at once (#2064)",
+    file: "src/lower/mir/drops.rs",
+    find: "                    Some(flag) => vec![StmtKind::If(Expr::var(flag), whole, None).at(self.js_span(span))],\n",
+    replace: "                    Some(_) => whole,\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_binding_moves_what_a_partial_arm_keeps.rs$"],
+  },
 ];
