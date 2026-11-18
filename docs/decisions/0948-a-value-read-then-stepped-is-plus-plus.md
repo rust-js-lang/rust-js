@@ -44,3 +44,19 @@ before preparation makes one. Any other step, `a + 2`, stays as it was.
   stepped is x++".
 - Mutations: `post-step-unmade`, `post-step-of-any-number`,
   `post-step-down-is-up`.
+
+## Amendment: Three.js's shader stage takes and increments its ID
+
+A read of a plain variable followed by its compound unit step gives the
+same old value as a postfix update. The variable is read without a
+getter. The compound form appears when `Cell::replace` reads and steps
+the same numeric thread-local.
+
+An ES constructor can put that update directly in its immediately
+following field assignment when the assignment is the old value's
+only use. The receiver is initialized before the assignment, so
+evaluating the plain `this` receiver before the update changes no
+effects. The case of ADR 0262 remains N.
+
+The constructor test checks the emitted assignment and the counter
+sequence, including a constructor that uses its old value twice.

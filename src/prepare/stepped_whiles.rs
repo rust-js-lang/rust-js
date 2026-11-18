@@ -114,22 +114,7 @@ pub(super) fn counters(module: &mut js::Module) {
     let mut each = |stmts: &mut Vec<Stmt>| {
         let mut i = 0;
         while i + 1 < stmts.len() {
-            let step = match (&stmts[i].kind, &stmts[i + 1].kind) {
-                (StmtKind::Const(name, read) | StmtKind::Let(name, Some(read)), StmtKind::Assign(target, value))
-                    if js::same_path(read, target) && !read.has_effects() =>
-                {
-                    match &value.kind {
-                        ExprKind::Binary(op @ (Op::Add | Op::Sub), from, one)
-                            if matches!(&from.kind, ExprKind::Var(v) if v == name)
-                                && matches!(one.kind, ExprKind::Num(n) if n == 1.0) =>
-                        {
-                            Some(*op)
-                        }
-                        _ => None,
-                    }
-                }
-                _ => None,
-            };
+            let step = counter_step(&stmts[i], &stmts[i + 1]);
             if let Some(op) = step
                 && let StmtKind::Const(_, read) | StmtKind::Let(_, Some(read)) = &mut stmts[i].kind
             {
@@ -142,4 +127,69 @@ pub(super) fn counters(module: &mut js::Module) {
         }
     };
     js::each_item_block_mut(&mut module.items, &mut each);
+    for item in &mut module.items {
+        let js::Item::Namespace(namespace) = item else { continue };
+        let Some(class) = namespace.class.as_ref().filter(|class| class.es) else {
+            continue;
+        };
+        if let Some(constructor) = namespace
+            .methods
+            .iter_mut()
+            .find(|method| method.name.is(&class.constructor))
+        {
+            inline_constructor_steps(&mut constructor.body);
+        }
+    }
+}
+
+fn counter_step(read: &Stmt, write: &Stmt) -> Option<Op> {
+    let (name, read) = match &read.kind {
+        StmtKind::Const(name, read) | StmtKind::Let(name, Some(read)) => (name, read),
+        _ => return None,
+    };
+    let (op, target, amount) = match &write.kind {
+        StmtKind::Assign(target, value) => match &value.kind {
+            ExprKind::Binary(op, from, amount) if matches!(&from.kind, ExprKind::Var(v) if v == name) => {
+                (*op, target, &**amount)
+            }
+            _ => return None,
+        },
+        // A plain variable has no getter. Its second read sees the old
+        // value too, so a previously formed compound can give that value.
+        StmtKind::Compound(op, target, amount) if matches!(read.kind, ExprKind::Var(_)) => (*op, target, amount),
+        _ => return None,
+    };
+    (matches!(op, Op::Add | Op::Sub)
+        && matches!(amount.kind, ExprKind::Num(n) if n == 1.0)
+        && js::same_path(read, target)
+        && !read.has_effects())
+    .then_some(op)
+}
+
+/// Binding an ES constructor's `this` has completed before it assigns
+/// a field. Reading that receiver has no observable effect, so the sole
+/// use of an adjacent step takes the step in its assignment.
+fn inline_constructor_steps(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let step = match (&stmts[i].kind, &stmts[i + 1].kind) {
+            (StmtKind::Const(name, step), StmtKind::Assign(target, value))
+                if matches!(step.kind, ExprKind::Stepped(..))
+                    && matches!(&target.kind, ExprKind::Member(receiver, _) if matches!(receiver.kind, ExprKind::This))
+                    && matches!(&value.kind, ExprKind::Var(read) if read == name)
+                    && js::mentions_of(&stmts[i + 2..], name) == 0 =>
+            {
+                Some(step.clone())
+            }
+            _ => None,
+        };
+        if let Some(step) = step
+            && let StmtKind::Assign(_, value) = &mut stmts[i + 1].kind
+        {
+            *value = step;
+            stmts.remove(i);
+        } else {
+            i += 1;
+        }
+    }
 }
