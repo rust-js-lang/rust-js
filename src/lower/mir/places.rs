@@ -33,21 +33,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             e.facts = e.facts.with(js::Known::Lasting);
         }
-        // A field a back step is given, each value moved into which its
-        // maker made knowing its back: a read of it is of one, marked so,
-        // as a local's value is by its maker (#851). Not std's compiled
-        // struct, which its maker never marks (`structure.rs`): the field of
-        // another instantiation of a generic struct, `Held(map).0` beside a
-        // `Held(range).0` stepped from its back, has a back only given it,
-        // `$knowing`'s (#1013).
-        if let Some(field) = crate::lower::analysis::field_of(self.tcx, state.body, place)
-            && self.krate.back_stepped.fields.contains(&field)
-            && let ty = place.ty(state.body, self.tcx).ty
-            && self.made_knowing_its_back_by_its_maker(ty)
-            && !self.compiled_struct(ty, &e)
-        {
-            e = crate::lower::iterators::made_knowing_its_back(e);
-        }
         // An `Option` whose `None` is only one of `undefined` and `null`,
         // its own or through a reference to it: its read says which (ADR
         // 0298, amended).

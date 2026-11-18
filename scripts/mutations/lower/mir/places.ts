@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "stepped-field-read-unmarked",
-    breaks:
-      "a read of a field a back step reads, each value moved into which its maker made knowing its back, isn't marked so, and its `next_back` refuses it (#851)",
-    file: "src/lower/mir/places.rs",
-    find: "            && self.krate.back_stepped.fields.contains(&field)\n",
-    replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_adapters_by_ref.rs$"],
-  },
-  {
     name: "nested-field-payload-boxed",
     breaks: "what a nested field's `Some` holds is read through the box, `$someValue(candidate.line)` (#470)",
     file: "src/lower/mir/places.rs",
@@ -221,14 +212,6 @@ export const mutations: Mutation[] = [
     find: "                Some(held) => ty = held,\n                None => return false,",
     replace: "                Some(_) => return false,\n                None => return false,",
     tests: ["test/corpus.test.ts", "-t", "^box_read_before_its_write.rs$"],
-  },
-  {
-    name: "stepped-field-compiled-marked",
-    breaks: "std's compiled `Map` read from a generic struct's field another instantiation of which is stepped from its back is taken for one made knowing its back, never given its compiled back, and `it.back` throws (#1013)",
-    file: "src/lower/mir/places.rs",
-    find: "            && !self.compiled_struct(ty, &e)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^iterators_held_in_a_generic_structs_field.rs$"],
   },
   {
     name: "boxed-field-not-read-through",

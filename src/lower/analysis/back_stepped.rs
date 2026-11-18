@@ -37,14 +37,12 @@ pub(super) fn of_crate<'tcx>(
     given: (bool, Option<&GivenADrop<'_>>),
 ) -> BackStepped<'tcx> {
     let mut typed = back_stepped(tcx, recognition, all_bodies, (library, drops));
-    let (locals, fields, typed_sources, lengths) =
-        stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), given);
+    let (locals, typed_sources, lengths) = stepped_locals(tcx, recognition, all_bodies, (drops, keeps_capacity), given);
     typed.extend(typed_sources);
     BackStepped {
         typed,
         borrows: borrows(all_bodies),
         locals,
-        fields,
         lengths,
     }
 }
@@ -412,10 +410,6 @@ pub(in crate::lower) struct BackStepped<'tcx> {
     pub(in crate::lower) borrows:
         IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), rustc_middle::mir::Local>,
     pub(in crate::lower) locals: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
-    /// Each field of a struct or an enum's variant a back step is given,
-    /// each value MIR moves into it marked `Given` (`stepped_locals`'s): a
-    /// read of it is of a value made knowing its back (#851).
-    pub(in crate::lower) fields: IndexSet<SteppedField>,
     /// Each local whose length is asked, made knowing it where it's made,
     /// and how (`LengthAsked`).
     pub(in crate::lower) lengths: IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), LengthAsked>,
@@ -500,12 +494,13 @@ pub(in crate::lower) fn made_by<'tcx>(
     }
 }
 
-/// What `stepped_locals` finds: each local stepped from its back, each
-/// field, the types a std struct holding them asks by type alone, and each
-/// local whose length is asked.
+/// What `stepped_locals` finds: each local stepped from its back, the
+/// types a std struct holding them asks by type alone, and each local whose
+/// length is asked. The fields a back step is given it follows to their
+/// locals alone: a read of one is of a compiled std adapter, which its
+/// maker never marks (#2112's survey, `places.rs`' mark retired).
 type SteppedValues<'tcx> = (
     IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), SteppedLocal>,
-    IndexSet<SteppedField>,
     IndexSet<Ty<'tcx>>,
     IndexMap<(rustc_span::def_id::DefId, rustc_middle::mir::Local), LengthAsked>,
 );
@@ -1197,7 +1192,7 @@ pub(super) fn stepped_locals<'tcx>(
             for at in held_whole {
                 stepped.entry(at).or_insert(SteppedLocal::Lent);
             }
-            return (stepped, stepped_fields, typed_sources, counted);
+            return (stepped, typed_sources, counted);
         }
     }
 }
