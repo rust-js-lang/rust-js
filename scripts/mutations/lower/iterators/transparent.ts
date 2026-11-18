@@ -12,6 +12,22 @@ export const mutations: Mutation[] = [
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
   },
   {
+    name: "transparent-library-iterator-unseen",
+    breaks: "a library's `Iterator` in a chain is no reason, as only the crate's are, so `c().take(2).flat_map(|_| c().skip(2))` of a library's `Count` is JS's helpers, whose `drop(2)` asks its own `nth(2)` where std's `try_fold` asks `nth(1)` (#2067)",
+    file: "src/lower/iterators/transparent.rs",
+    find: "    (ty.walk().filter_map(|part| part.as_type())).any(|part| recognition.is_user_iterator(part))\n",
+    replace: "    (ty.walk().filter_map(|part| part.as_type()))\n        .any(|part| matches!(part.kind(), ty::Adt(adt, _) if adt.did().is_local()) && recognition.is_user_iterator(part))\n",
+    tests: ["test/cross-crate-iterators.test.ts", "-t", "a library's iterator skipped in a flat_map is asked its own nth as std asks it"],
+  },
+  {
+    name: "transparent-opaque-iterator-unrevealed",
+    breaks: "an `impl Iterator` the crate's function returns is no reason, its iterator unrevealed, so `c().take(2).flat_map(|_| c().skip(2))` of a `Count` behind it is JS's helpers, whose `drop(2)` asks its own `nth(2)` where std's `try_fold` asks `nth(1)` (#2072)",
+    file: "src/lower/iterators/transparent.rs",
+    find: "    (ty.walk().filter_map(|part| part.as_type())).any(|part| recognition.is_user_iterator(part))\n",
+    replace: "    (ty.walk().filter_map(|part| part.as_type())).any(|part| matches!(part.kind(), ty::Adt(..)) && recognition.is_user_iterator(part))\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_iterator_own_nth_skipped_in_a_flat_map.rs$"],
+  },
+  {
     name: "transparent-held-unseen",
     breaks: "a chain that starts on an iterator held apart, `evens(&v).count()`, is taken as starting on another source",
     file: "src/lower/iterators/transparent.rs",

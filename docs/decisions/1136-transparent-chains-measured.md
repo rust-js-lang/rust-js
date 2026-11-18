@@ -642,3 +642,52 @@ nobody proved, each entry says why it's there in a comment beside it: on
 its way to being held, of an issue, or kept, proved equal, of an ADR and
 its proof, a test file or the copy matrix's rows, each of which exists.
 test/architecture-iterators.test.ts checks each.
+
+## Amendment: a library's iterator is a user iterator (2026-11-18, #2067)
+
+`user-iterator` asked whether a link's generic arguments hold an
+`Iterator` "of the crate's" by `adt.did().is_local()` beside its own
+`implements_trait` test, a second answer to what
+`Recognition::is_user_iterator` owns: whether an iterator is written in
+Rust, whose own steps std's adapters reach. The owner counts a library's
+iterator, whose impl its consumer compiles (`user_impl`'s
+`foreign.has_impl`); the predicate didn't. So `c().take(2).flat_map(|_|
+c().skip(2)).skip_while(..).any(..)` of a library's `Count` that writes its
+own `nth` answered `held`, filtered out as `c()` isn't a variable, and was
+JS's helpers, whose `drop(2)`, stepped by `next`, asked `nth(2)`, where in
+one crate it answered `user-iterator`, flipped to std's compiled structs,
+whose `Skip::try_fold` asks `nth(1)`, as native Rust does: a wrong answer
+(ADR 0262's "results change: preserve Rust's"), found by the metamorphic
+net's `library` rewrite of skip_try_fold.rs.
+
+The owner also reveals an opaque type, which the predicate's own test, of
+an ADT alone, didn't: in one crate, the same chain of a `Count` returned
+behind `impl Iterator` answered `held` too and asked `nth(2)` (#2072, the
+same cause). The predicate asks the owner now, `user_iterator_in`, of each
+part of each link's generic arguments.
+
+One snapshot moves, `drops_of_consumed_iterators.js`, of a `Counter`
+behind `fn count() -> impl Iterator`: its `count().map(f).collect()` is
+std's compiled `Map` now, `iterator_map(count(), f, { next }, drop)`
+collected by `$roomForHint` and closed, where it was `$closing($iterator(
+..)).map(f)`, 9 lines longer, and runs as native Rust does either way; and
+the `std_traits` example's `countdownRevealed(n).map(f)`, an `impl
+Iterator` too, is `iterator_map(..)`, as long. docs/readability.txt's
+`renamed x$1` share grows 454.6 to 454.7 of 10,000 lines by the first's
+`iter$1`. A
+narrower reason, a user iterator only where an own step its adapters reach
+is written, would keep it, but isn't sound to decide here: `user-iterator`
+keeps every Rust-written iterator out because the hand forms are proved for
+JS's own sources alone, not for what an iterator may write of its own
+(`size_hint`, `fold`, a `nth` past an adapter the catalog doesn't list),
+and it would move every other next-only chain of the corpus back to a hand
+form. ADR 0262's "results change: preserve Rust's" decides it.
+
+test/architecture-iterators.test.ts holds the rule: no file of lowering
+but recognition/iterators.rs tests `is_local()` beside an `Iterator` test.
+A grep of lowering for any other site answering the question by locality,
+or by a test of its own, found none. New corpus case
+`impl_iterator_own_nth_skipped_in_a_flat_map.rs` and a test of
+test/cross-crate-iterators.test.ts; mutations
+`transparent-library-iterator-unseen` and
+`transparent-opaque-iterator-unrevealed`.

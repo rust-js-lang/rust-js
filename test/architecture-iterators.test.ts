@@ -76,6 +76,23 @@ test("which own step an adapter reaches is the OwnStep catalog's alone", () => {
   expect(read("src/lower/recognition/own_steps.rs")).toContain("fn asked_of(self, adapter: &str)");
 });
 
+// Whether an iterator is written in Rust, the crate's or a library's, whose
+// own steps std's adapters reach, is `Recognition::is_user_iterator`'s alone:
+// a site that answered it by `is_local()` beside its own `Iterator` test took
+// a library's iterator for std's, and its chain stepped another `nth` than
+// std's (#2067), as a maker's own list missed a library's back (#2068).
+test("whether an iterator is written in Rust is is_user_iterator's alone", () => {
+  const asks = /implements_trait\([^;]*\biterator\b|has_user_impl\(\s*iterator\b|is_user_impl\([^;]*\biterator\b|StdItem::Iterator/;
+  const own = (lines: string[]) => lines.flatMap((line, i) =>
+    /is_local\(\)/.test(line) && asks.test(lines.slice(Math.max(0, i - 3), i + 4).join("\n")) ? [line.trim()] : []);
+  expect(own(["matches!(part.kind(), ty::Adt(adt, _) if adt.did().is_local()) && recognition.implements_trait(part, iterator)"])).toHaveLength(1);
+  const deciding = ["src/lower.rs", ...files("src/lower")]
+    .filter((file) => file.endsWith(".rs") && file !== "src/lower/recognition/iterators.rs")
+    .flatMap((file) => own(read(file).split("\n").map((line) => line.replace(/\/\/.*$/, ""))).map((line) => `${file}: ${line}`));
+  expect(deciding).toEqual([]);
+  expect(read("src/lower/iterators/transparent.rs")).toContain("recognition.is_user_iterator(part)");
+});
+
 // What an adapter's fold or `nth`, from either end, asks of what it holds is
 // that catalog's too, wherever another question follows it: slice_steps.rs
 // kept its own list of adapters whose `rfold` asks an `nth_back`, without the

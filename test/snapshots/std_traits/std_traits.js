@@ -640,9 +640,9 @@ export function genericIterators(n) {
     middle(evensBelow((n * 2) >>> 0), 3),
     looped([n, 2, 3]),
     total($iterator({ n }, countdownIterator_next)),
-    $iterator(countdownRevealed(n), countdownIterator_next)
-      .map((x) => (x + 1) >>> 0)
-      .reduce((a, b) => (a + b) >>> 0, 0),
+    iterator_map(countdownRevealed(n), (x) => (x + 1) >>> 0, {
+      next: countdownIterator_next,
+    }).reduce((a, b) => (a + b) >>> 0, 0),
   ];
 }
 //# sourceMappingURL=std_traits.js.map

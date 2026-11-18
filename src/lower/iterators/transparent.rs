@@ -19,7 +19,9 @@ use rustc_span::def_id::DefId;
 /// nothing, `Admitted`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(in crate::lower) enum Transparency {
-    /// An `Iterator` of the crate's among its links' generic arguments.
+    /// An `Iterator` written in Rust, the crate's or a library's
+    /// (`Recognition::is_user_iterator`), among its links' generic
+    /// arguments.
     UserIterator,
     /// It starts on an iterator held apart, a variable's, a field's, a
     /// parameter's, or a boxed one Rust made.
@@ -76,10 +78,10 @@ pub(in crate::lower) fn count_chains<'tcx>(
 }
 
 /// Each chain of `thir`, the body `owner`'s, and what keeps it from being
-/// transparent, the first of: an `Iterator` of the crate's; an iterator
-/// held apart it starts on; another source than an array, a `Vec`, a
-/// slice, a string, a range or a binding's boxed iterator; an iterator that
-/// escapes; an iterator method no table proves (`PROVED_LINKS`); an adapter's
+/// transparent, the first of: an `Iterator` written in Rust, the crate's
+/// or a library's; an iterator held apart it starts on; another source
+/// than an array, a `Vec`, a slice, a string, a range or a binding's boxed
+/// iterator; an iterator that escapes; an iterator method no table proves (`PROVED_LINKS`); an adapter's
 /// argument evaluated as it's given, whose order matters; a `Vec`
 /// collected, in a crate that reads capacities, `keeps_capacity`, by an
 /// iterator whose hand-written hint isn't std's lower bound, the capacity
@@ -185,7 +187,7 @@ pub(in crate::lower) fn chains<'tcx>(
             }
         }
         // Of its links' generic arguments, what it starts on its first's.
-        let crate_iterator = |ty: Ty<'tcx>| crate_iterator_in(&recognition, iterator, ty);
+        let crate_iterator = |ty: Ty<'tcx>| user_iterator_in(&recognition, ty);
         let answer = if chain
             .iter()
             .any(|&e| link(e).is_some_and(|(_, args, _)| args.types().any(crate_iterator)))
@@ -310,10 +312,10 @@ fn binding_boxed<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> bool 
     boxed_dyn && crate::lower::bindings::is_binding(tcx, callee)
 }
 
-/// Whether `ty` holds a type of the crate's that's an `Iterator`, whose
-/// `next` the chain may run.
-fn crate_iterator_in<'tcx>(recognition: &Recognition<'_, 'tcx>, iterator: DefId, ty: Ty<'tcx>) -> bool {
-    ty.walk().filter_map(|part| part.as_type()).any(|part| {
-        matches!(part.kind(), ty::Adt(adt, _) if adt.did().is_local()) && recognition.implements_trait(part, iterator)
-    })
+/// Whether `ty` holds an `Iterator` written in Rust, whose `next` the
+/// chain may run: the crate's, or a library's, whose own steps std's
+/// adapters reach as they reach the crate's (#2067), as its owner,
+/// `Recognition::is_user_iterator`, answers.
+fn user_iterator_in<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
+    (ty.walk().filter_map(|part| part.as_type())).any(|part| recognition.is_user_iterator(part))
 }

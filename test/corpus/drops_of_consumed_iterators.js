@@ -8,7 +8,9 @@ import {
   $iter,
   $iterator,
   $live,
+  $roomForHint,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -22,6 +24,10 @@ function counterIterator_next(counter) {
   }
 }
 
+function counterDrop_drop(counter) {
+  console.log(`drop counter at ${counter[0]}`);
+}
+
 function count() {
   return [0];
 }
@@ -33,13 +39,16 @@ function dDrop_drop(d) {
 function main() {
   const iter = count();
   const s = $iterator(iter, counterIterator_next).reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(`drop counter at ${iter[0]}`);
+  counterDrop_drop(iter);
   console.log(`s ${s}`);
-  const doubled = Array.from(
-    $closing($iterator(count(), counterIterator_next), (it) => {
-      console.log(`drop counter at ${it.of[0]}`);
-    }).map((x) => (x * 2) >>> 0),
+  const iter$1 = iterator_map(
+    count(),
+    (x) => (x * 2) >>> 0,
+    { next: counterIterator_next },
+    counterDrop_drop,
   );
+  const doubled = Array.from($roomForHint(iter$1, 4, false));
+  iter$1.return();
   console.log(`[${doubled.join(", ")}]`);
 
   const r = $collectResults(

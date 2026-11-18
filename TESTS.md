@@ -1,5 +1,11 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#2067, #2072): corpus case
+`impl_iterator_own_nth_skipped_in_a_flat_map.rs` holds an own `nth` behind
+an `impl Iterator` asked as std's `try_fold` asks it; test/cross-crate-iterators.test.ts
+a library's; test/architecture-iterators.test.ts holds whether an iterator
+is written in Rust to `is_user_iterator` alone.
+
 Changed on 2026-11-18 (#2052): corpus case
 `map_as_it_is_boxed_beside_an_enumeration_from_its_back.rs` holds an
 enumeration stepped from its back over a map made knowing its back alone.

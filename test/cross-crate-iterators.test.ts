@@ -68,3 +68,59 @@ pub fn stepped() -> Vec<String> {
   const { stepped } = await import(join(dir, "app", "lib.js"));
   expect(stepped()).toEqual(["Some(4)", "Some(7)", "[7, 5, 4, 2]", "Some(8)", "Some(4)", "Some(7)"]);
 });
+
+// A library's iterator that writes its own `nth`, skipped in a `flat_map`
+// and stepped by a short-circuiting consumer: std's `Skip::try_fold` asks
+// its source `nth(n - 1)`, as of the crate's own iterator. The chain is
+// std's compiled structs either way, where of a library's iterator it was
+// JS's helpers, whose `drop(2)`, stepped by `next`, asked `nth(2)` (#2067,
+// found by the metamorphic net's `library` rewrite of skip_try_fold.rs).
+test("a library's iterator skipped in a flat_map is asked its own nth as std asks it", async () => {
+  const dir = fixture("cross-crate-iterators-own-nth");
+  compiled(dir, `pub struct Count {
+    pub at: i32,
+    pub end: i32,
+}
+
+impl Iterator for Count {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<i32> {
+        if self.at < self.end {
+            self.at += 1;
+            Some(self.at)
+        } else {
+            None
+        }
+    }
+
+    fn nth(&mut self, n: usize) -> Option<i32> {
+        println!("nth {n}");
+        self.at = self.at.saturating_add(n as i32);
+        self.next()
+    }
+}
+
+pub fn c() -> Count {
+    Count { at: 0, end: 20 }
+}
+`, `use dep::c;
+
+pub fn any_past() -> bool {
+    c().take(2)
+        .flat_map(|_| c().skip(2))
+        .skip_while(|&x| x < 4)
+        .any(|x| x > 25)
+}
+`);
+  const { anyPast } = await import(join(dir, "app", "lib.js"));
+  const printed: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => printed.push(line);
+  try {
+    expect(anyPast()).toBe(false);
+  } finally {
+    console.log = log;
+  }
+  expect(printed).toEqual(["nth 1", "nth 1"]);
+});
