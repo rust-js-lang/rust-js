@@ -482,11 +482,22 @@ jobs:
         # Split on spaces, with no globbing: each word is a name or a flag.
         # And every 20 s the memory in use and the largest processes, so a
         # shard the runner stops, as it did for its memory (#1097), says
-        # what held it in its log.
+        # what held it in its log. The runner is a session of its own, and
+        # the step ends by stopping that whole group and the memory loop, so
+        # nothing it started outlives it into the post steps: shard 15/16 of
+        # check 44246946525 ended its mutations in 5 min and then sat in
+        # checkout's post step to the job's 50-min limit.
         run: |
           set -f
           ( while sleep 20; do echo "memory: $(free -m | awk '/^Mem:/ { print $3 " MB used, " $7 " MB available" }'); largest: $(ps -eo rss=,comm= --sort=-rss | head -4 | awk '{ printf "%s %.1f GB, ", $2, $1 / 1048576 }')"; done ) &
-          bun scripts/mutations.ts $ARGS ${{ steps.timings.outputs.args }} --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }}
+          watching=$!
+          setsid bun scripts/mutations.ts $ARGS ${{ steps.timings.outputs.args }} --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }} &
+          runner=$!
+          status=0
+          wait "$runner" || status=$?
+          pkill -P "$watching" 2>/dev/null || true
+          kill -- -"$runner" "$watching" 2>/dev/null || true
+          exit "$status"
       # What each mutation took, its build and its tests, passed or not: for
       # the shards to be balanced by, and to see where a run's time goes.
       - if: always()
