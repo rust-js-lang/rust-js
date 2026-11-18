@@ -20,9 +20,11 @@ use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
+mod at_hand;
 mod runs_nothing;
 mod std_given;
-use runs_nothing::{AtHand, CallArgs};
+use at_hand::AtHand;
+use runs_nothing::CallArgs;
 pub(in crate::lower) use runs_nothing::{
     binding_call_runs_nothing, binding_runs_nothing, call_runs_nothing, resolve_runs_nothing,
 };
