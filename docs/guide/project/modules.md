@@ -1169,6 +1169,11 @@ export function resolved(dispatcher) {
 }
 ```
 
+When a class's constructor turns its struct literal's fields into
+assignments such as `this.cacheKey = cacheKey`, each field's JSDoc stays
+above its assignment. A class that declares its own fields has no JSDoc
+on the corresponding constructor assignment.
+
 A struct's field's doc comment documents the object its literal makes
 where the crate writes one literal of the struct: it's that field's
 JSDoc there, as a JS object documents its fields. A struct made in more

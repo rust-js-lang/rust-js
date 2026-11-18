@@ -310,6 +310,9 @@ pub struct Class {
     pub forwarding: Vec<String>,
     /// The fields an ES class declares, `chunkName;`, each where its Rust field is (#568).
     pub fields: Vec<(Span, String)>,
+    /// JSDoc that belongs to the constructor's assignments when the class
+    /// does not declare those fields separately (ADR 0444, amended).
+    pub constructor_field_docs: Vec<(u32, String)>,
     /// Whether the item after it, a `js::on_load!`'s one statement,
     /// replaces its prototype, `ReactPromise.prototype =
     /// Object.create(Promise.prototype)`: printed right after its

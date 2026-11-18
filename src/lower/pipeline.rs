@@ -829,7 +829,10 @@ pub fn lower_crate<'tcx>(
                 let owner = fns[&def_id].owner.as_deref().unwrap_or_default();
                 let mut copied =
                     std::iter::once(&mut lowered.function).chain(copies.iter_mut().map(|c| &mut c.function));
-                if let Some(what) = copied.find_map(|f| super::classes::as_member(tcx, def_id, owner, f).err()) {
+                let mut constructor_field_docs = Vec::new();
+                if let Some(what) = copied
+                    .find_map(|f| super::classes::as_member(tcx, def_id, owner, f, &mut constructor_field_docs).err())
+                {
                     super::refusal::refuse(tcx, tcx.def_span(def_id), super::refusal::Refused::Feature(what));
                     failed = true;
                     continue;
@@ -847,6 +850,7 @@ pub fn lower_crate<'tcx>(
                                     .map_or(js::Span::NONE, |adt| sources.item_span(tcx, adt)),
                                 ..super::classes::js_class(tcx, def_id, &import_names[&module])
                             });
+                            class.constructor_field_docs.extend(constructor_field_docs);
                             let forwarding = forwarding_prototypes.contains(&def_id);
                             super::classes::place((member, forwarding), class, lowered.function.name.word()); // word: the method's JS name, as the class shows it
                         }
