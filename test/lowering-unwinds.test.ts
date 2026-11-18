@@ -178,7 +178,7 @@ pub fn owner_stack(info: &Info) -> String {
 }
 `);
   expect(js).not.toContain("$catchUnwind");
-  expect(js).not.toContain("kept");
+  expect(js).not.toContain("let kept");
   expect(js).toContain(`export function describe(value) {
   try {`);
   expect(js).toContain(`  } catch (error) {

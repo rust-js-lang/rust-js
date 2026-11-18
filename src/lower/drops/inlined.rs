@@ -108,20 +108,13 @@ fn inline_drop(items: &mut Vec<Item>, name: &js::Name) {
             }
             // Where its name is the guard's alone: a closure's parameter of
             // that name, or a `const` another closure makes, is another
-            // value, whose `d[0]` is no guard's field (#239); so, of one
-            // named twice, in each closure where it's its own.
+            // value, whose `d[0]` is no guard's field (#239). A guard named
+            // as another closure's variable is never so since #1681 change
+            // 3: each is spelled apart by its id (ADR 1150).
             for guard in given {
-                if alone(own_params, &made, &guard, true) {
+                if alone(own_params, &made, &guard) {
                     taken_apart(&mut made, own_params, &guard);
-                    continue;
                 }
-                js::each_expr_mut(&mut made, &mut |e| {
-                    if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind
-                        && alone(params, body, &guard, false)
-                    {
-                        taken_apart(body, params, &guard);
-                    }
-                });
             }
             bodies.push(made);
         });
@@ -194,12 +187,9 @@ fn called_closure(body: &mut Vec<Stmt>, params: &[Pattern], name: &js::Name) {
     if declared != 1 || !reads_where_made(body, params, name, (&closure_params, &closure_body)) {
         return;
     }
-    // What's beside the body where it's called, the closure's `const` not:
-    // it goes, so what the closure declares is no other name there.
-    let mut whole = body.clone();
-    js::each_block_mut(&mut whole, &mut |stmts| {
-        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));
-    });
+    // What's beside the body where it's called, what the closure declares
+    // spelled apart from it already, its own `const` too (ADR 1150).
+    let whole = body.clone();
     let mut done = false;
     js::each_block_mut(body, &mut |stmts| {
         let called = |s: &Stmt| {
@@ -246,22 +236,14 @@ fn reads_where_made(body: &[Stmt], params: &[Pattern], name: &js::Name, closure:
     !unknown && js::scopes::reach(body, name, &outside)
 }
 
-/// Whether `guard` is a variable of a function of `params` and `body`:
-/// declared there, and, of a closure in the function a drop's written in,
-/// not `whole`, by a parameter or its own statements' `const`, so no read
-/// of it in the closure is of a variable outside. By its id, one
-/// declaration: a tree copied whole, its declarations again, has fresh ids
-/// (`js::rebound`), and one that doesn't `js::validate` refuses.
-fn alone(params: &[Pattern], body: &[Stmt], guard: &js::Name, whole: bool) -> bool {
-    let given = params.iter().any(|p| p.bound().contains(&guard));
-    let mut declared = given;
+/// Whether `guard` is a variable of a function of `params` and `body`,
+/// declared there, so no read of it there is of a variable outside. By its
+/// id, one declaration: a tree copied whole, its declarations again, has
+/// fresh ids (`js::rebound`), and one that doesn't `js::validate` refuses.
+fn alone(params: &[Pattern], body: &[Stmt], guard: &js::Name) -> bool {
+    let mut declared = params.iter().any(|p| p.bound().contains(&guard));
     js::each_declared_name(body, &mut |n| declared |= n == guard);
     declared
-        && (whole
-            || given
-            || body
-                .iter()
-                .any(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard)))
 }
 
 /// What of a guard what runs after reads: the whole of it, given or read

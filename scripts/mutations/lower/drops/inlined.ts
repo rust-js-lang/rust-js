@@ -276,17 +276,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_of_its_own_type.rs$"],
   },
   {
-    name: "guard-named-twice-kept-whole",
-    breaks:
-      "a one-field guard whose name another closure's variable has stays `const counted = [x]` in the closure it's its own in (#239)",
-    file: "src/lower/drops/inlined.rs",
-    find: "                    if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind\n                        && alone(",
-    replace:
-      "                    if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &mut e.kind\n                        && false && alone(",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_name_shared.rs$"],
-    snapshots: true,
-  },
-  {
     name: "const-closure-drop-kept",
     breaks:
       "a guard in a closure that's a `const` fn keeps its drop a function, `restoreDrop_drop(_restore)` (ADR 0608, amended)",
@@ -414,16 +403,6 @@ export const mutations: Mutation[] = [
     find: "            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),\n",
     replace: "            ExprKind::Member(of, key) if false && matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_field_written_by_a_swap_or_in_an_expression.rs$"],
-  },
-  {
-    name: "guard-closure-beside-itself",
-    breaks:
-      "a guard's closure's body, in its call's place, names what it declares apart from its own `const`'s, `hold$1$1`, alien-signals' `link$1$1` (#501)",
-    file: "src/lower/drops/inlined.rs",
-    find: "        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));\n    });\n    let mut done = false;\n",
-    replace: "    });\n    let mut done = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
-    snapshots: true,
   },
   {
     name: "emptied-scopes-kept",
