@@ -20,6 +20,7 @@ import {
   $traitImpl,
   $tryOf,
   enumerateDebug_fmt,
+  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
@@ -94,6 +95,8 @@ function positionsDoubleEndedIterator_nextBack(
             unwind,
             ends,
           ),
+        (iterator, n) =>
+          enumerateDoubleEndedIterator_advanceBackBy(iterator, n, IIterator, IDoubleEndedIterator),
       ),
     ),
   )
@@ -157,6 +160,7 @@ const Wrap = {
           next_back: RDoubleEndedIterator.next_back,
           nthBack: RDoubleEndedIterator.nthBack,
           tryRfold: RDoubleEndedIterator.tryRfold,
+          advanceBackBy: RDoubleEndedIterator.advanceBackBy,
         }),
         (x) => (x * 3) >>> 0,
       ),

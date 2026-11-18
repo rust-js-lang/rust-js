@@ -18,6 +18,7 @@ import {
   $tryOf,
   $unwindsOn,
   iterator_rev,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
@@ -672,6 +673,22 @@ function main() {
               },
               unwind,
               ends,
+            ),
+          (iterator, n) =>
+            revDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              {
+                next: ownIterator_next,
+                sizeHint: ownIterator_sizeHint,
+                fold: ownIterator_fold,
+                nth: ownIterator_nth,
+                last: ownIterator_last,
+                count: ownIterator_count,
+              },
+              (own) => {
+                loudDrop_drop(own._held);
+              },
             ),
         ),
         1,

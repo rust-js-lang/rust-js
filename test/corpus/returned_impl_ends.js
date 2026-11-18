@@ -15,6 +15,7 @@ import {
   $rposition,
   $stepBy,
   $tryOf,
+  chainDoubleEndedIterator_advanceBackBy,
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_tryRfold,
@@ -202,7 +203,7 @@ function main() {
     `[${Array.from($roomForHint($stepBy($iterator(ranged(), $rangeNextBack), 2), 4, false)).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rev($knowing(chained(), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind, ends) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind, ends))).take(3)).join(", ")}]`,
+    `[${Array.from($rev($knowing(chained(), chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind, ends) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind, ends), chainDoubleEndedIterator_advanceBackBy)).take(3)).join(", ")}]`,
   );
   const value$1 = $findBack(
     $knowing(
@@ -226,6 +227,7 @@ function main() {
           unwind,
           ends,
         ),
+      chainDoubleEndedIterator_advanceBackBy,
     ),
     (x) => x % 3 === 0,
   );

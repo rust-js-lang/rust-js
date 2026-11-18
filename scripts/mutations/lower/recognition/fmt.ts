@@ -222,4 +222,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^visitor_err_a_fmt_error_driven_by_generic_code.rs$"],
   },
+  {
+    name: "inlined-text-made-by-its-last",
+    breaks:
+      "an inlined `Arguments::from_str` is taken to be made by its scope's last statement, a storage end, so it isn't called again and `Skip::advance_back_by`'s `assert!` message is refused: std's `Skip` isn't compiled whole (#1569, #2125)",
+    file: "src/lower/recognition/fmt.rs",
+    find: "    let &made_at = its.iter().rev().find(|&&at| !is_storage(at))?;\n",
+    replace: "    let &made_at = its.last()?;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

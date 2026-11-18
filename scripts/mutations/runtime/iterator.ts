@@ -304,4 +304,14 @@ export const mutations: Mutation[] = [
     replace: "  if ($ownMethod(value, \"advanceBackBy\")",
     tests: ["test/corpus.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it.rs$"],
   },
+  {
+    name: "given-back-advance-back-by-dropped",
+    breaks:
+      "a value given with a dictionary whose `advance_back_by` is std's compiled one is stepped back one at a time, so an `enumerate().rev()` counted drops its `Vec`'s items back to front where std drops them as one slice (#2125)",
+    file: "src/runtime/iterator.js",
+    find: "    back?.advanceBackBy,\n",
+    replace: "    undefined,\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^enumerate_advanced_from_its_back_by_its_source with std's iterator structs$"],
+    env: { ITERATOR_FORMS: "corpus" },
+  },
 ];

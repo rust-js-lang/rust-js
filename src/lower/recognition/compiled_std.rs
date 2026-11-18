@@ -54,11 +54,13 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterRev, Some("Iterator"), "find"),
     (StdPath::IterRev, Some("Iterator"), "fold"),
     (StdPath::IterRev, Some("Iterator"), "try_fold"),
+    (StdPath::IterRev, Some("Iterator"), "advance_by"),
     (StdPath::IterRev, Some("DoubleEndedIterator"), "next_back"),
     (StdPath::IterRev, Some("DoubleEndedIterator"), "nth_back"),
     (StdPath::IterRev, Some("DoubleEndedIterator"), "rfold"),
     (StdPath::IterRev, Some("DoubleEndedIterator"), "try_rfold"),
     (StdPath::IterRev, Some("DoubleEndedIterator"), "rfind"),
+    (StdPath::IterRev, Some("DoubleEndedIterator"), "advance_back_by"),
     (StdPath::IterRev, Some("ExactSizeIterator"), "len"),
     (StdPath::IterRev, Some("Clone"), "clone"),
     (StdPath::IterRev, Some("Debug"), "fmt"),
@@ -74,6 +76,7 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterEnumerate, Some("DoubleEndedIterator"), "nth_back"),
     (StdPath::IterEnumerate, Some("DoubleEndedIterator"), "rfold"),
     (StdPath::IterEnumerate, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterEnumerate, Some("DoubleEndedIterator"), "advance_back_by"),
     (StdPath::IterEnumerate, Some("ExactSizeIterator"), "len"),
     (StdPath::IterEnumerate, Some("Clone"), "clone"),
     (StdPath::IterEnumerate, Some("Debug"), "fmt"),
@@ -174,18 +177,22 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterFlatten, Some("Iterator"), "try_fold"),
     (StdPath::IterFlatten, Some("Iterator"), "last"),
     (StdPath::IterFlatten, Some("Iterator"), "count"),
+    (StdPath::IterFlatten, Some("Iterator"), "advance_by"),
     (StdPath::IterFlatten, Some("DoubleEndedIterator"), "next_back"),
     (StdPath::IterFlatten, Some("DoubleEndedIterator"), "rfold"),
     (StdPath::IterFlatten, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterFlatten, Some("DoubleEndedIterator"), "advance_back_by"),
     (StdPath::IterFlatMap, Some("Iterator"), "next"),
     (StdPath::IterFlatMap, Some("Iterator"), "size_hint"),
     (StdPath::IterFlatMap, Some("Iterator"), "fold"),
     (StdPath::IterFlatMap, Some("Iterator"), "try_fold"),
     (StdPath::IterFlatMap, Some("Iterator"), "last"),
     (StdPath::IterFlatMap, Some("Iterator"), "count"),
+    (StdPath::IterFlatMap, Some("Iterator"), "advance_by"),
     (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "next_back"),
     (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "rfold"),
     (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "advance_back_by"),
     (StdPath::IterSkip, Some("Iterator"), "next"),
     (StdPath::IterSkip, Some("Iterator"), "__iterator_get_unchecked"),
     (StdPath::IterSkip, Some("Iterator"), "size_hint"),
@@ -199,6 +206,7 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterSkip, Some("DoubleEndedIterator"), "nth_back"),
     (StdPath::IterSkip, Some("DoubleEndedIterator"), "try_rfold"),
     (StdPath::IterSkip, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterSkip, Some("DoubleEndedIterator"), "advance_back_by"),
     (StdPath::IterSkip, Some("Clone"), "clone"),
     (StdPath::IterSkip, Some("Debug"), "fmt"),
     (StdPath::IterTake, Some("Iterator"), "next"),
@@ -212,6 +220,7 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterTake, Some("DoubleEndedIterator"), "nth_back"),
     (StdPath::IterTake, Some("DoubleEndedIterator"), "try_rfold"),
     (StdPath::IterTake, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterTake, Some("DoubleEndedIterator"), "advance_back_by"),
     (StdPath::IterTake, Some("ExactSizeIterator"), "len"),
     (StdPath::IterTake, Some("Clone"), "clone"),
     (StdPath::IterTake, Some("Debug"), "fmt"),
@@ -237,6 +246,7 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterChain, Some("DoubleEndedIterator"), "nth_back"),
     (StdPath::IterChain, Some("DoubleEndedIterator"), "rfold"),
     (StdPath::IterChain, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterChain, Some("DoubleEndedIterator"), "advance_back_by"),
     (StdPath::IterChain, Some("Clone"), "clone"),
     (StdPath::IterChain, Some("Debug"), "fmt"),
     (StdPath::IterZip, Some("Iterator"), "next"),
@@ -457,6 +467,7 @@ pub(crate) const KNOWING_STEPS: &[(&str, &str)] = &[
     ("DoubleEndedIterator", "next_back"),
     ("DoubleEndedIterator", "rfold"),
     ("DoubleEndedIterator", "nth_back"),
+    ("DoubleEndedIterator", "advance_back_by"),
     ("DoubleEndedIterator", "try_rfold"),
     ("ExactSizeIterator", "len"),
 ];
@@ -1041,4 +1052,66 @@ pub(crate) fn has_compiled_bodies(tcx: TyCtxt<'_>, adt: DefId) -> bool {
                     .collect()
             })
             .contains(&adt)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// What std writes of a compiled struct that isn't compiled, and why:
+    /// of each struct, `*`, or of one by its catalog name.
+    const LEFT_OUT: &[(&str, &str, &str)] = &[
+        // `ExactSizeIterator::is_empty`, unstable (`exact_size_is_empty`):
+        // rust-js refuses a call of it, so no compiled body or crate asks
+        // it, and its default, `len() == 0`, is never run either (ADR
+        // 0262's first case, nothing to observe).
+        ("*", "is_empty", "a call of it is refused"),
+        // Written by hand, `$peekableHint`, std's body over its source's
+        // hint, which `std_iterator_steps` gives it where it's made.
+        ("Peekable", "size_hint", "`$peekableHint`"),
+    ];
+
+    /// Each step std's impls of a compiled adapter write, as std's steps'
+    /// catalog has them (`written`), is compiled, or `LEFT_OUT` says why:
+    /// one that isn't runs the trait's default in its place, which asks its
+    /// source another step than std's does, a `Rev`'s `advance_by` its
+    /// `next_back` one at a time, dropping a `Vec`'s items back to front
+    /// where std drops them as one slice, front to back (#2125).
+    #[test]
+    fn compiled_structs_compile_what_std_writes() {
+        let traits = ["Iterator", "DoubleEndedIterator", "ExactSizeIterator"];
+        let mut compiled: Vec<(&str, Vec<&str>)> = Vec::new();
+        for &(path, of, method) in COMPILED_STD {
+            let name = path.path().rsplit("::").next().expect("a path");
+            if !of.is_some_and(|of| traits.contains(&of)) {
+                continue;
+            }
+            match compiled.iter_mut().find(|(n, _)| *n == name) {
+                Some((_, methods)) => methods.push(method),
+                None => compiled.push((name, vec![method])),
+            }
+        }
+        let mut missing = Vec::new();
+        for (name, methods) in &compiled {
+            for &step in super::super::std_steps::written(name) {
+                let left_out = (LEFT_OUT.iter()).any(|&(of, left, _)| (of == "*" || of == *name) && left == step);
+                if !methods.contains(&step) && !left_out {
+                    missing.push(format!("{name}::{step}"));
+                }
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "std writes these of a compiled struct, which aren't compiled: {missing:?}"
+        );
+        // And each left out is one std writes of a compiled struct.
+        for &(of, left, _) in LEFT_OUT {
+            assert!(
+                (compiled.iter())
+                    .any(|(name, _)| (of == "*" || of == *name)
+                        && super::super::std_steps::written(name).contains(&left)),
+                "`LEFT_OUT`'s {of}::{left} is written by no compiled struct"
+            );
+        }
+    }
 }

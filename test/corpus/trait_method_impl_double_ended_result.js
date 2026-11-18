@@ -14,6 +14,7 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_tryRfold,
   mapExactSizeIterator_len,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_tryRfold,
@@ -68,6 +69,7 @@ export const aSource = {
           unwind,
           ends,
         ),
+      revDoubleEndedIterator_advanceBackBy,
     ),
 };
 function aSource_items(a) {

@@ -25,6 +25,7 @@ import {
   iterator_enumerate,
   iterator_rev,
   iterator_stepBy,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
@@ -269,6 +270,14 @@ function main() {
           unwind,
           ends,
           undefined,
+          dDrop_drop,
+        ),
+      advanceBackBy: (iterator, n) =>
+        revDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: everyIterator_next, sizeHint: everyIterator_sizeHint },
+          everyDrop_drop,
           dDrop_drop,
         ),
     },

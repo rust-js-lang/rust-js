@@ -24,10 +24,12 @@ import {
   $unwindsOn,
   iterator_skip,
   iterator_take,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -145,6 +147,16 @@ function lentRfold() {
                 unwind,
                 ends,
                 undefined,
+                dDrop_drop,
+              ),
+            (iterator, n) =>
+              takeIDoubleEndedIterator_advanceBackBy(
+                iterator,
+                n,
+                { next: $next, advanceBy: $advanceSlice },
+                { next_back: $nextBack },
+                intoIterExactSizeIterator,
+                $dropEach(dDrop_drop),
                 dDrop_drop,
               ),
           ),
@@ -344,6 +356,16 @@ function dynRfold() {
         undefined,
         dDrop_drop,
       ),
+    (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        intoIterExactSizeIterator,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ),
   );
   try {
     console.log(
@@ -496,6 +518,16 @@ function dynFold() {
         undefined,
         dDrop_drop,
       ),
+    (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        intoIterExactSizeIterator,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ),
   );
   try {
     console.log(
@@ -576,6 +608,15 @@ function dynRfoldOfASkip() {
         unwind,
         ends,
         undefined,
+        dDrop_drop,
+      ),
+    (iterator, n) =>
+      skipDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        $dropEach(dDrop_drop),
         dDrop_drop,
       ),
   );
@@ -689,6 +730,16 @@ function boxedDynRfold() {
           undefined,
           dDrop_drop,
         ),
+      (iterator, n) =>
+        takeIDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next, advanceBy: $advanceSlice },
+          { next_back: $nextBack },
+          intoIterExactSizeIterator,
+          $dropEach(dDrop_drop),
+          dDrop_drop,
+        ),
     ),
     () => {
       a.return();
@@ -747,6 +798,15 @@ function dynTryFoldOfASkip() {
         unwind,
         ends,
         undefined,
+        dDrop_drop,
+      ),
+    advanceBackBy: (iterator, n) =>
+      skipDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        $dropEach(dDrop_drop),
         dDrop_drop,
       ),
   };
@@ -823,6 +883,18 @@ function dynTryFoldOfASkip() {
         unwind,
         ends,
         undefined,
+        dDrop_drop,
+      ),
+    (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, fold: $foldOf },
+        skipDoubleEndedIterator,
+        skipExactSizeIterator,
+        (skip) => {
+          skip.return();
+        },
         dDrop_drop,
       ),
   );

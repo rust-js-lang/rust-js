@@ -1570,3 +1570,63 @@ made from std alone by `test/std-steps.test.ts`**, never by hand
 Case (ADR 0262): R. Which of the crate's steps std calls, and in which
 order, is observable; the catalog is std's, so what reads it does as std.
 Byte-identical output: `Wrapper::passes` gives `PASSED_ON`'s every answer.
+
+**Step 1c, the runtime's adapters held to it.** test/iterator-steps.test.ts
+builds each of the runtime's forms of a std adapter, `$mapEnds`,
+`$Steps.map`, `$filterEnds`, `$Steps.filter`, `$enumerate`, `$skipping`,
+`$taking`, `$stepBy`, `$stepByEnds`, `$lazyChain`, `$lazyZip`, `$rev`,
+`$flatMap`, `$flattenEnds`, `$lazyTakeWhile`, `$lazySkipWhile` and `$lent`'s
+four, over sources that write every step and record each they're asked,
+asks each step as the lowering does, in each of the probe's four runs, and
+holds what it asked to the catalog's trace, exactly; a form for one end
+isn't asked the other's. No difference is let stand: what isn't fixed yet
+is listed under its issue and comes off as it's fixed. Fixed with it:
+`$enumerate`'s `advance_back_by`, its source's (#2120); `$taking`'s, its
+source trimmed and advanced in one `advance_back_by` (#2121); `$skipping`'s,
+its source's, as many as it gives; and `skip`'s and `take`'s length, std's
+`ExactSizeIterator::len` of their size hint, not their source's `len`.
+Listed: the flattens' inner `advance_by`, `last` and back steps (#2123) and
+a `step_by`'s `nth` past an empty source (#2124). The two lengths keep
+their mutations, `skipping-length-its-source` and
+`taking-length-its-source`, retargeted to the lines that now say them,
+caught by `skip_advanced_from_its_back_by_its_source` and
+`counted_adapter_given_back_from_its_back`.
+
+**Step 1c, std's compiled structs held to it too (#2125).** The same three
+cases failed in the build of std's structs: a compiled struct ran the
+trait's default where std writes its own step, as COMPILED_STD left out
+what `docs/std-coverage.txt` doesn't list, the unstable `advance_by` and
+`advance_back_by` (`Take::count` is its source's `advance_by` on 1.100, a
+`Rev`'s, which was `next_back` one at a time, dropping a `Vec`'s items
+back to front where std drops them as one slice, front to back). And a
+compiled struct's `DoubleEndedIterator` dictionary carried no
+`advance_back_by`, so what std's compiled code asked of it was the
+default too. Now:
+
+- **Every step std writes of a compiled struct is compiled**: `Rev`'s
+  `advance_by` and `advance_back_by`, `Take`'s, `Skip`'s, `Enumerate`'s and
+  `Chain`'s `advance_back_by`, `Flatten`'s and `FlatMap`'s `advance_by` and
+  `advance_back_by`. A unit test, `compiled_structs_compile_what_std_writes`,
+  holds COMPILED_STD to the catalog's `writes`; what's left out says why:
+  `ExactSizeIterator::is_empty`, whose call rust-js refuses (unstable), so
+  nothing asks it or its default (ADR 0262's first case), and `Peekable`'s
+  `size_hint`, written by hand as `$peekableHint` (#2126 compiles it).
+- **What a `DoubleEndedIterator` dictionary carries is the catalog's**:
+  `back_steps()`, the steps of the probe's `next_back` line some impl
+  writes, `rfold`, `nth_back`, `try_rfold` and `advance_back_by`, replaces
+  the hand list `BACK_ENTRIES`. A compiled struct's dictionary, a `&mut`'s
+  passed on (`Wrapper::passes`) and `$knowing`'s compiled steps each
+  iterate it; a unit test holds the runtime's `knowing(back, len, ..)` to
+  it. `$given`, `$iterator`, `$knowing` and `$stdIterator`'s `knowing`
+  carry `advanceBackBy`, its `Result` the count `$advanceBackBy` reads.
+- **`Skip::advance_back_by`'s `assert!` message compiles** (#1569's
+  lowering half): rustc's inliner leaves `fmt::Arguments::from_str`'s
+  pointer bits in an optimized body. `recognition::inlined_text` finds its
+  inlined statements exactly, its one text and the `Arguments` it makes,
+  each local it writes read by it alone, and `mir::prepared` calls it
+  again, `_a = Arguments::from_str(<text>)`, as the crate's own MIR does;
+  any other shape is left as it is, refused as before.
+
+Case (ADR 0262): R, drop order and what's asked are observable. The
+corpus cases `{enumerate,take,skip}_advanced_from_its_back_by_its_source`
+run as native in both builds.

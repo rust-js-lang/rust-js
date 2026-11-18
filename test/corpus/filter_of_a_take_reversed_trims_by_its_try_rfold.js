@@ -17,11 +17,13 @@ import {
   $tryOf,
   iterator_rev,
   iterator_take,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
   revDoubleEndedIterator_tryRfold,
   revExactSizeIterator_len,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -135,6 +137,16 @@ function main() {
         undefined,
         noteDrop_drop,
       ),
+    advanceBackBy: (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        intoIterExactSizeIterator,
+        $dropEach(noteDrop_drop),
+        noteDrop_drop,
+      ),
   };
   const value = ends(
     $filterEnds(
@@ -208,6 +220,16 @@ function main() {
             unwind,
             ends,
             undefined,
+            noteDrop_drop,
+          ),
+        (iterator, n) =>
+          revDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf },
+            (take) => {
+              take.return();
+            },
             noteDrop_drop,
           ),
       ),
@@ -293,6 +315,16 @@ function main() {
             unwind,
             ends,
             undefined,
+            noteDrop_drop,
+          ),
+        (iterator, n) =>
+          revDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf },
+            (take) => {
+              take.return();
+            },
             noteDrop_drop,
           ),
       ),

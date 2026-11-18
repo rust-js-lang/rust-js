@@ -19,6 +19,7 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_tryRfold,
   mapExactSizeIterator_len,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_tryRfold,
@@ -143,6 +144,7 @@ function scaledSource(K) {
             unwind,
             ends,
           ),
+        (iterator, n) => revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
       ),
     hidden: (arg0, M) =>
       $knowing(

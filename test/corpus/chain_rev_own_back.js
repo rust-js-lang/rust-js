@@ -9,6 +9,7 @@ import {
   $nextBack,
   $rev,
   $tryOf,
+  chainDoubleEndedIterator_advanceBackBy,
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_tryRfold,
@@ -88,6 +89,13 @@ function main() {
               undefined,
               unwind,
               ends,
+            ),
+          (iterator, n) =>
+            chainDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: downIterator_next },
+              { next_back: downDoubleEndedIterator_nextBack },
             ),
         ),
       ),

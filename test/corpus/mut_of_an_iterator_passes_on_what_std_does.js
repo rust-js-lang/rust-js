@@ -67,6 +67,7 @@ function throughGet(g, RIterator, RDoubleEndedIterator, GGetMutR) {
         next_back: RDoubleEndedIterator.next_back,
         nthBack: RDoubleEndedIterator.nthBack,
         tryRfold: RDoubleEndedIterator.tryRfold,
+        advanceBackBy: RDoubleEndedIterator.advanceBackBy,
       }),
     ),
   );
@@ -80,6 +81,7 @@ const Held = {
           next_back: RDoubleEndedIterator.next_back,
           nthBack: RDoubleEndedIterator.nthBack,
           tryRfold: RDoubleEndedIterator.tryRfold,
+          advanceBackBy: RDoubleEndedIterator.advanceBackBy,
         }),
         (x) => (x * 2) >>> 0,
       ),
@@ -94,6 +96,7 @@ const Held = {
           next_back: RDoubleEndedIterator.next_back,
           nthBack: RDoubleEndedIterator.nthBack,
           tryRfold: RDoubleEndedIterator.tryRfold,
+          advanceBackBy: RDoubleEndedIterator.advanceBackBy,
         }),
         (x) => x % 2 === 0,
       ),

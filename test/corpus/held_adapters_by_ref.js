@@ -14,6 +14,7 @@ import {
   filterDoubleEndedIterator_tryRfold,
   iterator_filter,
   iterator_skip,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_tryRfold,
@@ -88,6 +89,7 @@ function main() {
             unwind,
             ends,
           ),
+        skipDoubleEndedIterator_advanceBackBy,
       ),
     ).take(2),
   );

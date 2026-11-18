@@ -19,6 +19,7 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   revClone_clone,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
@@ -76,6 +77,7 @@ function main() {
           unwind,
           ends,
         ),
+      (iterator, n) => revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
     ),
   );
   console.log(

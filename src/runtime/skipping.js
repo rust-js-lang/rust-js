@@ -154,7 +154,9 @@ function $skipping(iter, n, drop) {
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
   };
   skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
-  skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
+  // Its length std's `ExactSizeIterator::len`, its size hint's: its
+  // source's `size_hint`, as std's `Skip` writes no `len` (#2112).
+  skipping.len = () => skipping.sizeHint()[0];
   // Std's `Skip::nth_back`: its source's, of what it gives, the crate's own
   // where it reaches it (#220); past what it gives, what its source's finds
   // let go of, dropped (#718).
@@ -186,8 +188,17 @@ function $skipping(iter, n, drop) {
     $closedAfter(ends, () => $closed(skipping.iter));
     return folded;
   };
+  // Std's `Skip::advance_back_by(m)`: as many as it gives of `m`, by its
+  // source's `advance_back_by`, its own where it has one, a `Vec`'s as one
+  // slice, front to back (#2112).
+  const advanceBackBy = (m, dropItem = drop) => {
+    const min = Math.min(skipping.len(), m);
+    $advanceBackBy(skipping.iter, min, undefined, dropItem);
+    return m - min;
+  };
   $forward(skipping, iter, {
     advanceBy,
+    advanceBackBy: iter.back !== undefined ? advanceBackBy : undefined,
     count: iter.ownNth || iter.ownCount ? count : undefined,
     // Std's `fold` and `try_fold` of any source with an `nth`: its first
     // step taken while their frame holds only `init` and `f` (#768).

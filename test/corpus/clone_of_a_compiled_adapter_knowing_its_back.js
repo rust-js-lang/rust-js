@@ -12,6 +12,7 @@ import {
   $nextBack,
   $tryOf,
   copiedClone,
+  copiedDoubleEndedIterator_advanceBackBy,
   copiedDoubleEndedIterator_nextBack,
   copiedDoubleEndedIterator_rfold,
   copiedDoubleEndedIterator_tryRfold,
@@ -219,6 +220,13 @@ function cloneStepped(items) {
             undefined,
             unwind,
             ends,
+          ),
+        advanceBackBy: (iterator, n) =>
+          copiedDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+            mapDoubleEndedIterator,
           ),
       },
     ),

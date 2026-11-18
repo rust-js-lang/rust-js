@@ -361,6 +361,43 @@
         ]
       },
       {
+        "key": "core::iter::adapters::chain::{impl#2}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::Chain<A, B> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "chainDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::chain::{impl#2}::next_back",
         "rust_path": "rust_js_std::<core::iter::Chain<A, B> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -1949,6 +1986,33 @@
         ]
       },
       {
+        "key": "core::iter::adapters::enumerate::{impl#2}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "enumerateDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::enumerate::{impl#2}::next_back",
         "rust_path": "rust_js_std::<core::iter::Enumerate<I> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -3196,6 +3260,63 @@
         ]
       },
       {
+        "key": "core::iter::adapters::flatten::{impl#4}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::flatten::{impl#4}::next_back",
         "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -3384,6 +3505,59 @@
           },
           {
             "index": 8,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#3}::advance_by",
+        "rust_path": "rust_js_std::<core::iter::FlatMap<I, U, F> as core::iter::Iterator>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "flatMapIterator_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 4,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 5,
             "marks": [
               "drop"
             ],
@@ -3733,6 +3907,55 @@
         ]
       },
       {
+        "key": "core::iter::adapters::flatten::{impl#12}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::flatten::{impl#12}::next_back",
         "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -3899,6 +4122,53 @@
           },
           {
             "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#11}::advance_by",
+        "rust_path": "rust_js_std::<core::iter::Flatten<I> as core::iter::Iterator>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenIterator_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "OneShot"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
             "marks": [
               "drop"
             ]
@@ -7025,6 +7295,32 @@
         ]
       },
       {
+        "key": "core::iter::adapters::rev::{impl#2}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::Rev<I> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "revDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::rev::{impl#2}::next_back",
         "rust_path": "rust_js_std::<core::iter::Rev<I> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -7206,6 +7502,33 @@
             ],
             "stepped": [
               "core::iter::traits::exact_size::ExactSizeIterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::rev::{impl#1}::advance_by",
+        "rust_path": "rust_js_std::<core::iter::Rev<I> as core::iter::Iterator>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "revIterator_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
             ]
           },
           {
@@ -7860,6 +8183,33 @@
             "index": 0,
             "marks": [
               "written_into"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::skip::{impl#3}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::Skip<I> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "skipDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
             ]
           }
         ]
@@ -9224,6 +9574,34 @@
         ]
       },
       {
+        "key": "core::iter::adapters::take::{impl#4}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::Take<I> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "takeIDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::exact_size::ExactSizeIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::take::{impl#4}::next_back",
         "rust_path": "rust_js_std::<core::iter::Take<I> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -9611,6 +9989,24 @@
             "index": 3,
             "marks": [
               "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::take::{impl#11}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::Take<core::iter::Repeat<T>> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "takeRepeatTDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
             ]
           }
         ]
@@ -11322,6 +11718,117 @@
         ]
       },
       {
+        "key": "core::iter::adapters::flatten::{impl#21}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#47}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUDoubleEndedIterator2_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "core::iter::traits::double_ended::DoubleEndedIterator",
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#21}::advance_back_by::advance",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::DoubleEndedIterator>::advance_back_by::advance",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUDoubleEndedIterator_advanceBackBy_advance",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::flatten::{impl#21}::next_back",
         "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -11633,6 +12140,114 @@
           },
           {
             "index": 6,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#20}::advance_by",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUIterator_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#46}::advance_by",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUIterator2_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "Fused"
+            ],
+            "stepped": [
+              "core::iter::traits::iterator::Iterator"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 3,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::flatten::{impl#20}::advance_by::advance",
+        "rust_path": "rust_js_std::<core::iter::adapters::flatten::FlattenCompat<I, U> as core::iter::Iterator>::advance_by::advance",
+        "module": [
+          "iter"
+        ],
+        "export": "flattenCompatIUIterator_advanceBy_advance",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
             "marks": [
               "drop"
             ]
@@ -14730,6 +15345,35 @@
         ]
       },
       {
+        "key": "core::iter::adapters::flatten::advance_by_one",
+        "rust_path": "rust_js_std::core::iter::adapters::flatten::advance_by_one",
+        "module": [
+          "iter"
+        ],
+        "export": "advanceByOne",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 2,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::flatten::and_then_or_clear",
         "rust_path": "rust_js_std::core::iter::adapters::flatten::and_then_or_clear",
         "module": [
@@ -15642,11 +16286,13 @@
         "revIterator_find",
         "revIterator_fold",
         "revIterator_tryFold",
+        "revIterator_advanceBy",
         "revDoubleEndedIterator_nextBack",
         "revDoubleEndedIterator_nthBack",
         "revDoubleEndedIterator_rfold",
         "revDoubleEndedIterator_tryRfold",
         "revDoubleEndedIterator_rfind",
+        "revDoubleEndedIterator_advanceBackBy",
         "revExactSizeIterator_len",
         "revClone_clone",
         "revDebug_fmt",
@@ -15662,6 +16308,7 @@
         "enumerateDoubleEndedIterator_nthBack",
         "enumerateDoubleEndedIterator_rfold",
         "enumerateDoubleEndedIterator_tryRfold",
+        "enumerateDoubleEndedIterator_advanceBackBy",
         "enumerateExactSizeIterator_len",
         "enumerateClone_clone",
         "enumerateDebug_fmt",
@@ -15762,18 +16409,22 @@
         "flattenIterator_tryFold",
         "flattenIterator_last",
         "flattenIterator_count",
+        "flattenIterator_advanceBy",
         "flattenDoubleEndedIterator_nextBack",
         "flattenDoubleEndedIterator_rfold",
         "flattenDoubleEndedIterator_tryRfold",
+        "flattenDoubleEndedIterator_advanceBackBy",
         "flatMapIterator_next",
         "flatMapIterator_sizeHint",
         "flatMapIterator_fold",
         "flatMapIterator_tryFold",
         "flatMapIterator_last",
         "flatMapIterator_count",
+        "flatMapIterator_advanceBy",
         "flatMapDoubleEndedIterator_nextBack",
         "flatMapDoubleEndedIterator_rfold",
         "flatMapDoubleEndedIterator_tryRfold",
+        "flatMapDoubleEndedIterator_advanceBackBy",
         "skipIterator_next",
         "skipIterator___iteratorGetUnchecked",
         "skipIterator_sizeHint",
@@ -15787,6 +16438,7 @@
         "skipDoubleEndedIterator_nthBack",
         "skipDoubleEndedIterator_tryRfold",
         "skipDoubleEndedIterator_rfold",
+        "skipDoubleEndedIterator_advanceBackBy",
         "skipClone_clone",
         "skipDebug_fmt",
         "takeIterator_next",
@@ -15804,6 +16456,8 @@
         "takeRepeatTDoubleEndedIterator_tryRfold",
         "takeIDoubleEndedIterator_rfold",
         "takeRepeatTDoubleEndedIterator_rfold",
+        "takeIDoubleEndedIterator_advanceBackBy",
+        "takeRepeatTDoubleEndedIterator_advanceBackBy",
         "takeRepeatTExactSizeIterator_len",
         "takeRepeatWithFExactSizeIterator_len",
         "takeClone_clone",
@@ -15830,6 +16484,7 @@
         "chainDoubleEndedIterator_nthBack",
         "chainDoubleEndedIterator_rfold",
         "chainDoubleEndedIterator_tryRfold",
+        "chainDoubleEndedIterator_advanceBackBy",
         "chainClone_clone",
         "chainABDebug_fmt",
         "zipIterator_next",
@@ -15899,12 +16554,16 @@
         "flattenCompatIUIterator2_last",
         "flattenCompatIUIterator_count",
         "flattenCompatIUIterator2_count",
+        "flattenCompatIUIterator_advanceBy",
+        "flattenCompatIUIterator2_advanceBy",
         "flattenCompatIUDoubleEndedIterator_nextBack",
         "flattenCompatIUDoubleEndedIterator2_nextBack",
         "flattenCompatIUDoubleEndedIterator_rfold",
         "flattenCompatIUDoubleEndedIterator2_rfold",
         "flattenCompatIUDoubleEndedIterator_tryRfold",
         "flattenCompatIUDoubleEndedIterator2_tryRfold",
+        "flattenCompatIUDoubleEndedIterator_advanceBackBy",
+        "flattenCompatIUDoubleEndedIterator2_advanceBackBy",
         "takeSpecTake_specFold",
         "stepByStepByImplI_specNext",
         "stepByStepByImplI_specSizeHint",
@@ -15939,6 +16598,9 @@
         "intoItem",
         "iterator_last_some",
         "flattenCompatIUIterator_count_count",
+        "flattenCompatIUIterator_advanceBy_advance",
+        "advanceByOne",
+        "flattenCompatIUDoubleEndedIterator_advanceBackBy_advance",
         "zipSpecFold_specFold",
         "zipSpecFoldTrustedLenTrustedLen_specFold",
         "tSpecRangeSetupT_setup",
@@ -15985,8 +16647,8 @@
       ],
       "links": [
         {
-          "start": 817,
-          "end": 829,
+          "start": 826,
+          "end": 838,
           "file": "runtime.js"
         }
       ],
@@ -16155,7 +16817,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "71d0fb3731a1a07f"
+      "hash": "cd9c9a596f77ffce"
     },
     {
       "file": "iter.js.map",

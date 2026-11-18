@@ -407,10 +407,20 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mut-ref-back-entries-unfiltered",
-    breaks: "a `&mut I`'s `DoubleEndedIterator` dictionary passes on each of `BACK_ENTRIES` of `I`'s, its `rfold` too, where std's sized `&mut I` folds from its back by `I`'s `try_rfold` (`Wrapper::passes`, ADR 0928, #2000)",
+    breaks: "a `&mut I`'s `DoubleEndedIterator` dictionary passes on each of `back_steps` of `I`'s, its `rfold` too, where std's sized `&mut I` folds from its back by `I`'s `try_rfold` (`Wrapper::passes`, ADR 0928, #2000)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "                    .filter(|&&method| wrapper.passes(method) == Passed::Own)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_an_iterator_passes_on_what_std_does\\.rs$"],
+  },
+  {
+    name: "compiled-back-dictionary-advance-back-by-ungiven",
+    breaks:
+      "a compiled struct's `DoubleEndedIterator` dictionary carries no `advance_back_by`, so std's compiled `Rev::advance_by` of it steps it back one at a time, an `enumerate()`'s source's items dropped back to front where std drops them as one slice (#2125)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                    _ if self.compiled_step(ty, trait_id, method) => {\n",
+    replace: '                    _ if method == "nth_back" && self.compiled_step(ty, trait_id, method) => {\n',
+    tests: ["test/iterator-forms.test.ts", "-t", "^enumerate_advanced_from_its_back_by_its_source with std's iterator structs$"],
+    env: { ITERATOR_FORMS: "corpus" },
   },
 ];

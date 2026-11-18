@@ -28,6 +28,7 @@ import {
   $slicing,
   $tryOf,
   $unwindsOn,
+  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
@@ -39,9 +40,11 @@ import {
   iterator_rev,
   iterator_skip,
   iterator_take,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_tryRfold,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -485,6 +488,16 @@ function main() {
           undefined,
           dDrop_drop,
         ),
+      advanceBackBy: (iterator, n) =>
+        takeIDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+          { next_back: ownDoubleEndedIterator_nextBack },
+          ownExactSizeIterator,
+          undefined,
+          dDrop_drop,
+        ),
     };
     const held = iterator_skip(
       iterator_take(
@@ -532,6 +545,15 @@ function main() {
             undefined,
             unwind,
             ends,
+            undefined,
+            dDrop_drop,
+          ),
+        (iterator, n) =>
+          skipDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf },
+            takeDoubleEndedIterator,
             undefined,
             dDrop_drop,
           ),
@@ -592,6 +614,15 @@ function main() {
             undefined,
             dDrop_drop,
           ),
+        (iterator, n) =>
+          enumerateDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+            { next_back: hintsDoubleEndedIterator_nextBack },
+            undefined,
+            dDrop_drop,
+          ),
       ),
       ([, d]) => p(d),
       undefined,
@@ -646,6 +677,15 @@ function main() {
           undefined,
           unwind,
           ends,
+          undefined,
+          dDrop_drop,
+        ),
+      (iterator, n) =>
+        enumerateDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+          { next_back: hintsDoubleEndedIterator_nextBack },
           undefined,
           dDrop_drop,
         ),
@@ -755,6 +795,15 @@ function main() {
             undefined,
             unwind,
             ends,
+            undefined,
+            dDrop_drop,
+          ),
+        advanceBackBy: (iterator, n) =>
+          enumerateDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+            { next_back: hintsDoubleEndedIterator_nextBack },
             undefined,
             dDrop_drop,
           ),

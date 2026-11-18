@@ -188,19 +188,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
         } else if double_ended && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
-            let rfold = self.compiled_fold(ty, (trait_id, "rfold"), span)?;
-            let nth_back = match self.compiled_step(ty, trait_id, "nth_back") {
-                true => Some(self.user_method(ty, trait_id, "nth_back", &["k"], span)?.0),
-                false => None,
-            };
-            // And its `try_rfold`, which std's compiled code of it asks, a
-            // `Skip`'s of its `Take`: as a JS iterator's `tryRfold` (ADR 0930).
+            // Each of its back's steps std writes (`back_steps`), compiled:
+            // its `try_rfold`, which std's compiled code of it asks, a
+            // `Skip`'s of its `Take`, as a JS iterator's `tryRfold` (ADR
+            // 0930); its `advance_back_by`, which drops what it passes as
+            // its source's does, a `Vec`'s as one slice (#2125).
             let try_rfold = self.compiled_try_fold(ty, (trait_id, "try_rfold"), span)?;
-            for (method, own) in [
-                ("rfold", passed_rfold(rfold, try_rfold.as_ref())),
-                ("nth_back", nth_back),
-                ("try_rfold", try_rfold),
-            ] {
+            for method in crate::lower::recognition::back_steps() {
+                let own = match method {
+                    "rfold" => passed_rfold(self.compiled_fold(ty, (trait_id, "rfold"), span)?, try_rfold.as_ref()),
+                    "try_rfold" => try_rfold.clone(),
+                    _ if self.compiled_step(ty, trait_id, method) => {
+                        Some(self.user_method(ty, trait_id, method, &[counted_by(method)], span)?.0)
+                    }
+                    _ => None,
+                };
                 if let Some(own) = own {
                     props.push(js::Prop::Field(
                         crate::lower::bindings::trait_method_name(self.tcx, trait_id, method),
@@ -246,8 +248,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         debug_assert!(
             props.iter().skip(1).all(|prop| matches!(prop, js::Prop::Field(entry, _)
-                if BACK_ENTRIES.iter().any(|&method| crate::lower::bindings::trait_method_name(self.tcx, trait_id, method) == *entry))),
-            "an extension's dictionary carries its entry and `BACK_ENTRIES` alone"
+                if (crate::lower::recognition::back_steps().iter()).any(|&method| crate::lower::bindings::trait_method_name(self.tcx, trait_id, method) == *entry))),
+            "an extension's dictionary carries its entry and `back_steps` alone"
         );
         Ok(Expr::object(props))
     }
@@ -493,16 +495,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An extension's dictionary of a `&mut I` of type `ty`, of `I`'s, `of`: its entry, `next_back` or `len`,
-    /// and of `BACK_ENTRIES` those std's impl for it passes on to its `I`'s
+    /// and of `back_steps` those std's impl for it passes on to its `I`'s
     /// own (`Wrapper::passes`, #2000): of a sized `I`, `nth_back` and `try_rfold`,
     /// not `rfold`, which it folds by `I`'s `try_rfold` (ADRs 0928, 0937); of
     /// an unsized one, `nth_back` alone.
     pub(in crate::lower) fn mut_ref_extension_dictionary(&self, trait_id: DefId, ty: ty::Ty<'tcx>, of: Expr) -> Expr {
         use crate::lower::recognition::{Passed, Wrapper};
         let wrapper = Wrapper::of(self.tcx, self.typing_env, ty).expect("a `&mut`");
-        let others: &[&str] = match crate::lower::recognition::is_double_ended(self.tcx, trait_id) {
-            true => &BACK_ENTRIES,
-            false => &[],
+        let others: Vec<&str> = match crate::lower::recognition::is_double_ended(self.tcx, trait_id) {
+            true => crate::lower::recognition::back_steps(),
+            false => Vec::new(),
         };
         let entry = crate::lower::recognition::extension_entry(self.tcx, trait_id).to_string();
         let passed: Vec<String> = std::iter::once(entry)
@@ -547,14 +549,17 @@ fn folded_by_try(tried: Expr) -> Expr {
     )
 }
 
+/// The name of what a step of its back counts, `nth_back(k)`'s or
+/// `advance_back_by(n)`'s.
+pub(super) fn counted_by(method: &str) -> &'static str {
+    match method {
+        "nth_back" => "k",
+        _ => "n",
+    }
+}
+
 /// The entries of a dictionary, `of`, a `&mut` to what it's of passes on,
 /// `passed`: of one made here, those; of one given, each read from it.
-/// What a `DoubleEndedIterator`'s dictionary carries past its entry,
-/// `next_back`, where they're its iterator's own: the one list, which
-/// `iterator_extension_dictionary` makes of each iterator and
-/// `mut_ref_extension_dictionary` passes on of a `&mut` by `Wrapper::passes`.
-const BACK_ENTRIES: [&str; 3] = ["rfold", "nth_back", "try_rfold"];
-
 fn entries_passed_on(of: Expr, passed: Vec<String>) -> Expr {
     match of.kind {
         js::ExprKind::Object(props, _) => Expr::object(

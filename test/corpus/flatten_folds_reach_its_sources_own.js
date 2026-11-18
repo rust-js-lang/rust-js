@@ -21,6 +21,7 @@ import {
   $tryOf,
   $unwindsOn,
   flatMapDoubleEndedIterator_rfold,
+  flattenDoubleEndedIterator_advanceBackBy,
   flattenDoubleEndedIterator_nextBack,
   flattenDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_tryRfold,
@@ -504,6 +505,24 @@ function main() {
             $dropEach(dDrop_drop),
             dDrop_drop,
           ),
+        advanceBackBy: (iterator, n) =>
+          flattenDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf },
+            mapDoubleEndedIterator,
+            intoIterator$1,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            false,
+            false,
+            (map) => {
+              map.return();
+            },
+            $dropEach(dDrop_drop),
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
       },
       (flatten) => {
         flatten.return();
@@ -594,6 +613,24 @@ function main() {
               unwind,
               ends,
               undefined,
+              $dropEach(dDrop_drop),
+              dDrop_drop,
+            ),
+          advanceBackBy: (iterator, n) =>
+            flattenDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: $next, fold: $foldOf },
+              mapDoubleEndedIterator,
+              intoIterator$1,
+              { next: $next, advanceBy: $advanceSlice },
+              { next_back: $nextBack },
+              false,
+              false,
+              (map) => {
+                map.return();
+              },
+              $dropEach(dDrop_drop),
               $dropEach(dDrop_drop),
               dDrop_drop,
             ),

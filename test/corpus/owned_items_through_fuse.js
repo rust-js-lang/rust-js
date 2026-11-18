@@ -31,6 +31,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_rev,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
@@ -305,6 +306,14 @@ function main() {
             unwind,
             ends,
             undefined,
+            loudDrop_drop,
+          ),
+        advanceBackBy: (iterator, n) =>
+          revDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, advanceBy: $advanceSlice },
+            $dropEach(loudDrop_drop),
             loudDrop_drop,
           ),
       },

@@ -11,6 +11,7 @@ import {
   $next,
   $tryOf,
   $unwindsOn,
+  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
@@ -360,6 +361,18 @@ function main() {
                 undefined,
                 unwind,
                 ends,
+                undefined,
+                dDrop_drop,
+              ),
+            advanceBackBy: (iterator, n) =>
+              enumerateDoubleEndedIterator_advanceBackBy(
+                iterator,
+                n,
+                { next: countIterator_next, sizeHint: countIterator_sizeHint },
+                {
+                  next_back: countDoubleEndedIterator_nextBack,
+                  rfold: countDoubleEndedIterator_rfold,
+                },
                 undefined,
                 dDrop_drop,
               ),

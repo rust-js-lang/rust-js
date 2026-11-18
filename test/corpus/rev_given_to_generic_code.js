@@ -20,11 +20,13 @@ import {
   $tryOf,
   iterator_rev,
   iterator_skip,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
   revDoubleEndedIterator_tryRfold,
   revExactSizeIterator_len,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
@@ -76,6 +78,7 @@ function main() {
           unwind,
           ends,
         ),
+      (iterator, n) => revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
     ),
   );
   const value$1 = ends(
@@ -100,6 +103,8 @@ function main() {
           unwind,
           ends,
         ),
+      (iterator, n) =>
+        revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeInclusiveNext }),
     ),
   );
   console.log(
@@ -139,6 +144,8 @@ function main() {
               unwind,
               ends,
             ),
+          advanceBackBy: (iterator, n) =>
+            revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
         },
       ),
       (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $next, fold: $foldOf }),
@@ -159,6 +166,8 @@ function main() {
           unwind,
           ends,
         ),
+      (iterator, n) =>
+        revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $next, fold: $foldOf }),
     ),
   );
   console.log(
@@ -212,6 +221,13 @@ function main() {
             unwind,
             ends,
           ),
+        advanceBackBy: (iterator, n) =>
+          skipDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          ),
       }),
       (iterator) => revDoubleEndedIterator_nextBack(iterator, skipIterator),
       (iterator) =>
@@ -229,6 +245,7 @@ function main() {
           unwind,
           ends,
         ),
+      (iterator, n) => revDoubleEndedIterator_advanceBackBy(iterator, n, skipIterator),
     ),
   );
   console.log(

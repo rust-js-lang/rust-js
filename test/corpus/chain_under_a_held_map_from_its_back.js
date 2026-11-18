@@ -19,6 +19,7 @@ import {
   $rev,
   $tryOf,
   $unwindsOn,
+  chainDoubleEndedIterator_advanceBackBy,
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_rfold,
@@ -103,6 +104,17 @@ function main() {
         ownDrop_drop,
         unwind,
         ends,
+      ),
+    advanceBackBy: (iterator, n) =>
+      chainDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: ownIterator_next },
+        { next_back: ownDoubleEndedIterator_nextBack },
+        { next: ownIterator_next },
+        { next_back: ownDoubleEndedIterator_nextBack },
+        ownDrop_drop,
+        ownDrop_drop,
       ),
   };
   const map = $mapEnds(

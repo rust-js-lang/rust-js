@@ -169,3 +169,187 @@ for (const [name, make] of [
     expect(wrong).toEqual([]);
   });
 }
+
+// Each of the runtime's adapters asks of what it holds what std's adapter
+// asks, step by step: its trace, over sources that write every step and
+// record each they're asked with its argument, is std's, the catalog's
+// (src/lower/recognition/std_steps.txt, test/std-steps.test.ts, #2112), in
+// each of its runs of the sources' lengths. Each step is asked as the
+// lowering asks it, by the runtime's helper where it has one. A form made
+// for one end steps none from the other: one with no `back` isn't asked a
+// back step, nor one with no `len` its length. A difference that no program
+// can see is listed with why (ADR 0262's case N); any other is a wrong
+// answer.
+
+/** The catalog's runs: of each `<name>#<run>` and step, what was asked. */
+const stdRuns = (() => {
+  const runs = new Map<string, string>();
+  for (const line of readFileSync(join(import.meta.dir, "../src/lower/recognition/std_steps.txt"), "utf8").split("\n")) {
+    if (line.startsWith("#") || !line.includes(" |")) continue;
+    const [head, ...cells] = line.split(" |");
+    for (const cell of cells) {
+      const at = cell.indexOf(":");
+      runs.set(`${head} ${cell.slice(0, at)}`, cell.slice(at + 1).trim());
+    }
+  }
+  return runs;
+})();
+
+/** test/std-steps.rs's `SIZES`: the sources' lengths of each run. */
+const sizes: [number, number][] = [
+  [5, 3],
+  [0, 3],
+  [5, 0],
+  [1, 1],
+];
+
+/** std's name of each of `$forward`'s steps. */
+const stdName: Record<string, string> = {
+  next: "next",
+  back: "next_back",
+  sizeHint: "size_hint",
+  len: "len",
+  nth: "nth",
+  advanceBy: "advance_by",
+  fold: "fold",
+  tryFold: "try_fold",
+  last: "last",
+  count: "count",
+  nthBack: "nth_back",
+  advanceBackBy: "advance_back_by",
+  rfold: "rfold",
+  tryRfold: "try_rfold",
+};
+
+/** A source of `items` that writes every step, each its own, recording
+ * each it's asked, `src.nth(1)`, in `log`, as test/std-steps.rs's `Loud`. */
+function loud(name: string, items: unknown[], log: string[]): any {
+  const done = { done: true, value: undefined };
+  const say = (step: string, arg?: number) => log.push(`${name}.${stdName[step]}${arg === undefined ? "" : `(${arg})`}`);
+  const it: any = new std.$Steps(() => (say("next"), items.length > 0 ? { done: false, value: items.shift() } : done));
+  it.back = () => (say("back"), items.length > 0 ? { done: false, value: items.pop() } : done);
+  it.sizeHint = () => (say("sizeHint"), [items.length, items.length]);
+  it.len = () => (say("len"), items.length);
+  it.nth = (k: number) => (say("nth", k), k < items.length ? (items.splice(0, k), { done: false, value: items.shift() }) : ((items.length = 0), done));
+  it.advanceBy = (m: number) => (say("advanceBy", m), m - items.splice(0, m).length);
+  it.fold = (init: unknown, f: (a: unknown, x: unknown) => unknown) => (say("fold"), items.splice(0).reduce(f, init));
+  it.tryFold = (init: unknown, f: (a: unknown, x: unknown) => unknown, broke: (a: unknown) => boolean) => {
+    say("tryFold");
+    let a = init;
+    while (items.length > 0 && !broke((a = f(a, items.shift())))) {}
+    return a;
+  };
+  it.count = () => (say("count"), items.splice(0).length);
+  it.last = () => (say("last"), items.length > 0 ? { done: false, value: items.splice(0).pop() } : done);
+  it.nthBack = (k: number) => (say("nthBack", k), items.splice(Math.max(items.length - k, 0)), items.length > 0 ? { done: false, value: items.pop() } : done);
+  it.advanceBackBy = (m: number) => (say("advanceBackBy", m), m - items.splice(Math.max(items.length - m, 0)).length);
+  it.rfold = (init: unknown, f: (a: unknown, x: unknown) => unknown) => (say("rfold"), items.splice(0).reduceRight(f, init));
+  it.tryRfold = (init: unknown, f: (a: unknown, x: unknown) => unknown, broke: (a: unknown) => boolean) => {
+    say("tryRfold");
+    let a = init;
+    while (items.length > 0 && !broke((a = f(a, items.pop())))) {}
+    return a;
+  };
+  for (const step of ["fold", "rfold", "nth", "nthBack", "last", "count", "tryRfold"]) it[std.$ownStep(step)] = true;
+  return it;
+}
+
+const count = (a: number) => a + 1;
+/** Each step asked as the lowering asks it, test/std-steps.rs's arguments:
+ * `nth(1)`, `advance_by(2)`, a `try_fold` that breaks at its second item. */
+const asked: Record<string, (it: any) => unknown> = {
+  next: (it) => it.next(),
+  size_hint: (it) => std.$sizeHint(it),
+  nth: (it) => std.$nth(it, 1),
+  advance_by: (it) => std.$advanceBy(it, 2),
+  fold: (it) => std.$foldOf(it, 0, count),
+  try_fold: (it) => it.tryFold(0, count, (a: number) => a === 2),
+  last: (it) => std.$last(it),
+  count: (it) => std.$count(it),
+  next_back: (it) => it.back(),
+  nth_back: (it) => std.$nthBack(it, 1),
+  advance_back_by: (it) => std.$advanceBackBy(it, 2),
+  rfold: (it) => std.$foldBack(it, 0, count),
+  try_rfold: (it) => std.$tryRfoldOf(it, 0, count, (a: number) => a === 2),
+  len: (it) => it.len(),
+};
+
+/** Of a run, its sources: `src`, `other`, and `nested`, a flatten's, of up
+ * to two `inner`s of the second length. */
+type Sources = { src: () => any; other: () => any; nested: () => any };
+const sourcesOf = ([a, b]: [number, number], log: string[]): Sources => {
+  const range = (from: number, n: number) => Array.from({ length: n }, (_, i) => from + i);
+  return {
+    src: () => loud("src", range(1, a), log),
+    other: () => loud("other", range(6, b), log),
+    nested: () => loud("src", range(0, Math.min(a, 2)).map(() => loud("inner", range(1, b), log)), log),
+  };
+};
+
+const same = (x: unknown) => x;
+/** Each of the runtime's forms of a std adapter, by std's name. */
+const forms: [std: string, form: string, make: (s: Sources) => any][] = [
+  ["Map", "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
+  ["Map", "$Steps.map", (s) => s.src().map(same)],
+  ["Filter", "$filterEnds", (s) => std.$filterEnds(s.src(), (x: number) => x % 2 === 1)],
+  ["Filter", "$Steps.filter", (s) => s.src().filter((x: number) => x % 2 === 1)],
+  ["Enumerate", "$enumerate", (s) => std.$enumerate(s.src())],
+  ["Skip", "$skipping", (s) => std.$skipping(s.src(), 1)],
+  ["Take", "$taking", (s) => std.$taking(s.src(), 3)],
+  ["StepBy", "$stepBy", (s) => std.$stepBy(s.src(), 2)],
+  ["StepBy", "$stepByEnds", (s) => std.$stepByEnds(s.src(), 2)],
+  ["Chain", "$lazyChain", (s) => std.$lazyChain(s.src(), s.other())],
+  ["Zip", "$lazyZip", (s) => std.$lazyZip(s.src(), s.other())],
+  ["Rev", "$rev", (s) => std.$rev(s.src())],
+  ["Flatten", "$flatMap", (s) => std.$flatMap(s.nested(), same)],
+  ["Flatten", "$flattenEnds", (s) => std.$flattenEnds(s.nested(), same)],
+  ["TakeWhile", "$lazyTakeWhile", (s) => std.$lazyTakeWhile(s.src(), (x: number) => x < 4)],
+  ["SkipWhile", "$lazySkipWhile", (s) => std.$lazySkipWhile(s.src(), (x: number) => x < 2)],
+  ["&mut I", "$lent", (s) => std.$lent(s.src())],
+  ["&mut dyn I", "$lent unsized", (s) => std.$lent(s.src(), "lentUnsized")],
+  ["Box<I>", "$lent boxed", (s) => std.$lent(s.src(), "boxed")],
+  ["Box<dyn I>", "$lent boxedUnsized", (s) => std.$lent(s.src(), "boxedUnsized")],
+];
+
+/** Each form's step that asks other than std's does, a wrong answer not
+ * yet fixed, under its issue: none is let differ for good (#2112). */
+const differs: Record<string, string> = {
+  "$stepBy nth": "#2124: a `step_by`'s `nth` past an empty source asks its `nth` too, where std's stops at its first `next`",
+  "$stepByEnds nth": "#2124: a `step_by`'s `nth` past an empty source asks its `nth` too, where std's stops at its first `next`",
+  "$flatMap nth": "#2123",
+  "$flatMap advance_by": "#2123",
+  "$flatMap last": "#2123",
+  "$flattenEnds nth": "#2123",
+  "$flattenEnds advance_by": "#2123",
+  "$flattenEnds last": "#2123",
+  "$flattenEnds nth_back": "#2123",
+  "$flattenEnds advance_back_by": "#2123",
+  "$flattenEnds try_rfold": "#2123",
+};
+
+for (const [stdForm, form, make] of forms) {
+  test(`${form} asks what it holds as std's ${stdForm} does`, () => {
+    const wrong: string[] = [];
+    const listed = new Set<string>();
+    for (const step of Object.keys(asked)) {
+      for (const [run, size] of sizes.entries()) {
+        const want = stdRuns.get(`${stdForm}#${run} ${step}`);
+        if (want === undefined) continue;
+        const log: string[] = [];
+        const it = make(sourcesOf(size, log));
+        // A form for one end: none of the other's steps.
+        if ((/back|rfold/.test(step) && typeof it.back !== "function") || (step === "len" && typeof it.len !== "function")) continue;
+        log.length = 0;
+        asked[step]!(it);
+        const got = log.join(" ");
+        if (got === want) continue;
+        if (differs[`${form} ${step}`] === undefined) wrong.push(`${step}#${run}: std ${want}; ${got}`);
+        else listed.add(`${form} ${step}`);
+      }
+    }
+    expect(wrong).toEqual([]);
+    // A listed one that asks as std's does now comes off the list.
+    const fixed = Object.keys(differs).filter((key) => key.startsWith(`${form} `) && !listed.has(key));
+    expect(fixed).toEqual([]);
+  });
+}

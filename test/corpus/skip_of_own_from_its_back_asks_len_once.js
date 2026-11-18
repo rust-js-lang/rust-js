@@ -7,6 +7,7 @@ import {
   $sizeHint,
   $tryOf,
   iterator_skip,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
@@ -84,6 +85,13 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      (iterator, n) =>
+        skipDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint },
+          { next_back: countDoubleEndedIterator_nextBack },
         ),
     ),
     (n) => n % 2 === 0,

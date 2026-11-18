@@ -64,10 +64,10 @@ function $stdIterator(struct, steps, knows) {
   // what holds it passes on, a `skip`'s, as std's `Skip::count` asks its
   // source's: `ownCount` (#1048).
   if (steps.count !== undefined) $owns(it, "count");
-  it.knowing = (back, len, rfold, nthBack, tryRfold) => {
+  it.knowing = (back, len, rfold, nthBack, tryRfold, advanceBackBy) => {
     // Each given kept, what an earlier use gave where this one gives none.
     const known = it.$knows ?? [];
-    it.$knows = [back, len, rfold, nthBack, tryRfold].map((given, at) => given ?? known[at]);
+    it.$knows = [back, len, rfold, nthBack, tryRfold, advanceBackBy].map((given, at) => given ?? known[at]);
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
     // Its compiled `rfold` and `nth_back`, and `try_rfold`, which `rfind`
@@ -80,6 +80,14 @@ function $stdIterator(struct, steps, knows) {
         ((init, f, unwind, ends) => $takenBy(it, () => rfold(it, init, f, unwind, ends), true)),
       nthBack: nthBack && ((k) => step(nthBack(it, k))),
       tryRfold: tryRfold && ((init, f, broke, unwind, ends) => tryRfold(it, init, f, broke, unwind, ends)),
+      // Its compiled `advance_back_by`, its `Result` how many there
+      // weren't, as `advanceBackBy` gives it (#2125).
+      advanceBackBy:
+        advanceBackBy &&
+        ((m) => {
+          const advanced = advanceBackBy(it, m);
+          return advanced.TAG === "Ok" ? 0 : advanced._0;
+        }),
     });
     // Its compiled `nth_back`, std's body, which drops what it passes
     // itself, as its `nth` does: `ownNthBack`, which a `step_by` over it
@@ -87,8 +95,8 @@ function $stdIterator(struct, steps, knows) {
     if (nthBack !== undefined) $owns(it, "nthBack");
   };
   if (knows !== undefined) {
-    const [back, len, rfold, nthBack, tryRfold] = knows;
-    it.knowing(back, len, rfold, nthBack, tryRfold);
+    const [back, len, rfold, nthBack, tryRfold, advanceBackBy] = knows;
+    it.knowing(back, len, rfold, nthBack, tryRfold, advanceBackBy);
   }
   // Its fields, the struct's, are what a move copies and what a write of
   // the whole replaces; its methods step `it` itself (#537). Moved out

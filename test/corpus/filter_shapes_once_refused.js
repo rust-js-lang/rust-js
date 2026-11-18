@@ -17,6 +17,7 @@ import {
   iterator_peekable,
   iterator_rev,
   iterator_skip,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
@@ -55,6 +56,7 @@ export function revOfFilterOfSkip() {
         unwind,
         ends,
       ),
+    advanceBackBy: skipDoubleEndedIterator_advanceBackBy,
   };
   const it = iterator_rev(
     iterator_filter(iterator_skip($iter([1, 2, 3]), 1), (x) => x > 1, {

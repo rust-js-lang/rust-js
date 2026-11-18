@@ -22,6 +22,7 @@ import {
   iterator_skip,
   iterator_stepBy,
   iterator_take,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
@@ -30,6 +31,7 @@ import {
   stepByDoubleEndedIterator_nthBack,
   stepByDoubleEndedIterator_rfold,
   stepByDoubleEndedIterator_tryRfold,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_tryRfold,
@@ -116,6 +118,15 @@ function main() {
             undefined,
             dDrop_drop,
           ),
+        (iterator, n) =>
+          skipDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
       ),
     ).map((d) => {
       const result = d[0];
@@ -183,6 +194,14 @@ function main() {
               unwind,
               ends,
             ),
+          (iterator, n) =>
+            takeIDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: $next },
+              { next_back: $nextBack },
+              intoIterExactSizeIterator,
+            ),
         ),
       ),
     ).join(", ")}]`,
@@ -220,6 +239,14 @@ function main() {
             undefined,
             unwind,
             ends,
+          ),
+        (iterator, n) =>
+          takeIDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
           ),
       ),
     ).len()}`,
@@ -378,6 +405,15 @@ function main() {
               unwind,
               ends,
               undefined,
+              dDrop_drop,
+            ),
+          (iterator, n) =>
+            skipDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: $next, advanceBy: $advanceSlice },
+              { next_back: $nextBack },
+              $dropEach(dDrop_drop),
               dDrop_drop,
             ),
         ),

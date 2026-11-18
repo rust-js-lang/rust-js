@@ -11,6 +11,7 @@ import {
   $sizeHint,
   $tryOf,
   enumerateClone,
+  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
@@ -23,12 +24,14 @@ import {
   iterator_filter,
   iterator_skip,
   iterator_take,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
   skipIterator___iteratorGetUnchecked,
   takeClone,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -88,6 +91,7 @@ function main() {
         unwind,
         ends,
       ),
+    advanceBackBy: skipDoubleEndedIterator_advanceBackBy,
   };
   const enumerateDoubleEndedIterator = {
     next_back: (iterator) => enumerateDoubleEndedIterator_nextBack(iterator, exactSizeIterator$1),
@@ -118,6 +122,7 @@ function main() {
         unwind,
         ends,
       ),
+    advanceBackBy: enumerateDoubleEndedIterator_advanceBackBy,
   };
   const takeDoubleEndedIterator = {
     next_back: (iterator) =>
@@ -159,6 +164,14 @@ function main() {
         undefined,
         unwind,
         ends,
+      ),
+    advanceBackBy: (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next },
+        { next_back: $nextBack },
+        exactSizeIterator$1,
       ),
   };
   const v = [10, 20, 30, 40, 50];
@@ -224,6 +237,13 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      advanceBackBy: (iterator, n) =>
+        enumerateDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next, fold: $foldOf },
+          takeDoubleEndedIterator,
         ),
     },
     { len: (iterator) => enumerateExactSizeIterator_len(iterator, exactSizeIterator) },
@@ -322,6 +342,14 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      advanceBackBy: (iterator, n) =>
+        takeIDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next, fold: $foldOf, getUnchecked: skipIterator___iteratorGetUnchecked },
+          skipDoubleEndedIterator,
+          exactSizeIterator,
         ),
     },
   );

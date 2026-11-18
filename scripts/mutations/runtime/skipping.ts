@@ -38,9 +38,9 @@ export const mutations: Mutation[] = [
     name: "skipping-length-its-source",
     breaks: "an explicit `skip`'s length is its source's, counting what it skips",
     file: "src/runtime/skipping.js",
-    find: "  skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);\n",
+    find: "  skipping.len = () => skipping.sizeHint()[0];\n",
     replace: "  skipping.len = () => skipping.iter.len();\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_in_place_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(rev_in_place_through_adapters|skip_advanced_from_its_back_by_its_source).rs$"],
   },
   {
     name: "skipping-nth-back-by-next",
@@ -279,5 +279,13 @@ export const mutations: Mutation[] = [
     find: ' || $ownMethod(skipping.iter, "advanceBy"))\n',
     replace: ")\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_range_nth_given_to_generic_code.rs$"],
+  },
+  {
+    name: "skip-advance-back-by-unforwarded",
+    breaks: "a `skip(n)` advanced from its back steps its source by `next_back`, not its source's own `advance_back_by`, so a reversed `take`'s `count` of a `Vec`'s drops 5 then 4, where std's drops them as one slice, 4 then 5 (#2112)",
+    file: "src/runtime/skipping.js",
+    find: "    advanceBackBy: iter.back !== undefined ? advanceBackBy : undefined,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^skip_advanced_from_its_back_by_its_source.rs$"],
   },
 ];

@@ -24,6 +24,7 @@ import {
   filterDoubleEndedIterator_tryRfold,
   iterator_filter,
   iterator_rev,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
@@ -77,6 +78,14 @@ function main() {
         unwind,
         ends,
         undefined,
+        dDrop_drop,
+      ),
+    advanceBackBy: (iterator, n) =>
+      revDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(dDrop_drop),
         dDrop_drop,
       ),
   };

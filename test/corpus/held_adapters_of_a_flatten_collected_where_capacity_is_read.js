@@ -9,6 +9,7 @@ import {
   $nextBack,
   $roomForHint,
   $tryOf,
+  flatMapDoubleEndedIterator_advanceBackBy,
   flatMapDoubleEndedIterator_nextBack,
   flatMapDoubleEndedIterator_rfold,
   flatMapDoubleEndedIterator_tryRfold,
@@ -138,6 +139,17 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      advanceBackBy: (iterator, n) =>
+        flatMapDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next },
+          { next_back: $nextBack },
+          vecIntoIterator,
+          { next_back: $nextBack },
+          true,
+          false,
         ),
     },
   );

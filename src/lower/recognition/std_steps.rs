@@ -29,6 +29,9 @@ pub(in crate::lower) struct Asked {
 struct Steps {
     writes: Vec<&'static str>,
     runs: BTreeMap<&'static str, Vec<Vec<Asked>>>,
+    /// The steps of its `DoubleEndedIterator`, the probe's line of them,
+    /// the one its `next_back` begins.
+    back: Vec<&'static str>,
 }
 
 fn catalog() -> &'static BTreeMap<&'static str, Steps> {
@@ -45,8 +48,12 @@ fn catalog() -> &'static BTreeMap<&'static str, Steps> {
                 .expect("a catalog line is `<name>#<run> |<step>: ..`");
             let (name, _run) = head.rsplit_once('#').expect("a run's line is `<name>#<run>`");
             let steps = all.entry(name).or_default();
+            let back = cells.starts_with("next_back:");
             for cell in cells.split(" |") {
                 let (step, asked) = cell.split_once(':').expect("a cell is `<step>: <asked>`");
+                if back && !steps.back.contains(&step) {
+                    steps.back.push(step);
+                }
                 let asked = (asked.split_whitespace())
                     .map(|call| {
                         let (of, step) = call.split_once('.').expect("a call is `<source>.<step>`");
@@ -67,6 +74,26 @@ fn catalog() -> &'static BTreeMap<&'static str, Steps> {
 /// not the trait's default; false of a name the catalog hasn't.
 pub(in crate::lower) fn writes(name: &str, step: &str) -> bool {
     catalog().get(name).is_some_and(|steps| steps.writes.contains(&step))
+}
+
+/// The steps of `DoubleEndedIterator` past its `next_back`, the entry of
+/// its dictionary (`extension_entry`), that std's impls of an adapter or a
+/// wrapper write: what a dictionary of it carries beside its entry, and
+/// what a compiled std struct made knowing its back is given, in that
+/// order, `WRAPPER_STEPS`'. `rfold`, `nth_back`, `try_rfold` and
+/// `advance_back_by`.
+pub(in crate::lower) fn back_steps() -> Vec<&'static str> {
+    (WRAPPER_STEPS.into_iter())
+        .filter(|&step| step != "next_back")
+        .filter(|step| (catalog().values()).any(|steps| steps.back.contains(step) && steps.writes.contains(step)))
+        .collect()
+}
+
+/// The steps std's impls of `name`, a catalog name, write themselves, in
+/// the catalog's order; none of a name it hasn't.
+#[cfg(test)]
+pub(in crate::lower) fn written(name: &str) -> &'static [&'static str] {
+    catalog().get(name).map_or(&[], |steps| steps.writes.as_slice())
 }
 
 /// A wrapper std's impls step the iterator it holds through: a `&mut I` of
@@ -90,7 +117,8 @@ pub(in crate::lower) enum Passed {
     Default,
 }
 
-/// The steps a wrapper may pass on, std's names, in `$forward`'s order.
+/// The steps a wrapper may pass on, std's names, in the order a
+/// dictionary carries them.
 const WRAPPER_STEPS: [&str; 15] = [
     "next",
     "size_hint",
@@ -101,10 +129,10 @@ const WRAPPER_STEPS: [&str; 15] = [
     "last",
     "count",
     "next_back",
-    "advance_back_by",
-    "nth_back",
     "rfold",
+    "nth_back",
     "try_rfold",
+    "advance_back_by",
     "len",
     "is_empty",
 ];
@@ -236,6 +264,28 @@ mod tests {
         }
     }
 
+    /// What a dictionary of `DoubleEndedIterator` carries beside its entry
+    /// is the catalog's, and src/runtime/std_iterator.js's `knowing` takes
+    /// each, compiled, in that order, after its back and its length: the
+    /// mirror of a JS signature, run on both sides (#2125).
+    #[test]
+    fn back_steps_are_the_catalogs_and_knowings() {
+        assert_eq!(back_steps(), ["rfold", "nth_back", "try_rfold", "advance_back_by"]);
+        let runtime = include_str!("../../runtime/std_iterator.js");
+        let params = (runtime.lines())
+            .find_map(|line| line.trim().strip_prefix("it.knowing = ("))
+            .and_then(|rest| rest.split_once(')'))
+            .map(|(params, _)| params.split(", ").collect::<Vec<_>>())
+            .expect("std_iterator.js's `it.knowing = (..) =>`");
+        let mut steps = vec!["back", "len"];
+        steps.extend(
+            back_steps()
+                .into_iter()
+                .map(|step| js(step).expect("a back step's `$forward` name")),
+        );
+        assert_eq!(params, steps);
+    }
+
     /// What std's `&mut I` and `Box<I>` pass on, as the catalog says: of a
     /// sized `&mut I`, its folds by `try_fold`s; of an unsized one, neither;
     /// of a `Box<I>`, its `last` only of a sized one (#1601, #1986, #1995).
@@ -246,13 +296,13 @@ mod tests {
         assert_eq!(
             of(Wrapper::MutRefSized),
             [
-                Own, Own, Own, Own, ByTry, Own, Default, Default, Own, Own, Own, ByTry, Own, Own, Own
+                Own, Own, Own, Own, ByTry, Own, Default, Default, Own, ByTry, Own, Own, Own, Own, Own
             ]
         );
         assert_eq!(
             of(Wrapper::MutRefUnsized),
             [
-                Own, Own, Own, Own, Default, Default, Default, Default, Own, Own, Own, Default, Default, Own, Own
+                Own, Own, Own, Own, Default, Default, Default, Default, Own, Default, Own, Default, Own, Own, Own
             ]
         );
         assert_eq!(

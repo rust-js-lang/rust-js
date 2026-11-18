@@ -17,6 +17,7 @@ import {
   $tryOf,
   iterator_skip,
   iterator_take,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
@@ -107,6 +108,13 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      advanceBackBy: (iterator, n) =>
+        skipDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
         ),
     },
     { len: (iterator) => $exactLen($sizeHint(iterator)) },

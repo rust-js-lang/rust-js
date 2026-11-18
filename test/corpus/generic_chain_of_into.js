@@ -16,6 +16,7 @@ import {
   $roomForHint,
   $sizeHint,
   $tryOf,
+  chainDoubleEndedIterator_advanceBackBy,
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_tryRfold,
@@ -123,6 +124,15 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      (iterator, n) =>
+        chainDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next },
+          { next_back: $nextBack },
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
         ),
     ),
     (x) => x % 2 === 0,

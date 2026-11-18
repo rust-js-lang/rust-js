@@ -30,10 +30,12 @@ import {
   iterator_skip,
   iterator_take,
   revDoubleEndedIterator_nextBack,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -459,6 +461,16 @@ function held() {
             undefined,
             dDrop_drop,
           ),
+        (iterator, n) =>
+          takeIDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
       ),
       (d) => d[0] === 1,
       undefined,
@@ -573,6 +585,16 @@ function held() {
             undefined,
             dDrop_drop,
           ),
+        advanceBackBy: (iterator, n) =>
+          takeIDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
       },
       (take) => {
         take.return();
@@ -663,6 +685,15 @@ function held() {
             unwind,
             ends,
             undefined,
+            dDrop_drop,
+          ),
+        advanceBackBy: (iterator, n) =>
+          skipDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            $dropEach(dDrop_drop),
             dDrop_drop,
           ),
       },

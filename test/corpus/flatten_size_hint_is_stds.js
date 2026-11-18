@@ -13,9 +13,11 @@ import {
   $sizeHint,
   $tryOf,
   $utf8Bytes,
+  flatMapDoubleEndedIterator_advanceBackBy,
   flatMapDoubleEndedIterator_nextBack,
   flatMapDoubleEndedIterator_rfold,
   flatMapDoubleEndedIterator_tryRfold,
+  flattenDoubleEndedIterator_advanceBackBy,
   flattenDoubleEndedIterator_nextBack,
   flattenDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_tryRfold,
@@ -186,6 +188,18 @@ function main() {
           unwind,
           ends,
         ),
+      advanceBackBy: (iterator, n) =>
+        flattenDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+          doubleEndedIterator,
+          intoIterator,
+          { next: $next },
+          { next_back: $nextBack },
+          true,
+          false,
+        ),
     },
   );
   $next(back);
@@ -249,6 +263,17 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      advanceBackBy: (iterator, n) =>
+        flatMapDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next },
+          { next_back: $nextBack },
+          iterIntoIterator,
+          { next_back: $nextBack },
+          true,
+          false,
         ),
     },
   );

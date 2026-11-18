@@ -761,4 +761,12 @@ export const mutations: Mutation[] = [
     replace: "  flat.innersGone = () => {\n    const [front, back] = [inner.next, inner.back];\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_code_steps_adapters_as_std\\.rs$"],
   },
+  {
+    name: "enumerate-advance-back-by-unforwarded",
+    breaks: "an `enumerate()` advanced from its back steps its source by `next_back`, not its source's own `advance_back_by`, so a reversed `take`'s `count` of a `Vec`'s drops 5 then 4, where std's drops them as one slice, 4 then 5 (#2120)",
+    file: "src/runtime/back_steps.js",
+    find: "    advanceBackBy: iter.advanceBackBy === undefined ? undefined : advanceBackBy,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_advanced_from_its_back_by_its_source.rs$"],
+  },
 ];

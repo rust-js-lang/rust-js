@@ -16,6 +16,7 @@ import {
   $rev,
   $tryOf,
   chainClone_clone,
+  chainDoubleEndedIterator_advanceBackBy,
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_tryRfold,
@@ -102,7 +103,7 @@ function main() {
   $next(c);
   const c2 = chainClone_clone(c, iterClone, iterClone);
   console.log(
-    `${$count(c)} [${Array.from($rev($knowing(c2, chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind, ends) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind, ends)))).join(", ")}]`,
+    `${$count(c)} [${Array.from($rev($knowing(c2, chainDoubleEndedIterator_nextBack, undefined, undefined, chainDoubleEndedIterator_nthBack, (iterator, init, f, broke, unwind, ends) => chainDoubleEndedIterator_tryRfold(iterator, init, f, { next: $next }, { next_back: $nextBack }, { next: $next }, { next_back: $nextBack }, $tryOf(broke), undefined, undefined, unwind, ends), chainDoubleEndedIterator_advanceBackBy))).join(", ")}]`,
   );
   const value = chainedBack($iter([1, 2]), $iter([3, 4]));
   console.log(`${value == null ? "None" : `Some(${value})`}`);

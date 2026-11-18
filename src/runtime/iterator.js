@@ -9,12 +9,29 @@
 // crate's impl's, std's consumers call them (#162); and its own `rfold` and
 // `nth_back`, which std's consumers and adapters stepped from the back call
 // (#220), and `try_rfold`, std's compiled struct's, a `Take`'s, which what
-// folds it from its back asks (ADR 0930). An exported function's `impl
+// folds it from its back asks (ADR 0930), and `advance_back_by`, std's
+// compiled struct's, its `Result` how many there weren't, which drops what
+// it passes as its source does, a `Vec`'s as one slice (#2125). An exported function's `impl
 // Iterator` is given back to JS as one, which knows its back and its length
 // where its bounds say: its `back()` and `len()`, beside `next()`, are public
 // API, `@rust-js/std`'s `DoubleEndedIterator` and `ExactSizeIterator`
 // (ADR 1169, #1999).
-function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count) {
+function $iterator(
+  iterator,
+  next,
+  boxed = false,
+  nextBack,
+  len,
+  hint,
+  fold,
+  nth,
+  last,
+  rfold,
+  nthBack,
+  tryRfold,
+  count,
+  advanceBackBy,
+) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // from its back std's `Range::nth_back`, which a `rev()` of it is asked
   // `nth` by, a `skip`'s, so neither steps each number (#950); and its
@@ -25,7 +42,13 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   // And its `advance_by` and `advance_back_by`, std's, of its bounds, which
   // a chain's `advance_by` of it asks, and a `rev()`'s of it (#1240).
   const advance = $rangeAdvanceOf(next);
-  const advanceBack = nextBack && $rangeAdvanceOf(nextBack);
+  const advanceBack =
+    advanceBackBy === undefined
+      ? nextBack && $rangeAdvanceOf(nextBack)
+      : (of, m) => {
+          const advanced = advanceBackBy(of, m);
+          return advanced.TAG === "Ok" ? 0 : advanced._0;
+        };
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // An inclusive range's own `try_fold`, std's, which what folds it asks,
@@ -77,7 +100,8 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count);
+  it.with = (value) =>
+    $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count, advanceBackBy);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -96,10 +120,10 @@ function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth
 // `nth_back`, which pass the crate's own on (#224). Given back to JS by an
 // exported function, its `back()` and `len()` are public API, as
 // `$iterator`'s are (ADR 1169, #1999).
-function $knowing(it, back, len, rfold, nthBack, tryRfold) {
+function $knowing(it, back, len, rfold, nthBack, tryRfold, advanceBackBy) {
   let source = it;
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
-  source.knowing?.(back, len, rfold, nthBack, tryRfold);
+  source.knowing?.(back, len, rfold, nthBack, tryRfold, advanceBackBy);
   return it;
 }
 
@@ -143,6 +167,7 @@ function $given(value, iterator, boxed = false, back, len) {
     back?.nthBack,
     back?.tryRfold,
     iterator.count,
+    back?.advanceBackBy,
   );
   // Its own steps that drop what they pass as one slice, a `Vec`'s
   // `$slicing` gave it, where its dictionary has none of its own: so a

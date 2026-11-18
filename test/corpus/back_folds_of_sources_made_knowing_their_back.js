@@ -30,11 +30,13 @@ import {
   iterator_skip,
   peekableDoubleEndedIterator_nextBack,
   peekableDoubleEndedIterator_tryRfold,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
   revDoubleEndedIterator_tryRfold,
   revExactSizeIterator_len,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
@@ -268,6 +270,18 @@ function main() {
               undefined,
               dDrop_drop,
             ),
+          advanceBackBy: (iterator, n) =>
+            skipDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: givesIterator_next, sizeHint: givesIterator_sizeHint },
+              {
+                next_back: givesDoubleEndedIterator_nextBack,
+                rfold: givesDoubleEndedIterator_rfold,
+              },
+              givesDrop_drop,
+              dDrop_drop,
+            ),
         },
         (skip) => {
           skip.return();
@@ -351,6 +365,14 @@ function main() {
                 unwind,
                 ends,
                 undefined,
+                dDrop_drop,
+              ),
+            advanceBackBy: (iterator, n) =>
+              revDoubleEndedIterator_advanceBackBy(
+                iterator,
+                n,
+                { next: givesIterator_next, sizeHint: givesIterator_sizeHint },
+                givesDrop_drop,
                 dDrop_drop,
               ),
           },
@@ -441,6 +463,13 @@ function main() {
                       unwind,
                       ends,
                     ),
+                  advanceBackBy: (iterator, n) =>
+                    skipDoubleEndedIterator_advanceBackBy(
+                      iterator,
+                      n,
+                      { next: everyIterator_next, sizeHint: everyIterator_sizeHint },
+                      { next_back: everyDoubleEndedIterator_nextBack },
+                    ),
                 },
                 undefined,
                 accDrop_drop,
@@ -500,6 +529,11 @@ function main() {
                         unwind,
                         ends,
                       ),
+                    advanceBackBy: (iterator, n) =>
+                      revDoubleEndedIterator_advanceBackBy(iterator, n, {
+                        next: everyIterator_next,
+                        sizeHint: everyIterator_sizeHint,
+                      }),
                   },
                   undefined,
                   accDrop_drop,

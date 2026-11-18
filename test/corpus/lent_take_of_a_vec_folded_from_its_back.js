@@ -23,6 +23,7 @@ import {
   $unwindsOn,
   iterator_map,
   iterator_take,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -154,6 +155,16 @@ function main() {
         undefined,
         dDrop_drop,
       ),
+    (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        intoIterExactSizeIterator,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ),
   );
   try {
     console.log(`dyn rev fold ${$rev($lent(b, "lentUnsized")).reduce(digits, 0)}`);
@@ -220,6 +231,16 @@ function main() {
         unwind,
         ends,
         undefined,
+        dDrop_drop,
+      ),
+    (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        intoIterExactSizeIterator,
+        $dropEach(dDrop_drop),
         dDrop_drop,
       ),
   );
@@ -290,6 +311,16 @@ function main() {
         unwind,
         ends,
         undefined,
+        dDrop_drop,
+      ),
+    (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        intoIterExactSizeIterator,
+        $dropEach(dDrop_drop),
         dDrop_drop,
       ),
   );
@@ -365,6 +396,16 @@ function main() {
         undefined,
         dDrop_drop,
       ),
+    (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, advanceBy: $advanceSlice },
+        { next_back: $nextBack },
+        intoIterExactSizeIterator,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+      ),
   );
   try {
     try {
@@ -426,6 +467,16 @@ function main() {
                         undefined,
                         dDrop_drop,
                       ),
+                    (iterator, n) =>
+                      takeIDoubleEndedIterator_advanceBackBy(
+                        iterator,
+                        n,
+                        { next: $next, advanceBy: $advanceSlice },
+                        { next_back: $nextBack },
+                        intoIterExactSizeIterator,
+                        $dropEach(dDrop_drop),
+                        dDrop_drop,
+                      ),
                   ),
                 ),
               ).reduce(digits, 0)}`,
@@ -483,6 +534,16 @@ function main() {
                           unwind,
                           ends,
                           undefined,
+                          dDrop_drop,
+                        ),
+                      (iterator, n) =>
+                        takeIDoubleEndedIterator_advanceBackBy(
+                          iterator,
+                          n,
+                          { next: $next, advanceBy: $advanceSlice },
+                          { next_back: $nextBack },
+                          intoIterExactSizeIterator,
+                          $dropEach(dDrop_drop),
                           dDrop_drop,
                         ),
                     ),
@@ -544,6 +605,16 @@ function main() {
                         undefined,
                         dDrop_drop,
                       ),
+                    (iterator, n) =>
+                      takeIDoubleEndedIterator_advanceBackBy(
+                        iterator,
+                        n,
+                        { next: $next, advanceBy: $advanceSlice },
+                        { next_back: $nextBack },
+                        intoIterExactSizeIterator,
+                        $dropEach(dDrop_drop),
+                        dDrop_drop,
+                      ),
                   ),
                 );
                 console.log(`sized try_rfold ${value == null ? "None" : `Some(${value})`}`);
@@ -599,6 +670,16 @@ function main() {
                             unwind,
                             ends,
                             undefined,
+                            dDrop_drop,
+                          ),
+                        (iterator, n) =>
+                          takeIDoubleEndedIterator_advanceBackBy(
+                            iterator,
+                            n,
+                            { next: $next, advanceBy: $advanceSlice },
+                            { next_back: $nextBack },
+                            intoIterExactSizeIterator,
+                            $dropEach(dDrop_drop),
                             dDrop_drop,
                           ),
                       ),

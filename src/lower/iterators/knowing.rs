@@ -1108,7 +1108,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if back.is_none() && len.is_none() {
                 return Ok(None);
             }
-            // And its `rfold` and `nth_back`, std's compiled ones: its `rfold`
+            // And its back's steps std writes (`back_steps`), its compiled ones, in that order: its `rfold`
             // where it may reach the `rfold` of the crate's own, which std
             // passes on, as a `Fuse` does (#224), a type parameter's too; or
             // where it holds what drops, which std's drops where it does, a
@@ -1116,25 +1116,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // another, the same as by `next_back`.
             let double_ended = self.recognition().double_ended_iterator().filter(|_| back_asked);
             let std_order = self.drops(ty) != crate::lower::drops::Drops::Nothing;
-            let rfold = match double_ended {
-                Some(back) if std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May) => {
-                    self.compiled_fold(ty, (back, "rfold"), span)?
-                }
-                _ => None,
-            };
-            let nth_back = match double_ended {
-                Some(back) if self.compiled_step(ty, back, "nth_back") => {
-                    Some(self.user_method(ty, back, "nth_back", &["k"], span)?.0)
-                }
-                _ => None,
-            };
-            // And its `try_rfold`, compiled, which `rfind` and what folds it
-            // from its back by `try_rfold` ask (ADR 0930).
-            let try_rfold = match double_ended {
-                Some(back) => self.compiled_try_fold(ty, (back, "try_rfold"), span)?,
-                None => None,
-            };
-            let own = [rfold, nth_back, try_rfold];
+            let mut own = Vec::new();
+            for method in crate::lower::recognition::back_steps() {
+                own.push(match double_ended {
+                    Some(back)
+                        if method == "rfold"
+                            && (std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May)) =>
+                    {
+                        self.compiled_fold(ty, (back, "rfold"), span)?
+                    }
+                    Some(_) if method == "rfold" => None,
+                    // And its `try_rfold`, compiled, which `rfind` and what
+                    // folds it from its back by `try_rfold` ask (ADR 0930).
+                    Some(back) if method == "try_rfold" => self.compiled_try_fold(ty, (back, "try_rfold"), span)?,
+                    // Its `nth_back` and `advance_back_by`, where compiled.
+                    Some(back) if self.compiled_step(ty, back, method) => Some(
+                        self.user_method(ty, back, method, &[super::dictionaries::counted_by(method)], span)?
+                            .0,
+                    ),
+                    _ => None,
+                });
+            }
             let mut given = vec![
                 back.unwrap_or_else(Expr::js_undefined),
                 len.unwrap_or_else(Expr::js_undefined),

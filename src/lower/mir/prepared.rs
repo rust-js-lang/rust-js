@@ -80,6 +80,7 @@ impl<'tcx> Mir<'tcx> {
         // way it goes; the discriminant it read and nothing else does, nothing.
         if !body.source.def_id().is_local() {
             boxes_read_as_values(tcx, &mut body);
+            texts_called_again(tcx, &mut body);
             // A block that assumes `UbChecks`, which rust-js reads as off,
             // never runs (ADR 0917).
             for data in body.basic_blocks.as_mut() {
@@ -375,6 +376,58 @@ fn boxes_read_as_values<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>)
             data.statements[at].make_nop(true);
             at += 1;
         }
+    }
+}
+
+/// Of an optimized body, another crate's, each `fmt::Arguments::from_str`
+/// its inliner put in it called again, as the crate's own MIR calls it,
+/// `_a = Arguments::from_str(<text>)`: what `panic!("..")` and an
+/// `assert!`'s message make of a text alone, which the inliner left as the
+/// text's pointer's bits, JS having no memory for them (#1569). The
+/// statements recognition finds of it (`inlined_text`) go, and the block
+/// is split at the call; one it doesn't find is left as it is, refused as
+/// its transmute is.
+fn texts_called_again<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mut mir::Body<'tcx>) {
+    let mut block = BasicBlock::ZERO;
+    while block < body.basic_blocks.next_index() {
+        let Some(text) = crate::lower::recognition::inlined_text(tcx, body, block) else {
+            block += 1;
+            continue;
+        };
+        let blocks = body.basic_blocks.as_mut();
+        let next = blocks.next_index();
+        let data = &mut blocks[block];
+        let mut at = 0;
+        let (before, after): (Vec<_>, Vec<_>) = (data.statements.drain(..))
+            .map(|statement| {
+                at += 1;
+                (at - 1, statement)
+            })
+            .filter(|(at, _)| !text.statements.contains(at))
+            .partition(|&(at, _)| at < text.made_at);
+        data.statements = before.into_iter().map(|(_, statement)| statement).collect();
+        let after: Vec<mir::Statement<'tcx>> = after.into_iter().map(|(_, statement)| statement).collect();
+        let called = mir::Terminator {
+            source_info: text.called_at,
+            kind: TerminatorKind::Call {
+                func: Operand::function_handle(tcx, text.from_str.0, text.from_str.1, text.called_at.span),
+                args: Box::new([rustc_span::Spanned {
+                    node: text.text,
+                    span: text.called_at.span,
+                }]),
+                destination: text.made,
+                target: Some(next),
+                unwind: UnwindAction::Unreachable,
+                call_source: mir::CallSource::Normal,
+                fn_span: text.called_at.span,
+            },
+            attributes: Default::default(),
+        };
+        let went_on = data.terminator.replace(called);
+        let is_cleanup = data.is_cleanup;
+        let mut rest = mir::BasicBlockData::new(went_on, is_cleanup);
+        rest.statements = after;
+        blocks.push(rest);
     }
 }
 

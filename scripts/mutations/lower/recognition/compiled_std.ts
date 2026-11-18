@@ -311,4 +311,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(scan_map_while_unfused|size_hint_of_adapters).rs$"],
     snapshots: true,
   },
+  {
+    name: "take-advance-back-by-uncompiled",
+    breaks:
+      "std's `Take::advance_back_by` isn't compiled, so a compiled `take(n).rev()` counted runs the trait's default, its source's `nth_back` one at a time, not one `advance_back_by` that drops a `Vec`'s as one slice (#2125)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: '    (StdPath::IterTake, Some("DoubleEndedIterator"), "advance_back_by"),\n',
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

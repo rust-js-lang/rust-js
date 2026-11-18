@@ -125,9 +125,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `skip()` over a `take()` stepped by `rfind` steps each from its back, not by std's `Take::try_rfold`, one `nth_back` of the crate's iterator (ADR 0930)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            let own = [rfold, nth_back, try_rfold];\n",
-    replace:
-      "            let own = [rfold, nth_back, try_rfold.filter(|_| false)];\n",
+    find: '                    Some(back) if method == "try_rfold" => self.compiled_try_fold(ty, (back, "try_rfold"), span)?,\n',
+    replace: '                    Some(back) if method == "try_rfold" => None,\n',
     tests: ["test/corpus.test.ts", "-t", "^held_back_folds_by_try_rfold.rs$"],
   },
   {
@@ -367,8 +366,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled struct stepped from its back isn't given std's compiled `rfold`, so `rev()` of a `fuse()` folds the crate's iterator by `next_back`, not by its own `rfold` (#224, ADR 0981)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                Some(back) if std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May) => {\n",
-    replace: "                Some(back) if false && (std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May)) => {\n",
+    find: "                            && (std_order || self.recognition().reaches_its_own(ty, OwnStep::Rfold, Reach::May)) =>\n",
+    replace: "                            && false =>\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
@@ -384,9 +383,8 @@ export const mutations: Mutation[] = [
     name: "knowing-fuse-nth-back-unasked",
     breaks: "a compiled `fuse()` isn't given its compiled `nth_back` (#224)",
     file: "src/lower/iterators/knowing.rs",
-    find: '                Some(back) if self.compiled_step(ty, back, "nth_back") => {\n',
-    replace:
-      '                Some(back) if false && self.compiled_step(ty, back, "nth_back") => {\n',
+    find: "                    Some(back) if self.compiled_step(ty, back, method) => Some(\n",
+    replace: '                    Some(back) if method != "nth_back" && self.compiled_step(ty, back, method) => Some(\n',
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {

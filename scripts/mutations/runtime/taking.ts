@@ -6,9 +6,9 @@ export const mutations: Mutation[] = [
     name: "taking-length-its-source",
     breaks: "an explicit `take`'s length is its source's, not the fewer of that and how many it takes",
     file: "src/runtime/taking.js",
-    find: "  taking.len = () => Math.min(taking.iter.len(), taking.n);\n",
+    find: "  taking.len = () => taking.sizeHint()[0];\n",
     replace: "  taking.len = () => taking.iter.len();\n",
-    tests: ["test/corpus.test.ts", "-t", "^(held_back_folds_by_try_rfold|own_back_through_adapters).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(held_back_folds_by_try_rfold|own_back_through_adapters|counted_adapter_given_back_from_its_back).rs$"],
   },
   {
     name: "taking-front-uncounted",
@@ -31,8 +31,8 @@ export const mutations: Mutation[] = [
     name: "taking-nth-back-unasked",
     breaks: "a `take`'s `nth_back` steps by `next_back`, not its source's `nth_back` (#220)",
     file: "src/runtime/taking.js",
-    find: "    $forward(taking, iter, { nthBack, rfold, tryRfold });\n",
-    replace: "    $forward(taking, iter, { rfold, tryRfold });\n",
+    find: "    $forward(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });\n",
+    replace: "    $forward(taking, iter, { rfold, tryRfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_back_through_adapters.rs$"],
   },
   {
@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     name: "take-back-by-next",
     breaks: "a `take`'s `next_back` steps its source back by `next_back`, not its `nth_back` past what it won't give (#220)",
     file: "src/runtime/taking.js",
-    find: "      return $nthBackOf(taking.iter, past, drop);\n    };\n    taking.len",
-    replace: "      for (let k = 0; k < past; k++) taking.iter.back();\n      return taking.iter.back();\n    };\n    taking.len",
+    find: "      return $nthBackOf(taking.iter, past, drop);\n    };\n    // Its length",
+    replace: "      for (let k = 0; k < past; k++) taking.iter.back();\n      return taking.iter.back();\n    };\n    // Its length",
     tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
   },
   {
@@ -242,5 +242,13 @@ export const mutations: Mutation[] = [
     find: "  if (iter.len !== undefined) {\n",
     replace: "  if (true) {\n",
     tests: ["test/runtime-package.test.ts", "-t", "a take of a source that doesn't know its length has no back"],
+  },
+  {
+    name: "take-advance-back-by-by-nth-back",
+    breaks: "a `take(n)` advanced from its back trims its source by `nth_back`, then steps it, where std's asks its source's `advance_back_by` once, the trimmed and the passed as one `Vec` slice, front to back (#2121)",
+    file: "src/runtime/taking.js",
+    find: "    $forward(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });\n",
+    replace: "    $forward(taking, iter, { nthBack, rfold, tryRfold });\n",
+    tests: ["test/corpus.test.ts", "-t", "^take_advanced_from_its_back_by_its_source.rs$"],
   },
 ];

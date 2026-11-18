@@ -16,12 +16,14 @@ import {
   $rev,
   $tryOf,
   $unwindsOn,
+  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
   enumerateDoubleEndedIterator_tryRfold,
   iterator_enumerate,
   iterator_rev,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
@@ -287,6 +289,20 @@ function main() {
         undefined,
         dDrop_drop,
       ),
+    advanceBackBy: (iterator, n) =>
+      revDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        {
+          next: ownIterator_next,
+          sizeHint: ownIterator_sizeHint,
+          fold: ownIterator_fold,
+          last: ownIterator_last,
+          count: ownIterator_count,
+        },
+        ownDrop_drop,
+        dDrop_drop,
+      ),
   };
   const last = $lastDropping(
     iterator_rev(
@@ -444,6 +460,21 @@ function main() {
             unwind,
             ends,
             undefined,
+            dDrop_drop,
+          ),
+        advanceBackBy: (iterator, n) =>
+          enumerateDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            {
+              next: ownIterator_next,
+              sizeHint: ownIterator_sizeHint,
+              fold: ownIterator_fold,
+              last: ownIterator_last,
+              count: ownIterator_count,
+            },
+            { next_back: ownDoubleEndedIterator_nextBack },
+            ownDrop_drop,
             dDrop_drop,
           ),
       },

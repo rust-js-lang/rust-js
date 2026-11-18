@@ -10,6 +10,7 @@ import {
   $nextBack,
   $rev,
   $tryOf,
+  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
@@ -111,6 +112,7 @@ function main() {
         unwind,
         ends,
       ),
+    advanceBackBy: enumerateDoubleEndedIterator_advanceBackBy,
   };
   const groups = [[1, 2], [], [3, 4, 5]];
   const it = iterator_flatMap(

@@ -12,10 +12,12 @@ import {
   iterator_rev,
   iterator_skip,
   iterator_take,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -124,6 +126,18 @@ function main() {
         unwind,
         ends,
       ),
+    advanceBackBy: (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        countExactSizeIterator,
+      ),
   };
   const skipDoubleEndedIterator = {
     next_back: (iterator) =>
@@ -161,6 +175,13 @@ function main() {
         undefined,
         unwind,
         ends,
+      ),
+    advanceBackBy: (iterator, n) =>
+      skipDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
       ),
   };
   const held = iterator_rev(
@@ -218,6 +239,13 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      (iterator, n) =>
+        skipDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next, fold: $foldOf },
+          takeDoubleEndedIterator,
         ),
     ),
     (x) => x % 2 === 0,

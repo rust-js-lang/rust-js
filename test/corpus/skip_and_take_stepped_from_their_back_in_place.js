@@ -24,6 +24,7 @@ import {
   $tryOf,
   $unwindsOn,
   iterator_skip,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_tryRfold,
@@ -189,6 +190,7 @@ function main() {
           unwind,
           ends,
         ),
+      skipDoubleEndedIterator_advanceBackBy,
     ),
     (x) => x % 2 === 0,
   );

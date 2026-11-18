@@ -22,16 +22,19 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
   revDoubleEndedIterator_tryRfold,
   revExactSizeIterator_len,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
   stepByDoubleEndedIterator_rfold,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -165,6 +168,11 @@ function main() {
         unwind,
         ends,
       ),
+    advanceBackBy: (iterator, n) =>
+      revDoubleEndedIterator_advanceBackBy(iterator, n, {
+        next: plainIterator_next,
+        sizeHint: plainIterator_sizeHint,
+      }),
   };
   const revDoubleEndedIterator = {
     next_back: (iterator) =>
@@ -200,6 +208,13 @@ function main() {
         countDrop_drop,
         unwind,
         ends,
+      ),
+    advanceBackBy: (iterator, n) =>
+      revDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+        countDrop_drop,
       ),
   };
   const iter = iterator_rev(
@@ -267,6 +282,16 @@ function main() {
           },
           unwind,
           ends,
+        ),
+      advanceBackBy: (iterator, n) =>
+        skipDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next, fold: $foldOf, nth: $nth },
+          revDoubleEndedIterator,
+          (rev) => {
+            rev.return();
+          },
         ),
     },
     (skip) => {
@@ -354,6 +379,17 @@ function main() {
             },
             unwind,
             ends,
+          ),
+        advanceBackBy: (iterator, n) =>
+          takeIDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf, nth: $nth },
+            revDoubleEndedIterator,
+            revExactSizeIterator,
+            (rev) => {
+              rev.return();
+            },
           ),
       },
       (take) => {
@@ -467,6 +503,16 @@ function main() {
             unwind,
             ends,
           ),
+        advanceBackBy: (iterator, n) =>
+          skipDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf, nth: $nth },
+            revDoubleEndedIterator,
+            (rev) => {
+              rev.return();
+            },
+          ),
       },
       (skip) => {
         skip.return();
@@ -556,6 +602,13 @@ function main() {
                 undefined,
                 unwind,
                 ends,
+              ),
+            advanceBackBy: (iterator, n) =>
+              skipDoubleEndedIterator_advanceBackBy(
+                iterator,
+                n,
+                { next: $next, fold: $foldOf },
+                revDoubleEndedIterator$1,
               ),
           },
         ),

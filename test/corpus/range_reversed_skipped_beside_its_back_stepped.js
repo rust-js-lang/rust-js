@@ -14,6 +14,7 @@ import {
   $rev,
   $tryOf,
   iterator_rev,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_tryRfold,
@@ -68,6 +69,7 @@ function main() {
           unwind,
           ends,
         ),
+      (iterator, n) => revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
     ),
   );
   console.log(
@@ -95,6 +97,7 @@ function main() {
           unwind,
           ends,
         ),
+      (iterator, n) => revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
     ),
   );
   console.log(

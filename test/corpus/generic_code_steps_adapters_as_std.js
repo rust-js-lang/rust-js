@@ -24,11 +24,13 @@ import {
   $rangeNthBack,
   $someValue,
   $tryOf,
+  flatMapDoubleEndedIterator_advanceBackBy,
   flatMapDoubleEndedIterator_nextBack,
   flatMapDoubleEndedIterator_tryRfold,
   iterator_flatMap,
   iterator_map,
   iterator_skip,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
@@ -213,6 +215,13 @@ function main() {
         unwind,
         ends,
       ),
+    advanceBackBy: (iterator, n) =>
+      skipDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: bothIterator_next, sizeHint: bothIterator_sizeHint, nth: bothIterator_nth },
+        { next_back: bothDoubleEndedIterator_nextBack },
+      ),
   };
   const skipped = collected(
     iterator_map(
@@ -272,6 +281,17 @@ function main() {
           undefined,
           unwind,
           ends,
+        ),
+      (iterator, n) =>
+        flatMapDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: $next, fold: $foldOf, nth: $nth },
+          skipDoubleEndedIterator,
+          vecIntoIterator$1,
+          { next_back: $nextBackSome },
+          false,
+          false,
         ),
     ),
     optionFromIterator,

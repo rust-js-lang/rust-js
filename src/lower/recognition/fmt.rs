@@ -2,6 +2,7 @@
 //! and the writers `write!` writes to.
 
 use super::*;
+use rustc_middle::mir;
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether `ty` is standard output, or its lock, `Some(false)`, or
@@ -806,6 +807,170 @@ pub(crate) fn is_arguments_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(crate) fn is_arguments_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
     matches!(std_inherent_method(tcx, id), Some((MethodOf::Type(StdPath::FmtArguments), name))
         if matches!(name.as_str(), "from_str" | "from_str_nonconst"))
+}
+
+/// An `fmt::Arguments::from_str(<text>)` rustc's MIR inliner put in a
+/// block of an optimized body, another crate's (#1569): `panic!("..")`'s
+/// and an `assert!`'s message, which 1.100 makes the text's pointer's bits,
+/// `_p = copy _r as *const u8 (PtrToPtr); _t = copy _p as NonNull<u8>
+/// (Transmute); .. _a = Arguments { template: move _t, args: move _n }`.
+pub(crate) struct InlinedText<'tcx> {
+    /// The block's statements of its inlined scope, in order.
+    pub(crate) statements: Vec<usize>,
+    /// Of those, the one that makes the `Arguments`, the last but the ends
+    /// of its locals' storage.
+    pub(crate) made_at: usize,
+    /// The `Arguments` made.
+    pub(crate) made: mir::Place<'tcx>,
+    /// The text: what its inlined `len()` reads the bytes of, a `&str`
+    /// made a `&[u8]`.
+    pub(crate) text: mir::Operand<'tcx>,
+    /// `from_str` and its generic arguments, as it was inlined.
+    pub(crate) from_str: (DefId, ty::GenericArgsRef<'tcx>),
+    /// Where it was called: the scope it was inlined into and the call's
+    /// span.
+    pub(crate) called_at: mir::SourceInfo,
+}
+
+/// The first `fmt::Arguments::from_str` inlined in `block` of `body`, as
+/// `InlinedText` says, exactly: each statement of its scope in the block
+/// up to the one that makes its `Arguments`, none in another block or
+/// past it, one text, and each local its statements write but the
+/// `Arguments` read by them alone. `None` otherwise, its form left as
+/// rustc's inliner made it.
+pub(crate) fn inlined_text<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &mir::Body<'tcx>,
+    block: mir::BasicBlock,
+) -> Option<InlinedText<'tcx>> {
+    use rustc_middle::mir::visit::{PlaceContext, Visitor};
+    // The inlined `from_str` a scope is in, and its scope.
+    let from_str_of = |mut scope: mir::SourceScope| loop {
+        let data = &body.source_scopes[scope];
+        if let Some((instance, _)) = data.inlined
+            && is_arguments_from_str(tcx, instance.def_id())
+        {
+            return Some((scope, instance));
+        }
+        scope = data.parent_scope?;
+    };
+    let statements = &body.basic_blocks[block].statements;
+    let (scope, instance) = statements.iter().find_map(|s| from_str_of(s.source_info.scope))?;
+    let of_it = |info: mir::SourceInfo| from_str_of(info.scope).is_some_and(|(s, _)| s == scope);
+    let its: Vec<usize> = (0..statements.len())
+        .filter(|&at| of_it(statements[at].source_info))
+        .collect();
+    // Its `Arguments`, made by its last statement in the block but the ends
+    // of its locals' storage.
+    let is_storage = |at: usize| {
+        matches!(
+            statements[at].kind,
+            mir::StatementKind::StorageLive(_) | mir::StatementKind::StorageDead(_)
+        )
+    };
+    let &made_at = its.iter().rev().find(|&&at| !is_storage(at))?;
+    let (made, mir::Rvalue::Aggregate(kind, _)) = statements[made_at].kind.as_assign()? else {
+        return None;
+    };
+    let mir::AggregateKind::Adt(adt, ..) = **kind else {
+        return None;
+    };
+    if !is_std_path(tcx, adt, StdPath::FmtArguments) || made.as_local().is_none() {
+        return None;
+    }
+    // Its one text.
+    let texts: Vec<&mir::Operand<'tcx>> = (its.iter())
+        .filter_map(|&at| match statements[at].kind.as_assign()? {
+            (_, mir::Rvalue::Cast(mir::CastKind::Transmute, operand, _))
+                if matches!(operand.ty(&body.local_decls, tcx).kind(),
+                    ty::Ref(_, inner, _) if inner.is_str()) =>
+            {
+                Some(operand)
+            }
+            _ => None,
+        })
+        .collect();
+    let [text] = texts[..] else {
+        return None;
+    };
+    // Of no other block, nor any terminator, and what it writes but its
+    // `Arguments`, the text's local aside, read by it alone.
+    let mut written: Vec<mir::Local> = (its.iter())
+        .filter_map(|&at| statements[at].kind.as_assign())
+        .map(|(place, _)| place.local)
+        .collect();
+    if text.place().is_some_and(|place| written.contains(&place.local)) {
+        return None;
+    }
+    written.retain(|&local| Some(local) != made.as_local());
+    struct ReadElsewhere<'b> {
+        written: &'b [mir::Local],
+        found: bool,
+    }
+    impl<'tcx> Visitor<'tcx> for ReadElsewhere<'_> {
+        fn visit_local(&mut self, local: mir::Local, context: PlaceContext, _: mir::Location) {
+            self.found |= self.written.contains(&local) && !context.is_storage_marker();
+        }
+    }
+    let mut elsewhere = ReadElsewhere {
+        written: &written,
+        found: false,
+    };
+    for (b, data) in body.basic_blocks.iter_enumerated() {
+        for (at, statement) in data.statements.iter().enumerate() {
+            let its_own = b == block && its.contains(&at);
+            if !its_own && of_it(statement.source_info) {
+                return None;
+            }
+            if !its_own {
+                let location = mir::Location {
+                    block: b,
+                    statement_index: at,
+                };
+                elsewhere.visit_statement(statement, location);
+            }
+        }
+        if of_it(data.terminator().source_info) {
+            return None;
+        }
+        elsewhere.visit_terminator(data.terminator(), body.terminator_loc(b));
+    }
+    if elsewhere.found {
+        return None;
+    }
+    // And what's between its statements, the caller's, which goes before
+    // the call, neither reads nor ends its text.
+    let mut text_read = ReadElsewhere {
+        written: &text.place().map(|place| vec![place.local]).unwrap_or_default(),
+        found: false,
+    };
+    for at in (its[0]..made_at).filter(|at| !its.contains(at)) {
+        let location = mir::Location {
+            block,
+            statement_index: at,
+        };
+        text_read.visit_statement(&statements[at], location);
+        if text.place().is_some_and(
+            |place| matches!(statements[at].kind, mir::StatementKind::StorageDead(local) if local == place.local),
+        ) {
+            return None;
+        }
+    }
+    if text_read.found {
+        return None;
+    }
+    let (_, call) = body.source_scopes[scope].inlined?;
+    Some(InlinedText {
+        statements: its,
+        made_at,
+        made: *made,
+        text: text.clone(),
+        from_str: (instance.def_id(), instance.args),
+        called_at: mir::SourceInfo {
+            span: call,
+            scope: body.source_scopes[scope].parent_scope?,
+        },
+    })
 }
 
 /// `Argument::new_debug(&x)`, which `format_args!` makes of a `{:?}`

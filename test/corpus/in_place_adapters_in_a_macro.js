@@ -16,6 +16,7 @@ import {
   $roomForHint,
   $stepsOf,
   $tryOf,
+  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_tryRfold,
@@ -27,6 +28,7 @@ import {
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
   mapIterator___iteratorGetUnchecked,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_rfold,
@@ -66,6 +68,7 @@ function held(it) {
           unwind,
           ends,
         ),
+      revDoubleEndedIterator_advanceBackBy,
     ),
   );
   $extend(out, last == null ? [] : [last], true);
@@ -108,6 +111,7 @@ function heldNumbered(it) {
             unwind,
             ends,
           ),
+        enumerateDoubleEndedIterator_advanceBackBy,
       ),
       ([i, x]) => (((i * 100) >>> 0) + x) >>> 0,
     ),
@@ -156,6 +160,7 @@ function heldNumberedRev(it) {
         unwind,
         ends,
       ),
+    advanceBackBy: revDoubleEndedIterator_advanceBackBy,
   };
   const nextBack = enumerateDoubleEndedIterator_nextBack(
     it,
@@ -195,6 +200,13 @@ function heldNumberedRev(it) {
             undefined,
             unwind,
             ends,
+          ),
+        (iterator, n) =>
+          enumerateDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf },
+            revDoubleEndedIterator,
           ),
       ),
       ([i, x]) => (((i * 100) >>> 0) + x) >>> 0,

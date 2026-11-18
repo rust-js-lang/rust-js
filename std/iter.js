@@ -23,6 +23,7 @@ import {
   $givenDrop,
   $held,
   $intoIter,
+  $knowing,
   $lastDropping,
   $lastSome,
   $lent,
@@ -34,11 +35,11 @@ import {
   $nthBack,
   $nthDropping,
   $nthSome,
+  $optionTry,
   $overflowing,
   $peekableHint,
   $rem,
   $rev,
-  $revAdvanceBy,
   $sink,
   $sizeHint,
   $some,
@@ -2424,6 +2425,22 @@ export function revIterator_tryFold(
   return value;
 }
 
+export function revIterator_advanceBy(
+  rev,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  dropI,
+  dropIItem,
+) {
+  return $advanceBackBy(
+    $given(rev.iter, IIterator, true, IDoubleEndedIterator),
+    n,
+    undefined,
+    dropIItem,
+  );
+}
+
 export function revDoubleEndedIterator_nextBack(
   rev,
   IIterator = { next: $next },
@@ -2530,6 +2547,16 @@ export function revDoubleEndedIterator_rfind(
   }
   dropP?.(predicate);
   return value;
+}
+
+export function revDoubleEndedIterator_advanceBackBy(
+  rev,
+  n,
+  IIterator = { next: $next },
+  dropI,
+  dropIItem,
+) {
+  return $advanceBy($lent($given(rev.iter, IIterator, true)), n, dropIItem);
 }
 
 export function revExactSizeIterator_len(rev, IExactSizeIterator, dropI, dropIItem) {
@@ -2877,6 +2904,22 @@ export function enumerateDoubleEndedIterator_tryRfold(
     () => {
       $dispose(value);
     },
+  );
+}
+
+export function enumerateDoubleEndedIterator_advanceBackBy(
+  enumerate,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  dropI,
+  dropIItem,
+) {
+  return $advanceBackBy(
+    $given(enumerate.iter, IIterator, true, IDoubleEndedIterator),
+    n,
+    undefined,
+    dropIItem,
   );
 }
 
@@ -5926,6 +5969,45 @@ export function flattenIterator_count(
       );
 }
 
+export function flattenIterator_advanceBy(
+  flatten,
+  n,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  UIterator = { next: $next },
+  IFused,
+  UOneShot,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUIterator2_advanceBy(
+        flatten.inner,
+        n,
+        IIterator,
+        IItemIntoIterator,
+        IFused,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_advanceBy(
+        flatten.inner,
+        n,
+        IIterator,
+        IItemIntoIterator,
+        UIterator,
+        IFused,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      );
+}
+
 export function flattenDoubleEndedIterator_nextBack(
   flatten,
   IDoubleEndedIterator = { next_back: $nextBack },
@@ -6068,6 +6150,50 @@ export function flattenDoubleEndedIterator_tryRfold(
         dropAcc,
         dropFold,
         dropR,
+        dropIItem,
+        dropUItem,
+      );
+}
+
+export function flattenDoubleEndedIterator_advanceBackBy(
+  flatten,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  IItemIntoIterator,
+  UIterator = { next: $next },
+  UDoubleEndedIterator = { next_back: $nextBack },
+  IFused,
+  UOneShot,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  return UOneShot
+    ? flattenCompatIUDoubleEndedIterator2_advanceBackBy(
+        flatten.inner,
+        n,
+        IIterator,
+        IDoubleEndedIterator,
+        IItemIntoIterator,
+        IFused,
+        dropI,
+        dropU,
+        dropIItem,
+        dropUItem,
+      )
+    : flattenCompatIUDoubleEndedIterator_advanceBackBy(
+        flatten.inner,
+        n,
+        IIterator,
+        IDoubleEndedIterator,
+        IItemIntoIterator,
+        UIterator,
+        UDoubleEndedIterator,
+        IFused,
+        dropI,
+        dropU,
         dropIItem,
         dropUItem,
       );
@@ -6327,6 +6453,49 @@ export function flatMapIterator_count(
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapIterator_advanceBy(
+  flatMap,
+  n,
+  UIntoIterator,
+  IFused,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUIterator2_advanceBy(
+        flatMap.inner,
+        n,
+        { next: $nextSome, fold: $foldOf },
+        UIntoIterator,
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUIterator_advanceBy(
+        flatMap.inner,
+        n,
+        { next: $nextSome, fold: $foldOf },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        false,
         (map) => {
           map.return();
         },
@@ -6734,6 +6903,135 @@ export function flatMapDoubleEndedIterator_tryRfold(
         dropAcc,
         dropFold,
         dropR,
+        dropU,
+        dropUItem,
+      );
+}
+
+export function flatMapDoubleEndedIterator_advanceBackBy(
+  flatMap,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  UIntoIterator,
+  UIntoIterDoubleEndedIterator = { next_back: $nextBack },
+  IFused,
+  UIntoIterOneShot,
+  dropI,
+  dropU,
+  dropF,
+  dropIItem,
+  dropUItem,
+  dropUIntoIter,
+) {
+  return UIntoIterOneShot
+    ? flattenCompatIUDoubleEndedIterator2_advanceBackBy(
+        flatMap.inner,
+        n,
+        { next: $nextSome, fold: $foldOf },
+        {
+          next_back: (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              dropIItem,
+            ),
+          rfold: (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              unwind,
+              ends,
+              dropIItem,
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              $tryOf(broke),
+              dropU,
+              dropI,
+              dropF,
+              unwind,
+              ends,
+              undefined,
+              dropIItem,
+            ),
+        },
+        UIntoIterator,
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
+        dropU,
+        dropUItem,
+      )
+    : flattenCompatIUDoubleEndedIterator_advanceBackBy(
+        flatMap.inner,
+        n,
+        { next: $nextSome, fold: $foldOf },
+        {
+          next_back: (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              dropIItem,
+            ),
+          rfold: (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              dropU,
+              dropI,
+              dropF,
+              unwind,
+              ends,
+              dropIItem,
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              IIterator,
+              IDoubleEndedIterator,
+              $tryOf(broke),
+              dropU,
+              dropI,
+              dropF,
+              unwind,
+              ends,
+              undefined,
+              dropIItem,
+            ),
+        },
+        UIntoIterator,
+        UIntoIterator.IntoIterIterator(),
+        UIntoIterDoubleEndedIterator,
+        false,
+        (map) => {
+          map.return();
+        },
+        dropUIntoIter,
         dropU,
         dropUItem,
       );
@@ -7408,6 +7706,50 @@ export function skipDoubleEndedIterator_rfold(
   return result;
 }
 
+export function skipDoubleEndedIterator_advanceBackBy(
+  skip,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  dropI,
+  dropIItem,
+) {
+  const [_18, _19] = $sizeHint(skip.iter, IIterator);
+  const value = Math.max(_18 - skip.n, 0);
+  let tmp$1;
+  let tmp$2;
+  let tmp;
+  if (_19 == null) {
+    tmp = undefined;
+    tmp$1 = tmp;
+    tmp$2 = value;
+  } else {
+    tmp = Math.max(_19 - skip.n, 0);
+    tmp$1 = tmp;
+    tmp$2 = value;
+    if (tmp === value) {
+      const min = Math.min(value, n);
+      const rem = $advanceBackBy(
+        $given(skip.iter, IIterator, true, IDoubleEndedIterator),
+        min,
+        undefined,
+        dropIItem,
+      );
+      if (rem.TAG !== "Ok") {
+        throw new Error("ExactSizeIterator contract violation");
+      }
+      const n$1 = (n - min) >>> 0;
+      const value$1 = n$1 === 0 ? undefined : n$1;
+      return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
+    }
+  }
+  $assertFailed(
+    "Eq",
+    tmp$1 == null ? "None" : `Some(${tmp$1})`,
+    tmp$2 == null ? "None" : `Some(${tmp$2})`,
+  );
+}
+
 export function skipClone_clone(skip, IClone, dropI) {
   return $stdIterator({ iter: IClone.clone(skip.iter), n: skip.n }, skip.$steps, skip.$knows);
 }
@@ -7936,6 +8278,41 @@ export function takeRepeatTDoubleEndedIterator_rfold(
     dropFold,
     dropT,
   );
+}
+
+export function takeIDoubleEndedIterator_advanceBackBy(
+  take,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  IExactSizeIterator,
+  dropI,
+  dropIItem,
+) {
+  const trimInner = Math.max(IExactSizeIterator.len(take.iter) - take.n, 0);
+  const advanceBy = Math.min(trimInner + n, 4294967295);
+  const advanceBackBy = $advanceBackBy(
+    $given(take.iter, IIterator, true, IDoubleEndedIterator),
+    advanceBy,
+    undefined,
+    dropIItem,
+  );
+  let remainder;
+  if (advanceBackBy.TAG === "Ok") {
+    remainder = 0;
+  } else {
+    const rem = advanceBackBy._0;
+    remainder = rem;
+  }
+  const advancedByInner = (advanceBy - remainder) >>> 0;
+  const advancedBy = (advancedByInner - trimInner) >>> 0;
+  take.n = (take.n - advancedBy) >>> 0;
+  const value = (n - advancedBy) >>> 0 === 0 ? undefined : (n - advancedBy) >>> 0;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
+}
+
+export function takeRepeatTDoubleEndedIterator_advanceBackBy(take, n, TClone, dropT) {
+  return $advanceBy($lent(take), n, dropT);
 }
 
 export function takeRepeatTExactSizeIterator_len(take, TClone, dropT) {
@@ -8866,6 +9243,55 @@ export function chainDoubleEndedIterator_tryRfold(
   }
   dropF?.(f);
   return result;
+}
+
+export function chainDoubleEndedIterator_advanceBackBy(
+  chain,
+  n,
+  AIterator = { next: $next },
+  ADoubleEndedIterator = { next_back: $nextBack },
+  BIterator = { next: $next },
+  BDoubleEndedIterator = { next_back: $nextBack },
+  dropA,
+  dropB,
+  dropAItem,
+) {
+  if (chain.b != null) {
+    const b = $someValue(chain.b);
+    const advanceBackBy = $advanceBackBy(
+      $given(b, BIterator, true, BDoubleEndedIterator),
+      n,
+      undefined,
+      dropAItem,
+    );
+    if (advanceBackBy.TAG === "Ok") {
+      return { TAG: "Ok" };
+    }
+    const k = advanceBackBy._0;
+    n = k;
+    try {
+      if (chain.b != null) {
+        dropB?.($someValue(chain.b));
+      }
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        chain.b = undefined;
+      }
+    }
+  }
+  if (chain.a != null) {
+    const a = $someValue(chain.a);
+    return $advanceBackBy(
+      $given(a, AIterator, true, ADoubleEndedIterator),
+      n,
+      undefined,
+      dropAItem,
+    );
+  }
+  const value = n === 0 ? undefined : n;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function chainClone_clone(chain, AClone, BClone, dropA, dropB) {
@@ -9899,6 +10325,16 @@ export function iterator_rev(
           dropSelfItem,
         );
       },
+      advance(iterator, n) {
+        return revIterator_advanceBy(
+          iterator,
+          n,
+          SelfIterator,
+          SelfDoubleEndedIterator,
+          dropSelf,
+          dropSelfItem,
+        );
+      },
       fold(iterator, init, f, unwind, ends) {
         return revIterator_fold(
           iterator,
@@ -9928,9 +10364,6 @@ export function iterator_rev(
         );
       },
       takes: ["fold"],
-      advanceBy(it, m, drop) {
-        return $revAdvanceBy(it, m, drop, SelfIterator, SelfDoubleEndedIterator);
-      },
       close(iterator) {
         dropSelf?.(iterator.iter);
       },
@@ -10738,6 +11171,21 @@ export function iterator_flatten(
           dropSelfItemItem,
         );
       },
+      advance(iterator, n) {
+        return flattenIterator_advanceBy(
+          iterator,
+          n,
+          SelfIterator,
+          SelfItemIntoIterator,
+          IntoIterIterator,
+          SelfFused,
+          SelfItemIntoIterOneShot,
+          dropSelf,
+          dropSelfItemIntoIter,
+          dropSelfItem,
+          dropSelfItemItem,
+        );
+      },
       last(iterator) {
         return flattenIterator_last(
           iterator,
@@ -10995,6 +11443,21 @@ export function iterator_flatMap(
           iterator,
           UIntoIterator,
           UConstSize,
+          UIntoIterOneShot,
+          dropSelf,
+          dropU,
+          dropF,
+          dropSelfItem,
+          dropUItem,
+          dropUIntoIter,
+        );
+      },
+      advance(iterator, n) {
+        return flatMapIterator_advanceBy(
+          iterator,
+          n,
+          UIntoIterator,
+          SelfFused,
           UIntoIterOneShot,
           dropSelf,
           dropU,
@@ -12619,6 +13082,107 @@ export function flattenCompatIUIterator2_count(
   return result;
 }
 
+export function flattenCompatIUIterator_advanceBy(
+  flattenCompat,
+  n,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  UIterator = { next: $next },
+  IFused,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  const iterTryFold = FlattenCompat.iterTryFold(
+    flattenCompat,
+    n,
+    (a, b) =>
+      flattenCompatIUIterator_advanceBy_advance(
+        a,
+        $given(b, UIterator, true),
+        $givenDrop(dropU),
+        dropUItem,
+      ),
+    IIterator,
+    IItemIntoIterator,
+    $controlFlowTry,
+    IFused,
+    dropI,
+    dropU,
+    undefined,
+    undefined,
+    undefined,
+    dropIItem,
+    dropUItem,
+  );
+  if (iterTryFold.TAG === "Continue") {
+    const value = iterTryFold._0 === 0 ? undefined : iterTryFold._0;
+    return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
+  }
+  return { TAG: "Ok" };
+}
+
+export function flattenCompatIUIterator2_advanceBy(
+  flattenCompat,
+  n,
+  IIterator = { next: $next },
+  IItemIntoIterator,
+  IFused,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  const IntoIterIterator = IItemIntoIterator.IntoIterIterator();
+  n = n === 0 ? undefined : n;
+  if (n != null) {
+    const value = IFused
+      ? fuseFuseImplIFusedIterator_tryFold(
+          flattenCompat.iter,
+          n,
+          (a, b) =>
+            advanceByOne(
+              a,
+              $given(IItemIntoIterator.intoIter(b), IntoIterIterator, true),
+              dropIItem,
+              dropUItem,
+              dropU,
+            ),
+          IIterator,
+          $optionTry,
+          dropI,
+          undefined,
+          undefined,
+          undefined,
+          dropIItem,
+        )
+      : fuseFuseImplI_tryFold(
+          flattenCompat.iter,
+          n,
+          (a, b) =>
+            advanceByOne(
+              a,
+              $given(IItemIntoIterator.intoIter(b), IntoIterIterator, true),
+              dropIItem,
+              dropUItem,
+              dropU,
+            ),
+          IIterator,
+          $optionTry,
+          dropI,
+          undefined,
+          undefined,
+          undefined,
+          dropIItem,
+        );
+    return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
+  }
+  return IFused
+    ? fuseFuseImplIFusedIterator_advanceBy(flattenCompat.iter, 0, IIterator, dropI, dropIItem)
+    : fuseFuseImplI_advanceBy(flattenCompat.iter, 0, IIterator, dropI, dropIItem);
+}
+
 export function flattenCompatIUDoubleEndedIterator_nextBack(
   flattenCompat,
   IDoubleEndedIterator = { next_back: $nextBack },
@@ -13166,6 +13730,158 @@ export function flattenCompatIUDoubleEndedIterator2_tryRfold(
         dropR,
         dropIItem,
       );
+}
+
+export function flattenCompatIUDoubleEndedIterator_advanceBackBy(
+  flattenCompat,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  IItemIntoIterator,
+  UIterator = { next: $next },
+  UDoubleEndedIterator = { next_back: $nextBack },
+  IFused,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  const iterTryRfold = FlattenCompat.iterTryRfold(
+    flattenCompat,
+    n,
+    (a, b) =>
+      flattenCompatIUDoubleEndedIterator_advanceBackBy_advance(
+        a,
+        $given(b, UIterator, true, UDoubleEndedIterator),
+        $givenDrop(dropU),
+        dropUItem,
+      ),
+    IIterator,
+    IDoubleEndedIterator,
+    IItemIntoIterator,
+    $controlFlowTry,
+    IFused,
+    dropI,
+    dropU,
+    undefined,
+    undefined,
+    undefined,
+    dropIItem,
+    dropUItem,
+  );
+  if (iterTryRfold.TAG === "Continue") {
+    const value = iterTryRfold._0 === 0 ? undefined : iterTryRfold._0;
+    return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
+  }
+  return { TAG: "Ok" };
+}
+
+export function flattenCompatIUDoubleEndedIterator2_advanceBackBy(
+  flattenCompat,
+  n,
+  IIterator = { next: $next },
+  IDoubleEndedIterator = { next_back: $nextBack },
+  IItemIntoIterator,
+  IFused,
+  dropI,
+  dropU,
+  dropIItem,
+  dropUItem,
+) {
+  const IntoIterIterator = IItemIntoIterator.IntoIterIterator();
+  n = n === 0 ? undefined : n;
+  if (n != null) {
+    const value = IFused
+      ? fuseFuseImplIFusedIterator_tryRfold(
+          flattenCompat.iter,
+          n,
+          (a, b) =>
+            advanceByOne(
+              a,
+              $given(IItemIntoIterator.intoIter(b), IntoIterIterator, true),
+              dropIItem,
+              dropUItem,
+              dropU,
+            ),
+          IIterator,
+          $optionTry,
+          IDoubleEndedIterator,
+          dropI,
+          undefined,
+          undefined,
+          undefined,
+          dropIItem,
+        )
+      : fuseFuseImplI_tryRfold(
+          flattenCompat.iter,
+          n,
+          (a, b) =>
+            advanceByOne(
+              a,
+              $given(IItemIntoIterator.intoIter(b), IntoIterIterator, true),
+              dropIItem,
+              dropUItem,
+              dropU,
+            ),
+          IIterator,
+          $optionTry,
+          IDoubleEndedIterator,
+          dropI,
+          undefined,
+          undefined,
+          undefined,
+          dropIItem,
+        );
+    return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
+  }
+  return $advanceBackBy(
+    $knowing(
+      flattenCompat.iter,
+      (iterator) =>
+        fuseDoubleEndedIterator_nextBack(iterator, IDoubleEndedIterator, IFused, dropI, dropIItem),
+      undefined,
+      (iterator, init, f, unwind, ends) =>
+        fuseDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          IIterator,
+          IDoubleEndedIterator,
+          dropI,
+          unwind,
+          ends,
+          dropIItem,
+        ),
+      (iterator, k) =>
+        fuseDoubleEndedIterator_nthBack(
+          iterator,
+          k,
+          IIterator,
+          IDoubleEndedIterator,
+          IFused,
+          dropI,
+          dropIItem,
+        ),
+      (iterator, init, f, broke, unwind, ends) =>
+        fuseDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          IIterator,
+          IDoubleEndedIterator,
+          $tryOf(broke),
+          IFused,
+          dropI,
+          unwind,
+          ends,
+          undefined,
+          dropIItem,
+        ),
+    ),
+    0,
+    undefined,
+    dropIItem,
+  );
 }
 
 export function takeSpecTake_specFold(
@@ -14848,6 +15564,61 @@ export function flattenCompatIUIterator_count_count(acc, iter, dropU, dropUItem)
     dropU?.(iter);
   }
   return (acc + result) >>> 0;
+}
+
+export function flattenCompatIUIterator_advanceBy_advance(n, iter, dropU, dropUItem) {
+  const advanceBy = $advanceBy($lent(iter), n, dropUItem);
+  if (advanceBy.TAG === "Ok") {
+    return { TAG: "Break" };
+  }
+  const remaining = advanceBy._0;
+  return { TAG: "Continue", _0: remaining };
+}
+
+export function advanceByOne(n, inner, dropI, dropIItem, dropIIntoIter) {
+  const value = $held($intoIter(inner));
+  let next;
+  try {
+    next = $nextSome(value);
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(value);
+    }, error);
+    throw error;
+  }
+  let result;
+  if (next != null) {
+    const n$1 = (n - 1) >>> 0;
+    result = n$1 === 0 ? undefined : n$1;
+  } else {
+    result = n;
+  }
+  try {
+    if (next != null) {
+      dropIItem?.($someValue(next));
+    }
+  } catch (error) {
+    $cleanup(() => {
+      dropIIntoIter?.(value);
+    }, error);
+    throw error;
+  }
+  dropIIntoIter?.(value);
+  return result;
+}
+
+export function flattenCompatIUDoubleEndedIterator_advanceBackBy_advance(
+  n,
+  iter,
+  dropU,
+  dropUItem,
+) {
+  const advanceBackBy = $advanceBackBy(iter, n, undefined, dropUItem);
+  if (advanceBackBy.TAG === "Ok") {
+    return { TAG: "Break" };
+  }
+  const remaining = advanceBackBy._0;
+  return { TAG: "Continue", _0: remaining };
 }
 
 export function zipSpecFold_specFold(

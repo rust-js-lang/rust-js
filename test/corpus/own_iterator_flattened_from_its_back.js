@@ -24,6 +24,7 @@ import {
   $tryOf,
   $unwindsOn,
   iterator_rev,
+  revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_tryRfold,
@@ -258,6 +259,14 @@ function main() {
                 undefined,
                 unwind,
                 ends,
+                undefined,
+                dDrop_drop,
+              ),
+            (iterator, n) =>
+              revDoubleEndedIterator_advanceBackBy(
+                iterator,
+                n,
+                { next: foldsIterator_next },
                 undefined,
                 dDrop_drop,
               ),

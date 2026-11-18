@@ -19,6 +19,7 @@ import {
   $sizeHint,
   $stepByEnds,
   $tryOf,
+  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
@@ -33,6 +34,7 @@ import {
   iterator_skip,
   iterator_stepBy,
   iterator_take,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
@@ -41,6 +43,7 @@ import {
   stepByDoubleEndedIterator_nthBack,
   stepByDoubleEndedIterator_rfold,
   stepByDoubleEndedIterator_tryRfold,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -425,6 +428,19 @@ function main() {
             undefined,
             dDrop_drop,
           ),
+        advanceBackBy: (iterator, n) =>
+          takeIDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countExactSizeIterator,
+            undefined,
+            dDrop_drop,
+          ),
       },
       exactSizeIterator,
       undefined,
@@ -578,6 +594,18 @@ function main() {
           undefined,
           dDrop_drop,
         ),
+      advanceBackBy: (iterator, n) =>
+        enumerateDoubleEndedIterator_advanceBackBy(
+          iterator,
+          n,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          undefined,
+          dDrop_drop,
+        ),
     },
     {
       len: (iterator) =>
@@ -662,6 +690,18 @@ function main() {
             undefined,
             unwind,
             ends,
+            undefined,
+            dDrop_drop,
+          ),
+        advanceBackBy: (iterator, n) =>
+          skipDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
             undefined,
             dDrop_drop,
           ),

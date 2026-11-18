@@ -30,7 +30,9 @@ function $taking(iter, n, drop) {
       taking.n--;
       return $nthBackOf(taking.iter, past, drop);
     };
-    taking.len = () => Math.min(taking.iter.len(), taking.n);
+    // Its length std's `ExactSizeIterator::len`, its size hint's: its
+    // source's `size_hint`, as std's `Take` writes no `len` (#2112).
+    taking.len = () => taking.sizeHint()[0];
   }
   // Std's `Take::advance_by(m)` and `count`: its source's `advance_by`, by
   // as many as it has left, which drops what it passes itself where it
@@ -151,7 +153,18 @@ function $taking(iter, n, drop) {
     };
     const tryRfold = (init, f, broke, unwind, ends) =>
       taking.n === 0 || !kept(init, unwind, ends) ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind, ends);
-    $forward(taking, iter, { nthBack, rfold, tryRfold });
+    // Std's `Take::advance_back_by(m)`: its source trimmed to what it has
+    // left to take and `m` more in one of its source's `advance_back_by`,
+    // which drops what it passes itself, a `Vec`'s as one slice, front to
+    // back, the trimmed ones among them (#2121).
+    const advanceBackBy = (m, dropItem = drop) => {
+      const trim = Math.max(taking.iter.len() - taking.n, 0);
+      const back = $advanceBackBy(taking.iter, trim + m, undefined, dropItem);
+      const advanced = trim + m - (back.TAG === "Ok" ? 0 : back._0) - trim;
+      taking.n -= advanced;
+      return m - advanced;
+    };
+    $forward(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });
     // Its `nth_back` its source's, which drops what it passes over itself,
     // as a `step_by` over it asks from its back (#834).
     $ownsAs(taking, iter, "nthBack");

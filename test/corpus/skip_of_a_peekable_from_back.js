@@ -22,10 +22,12 @@ import {
   peekableDoubleEndedIterator_nextBack,
   peekableDoubleEndedIterator_rfold,
   peekableDoubleEndedIterator_tryRfold,
+  skipDoubleEndedIterator_advanceBackBy,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -127,6 +129,14 @@ function main() {
         undefined,
         unwind,
         ends,
+      ),
+    advanceBackBy: (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        { next_back: countDoubleEndedIterator_nextBack },
+        countExactSizeIterator,
       ),
   };
   const peekableDoubleEndedIterator = {
@@ -288,6 +298,13 @@ function main() {
               unwind,
               ends,
             ),
+          advanceBackBy: (iterator, n) =>
+            skipDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator$1,
+            ),
         },
       ),
       4,
@@ -346,6 +363,13 @@ function main() {
               undefined,
               unwind,
               ends,
+            ),
+          advanceBackBy: (iterator, n) =>
+            skipDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator,
             ),
         },
       ),

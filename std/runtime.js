@@ -756,12 +756,29 @@ export function $shift(items) {
 // crate's impl's, std's consumers call them (#162); and its own `rfold` and
 // `nth_back`, which std's consumers and adapters stepped from the back call
 // (#220), and `try_rfold`, std's compiled struct's, a `Take`'s, which what
-// folds it from its back asks (ADR 0930). An exported function's `impl
+// folds it from its back asks (ADR 0930), and `advance_back_by`, std's
+// compiled struct's, its `Result` how many there weren't, which drops what
+// it passes as its source does, a `Vec`'s as one slice (#2125). An exported function's `impl
 // Iterator` is given back to JS as one, which knows its back and its length
 // where its bounds say: its `back()` and `len()`, beside `next()`, are public
 // API, `@rust-js/std`'s `DoubleEndedIterator` and `ExactSizeIterator`
 // (ADR 1169, #1999).
-export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count) {
+export function $iterator(
+  iterator,
+  next,
+  boxed = false,
+  nextBack,
+  len,
+  hint,
+  fold,
+  nth,
+  last,
+  rfold,
+  nthBack,
+  tryRfold,
+  count,
+  advanceBackBy,
+) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // from its back std's `Range::nth_back`, which a `rev()` of it is asked
   // `nth` by, a `skip`'s, so neither steps each number (#950); and its
@@ -772,7 +789,13 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   // And its `advance_by` and `advance_back_by`, std's, of its bounds, which
   // a chain's `advance_by` of it asks, and a `rev()`'s of it (#1240).
   const advance = $rangeAdvanceOf(next);
-  const advanceBack = nextBack && $rangeAdvanceOf(nextBack);
+  const advanceBack =
+    advanceBackBy === undefined
+      ? nextBack && $rangeAdvanceOf(nextBack)
+      : (of, m) => {
+          const advanced = advanceBackBy(of, m);
+          return advanced.TAG === "Ok" ? 0 : advanced._0;
+        };
   const step = (item) => (item == null ? { done: true, value: undefined } : { done: false, value: boxed ? $someValue(item) : item });
   const it = new $Steps(() => step(next(iterator)));
   // An inclusive range's own `try_fold`, std's, which what folds it asks,
@@ -824,7 +847,8 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
   it.of = iterator;
   // Another of a value of its type, stepped as it is: a clone's (ADR 0525,
   // amended).
-  it.with = (value) => $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count);
+  it.with = (value) =>
+    $iterator(value, next, boxed, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count, advanceBackBy);
   if (nextBack !== undefined) {
     it.back = () => step(nextBack(iterator));
   }
@@ -843,10 +867,10 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
 // `nth_back`, which pass the crate's own on (#224). Given back to JS by an
 // exported function, its `back()` and `len()` are public API, as
 // `$iterator`'s are (ADR 1169, #1999).
-export function $knowing(it, back, len, rfold, nthBack, tryRfold) {
+export function $knowing(it, back, len, rfold, nthBack, tryRfold, advanceBackBy) {
   let source = it;
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;
-  source.knowing?.(back, len, rfold, nthBack, tryRfold);
+  source.knowing?.(back, len, rfold, nthBack, tryRfold, advanceBackBy);
   return it;
 }
 
@@ -890,6 +914,7 @@ export function $given(value, iterator, boxed = false, back, len) {
     back?.nthBack,
     back?.tryRfold,
     iterator.count,
+    back?.advanceBackBy,
   );
   // Its own steps that drop what they pass as one slice, a `Vec`'s
   // `$slicing` gave it, where its dictionary has none of its own: so a
@@ -5628,7 +5653,9 @@ export function $skipping(iter, n, drop) {
     return [Math.max(low - skipping.n, 0), high === undefined ? undefined : Math.max(high - skipping.n, 0)];
   };
   skipping.back = () => (skipping.len() > 0 ? skipping.iter.back() : { done: true, value: undefined });
-  skipping.len = () => Math.max(skipping.iter.len() - skipping.n, 0);
+  // Its length std's `ExactSizeIterator::len`, its size hint's: its
+  // source's `size_hint`, as std's `Skip` writes no `len` (#2112).
+  skipping.len = () => skipping.sizeHint()[0];
   // Std's `Skip::nth_back`: its source's, of what it gives, the crate's own
   // where it reaches it (#220); past what it gives, what its source's finds
   // let go of, dropped (#718).
@@ -5660,8 +5687,17 @@ export function $skipping(iter, n, drop) {
     $closedAfter(ends, () => $closed(skipping.iter));
     return folded;
   };
+  // Std's `Skip::advance_back_by(m)`: as many as it gives of `m`, by its
+  // source's `advance_back_by`, its own where it has one, a `Vec`'s as one
+  // slice, front to back (#2112).
+  const advanceBackBy = (m, dropItem = drop) => {
+    const min = Math.min(skipping.len(), m);
+    $advanceBackBy(skipping.iter, min, undefined, dropItem);
+    return m - min;
+  };
   $forward(skipping, iter, {
     advanceBy,
+    advanceBackBy: iter.back !== undefined ? advanceBackBy : undefined,
     count: iter.ownNth || iter.ownCount ? count : undefined,
     // Std's `fold` and `try_fold` of any source with an `nth`: its first
     // step taken while their frame holds only `init` and `f` (#768).
@@ -5715,7 +5751,9 @@ export function $taking(iter, n, drop) {
       taking.n--;
       return $nthBackOf(taking.iter, past, drop);
     };
-    taking.len = () => Math.min(taking.iter.len(), taking.n);
+    // Its length std's `ExactSizeIterator::len`, its size hint's: its
+    // source's `size_hint`, as std's `Take` writes no `len` (#2112).
+    taking.len = () => taking.sizeHint()[0];
   }
   // Std's `Take::advance_by(m)` and `count`: its source's `advance_by`, by
   // as many as it has left, which drops what it passes itself where it
@@ -5836,7 +5874,18 @@ export function $taking(iter, n, drop) {
     };
     const tryRfold = (init, f, broke, unwind, ends) =>
       taking.n === 0 || !kept(init, unwind, ends) ? init : $tryRfoldOf(taking.iter, init, f, broke, unwind, ends);
-    $forward(taking, iter, { nthBack, rfold, tryRfold });
+    // Std's `Take::advance_back_by(m)`: its source trimmed to what it has
+    // left to take and `m` more in one of its source's `advance_back_by`,
+    // which drops what it passes itself, a `Vec`'s as one slice, front to
+    // back, the trimmed ones among them (#2121).
+    const advanceBackBy = (m, dropItem = drop) => {
+      const trim = Math.max(taking.iter.len() - taking.n, 0);
+      const back = $advanceBackBy(taking.iter, trim + m, undefined, dropItem);
+      const advanced = trim + m - (back.TAG === "Ok" ? 0 : back._0) - trim;
+      taking.n -= advanced;
+      return m - advanced;
+    };
+    $forward(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });
     // Its `nth_back` its source's, which drops what it passes over itself,
     // as a `step_by` over it asks from its back (#834).
     $ownsAs(taking, iter, "nthBack");
@@ -6469,8 +6518,14 @@ export function $enumerate(iter) {
     enumerated.count += m - left;
     return left;
   };
+  // Std's `advance_back_by(m)`: its source's, given the item's drop of a
+  // pair's, where it has one, so a reversed `take`'s `count` of a `Vec`'s
+  // drops what it passes as one slice, front to back (#2120). It counts
+  // from the front, so nothing it counts moves.
+  const advanceBackBy = (m, drop) => enumerated.iter.advanceBackBy(m, drop && ((x) => drop([0, x])));
   // Each but its `count` and `try_fold` where its source has it.
   $forward(enumerated, iter, {
+    advanceBackBy: iter.advanceBackBy === undefined ? undefined : advanceBackBy,
     countItems,
     advanceBy: iter.advanceBy === undefined ? undefined : advanceBy,
     fold: iter.fold === undefined ? undefined : fold,
@@ -18287,10 +18342,10 @@ export function $stdIterator(struct, steps, knows) {
   // what holds it passes on, a `skip`'s, as std's `Skip::count` asks its
   // source's: `ownCount` (#1048).
   if (steps.count !== undefined) $owns(it, "count");
-  it.knowing = (back, len, rfold, nthBack, tryRfold) => {
+  it.knowing = (back, len, rfold, nthBack, tryRfold, advanceBackBy) => {
     // Each given kept, what an earlier use gave where this one gives none.
     const known = it.$knows ?? [];
-    it.$knows = [back, len, rfold, nthBack, tryRfold].map((given, at) => given ?? known[at]);
+    it.$knows = [back, len, rfold, nthBack, tryRfold, advanceBackBy].map((given, at) => given ?? known[at]);
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
     // Its compiled `rfold` and `nth_back`, and `try_rfold`, which `rfind`
@@ -18303,6 +18358,14 @@ export function $stdIterator(struct, steps, knows) {
         ((init, f, unwind, ends) => $takenBy(it, () => rfold(it, init, f, unwind, ends), true)),
       nthBack: nthBack && ((k) => step(nthBack(it, k))),
       tryRfold: tryRfold && ((init, f, broke, unwind, ends) => tryRfold(it, init, f, broke, unwind, ends)),
+      // Its compiled `advance_back_by`, its `Result` how many there
+      // weren't, as `advanceBackBy` gives it (#2125).
+      advanceBackBy:
+        advanceBackBy &&
+        ((m) => {
+          const advanced = advanceBackBy(it, m);
+          return advanced.TAG === "Ok" ? 0 : advanced._0;
+        }),
     });
     // Its compiled `nth_back`, std's body, which drops what it passes
     // itself, as its `nth` does: `ownNthBack`, which a `step_by` over it
@@ -18310,8 +18373,8 @@ export function $stdIterator(struct, steps, knows) {
     if (nthBack !== undefined) $owns(it, "nthBack");
   };
   if (knows !== undefined) {
-    const [back, len, rfold, nthBack, tryRfold] = knows;
-    it.knowing(back, len, rfold, nthBack, tryRfold);
+    const [back, len, rfold, nthBack, tryRfold, advanceBackBy] = knows;
+    it.knowing(back, len, rfold, nthBack, tryRfold, advanceBackBy);
   }
   // Its fields, the struct's, are what a move copies and what a write of
   // the whole replaces; its methods step `it` itself (#537). Moved out

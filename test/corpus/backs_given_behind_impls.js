@@ -16,6 +16,7 @@ import {
   $rest,
   $rev,
   $tryOf,
+  chainDoubleEndedIterator_advanceBackBy,
   chainDoubleEndedIterator_nextBack,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_tryRfold,
@@ -30,6 +31,7 @@ import {
   mapIterator___iteratorGetUnchecked,
   revDoubleEndedIterator_nextBack,
   revExactSizeIterator_len,
+  takeIDoubleEndedIterator_advanceBackBy,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -109,6 +111,14 @@ function main() {
         unwind,
         ends,
       ),
+    advanceBackBy: (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: $next },
+        { next_back: $nextBack },
+        iterExactSizeIterator,
+      ),
   };
   const v = [1, 2, 3];
   console.log(
@@ -147,6 +157,15 @@ function main() {
               undefined,
               unwind,
               ends,
+            ),
+          (iterator, n) =>
+            chainDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: $next },
+              { next_back: $nextBack },
+              { next: $next, fold: $foldOf },
+              takeDoubleEndedIterator,
             ),
         ),
       ),
