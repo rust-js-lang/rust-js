@@ -1,7 +1,8 @@
 //@ library-differs
 // std's directories and what the OS says of a file (#1397): `create_dir`,
-// `create_dir_all` and `read_dir`, its entries in the OS's order, each
-// entry's path, name, type and metadata; a file's `metadata()`, `set_len`,
+// `create_dir_all` and `read_dir`, every entry whatever order the OS gives
+// them in, which std leaves to the platform (#2071), each entry's path,
+// name, type and metadata; a file's `metadata()`, `set_len`,
 // `sync_all` and `sync_data`; `remove_dir`; and their errors, the OS's, and
 // std's own of a length past an `off_t`. Each file is the case's own, beside
 // the file its outcome goes to.
@@ -53,20 +54,26 @@ fn run() -> io::Result<()> {
     report("create_dir of a file", fs::create_dir(format!("{root}/a/zeta")));
     report("create_dir_all of nothing", fs::create_dir_all(""));
 
-    // Read in the OS's order, each entry's path, name and type.
+    // Every entry, each entry's path, name and type, sorted: the order the
+    // OS reads them in is the platform's.
     let names: Vec<_> = fs::read_dir(format!("{root}/a"))?.map(|entry| entry.map(|e| e.file_name())).collect::<io::Result<_>>()?;
     let mut sorted = names.clone();
     sorted.sort();
-    println!("{names:?} {sorted:?}");
+    println!("{} {sorted:?}", names.len());
+    let mut lines = Vec::new();
     for entry in fs::read_dir(format!("{root}/a"))? {
         let entry = entry?;
         let kind = entry.file_type()?;
         let len = if kind.is_file() { entry.metadata()?.len() } else { 0 };
-        println!("{:?} {:?} {} {} {} {len}", entry.path().strip_prefix(&root), entry.file_name(), kind.is_file(), kind.is_dir(), kind.is_symlink());
+        lines.push(format!("{:?} {:?} {} {} {} {len}", entry.path().strip_prefix(&root), entry.file_name(), kind.is_file(), kind.is_dir(), kind.is_symlink()));
+    }
+    lines.sort();
+    for line in lines {
+        println!("{line}");
     }
     let mut entries = fs::read_dir(format!("{root}/a/"))?;
     let first = entries.next().expect("an entry")?;
-    println!("{:?} {}", first.path().strip_prefix(&root), entries.count());
+    println!("{} {}", sorted.contains(&first.file_name()), entries.count());
     report("read_dir of a missing one", fs::read_dir(format!("{root}/missing")).map(|_| ()));
     report("read_dir of a file", fs::read_dir(format!("{root}/a/zeta")).map(|_| ()));
 

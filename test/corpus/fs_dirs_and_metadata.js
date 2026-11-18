@@ -133,7 +133,8 @@ function run() {
         unitDebug,
       );
 
-      // Read in the OS's order, each entry's path, name and type.
+      // Every entry, each entry's path, name and type, sorted: the order the
+      // OS reads them in is the platform's.
       const result$1 = $fsReadDir(`${root}/a`);
       if (result$1.TAG !== "Err") {
         const result$2 = $collectResults(
@@ -145,9 +146,8 @@ function run() {
           const names = result$2._0;
           const sorted = names.slice();
           sorted.sort($cmp);
-          console.log(
-            `[${names.map((item) => $debugStr(item)).join(", ")}] [${sorted.map((item) => $debugStr(item)).join(", ")}]`,
-          );
+          console.log(`${names.length} [${sorted.map((item) => $debugStr(item)).join(", ")}]`);
+          const lines = [];
           const result$1 = $fsReadDir(`${root}/a`);
           if (result$1.TAG !== "Err") {
             for (const entry of result$1._0) {
@@ -167,12 +167,17 @@ function run() {
                   len = 0n;
                 }
                 const stripPrefix = $pathStripPrefix(entry$1.path, root);
-                console.log(
+                lines.push(
                   `${stripPrefix.TAG === "Ok" ? `Ok(${$debugStr(stripPrefix._0)})` : "Err(StripPrefixError(()))"} ${$debugStr(entry$1.name)} ${kind === "file"} ${kind === "dir"} ${kind === "symlink"} ${len}`,
                 );
               } else {
                 return $ioThrow(entry._0);
               }
+            }
+            lines.sort($cmp);
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              console.log(`${line}`);
             }
             const result$2 = $fsReadDir(`${root}/a/`);
             if (result$2.TAG !== "Err") {
@@ -180,10 +185,7 @@ function run() {
               const result$1 = $unwrap($next(entries), "an entry");
               if (result$1.TAG !== "Err") {
                 const first = result$1._0;
-                const stripPrefix = $pathStripPrefix(first.path, root);
-                console.log(
-                  `${stripPrefix.TAG === "Ok" ? `Ok(${$debugStr(stripPrefix._0)})` : "Err(StripPrefixError(()))"} ${entries.reduce((n) => n + 1, 0)}`,
-                );
+                console.log(`${sorted.includes(first.name)} ${entries.reduce((n) => n + 1, 0)}`);
                 const result$2 = $fsReadDir(`${root}/missing`);
                 function map() {}
                 report(
