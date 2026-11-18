@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && value.facts.has(Known::Present)\n        {\n            let test = (**test).clone();\n",
     replace: "            && false\n        {\n            let test = (**test).clone();\n",
-    tests: ["test/js-object.test.ts", "-t", "one weak key"],
+    tests: ["test/js-object-kinds.test.ts", "-t", "one weak key"],
   },
   {
     name: "optional-call-any-fallback",

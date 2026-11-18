@@ -893,7 +893,7 @@ export const mutations: Mutation[] = [
     replace:
       '            pass("branch values", branch_values_of),\n            pass("declarations", |b, _| declarations(b)),\n            pass("tested options", |b, h| {\n                let changing = changing(b);\n                js::statement_lists(b, &mut |s| tested_options(s, &changing, &h.named.user))\n            }),\n',
     tests: [
-      "test/js-object.test.ts",
+      "test/js-object-kinds.test.ts",
       "-t",
       "an object.s property read where its test holds is one conditional",
     ],

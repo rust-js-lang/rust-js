@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     find: "                Expr::cond(test, this.present(), Expr::js_undefined())\n",
     replace:
       "                {\n                    let _ = test;\n                    this.present()\n                }\n",
-    tests: ["test/js-object.test.ts", "-t", "one weak key"],
+    tests: ["test/js-object-kinds.test.ts", "-t", "one weak key"],
   },
   {
     name: "instance-of-given-backwards",

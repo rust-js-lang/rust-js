@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
     replace:
       "        let at = i + 1 + 0 * stmts[i + 1..].iter().take_while(|s| declared(s)).count();\n",
     tests: [
-      "test/js-object.test.ts",
+      "test/js-object-kinds.test.ts",
       "-t",
       "an object.s property read where its test holds is one conditional",
     ],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/options.rs",
     find: "    if !js::scopes::not_read_as_themselves(&reads, &[v]).is_empty() {\n        return None;\n    }\n",
     replace: "",
-    tests: ["test/js-object.test.ts", "-t", "beside a closure's own of its name"],
+    tests: ["test/js-object-kinds.test.ts", "-t", "beside a closure's own of its name"],
   },
   {
     name: "tested-option-scopes-of-unmoved",
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/options.rs",
     find: "    if !js::scopes::not_read_as_themselves(&reads, &[v]).is_empty() {\n",
     replace: "    if !js::scopes::not_read_as_themselves(&reads, &[x]).is_empty() {\n",
-    tests: ["test/js-object.test.ts", "-t", "beside a closure's own of its name"],
+    tests: ["test/js-object-kinds.test.ts", "-t", "beside a closure's own of its name"],
   },
   {
     name: "overwritten-any-write",
