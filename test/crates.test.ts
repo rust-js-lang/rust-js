@@ -11,6 +11,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildSerde } from "./serde-crate";
+import { underLoad } from "../scripts/timing";
 import { buildCompiler, buildReact, compiler, fixture, nativeCrates, programFlags, root, run, target } from "./support";
 import { chain, contract, counting, pairs, printed, triples } from "./crates";
 import { node } from "./programs";
@@ -1255,7 +1256,9 @@ describe("a library's metadata is published with its JS, or neither is", () => {
 });
 // A component another crate declares is JSX's too (ADR 0110): its props
 // `macro`, which the consumer expands, may write `#[rust_js::jsx]` on an
-// expression, as its own crate's does, on a stable release.
+// expression, as its own crate's does, on a stable release. Its two
+// compiles load React's metadata, 0.8 s alone, and ran past bun's 5 s default
+// where every part of the corpus ran at once.
 test("a component of another crate is a JSX tag, on a stable release", () => {
   buildReact();
   const dir = fixture("cross-crate-jsx");
@@ -1276,7 +1279,7 @@ test("a component of another crate is a JSX tag, on a stable release", () => {
   built([join(app, "lib.rs"), "-o", join(app, "js", "lib.jsx"), "--dependency", join(ui, "js", "lib.manifest.json"),
     "--", "--crate-name", "app", "--extern", `ui=${join(ui, "js", "libui.rmeta")}`, ...react]);
   expect(readFileSync(join(app, "js", "lib.jsx"), "utf8")).toContain('<Button label="go" />');
-});
+}, underLoad(60_000));
 
 // A `#![no_std]` crate loads no `alloc`, so it has no `ToString`, which
 // every trait call was compared with: bitflags and num-traits crashed
