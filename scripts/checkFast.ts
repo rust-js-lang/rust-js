@@ -156,6 +156,7 @@ export const leftToCi: { run: string; why: string }[] = [
   { run: "bun install --frozen-lockfile", why: "a machine's setup: the packages, here installed already" },
   { run: "bunx --bun playwright install", why: "a machine's setup: the browser, here installed by `bun run setup`" },
   { run: "cargo build --locked", why: "the compiler, which check:fast builds first, for every job" },
+  { run: "bun scripts/std-fresh.ts", why: "std/ made again and compared, which `bun run push`'s std phase runs before check:fast" },
   { run: "BLESS=1", why: "a red run's bless patch: here a `BLESS=1` writes it in place" },
   { run: "bun run wasm", why: "the WASM compiler, a build of rustc's frontend to wasm32 of about half an hour" },
   {

@@ -377,6 +377,10 @@ jobs:
       # this checkout's: a job of its own spent most of its minutes
       # setting up what this one has (docs/dev-loop.md).
       - run: cargo build --locked
+      # std/, made again and compared, as \`bun run push\`'s std phase does:
+      # a merge on GitHub takes no push gate (#1971). About 3 s, nothing
+      # downloaded or uploaded.
+      - run: bun scripts/std-fresh.ts
       - run: bun run --cwd examples/vite-react build
 
   # The suite, on one machine, or split across `test_shards`, by how long

@@ -143,9 +143,9 @@ async function main() {
         for (const file of new Set([...remade, ...(bless ? ["docs/readability.txt"] : [])])) regenerate(file);
         run("build", ["cargo", "build", "--quiet"]);
         phase("build");
-        run("std", ["bun", "run", "std"]);
-        const std = lines(git("status", "--porcelain", "--", "std").out);
-        if (std.length > 0) throw new Refused(`std/ differs from what's committed, made again from this tree:\n${std.join("\n")}\ncommit it, or rebase onto the commit that does`);
+        // std/ made again and compared, the one check of it, CI's lint's too
+        // (scripts/std-fresh.ts), which names the fix where it differs.
+        run("std", ["bun", "scripts/std-fresh.ts"]);
         phase("std");
         run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);
         phase("mutants");

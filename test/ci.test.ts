@@ -271,6 +271,19 @@ test("the files only the nightly runs are test files, which its check runs", () 
   for (const line of suites) expect(line).toContain("${{ inputs.nightly && ' --nightly' || ' --selection=target/selection.json' }}");
 });
 
+// std/'s freshness runs on each push's check, in its lint job, after the
+// compiler's built: a merge on GitHub takes no push gate, and std/ left as
+// it was tested a runtime change against the old code (#1971).
+test("each push's lint job checks std/ is what its sources make, after the compiler's built", () => {
+  const lint = (Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { steps: { run?: string }[] }> }).jobs.lint;
+  const runs = lint.steps.map((step) => step.run ?? "");
+  const fresh = runs.indexOf("bun scripts/std-fresh.ts");
+  expect(fresh).toBeGreaterThan(runs.indexOf("cargo build --locked"));
+  expect(runs.indexOf("cargo build --locked")).toBeGreaterThanOrEqual(0);
+  // The one check, which `bun run push`'s std phase runs too.
+  expect(readFileSync(join(root, "scripts/push.ts"), "utf8")).toContain('run("std", ["bun", "scripts/std-fresh.ts"]);');
+});
+
 // `check:fast --all`, the check before a push, runs what a push's check
 // runs (#732): each command of check.yml's jobs is one of its jobs' (`ci`),
 // or one `leftToCi` says why it leaves to CI, and each of those is still

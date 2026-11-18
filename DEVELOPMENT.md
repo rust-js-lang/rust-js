@@ -989,7 +989,11 @@ the workflow's 2 machines; `--shards=4` splits it across four.
   manifest in), and commits what it wrote
   with it: `test/runtime-package.test.ts` and `test/std-package.test.ts`
   hold them to what the compiler writes. Left stale, every iterator
-  matrix run fails with "does not provide an export".
+  matrix run fails with "does not provide an export". And each push checks
+  it whatever its selection, `bun scripts/std-fresh.ts`: std/ made again
+  and compared with what's committed, by `bun run push`'s std phase and by
+  check.yml's lint job, the path a merge on GitHub takes (#1971); where it
+  differs, it names the files and the fix, `bun run std`, then commit std/.
 
 ## Workflows
 
