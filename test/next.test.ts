@@ -2,11 +2,11 @@ import { expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
-import { createServer } from "node:net";
 import { chromium } from "@playwright/test";
 import { buildCompiler, cargoBuiltPackages, compiler, fixture, KeptApp, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
 import { browserDeadline, clicked, hydrated, seen } from "./browser-waits";
+import { nextReady, served } from "./ports";
 
 const example = join(root, "examples/next");
 const cli = join(root, "tooling/cli.js");
@@ -839,20 +839,6 @@ pub fn Counter() -> JSX::Element {
 // `next dev` and `next build`, as the app's scripts run them, Next.js's
 // alone; `rust-js build`, the app's Rust compiled, its own process beside
 // them (ADR 0412).
-/** A port no process listens on, the system's choice of its ephemeral ones,
- * past each that fetch refuses as reserved (3659, 6000, ..): a random one of
- * a range met another app's, 7265 (#1269's check). */
-function freePort(): Promise<number> {
-  return new Promise((done, failed) => {
-    const probe = createServer();
-    probe.on("error", failed);
-    probe.listen(0, () => {
-      const { port } = probe.address() as { port: number };
-      probe.close(() => done(port));
-    });
-  });
-}
-
 function command(dir: string, args: string[]) {
   return spawn(process.execPath, [join(dir, "node_modules/next/dist/bin/next"), ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1" } });
 }
@@ -1036,25 +1022,17 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   expect(documented).toContain('nonce="n0nce"');
   // The custom server, run as Next.js's docs run one: `node server.js`.
   expect(readFileSync(join(dir, "server.js"), "utf8")).toContain('import next from "next";');
-  const custom = spawn("node", ["server.js"], {
-    cwd: dir,
-    env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1", PORT: String(await freePort()) },
-  });
+  // Ready, or what it said as it ended: a server that ends before it's
+  // ready, its exit code 0 where a rejection its spawn caught was logged,
+  // fails with its own words (#1951). It says the port it was given.
+  const { server: custom, port: customPort, output: customSaid } = await served(
+    (port) => spawn("node", ["server.js"], { cwd: dir, env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1", PORT: String(port) } }),
+    /custom server ready on (\d+)/,
+    { bound: false },
+  );
   try {
-    let served = "";
-    custom.stdout.on("data", (data) => (served += data));
-    custom.stderr.on("data", (data) => (served += data));
-    // Ready, or what it said as it ended: a server that ends before it's
-    // ready, its exit code 0 where a rejection its spawn caught was logged,
-    // fails with its own words (#1951).
-    while (!served.includes("custom server ready on ")) {
-      if (custom.exitCode !== null || custom.signalCode !== null) {
-        throw new Error(`the custom server ended before it was ready, ${custom.exitCode ?? custom.signalCode}:\n${served}`);
-      }
-      await Bun.sleep(100);
-    }
-    const at = `http://localhost:${served.match(/ready on (\d+)/)![1]}`;
-    expect(served).not.toContain("MODULE_TYPELESS_PACKAGE_JSON");
+    const at = `http://localhost:${customPort}`;
+    expect(customSaid()).not.toContain("MODULE_TYPELESS_PACKAGE_JSON");
     expect(await (await fetch(`${at}/custom`)).text()).toBe("custom server");
     expect(await (await fetch(`${at}/about`)).text()).toContain("About, in Rust");
   } finally {
@@ -1130,17 +1108,9 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     writeFileSync(join(dir, "app/counter.rs"), text);
     return finished(rustJs(dir, ["build"]));
   };
-  const port = await freePort();
-  const server = command(dir, ["dev", "--port", String(port)]);
-  let output = "";
-  server.stdout?.on("data", (data) => (output += data));
-  server.stderr?.on("data", (data) => (output += data));
+  const { server, port, output } = await served((port) => command(dir, ["dev", "--port", String(port)]), nextReady);
   let browser;
   try {
-    while (!output.includes("Ready")) {
-      if (server.exitCode !== null) throw new Error(output);
-      await Bun.sleep(100);
-    }
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     page.setDefaultTimeout(browserDeadline());
@@ -1173,10 +1143,10 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     const jsx = join(dir, "app/counter.jsx");
     const applied = async (text: string, label: string) => {
       for (let tries = 1; ; tries++) {
-        const mark = output.length;
+        const mark = output().length;
         if (tries === 1) await save(text);
         else writeFileSync(jsx, readFileSync(jsx));
-        const compiled = await within(() => output.indexOf("Compiled", mark) >= 0, browserDeadline() / 3);
+        const compiled = await within(() => output().indexOf("Compiled", mark) >= 0, browserDeadline() / 3);
         try {
           await button.filter({ hasText: label }).waitFor({ timeout: browserDeadline() / 3 });
           return;
@@ -1221,7 +1191,7 @@ test("next dev serves Rust routes, refreshes each rust-js build in place, and re
     await seen(page.getByText(/^light \d+ live \d+$/));
 
     // The server's instrumentation, registered as it started.
-    expect(output).toContain("instrumentation registered");
+    expect(output()).toContain("instrumentation registered");
 
     // The Pages Router's page and API route, each of the request.
     await page.goto(`http://localhost:${port}/codes/3`);

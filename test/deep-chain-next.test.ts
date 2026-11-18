@@ -12,11 +12,11 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync, realpathSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
-import { createServer } from "node:net";
 import { chromium } from "@playwright/test";
 import { buildCompiler, compiler, KeptApp, root, seeded } from "./support";
 import { cacheDirOf } from "../tooling/build.js";
 import { browserDeadline, clicked, hydrated, seen } from "./browser-waits";
+import { nextReady, served } from "./ports";
 
 const example = join(root, "examples/next");
 const cli = join(root, "tooling/cli.js");
@@ -146,18 +146,6 @@ function chainApp(name: string): string {
  * below it, else `max` where above it, else the value. */
 const shifted = (value: number, min: number, max: number) => (value < min ? min : value > max ? max : value);
 
-/** A port no process listens on, the system's choice. */
-function freePort(): Promise<number> {
-  return new Promise((done, failed) => {
-    const probe = createServer();
-    probe.on("error", failed);
-    probe.listen(0, () => {
-      const { port } = probe.address() as { port: number };
-      probe.close(() => done(port));
-    });
-  });
-}
-
 function finished(child: ReturnType<typeof spawn>): Promise<{ code: number | null; output: string }> {
   let output = "";
   child.stdout?.on("data", (data) => (output += data));
@@ -185,17 +173,9 @@ test("a Next app over the chain's crates builds, renders on the server, and its 
   expect(html).toContain('<p class="chosen">Chosen: none</p>');
   expect(html).toContain('<button aria-expanded="false">Country</button>');
 
-  const port = await freePort();
-  const server = next(dir, ["start", "--port", String(port)]);
-  let output = "";
-  server.stdout?.on("data", (data) => (output += data));
-  server.stderr?.on("data", (data) => (output += data));
+  const { server, port } = await served((port) => next(dir, ["start", "--port", String(port)]), nextReady);
   let browser;
   try {
-    while (!output.includes("Ready")) {
-      if (server.exitCode !== null) throw new Error(output);
-      await Bun.sleep(100);
-    }
     browser = await chromium.launch({ headless: true });
     const tab = await browser.newPage({ viewport: { width: 1024, height: 768 } });
     tab.setDefaultTimeout(browserDeadline());
