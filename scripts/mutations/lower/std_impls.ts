@@ -573,8 +573,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`contains` of floats is `includes(x)`, which finds `NaN`, where Rust's `==` doesn't (ADR 0966)",
     file: "src/lower/std_impls.rs",
-    find: "Some(_) => Expr::bin(Op::Ge, Expr::builtin(items, \"indexOf\", vec![x]), Expr::int(0)),",
-    replace: "Some(_) => Expr::builtin(items, \"includes\", vec![x]),",
+    find: "_ => Expr::bin(Op::Ge, Expr::builtin(items, \"indexOf\", vec![x]), Expr::int(0)),",
+    replace: "_ => Expr::builtin(items, \"includes\", vec![x]),",
     tests: ["test/corpus.test.ts", "-t", "^float_partial_cmp_tests.rs$"],
   },
   {
@@ -640,8 +640,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`v.contains(&node)` of what `===` compares and is never `NaN`, an object equal only to itself, is `v.indexOf(node) >= 0`, not `v.includes(node)` (ADR 1016)",
     file: "src/lower/std_impls.rs",
-    find: "                None => Expr::builtin(items, \"includes\", vec![x]),\n",
-    replace: "                None => Expr::bin(Op::Ge, Expr::builtin(items, \"indexOf\", vec![x]), Expr::int(0)),\n",
+    find: "                None if !self.param_compares_by_operator(item) => Expr::builtin(items, \"includes\", vec![x]),\n",
+    replace: "                None if !self.param_compares_by_operator(item) => Expr::bin(Op::Ge, Expr::builtin(items, \"indexOf\", vec![x]), Expr::int(0)),\n",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
   },
   {
@@ -758,5 +758,13 @@ export const mutations: Mutation[] = [
     find: "            if self.param_compares_by_operator(ty) {\n                return Ok(Expr::bin(Op::Eq, a, b));\n            }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^compared_by_operator.rs$"],
+  },
+  {
+    name: "contains-of-a-number-parameter-includes",
+    breaks: "`contains` in generic code every caller gives a number is `includes`, which finds a float's `NaN` where Rust's `==` doesn't: `has(&[NaN], NaN)` is `true`, and a merge under one `RefCell` never pushes, so never panics (#2054)",
+    file: "src/lower/std_impls.rs",
+    find: "                None if !self.param_compares_by_operator(item) => Expr::builtin(items, \"includes\", vec![x]),\n",
+    replace: "                None => Expr::builtin(items, \"includes\", vec![x]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^contains_of_a_generic_number_finds_no_nan.rs$"],
   },
 ];

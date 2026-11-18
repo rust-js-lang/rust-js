@@ -93,3 +93,26 @@ Held by `test/corpus/any_of_one_value_is_includes.rs` (text, a `u32`, a
 Mutations `never-nan-any-unread` (`iterators/eager.rs`),
 `never-nan-text-unmarked` (`combinators/adapters.rs`), `never-nan-floats-ordered` and
 `never-nan-chars-unmarked` (`number/operators.rs`).
+
+## Amendment (2026-11-18, #2054): a number a type parameter holds may be `NaN`
+
+`contains` in generic code every caller gives a JS number
+(`param_compares_by_operator`, #1874) compared its items by `===`, as `==`
+of a float does, but lowered to `includes`, which finds `NaN`: `contained`
+read a plain `===` whose `js_eq` is `None` as an object's, never `NaN`.
+The metamorphic net's `generic` rewrite of `contains_guarded_float` found
+it: the `NaN` "found", the push and its borrow never ran, and no
+"already borrowed" panic. Such a parameter's `contains` is `indexOf(x) >=
+0`, as a float's is.
+
+`contained` is the one site that took a `None` for never `NaN`. The
+others that choose JS's SameValueZero don't: an iterator's `any` is
+`includes` only of a literal or a `===` marked `NeverNaN`, which
+`strict_eq` marks only where `js_eq` is `SameValue` or the comparison is
+by address; and a `Set`'s or a `Map`'s keys need `Eq + Hash` or `Ord`,
+which no float has.
+
+Case C of ADR 0262. Corpus case `contains_of_a_generic_number_finds_no_nan`
+holds `u32`s and `f64`s, `NaN` and `-0.0`, and the merge that panics,
+against native; main finds the `NaN`. Mutation
+`contains-of-a-number-parameter-includes` is caught.

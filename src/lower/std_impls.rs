@@ -376,11 +376,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let strict = matches!(&same.kind, js::ExprKind::Binary(Op::Eq, each, of)
             if matches!(&each.kind, js::ExprKind::Var(v) if *v == param) && **of == x);
         // Of what's never `NaN`, an object equal only to itself (ADR
-        // 1016), `includes`, which finds what `indexOf` does.
+        // 1016), `includes`, which finds what `indexOf` does. Not of a type
+        // parameter every caller gives a JS number (#1874), which may be a
+        // float's `NaN` that `includes` finds where `==` doesn't (#2054).
         if body.is_empty() && strict {
             return Ok(match self.js_eq(item) {
-                None => Expr::builtin(items, "includes", vec![x]),
-                Some(_) => Expr::bin(Op::Ge, Expr::builtin(items, "indexOf", vec![x]), Expr::int(0)),
+                None if !self.param_compares_by_operator(item) => Expr::builtin(items, "includes", vec![x]),
+                _ => Expr::bin(Op::Ge, Expr::builtin(items, "indexOf", vec![x]), Expr::int(0)),
             });
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
