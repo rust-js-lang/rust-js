@@ -541,14 +541,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "enumerate-of-own-count-mapped",
-    breaks: "an `enumerate()` of the crate's iterator with its own `count` is a map of it, whose `count` steps it (#505)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure)\n                    || self.counts_by_compiled_count(iter_ty) =>",
-    replace: "                    || self.counts_by_compiled_count(iter_ty) =>",
-    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
-  },
-  {
     name: "enumerate-compiled-count-unseen",
     breaks:
       "an `enumerate()` of a held, peeked `peekable()` is a map of it, whose `count` gives what it peeked at first, where std's `Enumerate::count` is `Peekable::count`, which drops it after its source's `count` ends or unwinds (#655)",

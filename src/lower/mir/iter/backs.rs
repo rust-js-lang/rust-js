@@ -336,10 +336,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || self.recognition().reaches_its_own(output, OwnStep::Nth, Reach::Sure)
                     // Or one whose `nth` drops what it passes as one slice,
                     // a reversed `Vec`'s, its source's (#277); or whose
-                    // `count` is the crate's own, its source's (#505); or
-                    // std's compiled one (#655).
+                    // `count` is std's compiled one (#655).
                     || self.recognition().nths_a_slice(output)
-                    || self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure)
                     || self.counts_by_compiled_count(iter_ty) =>
             {
                 // Of the crate's, what it can be made to know.
