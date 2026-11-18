@@ -464,9 +464,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// place, which MIR holds to lend it or across what an argument runs
     /// before the step: made knowing its back where it's made, `$taking` or
     /// `$mapEnds` say, and marked so for its read (#718, #814, #811). A
-    /// variable whose length a `Vec` grown by what it's made into asks,
-    /// made in place: made knowing it as that growth makes what's made in
-    /// place (`made_as_growth_asks`, #1795, #1744). Another as it is.
+    /// variable, or a temporary, whose length a `Vec` grown by what it's
+    /// made into asks, made in place: made knowing it as that growth makes
+    /// what's made in place (`made_as_growth_asks`, #1795, #1744, #2041).
+    /// Each write of a local's value reads it: an assignment's, and a
+    /// pending temporary's made a `const` (`flush`). Another as it is.
     pub(in crate::lower::mir) fn written_as_asked(
         &mut self,
         local: rustc_middle::mir::Local,

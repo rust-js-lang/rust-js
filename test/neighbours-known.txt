@@ -33,10 +33,6 @@ std std_lends_beside_an_address.rs beside vec_set_len.rs
 #1343 P2 (neighbours): `ptr::addr_eq` of two `dyn Fn` `Arc`s is refused ("`size_of` of a value without one size") beside a case that counts an `Rc` of a `dyn Fn`
 plain std dyn_fn_addresses_of_rcs.rs beside rc_fn_ptr_eq_of_param.rs
 
-#1744 P2: in the plain build, a Vec grown by a held chain of an inspect() and an array is refused where its capacity is read
-plain field_rewrite_singles.rs beside vec_grown_by_a_chain_of_an_inspect_where_capacity_is_read.rs
-plain inspect_by_a_function_before_a_chain_argument.rs beside repeat_n_hint_held.rs
-
 #1892 P2 (neighbours): a Vec grown by an iterator rust-js can't count is refused in a crate that reads a Vec's capacity
 plain boxed_iterator_stepped_as_what_it_boxes.rs beside vec_set_len.rs
 

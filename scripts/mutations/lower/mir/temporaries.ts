@@ -674,4 +674,12 @@ export const mutations: Mutation[] = [
     replace: "        if false\n            && state.body.local_kind(local) != mir::LocalKind::Arg\n",
     tests: ["test/crates.test.ts", "-t", "zero_sized_value_a_librarys_generic_impl_gives"],
   },
+  {
+    name: "flushed-temporary-unasked",
+    breaks: "a pending temporary made a `const` where it's flushed isn't made knowing what later uses ask, so the `inspect(f)` a chain's growth asks the length of, held while `vec![9]` allocates, is JS's own map, refused as an `ExactSizeIterator` (#2041)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            let expr = self.written_as_asked(local, (expr, state.body.local_decls[local].ty), Span::default())?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_chained_with_a_vecs_items_where_capacity_is_read.rs$"],
+  },
 ];

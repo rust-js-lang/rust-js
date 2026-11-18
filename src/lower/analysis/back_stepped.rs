@@ -430,10 +430,10 @@ pub(in crate::lower) enum LengthAsked {
     /// back is made of, which counts it there (#1354), and a counted
     /// adapter's temporary a `Vec` is grown by (#1317).
     Counted,
-    /// A variable that holds what's made in place, whose length, or whose
-    /// parts', the growth of a `Vec` by what it's made into asks
-    /// (`lengths_asked`): made knowing it as it's written
-    /// (`written_as_asked`, #1795, #1744).
+    /// A variable, or a temporary, that holds what's made in place, whose
+    /// length, or whose parts', the growth of a `Vec` by what it's made
+    /// into asks (`lengths_asked`): made knowing it as it's written
+    /// (`written_as_asked`, #1795, #1744, #2041).
     Held,
 }
 
@@ -909,6 +909,9 @@ pub(super) fn stepped_locals<'tcx>(
                     // length that growth asks, of it or of its parts, asked
                     // of the variable, made knowing it where it's made, as
                     // what's made in place is where it's grown (#1795, #1744).
+                    // A temporary too, which MIR holds while an argument is
+                    // made, the `inspect(f)` of `.inspect(f).chain(vec![9])`
+                    // while `vec!` allocates, written where it's made (#2041).
                     // By what the grown value is made of, back from what the
                     // call's given, through each value of an asked type: not
                     // another variable of the same type.
@@ -934,9 +937,7 @@ pub(super) fn stepped_locals<'tcx>(
                             if !asked.contains(&erased(mir.local_decls[local].ty)) {
                                 continue;
                             }
-                            if user_variable(&mir.local_decls[local]) {
-                                counted.entry((owner, local)).or_insert(LengthAsked::Held);
-                            }
+                            counted.entry((owner, local)).or_insert(LengthAsked::Held);
                             at.extend(made_of.get(&local).into_iter().flatten());
                         }
                     }

@@ -107,3 +107,33 @@ whether its form has a fold, so a `Vec` extended by an adapter of it is
 with snapshots compared, and mutation `hintless-form-forgotten-by-its-variable`
 tests it there. Its readable form keeps being JS's own where nothing asks its
 length. The ADR 0908 note about #1744's held form is superseded.
+
+## Amendment (2026-11-18, #2041): a temporary's length asked too, and a flushed one made so
+
+`vec![1, 2].into_iter().inspect(f).chain(vec![9]).collect()` was refused
+in a crate that reads a capacity: "a `Inspect<vec::IntoIter<u32>, ..>`
+as an `ExactSizeIterator`, which rust-js can't count yet". The neighbour
+shuffle found it where a case of that form sits beside one that reads a
+capacity (#1744's two leftover pairs). The same chain of an array's items,
+`.chain([9])`, compiled. MIR holds the `inspect` in a temporary while
+`vec!` allocates the chain's argument. Two gaps left that temporary JS's
+own map:
+
+- `lengths_asked`'s walk gave `Held` only to a user variable; a temporary
+  of an asked type went unasked. It's asked as a variable is.
+- A pending temporary that `flush` writes as a `const`, where what runs
+  next must not run first, skipped `written_as_asked`, which an
+  assignment's write goes through. Each write of a local's value now
+  reads it.
+
+The temporary is made `$mapEnds(..)`, knowing its length, and the chain is
+the `$lazyChain` the array's already was.
+
+Case C of ADR 0262: what was refused now runs as Rust's. New corpus case
+`inspect_chained_with_a_vecs_items_where_capacity_is_read` runs against
+native in both builds and through every metamorphic rewrite: a chain by a
+closure, by a function, of items with a destructor, of none, and an
+`extend` of a `Vec` that has some. Main refuses it. Both pairs now run as
+native in the plain build; they leave test/neighbours-known.txt.
+`held-length-unasked` names the line as it now reads. New mutations
+`held-length-temporary-unasked` and `flushed-temporary-unasked` are caught.

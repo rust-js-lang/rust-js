@@ -272,6 +272,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.in_place.insert(local, expr);
                 continue;
             }
+            // Made knowing what later uses ask of it, as an assignment's
+            // value is (`written_as_asked`): the `inspect(f)` a chain's
+            // growth asks the length of, held while `vec![9]` allocates
+            // (#2041).
+            let expr = self.written_as_asked(local, (expr, state.body.local_decls[local].ty), Span::default())?;
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
             note_marks(state, local, &expr);
