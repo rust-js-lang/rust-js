@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding that runs only what it's given, `console.error(..)` of text, may run anything, so a borrow held across it is counted, `$borrowMut(root.expirationTimes, true)`",
     file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
-    find: "    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args)\n",
+    find: "    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args, given)\n",
     replace: "    binding_runs_nothing(recognition.tcx, def_id)\n",
     tests: ["test/lowering-cell-borrows.test.ts"],
   },
@@ -135,5 +135,21 @@ export const mutations: Mutation[] = [
     find: "        && super::resolvers::is_resolve(tcx, thir, *callee)\n",
     replace: "        && (super::resolvers::is_resolve(tcx, thir, *callee) || true)\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "promise's resolve is given text"],
+  },
+  {
+    name: "none-written-not-read",
+    breaks: "a `runs_only_given` builtin given `None` where its options' type is an object is still counted, so the vercel-ui SDK's memo over `Intl.Locale(tag, None)` keeps `$withBorrowMut` (#2082)",
+    file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
+    find: "        .all(|(at, &input)| value_runs_nothing(recognition, input) || written_none(at))\n",
+    replace: "        .all(|(at, &input)| value_runs_nothing(recognition, input) || (false && written_none(at)))\n",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "of no options"],
+  },
+  {
+    name: "none-written-of-any-option",
+    breaks: "an `Option` written `Some(options)`, a JS caller's object, is taken for `None`, so a builtin given it isn't counted where its getters may re-enter the borrow (#2082)",
+    file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
+    find: "            && adt.variant_index.as_u32() == 0\n            && adt.fields.is_empty())\n",
+    replace: ")\n",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "a JS caller's options"],
   },
 ];

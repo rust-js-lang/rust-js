@@ -3,8 +3,11 @@
 // 0898): a `RefCell` borrowed across its call isn't counted, so a memo whose
 // maker calls only such builtins reads its cache plainly. The marks of
 // generated builtins are builtins/policy.ts' `RUNS`, each with its spec step;
-// `RegExp`'s are written by hand (#2082). One whose maker calls the program
-// back, a JS callback, keeps the check, and its re-entry panics as Rust's.
+// `RegExp`'s are written by hand (#2082). A constructor that runs only what
+// it's given runs nothing given `None` where its options' type is an object a
+// JS caller could hand over, but not given that object. One whose maker calls
+// the program back, a JS callback, keeps the check, and its re-entry panics
+// as Rust's.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -54,3 +57,29 @@ test("a memo whose maker calls the program back keeps its borrow checked, and it
   expect(lib.memo("a", () => 2)).toBe(2);
   expect(() => lib.memo("b", () => lib.memo("c", () => 3))).toThrow("already borrowed");
 });
+
+test("a memo whose maker makes a locale and a date format of no options reads its cache plainly", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-intl-none",
+    memo(
+      `js::intl::locale::new(key, None).map_or(0.0, |tag| tag.to_string().len() as f64) + js::intl::date_time_format::new(None, None).resolved_options().locale.len() as f64`,
+    ),
+  );
+  expect(js).not.toContain("$withBorrowMut");
+  const runtime = new Intl.DateTimeFormat().resolvedOptions().locale.length;
+  expect(lib.memo("de-DE")).toBe(5 + runtime);
+  expect(lib.memo("not a tag!")).toBe(runtime);
+});
+
+test("a memo whose maker gives a locale a JS caller's options keeps its borrow checked", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-intl-given",
+    memo(
+      `js::intl::locale::new(key, Some(options)).map_or(0.0, |tag| tag.to_string().len() as f64)`,
+      "key: &str, options: &js::intl::LocaleOptions",
+    ),
+  );
+  expect(js).toContain("$withBorrowMut");
+  expect(lib.memo("en", { region: "GB" })).toBe("en-GB".length);
+});
+

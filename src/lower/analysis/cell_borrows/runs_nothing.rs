@@ -8,7 +8,7 @@ use crate::lower::bindings::{JsForm, is_binding, js_form, runs_nothing, runs_onl
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{Recognition, StdItem, is_js_object_deref};
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::thir::{ExprId, Thir};
+use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
@@ -62,17 +62,39 @@ pub(in crate::lower) fn call_runs_nothing(foreign: &Foreign<'_, '_>, id: DefId) 
 /// Whether `def_id`, a binding that runs no code but its own and what it's
 /// given, `#[rust_js::runs_only_given]` (ADR 0898), is given, of `args`,
 /// only what runs nothing as JS reads it (`value_runs_nothing`).
+/// Of each argument, where the call's are known, `given`, also one
+/// written `None`, whatever its type: it's nothing JS reads, `undefined`,
+/// as `Intl.Locale(tag, None)`'s options are (#2082).
 fn given_what_runs_nothing<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
+    given: Option<(&Thir<'tcx>, &[ExprId])>,
 ) -> bool {
     let tcx = recognition.tcx;
     if !is_binding(tcx, def_id) || !runs_only_given(tcx, def_id) {
         return false;
     }
     let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
-    (sig.skip_binder().inputs().iter()).all(|&input| value_runs_nothing(recognition, input))
+    let written_none = |at: usize| {
+        given.is_some_and(|(thir, given)| {
+            given
+                .get(at)
+                .is_some_and(|&arg| is_none_written(recognition, thir, arg))
+        })
+    };
+    (sig.skip_binder().inputs().iter().enumerate())
+        .all(|(at, &input)| value_runs_nothing(recognition, input) || written_none(at))
+}
+
+/// Whether `arg` is `None` as the call writes it, an `Option`'s variant of
+/// no payload, through the scopes THIR wraps it in.
+fn is_none_written<'tcx>(recognition: &Recognition<'_, 'tcx>, thir: &Thir<'tcx>, arg: ExprId) -> bool {
+    let at = crate::lower::body_queries::strip(thir, arg);
+    matches!(&thir[at].kind, ExprKind::Adt(adt)
+        if recognition.is_lang_adt(thir[at].ty, LangItem::Option)
+            && adt.variant_index.as_u32() == 0
+            && adt.fields.is_empty())
 }
 
 /// Whether JS reads a value of `ty` with no code of anyone's: a number, a
@@ -125,10 +147,14 @@ pub(in crate::lower) fn resolve_runs_nothing<'tcx>(
 /// (`given_what_runs_nothing`). So a borrow held across it meets no other,
 /// and it sets none of the crate's variables, which lowering marks its
 /// call so (`Known::RunsNothing`, ADR 0277, amended).
+/// `given`, where the caller has them, the call's arguments, each `None`
+/// of which runs nothing whatever its type (`given_what_runs_nothing`);
+/// lowering's, which has none, asks of the types alone.
 pub(in crate::lower) fn binding_call_runs_nothing<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
+    given: Option<(&Thir<'tcx>, &[ExprId])>,
 ) -> bool {
-    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args)
+    binding_runs_nothing(recognition.tcx, def_id) || given_what_runs_nothing(recognition, def_id, args, given)
 }

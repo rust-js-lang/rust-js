@@ -9,4 +9,12 @@ export const mutations: Mutation[] = [
     replace: '#[cfg_attr(rust_js, rust_js::link_name = "replace")]\n    pub fn replace_all',
     tests: ["test/js-strings.test.ts", "-t", "replaceAll uses JavaScript replacement templates"],
   },
+  {
+    name: "regexp-test-counted-as-running-code",
+    breaks: "a regex's `test` loses `runs_nothing`, so a memo whose maker only tests a regex keeps `$withBorrowMut` around its cache (#2082)",
+    file: "builtins/src/lib.rs",
+    find: '#[cfg_attr(rust_js, rust_js::link_name = "test")]\n    #[cfg_attr(rust_js, rust_js::runs_nothing)]\n',
+    replace: '#[cfg_attr(rust_js, rust_js::link_name = "test")]\n',
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "runs only a regex"],
+  },
 ];

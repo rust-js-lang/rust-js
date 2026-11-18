@@ -609,7 +609,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's call that may run the program's code, `before.call()`, is taken to run none, so a copy of a module's variable read past it is the variable, which the callback set (ADR 0277, amended)",
     file: "src/lower/binding_calls.rs",
-    find: "                if super::analysis::binding_call_runs_nothing(&self.recognition(), def_id, generic_args) =>\n",
+    find: "                if super::analysis::binding_call_runs_nothing(&self.recognition(), def_id, generic_args, None) =>\n",
     replace: "                if true =>\n",
     tests: [
       "test/lowering-shadows.test.ts",

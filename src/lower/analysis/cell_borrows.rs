@@ -306,7 +306,9 @@ impl<'tcx> CellBorrows<'tcx> {
     ) -> bool {
         let tcx = recognition.tcx;
         let itself = |ty| self.clones_itself(recognition, owner, ty);
-        match called(recognition, def_id, args, receiver, &itself) {
+        let one = receiver.map(|(_, r)| [r]);
+        let given = receiver.zip(one.as_ref()).map(|((thir, _), one)| (thir, &one[..]));
+        match called(recognition, def_id, args, given, &itself) {
             // Of code rust-js can't see, a binding's or a library's, what
             // it calls back isn't asked (ADR 0863, amended); of what may be
             // the crate's own, an `F: Fn`'s call, what anything may (#1669).
@@ -413,7 +415,9 @@ impl<'tcx> CellBorrows<'tcx> {
     ) -> bool {
         let tcx = recognition.tcx;
         let itself = |ty| self.clones_itself(recognition, owner, ty);
-        match called(recognition, def_id, args, receiver, &itself) {
+        let one = receiver.map(|(_, r)| [r]);
+        let given = receiver.zip(one.as_ref()).map(|((thir, _), one)| (thir, &one[..]));
+        match called(recognition, def_id, args, given, &itself) {
             Called::Nothing => false,
             Called::Cell(theirs) => self.cell_call_asks(recognition, (def_id, args), theirs, held, drops),
             Called::Body(body, args) => self.runs_asks(tcx, body, Some(args), held, drops),
@@ -793,9 +797,7 @@ pub(in crate::lower) fn borrowed<'tcx>(
         return None;
     };
     let (id, generic_args) = fn_def(thir[fun].ty)?;
-    match called(recognition, id, generic_args, args.first().map(|&a| (thir, a)), &|_| {
-        false
-    }) {
+    match called(recognition, id, generic_args, Some((thir, &args[..])), &|_| false) {
         Called::Cell(cell) => Some(cell),
         _ => None,
     }
@@ -824,16 +826,18 @@ enum Called<'tcx> {
     Unseen,
 }
 
-/// What calling `def_id`, of `args`, runs; `receiver` its first argument,
-/// the cell a borrow is of.
+/// What calling `def_id`, of `args`, runs; `given` what's known of the
+/// call's arguments, its first the receiver, the cell a borrow is of, and
+/// each what `binding_call_runs_nothing` reads of a binding's (#2082).
 fn called<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
-    receiver: Option<(&Thir<'tcx>, ExprId)>,
+    given: Option<(&Thir<'tcx>, &[ExprId])>,
     clones_itself: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> Called<'tcx> {
     let tcx = recognition.tcx;
+    let receiver = given.and_then(|(thir, given)| Some((thir, *given.first()?)));
     // A clone of what's its own clone, a type parameter's whose `Clone`
     // bound takes no dictionary, is the value: it runs nothing (ADR 0914,
     // amended).
@@ -841,7 +845,7 @@ fn called<'tcx>(
         return Called::Nothing;
     }
     // A trait's binding, of a type parameter its bound reads (ADR 0307).
-    if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args) {
+    if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args, given) {
         return Called::Nothing;
     }
     let instance = match crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, def_id, args) {
@@ -988,13 +992,7 @@ fn direct<'tcx>(
         match e.kind {
             ExprKind::Call { fun, ref args, .. } => match fn_def(thir[fun].ty) {
                 Some((id, generic_args)) => {
-                    let called = called(
-                        recognition,
-                        id,
-                        generic_args,
-                        args.first().map(|&a| (thir, a)),
-                        clones_itself,
-                    );
+                    let called = called(recognition, id, generic_args, Some((thir, &args[..])), clones_itself);
                     // A borrow of a cell of a type, of its class by its
                     // flow (rd482).
                     let called = match called {

@@ -226,3 +226,30 @@ promise's resolve is given text isn't counted", with mutations
 `resolve-given-objects-runs-nothing` in
 `lower/analysis/cell_borrows.ts`, and `resolve-of-a-mut-binding` in
 `lower/analysis/resolvers.ts`.
+
+## Amendment (2026-11-18): an argument written `None` runs nothing, whatever its type (#2082)
+
+A `runs_only_given` binding runs nothing where each argument runs nothing
+as JS reads it, `value_runs_nothing`, by its type: an options object's
+type fails, as a JS caller may hand one over whose getters are the
+program's, so `Intl.Locale(tag, None)` and `Intl.DateTimeFormat(None,
+None)`, which the vercel-ui SDK's memo calls, were counted, and its cache
+kept `$withBorrowMut`.
+
+Now where the call's arguments are known, an argument written `None`, an
+`Option`'s variant of no payload as THIR has it, runs nothing whatever its
+type: it's `undefined`, which JS reads with no code (`is_none_written`).
+`binding_call_runs_nothing` is the one rule, given what's known:
+`cell_borrows`' `called` passes the call's THIR arguments where it has
+them, its first the receiver it read before; lowering's `binding_calls`,
+which has none, asks of the types alone, so it's no less strict than it
+was. `Some(options)` a JS caller handed over is still counted.
+
+Rows: test/builtins-runs-nothing.test.ts' memo over `Intl.Locale(key,
+None)` and `Intl.DateTimeFormat(None, None)` reads its cache plainly, and
+one given a JS caller's `Some(options)` keeps its check. Mutations
+`none-written-not-read` and `none-written-of-any-option`, caught;
+`runs-only-given-ignored` and lowering's re-anchored, caught. The vercel-ui
+SDK's memo still keeps its check for `js::optional_call((tag,
+Locale::get_week_info), ())`, which may run the method its path names.
+
