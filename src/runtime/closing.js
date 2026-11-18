@@ -114,6 +114,21 @@ function $closing(it, drop, slices = true) {
     $closedAfter(ends, close);
     return folded;
   };
+  // Its `try_fold`, its iterator's, as std's adapters pass it on: a
+  // `skip`'s is its source's `nth(n - 1)` then its `try_fold`, which a
+  // collect into an `Option` or a `Result` steps it by (`$shuntStep`,
+  // #1004), given it in generic code (#2051); and a stage's `unwind` goes
+  // on with it, so a `filter`'s rejected item whose drop panics leaks the
+  // accumulator its fold closure has made what it gives, as std's does
+  // (rust-lang/rust#47949, #2056). Run out, it's done with, as by `next`
+  // (ADR 0570). Not closed as a panic unwinds, as its `fold` is: `try_fold`
+  // takes `&mut self`, so what it steps is its owner's to drop then, where
+  // `fold` takes it by value; what drops with `f` is its caller's (#768).
+  const tryFold = (init, f, broke, unwind, ends) => {
+    const folded = it.tryFold(init, f, broke, unwind, ends);
+    if (!broke(folded) && !closing.held) close();
+    return folded;
+  };
   $forward(closing, it, {
     advanceBackBy: slice ? advanceBackBy : undefined,
     // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
@@ -125,6 +140,7 @@ function $closing(it, drop, slices = true) {
     count: it.ownCount || intoIter ? count : undefined,
     last: it.ownLast || intoIter ? last : undefined,
     rfold: it.rfold !== undefined ? rfold : undefined,
+    tryFold: it.tryFold !== undefined ? tryFold : undefined,
     tryRfold: "tryRfold",
   });
   return closing;

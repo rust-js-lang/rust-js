@@ -537,8 +537,60 @@ function $flattenEnds(it, each, knowing) {
     inner.back = undefined;
     return last === undefined ? counted : counted + $count(last, drop);
   };
-  $forward(flat, it, { fold: folding(front, "next", "back"), rfold: folding($foldBack, "back", "next"), count });
+  // Std's `FlattenCompat::try_fold`, as `$flatMap`'s: the front inner's
+  // rest, then its source's `try_fold` of each item's inner, then the back
+  // inner's, each broken where `broke` says, the inner it broke in kept to
+  // step on from; its source, done, fused. A step its sibling has, so what
+  // stops early, a collect into an `Option` or a `find`, steps it as Rust's
+  // does, not by its `next` (#2051).
+  const tryFold = (init, g, broke, unwind, ends) => {
+    let folded = init;
+    if (inner.next !== undefined) {
+      folded = $lent(inner.next).tryFold(folded, g, broke, unwind);
+      if (broke(folded)) return folded;
+      inner.next = undefined;
+    }
+    if (!ended) {
+      folded = $lent(it).tryFold(
+        folded,
+        (a, x) => {
+          inner.next = $iter(unwind === undefined ? made(x) : $staged(made, x, undefined, a, unwind));
+          const stepped = $lent(inner.next).tryFold(a, g, broke, unwind);
+          if (!broke(stepped)) inner.next = undefined;
+          return stepped;
+        },
+        broke,
+        unwind,
+      );
+      if (broke(folded)) return folded;
+      ended = true;
+    }
+    if (inner.back !== undefined) {
+      folded = $lent(inner.back).tryFold(folded, g, broke, unwind);
+      if (broke(folded)) return folded;
+      inner.back = undefined;
+    }
+    return folded;
+  };
+  $forward(flat, it, {
+    fold: folding(front, "next", "back"),
+    rfold: folding($foldBack, "back", "next"),
+    tryFold,
+    count,
+  });
   // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.
   $owns(flat, "count");
+  // What std's `FlattenCompat::last` takes, as `$flatMap`'s: the inner it
+  // steps from the front, its source, unless it's ended, what makes each
+  // inner, and the one it steps from the back, which its fold reaches
+  // last, each let go as it's taken (`$lastDropping`, #645, #2051).
+  flat.inners = () => {
+    const [front, back] = [inner.next, inner.back];
+    inner.next = undefined;
+    inner.back = undefined;
+    const source = ended ? undefined : it;
+    ended = true;
+    return [front, source, made, back];
+  };
   return flat;
 }

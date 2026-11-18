@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "    const source = it.skipped();\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_passed_item_drop_unwinds.rs$"],
   },
+  {
+    name: "flatten-last-back-inner-forgotten",
+    breaks: "`last()` of a flatten stepped from its back first leaves out the inner it stepped from the back, which std's `FlattenCompat` fold reaches last, so its items aren't its `last` (#2051)",
+    file: "src/runtime/last_dropping.js",
+    find: "    if (back !== undefined) take(() => back);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_code_steps_adapters_as_std\\.rs$"],
+  },
 ];

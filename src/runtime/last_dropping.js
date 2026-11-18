@@ -47,7 +47,7 @@ function $lastDropping(it, drop, boxed) {
   // `f` does, the one kept dropped, then what's left of the source, as the
   // fold's closure drops the accumulator it holds as it unwinds.
   if (it.inners !== undefined) {
-    const [front, source, f] = it.inners();
+    const [front, source, f, back] = it.inners();
     let kept;
     const unwind = () => {
       const dropped = kept;
@@ -77,6 +77,9 @@ function $lastDropping(it, drop, boxed) {
     } else if (source !== undefined) {
       $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind);
     }
+    // The one it steps from the back, of a double-ended one, which
+    // `FlattenCompat`'s fold reaches last (#2051).
+    if (back !== undefined) take(() => back);
     return kept === undefined ? undefined : some($someValue(kept));
   }
   // Given `drop`, which a `Vec`'s `IntoIter`'s own, `$slicing`'s, drops

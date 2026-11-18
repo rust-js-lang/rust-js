@@ -357,4 +357,12 @@ export const mutations: Mutation[] = [
     replace: "  const closing = new $Steps(() => done(it.next()), close);\n",
     tests: ["test/corpus.test.ts", "-t", "^from_iter_holds_what_generic_code_gives\\.rs$"],
   },
+  {
+    name: "closing-try-fold-by-next",
+    breaks: "a `$closing`'s `tryFold` is `$Steps`' default by `next`, so a collect into an `Option` of a `skip(1)` generic code gives it steps `nth(1)` where std's `try_fold` asks `nth(0)` (#2051), and an in-place collect through a filter whose closure holds what drops drops what it collected where a rejected item's drop panics, where std leaks it (#2056)",
+    file: "src/runtime/closing.js",
+    find: "    tryFold: it.tryFold !== undefined ? tryFold : undefined,\n",
+    replace: "    tryFold: undefined,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(collected_in_place_past_a_capturing_filter_whose_rejected_drop_panics|generic_code_steps_adapters_as_std)\\.rs$"],
+  },
 ];

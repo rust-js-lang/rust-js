@@ -4694,7 +4694,7 @@ export function $lastDropping(it, drop, boxed) {
   // `f` does, the one kept dropped, then what's left of the source, as the
   // fold's closure drops the accumulator it holds as it unwinds.
   if (it.inners !== undefined) {
-    const [front, source, f] = it.inners();
+    const [front, source, f, back] = it.inners();
     let kept;
     const unwind = () => {
       const dropped = kept;
@@ -4724,6 +4724,9 @@ export function $lastDropping(it, drop, boxed) {
     } else if (source !== undefined) {
       $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind);
     }
+    // The one it steps from the back, of a double-ended one, which
+    // `FlattenCompat`'s fold reaches last (#2051).
+    if (back !== undefined) take(() => back);
     return kept === undefined ? undefined : some($someValue(kept));
   }
   // Given `drop`, which a `Vec`'s `IntoIter`'s own, `$slicing`'s, drops
@@ -5262,6 +5265,21 @@ export function $closing(it, drop, slices = true) {
     $closedAfter(ends, close);
     return folded;
   };
+  // Its `try_fold`, its iterator's, as std's adapters pass it on: a
+  // `skip`'s is its source's `nth(n - 1)` then its `try_fold`, which a
+  // collect into an `Option` or a `Result` steps it by (`$shuntStep`,
+  // #1004), given it in generic code (#2051); and a stage's `unwind` goes
+  // on with it, so a `filter`'s rejected item whose drop panics leaks the
+  // accumulator its fold closure has made what it gives, as std's does
+  // (rust-lang/rust#47949, #2056). Run out, it's done with, as by `next`
+  // (ADR 0570). Not closed as a panic unwinds, as its `fold` is: `try_fold`
+  // takes `&mut self`, so what it steps is its owner's to drop then, where
+  // `fold` takes it by value; what drops with `f` is its caller's (#768).
+  const tryFold = (init, f, broke, unwind, ends) => {
+    const folded = it.tryFold(init, f, broke, unwind, ends);
+    if (!broke(folded) && !closing.held) close();
+    return folded;
+  };
   $forward(closing, it, {
     advanceBackBy: slice ? advanceBackBy : undefined,
     // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
@@ -5273,6 +5291,7 @@ export function $closing(it, drop, slices = true) {
     count: it.ownCount || intoIter ? count : undefined,
     last: it.ownLast || intoIter ? last : undefined,
     rfold: it.rfold !== undefined ? rfold : undefined,
+    tryFold: it.tryFold !== undefined ? tryFold : undefined,
     tryRfold: "tryRfold",
   });
   return closing;
@@ -6570,9 +6589,61 @@ export function $flattenEnds(it, each, knowing) {
     inner.back = undefined;
     return last === undefined ? counted : counted + $count(last, drop);
   };
-  $forward(flat, it, { fold: folding(front, "next", "back"), rfold: folding($foldBack, "back", "next"), count });
+  // Std's `FlattenCompat::try_fold`, as `$flatMap`'s: the front inner's
+  // rest, then its source's `try_fold` of each item's inner, then the back
+  // inner's, each broken where `broke` says, the inner it broke in kept to
+  // step on from; its source, done, fused. A step its sibling has, so what
+  // stops early, a collect into an `Option` or a `find`, steps it as Rust's
+  // does, not by its `next` (#2051).
+  const tryFold = (init, g, broke, unwind, ends) => {
+    let folded = init;
+    if (inner.next !== undefined) {
+      folded = $lent(inner.next).tryFold(folded, g, broke, unwind);
+      if (broke(folded)) return folded;
+      inner.next = undefined;
+    }
+    if (!ended) {
+      folded = $lent(it).tryFold(
+        folded,
+        (a, x) => {
+          inner.next = $iter(unwind === undefined ? made(x) : $staged(made, x, undefined, a, unwind));
+          const stepped = $lent(inner.next).tryFold(a, g, broke, unwind);
+          if (!broke(stepped)) inner.next = undefined;
+          return stepped;
+        },
+        broke,
+        unwind,
+      );
+      if (broke(folded)) return folded;
+      ended = true;
+    }
+    if (inner.back !== undefined) {
+      folded = $lent(inner.back).tryFold(folded, g, broke, unwind);
+      if (broke(folded)) return folded;
+      inner.back = undefined;
+    }
+    return folded;
+  };
+  $forward(flat, it, {
+    fold: folding(front, "next", "back"),
+    rfold: folding($foldBack, "back", "next"),
+    tryFold,
+    count,
+  });
   // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.
   $owns(flat, "count");
+  // What std's `FlattenCompat::last` takes, as `$flatMap`'s: the inner it
+  // steps from the front, its source, unless it's ended, what makes each
+  // inner, and the one it steps from the back, which its fold reaches
+  // last, each let go as it's taken (`$lastDropping`, #645, #2051).
+  flat.inners = () => {
+    const [front, back] = [inner.next, inner.back];
+    inner.next = undefined;
+    inner.back = undefined;
+    const source = ended ? undefined : it;
+    ended = true;
+    return [front, source, made, back];
+  };
   return flat;
 }
 

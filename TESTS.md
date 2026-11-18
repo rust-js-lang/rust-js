@@ -1,5 +1,11 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#2051, #2056): test/iterator-steps.test.ts, three
+tests, holds each runtime wrapper that passes its source's steps on to
+reaching every step of `$stepNames`, and the two flattens to the same steps;
+corpus cases `generic_code_steps_adapters_as_std.rs` and
+`collected_in_place_past_a_capturing_filter_whose_rejected_drop_panics.rs`.
+
 Changed on 2026-11-18 (#1944's regression): corpus case
 `guard_lent_to_a_closure_proves_remove.rs` holds a `RefCell` guard lent
 shared to a closure, its `remove(0)` past a push proved, and a `Cell` field

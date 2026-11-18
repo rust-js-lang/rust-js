@@ -1485,3 +1485,54 @@ generic code and through a `Box<dyn Iterator>`, each compile to std's
 stepped as JS's array iterator, which gives the same items.
 `steps-flat-map-unfused` is held by `flatten_from_both_ends`, whose
 `Flaky(0).flatten()` the runtime still steps.
+
+## Amendment: a wrapper passes on every step its source has (2026-11-18, #2051, #2056)
+
+Generic code hands what it's given on wrapped: a `from_iter` gets
+`$closing(Iterator.from(it), ..)`, a capturing `filter` its source as
+`$holding`, a `flat_map` made for a caller that asks for a back
+`$flattenEnds`. Each passed its source's steps on by `$forward`, but not all
+of them. `$closing` had no `tryFold`, so what steps by `try_fold` stepped it
+by `$Steps`' default over `next`:
+
+- a collect into an `Option` or a `Result`, std's `GenericShunt`, stepped a
+  `skip(1)` by `nth(1)` where std's `Skip::try_fold` asks `nth(0)`;
+- an in-place collect through a capturing `filter`, whose rejected item's
+  drop panicked, dropped the accumulator std leaks (S2).
+
+`$flattenEnds` had no `inners`, so `last()` of it was `Iterator`'s default,
+dropping each item as the next came, not `FlattenCompat::last`, each inner's
+own `last`; and no `tryFold`, which its sibling `$flatMap` has.
+
+`$closing` passes `tryFold` on: its source's, a stage's `unwind` going on
+with it, closed where it runs out and nothing holds it, as a `next` that's
+done closes it (ADR 0570). Not closed as a panic unwinds, as its `fold` is:
+`try_fold` takes `&mut self`, so what it steps is its owner's to drop then,
+where `fold` takes it by value (S2); the iterator matrix's `try_fold` rows
+over a crate's own iterator drop the source once, as native does. `$flattenEnds` has `inners`,
+`$flatMap`'s and the inner it steps from the back, which `FlattenCompat`'s
+fold reaches last, and `tryFold`, std's `FlattenCompat::try_fold`.
+
+What holds it, so a sixth step can't be missed:
+`test/iterator-steps.test.ts` builds a source of every step,
+`$stepNames`', lent.js's one list, each its own and recording its call; it
+holds each wrapper that passes its source on, `$closing` and `$holding`,
+to reaching each, a step it doesn't pass on said with why (`advanceBy`
+and `advanceBackBy` only where they're its source's own, as one of its
+kind is `$Steps`' default anyway); and the two flattens to the same steps
+of their own; and where a step panics, each wrapper to closing its source
+as the step's receiver says, read from this toolchain's core: by value,
+`fold(self, ..)`, closed; by `&mut self`, `try_fold`, not. On main's
+runtime, its first three tests fail; the receiver's catch the `tryFold`
+that closed as its `fold` does, which dropped a source twice.
+
+Corpus cases `generic_code_steps_adapters_as_std`, the shapes through a
+generic function against native, and
+`collected_in_place_past_a_capturing_filter_whose_rejected_drop_panics`
+(#2056, m1-lisa's). The five metamorphic `generic-instances` rewrites and
+the `loud-drop` one leave `test/metamorphic-known.txt`. Mutations
+`closing-try-fold-by-next`, `flatten-ends-inners-forgotten` and
+`flatten-last-back-inner-forgotten` are caught. `$flattenEnds`'
+`tryFold` has no mutation: it's made only over a range of arrays, whose
+`try_fold` is its `next`, so no program shows it yet, and the harness
+takes no runtime-only test as a mutation's; the sibling row holds it.

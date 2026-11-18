@@ -529,16 +529,16 @@ export const mutations: Mutation[] = [
     name: "flatten-ends-fold-unforwarded",
     breaks: "a flatten stepped from its back has no `fold`, so its `fold`, and a `rev()`'s `rfold` of it, step it by `next`, never calling its source's own `fold` (#649)",
     file: "src/runtime/back_steps.js",
-    find: '  $forward(flat, it, { fold: folding(front, "next", "back"), rfold:',
-    replace: "  $forward(flat, it, { rfold:",
+    find: '    fold: folding(front, "next", "back"),\n',
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
   },
   {
     name: "flatten-ends-rfold-unforwarded",
     breaks: "a flatten stepped from its back has no `rfold`, so its `rfold`, and a `rev()`'s `fold` of it, step it by `next_back`, never calling its source's own `rfold` (#621, #649)",
     file: "src/runtime/back_steps.js",
-    find: ', rfold: folding($foldBack, "back", "next"), count });\n',
-    replace: ", count });\n",
+    find: '    rfold: folding($foldBack, "back", "next"),\n',
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_folds_reach_its_sources_own.rs$"],
   },
   {
@@ -561,8 +561,8 @@ export const mutations: Mutation[] = [
     name: "flatten-ends-count-by-next",
     breaks: "`$flattenEnds` has no `count` of its own, so `$count` steps each inner iterator by `next`, not by its own `count` as std's `FlattenCompat::count` does (#736)",
     file: "src/runtime/back_steps.js",
-    find: "rfold: folding($foldBack, \"back\", \"next\"), count });\n",
-    replace: "rfold: folding($foldBack, \"back\", \"next\") });\n",
+    find: "    tryFold,\n    count,\n  });\n  // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.\n",
+    replace: "    tryFold,\n  });\n  // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
   {
@@ -736,4 +736,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
   },
 
+  {
+    name: "flatten-ends-inners-forgotten",
+    breaks: "a double-ended flatten generic code gives `last()` has no `inners`, so its `last` is `Iterator`'s default, dropping each item as the next comes, not std's `FlattenCompat::last`, each inner's own `last` (#2051)",
+    file: "src/runtime/back_steps.js",
+    find: "  flat.inners = () => {\n    const [front, back] = [inner.next, inner.back];\n",
+    replace: "  flat.innersGone = () => {\n    const [front, back] = [inner.next, inner.back];\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_code_steps_adapters_as_std\\.rs$"],
+  },
 ];
