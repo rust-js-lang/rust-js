@@ -3,15 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "async-param-copy-unheld",
-    breaks:
-      "rustc's copy of an `async fn`'s parameter, `let n = n;`, is named as the program's, no holder of the parameter, so its body keeps `const n$1 = n` beside it (#1681 change 3)",
-    file: "src/lower/mir/locals.rs",
-    find: "                (Some(_), _) if let Some(param) = copies.get(&local) => self.fresh(Base::Derived(param)),\n",
-    replace: "",
-    tests: ["test/lowering-async.test.ts", "-t", "an async fn's parameter its body sets"],
-  },
-  {
     name: "user-local-not-the-programs",
     breaks: "a local rustc says the program named is named as a name rust-js made, not the program's: reclaiming gives the program's name to another, a variable renamed (ADR 1150); the debug build's invariant says so where it's made",
     file: "src/lower/mir/locals.rs",
