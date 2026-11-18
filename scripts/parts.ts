@@ -24,8 +24,15 @@
 // machines; with `bun test`'s flags given after the file. Parts run as
 // many at once as the machine holds, of those named, unless `--at-once`
 // says fewer.
+//
+// One file, of cases each part takes its share of (`RUST_JS_CASES`), or
+// it's refused (`unparted`): a file of no cases, or a second file among
+// the flags, ran whole in every part, and a run of the suite's files in
+// 10 parts wrote 20 GiB of fixtures and filled the disk. The suite in
+// parts is `bun run check:fast`'s, which runs each file once.
+import { readFileSync } from "node:fs";
 import { freemem, totalmem } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import { footprints, processTree, stopGroup, treeBytes } from "../test/child";
 import { atOnce } from "./shard";
@@ -58,6 +65,20 @@ export function partsOf(spec: string): { parts: number[]; count: number } {
   const [first, last] = from === undefined ? [1, count] : [Number(from), Number(to)];
   if (of === undefined || count < 1 || first < 1 || first > last || last > count) throw new Error(`parts are \`n\` or \`a-b/n\`, not ${spec}`);
   return { parts: Array.from({ length: last - first + 1 }, (_, i) => first + i), count };
+}
+
+/** Why `file`, of source `source`, given `flags` after it, can't run in
+ * parts: a test file among the flags, or a file that doesn't take its
+ * part's share of its cases, `RUST_JS_CASES` read or `caseShard`'s, so
+ * each part would run all of it; or nothing. */
+export function unparted(file: string, source: string, flags: string[]): string | undefined {
+  const runSuite = "run the suite with `bun run check:fast`, which runs each file once and the corpus in parts";
+  const others = flags.filter((flag) => !flag.startsWith("-") && /\.test\.[jt]sx?$/.test(flag));
+  if (others.length > 0) return `${others.join(", ")}: one test file runs in parts, and every other given would run whole in each part: ${runSuite}`;
+  if (!/process\.env\.RUST_JS_CASES\b|\bcaseShard\(/.test(source)) {
+    return `${file} doesn't take its part's share of its cases (\`RUST_JS_CASES\`, \`caseShard\`), so each part would run it whole: ${runSuite}`;
+  }
+  return undefined;
 }
 
 /** The test a `bun test` line says ended, or nothing. */
@@ -190,6 +211,8 @@ if (import.meta.main) {
   const said = args.find((arg) => arg.startsWith("--at-once="));
   const [spec, file, ...flags] = args.filter((arg) => arg !== said);
   if (spec === undefined || file === undefined) throw new Error("usage: bun scripts/parts.ts <auto | n | a-b/n> [--at-once=<k>] <test file> [bun test's flags]");
+  const refused = unparted(file, readFileSync(resolve(root, file), "utf8"), flags);
+  if (refused !== undefined) throw new Error(refused);
   const held = atOnce("test");
   const parts = partsOf(spec === "auto" ? String(held) : spec);
   const together = said === undefined ? Math.min(parts.parts.length, held) : Number(said.slice("--at-once=".length));

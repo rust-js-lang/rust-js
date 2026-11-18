@@ -19,7 +19,7 @@ import { unrerunnable } from "../scripts/attribute";
 import { changedCases, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, drivesBrowser, testFileSeconds } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
-import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
+import { caseOf, partsOf, runParts, unparted, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, programFlags, root } from "./support";
@@ -797,6 +797,24 @@ test("a part's spec names its parts, and a part's line says how it ended", () =>
   expect(verdict(1, null, 'Test filter "x" had no matches\n')).toBe("failed");
   expect(verdict(null, "SIGKILL", "(pass) a\n")).toBe("killed (memory?)");
   expect(verdict(143, null, "(pass) a\n")).toBe("killed (memory?)");
+});
+
+// A file in parts is one of cases each part takes its share of: a file of
+// none, or a second file among the flags, ran whole in every part, and the
+// suite's files in 10 parts filled the disk with 20 GiB of fixtures. Each
+// file a workflow runs in parts is one. (The sources below are built, so
+// this file reads as one of no cases, which it is.)
+test("parts.ts runs one file of cases in parts, and refuses another, naming check:fast", () => {
+  const cases = ["RUST", "JS", "CASES"].join("_");
+  const sharded = `const [part, parts] = (process.env.${cases} ?? "1/1").split("/").map(Number);`;
+  expect(unparted("test/a.test.ts", sharded, ["--timeout=60000"])).toBeUndefined();
+  expect(unparted("test/a.test.ts", `for (const name of ${"caseShard"}(cases)) test(name, () => {});`, [])).toBeUndefined();
+  expect(unparted("test/ci.test.ts", readFileSync(join(root, "test/ci.test.ts"), "utf8"), [])).toContain("each part would run it whole: run the suite with `bun run check:fast`");
+  expect(unparted("test/a.test.ts", sharded, ["test/b.test.ts", "--timeout=1"])).toContain("test/b.test.ts: one test file runs in parts");
+  const workflows = readdirSync(join(root, ".github/workflows")).filter((name) => name.endsWith(".yml"));
+  const runs = workflows.flatMap((name) => [...readFileSync(join(root, ".github/workflows", name), "utf8").matchAll(/bun scripts\/parts\.ts .*?(test\/\S+\.test\.tsx?)([^\n]*)/g)]);
+  expect(runs.length).toBeGreaterThan(0);
+  for (const [, file, flags] of runs) expect(unparted(file!, readFileSync(join(root, file!), "utf8"), flags!.trim().split(/\s+/).filter(Boolean)), file).toBeUndefined();
 });
 
 test("a part the machine kills is said killed, with what it ran and its peak", async () => {
