@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { checkedMembers, open } from "@rust-js/typescript";
 import { fixture, root } from "./support";
 import { underLoad } from "../scripts/timing";
+import { typeChecked } from "./type-checked";
 
 const declarations = `import type { ReactNode } from "react";
 
@@ -351,9 +352,8 @@ test("print writes erasable syntax only", async () => {
     });
     writeFileSync(join(dir, "other.ts"), "export interface Other { id?: string }\n");
     writeFileSync(join(dir, "types.ts"), types);
-    writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({ compilerOptions: { strict: true, noEmit: true, erasableSyntaxOnly: true, verbatimModuleSyntax: true, module: "esnext", moduleResolution: "bundler" }, files: ["types.ts"] }));
-    const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-    expect(checked.stdout.toString()).toBe("");
+    const checked = typeChecked(dir, "types.ts", { erasableSyntaxOnly: true, verbatimModuleSyntax: true });
+    expect(checked.out).toBe("");
     const values = { kind: "namespace" as const, name: "Values", exported: true, declare: false, declarations: [{ kind: "const" as const, name: "x", exported: true, declare: false, type: { kind: "keyword" as const, keyword: "number" } }] };
     expect(ts.print({ declarations: [values] })).rejects.toThrow("isn't erasable");
     expect(await ts.print({ declarations: [{ ...values, declare: true }] })).toContain("declare namespace Values");

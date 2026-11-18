@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
@@ -27,16 +28,8 @@ function compiled(dir: string, dep: Record<string, string>, app: string, undecla
     "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
 }
 
-/** TypeScript's errors in `file` of `dir`, strict, its declarations checked too. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, "tsconfig.json");
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = {};
 
 const contexts = {
   "dep.rs": "pub mod context;\n",
@@ -74,7 +67,7 @@ test("a library's type is imported from the file its declarations are in", () =>
 read({ value: 1, count: 2 });
 read({ value: "one", count: 2 });
 `);
-  const errors = typeChecked(dir, "caller.ts");
+  const errors = typeChecked(dir, "caller.ts", checking);
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("caller.ts(4,");
 });
@@ -151,7 +144,7 @@ pub fn named(event: &DispatchEvent) -> PluginName {
 named({ name: "one" });
 named({ name: 1 });
 `);
-  const errors = typeChecked(dir, "caller.ts");
+  const errors = typeChecked(dir, "caller.ts", checking);
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("caller.ts(4,");
 });
@@ -198,7 +191,7 @@ pub fn encode_reply(value: &'static ReactServerValue) -> bool {
 encodeReply(new Map([["a", [1, "b", { c: true }]]]));
 encodeReply(Symbol());
 `);
-  const errors = typeChecked(dir, "caller.ts");
+  const errors = typeChecked(dir, "caller.ts", checking);
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("caller.ts(4,");
 });
@@ -397,7 +390,7 @@ decodeAction(1, { id: 2 });
 serverDecode(1, { id: 2 });
 decodeAction(1, "manifest");
 `);
-  const errors = typeChecked(dir, "caller.ts");
+  const errors = typeChecked(dir, "caller.ts", checking);
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("caller.ts(5,");
   const module = await import(join(dir, "app", "lib.js"));
@@ -478,7 +471,7 @@ const measured: Measure = size(kind);
 count({ temporaryReferences: set });
 count({ temporaryReferences: measured });
 `);
-  const errors = typeChecked(dir, "caller.ts");
+  const errors = typeChecked(dir, "caller.ts", checking);
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("caller.ts(8,");
 });
@@ -534,5 +527,5 @@ export const moved: number = first!.impl.apply(first!.value, 1);
 // @ts-expect-error A step's name is text.
 export const wrong: number = first!.impl.name(first!.value);
 `);
-  expect(typeChecked(dir, "caller.ts")).toEqual([]);
+  expect(typeChecked(dir, "caller.ts", checking)).toEqual([]);
 });

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { open } from "@rust-js/typescript";
 import { runSync } from "./child";
 import { fixture, root } from "./support";
+import { typeChecked } from "./type-checked";
 
 const declarations = "export interface Box<T = string> {\n    value: T;\n    map<U extends T = T>(value: U): U;\n}\n\nexport type List<T = number> = readonly T[];\n\nexport declare function pick<T = string>(value?: T): T;\n\nexport interface Factory {\n    new <T = object>(): Box<T>;\n}\n\nexport interface Bounded<T extends string = \"x\"> {\n    value: T;\n}\n\nexport type Maker = <T = number>() => T;\n";
 
@@ -41,10 +42,8 @@ test("original and printed defaults accept strict callers that omit type argumen
     for (const module of ["input","output"]) {
       const consumer=module+"-consumer.ts";
       writeFileSync(join(dir,consumer),'import {pick,type Box,type List,type Factory,type Bounded,type Maker} from "./'+module+'.js";\ndeclare const box: Box;\nconst value: string = box.value;\nconst selected: string = box.map("x");\nconst list: List = [1,2];\nconst text: string = pick();\ndeclare const factory: Factory;\nconst made: Box<object> = new factory();\ndeclare const bounded: Bounded;\nconst literal: \"x\" = bounded.value;\n// @ts-expect-error the constraint is preserved\ntype WrongBound = Bounded<number>;\n// @ts-expect-error the literal default is preserved\nconst wrongLiteral: \"y\" = bounded.value;\ndeclare const make: Maker;\nconst madeNumber: number = make();\n');
-      const config=join(dir,module+".json");
-      writeFileSync(config,JSON.stringify({compilerOptions:{strict:true,noEmit:true,types:[],lib:["es2022"],module:"esnext",moduleResolution:"bundler"},files:[consumer]}));
-      const result=runSync([process.execPath,join(root,"node_modules/typescript/bin/tsc"),"-p",config],dir,10_000);
-      expect(result.code,result.stdout+result.stderr).toBe(0);
+      const result = typeChecked(dir, consumer, { types: [], lib: ["es2022"] });
+      expect(result.code,result.out).toBe(0);
     }
   } finally { await session.close(); }
 });

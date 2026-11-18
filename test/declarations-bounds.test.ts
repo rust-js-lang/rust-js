@@ -11,21 +11,14 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
 const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
-/** TypeScript's errors of `file` in `dir`, strict, the DOM's lib in. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, `tsconfig-${file}.json`);
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", lib: ["es2022", "dom"], strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, lib: ["es2022", "dom"], types: [] };
 
 // The trait by another name: its identity, not its spelling.
 const program = `use webapi::{Element, IsA as Extends};
@@ -91,5 +84,5 @@ selected<Text>(document.createTextNode("button"));
 // @ts-expect-error Nor is it one to count.
 count([document.createTextNode("button")]);
 `);
-  expect(typeChecked(dir, "consumer.ts")).toEqual([]);
+  expect(typeChecked(dir, "consumer.ts", checking)).toEqual([]);
 });

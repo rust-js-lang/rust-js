@@ -11,21 +11,14 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
 const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
-/** TypeScript's errors of `file` in `dir`, strict. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, `tsconfig-${file}.json`);
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", lib: ["es2022"], strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, lib: ["es2022"], types: [] };
 
 const program = `/// A commit's details: what it's given, then how it came about.
 pub struct Committed<G: 'static> {
@@ -80,7 +73,7 @@ export const source: string = committed(given, "mouse").source;
 // @ts-expect-error The struct's own key is its own, not the given's.
 export const theirs: "theirs" = committed({ source: "theirs" } as const, "mouse").source;
 `);
-  expect(typeChecked(dir, "consumer.ts")).toEqual([]);
+  expect(typeChecked(dir, "consumer.ts", checking)).toEqual([]);
 });
 
 test("a js::Spread unflattened, or alone in its struct, is refused", () => {

@@ -1,38 +1,66 @@
 // TypeScript's check of what imports a module's JS and its declarations
-// (ADR 0196), the same under each setting that changes what a declaration
-// means to an app: the one check the declarations' test files share.
+// (ADR 0196): the one check every test of generated declarations makes,
+// each under the settings it asks for, over what every check has (#2103).
 
 import { expect } from "bun:test";
 import { writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
+import { underLoad } from "../scripts/timing";
 import { root } from "./support";
+
+/** TypeScript's `compilerOptions` a check is made under, over `base`. */
+export type Setting = Record<string, unknown>;
+
+/** What every check has: ES modules a bundler resolves, strict, nothing
+ * emitted, the declarations checked too, `skipLibCheck` off; a setting may
+ * turn one off, `noEmit: false` of a check whose JS is run after. */
+const base: Setting = { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false };
+
+/** The `@types` of the checkout's packages, what a check that reads Node's
+ * or React's names is given. */
+export const repoTypes: Setting = { typeRoots: [join(root, "node_modules/@types")] };
+
+/** ES2022, an optional property taking `undefined` only where it says so:
+ * what most declarations' tests check under, with what `lib` and `types`
+ * each needs. */
+export const es2022: Setting = { target: "es2022", exactOptionalPropertyTypes: true };
 
 // The settings an app's TypeScript may have, each one that changes what a
 // declaration means to it: a `.d.ts` means the same under every one, so an
 // app's TypeScript isn't held to more, or less, than the Rust holds it to.
-const settings: Record<string, object> = {
-  bundler: { module: "esnext", moduleResolution: "bundler", allowJs: true },
+// What a check is made under where it names none.
+const app = { jsx: "react-jsx", ...repoTypes };
+export const appSettings: Setting[] = [
+  { ...app, allowJs: true },
   // What Vite's template has, and the strictest of TypeScript's checks that
   // read a declaration: an optional property takes `undefined` only where it
   // says so.
-  strictest: { module: "esnext", moduleResolution: "bundler", verbatimModuleSyntax: true, isolatedModules: true, erasableSyntaxOnly: true, exactOptionalPropertyTypes: true },
-  nodenext: { module: "nodenext", moduleResolution: "nodenext", allowJs: true },
-};
+  { ...app, verbatimModuleSyntax: true, isolatedModules: true, erasableSyntaxOnly: true, exactOptionalPropertyTypes: true },
+  { ...app, module: "nodenext", moduleResolution: "nodenext", allowJs: true },
+];
 
-/** TypeScript's errors in `file` of `dir`, which imports a module's JS, the same under each of `settings`; its declarations checked too, `skipLibCheck` off. */
-export function typeChecked(dir: string, file: string): string[] {
-  const each = Object.entries(settings).map(([name, options]) => {
-    const config = join(dir, `tsconfig.${name}.json`);
-    writeFileSync(config, JSON.stringify({
-      compilerOptions: { ...options, jsx: "react-jsx", strict: true, noEmit: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
-      files: [file],
-    }));
-    const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-    return { name, errors: checked.stdout.toString().split("\n").filter((line) => line.includes("error TS")) };
+/** What a check found: each line of an error TypeScript wrote, with how
+ * it ended, `code`, and all it wrote, `out`, for a test that reads them,
+ * each always there but not enumerable, so `toEqual` compares the lines
+ * alone (and typed optional, so `toEqual([])` reads as it means). */
+export type Checked = string[] & { code?: number; out?: string };
+
+/** TypeScript's errors in `files` of `dir`, which import a module's JS,
+ * one or several, under each of `settings`, `appSettings` where it's given
+ * none: the same places under each, the first's returned. Each config is
+ * named for its first file and its setting, so checks of one directory
+ * never meet. */
+export function typeChecked(dir: string, files: string | string[], ...settings: Setting[]): Checked {
+  const given = typeof files === "string" ? [files] : files;
+  const each = (settings.length > 0 ? settings : appSettings).map((setting, at) => {
+    const config = join(dir, `tsconfig-${basename(given[0]!)}-${at}.json`);
+    writeFileSync(config, JSON.stringify({ compilerOptions: { ...base, ...setting }, files: given }));
+    const ran = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir, timeout: underLoad(60_000) });
+    const out = ran.stdout.toString() + ran.stderr.toString();
+    const errors = ran.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+    return Object.defineProperties(errors as Checked, { code: { value: ran.exitCode ?? 1 }, out: { value: out } });
   });
   const where = (errors: string[]) => errors.map((error) => error.slice(0, error.indexOf(":")));
-  for (const { name, errors } of each.slice(1)) {
-    expect({ [name]: where(errors) }).toEqual({ [name]: where(each[0].errors) });
-  }
-  return each[0].errors;
+  each.slice(1).forEach((errors, at) => expect({ [`setting ${at + 1}`]: where(errors) }).toEqual({ [`setting ${at + 1}`]: where(each[0]!) }));
+  return each[0]!;
 }

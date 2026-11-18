@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { Refused, type Library, writeClass, writing } from "../builtins/library";
 import { NAMES, THROWS } from "../builtins/policy";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { repoTypes, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
@@ -195,15 +196,7 @@ export const weekend: number[] = info.weekend;
 export const wrong: string = week(locale).firstDay;
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, lib: ["esnext"], typeRoots: [join(root, "node_modules/@types")] },
-      files: ["use.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  const errors = typeChecked(dir, "use.ts", { ...repoTypes, allowJs: true, lib: ["esnext"] });
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("use.ts(6,");
 });

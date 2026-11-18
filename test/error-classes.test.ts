@@ -11,19 +11,12 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
-/** TypeScript's errors of `file` in `dir`, strict, ES2022's `Error` of a `cause`. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, `tsconfig-${file}.json`);
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", lib: ["es2022"], strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, lib: ["es2022"], types: [] };
 
 const flags = (dir: string) => ["--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
@@ -230,7 +223,7 @@ export const stack: string | undefined = error.stack;
 // @ts-expect-error A code is text.
 export const wrong: number = error.code;
 `);
-  expect(typeChecked(dir, "consumer.ts")).toEqual([]);
+  expect(typeChecked(dir, "consumer.ts", checking)).toEqual([]);
 });
 
 test("what Error's constructor sets is refused of another shape, saying what to write", () => {

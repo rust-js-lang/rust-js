@@ -9,17 +9,10 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, root, run } from "./support";
+import { es2022, repoTypes, type Setting, typeChecked } from "./type-checked";
 
-/** TypeScript's errors in `file` of `dir`, strict, its declarations checked too. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, "tsconfig.json");
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", lib: ["es2022", "esnext.iterator"], strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, typeRoots: [join(root, "node_modules/@types")] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, ...repoTypes, lib: ["es2022", "esnext.iterator"] };
 
 test("an iterator at the JS boundary is declared what a JS caller gives and what it's given back", () => {
   const dir = fixture("declarations-iterators");
@@ -69,12 +62,12 @@ export const ofArray: number = left([1, 2, 3]);
 const back: IteratorResult<number> = upto(3).back();
 export const length: number = upto(3).len() + (back.done ? 0 : back.value);
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
   writeFileSync(join(dir, "wrong.ts"), `import { counted, lastOf, left } from "./lib.js";
 lastOf(counted(3));
 left(new Set([1, 2]));
 `);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([
     expect.stringContaining("error TS2345: Argument of type 'IterableIterator<number>' is not assignable to parameter of type 'DoubleEndedIterator<number> | readonly number[]'"),
     expect.stringContaining("error TS2345: Argument of type 'Set<number>' is not assignable to parameter of type 'ExactSizeIterator<number> | readonly number[]'"),
   ]);

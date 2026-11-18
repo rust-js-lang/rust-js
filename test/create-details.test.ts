@@ -13,6 +13,7 @@ import { copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { contract, type Factory } from "./create-details/contract";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
@@ -28,12 +29,8 @@ function compiled(): string {
   return dir;
 }
 
-/** TypeScript's errors of `file` in `dir`, as Codex's declarations test
- * checks it: strict, the DOM's lib in. */
-function typeChecked(dir: string, file: string): string[] {
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "--ignoreConfig", "--noEmit", "--strict", "--skipLibCheck", "--target", "esnext", "--module", "esnext", "--moduleResolution", "bundler", "--lib", "esnext,dom", "--allowImportingTsExtensions", file], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { target: "esnext", lib: ["esnext", "dom"], skipLibCheck: true, allowImportingTsExtensions: true };
 
 test("createDetails' JS is upstream's body, of its three arguments", () => {
   const dir = compiled();
@@ -133,5 +130,5 @@ if (details.reason === "drop") {
   const transfer: DataTransfer | null | undefined = details.event?.dataTransfer;
 }
 `);
-  expect(typeChecked(dir, "consumer.ts")).toEqual([]);
+  expect(typeChecked(dir, "consumer.ts", checking)).toEqual([]);
 });

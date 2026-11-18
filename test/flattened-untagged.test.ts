@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, target } from "./support";
+import { typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
@@ -109,12 +110,8 @@ export const all: boolean[] = [direct, wrapped, native].map(handles);
 export const wrong: NumberKeyEvent = { key: 4 };
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({ compilerOptions: { module: "esnext", moduleResolution: "bundler", allowJs: true, strict: true, noEmit: true, skipLibCheck: true, lib: ["esnext", "dom"] }, files: ["use.ts"] }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+  const checked = typeChecked(dir, "use.ts", { allowJs: true, skipLibCheck: true, lib: ["esnext", "dom"] });
+  expect(checked).toEqual([]);
   // JS's own objects, as a framework gives them, told apart as Rust's are.
   const { handles, isComposing, wrapped } = await import(join(dir, "lib.js"));
   expect(handles({ key: "1" })).toBe(true);

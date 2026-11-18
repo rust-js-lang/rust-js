@@ -16,21 +16,14 @@ import { join } from "node:path";
 import { typescriptEventMaps } from "../webapi/coverage";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
 const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
-/** TypeScript's errors of `file` in `dir`, strict, the DOM's lib in. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, `tsconfig-${file}.json`);
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", lib: ["es2022", "dom"], strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, lib: ["es2022", "dom"], types: [] };
 
 /** The crate's `Listen` catalog, of its generated source: each target's
  * events, by name, each the event's interface. */
@@ -108,7 +101,7 @@ on(button, "click", () => {}, {capture: "wrong"});
 // @ts-expect-error The event name must belong to the native event map.
 on(button, "not-a-native-event", () => {});
 `);
-  expect(typeChecked(dir, "kernel-events.ts")).toEqual([]);
+  expect(typeChecked(dir, "kernel-events.ts", checking)).toEqual([]);
   // A listener narrower than its event, or a name of no target's, refused;
   // of a bound alone too.
   writeFileSync(join(dir, "wrong.ts"), `import { listened, on } from "./lib.js";
@@ -116,7 +109,7 @@ const button = document.createElement("button");
 on(button, "click", (event: KeyboardEvent) => event.key);
 listened(button, "not-an-event", () => {});
 `);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2345"), expect.stringContaining("error TS2345")]);
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([expect.stringContaining("error TS2345"), expect.stringContaining("error TS2345")]);
 });
 
 // Each target's map is the catalog's, exactly: its names, each its event,
@@ -145,10 +138,10 @@ type Expect<T extends true> = T;
     text += `export type _${t} = Expect<Exact<EventMapOf<${t}>, ${expected}>>;\n`;
   }
   writeFileSync(join(dir, "targets.ts"), text);
-  expect(typeChecked(dir, "targets.ts")).toEqual([]);
+  expect(typeChecked(dir, "targets.ts", checking)).toEqual([]);
   // And a wrong one isn't, so the check checks.
   writeFileSync(join(dir, "wrong.ts"), `${text}export type _wrong = Expect<Exact<EventMapOf<HTMLButtonElement>, { click: KeyboardEvent }>>;\n`);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2344")]);
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([expect.stringContaining("error TS2344")]);
 }, underLoad(120_000));
 
 // A type TypeScript's DOM lacks is an empty global interface of
@@ -170,7 +163,7 @@ export type Names = Expect<Same<keyof EventMapOf<BatteryManager>, "chargingchang
 // Undeclared: none of another type's.
 export type Other = Expect<Same<keyof EventMapOf<{ unrelated: true }>, never>>;
 `);
-  expect(typeChecked(dir, "declared.ts")).toEqual([]);
+  expect(typeChecked(dir, "declared.ts", checking)).toEqual([]);
 });
 
 // What @rust-js/webapi ships for it, pinned: a map grows only as the

@@ -12,21 +12,14 @@ import { join } from "node:path";
 
 import { typescriptNames } from "../webapi/coverage";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
 const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
-/** TypeScript's errors in `file` of `dir`, strict, the DOM's lib in. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, "tsconfig.json");
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", lib: ["es2022", "dom"], strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, lib: ["es2022", "dom"], types: [] };
 
 test("navigator.getBattery() is bound, and its BatteryManager declared where TypeScript lacks it", async () => {
   const dir = fixture("webapi-battery");
@@ -50,13 +43,13 @@ export const charging: boolean = battery.charging;
 export const percent: number = await level(navigator);
 battery.onlevelchange = () => {};
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
   writeFileSync(join(dir, "wrong.ts"), `import { manager } from "./lib.js";
 const battery = await manager(navigator);
 export const level: string = battery.level;
 battery.charging = true;
 `);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2322"), expect.stringContaining("error TS2540")]);
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([expect.stringContaining("error TS2322"), expect.stringContaining("error TS2540")]);
   const lib = await import(join(dir, "lib.js"));
   const battery = { charging: true, level: 0.5 };
   const navigator = { getBattery: () => Promise.resolve(battery) };
@@ -77,7 +70,7 @@ test("an HTMLSelectedContentElement a crate names is declared where TypeScript l
 declare const selected: HTMLSelectedContentElement;
 export const name: string = tag(selected);
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
 });
 
 // A webapi dictionary a public function takes is TypeScript's own of its
@@ -104,11 +97,11 @@ export const on: boolean = capturing({ capture: true, once: false, signal: new A
 export const off: boolean = capturing(undefined);
 export const quad: boolean = boxed({ box: "border" });
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
   writeFileSync(join(dir, "wrong.ts"), `import { capturing } from "./lib.js";
 export const wrong: boolean = capturing({ capture: "yes" });
 `);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2322")]);
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([expect.stringContaining("error TS2322")]);
 });
 
 // DOM's WebIDL moved `startContainer` from `AbstractRange` to `NodeRange`,
@@ -137,7 +130,7 @@ export const node: Node = start(range);
 export const container: Node = of(range).startContainer;
 export const at: number = offset(range);
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
   const lib = await import(join(dir, "lib.js"));
   const node = {};
   const range = { startContainer: node, startOffset: 3 };
@@ -188,7 +181,7 @@ void [button, element];
 selected<string>("button");
 selected<Text>(document.createTextNode("button"));
 `);
-  expect({declarations,valid:typeChecked(dir,"valid.ts"),invalid:typeChecked(dir,"invalid.ts")}).toEqual({
+  expect({declarations,valid:typeChecked(dir,"valid.ts", checking),invalid:typeChecked(dir,"invalid.ts", checking)}).toEqual({
     declarations:expect.stringContaining("selected<T extends Element>"),
     valid:[],
     // A text node's is TS2740, its missing members, as tsc says of the

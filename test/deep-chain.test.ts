@@ -14,6 +14,7 @@ import { checkCargo } from "../tooling/cargo.js";
 import { channel } from "../scripts/toolchain.ts";
 import { buildCompiler, buildReact, compiler, fixture, root, run, seeded } from "./support";
 import { cargo } from "./crates";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
 beforeAll(() => {
   buildCompiler();
@@ -31,16 +32,8 @@ const crates: Record<string, string> = {
   check: 'app = { path = "../app" }\n',
 };
 
-/** TypeScript's errors of `file` in `dir`, strict, with React's types. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, `tsconfig-${file}.json`);
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", lib: ["es2022", "dom"], jsx: "react-jsx", strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, lib: ["es2022", "dom"], jsx: "react-jsx", types: [] };
 
 /** The chain's workspace in `dir`, its crates' sources test/deep-chain's. */
 function workspace(dir: string): string {
@@ -100,6 +93,6 @@ buttonClasses("Huge", "Small");
 // @ts-expect-error A placement's side is one of four.
 export const wrong: Placement = { side: "Middle", align: "Start" };
 `);
-  expect(typeChecked(dir, "caller.tsx")).toEqual([]);
+  expect(typeChecked(dir, "caller.tsx", checking)).toEqual([]);
 }, 600_000);
 

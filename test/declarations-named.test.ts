@@ -7,17 +7,10 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, root, run } from "./support";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
-/** TypeScript's errors of `file` in `dir`, strict, its declarations checked too. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, `tsconfig-${file}.json`);
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, verbatimModuleSyntax: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, verbatimModuleSyntax: true, types: [] };
 
 // A type a `#[rust_js::name]` names is declared by it, its export and
 // every reference, of its module and another's (#1829), as the vercel UI
@@ -65,7 +58,7 @@ import { start } from "./week.js";
 const typed: ISODate = "2024-02-29";
 export const later: string = start(addDays(typed, 1), { year: 2024 });
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
 });
 
 // Re-exported from the crate's root by that name too, `export type {
@@ -99,5 +92,5 @@ const formatted: ISODate | null | undefined = isoDate(2024, 2, 29);
 const invalid: ISODate = 20240229;
 void [value, formatted, invalid];
 `);
-  expect(typeChecked(dir, "root-calendar.ts")).toEqual([]);
+  expect(typeChecked(dir, "root-calendar.ts", checking)).toEqual([]);
 });

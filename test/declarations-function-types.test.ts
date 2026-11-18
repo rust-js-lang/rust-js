@@ -8,6 +8,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { repoTypes, typeChecked } from "./type-checked";
 
 const program = `use std::rc::Rc;
 
@@ -120,15 +121,7 @@ export const both: number = calls((a) => a, (b, c) => (b ?? 0) + c);
 export const wrong: number = other().unlink();
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, exactOptionalPropertyTypes: true, typeRoots: [join(root, "node_modules/@types")] },
-      files: ["use.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  const errors = typeChecked(dir, "use.ts", { ...repoTypes, allowJs: true, exactOptionalPropertyTypes: true });
   expect(errors.length).toBe(1);
   expect(errors[0]).toContain("use.ts(6,");
 });
@@ -231,15 +224,8 @@ const task = SCHEDULE_CALLBACK(level, "work");
 console.log(JSON.stringify([task.id, task.priorityLevel, SCHEDULE_CALLBACK(1, "a", 2).id, SCALE(2, 3)]));
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
-      files: ["use.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+  const checked = typeChecked(dir, "use.ts", { ...repoTypes, allowJs: true });
+  expect(checked).toEqual([]);
   // No host installs one here: this crate's, as Rust's.
   expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([4, 3, 3, 6]);
 });

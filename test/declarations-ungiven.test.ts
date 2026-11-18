@@ -9,6 +9,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { repoTypes, typeChecked } from "./type-checked";
 
 const program = `use std::any::{Any, TypeId};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -140,15 +141,7 @@ export const ok: number = total() + (first([1]) ?? 0);
 export const wrong = size();
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
-      files: ["use.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  const errors = typeChecked(dir, "use.ts", { ...repoTypes, allowJs: true });
   expect(errors.length).toBe(1);
   expect(errors[0]).toContain("use.ts(2,");
   expect(errors[0]).toContain("has no exported member 'size'");
@@ -276,15 +269,7 @@ export const ok = totalArea([{ radius: 1 }], circleShape);
 export const unboxed = bumped(1, { bump: () => 1 });
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
-      files: ["use.ts", "wrong.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  const errors = typeChecked(dir, ["use.ts", "wrong.ts"], { ...repoTypes, allowJs: true });
   expect(errors.filter((line) => line.startsWith("use.ts"))).toEqual([]);
   expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(4,10)", "wrong.ts(5,35)", "wrong.ts(6,24)", "wrong.ts(8,31)"]);
   // What it gives is what Rust's calls give.
@@ -347,15 +332,7 @@ export const unplaced = checked(1, null);
 export const unsized = zeros();
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
-      files: ["use.ts", "wrong.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  const errors = typeChecked(dir, ["use.ts", "wrong.ts"], { ...repoTypes, allowJs: true });
   expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(2,25)", "wrong.ts(3,24)"]);
   // What it gives is what Rust's calls give, a panic naming where it's told it's called from.
   expect(JSON.parse(run([process.execPath, join(dir, "use.ts")]))).toEqual([
@@ -492,15 +469,7 @@ tick({ value: { count: 0 } });
 grow({ value: [] });
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
-      files: ["use.ts", "wrong.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  const errors = typeChecked(dir, ["use.ts", "wrong.ts"], { ...repoTypes, allowJs: true });
   expect(errors.filter((line) => line.startsWith("use.ts"))).toEqual([]);
   expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual([
     "wrong.ts(2,6)",
@@ -619,15 +588,7 @@ u32Swap.swapWith({ value: 3 }, 4);
 const n: number = clicksSlot.slot({ value: clicks() });
 `,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, allowJs: true, typeRoots: [join(root, "node_modules/@types")] },
-      files: ["use.ts", "wrong.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  const errors = typeChecked(dir, ["use.ts", "wrong.ts"], { ...repoTypes, allowJs: true });
   expect(errors.filter((line) => line.startsWith("use.ts"))).toEqual([]);
   expect(errors.map((line) => line.replace(/: error.*/, ""))).toEqual(["wrong.ts(2,11)", "wrong.ts(3,20)", "wrong.ts(4,32)", "wrong.ts(5,7)"]);
   // What Rust's calls give: `bump_twice` of a `Clicks` 2, of a `5u32` 7, its

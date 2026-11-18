@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-19 (#2103): every test of what TypeScript makes of generated declarations checks it by test/type-checked.ts's `typeChecked`, its settings its parameters, where 33 test files ran `tsc` their own way; test/test-helpers.test.ts holds them to it.
+
 Changed on 2026-11-18 (#1971's cause): test/std-fresh.test.ts, one test, holds std/'s freshness check, which each push's lint job runs (`bun scripts/std-fresh.ts`), to naming what differs in std/ alone.
 
 Changed on 2026-11-18 (#2082, #2106, #2110, #2109): test/builtins-runs-nothing.test.ts, twenty-one tests, holds the js crate's builtins that run none of the program's code, and property reads that run nothing only of what a builtin made: a memo's borrow over a regex, a locale's own or an `exec` match reads plain; over a callback, a JS caller's locale or a map's kept value it's checked.

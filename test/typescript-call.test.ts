@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { checkedMembers, open } from "@rust-js/typescript";
 import { runSync } from "./child";
 import { fixture, root } from "./support";
+import { typeChecked } from "./type-checked";
 
 const declarations = [
   "export interface Callable {",
@@ -33,10 +34,8 @@ function check(dir: string, module: string) {
     'const text: string = nested("x");',
     "const number: number = nested(1, true);",
   ].join("\n") + "\n");
-  const config = join(dir, module + ".json");
-  writeFileSync(config, JSON.stringify({ compilerOptions: { strict: true, noEmit: true, types: [], lib: ["esnext"], module: "esnext", moduleResolution: "bundler" }, files: [module + "-consumer.ts"] }));
-  const result = runSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], dir, 10_000);
-  expect(result.code, result.stdout + result.stderr).toBe(0);
+  const result = typeChecked(dir, module + "-consumer.ts", { types: [], lib: ["esnext"] });
+  expect(result.code, result.out).toBe(0);
 }
 
 test("original callable interface and object signatures pass strict consumers", () => {

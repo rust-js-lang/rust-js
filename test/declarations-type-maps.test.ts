@@ -13,21 +13,14 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
 const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
-/** TypeScript's errors of `file` in `dir`, strict, the DOM's lib in. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, `tsconfig-${file}.json`);
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", lib: ["es2022", "dom"], strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, lib: ["es2022", "dom"], types: [] };
 
 const program = `use webapi::{Event, KeyboardEvent, MouseEvent};
 
@@ -148,7 +141,7 @@ export const unknown: ChangeReason = "hover";
 // @ts-expect-error An escape key's event is a key's.
 export const wrong: EventOf<"escape-key"> = new MouseEvent("click");
 `);
-  expect(typeChecked(dir, "consumer.ts")).toEqual([]);
+  expect(typeChecked(dir, "consumer.ts", checking)).toEqual([]);
 });
 
 test("a type map written otherwise, or of an impl that names no key, is refused", () => {
@@ -235,7 +228,7 @@ export const changes: "change" = null as unknown as ReturnType<typeof shape<true
 // @ts-expect-error A literal \`false\` isn't \`true\`.
 export const wrong: true = no();
 `);
-  expect(typeChecked(dir, "consumer.ts")).toEqual([]);
+  expect(typeChecked(dir, "consumer.ts", checking)).toEqual([]);
   writeFileSync(join(dir, "run.mjs"), `import { cancels, yes } from "./lib.js";\nconsole.log(cancels(yes()), cancels(false));\n`);
   expect(run(["node", join(dir, "run.mjs")])).toBe("change commit\n");
 });

@@ -8,17 +8,10 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, root, run } from "./support";
+import { es2022, repoTypes, type Setting, typeChecked } from "./type-checked";
 
-/** TypeScript's errors in `file` of `dir`, strict, its declarations checked too. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, "tsconfig.json");
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, typeRoots: [join(root, "node_modules/@types")] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, ...repoTypes };
 
 test("an async fn is declared the Promise of what it resolves to", async () => {
   const dir = fixture("declarations-async");
@@ -42,11 +35,11 @@ export const all: string[] = await names();
 export const one: number | null | undefined = await first([1, 2]);
 export const done: void = await nothing();
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
   writeFileSync(join(dir, "wrong.ts"), `import { names } from "./lib.js";
 export const wrong: number[] = await names();
 `);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2322")]);
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([expect.stringContaining("error TS2322")]);
   const lib = await import(join(dir, "lib.js"));
   expect([await lib.names(), await lib.first([3, 4]), await lib.nothing()]).toEqual([["a", "b"], 3, undefined]);
 });

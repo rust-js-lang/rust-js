@@ -7,6 +7,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
@@ -116,11 +117,8 @@ impl<T> Wrapped<T> {
     join(dir, "use.ts"),
     'import { Counter, Wrapped } from "./lib.js";\n\nconst counter: Counter = Counter.new();\nCounter.tick(counter);\nconst n: number = Counter.START + counter.count;\nexport const text: string = Wrapped.get(Wrapped.map(Wrapped.new(n), (v) => `${v}`));\n',
   );
-  const options = { module: "esnext", moduleResolution: "bundler", allowJs: true, strict: true, noEmit: true, skipLibCheck: false };
-  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({ compilerOptions: options, files: ["use.ts"] }));
-  const tsc = join(root, "node_modules/typescript/bin/tsc");
-  const checked = Bun.spawnSync([process.execPath, tsc, "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  expect(checked.stdout.toString()).toBe("");
+  const checked = typeChecked(dir, "use.ts", { allowJs: true });
+  expect(checked.out).toBe("");
 });
 
 // A generic impl's parameter TypeScript has a type for, `C: ReactNode`, is

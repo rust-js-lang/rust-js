@@ -8,19 +8,12 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
+import { es2022, type Setting, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 
-/** TypeScript's errors of `file` in `dir`, strict, its declarations checked too. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, `tsconfig-${file}.json`);
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, types: [] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, types: [] };
 
 test("an exported Result is declared its tagged union, of its type arguments", async () => {
   const dir = fixture("declarations-results");
@@ -56,12 +49,12 @@ if (kept.TAG === "Ok") {
   console.log(text);
 }
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
   // A `Result` isn't its `Ok` value.
   writeFileSync(join(dir, "wrong.ts"), `import { generic } from "./lib.js";
 export const text: string = generic("en", true);
 `);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2322")]);
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([expect.stringContaining("error TS2322")]);
 });
 
 // A field always `undefined`, a `()`'s, is optional, `_0?: undefined`: the
@@ -123,5 +116,5 @@ if (result.TAG === "Ok") {
   console.log(nothing);
 }
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
 });

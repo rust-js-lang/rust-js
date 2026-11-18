@@ -8,6 +8,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, root, run } from "./support";
+import { typeChecked } from "./type-checked";
 
 test("an Option of Infallible is declared as only null or undefined", () => {
   const dir = fixture("declarations-infallible");
@@ -39,10 +40,6 @@ pub fn absurd(v: Infallible) -> u32 {
     join(dir, "use.ts"),
     'import { set, type Halted } from "./lib.js";\nexport const a: number = set(1) + set(2, null) + set(3, undefined);\nexport const h: Halted = {};\n// @ts-expect-error: no value is an `Infallible`\nset(4, 0);\n',
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({ compilerOptions: { module: "esnext", moduleResolution: "bundler", allowJs: true, strict: true, noEmit: true, skipLibCheck: false }, files: ["use.ts"] }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  expect(checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"))).toEqual([]);
+  const checked = typeChecked(dir, "use.ts", { allowJs: true });
+  expect(checked).toEqual([]);
 });

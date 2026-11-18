@@ -8,17 +8,10 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, root, run } from "./support";
+import { es2022, repoTypes, type Setting, typeChecked } from "./type-checked";
 
-/** TypeScript's errors in `file` of `dir`, strict, its declarations checked too. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, "tsconfig.json");
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, typeRoots: [join(root, "node_modules/@types")] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...es2022, ...repoTypes };
 
 test("a LazyCell or a LazyLock is declared std's opaque type of what it holds", async () => {
   const dir = fixture("declarations-lazy");
@@ -61,13 +54,13 @@ export const kept: LazyLock<Point> = ORIGIN;
 export const x: number = xOf(kept);
 export const one: number = counted(made());
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
   writeFileSync(join(dir, "wrong.ts"), `import { counted, PRIMES, xOf } from "./lib.js";
 xOf(PRIMES);
 xOf({ init: () => ({ x: 0, y: 0 }) });
 counted({ value: 1 });
 `);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([
     expect.stringContaining("error TS2345: Argument of type 'LazyLock<number[]>' is not assignable to parameter of type 'LazyLock<Point>'"),
     expect.stringContaining("error TS2353: Object literal may only specify known properties, and 'init' does not exist in type 'LazyLock<Point>'"),
     expect.stringContaining("error TS2353: Object literal may only specify known properties, and 'value' does not exist in type 'LazyCell<number>'"),

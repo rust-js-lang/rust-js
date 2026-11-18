@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { memberKey, open } from "@rust-js/typescript";
 import { fixture, root } from "./support";
 import { runSync } from "./child";
+import { typeChecked } from "./type-checked";
 
 test("computed symbol members keep their declaration keys through the model", async () => {
   const file = join(fixture("typescript-symbol-keys"), "symbols.d.ts");
@@ -46,10 +47,8 @@ test("computed symbol declarations remain usable by strict TypeScript consumers"
     const consumer = (module: string) => 'import type { Symbols } from "./'+module+'";\ndeclare const value: Symbols;\nconst iterable: Iterable<string> = value;\nconst brand: string = value[Symbol.toStringTag];\nvalue[Symbol.dispose]?.();\nconst other: number = value["[Symbol.iterator]"]();\n';
     for (const module of ["input","output"]) {
       writeFileSync(join(dir,module+"-consumer.ts"),consumer(module+".d.ts"));
-      const config=join(dir,module+".json");
-      writeFileSync(config,JSON.stringify({compilerOptions:{strict:true,noEmit:true,types:[],lib:["esnext"],module:"esnext",moduleResolution:"bundler"},files:[module+"-consumer.ts"]}));
-      const checked=runSync([process.execPath,join(root,"node_modules/typescript/bin/tsc"),"-p",config],dir,10_000);
-      expect(checked.code,checked.stdout+checked.stderr).toBe(0);
+      const checked = typeChecked(dir, module+"-consumer.ts", { types: [], lib: ["esnext"] });
+      expect(checked.code,checked.out).toBe(0);
     }
   } finally { await ts.close(); }
 });

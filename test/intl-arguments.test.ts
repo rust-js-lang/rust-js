@@ -6,6 +6,7 @@ import {underLoad} from "../scripts/timing";
 import {intlArgumentCases} from "../builtins/coverage";
 import {runSync} from "./child";
 import {buildReact, compiler, fixture, root, run, target} from "./support";
+import { repoTypes, typeChecked } from "./type-checked";
 
 beforeAll(buildReact, 600_000);
 const source = `use js::intl::{self, DateTimeFormatOptions, IntoLocalesArgument, IntoStrOrStrList, IntoDateOrNumber, IntoBigIntOrDateOrNumber, LocaleElement};
@@ -78,10 +79,8 @@ locales(locale);
 // @ts-expect-error parts retain native field types
 parts('en-US', 0)[0].missing;
 `);
-  const config = join(dir, "tsconfig.json");
-  writeFileSync(config, JSON.stringify({compilerOptions: {strict: true, noEmit: true, skipLibCheck: false, target: "esnext", module: "esnext", moduleResolution: "bundler", typeRoots: [join(root, "node_modules/@types")]}, files: [consumer]}));
-  const checked = runSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], dir, 20000);
-  expect(checked.code, checked.stdout + checked.stderr).toBe(0);
+  const checked = typeChecked(dir, consumer, { ...repoTypes, target: "esnext" });
+  expect(checked.code, checked.out).toBe(0);
   const made = await import(output);
   function compare(made: any) {
     const results: unknown[] = [];

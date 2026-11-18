@@ -12,6 +12,7 @@ import { buildCompiler, compiler, fixture, root, run, stdDir } from "./support";
 import { underLoad } from "../scripts/timing";
 import { stdBuild } from "../scripts/std";
 import { runSync } from "./child";
+import { typeChecked } from "./type-checked";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -146,10 +147,7 @@ test("the committed @rust-js/std's types are the catalog's, and TypeScript check
   expect(readFileSync(join(stdDir, "index.d.ts"), "utf8")).toBe(written.stdout);
   const pkg = JSON.parse(readFileSync(join(stdDir, "package.json"), "utf8"));
   expect([pkg.exports["."].types, pkg.files.includes("index.d.ts")]).toEqual(["./index.d.ts", true]);
-  const checked = runSync(
-    [process.execPath, join(root, "node_modules/typescript/bin/tsc"), "--ignoreConfig", "--strict", "--noEmit", "--skipLibCheck", "false", "index.d.ts"],
-    stdDir,
-    60_000,
-  );
-  expect(checked.stdout).toBe("");
+  // From a directory of its own, so no config is written into std/.
+  const checked = typeChecked(fixture("std-types"), join(stdDir, "index.d.ts"), {});
+  expect(checked.out).toBe("");
 });

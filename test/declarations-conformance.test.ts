@@ -33,6 +33,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, nativeBinary, programFlags, root, run } from "./support";
 import { readdirSync } from "node:fs";
+import { repoTypes, typeChecked } from "./type-checked";
 
 const cases = [
   "declared_signatures",
@@ -668,15 +669,7 @@ function conformance(name: string): number {
     join(dir, "caller.ts"),
     `import { ${[...imported].join(", ")} } from "./lib.js";\nconst show = (v: unknown): string => JSON.stringify(v === undefined ? null : v);\n${tsLines.join("\n")}\n`,
   );
-  writeFileSync(
-    join(dir, "tsconfig.json"),
-    JSON.stringify({
-      compilerOptions: { module: "esnext", moduleResolution: "bundler", target: "es2022", strict: true, allowJs: false, skipLibCheck: true, typeRoots: [join(root, "node_modules/@types")] },
-      files: ["caller.ts"],
-    }),
-  );
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
-  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  const errors = typeChecked(dir, "caller.ts", { ...repoTypes, target: "es2022", allowJs: false, skipLibCheck: true, noEmit: false });
   expect([name, errors]).toEqual([name, []]);
   // The caller's JS beside the crate's, which `./lib.js` names.
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }');

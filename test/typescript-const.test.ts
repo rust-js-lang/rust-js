@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { open } from "@rust-js/typescript";
 import { runSync } from "./child";
 import { fixture, root } from "./support";
+import { typeChecked } from "./type-checked";
 
 const declarations = [
   "export declare function keep<const T>(value: T): T;",
@@ -42,10 +43,8 @@ const consumer = (module: string) => [
 
 function check(dir: string, module: string) {
   writeFileSync(join(dir, module + "-consumer.ts"), consumer(module));
-  const config = join(dir, module + ".json");
-  writeFileSync(config, JSON.stringify({ compilerOptions: { strict: true, noEmit: true, types: [], lib: ["es2022"], module: "esnext", moduleResolution: "bundler" }, files: [module + "-consumer.ts"] }));
-  const result = runSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], dir, 10_000);
-  expect(result.code, result.stdout + result.stderr).toBe(0);
+  const result = typeChecked(dir, module + "-consumer.ts", { types: [], lib: ["es2022"] });
+  expect(result.code, result.out).toBe(0);
 }
 
 test("const parameter inputs are valid for the original strict consumer", () => {

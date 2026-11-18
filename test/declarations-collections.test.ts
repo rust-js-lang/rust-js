@@ -8,17 +8,10 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compiler, fixture, root, run } from "./support";
+import { repoTypes, type Setting, typeChecked } from "./type-checked";
 
-/** TypeScript's errors in `file` of `dir`, strict, its declarations checked too. */
-function typeChecked(dir: string, file: string): string[] {
-  const config = join(dir, "tsconfig.json");
-  writeFileSync(config, JSON.stringify({
-    compilerOptions: { module: "esnext", moduleResolution: "bundler", strict: true, noEmit: true, skipLibCheck: false, exactOptionalPropertyTypes: true, typeRoots: [join(root, "node_modules/@types")] },
-    files: [file],
-  }));
-  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-  return checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
-}
+// What this file's checks of its declarations are made under (`typeChecked`).
+const checking: Setting = { ...repoTypes, exactOptionalPropertyTypes: true };
 
 // ADR 0876: React's ReactTaint keeps `TaintRegistryByteLengths`, a
 // `Set<number>`, as an `Rc<RefCell<HashSet<u32>>>` the JS is `new Set()`
@@ -94,7 +87,7 @@ export const total: number = sum(byteLengths) + count(new Set(["a"]));
 export const age: number | undefined = ages().get("Ada");
 export const first: string[] | undefined = ranks().get(1);
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
 });
 
 // #1748, found porting a WebGPU page: a function giving back a buffer as it
@@ -134,11 +127,11 @@ export const owned: boolean = said.TAG === "Owned";
 export const shown: string = said._0;
 export const first: number | undefined = numbers(new Array<number>(16).fill(1))._0[0];
 `);
-  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  expect(typeChecked(dir, "use.ts", checking)).toEqual([]);
   writeFileSync(join(dir, "wrong.ts"), `import { shouted } from "./lib.js";
 export const wrong: number = shouted("hi")._0;
 `);
-  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2322")]);
+  expect(typeChecked(dir, "wrong.ts", checking)).toEqual([expect.stringContaining("error TS2322")]);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shouted("hi"), lib.shouted("hi!")]).toEqual([{ TAG: "Owned", _0: "hi!" }, { TAG: "Borrowed", _0: "hi!" }]);
 });
