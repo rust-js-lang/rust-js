@@ -1189,3 +1189,19 @@ is refused, as any other), and `in-place-part-copied-held`
 `Copied<Map<..>>`", and a part cloned apart is std's compiled struct).
 `own-bindings-of-its-name-counted`, the fourth of the coverage run, was
 already retired. Mutation `unreached-trailer-refused` is caught.
+
+## Amendment: what caught a mutant is named (2026-11-18)
+
+Each caught mutant's result line names the first test that failed with
+it, by its file and its name as bun prints it, `mut-iterator-extension-unpeeled
+caught by test/corpus.test.ts > dyn_of_a_lent_iterator_steps_it.rs`; a
+unit test's by `cargo test` and its name, a snapshot's by the cases whose
+snapshots caught it. `target/mutants/results.json` keeps them as
+`caughtBy`, beside `results`, whose verdicts stay as they were for their
+readers (`ci.ts`, `attribute.ts`, `latent-survivors.ts`). Without it,
+finding which case of a whole corpus caught a mutant, to retarget one whose
+named tests stopped reaching it, took a second whole-corpus run by hand
+(12 minutes on the M1). `catchingTest` reads it off the run's output:
+not a test that ran out of time, and not a `(fail)` quoted in a failed
+test's diff. Mutations `catching-test-timed-out-counted` and
+`catching-test-without-its-file`.

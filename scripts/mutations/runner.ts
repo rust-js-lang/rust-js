@@ -218,4 +218,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mutations.test.ts", "-t", "the crate the mutations build has each file the compiler includes"],
   },
+  {
+    name: "catching-test-timed-out-counted",
+    breaks: "a test that ran out of time with a mutant is named what caught it, where it says only that the machine was slow, not what the mutant broke",
+    file: "scripts/mutations.ts",
+    find: "    if (failed && !/^ {2}\\^ .* timed out\\b/.test(next)) return file ? `${file} > ${failed[1]}` : failed[1];\n",
+    replace: "    if (failed) return file ? `${file} > ${failed[1]}` : failed[1];\n",
+    tests: ["test/mutations.test.ts", "-t", "a caught mutant names the first test that failed with it"],
+  },
+  {
+    name: "catching-test-without-its-file",
+    breaks: "what caught a mutant is named without its file, `alias_reads.rs` alone, which names no test a sweep can run",
+    file: "scripts/mutations.ts",
+    find: "    if (header) file = header[1];\n",
+    replace: "",
+    tests: ["test/mutations.test.ts", "-t", "a caught mutant names the first test that failed with it"],
+  },
 ];

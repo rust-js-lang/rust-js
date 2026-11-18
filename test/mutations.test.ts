@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { belowFloor, betweenTests, byControl, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -460,6 +460,31 @@ test("a mutant is caught, survives, or the run says nothing of it", () => {
   // A hook that ran out of time, as bun test prints it: the test never ran.
   const hookTimedOut = "(fail) never reaches assertion [101.76ms]\n  ^ a beforeEach/afterEach hook timed out for this test.\n";
   expect(judge(exit(1), `${hookTimedOut}\n 0 pass\n 1 fail\n`)).toBe("inconclusive");
+});
+
+// What caught a mutant is named, its first failing test by its file and
+// name, on its result line and in results.json's `caughtBy`, so a sweep of
+// survivors reads it rather than running a whole corpus again by hand to
+// find it (`mut-iterator-extension-unpeeled`'s twelve minutes): not one
+// that ran out of time, which says only that the machine was slow.
+test("a caught mutant names the first test that failed with it, by its file", () => {
+  const output = [
+    "test/class-constructors.test.ts:",
+    "(pass) a constructor [3.00ms]",
+    "",
+    "test/corpus.test.ts:",
+    "(pass) wrapping.rs [12.00ms]",
+    "(fail) slow.rs [300000.00ms]",
+    "  ^ this test timed out after 300000ms.",
+    "(fail) alias_reads.rs [640.00ms]",
+    "(fail) later.rs [10.00ms]",
+  ].join("\n");
+  expect(catchingTest(output)).toBe("test/corpus.test.ts > alias_reads.rs");
+  expect(catchingTest("test/a.test.ts:\n(fail) d > b [1.00ms]\n")).toBe("test/a.test.ts > d > b");
+  expect(catchingTest("test/a.test.ts:\n# Unhandled error between tests\n---\nboom\n---\n")).toBe(`test/a.test.ts > ${betweenTests}`);
+  expect(catchingTest("test/a.test.ts:\n(pass) b [1.00ms]\n 1 pass\n 0 fail\n")).toBeUndefined();
+  // Not a `(fail)` quoted in a failed test's diff, but the run's own after it.
+  expect(catchingTest('test/a.test.ts:\n+     "(fail) slow.rs [3.00ms]",\n(fail) quoting [1.00ms]\n')).toBe("test/a.test.ts > quoting");
 });
 
 // A test that fails once with a mutant and passes run again with it is a

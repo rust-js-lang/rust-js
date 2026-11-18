@@ -12,7 +12,9 @@ import { join } from "node:path";
 import { run } from "../test/child";
 
 /** What `results.json` holds of a run, of the commit it ran at. */
-export type Results = { commit: string; results: Record<string, string> };
+/** A run's verdicts, by mutation, and of each caught, the first test that
+ * failed with it, `test/corpus.test.ts > alias_reads.rs` (`catchingTest`). */
+export type Results = { commit: string; results: Record<string, string>; caughtBy?: Record<string, string> };
 
 /** The survivors of `here`, a run's results, that `atBase`, the same
  * mutations' at the base, says survive there too: latent. Each other one,

@@ -818,6 +818,26 @@ export function failures(output: string): string[] {
   return [...new Set([...failed.map((m) => m[1]!.replace(/ \[[\d.]+m?s\]$/, "")), ...between.map(() => betweenTests)])];
 }
 
+/** The first test that failed in a `bun test` run, by its file and its
+ * name as bun prints it, `test/corpus.test.ts > alias_reads.rs`: what
+ * caught a mutant, which a result line and `results.json`'s `caughtBy`
+ * name, so a sweep reads it rather than running the tests again. Of the
+ * failures `failures` counts, none that ran out of time; `undefined` where
+ * none failed. */
+export function catchingTest(output: string): string | undefined {
+  let file: string | undefined;
+  for (const [line, next = ""] of output.split("\n").map((line, at, lines) => [line, lines[at + 1]])) {
+    const header = line.match(/^(\S+\.test\.[jt]s):$/);
+    if (header) file = header[1];
+    // Not one quoted in a failed test's diff, `"(fail) b.rs",`, which no
+    // run printed of itself; one a long diff's cut-off line ends in is.
+    const failed = line.match(/(?:^|[^"'`])\(fail\) (.*?)(?: \[[\d.]+m?s\])?$/);
+    if (failed && !/^ {2}\^ .* timed out\b/.test(next)) return file ? `${file} > ${failed[1]}` : failed[1];
+    if (/^# Unhandled error between tests$/.test(line)) return file ? `${file} > ${betweenTests}` : betweenTests;
+  }
+  return undefined;
+}
+
 /** `tests`, a mutation's `bun test` arguments, narrowed to the tests named
  * `failed` by `-t`, each by its `describe`s and name as bun prints it; or
  * `tests` whole where one is a setup's or a `describe`'s, which no name
@@ -1029,11 +1049,12 @@ async function corpusMutantsRun(compiler: string, beside: <T>(work: () => Promis
 }
 
 /** What a run found of each mutation it ran, `target/mutants/results.json` (`Results`): CI keeps each
- * shard's, and the next check of `main` runs what changed since and what wasn't caught (`ci.ts`'s `resultsBase`). */
-function writeResults(results: Map<string, string>) {
+ * shard's, and the next check of `main` runs what changed since and what wasn't caught (`ci.ts`'s `resultsBase`).
+ * And, of each caught, the first test that failed with it (`caughtBy`, `catchingTest`), which a sweep reads. */
+function writeResults(results: Map<string, string>, caughtBy: Map<string, string>) {
   const commit = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root }).stdout.toString().trim();
   mkdirSync(work, { recursive: true });
-  const found: Results = { commit, results: Object.fromEntries(results) };
+  const found: Results = { commit, results: Object.fromEntries(results), caughtBy: Object.fromEntries(caughtBy) };
   writeFileSync(join(work, "results.json"), JSON.stringify(found, null, 2) + "\n");
 }
 
@@ -1658,7 +1679,7 @@ async function main() {
     return;
   }
   if (chosen.length === 0 && !harness) {
-    writeResults(new Map());
+    writeResults(new Map(), new Map());
     console.log("no mutations to run");
     return;
   }
@@ -1795,6 +1816,8 @@ async function main() {
   const size = Number(args.find((arg) => arg.startsWith("--batch="))?.slice("--batch=".length)) || 32;
   const read = crateText;
   const results = new Map<Mutation, string>();
+  // Of each caught, the first test that failed with it (`catchingTest`).
+  const caughtBy = new Map<Mutation, string | undefined>();
   // One whose build wouldn't lex is said so by name, not built: a build of
   // many with it in splits down to it, twenty minutes of a shard (#479).
   const sited: Sited[] = [];
@@ -1916,7 +1939,7 @@ async function main() {
   // `bin`, named as the mutation, which chooses it, beside the std sysroot
   // its builds share.
   const confirming = recorded(args);
-  const judgeMutant = async (mutation: Mutation, compiler: string, log: string, bin = join(work, "bin")): Promise<{ result: string; tests: number }> => {
+  const judgeMutant = async (mutation: Mutation, compiler: string, log: string, bin = join(work, "bin")): Promise<{ result: string; tests: number; by?: string }> => {
     const logged = join(work, "logs", `${log}.log`);
     mkdirSync(join(work, "logs"), { recursive: true });
     if (mutation.unitTests !== undefined) {
@@ -1926,7 +1949,8 @@ async function main() {
       const verdict = judgeUnit(p);
       if (verdict === "inconclusive") console.log(`--- ${log}, inconclusive: its log's end\n${(p.stdout + p.stderr).split("\n").slice(-60).join("\n")}\n---`);
       const result = verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: \`cargo test ${mutation.unitTests}\` passed with it` : `INCONCLUSIVE: see ${logged}`;
-      return { result, tests: (performance.now() - started) / 1000 };
+      const unit = (p.stdout + p.stderr).match(/^test (\S+) \.\.\. FAILED$/m)?.[1];
+      return { result, tests: (performance.now() - started) / 1000, by: verdict === "caught" ? `cargo test ${unit ?? mutation.unitTests}` : undefined };
     }
     const mutant = join(bin, mutation.name);
     mkdirSync(bin, { recursive: true });
@@ -1947,11 +1971,13 @@ async function main() {
       : { verdict: judge(exit, byTests.output), again: "", flake: undefined };
     let output = byTests.output + twice.again;
     let verdict = twice.verdict;
+    let by = exit.overgrown ? "its compiler growing past what a run of tests is given" : catchingTest(byTests.output);
     if (verdict === "survived" && ofReadabilityOwner(mutation.file)) {
       const bySnapshots = await snapshotsJudge(mutation, mutant);
       output += `\n--- the snapshots of the cases that reach it (#864): ${bySnapshots.said}\n${bySnapshots.output}`;
       if (bySnapshots.caught) {
         verdict = "caught";
+        by = bySnapshots.said;
         console.log(`${log}: its tests passed; ${bySnapshots.said}`);
       }
     }
@@ -1967,7 +1993,7 @@ async function main() {
     const result = verdict === "caught" ? "caught" : verdict === "survived"
       ? `SURVIVED: its ${ran} tests passed with it${mutation.snapshots ? "" : ", snapshots not compared"}`
       : twice.flake ? `INCONCLUSIVE: ${twice.flake}; see ${logged}` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${logged}`;
-    return { result, tests };
+    return { result, tests, by: verdict === "caught" ? by : undefined };
   };
   const one = async (batch: Sited[], slot: number) => {
     if (sources.has(batch[0].mutation)) {
@@ -1979,6 +2005,7 @@ async function main() {
             return ownsTestSlot ? run() : beside(run);
           }, async (exit, output, again) => (confirming ? judgeTwice(exit, output, mutation.tests!, again) : { verdict: judge(exit, output), again: "" }), mutate);
         results.set(mutation, answer.result);
+        if (answer.result === "caught") caughtBy.set(mutation, catchingTest(answer.output));
         took.set(mutation, {build: answer.build, tests: answer.tests});
         mkdirSync(join(work, "logs"), {recursive: true});
         writeFileSync(join(work, "logs", mutation.name + ".log"), answer.output);
@@ -2031,6 +2058,7 @@ async function main() {
       const judged = await judgeMutant(mutation, kept, mutation.name);
       took.set(mutation, { build: building / batch.length, tests: judged.tests });
       results.set(mutation, judged.result);
+      caughtBy.set(mutation, judged.by);
       if (freshKept === undefined) return;
       const fresh = await judgeMutant(mutation, freshKept, `${mutation.name}.fresh`, join(work, "bin", "fresh"));
       const said = `${mutation.name}: built incrementally, ${judged.result}; fresh, ${fresh.result}`;
@@ -2077,7 +2105,10 @@ async function main() {
   );
   await Promise.all(buildsTesting);
   const rows: [Mutation, string][] = chosen.map((mutation) => [mutation, results.get(mutation) ?? "not run"]);
-  for (const [mutation, result] of rows) console.log(`${mutation.name}\t${result}`);
+  for (const [mutation, result] of rows) {
+    const by = result === "caught" ? caughtBy.get(mutation) : undefined;
+    console.log(`${mutation.name}\t${result}${by ? `\tby ${by}` : ""}`);
+  }
   const summary = process.env.GITHUB_STEP_SUMMARY;
   if (summary) {
     const cell = (s: string) => s.replaceAll("|", "\\|");
@@ -2093,7 +2124,13 @@ async function main() {
   const slowest = [...took].sort(([, a], [, b]) => b.build + b.tests - (a.build + a.tests)).slice(0, 10);
   for (const [mutation, time] of slowest) console.log(`slow\t${mutation.name}\tbuild ${shown(time.build)}, tests ${shown(time.tests)}`);
   writeFileSync(join(work, "timings.json"), JSON.stringify(Object.fromEntries([...took].map(([mutation, time]) => [mutation.name, time])), null, 2) + "\n");
-  writeResults(new Map(rows.map(([mutation, result]) => [mutation.name, result])));
+  writeResults(
+    new Map(rows.map(([mutation, result]) => [mutation.name, result])),
+    new Map(rows.flatMap(([mutation, result]) => {
+      const by = result === "caught" ? caughtBy.get(mutation) : undefined;
+      return by ? [[mutation.name, by] as [string, string]] : [];
+    })),
+  );
   const harnessRows = await harnessResults;
   for (const [name, result] of harnessRows) console.log(`corpus-mutant ${name}\t${result}`);
   const harnessMissed = harnessRows.filter(([, result]) => !result.startsWith("caught") && !result.startsWith("passed, as it must"));
