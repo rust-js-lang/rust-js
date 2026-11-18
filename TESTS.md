@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-19 (#2114): test/at-hand-slots.test.ts, five tests, holds what a thread-local the crate alone reaches holds, at hand where every write of it is.
+
 Changed on 2026-11-19 (#2103): every test of what TypeScript makes of generated declarations checks it by test/type-checked.ts's `typeChecked`, its settings its parameters, where 33 test files ran `tsc` their own way; test/test-helpers.test.ts holds them to it.
 
 Changed on 2026-11-18 (#1971's cause): test/std-fresh.test.ts, one test, holds std/'s freshness check, which each push's lint job runs (`bun scripts/std-fresh.ts`), to naming what differs in std/ alone.

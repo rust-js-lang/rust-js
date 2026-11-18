@@ -385,7 +385,8 @@ pub fn listed(set: &Set<str>) -> Vec<String> {
 `);
   // A set read back out of the cell isn't at hand, so its `add` may be a
   // JS caller's override, and the cell's borrow is checked across it
-  // (#2111); #2114, a cell's contents a builtin made, makes it plain again.
+  // (#2111). A field's cell, `transitionLanes`, isn't one #2114's slots
+  // take, a thread-local's or a local's: a struct's own is to come.
   expect(js).toContain(
     "  const transitionLanesMap = $borrowMut(root.transitionLanes, true);\n  try {\n    const transitions = $index(transitionLanesMap, index) ?? new Set();\n    transitions.add(transition);\n",
   );

@@ -185,7 +185,8 @@ impl<'tcx> CellBorrows<'tcx> {
         // Which cells each borrow can be of, which each body's borrows are
         // classed by: of std's code, what `std_runs` says of its impls.
         found.flow = super::cell_flow::CellFlow::of_crate(recognition, &found, bodies);
-        found.at_hand = AtHand::of_crate(recognition, bodies, inits);
+        found.closed = closed_keys(tcx, bodies);
+        found.at_hand = AtHand::of_crate(recognition, bodies, (inits, &found.closed));
         let direct: IndexMap<DefId, Direct<'tcx>> = (bodies.iter())
             .filter(|body| body.root().is_some())
             .map(|body| {
@@ -244,7 +245,6 @@ impl<'tcx> CellBorrows<'tcx> {
             .filter(|&(&id, _)| !crate::lower::bindings::is_on_load(tcx, id))
             .flat_map(|(_, d)| d.own.cells.iter().copied())
             .collect();
-        found.closed = closed_keys(tcx, bodies);
         found.seen = seen_borrows(tcx, &direct);
         found.seen_anything = seen_anything(&direct);
         // What code rust-js can't see may run of the crate's: the bodies it

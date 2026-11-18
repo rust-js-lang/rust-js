@@ -4,12 +4,15 @@
 
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{JsForm, creates, is_binding, js_form};
-use crate::lower::recognition::{Recognition, StdItem};
+use crate::lower::recognition::{Recognition, Std, StdItem};
+use crate::lower::std_types::option::OptionPlaceOp;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtKind, Thir};
 use rustc_span::def_id::{DefId, LocalDefId};
+
+mod slots;
 
 /// The crate's variables whose value is one a builtin made, at hand (#2106):
 /// what a constructor makes, `new X`, or a binding that `creates` its
@@ -30,6 +33,15 @@ use rustc_span::def_id::{DefId, LocalDefId};
 #[derive(Default)]
 pub(in crate::lower) struct AtHand {
     vars: IndexSet<LocalVarId>,
+    /// The crate's thread-locals no code but its own reaches every write of
+    /// which is at hand, its slots (#2114): what they hold read back is.
+    slots: IndexSet<DefId>,
+    /// What a slot's `with_borrow` and `with_borrow_mut` closures are lent,
+    /// at hand as the slot is: what's written through it is of its writes.
+    slot_params: IndexSet<LocalVarId>,
+    /// The crate's closures whose value is at hand, `get_or_insert_with(||
+    /// js::map::new(None))`'s.
+    closures: IndexSet<DefId>,
     /// The crate's thread-locals whose value is at hand, which its
     /// contract says of them (`ItemFact::AtHand`).
     keys: IndexSet<DefId>,
@@ -54,23 +66,47 @@ impl AtHand {
     pub(in crate::lower) fn of_crate<'tcx>(
         recognition: &Recognition<'_, 'tcx>,
         whole: &[&crate::lower::Body<'tcx>],
-        inits: &IndexMap<LocalDefId, LocalDefId>,
+        (inits, closed): (&IndexMap<LocalDefId, LocalDefId>, &IndexSet<DefId>),
     ) -> Self {
         let tcx = recognition.tcx;
         let mut at_hand = AtHand::default();
         let bodies: Vec<(DefId, &Thir<'tcx>)> = whole.iter().map(|body| (body.def_id, &body.thir)).collect();
         let bodies = &bodies[..];
+        // A body's own recognition, of its typing env, which a call's generic
+        // arguments there, a const parameter's, are of.
+        let in_body = |thir: &Thir<'tcx>| {
+            let body = bodies
+                .iter()
+                .find(|(_, of)| std::ptr::eq(*of, thir))
+                .map(|&(body, _)| body);
+            Recognition {
+                typing_env: body.map_or(recognition.typing_env, |body| {
+                    rustc_middle::ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(body))
+                }),
+                ..*recognition
+            }
+        };
         let thir_of = |id: DefId| bodies.iter().find(|(body, _)| *body == id).map(|(_, thir)| *thir);
         let (assigned, lent) = writes(bodies);
         let calls = Calls::of(tcx, bodies);
         // Each of the crate's thread-locals, by its initializer's root: one
         // whose value is at hand is one no code replaces, as what's at hand
         // is never a `Cell`'s nor a `RefCell`'s.
-        let inits: Vec<(DefId, &Thir<'tcx>, ExprId)> = (inits.iter())
+        let initialized_by: &IndexMap<LocalDefId, LocalDefId> = inits;
+        let inits: Vec<(DefId, &Thir<'tcx>, ExprId)> = (initialized_by.iter())
             .filter_map(|(&init, &key)| {
                 let body = whole.iter().find(|body| body.def_id == init.to_def_id())?;
                 Some((key.to_def_id(), &body.thir, body.root()?))
             })
+            .collect();
+        // Every thread-local's key has an initializer; one whose body isn't
+        // among the bodies is a `const { .. }`'s, which makes no JS object, a
+        // binding being no `const fn`.
+        let initialized: IndexSet<DefId> = initialized_by.values().map(|key| key.to_def_id()).collect();
+        let slot_writes = slots::of(&in_body, bodies, (closed, &initialized), &inits);
+        let roots: Vec<(DefId, &Thir<'tcx>, ExprId)> = (whole.iter())
+            .filter(|body| tcx.is_closure_like(body.def_id))
+            .filter_map(|body| Some((body.def_id, &body.thir, body.root()?)))
             .collect();
         let bind = |pattern: &Pat<'tcx>, found: &mut Vec<LocalVarId>| {
             pattern.walk_always(|p| {
@@ -88,21 +124,24 @@ impl AtHand {
                         initializer: Some(value),
                         ..
                     } = &stmt.kind
-                        && at_hand.holds(recognition, thir, *value)
+                        && at_hand.holds(&in_body(thir), thir, *value)
                     {
                         bind(pattern, &mut found);
                     }
                 }
                 for e in thir.exprs.iter() {
                     match &e.kind {
-                        ExprKind::Let { expr, pat } if at_hand.holds(recognition, thir, *expr) => bind(pat, &mut found),
-                        ExprKind::Match { scrutinee, arms, .. } if at_hand.holds(recognition, thir, *scrutinee) => {
+                        ExprKind::Let { expr, pat } if at_hand.holds(&in_body(thir), thir, *expr) => {
+                            bind(pat, &mut found)
+                        }
+                        ExprKind::Match { scrutinee, arms, .. } if at_hand.holds(&in_body(thir), thir, *scrutinee) => {
                             for &arm in arms.iter() {
                                 bind(&thir[arm].pattern, &mut found);
                             }
                         }
                         ExprKind::Call { fun, args, .. } => {
-                            if let Some(pattern) = at_hand.payload_parameter(recognition, thir, (*fun, args), &thir_of)
+                            if let Some(pattern) =
+                                at_hand.payload_parameter(&in_body(thir), thir, (*fun, args), &thir_of)
                             {
                                 bind(pattern, &mut found);
                             }
@@ -111,9 +150,24 @@ impl AtHand {
                     }
                 }
             }
+            // A closure whose value is at hand; a slot every write of which is.
+            let grown = at_hand.closures.len() + at_hand.slots.len();
+            for &(closure, thir, root) in &roots {
+                if !at_hand.closures.contains(&closure) && at_hand.holds(&in_body(thir), thir, root) {
+                    at_hand.closures.insert(closure);
+                }
+            }
+            for (&key, written) in &slot_writes {
+                let Some((writes, params)) = written else { continue };
+                if !at_hand.slots.contains(&key) && writes.iter().all(|write| at_hand.written(&in_body, write)) {
+                    at_hand.slots.insert(key);
+                    at_hand.slot_params.extend(params.iter().copied());
+                }
+            }
+            let grown = at_hand.closures.len() + at_hand.slots.len() != grown;
             // A thread-local whose initializer makes what's at hand.
             for &(key, thir, root) in &inits {
-                if !at_hand.keys.contains(&key) && at_hand.holds(recognition, thir, root) {
+                if !at_hand.keys.contains(&key) && at_hand.holds(&in_body(thir), thir, root) {
                     at_hand.keys.insert(key);
                 }
             }
@@ -122,7 +176,7 @@ impl AtHand {
             for &(_, thir) in bodies {
                 for e in thir.exprs.iter() {
                     if let ExprKind::Call { fun, args, .. } = &e.kind
-                        && let Some(pattern) = at_hand.given_by_key(recognition, thir, (*fun, args), &thir_of)
+                        && let Some(pattern) = at_hand.given_by_key(&in_body(thir), thir, (*fun, args), &thir_of)
                     {
                         bind(pattern, &mut found);
                     }
@@ -132,9 +186,10 @@ impl AtHand {
                 let Some(callee_thir) = thir_of(callee) else { continue };
                 for (at, param) in callee_thir.params.iter().enumerate() {
                     let Some(pattern) = param.pat.as_deref() else { continue };
-                    if (sites.iter())
-                        .all(|&(thir, args)| args.get(at).is_some_and(|&arg| at_hand.holds(recognition, thir, arg)))
-                    {
+                    if (sites.iter()).all(|&(thir, args)| {
+                        args.get(at)
+                            .is_some_and(|&arg| at_hand.holds(&in_body(thir), thir, arg))
+                    }) {
                         bind(pattern, &mut found);
                     }
                 }
@@ -145,11 +200,11 @@ impl AtHand {
             found.retain(|var| {
                 !lent.contains(var)
                     && (assigned.get(var).into_iter().flatten())
-                        .all(|&(thir, value)| at_hand.holds(recognition, thir, value))
+                        .all(|&(thir, value)| at_hand.holds(&in_body(thir), thir, value))
             });
             let before = at_hand.vars.len();
             at_hand.vars.extend(found);
-            if at_hand.vars.len() == before {
+            if at_hand.vars.len() == before && !grown {
                 return at_hand;
             }
         }
@@ -193,12 +248,11 @@ impl AtHand {
         (fun, args): (ExprId, &[ExprId]),
         thir_of: &dyn Fn(DefId) -> Option<&'a Thir<'tcx>>,
     ) -> Option<&'a Pat<'tcx>> {
-        let tcx = recognition.tcx;
-        let (callee, _) = crate::lower::fn_def(thir[fun].ty)?;
+        let (callee, generic_args) = crate::lower::fn_def(thir[fun].ty)?;
         let [key, closure] = args else {
             return None;
         };
-        if tcx.item_name(callee).as_str() != "with"
+        if recognition.classify(callee, generic_args) != Some(Std::LocalWith { tried: false })
             || !recognition.is_std_type(thir[*key].ty.peel_refs(), StdItem::LocalKey)
         {
             return None;
@@ -231,6 +285,32 @@ impl AtHand {
         self.keys.iter().copied()
     }
 
+    /// Whether a slot's write is of what's at hand.
+    fn written<'r, 'tcx>(
+        &self,
+        in_body: &dyn Fn(&Thir<'tcx>) -> Recognition<'r, 'tcx>,
+        write: &slots::Write<'_, 'tcx>,
+    ) -> bool {
+        match *write {
+            slots::Write::Value(thir, value) => self.holds(&in_body(thir), thir, value),
+            slots::Write::Closure(closure) => self.closures.contains(&closure),
+            slots::Write::Made => true,
+        }
+    }
+
+    /// Whether `made`, in `thir`, the maker `get_or_insert_with` is given,
+    /// makes what's at hand: a closure whose value is, or a builtin's
+    /// constructor, or one that creates its result.
+    fn makes_at_hand<'tcx>(&self, recognition: &Recognition<'_, 'tcx>, thir: &Thir<'tcx>, made: ExprId) -> bool {
+        let tcx = recognition.tcx;
+        match &thir[crate::lower::body_queries::strip(thir, made)].kind {
+            ExprKind::Closure(c) => self.closures.contains(&c.closure_id.to_def_id()),
+            _ => crate::lower::fn_def(thir[made].ty).is_some_and(|(maker, _)| {
+                is_binding(tcx, maker) && (matches!(js_form(tcx, maker), JsForm::New(_)) || creates(tcx, maker))
+            }),
+        }
+    }
+
     /// Whether `e`, in `thir`, is a value at hand.
     pub(in crate::lower) fn holds<'tcx>(
         &self,
@@ -242,7 +322,20 @@ impl AtHand {
         let e = crate::lower::body_queries::strip(thir, e);
         match &thir[e].kind {
             ExprKind::Deref { arg } | ExprKind::Borrow { arg, .. } => self.holds(recognition, thir, *arg),
-            ExprKind::VarRef { id } => self.vars.contains(id),
+            ExprKind::VarRef { id } => self.vars.contains(id) || self.slot_params.contains(id),
+            // `None`, which holds no object.
+            ExprKind::Adt(adt) if recognition.is_lang_adt(thir[e].ty, LangItem::Option) && adt.fields.is_empty() => {
+                true
+            }
+            // A value of each way it may be made.
+            ExprKind::Match { arms, .. } => {
+                !arms.is_empty() && arms.iter().all(|&arm| self.holds(recognition, thir, thir[arm].body))
+            }
+            ExprKind::If {
+                then,
+                else_opt: Some(otherwise),
+                ..
+            } => self.holds(recognition, thir, *then) && self.holds(recognition, thir, *otherwise),
             // `Some(x)` of what's at hand, as a cast is given it.
             ExprKind::Adt(adt) if recognition.is_lang_adt(thir[e].ty, LangItem::Option) && adt.fields.len() == 1 => {
                 self.holds(recognition, thir, adt.fields[0].expr)
@@ -259,7 +352,33 @@ impl AtHand {
                     args.first().is_some_and(|&of| self.holds(recognition, thir, of))
                 }
                 Some((callee, _)) if is_binding(tcx, callee) => {
-                    matches!(js_form(tcx, callee), JsForm::New(_)) || creates(tcx, callee)
+                    matches!(js_form(tcx, callee), JsForm::New(_) | JsForm::Null) || creates(tcx, callee)
+                }
+                // What a slot holds, read back (#2114): its `get`, `take`'s
+                // or `replace`'s old value, and what a `with_borrow`'s or a
+                // `with_borrow_mut`'s closure gives of it.
+                Some((callee, generic_args)) if slots::closed_key(tcx, thir, (callee, args), &self.slots).is_some() => {
+                    match recognition.classify(callee, generic_args) {
+                        Some(Std::CellGet | Std::CellTake | Std::CellReplace) => true,
+                        Some(Std::LocalBorrow { .. }) => args.get(1).is_some_and(|&closure| {
+                            matches!(&thir[crate::lower::body_queries::strip(thir, closure)].kind,
+                                ExprKind::Closure(c) if self.closures.contains(&c.closure_id.to_def_id()))
+                        }),
+                        _ => false,
+                    }
+                }
+                // An `Option`'s value made where it's none, of what's at hand.
+                Some((callee, generic_args))
+                    if let Some(Std::OptionPlace(
+                        op @ (OptionPlaceOp::GetOrInsertWith | OptionPlaceOp::GetOrInsert | OptionPlaceOp::Insert),
+                    )) = recognition.classify(callee, generic_args) =>
+                {
+                    let [of, given] = &args[..] else { return false };
+                    self.holds(recognition, thir, *of)
+                        && match op {
+                            OptionPlaceOp::GetOrInsertWith => self.makes_at_hand(recognition, thir, *given),
+                            _ => self.holds(recognition, thir, *given),
+                        }
                 }
                 Some((callee, _)) => {
                     matches!(

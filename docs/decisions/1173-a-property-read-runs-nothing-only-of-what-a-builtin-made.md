@@ -8,6 +8,8 @@ value, as each caller's instantiation says.
 Amended 2026-11-18 (#2111, #2113): a binding's method is its own only
 of a receiver at hand, and a Rust field read is JS's property read.
 Amended 2026-11-19 (#2118): lowering's `Known::RunsNothing` asks it too.
+Amended 2026-11-19 (#2114, its first step): what a thread-local the crate
+alone reaches holds, every write of it at hand, is at hand read back.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 whose Consequence it narrows to ADR 0262's difference 60, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
@@ -136,6 +138,29 @@ eight Intl formatters' `resolvedOptions()` create their result (ECMA-402's
 `OrdinaryObjectCreate`), `CREATES` in `builtins/policy.ts`, which
 `builtins/intl.ts` now writes through `attributesOf`, as `library.ts` does.
 
+### What a thread-local holds (#2114)
+
+A thread-local the crate alone reaches, `closed_keys`' (a private key used
+only by `get`, `set`, `take`, `replace`, `with_borrow` and
+`with_borrow_mut`, never its cell lent nor the key handed on), is a slot
+(`at_hand/slots.rs`): what it holds is at hand where every write of it is.
+Its writes are a closed list: its initializer, its cell's `new`'s value
+(a `const { .. }` one's makes no JS object, a binding being no `const fn`);
+`set` and `replace`; and in a `with_borrow_mut`'s closure, `*p = v`, an
+`Option`'s `insert`, `get_or_insert`, `replace` and `get_or_insert_with` of
+a closure at hand or a builtin's constructor, `js::weak_set::new`. Every
+use of what the closure is lent must be one of those or a read, its `*p`,
+`take`, `is_none`, `is_some`, `as_ref`: any other, the reference handed to
+a function, captured by a closure, lent mutably, disqualifies the slot, as
+an initializer not recognized does, so the rule fails closed. Read back,
+`get`, `take`'s or `replace`'s old value, what a `with_borrow` or a
+`with_borrow_mut` closure gives, and what either is lent, is at hand;
+`None`, `js::null()`, and a `match` or an `if` whose every arm is, too.
+React's Fizz hooks' `renderPhaseUpdates` and hot reloading's
+`failedBoundaries` are back to their forms before #2111. A local `Rc` of a
+cell its closures share, the noop renderer's, is the second step; a
+struct's field, the lanes' `transitionLanes`, isn't a slot (#2108's).
+
 ## Why
 
 ADR 0262's third case: where a getter calls back, the results change. A
@@ -233,3 +258,11 @@ that row, caught. React's port: Fizz's `renderPhaseUpdates$1` copy returns,
 its `Map` read back out of a `Cell` (#2114's noise, as the set of
 lowering-shadows' `Cell` row is); the corpus, the snapshots and the
 vercel-ui SDK don't move.
+#2114's rows (test/at-hand-slots.test.ts): a private thread-local's set made
+by `get_or_insert_with`, and a `Cell`'s map set where it's none, read
+plainly under a memo's borrow; one whose cell is lent by `with`, one a JS
+caller's set is written to (its override's re-entry throwing), and one whose
+lent value is handed to a function keep the check. Mutations
+`slot-writes-unread`, `slot-reads-unknown`, `slot-lent-value-unbound`,
+`slot-unaccounted-use-admitted` and `slot-initializer-unread`, caught;
+lowering-shadows' rows back to their forms before #2111.
