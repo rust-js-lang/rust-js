@@ -250,3 +250,39 @@ parameter's key against native Rust, each panicking as Rust does, and a
 `String` key, the map's `get`. Mutations `map-key-changing-held`
 (`ranges/keys.ts`), `key-stays-of-hand-written-impls` and
 `key-stays-of-any-type` (`recognition/stable_keys.ts`) are each caught.
+
+## Amendment: a value put in where it's missing, then read whole (the vercel-ui SDK's port, G3, 2026-11-18)
+
+`*cache.entry(key).or_insert_with(|| resolve(key))`, a value the entry
+holds, put in where it's missing and then copied out, printed the
+helpers, `$orInsertWith(cache, key, () => resolve(key)); return
+$mutGet(cache, key).value;`: MIR puts it in as a statement of its own,
+which `inserted_entries` left, as it took only a put-in the statement then
+used. Now one whose next statement reads the value there whole first is
+the map's own steps too, as the 2026-10-27 amendment writes them:
+
+```js
+if (!cache.has(key)) {
+  cache.set(key, resolve(key));
+}
+return cache.get(key);
+```
+
+its maker run only where the key is missing, and set before the read, as
+std's `or_insert_with` runs it. One whose read comes after other
+statements stays the helpers. Two keys are one by `same_key`, the one
+rule `counted_entries` asks too. The SDK writes `let day = cache.get(key);
+if (day === undefined) { cache.set(key, (day = resolveFirstDay(locale)))
+}`: right only where the value's JS is never `undefined`, which an
+`Option`'s is, so this one form for every value stays, and the SDK's is a
+listed port difference (the lead). The SDK's `$withBorrowMut` around it
+stays: its maker calls a binding, which may call the crate's exported
+function again, where Rust's `borrow_mut` panics (#2082).
+
+Corpus case `entry_put_in_then_read`, against native: a thread-local's
+memo of a `RefCell`, `or_insert(0)`, a maker that reads the map's length,
+and one read after another statement, kept. No other snapshot moves.
+Mutations `entry-read-back-kept-helpers` and `entry-read-back-not-read-whole`,
+caught; `mir-map-count-literal-key` and `inserted-entries-helper`
+re-anchored, caught.
+
