@@ -99,3 +99,26 @@ pub fn rust(text: &str) -> (String, String) {
   // U+0277 raises to U+A7DD.
   expect([lib.rust("꟝")[0], lib.rust("ɷ")[1]]).toEqual(["ɷ", "꟝"]);
 });
+
+test("a string's replaceAll uses JavaScript replacement templates", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("string-replace-all");
+  writeFileSync(join(dir, "lib.rs"), `use js::string;
+
+pub fn replace(text: &str, pattern: &str, replacement: &str) -> String {
+    string::replace_all(text, pattern, replacement)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return text.replaceAll(pattern, replacement);");
+  const lib = await import(join(dir, "lib.js"));
+  const cases = [
+    ["de_DE_POSIX", "_", "-"],
+    ["a_a", "a", "$$-$&-$`-$'"],
+    ["😀", "", "."],
+    ["a.b.", ".", "-"],
+  ] as const;
+  for (const [text, pattern, replacement] of cases) {
+    expect(lib.replace(text, pattern, replacement)).toBe(text.replaceAll(pattern, replacement));
+  }
+});
