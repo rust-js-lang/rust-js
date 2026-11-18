@@ -173,9 +173,12 @@ impl<'tcx> Walk<'_, 'tcx> {
         assigned: Option<Local>,
     ) {
         let stale = effects.stale(location);
-        // What the query keeps: the transfer's forgetting of `before`.
+        // What the query keeps: the transfer's forgetting of `before`; and
+        // of no guard held, so a fact a guard alone keeps is said so.
         let mut by_query = before.clone();
         transfer::forget_stale(stale, assigned, &mut by_query);
+        let mut unguarded = before.clone();
+        transfer::forget_stale(effects.stale_unguarded(location), assigned, &mut unguarded);
         let what = self.what(location);
         let mut differ = Vec::new();
         for (l, known) in before.intervals.iter_enumerated() {
@@ -188,7 +191,8 @@ impl<'tcx> Walk<'_, 'tcx> {
             let kept =
                 (afters.iter()).all(|after| after.intervals[l].is_some_and(|i| known.lo <= i.lo && i.hi <= known.hi));
             let query = by_query.intervals[l] == Some(*known);
-            differ.push((kept, query, format!("interval {l:?} {known:?}"), vec![l]));
+            let guard = query && unguarded.intervals[l] != Some(*known);
+            differ.push((kept, query, guard, format!("interval {l:?} {known:?}"), vec![l]));
         }
         // A slice's least kept where it's as much or more after.
         for (&slice, &least) in &before.least {
@@ -196,14 +200,12 @@ impl<'tcx> Walk<'_, 'tcx> {
                 continue;
             }
             let kept = (afters.iter()).all(|after| after.least.get(&slice).is_some_and(|&l| l >= least));
-            differ.push((
-                kept,
-                by_query.least.get(&slice) == Some(&least),
-                format!("least {slice:?} {least}"),
-                vec![slice],
-            ));
+            let query = by_query.least.get(&slice) == Some(&least);
+            let guard = query && unguarded.least.get(&slice) != Some(&least);
+            differ.push((kept, query, guard, format!("least {slice:?} {least}"), vec![slice]));
         }
         let by_query_facts: IndexSet<String> = by_query.facts().into_iter().map(|f| f.name).collect();
+        let unguarded_facts: IndexSet<String> = unguarded.facts().into_iter().map(|f| f.name).collect();
         let after_facts: Vec<IndexSet<String>> = (afters.iter())
             .map(|after| after.facts().into_iter().map(|f| f.name).collect())
             .collect();
@@ -219,9 +221,10 @@ impl<'tcx> Walk<'_, 'tcx> {
             let kept = (after_facts.iter())
                 .all(|names| names.contains(&fact.name) || stronger.as_ref().is_some_and(|s| names.contains(s)));
             let query = by_query_facts.contains(&fact.name);
-            differ.push((kept, query, fact.name, fact.of));
+            let guard = query && !unguarded_facts.contains(&fact.name);
+            differ.push((kept, query, guard, fact.name, fact.of));
         }
-        for (kept, query, name, of) in differ {
+        for (kept, query, guard, name, of) in differ {
             let kind = match (kept, query) {
                 (true, false) => "effects-forgets",
                 (false, true) => "effects-keeps",
@@ -232,7 +235,11 @@ impl<'tcx> Walk<'_, 'tcx> {
             let owner = self.tcx.def_path_str(self.body.source.def_id());
             record_effects(
                 self.tcx,
-                format!("{kind}\t{owner}\t{at}\t{name} [{}]\t{what}\n", names.join(", ")),
+                format!(
+                    "{kind}\t{owner}\t{at}\t{name} [{}]\t{what}{}\n",
+                    names.join(", "),
+                    if guard { " under a guard" } else { "" }
+                ),
             );
         }
     }

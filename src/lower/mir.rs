@@ -905,7 +905,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own = mir.body.source.def_id().is_local();
         // What MIR proves of the body lowered (ADR 1137).
         let lowering = threaded.as_ref().unwrap_or(held);
-        let _proofs = crate::lower::analysis::body_proofs(self.tcx, self.typing_env, &lowering.body, self.libraries());
+        let _proofs = crate::lower::analysis::body_proofs(
+            self.tcx,
+            self.typing_env,
+            &lowering.body,
+            self.libraries(),
+            Some(self.krate.cell_borrows),
+        );
         let lowered = crate::decisions::in_body(own, || self.mir_function(lowering, captures, seed));
         self.locals.mir.dictionaries = dictionaries;
         self.locals.mir.declaring = declaring;

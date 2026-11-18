@@ -169,6 +169,7 @@ fn proofs<'a, 'tcx>(
     body: &'a Body<'tcx>,
     given: Given,
     libraries: Option<Libraries<'a, 'tcx>>,
+    cells: Option<&crate::lower::analysis::CellBorrows<'tcx>>,
 ) -> Proofs {
     let mut walk = walk(tcx, typing_env, body, given);
     walk.libraries = libraries;
@@ -176,7 +177,15 @@ fn proofs<'a, 'tcx>(
     if caches.intervals_shadow.is_some() || caches.intervals_by_effects {
         let made = body.local_decls.len();
         walk.effects = Some(crate::lower::analysis::Effects::of(
-            tcx, typing_env, &walk.body, libraries, made,
+            tcx,
+            typing_env,
+            &walk.body,
+            libraries,
+            made,
+            cells
+                .map(|cells| move |ty| cells.unnamed_may_borrow(tcx, ty))
+                .as_ref()
+                .map(|f| f as &dyn Fn(Ty<'tcx>) -> bool),
         ));
         walk.located = (walk.body.basic_blocks.iter_enumerated())
             .flat_map(|(block, data)| {

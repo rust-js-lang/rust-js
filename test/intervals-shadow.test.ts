@@ -6,6 +6,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
+import { agree, compileJs, runJs, runNative, runtimes } from "./programs";
 import { buildSerde } from "./serde-crate";
 import { buildCompiler, compiler, fixture, root } from "./support";
 import { underLoad } from "../scripts/timing";
@@ -28,18 +29,19 @@ function shadowOf(source: string): string[] {
 // would keep, its `effects-keeps` lines, a write the query can't see. Not
 // one the rules forget where a pointer is made, a borrow, `assign ref mut`,
 // or std's `iter_mut`, `index_mut` or `deref_mut`, which write nothing:
-// the query forgets it at the write the pointer makes.
-function keptByTheQuery(names: string[]): string[] {
+// the query forgets it at the write the pointer makes. Nor one a `RefCell`
+// guard held there covers, which no code run past it writes but through it.
+function keptByTheQuery(names: string[], underAGuard: string[] = []): string[] {
   const dir = fixture("effects-shadow");
   return names.flatMap((name) => {
     const log = join(dir, `${name}.txt`);
     writeFileSync(log, "");
     const out = runSync([compiler, "--intervals-shadow", log, join(root, "test/corpus", name), "-o", join(dir, `${name}.js`)], dir, 120_000);
     expect(out.code, out.stderr).toBe(0);
-    return readFileSync(log, "utf8")
-      .split("\n")
-      .filter((line) => line.startsWith("effects-keeps\t"))
-      .filter((line) => !/\tassign (ref|raw)|\tcall .*::(iter_mut|index_mut|deref_mut)$/.test(line))
+    const kept = readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("effects-keeps\t"));
+    underAGuard.push(...kept.filter((line) => line.endsWith(" under a guard")).map((line) => `${name}: ${line.split("\t")[1]}`));
+    return kept
+      .filter((line) => !/\tassign (ref|raw)|\tcall .*::(iter_mut|index_mut|deref_mut)$| under a guard$/.test(line))
       .map((line) => line.split("\t"))
       .map(([, owner, , , what]) => `${name}: ${owner} at ${what}`);
   });
@@ -995,6 +997,7 @@ test("the effects shadow says where the query keeps what the rules forget", () =
 });
 
 test("the effects query keeps nothing the forgetting rules forget at a write", () => {
+  const underAGuard: string[] = [];
   expect([
     ...new Set(keptByTheQuery([
       "raw_pointer_written_after_its_owner_reads.rs",
@@ -1006,8 +1009,11 @@ test("the effects query keeps nothing the forgetting rules forget at a write", (
       "refcell_guard_bounds.rs",
       "inner_while_exit_in_catch.rs",
       "rc_refcell_bounds.rs",
-    ])),
+    ], underAGuard)),
   ]).toEqual([]);
+  // What a held guard alone keeps, a `Ref` of a segment's chunks held across
+  // the crate's `write_chunk` and `flush_segment`: nowhere a guard's dropped.
+  expect([...new Set(underAGuard)]).toEqual(["inner_while_exit_in_catch.rs: flush_subtree", "inner_while_exit_in_catch.rs: flush_until"]);
 }, 600_000);
 
 // What the forgetting rules prove, the transfer that asks the effects query
@@ -1034,7 +1040,46 @@ test("the effects query keeps what the rules prove of what no write reaches", ()
     "length_shifted_past_a_push.rs",
     "bounds_by_a_value.rs",
     "loop_ending_branch_loop.rs",
+    "refcell_guard_bounds.rs",
   ]) {
     expect([name, proved(name, ["--intervals-by-effects"])]).toEqual([name, proved(name, [])]);
   }
 }, 600_000);
+
+// A `RefCell` guard held across code that writes its cell through another
+// `Rc` of it (#2112 B, the lead's condition on the guard rule): with the
+// transfer that asks the query, the JS runs as native Rust does, panicking
+// where Rust's second borrow does, or keeping the check where the code is
+// what `cell_borrows` can't name.
+test("a guard held across code that writes its cell through a clone runs as Rust does, asking the query", () => {
+  // And past a guard's drop, a call that clears the cell through another
+  // `Rc`, `after_its_guard`: the guard covers nothing once it's dropped.
+  for (const name of ["refcell_written_through_a_clone_under_its_guard.rs", "refcell_guard_bounds.rs"]) {
+    const dir = fixture(`effects-guard-${name}`);
+    const file = join(root, "test/corpus", name);
+    const native = runNative(file, dir);
+    if (typeof native === "string") throw new Error(native);
+    const compiled = compileJs(file, dir, "2024", false, {}, ["--intervals-by-effects"]);
+    if (!("js" in compiled)) throw new Error(compiled.error);
+    const ran = runJs(runtimes[0][1], compiled.js, dir, "by-effects");
+    expect([name, agree(ran, native)]).toEqual([name, true]);
+  }
+}, 300_000);
+
+// What a held `RefCell` guard alone keeps, of the case of a cell written
+// through a clone (#2112 B): where a guard is held across the code, a
+// `borrow()`'s, `impl Fn`'s or `&dyn Fn`'s; never past a guard's drop,
+// `after_a_dropped_guard`'s, where the code clears the cell.
+test("a guard keeps what it covers only while it's held", () => {
+  const dir = fixture("effects-guard-kept");
+  const log = join(dir, "shadow.txt");
+  writeFileSync(log, "");
+  const file = join(root, "test/corpus/refcell_written_through_a_clone_under_its_guard.rs");
+  const out = runSync([compiler, "--intervals-shadow", log, file, "-o", join(dir, "case.js")], dir, 120_000);
+  expect(out.code, out.stderr).toBe(0);
+  const guarded = readFileSync(log, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("effects-keeps\t") && line.endsWith(" under a guard"))
+    .map((line) => line.split("\t")[1]);
+  expect([...new Set(guarded)]).toEqual(["read_under", "read_under_dyn"]);
+});

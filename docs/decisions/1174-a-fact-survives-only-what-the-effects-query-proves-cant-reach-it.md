@@ -165,3 +165,35 @@ keeps row) and `effects-items-taken-for-replaced` (the lossy one, caught by
 the proofs row), `effects-references-untyped`,
 `effects-scalar-store-resizes-rows`, `effects-push-replaces`,
 `effects-shadow-keeps-unsaid`, each caught.
+
+## Amendment (2026-11-19, step 3a): a held guard, as `cell_borrows` counts it
+
+A `RefCell` guard held across code, from its `borrow()` or `borrow_mut()`
+till its drop, a move or its storage's end on every way there, covers
+what it points to: no code run meanwhile writes it but through the guard,
+as Rust's second borrow panics (`effects/guards.rs`). In JS that holds
+where `cell_borrows` counts the guard, where code run under it may borrow
+its cell, unnamed code too (`call_asks` of what can't be named,
+`anything_asks`), so a borrow it makes panics as Rust's does, or has proved
+none does. The lead's condition: it's asked of `cell_borrows`
+(`CellBorrows::unnamed_may_borrow`, in `cell_borrows/unnamed.rs`), not
+re-derived, and where neither holds, a guard made in a call's own
+arguments, which counts only what it sees (`call_asks_seen`), across code
+that may be unnamed and may borrow its cell, the query's answer stands.
+
+Measured: 31 of 2,252 lost (1.4%) in 23 cases, none gained (the two
+proofs more are of the new case). The guard covers what a guard reaches
+one pointer down; about 15 of the 31 are still a cell reached past it, or
+a temporary guard across a `dyn`'s code.
+
+Held by corpus case `refcell_written_through_a_clone_under_its_guard`,
+code that clears the cell through another `Rc` under a `borrow()`, a
+`borrow_mut()`, an `impl Fn`'s and a `&dyn Fn`'s, and past a dropped
+guard, run against native; "a guard held across code that writes its cell
+through a clone runs as Rust does, asking the query", its JS and
+`refcell_guard_bounds`' with `--intervals-by-effects` against native; "a
+guard keeps what it covers only while it's held"; the shadow saying a keep
+`under a guard` where the query without guards would forget it; mutation
+`effects-guards-cover-nothing`. A guard kept past its drop shows only once
+the rules are gone, where they forget first now: step 3b's native row
+holds it.

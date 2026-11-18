@@ -23,6 +23,7 @@ use rustc_span::def_id::DefId;
 mod at_hand;
 mod runs_nothing;
 mod std_given;
+mod unnamed;
 use at_hand::AtHand;
 use runs_nothing::{CallArgs, generic_read, read_may_run};
 pub(in crate::lower) use runs_nothing::{
