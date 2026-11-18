@@ -484,6 +484,12 @@ caller may still leave a trailing one out; its body reads `None` as any
 `Option`'s ([ADR 1161](../../decisions/1161-a-present-slot-and-a-results-undefined.md),
 amended).
 
+A leading `let limit = limit.unwrap_or(4.0);` for a parameter marked
+`none_undefined(limit)` becomes the JavaScript parameter `limit = 4`.
+The fallback must be a literal, so its evaluation as a parameter cannot
+read a later parameter or skip an effect the Rust would run. The formal
+default triggers for `undefined` and JavaScript’s `Function.length` counts parameters before the first default.
+
 ## Rest parameters
 
 A function's last parameter, a slice marked

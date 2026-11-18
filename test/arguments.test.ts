@@ -259,3 +259,50 @@ pub fn other(f: &dyn Fn(Option<&'static Unknown>) -> Option<&'static Unknown>) -
   const lib = await import(join(dir, "app", "lib.js"));
   expect([dep.inside(), lib.direct(), lib.held(), lib.field(), lib.generic()]).toEqual([2, 2, 2, 2, 2]);
 });
+
+test("an undefined-only parameter with an entry literal default is a JS default parameter", async () => {
+  const dir = fixture("undefined-parameter-default");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::none_undefined(width))]
+pub fn padded(count: f64, width: Option<f64>) -> f64 {
+    let width = width.unwrap_or(4.0);
+    width * count
+}
+
+pub fn nullish(count: f64, width: Option<f64>) -> f64 {
+    let width = width.unwrap_or(4.0);
+    width * count
+}
+
+#[cfg_attr(rust_js, rust_js::none_undefined(marked))]
+pub fn only_marked(width: Option<f64>, marked: Option<f64>) -> f64 {
+    let width = width.unwrap_or(4.0);
+    width + marked.unwrap_or(1.0)
+}
+
+#[cfg_attr(rust_js, rust_js::none_undefined(width))]
+pub fn later(width: Option<f64>, limit: f64) -> f64 {
+    let width = width.unwrap_or(limit);
+    width + 1.0
+}
+
+#[cfg_attr(rust_js, rust_js::none_undefined(width))]
+pub fn eager(width: Option<f64>, fallback: fn() -> f64) -> f64 {
+    let width = width.unwrap_or(fallback());
+    width + 1.0
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const emitted = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(emitted).toContain("export function padded(count, width = 4)");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("padded(count: number, width?: number | undefined)");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.padded.length).toBe(1);
+  expect([lib.padded(3), lib.padded(3, undefined), lib.padded(3, null), lib.padded(3, 2)]).toEqual([12, 12, 0, 6]);
+  expect(lib.nullish.length).toBe(2);
+  expect(lib.nullish(3, null)).toBe(12);
+  expect(lib.onlyMarked(null)).toBe(5);
+  expect(lib.later(undefined, 8)).toBe(9);
+  let calls = 0;
+  expect(lib.eager(5, () => { calls++; return 2; })).toBe(6);
+  expect(calls).toBe(1);
+});

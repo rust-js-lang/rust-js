@@ -3,6 +3,42 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "undefined-literal-default-unpromoted",
+    breaks: "an undefined-only parameter's leading literal fallback leaves the JS function's arity unchanged",
+    find: "        literal_defaults(self.tcx, def_id, &mut params, &mut out);\n",
+    replace: "",
+    file: "src/lower/mir.rs",
+    tests: [
+      "test/arguments.test.ts",
+      "-t",
+      "entry literal default"
+    ]
+  },
+  {
+    name: "undefined-literal-default-unmarked",
+    breaks: "a nullish parameter is given a formal default because a different parameter is marked undefined-only",
+    find: "&& matches!(input.pat.kind, rustc_hir::PatKind::Binding(_, _, ident, None) if marked.contains(&ident.name))",
+    replace: "&& matches!(input.pat.kind, rustc_hir::PatKind::Binding(_, _, _, None))",
+    file: "src/lower/mir.rs",
+    tests: [
+      "test/arguments.test.ts",
+      "-t",
+      "entry literal default"
+    ]
+  },
+  {
+    name: "undefined-literal-default-variable",
+    breaks: "moves a fallback's read of a later parameter into its earlier default's scope",
+    find: "if !matches!(&before.kind, ExprKind::Var(other) if other == name) || !literal {",
+    replace: "if !matches!(&before.kind, ExprKind::Var(other) if other == name) {",
+    file: "src/lower/mir.rs",
+    tests: [
+      "test/arguments.test.ts",
+      "-t",
+      "entry literal default"
+    ]
+  },
+  {
     name: "mir-drop-uses-unnoted",
     breaks:
       "a generic function from MIR isn't given the drop functions it uses, so what it drops isn't",

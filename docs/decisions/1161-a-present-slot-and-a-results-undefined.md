@@ -123,3 +123,17 @@ test/present-slots.test.ts (the two declarations, omitted, `undefined`,
 undefinable-param-plain (`signatures.rs`), undefinable-param-nullable
 (`declarations/functions.rs`), undefined-param-of-any-allowed
 (`bindings/validated.rs`).
+
+## Amendment: an entry literal fallback is a formal default
+
+Three.js declares `getVectorLength(count, vectorLength = 4)`. Its port
+uses `Option<f64>` and a leading `unwrap_or(4.0)`. A parameter explicitly
+marked `none_undefined` gets the literal as its default in the JavaScript parameter list. JavaScript applies that default for
+an omitted argument or `undefined` and exposes the corresponding
+`Function.length`.
+
+A plain Rust `Option` keeps its nullish behavior. A fallback with a
+read or an effect stays in the body, so all parameters are initialized
+before that read and eager Rust evaluation still happens. The test
+in `test/arguments.test.ts` covers arity, both kinds of absence, and
+nonliteral fallbacks. Case of ADR 0262: the Rust values behave as before.
