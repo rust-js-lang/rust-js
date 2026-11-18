@@ -721,3 +721,31 @@ test("a function value's trailing None is no argument, a bound one's too, in Bun
     await browser.close();
   }
 }, underLoad(300_000));
+
+test("a return preserves its locally written null and undefined", async () => {
+  const dir = fixture("locally-written-null");
+  writeFileSync(join(dir, "lib.rs"), `
+pub fn removed(has_entry: bool, remove: fn() -> f64) -> Option<f64> {
+    let mut value = js::null();
+    if has_entry {
+        let removed = remove();
+        value = if removed > 0.0 { Some(removed) } else { None };
+    }
+    value
+}
+
+pub fn passed(value: Option<f64>) -> Option<f64> {
+    value
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const output = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(output).toContain("  return value;\n}");
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toMatch(/removed\([^;]+\): number \| null \| undefined;/);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.removed(false, () => { throw new Error("must not run"); })).toBeNull();
+  expect(lib.removed(true, () => 0)).toBeUndefined();
+  expect(lib.removed(true, () => 12)).toBe(12);
+  expect(lib.passed(null)).toBeUndefined();
+});

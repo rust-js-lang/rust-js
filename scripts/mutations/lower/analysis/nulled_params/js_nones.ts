@@ -12,6 +12,14 @@ const sources = ["test/none-given.test.ts", "-t", "each source of JS's null"];
 
 export const mutations: Mutation[] = [
   {
+    name: "js-nones-explicit-null-normalized",
+    breaks: "a returned local loses its explicit js::null() value",
+    file,
+    find: "                    NoneForm::Null if bindings::is_js_null(tcx, callee) => Source::WrittenNull,\n",
+    replace: "",
+    tests: ["test/none-given.test.ts", "-t", "locally written null"],
+  },
+  {
     name: "js-nones-given-params-trusted",
     breaks: "a parameter of a function JS calls holds Rust's `None`, so `(1.25).toPrecision(null)` throws where Rust's `to_precision(1.25, None)` is \"1.25\" (#1840)",
     file,

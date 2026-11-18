@@ -289,3 +289,15 @@ declared as its Option, as written", and the mutations
 (`declarations.rs`), `cell-made-null-undeclared`,
 `cell-set-null-undeclared` and `cell-borrowed-null-undeclared`
 (`body_queries.rs`).
+
+## Amendment: a returned local can carry an explicit null
+
+Returning a local that only receives a JavaScript null from
+`js::null()` keeps the value as written. That local can also hold
+`None` as undefined or a present value. The normal Rust Option
+conversion remains in place when a null may have come from the caller.
+This preserves the distinction in JavaScript while both remain None
+to Rust, the results-change case of ADR 0262.
+
+`test/none-given.test.ts` checks all three outcomes and the existing
+normalization of a null received from the caller.

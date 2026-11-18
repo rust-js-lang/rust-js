@@ -70,6 +70,17 @@ impl JsNones {
         self.sources_of(tcx, body, place) != 0
     }
 
+    /// Every possible `null` was explicitly written as `js::null()`.
+    /// Other writes may contribute `undefined` or a value.
+    pub(in crate::lower) fn holds_written_null<'tcx>(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        body: &mir::Body<'tcx>,
+        place: Place<'tcx>,
+    ) -> bool {
+        self.sources_of(tcx, body, place) == Source::WrittenNull as u8
+    }
+
     /// Whether `place`, read in `body`, a `Some`'s payload, may itself be
     /// JS's `null`, a `None` JS gave: what JS threw, a `JsError`, of a
     /// caught `null` (ADR 0030, #1939). A payload of another type is no
@@ -124,6 +135,8 @@ pub(in crate::lower) enum Source {
     Unknown = 32,
     /// Another crate's: its result, a field of its struct, a static.
     Foreign = 64,
+    /// A program's explicit `js::null()` (ADR 0935).
+    WrittenNull = 128,
 }
 
 /// Whether an `Option` of `ty` has one `None` JS may give apart, `null`
@@ -861,6 +874,7 @@ impl<'tcx> Graph<'_, '_, 'tcx> {
                 && matches!(output.kind(), ty::Adt(_, args) if !self.holds(args.type_at(0)));
             if !trusted {
                 let source = match none_form(tcx, NonePlace::CallResult(callee)) {
+                    NoneForm::Null if bindings::is_js_null(tcx, callee) => Source::WrittenNull,
                     NoneForm::Null => Source::Nullable,
                     _ => Source::Binding,
                 };
