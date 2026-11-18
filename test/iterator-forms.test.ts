@@ -47,6 +47,9 @@ const few = [
   // `repeat(x)`, std's compiled `Repeat` in the std build, which drops the
   // `x` it holds by the drop its compiled maker is given (#1458).
   "repeat_n_drops_what_it_holds.rs",
+  // `repeat(x)`, std's compiled `Repeat` in the std build, whose `last` and
+  // `count` panic with a text alone (#1569).
+  "repeat_drops_what_it_holds.rs",
   "cycle_drops_what_it_replaces.rs",
   "cycle_clone_or_drop_panics_drops_what_it_holds.rs",
   "fallible_collect_into_own_from_iter.rs",

@@ -46,6 +46,7 @@ const why = {
  * only where both builds import it. */
 export const pitted: string[] = [
   "$repeatingN",
+  "$repeating",
   "$cycleOf",
   "$clone",
   "$collectDropping",
@@ -277,7 +278,6 @@ export const shared: Record<string, keyof typeof why> = {
   "$removeItem": "collections",
   "$removeOpt": "collections",
   "$repeat": "collections", // `vec![item; count]`, `Vec::from_elem`
-  "$repeating": "memory", // ADR 0932, #1569: `Repeat`'s `last` and `count`, which only panic, inline `fmt::Arguments::from_str`'s pointer transmute
   "$replaceRange": "collections",
   "$replaceWith": "collections",
   "$reserveHint": "collections",

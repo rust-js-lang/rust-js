@@ -320,4 +320,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "repeat-nth-uncompiled",
+    breaks:
+      "std's `Repeat::nth` isn't compiled, so std's compiled `Repeat` steps by the trait's default `nth`, cloning `x` at each step it passes, where std's clones it once (#1569)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: '    (StdPath::IterRepeat, Some("Iterator"), "nth"),\n',
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
+  },
 ];

@@ -129,3 +129,7 @@ table to reach past `std::iter`, a `char` module in `@rust-js/std`, that
 literal written as its one field, and `u16::is_utf16_surrogate` lowered,
 four mechanisms for one helper the corpus already holds against native
 Rust (the lead's decision for the user, (b)).
+
+**Amended (2026-11-19, #1569):** `$repeating` is pitted now, std's
+`Repeat` compiled in the build of std's bodies (ADR 0932, amended), its
+`last` and `count`'s literal panic lowered.

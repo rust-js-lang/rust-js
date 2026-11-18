@@ -270,6 +270,19 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterRepeatN, Some("DoubleEndedIterator"), "try_rfold"),
     (StdPath::IterRepeatN, Some("Clone"), "clone"),
     (StdPath::IterRepeatN, Some("Debug"), "fmt"),
+    // Its `last` and `count` panic with a text alone, the inlined
+    // `Arguments::from_str` `mir::prepared` calls again (#1569).
+    (StdPath::IterRepeat, Some("Iterator"), "next"),
+    (StdPath::IterRepeat, Some("Iterator"), "size_hint"),
+    (StdPath::IterRepeat, Some("Iterator"), "advance_by"),
+    (StdPath::IterRepeat, Some("Iterator"), "nth"),
+    (StdPath::IterRepeat, Some("Iterator"), "last"),
+    (StdPath::IterRepeat, Some("Iterator"), "count"),
+    (StdPath::IterRepeat, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterRepeat, Some("DoubleEndedIterator"), "advance_back_by"),
+    (StdPath::IterRepeat, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterRepeat, Some("Clone"), "clone"),
+    (StdPath::IterRepeat, Some("Debug"), "fmt"),
     (StdPath::IterCycle, Some("Iterator"), "next"),
     (StdPath::IterCycle, Some("Iterator"), "size_hint"),
     (StdPath::IterCycle, Some("Iterator"), "try_fold"),
@@ -434,12 +447,13 @@ const COMPILED_STD_IO_PROVIDED: &[(&str, &str)] = &[
 /// (`called_for_build`): `core::io`'s that make a reader of others, which
 /// `Read`'s `chain` and `take` call (#1156), public to std alone, unstable,
 /// so the walk of what a compiled body calls that std keeps private finds
-/// neither; and `iter`'s makers of a plain struct, `repeat_n` (#1458). The
-/// one table of them.
+/// neither; and `iter`'s makers of a plain struct, `repeat_n` (#1458) and
+/// `repeat` (#1569). The one table of them.
 const COMPILED_STD_FNS: &[(StdPath, Option<StdPath>)] = &[
     (StdPath::IoChainFn, None),
     (StdPath::IoTakeFn, None),
     (StdPath::IterRepeatNFn, Some(StdPath::IterRepeatN)),
+    (StdPath::IterRepeatFn, Some(StdPath::IterRepeat)),
 ];
 
 /// The `Iterator` methods a compiled std struct is made a JS iterator with
@@ -598,6 +612,11 @@ const MEANING_ONLY: &[StdPath] = &[
     // test/corpus/repeat_n_cloned.rs;
     // test/corpus/repeats_stepped_from_their_backs.rs.
     StdPath::IterRepeatN,
+    // Kept, proved equal: each item a clone of the one held, which it drops
+    // as it's dropped; its `last` and `count` panic, "iterator is infinite",
+    // stepping nothing (ADR 0932).
+    // Proof: test/corpus/repeat_drops_what_it_holds.rs.
+    StdPath::IterRepeat,
     // Kept, proved equal: a copy of a `Copy` item is the item (ADR 0480).
     // Proof: test/corpus/copied_kept_as_its_source.rs; the copy matrix's
     // rows ITERATOR_TABLE=copies ITERATOR_MATRIX=/[ .]copied[ .|]/.

@@ -6998,6 +6998,228 @@
         ]
       },
       {
+        "key": "core::iter::sources::repeat::{impl#4}",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::clone::Clone>",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatClone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#4}::clone",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::clone::Clone>::clone",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatClone_clone",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#5}",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatADebug",
+        "member": null
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#5}::fmt",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatADebug_fmt",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "written_into"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#1}::advance_back_by",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::DoubleEndedIterator>::advance_back_by",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatDoubleEndedIterator_advanceBackBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#1}::next_back",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::DoubleEndedIterator>::next_back",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatDoubleEndedIterator_nextBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#1}::nth_back",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::DoubleEndedIterator>::nth_back",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatDoubleEndedIterator_nthBack",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#0}::advance_by",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::Iterator>::advance_by",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatIterator_advanceBy",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#0}::count",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::Iterator>::count",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatIterator_count",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#0}::last",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::Iterator>::last",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatIterator_last",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#0}::next",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::Iterator>::next",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatIterator_next",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#0}::nth",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::Iterator>::nth",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatIterator_nth",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::sources::repeat::{impl#0}::size_hint",
+        "rust_path": "rust_js_std::<core::iter::Repeat<A> as core::iter::Iterator>::size_hint",
+        "module": [
+          "iter"
+        ],
+        "export": "repeatIterator_sizeHint",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::sources::repeat_n::{impl#11}",
         "rust_path": "rust_js_std::<core::iter::RepeatN<A> as core::clone::Clone>",
         "module": [
@@ -15461,6 +15683,24 @@
         ]
       },
       {
+        "key": "core::iter::sources::repeat::repeat",
+        "rust_path": "rust_js_std::core::iter::repeat",
+        "module": [
+          "iter"
+        ],
+        "export": "repeat",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "clone"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::sources::repeat_n::repeat_n",
         "rust_path": "rust_js_std::core::iter::repeat_n",
         "module": [
@@ -16045,6 +16285,10 @@
       "core::iter::adapters::zip::{impl#3}",
       "core::iter::adapters::zip::{impl#4}",
       "core::iter::adapters::zip::{impl#5}",
+      "core::iter::sources::repeat::{impl#0}",
+      "core::iter::sources::repeat::{impl#1}",
+      "core::iter::sources::repeat::{impl#4}",
+      "core::iter::sources::repeat::{impl#5}",
       "core::iter::sources::repeat_n::{impl#11}",
       "core::iter::sources::repeat_n::{impl#2}",
       "core::iter::sources::repeat_n::{impl#4}",
@@ -16123,6 +16367,7 @@
       "core::iter::adapters::skip_while::SkipWhile",
       "core::iter::adapters::take::Take",
       "core::iter::adapters::take_while::TakeWhile",
+      "core::iter::sources::repeat::Repeat",
       "core::iter::sources::repeat_n::RepeatN"
     ],
     "modules": [
@@ -16507,6 +16752,17 @@
         "repeatNDoubleEndedIterator_tryRfold",
         "repeatNClone_clone",
         "repeatNDebug_fmt",
+        "repeatIterator_next",
+        "repeatIterator_sizeHint",
+        "repeatIterator_advanceBy",
+        "repeatIterator_nth",
+        "repeatIterator_last",
+        "repeatIterator_count",
+        "repeatDoubleEndedIterator_nextBack",
+        "repeatDoubleEndedIterator_advanceBackBy",
+        "repeatDoubleEndedIterator_nthBack",
+        "repeatClone_clone",
+        "repeatADebug_fmt",
         "cycleIterator_next",
         "cycleIterator_sizeHint",
         "cycleIterator_tryFold",
@@ -16537,6 +16793,7 @@
         "iterator_cycle",
         "trustedRandomAccessNoCoerce_size",
         "repeatN",
+        "repeat",
         "iSpecTrustedRandomAccessTrustedRandomAccessNoCoerce_tryGetUnchecked",
         "fuseFuseImplI_tryRfold",
         "fuseFuseImplIFusedIterator_tryRfold",
@@ -16642,6 +16899,8 @@
         "zipClone",
         "repeatNClone",
         "repeatNDebug",
+        "repeatClone",
+        "repeatADebug",
         "cycleClone",
         "cycleDebug"
       ],
@@ -16817,7 +17076,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "cd9c9a596f77ffce"
+      "hash": "95ccb28460af9d40"
     },
     {
       "file": "iter.js.map",

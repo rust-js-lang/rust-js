@@ -913,6 +913,8 @@ const $chainABDebug = new WeakMap();
 const $zipClone = new WeakMap();
 const $repeatNClone = new WeakMap();
 const $repeatNDebug = new WeakMap();
+const $repeatClone = new WeakMap();
+const $repeatADebug = new WeakMap();
 const $cycleClone = new WeakMap();
 const $cycleDebug = new WeakMap();
 
@@ -9828,6 +9830,79 @@ export function repeatNDebug_fmt(repeatN, options, ADebug, dropA) {
   return f.done();
 }
 
+export function repeatIterator_next(repeat, AClone, dropA) {
+  return $some(AClone.clone(repeat.element));
+}
+
+export function repeatIterator_sizeHint(repeat, AClone, dropA) {
+  return [4294967295, undefined];
+}
+
+export function repeatIterator_advanceBy(repeat, n, AClone, dropA) {
+  return { TAG: "Ok" };
+}
+
+export function repeatIterator_nth(repeat, n, AClone, dropA) {
+  return $some(AClone.clone(repeat.element));
+}
+
+export function repeatIterator_last(repeat, AClone, dropA) {
+  try {
+    throw new Error("iterator is infinite");
+  } catch (error) {
+    $cleanup(() => {
+      repeat.return();
+    }, error);
+    throw error;
+  }
+}
+
+export function repeatIterator_count(repeat, AClone, dropA) {
+  try {
+    throw new Error("iterator is infinite");
+  } catch (error) {
+    $cleanup(() => {
+      repeat.return();
+    }, error);
+    throw error;
+  }
+}
+
+export function repeatDoubleEndedIterator_nextBack(repeat, AClone, dropA) {
+  return $some(AClone.clone(repeat.element));
+}
+
+export function repeatDoubleEndedIterator_advanceBackBy(repeat, n, AClone, dropA) {
+  return { TAG: "Ok" };
+}
+
+export function repeatDoubleEndedIterator_nthBack(repeat, n, AClone, dropA) {
+  return $some(AClone.clone(repeat.element));
+}
+
+export function repeatClone_clone(repeat, AClone) {
+  return $stdIterator({ element: AClone.clone(repeat.element) }, repeat.$steps, repeat.$knows);
+}
+
+export function repeatADebug_fmt(repeat, options, ADebug) {
+  const f = $sink();
+  $writeDebugStruct(
+    f,
+    "Repeat",
+    [
+      [
+        "element",
+        repeat.element,
+        (f, value) => {
+          $writeBy(f, ADebug, value, options);
+        },
+      ],
+    ],
+    options?.alternate,
+  );
+  return f.done();
+}
+
 export function cycleIterator_next(cycle, IClone, IIterator = { next: $next }, dropI, dropIItem) {
   const next = IIterator.next(cycle.iter);
   if (next == null) {
@@ -12052,6 +12127,36 @@ export function repeatN(element, count, TClone, dropT) {
         if (iterator.inner != null) {
           dropT?.(iterator.inner.element);
         }
+      },
+    },
+  );
+}
+
+export function repeat(elt, TClone, dropT) {
+  return $stdIterator(
+    { element: elt },
+    {
+      next(iterator) {
+        return repeatIterator_next(iterator, TClone, dropT);
+      },
+      hint(iterator) {
+        return repeatIterator_sizeHint(iterator, TClone, dropT);
+      },
+      nth(iterator, n) {
+        return repeatIterator_nth(iterator, n, TClone, dropT);
+      },
+      advance(iterator, n) {
+        return repeatIterator_advanceBy(iterator, n, TClone, dropT);
+      },
+      last(iterator) {
+        return repeatIterator_last(iterator, TClone, dropT);
+      },
+      count(iterator) {
+        return repeatIterator_count(iterator, TClone, dropT);
+      },
+      takes: ["last", "count"],
+      close(iterator) {
+        dropT?.(iterator.element);
       },
     },
   );
@@ -16233,6 +16338,19 @@ export function repeatNDebug(ADebug, dropA) {
     fmtInto(f, value, options) {
       return $writingInto(f, repeatNDebug_fmt, value, options, ADebug, dropA);
     },
+  }));
+}
+
+export function repeatClone(AClone) {
+  return $traitImpl($repeatClone, [AClone], () => ({
+    clone: (arg0) => repeatClone_clone(arg0, AClone),
+  }));
+}
+
+export function repeatADebug(ADebug) {
+  return $traitImpl($repeatADebug, [ADebug], () => ({
+    fmt: (arg0, arg1) => repeatADebug_fmt(arg0, arg1, ADebug),
+    fmtInto: (f, value, options) => $writingInto(f, repeatADebug_fmt, value, options, ADebug),
   }));
 }
 

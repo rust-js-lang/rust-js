@@ -231,3 +231,21 @@ prints its clones and drops, against native Rust in both builds.
 Mutations: `repeat-n-clone-refused` (`lower/std_impls/clones.ts`),
 replacing `repeat-n-clone-refusal-unnamed`; `repeat-n-clone-counts-from-the-start`
 and `repeat-n-clone-of-done-clones` (`runtime/repeating.ts`).
+
+**Amended (2026-11-19, #1569): `Repeat` is compiled as its meaning
+alone.** Its `last` and `count` compile now: `mir::prepared` calls the
+`fmt::Arguments::from_str` rustc's inliner put in std's optimized body
+again (`recognition::inlined_text`, ADR 1092 amended), so their panic,
+"iterator is infinite", is a text alone. Each method std writes for it is
+compiled, `next`, `size_hint`, `advance_by`, `nth`, `last`, `count`,
+`next_back`, `advance_back_by`, `nth_back`, `clone` and `Debug`'s `fmt`;
+`repeat` joins `COMPILED_STD_FNS` and `Repeat` `MEANING_ONLY`'s, kept,
+its hand form proved equal. Every build but std's bodies makes
+`$repeating(x)` as before, byte-identical: Campaign 2 flips no more of the
+default output onto std's structs (#2112). Case (ADR 0262): R, what's
+cloned and dropped, and the panic, are observable.
+`test/corpus/repeat_drops_what_it_holds.rs` holds an element with a
+destructor through `next`, `nth`, `take`, `skip` and a `zip`, `count`'s
+panic caught and `last`'s ending the run, against native Rust in both
+builds; the plain build's `$repeating` still refuses a `Repeat`'s back,
+which std's compiled one has. Mutation `repeat-nth-uncompiled`.
