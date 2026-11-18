@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2729
-lines	366803
+files	2734
+lines	366996
 temporaries	0	0
 labeled blocks	0	0
-while (true)	233	6.4
-$iter	3172	86.5
+while (true)	233	6.3
+$iter	3173	86.5
 Iterator.from	262	7.1
 return;	355	9.7
-renamed x$1	16685	454.9
-role fallbacks	9200	250.8
+renamed x$1	16683	454.6
+role fallbacks	9207	250.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	60
@@ -167,6 +167,7 @@ test/corpus/boxed_dyn_debug.js	37	0	0	0	0	0	0	0	1
 test/corpus/boxed_fn_given_to_a_once_callee_drops.js	120	0	0	0	0	0	0	10	1
 test/corpus/boxed_fn_given_to_consumers_drops.js	255	0	0	0	6	0	0	35	13
 test/corpus/boxed_fn_through_a_call_drops.js	367	0	0	0	1	0	0	57	23
+test/corpus/boxed_fns_in_a_vec_called_by_ref.js	46	0	0	0	0	0	0	0	0
 test/corpus/boxed_function_boxed_again.js	166	0	0	0	0	0	0	0	0
 test/corpus/boxed_function_panics_drop_the_consumed_iterator.js	56	0	0	0	0	0	0	0	0
 test/corpus/boxed_iterator_drop_panicking_as_it_unwinds_aborts.js	40	0	0	0	1	0	0	0	0
@@ -920,6 +921,9 @@ test/corpus/fmt_write_function.js	107	0	0	0	0	0	0	6	4
 test/corpus/fn_addr_eq_compares_functions.js	39	0	0	0	0	0	0	0	1
 test/corpus/fn_boxed_once_drops.js	123	0	0	0	0	0	0	12	1
 test/corpus/fn_closure_moved_into_a_once_callee.js	118	0	0	0	0	0	0	0	1
+test/corpus/fn_closure_moved_into_std_map_called_by_ref.js	43	0	0	0	1	0	0	0	3
+test/corpus/fn_closure_moved_on_to_a_std_once_drops.js	32	0	0	0	0	0	0	0	4
+test/corpus/fn_closure_moved_through_a_blanket_impl_drops.js	44	0	0	0	0	0	0	0	0
 test/corpus/fn_compared_by_its_pointer.js	46	0	0	0	0	0	0	0	1
 test/corpus/fn_dyn_holding_an_any_dyn_drops_it.js	156	0	0	1	1	0	0	0	1
 test/corpus/fn_dyn_holding_an_error_or_iterator_dyn_drops_it.js	91	0	0	0	1	0	0	0	1
@@ -1091,10 +1095,11 @@ test/corpus/guard_early_returns_drop_where_they_leave.js	99	0	0	0	0	0	0	0	2
 test/corpus/guard_ended_before_its_value_is_dropped_by_the_caller.js	365	0	0	0	0	0	0	3	0
 test/corpus/guard_field_written_by_a_swap_or_in_an_expression.js	64	0	0	0	0	0	0	0	1
 test/corpus/guard_held_in_an_aggregate_written_whole.js	56	0	0	0	0	0	0	0	0
-test/corpus/guard_held_in_an_undo_stack.js	387	0	0	0	0	0	2	36	1
+test/corpus/guard_held_in_an_undo_stack.js	383	0	0	0	0	0	2	36	1
 test/corpus/guard_held_while_a_type_parameters_value_drops.js	330	0	0	0	1	0	0	0	0
 test/corpus/guard_held_while_an_entry_whose_drop_borrows_is_written_over.js	400	0	0	0	0	0	0	10	0
 test/corpus/guard_held_while_its_rc_is_cloned_out.js	153	0	0	0	0	0	1	17	3
+test/corpus/guard_lent_to_a_closure_proves_remove.js	43	0	0	0	0	0	0	0	0
 test/corpus/guard_let_checked_beside_a_counted_one.js	53	0	0	0	0	0	0	0	0
 test/corpus/guard_restores_a_quiet_ref_cell.js	174	0	0	0	0	0	0	0	0
 test/corpus/guard_scope_loop_in_an_if.js	97	0	0	0	0	0	0	0	0
@@ -2482,7 +2487,7 @@ test/corpus/type_reexport_in_no_load_cycle.js	14	0	0	0	0	0	0	0	0
 test/corpus/u32_masks.js	39	0	0	0	0	0	0	0	0
 test/corpus/unboxed_type_params.js	94	0	0	0	0	0	0	6	0
 test/corpus/unchecked_and_saturating_neg.js	23	0	0	0	0	0	0	0	0
-test/corpus/undo_stack_map_reentered.js	177	0	0	0	0	0	3	28	2
+test/corpus/undo_stack_map_reentered.js	166	0	0	0	0	0	3	26	2
 test/corpus/unicode_answers_are_rusts.js	51	0	0	0	0	0	0	0	0
 test/corpus/uninit_array_param.js	65	0	0	0	0	0	0	4	3
 test/corpus/uninit_bytes_written_one_by_one.js	321	0	0	0	0	0	0	36	0

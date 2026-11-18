@@ -10,7 +10,6 @@ import {
   $live,
   $rcClone,
   $rcDrop,
-  $removeOutOfBounds,
   $truncate,
   $unwindsOn,
 } from "@rust-js/std";
@@ -100,10 +99,7 @@ export function createUndoStack(initial, options) {
       } else {
         history.entries.push(state);
         if (history.entries.length > limit + 1) {
-          if (0 >= history.entries.length) {
-            $removeOutOfBounds(history.entries, 0);
-          }
-          $rcDrop(history.entries.splice(0, 1)[0]);
+          $rcDrop(history.entries.shift());
         }
         history.index = (history.entries.length - 1) >>> 0;
       }

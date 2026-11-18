@@ -124,7 +124,10 @@ pub(super) fn fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Op
 /// known of nothing where the guard's made, as no path before it writes
 /// it: a guard made each turn of a loop knows nothing of the last turn's.
 /// Of a guard made at one place, by `borrow()` or `borrow_mut()`, of a
-/// struct; never one lent past its own `Deref`s, `step(&mut guard)`. A
+/// struct; never one lent past its own `Deref`s, `step(&mut guard)`, but
+/// where it's a shared `&guard`, which reaches nothing but the struct's
+/// `&`, a closure's capture of `history.open` read (#1944): through it no
+/// field's changed but a cell's, which a field that holds one keeps. A
 /// field that holds a cell, which another `Ref` may change, is a local
 /// that holds one: the walk knows nothing of what a cell holds but a
 /// length, which `cells` forgets at a call or a `borrow_mut()` as it does
@@ -155,18 +158,19 @@ pub(super) fn guard_fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>)
     }
     // Each reference to a guard, `&g` or `&mut g`, and each `Deref` of
     // one, its pointer to the struct, by the guard and where it's made.
-    let mut lent: IndexMap<Local, (Local, Location)> = IndexMap::default();
+    let mut lent: IndexMap<Local, (Local, Location, bool)> = IndexMap::default();
     let mut pointers: IndexMap<Local, (Local, Location)> = IndexMap::default();
     for (block, data) in body.basic_blocks.iter_enumerated() {
         for (statement_index, statement) in data.statements.iter().enumerate() {
             if let StatementKind::Assign(assign) = &statement.kind
-                && let Rvalue::Ref(_, _, of) = &assign.1
+                && let Rvalue::Ref(_, kind, of) = &assign.1
                 && of.projection.is_empty()
                 && guards.contains(&of.local)
                 && assign.0.projection.is_empty()
                 && once(&assign.0.local)
             {
-                lent.insert(assign.0.local, (of.local, Location { block, statement_index }));
+                let shared = matches!(kind, mir::BorrowKind::Shared);
+                lent.insert(assign.0.local, (of.local, Location { block, statement_index }, shared));
             }
         }
     }
@@ -182,7 +186,7 @@ pub(super) fn guard_fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>)
             && let [arg] = &args[..]
             && let Some(place) = arg.node.place()
             && place.projection.is_empty()
-            && let Some(&(guard, _)) = lent.get(&place.local)
+            && let Some(&(guard, _, _)) = lent.get(&place.local)
             && destination.projection.is_empty()
             && once(&destination.local)
         {
@@ -195,7 +199,7 @@ pub(super) fn guard_fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>)
     // a move or a drop, past which borrowck lets none of its pointers be
     // used.
     struct Uses<'a, 'tcx> {
-        lent: &'a IndexMap<Local, (Local, Location)>,
+        lent: &'a IndexMap<Local, (Local, Location, bool)>,
         pointers: &'a IndexMap<Local, (Local, Location)>,
         whole: IndexSet<Local>,
         fields: IndexMap<(Local, usize), Ty<'tcx>>,
@@ -205,9 +209,9 @@ pub(super) fn guard_fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>)
             if matches!(context, PlaceContext::NonUse(_)) {
                 return;
             }
-            if let Some(&(guard, at)) = self.lent.get(&place.local) {
+            if let Some(&(guard, at, shared)) = self.lent.get(&place.local) {
                 let derefs = (self.pointers.values()).any(|&(of, from)| of == guard && from == location);
-                if at != location && !derefs {
+                if at != location && !derefs && !shared {
                     self.whole.insert(guard);
                 }
             } else if let Some(&(guard, at)) = self.pointers.get(&place.local) {

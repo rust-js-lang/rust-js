@@ -1,5 +1,10 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#1944's regression): corpus case
+`guard_lent_to_a_closure_proves_remove.rs` holds a `RefCell` guard lent
+shared to a closure, its `remove(0)` past a push proved, and a `Cell` field
+the closure changes through it, its index checked.
+
 Changed on 2026-11-18 (#1908's scope): corpus case
 `option_subject_of_a_cells_field.rs` holds an `Option` combinator's subject
 read through a captured `Rc<RefCell<_>>`'s guard, read again where nothing

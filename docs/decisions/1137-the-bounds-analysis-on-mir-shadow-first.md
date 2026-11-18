@@ -1219,3 +1219,30 @@ test/lowering-collections.test.ts holds the JS: `return keys.at(-1);`,
 terminated. Mutations `split-collected-least-unknown`,
 `slice-end-present-of-any` and `ended-present-unmarked-in-place` are
 caught.
+
+## Amendment (2026-11-18): a guard lent shared keeps its fields locals (#1944's regression)
+
+`733270bab`, MIR's intervals deciding a call's indexes, lost the undo
+stack's `remove(0)` past a push: `history.entries.shift()`, as upstream
+writes it, became `if (0 >= history.entries.length) $removeOutOfBounds(..);
+history.entries.splice(0, 1)`. `record`'s closure, `group.is_some_and(|group|
+.. history.open ..)`, captures `&history`, a shared reference to the
+`RefMut` guard, and `guard_fields_as_locals` took any use of a reference to
+a guard but its own `Deref` for the guard lent whole, `step(&mut guard)`,
+so the guard's fields were no locals and the length the push grew was
+forgotten.
+
+A shared `&guard` reaches nothing but `&History`, by `Deref`: through it no
+field changes but a cell's, and the cell can't be borrowed mutably again
+while the guard lives. So a reference lent by a shared borrow, used past its
+own `Deref`, isn't a use of the guard whole; a `&mut guard` still is. A
+field that holds a cell is a local that holds the cell, as before: the walk
+knows nothing of a `Cell`'s value, and a call forgets a `RefCell`'s length.
+
+Corpus case `guard_lent_to_a_closure_proves_remove` holds both against
+native: `record`'s shape, whose `remove(0)` is `shift()`, and a closure
+given `&history` that changes a `Cell` field through it, `history.at`, whose
+index keeps its check and panics as Rust does. Mutations
+`guard-fields-of-a-guard-lent-shared-whole` (the proof lost) and
+`guard-fields-of-a-guard-lent-mut-as-shared` (the unsound direction, caught
+by `refcell_guard_fields`' `step(&mut history)`).
