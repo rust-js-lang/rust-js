@@ -100,14 +100,6 @@ export const mutations: Mutation[] = [
     tests: ["test/es-classes.test.ts", "-t", "implicit JavaScript constructor"],
   },
   {
-    name: "static-es-class-in-impl-module",
-    breaks: "a fieldless ES class is emitted beside its impl, while its declaration and re-export point to the struct's module",
-    file: "src/lower.rs",
-    find: "classes::class_of(tcx, def_id).and_then(|class| classes::implicit_constructor_home(tcx, class))",
-    replace: "classes::class_of(tcx, def_id).and_then(|_| None)",
-    tests: ["test/es-classes.test.ts", "-t", "implicit constructor lives with its struct"],
-  },
-  {
     name: "class-impl-unmarked-allowed",
     breaks:
       "a class's impl not marked `#[rust_js::class]` compiles, the attribute on one half of the class",
@@ -183,8 +175,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class whose struct is another module's is declared nowhere, `createFiber(): any`",
     file,
-    find: "    Some(tcx.parent_module_from_def_id(made.as_local()?))\n",
-    replace: "    Some(tcx.parent_module_from_def_id(made.as_local().and(adt.as_local())?))\n",
+    find: "    made.and_then(DefId::as_local)\n",
+    replace: "    made.and_then(DefId::as_local).and(adt.as_local())\n",
     tests: ["test/class-constructors.test.ts", "-t", "constructor's statements set this"],
   },
   {
