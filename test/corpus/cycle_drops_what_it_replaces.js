@@ -82,8 +82,8 @@ function main() {
     iterator_cycle(count(3, 0), { next: countIterator_next }, countClone, countDrop_drop),
   );
   try {
-    const value = $next(empty);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(empty);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

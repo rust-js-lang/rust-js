@@ -51,8 +51,8 @@ function main() {
     iterator_cycle([2, 0], { next: stepsIterator_next }, stepsClone, stepsDrop_drop),
   );
   try {
-    const value = $next(cycled);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(cycled);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     $cleanup(() => {
       cycled.return();

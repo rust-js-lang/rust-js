@@ -112,19 +112,19 @@ function nodeDebug_fmt(node) {
 
 function main() {
   const cell = [1, 2];
-  const value = $borrow(cell, true);
+  const borrow = $borrow(cell, true);
   try {
-    const value$1 = $tryBorrow(cell, true);
-    console.log(`${value.length} ${value$1.TAG === "Err"}`);
-    if (value$1.TAG === "Ok") {
-      $unborrow(value$1._0);
+    const tryBorrowMut = $tryBorrow(cell, true);
+    console.log(`${borrow.length} ${tryBorrowMut.TAG === "Err"}`);
+    if (tryBorrowMut.TAG === "Ok") {
+      $unborrow(tryBorrowMut._0);
     }
   } finally {
-    $unborrow(value);
+    $unborrow(borrow);
   }
-  const value$1 = $borrow(cell, true);
+  const value = $borrow(cell, true);
   const probe = [cell, 0];
-  const n = (value$1.length + probe[1]) >>> 0;
+  const n = (value.length + probe[1]) >>> 0;
   try {
     const tryBorrowMut = $tryBorrow(probe[0], true);
     console.log(`drop sees it borrowed: ${tryBorrowMut.TAG === "Err"}`);
@@ -132,32 +132,32 @@ function main() {
       $unborrow(tryBorrowMut._0);
     }
   } finally {
-    $unborrow(value$1);
+    $unborrow(value);
   }
   console.log(`${n}`);
   const peeks = [[cell]];
-  const value$2 = $borrow(cell, true);
+  const value$1 = $borrow(cell, true);
   let m;
   try {
-    m = value$2.length + peeks.map((item) => peekClone_clone(item)).length;
+    m = value$1.length + peeks.map((item) => peekClone_clone(item)).length;
   } finally {
-    $unborrow(value$2);
+    $unborrow(value$1);
   }
   console.log(`${m}`);
   const options = [[cell]];
-  const value$3 = $borrow(cell, true);
+  const value$2 = $borrow(cell, true);
   let k;
   try {
     k =
-      value$3.length + options.map((item) => (item == null ? item : peekClone_clone(item))).length;
+      value$2.length + options.map((item) => (item == null ? item : peekClone_clone(item))).length;
   } finally {
-    $unborrow(value$3);
+    $unborrow(value$2);
   }
   console.log(`${k}`);
-  const value$4 = $borrow(cell, true);
+  const value$3 = $borrow(cell, true);
   let asked;
   try {
-    asked = value$4.map(() => {
+    asked = value$3.map(() => {
       const tryBorrowMut = $tryBorrow(cell, true);
       const result = tryBorrowMut.TAG === "Err";
       if (tryBorrowMut.TAG === "Ok") {
@@ -166,15 +166,15 @@ function main() {
       return result;
     });
   } finally {
-    $unborrow(value$4);
+    $unborrow(value$3);
   }
   console.log(`[${asked.join(", ")}]`);
   const seen = ((s) => {
-    const borrow = $borrow(s, true);
+    const value = $borrow(s, true);
     try {
-      return borrow.map(asksShared);
+      return value.map(asksShared);
     } finally {
-      $unborrow(borrow);
+      $unborrow(value);
     }
   })(shared);
   console.log(`[${seen.join(", ")}]`);

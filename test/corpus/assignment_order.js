@@ -58,13 +58,13 @@ function set(r) {
 
 function main() {
   const v = [0, 0];
-  const value$2 = value("vec =", 1);
+  const value$1 = value("vec =", 1);
   const index$1 = index("vec =", 0);
-  v[$at(v, index$1)] = value$2;
-  const value$4 = value("vec +=", 2);
+  v[$at(v, index$1)] = value$1;
+  const value$3 = value("vec +=", 2);
   const index$2 = index("vec +=", 1);
   $index(v, index$2);
-  const value$3 = {
+  const value$2 = {
     get value() {
       return v[index$2];
     },
@@ -72,15 +72,15 @@ function main() {
       v[index$2] = value;
     },
   };
-  value$3.value = (value$3.value + value$4) | 0;
+  value$2.value = (value$2.value + value$3) | 0;
   let a = [0, 0];
-  const value$6 = value("array =", 3);
-  const value$5 = index("array =", 0);
-  a[$at(a, value$5)] = value$6;
-  const value$8 = value("array +=", 4);
-  const value$7 = index("array +=", 1);
-  const value$1 = (a[$at(a, value$7)] + value$8) | 0;
-  a[value$7] = value$1;
+  const value$5 = value("array =", 3);
+  const value$4 = index("array =", 0);
+  a[$at(a, value$4)] = value$5;
+  const value$7 = value("array +=", 4);
+  const value$6 = index("array +=", 1);
+  const value$8 = (a[$at(a, value$6)] + value$7) | 0;
+  a[value$6] = value$8;
   const ps = [{ x: 0 }];
   const value$9 = value("field =", 5);
   $index(ps, index("field =", 0)).x = value$9;

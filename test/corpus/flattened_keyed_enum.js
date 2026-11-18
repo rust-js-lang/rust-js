@@ -142,10 +142,10 @@ function main() {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const value = name(node);
-    const value$1 = node.flags;
-    const value$2 = read(node);
+    const flags = node.flags;
+    const value$1 = read(node);
     console.log(
-      `${value} ${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${isSource(node)} ${((value) => (value == null ? "None" : `Some(${value})`))(pending(node))}`,
+      `${value} ${flags} ${value$1 == null ? "None" : `Some(${value$1})`} ${isSource(node)} ${((value) => (value == null ? "None" : `Some(${value})`))(pending(node))}`,
     );
   }
 }

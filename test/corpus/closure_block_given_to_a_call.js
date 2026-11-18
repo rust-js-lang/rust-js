@@ -99,7 +99,7 @@ function main() {
       console.log(`item ${x}`);
     }
     try {
-      const value$3 = value.forEach(f$3);
+      const value$1 = value.forEach(f$3);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {

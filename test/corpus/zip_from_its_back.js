@@ -148,9 +148,9 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$2;
+  let zip;
   try {
-    tmp$2 = $trustedZipEnds(tmp$1, $iter(b), dDrop_drop, dDrop_drop);
+    zip = $trustedZipEnds(tmp$1, $iter(b), dDrop_drop, dDrop_drop);
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -171,7 +171,7 @@ function main() {
   }
   let last;
   try {
-    nextBack = $nextBack(tmp$2);
+    nextBack = $nextBack(zip);
     last = nextBack != null ? map(nextBack) : undefined;
   } catch (error) {
     $cleanup(() => {
@@ -185,9 +185,9 @@ function main() {
     throw error;
   }
   $print(`| next_back ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}\n`);
-  let tmp$3;
+  let tmp$2;
   try {
-    tmp$3 = $iter(b);
+    tmp$2 = $iter(b);
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -199,9 +199,9 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$4;
+  let tmp$3;
   try {
-    tmp$4 = $trustedZipEnds(tmp$3, $iter(a), dDrop_drop, dDrop_drop);
+    tmp$3 = $trustedZipEnds(tmp$2, $iter(a), dDrop_drop, dDrop_drop);
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -221,7 +221,7 @@ function main() {
     return result;
   }
   try {
-    nextBack$1 = $nextBack(tmp$4);
+    nextBack$1 = $nextBack(tmp$3);
     last = nextBack$1 != null ? map$1(nextBack$1) : undefined;
   } catch (error) {
     $cleanup(() => {
@@ -237,9 +237,9 @@ function main() {
   $print(
     `| next_back of the shorter first ${last == null ? "None" : `Some((${last[0]}, ${last[1]}))`}\n`,
   );
-  let tmp$5;
+  let tmp$4;
   try {
-    tmp$5 = $iter(v);
+    tmp$4 = $iter(v);
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -251,13 +251,30 @@ function main() {
     }, error);
     throw error;
   }
-  const shorter = Math.min(tmp$5.end - tmp$5.at, Math.max(w.length - 1, 0));
+  const shorter = Math.min(tmp$4.end - tmp$4.at, Math.max(w.length - 1, 0));
   $print(`| len of a skip ${shorter}\n`);
-  let tmp$6;
+  let tmp$5;
   try {
-    tmp$6 = $iter(ds(1, 4));
+    tmp$5 = $iter(ds(1, 4));
   } catch (error) {
     $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
+    throw error;
+  }
+  let tmp$6;
+  try {
+    tmp$6 = ds(4, 5);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of tmp$5) {
+        dDrop_drop(item);
+      }
       for (const item of b) {
         dDrop_drop(item);
       }
@@ -269,26 +286,9 @@ function main() {
   }
   let tmp$7;
   try {
-    tmp$7 = ds(4, 5);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of tmp$6) {
-        dDrop_drop(item);
-      }
-      for (const item of b) {
-        dDrop_drop(item);
-      }
-      for (const item of a) {
-        dDrop_drop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let tmp$8;
-  try {
-    tmp$8 = $zipEnds(
-      $closing(tmp$6, $dropEach(dDrop_drop)),
-      $closing($iter(tmp$7), $dropEach(dDrop_drop)),
+    tmp$7 = $zipEnds(
+      $closing(tmp$5, $dropEach(dDrop_drop)),
+      $closing($iter(tmp$6), $dropEach(dDrop_drop)),
       dDrop_drop,
       dDrop_drop,
       true,
@@ -307,7 +307,7 @@ function main() {
   let pairs;
   try {
     pairs = $collectDropping(
-      $rev(tmp$8).map(([x, y]) => {
+      $rev(tmp$7).map(([x, y]) => {
         const result = [x[0], y[0]];
         dDrop_drop(y);
         dDrop_drop(x);
@@ -338,11 +338,28 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$9;
+  let tmp$8;
   try {
-    tmp$9 = $iter(ds(1, 2));
+    tmp$8 = $iter(ds(1, 2));
   } catch (error) {
     $cleanup(() => {
+      for (const item of b) {
+        dDrop_drop(item);
+      }
+      for (const item of a) {
+        dDrop_drop(item);
+      }
+    }, error);
+    throw error;
+  }
+  let tmp$9;
+  try {
+    tmp$9 = ds(4, 7);
+  } catch (error) {
+    $cleanup(() => {
+      for (const item of tmp$8) {
+        dDrop_drop(item);
+      }
       for (const item of b) {
         dDrop_drop(item);
       }
@@ -354,26 +371,9 @@ function main() {
   }
   let tmp$10;
   try {
-    tmp$10 = ds(4, 7);
-  } catch (error) {
-    $cleanup(() => {
-      for (const item of tmp$9) {
-        dDrop_drop(item);
-      }
-      for (const item of b) {
-        dDrop_drop(item);
-      }
-      for (const item of a) {
-        dDrop_drop(item);
-      }
-    }, error);
-    throw error;
-  }
-  let tmp$11;
-  try {
-    tmp$11 = $zipEnds(
-      $closing(tmp$9, $dropEach(dDrop_drop)),
-      $closing($iter(tmp$10), $dropEach(dDrop_drop)),
+    tmp$10 = $zipEnds(
+      $closing(tmp$8, $dropEach(dDrop_drop)),
+      $closing($iter(tmp$9), $dropEach(dDrop_drop)),
       dDrop_drop,
       dDrop_drop,
       true,
@@ -391,7 +391,7 @@ function main() {
   }
   try {
     pairs = $collectDropping(
-      $rev(tmp$11).map(([x, y]) => {
+      $rev(tmp$10).map(([x, y]) => {
         const result = [x[0], y[0]];
         dDrop_drop(y);
         dDrop_drop(x);
@@ -422,9 +422,9 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$12;
+  let tmp$11;
   try {
-    tmp$12 = $iter(ds(1, 5));
+    tmp$11 = $iter(ds(1, 5));
   } catch (error) {
     $cleanup(() => {
       for (const item of b) {
@@ -436,12 +436,12 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$13;
+  let tmp$12;
   try {
-    tmp$13 = ds(5, 8);
+    tmp$12 = ds(5, 8);
   } catch (error) {
     $cleanup(() => {
-      for (const item of tmp$12) {
+      for (const item of tmp$11) {
         dDrop_drop(item);
       }
       for (const item of b) {
@@ -457,8 +457,8 @@ function main() {
   try {
     it = $held(
       iterator_zip(
+        tmp$11,
         tmp$12,
-        tmp$13,
         { next: $next, advanceBy: $advanceSlice },
         {
           intoIter: (items) => $iter(items),
@@ -573,7 +573,7 @@ function main() {
   it.return();
   $print("| dropped\n");
   r = $catchUnwind(() => {
-    const zip = $held(
+    const value = $held(
       $zipEnds(
         $closing($iter(ds(1, 3)), $dropEach(dDrop_drop)),
         $iterator(
@@ -588,7 +588,7 @@ function main() {
       ),
     );
     try {
-      const nextBack = $nextBack(zip);
+      const nextBack = $nextBack(value);
       function map([x, y]) {
         const result = [x[0], y];
         dDrop_drop(x);
@@ -599,7 +599,7 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        zip.return();
+        value.return();
       }
     }
   });

@@ -233,9 +233,9 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
       if (i == null) {
         break;
       }
-      let val;
+      let insert;
       try {
-        val = $insert(other, key(i, "b"), [(100 + i) >>> 0, false], dropK, valDrop_drop, true);
+        insert = $insert(other, key(i, "b"), [(100 + i) >>> 0, false], dropK, valDrop_drop, true);
       } catch (error) {
         $cleanup(() => {
           $dropItems($sortedEntries(other, KOrd.cmp), ([key, value]) => {
@@ -266,8 +266,8 @@ function appended(key, number, KOrd, KTreeMap, dropK) {
         throw error;
       }
       try {
-        if (val != null) {
-          valDrop_drop(val);
+        if (insert != null) {
+          valDrop_drop(insert);
         }
       } catch (error) {
         $cleanup(() => {

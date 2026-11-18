@@ -227,7 +227,7 @@ function edges() {
       }
       return $cmp((a[0] + zero(g$2)) >>> 0, b[0]);
     }
-    const value$2 = $maxBy(
+    const value$1 = $maxBy(
       $closing($iterator(items(4), itemsIterator_next), (it) => {
         dDrop_drop(it.of._held);
       }),
@@ -243,7 +243,7 @@ function edges() {
       iDrop_drop(i);
       return result;
     }
-    return value$2 != null ? map$2(value$2) : undefined;
+    return value$1 != null ? map$2(value$1) : undefined;
   });
   $print(`| panic ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
@@ -338,9 +338,9 @@ function edges() {
   r = $catchUnwind(() => {
     let g$0$live = true;
     const value = [[5], [7]];
-    let map;
+    let tmp;
     try {
-      map = $closing($iter(value), $dropEach(iDrop_drop)).map((i) => {
+      tmp = $closing($iter(value), $dropEach(iDrop_drop)).map((i) => {
         if (i[0] === 5) {
           try {
             throw new Error("first");
@@ -363,15 +363,15 @@ function edges() {
       throw error;
     }
     const f = (a) => (a[0] + zero(g$5)) >>> 0;
-    const value$1 = $maxByKey(map, f, $cmp, false, iDrop_drop, () => {
+    const value$1 = $maxByKey(tmp, f, $cmp, false, iDrop_drop, () => {
       dDrop_drop(g$5);
     });
-    function map$1(i) {
+    function map(i) {
       const result = i[0];
       iDrop_drop(i);
       return result;
     }
-    return value$1 != null ? map$1(value$1) : undefined;
+    return value$1 != null ? map(value$1) : undefined;
   });
   $print(`| vec first step panics ${r.TAG === "Err"}\n`);
 }

@@ -474,8 +474,8 @@ function main() {
     ),
   );
   try {
-    const value = $nth($lent(value$1), 2);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const nth = $nth($lent(value$1), 2);
+    console.log(`${nth == null ? "None" : `Some(${nth})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

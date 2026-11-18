@@ -66,9 +66,9 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp;
+  let loud;
   try {
-    tmp = $insert(shared, 1, { value: [2], strong: 1, weak: 0 });
+    loud = $insert(shared, 1, { value: [2], strong: 1, weak: 0 });
   } catch (error) {
     $cleanup(() => {
       for (const item of shared.values()) {
@@ -81,8 +81,8 @@ function main() {
     throw error;
   }
   try {
-    if (tmp != null) {
-      $rcDrop(tmp, loudDrop_drop);
+    if (loud != null) {
+      $rcDrop(loud, loudDrop_drop);
     }
   } catch (error) {
     $cleanup(() => {
@@ -131,9 +131,9 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$1;
+  let tmp;
   try {
-    tmp$1 = $insert(options, 1, [3]);
+    tmp = $insert(options, 1, [3]);
   } catch (error) {
     $cleanup(() => {
       for (const item of options.values()) {
@@ -151,9 +151,9 @@ function main() {
     throw error;
   }
   try {
-    if (tmp$1 != null) {
-      if ($someValue(tmp$1) != null) {
-        loudDrop_drop($someValue(tmp$1));
+    if (tmp != null) {
+      if ($someValue(tmp) != null) {
+        loudDrop_drop($someValue(tmp));
       }
     }
   } catch (error) {
@@ -221,9 +221,54 @@ function main() {
     }, error);
     throw error;
   }
+  let tmp$1;
+  try {
+    tmp$1 = $insert(sorted, 1, [4]);
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of options.values()) {
+        if (item != null) {
+          loudDrop_drop(item);
+        }
+      }
+      for (const item of shared.values()) {
+        $rcDrop(item, loudDrop_drop);
+      }
+      for (const item of boxes.values()) {
+        loudDrop_drop(item);
+      }
+    }, error);
+    throw error;
+  }
+  try {
+    if (tmp$1 != null) {
+      loudDrop_drop(tmp$1);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        loudDrop_drop(value);
+      }
+      for (const item of options.values()) {
+        if (item != null) {
+          loudDrop_drop(item);
+        }
+      }
+      for (const item of shared.values()) {
+        $rcDrop(item, loudDrop_drop);
+      }
+      for (const item of boxes.values()) {
+        loudDrop_drop(item);
+      }
+    }, error);
+    throw error;
+  }
   let tmp$2;
   try {
-    tmp$2 = $insert(sorted, 1, [4]);
+    tmp$2 = $insert(sorted, 2, [5]);
   } catch (error) {
     $cleanup(() => {
       for (const [, value] of $sortedEntries(sorted, $cmp)) {
@@ -266,58 +311,13 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$3;
-  try {
-    tmp$3 = $insert(sorted, 2, [5]);
-  } catch (error) {
-    $cleanup(() => {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        loudDrop_drop(value);
-      }
-      for (const item of options.values()) {
-        if (item != null) {
-          loudDrop_drop(item);
-        }
-      }
-      for (const item of shared.values()) {
-        $rcDrop(item, loudDrop_drop);
-      }
-      for (const item of boxes.values()) {
-        loudDrop_drop(item);
-      }
-    }, error);
-    throw error;
-  }
-  try {
-    if (tmp$3 != null) {
-      loudDrop_drop(tmp$3);
-    }
-  } catch (error) {
-    $cleanup(() => {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        loudDrop_drop(value);
-      }
-      for (const item of options.values()) {
-        if (item != null) {
-          loudDrop_drop(item);
-        }
-      }
-      for (const item of shared.values()) {
-        $rcDrop(item, loudDrop_drop);
-      }
-      for (const item of boxes.values()) {
-        loudDrop_drop(item);
-      }
-    }, error);
-    throw error;
-  }
   try {
     $retainMap(
       sorted,
       (k, x) => {
-        const loud = [(x.value[0] + 10) >>> 0];
+        const value = [(x.value[0] + 10) >>> 0];
         loudDrop_drop(x.value);
-        x.value = loud;
+        x.value = value;
         return k % 2 === 0;
       },
       $sortedEntries(sorted, $cmp),

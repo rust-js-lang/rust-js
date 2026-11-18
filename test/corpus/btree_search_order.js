@@ -183,8 +183,8 @@ function main() {
         throw error;
       }
       try {
-        const value = $insert(m, [12], 12, dDrop_drop);
-        console.log(`${value == null ? "None" : `Some(${value})`}`);
+        const insert = $insert(m, [12], 12, dDrop_drop);
+        console.log(`${insert == null ? "None" : `Some(${insert})`}`);
       } catch (error) {
         $cleanup(() => {
           for (const [key, ,] of $sortedEntries(m, dOrd_cmp)) {

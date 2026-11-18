@@ -304,26 +304,26 @@ function main() {
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const value$4 = secondBorrowed([[9, 8, 7]], listedContainer);
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = [[4, "kept"]];
+  const kept = [[4, "kept"]];
   try {
-    const value = second(value$5, KeptSource);
+    const value = second(kept, KeptSource);
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      countdownDrop_drop(kept[0]);
+    }
+  }
+  const value$5 = [[2, "kept"]];
+  try {
+    const value = last(value$5, KeptSource);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
       countdownDrop_drop(value$5[0]);
-    }
-  }
-  const value$6 = [[2, "kept"]];
-  try {
-    const value = last(value$6, KeptSource);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      countdownDrop_drop(value$6[0]);
     }
   }
 }

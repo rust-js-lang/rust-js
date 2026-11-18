@@ -180,9 +180,9 @@ function run() {
               const result$1 = $unwrap($next(entries), "an entry");
               if (result$1.TAG !== "Err") {
                 const first = result$1._0;
-                const value = $pathStripPrefix(first.path, root);
+                const stripPrefix = $pathStripPrefix(first.path, root);
                 console.log(
-                  `${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(StripPrefixError(()))"} ${entries.reduce((n) => n + 1, 0)}`,
+                  `${stripPrefix.TAG === "Ok" ? `Ok(${$debugStr(stripPrefix._0)})` : "Err(StripPrefixError(()))"} ${entries.reduce((n) => n + 1, 0)}`,
                 );
                 const result$2 = $fsReadDir(`${root}/missing`);
                 function map() {}

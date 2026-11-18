@@ -634,7 +634,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value `{:?}` reads twice, given as it's made, stays a function called in place, `((result) => ..)(f())`, not `const value = f();`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("applied values", |b, h| {\n                let set = js::Writes::of(b).by_closures();\n                let mut taken = IndexSet::default();\n                js::names_in(b, &mut taken);\n                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain, &mut taken))\n            }),\n',
+    find: '            pass("applied values", |b, h| {\n                let set = js::Writes::of(b).by_closures();\n                js::statement_lists(b, &mut |s| applied_values(s, &set, h.plain))\n            }),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_result_methods.rs$"],
     snapshots: true,
@@ -741,7 +741,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary MIR holds is named `_4`, not after the call that made it",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("temporaries named", |b, h| {\n                bindings::readable_temporaries(&h.params.borrow(), b, (h.suggested, &h.made.spilled, h.items_read))\n            }),\n',
+    find: '            pass("temporaries named", |b, h| {\n                bindings::readable_temporaries(b, h.suggested)\n            }),\n',
     replace: "",
     tests: ["test/lowering-mir-lets.test.ts", "-t", "held temporary is named"],
   },

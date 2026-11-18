@@ -63,12 +63,12 @@ function keptEarly(stop) {
 }
 
 function main() {
-  const value = make(1);
-  if (Noisy.big(value)) {
-    console.log(`drop ${value[0]}`);
+  const noisy = make(1);
+  if (Noisy.big(noisy)) {
+    console.log(`drop ${noisy[0]}`);
     console.log("then");
   } else {
-    console.log(`drop ${value[0]}`);
+    console.log(`drop ${noisy[0]}`);
     console.log("else");
   }
 
@@ -85,45 +85,45 @@ function main() {
   }
 
   const inner = 50;
-  const value$1 = make(5);
-  const found = Noisy.big(value$1);
-  console.log(`drop ${value$1[0]}`);
+  const value = make(5);
+  const found = Noisy.big(value);
+  console.log(`drop ${value[0]}`);
   console.log(`drop ${inner}`);
   console.log(`found ${found}`);
 
   console.log(`tail ${tail(6)}`);
 
-  const value$2 = make(7);
-  const value$3 = [7];
+  const value$1 = make(7);
+  const value$2 = [7];
   try {
     try {
-      if (!$eq(value$2, value$3)) {
-        $assertFailed("Eq", noisyDebug_fmt(value$2), noisyDebug_fmt(value$3));
+      if (!$eq(value$1, value$2)) {
+        $assertFailed("Eq", noisyDebug_fmt(value$1), noisyDebug_fmt(value$2));
       }
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        console.log(`drop ${value$3[0]}`);
+        console.log(`drop ${value$2[0]}`);
       }
     }
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${value$2[0]}`);
+      console.log(`drop ${value$1[0]}`);
     }
   }
-  const value$4 = make(8);
-  if (!Noisy.big(value$4)) {
-    console.log(`drop ${value$4[0]}`);
+  const value$3 = make(8);
+  if (!Noisy.big(value$3)) {
+    console.log(`drop ${value$3[0]}`);
     throw new Error("assertion failed: make(8).big()");
   }
-  console.log(`drop ${value$4[0]}`);
-  const value$5 = early(true);
-  console.log(`early ${value$5 == null}`);
-  if (value$5 != null) {
-    console.log(`drop ${value$5.a[0]}`);
+  console.log(`drop ${value$3[0]}`);
+  const value$4 = early(true);
+  console.log(`early ${value$4 == null}`);
+  if (value$4 != null) {
+    console.log(`drop ${value$4.a[0]}`);
   }
   let pair = early(false);
   let pair$0$live = true;
@@ -142,33 +142,33 @@ function main() {
 
   pair$0$live = false;
   function check(n) {
-    const noisy = make(n);
-    const result = Noisy.big(noisy);
-    console.log(`drop ${noisy[0]}`);
+    const value = make(n);
+    const result = Noisy.big(value);
+    console.log(`drop ${value[0]}`);
     return result;
   }
   console.log(`check ${check(10)}`);
   pair = (stop) => {
-    const noisy = make(11);
+    const value = make(11);
     if (stop) {
       const result = undefined;
-      console.log(`drop ${noisy[0]}`);
+      console.log(`drop ${value[0]}`);
       return result;
     }
     return {
-      a: noisy,
+      a: value,
       b: 2,
     };
   };
-  const value$6 = pair(true);
-  console.log(`pair ${value$6 == null}`);
+  const value$5 = pair(true);
+  console.log(`pair ${value$5 == null}`);
+  if (value$5 != null) {
+    console.log(`drop ${value$5.a[0]}`);
+  }
+  const value$6 = keptEarly(true);
+  console.log(`kept ${value$6 == null}`);
   if (value$6 != null) {
     console.log(`drop ${value$6.a[0]}`);
-  }
-  const value$7 = keptEarly(true);
-  console.log(`kept ${value$7 == null}`);
-  if (value$7 != null) {
-    console.log(`drop ${value$7.a[0]}`);
   }
   console.log("end");
 }

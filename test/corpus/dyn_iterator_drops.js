@@ -127,11 +127,11 @@ function main() {
   }
   const all = [tmp$1, tmp$2];
   let all$live = true;
-  let value;
+  let pop;
   try {
-    value = all.pop();
-    if (value != null) {
-      $disposeIterator(value);
+    pop = all.pop();
+    if (pop != null) {
+      $disposeIterator(pop);
     }
   } catch (error) {
     $cleanup(() => {

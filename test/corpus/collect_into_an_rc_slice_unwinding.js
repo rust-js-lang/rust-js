@@ -232,7 +232,7 @@ function main() {
           }
           case 3: {
             mapped$live = false;
-            const value = {
+            const collect = {
               value: $collectDropping(
                 $filterEnds(
                   $knowing(
@@ -295,8 +295,8 @@ function main() {
               strong: 1,
               weak: 0,
             };
-            result = value.value.length;
-            $rcDrop(value, (value) => {
+            result = collect.value.length;
+            $rcDrop(collect, (value) => {
               for (const item of value) {
                 loudDrop_drop(item);
               }
@@ -468,9 +468,9 @@ function main() {
             break;
           }
           default: {
-            let tmp;
+            let collect;
             try {
-              tmp = {
+              collect = {
                 value: $collectDropping(
                   $roomForCounted(
                     $lazyRange(0, 4).map((i) => {
@@ -492,8 +492,8 @@ function main() {
               }, error);
               throw error;
             }
-            result = tmp.value.length;
-            $rcDrop(tmp, (value) => {
+            result = collect.value.length;
+            $rcDrop(collect, (value) => {
               for (const item of value) {
                 loudDrop_drop(item);
               }

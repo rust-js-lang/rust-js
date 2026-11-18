@@ -126,10 +126,10 @@ function main() {
     }, error);
     throw error;
   }
-  let value;
+  let remove;
   try {
-    value = fs.splice(0, 1)[0];
-    $dispose(value);
+    remove = fs.splice(0, 1)[0];
+    $dispose(remove);
   } catch (error) {
     $cleanup(() => {
       $dropItems(fs, $dispose);

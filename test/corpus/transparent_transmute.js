@@ -49,8 +49,8 @@ function main() {
   const inner = Uuid.asHyphenated(id);
   console.log(`${inner[3]}`);
   const owned = [9, 8, 7, 6];
-  const value$1 = $eq(owned, [9, 8, 7, 6]);
-  console.log(`${uuidDebug_fmt(owned)} ${value$1}`);
+  const value = $eq(owned, [9, 8, 7, 6]);
+  console.log(`${uuidDebug_fmt(owned)} ${value}`);
   const named = "ada";
   let text = named;
   console.log(`${named} ${$byteLen(text)}`);
@@ -70,7 +70,7 @@ function main() {
   widened(items).push(2);
   console.log(`[${items.join(", ")}]`);
   text = "a";
-  const value = longer({
+  const value$1 = longer({
     get value() {
       return text;
     },
@@ -78,7 +78,7 @@ function main() {
       text = value;
     },
   });
-  value.value += "b";
+  value$1.value += "b";
   console.log(`${text}`);
 }
 //# sourceMappingURL=case.js.map

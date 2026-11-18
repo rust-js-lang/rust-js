@@ -79,26 +79,26 @@ function main() {
       stepBy.return();
     }
   }
-  const value = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3, lDrop_drop));
+  const value$1 = $held($stepByEnds($closing($iter(ls(8)), $dropEach(lDrop_drop)), 3, lDrop_drop));
   try {
-    const nextBack = $nextBack(value);
+    const nextBack = $nextBack(value$1);
     function map(l) {
       const result = l[0];
       lDrop_drop(l);
       return result;
     }
-    const value$1 = nextBack != null ? map(nextBack) : undefined;
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = nextBack != null ? map(nextBack) : undefined;
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value.return();
+      value$1.return();
     }
   }
-  const value$1 = $held($stepByEnds($closing($iter(ls(10)), $dropEach(lDrop_drop)), 4, lDrop_drop));
+  const value$2 = $held($stepByEnds($closing($iter(ls(10)), $dropEach(lDrop_drop)), 4, lDrop_drop));
   try {
-    const rfind = $findBack(value$1, (l) => l[0] < 5, undefined, lDrop_drop);
+    const rfind = $findBack(value$2, (l) => l[0] < 5, undefined, lDrop_drop);
     function map(l) {
       const result = l[0];
       lDrop_drop(l);
@@ -110,7 +110,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value$1.return();
+      value$2.return();
     }
   }
   const folded = $foldBack(

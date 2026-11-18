@@ -71,10 +71,10 @@ function main() {
   pending.items.push(6, 7);
   const queued = eachPending((item) => {
     const tryBorrowMut = $tryBorrow(pending.items, true);
-    let tryBorrowMut$0$live = true;
+    let value$0$live = true;
     let result;
     if (tryBorrowMut.TAG === "Ok") {
-      tryBorrowMut$0$live = false;
+      value$0$live = false;
       try {
         tryBorrowMut._0.push(item);
         result = true;
@@ -85,7 +85,7 @@ function main() {
       result = false;
     }
     if (tryBorrowMut.TAG === "Ok") {
-      if (tryBorrowMut$0$live) {
+      if (value$0$live) {
         $unborrow(tryBorrowMut._0);
       }
     }
@@ -96,10 +96,10 @@ function main() {
   const watched = { items: [4, 5] };
   const tried = each(watched, (item) => {
     const tryBorrowMut = $tryBorrow(watched.items, true);
-    let tryBorrowMut$0$live = true;
+    let value$0$live = true;
     let result;
     if (tryBorrowMut.TAG === "Ok") {
-      tryBorrowMut$0$live = false;
+      value$0$live = false;
       try {
         tryBorrowMut._0.push(item);
         result = true;
@@ -110,7 +110,7 @@ function main() {
       result = false;
     }
     if (tryBorrowMut.TAG === "Ok") {
-      if (tryBorrowMut$0$live) {
+      if (value$0$live) {
         $unborrow(tryBorrowMut._0);
       }
     }

@@ -14,11 +14,11 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 const sources = files("src").filter(path => path.endsWith(".rs"));
 
 // A temporary's name is one rule (ADR 0569, #890): what made it suggests
-// it, rust-analyzer's way, else its role's word, and one pick of the first
-// untaken. `temporary_names.rs` alone spells it; tidy's renaming, hints
-// and lowering ask it.
+// it, rust-analyzer's way, else its role's word, which preparation spells
+// (`prepare::temporaries`). `temporary_names.rs` alone suggests it; tidy's
+// renaming, hints and lowering ask it.
 test("a temporary's name is suggested and picked in temporary_names.rs alone", () => {
-  const rule = /const USELESS_(?:METHODS|NAMES)\b|\bfn (?:call_name|call_suggestion|held_type_name)\b|\bfn pick\(\s*suggestions\b|Role::Value => "value"/;
+  const rule = /const USELESS_(?:METHODS|NAMES)\b|\bfn (?:call_name|call_suggestion|held_type_name)\b|Role::Value => "value"/;
   expect(sources.filter(file => rule.test(read(file)))).toEqual(["src/lower/temporary_names.rs"]);
 });
 
@@ -111,7 +111,7 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
   expect(with_(/Name::made\(/)).toEqual(["src/lower.rs"]);
   expect(with_(/names::made_base\(/)).toEqual(["src/js/name.rs", "src/js/validate.rs"]);
   // Preparation's speller, a loop's counter's its `counters` (#2032).
-  expect(with_(/\.made_base\(\)/).sort()).toEqual(["src/prepare.rs", "src/prepare/counters.rs", "src/prepare/reclaim.rs"]);
+  expect(with_(/\.made_base\(\)/).sort()).toEqual(["src/prepare.rs", "src/prepare/counters.rs", "src/prepare/reclaim.rs", "src/prepare/temporaries.rs"]);
 });
 
 // A name given apart, `node$2` of `node`, is spelled by `names.rs` alone,

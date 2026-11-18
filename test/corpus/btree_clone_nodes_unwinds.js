@@ -98,11 +98,11 @@ function main() {
     const m = new ($ordTreeMap(keyOrd_cmp))();
     for (let i = 0; i < n; i++) {
       if (n) {
-        const value = [$rem((i * 7) >>> 0, n) >>> 0];
+        const key = [$rem((i * 7) >>> 0, n) >>> 0];
         const val = [i];
         let insert;
         try {
-          insert = $insert(m, value, val, keyDrop_drop, valDrop_drop, true);
+          insert = $insert(m, key, val, keyDrop_drop, valDrop_drop, true);
         } catch (error) {
           $cleanup(() => {
             $dropItems($sortedEntries(m, keyOrd_cmp), ([key, value]) => {
@@ -235,9 +235,9 @@ function main() {
         copy$0$live = false;
         const copy$1 = copy._0;
         calls = 0;
-        let tmp;
+        let insert;
         try {
-          tmp = $insert(copy$1, [(n / 2) >>> 0], [0], keyDrop_drop, valDrop_drop, true);
+          insert = $insert(copy$1, [(n / 2) >>> 0], [0], keyDrop_drop, valDrop_drop, true);
         } catch (error) {
           $cleanup(() => {
             $dropItems($sortedEntries(copy$1, keyOrd_cmp), ([key, value]) => {
@@ -266,8 +266,8 @@ function main() {
           throw error;
         }
         try {
-          if (tmp != null) {
-            valDrop_drop(tmp);
+          if (insert != null) {
+            valDrop_drop(insert);
           }
         } catch (error) {
           $cleanup(() => {
@@ -296,13 +296,13 @@ function main() {
           }, error);
           throw error;
         }
-        const value = [(n / 3) >>> 0];
+        const key = [(n / 3) >>> 0];
         let remove;
         try {
-          remove = $remove(copy$1, value, keyDrop_drop);
+          remove = $remove(copy$1, key, keyDrop_drop);
         } catch (error) {
           $cleanup(() => {
-            keyDrop_drop(value);
+            keyDrop_drop(key);
             $dropItems($sortedEntries(copy$1, keyOrd_cmp), ([key, value]) => {
               try {
                 keyDrop_drop(key);
@@ -334,7 +334,7 @@ function main() {
           }
         } catch (error) {
           $cleanup(() => {
-            keyDrop_drop(value);
+            keyDrop_drop(key);
             $dropItems($sortedEntries(copy$1, keyOrd_cmp), ([key, value]) => {
               try {
                 keyDrop_drop(key);
@@ -361,7 +361,7 @@ function main() {
           throw error;
         }
         try {
-          keyDrop_drop(value);
+          keyDrop_drop(key);
         } catch (error) {
           $cleanup(() => {
             $dropItems($sortedEntries(copy$1, keyOrd_cmp), ([key, value]) => {

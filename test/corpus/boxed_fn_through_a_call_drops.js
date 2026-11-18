@@ -58,10 +58,10 @@ function entriesAndCatch() {
       },
     ),
   );
-  const value$1 = $droppingOnce(f, () => {
+  const value = $droppingOnce(f, () => {
     $dispose(f);
   });
-  $orInsertWith(entry._0[0], entry._0[1], value$1, undefined, $dispose);
+  $orInsertWith(entry._0[0], entry._0[1], value, undefined, $dispose);
   const orInsertWith = $mutGet(entry._0[0], entry._0[1]);
   orInsertWith.value += 0;
   console.log("after entry");
@@ -90,8 +90,8 @@ function entriesAndCatch() {
     throw error;
   }
   $orInsertWith(entry$1._0[0], entry$1._0[1], k, undefined, $dispose);
-  const value$2 = $mutGet(entry$1._0[0], entry$1._0[1]);
-  value$2.value += 0;
+  const value$1 = $mutGet(entry$1._0[0], entry$1._0[1]);
+  value$1.value += 0;
   console.log("after local entry");
   const c = [40];
   const f$1 = at0(
@@ -107,11 +107,11 @@ function entriesAndCatch() {
       $dispose(f$1);
     }),
   );
-  const value$3 = r.TAG === "Ok" ? r._0 : undefined;
-  console.log(`caught ${value$3 == null ? "None" : `Some(${value$3})`}`);
+  const value$2 = r.TAG === "Ok" ? r._0 : undefined;
+  console.log(`caught ${value$2 == null ? "None" : `Some(${value$2})`}`);
   // A `dyn Fn` box, whose call doesn't consume it: dropped as it returns.
   const e = [60];
-  const value$4 = at0(
+  const value$3 = at0(
     $dropping(
       () => Loud.get(e),
       () => {
@@ -119,9 +119,9 @@ function entriesAndCatch() {
       },
     ),
   );
-  const value = $catchUnwind(value$4);
-  $dispose(value$4);
-  r = value;
+  const value$4 = $catchUnwind(value$3);
+  $dispose(value$3);
+  r = value$4;
   const value$5 = r.TAG === "Ok" ? r._0 : undefined;
   console.log(`caught ${value$5 == null ? "None" : `Some(${value$5})`}`);
   let d$live = true;
@@ -141,8 +141,8 @@ function entriesAndCatch() {
   const value$6 = at0(
     $dropping(
       (acc, x) => {
-        const value = x + Loud.get(d) * 0;
-        acc.value = (acc.value + value) >>> 0;
+        const value$6 = x + Loud.get(d) * 0;
+        acc.value = (acc.value + value$6) >>> 0;
         return acc.value;
       },
       () => {

@@ -171,6 +171,30 @@ impl Tree {
         around || inside
     }
 
+    /// Whether a variable spelled already that's given apart from a root,
+    /// as `apart` says, `next$7` of `next`, is where reclaiming it as that
+    /// root is what `from` named it would stop: declared in a scope that declares `from`;
+    /// or inside one, `from` read inside its scope; or around one, it read
+    /// inside `from`'s. So a made name the program's would then give way to
+    /// doesn't take it (ADR 0357).
+    pub(crate) fn reclaims_to(&self, from: &str, apart: &dyn Fn(&Name) -> bool) -> bool {
+        let ups = |scope: usize| std::iter::successors(Some(scope), |&up| self.scopes[up].parent);
+        let declaring = self.declaring.get(from).map(Vec::as_slice).unwrap_or_default();
+        let read_in = |word: &str, scope: usize| {
+            (self.reads.get(word).into_iter().flatten()).any(|read| ups(read.scope).any(|up| up == scope))
+        };
+        (self.scopes.iter().enumerate()).any(|(at, scope)| {
+            (scope.bound.iter()).any(|(word, name)| {
+                apart(name)
+                    && declaring.iter().any(|&d| {
+                        d == at
+                            || (ups(at).skip(1).any(|up| up == d) && read_in(from, at))
+                            || (ups(d).skip(1).any(|up| up == at) && read_in(word, d))
+                    })
+            })
+        })
+    }
+
     /// Does each read stay of what it's of, where `from` is named `to`? No
     /// scope that declares `from` declares `to` too; no read of `from`
     /// passes a declaration of `to` before its own; and no read of `to`

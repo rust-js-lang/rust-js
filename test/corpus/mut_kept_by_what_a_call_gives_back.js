@@ -109,7 +109,7 @@ function main() {
   );
   value.value += "!";
   let n = 1;
-  const value$2 = same({
+  const value$1 = same({
     get value() {
       return n;
     },
@@ -117,13 +117,13 @@ function main() {
       n = value;
     },
   });
-  value$2.value = (value$2.value + 10) | 0;
+  value$1.value = (value$1.value + 10) | 0;
   const v = [1];
   same($cellOf(v)).value.push(2);
   console.log(`${s} ${n} [${v.join(", ")}]`);
 
   let text = "a";
-  const value$1 = longer(
+  const value$2 = longer(
     {
       get value() {
         return text;
@@ -134,7 +134,7 @@ function main() {
     },
     tGetMutT,
   );
-  value$1.value += "b";
+  value$2.value += "b";
   console.log(`${text}`);
 }
 //# sourceMappingURL=case.js.map

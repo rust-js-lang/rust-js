@@ -119,10 +119,10 @@ function main() {
     }
   }
   try {
-    const value = $upgrade(weak);
-    console.log(`${value == null} ${weak.strong}`);
-    if (value != null) {
-      $rcDrop(value, (value) => {
+    const upgrade = $upgrade(weak);
+    console.log(`${upgrade == null} ${weak.strong}`);
+    if (upgrade != null) {
+      $rcDrop(upgrade, (value) => {
         console.log(`drop ${value.held[0]}`);
       });
     }

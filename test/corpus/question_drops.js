@@ -101,9 +101,9 @@ function dCheckedDouble_checkedDouble(d) {
 }
 
 function twice(base, TCheckedDouble, dropT) {
-  let value;
+  let checkedDouble;
   try {
-    value = TCheckedDouble.checkedDouble(base);
+    checkedDouble = TCheckedDouble.checkedDouble(base);
   } catch (error) {
     $cleanup(() => {
       dropT?.(base);
@@ -111,37 +111,37 @@ function twice(base, TCheckedDouble, dropT) {
     throw error;
   }
   let result;
-  if (value != null) {
+  if (checkedDouble != null) {
     try {
       dropT?.(base);
     } catch (error) {
       $cleanup(() => {
-        base = value;
+        base = checkedDouble;
         dropT?.(base);
       }, error);
       throw error;
     }
-    base = value;
-    let value$1;
+    base = checkedDouble;
+    let value;
     try {
-      value$1 = TCheckedDouble.checkedDouble(base);
+      value = TCheckedDouble.checkedDouble(base);
     } catch (error) {
       $cleanup(() => {
         dropT?.(base);
       }, error);
       throw error;
     }
-    if (value$1 != null) {
+    if (value != null) {
       try {
         dropT?.(base);
       } catch (error) {
         $cleanup(() => {
-          base = value$1;
+          base = value;
           dropT?.(base);
         }, error);
         throw error;
       }
-      base = value$1;
+      base = value;
       return base;
     }
     result = undefined;

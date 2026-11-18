@@ -145,9 +145,9 @@ function main() {
   $next(it);
   const later = $clone(it);
   const collect = Array.from(it);
-  const value$1 = Array.from(later);
+  const value = Array.from(later);
   $print(
-    `cloned iterator [${collect.map((item) => pDebug_fmt(item)).join(", ")}] [${value$1.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
+    `cloned iterator [${collect.map((item) => pDebug_fmt(item)).join(", ")}] [${value.map((item) => pDebug_fmt(item)).join(", ")}]\n`,
   );
   $print(
     `generic [${copiedInGenericCode(ps, pCopy)
@@ -188,13 +188,13 @@ function main() {
       Clone: () => sideClone,
     }).join(", ")}]\n`,
   );
-  const value$2 = ps[0] == null ? ps[0] : [ps[0][0]];
-  $print(`option ${value$2 == null ? "None" : `Some(${pDebug_fmt(value$2)})`}\n`);
+  const value$1 = ps[0] == null ? ps[0] : [ps[0][0]];
+  $print(`option ${value$1 == null ? "None" : `Some(${pDebug_fmt(value$1)})`}\n`);
   const one = [4];
-  const value$3 = one == null ? one : [one[0]];
-  $print(`option of a &mut ${value$3 == null ? "None" : `Some(${pDebug_fmt(value$3)})`}\n`);
-  const value = ps.at(-1);
-  const value$4 = value == null ? value : pClone_clone(value);
+  const value$2 = one == null ? one : [one[0]];
+  $print(`option of a &mut ${value$2 == null ? "None" : `Some(${pDebug_fmt(value$2)})`}\n`);
+  const value$3 = ps.at(-1);
+  const value$4 = value$3 == null ? value$3 : pClone_clone(value$3);
   $print(`option cloned ${value$4 == null ? "None" : `Some(${pDebug_fmt(value$4)})`}\n`);
 
   const item = [0];

@@ -158,7 +158,11 @@ pub fn resolve_read(value: Option<&'static Unknown>, log: &dyn Fn(&str), then: &
 }
 `);
   expect(js).toContain('export function resolve(value, log, then) {\n  if (typeof value === "object" && value !== null) {\n    log(typeof value.x);\n');
-  expect(js).toContain("const object =");
+  // The closure's own spelled apart from it, `value$1`, by preparation's
+  // speller, so the object is the value itself, read where it's tested, as
+  // upstream's resolveToJSON reads `value`: no holder of it (#1681).
+  expect(js).not.toContain("const object =");
+  expect(js).toContain("log(value$1._0 + typeof value.x);");
   const seen: string[] = [];
   const log = (text: string) => seen.push(text);
   const then = (f: (part: unknown) => void) => { f(1); f(null); };

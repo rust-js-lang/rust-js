@@ -175,11 +175,28 @@ function main() {
       $dropEach(loudDrop_drop),
       loudDrop_drop,
     );
+    let next;
+    try {
+      next = $next(c);
+    } catch (error) {
+      $cleanup(() => {
+        for (const item of c.orig) {
+          loudDrop_drop(item);
+        }
+        for (const item of c.iter) {
+          loudDrop_drop(item);
+        }
+      }, error);
+      throw error;
+    }
     let loud;
     try {
       loud = $next(c);
     } catch (error) {
       $cleanup(() => {
+        if (next != null) {
+          loudDrop_drop(next);
+        }
         for (const item of c.orig) {
           loudDrop_drop(item);
         }
@@ -197,25 +214,8 @@ function main() {
         if (loud != null) {
           loudDrop_drop(loud);
         }
-        for (const item of c.orig) {
-          loudDrop_drop(item);
-        }
-        for (const item of c.iter) {
-          loudDrop_drop(item);
-        }
-      }, error);
-      throw error;
-    }
-    let tmp$1;
-    try {
-      tmp$1 = $next(c);
-    } catch (error) {
-      $cleanup(() => {
-        if (tmp != null) {
-          loudDrop_drop(tmp);
-        }
-        if (loud != null) {
-          loudDrop_drop(loud);
+        if (next != null) {
+          loudDrop_drop(next);
         }
         for (const item of c.orig) {
           loudDrop_drop(item);
@@ -228,39 +228,18 @@ function main() {
     }
     try {
       console.log(
-        `${loud == null ? "None" : `Some(${loudDebug_fmt(loud)})`} ${tmp == null ? "None" : `Some(${loudDebug_fmt(tmp)})`} ${tmp$1 == null ? "None" : `Some(${loudDebug_fmt(tmp$1)})`}`,
+        `${next == null ? "None" : `Some(${loudDebug_fmt(next)})`} ${loud == null ? "None" : `Some(${loudDebug_fmt(loud)})`} ${tmp == null ? "None" : `Some(${loudDebug_fmt(tmp)})`}`,
       );
     } catch (error) {
       $cleanup(() => {
-        if (tmp$1 != null) {
-          loudDrop_drop(tmp$1);
-        }
         if (tmp != null) {
           loudDrop_drop(tmp);
         }
         if (loud != null) {
           loudDrop_drop(loud);
         }
-        for (const item of c.orig) {
-          loudDrop_drop(item);
-        }
-        for (const item of c.iter) {
-          loudDrop_drop(item);
-        }
-      }, error);
-      throw error;
-    }
-    try {
-      if (tmp$1 != null) {
-        loudDrop_drop(tmp$1);
-      }
-    } catch (error) {
-      $cleanup(() => {
-        if (tmp != null) {
-          loudDrop_drop(tmp);
-        }
-        if (loud != null) {
-          loudDrop_drop(loud);
+        if (next != null) {
+          loudDrop_drop(next);
         }
         for (const item of c.orig) {
           loudDrop_drop(item);
@@ -280,6 +259,9 @@ function main() {
         if (loud != null) {
           loudDrop_drop(loud);
         }
+        if (next != null) {
+          loudDrop_drop(next);
+        }
         for (const item of c.orig) {
           loudDrop_drop(item);
         }
@@ -292,6 +274,24 @@ function main() {
     try {
       if (loud != null) {
         loudDrop_drop(loud);
+      }
+    } catch (error) {
+      $cleanup(() => {
+        if (next != null) {
+          loudDrop_drop(next);
+        }
+        for (const item of c.orig) {
+          loudDrop_drop(item);
+        }
+        for (const item of c.iter) {
+          loudDrop_drop(item);
+        }
+      }, error);
+      throw error;
+    }
+    try {
+      if (next != null) {
+        loudDrop_drop(next);
       }
     } catch (error) {
       $cleanup(() => {

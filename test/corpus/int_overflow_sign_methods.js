@@ -24,15 +24,15 @@ function main() {
   console.log(
     `(${(id(1) << 33) >>> 0}, ${true}) (${id(-1) >> (9 & 7)}, ${true}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)([BigInt.asUintN(64, id(1n) << 63n), false])}`,
   );
-  const value = id(-2147483648);
-  const value$1 = id(-5);
-  const value$2 = id(-9223372036854775808n);
+  const value$1 = id(-2147483648);
+  const value$2 = id(-5);
+  const value = id(-9223372036854775808n);
   const value$3 = [
-    value$2 === -9223372036854775808n ? -9223372036854775808n : value$2 < 0n ? -value$2 : value$2,
-    value$2 === -9223372036854775808n,
+    value === -9223372036854775808n ? -9223372036854775808n : value < 0n ? -value : value,
+    value === -9223372036854775808n,
   ];
   console.log(
-    `(${value === -2147483648 ? -2147483648 : value < 0 ? -value : value}, ${value === -2147483648}) (${value$1 === -128 ? -128 : value$1 < 0 ? -value$1 : value$1}, ${value$1 === -128}) (${value$3[0]}, ${value$3[1]})`,
+    `(${value$1 === -2147483648 ? -2147483648 : value$1 < 0 ? -value$1 : value$1}, ${value$1 === -2147483648}) (${value$2 === -128 ? -128 : value$2 < 0 ? -value$2 : value$2}, ${value$2 === -128}) (${value$3[0]}, ${value$3[1]})`,
   );
   const base = id(3);
   const overflowingPow = $overflowing($pow(base, 6) & 255, $powExact(base, 6), 0, 255);

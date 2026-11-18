@@ -169,11 +169,11 @@ function main() {
       const [e, f] = tee($iter([undefined, 1]));
       try {
         try {
-          const value = teeIterator_next(e, { next: $nextSome }, clone);
+          const next = teeIterator_next(e, { next: $nextSome }, clone);
+          const value = teeIterator_next(f, { next: $nextSome }, clone);
           const value$1 = teeIterator_next(f, { next: $nextSome }, clone);
-          const value$2 = teeIterator_next(f, { next: $nextSome }, clone);
           console.log(
-            `${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`} ${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`} ${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
+            `${next == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(next))})`} ${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`} ${value$1 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1))})`}`,
           );
           console.log("end");
         } finally {

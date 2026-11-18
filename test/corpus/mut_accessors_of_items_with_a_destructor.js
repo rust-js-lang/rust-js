@@ -323,9 +323,9 @@ function main() {
   }
   if (top != null) {
     const value = [0];
-    let tmp;
+    let d;
     try {
-      tmp = $peekMutTop(top);
+      d = $peekMutTop(top);
     } catch (error) {
       $cleanup(() => {
         dDrop_drop(value);
@@ -342,8 +342,8 @@ function main() {
       }, error);
       throw error;
     }
-    dDrop_drop(tmp);
-    $assign(tmp, value);
+    dDrop_drop(d);
+    $assign(d, value);
     try {
       $peekMutDrop(top);
     } catch (error) {
@@ -611,9 +611,9 @@ function main() {
         }, error);
         throw error;
       }
-      let tmp;
+      let d;
       try {
-        tmp = $treeEnd(s, (a, b) => $cmp(a[0], b[0]), false, true, true);
+        d = $treeEnd(s, (a, b) => $cmp(a[0], b[0]), false, true, true);
       } catch (error) {
         $cleanup(() => {
           for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]))) {
@@ -630,13 +630,13 @@ function main() {
         }, error);
         throw error;
       }
-      let tmp$1;
+      let tmp;
       try {
-        tmp$1 = $treeEnd(s, (a, b) => $cmp(a[0], b[0]), true, true, true);
+        tmp = $treeEnd(s, (a, b) => $cmp(a[0], b[0]), true, true, true);
       } catch (error) {
         $cleanup(() => {
-          if (tmp != null) {
-            dDrop_drop(tmp);
+          if (d != null) {
+            dDrop_drop(d);
           }
           for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]))) {
             dDrop_drop(key);
@@ -655,38 +655,15 @@ function main() {
       const size = s.size;
       try {
         console.log(
-          `${tmp == null ? "None" : `Some(${dDebug_fmt(tmp)})`} ${tmp$1 == null ? "None" : `Some(${dDebug_fmt(tmp$1)})`} ${size}`,
+          `${d == null ? "None" : `Some(${dDebug_fmt(d)})`} ${tmp == null ? "None" : `Some(${dDebug_fmt(tmp)})`} ${size}`,
         );
       } catch (error) {
         $cleanup(() => {
-          if (tmp$1 != null) {
-            dDrop_drop(tmp$1);
-          }
           if (tmp != null) {
             dDrop_drop(tmp);
           }
-          for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]))) {
-            dDrop_drop(key);
-          }
-          for (const [, value] of $sortedEntries(m, $cmp)) {
-            dDrop_drop(value);
-          }
-          if (h$live) {
-            for (const item of h) {
-              dDrop_drop(item);
-            }
-          }
-        }, error);
-        throw error;
-      }
-      try {
-        if (tmp$1 != null) {
-          dDrop_drop(tmp$1);
-        }
-      } catch (error) {
-        $cleanup(() => {
-          if (tmp != null) {
-            dDrop_drop(tmp);
+          if (d != null) {
+            dDrop_drop(d);
           }
           for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]))) {
             dDrop_drop(key);
@@ -705,6 +682,29 @@ function main() {
       try {
         if (tmp != null) {
           dDrop_drop(tmp);
+        }
+      } catch (error) {
+        $cleanup(() => {
+          if (d != null) {
+            dDrop_drop(d);
+          }
+          for (const key of $sortedKeys(s, (a, b) => $cmp(a[0], b[0]))) {
+            dDrop_drop(key);
+          }
+          for (const [, value] of $sortedEntries(m, $cmp)) {
+            dDrop_drop(value);
+          }
+          if (h$live) {
+            for (const item of h) {
+              dDrop_drop(item);
+            }
+          }
+        }, error);
+        throw error;
+      }
+      try {
+        if (d != null) {
+          dDrop_drop(d);
         }
       } catch (error) {
         $cleanup(() => {

@@ -180,22 +180,22 @@ function readApart() {
     weak: 0,
   };
   try {
-    let tmp;
+    let borrow;
     try {
       if (this$.value.borrows < 0) {
         $alreadyMutablyBorrowed();
       }
-      tmp = this$.value;
+      borrow = this$.value;
     } catch (error) {
       $cleanup(() => {
         $rcDrop(probe, $dispose);
       }, error);
       throw error;
     }
-    const before = tmp.value != null;
-    let tmp$1;
+    const before = borrow.value != null;
+    let tmp;
     try {
-      tmp$1 = $downgrade(probe);
+      tmp = $downgrade(probe);
     } catch (error) {
       $cleanup(() => {
         $rcDrop(probe, $dispose);
@@ -207,8 +207,8 @@ function readApart() {
       borrowMut = $borrowMut(this$.value, true);
     } catch (error) {
       $cleanup(() => {
-        if (tmp$1 != null) {
-          $weakDrop(tmp$1);
+        if (tmp != null) {
+          $weakDrop(tmp);
         }
         $rcDrop(probe, $dispose);
       }, error);
@@ -220,13 +220,13 @@ function readApart() {
       }
     } catch (error) {
       $cleanup(() => {
-        borrowMut.value = tmp$1;
+        borrowMut.value = tmp;
         $unborrow(borrowMut);
         $rcDrop(probe, $dispose);
       }, error);
       throw error;
     }
-    borrowMut.value = tmp$1;
+    borrowMut.value = tmp;
     $unborrow(borrowMut);
     return [probe, before];
   } catch (error) {

@@ -478,14 +478,14 @@ function main() {
       }, error);
       throw error;
     }
-    function map$1(d) {
+    function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    let map;
+    let tmp$1;
     try {
-      map = found != null ? map$1(found) : undefined;
+      tmp$1 = found != null ? map(found) : undefined;
       last$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -497,13 +497,13 @@ function main() {
       }, error);
       throw error;
     }
-    function map$2(d) {
+    function map$1(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    const value$1 = last != null ? map$2(last) : undefined;
-    return `${map == null ? "None" : `Some(${map})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${s$1}`;
+    const value$1 = last != null ? map$1(last) : undefined;
+    return `${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${s$1}`;
   });
   run("rev rfold panics", () =>
     $foldBack(

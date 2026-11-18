@@ -89,18 +89,18 @@ function main() {
   console.log(`through a &mut &mut ${twice.finish() === one.finish()}`);
   let tmp = new $SipHasher(1, 3);
   const h = { value: tmp };
-  const value$1 = finished(h);
+  const value = finished(h);
   tmp = h.value;
-  console.log(`a &mut parameter ${value$1 === one.finish()}`);
+  console.log(`a &mut parameter ${value === one.finish()}`);
 
   let tally = { sum: 0n, writes: 0n };
   tallyHasher_write(tally, [1, 2]);
   tallyHasher.writeU8({ value: tally }, 3);
   console.log(`own through a &mut ${tallyHasher_finish(tally)}`);
   const h$1 = { value: tally };
-  const value$2 = tallyFinished(h$1);
+  const value$1 = tallyFinished(h$1);
   tally = h$1.value;
-  console.log(`own as a &mut parameter ${value$2}`);
+  console.log(`own as a &mut parameter ${value$1}`);
   console.log(`own after ${tallyHasher_finish(tally)}`);
 
   console.log(`generic ${fed(new $SipHasher(1, 3), $sipHasher) === expected}`);
@@ -111,7 +111,7 @@ function main() {
   console.log(`generic &mut ${given.finish() === expected}`);
 
   let hashed = new $SipHasher(1, 3);
-  const value = {
+  const value$2 = {
     get value() {
       return hashed;
     },
@@ -119,8 +119,8 @@ function main() {
       hashed = value;
     },
   };
-  $sipHasher.writeU32(value, 7);
-  $sipHasher.writeStr(value, "seven");
+  $sipHasher.writeU32(value$2, 7);
+  $sipHasher.writeStr(value$2, "seven");
   const plainHashed = new $SipHasher(1, 3);
   plainHashed.writeU32(7);
   plainHashed.writeStr("seven");

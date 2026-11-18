@@ -134,12 +134,12 @@ function main() {
   }
   try {
     console.log(`${$borrow(other.value).length}`);
-    const value = $borrowMut(other.value, true);
+    const borrowMut = $borrowMut(other.value, true);
     let last;
     try {
-      last = value.pop();
+      last = borrowMut.pop();
     } finally {
-      $unborrow(value);
+      $unborrow(borrowMut);
     }
     console.log(`popped ${last != null}`);
     if (last != null) {

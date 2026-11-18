@@ -125,9 +125,9 @@ function earlyBreak() {
       }
     }
     if (i === 1) {
-      let tmp;
+      let noisy;
       try {
-        tmp = [id(59)];
+        noisy = [id(59)];
       } catch (error) {
         throw $unwindsOn(error);
       } finally {
@@ -135,7 +135,7 @@ function earlyBreak() {
           console.log(`drop ${held[0]}`);
         }
       }
-      held = tmp;
+      held = noisy;
       break;
     }
   }

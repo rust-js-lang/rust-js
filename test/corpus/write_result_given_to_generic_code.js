@@ -244,7 +244,7 @@ function main() {
   const unitDebug = { fmt: (value) => "()" };
   const v = [];
   report("vec", $writeTagged($writeText(v, "x\n")), unitDebug);
-  let tmp;
+  let fails;
   report(
     "fails",
     $writeTagged(
@@ -252,10 +252,10 @@ function main() {
         failsWrite.writeFmt(
           {
             get value() {
-              return tmp;
+              return fails;
             },
             set value(value) {
-              tmp = value;
+              fails = value;
             },
           },
           "x\n",
@@ -268,7 +268,7 @@ function main() {
   let s = "";
   s += "y";
   $print(`${shown($writeTagged(undefined), unitDebug, { fmt: (value) => "Error" })} ${s}\n`);
-  let tmp$1;
+  let tmp;
   $print(
     `${shown(
       $writeTagged(
@@ -276,10 +276,10 @@ function main() {
           failsWrite.writeAll(
             {
               get value() {
-                return tmp$1;
+                return tmp;
               },
               set value(value) {
-                tmp$1 = value;
+                tmp = value;
               },
             },
             [122],
@@ -318,14 +318,14 @@ function main() {
         $writeResult(() => {
           n = (n + 1) | 0;
           if (n < 3) {
-            let fails;
+            let tmp$1;
             failsWrite.writeFmt(
               {
                 get value() {
-                  return fails;
+                  return tmp$1;
                 },
                 set value(value) {
-                  fails = value;
+                  tmp$1 = value;
                 },
               },
               "y\n",
@@ -343,14 +343,14 @@ function main() {
       () =>
         $writeResult(() => {
           m = (m + 1) | 0;
-          let fails;
+          let tmp;
           failsWrite.writeFmt(
             {
               get value() {
-                return fails;
+                return tmp;
               },
               set value(value) {
-                fails = value;
+                tmp = value;
               },
             },
             "z\n",
@@ -364,7 +364,7 @@ function main() {
   // A trait's generic method's, directly and through generic code; a
   // generic method's; a `fn` pointer's.
   $print(`${checkerCheck_check(undefined, $writeTagged($writeText(v, "a\n")), unitDebug)}\n`);
-  let tmp$2;
+  let tmp$1;
   $print(
     `${through(
       undefined,
@@ -372,10 +372,10 @@ function main() {
         failsWrite.writeFmt(
           {
             get value() {
-              return tmp$2;
+              return tmp$1;
             },
             set value(value) {
-              tmp$2 = value;
+              tmp$1 = value;
             },
           },
           "b\n",
@@ -397,7 +397,7 @@ function main() {
   $print(
     `${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$ioErrorDebug(value$1._0)})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$ioErrorDebug(result._0)})`))(after(true))}\n`,
   );
-  let tmp$3;
+  let tmp$2;
   const kept = $writeTry(() =>
     $writeCheck(
       same(
@@ -405,10 +405,10 @@ function main() {
           failsWrite.writeFmt(
             {
               get value() {
-                return tmp$3;
+                return tmp$2;
               },
               set value(value) {
-                tmp$3 = value;
+                tmp$2 = value;
               },
             },
             "y\n",
@@ -419,17 +419,17 @@ function main() {
   );
   $print(`${kept !== undefined}\n`);
   const value$2 = $writeTry(() => forward($writeText(v, "z\n")));
-  let tmp$4;
+  let tmp$3;
   const result = $writeTry(() =>
     forward(
       $writeTry(() =>
         failsWrite.writeFmt(
           {
             get value() {
-              return tmp$4;
+              return tmp$3;
             },
             set value(value) {
-              tmp$4 = value;
+              tmp$3 = value;
             },
           },
           "z\n",

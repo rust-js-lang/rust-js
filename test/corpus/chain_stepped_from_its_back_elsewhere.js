@@ -355,6 +355,34 @@ function main() {
   }
   const value = last != null ? map(last) : undefined;
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
+  const chain = $held(
+    iterator_chain(
+      [3],
+      [[7], [8]],
+      { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
+      vecIntoIterator,
+      undefined,
+      $dropEach(dDrop_drop),
+      dDrop_drop,
+      $dropEach(dDrop_drop),
+    ),
+  );
+  try {
+    const nth = $nthDropping($lent(chain), 3, dDrop_drop, false);
+    function map(d) {
+      const result = d[0];
+      dDrop_drop(d);
+      return result;
+    }
+    const value = nth != null ? map(nth) : undefined;
+    console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      chain.return();
+    }
+  }
   const value$1 = $held(
     iterator_chain(
       [3],
@@ -368,36 +396,8 @@ function main() {
     ),
   );
   try {
-    const nth = $nthDropping($lent(value$1), 3, dDrop_drop, false);
-    function map(d) {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }
-    const value = nth != null ? map(nth) : undefined;
-    console.log(`nth ${value == null ? "None" : `Some(${value})`}`);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      value$1.return();
-    }
-  }
-  const value$2 = $held(
-    iterator_chain(
-      [3],
-      [[7], [8]],
-      { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
-      vecIntoIterator,
-      undefined,
-      $dropEach(dDrop_drop),
-      dDrop_drop,
-      $dropEach(dDrop_drop),
-    ),
-  );
-  try {
     console.log(
-      `any ${$lent(value$2).some((d) => {
+      `any ${$lent(value$1).some((d) => {
         const result = d[0] === 7;
         dDrop_drop(d);
         return result;
@@ -407,7 +407,7 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value$2.return();
+      value$1.return();
     }
   }
   const iter = iterator_chain(
@@ -442,12 +442,12 @@ function main() {
   for (const key of $sortedKeys(set, (a, b) => $cmp(a[0], b[0]))) {
     dDrop_drop(key);
   }
-  const value$3 = skippedBack([[1], [2]], [[6], [7]]);
+  const value$2 = skippedBack([[1], [2]], [[6], [7]]);
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
+  const value$3 = skippedBack([[1], [2]], [[5], [6], [7]]);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = skippedBack([[1], [2]], [[5], [6], [7]]);
+  const value$4 = skippedBack([[1], [2], [3]], [[6]]);
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const value$5 = skippedBack([[1], [2], [3]], [[6]]);
-  console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   let r = $catchUnwind(() =>
     $foldBack(
       $lazyChain(
@@ -476,15 +476,15 @@ function main() {
   // fold is done with it, the crate's own first (#757).
   console.log(`rfold ${backsBack()}`);
   const g = [91];
-  const value$6 = { at: 1, end: 4 };
-  const value$7 = [[6]];
+  const backs = { at: 1, end: 4 };
+  const value$5 = [[6]];
   let tmp;
   try {
     tmp = $lazyChain(
-      $closing($iterator(value$6, backsIterator_next), (it) => {
+      $closing($iterator(backs, backsIterator_next), (it) => {
         console.log("drop src");
       }),
-      $closing($iter(value$7), $dropEach(dDrop_drop)),
+      $closing($iter(value$5), $dropEach(dDrop_drop)),
     );
   } catch (error) {
     $cleanup(() => {
@@ -502,18 +502,18 @@ function main() {
   });
   console.log(`fold ${n}`);
   const g$1 = [92];
-  const value$8 = { at: 1, end: 3 };
-  const value$9 = [[6]];
+  const value$6 = { at: 1, end: 3 };
+  const value$7 = [[6]];
   let tmp$1;
   try {
     tmp$1 = $lazyChain(
       $closing(
-        $iterator(value$8, backsIterator_next, false, backsDoubleEndedIterator_nextBack),
+        $iterator(value$6, backsIterator_next, false, backsDoubleEndedIterator_nextBack),
         (it) => {
           console.log("drop src");
         },
       ),
-      $closing($iter(value$9), $dropEach(dDrop_drop)),
+      $closing($iter(value$7), $dropEach(dDrop_drop)),
     );
   } catch (error) {
     $cleanup(() => {
@@ -530,10 +530,10 @@ function main() {
     dDrop_drop(g$1);
   });
   console.log(`rfold ${n}`);
-  const value$10 = skippedBack([[1], [2], [3]], []);
-  console.log(`${value$10 == null ? "None" : `Some(${value$10})`}`);
-  const value$11 = nestedBack();
-  console.log(`${value$11 == null ? "None" : `Some(${value$11})`}`);
+  const value$8 = skippedBack([[1], [2], [3]], []);
+  console.log(`${value$8 == null ? "None" : `Some(${value$8})`}`);
+  const value$9 = nestedBack();
+  console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);
   console.log(`${heldBack()}`);
   // A chain of two of the crate's iterators that drop, under a map that
   // holds what drops, folded from its back.
@@ -593,15 +593,15 @@ function main() {
   r = $catchUnwind(() => {
     const g = [93];
     const n = 0;
-    const backs = { at: 1, end: 4 };
-    const value = [[6]];
-    let chain;
+    const value = { at: 1, end: 4 };
+    const value$1 = [[6]];
+    let tmp;
     try {
-      chain = $lazyChain(
-        $closing($iterator(backs, backsIterator_next), (it) => {
+      tmp = $lazyChain(
+        $closing($iterator(value, backsIterator_next), (it) => {
           console.log("drop src");
         }),
-        $closing($iter(value), $dropEach(dDrop_drop)),
+        $closing($iter(value$1), $dropEach(dDrop_drop)),
       );
     } catch (error) {
       $cleanup(() => {
@@ -625,7 +625,7 @@ function main() {
         }
       }
     }
-    return $consume(chain, "fold", 0, f, undefined, () => {
+    return $consume(tmp, "fold", 0, f, undefined, () => {
       dDrop_drop(g);
     });
   });
@@ -644,9 +644,9 @@ function main() {
       throw error;
     }
     const value$1 = [[6]];
-    let chain;
+    let tmp$1;
     try {
-      chain = $lazyChain(
+      tmp$1 = $lazyChain(
         $closing(tmp, $dropEach(dDrop_drop)),
         $closing($iter(value$1), $dropEach(dDrop_drop)),
       );
@@ -672,7 +672,7 @@ function main() {
         }
       }
     }
-    return $consume(chain, "fold", 0, f, undefined, () => {
+    return $consume(tmp$1, "fold", 0, f, undefined, () => {
       dDrop_drop(g);
     });
   });
@@ -729,9 +729,9 @@ function main() {
       }, error);
       throw error;
     }
-    let chain;
+    let tmp$2;
     try {
-      chain = $held($lazyChain($closing(tmp$1, $dropEach(dDrop_drop)), skipping));
+      tmp$2 = $held($lazyChain($closing(tmp$1, $dropEach(dDrop_drop)), skipping));
     } catch (error) {
       $cleanup(() => {
         dDrop_drop(g);
@@ -747,7 +747,7 @@ function main() {
     }
     try {
       const value = $tryFoldSome(
-        chain,
+        tmp$2,
         d,
         (a, b) => f(a, b),
         dDrop_drop,
@@ -760,7 +760,7 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        chain.return();
+        tmp$2.return();
       }
     }
   });
@@ -769,18 +769,18 @@ function main() {
     const r = $catchUnwind(() => {
       const g = [94];
       const n = 0;
-      const backs = { at: 1, end: 3 };
-      const value = [[5], [6], [7]];
-      let chain;
+      const value = { at: 1, end: 3 };
+      const value$1 = [[5], [6], [7]];
+      let tmp;
       try {
-        chain = $lazyChain(
+        tmp = $lazyChain(
           $closing(
-            $iterator(backs, backsIterator_next, false, backsDoubleEndedIterator_nextBack),
+            $iterator(value, backsIterator_next, false, backsDoubleEndedIterator_nextBack),
             (it) => {
               console.log("drop src");
             },
           ),
-          $closing($iter(value), $dropEach(dDrop_drop)),
+          $closing($iter(value$1), $dropEach(dDrop_drop)),
         );
       } catch (error) {
         $cleanup(() => {
@@ -804,7 +804,7 @@ function main() {
           }
         }
       }
-      return $consume(chain, "rfold", 0, f, undefined, () => {
+      return $consume(tmp, "rfold", 0, f, undefined, () => {
         dDrop_drop(g);
       });
     });

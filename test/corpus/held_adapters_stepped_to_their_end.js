@@ -202,8 +202,8 @@ function main() {
     while ((x = $next(mapped)) != null) {
       console.log(`${x}`);
     }
-    const value = $next(mapped);
-    console.log(`map done ${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(mapped);
+    console.log(`map done ${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -262,8 +262,8 @@ function main() {
       ),
     );
     try {
-      const value = $next(stepped);
-      console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+      const next = $next(stepped);
+      console.log(`${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`);
     } catch (error) {
       $cleanup(() => {
         stepped.return();
@@ -291,8 +291,8 @@ function main() {
       ),
     );
     try {
-      const value = $next(collected);
-      console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
+      const next = $next(collected);
+      console.log(`${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`);
     } catch (error) {
       $cleanup(() => {
         collected.return();

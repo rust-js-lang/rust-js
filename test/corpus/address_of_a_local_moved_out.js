@@ -164,11 +164,11 @@ function main() {
   const b = a.map((item) => [item[0], item[1]]);
   $storedItems(b, 8);
   $stored($ptr(b, 0), 8);
-  const value$3 = at === $addr($ptrTo(b), 16);
+  const value$2 = at === $addr($ptrTo(b), 16);
   $storedItems(b, 8);
-  const value$2 = aFirst === addressOf(b[0]);
+  const value$3 = aFirst === addressOf(b[0]);
   $storedItems(b, 8);
-  console.log(`array: ${value$3} ${value$2} [${b.map((item) => nDebug_fmt(item)).join(", ")}]`);
+  console.log(`array: ${value$2} ${value$3} [${b.map((item) => nDebug_fmt(item)).join(", ")}]`);
 
   // Moved out on one way alone, then assigned again: its object still.
   const many = $args().length > 5;

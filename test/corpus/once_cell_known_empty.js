@@ -230,9 +230,9 @@ function main() {
     cache: undefined,
   };
   effects.cache = made("one");
-  const value$1 = made("two");
+  const value = made("two");
   if (effects.cache === undefined) {
-    effects.cache = value$1;
+    effects.cache = value;
   }
   console.log(`${effects.cache == null ? "None" : `Some(${$debugStr(effects.cache)})`}`);
 

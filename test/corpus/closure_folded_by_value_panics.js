@@ -151,8 +151,8 @@ function main() {
     $print(`${n} `);
   });
   case$("any", (g) => {
-    const value = [1, 2, 3];
-    let value$1;
+    const value$1 = [1, 2, 3];
+    let value;
     try {
       function f(x) {
         if (x === 2) {
@@ -160,7 +160,7 @@ function main() {
         }
         return (x + zero(g)) >>> 0 === 9;
       }
-      value$1 = value.some(f);
+      value = value$1.some(f);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
@@ -168,7 +168,7 @@ function main() {
         dDrop_drop(g);
       }
     }
-    const n = value$1;
+    const n = value;
     $print(`${n} `);
   });
   case$("retain", (g) => {

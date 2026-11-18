@@ -112,14 +112,14 @@ function main() {
   );
   // Std's compared with the crate's, which ends first: the item taken of
   // the first dropped before the argument is.
-  const value = $iter([[1], [2]]);
-  const value$1 = [[1]];
+  const value$1 = $iter([[1], [2]]);
+  const value = [[1]];
   let tmp;
   try {
-    tmp = it($iter(value$1), "b", 0);
+    tmp = it($iter(value), "b", 0);
   } catch (error) {
     $cleanup(() => {
-      for (const item of value) {
+      for (const item of value$1) {
         dDrop_drop(item);
       }
     }, error);
@@ -127,7 +127,7 @@ function main() {
   }
   console.log(
     `${$iterEq(
-      $closing(value, $dropEach(dDrop_drop)),
+      $closing(value$1, $dropEach(dDrop_drop)),
       $closing(
         $iterator(
           tmp,
@@ -155,14 +155,14 @@ function main() {
   // The argument's step panics: the item taken dropped as it unwinds,
   // then the argument, then what's left of the receiver.
   caught(() => {
-    const value$1 = $iter([[1], [2], [3]]);
-    const value = [[1]];
+    const value = $iter([[1], [2], [3]]);
+    const value$2 = [[1]];
     let tmp;
     try {
-      tmp = it($iter(value), "b", 2);
+      tmp = it($iter(value$2), "b", 2);
     } catch (error) {
       $cleanup(() => {
-        for (const item of value$1) {
+        for (const item of value) {
           dDrop_drop(item);
         }
       }, error);
@@ -170,7 +170,7 @@ function main() {
     }
     console.log(
       `${$iterEq(
-        $closing(value$1, $dropEach(dDrop_drop)),
+        $closing(value, $dropEach(dDrop_drop)),
         $closing(
           $iterator(
             tmp,

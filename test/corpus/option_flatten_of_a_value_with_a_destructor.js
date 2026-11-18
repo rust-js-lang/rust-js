@@ -38,10 +38,10 @@ function main() {
       dDrop_drop(flatten);
     }
     const empty = undefined;
-    const value = $someValue(empty);
-    console.log(`${value == null}`);
-    if (value != null) {
-      dDrop_drop(value);
+    const d = $someValue(empty);
+    console.log(`${d == null}`);
+    if (d != null) {
+      dDrop_drop(d);
     }
     const deep = [3];
     const once = $someValue(deep);

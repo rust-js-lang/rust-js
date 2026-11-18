@@ -137,8 +137,8 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const value = last != null ? map(last) : undefined;
-    console.log(`last ${value == null ? "None" : `Some(${value})`}`);
+    const value$2 = last != null ? map(last) : undefined;
+    console.log(`last ${value$2 == null ? "None" : `Some(${value$2})`}`);
   });
   console.log(`panicked ${ended.TAG === "Err"}`);
 

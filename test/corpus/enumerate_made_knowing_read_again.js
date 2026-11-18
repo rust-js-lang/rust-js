@@ -138,7 +138,7 @@ function main() {
     ),
   );
   try {
-    const value = enumerateDoubleEndedIterator_nextBack(
+    const nextBack = enumerateDoubleEndedIterator_nextBack(
       it,
       mapExactSizeIterator,
       mapDoubleEndedIterator,
@@ -148,9 +148,9 @@ function main() {
     );
     const next = $next(it);
     console.log(
-      `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`,
+      `${nextBack == null ? "None" : `Some((${nextBack[0]}, ${nextBack[1]}))`} ${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`,
     );
-    const value$1 = enumerateDoubleEndedIterator_nextBack(
+    const value = enumerateDoubleEndedIterator_nextBack(
       it,
       mapExactSizeIterator,
       mapDoubleEndedIterator,
@@ -159,7 +159,7 @@ function main() {
       },
     );
     console.log(
-      `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${enumerateExactSizeIterator_len(
+      `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${enumerateExactSizeIterator_len(
         it,
         mapExactSizeIterator,
         (map) => {

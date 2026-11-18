@@ -134,14 +134,14 @@ function main() {
   console.log(`${firsts.length}`);
   const made = ["i", "j"].map((w) =>
     $writeTry(() => {
-      let fails;
+      let tmp;
       failsWrite.writeFmt(
         {
           get value() {
-            return fails;
+            return tmp;
           },
           set value(value) {
-            fails = value;
+            tmp = value;
           },
         },
         `${w}\n`,
@@ -153,14 +153,14 @@ function main() {
   let fails = 0;
   for (const r of ["k", "l"].values().map((w) =>
     $writeTry(() => {
-      let fails;
+      let tmp;
       failsWrite.writeFmt(
         {
           get value() {
-            return fails;
+            return tmp;
           },
           set value(value) {
-            fails = value;
+            tmp = value;
           },
         },
         `${w}\n`,
@@ -175,14 +175,14 @@ function main() {
   oks = ["m", "n"].map((w) => $writeText(v, `${w}\n`)).filter((x) => x === undefined).length;
   console.log(`${oks}`);
   const boxed = (w) => {
-    let fails;
+    let tmp;
     failsWrite.writeFmt(
       {
         get value() {
-          return fails;
+          return tmp;
         },
         set value(value) {
-          fails = value;
+          tmp = value;
         },
       },
       `${w}\n`,

@@ -244,8 +244,8 @@ function main() {
     ),
   );
   try {
-    const value = $next(taken);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(taken);
+    console.log(`${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

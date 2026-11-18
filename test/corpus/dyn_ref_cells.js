@@ -115,11 +115,11 @@ function main() {
   const value$2 = $borrow(labeled, true);
   try {
     const label = value$2.impl.label(value$2.value);
-    const value = $borrow($index(shapes, 0), true);
+    const receiver = $borrow($index(shapes, 0), true);
     try {
-      console.log(`${label} ${$displayF64(value.impl.area(value.value))}`);
+      console.log(`${label} ${$displayF64(receiver.impl.area(receiver.value))}`);
     } finally {
-      $unborrow(value);
+      $unborrow(receiver);
     }
   } finally {
     $unborrow(value$2);

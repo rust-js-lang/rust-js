@@ -234,9 +234,9 @@ function main() {
     if (k == null) {
       break;
     }
-    let loud;
+    let insert;
     try {
-      loud = $insert(inserted, k, [k]);
+      insert = $insert(inserted, k, [k]);
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(inserted, $cmp), ([, value]) => {
@@ -262,8 +262,8 @@ function main() {
       throw error;
     }
     try {
-      if (loud != null) {
-        loudDrop_drop(loud);
+      if (insert != null) {
+        loudDrop_drop(insert);
       }
     } catch (error) {
       $cleanup(() => {

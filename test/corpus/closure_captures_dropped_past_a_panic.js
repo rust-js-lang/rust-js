@@ -62,10 +62,10 @@ function main() {
     const h = [80];
     let g$live = true;
     const g = [90];
-    const value$1 = [1, 2];
+    const value = [1, 2];
     let tmp;
     try {
-      tmp = $iter(value$1);
+      tmp = $iter(value);
       h$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -108,14 +108,14 @@ function main() {
       throw error;
     }
     const f$1 = (a, x) => (a + x) >>> 0;
-    const value = $consume(iter, "fold", 0, f$1, undefined, () => {
+    const value$1 = $consume(iter, "fold", 0, f$1, undefined, () => {
       console.log(`drop ${g[0]}`);
       if (g[0] === 90) {
         throw new Error("drop");
       }
     });
     iter.return();
-    const total = value;
+    const total = value$1;
     console.log(`total ${total}`);
   });
   console.log(`${r.TAG === "Err"}`);

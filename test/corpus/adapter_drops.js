@@ -1477,9 +1477,9 @@ function main() {
     throw error;
   }
   try {
-    const value = $next(plain);
+    const next = $next(plain);
     console.log(
-      `plain zip ${tmp$9 == null ? "None" : `Some((${tmp$9[0]}, ${tmp$9[1]}))`} ${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`,
+      `plain zip ${tmp$9 == null ? "None" : `Some((${tmp$9[0]}, ${tmp$9[1]}))`} ${next == null ? "None" : `Some((${next[0]}, ${next[1]}))`}`,
     );
   } catch (error) {
     $cleanup(() => {

@@ -271,8 +271,8 @@ function main() {
         } else if (r.TAG === "Err" && value$1.TAG === "Err") {
           countedClone_cloneFrom(r._0, value$1._0);
         } else {
-          const value$2 = $take(r, { ...value$1, _0: countedClone_clone(value$1._0) });
-          countedDrop_drop(value$2._0);
+          const value = $take(r, { ...value$1, _0: countedClone_clone(value$1._0) });
+          countedDrop_drop(value._0);
         }
       } catch (error) {
         throw $unwindsOn(error);

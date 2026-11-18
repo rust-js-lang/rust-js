@@ -397,8 +397,8 @@ function main() {
   }
   console.log("a local: stepped to its end");
   try {
-    const value = $next(fused$1);
-    console.log(`a local: again ${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(fused$1);
+    console.log(`a local: again ${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     $cleanup(() => {
       fused$1.return();
@@ -424,8 +424,8 @@ function main() {
     throw error;
   }
   try {
-    const value = $next(fused$1);
-    console.log(`a local's first: ${value == null ? "None" : `Some(${value})`}`);
+    const next = $next(fused$1);
+    console.log(`a local's first: ${next == null ? "None" : `Some(${next})`}`);
   } catch (error) {
     $cleanup(() => {
       fused$1.return();

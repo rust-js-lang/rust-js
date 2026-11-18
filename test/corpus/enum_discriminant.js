@@ -46,20 +46,20 @@ function main() {
   }
   const value = { TAG: "Circle", _0: 0 };
   const get = counts.get(value.TAG === "Circle" ? 0 : value.TAG === "Square" ? 1 : 2);
-  const value$4 = counts.get(EMPTY);
+  const value$1 = counts.get(EMPTY);
   console.log(
-    `${get == null ? "None" : `Some(${get})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${get == null ? "None" : `Some(${get})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$1 = { TAG: "Square", side: 1 };
-  console.log(`Discriminant(${value$1.TAG === "Circle" ? 0 : value$1.TAG === "Square" ? 1 : 2})`);
+  const value$2 = { TAG: "Square", side: 1 };
+  console.log(`Discriminant(${value$2.TAG === "Circle" ? 0 : value$2.TAG === "Square" ? 1 : 2})`);
   console.log(
     `Discriminant(${{ Low: 3, High: 10 }["Low"]}) Discriminant(${{ Low: 3, High: 10 }["High"]})`,
   );
-  const value$2 = $index(shapes, 3);
-  const value$5 = (value$2.TAG === "Circle" ? 0 : value$2.TAG === "Square" ? 1 : 2) === EMPTY;
-  const value$3 = $index(shapes, 1);
+  const value$3 = $index(shapes, 3);
+  const value$4 = (value$3.TAG === "Circle" ? 0 : value$3.TAG === "Square" ? 1 : 2) === EMPTY;
+  const value$5 = $index(shapes, 1);
   console.log(
-    `${value$5} ${(value$3.TAG === "Circle" ? 0 : value$3.TAG === "Square" ? 1 : 2) === SQUARE}`,
+    `${value$4} ${(value$5.TAG === "Circle" ? 0 : value$5.TAG === "Square" ? 1 : 2) === SQUARE}`,
   );
   console.log(`${shapeDebug_fmt($index(shapes, 1))}`);
 }

@@ -23,32 +23,30 @@ function fallenBack(x, TClone) {
 }
 
 function unwraps(a, r) {
-  const value = $someValue(
+  const value$1 = $someValue(
     $unwrap(
       cloned(a, {
-        clone(value) {
-          const value$1 = $someValue(value);
-          return value == null
-            ? value
-            : $some(value$1 == null ? value$1 : $some($someValue(value$1)));
+        clone(value$1) {
+          const value = $someValue(value$1);
+          return value$1 == null
+            ? value$1
+            : $some(value == null ? value : $some($someValue(value)));
         },
       }),
     ),
   );
-  const value$1 = $someValue(
+  const value = $someValue(
     copiedOut(a, {
-      clone(value) {
-        const value$1 = $someValue(value);
-        return value == null
-          ? value
-          : $some(value$1 == null ? value$1 : $some($someValue(value$1)));
+      clone(value$1) {
+        const value = $someValue(value$1);
+        return value$1 == null ? value$1 : $some(value == null ? value : $some($someValue(value)));
       },
     }) ?? $some(undefined),
   );
   const option = defaulted(a, {
-    clone(value) {
-      const value$1 = $someValue(value);
-      return value == null ? value : $some(value$1 == null ? value$1 : $some($someValue(value$1)));
+    clone(value$1) {
+      const value = $someValue(value$1);
+      return value$1 == null ? value$1 : $some(value == null ? value : $some($someValue(value)));
     },
   });
   const result = fallenBack(r, {
@@ -58,8 +56,8 @@ function unwraps(a, r) {
         : value,
   });
   return [
-    value,
     value$1,
+    value,
     option != null ? $someValue(option) : undefined,
     result.TAG === "Ok" ? result._0 : undefined,
     r.TAG === "Ok" ? r._0 : undefined,

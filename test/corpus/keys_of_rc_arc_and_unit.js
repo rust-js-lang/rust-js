@@ -353,8 +353,8 @@ function main() {
     throw error;
   }
   try {
-    const value = u.get(undefined);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const get = u.get(undefined);
+    console.log(`${get == null ? "None" : `Some(${get})`}`);
   } catch (error) {
     $cleanup(() => {
       $rcDrop(p);

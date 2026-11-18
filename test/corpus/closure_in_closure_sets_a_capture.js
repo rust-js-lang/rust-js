@@ -13,9 +13,9 @@ function nested(n) {
     $lazyRange(0, n).forEach((k) => {
       const d$1 = d;
       $lazyRange(0, 2).forEach((j) => {
-        const d = [(((k * 10) >>> 0) + j) >>> 0];
+        const value = [(((k * 10) >>> 0) + j) >>> 0];
         console.log(`drop ${d$1[0]}`);
-        $assign(d$1, d);
+        $assign(d$1, value);
         seen = (seen + d$1[0]) >>> 0;
       });
     });

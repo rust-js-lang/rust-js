@@ -69,8 +69,8 @@ function grown(framed) {
     get value() {
       return borrowMut.shape;
     },
-    set value(value) {
-      borrowMut.shape = value;
+    set value(newValue) {
+      borrowMut.shape = newValue;
     },
   };
   try {

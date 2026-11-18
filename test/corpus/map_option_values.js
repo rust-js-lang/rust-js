@@ -79,7 +79,7 @@ function main() {
   nested.set(2, undefined);
   nested.set(3, 3);
   for (let key = 1; key <= 4; key++) {
-    const value = $someGet(nested, key);
+    const get = $someGet(nested, key);
     const arg = read(nested, key, {
       fmt: (value) =>
         value == null
@@ -87,7 +87,7 @@ function main() {
           : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`,
     });
     console.log(
-      `${key}: ${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($someValue(value))})`} ${arg}`,
+      `${key}: ${get == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($someValue(get))})`} ${arg}`,
     );
   }
   nested.forEach((value, key) => {

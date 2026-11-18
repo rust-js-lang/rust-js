@@ -53,6 +53,7 @@ mod revealed;
 pub(in crate::lower) use hints::forget_thir_hints;
 pub(in crate::lower) use queries::{referred_constant, referred_key};
 pub(in crate::lower) use revealed::revealed;
+pub(in crate::lower) use temporaries::held_names;
 pub(in crate::lower) mod result_use;
 mod rvalues;
 mod scopes;
@@ -1210,7 +1211,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 until: self.krate.tidy_until,
                 params: &params,
                 suggested: &self.temporaries_names(mir_body, &state),
-                items_read: &self.items_read(def_id),
                 named: &state.locals.named(),
                 again: &Default::default(),
                 commented: &state.commented,
@@ -1219,18 +1219,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         census::note(mir_body, &out);
         self.body_epilogue(&mut state, &mut out);
         Ok((params.into_inner(), out))
-    }
-
-    /// What the items written in `def_id`'s body may read that the body
-    /// doesn't show (`Hints::items_read`): the module's names, which no
-    /// local takes (ADR 0267), where it has any; else none.
-    fn items_read(&self, def_id: rustc_span::def_id::DefId) -> IndexSet<String> {
-        if self.items_written_in(def_id).next().is_none() {
-            return IndexSet::default();
-        }
-        (self.module_names.iter().cloned())
-            .chain(self.module_fn_names())
-            .collect()
     }
 
     /// The names of plain values, which nothing changes (`Locals::plain`),
