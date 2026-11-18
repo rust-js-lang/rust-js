@@ -81,20 +81,12 @@ export function createUndoStack(initial, options) {
         $rcDrop(state);
         throw error;
       }
-      function holds(group) {
-        if (group === "") {
-          return false;
-        }
-        const open = history.open;
-        return open != null && open.group === group && time - open.time < groupDelay;
-      }
-      let joins;
-      try {
-        joins = group != null && holds(group);
-      } catch (error) {
-        $rcDrop(state);
-        throw error;
-      }
+      const joins =
+        group != null &&
+        group !== "" &&
+        history.open != null &&
+        history.open.group === group &&
+        time - history.open.time < groupDelay;
       if (joins) {
         const index = history.index;
         try {
@@ -108,11 +100,10 @@ export function createUndoStack(initial, options) {
       } else {
         history.entries.push(state);
         if (history.entries.length > limit + 1) {
-          const result = history.entries;
-          if (0 >= result.length) {
-            $removeOutOfBounds(result, 0);
+          if (0 >= history.entries.length) {
+            $removeOutOfBounds(history.entries, 0);
           }
-          $rcDrop(result.splice(0, 1)[0]);
+          $rcDrop(history.entries.splice(0, 1)[0]);
         }
         history.index = (history.entries.length - 1) >>> 0;
       }

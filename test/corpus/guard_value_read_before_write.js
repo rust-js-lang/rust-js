@@ -39,11 +39,7 @@ export function held(handler) {
   const guard = $borrow($fieldCell(handler, "chunk"), true);
   try {
     touch(handler);
-    if (lend($fieldCell(handler, "chunk"))) {
-      return guard.value != null ? guard.value.id : 0;
-    } else {
-      return 1;
-    }
+    return lend($fieldCell(handler, "chunk")) ? (guard.value?.id ?? 0) : 1;
   } finally {
     $unborrow(guard);
   }

@@ -90,10 +90,9 @@ function limitedWrite_write(limited, bytes) {
     return { TAG: "Err", _0: new $IoError("WriteZero", { value: "full", impl: $stringError() }) };
   }
   const n = Math.min(bytes.length, limited.room);
-  const result = limited.out;
   const items = bytes.slice(0, n);
   for (let i = 0; i < items.length; i++) {
-    result.push(items[i]);
+    limited.out.push(items[i]);
   }
   limited.room -= n;
   return { TAG: "Ok", _0: n };

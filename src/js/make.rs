@@ -77,7 +77,9 @@ impl Expr {
     /// This, which lowering knows is never `undefined`, though maybe
     /// `null` (`Known::Defined`); one it knows otherwise of, a getter's
     /// read say, as it is. What it knows of the `None` it can be, of an
-    /// `Option`'s read (`Known::NoneNull`), is no other knowledge.
+    /// `Option`'s read (`Known::NoneNull`), is no other knowledge, nor is
+    /// that it's a field no getter answers (`Known::Own`), which says how
+    /// it's read, not what.
     pub fn defined(self) -> Expr {
         self.known_as(Known::Defined)
     }
@@ -90,7 +92,7 @@ impl Expr {
     }
 
     fn known_as(self, known: Known) -> Expr {
-        match self.facts.of_presence() == self.facts {
+        match self.facts.of_presence() == self.facts.without(Known::Own) {
             true => Expr {
                 facts: self.facts.with(known),
                 ..self
@@ -137,6 +139,12 @@ impl Expr {
             facts: Facts::of(Known::Setter),
             ..self
         }
+    }
+
+    /// This, a field of a struct only the program makes (`Known::Own`).
+    pub fn own_field(mut self) -> Expr {
+        self.facts = self.facts.with(Known::Own);
+        self
     }
 
     /// This, a binding's read of a property, which a getter may answer

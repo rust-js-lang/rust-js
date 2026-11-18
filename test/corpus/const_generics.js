@@ -36,11 +36,10 @@ const Ring = {
 
   push(ring, x, CAP) {
     if (ring.items.length === CAP) {
-      const result = ring.items;
-      if (0 >= result.length) {
-        $removeOutOfBounds(result, 0);
+      if (0 >= ring.items.length) {
+        $removeOutOfBounds(ring.items, 0);
       }
-      result.splice(0, 1);
+      ring.items.splice(0, 1);
     }
     ring.items.push(x);
   },

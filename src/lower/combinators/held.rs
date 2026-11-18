@@ -34,13 +34,65 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A combinator's subject, which Rust reads once, as it's read twice:
+    /// itself where it may be (`subject_read_twice`), else held in a
+    /// `const` first, at `out`'s index it gives. A `map_or`'s that isn't a
+    /// variable is held too, so its `?.` folds it, `fiber.return?.tag ?? 0`
+    /// (ADR 0309), and where it doesn't fold, it's read again in place
+    /// (`read_again`), as the third value says.
+    pub(super) fn subject_to_read_twice(
+        &mut self,
+        comb: Comb,
+        subject: Expr,
+        subject_ty: Ty<'tcx>,
+        values: &[Expr],
+        out: &mut Vec<Stmt>,
+    ) -> (Expr, Option<usize>, bool) {
+        let read_twice = self.subject_read_twice(&subject);
+        if read_twice && (comb != Comb::MapOr || matches!(subject.kind, js::ExprKind::Var(_))) {
+            return (subject, None, true);
+        }
+        let at = out.len();
+        (
+            self.held_subject(subject, subject_ty, values, out),
+            Some(at),
+            read_twice,
+        )
+    }
+
     /// Whether a combinator's subject, which Rust reads once, may be read
     /// twice where the JS tests it and reads it again: no getter can answer
     /// it, a variable's, a constant's, the program's item's
-    /// (`reads_alike_twice`, #1908) or a field of its plain data
-    /// (`plain_field`, rd614). Else it's held in a `const` first.
+    /// (`reads_alike_twice`, #1908), a field of its plain data, which
+    /// nothing changes (`plain_field`, rd614), or a field of a struct only
+    /// the program makes, which no getter answers (`Known::Own`). Nothing a
+    /// program rustc accepts runs between the test and the read that writes
+    /// such a field: a closure inlined there is one expression, which can't
+    /// write the field it was given but through a `&mut` of it, a call
+    /// borrowck refuses beside the read, and a closure of more is a
+    /// function called with the field, read before it runs (ADR 1022,
+    /// amended). Else it's held in a `const` first.
     pub(in crate::lower) fn subject_read_twice(&self, subject: &Expr) -> bool {
-        subject.reads_alike_twice() || self.plain_field(subject)
+        subject.reads_alike_twice() || self.plain_field(subject) || subject.facts.has(js::Known::Own)
+    }
+}
+
+/// `value`, a combinator's, with the `const` its subject, which may be read
+/// twice, was held in at `spilled_at`, `out`'s last, read in place again.
+pub(super) fn read_again(value: Expr, spilled_at: Option<usize>, out: &mut Vec<Stmt>) -> Expr {
+    let Some(at) = spilled_at.filter(|&at| out.len() == at + 1) else {
+        return value;
+    };
+    let StmtKind::Const(name, held) = &out[at].kind else {
+        return value;
+    };
+    let (name, held) = (name.clone(), held.clone());
+    match value.substitute_names(&|var| (*var == name).then(|| held.clone())) {
+        Some(value) => {
+            out.pop();
+            value
+        }
+        None => value,
     }
 }
 

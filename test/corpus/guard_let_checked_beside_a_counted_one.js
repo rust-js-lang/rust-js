@@ -12,14 +12,13 @@ function make(history) {
       $alreadyBorrowed();
     }
     const time = 3;
-    function holds(group) {
-      if (group === "") {
-        return false;
-      }
-      const open = history.open;
-      return open != null && open.group === group && time - open.time < 5;
-    }
-    return group != null && holds(group);
+    return (
+      group != null &&
+      group !== "" &&
+      history.open != null &&
+      history.open.group === group &&
+      time - history.open.time < 5
+    );
   }
   function each(f) {
     const _held = $borrow(history, true);

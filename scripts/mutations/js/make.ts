@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
     name: "defined-of-a-presence-read-kept-out",
     breaks: "what a nullable binding's getter gave, read again with what its `None` is, is no longer `Some`'s value, so `internals.T = prevTransition` stores `prevTransition ?? null` (ADRs 0841, 0298)",
     file: "src/js/make.rs",
-    find: "        match self.facts.of_presence() == self.facts {\n",
+    find: "        match self.facts.of_presence() == self.facts.without(Known::Own) {\n",
     replace: "        match self.facts == Facts::NONE {\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "a nullable function's result is written to a nullable place as it is"],
   },
@@ -544,5 +544,14 @@ export const mutations: Mutation[] = [
     find: "            _ if self.facts.has(Known::Proved) || self.facts.has(Known::ProvedDefined) => false,\n",
     replace: "            _ if self.facts.has(Known::ProvedDefined) => false,\n",
     tests: ["test/lowering-nullable-tests.test.ts", "test/lowering-nullable-truthy.test.ts"],
+  },
+  {
+    name: "defined-drops-own",
+    breaks: "a field no getter answers, `Known::Own`, isn't made `defined()`, so React DOM's `getParent` step, `inst.and_then(|inst| inst.r#return.borrow().clone())`, prints `inst?.return`, `undefined` where its `None` is `null` (#1908's scope)",
+    file: "src/js/make.rs",
+    find: "        match self.facts.of_presence() == self.facts.without(Known::Own) {\n",
+    replace: "        match self.facts.of_presence() == self.facts {\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_a_mapped_option\\.rs$"],
+    snapshots: true,
   },
 ];

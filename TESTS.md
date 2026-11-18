@@ -1,5 +1,11 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#1908's scope): corpus case
+`option_subject_of_a_cells_field.rs` holds an `Option` combinator's subject
+read through a captured `Rc<RefCell<_>>`'s guard, read again where nothing
+runs between, as upstream writes it, and `nullable_field_of_a_mapped_option.rs`
+React DOM's `getParent` step.
+
 Changed on 2026-11-18 (#1904's markers): test/object-markers.test.ts, two
 tests, holds every binding crate's `Classed` type to what an object's
 binding is, `Defined` and `WeakKey`; test/intl-locale.test.ts's sixth, an

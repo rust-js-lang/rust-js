@@ -547,8 +547,10 @@ test("a library's type equal only to itself keys its consumer's Set by itself", 
   expect(app).toContain("function schedule(transition, fiber) {\n  if (transition.updatedFibers != null) {\n    transition.updatedFibers.add(fiber);\n");
   // A borrow held while `contains` runs: std's `Borrow` of a `&Fiber` is
   // its blanket impl, none of the library's, so it runs no code of `dep`'s.
-  // Of a parameter's field, which Rust reads once, read once (#1908).
-  expect(app).toContain("  const fibers = transition.updatedFibers;\n  return fibers != null && fibers.has(fiber);\n");
+  // A field of the library's struct, which only the program makes, no
+  // getter answers, so it's read again, as `schedule` reads it (ADR 1022,
+  // amended).
+  expect(app).toContain("  return transition.updatedFibers != null && transition.updatedFibers.has(fiber);\n");
   expect(app).toContain("${a === b} ${a === a}");
   expect(app).toContain("  const own = new Set();\n  own.add(b);\n");
   expect(app).not.toContain("$borrow");

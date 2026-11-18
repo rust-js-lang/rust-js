@@ -578,6 +578,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             (Shape::Object(fields), _) => {
+                // Of a variable, or a field so read itself, of a struct only
+                // the program makes: no getter answers it (#1908's scope).
+                let own_base = matches!(base.kind, js::ExprKind::Var(_)) || base.facts.has(js::Known::Own);
                 let field = self.field_member(base, &fields[i].0);
                 // Of a JS object the program didn't build, a getter may
                 // answer it (rd204, ADR 1022); Rust's read of a field can't
@@ -585,6 +588,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // getter's throw is none Rust sees (rd227, rd228).
                 let field = match self.fields_answered_by_getters(ty) {
                     true => field.answered_by_a_getter().never_throws(),
+                    false if own_base && !self.fields_read_once(ty) => field.own_field(),
                     false => field,
                 };
                 let def = self.struct_field_def(ty, i);

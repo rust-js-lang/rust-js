@@ -39,25 +39,22 @@ export function createUndoStack(initial, options) {
     const history$1 = history;
     const end = (history$1.index + 1) >>> 0;
     $truncate(history$1.entries, end);
-    function holds(group) {
-      if (group === "") {
-        return false;
-      }
-      const open = history$1.open;
-      return open != null && open.group === group && time - open.time < groupDelay;
-    }
-    const joins = group != null && holds(group);
+    const joins =
+      group != null &&
+      group !== "" &&
+      history$1.open != null &&
+      history$1.open.group === group &&
+      time - history$1.open.time < groupDelay;
     if (joins) {
       const index = history$1.index;
       history$1.entries[$at(history$1.entries, index)] = state;
     } else {
       history$1.entries.push(state);
       if (history$1.entries.length > limit + 1) {
-        const result = history$1.entries;
-        if (0 >= result.length) {
-          $removeOutOfBounds(result, 0);
+        if (0 >= history$1.entries.length) {
+          $removeOutOfBounds(history$1.entries, 0);
         }
-        result.splice(0, 1);
+        history$1.entries.splice(0, 1);
       }
       history$1.index = (history$1.entries.length - 1) >>> 0;
     }

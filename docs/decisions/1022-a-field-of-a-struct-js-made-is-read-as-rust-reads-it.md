@@ -518,3 +518,63 @@ it never builds, a getter's `Some` then `None`, panicking as Rust does; a
 dictionary the crate builds keeping its check); mutations
 `crate-constructed-read-anew` and `dictionary-constructed-by-the-crate`
 (lower/analysis/fn_pointers.ts).
+
+## Amendment (2026-11-18): a field of the program's own struct, held in a cell, read again (#1908's scope)
+
+#1908 held an `Option` combinator's subject in a `const` unless it reads
+alike twice or is a field of plain data, a local nothing changes. The undo
+stack's `record`, upstream's `!!group && open?.group === group && time -
+open.time < groupDelay`, then printed its condition as a nested
+`function holds(group) { .. const open = history.open; .. }`: `history`
+is an `Rc<RefCell<History>>` the closure captures, no plain local, so
+`history.open` was held. And the function, which captures the guard, cost
+the `remove(0)` after the push its proof (`8453fcd13`, by bisection).
+
+A getter is what #1908 guards against: a field of what JS may make or give
+(`fields_read_once`), which may answer anew. `History` is the program's
+own, its fields plain properties. So a field read of a struct of the
+program's whose `fields_read_once` is false, of a variable or of a field so
+read, is `Known::Own`, set where the read is lowered (`project`), and an
+`Own` subject is read twice, as a plain one is (rd614). ADR 0262's first
+case: no getter answers it, so JS's second read gives what Rust's one gave.
+
+Nothing a program rustc accepts writes the field between the test and the
+second read, which we checked rather than assumed:
+
+1. A closure that writes the field it's given, `slot.x.map(|v| { slot.x =
+   None; v + 1 })`, compiles (`Option<i32>` is `Copy`, the closure captures
+   `slot.x` apart), but a body of more than one expression is a function,
+   called with the field: `map(slot.x)` reads it before the write.
+2. `and_then`, `is_some_and` of the same hold it first, `const v = s.x`.
+3. One expression through a `&mut` of it, `slot.x.map(|v| reset(&mut
+   slot.x) + v)`, compiles too, but the `&mut` of a field is a box written
+   back, more than one statement: the function again.
+4. One expression that calls a closure writing it, `|v| clear() + v`, is
+   refused by rustc (E0503).
+5. Through a `RefCell`, the write panics, "already borrowed", natively and
+   in the JS, before the second read.
+
+So the soundness leans on the lowering of 1 and 3, a function called with
+the field, and the corpus case holds both against native: a change that
+inlined a body of several statements would fail there. A check of what runs
+between the reads was tried and dropped: no row could reach it.
+
+A `map_or`'s subject that isn't a variable is held, as #1908 holds one, so
+its `?.` folds it (ADR 0309), `fiber.return?.tag ?? 0`, and is read again in
+place where it doesn't, `q.step != null ? q.step * 2 : 0`: an `Own` subject
+kept the folding the `const` gave it, and one of plain data gains it,
+`guard.value?.id ?? 0`.
+
+`record` is inline again, as upstream and as rust-js printed before
+`8453fcd13`. Corpus case `option_subject_of_a_cells_field` holds the
+shapes, against native; mutations `own-field-unmarked`,
+`own-field-read-once-always`, `map-or-subject-not-held` and
+`map-or-subject-kept-held`; `map-field-spilled`'s row is now
+`untagged_field_of_each_variant`, a variant's field, which `plain` answers
+and `Own`, of a struct's, doesn't. `defined()` and `present()` keep `Own`,
+which says how a field is read, not what it is
+(`optional-nullable-read-defined`, `defined-drops-own`): where `Own` blocked
+`defined()`, React DOM's `getParent` step printed `inst?.return`, whose
+`undefined` is no `None` the crate's `=== null` reads, a wrong answer
+caught before it landed; corpus case `nullable_field_of_a_mapped_option`
+holds `inst != null ? inst.return : null`.

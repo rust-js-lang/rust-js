@@ -15,8 +15,7 @@ function takeFirst(q) {
 }
 
 function doubled(q) {
-  const s = q.step;
-  return s != null ? s * 2 : 0;
+  return q.step != null ? q.step * 2 : 0;
 }
 
 function main() {

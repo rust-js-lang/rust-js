@@ -331,11 +331,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         // The subject is read more than once.
-        let spilled_at = (!self.subject_read_twice(&subject)).then_some(out.len());
-        let subject = match self.subject_read_twice(&subject) {
-            true => subject,
-            false => self.held_subject(subject, subject_ty, &values, out),
-        };
+        let (subject, spilled_at, read_twice) = self.subject_to_read_twice(comb, subject, subject_ty, &values, out);
         let mut rest = values.into_iter();
         let mut next = || rest.next().expect("rustc checked the arguments");
         let some = Expr::bin(Op::LooseNe, subject.clone(), Expr::null());
@@ -435,6 +431,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         nullish
                     }
+                    None if read_twice => held::read_again(Expr::cond(some, mapped, fallback), spilled_at, out),
                     None => Expr::cond(some, mapped, fallback),
                 }
             }

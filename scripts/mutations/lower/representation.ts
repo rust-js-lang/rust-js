@@ -689,4 +689,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/getter-reads.test.ts", "-t", "js_given_options"],
   },
+  {
+    name: "own-field-unmarked",
+    breaks: "a field of a struct only the program makes isn't said to be one no getter answers, so an `Option` combinator's subject of it, `history.open`, is held in a `const` and its closure's condition a nested function (#1908's scope)",
+    file: "src/lower/representation.rs",
+    find: "                    false if own_base && !self.fields_read_once(ty) => field.own_field(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^undo_stack_map_reentered\\.rs$"],
+    snapshots: true,
+  },
 ];

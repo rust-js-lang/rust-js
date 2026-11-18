@@ -25,7 +25,7 @@ function counter() {
 }
 
 const ptr = leaked();
-const READ = $local(() => (ptr != null ? ptr.n : 0));
+const READ = $local(() => ptr?.n ?? 0);
 const a = leakedT();
 const b = $local(() => a);
 const READ_A = $local(() => a.n);

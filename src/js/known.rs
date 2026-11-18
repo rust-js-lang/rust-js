@@ -55,6 +55,13 @@ knowns! {
     /// JS may throw of it, or run a trap or a `valueOf`, never a value
     /// nothing reads that can go (#462).
     Getter,
+    /// A read of a field of a struct only the program makes, a plain data
+    /// property no getter answers, of a variable or of a field so read
+    /// itself, `history.open` of a `RefCell<History>`'s: the same value read
+    /// twice, as nothing a program rustc accepts writes it between
+    /// (`fields_read_once` false, #1908's scope; ADR 1022, amended). It says
+    /// how it's read, not what: `defined()` and `present()` keep it.
+    Own,
     /// A binding's write of a property, `set x` or `set X.y`, the target
     /// of its assignment: a setter may answer it, which may do anything,
     /// throw too, so the write never only makes a value (ADR 0660,
@@ -412,6 +419,7 @@ impl Known {
             | Known::Present
             | Known::Proved
             | Known::ProvedDefined
+            | Known::Own
             | Known::Taken
             | Known::ArrayItems
             | Known::Item

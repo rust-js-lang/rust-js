@@ -36,10 +36,9 @@ export function bufWrite(CAP) {
 
 function bufWrite_write(buf, data, CAP) {
   const len = Math.min((CAP - buf.bytes.length) >>> 0, data.length);
-  const result = buf.bytes;
   const items = data.slice(0, len);
   for (let i = 0; i < items.length; i++) {
-    result.push(items[i]);
+    buf.bytes.push(items[i]);
   }
   return { TAG: "Ok", _0: len };
 }
