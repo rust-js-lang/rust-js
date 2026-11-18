@@ -137,3 +137,15 @@ it, `#default.Template`, is that name's, `ModuleDependency.Template`.
   `default-type-named-after-its-module` (`lower/declarations.ts`),
   `package-default-type-imported-as-a-name`
   (`lower/declarations/imports.ts`).
+
+## Amendment: relative JavaScript binding types
+
+A relative \`#[rust_js::types = "./math/color.js#Color"]\` specifier is
+relative to the crate root, as the same specifier in \`link_name\` is. The
+output resolves both through the same file layout. A binding used from
+\`render/uniforms.rs\` therefore imports its runtime value and its type
+from \`../math/color.js\`. Bare package specifiers retain their spelling.
+
+The declaration still describes the same type (ADR 0262, no runtime
+difference). The relative binding test checks both imports and type-checks
+a consumer with bundler and NodeNext module resolution.

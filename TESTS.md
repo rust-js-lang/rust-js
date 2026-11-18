@@ -2,6 +2,8 @@
 
 Changed on 2026-11-18: the nullable proof regression checks an option filled on its missing branch, including a local initialized by a lookup. Paths that skip the fill or mutate the option through a borrow still panic on unwrap.
 
+Changed on 2026-11-18: the declaration suite checks relative foreign types in a nested module and resolves them from a TypeScript consumer.
+
 Changed on 2026-11-18: the map binding regression checks strict undefined comparisons and the behavior of missing, null, and object values in native Map and WeakMap.
 
 Changed on 2026-11-18: the constructor binding regression checks direct JavaScript construction from a property read, getter order, and TypeError for invalid targets.

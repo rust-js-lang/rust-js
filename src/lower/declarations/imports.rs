@@ -20,7 +20,8 @@ type TypeExport<'a> = (
 type ModuleImports<K> = BTreeSet<(K, String, bool)>;
 
 /// The declarations that import and re-export, first in a `.d.ts`: the
-/// types of JS modules', `import type { ReactNode } from "react";`; of
+/// types of JS modules', `import type { ReactNode } from "react";`, with
+/// relative bindings linked from the crate root as their runtime imports are; of
 /// libraries' modules, by their file's specifier, `import type { Context }
 /// from "../react/ReactContext.js";`, as a library's functions are
 /// imported (ADR 0210, amended); of the crate's other modules, by their
@@ -41,7 +42,7 @@ pub(super) fn imports(
 ) -> Vec<Value> {
     let mut declarations = Vec::new();
     for (from, names, default) in of_modules(packages) {
-        declarations.extend(type_imports(json!({ "from": from }), names, default));
+        declarations.extend(type_imports(json!({ "specifier": from }), names, default));
     }
     for (from, names, default) in of_modules(libraries) {
         declarations.extend(type_imports(json!({ "specifier": from }), names, default));
