@@ -12,7 +12,7 @@ pub(in crate::lower) fn given_a_drop<'tcx>(
     param: &ty::GenericParamDef,
 ) -> bool {
     matches!(param.kind, ty::GenericParamDefKind::Type { .. })
-        && !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, param.index, param.name))
+        && !crate::lower::copies::is_copy(tcx, typing_env, Ty::new_param(tcx, param.index, param.name))
 }
 
 /// A generic trait method's own type parameters its caller gives a drop for

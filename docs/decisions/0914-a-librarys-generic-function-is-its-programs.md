@@ -2140,3 +2140,14 @@ its dictionary, and pairs `library_elides_through_a_private_callee` and
 `elided-of-changed`, `elided-not-closed-over-calls`,
 `elided-impl-methods-dropped` and `elided-trait-method-impls-unfollowed`.
 The scan's sixteen mutations went with its code, `may_hold_changed`'s two among them.
+
+### Whether a type is `Copy`: one place asks (2026-11-19, #2112's change D, step 1.5)
+
+Seven places asked rustc's trait solver whether a type is `Copy`,
+`type_is_copy_modulo_regions`, each in its own words: the copy policy,
+the `Rc` counts, value cells, zip folds' clones and which type
+parameters are given a drop. One function asks now, `copies::is_copy`,
+of the typing environment its caller is in. test/architecture-traits.test.ts
+holds that nothing else does. No answer changes (case of
+[0262](0262-when-rust-and-js-disagree.md): none).
+

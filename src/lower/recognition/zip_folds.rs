@@ -61,7 +61,7 @@ fn clone_runs_crates_code<'tcx>(
     ty: Ty<'tcx>,
     seen: &mut IndexSet<Ty<'tcx>>,
 ) -> bool {
-    if tcx.type_is_copy_modulo_regions(typing_env, ty) || !seen.insert(ty) {
+    if crate::lower::copies::is_copy(tcx, typing_env, ty) || !seen.insert(ty) {
         return false;
     }
     let clone = tcx.require_lang_item(LangItem::Clone, rustc_span::DUMMY_SP);

@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a static holding react's `ElementType` is refused: `statics of type Variant`",
     file: "src/lower/copies.rs",
-    find: "                tcx.type_is_copy_modulo_regions(ty::TypingEnv::fully_monomorphized(), ty)\n",
+    find: "                is_copy(tcx, ty::TypingEnv::fully_monomorphized(), ty)\n",
     replace: "                false\n",
     tests: ["test/jsx-types.test.ts", "-t", "ElementType, rendered as a tag"],
   },

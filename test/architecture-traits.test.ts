@@ -111,3 +111,11 @@ test("which trait impls a compile has is asked of traits.rs alone", () => {
   const defines = /\bfn (declared_impls|declared_impls_of|lowered_impls|is_lowered_impl)\b/;
   expect(sources.filter(file => defines.test(read(file)))).toEqual(["src/lower/traits.rs"]);
 });
+
+// Whether a type is `Copy` is rustc's trait solver's answer, asked in one
+// place, `copies::is_copy` (#2112's change D): seven places asked it each
+// their own way, beside the bound as written or a library's own view.
+test("whether a type is `Copy` is asked of copies.rs alone", () => {
+  const asks = /\btype_is_copy_modulo_regions\b|\bis_copy_modulo_regions\b/;
+  expect(sources.filter(file => asks.test(read(file)))).toEqual(["src/lower/copies.rs"]);
+});

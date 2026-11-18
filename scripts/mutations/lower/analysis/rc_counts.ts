@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's `Copy` closure given `Rc::new` twice, compiled by a consumer that reads a `dyn Fn`'s address, is taken to be made with each, so the two `Rc`s are one function, `addr_eq` `true` (#1053)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                    if tcx.type_is_copy_modulo_regions(env, from) {\n                        copied.insert(erased(from));\n                    }\n",
+    find: "                    if crate::lower::copies::is_copy(tcx, env, from) {\n                        copied.insert(erased(from));\n                    }\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
   },

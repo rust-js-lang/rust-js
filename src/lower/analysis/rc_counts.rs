@@ -454,7 +454,7 @@ pub(super) fn counted_rcs<'tcx>(
                     && let Some(to) = to_owner.boxed_ty().or_else(|| rc_pointee(tcx, to_owner))
                     && fn_dyn(to)
                 {
-                    if tcx.type_is_copy_modulo_regions(env, from) {
+                    if crate::lower::copies::is_copy(tcx, env, from) {
                         copied.insert(erased(from));
                     }
                     unsized_fns.insert((erased(from_owner), erased(from), erased(to)));
@@ -519,7 +519,7 @@ pub(super) fn counted_rcs<'tcx>(
                 && let Some(to) = expr.ty.boxed_ty().or_else(|| rc_pointee(tcx, expr.ty))
                 && fn_dyn(to)
             {
-                if tcx.type_is_copy_modulo_regions(env, from) {
+                if crate::lower::copies::is_copy(tcx, env, from) {
                     copied.insert(erased(from));
                 }
                 unsized_fns.insert((erased(owner_ty), erased(from), erased(to)));

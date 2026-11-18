@@ -65,7 +65,7 @@ pub(super) fn value_cell<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tc
         ty::Ref(_, _, mir::Mutability::Not) => true,
         ty::Adt(adt, args) => {
             crate::lower::representation::marks_js_object(tcx, adt, args)
-                && tcx.type_is_copy_modulo_regions(ty::TypingEnv::fully_monomorphized(), value)
+                && crate::lower::copies::is_copy(tcx, ty::TypingEnv::fully_monomorphized(), value)
         }
         _ => false,
     };

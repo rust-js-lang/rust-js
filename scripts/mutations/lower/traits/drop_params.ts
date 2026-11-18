@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Copy` type parameter is given a drop function too, which its callers pass for nothing",
     file: "src/lower/traits/drop_params.rs",
-    find: "        && !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, param.index, param.name))\n",
+    find: "        && !crate::lower::copies::is_copy(tcx, typing_env, Ty::new_param(tcx, param.index, param.name))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copy_param_no_drop.rs$"],
     snapshots: true,

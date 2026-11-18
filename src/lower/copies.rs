@@ -785,7 +785,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn is_copy(&self, ty: Ty<'tcx>) -> bool {
-        self.tcx.type_is_copy_modulo_regions(self.typing_env, ty)
+        is_copy(self.tcx, self.typing_env, ty)
     }
 
     /// An enum rust-js writes as ADR 0033 says, that's `Copy`: one of the
@@ -1130,6 +1130,14 @@ fn parameters_given<'tcx>(ty: Ty<'tcx>, general: Ty<'tcx>, given: &mut IndexMap<
     }
 }
 
+/// Whether a value of `ty` is `Copy` where `typing_env` says, as rustc's
+/// trait solver answers of it there: the one place rust-js asks (#2112's
+/// change D). A type parameter's of its bounds; an instance's of its
+/// arguments.
+pub(in crate::lower) fn is_copy<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+    tcx.type_is_copy_modulo_regions(typing_env, ty)
+}
+
 /// What the crate changes in place (ADR 0052): the types whose objects it
 /// changes, and the `Vec`s.
 #[derive(Clone, Copy)]
@@ -1174,7 +1182,7 @@ pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
             // A JS value that's `Copy`, react's `ElementType`, nothing changes
             // through (ADR 0234).
             ty::Adt(adt, args) if super::representation::marks_js_object(tcx, *adt, args) => {
-                tcx.type_is_copy_modulo_regions(ty::TypingEnv::fully_monomorphized(), ty)
+                is_copy(tcx, ty::TypingEnv::fully_monomorphized(), ty)
             }
             // The crate's own struct or enum, or a library's, React's
             // `Dispatcher`, compiled as its fields say too (ADR 0100); not
