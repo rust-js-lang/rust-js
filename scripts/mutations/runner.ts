@@ -67,6 +67,22 @@ export const mutations: Mutation[] = [
     tests: ["test/mutations.test.ts", "-t", "a removed mutation is told from one renamed or moved"],
   },
   {
+    name: "whole-corpus-in-one-process",
+    breaks: "a mutant's whole corpus runs in one process, 12 at once each past its time, inconclusive (ADR 0093, amended)",
+    file: "scripts/mutations.ts",
+    find: "  return tests.length === wholeCorpus.length && tests.every((arg, i) => arg === wholeCorpus[i]);\n",
+    replace: "  return false;\n",
+    tests: ["test/mutations.test.ts", "-t", "a mutant against the whole corpus runs it in parts"],
+  },
+  {
+    name: "corpus-sweep-keeps-settings",
+    breaks: "`--corpus` keeps a mutation's settings, which select another file's parts, so its corpus run is refused as it starts (#1210)",
+    file: "scripts/mutations.ts",
+    find: "  return { ...mutation, tests: [...wholeCorpus], snapshots: true, env: undefined, unitTests: undefined };\n",
+    replace: "  return { ...mutation, tests: [...wholeCorpus], snapshots: true, unitTests: undefined };\n",
+    tests: ["test/mutations.test.ts", "-t", "a mutant against the whole corpus runs it in parts"],
+  },
+  {
     name: "retire-control-unasked",
     breaks: "a test that fails with any compiler in a mutant's environment is named a row of the mutation, and none could be retired",
     file: "scripts/mutations.ts",

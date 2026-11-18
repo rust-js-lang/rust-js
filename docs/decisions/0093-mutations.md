@@ -1226,3 +1226,26 @@ the crates (`unbuiltBy`), and one that doesn't is INCONCLUSIVE, never a
 survivor. `string-replace-all-is-first-only` is caught by its test, in
 about two minutes here. Mutations `source-bindings-unbuilt-judged` and
 `source-bindings-marked` are caught.
+
+## Amendment: a mutant against the whole corpus runs it in parts, and `--corpus` sweeps survivors so (2026-11-18)
+
+The sweep of the survivors the coverage run found reached, 190 of them,
+asked each against the whole corpus with its snapshots compared. Each
+mutation's tests set to `["test/corpus.test.ts"]`, the runner ran each
+mutant's corpus in one `bun test` process, twelve mutants at once: a load
+of about 30 on the Mac mini's 12 cores, and every mutant it judged,
+eleven by the time it was stopped, ran past its time, inconclusive. Its
+controls already ran the corpus in parts.
+
+So a mutant whose tests are the corpus whole, no `-t` (`ofWholeCorpus`),
+runs it as its controls do: in `caseParts` parts at once, each its
+`RUST_JS_CASES` and its own slot among the tests at once, each to its
+first failure (`testsInParts`), passing where every part does; its
+reruns too. And `bun scripts/mutations.ts --corpus <name>..` runs each
+named mutation so, its snapshots compared, whatever tests it names, and
+without its settings, which select other files' parts
+(`againstWholeCorpus`): the sweep's one way, the catching case each
+caught one names in its result line and `caughtBy` its retarget. No
+catalog is edited for a sweep. The corpus in 12 parts took 117 s as the
+compiler is here. Mutations `whole-corpus-in-one-process` and
+`corpus-sweep-keeps-settings` are caught.

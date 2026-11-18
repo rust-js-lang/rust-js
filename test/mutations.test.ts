@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -721,7 +721,7 @@ test("a flag that takes a value, given none, is refused with its form", () => {
   expect(refusedFlags(["--changed"])).toEqual(["--changed takes a value: --changed=<base>"]);
   expect(refusedFlags(["--base="])).toEqual(["--base takes a value: --base=<commit>"]);
   expect(refusedFlags(["--changed=origin/main", "--list", "--browser", "--shard=2/16", "a-mutation"])).toEqual([]);
-  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --changed=<base>");
+  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --corpus, --changed=<base>");
   // A list's flag given `=` and nothing is an empty list: check.yml's form,
   // `--also={retry}` where none is retried; bare, it's refused.
   expect(refusedFlags(["--changed=0123abc", "--also=", "--base=0123abc"])).toEqual([]);
@@ -736,4 +736,18 @@ test("the control runs each set of tests with its mutation's settings", () => {
   const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
   expect(source).toContain("env: { ...run.env, ...(run.part ? { RUST_JS_CASES: run.part } : {}) }");
   expect(source).toContain('m.snapshots ? "snapshots" : "", envKey(m.env)');
+});
+
+// The corpus whole is run in parts at once, as its controls are, never in
+// one process: 12 mutants' whole corpus at once each ran past its time,
+// inconclusive, every one of a sweep's (ADR 0093, amended). `--corpus`
+// runs each chosen mutation so, its snapshots compared, without its
+// settings, which select other files' parts.
+test("a mutant against the whole corpus runs it in parts; --corpus runs each so", () => {
+  expect(ofWholeCorpus(["test/corpus.test.ts"])).toBe(true);
+  expect(ofWholeCorpus(["test/corpus.test.ts", "-t", "^a.rs$"])).toBe(false);
+  expect(ofWholeCorpus(["test/ci.test.ts"])).toBe(false);
+  const swept = againstWholeCorpus({ name: "m", breaks: "x", file: "src/a.rs", find: "a", replace: "b", tests: ["test/a.test.ts", "-t", "x"], env: { ITERATOR_TABLE: "copies" } });
+  expect([swept.tests, swept.snapshots, swept.env]).toEqual([["test/corpus.test.ts"], true, undefined]);
+  expect(refusedFlags(["--corpus"])).toEqual([]);
 });

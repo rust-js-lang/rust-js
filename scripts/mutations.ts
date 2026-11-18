@@ -9,6 +9,7 @@
 //   bun scripts/mutations.ts --changed=main   # a change's, since where it left main
 //   bun scripts/mutations.ts --shard=2/6      # a sixth of them, as CI splits them
 //   bun scripts/mutations.ts --batch=1        # each built alone, not 32 to a build
+//   bun scripts/mutations.ts --corpus a b ..  # each named against the whole corpus, its snapshots compared
 //   bun scripts/mutations.ts --typecheck=origin/main  # a change's files' mutants type-checked, none run
 //
 // The mutations themselves are in `mutations/`, one list for each source
@@ -949,6 +950,49 @@ async function test(
   return { passed: passed(p.code, !stopped(p, testTimeout), output), ran: pass + fail, output, exit: p };
 }
 
+/** The corpus whole, as a mutation's tests name it: run in parts at once
+ * (`testsInParts`), as its controls are, never in one process, where 12
+ * mutants' at once each ran past its time, inconclusive (ADR 0093,
+ * amended). */
+export const wholeCorpus = ["test/corpus.test.ts"];
+
+/** `mutation` run against the whole corpus with its snapshots compared,
+ * `--corpus`'s: no other test, nor its settings, which select other files'
+ * parts, nor its unit tests. */
+export function againstWholeCorpus(mutation: Mutation): Mutation {
+  return { ...mutation, tests: [...wholeCorpus], snapshots: true, env: undefined, unitTests: undefined };
+}
+
+/** Whether `tests` are the corpus whole, no `-t`: `wholeCorpus`. */
+export function ofWholeCorpus(tests: string[]): boolean {
+  return tests.length === wholeCorpus.length && tests.every((arg, i) => arg === wholeCorpus[i]);
+}
+
+/** `tests` with `compiler`, as `test` runs them, but the corpus whole in
+ * `parts` at once, each its `RUST_JS_CASES` and its own slot of `beside`,
+ * each to its first failure: what they printed together, passed where
+ * every part did, the exit of the first that failed. */
+async function testsInParts(
+  tests: string[],
+  compiler: string,
+  snapshots: Snapshots,
+  env: Record<string, string> | undefined,
+  beside: <T>(work: () => Promise<T>) => Promise<T>,
+  parts = caseParts(machine().cores),
+): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
+  if (!ofWholeCorpus(tests)) return beside(() => test(tests, compiler, snapshots, { env }));
+  const ran = await Promise.all(
+    Array.from({ length: parts }, (_, i) => beside(() => test(tests, compiler, snapshots, { env: { ...env, RUST_JS_CASES: `${i + 1}/${parts}` } }))),
+  );
+  const failed = ran.find((part) => !part.passed);
+  return {
+    passed: failed === undefined,
+    ran: ran.reduce((all, part) => all + part.ran, 0),
+    output: ran.map((part) => part.output).join("\n"),
+    exit: (failed ?? ran[ran.length - 1]!).exit,
+  };
+}
+
 /** How a run of the corpus judges its cases: by what the JS does alone
  * (`false`), by that and its snapshots (`true`, a mutation's
  * `snapshots`), or by its snapshots alone, run neither natively nor as JS
@@ -1059,7 +1103,7 @@ function writeResults(results: Map<string, string>, caughtBy: Map<string, string
 }
 
 /** The flags `main` takes alone. */
-const alone = ["--list", "--browser"];
+const alone = ["--list", "--browser", "--corpus"];
 
 /** The flags `main` takes with `=` and a value, each with the form it's
  * given in. */
@@ -1657,6 +1701,13 @@ async function main() {
   // `resultsBase`). One no longer listed is gone, not run.
   const also = (args.find((arg) => arg.startsWith("--also="))?.slice("--also=".length) ?? "").split(",").filter(Boolean);
   chosen = [...chosen, ...mutations.filter((m) => also.includes(m.name) && !chosen.includes(m))];
+  // Each against the whole corpus with its snapshots compared, whatever
+  // tests it names, `--corpus`: a sweep of survivors, whose catching cases
+  // `caughtBy` says, its retargets (ADR 0093, amended). Its settings,
+  // which select other files' parts, aren't the corpus's.
+  if (args.includes("--corpus")) {
+    chosen = chosen.map(againstWholeCorpus);
+  }
   const sharded = shardArg(args);
   if (sharded) {
     const names = timedShard(chosen.map((m) => m.name), sharded.index, sharded.count, args.find((arg) => arg.startsWith("--timings="))?.slice(10), (name) => mutations.find((m) => m.name === name)?.file);
@@ -1960,14 +2011,11 @@ async function main() {
     } catch {
       cpSync(compiler, mutant);
     }
-    let started = 0;
-    const byTests = await beside(() => {
-      started = performance.now();
-      return test(mutation.tests!, mutant, mutation.snapshots, { env: mutation.env });
-    });
+    const started = performance.now();
+    const byTests = await testsInParts(mutation.tests!, mutant, mutation.snapshots ?? false, mutation.env, beside);
     const { ran, exit } = byTests;
     const twice = confirming
-      ? await judgeTwice(exit, byTests.output, mutation.tests!, (tests) => beside(() => test(tests, mutant, mutation.snapshots, { env: mutation.env })))
+      ? await judgeTwice(exit, byTests.output, mutation.tests!, (tests) => testsInParts(tests, mutant, mutation.snapshots ?? false, mutation.env, beside))
       : { verdict: judge(exit, byTests.output), again: "", flake: undefined };
     let output = byTests.output + twice.again;
     let verdict = twice.verdict;
