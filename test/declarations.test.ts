@@ -4,75 +4,13 @@
 // react.dev's TypeScript is against the components ported to Rust.
 
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
-
-// The settings an app's TypeScript may have, each one that changes what a
-// declaration means to it: a `.d.ts` means the same under every one, so an
-// app's TypeScript isn't held to more, or less, than the Rust holds it to.
-const settings: Record<string, object> = {
-  bundler: { module: "esnext", moduleResolution: "bundler", allowJs: true },
-  // What Vite's template has, and the strictest of TypeScript's checks that
-  // read a declaration: an optional property takes `undefined` only where it
-  // says so.
-  strictest: { module: "esnext", moduleResolution: "bundler", verbatimModuleSyntax: true, isolatedModules: true, erasableSyntaxOnly: true, exactOptionalPropertyTypes: true },
-  nodenext: { module: "nodenext", moduleResolution: "nodenext", allowJs: true },
-};
-
-/** TypeScript's errors in `file` of `dir`, which imports a module's JS, the same under each of `settings`; its declarations checked too, `skipLibCheck` off. */
-function typeChecked(dir: string, file: string): string[] {
-  const each = Object.entries(settings).map(([name, options]) => {
-    const config = join(dir, `tsconfig.${name}.json`);
-    writeFileSync(config, JSON.stringify({
-      compilerOptions: { ...options, jsx: "react-jsx", strict: true, noEmit: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
-      files: [file],
-    }));
-    const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", config], { cwd: dir });
-    return { name, errors: checked.stdout.toString().split("\n").filter((line) => line.includes("error TS")) };
-  });
-  const where = (errors: string[]) => errors.map((error) => error.slice(0, error.indexOf(":")));
-  for (const { name, errors } of each.slice(1)) {
-    expect({ [name]: where(errors) }).toEqual({ [name]: where(each[0].errors) });
-  }
-  return each[0].errors;
-}
-
-test("a relative binding type is imported from the declaring module's file", () => {
-  buildReact();
-  const dir = fixture("relative-declaration-binding");
-  mkdirSync(join(dir, "math"));
-  mkdirSync(join(dir, "render"));
-  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
-  writeFileSync(join(dir, "lib.rs"), 'pub mod render;\n');
-  writeFileSync(join(dir, "render.rs"), 'pub mod uniforms;\n');
-  writeFileSync(join(dir, "math", "color.js"), 'export class Color { constructor(hex) { this.hex = hex; } }\n');
-  writeFileSync(join(dir, "math", "color.d.ts"), 'export declare class Color { constructor(hex: number); hex: number; }\n');
-  writeFileSync(join(dir, "render", "uniforms.rs"), `use std::marker::PhantomData;
-use js::JsObject;
-
-#[cfg_attr(rust_js, rust_js::types = "./math/color.js#Color")]
-pub struct Color(PhantomData<JsObject>);
-
-#[cfg_attr(rust_js, rust_js::link_name = "new ./math/color.js#Color")]
-fn new_color(_hex: u32) -> &'static Color {
-    unreachable!()
-}
-
-pub fn diffuse(hex: u32) -> &'static Color {
-    new_color(hex)
-}
-`);
-  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "render", "uniforms.js"), "utf8")).toContain('import { Color } from "../math/color.js";');
-  expect(readFileSync(join(dir, "render", "uniforms.d.ts"), "utf8")).toContain('import type { Color } from "../math/color.js";');
-  const file = join(dir, "consumer.ts");
-  writeFileSync(file, 'import { diffuse } from "./render/uniforms.js";\nconst hex: number = diffuse(1).hex;\n');
-  expect(typeChecked(dir, file)).toEqual([]);
-});
+import { typeChecked } from "./type-checked";
 
 test("declarations type what a module exports, for TypeScript that imports it", () => {
   buildReact();
