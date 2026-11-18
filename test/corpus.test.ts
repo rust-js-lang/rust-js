@@ -12,7 +12,7 @@
 //            └─ rust-js ──► case.js ─┬─ bun  ──────┼─► stdout, stderr, outcome: the same?
 //                                    └─ node ──────┘
 
-import { beforeAll, expect, test } from "bun:test";
+import { afterAll, beforeAll, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -25,6 +25,7 @@ import { aborted, agree, compileJs, node, runJs, runNative, runtimes, show, type
 import { buildCompiler, caseShard, compiler, firstPart, fixture, root, helpersModule } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { underLoad } from "../scripts/timing";
+import { devTimes, ownsTimes } from "../scripts/devTimes";
 
 /** The case's JS as a production build ships it: one file, bundled and
  * minified by Vite, with Rolldown and Oxc, as an app's is. */
@@ -232,9 +233,19 @@ firstPart("every snapshot in the corpus is the JS of a case that runs", () => {
   expect(snapshots).toEqual(running.map((name) => name.replace(/\.rs$/, ".js")));
 });
 
+// Run on its own, not as a part of check:fast's or a mutant's, its line in
+// the machine's log (scripts/devTimes.ts), with how many cases failed.
+const owned = ownsTimes("corpus");
+let failedCases = 0;
+afterAll(() => {
+  if (owned) devTimes("corpus", { started: 0, selection: `${caseShard(cases).length} cases`, ok: failedCases === 0, note: failedCases ? `${failedCases} failed` : "" });
+});
+
 for (const name of caseShard(cases)) {
   test(name, async () => {
-    expect(await check(join(corpus, name))).toEqual([]);
+    const problems = await check(join(corpus, name));
+    failedCases += Number(problems.length > 0);
+    expect(problems).toEqual([]);
   }, underLoad(120_000));
 }
 

@@ -31,6 +31,7 @@ import { type CheckLogRun, checkLogRun } from "./checkLogs";
 import { expected, jobTimesStore, readJobTimes, recordJobTimes } from "./jobTimes";
 import { fairShare, holdLease, leaseStore, liveLeases } from "./leases";
 import { elapsed, loadScale, median, shown, timed } from "./timing";
+import { devTimes, ownsTimes, slowest } from "./devTimes";
 
 const root = join(import.meta.dir, "..");
 
@@ -808,6 +809,9 @@ if (import.meta.main) {
   // checkout's crate, not its compiler (cargo test, clippy, the formats,
   // the change's mutations), nor what the run's selection or times say.
   const given = args.find((arg) => arg.startsWith("--compiler="))?.slice("--compiler=".length);
+  // Its own line in the machine's log, where it isn't a step of a run that
+  // writes one, a push's or a retirement's (scripts/devTimes.ts).
+  const owns = given === undefined && ownsTimes("check:fast");
   const all = args.includes("--all") || given !== undefined;
   // The machine shared with concurrent runs, each its share (scripts/leases.ts).
   holdLease("check");
@@ -969,6 +973,12 @@ if (import.meta.main) {
   console.log(
     `\n${failed.length === 0 ? `all passed: ${timed(scope, total, { ran: totalKey(listed) })}` : `${failed.length} failed in ${total.toFixed(0)}s`}`,
   );
+  // Its line in the machine's log, its slowest jobs its steps; a mutant's
+  // or a retirement's run is its runner's line.
+  if (owns) {
+    const steps: [string, number][] = results.map((r) => [r.job.name, (r.end - r.start) / 1000]);
+    devTimes("check:fast", { started: 0, phases: slowest(steps), selection: scope, ok: failed.length === 0, note: failed.length ? `${failed.length} failed` : "" });
+  }
   process.exit(failed.length === 0 ? 0 : 1);
 }
 

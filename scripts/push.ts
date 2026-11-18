@@ -34,17 +34,16 @@
 //
 // A tracked change not committed is refused: the check would see it, the push
 // wouldn't. Each run, however it ends, appends a line to the machine's log of
-// times, outside the repository (scripts/disk.ts's `devTimesLog`): `<ISO> |
+// times, outside the repository (scripts/devTimes.ts, its one writer): `<ISO> |
 // <machine> | <agent> | push | <sha> | total <s> | <phase> <s>, .. | select
 // <outcome> | load <1m/5m/15m> | ok|fail | <note>`, the selection's outcome
 // `all (<why>)`, `some (N files, M cases)` or `none` and the map's commit and
 // how far behind it is (scripts/select.ts); the machine and agent each
 // machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
 import { spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { loadavg } from "node:os";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { selectionFile } from "./select";
-import { devTimesLog, whoRuns } from "./disk";
+import { devTimes, ownsTimes } from "./devTimes";
 import { touchesPort } from "./iteratorSlice";
 
 /** The phases, in the order they run. */
@@ -68,36 +67,6 @@ export function reactGate(changed: string[], incoming: string[] | undefined): "r
 export function onlyPushedFiles(changed: string[], pushed: string[]): string[] {
   const ours = new Set(pushed);
   return changed.filter((file) => !ours.has(file));
-}
-
-/** The machine log's line of a run (DEVELOPMENT.md, "Pushing"). */
-export function timesLine(run: {
-  at: Date;
-  machine: string;
-  agent: string;
-  sha: string;
-  total: number;
-  phases: [string, number][];
-  selection: string;
-  load: number[];
-  ok: boolean;
-  note: string;
-}): string {
-  const phases = run.phases.map(([name, s]) => `${name} ${Math.round(s)}s`).join(", ") || "-";
-  const load = run.load.map((l) => l.toFixed(2)).join("/");
-  return [
-    run.at.toISOString().replace(/\.\d+Z$/, "Z"),
-    run.machine,
-    run.agent,
-    "push",
-    run.sha,
-    `total ${Math.round(run.total)}s`,
-    phases,
-    `select ${run.selection}`,
-    `load ${load}`,
-    run.ok ? "ok" : "fail",
-    run.note,
-  ].join(" | ");
 }
 
 function sh(cmd: string[], quiet = false): { code: number; out: string } {
@@ -127,27 +96,11 @@ function main() {
   // The machine's log's line, written once, however the run ends: past
   // its end, a failure's, and a signal's, which stops `spawnSync`'s child
   // and then runs here (m6-lily's push of b355dc824 wrote none).
-  let written = false;
+  let written = !ownsTimes("push");
   const writeLine = () => {
     if (written) return;
     written = true;
-    const who = whoRuns();
-    const unset = who.unset.length > 0 ? ` (${who.unset.join(", ")} unset: the host's name)` : "";
-    appendFileSync(
-      devTimesLog,
-      `${timesLine({
-        at: new Date(),
-        machine: who.machine,
-        agent: who.agent,
-        sha: git("rev-parse", "--short", "HEAD").out.trim(),
-        total: (performance.now() - started) / 1000,
-        phases: timed,
-        selection,
-        load: loadavg(),
-        ok,
-        note: `${note}${unset}`,
-      })}\n`,
-    );
+    devTimes("push", { started, phases: timed, selection, ok, note });
   };
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
     process.on(signal, () => {

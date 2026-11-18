@@ -33,6 +33,7 @@ import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
 import { latentSurvivors, type Results } from "./latent-survivors";
 import { binaryHash, builtBinary, freshShare, unapplied, verdictKind } from "./mutant-builds";
 import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from "./crate-corpus";
+import { devTimes, ownsTimes } from "./devTimes";
 
 const root = join(import.meta.dir, "..");
 
@@ -1976,4 +1977,12 @@ async function main() {
   if (freshDiffers.length > 0) process.exitCode = 1;
 }
 
-if (import.meta.main) await main();
+if (import.meta.main) {
+  // Its line in the machine's log, however it ends: a retirement's, a
+  // type-check's or a run's of its mutations.
+  const args = process.argv.slice(2);
+  const kind = args.some((arg) => arg.startsWith("--retire=")) ? "retire" : args.some((arg) => arg.startsWith("--typecheck=")) ? "mutations typecheck" : "mutations";
+  const note = args.filter((arg) => !arg.startsWith("--")).length > 0 || kind === "retire" ? args.join(" ").slice(0, 200) : "";
+  if (ownsTimes(kind)) process.on("exit", (code) => devTimes(kind, { started: 0, ok: code === 0, note }));
+  await main();
+}

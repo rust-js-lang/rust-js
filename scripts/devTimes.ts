@@ -1,0 +1,89 @@
+// The machine's log of the dev loop's times, outside the repository: a
+// line a run of `bun run push`, `check:fast`, the corpus run on its own,
+// `scripts/mutations.ts` (`--retire` too) and React's port's regen, each
+// written by the run itself, however it ends, so no agent has to remember
+// to (m1-lisa's night of numbers went with a compacted context). The one
+// writer: `<ISO> | <machine> | <agent> | <kind> | <sha> | total <s> |
+// <step> <s>, .. | select <outcome> | load <1m/5m/15m> | ok|fail | <note>`
+// (DEVELOPMENT.md, "Pushing").
+import { spawnSync } from "node:child_process";
+import { appendFileSync } from "node:fs";
+import { hostname, loadavg } from "node:os";
+import { devTimesLog } from "../test/bounded";
+
+/** Who a line of the log is of: the machine and the agent its sessions
+ * name, `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's own; else the
+ * host's name and `-`, and `unset` says which wasn't set, which the line
+ * says, as the M1's and the MacBook's lines read as the mini's. */
+export function whoRuns(env: Record<string, string | undefined> = process.env, host = hostname()): { machine: string; agent: string; unset: string[] } {
+  const unset = ["RUST_JS_MACHINE", "RUST_JS_AGENT"].filter((name) => !env[name]);
+  return { machine: env.RUST_JS_MACHINE || host, agent: env.RUST_JS_AGENT || "-", unset };
+}
+
+/** A run's line of the log. */
+export type TimesRun = {
+  at: Date;
+  machine: string;
+  agent: string;
+  kind: string;
+  sha: string;
+  total: number;
+  phases: [string, number][];
+  selection: string;
+  load: number[];
+  ok: boolean;
+  note: string;
+};
+
+/** The log's line of a run. */
+export function timesLine(run: TimesRun): string {
+  const phases = run.phases.map(([name, s]) => `${name} ${Math.round(s)}s`).join(", ") || "-";
+  const load = run.load.map((l) => l.toFixed(2)).join("/");
+  return [
+    run.at.toISOString().replace(/\.\d+Z$/, "Z"),
+    run.machine,
+    run.agent,
+    run.kind,
+    run.sha,
+    `total ${Math.round(run.total)}s`,
+    phases,
+    `select ${run.selection}`,
+    `load ${load}`,
+    run.ok ? "ok" : "fail",
+    run.note,
+  ].join(" | ");
+}
+
+/** Append a run of `kind`'s line to the machine's log, from its start,
+ * `started` (`performance.now()`), its steps, `phases`, the slowest first
+ * where there are many, and whether it passed. The checkout's `HEAD` is
+ * its sha, `cwd`'s. Never fails the run it's of. */
+export function devTimes(
+  kind: string,
+  { started, phases = [], selection = "-", ok, note = "", cwd = process.cwd() }: { started: number; phases?: [string, number][]; selection?: string; ok: boolean; note?: string; cwd?: string },
+): void {
+  try {
+    const who = whoRuns();
+    const unset = who.unset.length > 0 ? ` (${who.unset.join(", ")} unset: the host's name)` : "";
+    const sha = spawnSync("git", ["rev-parse", "--short", "HEAD"], { cwd, encoding: "utf8" }).stdout?.trim() || "-";
+    const line = timesLine({ at: new Date(), machine: who.machine, agent: who.agent, kind, sha, total: (performance.now() - started) / 1000, phases, selection, load: loadavg(), ok, note: `${note}${unset}` });
+    appendFileSync(devTimesLog, `${line}\n`);
+  } catch {
+    // A log that can't be written says nothing of the run.
+  }
+}
+
+/** Whether a run of `kind` writes its own line: not where it's a step of
+ * a run that writes one, a push's check:fast, a retirement's port regen or
+ * check:fast's corpus parts, which the environment says (`RUST_JS_TIMED_BY`,
+ * which a run that writes one sets for what it runs). */
+export function ownsTimes(kind: string, env: Record<string, string | undefined> = process.env): boolean {
+  if (env.RUST_JS_TIMED_BY) return false;
+  env.RUST_JS_TIMED_BY = kind;
+  return true;
+}
+
+/** Of steps' times, the `n` slowest, slowest first: a long run's line. */
+export function slowest(steps: [string, number][], n = 5): [string, number][] {
+  return [...steps].sort((a, b) => b[1] - a[1]).slice(0, n);
+}

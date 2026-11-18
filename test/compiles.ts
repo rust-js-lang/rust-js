@@ -49,8 +49,9 @@ export const capBytes = (env: Record<string, string | undefined> = {}) => Number
 /** What only the tests' harness reads of the environment, never the
  * compiler (`test/compiles.test.ts` holds it to the compiler's sources):
  * a check's job's share of the cores, its part of the cases, the compiler
- * by its path, which a check links anew each run, and the shell's. */
-export const unread = ["RUST_JS_LOAD_SCALE", "RUST_JS_CASES", "RUST_JS_COMPILER", "RUST_JS_COMPILE_CACHE_MB", "RUST_JS_KEEP_FIXTURES", "RUST_JS_COMPILE_TIMEOUT", "BUN_TEST_WORKER_ID", "_", "PWD", "OLDPWD", "SHLVL"];
+ * by its path, which a check links anew each run, which run logs the
+ * times (scripts/devTimes.ts), and the shell's. */
+export const unread = ["RUST_JS_LOAD_SCALE", "RUST_JS_CASES", "RUST_JS_COMPILER", "RUST_JS_COMPILE_CACHE_MB", "RUST_JS_KEEP_FIXTURES", "RUST_JS_COMPILE_TIMEOUT", "RUST_JS_TIMED_BY", "RUST_JS_DEV_TIMES", "BUN_TEST_WORKER_ID", "_", "PWD", "OLDPWD", "SHLVL"];
 
 const sha = (...parts: (string | Uint8Array)[]) => {
   const hash = createHash("sha256");

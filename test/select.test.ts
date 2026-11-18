@@ -9,8 +9,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { jobs, ranKey, totalKey } from "../scripts/checkFast";
-import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
-import { whoRuns } from "../scripts/disk";
+import { onlyPushedFiles, phases as pushPhases } from "../scripts/push";
+import { ownsTimes, slowest, timesLine, whoRuns } from "../scripts/devTimes";
 import { failedIn, misses } from "../scripts/selector-audit";
 import { baselines, capOf, hunksAtMap, interaction, mapLine, movedUnits, osBranches, outcome, pushSelection, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
 import { readsSources, type TestMap } from "../scripts/testMap";
@@ -307,7 +307,7 @@ test("check:fast runs what the selection selected: its files, its cases in parts
 test("bun run push says its selection on its line, and runs the check and the port only where they can differ", () => {
   expect(pushPhases).toEqual(["rebase", "build", "std", "mutants", "check", "sanity", "react", "files", "push"]);
   expect(onlyPushedFiles(["a.rs", "b.rs"], ["a.rs"])).toEqual(["b.rs"]);
-  const line = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", sha: "abc", total: 61.4, phases: [["check", 300]], selection: "some (3 files, 12 cases)", load: [1, 2, 3], ok: true, note: "" });
+  const line = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", kind: "push", sha: "abc", total: 61.4, phases: [["check", 300]], selection: "some (3 files, 12 cases)", load: [1, 2, 3], ok: true, note: "" });
   expect(line).toBe("2026-11-16T08:00:00Z | m | a | push | abc | total 61s | check 300s | select some (3 files, 12 cases) | load 1.00/2.00/3.00 | ok | ");
   expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.push).toBe("bun scripts/push.ts");
   for (const doc of ["DEVELOPMENT.md", "CONTRIBUTING.md"]) expect(readFileSync(join(root, doc), "utf8")).toContain("`bun run push`");
@@ -325,6 +325,17 @@ test("bun run push says its selection on its line, and runs the check and the po
   expect(push).toContain('for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const)');
   expect(whoRuns({ RUST_JS_MACHINE: "m1-lisa", RUST_JS_AGENT: "ioX" }, "host")).toEqual({ machine: "m1-lisa", agent: "ioX", unset: [] });
   expect(whoRuns({}, "host.local")).toEqual({ machine: "host.local", agent: "-", unset: ["RUST_JS_MACHINE", "RUST_JS_AGENT"] });
+  // Each run of the loop writes its own line through the one writer, but
+  // one that's a step of another's, whose environment says so: a push's
+  // check:fast, a retirement's port regen, check:fast's corpus parts.
+  const env: Record<string, string | undefined> = {};
+  expect(ownsTimes("push", env)).toBe(true);
+  expect(ownsTimes("check:fast", env)).toBe(false);
+  expect(env.RUST_JS_TIMED_BY).toBe("push");
+  expect(slowest([["a", 1], ["b", 9], ["c", 5]], 2)).toEqual([["b", 9], ["c", 5]]);
+  for (const file of ["scripts/push.ts", "scripts/checkFast.ts", "scripts/mutations.ts", "scripts/react-in-rust.ts", "test/corpus.test.ts"]) {
+    expect(readFileSync(join(root, file), "utf8")).toContain("ownsTimes(");
+  }
   // A map not fetched says why on the line, not only that there's none.
   expect(push).toContain('if (fetched.startsWith("no map fetched")) selection += ` [${fetched}]`;');
 });

@@ -845,7 +845,12 @@ checked:
   Each phase's time is printed, and one line of them is appended to the
   machine's log of times, outside the repository (`RUST_JS_DEV_TIMES`,
   `~/rust-js-dev-times.log` unless given; `RUST_JS_MACHINE` and
-  `RUST_JS_AGENT` name the machine and the agent).
+  `RUST_JS_AGENT` name the machine and the agent). `check:fast`, the
+  corpus run on its own, `scripts/mutations.ts` (`--retire` too) and
+  React's port's regen each append their own line in the same form, by
+  one writer (scripts/devTimes.ts), however they end; none where it's a
+  step of another run that writes one, a push's check or a retirement's
+  regen.
 - **A push that undoes a commit already on `main` is refused** by the
   pre-push hook `bun install` sets git to run (`.githooks/pre-push`,
   `scripts/push-guard.ts`): a commit made from an older tree, as `git

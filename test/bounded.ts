@@ -53,6 +53,10 @@ export const machineStore = join(mainCheckoutOf(checkout), ".cache");
  * keeps an orphan. */
 export const retiredMachineStore = join(homedir(), ".cache", "rust-js");
 
+/** The machine's log of the dev loop's times, outside the checkouts, a
+ * line a run, a few KB a week (scripts/devTimes.ts writes it). */
+export const devTimesLog = process.env.RUST_JS_DEV_TIMES ?? join(homedir(), "rust-js-dev-times.log");
+
 /** The temp root of what the tests and their tools make and leave, the
  * system's temp directory's `rust-js-dev/`: every test process's `TMPDIR`
  * (test/setup.ts), so what a tool leaves there, Vitest's module cache of

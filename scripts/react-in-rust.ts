@@ -36,6 +36,7 @@ import { floorBytes } from "../test/bounded";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cacheDirOf } from "../tooling/build.js";
 import { channel } from "./toolchain";
+import { devTimes, ownsTimes } from "./devTimes";
 
 const root = resolve(import.meta.dir, "..");
 const repository = "https://github.com/rust-js-lang/react-in-rust.git";
@@ -220,6 +221,8 @@ if (!import.meta.main) {
   }
   report(`react-in-rust at ${pin.slice(0, 9)}: its workspace compiles against this checkout's bindings.`);
 } else if (command === "regen") {
+  // Its line in the machine's log, however it ends.
+  if (ownsTimes("port regen")) process.on("exit", (code) => devTimes("port regen", { started: 0, ok: code === 0, note: `at ${pin.slice(0, 9)}` }));
   // The compiler of this checkout's source, built first where none is
   // given: one built before a change of it regenerates another compiler's
   // JS, and its diff misleads. Cargo finds one up to date at once.
