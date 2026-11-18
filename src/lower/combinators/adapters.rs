@@ -338,9 +338,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let made_state = self.unspelled("state");
         let made_b = self.unspelled("b");
         let made_a = self.unspelled("a");
-        // A flatten's, whose `count` is each inner iterator's own, the
-        // crate's where one writes it (#736): `$flatMap`, which counts them so.
-        let own_count = self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure);
+        // A flatten's, whose `count` and `last` are each inner iterator's
+        // own, the crate's where one writes it (#736, #2123): `$flatMap`,
+        // which counts them and takes their last so.
+        let own_count = [OwnStep::Count, OwnStep::Last]
+            .into_iter()
+            .any(|step| self.recognition().reaches_its_own(output, step, Reach::Sure));
         let mut next = || rest.next().expect("rustc checked the arguments");
         let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
         // Whether the item is `Some`, `item != null`, whatever it holds

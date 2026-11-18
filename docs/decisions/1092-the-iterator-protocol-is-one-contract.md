@@ -1638,3 +1638,26 @@ second side gives `None` once, is asked nothing more: `nth` gave one of
 its later items. Its two `differs` rows come off the net. Case (ADR 0262):
 R. Corpus case `step_by_nth_stops_where_its_source_ends`; mutation
 `step-by-nth-past-its-sources-end`.
+
+**The flattens ask their inners what std's do (#2123).** `$flatMap` and
+`$flattenEnds` write std's `FlattenCompat` steps where they stepped each
+item: `advance_by`, each inner iterator's own `advance_by` through its
+source's `try_fold`, the one it stops in kept, and `nth` std's default of
+it; `last`, each inner's own `last` by its source's fold (`$flatLast`,
+`$lastDropping`'s `inners`); and from the back, `$flattenEnds`'
+`advance_back_by`, each inner's own `advance_back_by` through its
+source's `try_rfold`, `nth_back` std's default of it, and `try_rfold`
+through its source's. A flatten whose inners' `last` is the crate's own
+is `$flatMap` (`asked_of`'s `Last` of `Flatten` and `FlatMap`, each inner's
+`Last`), as one whose `count` is. The net's nine `differs` rows come off;
+none is left. So `rev().take(2).count()` of a flatten of `Vec`s drops
+`11, 12` as std does, one slice, where it dropped `12, 11`. Case (ADR
+0262): R. Corpus case `flatten_steps_its_inners_as_std`; mutations
+`flat-map-last-stepped`, `flatten-ends-advance-back-by-stepped`,
+`flatten-last-asks-no-inner` and `flatten-own-last-unasked`.
+And the runtime's default `nth_back` of what has its own
+`advance_back_by`, a compiled flatten given it by its dictionary, is
+std's, that `advance_back_by(n)` then the next from its back, where it
+stepped each (`$nthBack`, `$nthBackOf`): in the build of std's structs
+`rev().nth(4)` of a flatten of `Vec`s dropped `12, 11, 10`. Mutation
+`nth-back-default-steps-each`.

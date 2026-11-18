@@ -100,12 +100,12 @@ for (const [name, make, kept] of wrappers) {
 // does, each made of what the generic code that holds it may ask.
 test("each flatten has the steps of its own the other has", () => {
   const own = (made: object) =>
-    ["fold", "tryFold", "count", "inners"].filter((step) => Object.hasOwn(made, step)).sort();
+    ["fold", "tryFold", "count", "inners", "advanceBy", "last"].filter((step) => Object.hasOwn(made, step)).sort();
   const items = () => std.$iter([[1], [2]]);
   const flatMap = std.$flatMap(items(), (x: unknown) => x);
   const ends = std.$flattenEnds(items(), (x: unknown) => x);
   expect(own(ends)).toEqual(own(flatMap));
-  expect(own(flatMap)).toEqual(["count", "fold", "inners", "tryFold"]);
+  expect(own(flatMap)).toEqual(["advanceBy", "count", "fold", "inners", "last", "tryFold"]);
 });
 
 // Who drops what a step stepped, where the step panics, follows how the
@@ -314,15 +314,6 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
 /** Each form's step that asks other than std's does, a wrong answer not
  * yet fixed, under its issue: none is let differ for good (#2112). */
 const differs: Record<string, string> = {
-  "$flatMap nth": "#2123",
-  "$flatMap advance_by": "#2123",
-  "$flatMap last": "#2123",
-  "$flattenEnds nth": "#2123",
-  "$flattenEnds advance_by": "#2123",
-  "$flattenEnds last": "#2123",
-  "$flattenEnds nth_back": "#2123",
-  "$flattenEnds advance_back_by": "#2123",
-  "$flattenEnds try_rfold": "#2123",
 };
 
 for (const [stdForm, form, make] of forms) {

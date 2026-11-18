@@ -380,4 +380,13 @@ export const mutations: Mutation[] = [
     replace: "            return matches!(ty.kind(), ty::Param(_)) && (reach == Reach::May || step.asked_at_run_time());\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_consumer_of_an_into_iter_takes_it.rs$"],
   },
+  {
+    name: "flatten-last-asks-no-inner",
+    breaks:
+      "std's `Flatten::last` is taken to ask nothing of its inner iterators, so a flatten of the crate's iterators that write `last` is JS's `flatMap`, whose last never asks theirs (#2123)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: '            (Last, "Flatten" | "FlatMap") => &[(INNERS, Last)],\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
+  },
 ];

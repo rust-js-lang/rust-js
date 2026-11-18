@@ -576,8 +576,8 @@ export const mutations: Mutation[] = [
     name: "flatten-ends-count-by-next",
     breaks: "`$flattenEnds` has no `count` of its own, so `$count` steps each inner iterator by `next`, not by its own `count` as std's `FlattenCompat::count` does (#736)",
     file: "src/runtime/back_steps.js",
-    find: "    tryFold,\n    count,\n  });\n  // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.\n",
-    replace: "    tryFold,\n  });\n  // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.\n",
+    find: "    tryRfold,\n    count,\n    advanceBy,\n",
+    replace: "    tryRfold,\n    advanceBy,\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
   {
@@ -592,8 +592,8 @@ export const mutations: Mutation[] = [
     name: "flatten-ends-count-not-passed-on",
     breaks: "`$flattenEnds` doesn't say its `count` is its own, so a `skip()` of it counts what's left by `next`, not by each inner iterator's own `count` as std's `Skip::count` asks of its source (#736)",
     file: "src/runtime/back_steps.js",
-    find: "  // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.\n  $owns(flat, \"count\");\n",
-    replace: "",
+    find: "  $owns(flat, \"count\", \"last\", \"nthBack\");\n",
+    replace: "  $owns(flat, \"last\", \"nthBack\");\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
   {
@@ -777,5 +777,24 @@ export const mutations: Mutation[] = [
     find: "      if (n === 0 || head.done) return head;\n      drop?.(head.value);\n",
     replace: "      if (n === 0) return head;\n      if (!head.done) drop?.(head.value);\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_nth_stops_where_its_source_ends.rs$"],
+  },
+  {
+    name: "flatten-ends-advance-back-by-stepped",
+    breaks:
+      "a double-ended flatten's `advance_back_by` steps each item from its back, not each inner iterator's own `advance_back_by`, so `rev().take(2).count()` of a flatten of `Vec`s drops `12, 11` where std drops them as one slice, `11, 12` (#2123)",
+    file: "src/runtime/back_steps.js",
+    find: "    advanceBackBy,\n    nthBack: (k, drop) =>",
+    replace: "    nthBack: (k, drop) =>",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
+  },
+  {
+    name: "nth-back-default-steps-each",
+    breaks:
+      "std's default `nth_back` of an iterator with its own `advance_back_by`, a compiled flatten's, steps each from its back, not its `advance_back_by(n)`, so `rev().nth(4)` of a flatten of `Vec`s drops `12, 11, 10` where std drops them as one slice, `10, 11, 12` (#2123)",
+    file: "src/runtime/back_steps.js",
+    find: "  if (it.advanceBackBy !== undefined) {\n    if (it.advanceBackBy(n, drop) > 0) return undefined;\n",
+    replace: "  if (false) {\n    if (it.advanceBackBy(n, drop) > 0) return undefined;\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^flatten_steps_its_inners_as_std with std's iterator structs$"],
+    env: { ITERATOR_FORMS: "corpus" },
   },
 ];

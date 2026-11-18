@@ -5,6 +5,14 @@
 // not a generator, which would close both as a step throws, a panic in
 // `f`: what takes it closes it, after what it holds itself, a `last`'s kept
 // item, as Rust's frames unwind (#426).
+// Std's `FlattenCompat::last` of `flat`: each inner iterator's own `last`,
+// by its source's fold, `$lastDropping`'s of what it holds (`inners`,
+// #645), a step (#2123).
+function $flatLast(flat, drop) {
+  const last = $lastDropping(flat, drop, true);
+  return last === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(last) };
+}
+
 function $flatMap(it, f) {
   let inner;
   let ended = false;
@@ -108,10 +116,40 @@ function $flatMap(it, f) {
     const each = (n, x) => n + $count($stepsOf(f(x)), drop);
     return typeof it.fold === "function" ? it.fold(counted, each) : $foldDropping(it, counted, each);
   };
-  $forward(flat, it, { fold, tryFold, count });
+  // Its `advance_by`, std's `FlattenCompat::advance_by`: the one it's in's
+  // own, then its source's `try_fold` of each one's own, the one it stops
+  // in kept to step on from; how many there weren't. Its `nth` is std's
+  // default of it, `$Steps`', so each asks what std's asks (#2123).
+  const advanceBy = (m, drop) => {
+    let left = m;
+    if (inner !== undefined) {
+      left = $advanceByOf(inner, left, drop);
+      if (left === 0) return 0;
+      inner = undefined;
+    }
+    if (ended) return left;
+    let stopped = false;
+    left = $lent(it).tryFold(
+      left,
+      (k, x) => {
+        inner = $stepsOf(f(x));
+        const rest = $advanceByOf(inner, k, drop);
+        stopped = rest === 0;
+        if (!stopped) inner = undefined;
+        return rest;
+      },
+      () => stopped,
+    );
+    if (!stopped) {
+      ended = true;
+      it.return?.();
+    }
+    return left;
+  };
+  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop) => $flatLast(flat, drop) });
   // Its `count` its own, which what holds it passes on, a `skip()`'s, as
-  // std's `Skip::count` asks its source's.
-  $owns(flat, "count");
+  // std's `Skip::count` asks its source's; and its `last`, each inner's own.
+  $owns(flat, "count", "last");
   // What std's `Flatten::last` takes, its inner iterator stepped part-way,
   // its source, unless it's ended, fused as std's is, and `f`, which make
   // the rest, let go as they're taken (`$lastDropping`, #645).

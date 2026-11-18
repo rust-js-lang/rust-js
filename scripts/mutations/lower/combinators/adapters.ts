@@ -407,8 +407,8 @@ export const mutations: Mutation[] = [
     name: "flat-map-own-count-js",
     breaks: "a flatten of inner iterators whose own `count` it reaches is JS's `flatMap`, which has no `count`, so each is counted by `next` (#736)",
     file: "src/lower/combinators/adapters.rs",
-    find: "        let own_count = self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure);\n",
-    replace: "        let own_count = false && self.recognition().reaches_its_own(output, OwnStep::Count, Reach::Sure);\n",
+    find: "        let own_count = [OwnStep::Count, OwnStep::Last]\n",
+    replace: "        let own_count = [OwnStep::Last]\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
   {
@@ -498,5 +498,14 @@ export const mutations: Mutation[] = [
     find: "                    Some(ty::Ref(_, item, _)) if into == Some(item) => self.bits_copy_fn(item),\n",
     replace: "                    Some(ty::Ref(_, item, _)) if into == Some(item) => Some(self.clone_fn(\"item\", item, span)?),\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
+  {
+    name: "flatten-own-last-unasked",
+    breaks:
+      "a flatten whose inner iterators' `last` is the crate's own is JS's `flatMap` where its `count` isn't, so its `last` never asks theirs (#2123)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        let own_count = [OwnStep::Count, OwnStep::Last]\n",
+    replace: "        let own_count = [OwnStep::Count]\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
   },
 ];

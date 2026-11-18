@@ -127,6 +127,7 @@ impl OwnStep {
             (Last, "Skip" | "Fuse" | "Peekable" | "Copied" | "Cloned") => own,
             (Count, "Skip" | "Fuse" | "Peekable" | "Enumerate" | "Copied" | "Cloned") => own,
             (Count, "Flatten" | "FlatMap") => &[(INNERS, Count)],
+            (Last, "Flatten" | "FlatMap") => &[(INNERS, Last)],
             _ => &[],
         }
     }

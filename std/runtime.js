@@ -6116,6 +6116,13 @@ export function $nthBack(it, n, found = (item) => item, drop) {
     const step = it.nthBack(n, drop);
     return step.done ? undefined : found(step.value);
   }
+  // Std's default `nth_back`: its `advance_back_by(n)`, its own where it
+  // has one, a compiled flatten's, then the next from its back (#2123).
+  if (it.advanceBackBy !== undefined) {
+    if (it.advanceBackBy(n, drop) > 0) return undefined;
+    const step = it.back();
+    return step.done ? undefined : found(step.value);
+  }
   for (let step = it.back(); !step.done; step = it.back()) {
     if (n-- === 0) return found(step.value);
     drop?.(step.value);
@@ -6193,6 +6200,10 @@ export function $tryRfoldOf(it, init, f, broke, unwind, ends) {
 // the next.
 export function $nthBackOf(it, k, drop) {
   if (it.nthBack !== undefined) return it.nthBack(k);
+  if (it.advanceBackBy !== undefined) {
+    if (it.advanceBackBy(k, drop) > 0) return { done: true, value: undefined };
+    return it.back();
+  }
   for (; k > 0; k--) {
     const step = it.back();
     if (step.done) return step;
@@ -6681,14 +6692,98 @@ export function $flattenEnds(it, each, knowing) {
     }
     return folded;
   };
+  // Std's `FlattenCompat::try_rfold`, `tryFold`'s from the back: the back
+  // inner's rest, then its source's `try_rfold` of each item's inner, then
+  // the front inner's (#2123). What drops with `g`, `ends`, isn't passed
+  // on, as `tryFold`'s isn't: its caller drops it after (#768).
+  const tryRfold = (init, g, broke, unwind, ends) => {
+    let folded = init;
+    if (inner.back !== undefined) {
+      folded = $tryRfoldOf(inner.back, folded, g, broke, unwind);
+      if (broke(folded)) return folded;
+      inner.back = undefined;
+    }
+    if (!ended) {
+      folded = $tryRfoldOf(
+        it,
+        folded,
+        (a, x) => {
+          inner.back = $iter(unwind === undefined ? made(x) : $staged(made, x, undefined, a, unwind));
+          const stepped = $tryRfoldOf(inner.back, a, g, broke, unwind);
+          if (!broke(stepped)) inner.back = undefined;
+          return stepped;
+        },
+        broke,
+        unwind,
+      );
+      if (broke(folded)) return folded;
+      ended = true;
+    }
+    if (inner.next !== undefined) {
+      folded = $tryRfoldOf(inner.next, folded, g, broke, unwind);
+      if (broke(folded)) return folded;
+      inner.next = undefined;
+    }
+    return folded;
+  };
+  // Std's `FlattenCompat::advance_by` and `advance_back_by`: the inner it's
+  // in at that end's own, then its source's `try_fold` or `try_rfold` of
+  // each item's inner's own, the one it stops in kept to step on from, then
+  // the other end's inner's; how many there weren't. Its `nth` and
+  // `nth_back` are std's defaults of them (#2123).
+  const advancing = (own, other, advance, fold) => (m, drop) => {
+    let left = m;
+    if (inner[own] !== undefined) {
+      left = advance(inner[own], left, drop);
+      if (left === 0) return 0;
+      inner[own] = undefined;
+    }
+    if (!ended) {
+      let stopped = false;
+      left = fold(it, left, (k, x) => {
+        inner[own] = $iter(made(x));
+        const rest = advance(inner[own], k, drop);
+        stopped = rest === 0;
+        if (!stopped) inner[own] = undefined;
+        return rest;
+      });
+      if (stopped) return 0;
+      ended = true;
+    }
+    if (inner[other] !== undefined) {
+      left = advance(inner[other], left, drop);
+      if (left === 0) return 0;
+      inner[other] = undefined;
+    }
+    return left;
+  };
+  const advanceBy = advancing("next", "back", $advanceByOf, (source, init, f) =>
+    $lent(source).tryFold(init, f, (k) => k === 0),
+  );
+  const advanceBackBy = advancing(
+    "back",
+    "next",
+    (inner, m, drop) => {
+      const advanced = $advanceBackBy(inner, m, undefined, drop);
+      return advanced.TAG === "Ok" ? 0 : advanced._0;
+    },
+    (source, init, f) => $tryRfoldOf(source, init, f, (k) => k === 0),
+  );
   $forward(flat, it, {
     fold: folding(front, "next", "back"),
     rfold: folding($foldBack, "back", "next"),
     tryFold,
+    tryRfold,
     count,
+    advanceBy,
+    advanceBackBy,
+    nthBack: (k, drop) => (advanceBackBy(k, drop) > 0 ? { done: true, value: undefined } : flat.back()),
+    last: (drop) => $flatLast(flat, drop),
   });
-  // Its `count` its own, which what holds it passes on, as `$flatMap`'s is.
-  $owns(flat, "count");
+  // Its `count` its own, which what holds it passes on, as `$flatMap`'s is;
+  // its `last`, each inner's own; its `nth_back`, which drops what it
+  // passes itself.
+  $owns(flat, "count", "last", "nthBack");
   // What std's `FlattenCompat::last` takes, as `$flatMap`'s: the inner it
   // steps from the front, its source, unless it's ended, what makes each
   // inner, and the one it steps from the back, which its fold reaches
@@ -21257,6 +21352,14 @@ export function $trustedZipEnds(a, b, dropA, dropB) {
 // not a generator, which would close both as a step throws, a panic in
 // `f`: what takes it closes it, after what it holds itself, a `last`'s kept
 // item, as Rust's frames unwind (#426).
+// Std's `FlattenCompat::last` of `flat`: each inner iterator's own `last`,
+// by its source's fold, `$lastDropping`'s of what it holds (`inners`,
+// #645), a step (#2123).
+export function $flatLast(flat, drop) {
+  const last = $lastDropping(flat, drop, true);
+  return last === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(last) };
+}
+
 export function $flatMap(it, f) {
   let inner;
   let ended = false;
@@ -21360,10 +21463,40 @@ export function $flatMap(it, f) {
     const each = (n, x) => n + $count($stepsOf(f(x)), drop);
     return typeof it.fold === "function" ? it.fold(counted, each) : $foldDropping(it, counted, each);
   };
-  $forward(flat, it, { fold, tryFold, count });
+  // Its `advance_by`, std's `FlattenCompat::advance_by`: the one it's in's
+  // own, then its source's `try_fold` of each one's own, the one it stops
+  // in kept to step on from; how many there weren't. Its `nth` is std's
+  // default of it, `$Steps`', so each asks what std's asks (#2123).
+  const advanceBy = (m, drop) => {
+    let left = m;
+    if (inner !== undefined) {
+      left = $advanceByOf(inner, left, drop);
+      if (left === 0) return 0;
+      inner = undefined;
+    }
+    if (ended) return left;
+    let stopped = false;
+    left = $lent(it).tryFold(
+      left,
+      (k, x) => {
+        inner = $stepsOf(f(x));
+        const rest = $advanceByOf(inner, k, drop);
+        stopped = rest === 0;
+        if (!stopped) inner = undefined;
+        return rest;
+      },
+      () => stopped,
+    );
+    if (!stopped) {
+      ended = true;
+      it.return?.();
+    }
+    return left;
+  };
+  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop) => $flatLast(flat, drop) });
   // Its `count` its own, which what holds it passes on, a `skip()`'s, as
-  // std's `Skip::count` asks its source's.
-  $owns(flat, "count");
+  // std's `Skip::count` asks its source's; and its `last`, each inner's own.
+  $owns(flat, "count", "last");
   // What std's `Flatten::last` takes, its inner iterator stepped part-way,
   // its source, unless it's ended, fused as std's is, and `f`, which make
   // the rest, let go as they're taken (`$lastDropping`, #645).
