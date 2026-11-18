@@ -854,7 +854,7 @@ pub(super) fn reject_misuse<'tcx>(
                     && is_class(tcx, adt.did())
                     && (tcx.associated_item_def_ids(id).iter()).any(|&item| tcx.def_kind(item) != DefKind::AssocTy)
                     && !identity
-                    && !tcx.is_diagnostic_item(rustc_span::sym::Default, trait_id)
+                    && !super::recognition::is_std_def(tcx, trait_id, super::recognition::StdItem::Default)
                 {
                     let name = tcx.def_path_str(tcx.impl_trait_id(id));
                     refuse(
