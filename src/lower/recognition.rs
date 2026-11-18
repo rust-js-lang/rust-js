@@ -25,7 +25,7 @@ mod open_calls;
 pub(in crate::lower) use methods::keeps_each;
 pub(in crate::lower) use wrappers::{IntNewtype, PinTarget};
 mod own_steps;
-mod passed_on;
+mod std_steps;
 pub(in crate::lower) use chars::{TextIter, reaches_text_iter};
 pub(in crate::lower) use lengths::EqSide;
 pub(in crate::lower) use own_steps::{OwnStep, Reach};
@@ -50,8 +50,8 @@ mod zip_folds;
 
 pub(super) use self::{
     adapter_types::*, c_strs::*, calls::*, compiled_std::*, fmt::*, iterators::*, js_items::*, json::*, loop_ranges::*,
-    open_calls::*, passed_on::*, serde::*, sorts::*, specialization::*, stable_keys::*, std_crates::*, std_items::*,
-    std_paths::*, traits::*, type_facts::*, types::*, wrappers::*, zip_folds::*,
+    open_calls::*, serde::*, sorts::*, specialization::*, stable_keys::*, std_crates::*, std_items::*, std_paths::*,
+    std_steps::*, traits::*, type_facts::*, types::*, wrappers::*, zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};

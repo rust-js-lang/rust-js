@@ -60,7 +60,7 @@ impl OwnStep {
     /// `fold` and `rfold` are `I`'s `try_fold`s, its `last` and `count`
     /// std's defaults, of `next`.
     fn through_a_mut_ref(self) -> bool {
-        use super::passed_on::{Passed, Wrapper};
+        use super::std_steps::{Passed, Wrapper};
         [Wrapper::MutRefSized, Wrapper::MutRefUnsized]
             .iter()
             .all(|w| w.passes(self.method()) == Passed::Own)

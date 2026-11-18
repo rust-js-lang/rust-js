@@ -494,7 +494,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An extension's dictionary of a `&mut I` of type `ty`, of `I`'s, `of`: its entry, `next_back` or `len`,
     /// and of `BACK_ENTRIES` those std's impl for it passes on to its `I`'s
-    /// own (`PASSED_ON`, #2000): of a sized `I`, `nth_back` and `try_rfold`,
+    /// own (`Wrapper::passes`, #2000): of a sized `I`, `nth_back` and `try_rfold`,
     /// not `rfold`, which it folds by `I`'s `try_rfold` (ADRs 0928, 0937); of
     /// an unsized one, `nth_back` alone.
     pub(in crate::lower) fn mut_ref_extension_dictionary(&self, trait_id: DefId, ty: ty::Ty<'tcx>, of: Expr) -> Expr {
@@ -552,7 +552,7 @@ fn folded_by_try(tried: Expr) -> Expr {
 /// What a `DoubleEndedIterator`'s dictionary carries past its entry,
 /// `next_back`, where they're its iterator's own: the one list, which
 /// `iterator_extension_dictionary` makes of each iterator and
-/// `mut_ref_extension_dictionary` passes on of a `&mut` by `PASSED_ON`.
+/// `mut_ref_extension_dictionary` passes on of a `&mut` by `Wrapper::passes`.
 const BACK_ENTRIES: [&str; 3] = ["rfold", "nth_back", "try_rfold"];
 
 fn entries_passed_on(of: Expr, passed: Vec<String>) -> Expr {

@@ -599,7 +599,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0487).
     pub(in crate::lower) fn iterator_evidence(&self, ty: ty::Ty<'tcx>, trait_id: DefId) -> Option<Expr> {
         // A `&mut`'s, of an extension: what std's `&mut I` passes on of
-        // `I`'s, `PASSED_ON`'s, never its own `rfold` (#2104), as the
+        // `I`'s (`Wrapper::passes`), never its own `rfold` (#2104), as the
         // dictionary of a `&mut R` a caller gives is (ADR 0937).
         if let ty::Ref(_, to, ty::Mutability::Mut) = *ty.kind()
             && crate::lower::recognition::is_iterator_extension(self.tcx, trait_id)

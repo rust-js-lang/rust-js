@@ -426,7 +426,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `summed(it)` of a `&mut R`, not one bound by none, `pass(it)`,
             // which holds the `&mut` as the value it is, not one given as it is with its dictionaries, a compiled
             // std body's, as an unsized one's is below: lent once it's made what it lends is, so it passes on
-            // what std's `&mut I` does, `PASSED_ON`'s, `$lent`'s: its folds
+            // what std's `&mut I` does, `Wrapper::passes`', `$lent`'s: its folds
             // by its `try_fold`s, its `count` std's default, never the
             // iterator's own (#2104). Of a type parameter's alone, given by
             // its dictionaries as it is: another's form is made a `&mut`'s

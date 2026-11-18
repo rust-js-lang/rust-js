@@ -1536,3 +1536,37 @@ the `loud-drop` one leave `test/metamorphic-known.txt`. Mutations
 `tryFold` has no mutation: it's made only over a range of arrays, whose
 `try_fold` is its `next`, so no program shows it yet, and the harness
 takes no runtime-only test as a mutation's; the sibling row holds it.
+
+## Amendment: std's steps, one catalog made from std (2026-11-19, #2112 Change A, step 1)
+
+§3's table, `OwnStep::asked_of`'s rows, `PASSED_ON` and the runtime's
+`$forward` declarations each said again, by hand, what std's adapters
+write and ask. A first diff of them against std found five wrong answers
+(#2120, #2121, #2122: `$enumerate` and `$taking` without std's
+`advance_back_by`, and `copied()`/`cloned()` with each other's `last` and
+`count`), and rows of `asked_of` that over- or under-claim.
+
+**std's steps are one catalog, `src/lower/recognition/std_steps.txt`,
+made from std alone by `test/std-steps.test.ts`**, never by hand
+(`BLESS=1` writes it again, its diff what the toolchain's std changed):
+
+- **What each writes:** of each adapter of `core::iter` and of `&mut I`
+  and `Box<I>`, which of `Iterator`'s, `DoubleEndedIterator`'s and
+  `ExactSizeIterator`'s methods its impls write, read from rust-src.
+- **What each step asks:** `test/std-steps.rs`, run natively with
+  unstable features on, holds each adapter over sources that write every
+  step, `try_fold` and `advance_by` too, as std's own sources do, and
+  print each step they're asked with its argument; each step of each is
+  asked of a fresh one in four runs of the sources' lengths, so a path
+  that turns on what's left, a chain's `nth` past its first side, is seen.
+- **Who reads it:** `recognition::std_steps` (`Wrapper::passes`, which
+  replaces `PASSED_ON`: own where every run asks the same step of the
+  source alone, by `try_` fold where it asks that alone, the trait's
+  default otherwise; its unit tests hold lent.js's `$passedOn` to it and
+  its answers to std's, unchanged). The next steps move `asked_of` onto it
+  and hold every runtime adapter's trace to its row
+  (test/iterator-steps.test.ts), which finds the rest.
+
+Case (ADR 0262): R. Which of the crate's steps std calls, and in which
+order, is observable; the catalog is std's, so what reads it does as std.
+Byte-identical output: `Wrapper::passes` gives `PASSED_ON`'s every answer.

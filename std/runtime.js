@@ -22467,9 +22467,9 @@ export function $formatFloat(value, options, show) {
 // specializations fold; of an unsized one, a `dyn`'s, `lentUnsized`,
 // neither, std's defaults over its `next` and `next_back`; and of a
 // `Box<I>`, `boxed` and `boxedUnsized` (#1601, #1995). The compiler's one
-// catalog's, `PASSED_ON` (src/lower/recognition/passed_on.rs, #2000), by
-// `$forward`'s names: test/passed-on.test.ts holds the catalog to std's
-// source in rust-src, and each list here to the catalog.
+// catalog's, std's steps (src/lower/recognition/std_steps.rs, #2000,
+// #2112), by `$forward`'s names: test/std-steps.test.ts makes the catalog
+// from std itself, and its unit tests hold each list here to it.
 export const $passedOn = {
   lent: ["next", "sizeHint", "advanceBy", "nth", "fold", "tryFold", "back", "advanceBackBy", "nthBack", "rfold", "tryRfold", "len"],
   lentUnsized: ["next", "sizeHint", "advanceBy", "nth", "back", "advanceBackBy", "nthBack", "len"],

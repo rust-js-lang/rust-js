@@ -407,7 +407,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mut-ref-back-entries-unfiltered",
-    breaks: "a `&mut I`'s `DoubleEndedIterator` dictionary passes on each of `BACK_ENTRIES` of `I`'s, its `rfold` too, where std's sized `&mut I` folds from its back by `I`'s `try_rfold` (`PASSED_ON`, ADR 0928, #2000)",
+    breaks: "a `&mut I`'s `DoubleEndedIterator` dictionary passes on each of `BACK_ENTRIES` of `I`'s, its `rfold` too, where std's sized `&mut I` folds from its back by `I`'s `try_rfold` (`Wrapper::passes`, ADR 0928, #2000)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "                    .filter(|&&method| wrapper.passes(method) == Passed::Own)\n",
     replace: "",

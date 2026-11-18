@@ -4,7 +4,8 @@
 // differs: a `skip(1)`'s `tryFold` asks `nth(0)` where its `next` asks
 // `nth(1)` (#2051), and a `filter`'s keeps what its accumulator holds as
 // a stage panics (#2056). Every step is `$stepNames`, lent.js's, the one
-// list; what a `&mut I` and a `Box<I>` pass on is test/passed-on.test.ts's.
+// list; what a `&mut I` and a `Box<I>` pass on is std's steps' catalog's
+// (src/lower/recognition/std_steps.rs).
 // A step a wrapper doesn't pass on says why here, so a sixth one can't be
 // missed: `$closing` lacked `tryFold`, and `$flattenEnds` `tryFold` and
 // what `last` takes, `inners`, which `$flatMap` had (#2051).
