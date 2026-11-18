@@ -476,4 +476,12 @@ export const mutations: Mutation[] = [
     replace: "                true => state.refs.insert(alias, Expr::var(&name)),\n",
     tests: ["test/corpus.test.ts","-t","^held_formatter_prints.rs$"],
   },
+  {
+    name: "on-load-top-names-left-spelled",
+    breaks: "what an `on_load!` body declares at its top keeps the word lowering gave it, so two bodies that bind `x` declare it twice at the module's top, which JS won't load (#2070)",
+    file: "src/lower/mir.rs",
+    find: "                let to = name.spelled_apart();\n                js::replaced(&mut out, &name, &to);\n",
+    replace: "                let _ = name;\n",
+    tests: ["test/lowering-bindings.test.ts", "-t", "on_load bodies that bind one name"],
+  },
 ];

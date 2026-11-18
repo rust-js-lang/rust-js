@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(local_named_as_a_helper_its_scope_reads|clones_beside_a_generic_clone_of_a_copied_map).rs$"],
   },
+  {
+    name: "import-of-the-programs-unspelled-word-kept",
+    breaks: "an import keeps the word a name of the program's not spelled yet will be spelled, an `on_load!` body's `value` beside `super::value`, so the program's is given apart, `value$2`, where the import gives way (#2070)",
+    file: "src/prepare/import_names.rs",
+    find: "        match name.made_base().filter(|_| name.is_the_programs()) {\n",
+    replace: "        match None::<&str> {\n",
+    tests: ["test/link.test.ts", "-t", "module-load statements resolve imports around their local bindings"],
+  },
 ];

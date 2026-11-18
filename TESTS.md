@@ -1,5 +1,9 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#2070): test/on-load-names.test.ts, two tests, holds
+an `on_load!` body's top-level local beside a function and an import of its
+word, given apart and run.
+
 Changed on 2026-11-18 (#2067, #2072): corpus case
 `impl_iterator_own_nth_skipped_in_a_flat_map.rs` holds an own `nth` behind
 an `impl Iterator` asked as std's `try_fold` asks it; test/cross-crate-iterators.test.ts

@@ -55,6 +55,16 @@ impl Words<'_> {
     fn name(&mut self, name: &str) {
         self.taken.insert(name.to_owned());
     }
+
+    /// A binding's name: of the program's not spelled yet, a scope's
+    /// function or an `on_load!` body's top, the word it'll be spelled,
+    /// which its import gives way to as to the program's spelled (#2070).
+    fn named(&mut self, name: &Name) {
+        match name.made_base().filter(|_| name.is_the_programs()) {
+            Some(base) => self.name(base),
+            None => self.name(name.word()),
+        }
+    }
 }
 
 fn visit(items: &[Item], visitor: &mut Words<'_>) {
@@ -62,7 +72,7 @@ fn visit(items: &[Item], visitor: &mut Words<'_>) {
         match item {
             Item::Function(function) => function_names(function, visitor),
             Item::Namespace(namespace) => {
-                visitor.name(namespace.name.word());
+                visitor.named(&namespace.name);
                 for constant in &namespace.constants {
                     expr(&constant.value, visitor);
                 }
@@ -71,7 +81,7 @@ fn visit(items: &[Item], visitor: &mut Words<'_>) {
                 }
             }
             Item::Const(constant) => {
-                visitor.name(constant.name.word());
+                visitor.named(&constant.name);
                 constant.fields.names.iter().for_each(|(field, _)| visitor.name(field));
                 expr(&constant.value, visitor);
             }
@@ -81,7 +91,7 @@ fn visit(items: &[Item], visitor: &mut Words<'_>) {
 }
 
 fn function_names(function: &Function, visitor: &mut Words<'_>) {
-    visitor.name(function.name.word());
+    visitor.named(&function.name);
     for param in &function.params {
         pattern(param, visitor);
     }
@@ -90,18 +100,18 @@ fn function_names(function: &Function, visitor: &mut Words<'_>) {
 
 fn pattern(p: &Pattern, visitor: &mut Words<'_>) {
     // A default, `{ size = "md" }`, is a literal: it names nothing.
-    p.names().into_iter().for_each(|n| visitor.name(n));
+    p.bound().into_iter().for_each(|n| visitor.named(n));
 }
 
 fn block(body: &[Stmt], visitor: &mut Words<'_>) {
     for statement in body {
         match &statement.kind {
             StmtKind::Const(n, e) => {
-                visitor.name(n.word());
+                visitor.named(n);
                 expr(e, visitor);
             }
             StmtKind::Let(n, e) => {
-                visitor.name(n.word());
+                visitor.named(n);
                 if let Some(e) = e {
                     expr(e, visitor);
                 }
@@ -144,7 +154,7 @@ fn block(body: &[Stmt], visitor: &mut Words<'_>) {
                 body,
                 ..
             } => {
-                visitor.name(n.word());
+                visitor.named(n);
                 expr(start, visitor);
                 expr(test, visitor);
                 if let Some(value) = step.value() {
@@ -175,7 +185,7 @@ fn block(body: &[Stmt], visitor: &mut Words<'_>) {
             StmtKind::TryCatch(body, error, handler) => {
                 block(body, visitor);
                 if let Some(error) = error {
-                    visitor.name(error.word());
+                    visitor.named(error);
                 }
                 block(handler, visitor);
             }
@@ -192,7 +202,7 @@ fn expr(e: &Expr, visitor: &mut Words<'_>) {
     match &e.kind {
         ExprKind::Symbol(_) => {}
         // Not an import's own read: what it's spelled apart from.
-        ExprKind::Var(n) if !visitor.imports.contains(n) => visitor.name(n.word()),
+        ExprKind::Var(n) if !visitor.imports.contains(n) => visitor.named(n),
         ExprKind::Var(_) => {}
         ExprKind::Assigned(target, a) => {
             expr(target, visitor);

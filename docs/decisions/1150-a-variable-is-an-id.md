@@ -1554,3 +1554,28 @@ that replace the tables: `scope-function-names-unreserved`,
 `in-place-spills-share-a-name`, `enumerate-unread-item-named-as-accumulator`,
 `temporary-takes-a-word-reclaimed`, `temporary-flags-of-the-old-word`,
 `applied-imported-refused`.
+
+## Amendment (2026-11-18): an `on_load!` body's top, the last table (#2070)
+
+#2048 left one word-keyed table in lowering: an `on_load!` body's locals,
+the program's, which lowering spelled at its module's top beside an earlier
+body's, so `FnCx::fresh`'s table took the earlier bodies' top-level words
+(two that bind `x` would otherwise declare it twice). Now what a body
+declares at its top, the program's, is a name not spelled yet
+(`Name::spelled_apart`, where `lower_fn_mir` finishes the body, by its id),
+and preparation spells it as it spells any made name at an item's top,
+apart from the module's words, as `reclaim::spelled` does: the first `x`,
+the next `x$1`. The table goes; lowering picks no JS word from a table of
+its own but `FnCx::fresh`'s for its own locals, and change 3 is done. An
+import gives way to the program's name not spelled yet as to its spelled
+one: `import_names` takes the word it'll be spelled, so `import { value as
+value$1 }` beside the body's `value`, as before (test/link.test.ts).
+
+Rows: test/lowering-bindings.test.ts' "on_load bodies that bind one name
+each keep their own", which failed "declared twice" without the table, and
+test/on-load-names.test.ts: a body's `x` beside a function `x` its
+initializer calls, and beside an import `x`, each given apart and run.
+Mutation `on-load-top-names-left-spelled`, caught;
+`on-load-earlier-names-unreserved` and `on-load-names-of-any-module` go
+with the table they mutated.
+

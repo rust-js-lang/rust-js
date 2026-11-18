@@ -111,7 +111,9 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
   expect(with_(/Name::made\(/)).toEqual(["src/lower.rs"]);
   expect(with_(/names::made_base\(/)).toEqual(["src/js/name.rs", "src/js/validate.rs"]);
   // Preparation's speller, a loop's counter's its `counters` (#2032).
-  expect(with_(/\.made_base\(\)/).sort()).toEqual(["src/prepare.rs", "src/prepare/counters.rs", "src/prepare/reclaim.rs", "src/prepare/temporaries.rs"]);
+  // And its imports' spelling, which gives way to the program's names not
+  // spelled yet by the word they'll take (#2070).
+  expect(with_(/\.made_base\(\)/).sort()).toEqual(["src/prepare.rs", "src/prepare/counters.rs", "src/prepare/import_names.rs", "src/prepare/reclaim.rs", "src/prepare/temporaries.rs"]);
 });
 
 // A name given apart, `node$2` of `node`, is spelled by `names.rs` alone,

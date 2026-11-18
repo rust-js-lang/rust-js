@@ -666,6 +666,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if returns {
                 out = vec![StmtKind::Labeled(label, out).at(js::Span::NONE)];
             }
+            // What it declares at its top, the program's, a name not
+            // spelled yet: at the module's top beside another body's of one
+            // word, which preparation spells apart from the module's top,
+            // `x$1` (#2070).
+            let top: Vec<js::Name> = (out.iter())
+                .flat_map(js::declared_here)
+                .filter(|name| name.is_the_programs() && !name.is_unspelled())
+                .cloned()
+                .collect();
+            for name in top {
+                let to = name.spelled_apart();
+                js::replaced(&mut out, &name, &to);
+            }
         }
         let is_async = self.tcx.asyncness(def_id).is_async();
         if is_async {
