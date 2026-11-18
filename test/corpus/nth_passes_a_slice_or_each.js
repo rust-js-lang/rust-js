@@ -153,7 +153,10 @@ const Holder = {
   },
 
   nthPassedOn(holder, k, IIterator, IExactSizeIterator) {
-    return nthAndLen($given(holder.it, IIterator, false, undefined, IExactSizeIterator.len), k);
+    return nthAndLen(
+      $lent($given(holder.it, IIterator, false, undefined, IExactSizeIterator.len)),
+      k,
+    );
   },
   nthBack(holder, k, IIterator, IDoubleEndedIterator) {
     const nthBack = $nthBack(

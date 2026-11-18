@@ -67,3 +67,44 @@ native. Mutations `lent-range-length-unknown` and `lent-range-back-unknown`;
 `mut-ref-extension-of-evidence-unseen` re-anchored. The row that holds the
 derived names, a held `&mut R` of the crate's iterator folded from its back
 through std's `Map`, waits on #2104, whose plain build gets it wrong.
+
+## Amendment: a `&mut` of the crate's iterator passes on what std's does, as a value too (#2104, 2026-11-18)
+
+Std's sized `&mut I` folds by `I`'s `try_fold` and `try_rfold` (`PASSED_ON`'s
+`ByTry`), which the crate's own iterator can't write on stable Rust, so by
+the traits' defaults over `next` and `next_back`, and counts by std's
+default; never `I`'s own `fold`, `rfold` or `count`. Two of its value forms
+kept the iterator's own and ran them, `own rfold` where native folded:
+
+- A `&mut` of a type parameter's iterator given for a type parameter by
+  value, bound by `Iterator`, that the callee steps as a JS iterator, `summed(it)` of
+  `through`'s `&mut R`, was given as the iterator it lends is, its own
+  methods in it. It's lent now (`given_iterators`, `lent_iterator`), as an
+  unsized one's already was (#1996), so `$lent`'s kind, `$passedOn`,
+  `PASSED_ON`'s, says what reaches the iterator. Not where the callee takes
+  it as it is with its dictionaries (`given_as_it_is`), a compiled std
+  body's, which steps the value itself; not a concrete iterator's, whose
+  form is a `&mut`'s already where it's lent (the crate's own,
+  `user_iterator_knowing`; std's compiled structs, whose fields a lend
+  hides); and not where the `&mut` is the callee's own parameter, a `&mut
+  self` or a `&mut G`, or for a parameter bound by none, `pass<I>(it: I)`,
+  which hold it as the value it is. Each of those was tried and broke
+  corpus cases or the copy matrix. `nth_passes_a_slice_or_each`'s `&mut` of a
+  held `I` given to `nth_and_len` is `$lent(..)` now, its `nth` and `len`
+  passed on as before.
+- A type parameter's `by_ref()` stepped from its back by an adapter made
+  of it was given the parameter's own dictionaries: `iterator_evidence`
+  peeled the `&mut`, and the adapter's maker asked it of the type behind
+  it. A `&mut`'s extension evidence is now the `&mut`'s,
+  `mut_ref_extension_dictionary` over the parameter's, and the makers in
+  `backs.rs` ask it of what they're given, the `&mut` (`given_stepped`).
+
+Corpus case `mut_of_an_iterator_passes_on_what_std_does`: an iterator
+writing its own `fold`, `count` and `rfold`, through a `&mut R` given on as
+`J`, through a held type parameter's `by_ref()` mapped and filtered and
+reversed, folded and counted, by value, and through a `GetMut`'s `&mut G`,
+against native (each `&mut` row ran the iterator's own at main). Mutations
+`mut-r-argument-unlent`, `own-mut-iterator-lent-again`,
+`mut-ref-evidence-peeled`, `given-map-source-of-the-referent` and
+`mut-ref-back-entries-unfiltered` (#2000's, whose row this is);
+`given-map-source-raw` re-anchored.

@@ -206,9 +206,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map` of an `I` given as it is that knows its back is `$mapEnds` of its caller's value, a range, not a JS iterator",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {\n",
+    find: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), held, back, len) {\n",
     replace:
-      "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len).filter(|_| false) {\n",
+      "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), held, back, len).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
@@ -909,5 +909,13 @@ export const mutations: Mutation[] = [
     find: "                    None if self.stepped_from_its_back(output) => {\n",
     replace: "                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty, receiver) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_boxed_beside_an_enumeration_from_its_back\\.rs$"],
+  },
+  {
+    name: "given-map-source-of-the-referent",
+    breaks: "a map stepped from its back of a type parameter's `by_ref()` is given the parameter's own dictionaries, its own `rfold` too, not the `&mut`'s, where std's `&mut I` folds by `I`'s `try_rfold` (#2104)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), held, back, len) {\n",
+    replace: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_an_iterator_passes_on_what_std_does\\.rs$"],
   },
 ];

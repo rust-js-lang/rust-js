@@ -299,7 +299,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A source given as it is is given its back where it's asked;
                 // one the crate steps from its back without one, a range or
                 // another adapter, made knowing it, or refused (ADR 0545).
-                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {
+                let it = match self.given_stepped(receiver.clone(), held, back, len) {
                     Some(it) => it,
                     None if self.is_user_iterator(iter_ty) => {
                         self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?
@@ -349,7 +349,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let of_param = matches!(iter_ty.peel_refs().kind(), ty::Param(_));
                 let back = of_param || self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
                 let len = of_param || self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);
-                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {
+                let it = match self.given_stepped(receiver.clone(), held, back, len) {
                     // Closed to drop it, as a map's is, where it's owned, not
                     // through a `&mut` (#223, #225), a type parameter's
                     // value too (#971).
@@ -430,7 +430,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (ADR 0098), as a compiled `Rev` steps it from its back (ADR
             // 0871).
             Some(IterMethod::Filter) if self.knows_its_back(output) => {
-                let it = match self.given_stepped(receiver.clone(), iter_ty, true, false) {
+                let it = match self.given_stepped(receiver.clone(), held, true, false) {
                     Some(it) => it,
                     None if self.is_user_iterator(iter_ty) => {
                         self.user_iterator_knowing(receiver.clone(), held, (true, false), span)?

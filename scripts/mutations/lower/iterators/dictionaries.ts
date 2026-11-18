@@ -405,4 +405,12 @@ export const mutations: Mutation[] = [
     replace: "            (false, None) if self.is_user_iterator(ty) && self.recognition().own_len(ty).is_none() => {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_provided_methods_given_through_bounds\\.rs$"],
   },
+  {
+    name: "mut-ref-back-entries-unfiltered",
+    breaks: "a `&mut I`'s `DoubleEndedIterator` dictionary passes on each of `BACK_ENTRIES` of `I`'s, its `rfold` too, where std's sized `&mut I` folds from its back by `I`'s `try_rfold` (`PASSED_ON`, ADR 0928, #2000)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                    .filter(|&&method| wrapper.passes(method) == Passed::Own)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_an_iterator_passes_on_what_std_does\\.rs$"],
+  },
 ];

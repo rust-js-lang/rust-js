@@ -577,4 +577,21 @@ export const mutations: Mutation[] = [
     replace: "                *value = self.js_iterator(held);\n",
     tests: ["test/corpus.test.ts", "-t", "^fuse_holds_its_source_in_generic_code\\.rs$"],
   },
+  {
+    name: "mut-r-argument-unlent",
+    breaks: "a `&mut` of an iterator given for a type parameter by value, `summed(it)` of a `&mut R`, isn't lent, so it folds by the iterator's own `rfold`, `fold` and `count`, where std's `&mut I` folds by its `try_fold`s and counts by std's default (#2104)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            if let Some(by) = lent {\n",
+    replace: "            if let Some(by) = lent.filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_an_iterator_passes_on_what_std_does\\.rs$"],
+  },
+  {
+    name: "own-mut-iterator-lent-again",
+    breaks: "a `&mut` of a concrete iterator given for a type parameter by value is lent again, `$lent(..)`, where its form is a `&mut`'s already: the crate's own iterator's `$lent($iterator(..))`, std's compiled struct's, whose fields the lend hides (#2104)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                    if to.is_sized(self.tcx, self.typing_env) && crate::lower::generic_facts::is_type_parameter(to))\n",
+    replace: "                    if to.is_sized(self.tcx, self.typing_env))\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_provided_methods_given_through_bounds\\.rs$"],
+    snapshots: true,
+  },
 ];

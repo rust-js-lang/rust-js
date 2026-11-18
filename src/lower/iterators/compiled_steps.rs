@@ -598,6 +598,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// an extension's, `DoubleEndedIterator`'s or `ExactSizeIterator`'s
     /// (ADR 0487).
     pub(in crate::lower) fn iterator_evidence(&self, ty: ty::Ty<'tcx>, trait_id: DefId) -> Option<Expr> {
+        // A `&mut`'s, of an extension: what std's `&mut I` passes on of
+        // `I`'s, `PASSED_ON`'s, never its own `rfold` (#2104), as the
+        // dictionary of a `&mut R` a caller gives is (ADR 0937).
+        if let ty::Ref(_, to, ty::Mutability::Mut) = *ty.kind()
+            && crate::lower::recognition::is_iterator_extension(self.tcx, trait_id)
+        {
+            let of = self.iterator_evidence(to, trait_id)?;
+            return Some(self.mut_ref_extension_dictionary(trait_id, ty, of));
+        }
         // Of a copied default, its MIR's, in its impl's terms already (#803):
         // `T` of its trait's `Self` in `impl<T: Iterator> Trait for T` (ADR 0492).
         let ty = ty.peel_refs();

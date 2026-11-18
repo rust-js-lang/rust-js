@@ -421,6 +421,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
+            // A `&mut` of a sized iterator given for a type parameter by
+            // value bound by `Iterator` that steps it as a JS iterator,
+            // `summed(it)` of a `&mut R`, not one bound by none, `pass(it)`,
+            // which holds the `&mut` as the value it is, not one given as it is with its dictionaries, a compiled
+            // std body's, as an unsized one's is below: lent once it's made what it lends is, so it passes on
+            // what std's `&mut I` does, `PASSED_ON`'s, `$lent`'s: its folds
+            // by its `try_fold`s, its `count` std's default, never the
+            // iterator's own (#2104). Of a type parameter's alone, given by
+            // its dictionaries as it is: another's form is made a `&mut`'s
+            // already where it's lent, the crate's own iterator's
+            // (`user_iterator_knowing`), std's compiled struct's, a range's.
+            let lent = (crate::lower::generic_facts::type_parameter(input).is_some_and(|param| {
+                bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
+            }) && matches!(*given.kind(), ty::Ref(_, to, ty::Mutability::Mut)
+                    if to.is_sized(self.tcx, self.typing_env) && crate::lower::generic_facts::is_type_parameter(to))
+                && self.implements_iterator(given))
+            .then_some(given);
             // Through a reference, what it's to; through a `Box<I>`, its `I`,
             // given as the box of it is, which steps it by what std's `Box`
             // passes on (`iterator_held`, #1601).
@@ -517,6 +534,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let held = std::mem::replace(value, Expr::taken());
                 *value = self.made_so_its_source_is_found(held, given);
+            }
+            if let Some(by) = lent {
+                let held = std::mem::replace(value, Expr::taken());
+                *value = self.lent_iterator(held, by);
             }
         }
         Ok(())

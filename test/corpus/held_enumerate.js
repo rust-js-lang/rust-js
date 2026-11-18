@@ -152,7 +152,14 @@ function lastDoubled(items) {
 const Wrap = {
   lastTripled(wrap, RIterator, RDoubleEndedIterator) {
     return $foldBack(
-      $mapEnds($given(wrap.inner, RIterator, false, RDoubleEndedIterator), (x) => (x * 3) >>> 0),
+      $mapEnds(
+        $given(wrap.inner, RIterator, false, {
+          next_back: RDoubleEndedIterator.next_back,
+          nthBack: RDoubleEndedIterator.nthBack,
+          tryRfold: RDoubleEndedIterator.tryRfold,
+        }),
+        (x) => (x * 3) >>> 0,
+      ),
       undefined,
       (last, x) => last ?? x,
     );

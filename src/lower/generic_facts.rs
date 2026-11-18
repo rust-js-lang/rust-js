@@ -593,8 +593,14 @@ pub(in crate::lower) fn is_type_parameter(ty: Ty<'_>) -> bool {
 /// The index of the type parameter `ty` is, `Self` too, where it's one:
 /// which of a function's generic arguments it's given there (#1661).
 pub(in crate::lower) fn type_parameter_of(ty: Ty<'_>) -> Option<u32> {
+    type_parameter(ty).map(|param| param.index)
+}
+
+/// The type parameter `ty` is, where it's one, `type_parameter_of`'s, as a
+/// question of it by name asks it, `given_as_it_is` (#2104).
+pub(in crate::lower) fn type_parameter(ty: Ty<'_>) -> Option<ty::ParamTy> {
     match ty.kind() {
-        ty::Param(param) => Some(param.index),
+        ty::Param(param) => Some(*param),
         _ => None,
     }
 }

@@ -280,4 +280,12 @@ export const mutations: Mutation[] = [
     replace: "        match self.recognition().own_len(ty).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^own_provided_methods_given_through_bounds\\.rs$"],
   },
+  {
+    name: "mut-ref-evidence-peeled",
+    breaks: "a `&mut R`'s extension dictionary of a type parameter given as it is is `R`'s own, its own `rfold` too, where std's `&mut I` folds from its back by `I`'s `try_rfold` (#2104)",
+    file: "src/lower/iterators/compiled_steps.rs",
+    find: "            && crate::lower::recognition::is_iterator_extension(self.tcx, trait_id)\n        {\n",
+    replace: "            && crate::lower::recognition::is_iterator_extension(self.tcx, trait_id)\n            && false\n        {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_of_an_iterator_passes_on_what_std_does\\.rs$"],
+  },
 ];
