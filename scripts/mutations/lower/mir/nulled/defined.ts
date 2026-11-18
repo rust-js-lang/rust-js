@@ -43,8 +43,8 @@ export const mutations: Mutation[] = [
     name: "defined-classify-of-any-local",
     breaks: "a `js::classify` of another value is taken for a test of the local read, so its edge proves a local it never tested (#1933)",
     file: "src/lower/mir/nulled/defined.rs",
-    find: "            || self.tested_local(state, &given.node)? != local\n",
-    replace: "            || self.tested_local(state, &given.node).is_none()\n",
+    find: "            || self.tested_local(state, &given.node, Some(local))? != local\n",
+    replace: "            || self.tested_local(state, &given.node, Some(local)).is_none()\n",
     tests: defined,
   },
   {

@@ -14,6 +14,7 @@ mod field_reads;
 mod items;
 mod lends;
 mod one_none;
+mod presence_paths;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
@@ -464,7 +465,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.proved_by(state, local, Self::present_edge, state.at) {
             return true;
         }
-        if self.ended_present(state, local) {
+        if self.ended_present(state, local) || self.present_on_all_paths(state, local, state.at) {
             return true;
         }
         let Some([Write::Assign(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _))]) =
@@ -480,7 +481,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         of.projection.is_empty()
             && state.locals.writes[local] == 1
             && local.as_usize() > state.body.arg_count
-            && written.is_some_and(|at| self.proved_by(state, of.local, Self::present_edge, at))
+            && written.is_some_and(|at| {
+                self.proved_by(state, of.local, Self::present_edge, at)
+                    || self.present_on_all_paths(state, of.local, at)
+            })
     }
 
     /// Whether `local`, an `Option`, is written once, never lent, by a
@@ -742,7 +746,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => *no,
                     },
                 };
-                (self.tested_local(state, &given.node)? == local).then_some(present)
+                (self.tested_local(state, &given.node, Some(local))? == local).then_some(present)
             }
             // A variant's of `k = js::classify(local)` that isn't `undefined`
             // or `null`, `if let Kind::Function(_) = js::classify(exports)`.
@@ -763,9 +767,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The local `given`, a test's argument, is of: through the copies MIR
     /// makes of it for the call, `_11 = copy _3`, the reference it lends,
     /// `_12 = &_3`, and that reference's reborrows.
-    fn tested_local(&self, state: &State<'_, 'tcx>, given: &Operand<'tcx>) -> Option<Local> {
+    fn tested_local(&self, state: &State<'_, 'tcx>, given: &Operand<'tcx>, stop: Option<Local>) -> Option<Local> {
         let mut tested = given.place().filter(|p| p.projection.is_empty())?.local;
         for _ in 0..4 {
+            if stop == Some(tested) {
+                break;
+            }
             match self.whole_writes(state, tested).as_deref() {
                 Some(
                     [
@@ -791,13 +798,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The local `side`, a comparison's operand, is `js::type_of` of.
     fn type_of_test(&self, state: &State<'_, 'tcx>, side: &Operand<'tcx>) -> Option<Local> {
-        let kind = self.tested_local(state, side)?;
+        let kind = self.tested_local(state, side, None)?;
         let writes = self.whole_writes(state, kind)?;
         let [Write::Call(_, func, [given])] = writes.as_slice() else {
             return None;
         };
         let (callee, _) = func.const_fn_def()?;
-        crate::lower::recognition::is_js_type_of(self.tcx, callee).then(|| self.tested_local(state, &given.node))?
+        crate::lower::recognition::is_js_type_of(self.tcx, callee)
+            .then(|| self.tested_local(state, &given.node, None))?
     }
 
     /// The text constant `side`, a comparison's operand, is, through the
@@ -806,7 +814,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let constant = match side {
             Operand::Constant(c) => **c,
             _ => {
-                let held = self.tested_local(state, side)?;
+                let held = self.tested_local(state, side, None)?;
                 let writes = self.whole_writes(state, held)?;
                 let [Write::Assign(Rvalue::Use(Operand::Constant(c), _))] = writes.as_slice() else {
                     return None;

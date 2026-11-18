@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-18: the nullable proof regression checks an option filled on its missing branch, including a local initialized by a lookup. Paths that skip the fill or mutate the option through a borrow still panic on unwrap.
+
 Changed on 2026-11-18: the constructor binding regression checks direct JavaScript construction from a property read, getter order, and TypeError for invalid targets.
 
 Changed on 2026-11-18: the argument regression checks JavaScript default syntax, arity, null, undefined, and fallbacks that read later arguments or have effects.

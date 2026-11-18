@@ -150,3 +150,48 @@ pub fn node_of(element: &Element) -> &Node {
   expect([lib.pick(hop(one), "a"), lib.pick(hop(null), "a")]).toEqual([one, undefined]);
   expect([lib.keep(hop(one), "a"), lib.keep(hop(null), "a")]).toEqual([one, undefined]);
 });
+
+test("an option filled on its missing branch is present at the join", async () => {
+  const { dir, js } = compile("option-filled-on-missing-branch", `
+pub fn filled(mut value: Option<f64>, initialize: fn() -> f64) -> f64 {
+    if value.is_none() {
+        value = Some(initialize());
+    }
+    value.unwrap()
+}
+
+pub fn filled_after_read(read: fn() -> Option<f64>, initialize: fn() -> f64) -> f64 {
+    let mut value = read();
+    if value.is_none() {
+        value = Some(initialize());
+    }
+    value.unwrap()
+}
+
+pub fn maybe_filled(mut value: Option<f64>, fill: bool) -> f64 {
+    if value.is_none() && fill {
+        value = Some(42.0);
+    }
+    value.unwrap()
+}
+
+pub fn reset(mut value: Option<f64>, change: fn(&mut Option<f64>)) -> f64 {
+    if value.is_none() {
+        value = Some(42.0);
+    }
+    change(&mut value);
+    value.unwrap()
+}
+`);
+  const filled = js.slice(js.indexOf("export function filled"), js.indexOf("export function maybeFilled"));
+  expect(filled).toContain("return value;");
+  expect(filled).not.toContain("$unwrap");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.filled(12, () => { throw new Error("must not initialize"); })).toBe(12);
+  expect(lib.filled(undefined, () => 42)).toBe(42);
+  expect(lib.filled(null, () => 42)).toBe(42);
+  expect(lib.filledAfterRead(() => undefined, () => 42)).toBe(42);
+  expect(lib.filledAfterRead(() => 12, () => { throw new Error("must not initialize"); })).toBe(12);
+  expect(() => lib.maybeFilled(undefined, false)).toThrow("called `Option::unwrap()` on a `None` value");
+  expect(() => lib.reset(12, (value: { value: unknown }) => { value.value = undefined; })).toThrow("called `Option::unwrap()` on a `None` value");
+});

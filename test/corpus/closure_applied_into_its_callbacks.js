@@ -22,7 +22,7 @@ function later(given) {
   if (read != null) {
     out.push(read(1));
   }
-  out.push(given ?? 0);
+  out.push(given);
   return out;
 }
 

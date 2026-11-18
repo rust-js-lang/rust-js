@@ -792,3 +792,17 @@ mutations `local-cell-read-past-a-call`, `local-cell-read-unproved`
 (lower/mir/tidy/bindings.ts). `field-test-undecided-where-its-variable-changes`
 retires: with `present_in` gone, whether a field's test of a variable
 something assigns is decided changes no corpus case, test or React's port.
+
+## Amendment: an option filled on its missing branch
+
+Three.js fills a missing cached entry and then reads it. A Rust option
+is present after a branch when every incoming path either takes the
+present edge of its test or writes `Some` afterwards. The MIR proof
+walks predecessor paths, stops at such evidence, and rejects an
+unknown write or a path to the entry. A later write through a mutable
+borrow also prevents the proof. Earlier tests still use their original
+value even when the local has a later assignment.
+
+The unwrap remains wherever a path can carry `None`. This follows
+ADR 0262’s first case. `test/lowering-nullable-truthy.test.ts` covers
+a filled option, a path that skips the fill, and a mutable alias.
