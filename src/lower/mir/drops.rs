@@ -221,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made: the function owns what it's given, and drops it where Rust
     /// does, not as it's done (#392). Not std's struct, compiled, which
     /// steps what it holds as Rust does, and has no `hold()`.
-    pub(super) fn parameters_first(&self, state: &State<'_, 'tcx>) -> R<Vec<Stmt>> {
+    pub(super) fn parameters_first(&mut self, state: &State<'_, 'tcx>) -> R<Vec<Stmt>> {
         // Each JS gives again that it changes, its copy (#1723).
         let mut out = self.kept_starts(state.body, &state.parts, &|local| state.locals.names[local].clone())?;
         for local in state.body.args_iter() {

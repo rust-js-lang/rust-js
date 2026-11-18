@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = operand.ty(&state.body.local_decls, self.tcx);
             let span = state.body.local_decls[place.local].source_info.span;
             let held = self.value_expr(read, span)?;
-            return Ok(Value::Expr(self.kept_copy(held, ty, span)?));
+            return Ok(Value::Expr(self.kept_copy(held, ty, span, out)?));
         }
         // A flattened struct read whole by value, `r.range`, of its parent's
         // object, or copied out of a reference, `*range`, which may be one

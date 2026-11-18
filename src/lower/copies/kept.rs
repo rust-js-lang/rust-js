@@ -7,8 +7,10 @@
 //! moved out, it copies first: `const at = { ...props.at };`, as a clone
 //! would, and a `Vec`'s `slice()`.
 
+use super::super::recursive_fns::Kind;
 use super::super::refusal::{Refused, refuse};
-use super::super::{FnCx, R, Shape};
+use super::super::temporary_names::Base;
+use super::super::{FnCx, R, Shape, lower_first};
 use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::js::{Expr, Prop};
@@ -117,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// one a pattern takes apart, `({ at })`, each part's, `at = { ...at }`,
     /// `parts` its parts, as the pattern moves each out where it's given.
     pub(in crate::lower) fn kept_starts(
-        &self,
+        &mut self,
         body: &mir::Body<'tcx>,
         parts: &IndexMap<mir::Local, mir::Local>,
         name_of: &dyn Fn(mir::Local) -> js::Name,
@@ -129,7 +131,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for local in copies.at_start.iter().copied().chain(parted) {
             let name = name_of(local);
             let decl = &body.local_decls[local];
-            let copy = self.kept_copy(Expr::var(&name), decl.ty, decl.source_info.span)?;
+            let (ty, span) = (decl.ty, decl.source_info.span);
+            let copy = self.kept_copy(Expr::var(&name), ty, span, &mut out)?;
             if !name.is_unnamed() && copy.kind != Expr::var(&name).kind {
                 out.push(js::StmtKind::Assign(Expr::var(&name), copy).at(js::Span::NONE));
             }
@@ -189,15 +192,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that may, `{ ...props.at, path: props.at.path.slice() }`; a `Vec`'s
     /// `slice()`, or `map` of its items' copies; an `Option`'s `Some`'s; a
     /// `Box`'s value's, which it is; an enum's variant's parts. What it
-    /// can't copy, a map JS holds in a form of its own, refused.
-    pub(in crate::lower) fn kept_copy(&self, place: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// can't copy, a map JS holds in a form of its own, refused. A type
+    /// inside itself, `Row` in its `children: Vec<Row>`, a function of its
+    /// module that calls itself for the ones inside, `copyRow(row)`, as its
+    /// clone is (`recursive_fns`): expanded in place, it never ended
+    /// (#2096). Never its clone, which may run the program's `Clone`.
+    pub(in crate::lower) fn kept_copy(
+        &mut self,
+        place: Expr,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<js::Stmt>,
+    ) -> R<Expr> {
         if !self.kept_may_change(ty) {
             return Ok(place);
         }
         // Read once where it's read more than once.
         if !place.reads_same() {
             let param = self.unspelled("value");
-            let body = self.kept_copy(Expr::var(&param), ty, span)?;
+            let body = self.kept_copy(Expr::var(&param), ty, span, out)?;
             return Ok(Expr::call(
                 Expr::arrow(
                     vec![param.clone().into()],
@@ -209,18 +222,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_copy(ty) {
             return Ok(self.copy(place, ty));
         }
-        let each = |place: Expr, item: Ty<'tcx>| -> R<Expr> {
-            if !self.kept_may_change(item) {
-                return Ok(Expr::builtin(place, "slice", Vec::new()));
-            }
-            let name = self.fresh(crate::lower::Base::Named("item"));
-            let body = self.kept_copy(Expr::var(&name), item, span)?;
-            let copy = Expr::arrow(
-                vec![name.clone().into()],
-                vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
-            );
-            Ok(Expr::builtin(place, "map", vec![copy]))
-        };
+        if self.is_recursive(ty) {
+            let ty::Adt(adt, _) = ty.kind() else {
+                unreachable!("a recursive type is an ADT");
+            };
+            let type_name = self.tcx.item_name(adt.did()).to_string();
+            let (base, param) = (format!("copy{type_name}"), lower_first(&type_name));
+            let name = self.recursive_fn(
+                (Kind::KeptCopy, ty, &base),
+                &[Base::Named(&param)],
+                |cx, params, body| cx.kept_copy_parts(params[0].clone(), ty, span, body),
+                out,
+            )?;
+            return Ok(Expr::call(Expr::var(&name), vec![place]));
+        }
+        self.kept_copy_parts(place, ty, span, out)
+    }
+
+    /// A `Vec`'s or an array's copy, of items `item` (`kept_copy`): its
+    /// `slice()`, or `map` of its items' copies.
+    fn kept_copy_items(&mut self, place: Expr, item: Ty<'tcx>, span: Span, out: &mut Vec<js::Stmt>) -> R<Expr> {
+        if !self.kept_may_change(item) {
+            return Ok(Expr::builtin(place, "slice", Vec::new()));
+        }
+        let name = self.fresh(Base::Named("item"));
+        let body = self.kept_copy(Expr::var(&name), item, span, out)?;
+        let copy = Expr::arrow(
+            vec![name.clone().into()],
+            vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
+        );
+        Ok(Expr::builtin(place, "map", vec![copy]))
+    }
+
+    /// `kept_copy` of `place`, a value read once, made of its parts' copies.
+    fn kept_copy_parts(&mut self, place: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<js::Stmt>) -> R<Expr> {
         match self.shape(ty) {
             Shape::Object(fields) => {
                 let mut props = vec![Prop::Spread(place.clone())];
@@ -233,28 +268,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if self.kept_may_change(t) {
                         props.push(Prop::Field(
                             name.clone(),
-                            self.kept_copy(Expr::member(place.clone(), name), t, span)?,
+                            self.kept_copy(Expr::member(place.clone(), name), t, span, out)?,
                         ));
                     }
                 }
                 Ok(Expr::object(props))
             }
-            Shape::Array(tys) => Ok(Expr::array(
-                (tys.into_iter().enumerate())
-                    .map(|(i, t)| self.kept_copy(Expr::index(place.clone(), Expr::int(i as i128)), t, span))
-                    .collect::<R<Vec<_>>>()?,
-            )),
+            Shape::Array(tys) => {
+                let mut parts = Vec::new();
+                for (i, t) in tys.into_iter().enumerate() {
+                    parts.push(self.kept_copy(Expr::index(place.clone(), Expr::int(i as i128)), t, span, out)?);
+                }
+                Ok(Expr::array(parts))
+            }
             Shape::Other => match *ty.kind() {
-                ty::Array(item, _) => each(place, item),
-                ty::Adt(_, args) if self.is_vec_like(ty) => each(place, args.type_at(0)),
-                ty::Adt(adt, args) if adt.is_box() => self.kept_copy(place, args.type_at(0), span),
+                ty::Array(item, _) => self.kept_copy_items(place, item, span, out),
+                ty::Adt(_, args) if self.is_vec_like(ty) => self.kept_copy_items(place, args.type_at(0), span, out),
+                ty::Adt(adt, args) if adt.is_box() => self.kept_copy(place, args.type_at(0), span, out),
                 // `Some(x)` is `x` (ADR 0030); of a box, `Some(None)`, the
                 // value inside, which this doesn't take apart.
                 _ if let Some(inner) = self.option_of(ty)
                     && self.option_of(inner).is_none() =>
                 {
                     let none = Expr::bin(js::Op::LooseEq, place.clone(), Expr::null());
-                    Ok(Expr::cond(none, place.clone(), self.kept_copy(place, inner, span)?))
+                    Ok(Expr::cond(
+                        none,
+                        place.clone(),
+                        self.kept_copy(place, inner, span, out)?,
+                    ))
                 }
                 // `{ TAG: "Line", _0: .. }`: each variant with a part that
                 // may change, its copy, every other value itself.
@@ -268,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let mut props = vec![Prop::Spread(place.clone())];
                         for (name, t) in fields {
                             if self.kept_may_change(t) {
-                                let part = self.kept_copy(Expr::member(place.clone(), name.clone()), t, span)?;
+                                let part = self.kept_copy(Expr::member(place.clone(), name.clone()), t, span, out)?;
                                 props.push(Prop::Field(name, part));
                             }
                         }

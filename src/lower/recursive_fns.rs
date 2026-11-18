@@ -1,10 +1,11 @@
 //! A type inside itself, `Hir` in `HirKind::Capture`'s `Box<Hir>`: its
-//! `==`, clone and order are each a function, which calls itself for the
-//! ones inside (ADRs 0052, 0053, #511). Expanded in place, each never
-//! ended. Of a type its module knows, the module's own function, one for
-//! each type and module, which every place that compares, clones or orders
-//! one calls (#517); of one only a caller knows, made of a type parameter,
-//! the function's, which reads the dictionaries it was given. And a type's
+//! `==`, clone, kept copy (#2096) and order are each a function, which
+//! calls itself for the ones inside (ADRs 0052, 0053, #511). Expanded in
+//! place, each never ended. Of a type its module knows, the module's own
+//! function, one for each type and module, which every place that
+//! compares, clones, copies or orders one calls (#517); of one only a
+//! caller knows, made of a type parameter, the function's, which reads the
+//! dictionaries it was given. And a type's
 //! dictionary of std's order its module makes, `pointPartialOrd`, made once,
 //! a `const` of its module, as the crate's own impls' are (#944).
 
@@ -20,6 +21,10 @@ use rustc_span::def_id::{DefId, LocalModId};
 pub(super) enum Kind {
     Eq,
     Clone,
+    /// The copy of what JS gives again, which it keeps, that a body changes
+    /// in place (`kept_copy`, #1723, #2096): never its clone, which may run
+    /// the program's `Clone`.
+    KeptCopy,
     /// Its order, partial or not.
     Cmp {
         partial: bool,

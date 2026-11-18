@@ -8,6 +8,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { underLoad } from "../scripts/timing";
 import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target, bunTest } from "./support";
 
@@ -294,4 +295,104 @@ test("a component's props a library changes in place are copied first", async ()
   const lib = await import(join(out("app"), "lib.jsx"));
   const props = { names: ["a"] };
   expect([lib.Tagged(props).props.children, lib.Tagged(props).props.children, props.names]).toEqual([2, 2, ["a"]]);
+});
+
+// A recursive type's kept copy is a function of its module that calls
+// itself for the ones inside, `copyRow`, through a `Vec` or an
+// `Option<Box<..>>`, as a clone of one is (`recursive_fns`); expanded in
+// place, it never ended, and the compile hung (#2096). Each renders
+// Rust's answer under StrictMode, which renders it twice with the props
+// it kept, and the props it was given stay as they were.
+test("a kept copy of a recursive type is a function that calls itself, and the compile ends", () => {
+  const dir = fixture("react-kept-recursive");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub struct Row {
+    pub number: u32,
+    pub children: Vec<Row>,
+}
+
+pub struct Props {
+    pub row: Row,
+}
+
+pub fn Edited(mut props: Props) -> JSX::Element {
+    props.row.children[0].children.push(Row { number: 7, children: Vec::new() });
+    jsx! { <i>{props.row.children[0].children.len()}</i> }
+}
+
+pub struct Link {
+    pub value: u32,
+    pub next: Option<Box<Link>>,
+}
+
+pub struct LinkProps {
+    pub head: Link,
+}
+
+pub fn Bumped(mut props: LinkProps) -> JSX::Element {
+    if let Some(next) = &mut props.head.next {
+        next.value += 1;
+    }
+    jsx! { <b>{props.head.next.as_ref().map_or(0, |next| next.value)}</b> }
+}
+
+pub enum Tree {
+    Leaf(u32),
+    Node(Vec<Tree>),
+}
+
+pub struct TreeProps {
+    pub tree: Tree,
+}
+
+pub fn Grown(mut props: TreeProps) -> JSX::Element {
+    if let Tree::Node(trees) = &mut props.tree {
+        trees.push(Tree::Leaf(1));
+    }
+    let count = match &props.tree {
+        Tree::Node(trees) => trees.len(),
+        Tree::Leaf(_) => 0,
+    };
+    jsx! { <s>{count}</s> }
+}
+
+pub fn Shown() -> JSX::Element {
+    let row = Row { number: 1, children: vec![Row { number: 2, children: Vec::new() }] };
+    let head = Link { value: 1, next: Some(Box::new(Link { value: 5, next: None })) };
+    jsx! {
+        <div>
+            <Edited row={row} />
+            <Bumped head={head} />
+            <Grown tree={Tree::Node(vec![Tree::Leaf(3)])} />
+        </div>
+    }
+}
+`,
+  );
+  const ran = runSync([compiler, ...flags(dir)], root, underLoad(30_000));
+  expect(ran.code, ran.stderr).toBe(0);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain("function copyRow(row) {");
+  writeFileSync(
+    join(dir, "driver.test.jsx"),
+    `import { expect, test } from "bun:test";
+import { StrictMode, createElement } from "react";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
+import { Shown } from "./lib.jsx";
+
+test("each renders Rust's answer under StrictMode", () => {
+  const container = document.createElement("div");
+  flushSync(() => createRoot(container).render(createElement(StrictMode, null, createElement(Shown))));
+  expect([...container.querySelectorAll("i, b, s")].map((e) => e.textContent)).toEqual(["1", "6", "2"]);
+});
+`,
+  );
+  const p = bunTest(["--preload", "./test/happydom.js", join(dir, "driver.test.jsx")]);
+  const output = p.stdout + p.stderr;
+  expect([p.code, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "1"]);
 });

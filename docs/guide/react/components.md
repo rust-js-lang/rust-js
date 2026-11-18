@@ -208,6 +208,8 @@ React keeps the props object and renders again with it, twice in
 `const at = { ...props.at };`, and each render is Rust's. Props given on
 unchanged, `<Dot at={props.at} />`, aren't copied
 ([ADR 0020](../../decisions/0020-structs-and-tuples.md), amended, #1723).
+Props of a type inside itself, a `Row` whose `children` are `Vec<Row>`,
+are copied by a function that calls itself, `copyRow(props.row)` (#2096).
 
 ## Children
 

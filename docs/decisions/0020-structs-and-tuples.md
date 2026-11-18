@@ -450,3 +450,32 @@ Corpus case `array_map_of_an_identity` runs against native in both builds:
 holds the JS, `return ["Share", "Copy"];` and `const d = c.slice();`.
 Mutations `identity-map-shared-though-written` and
 `identity-array-map-kept` are caught.
+
+## Amendment (2026-11-18, #2096): a recursive type's kept copy is a function that calls itself
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept; and the compile must end.
+
+The kept copy above was written out in place, each part's copy inside
+its parent's. Of a type inside itself, a `Row` whose `children` are a
+`Vec<Row>`, that never ended: `rust-js build` of a component changing
+`props.row.children[0].children` hung, the copy of a `Row` writing the
+copy of its `Row`s, and theirs. A finite Rust tree is copied by walking
+it, as its clone is.
+
+So a recursive type's kept copy is a function of its module, made once
+by the owner of functions that call themselves (`recursive_fns`, as
+`cloneRow` is), each place that copies one calling it:
+
+```js
+function copyRow(row) {
+  return { ...row, children: row.children.map((item) => copyRow(item)) };
+}
+```
+
+Through an `Option<Box<Link>>`, `next: link.next == null ? link.next :
+copyLink(link.next)`, and an enum's variant, `copyTree`, alike. It's
+never the type's clone, which may run the program's own `Clone`, nor
+does it need one. test/react-kept.test.ts renders a `Vec`'s, an
+`Option<Box<..>>`'s and an enum's under `<StrictMode>`, Rust's answers,
+its compile bounded; mutation `kept-copy-recursive-in-place` is caught.

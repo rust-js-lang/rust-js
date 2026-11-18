@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "kept-vec-items-shared",
     breaks: "a `Vec` React kept, its items changed, is copied by `slice()` alone, so its items are React's (#1723)",
     file: "src/lower/copies/kept.rs",
-    find: "                return Ok(Expr::builtin(place, \"slice\", Vec::new()));\n",
-    replace: "                return Ok(Expr::builtin(place, \"slice\", Vec::new()));\n            }\n            if true {\n                return Ok(Expr::builtin(place, \"slice\", Vec::new()));\n",
+    find: "            return Ok(Expr::builtin(place, \"slice\", Vec::new()));\n",
+    replace: "            return Ok(Expr::builtin(place, \"slice\", Vec::new()));\n        }\n        if true {\n            return Ok(Expr::builtin(place, \"slice\", Vec::new()));\n",
     tests: ["test/react-kept.test.ts", "-t", "copied where it's changed"],
   },
   {
@@ -65,5 +65,13 @@ export const mutations: Mutation[] = [
     find: "                let fields = match self.own_object_fields(ty) {\n",
     replace: "                let fields = match self.own_object_fields(ty).filter(|_| false) {\n",
     tests: ["test/react-kept.test.ts", "-t", "a component's kept copy of flattened props reads its own keys alone"],
+  },
+  {
+    name: "kept-copy-recursive-in-place",
+    breaks: "a recursive type's kept copy, a component's props of a `Row` whose `children` are `Vec<Row>`, is written out in place, each `Row`'s copy inside its parent's, and the compile never ends (#2096)",
+    file: "src/lower/copies/kept.rs",
+    find: "        if self.is_recursive(ty) {\n",
+    replace: "        if false && self.is_recursive(ty) {\n",
+    tests: ["test/react-kept.test.ts", "-t", "a kept copy of a recursive type is a function that calls itself"],
   },
 ];
