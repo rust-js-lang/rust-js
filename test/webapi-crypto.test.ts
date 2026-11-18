@@ -1,12 +1,15 @@
 // webapi's crypto, against the real API: Node's and Chromium's.
 
-import { expect, test } from "bun:test";
+import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright";
 
-import { compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, run, target } from "./support";
 import { underLoad } from "../scripts/timing";
+
+// The js crate it compiles against, in `target` (`buildReact`).
+beforeAll(buildReact, 600_000);
 
 // `crypto.getRandomValues(array)` fills the array it's given and gives it
 // back, TypeScript's `getRandomValues<T extends ..>(array: T): T`: the

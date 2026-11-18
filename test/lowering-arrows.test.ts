@@ -4,11 +4,14 @@
 // statement, or of a call whose JS gives something else. Each test is a
 // program of its own, compiled and run.
 
-import { expect, test } from "bun:test";
+import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildNode } from "./node-crate";
-import { compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, run, target } from "./support";
+
+// The js crate it compiles against, in `target` (`buildReact`).
+beforeAll(buildReact, 600_000);
 
 // ADR 0883: a closure the program wrote as its call's value, `|| f()`, is
 // `() => f()` where the call's JS gives `undefined`: a function of the

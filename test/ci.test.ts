@@ -1238,3 +1238,21 @@ test("an artifact's download is asked again into an empty directory", () => {
   expect(scripts.filter((name) => /"run", "download"/.test(readFileSync(join(root, "scripts", name), "utf8")))).toEqual([]);
   rmSync(dir, { recursive: true, force: true });
 });
+
+// A test file that compiles against the js, webapi or react crate's
+// metadata in `target` builds it first, `buildReact`, as the run's first
+// file to ask for it may be its own: test/on-load-names.test.ts didn't,
+// and passed where `target` held them already, but failed on CI, "extern
+// location for js does not exist" (#2070's file, main red).
+test("each test file that compiles against the bindings' crates builds them first", () => {
+  const dir = join(root, "test");
+  const crates = /join\(target, "lib(js|webapi|react)\.rmeta"\)|import \{[^}]*\bjs\b[^}]*\} from "\.\/crates"/;
+  const unbuilt = readdirSync(dir)
+    .filter((file) => file.endsWith(".ts") && file !== "support.ts" && file !== "crates.ts")
+    .filter((file) => {
+      const text = readFileSync(join(dir, file), "utf8");
+      return crates.test(text) && !/\bbuildReact\b/.test(text);
+    });
+  expect(unbuilt).toEqual([]);
+});
+

@@ -5,11 +5,14 @@
 // import of its word gives way to it, as to the program's spelled names;
 // and two bodies' of one word are two variables (#2070).
 
-import { expect, test } from "bun:test";
+import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, run, target } from "./support";
+
+// The js crate it compiles against, in `target` (`buildReact`).
+beforeAll(buildReact, 600_000);
 
 /** `source`, its modules `others`, compiled; its JS and the module. */
 async function compiled(name: string, source: string, others: Record<string, string> = {}) {
