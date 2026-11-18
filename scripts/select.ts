@@ -35,12 +35,14 @@
 //                          everything: tests build them as apps' dependencies,
 //                          which no import or read says
 
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { machineStore } from "../test/bounded";
 import { importsOf } from "./iteratorSlice";
-import { pushSuiteFiles } from "./shard";
-import { type Change, caseFiles, type Hunk, hunksOf, mapStore, nearestMap, noMap, pick, readsOf, type TestMap, toolchainOf, unitsReaching } from "./testMap";
+import { expected, type JobTimes, readJobTimes } from "./jobTimes";
+import { machine, pushSuiteFiles } from "./shard";
+import { type Change, caseFiles, caseUnit, functionsOf, type Hunk, hunksOf, mapStore, nearestMap, noMap, pick, reachOfFunctions, readsOf, type TestMap, toolchainOf, unitsReaching } from "./testMap";
 
 const root = join(import.meta.dir, "..");
 
@@ -53,7 +55,22 @@ export const selectionFile = join(root, "target", "check-fast-selection.json");
  * cases (`forms`), its net's; `all` where it can't say, every one listed.
  * `why` says why each ran, or why everything did; `allOwn` whether that
  * reason is the branch's own change, not others' since the map's commit. */
-export type Selection = { all: boolean; allOwn?: boolean; files: string[]; cases: string[]; forms: string[]; why: string; map?: string; behind?: number; capped?: string };
+export type Selection = {
+  all: boolean;
+  allOwn?: boolean;
+  files: string[];
+  cases: string[];
+  forms: string[];
+  why: string;
+  map?: string;
+  behind?: number;
+  capped?: string;
+  /** Of a change to the compiler's code, the functions it changes, by
+   * their indices in the map: what a sanity pass ranks its tests by. */
+  functions?: number[];
+  /** Of a sanity pass's budget, what it left out (`budgeted`). */
+  skipped?: { files: string[]; cases: string[] };
+};
 
 /** What a change selects of: the push suite's test files (`suiteFiles`),
  * the corpus's cases, the map or why there's none, and, of each test file,
@@ -186,6 +203,7 @@ export function select(changes: Change[], context: Context): Selection {
   };
   const srcChanges: Change[] = [];
   let runtime: string | undefined;
+  let functions: number[] | undefined;
   for (const change of changes) {
     const { file } = change;
     if (everythingGlobs.some((glob) => glob.match(file))) return whole(`${file} is what every test runs under`, file);
@@ -262,6 +280,7 @@ export function select(changes: Change[], context: Context): Selection {
     for (const name of picked.cases) runCases.add(name);
     for (const name of picked.forms) runForms.add(name);
     why.push(picked.why);
+    functions = picked.functions;
   }
   const order = (of: Set<string>, all: string[]) => all.filter((item) => of.has(item));
   return {
@@ -270,6 +289,7 @@ export function select(changes: Change[], context: Context): Selection {
     cases: order(runCases, cases),
     forms: order(runForms, cases),
     why: why.join("; ") || "nothing changed",
+    ...(functions === undefined ? {} : { functions }),
   };
 }
 
@@ -354,6 +374,8 @@ export function selectChange(base = "origin/main", sanity?: string, rule: Rule =
   const own = ownFiles(base);
   const reach = reachOf([...files, caseFiles[1]]);
   if (map === undefined) {
+    // No map of a sanity pass: the cap, unranked.
+    if (sanity !== undefined) return capOf([...own], files, cases);
     // No map: the branch's own change, by the rules that need none, and
     // everything where one does.
     const changes = [...own].map((file): Change => ({ file, hunks: existsSync(join(root, file)) ? [[1, 1]] : "new" }));
@@ -366,7 +388,13 @@ export function selectChange(base = "origin/main", sanity?: string, rule: Rule =
     if (now === undefined || before === undefined) return { all: true, files: [], cases: [], forms: [], why: "the sanity pass can't find the commits the rebase brought", map: map.commit, behind };
     // The incoming commits are others', each checked by its own push.
     const side = (from: string, to: string | undefined, mine: boolean) => sideSelection(changesBetween(from, to), from, { files, cases, map, reach, own: () => mine });
-    return { ...interaction(side(now, undefined, true), side(before, now, false)), map: map.commit, behind };
+    const both = interaction(side(now, undefined, true), side(before, now, false));
+    // Where it can't say, the cap; and of either, what fits the budget,
+    // by the change's own functions: those it changes, or of its files.
+    const changed = Bun.spawnSync(["git", "diff", "--name-only", now], { cwd: root, stdout: "pipe" }).stdout.toString().split("\n").filter(Boolean);
+    const said = both.all ? capOf(changed, files, cases, map) : both;
+    const functions = said.functions ?? functionsOf(map, changed.filter((file) => file.startsWith("src/")));
+    return { ...budgeted({ ...said, functions }, reachOfFunctions(map, functions), costsOf(readJobTimes(), cases.length), machine().cores), map: map.commit, behind };
   }
   const since = rule === "push" ? mergeBase(base) : undefined;
   if (since !== undefined) {
@@ -498,13 +526,10 @@ function sideSelection(changes: Change[], from: string, context: { files: string
     files: [...new Set([...selection.files, ...context.files.filter((file) => reached.has(file))])],
     cases: [...new Set([...selection.cases, ...byCase])],
     forms: [...new Set([...selection.forms, ...byCase])],
+    functions: [...new Set([...(selection.functions ?? []), ...functionsOf(context.map, moved)])],
     why: `${selection.why}; ${moved.join(", ")} by every test of its functions`,
   };
 }
-
-/** The most test files a sanity pass runs past a rebase, about five
- * minutes on the Mac mini; past it, the interaction's corpus cases alone. */
-export const sanityBudget = 40;
 
 /** A sanity pass past a rebase: what both the branch's own change, `own`,
  * and the commits the rebase brought, `incoming`, can affect. A test only
@@ -513,27 +538,88 @@ export const sanityBudget = 40;
  * the incoming commits affect was checked by their pushers, and changes
  * only if the branch's change affects it too (ADR 1101, amended). Where a
  * side selects everything, the other side's; where both do, everything,
- * for the cap. Past `sanityBudget`'s files, the interaction's corpus cases
- * alone, and the test files the branch changes itself. */
-export function interaction(own: Selection, incoming: Selection, budget = sanityBudget): Selection {
+ * for the cap (`capOf`). What it runs of it is `budgeted`'s. */
+export function interaction(own: Selection, incoming: Selection): Selection {
   if (own.all && incoming.all) return { ...own, why: `both the change and the commits the rebase brought select everything (${own.why}; ${incoming.why})` };
   const say = (selection: Selection) => (selection.all ? "everything" : `${selection.files.length} files, ${selection.cases.length} cases`);
   const why = `the interaction: the change's ${say(own)} and the rebase's commits' ${say(incoming)}`;
-  const both = own.all ? incoming : incoming.all ? own : {
+  const functions = own.functions === undefined ? {} : { functions: own.functions };
+  if (own.all) return { ...incoming, all: false, why, ...functions };
+  if (incoming.all) return { ...own, all: false, why };
+  return {
     all: false,
     files: own.files.filter((file) => incoming.files.includes(file)),
     cases: own.cases.filter((name) => incoming.cases.includes(name)),
     forms: own.forms.filter((name) => incoming.forms.includes(name)),
     why,
+    ...functions,
   };
-  if (both.files.length <= budget) return { ...both, all: false, why };
+}
+
+/** A sanity pass's budget: the seconds its tests take on the machine's
+ * cores at once, past check:fast's own start of some 25 s, so the pass is
+ * about a minute (Tu's rule: quick, then push; CI's check covers the
+ * combination). Its rounds took 23–248 s on the Mac mini, the interaction's
+ * every corpus case, or both sides' everything capped to the change's own
+ * whole selection again, 220–228 s (2026-11-18); a longer pass is a moving
+ * `main`'s next round too. */
+export const sanitySeconds = 45;
+
+/** What a sanity pass's tests are said to cost, in seconds of a core: a
+ * test file its usual, as check:fast's jobs keep it (`readJobTimes`), and
+ * a corpus case the corpus's whole run's usual over its cases. One not yet
+ * measured, its file's or the corpus's, is said to cost `unmeasured`. */
+export type Costs = { file: (file: string) => number; case: number };
+export const unmeasured = { file: 10, case: 0.3 };
+
+/** `Costs` by check:fast's jobs as the machine kept them, of `cases` the
+ * corpus's cases. */
+export function costsOf(times: Record<string, JobTimes>, cases: number): Costs {
+  const usual = (name: string) => expected(times[name]).usual;
+  const parts = Object.keys(times).filter((name) => /^corpus \d+\/(\d+)$/.test(name));
+  const whole = parts.filter((name) => name.endsWith(`/${machine().cores}`)).map(usual).filter(Number.isFinite);
+  const perCase = whole.length > 0 && cases > 0 ? (whole.reduce((sum, seconds) => sum + seconds, 0) * (machine().cores / whole.length)) / cases : unmeasured.case;
+  return { file: (file) => (Number.isFinite(usual(file)) ? usual(file) : unmeasured.file), case: perCase };
+}
+
+/** Of a sanity pass's selection, what it runs within `seconds` on `cores`
+ * (`sanitySeconds`): its test files and corpus cases each by how many of
+ * the change's own functions it ran, `reach`, most first, and the cheaper
+ * first between equals, so a change no map can rank runs the most it can,
+ * then the selection's order; each taken where it fits what's left, and
+ * none that alone takes longer than `seconds`. What it leaves is `skipped`, which
+ * `capped` counts and `recordSanity` keeps, so a red `main` an interaction
+ * made can be held to whether its pass ran the failing test (ADR 1101,
+ * amended). */
+export function budgeted(selection: Selection, reach: (unit: string) => number, costs: Costs, cores: number, seconds = sanitySeconds): Selection {
+  if (selection.all) return selection;
+  const units = [
+    ...selection.files.filter((file) => !(caseFiles as readonly string[]).includes(file)).map((file) => ({ file, unit: file, cost: costs.file(file) })),
+    ...selection.cases.map((name) => ({ name, unit: caseUnit(caseFiles[0], name)!, cost: costs.case })),
+  ];
+  const ranked = units.map((unit, at) => ({ ...unit, at, reach: reach(unit.unit) })).sort((a, b) => b.reach - a.reach || a.cost - b.cost || a.at - b.at);
+  let left = seconds * cores;
+  const ran = new Set<string>();
+  for (const unit of ranked) {
+    if (unit.cost > seconds || unit.cost > left) continue;
+    left -= unit.cost;
+    ran.add(unit.unit);
+  }
+  const files = selection.files.filter((file) => (caseFiles as readonly string[]).includes(file) || ran.has(file));
+  const cases = selection.cases.filter((name) => ran.has(caseUnit(caseFiles[0], name)!));
+  const skipped = { files: files.length === selection.files.length ? [] : selection.files.filter((file) => !files.includes(file)), cases: selection.cases.filter((name) => !cases.includes(name)) };
+  const kept = cases.length > 0 ? files : files.filter((file) => file !== caseFiles[0]);
+  if (skipped.files.length === 0 && skipped.cases.length === 0) return selection;
+  const said = (of: string[], from: string[], what: string) => (from.length === 0 ? [] : [`${of.length} of ${from.length} ${what}`]);
+  const tested = (of: string[]) => of.filter((file) => !(caseFiles as readonly string[]).includes(file));
+  const by = selection.functions?.length ? `by reach of the change's ${selection.functions.length} functions` : "cheapest first";
   return {
-    all: false,
-    files: both.cases.length > 0 ? ["test/corpus.test.ts"] : [],
-    cases: both.cases,
-    forms: [],
-    why,
-    capped: `corpus of the interaction (${both.files.length} files, past ${budget})`,
+    ...selection,
+    files: kept,
+    cases,
+    forms: selection.forms.filter((name) => cases.includes(name)),
+    capped: `${selection.capped ? `${selection.capped}, ` : ""}${[...said(tested(kept), tested(selection.files), "files"), ...said(cases, selection.cases, "cases")].join(" and ")} in ${seconds} s, ${by}`,
+    skipped,
   };
 }
 
@@ -577,15 +663,32 @@ export function capOf(changed: string[], files: string[], cases: string[], map?:
   const reached = map ? unitsReaching(map, sources) : [];
   const mapFiles = files.filter((file) => reached.includes(file) || ownFiles.includes(file));
   const mapCases = cases.filter((name) => reached.includes(`test/corpus/${name}`) || ownCases.includes(name));
-  if (map && reached.length > 0) return result(mapFiles, mapCases, `some (from the map at ${map.commit.slice(0, 9)}: ${mapFiles.length} files, ${mapCases.length} cases)`);
+  if (map && reached.length > 0) return { ...result(mapFiles, mapCases, `some (from the map at ${map.commit.slice(0, 9)}: ${mapFiles.length} files, ${mapCases.length} cases)`), functions: functionsOf(map, sources) };
   return result([...new Set([...ownFiles, "test/corpus.test.ts"])], cases, "corpus");
 }
 
-/** `capOf` of this checkout's change since `base`'s merge-base. */
-export function sanityCap(base = "origin/main"): Selection {
-  const since = mergeBase(base);
-  const changed = since === undefined ? [] : Bun.spawnSync(["git", "diff", "--name-only", since], { cwd: root, stdout: "pipe" }).stdout.toString().split("\n").filter(Boolean);
-  return capOf(changed, suiteFiles(), corpusCases(), nearestMap(mapStore, root, toolchainOf()));
+/** Where the machine keeps what each sanity pass ran and left
+ * (`recordSanity`), a file a pass, by the commit it checked; and the most
+ * it keeps, as `scripts/disk.ts` bounds it, the oldest first. */
+export const sanityRunsStore = join(machineStore, "sanity-runs");
+export const sanityRunsCap = 16 * 2 ** 20;
+
+/** A sanity pass's `selection` kept, by HEAD's commit, the one it checks
+ * and pushes, past `checked`, the commit checked before the rebase: what
+ * it ran and what its budget left (`skipped`). Where `main` goes red from
+ * an interaction of two pushes, the failing test is in the pushed
+ * commit's `ran`, or its `skipped`: whether the budget let it through
+ * (ADR 1101, amended; docs/dev-loop.md says when to revisit it). */
+export function recordSanity(selection: Selection, checked: string): void {
+  const head = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root, stdout: "pipe" }).stdout.toString().trim();
+  if (head === "") return;
+  mkdirSync(sanityRunsStore, { recursive: true });
+  writeFileSync(join(sanityRunsStore, `${head}.json`), `${JSON.stringify(sanityRecord(selection, head, checked), null, 1)}\n`);
+}
+
+/** What `recordSanity` keeps of a pass. */
+export function sanityRecord(selection: Selection, head: string, checked: string) {
+  return { head, checked, map: selection.map ?? null, outcome: outcome(selection), all: selection.all, ran: { files: selection.files, cases: selection.cases }, skipped: selection.skipped ?? { files: [], cases: [] } };
 }
 
 /** A selection in a line: `all (why)`, `some (N files, M cases)`, `none`;

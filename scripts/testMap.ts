@@ -236,7 +236,7 @@ export type Change = { file: string; hunks: Hunk[] | "new" };
 
 /** What a change runs: the files and cases it can affect, or all of them,
  * and why. */
-export type Picked = { kind: "picked"; files: string[]; cases: string[]; forms: string[]; why: string } | { kind: "all"; why: string };
+export type Picked = { kind: "picked"; files: string[]; cases: string[]; forms: string[]; functions: number[]; why: string } | { kind: "all"; why: string };
 
 /** The test files of the corpus's cases, whose each case is a test of its
  * own: the corpus's, and the corpus built with std's iterator structs
@@ -616,6 +616,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     files: pickedFiles,
     cases: pickedCases,
     forms: pickedForms,
+    functions: [...touched],
     why: `${touched.size} of the compiler's functions changed`,
   };
 }
@@ -625,13 +626,31 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
  * `test/corpus/x.rs`. Those that run on every change, `null`, aren't
  * said: a sanity pass's cap asks what a file's functions reach. */
 export function unitsReaching(map: TestMap, files: string[]): string[] {
-  const of = new Set(files);
-  const functions = map.functions.flatMap(({ file }, at) => (of.has(file) ? [at] : []));
+  const functions = functionsOf(map, files);
   return Object.entries(map.units).flatMap(([unit, bits]) => {
     if (bits === null) return [];
     const bytes = Buffer.from(bits, "base64");
     return functions.some((f) => bytes[f >> 3]! & (1 << (f & 7))) ? [unit] : [];
   });
+}
+
+/** The functions of `files`, the compiler's sources, by their indices in
+ * the map. */
+export function functionsOf(map: TestMap, files: string[]): number[] {
+  const of = new Set(files);
+  return map.functions.flatMap(({ file }, at) => (of.has(file) ? [at] : []));
+}
+
+/** How many of `functions` each unit, a test file or a corpus case
+ * (`caseUnit`), ran as the map recorded it: none of one it has no record
+ * of, or that ran no compiler. */
+export function reachOfFunctions(map: TestMap, functions: number[]): (unit: string) => number {
+  return (unit) => {
+    const bits = map.units[unit];
+    if (bits === undefined || bits === null) return 0;
+    const bytes = Buffer.from(bits, "base64");
+    return functions.filter((f) => (bytes[f >> 3] ?? 0) & (1 << (f & 7))).length;
+  };
 }
 
 /** Each hunk of `git diff -U0`'s, by file: its lines of the old side, and

@@ -805,3 +805,41 @@ module's" and "a function's signature changed is its body's change";
 mutations `use-change-glob-taken`, `use-change-only-namers`,
 `use-change-type-field-unseen`, `signature-change-callers-unseen` and
 `signature-change-pub-module-only`, each caught.
+
+### Amended: a sanity pass runs what fits a minute, what reaches the change first (2026-11-18)
+
+Of the 141 pushes in the Mac mini's log, 27 needed a second round or a
+third; past their first, they spent 5,905 s, 3,670 s of it in sanity
+passes. Each since 2026-11-16 was capped: past 40 files, the
+interaction's every corpus case (15 rounds, 41–248 s); where both sides
+say everything, the change's own selection by the map, the whole suite
+again for a compiler change (6 rounds, 220–228 s). One of 16 files took
+229 s: a file's cost isn't its count. A longer pass is also a moving
+`main`'s next round.
+
+Now every sanity pass, the interaction or the cap, runs what fits
+`sanitySeconds`, 45 s of the machine's cores past check:fast's own start
+of some 25 s (`budgeted`). Each test file and corpus case is ranked by how
+many of the change's own functions it ran as the map recorded them
+(`reachOfFunctions`): the functions its diff changes (`pick`'s), or of a
+change the map can't place, every function of its compiler files
+(`functionsOf`); the cheaper first between equals, then the selection's
+order. A file costs its usual as check:fast's jobs keep it, a case the
+corpus's whole run over its cases (`costsOf`); one not yet measured 10 s,
+0.3 s. Each is taken where it fits what's left, none that alone is longer
+than the budget, as `test/metamorphic.test.ts`'s 180 s. The pass says
+`capped <n> of <m> files and <k> of <l> cases in 45 s, by reach of the
+change's <f> functions` (or `cheapest first` where it has none).
+
+The trade is a local minute against an interaction reaching `main` and
+turning it red, a CI round and a fix. So what each pass ran and left is
+kept by the commit it pushed (`recordSanity`, the main checkout's
+`.cache/sanity-runs/`, 16 MB, `bun run disk`'s). Where `main` goes red
+from two pushes meeting, the failing test is in its pass's `ran` or its
+`skipped`; one that the budget skipped more than rarely is the cue to
+raise it (docs/dev-loop.md). The old `sanityBudget`'s corpus-only form and
+check:fast's own cap are gone: `selectChange` owns the pass whole.
+
+Tests: test/select.test.ts, "a sanity pass runs what reaches most of the
+change first, within its budget"; mutations `sanity-budget-unranked`, `sanity-budget-dearer-first`,
+`sanity-budget-overrun`, `sanity-skipped-unrecorded`.

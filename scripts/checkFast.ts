@@ -24,7 +24,7 @@ import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import {childWarnings} from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
-import { outcome, readOnly, sanityCap, selectChange, selectionFile, suiteFiles } from "./select";
+import { outcome, readOnly, recordSanity, selectChange, selectionFile, suiteFiles } from "./select";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, pooledParts } from "./shard";
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
@@ -918,13 +918,12 @@ if (import.meta.main) {
   const sanity = args.find((arg) => arg.startsWith("--sanity="))?.slice("--sanity=".length);
   // The push's rule: the change's own, never others' `all` (ADR 1101,
   // amended); CI's check keeps the full rule.
-  let selection = selectChange("origin/main", sanity, "push");
-  let capped = selection.capped !== undefined;
-  if (sanity && selection.all) {
-    console.log(`the sanity pass can't say (${selection.why}): its cap, the change's own test files and cases`);
-    selection = { ...sanityCap(), map: selection.map, behind: selection.behind };
-    capped = true;
-  }
+  // A sanity pass's is capped where it can't say, and held to its budget
+  // (`budgeted`); what it ran and left kept for a red `main`'s reader.
+  const selection = selectChange("origin/main", sanity, "push");
+  const capped = selection.capped !== undefined;
+  if (sanity && capped) console.log(`the sanity pass: ${outcome(selection)}`);
+  if (sanity && given === undefined) recordSanity(selection, sanity);
   let picked: Scope["picked"];
   let forms: Scope["forms"];
   const formsList = join(own, "forms.txt");

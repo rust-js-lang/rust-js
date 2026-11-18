@@ -823,9 +823,12 @@ checked:
   than the machine's. Where `main` moved while it checked, it rebases again
   and runs a sanity pass (`check:fast --sanity=<the commit checked>`): the
   interaction, the tests both the change and the commits the rebase
-  brought can affect, its corpus cases alone past 40 files, and capped to
-  the change's own test files and cases where both sides say everything;
-  CI checks the combination. It rebases and runs it again as
+  brought can affect, capped to the change's own test files and cases
+  where both sides say everything, and of either what fits 45 s of the
+  machine's cores, those that ran most of the change's own functions
+  first; CI checks the combination. What each pass ran and left is kept
+  in the main checkout's `.cache/sanity-runs/<commit>.json`: where `main`
+  goes red from two pushes meeting, look there for the failing test. It rebases and runs it again as
   often as `main` moves, until it lands. Its line of times names which
   (`check` or `sanity`) and what was selected, `select all (why)`,
   `select some (N files, M cases)`, `select capped …` or `select none`, the

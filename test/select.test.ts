@@ -12,7 +12,7 @@ import { jobs, ranKey, totalKey } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases } from "../scripts/push";
 import { ownsTimes, slowest, timesLine, whoRuns } from "../scripts/devTimes";
 import { failedIn, misses } from "../scripts/selector-audit";
-import { baselines, capOf, hunksAtMap, interaction, mapLine, movedUnits, osBranches, outcome, pushSelection, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
+import { baselines, budgeted, capOf, type Costs, hunksAtMap, interaction, mapLine, movedUnits, osBranches, outcome, pushSelection, reachOf, type Reach, sanityRecord, select, type Selection, suiteFiles } from "../scripts/select";
 import { readsSources, type TestMap } from "../scripts/testMap";
 import { root } from "./support";
 
@@ -207,10 +207,32 @@ test("a sanity pass runs what both the change and the rebase's commits can affec
   expect(interaction(all, some(["test/a.test.ts"], ["c1.rs"]))).toMatchObject({ all: false, files: ["test/a.test.ts"], cases: ["c1.rs"] });
   expect(interaction(some(["test/a.test.ts"], []), all)).toMatchObject({ all: false, files: ["test/a.test.ts"], cases: [] });
   expect(interaction(all, all).all).toBe(true);
-  // Past the budget, the interaction's corpus cases alone.
-  const big = interaction(some(many, every), some(many.slice(0, 50), every.slice(0, 7)), 40);
-  expect([big.files, big.cases.length, big.capped]).toEqual([["test/corpus.test.ts"], 7, "corpus of the interaction (50 files, past 40)"]);
-  expect(outcome(big)).toBe("capped corpus of the interaction (50 files, past 40)");
+  // The change's own functions go with it, which its pass ranks by.
+  expect(interaction({ ...some(["test/a.test.ts"], []), functions: [3] }, all).functions).toEqual([3]);
+});
+
+// A sanity pass runs what fits its budget, what reaches most of the
+// change's own functions first: its rounds took 23–248 s on the Mac mini,
+// the interaction's every case, or both sides' everything capped to the
+// change's whole selection again (2026-11-18).
+test("a sanity pass runs what reaches most of the change first, within its budget", () => {
+  const selection: Selection = { all: false, files: ["test/slow.test.ts", "test/a.test.ts", "test/b.test.ts", "test/corpus.test.ts"], cases: ["x.rs", "y.rs", "z.rs"], forms: ["y.rs"], why: "", functions: [0, 1] };
+  const reach = (unit: string) => ({ "test/b.test.ts": 2, "test/corpus/z.rs": 2, "test/corpus/y.rs": 1 } as Record<string, number>)[unit] ?? 0;
+  const costs: Costs = { file: (file) => (file === "test/slow.test.ts" ? 100 : 20), case: 10 };
+  // 2 cores of 30 s: z (10) then b (20), the cheaper first of those that
+  // reach both functions, y (10), then x (10); a has no room left, and
+  // slow takes longer alone than the pass.
+  const ran = budgeted(selection, reach, costs, 2, 30);
+  expect([ran.files, ran.cases, ran.forms]).toEqual([["test/b.test.ts", "test/corpus.test.ts"], ["x.rs", "y.rs", "z.rs"], ["y.rs"]]);
+  expect(ran.skipped).toEqual({ files: ["test/slow.test.ts", "test/a.test.ts"], cases: [] });
+  expect(outcome(ran)).toBe("capped 1 of 3 files and 3 of 3 cases in 30 s, by reach of the change's 2 functions");
+  // What fits whole is the selection as it was; a cap's said first.
+  expect(budgeted({ ...selection, files: ["test/a.test.ts"], cases: [] }, reach, costs, 12, 45)).toEqual({ ...selection, files: ["test/a.test.ts"], cases: [] });
+  expect(budgeted({ ...selection, capped: "corpus" }, reach, costs, 2, 30).capped).toStartWith("corpus, 1 of 3 files");
+  // What it ran and left kept, for a red `main`'s reader.
+  expect(sanityRecord(ran, "h", "c")).toMatchObject({ head: "h", checked: "c", ran: { files: ran.files, cases: ran.cases }, skipped: { files: ["test/slow.test.ts", "test/a.test.ts"], cases: [] } });
+  // No case left: no corpus file to run them.
+  expect(budgeted({ ...selection, cases: ["x.rs"] }, () => 0, { file: () => 30, case: 31 }, 1, 30).files).toEqual(["test/slow.test.ts"]);
 });
 
 // A sanity pass the selector can't say of is capped: the change's own

@@ -18,8 +18,10 @@
 //             --sanity=<checked>`: the interaction of the change's own diff
 //             and the commits the rebase brought, what both can affect,
 //             capped to its own test files and cases where even that says
-//             everything (Tu's rule: quick, then push; CI's check covers the
-//             combination). Rebased and checked so until it lands, no limit
+//             everything, and of either what fits its budget, those that
+//             reach most of the change first (scripts/select.ts's
+//             `budgeted`; Tu's rule: quick, then push; CI's check covers
+//             the combination). Rebased and checked so until it lands, no limit
 //   react     the React port at its pin (`react-in-rust.ts regen`), of a
 //             change to what compiles it (`touchesPort`), refused on any
 //             difference: a change the port takes moves the pin in this push.

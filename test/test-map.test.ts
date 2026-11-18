@@ -73,6 +73,7 @@ test("a change to a function's code runs the tests that ran it, and those that r
     files: ["test/one.test.ts", "test/reads.test.ts", "test/corpus.test.ts"],
     cases: [],
     forms: ["y.rs"],
+    functions: [0],
     why: "1 of the compiler's functions changed",
   });
   expect(pick(map, [{ file: "src/a.rs", hunks: [[38, 1]] }], files, cases)).toMatchObject({

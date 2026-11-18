@@ -25,6 +25,7 @@ import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "..
 import { checkLogsCap, checkLogsStore } from "./checkLogs";
 import { leasedIn } from "./leases";
 import { worktreeRoots } from "./strays";
+import { sanityRunsCap, sanityRunsStore } from "./select";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
 import { keptAppsCap, keptStores, pruneKeptStores, rustlantisCap, rustlantisStore } from "../test/kept";
@@ -133,6 +134,7 @@ export function stores(): Store[] {
     { name: ".cache/tasks", dir: join(machineStore, "tasks"), cap: 16 * 2 ** 20, bound: (free) => void boundEntries(join(machineStore, "tasks"), 16 * 2 ** 20, free) },
     { name: ".cache/job-times", dir: jobTimesStore, cap: jobTimesCap, bound: (free) => void boundEntries(jobTimesStore, jobTimesCap, free) },
     { name: ".cache/check-logs", dir: checkLogsStore, cap: checkLogsCap, bound: (free) => void boundEntries(checkLogsStore, checkLogsCap, free) },
+    { name: ".cache/sanity-runs", dir: sanityRunsStore, cap: sanityRunsCap, bound: (free) => void boundEntries(sanityRunsStore, sanityRunsCap, free) },
     { name: ".cache/rustlantis", dir: rustlantisStore, cap: rustlantisCap, bound: (free) => void boundEntries(rustlantisStore, rustlantisCap, free) },
     { name: "the temp root", dir: tempRoot, cap: tempCap, bound: (free) => void boundEntries(tempRoot, tempCap, free) },
   ];
