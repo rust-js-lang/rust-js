@@ -8,7 +8,7 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { jobs, ranKey } from "../scripts/checkFast";
+import { jobs, ranKey, totalKey } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
 import { whoRuns } from "../scripts/disk";
 import { failedIn, misses } from "../scripts/selector-audit";
@@ -296,6 +296,12 @@ test("check:fast runs what the selection selected: its files, its cases in parts
   expect(everything.filter((job) => job.name.startsWith("corpus ")).length).toBe(12);
   expect(testJobs(everything)).toContain("test/snapshots.test.ts");
   expect([...new Set(everything.filter((job) => job.name.startsWith("corpus ") || job.name === "test/snapshots.test.ts").map((job) => job.ran))]).toEqual(["all"]);
+  // A whole run is timed against runs of the same jobs, each running what
+  // it ran: in any order, and apart from a run with a job more or a
+  // selection's other cases.
+  expect(totalKey([...everything].reverse())).toBe(totalKey(everything));
+  expect(totalKey(everything.slice(1))).not.toBe(totalKey(everything));
+  expect(totalKey(selected)).not.toBe(totalKey(everything));
 });
 
 test("bun run push says its selection on its line, and runs the check and the port only where they can differ", () => {

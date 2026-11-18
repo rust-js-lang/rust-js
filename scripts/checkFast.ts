@@ -117,6 +117,15 @@ export function ranKey(picked: { files: Set<string>; cases: string[]; forms: str
   return listKey(capped ? "capped" : "some", [picked.files, picked.cases, picked.forms]);
 }
 
+/** What a whole run's time is of, the key of its usual: the jobs it ran,
+ * each with what it ran (`ran`), in any order. A run that adds the
+ * change's rows, the std-iterator corpus, the nets or the crate corpus,
+ * 7–8 minutes here, was said against `--all` runs without them, 4½–5, and
+ * was always "slower than usual". */
+export function totalKey(ran: Job[]): string {
+  return listKey("jobs", [ran.map((job) => `${job.name}\t${job.ran ?? ""}`)]);
+}
+
 /** `kind` and a digest of `lists`, each in any order: what a job sized by
  * the change ran, its cases or mutations, the key of its usual. */
 function listKey(kind: string, lists: Iterable<string>[]): string {
@@ -958,7 +967,7 @@ if (import.meta.main) {
   const total = elapsed();
   const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : "check:fast, everything";
   console.log(
-    `\n${failed.length === 0 ? `all passed: ${timed(scope, total, { ran: picked ? ranKey(picked, capped) : undefined })}` : `${failed.length} failed in ${total.toFixed(0)}s`}`,
+    `\n${failed.length === 0 ? `all passed: ${timed(scope, total, { ran: totalKey(listed) })}` : `${failed.length} failed in ${total.toFixed(0)}s`}`,
   );
   process.exit(failed.length === 0 ? 0 : 1);
 }
