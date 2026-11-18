@@ -972,3 +972,30 @@ isn't asked here; a call given one keeps `?? null`.
   `or-subject-asked`, `field-take-unknown`,
   `field-take-of-any-place` and `field-take-unchecked`
   (`mir/nulled.ts`).
+
+## Amendment: a function JS or a consumer calls returns `undefined` for `None` (2026-11-18, #2055)
+
+rd632 finds a function of the crate's returns `null` or a value where each
+write of its result is so (`note_nulled_returns`), and a call of it gives a
+nullable parameter as it is, tested `!== null` there. But a function JS or
+a consumer calls (`returns_one_none`: `js_facing`, a plain `Option` result)
+gives its `None` back as Rust's, `undefined`: each write that may hold
+`null` is given `?? undefined` at its exit (#1840). Its returns were found
+`null` or a value all the same. So the crate's own `dispatch(event_target(node))`
+tested `!== null`, and read `.id` of the `undefined` that
+`parent_of(node) ?? undefined` gave. The metamorphic net's `library`
+rewrite of nulled_returns_given_on.rs found it: moved into a library, each
+function is a consumer's to call.
+
+Of such a function, a write of its result counts as `null` or a value
+only where its exit gives it as it is, as `one_none_returned` asks
+(`none_trusted`: nothing JS gave that's `null` reaches it). React DOM's
+`getEventTarget` is still found so. A call of any other is either one:
+what it's given is tested `!= null`, and a nullable place it's stored in
+is given `?? null`. In React's port that's `task.thenableState =
+getThenableStateAfterSuspending() ?? null` and `diffHydratedText(..) ??
+null`, whose exits give `undefined`, which the field stored before. Results change
+otherwise, so this follows ADR 0262's "preserve Rust's behavior". Pinned by
+test/corpus/nulled_return_of_a_pub_fn_given_on.rs, whose `pub fn
+event_target` a program's JS exports too. Mutation
+`returns-nulled-past-an-exit` is caught.

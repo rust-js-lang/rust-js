@@ -902,10 +902,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return;
         }
+        // Of one JS or a consumer calls, each write its exit gives as it is:
+        // one that may hold a `null` is given `?? undefined`, Rust's `None`
+        // (`one_none_returned`), so no longer `null` or a value (#2055).
+        let exit = crate::lower::analysis::nulled_params::returns_one_none(self.tcx, self.krate.foreign, id);
+        let as_it_is = |write: &Write<'_, 'tcx>| {
+            let given = match write {
+                Write::Assign(Rvalue::Use(operand, _)) => operand.clone(),
+                _ => Operand::Copy(mir::RETURN_PLACE.into()),
+            };
+            !exit || self.none_trusted(state, &given)
+        };
         let nulled = self.whole_writes(state, mir::RETURN_PLACE).is_some_and(|writes| {
             !writes.is_empty()
                 && (writes.iter()).all(|write| {
                     self.written_given(state, mir::RETURN_PLACE, write, &mut Vec::new()) == (Given::Nulled, None)
+                        && as_it_is(write)
                 })
         });
         if nulled {

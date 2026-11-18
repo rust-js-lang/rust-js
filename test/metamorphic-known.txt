@@ -128,9 +128,6 @@ plain std dyn-ref vec_lent_to_code_that_keeps_a_pointer.rs
 #2054 P0 (mut-refs): generic contains_guarded_float ends normally where native panics 'RefCell already borrowed'
 plain std generic contains_guarded_float.rs
 
-#2055 P0 (nullability): library nulled_returns_given_on throws reading 'id' of undefined where native runs
-plain std library nulled_returns_given_on.rs
-
 #2056 P0 (drops): loud-drop collected_in_place_leaked_past_a_filters_drop drops in another order before its abort
 plain loud-drop collected_in_place_leaked_past_a_filters_drop.rs
 

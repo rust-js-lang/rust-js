@@ -1180,7 +1180,8 @@ export function ratio(a, b) {
   caller's own given on is one only where it is so itself, each passing
   on followed, rd624; a call of the crate's function whose every return
   is so, React DOM's `getEventTarget`'s `target.parentNode` or
-  `target`; the `Ok` of `catch_unwind(f)` of a function or closure whose
+  `target`, unless JS or a consumer calls it, whose `None` leaves as
+  `undefined`, #2055; the `Ok` of `catch_unwind(f)` of a function or closure whose
   every return is so, and `a.or(b)` or `a.or_else(f)` whose `b` is or
   whose `f` returns so, whatever `a` is, React DOM's getActiveElement's
   `doc.activeElement ?? doc.body`, rd16, and `component_stack.or(js::null())`,

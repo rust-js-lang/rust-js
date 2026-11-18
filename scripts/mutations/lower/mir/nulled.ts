@@ -290,6 +290,14 @@ export const mutations: Mutation[] = [
     tests: rd632,
   },
   {
+    name: "returns-nulled-past-an-exit",
+    breaks: "a function JS or a consumer calls, whose exit gives its `None` back `undefined`, is found to return `null` or a value, so what its result is given is tested `!== null` and reads a property of `undefined` (#2055)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            !exit || self.none_trusted(state, &given)\n",
+    replace: "            true\n",
+    tests: ["test/corpus.test.ts", "-t", "nulled_return_of_a_pub_fn_given_on"],
+  },
+  {
     name: "returns-nulled-unasked",
     breaks: "a call of a function found to return `null` or a value isn't taken as giving so, so the nullable parameter it's given is tested `!= null` (rd632)",
     file: "src/lower/mir/nulled.rs",
