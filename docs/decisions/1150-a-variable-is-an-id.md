@@ -1484,3 +1484,14 @@ three things now:
 and the walks' own definitions, which go with step 2. Byte-identical: the
 suite, the corpus, the crate corpus and React's port, each answer probed
 old against new.
+
+## Amendment: no walk asks a variable by its word (#1681 change 3, its end)
+
+Tidy's temporaries spelled by preparation (step 2, adc627235) took the word
+walks' last callers, and their definitions went with them: no walk asks a
+variable by its word. test/architecture-names.test.ts holds it so, no
+longer a count that falls: a call of `mentions_in`, `Expr::mentions_var`,
+`visit_stmts`, `visit_vars`, `Expr::substitute`, `each_declared`,
+`names_in`, `renamed`, `merged`, `read_as_this` or `this_outside_accessors`,
+a walk brought back by its old name, fails it, naming the file. Each
+variable is asked by its `Name`.

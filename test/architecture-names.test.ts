@@ -226,18 +226,16 @@ test("a name's word is read outside preparation and printing only as the ratchet
   expect(counted.filter(([file, n]) => n > (allowed[file] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${allowed[file] ?? 0}`)).toEqual([]);
 });
 
-// `WORD_WALKS`, which only falls, to none: the calls of the walks that ask
-// a variable by its word, `mentions_in`, `Expr::mentions_var`,
+// No walk asks a variable by its word: `mentions_in`, `Expr::mentions_var`,
 // `visit_stmts`, `visit_vars`, `Expr::substitute`, `each_declared`,
 // `names_in`, `renamed`, `merged`, `read_as_this` and
-// `this_outside_accessors`, each with a twin that asks it by its `Name`
-// (`mentions_of`, `mentions_name`, `visit_stmt_names`, `visit_names`,
-// `substitute_names`, `each_declared_name`, `replaced`, ..), as names are
-// ids (ADR 1150).
-// Change 3's last slice deletes them. A file's own function of one of
-// those names is its own.
-const WORD_WALKS = 10;
-test("a variable is asked of the walks by its word only as counted", () => {
+// `this_outside_accessors` are gone, change 3's last step; each variable is
+// asked by its `Name` (`mentions_of`, `mentions_name`, `visit_stmt_names`,
+// `visit_names`, `substitute_names`, `each_declared_name`, `replaced`, ..),
+// as names are ids (ADR 1150). A call of one by its old name, a walk
+// brought back, fails here. A file's own function of one of those names is
+// its own.
+test("no walk asks a variable by its word", () => {
   const free = ["mentions_in", "visit_stmts", "each_declared", "names_in", "renamed", "merged",
     "read_as_this", "this_outside_accessors"];
   const methods = ["mentions_var", "visit_vars", "substitute"];
@@ -254,5 +252,5 @@ test("a variable is asked of the walks by its word only as counted", () => {
       .reduce((n, line) => n + [...line.matchAll(new RegExp(`\\.${m}\\(`, "g"))].length, 0);
     return free.reduce((n, f) => n + of(f), 0) + methods.reduce((n, m) => n + ofMethod(m), 0);
   };
-  expect(sources.reduce((n, file) => n + walks(file), 0)).toBeLessThanOrEqual(WORD_WALKS);
+  expect(sources.filter((file) => walks(file) > 0)).toEqual([]);
 });
