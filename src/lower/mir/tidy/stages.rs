@@ -673,12 +673,12 @@ pub(super) const STAGES: &[Stage] = &[
                 js::each_expr_mut(b, &mut |e| concise_arrows(e, h.concise))
             }),
             pass("counted entries", |b, _| {
-                js::statement_lists(b, &mut crate::lower::std_types::map::counted_entries)
+                js::statement_lists(b, &mut crate::lower::std_types::map_entries::counted_entries)
             }),
             // An entry's value put in where it's missing, then used, `if
             // (!m.has(k)) { m.set(k, []); } m.get(k).push(v);`.
             pass("inserted entries", |b, _| {
-                js::statement_lists(b, &mut crate::lower::std_types::map::inserted_entries)
+                js::statement_lists(b, &mut crate::lower::std_types::map_entries::inserted_entries)
             }),
             pass("negations", |b, _| js::each_expr_mut(b, &mut negations)),
             pass("pairs' fields", |b, _| js::each_expr_mut(b, &mut pairs_fields)),

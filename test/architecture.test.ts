@@ -429,7 +429,7 @@ const idioms: [string, RegExp, string[]][] = [
   ["the dictionary's `impl` field", /"impl"/, ["src/js.rs"]],
   // A std type's helpers, read and written where the type is lowered: a
   // pass of tidy's over them is the type's module's (the second review).
-  ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/mir/entries.rs", "src/lower/mut_refs.rs"]],
+  ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/std_types/map_entries.rs", "src/lower/mir/entries.rs", "src/lower/mut_refs.rs"]],
   ["a range made as stepped", /"\$lazyRange"/, ["src/lower/std_types/range.rs"]],
   ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/std_impls/clones.rs", "src/lower/drops/parts.rs"]],
   // A variant without fields as a body writes it, a numbered enum's by its
@@ -469,7 +469,7 @@ const shapeTests: Record<string, [number, string]> = {
   "src/lower/pointers.rs read_only_pointer_to": [2, "whether the JS names a place to read again, else a cell of the value"],
   "src/lower/pointers.rs pointer_to": [1, "a pointer to a property is its object and key, not `$ptrTo`"],
   "src/lower/std_types/cell.rs cell_call": [2, "a fact's to ask: a quiet `RefCell`'s object replaced in a field where the cell is the field's place, which a field holding a `&RefCell` is shaped as too"],
-  "src/lower/std_types/map.rs first": [3, "JS's evaluation: what a statement evaluates first"],
+  "src/lower/std_types/map_entries.rs first": [3, "JS's evaluation: what a statement evaluates first"],
   "src/lower/mir/iter/backs.rs closed_rev": [1, "JS's evaluation: a variable's or a field's read evaluates nothing, so the receiver is read as it is"],
   "src/lower/mir/iter/backs.rs rev_items": [2, "JS's evaluation: a variable's or a field's read, a tuple struct's `held[0]` too (#1013), evaluates nothing, so the receiver is read as it is"],
   "src/lower/mir/iter/backs.rs reversed_inward": [1, "JS's call: a function value given as it is reads no index"],

@@ -621,7 +621,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`*m.entry(k).or_insert(0) += 1` from MIR is a handle on the key's value, `$mutGet(m, k).value = \u2026`",
     file: "src/lower/mir/tidy/stages.rs",
-    find: '            pass("counted entries", |b, _| {\n                js::statement_lists(b, &mut crate::lower::std_types::map::counted_entries)\n            }),\n',
+    find: '            pass("counted entries", |b, _| {\n                js::statement_lists(b, &mut crate::lower::std_types::map_entries::counted_entries)\n            }),\n',
     replace: "",
     tests: [
       "test/lowering-collections.test.ts",

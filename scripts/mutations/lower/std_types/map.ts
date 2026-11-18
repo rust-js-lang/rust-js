@@ -148,19 +148,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "mir-map-count-literal-key",
-    breaks:
-      '`*m.entry("a").or_insert(0) += 5` from MIR stays a handle, `$mutGet(m, "a")`',
-    file: "src/lower/std_types/map.rs",
-    find: "js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b))",
-    replace: "js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b && false))",
-    tests: [
-      "test/lowering-collections.test.ts",
-      "-t",
-      "a count kept in a map from MIR",
-    ],
-  },
-  {
     name: "path-key-plain-map",
     breaks: "a map of paths is a `Map`, which finds a path by its text",
     file: "src/lower/std_types/map.rs",
@@ -456,27 +443,6 @@ export const mutations: Mutation[] = [
     find: "    js::each_item_block_mut(items, &mut |stmts| {\n",
     replace: "    js::each_item_block_mut(&mut items[..0], &mut |stmts| {\n",
     tests: ["test/lowering-collections.test.ts", "-t", "closure set at load"],
-  },
-  {
-    name: "inserted-entries-helper",
-    breaks:
-      "`m.entry(k).or_default().push(v)` stays `$orInsertWith(m, k, () => []).push(v)`, not `if (!m.has(k)) { m.set(k, []); } m.get(k).push(v);` (ADR 0059, amended)",
-    file: "src/lower/std_types/map.rs",
-    find: "        let Some((map, key, made)) = made else {\n",
-    replace:
-      "        let Some((map, key, made)) = made.filter(|_| false) else {\n",
-    tests: ["test/corpus.test.ts", "-t", "^entry_default_pushed.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "inserted-entry-value-alone",
-    breaks:
-      "a count's `const current = $orInsert(m, k, 0)` is its map's steps too, `if (!m.has(k)) { .. } const current = m.get(k);`, three statements for one (ADR 0059, amended)",
-    file: "src/lower/std_types/map.rs",
-    find: "            .filter(|e| !matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name().is_some()))\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^entry_default_pushed.rs$"],
-    snapshots: true,
   },
   {
     name: "identity-in-key-by-contents",
