@@ -2,11 +2,13 @@
 //! made, whose property reads meet no getter of the program's (#2106, ADR
 //! 1173). Split from runs_nothing.rs by concept.
 
-use crate::collections::IndexSet;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{JsForm, creates, is_binding, js_form};
 use crate::lower::recognition::{Recognition, StdItem};
+use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
+use rustc_middle::mir::BorrowKind;
+use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtKind, Thir};
 use rustc_span::def_id::DefId;
 
 /// The crate's variables whose value is one a builtin made, at hand (#2106):
@@ -16,6 +18,9 @@ use rustc_span::def_id::DefId;
 /// `Option`'s or a `Result`'s combinator's closure given one's payload,
 /// `.and_then(|matched| matched.get(1))`, a closure's capture of one too.
 /// Never what a builtin hands back from what a JS caller stored, `Map.get`'s.
+/// A variable is at hand only where every write of it is: its binding's
+/// and each assignment's, to it or to a closure's capture of it; one lent
+/// `&mut` or bound `ref mut`, whose writes aren't seen, never is.
 #[derive(Default)]
 pub(in crate::lower) struct AtHand {
     vars: IndexSet<LocalVarId>,
@@ -42,7 +47,8 @@ impl AtHand {
     ) -> Self {
         let mut at_hand = AtHand::default();
         let thir_of = |id: DefId| bodies.iter().find(|(body, _)| *body == id).map(|(_, thir)| *thir);
-        let bind = |pattern: &rustc_middle::thir::Pat<'tcx>, found: &mut Vec<LocalVarId>| {
+        let (assigned, lent) = writes(bodies);
+        let bind = |pattern: &Pat<'tcx>, found: &mut Vec<LocalVarId>| {
             pattern.walk_always(|p| {
                 if let PatKind::Binding { var, .. } = p.kind {
                     found.push(var);
@@ -81,6 +87,14 @@ impl AtHand {
                     }
                 }
             }
+            // Each condition holds of more as more is at hand, so this least
+            // fixed point is sound: a variable a cycle of writes alone gives
+            // is never at hand.
+            found.retain(|var| {
+                !lent.contains(var)
+                    && (assigned.get(var).into_iter().flatten())
+                        .all(|&(thir, value)| at_hand.holds(recognition, thir, value))
+            });
             let before = at_hand.vars.len();
             at_hand.vars.extend(found);
             if at_hand.vars.len() == before {
@@ -144,5 +158,89 @@ impl AtHand {
             },
             _ => false,
         }
+    }
+}
+
+/// Of each variable, each value assigned to it, in its body.
+type Assigned<'a, 'tcx> = IndexMap<LocalVarId, Vec<(&'a Thir<'tcx>, ExprId)>>;
+
+/// Of each variable of `bodies`, the values assigned to it, `x = value`'s,
+/// a closure's to its capture of it too; and the variables lent `&mut`,
+/// `&raw mut` or bound `ref mut` in a pattern of them, whose writes through
+/// the loan aren't seen.
+fn writes<'a, 'tcx>(bodies: &[(DefId, &'a Thir<'tcx>)]) -> (Assigned<'a, 'tcx>, IndexSet<LocalVarId>) {
+    let mut assigned = Assigned::default();
+    let mut lent = IndexSet::default();
+    for &(_, thir) in bodies {
+        let lends_mut = |pattern: &Pat<'tcx>| {
+            let mut lends = false;
+            pattern.walk_always(|p| {
+                lends |= matches!(
+                    p.kind,
+                    PatKind::Binding {
+                        mode: rustc_hir::BindingMode(rustc_hir::ByRef::Yes(_, Mutability::Mut), _),
+                        ..
+                    }
+                );
+            });
+            lends
+        };
+        for stmt in thir.stmts.iter() {
+            if let StmtKind::Let {
+                pattern,
+                initializer: Some(value),
+                ..
+            } = &stmt.kind
+                && lends_mut(pattern)
+            {
+                lent.extend(root(thir, *value));
+            }
+        }
+        for e in thir.exprs.iter() {
+            match &e.kind {
+                ExprKind::Assign { lhs, rhs } => match root_written(thir, *lhs) {
+                    Some((var, true)) => assigned.entry(var).or_default().push((thir, *rhs)),
+                    Some((var, false)) => {
+                        lent.insert(var);
+                    }
+                    None => {}
+                },
+                ExprKind::AssignOp { lhs: arg, .. }
+                | ExprKind::Borrow {
+                    borrow_kind: BorrowKind::Mut { .. },
+                    arg,
+                }
+                | ExprKind::RawBorrow {
+                    mutability: Mutability::Mut,
+                    arg,
+                } => lent.extend(root(thir, *arg)),
+                ExprKind::Let { expr, pat } if lends_mut(pat) => lent.extend(root(thir, *expr)),
+                ExprKind::Match { scrutinee, arms, .. } if arms.iter().any(|&arm| lends_mut(&thir[arm].pattern)) => {
+                    lent.extend(root(thir, *scrutinee));
+                }
+                _ => {}
+            }
+        }
+    }
+    (assigned, lent)
+}
+
+/// The variable the place `e`, in `thir`, is part of, through its fields,
+/// elements and derefs: `x`, of `x.0[i]` or `*x`.
+fn root(thir: &Thir<'_>, e: ExprId) -> Option<LocalVarId> {
+    root_written(thir, e).map(|(var, _)| var)
+}
+
+/// `root`'s, and whether the place is the variable itself, `x`, not a part
+/// of it or what it points to.
+fn root_written(thir: &Thir<'_>, e: ExprId) -> Option<(LocalVarId, bool)> {
+    let e = crate::lower::body_queries::strip(thir, e);
+    match &thir[e].kind {
+        ExprKind::VarRef { id } => Some((*id, true)),
+        ExprKind::UpvarRef { var_hir_id, .. } => Some((*var_hir_id, true)),
+        ExprKind::Field { lhs: of, .. } | ExprKind::Index { lhs: of, .. } | ExprKind::Deref { arg: of } => {
+            root(thir, *of).map(|var| (var, false))
+        }
+        _ => None,
     }
 }

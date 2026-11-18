@@ -258,3 +258,87 @@ impl Seen {
   expect(js).toContain("$borrowMut");
 });
 
+// A variable is at hand only where every write of it is (#2110): a JS
+// caller's locale assigned over one a builtin made, or written through a
+// loan, keeps the memo's borrow checked.
+
+test("a variable a JS caller's locale is assigned to keeps its borrow checked", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-reassigned",
+    memo(
+      `{
+            let mut locale = tag.maximize();
+            if given {
+                locale = tag;
+            }
+            locale.region().map_or(0.0, |region| region.len() as f64)
+        }`,
+      "tag: &'static js::intl::Locale, given: bool",
+      "tag",
+    ),
+  );
+  expect(js).toContain("$withBorrowMut");
+  expect(lib.memo(new Intl.Locale("en-GB"), true)).toBe(2);
+});
+
+test("a variable a closure assigns a JS caller's locale to keeps its borrow checked", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-reassigned-in-closure",
+    memo(
+      `{
+            let mut locale = tag.maximize();
+            let mut read = move || {
+                if given {
+                    locale = tag;
+                }
+                locale.region().map_or(0.0, |region| region.len() as f64)
+            };
+            read()
+        }`,
+      "tag: &'static js::intl::Locale, given: bool",
+      "tag",
+    ),
+  );
+  expect(js).toContain("$withBorrowMut");
+  expect(lib.memo(new Intl.Locale("en-GB"), true)).toBe(2);
+});
+
+test("a variable lent mutably keeps its borrow checked", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-lent",
+    memo(
+      `{
+            let mut locale = tag.maximize();
+            let mut other = tag;
+            if given {
+                std::mem::swap(&mut locale, &mut other);
+            }
+            locale.region().map_or(0.0, |region| region.len() as f64)
+        }`,
+      "tag: &'static js::intl::Locale, given: bool",
+      "tag",
+    ),
+  );
+  expect(js).toContain("$withBorrowMut");
+  expect(lib.memo(new Intl.Locale("en-GB"), true)).toBe(2);
+});
+
+test("a variable bound by ref mut keeps its borrow checked", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-ref-mut",
+    memo(
+      `{
+            let mut locale = tag.maximize();
+            match locale {
+                ref mut slot if given => *slot = tag,
+                _ => {}
+            }
+            locale.region().map_or(0.0, |region| region.len() as f64)
+        }`,
+      "tag: &'static js::intl::Locale, given: bool",
+      "tag",
+    ),
+  );
+  expect(js).toContain("$withBorrowMut");
+  expect(lib.memo(new Intl.Locale("en-GB"), true)).toBe(2);
+});

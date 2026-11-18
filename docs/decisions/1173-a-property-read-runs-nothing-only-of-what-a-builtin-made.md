@@ -1,6 +1,8 @@
 # 1173. A property read runs nothing only of what a builtin made
 
 Status: Accepted (2026-11-18, the user's decision: fix, not accept; #2106).
+Amended 2026-11-18 (#2110): a variable is at hand only where every write
+of it is.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 whose Consequence it narrows to #2109's case, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
@@ -47,6 +49,16 @@ to a fixed point over every body's THIR:
 - Never what a builtin hands back from what a JS caller stored: `Map.get`'s,
   an element's, `Reflect.get`'s, a promise's value. Nor a DOM query's
   element, which may be a custom element whose class has getters.
+- A variable is at hand only where every write of it is: its binding's
+  and each assignment's, to it or to a closure's capture of it, `locale =
+  tag`. One lent `&mut` or `&raw mut`, `std::mem::swap(&mut locale, ..)`,
+  or bound `ref mut` in a pattern of it, isn't: what's written through the
+  loan isn't seen. As first landed, a variable was at hand by its binding
+  alone, so a JS caller's locale assigned over one `maximize()` made was
+  read plainly under a held cell, where Rust's re-borrow panics (#2110,
+  P0). The fixed point stays the least: each condition holds of more as
+  more is at hand, so a variable only a cycle of writes gives is never at
+  hand, as is sound.
 
 `#[rust_js::creates]` is a binding fact: generated builtins have it from
 `builtins/policy.ts`' `CREATES`, which the generator writes through the one
@@ -91,7 +103,12 @@ day, `firstDayOfWeek`, has no borrow check.
 test/builtins-runs-nothing.test.ts: a JS caller's locale read in a memo's
 borrow, and under a `RefCell` guard, keeps the check; the match `exec`
 made, through `and_then`, reads plainly; a value a `Map` kept is counted.
+A JS caller's locale assigned over one a builtin made, by the function or a
+`move` closure, or a variable lent `&mut` or bound `ref mut`, keeps the check
+(#2110).
 Mutations `at-hand-of-any-variable`, `at-hand-of-any-capture`,
 `at-hand-of-any-binding`, `creates-unread`,
-`at-hand-combinator-parameter-lost`, `regexp-exec-not-creating` and
-`library-methods-create-unmarked`.
+`at-hand-combinator-parameter-lost`, `regexp-exec-not-creating`,
+`library-methods-create-unmarked`, and #2110's `at-hand-assignment-unread`,
+`at-hand-loan-unread`, `at-hand-mut-borrow-not-lending`,
+`at-hand-ref-mut-not-lending` and `at-hand-capture-assignment-unseen`.
