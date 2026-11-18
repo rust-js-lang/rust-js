@@ -1630,3 +1630,11 @@ default too. Now:
 Case (ADR 0262): R, drop order and what's asked are observable. The
 corpus cases `{enumerate,take,skip}_advanced_from_its_back_by_its_source`
 run as native in both builds.
+
+**A `step_by`'s `nth` past its source's end (#2124).** `$stepBy`'s `nth`
+returns where its first `next` gives `None`, as std's `spec_nth`'s
+`self.iter.next()?` does, so a source that isn't fused, a chain whose
+second side gives `None` once, is asked nothing more: `nth` gave one of
+its later items. Its two `differs` rows come off the net. Case (ADR 0262):
+R. Corpus case `step_by_nth_stops_where_its_source_ends`; mutation
+`step-by-nth-past-its-sources-end`.

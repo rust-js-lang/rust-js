@@ -6281,8 +6281,10 @@ export function $stepBy(it, step, drop) {
     if (stepped.first) {
       stepped.first = false;
       const head = it.next();
-      if (n === 0) return head;
-      if (!head.done) drop?.(head.value);
+      // Std's `spec_nth`: `self.iter.next()?`, so a source that's done
+      // there is asked nothing more, one that isn't fused too (#2124).
+      if (n === 0 || head.done) return head;
+      drop?.(head.value);
       n -= 1;
     }
     return skip((n + 1) * step - 1, "next");

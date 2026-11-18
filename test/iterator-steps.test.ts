@@ -314,8 +314,6 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
 /** Each form's step that asks other than std's does, a wrong answer not
  * yet fixed, under its issue: none is let differ for good (#2112). */
 const differs: Record<string, string> = {
-  "$stepBy nth": "#2124: a `step_by`'s `nth` past an empty source asks its `nth` too, where std's stops at its first `next`",
-  "$stepByEnds nth": "#2124: a `step_by`'s `nth` past an empty source asks its `nth` too, where std's stops at its first `next`",
   "$flatMap nth": "#2123",
   "$flatMap advance_by": "#2123",
   "$flatMap last": "#2123",

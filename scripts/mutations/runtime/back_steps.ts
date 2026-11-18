@@ -195,8 +195,8 @@ export const mutations: Mutation[] = [
     name: "step-by-nth-first-kept",
     breaks: "step_by's nth past its first item",
     file: "src/runtime/back_steps.js",
-    find: "      if (n === 0) return head;\n",
-    replace: "",
+    find: "      if (n === 0 || head.done) return head;\n",
+    replace: "      if (head.done) return head;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
     snapshots: true,
   },
@@ -768,5 +768,14 @@ export const mutations: Mutation[] = [
     find: "    advanceBackBy: iter.advanceBackBy === undefined ? undefined : advanceBackBy,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_advanced_from_its_back_by_its_source.rs$"],
+  },
+  {
+    name: "step-by-nth-past-its-sources-end",
+    breaks:
+      "a `step_by(n)`'s `nth` asks its source on past a first `next` of `None`, so a chain whose second side gives `None` once, then its items, gives one of them where std's `StepBy::nth` stops: `Some(8)`, not `None` (#2124)",
+    file: "src/runtime/back_steps.js",
+    find: "      if (n === 0 || head.done) return head;\n      drop?.(head.value);\n",
+    replace: "      if (n === 0) return head;\n      if (!head.done) drop?.(head.value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^step_by_nth_stops_where_its_source_ends.rs$"],
   },
 ];
