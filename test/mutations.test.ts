@@ -39,6 +39,8 @@ test("the crate the mutations build has each file the compiler includes", () => 
       const path = relative(root, normalize(joined(root, dirname(file), included)));
       if (!path.startsWith("src/")) outside.add(path);
     }
+    // And what a unit test reads where the crate is (`CARGO_MANIFEST_DIR`).
+    for (const [, read] of readFileSync(joined(root, file), "utf8").matchAll(/env!\("CARGO_MANIFEST_DIR"\)\)\s*\.join\("([^"]+)"\)/g)) outside.add(read);
   }
   const copied = (path: string) => crateFiles.some((kept) => path === kept || path.startsWith(`${kept}/`));
   expect([...outside].filter((path) => !copied(path))).toEqual([]);

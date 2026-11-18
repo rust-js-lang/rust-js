@@ -202,4 +202,12 @@ export const mutations: Mutation[] = [
     replace: "        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: run.part ? { RUST_JS_CASES: run.part } : {} });\n",
     tests: ["test/mutations.test.ts", "-t", "the control runs each set of tests with its mutation's settings"],
   },
+  {
+    name: "crate-copy-snapshots-left-out",
+    breaks: "the crate a mutant is built of has none of the snapshots its unit tests read by `CARGO_MANIFEST_DIR`, so `snapshots_are_formatted` fails in every mutant's environment, as the compiler is too",
+    file: "scripts/mutations.ts",
+    find: "  \"test/snapshots\",\n",
+    replace: "",
+    tests: ["test/mutations.test.ts", "-t", "the crate the mutations build has each file the compiler includes"],
+  },
 ];

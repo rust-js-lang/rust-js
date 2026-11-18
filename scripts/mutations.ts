@@ -386,6 +386,11 @@ export const crateFiles = [
   "vendor",
   "test/vec-collect-ways.txt",
   "docs/library-contract.md",
+  // What the unit tests read by `CARGO_MANIFEST_DIR`: format's
+  // `snapshots_are_formatted` read none in the crate's copy and failed in
+  // every mutant's environment, as the compiler is too. Copied, never
+  // linked, so nothing a mutant runs writes the checkout's.
+  "test/snapshots",
 ];
 const buildTimeout = 20 * 60_000;
 const testTimeout = 20 * 60_000;
