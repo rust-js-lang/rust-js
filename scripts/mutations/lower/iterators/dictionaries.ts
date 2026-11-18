@@ -220,15 +220,11 @@ export const mutations: Mutation[] = [
   {
     name: "mut-iterator-extension-unpeeled",
     breaks:
-      "the `ExactSizeIterator` dictionary of a `&mut` to the crate's iterator is std's default hint's",
+      "the `DoubleEndedIterator` dictionary of a `&mut` to a `&mut` of std's iterator, `back_of(&mut items.by_ref())`, isn't of what it lends: refused, where native steps it from its back (since #2073 a `&mut` to the crate's own is `user_len`'s, which looks through it itself)",
     file: "src/lower/iterators/dictionaries.rs",
     find: "        let ty = ty.peel_refs();\n        let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);\n",
     replace: "        let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(own_iterator_dropped_through_adapters|held_enumerate|std_enumerate).rs$",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_lent_iterator_steps_it\\.rs$"],
   },
   {
     name: "held-map-cycled-apart",
