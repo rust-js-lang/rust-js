@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-18: the ES class regression verifies that an ordinary Default implementation compiles and gives instances through both constructors and Rust trait calls.
+
 Changed on 2026-11-18: the nullable proof regression checks an option filled on its missing branch, including a local initialized by a lookup. Paths that skip the fill or mutate the option through a borrow still panic on unwrap.
 
 Changed on 2026-11-18: the map binding regression checks strict undefined comparisons and the behavior of missing, null, and object values in native Map and WeakMap.

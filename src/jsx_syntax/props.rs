@@ -52,6 +52,11 @@ pub(super) fn props_companion(
         .map(|p| p.ident.as_str().to_string())
         .collect();
     let attrs = super::configured_attrs(sess, &item.attrs)?;
+    // A class's macro is its own, its component's or the refusal of one
+    // whose impl is elsewhere (ADR 1041).
+    if attrs.iter().any(|attr| super::is_rust_js_attr(attr, "class")) {
+        return None;
+    }
     let derives_default = attrs.iter().any(|attr| {
         attr.has_name(rustc_span::sym::derive)
             && attr
@@ -61,11 +66,6 @@ pub(super) fn props_companion(
     let name = ident.as_str().to_string();
     let derives_default = derives_default || written_default.contains(&name);
     if !derives_default && !props.contains(&name) {
-        // A class's macro is its own, its component's or the refusal of one
-        // whose impl is elsewhere (ADR 1041).
-        if attrs.iter().any(|attr| super::is_rust_js_attr(attr, "class")) {
-            return None;
-        }
         if fields.iter().all(|field| as_visible(sess, &field.vis, &item.vis)) {
             // Every field as visible as it: built as its own components'.
         } else if matches!(item.vis.kind, ast::VisibilityKind::Inherited) {

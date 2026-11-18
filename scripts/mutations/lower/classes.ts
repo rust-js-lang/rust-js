@@ -146,6 +146,14 @@ export const mutations: Mutation[] = [
     tests: ["test/classes.test.ts", "-t", "Display is its prototype"],
   },
   {
+    name: "class-default-impl-refused",
+    breaks: "a class cannot implement the static Default trait",
+    file,
+    find: "                    && !tcx.is_diagnostic_item(rustc_span::sym::Default, trait_id)\n",
+    replace: "",
+    tests: ["test/classes.test.ts", "-t", "ES class implementing Default"],
+  },
+  {
     name: "class-identity-impls-refused",
     breaks:
       "a class's `PartialEq` of `ptr::eq` and `Hash` of `ptr::hash`, React's fibers in a `Set`, are refused as a trait's methods",

@@ -1343,6 +1343,10 @@ export function createRequest(tasks) {
   says is `get ..`, are refused
   ([ADR 1041](../../decisions/1041-a-class-that-implements-a-bindings-class-extends-it.md),
   amended).
+- **A class can implement `Default`**. Calling `Default::default()` runs
+  the Rust implementation. It adds no JavaScript class or prototype
+  member, and JSX still uses the class’s own companion
+  ([ADR 0213](../../decisions/0213-props-as-written.md), amended).
 - **Its `impl fmt::Display` is the prototype's `toString`**, as JS's
   `toString() { return `${this.rowIndex},${this.columnIndex}`; }`: Rust's
   `{p}` and `p.to_string()` call it, `p.toString()`, never JS's text of
