@@ -1050,3 +1050,45 @@ shares a crate, a target or a checkout with a suite (the unmutated
 compiler they compare with is the controls' build, copied, never built
 again where the next mutant builds). Serially, each retirement took
 13–28 minutes, about a third of it controls.
+
+### Amendment: a verdict that's recorded is confirmed; a flake is inconclusive, named
+
+A verdict that's recorded is confirmed: a run of every mutation, the
+nightly's, whose survivors are listed as latent, and `--retire`, whose
+verdict removes a mutation (`recorded`). A change's run, per push, locally
+and in CI's check, judges once, as before: a flake that hides a survivor
+there doesn't land a wrong answer, only delays the survivor's finding to
+the next recorded run, and confirming there cost half again: the 42
+mutations of `src/lower/drops/inlined.rs` on the Mac mini took 112 s and
+104 s judged once, 166 s and 164 s confirmed, as each caught mutant's
+failing test runs again and a mutant's compiles are never cached; a
+change's mutations are most of CI's minutes.
+
+How a catch is confirmed: a test that failed once with a mutant was its
+catch, where the run's controls had passed it as the compiler is. A flake, a test that fails now
+and then whatever the compiler, then hid a survivor as a catch: a
+2-row `--retire` named tests of `test/native-outcomes.test.ts` and
+`test/source-mutations.test.ts` rows of `momentary-alias-read-taken`,
+which passed when run again with it. Now, in a recorded run, each test
+that fails with a mutant is run again with it (`judgeTwice`): those that failed alone,
+narrowed by `-t` to their names (`narrowedTo`), and where none fails, the
+mutant's tests whole once more, as one test may fail only after the
+others; or whole at once, where what failed was a setup, `(unnamed)`, or a
+`describe`'s body, which no name chooses. It's caught only where one test
+fails both times. Each passed as the compiler is already: an ordinary
+run's controls ran every set first, and source mutations' controls ran
+their workspace's. `--retire` runs each test the suite failed again with
+the mutant and with the compiler as it is (`failingWith`): a row is a test
+that failed both times with it and passes as it is (`byControl`); one that
+failed as it is says nothing, as before; one that passed run again with
+the mutant is `flaked`. A retirement only flakes failed says nothing, and
+gives no trailer: fix them, then retire.
+
+A mutant whose only failures were flakes is INCONCLUSIVE, the row naming
+each (`<test> failed with it once and passed run again with it, a flake,
+which says nothing of it: fix the flake`). Inconclusive counts as not
+caught in the run's verdict, failing the run, the nightly's too, as a
+survivor does: a flake named and fixed, rather than a survivor hidden as a
+catch or a flake passed over in silence. A test that ran out of time
+still says nothing (`failures`, the one reader of a run's failures, which
+`judge` asks too).

@@ -9,7 +9,7 @@ import {
 } from "../scripts/source-mutations";
 import { existsSync } from "node:fs";
 import { sourceMutation } from "../scripts/source-mutations";
-import { judge, mutate, type Mutation } from "../scripts/mutations";
+import { judgeTwice, mutate, type Mutation } from "../scripts/mutations";
 import { run, stopped } from "./child";
 import { passed, summary } from "../scripts/test-summary";
 
@@ -113,9 +113,9 @@ async function executeSource(
     example.root,
     example.work,
     example.files,
-    async (workspace, env) => {
+    async (workspace, env, tests = own.tests!) => {
       const exit = await run(
-        [process.execPath, "test", ...own.tests!],
+        [process.execPath, "test", ...tests],
         workspace,
         10000,
         env,
@@ -129,7 +129,7 @@ async function executeSource(
         ran: counts.pass + counts.fail,
       };
     },
-    judge,
+    (exit, output, again) => judgeTwice(exit, output, own.tests!, again),
     mutate,
   );
 }
@@ -146,6 +146,17 @@ test("a loaded source mutant is caught by its actual test and cleaned without to
   expect(existsSync(join(example.work, "sources", "owner-value-mutant"))).toBe(
     false,
   );
+});
+
+// A test that fails with the mutant once and passes run again with it, as
+// this one does, its first run leaving a mark, is a flake and no catch.
+test("a source mutant's test that fails once and passes run again is a flake, inconclusive", async () => {
+  const example = exampleSource(
+    "source-mutation-flaky",
+    'import {test, expect} from "bun:test"; import {existsSync, writeFileSync} from "node:fs"; import {value} from "../owner.js"; test("value", () => { const mark = import.meta.dir + "/flaked"; if (value === 1 || existsSync(mark)) return; writeFileSync(mark, ""); expect(value).toBe(1); });',
+  );
+  const result = await executeSource(example);
+  expect(result.result).toBe("INCONCLUSIVE: value failed with it once and passed run again with it, a flake, which says nothing of it: fix the flake");
 });
 
 test("passing tests that never load their owner are inconclusive", async () => {

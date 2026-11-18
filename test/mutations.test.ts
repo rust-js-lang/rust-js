@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { byControl, crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { betweenTests, byControl, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -314,7 +314,9 @@ test("a removed mutation is told from one renamed or moved, and its trailer is -
   // A test that fails as the compiler is too, in a mutant's environment,
   // says nothing: it's no row of the mutation's.
   const failed = [{ file: "test/corpus.test.ts", test: "untagged_enums.rs" }, { file: "test/compiles.test.ts", test: "a compile is kept" }];
-  expect(byControl(failed, new Set(["test/compiles.test.ts\ta compile is kept"]))).toEqual({ caught: ["test/corpus.test.ts: untagged_enums.rs"], silent: ["test/compiles.test.ts: a compile is kept"] });
+  expect(byControl(failed, new Set(["test/corpus.test.ts\tuntagged_enums.rs"]), new Set(["test/compiles.test.ts\ta compile is kept"]))).toEqual({ caught: ["test/corpus.test.ts: untagged_enums.rs"], silent: ["test/compiles.test.ts: a compile is kept"], flaked: [] });
+  // One that passed run again with the mutant is a flake, no row of it.
+  expect(byControl(failed, new Set(), new Set())).toEqual({ caught: [], silent: [], flaked: ["test/corpus.test.ts: untagged_enums.rs", "test/compiles.test.ts: a compile is kept"] });
 });
 
 // A retirement's evidence holds React's port too, at its pin, which
@@ -423,6 +425,52 @@ test("a mutant is caught, survives, or the run says nothing of it", () => {
   // A hook that ran out of time, as bun test prints it: the test never ran.
   const hookTimedOut = "(fail) never reaches assertion [101.76ms]\n  ^ a beforeEach/afterEach hook timed out for this test.\n";
   expect(judge(exit(1), `${hookTimedOut}\n 0 pass\n 1 fail\n`)).toBe("inconclusive");
+});
+
+// A test that fails once with a mutant and passes run again with it is a
+// flake, which hid a survivor as a catch: a `--retire` of
+// `momentary-alias-read-taken` named tests of native-outcomes and
+// source-mutations that passed when run again. A catch fails twice.
+test("a mutant is caught by a test that fails with it twice, a flake inconclusive and named", async () => {
+  const exit = (code: number | null): Exit => ({ code, signal: null, timedOut: false, overflowed: false, stdout: "", stderr: "", bytes: { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) } });
+  const fail = (name: string) => ({ exit: exit(1), output: `(fail) ${name} [12.00ms]\nBailed out after 1 failure\n` });
+  const pass = { exit: exit(0), output: "(pass) wrapping.rs\n\n 1 pass\n 0 fail\n" };
+  expect(failures("(fail) d > a.rs [1.00ms]\n(fail) b.rs\n")).toEqual(["d > a.rs", "b.rs"]);
+  const tests = ["test/corpus.test.ts", "-t", "^(wrapping|other).rs$"];
+  expect(narrowedTo(tests, ["d > wrapping.rs"])).toEqual(["test/corpus.test.ts", "-t", "d.*wrapping\\.rs"]);
+  expect(narrowedTo(tests, ["(unnamed)"])).toBe(tests);
+  expect(narrowedTo(tests, [betweenTests])).toBe(tests);
+  // Each run again: the failed tests alone, then the set whole.
+  const runs = (...said: { exit: Exit; output: string }[]) => {
+    const asked: string[][] = [];
+    return { asked, again: async (tests: string[]) => (asked.push(tests), said.shift()!) };
+  };
+  const first = fail("wrapping.rs");
+  const twice = runs(fail("wrapping.rs"));
+  expect((await judgeTwice(first.exit, first.output, tests, twice.again)).verdict).toBe("caught");
+  expect(twice.asked).toEqual([["test/corpus.test.ts", "-t", "wrapping\\.rs"]]);
+  // One that fails only after the others is caught by the set whole.
+  const after = runs(pass, fail("wrapping.rs"));
+  expect((await judgeTwice(first.exit, first.output, tests, after.again)).verdict).toBe("caught");
+  expect(after.asked).toEqual([["test/corpus.test.ts", "-t", "wrapping\\.rs"], tests]);
+  const flaky = await judgeTwice(first.exit, first.output, tests, runs(pass, pass).again);
+  expect(flaky.verdict).toBe("inconclusive");
+  expect(flaky.flake).toContain("wrapping.rs failed with it once and passed run again with it");
+  // Another test that fails the second time isn't the first failing twice.
+  expect((await judgeTwice(first.exit, first.output, tests, runs(fail("other.rs"), fail("other.rs")).again)).verdict).toBe("inconclusive");
+  // What isn't caught is run once.
+  const once = runs();
+  expect((await judgeTwice(pass.exit, pass.output, tests, once.again)).verdict).toBe("survived");
+  expect(once.asked).toEqual([]);
+});
+
+// A verdict that's recorded is confirmed: a run of every mutation, the
+// nightly's, sharded or not; a change's or named ones', per push, judge once.
+test("a run of every mutation confirms its catches, a change's judges once", () => {
+  expect(recorded([])).toBe(true);
+  expect(recorded(["--shard=3/16", "--fresh=0.05", "--timings=t.json"])).toBe(true);
+  expect(recorded(["--changed=abc", "--also=", "--base=abc", "--shard=1/4"])).toBe(false);
+  expect(recorded(["some-mutation"])).toBe(false);
 });
 
 // The mutated crate is kept between mutations and runs: only what differs

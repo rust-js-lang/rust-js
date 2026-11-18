@@ -67,8 +67,12 @@ export async function sourceMutation(
   root: string,
   work: string,
   files: string[],
-  test: (workspace: string, env: Record<string, string>) => Promise<SourceRun>,
-  judge: (exit: Exit, output: string) => "caught" | "survived" | "inconclusive",
+  test: (workspace: string, env: Record<string, string>, tests?: string[]) => Promise<SourceRun>,
+  judge: (
+    exit: Exit,
+    output: string,
+    again: (tests: string[]) => Promise<SourceRun>,
+  ) => Promise<{ verdict: "caught" | "survived" | "inconclusive"; again: string; flake?: string }>,
   mutate: (source: string, mutation: Mutation) => string | { problem: string },
 ): Promise<{
   result: string;
@@ -141,14 +145,19 @@ export async function sourceMutation(
           bytes: Math.max(peak, bytesOf(workspace)),
         };
       if (changed) {
-        const verdict = judge(tested.exit, tested.output);
+        // A test that failed is run again in the mutant's workspace: a
+        // flake is no catch (`judgeTwice`).
+        const { verdict, again, flake } = await judge(tested.exit, tested.output, (tests) => test(workspace, env, tests));
+        output += again;
         return {
           result:
             verdict === "caught"
               ? "caught"
               : verdict === "survived"
                 ? "SURVIVED: its tests passed"
-                : "INCONCLUSIVE: no test failed or runner did not finish",
+                : flake
+                  ? `INCONCLUSIVE: ${flake}`
+                  : "INCONCLUSIVE: no test failed or runner did not finish",
           output,
           build,
           tests,

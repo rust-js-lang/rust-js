@@ -793,12 +793,75 @@ export function judge(p: Exit, output: string): "caught" | "survived" | "inconcl
   if (p.overgrown) return "caught";
   if (stopped(p, testTimeout)) return "inconclusive";
   if (p.code === 0) return passed(p.code, true, output) ? "survived" : "inconclusive";
+  return p.code === 1 && failures(output).length > 0 ? "caught" : "inconclusive";
+}
+
+/** What a failed error between tests is called among `failures`. */
+export const betweenTests = "(between tests)";
+
+/** The failures of a `bun test` run that say something of its compiler:
+ * each test that failed, by its name, a setup's `(unnamed)` too, and
+ * `betweenTests` for a `describe`'s body that threw; none that ran out of
+ * time, which says only that the machine was slow. */
+export function failures(output: string): string[] {
   // Not only at a line's start: a long diff bun test cuts short doesn't end
   // its last line, and the `(fail)` after it is printed on that line.
   const failed = [...output.matchAll(/\(fail\) (.*)$\n?(  \^ .* timed out\b)?/gm)].filter((m) => m[2] === undefined);
   const between = [...output.matchAll(/^# Unhandled error between tests\n-+\n([\s\S]*?)\n-+$/gm)].filter((m) => !/\btimed out\b/.test(m[1]));
-  return p.code === 1 && failed.length + between.length > 0 ? "caught" : "inconclusive";
+  return [...new Set([...failed.map((m) => m[1]!.replace(/ \[[\d.]+m?s\]$/, "")), ...between.map(() => betweenTests)])];
 }
+
+/** `tests`, a mutation's `bun test` arguments, narrowed to the tests named
+ * `failed` by `-t`, each by its `describe`s and name as bun prints it; or
+ * `tests` whole where one is a setup's or a `describe`'s, which no name
+ * chooses. */
+export function narrowedTo(tests: string[], failed: string[]): string[] {
+  if (failed.includes("(unnamed)") || failed.includes(betweenTests)) return tests;
+  const pattern = failed.map((test) => test.split(" > ").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*")).join("|");
+  return [...testSet(tests).files, "-t", pattern];
+}
+
+/** Whether a run's verdicts are recorded, so each catch is confirmed
+ * (`judgeTwice`): a run of every mutation, the nightly's, whose survivors
+ * are listed as latent, and not a change's (`--changed`) or named ones',
+ * per push, locally and on CI, which judge once. A flake there only delays
+ * a survivor's finding to the next recorded run, where confirming every
+ * catch cost half again a change's run (ADR 0093, amended). `--retire`'s
+ * verdicts confirm their own (`failingWith`). */
+export function recorded(args: string[]): boolean {
+  return !args.some((arg) => arg.startsWith("--changed=")) && args.every((arg) => arg.startsWith("--"));
+}
+
+/** A mutant's verdict by a run of its tests (`judge`), a catch confirmed:
+ * a test that fails once with it and passes when run again with it is a
+ * flake, which says nothing of it, where it hid a survivor as a catch (a
+ * `--retire` of `momentary-alias-read-taken`). Each test that failed is run
+ * again with it, `again`, those alone, and where none fails, its `tests`
+ * whole once more, as one may fail only after the others: it's caught
+ * where a test fails both times. Each passed as the compiler is, the run's
+ * controls (`--retire`'s, `failingWith`); one that failed once and passed
+ * again is a flake, the verdict inconclusive, which fails the run as a
+ * survivor does, `flake` naming it to be fixed (ADR 0093). */
+export async function judgeTwice(
+  exit: Exit,
+  output: string,
+  tests: string[],
+  again: (tests: string[]) => Promise<{ exit: Exit; output: string }>,
+): Promise<{ verdict: "caught" | "survived" | "inconclusive"; again: string; flake?: string }> {
+  const verdict = judge(exit, output);
+  if (verdict !== "caught" || exit.overgrown) return { verdict, again: "" };
+  const failed = failures(output);
+  const narrowed = narrowedTo(tests, failed);
+  let said = "";
+  for (const rerun of narrowed === tests ? [tests] : [narrowed, tests]) {
+    const r = await again(rerun);
+    said += `\n--- run again with it: bun test ${rerun.join(" ")}\n${r.output}`;
+    if (r.exit.overgrown || failures(r.output).some((name) => failed.includes(name))) return { verdict: "caught", again: said };
+  }
+  return { verdict: "inconclusive", again: said, flake: `${failed.join(", ")} failed with it once and passed run again with it, a flake, which says nothing of it: fix the flake` };
+}
+
+
 
 /** The tests a `bun test` run's output says failed, by their names: a
  * setup's that failed, `(unnamed)`, too. */
@@ -1301,16 +1364,27 @@ async function retireVerdict(
   console.log(`${mutation.name}: the crate corpus, every row, measured with it`);
   const crates = await crateVerdicts(mutant, false);
   const crateCaught = typeof crates === "string" ? [`crate corpus: failed with it: ${crates}`] : verdictsDiffer(crateControl, crates);
-  rmSync(mutant, { force: true });
   const output = suite.stdout + suite.stderr;
   if (stopped(suite, retireTimeout)) throw new Error(`check:fast with ${mutation.name} ${stopped(suite, retireTimeout)}: it says nothing\n${output.slice(-3000)}`);
   const failed = [...output.matchAll(/^failed with it: (\S+)\t(.*)$/gm)].map((m) => ({ file: m[1]!, test: m[2]! }));
   if (suite.code !== 0 && failed.length === 0) throw new Error(`check:fast with ${mutation.name} failed, naming no test: it says nothing of it\n${output.slice(-3000)}`);
-  const control = await failingAsItIs(failed, unmutated);
-  const { caught: suiteCaught, silent: suiteSilent } = byControl(failed, control);
+  // Each that failed, run again with it, and as the compiler is: a catch
+  // fails both times with it and passes as it is (`judgeTwice`).
+  const again = await failingWith(failed, mutant, failures);
+  rmSync(mutant, { force: true });
+  const unmutatedCopy = join(work, "bin", "retire-control");
+  mkdirSync(dirname(unmutatedCopy), { recursive: true });
+  rmSync(unmutatedCopy, { force: true });
+  cpSync(unmutated, unmutatedCopy);
+  const control = await failingWith(failed, unmutatedCopy, failedTests);
+  rmSync(unmutatedCopy, { force: true });
+  const { caught: suiteCaught, silent: suiteSilent, flaked } = byControl(failed, again, control);
   const silent = [...unitSilent, ...suiteSilent];
   if (silent.length > 0) console.log(`\nthese fail as the compiler is too, in a mutant's environment, and say nothing of it:\n${silent.map((name) => `  ${name}`).join("\n")}`);
+  if (flaked.length > 0) console.log(`\nthese failed with it once and passed run again with it, flakes, which say nothing of it:\n${flaked.map((name) => `  ${name}`).join("\n")}`);
   const caught = [...unitCaught, ...suiteCaught, ...portCaught, ...crateCaught];
+  // Nothing caught it but a flake: no evidence either way.
+  if (caught.length === 0 && flaked.length > 0) throw new Error(`only flakes failed with it, which say nothing of it: fix them, and run \`--retire=${mutation.name}\` again`);
   if (caught.length === 0) {
     const head = runSync(["git", "rev-parse", "--short=9", "HEAD"], root, 10_000).stdout.trim();
     const ran = output.match(/^(?:all passed: |\d+ failed in )(.*)$/m)?.[1] ?? "check:fast";
@@ -1325,38 +1399,35 @@ async function retireVerdict(
 }
 
 /** Of the tests that failed with a mutant, those that caught it, which
- * pass as the compiler is, and those that say nothing, which fail with it
- * too in a mutant's environment (`failingAsItIs`, by `file\ttest`). */
-export function byControl(failed: { file: string; test: string }[], control: Set<string>): { caught: string[]; silent: string[] } {
+ * failed again with it (`again`) and pass as the compiler is; those that
+ * say nothing, which fail as the compiler is too, in a mutant's environment
+ * (`control`); and those `flaked`, which passed run again with it. Each
+ * set by `file\ttest` (`failingWith`). */
+export function byControl(failed: { file: string; test: string }[], again: Set<string>, control: Set<string>): { caught: string[]; silent: string[]; flaked: string[] } {
   const said = (f: { file: string; test: string }) => `${f.file}: ${f.test}`;
-  return { caught: failed.filter((f) => !control.has(`${f.file}\t${f.test}`)).map(said), silent: failed.filter((f) => control.has(`${f.file}\t${f.test}`)).map(said) };
+  const silent = failed.filter((f) => control.has(`${f.file}\t${f.test}`));
+  const telling = failed.filter((f) => !control.has(`${f.file}\t${f.test}`));
+  return { caught: telling.filter((f) => again.has(`${f.file}\t${f.test}`)).map(said), silent: silent.map(said), flaked: telling.filter((f) => !again.has(`${f.file}\t${f.test}`)).map(said) };
 }
 
-/** Of `failed`, the tests of a suite's run with a mutant, which fail as the
- * compiler is too, in a mutant's environment, by `file\ttest`: each file's
- * run again with the checkout's compiler, as a mutant's tests run it, by
- * their names, or whole where its setup failed. */
-async function failingAsItIs(failed: { file: string; test: string }[], asItIs: string): Promise<Set<string>> {
-  // Built by the controls, before any mutant: a build here would write the
-  // crate the next mutant builds in.
-  const unmutated = join(work, "bin", "retire-control");
-  mkdirSync(dirname(unmutated), { recursive: true });
-  rmSync(unmutated, { force: true });
-  cpSync(asItIs, unmutated);
-  const own = join(work, "tests", "retire-control");
+/** Of `failed`, the tests of a suite's run with a mutant, which fail with
+ * `compiler`, in a mutant's environment, by `file\ttest`, as `read` says
+ * of each run: each file's run again, as a mutant's tests run it, by their
+ * names, or whole where its setup failed (`narrowedTo`). The compiler as it
+ * is runs as a copy, as the build the next mutant writes may replace it. */
+async function failingWith(failed: { file: string; test: string }[], compiler: string, read: (output: string) => string[]): Promise<Set<string>> {
+  const own = join(work, "tests", `retire-${basename(compiler)}`);
   const failing = new Set<string>();
   for (const file of new Set(failed.map((f) => f.file))) {
-    const tests = failed.filter((f) => f.file === file).map((f) => f.test);
-    const pattern = tests.includes("(unnamed)") ? [] : ["-t", tests.map((test) => test.split(" > ").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*")).join("|")];
+    const tests = narrowedTo([file], failed.filter((f) => f.file === file).map((f) => f.test));
     rmSync(own, { recursive: true, force: true });
     mkdirSync(own, { recursive: true });
-    const unasked = await ownRuntime(unmutated, own);
-    if (unasked) throw new Error(`the compiler as it is couldn't be asked its runtime: ${endedAs(unasked)}`);
-    const p = await run([process.execPath, "test", "--timeout=60000", file, ...pattern], root, retireTimeout, testsEnv(unmutated, own, true));
-    for (const test of failedTests(p.stdout + p.stderr)) failing.add(`${file}\t${test}`);
+    const unasked = await ownRuntime(compiler, own);
+    if (unasked) throw new Error(`${compiler} couldn't be asked its runtime: ${endedAs(unasked)}`);
+    const p = await run([process.execPath, "test", "--timeout=60000", ...tests], root, retireTimeout, testsEnv(compiler, own, true));
+    for (const test of read(p.stdout + p.stderr)) failing.add(`${file}\t${test}`);
   }
   rmSync(own, { recursive: true, force: true });
-  rmSync(unmutated, { force: true });
   return failing;
 }
 
@@ -1776,6 +1847,7 @@ async function main() {
   // of how the JS reads, its cases' snapshots (#864). Run as a link in
   // `bin`, named as the mutation, which chooses it, beside the std sysroot
   // its builds share.
+  const confirming = recorded(args);
   const judgeMutant = async (mutation: Mutation, compiler: string, log: string, bin = join(work, "bin")): Promise<{ result: string; tests: number }> => {
     const logged = join(work, "logs", `${log}.log`);
     mkdirSync(join(work, "logs"), { recursive: true });
@@ -1802,8 +1874,11 @@ async function main() {
       return test(mutation.tests!, mutant, mutation.snapshots, { env: mutation.env });
     });
     const { ran, exit } = byTests;
-    let output = byTests.output;
-    let verdict = judge(exit, output);
+    const twice = confirming
+      ? await judgeTwice(exit, byTests.output, mutation.tests!, (tests) => beside(() => test(tests, mutant, mutation.snapshots, { env: mutation.env })))
+      : { verdict: judge(exit, byTests.output), again: "", flake: undefined };
+    let output = byTests.output + twice.again;
+    let verdict = twice.verdict;
     if (verdict === "survived" && ofReadabilityOwner(mutation.file)) {
       const bySnapshots = await snapshotsJudge(mutation, mutant);
       output += `\n--- the snapshots of the cases that reach it (#864): ${bySnapshots.said}\n${bySnapshots.output}`;
@@ -1823,7 +1898,7 @@ async function main() {
     if (verdict === "inconclusive") console.log(`--- ${log}, inconclusive: its log's end\n${output.split("\n").slice(-60).join("\n")}\n---`);
     const result = verdict === "caught" ? "caught" : verdict === "survived"
       ? `SURVIVED: its ${ran} tests passed with it${mutation.snapshots ? "" : ", snapshots not compared"}`
-      : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${logged}`;
+      : twice.flake ? `INCONCLUSIVE: ${twice.flake}; see ${logged}` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${logged}`;
     return { result, tests };
   };
   const one = async (batch: Sited[], slot: number) => {
@@ -1831,10 +1906,10 @@ async function main() {
       const mutation = batch[0].mutation;
       const execute = async (ownsTestSlot = false) => {
         const answer = await sourceMutation(mutation, template, work, tracked,
-          (directory, env) => {
-            const run = () => test(mutation.tests!, unmutated, mutation.snapshots, {directory, env: {...env, ...mutation.env}});
+          (directory, env, tests = mutation.tests!) => {
+            const run = () => test(tests, unmutated, mutation.snapshots, {directory, env: {...env, ...mutation.env}});
             return ownsTestSlot ? run() : beside(run);
-          }, judge, mutate);
+          }, async (exit, output, again) => (confirming ? judgeTwice(exit, output, mutation.tests!, again) : { verdict: judge(exit, output), again: "" }), mutate);
         results.set(mutation, answer.result);
         took.set(mutation, {build: answer.build, tests: answer.tests});
         mkdirSync(join(work, "logs"), {recursive: true});
