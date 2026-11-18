@@ -495,6 +495,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         .any(|item| self.is_std_type(ty, item))
     }
 
+    /// A guard's `Deref`, std's, what it guards: `*cell.borrow()`'s.
+    pub(in crate::lower) fn is_guard_deref(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        self.tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id)
+            && args.types().next().is_some_and(|of| self.is_guard(of))
+    }
+
     /// A guard whose drop as a panic unwinds poisons its lock, as std's:
     /// a `MutexGuard` or an `RwLockWriteGuard` (ADR 0144, amended; #1438).
     pub(in crate::lower) fn poisons_its_lock(&self, ty: Ty<'tcx>) -> bool {

@@ -120,8 +120,8 @@ export const mutations: Mutation[] = [
     name: "slot-writes-unread",
     breaks: "a thread-local is a slot whatever's written to it, so one a JS caller's set is stored in reads it plainly under a held borrow, its override's re-entry passing where Rust panics (#2114)",
     file: "src/lower/analysis/cell_borrows/at_hand.rs",
-    find: "writes.iter().all(|write| at_hand.written(&in_body, write))",
-    replace: "true",
+    find: "!at_hand.slots.contains(&key) && writes.iter().all(|write| at_hand.written(&in_body, write))",
+    replace: "!at_hand.slots.contains(&key) && true",
     tests: ["test/at-hand-slots.test.ts", "-t", "a JS caller's set is written"],
   },
   {
@@ -139,5 +139,21 @@ export const mutations: Mutation[] = [
     find: "at_hand.slot_params.extend(params.iter().copied());",
     replace: "let _ = params;",
     tests: ["test/at-hand-slots.test.ts", "-t", "a private thread-local's set"],
+  },
+  {
+    name: "local-cell-writes-unread",
+    breaks: "a local cell its closures share is at hand whatever's written to it, so one a JS caller's map is replaced into reads it plainly under a held borrow (#2114)",
+    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    find: "                    && writes.iter().all(|write| at_hand.written(&in_body, write))\n",
+    replace: "                    && true\n",
+    tests: ["test/at-hand-slots.test.ts", "-t", "a JS caller's map is written to"],
+  },
+  {
+    name: "local-cell-reads-unknown",
+    breaks: "what a local cell's `borrow()` reads isn't taken to be at hand, so React's noop renderer's `suspenseyThingCache` map's `get` keeps its memo's borrow checked (#2114)",
+    file: "src/lower/analysis/cell_borrows/at_hand.rs",
+    find: "                        Some(Std::Borrow { mutable: false, .. } | Std::CellReplace | Std::CellTake)\n",
+    replace: "                        Some(Std::Borrow { mutable: false, .. } | Std::CellReplace | Std::CellTake) if false\n",
+    tests: ["test/at-hand-slots.test.ts", "-t", "its map a builtin made, reads plainly"],
   },
 ];

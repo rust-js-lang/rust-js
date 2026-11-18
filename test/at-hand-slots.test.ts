@@ -142,3 +142,73 @@ pub fn memo(key: &str) -> f64 {
   expect(js).not.toMatch(checked);
   expect(lib.memo("a")).toBe(0);
 });
+
+// A local cell its closures share, React's noop renderer's
+// `suspenseyThingCache` (#2114's second step): the `let` of
+// `Rc::new(RefCell::new(..))`, its `Rc::clone`s and the closures that
+// capture them, each use a clone's, a capture's, or `borrow()`'s,
+// `replace`'s or `take`'s. Its map a builtin made, read back, runs
+// nothing; the cell handed to a function, or a JS caller's map written to
+// it, keeps it counted.
+const shared = (more: string) => `use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+pub struct Memo {
+    pub memo: Box<dyn Fn(&str) -> f64>,
+    pub reset: Box<dyn Fn()>,
+}
+
+pub fn make() -> Memo {
+    let seen: Rc<RefCell<Option<&'static js::Map<str, f64>>>> = Rc::new(RefCell::new(js::null()));
+    let cache: Rc<RefCell<HashMap<String, f64>>> = Rc::new(RefCell::new(HashMap::new()));
+    ${more}
+    Memo {
+        memo: Box::new({
+            let seen = Rc::clone(&seen);
+            move |key| {
+                *cache.borrow_mut().entry(key.to_string()).or_insert_with(|| {
+                    if seen.borrow().is_none() {
+                        seen.replace(Some(js::map::new(None)));
+                    }
+                    seen.borrow().unwrap().get(key).unwrap_or(0.0)
+                })
+            }
+        }),
+        reset: Box::new({
+            let seen = Rc::clone(&seen);
+            move || {
+                seen.replace(js::null());
+            }
+        }),
+    }
+}
+`;
+
+test("a local cell its closures share, its map a builtin made, reads plainly", async () => {
+  const { js, lib } = await compiled("local-cell", shared(""));
+  expect(js).not.toContain("$borrowMut(cache");
+  const memo = lib.make();
+  expect(memo.memo("a")).toBe(0);
+  memo.reset();
+});
+
+test("a local cell handed to a function keeps the borrow across its map's methods checked", async () => {
+  const { js } = await compiled(
+    "local-cell-handed-on",
+    shared(`look(&seen);`).replace("pub struct Memo {", "fn look(_: &RefCell<Option<&'static js::Map<str, f64>>>) {}\n\npub struct Memo {"),
+  );
+  expect(js).toContain("$borrowMut(cache");
+});
+
+test("a local cell a JS caller's map is written to keeps the borrow across its methods checked", async () => {
+  const { js } = await compiled(
+    "local-cell-given",
+    shared("").replace("pub fn make() -> Memo {", "pub fn make(given: &'static js::Map<str, f64>) -> Memo {").replace(
+      "                seen.replace(js::null());",
+      "                seen.replace(Some(given));",
+    ),
+  );
+  expect(js).toContain("$borrowMut(cache");
+});
+

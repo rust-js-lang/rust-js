@@ -12,6 +12,7 @@ use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtKind, Thir};
 use rustc_span::def_id::{DefId, LocalDefId};
 
+mod local_cells;
 mod slots;
 
 /// The crate's variables whose value is one a builtin made, at hand (#2106):
@@ -42,6 +43,10 @@ pub(in crate::lower) struct AtHand {
     /// The crate's closures whose value is at hand, `get_or_insert_with(||
     /// js::map::new(None))`'s.
     closures: IndexSet<DefId>,
+    /// The variables of a local cell its closures share every write of
+    /// which is at hand (`local_cells`, #2114): what `borrow()` reads of it
+    /// is.
+    cells: IndexSet<LocalVarId>,
     /// The crate's thread-locals whose value is at hand, which its
     /// contract says of them (`ItemFact::AtHand`).
     keys: IndexSet<DefId>,
@@ -104,6 +109,7 @@ impl AtHand {
         // binding being no `const fn`.
         let initialized: IndexSet<DefId> = initialized_by.values().map(|key| key.to_def_id()).collect();
         let slot_writes = slots::of(&in_body, bodies, (closed, &initialized), &inits);
+        let local_cells = local_cells::of(&in_body, bodies);
         let roots: Vec<(DefId, &Thir<'tcx>, ExprId)> = (whole.iter())
             .filter(|body| tcx.is_closure_like(body.def_id))
             .filter_map(|body| Some((body.def_id, &body.thir, body.root()?)))
@@ -151,7 +157,7 @@ impl AtHand {
                 }
             }
             // A closure whose value is at hand; a slot every write of which is.
-            let grown = at_hand.closures.len() + at_hand.slots.len();
+            let grown = at_hand.closures.len() + at_hand.slots.len() + at_hand.cells.len();
             for &(closure, thir, root) in &roots {
                 if !at_hand.closures.contains(&closure) && at_hand.holds(&in_body(thir), thir, root) {
                     at_hand.closures.insert(closure);
@@ -164,7 +170,15 @@ impl AtHand {
                     at_hand.slot_params.extend(params.iter().copied());
                 }
             }
-            let grown = at_hand.closures.len() + at_hand.slots.len() != grown;
+            for group in &local_cells {
+                let Some(writes) = &group.writes else { continue };
+                if !group.members.iter().all(|member| at_hand.cells.contains(member))
+                    && writes.iter().all(|write| at_hand.written(&in_body, write))
+                {
+                    at_hand.cells.extend(group.members.iter().copied());
+                }
+            }
+            let grown = at_hand.closures.len() + at_hand.slots.len() + at_hand.cells.len() != grown;
             // A thread-local whose initializer makes what's at hand.
             for &(key, thir, root) in &inits {
                 if !at_hand.keys.contains(&key) && at_hand.holds(&in_body(thir), thir, root) {
@@ -379,6 +393,27 @@ impl AtHand {
                             OptionPlaceOp::GetOrInsertWith => self.makes_at_hand(recognition, thir, *given),
                             _ => self.holds(recognition, thir, *given),
                         }
+                }
+                // What an `Rc` or a guard points to is what it's of.
+                Some((callee, generic_args))
+                    if crate::lower::recognition::is_rc_deref(tcx, callee, generic_args)
+                        || recognition.is_guard_deref(callee, generic_args) =>
+                {
+                    args.first().is_some_and(|&of| self.holds(recognition, thir, of))
+                }
+                // What a local cell its closures share holds, read back
+                // (#2114): its `borrow()`, `replace`'s or `take`'s old value.
+                Some((callee, generic_args))
+                    if matches!(
+                        recognition.classify(callee, generic_args),
+                        Some(Std::Borrow { mutable: false, .. } | Std::CellReplace | Std::CellTake)
+                    ) && args
+                        .first()
+                        .and_then(|&receiver| local_cells::receiver_member(recognition, thir, receiver))
+                        .is_some_and(|at| matches!(thir[at].kind,
+                            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } if self.cells.contains(&id))) =>
+                {
+                    true
                 }
                 Some((callee, _)) => {
                     matches!(

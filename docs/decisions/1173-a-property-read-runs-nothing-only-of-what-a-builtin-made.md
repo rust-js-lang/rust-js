@@ -8,8 +8,9 @@ value, as each caller's instantiation says.
 Amended 2026-11-18 (#2111, #2113): a binding's method is its own only
 of a receiver at hand, and a Rust field read is JS's property read.
 Amended 2026-11-19 (#2118): lowering's `Known::RunsNothing` asks it too.
-Amended 2026-11-19 (#2114, its first step): what a thread-local the crate
-alone reaches holds, every write of it at hand, is at hand read back.
+Amended 2026-11-19 (#2114): what a thread-local the crate alone reaches
+holds, and a local cell its closures share, every write of it at hand, is
+at hand read back.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 whose Consequence it narrows to ADR 0262's difference 60, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
@@ -157,8 +158,17 @@ an initializer not recognized does, so the rule fails closed. Read back,
 `with_borrow_mut` closure gives, and what either is lent, is at hand;
 `None`, `js::null()`, and a `match` or an `if` whose every arm is, too.
 React's Fizz hooks' `renderPhaseUpdates` and hot reloading's
-`failedBoundaries` are back to their forms before #2111. A local `Rc` of a
-cell its closures share, the noop renderer's, is the second step; a
+`failedBoundaries` are back to their forms before #2111.
+
+So is a local cell its closures share (`at_hand/local_cells.rs`): the `let`
+of `Rc::new(RefCell::new(v))`, the `let`s of its `Rc::clone`s and the
+closures that capture any of them, each use of each a clone's argument, a
+capture, or the receiver, through derefs, of the cell's `borrow()` (a
+read), `replace(v)` or `set(v)` (a write) or `take()`. Any other use, the
+cell handed to a function, returned, moved, borrowed mutably, disqualifies
+it. What `borrow()`, `replace` and `take` read of one every write of which
+is at hand is; an `Rc`'s and a guard's `Deref` pass it on. React's noop
+renderer's `suspenseyThingCache` is back to its form before #2111. A
 struct's field, the lanes' `transitionLanes`, isn't a slot (#2108's).
 
 ## Why
@@ -265,4 +275,9 @@ caller's set is written to (its override's re-entry throwing), and one whose
 lent value is handed to a function keep the check. Mutations
 `slot-writes-unread`, `slot-reads-unknown`, `slot-lent-value-unbound`,
 `slot-unaccounted-use-admitted` and `slot-initializer-unread`, caught;
-lowering-shadows' rows back to their forms before #2111.
+lowering-shadows' rows back to their forms before #2111. Its second step's
+rows: a local cell its closures share, its map a builtin made, reads
+plainly; handed to a function, or given a JS caller's map, it keeps the
+check. Mutations `local-cell-writes-unread`, `local-cell-reads-unknown`,
+`local-cell-unaccounted-use-admitted` and `local-cell-clones-unseen`,
+caught.
