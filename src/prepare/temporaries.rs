@@ -29,6 +29,7 @@ pub(super) fn spelled(module: &mut js::Module) {
         .filter(|root| !top.contains(root))
         .collect();
     for item in &mut module.items {
+        apart_where_declared_again(item);
         let mut suggested: Vec<Name> = Vec::new();
         names_mut(item, true, &mut |name| {
             // By its word, as it's spelled below: a made name's word is its own
@@ -114,5 +115,48 @@ pub(super) fn spelled(module: &mut js::Module) {
                 *name = to.clone();
             }
         });
+    }
+}
+
+/// Each name lowering made, not spelled yet, declared again in a block that
+/// declares it already, a word of its own from there on: two variables,
+/// as JS can't declare one twice in a block. Two copies of one body
+/// applied in it, a `Drop`'s at each value it drops (`js::applied`), each
+/// keep the made names of the body, which a copy in a scope of its own, a
+/// cleanup's arrow, is spelled with alike; beside each other, each is its
+/// own, spelled apart, `value$1` beside `value`, of the words suggested of
+/// it still (#1681 change 3, step 2's regression).
+fn apart_where_declared_again(item: &mut js::Item) {
+    let mut names: Vec<Name> = Vec::new();
+    names_mut(item, true, &mut |name| names.push(name.clone()));
+    let mut apart = |list: &mut Vec<js::Stmt>| {
+        let mut declared: Vec<Name> = Vec::new();
+        for at in 0..list.len() {
+            let here: Vec<Name> = js::declared_here(&list[at]).into_iter().cloned().collect();
+            for name in here {
+                if !name.is_unspelled() || !declared.iter().any(|d| d.is(name.word())) {
+                    declared.push(name);
+                    continue;
+                }
+                let to = name.spelled_later_apart(&names);
+                names.push(to.clone());
+                js::replaced(&mut list[at..], &name, &to);
+                declared.push(to);
+            }
+        }
+    };
+    let mut each = |stmts: &mut Vec<js::Stmt>| {
+        js::statement_lists(stmts, &mut apart);
+        js::each_expr_mut(stmts, &mut |e| match &mut e.kind {
+            js::ExprKind::Arrow(_, body) | js::ExprKind::AsyncArrow(_, body) => js::statement_lists(body, &mut apart),
+            js::ExprKind::Function(function) => js::statement_lists(&mut function.body, &mut apart),
+            _ => {}
+        });
+    };
+    match item {
+        js::Item::Function(function) => each(&mut function.body),
+        js::Item::Namespace(namespace) => namespace.methods.iter_mut().for_each(|method| each(&mut method.body)),
+        js::Item::Statements(stmts) => each(stmts),
+        js::Item::Const(_) => {}
     }
 }

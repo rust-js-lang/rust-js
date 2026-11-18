@@ -72,4 +72,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(loop_drops|assignment_order).rs$"],
     snapshots: true,
   },
+  {
+    name: "temporary-declared-again-kept",
+    breaks: "two copies of a `Drop`'s body applied beside each other in one block keep one made name, which preparation spells `value` for both, `const value` declared twice, so rustc's drop/issue-48962.rs and drop/struct-field-drop-order.rs are refused (#1681 change 3, step 2's regression)",
+    file: "src/prepare/temporaries.rs",
+    find: "        apart_where_declared_again(item);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(drop_body_inlined_twice_in_a_block|field_drops_inlined_in_one_block)\\.rs$"],
+  },
 ];
