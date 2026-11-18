@@ -1,6 +1,6 @@
 // How much of JS's standard library the js crate binds, where Rust has no
-// type of its own for it: each built-in TypeScript's ES2024 libs declare
-// (TypeScript 5.9's `lib.es*.d.ts`, pinned as `typescript-es`), its members,
+// type of its own for it: each built-in the parser engine's ESNext libs
+// declare, its members,
 // statics and constructor, against what src binds by each function's link
 // name. `Array`, `String`, `Number`, `Math`, `Map` and `Set` are Rust's own
 // types' (`Vec`, `str`, `f64`, `HashMap`): not counted. Of `Object`, its
@@ -13,20 +13,24 @@ import { join } from "node:path";
 
 import { checkedMembers, open } from "@rust-js/typescript";
 import { snake } from "../scripts/rust-names";
+import { gaps } from "./gaps";
 
-/** The built-ins measured: classes, namespaces and objects of functions. */
-export const SCOPE = [
-  "Date", "RegExp", "Error", "AggregateError",
-  "EvalError", "RangeError", "ReferenceError", "SyntaxError", "TypeError", "URIError",
-  "Promise", "Symbol",
-  "ArrayBuffer", "SharedArrayBuffer", "DataView",
-  "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array",
-  "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array",
-  "WeakMap", "WeakSet", "WeakRef", "FinalizationRegistry",
-  "Object", "Proxy", "Reflect", "Atomics", "JSON", "Intl",
-  "Intl.Collator", "Intl.DateTimeFormat", "Intl.DisplayNames", "Intl.ListFormat", "Intl.Locale",
-  "Intl.NumberFormat", "Intl.PluralRules", "Intl.RelativeTimeFormat", "Intl.Segmenter",
-];
+/** What JS's ESNext library declares that Rust has a type of its own for,
+ * not measured, each with why. Every other root the library declares, a
+ * constructor, an object of functions or a namespace of them, is (#1903):
+ * a new one is seen, never hidden by a list of the measured. */
+export const RUST_OWNED: Record<string, string> = {
+  Array: "a `Vec` or a slice (ADR 0036)",
+  String: "a `String` or a `str`",
+  Number: "an `f64`, a number of Rust's",
+  Boolean: "a `bool`",
+  BigInt: "an `i64` or a `u64`, Rust's wide integers",
+  Function: "a closure or a function item",
+  Math: "`f64`'s own methods",
+  Map: "a `HashMap` or a `BTreeMap`",
+  Set: "a `HashSet` or a `BTreeSet`",
+  Iterator: "Rust's `Iterator` and its adapters; a JS iterator crosses the boundary as one (ADR 0061)",
+};
 
 /** The built-ins of which only their constructor's statics are measured. */
 const STATICS_ONLY = new Set(["Object"]);
@@ -43,23 +47,25 @@ const MADE_BY: Record<string, string> = { SymbolFor: "Symbol.static:for" };
 
 export type Coverage = { all: string[]; covered: string[] };
 
-const libs = new URL("../node_modules/typescript-es/lib/", import.meta.url).pathname;
-const src = new URL("./src/", import.meta.url).pathname;
+/** The single selection for member and argument conformance. */
+const LIBRARY = { lib: ["esnext"] };
 
-/** The one library-level selection for member and argument coverage. */
-const libraryFiles = () => readdirSync(libs)
-  .filter((f) => /^lib\.es(5|20(1[5-9]|2[0-4]))(\.[a-z.]+)?\.d\.ts$/.test(f) && !f.includes(".full."))
-  .map((f) => join(libs, f));
+const src = new URL("./src/", import.meta.url).pathname;
 
 /** Native Rust callers derived from the pinned library's argument unions.
  * Unknown future members fail here, rather than leaving narrower bindings green.
  * Compile these callers: deleting a trait member must lose coverage too. */
-export async function intlArgumentCases(): Promise<{ source: string; cases: number; sites: string[] }> {
-  const files = libraryFiles();
-  const session = await open(files);
+export async function intlArgumentCases(): Promise<{ source: string; cases: number; sites: string[]; gapped: string[] }> {
+  const session = await open([], LIBRARY);
+  const files = await session.libraries();
   const aliases = new Map<string, any>();
   const calls = new Map<string, { params: any[]; invoke: (args: string[]) => string }[]>();
-  const formatters = new Set(SCOPE.filter(name => name.startsWith("Intl.") && name !== "Intl.Locale").map(name => name.slice(5)));
+  // Each `Intl` constructor the crate binds but `Locale`: one it doesn't is a
+  // gap, its issue's (builtins/gaps.txt), no caller of it to compile.
+  const bound = bindings();
+  const formatters = new Set([...(await typescript()).keys()]
+    .filter(name => name.startsWith("Intl.") && name !== "Intl.Locale" && bound.has(`${name}.constructor`))
+    .map(name => name.slice(5)));
   const add = (name: string, params: any[], invoke: (args: string[]) => string) => {
     calls.set(name, [...(calls.get(name) ?? []), {params, invoke}]);
   };
@@ -90,9 +96,18 @@ export async function intlArgumentCases(): Promise<{ source: string; cases: numb
   };
   try { for (const file of files) walk((await session.read(file)).declarations); }
   finally { await session.close(); }
+  const gapList = gaps();
+  const gapped = new Set<string>();
   const values = (type: any): (string | undefined)[] => {
     if (type.kind === "union") return [...new Set<string | undefined>(type.types.flatMap(values))];
     if (type.kind === "reference") {
+      // An alternative of a root the crate doesn't bind yet, `Temporal`'s:
+      // a gap, named with its issue (builtins/gaps.txt), no caller of it.
+      const gap = gapList.find((g) => g.pattern.endsWith(".*") && (type.name + ".").startsWith(g.pattern.slice(0, -1)));
+      if (gap) {
+        gapped.add(`${type.name}\t#${gap.issue}`);
+        return [];
+      }
       const alias = aliases.get(type.name) ?? aliases.get("Intl." + type.name);
       if (alias) return values(alias);
       if (type.name === "Locale") return ['intl::locale::new("de-DE", &intl::LocaleOptions::default()).unwrap()'];
@@ -137,19 +152,20 @@ export async function intlArgumentCases(): Promise<{ source: string; cases: numb
     }
   }
   source.push("pub fn coverage(formatter: &intl::DateTimeFormat, date: &js::Date, " + [...options].map(([name, value]) => `${value}: &intl::${name}`).join(", ") + ") {", ...emitted, "}");
-  return {source: source.join("\n") + "\n", cases: emitted.size, sites: [...calls.keys()].sort()};
+  return {source: source.join("\n") + "\n", cases: emitted.size, sites: [...calls.keys()].sort(), gapped: [...gapped].sort()};
 }
 
 /** Each built-in's members: instance ones by name, `static:` ones, and
  * `constructor` where `new` makes one. */
 async function typescript(): Promise<Map<string, Set<string>>> {
-  const files = libraryFiles();
-  const session = await open(files);
+  const session = await open([], LIBRARY);
+  const files = await session.libraries();
   const interfaces = new Map<string, Set<string>>();
   const heritage = new Map<string, string[]>();
   const constructSignatures = new Set<string>();
   const constructors = new Map<string, { statics: Set<string>; ctor: boolean } | string>();
   const functions = new Set<string>();
+  const namespaces = new Set<string>();
   const named = (m: any) => (m.kind === "method" || m.kind === "property") && /^[A-Za-z_$][\w$]*$/.test(m.name);
   const walk = (declarations: any[], prefix: string) => {
     for (const d of declarations) {
@@ -171,7 +187,11 @@ async function typescript(): Promise<Map<string, Set<string>>> {
         }
       } else if (d.kind === "function") {
         functions.add(name);
+      } else if (d.kind === "namespace" && d.name === "global" && prefix === "") {
+        // `declare global { .. }`, the global scope's own.
+        walk(d.declarations, "");
       } else if (d.kind === "namespace") {
+        namespaces.add(name);
         walk(d.declarations, `${name}.`);
       }
     }
@@ -194,8 +214,17 @@ async function typescript(): Promise<Map<string, Set<string>>> {
   const inherited = (name: string, seen = new Set<string>()): string[] =>
     (heritage.get(name) ?? []).flatMap((p) => (seen.has(p) ? [] : (seen.add(p), [...(interfaces.get(p) ?? []), ...inherited(p, seen)])));
   for (const name of interfaces.keys()) for (const m of inherited(name)) interfaces.get(name)!.add(m);
+  // The roots measured, as the library declares them: each constructor or
+  // object of functions, `declare var Date: DateConstructor`, and each
+  // namespace of functions, `Reflect`, `Temporal.Now`; not one Rust owns.
+  const roots = new Set<string>();
+  for (const [name, ctor] of constructors) {
+    if (typeof ctor === "string" ? interfaces.has(ctor) : true) roots.add(name);
+  }
+  for (const name of namespaces) if ([...functions].some((f) => f.startsWith(`${name}.`) && !f.slice(name.length + 1).includes("."))) roots.add(name);
+  const scope = [...roots].filter((name) => !(name in RUST_OWNED)).sort();
   const out = new Map<string, Set<string>>();
-  for (const name of SCOPE) {
+  for (const name of scope) {
     const members = new Set<string>();
     const ctor = constructors.get(name);
     const own = ctor === name;
@@ -303,7 +332,7 @@ export async function measure(): Promise<Coverage> {
 /** The baseline's text: a summary, then each member bound. */
 export function render(c: Coverage): string {
   return [
-    `# The js crate against TypeScript's ES2024 library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts`,
+    `# The js crate against TypeScript's engine-selected ESNext library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts`,
     `# members: ${c.covered.length} of ${c.all.length} (${((100 * c.covered.length) / c.all.length).toFixed(1)}%)`,
     ...c.covered,
     "",

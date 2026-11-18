@@ -17,3 +17,12 @@ await ts.close();
 Generic parameter constraints and defaults are distinct model fields. Reading and printing preserves both, including dependent and literal defaults, so native declarations remain callable without type arguments where their original defaults allow it.
 
 Const generic modifiers survive declaration reading and printing without changing ordinary generic inference. Interface/object call signatures are structured call members, distinct from construct members and named methods; overload order and their generic/optional/rest parameter relationships remain in the model.
+
+The parser and the standard library use the same pinned TypeScript.
+Ordinary sessions load only their explicit files. To read standard libraries,
+use open(files, {lib:["esnext"]}) and then await session.libraries().
+The returned paths are the program's default libraries as classified by
+TypeScript. Read them through the same session's read(path) operation;
+user files, even ones named lib.custom.d.ts, are excluded from that list.
+An explicit older library selection remains older; no filename/year scan or
+second TypeScript package supplies standard declarations.

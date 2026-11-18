@@ -1,6 +1,11 @@
 import type {Mutation} from "../../mutations";
 const tests = ["test/builtins-coverage.test.ts", "-t", "the js crate binds what it bound"];
 export const mutations: Mutation[] = [
+  {name: "builtins-library-selection-stale", breaks: "member and argument coverage silently return to an older standard library", file: "builtins/coverage.ts", find: "const LIBRARY = { lib: [\"esnext\"] };", replace: "const LIBRARY = { lib: [\"es2024\"] };", tests},
   {name: "builtins-object-constructor-unread", breaks: "object-shaped constructor signatures disappear from native coverage", file: "builtins/coverage.ts", find: 'const ctor = checkedMembers(d.type.members).some((m: any) => m.kind === "construct");', replace: 'const ctor = false;', tests},
   {name: "builtins-interface-constructor-unread", breaks: "interface constructor signatures disappear from native coverage", file: "builtins/coverage.ts", find: 'constructSignatures.add(name);', replace: 'constructSignatures.delete(name);', tests},
+  {name: "builtins-rust-owned-measured", breaks: "what Rust has a type of its own for, `Array`'s and `Map`'s members, is measured as the js crate's to bind (#1903)", file: "builtins/coverage.ts", find: "const scope = [...roots].filter((name) => !(name in RUST_OWNED)).sort();", replace: "const scope = [...roots].sort();", tests},
+  {name: "builtins-global-scope-a-namespace", breaks: "`declare global`'s roots are measured as `global.Iterator`, a root no gap or policy names, where they're the global scope's (#1903)", file: "builtins/coverage.ts", find: '} else if (d.kind === "namespace" && d.name === "global" && prefix === "") {', replace: '} else if (false) {', tests: ["test/builtins-coverage.test.ts", "-t", "names its issue"]},
+  {name: "builtins-gap-alternative-refused", breaks: "an Intl argument alternative of a root the crate doesn't bind yet, `Temporal.PlainDate`, throws where it's a gap, its issue's (#1903, #1918)", file: "builtins/coverage.ts", find: "      if (gap) {", replace: "      if (false && gap) {", tests: ["test/intl-arguments.test.ts"]},
+  {name: "builtins-gap-alternative-unsaid", breaks: "an Intl argument alternative left out as a gap isn't reported with its issue (#1903, #1918)", file: "builtins/coverage.ts", find: "        gapped.add(`${type.name}\\t#${gap.issue}`);", replace: "", tests: ["test/intl-arguments.test.ts"]},
 ];

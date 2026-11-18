@@ -123,8 +123,9 @@ const KEYWORD_KINDS = Object.fromEntries(
  * A session of TypeScript's, over `files`, which `read` reads; `print`
  * needs none. Close it when done: it's a process of TypeScript's.
  * @param {string[]} [files]
+ * @param {{lib?: string[]}} [options] Explicit standard libraries, selected by the engine.
  */
-export async function open(files = []) {
+export async function open(files = [], options = {}) {
   const dir = mkdtempSync(join(tmpdir(), "rust-js-typescript-"));
   // A file of its own, so a project of no others isn't an empty one.
   const own = join(dir, "own.d.ts");
@@ -135,7 +136,7 @@ export async function open(files = []) {
     JSON.stringify({
       compilerOptions: {
         noEmit: true,
-        noLib: true,
+        ...(options.lib === undefined ? { noLib: true } : { lib: options.lib }),
         skipLibCheck: true,
         types: [],
       },
@@ -156,6 +157,16 @@ export async function open(files = []) {
     throw error;
   }
   return {
+    /** The program’s default libraries, as classified by TypeScript, not filenames.
+     * @returns {Promise<string[]>} */
+    async libraries() {
+      const files = await project.program.getSourceFileNames();
+      const libraries = await Promise.all(files.map(async (file) => {
+        const source = await project.program.getSourceFile(file);
+        return source && await project.program.isSourceFileDefaultLibrary(source) ? file : undefined;
+      }));
+      return libraries.filter((file) => file !== undefined).sort();
+    },
     /** The declarations `file`, one of the session's, makes. @returns {Promise<Module>} */
     async read(file) {
       const source = await project.program.getSourceFile(resolve(file));

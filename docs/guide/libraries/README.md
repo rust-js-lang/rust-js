@@ -8,7 +8,7 @@ functions is the JS it names, `document.get_element_by_id("app")` being
 
 | `use` | Binds | Cargo package | npm package | What it covers |
 |---|---|---|---|---|
-| `js` | JS's own language: promises, errors, JSON, regular expressions, timers, typed arrays, `Intl` | `rust-js-builtins` | `@rust-js/builtins` | TypeScript's ES2024 library where Rust has no type of its own: 689 of 689 members |
+| `js` | JS's own language: promises, errors, JSON, regular expressions, timers, typed arrays, `Intl` | `rust-js-builtins` | `@rust-js/builtins` | The pinned engine's ESNext library where Rust has no type of its own: 749 of 1,083 members, each gap named with its issue (builtins/gaps.txt) |
 | `webapi` | the browser, generated from W3C's WebIDL | `rust-js-webapi` | `@rust-js/webapi` | TypeScript's DOM: 8,372 of 8,419 members |
 | `node` | Node.js's modules | `rust-js-node` | `@rust-js/node` | `@types/node`: 160 of 1,535 exports, what ports have needed |
 | `react` | React and React DOM, 18.0 on | `rust-js-react` | `@rust-js/react` | `@types/react` and `@types/react-dom`: 244 of 244 exports |

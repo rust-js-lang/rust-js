@@ -14,9 +14,20 @@ import { join } from "node:path";
 
 const root = join(import.meta.dir, "..");
 const COOL_OFF_DAYS = 3;
-// What a release may be tagged: a stable one, and TypeScript's beta and
-// release candidate, which rust-js pins; never `next`, a nightly.
+// What a release may be tagged: a stable one, and a beta or a release
+// candidate only where a capability below asks it; never `next`, a nightly.
 const TAGS = ["latest", "rc", "beta"];
+// Of each package, the capabilities no stable release supplies yet, each with
+// the test that fails without it: only these make its prerelease eligible.
+// The newest stable release is taken otherwise (#1903).
+export const PRERELEASE_FOR: Record<string, { capability: string; test: string }[]> = {
+  typescript: [
+    {
+      capability: "the DOM library declares what webapi's generator reads, CloseWatcher, DocumentPictureInPicture, Serial, SerialPort and the rest, and their event maps, which 7.0's doesn't",
+      test: "test/definitions.test.ts -t \"the pinned TypeScript's DOM library\"",
+    },
+  ],
+};
 // Each package and the package.json that pins it.
 const PINNED: [string, string][] = [
   ["@types/web", "webapi/package.json"],
@@ -27,31 +38,34 @@ const PINNED: [string, string][] = [
   ["typescript", "package.json"],
 ];
 
-function sh(cmd: string[], cwd = root, timeoutMs = 600_000): { ok: boolean; out: string } {
-  const run = Bun.spawnSync(cmd, { cwd, timeout: timeoutMs, stdout: "pipe", stderr: "pipe" });
-  return { ok: run.exitCode === 0, out: run.stdout.toString() + run.stderr.toString() };
+async function sh(cmd: string[], cwd = root, timeoutMs = 600_000): Promise<{ ok: boolean; out: string }> {
+  const run = Bun.spawn(cmd, { cwd, timeout: timeoutMs, stdout: "pipe", stderr: "pipe" });
+  const [code, stdout, stderr] = await Promise.all([run.exited, new Response(run.stdout).text(), new Response(run.stderr).text()]);
+  return { ok: code === 0, out: stdout + stderr };
 }
 
-function npmView(name: string, field: string): any {
-  const { ok, out } = sh(["npm", "view", name, field, "--json"], root, 60_000);
-  if (!ok) throw new Error(`npm view ${name} ${field}: ${out}`);
+async function packageMetadata(name: string, field: string): Promise<any> {
+  const { ok, out } = await sh(["bun", "pm", "view", name, field, "--json"], root, 60_000);
+  if (!ok) throw new Error(`bun pm view ${name} ${field}: ${out}`);
   return JSON.parse(out);
 }
 
-/** The newest release of `name` a tag in TAGS names, at least
- * COOL_OFF_DAYS old: of the versions each tag has had, the newest. */
-function newest(name: string): string {
-  const tags: Record<string, string> = npmView(name, "dist-tags");
-  const time: Record<string, string> = npmView(name, "time");
-  const old = Date.now() - COOL_OFF_DAYS * 86_400_000;
+/** The newest stable release a tag in TAGS names, at least COOL_OFF_DAYS
+ * old: of the versions each tag has had, the newest. A beta or a release
+ * candidate is eligible only where `prerelease` says a capability needs it,
+ * `PRERELEASE_FOR`'s, and then the newest of either. */
+export function newest(tags: Record<string, string>, time: Record<string, string>, now = Date.now(), prerelease = false): string {
+  const old = now - COOL_OFF_DAYS * 86_400_000;
   // A tag may have moved within the cool-off: the version before it, of the
   // same kind (stable for `latest`, its prerelease kind for the others).
   const kind = (v: string) => v.match(/-([a-z]+)/)?.[1] ?? "stable";
-  const kinds = new Set(TAGS.flatMap((t) => (tags[t] ? [kind(tags[t])] : [])));
+  const kinds = new Set(TAGS.flatMap((t) => (tags[t] ? [kind(tags[t])] : [])).filter((k) => prerelease || k === "stable"));
   const candidates = Object.keys(time)
     .filter((v) => /^\d/.test(v) && kinds.has(kind(v)) && Date.parse(time[v]) <= old)
     .filter((v) => !/-dev\.|-insiders\./.test(v));
-  return candidates.sort(Bun.semver.order).at(-1)!;
+  const version = candidates.sort(Bun.semver.order).at(-1);
+  if (!version) throw new Error("No eligible release is old enough under the accepted tags");
+  return version;
 }
 
 function pinned(file: string, name: string): string {
@@ -85,49 +99,93 @@ function summary(before: string, after: string): string[] {
   return lines;
 }
 
-const bumps = PINNED.flatMap(([name, file]) => {
-  const from = pinned(file, name);
-  const to = newest(name);
-  return Bun.semver.order(to, from) > 0 ? [{ name, file, from, to }] : [];
-});
-if (!bumps.length) {
-  console.log(`Every definition is at its newest release ${COOL_OFF_DAYS}+ days old.`);
-  process.exit(0);
-}
-for (const b of bumps) console.log(`${b.name}: ${b.from} -> ${b.to}`);
-if (process.argv.includes("--check")) process.exit(0);
-
-for (const b of bumps) pin(b.file, b.name, b.from, b.to);
-const failed: string[] = [];
-const step = (label: string, cmd: string[], cwd = root, timeoutMs = 600_000) => {
-  const { ok, out } = sh(cmd, cwd, timeoutMs);
-  console.log(`${ok ? "ok  " : "FAIL"} ${label}`);
-  if (!ok) {
-    failed.push(label);
-    console.log(out.split("\n").slice(-40).join("\n"));
+async function main() {
+  const bumps = (await Promise.all(PINNED.map(async ([name, file]) => {
+    const from = pinned(file, name);
+    const [tags, time] = await Promise.all([packageMetadata(name, "dist-tags"), packageMetadata(name, "time")]);
+    const to = newest(tags, time, Date.now(), (PRERELEASE_FOR[name] ?? []).length > 0);
+    return Bun.semver.order(to, from) > 0 ? [{ name, file, from, to }] : [];
+  }))).flat();
+  // `--regenerate`: every step at the pins as they are, which proves the
+  // regeneration deterministic, nothing in the tree moved (#1903).
+  if (!bumps.length && !process.argv.includes("--regenerate")) {
+    console.log(`Every definition is at its newest release ${COOL_OFF_DAYS}+ days old.`);
+    process.exit(0);
   }
-  return out;
-};
-step("bun install", ["bun", "install"]);
-const libRs = join(root, "webapi/src/lib.rs");
-const before = readFileSync(libRs, "utf8");
-console.log(step("webapi: bun run generate", ["bun", "run", "generate"], join(root, "webapi")).trim());
-const after = readFileSync(libRs, "utf8");
-for (const line of summary(before, after)) console.log(line);
-// Coverage is a ratchet (test/webapi-coverage.test.ts): a member bound
-// before and lost now is named, for its rule or its issue; what's gained
-// alone is blessed into webapi/coverage.txt.
-const { measure, render } = await import("../webapi/coverage");
-const baseline = join(root, "webapi/coverage.txt");
-const now = await measure();
-const covered = new Set(now.covered);
-const lost = readFileSync(baseline, "utf8").split("\n").filter((l) => l && !l.startsWith("#") && !covered.has(l));
-writeFileSync(baseline, render(now));
-if (lost.length) {
-  failed.push("coverage");
-  console.log(`FAIL coverage: lost ${lost.join(", ")} (blessed in coverage.txt: keep only with an issue tracking each)`);
-} else console.log(`ok   coverage: ${now.covered.length} of ${now.all.length} members`);
-step("webapi tests", ["bun", "test", "test/webapi-coverage.test.ts", "test/webapi-declares.test.ts", "test/webapi-namespaces.test.ts", "test/webapi-event-map.test.ts"]);
-step("React port: regen", ["bun", "scripts/react-in-rust.ts", "regen"], root, 1_800_000);
-console.log(failed.length ? `\nNot ready: ${failed.join(", ")}. Fix or report each, then gate as any change.` : "\nReady: gate it as any change (check:fast --all), then commit with the summary above.");
-process.exit(failed.length ? 1 : 0);
+  for (const b of bumps) console.log(`${b.name}: ${b.from} -> ${b.to}`);
+  // A stable release where a prerelease was asked: its capability's test
+  // may pass on it now, and the entry go.
+  for (const b of bumps) {
+    for (const asked of PRERELEASE_FOR[b.name] ?? []) {
+      if (!b.to.includes("-")) console.log(`${b.name} ${b.to} is stable: if \`bun test ${asked.test}\` passes on it, remove its PRERELEASE_FOR entry (${asked.capability})`);
+    }
+  }
+  if (process.argv.includes("--check")) process.exit(0);
+
+  for (const b of bumps) {
+    // The published parser dependency consumes the root engine pin, never another release.
+    if (b.name === "typescript") {
+      const parser = pinned("typescript/package.json", b.name);
+      if (parser !== b.from) throw new Error("The parser and root TypeScript pins differ");
+      pin("typescript/package.json", b.name, parser, b.to);
+    }
+    pin(b.file, b.name, b.from, b.to);
+  }
+  const failed: string[] = [];
+  const step = async (label: string, cmd: string[], cwd = root, timeoutMs = 600_000) => {
+    const { ok, out } = await sh(cmd, cwd, timeoutMs);
+    console.log(`${ok ? "ok  " : "FAIL"} ${label}`);
+    if (!ok) {
+      failed.push(label);
+      console.log(out.split("\n").slice(-40).join("\n"));
+    }
+    return out;
+  };
+  await step("bun install", ["bun", "install"]);
+  const libRs = join(root, "webapi/src/lib.rs");
+  const before = readFileSync(libRs, "utf8");
+  console.log((await step("webapi: bun run generate", ["bun", "run", "generate"], join(root, "webapi"))).trim());
+  const after = readFileSync(libRs, "utf8");
+  for (const line of summary(before, after)) console.log(line);
+  // These existing generators remain their groups’ authorities until #1904 migrates them.
+  await Promise.all(["typed_arrays", "errors", "intl"].map(name => step("builtins: " + name, ["bun", "builtins/" + name + ".ts"])));
+  const coverage = async <C extends { all: string[]; covered: string[] }>(name: string, model: { measure: () => Promise<C>; render: (value: C) => string }) => {
+    const baseline = join(root, name, "coverage.txt");
+    const now = await model.measure();
+    const covered = new Set(now.covered);
+    const before = readFileSync(baseline, "utf8").split("\n").filter(line => line && !line.startsWith("#"));
+    const lost = before.filter(member => !covered.has(member));
+    const added = now.covered.filter(member => !before.includes(member));
+    if (lost.length) {
+      failed.push(name + " coverage");
+      console.log(`FAIL ${name} coverage: lost ${lost.join(", ")}; baseline retained`);
+    } else {
+      writeFileSync(baseline, model.render(now));
+      console.log(`ok   ${name} coverage: ${now.covered.length} of ${now.all.length} members`);
+    }
+    if (added.length) console.log(name + " covered additions: " + added.join(", "));
+    const missing = now.all.filter(member => !covered.has(member));
+    if (missing.length) console.log(name + " unbound: " + missing.join(", "));
+  };
+  await Promise.all([
+    import("../webapi/coverage").then(model => coverage("webapi", model)),
+    import("../builtins/coverage").then(model => coverage("builtins", model)),
+  ]);
+  // Each gap's issue still open: a closed one names a gap nothing tracks
+  // (builtins/gaps.txt, #1903).
+  const { gaps } = await import("../builtins/gaps");
+  for (const issue of [...new Set(gaps().map((g) => g.issue))].sort((a, b) => a - b)) {
+    const { ok, out } = await sh(["gh", "issue", "view", String(issue), "--json", "state", "--jq", ".state"], root, 60_000);
+    if (!ok || out.trim() !== "OPEN") {
+      failed.push(`gap issue #${issue}`);
+      console.log(`FAIL builtins/gaps.txt: #${issue} is ${ok ? out.trim().toLowerCase() : `unread: ${out.trim()}`}; bind its gaps, or name the issue that tracks them`);
+    }
+  }
+  await step("builtin tests", ["bun", "test", "--parallel", "test/builtins-coverage.test.ts", "test/intl-arguments.test.ts"]);
+  await step("webapi tests", ["bun", "test", "test/webapi-coverage.test.ts", "test/webapi-declares.test.ts", "test/webapi-namespaces.test.ts", "test/webapi-event-map.test.ts"]);
+  await step("React port: regen", ["bun", "scripts/react-in-rust.ts", "regen"], root, 1_800_000);
+  console.log(failed.length ? `\nNot ready: ${failed.join(", ")}. Fix or report each, then gate as any change.` : "\nReady: gate it as any change (check:fast --all), then commit with the summary above.");
+  process.exit(failed.length ? 1 : 0);
+}
+
+if (import.meta.main) await main();

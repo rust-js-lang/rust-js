@@ -121,6 +121,11 @@ parts('en-US', 0)[0].missing;
 test("pinned TypeScript argument unions are admitted by the Rust bindings", async () => {
   const generated = await intlArgumentCases();
   expect(generated.sites).toHaveLength(26);
+  // Each alternative of a root the crate doesn't bind, named with its issue
+  // (builtins/gaps.txt): `Intl.FormattableTemporalObject`'s six (#1918).
+  expect(generated.gapped).toEqual(
+    ["Instant", "PlainDate", "PlainDateTime", "PlainMonthDay", "PlainTime", "PlainYearMonth"].map((t) => `Temporal.${t}\t#1918`),
+  );
   expect(generated.cases).toBeGreaterThan(200);
   const dir = fixture("intl-argument-coverage");
   const input = join(dir, "lib.rs");

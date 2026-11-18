@@ -1,5 +1,13 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#1903): test/definitions.test.ts, four tests, holds
+the definitions update's release policy (stable first, a prerelease only for
+a capability that names its test), one TypeScript pin for the parser and the
+library, the update's whole run against fakes, and the capability the pinned
+beta is kept for; test/builtins-coverage.test.ts adds two, every unbound
+member named with its issue (builtins/gaps.txt); test/typescript.test.ts a
+library selection.
+
 How these suites find wrong answers, and what each has found, is in
 [docs/finding-wrong-answers.md](docs/finding-wrong-answers.md).
 

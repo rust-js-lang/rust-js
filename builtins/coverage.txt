@@ -1,5 +1,5 @@
-# The js crate against TypeScript's ES2024 library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts
-# members: 748 of 748 (100.0%)
+# The js crate against TypeScript's engine-selected ESNext library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts
+# members: 749 of 1083 (69.2%)
 AggregateError.cause
 AggregateError.constructor
 AggregateError.errors
@@ -524,6 +524,7 @@ RegExp.ignoreCase
 RegExp.lastIndex
 RegExp.multiline
 RegExp.source
+RegExp.static:escape
 RegExp.sticky
 RegExp.test
 RegExp.unicode

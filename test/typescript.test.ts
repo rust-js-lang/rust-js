@@ -401,3 +401,45 @@ export type Nested = {
     await expect(ts.print({declarations: [{...factory, members: [{kind: "unrecognized-member"}]}]} as any)).rejects.toThrow("isn't one TypeScript is given");
   } finally { await ts.close(); }
 });
+
+
+// The parser engine owns its default library graph, including ESNext.
+test("library selection uses the engine graph and leaves ordinary sessions isolated", async () => {
+  const file = join(fixture("typescript-libraries"), "lib.custom.d.ts");
+  writeFileSync(file, "export interface Custom { value: string }\n");
+  const isolated = await open([file]);
+  try {
+    expect(await isolated.libraries()).toEqual([]);
+    expect((await isolated.read(file)).declarations[0]).toMatchObject({ kind: "interface", name: "Custom" });
+  } finally {
+    await isolated.close();
+  }
+  const selected = await open([file], { lib: ["esnext"] });
+  try {
+    const libraries = await selected.libraries();
+    expect(libraries.length).toBeGreaterThan(20);
+    expect(libraries).not.toContain(file);
+    expect(new Set(libraries).size).toBe(libraries.length);
+    expect(await selected.libraries()).toEqual(libraries);
+    const intl = libraries.find(name => name.endsWith("/lib.esnext.intl.d.ts"));
+    expect(intl).toBeDefined();
+    const declarations = (await selected.read(intl!)).declarations;
+    const locale = declarations.flatMap(d => d.kind === "namespace" && d.name === "Intl" ? d.declarations : []).find(d => d.kind === "interface" && d.name === "Locale");
+    expect(locale).toBeDefined();
+    if (locale?.kind !== "interface") throw new Error("Intl.Locale interface missing");
+    expect(locale.members.map(m => "name" in m ? m.name : "")).toContain("getWeekInfo");
+    expect(locale.members.map(m => "name" in m ? m.name : "")).not.toContain("weekInfo");
+    const es5 = libraries.find(name => name.endsWith("/lib.es5.d.ts"));
+    expect(es5).toBeDefined();
+    expect((await selected.read(es5!)).declarations.some(d => "name" in d && d.name === "Object")).toBe(true);
+  } finally {
+    await selected.close();
+  }
+  const older = await open([], { lib: ["es2020"] });
+  try {
+    expect((await older.libraries()).some(name => name.endsWith("/lib.esnext.intl.d.ts"))).toBe(false);
+    expect((await older.libraries()).some(name => name.endsWith("/lib.es2020.d.ts"))).toBe(true);
+  } finally {
+    await older.close();
+  }
+});

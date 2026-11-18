@@ -1,6 +1,7 @@
 // The TypeScript Member protocol, loaded in the isolated source workspace.
 import type { Mutation } from "../../mutations";
 const tests = ["test/typescript.test.ts", "-t", "construct signatures retain"];
+const libraryTests = ["test/typescript.test.ts", "-t", "library selection"];
 export const mutations: Mutation[] = [
   {"name":"typescript-parameter-const-unread","breaks":"a declared const parameter is read as an ordinary widening parameter","file":"typescript/index.js","find":"    ...(p.modifiers?.some((m) => m.kind === SyntaxKind.ConstKeyword) && { const: true }),","replace":"    ...{},","tests":["test/typescript-const.test.ts"]},
   {"name":"typescript-parameter-ordinary-made-const","breaks":"ordinary generic inference is silently changed into literal inference","file":"typescript/index.js","find":"p.modifiers?.some((m) => m.kind === SyntaxKind.ConstKeyword)","replace":"true","tests":["test/typescript-const.test.ts"]},
@@ -57,6 +58,30 @@ export const mutations: Mutation[] = [
     find: "      return f.createConditionalTypeNode(\n",
     replace: "      return typeNode(t.check);\n      return f.createConditionalTypeNode(\n",
     tests: ["test/typescript.test.ts", "-t", "a conditional type, and an object alias"],
+  },
+  {
+    name: "typescript-libraries-ignore-selection",
+    breaks: "explicit ESNext selection still opens an isolated noLib program",
+    file: "typescript/index.js",
+    find: "...(options.lib === undefined ? { noLib: true } : { lib: options.lib }),",
+    replace: "noLib: true,",
+    tests: libraryTests,
+  },
+  {
+    name: "typescript-libraries-count-user-files",
+    breaks: "user declarations masquerade as default libraries",
+    file: "typescript/index.js",
+    find: "await project.program.isSourceFileDefaultLibrary(source)",
+    replace: "true",
+    tests: libraryTests,
+  },
+  {
+    name: "typescript-libraries-default-to-esnext",
+    breaks: "ordinary sessions silently inherit the standard library graph",
+    file: "typescript/index.js",
+    find: "...(options.lib === undefined ? { noLib: true } : { lib: options.lib }),",
+    replace: "lib: options.lib ?? [\"esnext\"],",
+    tests: libraryTests,
   },
   {
     name: "typescript-construct-unread",

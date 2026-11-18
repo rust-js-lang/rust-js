@@ -490,3 +490,49 @@ two String methods, four DateTimeFormat methods and getCanonicalLocales.
 Every overload contributes accepted union members. Typed option inputs also
 catch narrowing a full formatter options type to matcher-only. Unknown
 argument members fail coverage rather than silently disappear.
+
+## Amendment (2026-11-18): one engine's ESNext library, every root of it (#1903)
+
+**One library, the engine's.** Coverage and the Intl argument callers read
+the standard library TypeScript's own engine selects, `lib: ["esnext"]`
+through `@rust-js/typescript`'s session, whose `libraries()` are the files
+the program classes as its default libraries. The `typescript-es` alias of
+5.9.3 and its ES5-to-ES2024 filename filter are gone. One pin, the root's
+and the parser's, and `definitions` moves both together.
+
+**Every root, not a list.** The roots measured are what that library
+declares: each constructor or object of functions, `declare var Date:
+DateConstructor`, and each namespace of functions, `Reflect`,
+`Temporal.Now`, `declare global`'s as the global scope's. `RUST_OWNED` names
+what Rust has a type of its own for, each with why: `Array`, `String`,
+`Number`, `Boolean`, `BigInt`, `Function`, `Math`, `Map`, `Set` and
+`Iterator`. The old `SCOPE` list hid each new root; none is now.
+
+**Each gap named with its issue.** builtins/gaps.txt lists every member
+the js crate doesn't bind, or a whole root, `Temporal.*`, with its issue.
+The coverage test fails on an unbound member it doesn't name, on a line
+that names nothing unbound, and on a bound member it still names;
+`definitions` fails on a gap whose issue is closed. The Intl argument
+callers give an alternative of a gap's root, `Intl.FormattableTemporalObject`'s
+six Temporal types, as that gap's (#1918), never a narrower union, and still
+fail on any other they can't make.
+
+**What moved.** ES2024's 748 of 748 members become ESNext's 749 of 1,083:
+`RegExp.escape` was bound already, and 334 are gaps, linked to explicit
+resource management (#2044), `Float16Array` (#2045), the newer statics and
+methods (#2046), `Intl.DurationFormat` (#2047), `Intl.Locale`'s getters
+(#1904) and Temporal (#1918).
+
+**The pin.** `definitions` takes the newest stable release three days old,
+and a beta or a release candidate only for a capability no stable release
+supplies, which `PRERELEASE_FOR` names with the test that fails without it.
+TypeScript is held at 7.1.0-beta so: 7.0's DOM library lacks 20 types
+webapi's generator reads, `CloseWatcher`, `Serial`, `SerialPort` and the
+rest, and three event maps, which webapi would otherwise declare itself.
+The test lists each, and `definitions` says when a stable release may
+retire the entry. `definitions --regenerate` runs every step at the pins as
+they are: nothing in the tree moves.
+
+This is case N: the declaration authority changes, not JavaScript or Rust
+semantics. Generating the builtins from this library is #1904; each
+group's hand-written spec stays its authority until migrated.

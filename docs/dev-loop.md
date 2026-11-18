@@ -1,5 +1,9 @@
 # The development loop's ledger
 
+`bun run definitions --check` asks each package's metadata at once, not in
+turn (#1903): 1 s where it took 7 s on the M6, the registry's cache not
+controlled.
+
 Every experiment to make the development loop faster or its feedback
 sooner, what it measured, and whether it's still in use. This is the one
 place for that. [DEVELOPMENT.md](../DEVELOPMENT.md#keeping-the-loop-fast)

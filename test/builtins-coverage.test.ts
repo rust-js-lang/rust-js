@@ -8,6 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { measure, render } from "../builtins/coverage";
+import { problems } from "../builtins/gaps";
 import { generatorOutput, root } from "./support";
 import { underLoad } from "../scripts/timing";
 
@@ -23,6 +24,28 @@ test("the js crate binds what it bound of TypeScript's ES library", async () => 
   // And what's new is in the baseline, blessed.
   expect(render(now)).toBe(readFileSync(baseline, "utf8"));
 }, underLoad(60_000));
+
+// What the js crate doesn't bind of the library is a gap, each named in
+// builtins/gaps.txt with its issue: an unbound member it doesn't name fails,
+// as a line that names nothing unbound does (#1903).
+test("each member the js crate doesn't bind names its issue", async () => {
+  expect(problems(await measure())).toEqual([]);
+}, underLoad(60_000));
+
+// Each way a gap list can be wrong, of a made-up library: an unbound member
+// no line names, a line naming nothing unbound, a bound member still named;
+// and `Root.*` naming the roots in it, `Temporal.*` `Temporal.Instant`'s.
+test("a gap list names each unbound member, and nothing else", () => {
+  const measured = { all: ["A.x", "A.y", "B.z", "T.I.at", "T.P.of"], covered: ["A.x"] };
+  const list = [{ pattern: "A.x", issue: 1 }, { pattern: "C.*", issue: 2 }, { pattern: "T.*", issue: 3 }];
+  expect(problems(measured, list)).toEqual([
+    "A.y: unbound, and no line of builtins/gaps.txt names its issue",
+    "B.z: unbound, and no line of builtins/gaps.txt names its issue",
+    "A.x: builtins/gaps.txt names it, but nothing it names is unbound",
+    "C.*: builtins/gaps.txt names it, but nothing it names is unbound",
+    "A.x: bound, and builtins/gaps.txt still names it",
+  ]);
+});
 
 // The typed arrays are one shape over eleven element types, written once in
 // builtins/typed_arrays.ts: what's committed is what it writes.

@@ -186,3 +186,17 @@ constructs as appropriate; unnamed call signatures do not become members
 or constructors. React coverage reads declaration exports, not Member
 kinds. The made-up unknown-kind control still throws, and its source
 mutation is caught alongside the call and construct controls.
+
+## Amendment (2026-11-18): the engine also selects its standard libraries (#1903)
+
+The existing open(files) operation accepts a second options object with an
+explicit lib selection. Without it the existing noLib isolation is
+preserved. With `lib: ["esnext"]`, TypeScript loads its own complete
+referenced library graph. The session's `libraries()` returns its
+default-library paths by the engine's `isSourceFileDefaultLibrary`, sorted
+for deterministic consumers; the existing `read` reads their declarations.
+Neither names resembling lib files nor a second package or a year filter
+decide membership. A test proves an explicit ES2020 selection stays older
+and that user files never become standard libraries; three mutations break
+selection, isolation and classification. Case N: a tool's declaration
+boundary, with no Rust semantic exception.

@@ -1,0 +1,46 @@
+# What TypeScript's ESNext library declares that the js crate doesn't bind,
+# each with the issue that tracks it: bun test test/builtins-coverage.test.ts.
+# A line is a member, or `Root.*`, every member of a root and the roots in it.
+# An unbound member no line names fails, as does a line that names none, or
+# a member bound; `bun run definitions` fails on an issue that's closed.
+AsyncDisposableStack.*	#2044
+DisposableStack.*	#2044
+SuppressedError.*	#2044
+Symbol.static:asyncDispose	#2044
+Symbol.static:dispose	#2044
+Float16Array.*	#2045
+DataView.getFloat16	#2045
+DataView.setFloat16	#2045
+Atomics.static:pause	#2046
+Error.static:isError	#2046
+EvalError.static:isError	#2046
+RangeError.static:isError	#2046
+ReferenceError.static:isError	#2046
+SyntaxError.static:isError	#2046
+TypeError.static:isError	#2046
+URIError.static:isError	#2046
+Promise.static:try	#2046
+Symbol.static:metadata	#2046
+Uint8Array.setFromBase64	#2046
+Uint8Array.setFromHex	#2046
+Uint8Array.static:fromBase64	#2046
+Uint8Array.static:fromHex	#2046
+Uint8Array.toBase64	#2046
+Uint8Array.toHex	#2046
+WeakMap.getOrInsert	#2046
+WeakMap.getOrInsertComputed	#2046
+Intl.PluralRules.selectRange	#2046
+JSON.static:isRawJSON	#2046
+JSON.static:rawJSON	#2046
+Promise.static:allKeyed	#2046
+Promise.static:allSettledKeyed	#2046
+Intl.DurationFormat.*	#2047
+Intl.Locale.getCalendars	#1904
+Intl.Locale.getCollations	#1904
+Intl.Locale.getHourCycles	#1904
+Intl.Locale.getNumberingSystems	#1904
+Intl.Locale.getTextInfo	#1904
+Intl.Locale.getTimeZones	#1904
+Intl.Locale.getWeekInfo	#1904
+Temporal.*	#1918
+Date.toTemporalInstant	#1918
