@@ -24,7 +24,7 @@ mod at_hand;
 mod runs_nothing;
 mod std_given;
 use at_hand::AtHand;
-use runs_nothing::CallArgs;
+use runs_nothing::{CallArgs, generic_read, read_may_run};
 pub(in crate::lower) use runs_nothing::{
     binding_call_runs_nothing, binding_runs_nothing, call_runs_nothing, resolve_runs_nothing,
 };
@@ -66,6 +66,9 @@ impl<'tcx> Borrow<'tcx> {
 struct Summary<'tcx> {
     cells: IndexSet<Borrow<'tcx>>,
     drops: IndexSet<Ty<'tcx>>,
+    /// Each property read of a type parameter's value, by the type read,
+    /// which each instantiation settles (`read_may_run`, #2109).
+    reads: IndexSet<Ty<'tcx>>,
 }
 
 /// What each body of the crate may borrow, its calls' and its closures'
@@ -199,15 +202,17 @@ impl<'tcx> CellBorrows<'tcx> {
         let mut of: IndexMap<DefId, Option<Summary<'tcx>>> = (direct.iter())
             .map(|(&id, d)| (id, (!d.reach.any()).then(|| d.own.clone())))
             .collect();
+        let reads = |ty| read_may_run(recognition, Some(&found.pointers), ty);
         loop {
             let mut changed = false;
             for (&id, d) in &direct {
                 let Some(mut next) = of[&id].clone() else { continue };
                 let any = (d.runs.iter()).any(|&(run, args)| match of.get(&run) {
-                    Some(Some(theirs)) => match instantiated(tcx, theirs, args, drops) {
+                    Some(Some(theirs)) => match instantiated(tcx, theirs, args, (drops, &reads)) {
                         Some(theirs) => {
                             next.cells.extend(theirs.cells);
                             next.drops.extend(theirs.drops);
+                            next.reads.extend(theirs.reads);
                             false
                         }
                         None => true,
@@ -319,13 +324,14 @@ impl<'tcx> CellBorrows<'tcx> {
             thir,
             args: &one[..],
             at_hand: &self.at_hand,
+            pointers: Some(&self.pointers),
         });
         match called(recognition, def_id, args, given, &itself) {
             // Of code rust-js can't see, a binding's or a library's, what
             // it calls back isn't asked (ADR 0863, amended); of what may be
             // the crate's own, an `F: Fn`'s call, what anything may (#1669).
             Called::Nothing | Called::Unseen => false,
-            Called::Any => self.anything_asks(tcx, held),
+            Called::Any | Called::Read(_) => self.anything_asks(tcx, held),
             // A cell's own call, and what it runs by its bounds,
             // `replace_with`'s function while it holds its borrow, a
             // `take`'s `Default` before (#687, #699).
@@ -432,21 +438,22 @@ impl<'tcx> CellBorrows<'tcx> {
             thir,
             args: &one[..],
             at_hand: &self.at_hand,
+            pointers: Some(&self.pointers),
         });
         match called(recognition, def_id, args, given, &itself) {
             Called::Nothing => false,
             Called::Cell(theirs) => self.cell_call_asks(recognition, (def_id, args), theirs, held, drops),
-            Called::Body(body, args) => self.runs_asks(tcx, body, Some(args), held, drops),
+            Called::Body(body, args) => self.runs_asks(recognition, body, Some(args), held, drops),
             Called::Bodies(bodies) => {
-                (bodies.into_iter()).any(|(body, args)| self.runs_asks(tcx, body, Some(args), held, drops))
+                (bodies.into_iter()).any(|(body, args)| self.runs_asks(recognition, body, Some(args), held, drops))
             }
             Called::Std(id, args) => {
                 let given = std_given(recognition, &self.impls, id, args);
                 (given.any && self.anything_asks(tcx, held))
                     || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
-                    || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))
+                    || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(recognition, body, args, held, drops))
             }
-            Called::Any | Called::Unseen => self.anything_asks(tcx, held),
+            Called::Any | Called::Unseen | Called::Read(_) => self.anything_asks(tcx, held),
         }
     }
 
@@ -488,9 +495,13 @@ impl<'tcx> CellBorrows<'tcx> {
         given.any
             || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
             || (given.bodies.iter()).any(|&(body, args)| match self.of.get(&body) {
-                Some(Some(theirs)) => {
-                    instantiated(tcx, theirs, args, drops).is_none_or(|theirs| theirs.asks(tcx, &self.closed, held))
-                }
+                Some(Some(theirs)) => instantiated(
+                    tcx,
+                    theirs,
+                    args,
+                    (drops, &|ty| read_may_run(recognition, Some(&self.pointers), ty)),
+                )
+                .is_none_or(|theirs| theirs.asks(tcx, &self.closed, held)),
                 _ => true,
             })
     }
@@ -554,7 +565,7 @@ impl<'tcx> CellBorrows<'tcx> {
         };
         given.any
             || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))
-            || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))
+            || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(recognition, body, args, held, drops))
     }
 
     /// Whether calling `def_id`, of `args`, may run code rust-js can't see
@@ -584,7 +595,7 @@ impl<'tcx> CellBorrows<'tcx> {
                 let given = std_given(recognition, &self.impls, id, args);
                 given.any || !given.bodies.iter().all(|(body, _)| summarized(body))
             }
-            Called::Any | Called::Unseen => true,
+            Called::Any | Called::Unseen | Called::Read(_) => true,
         }
     }
 
@@ -623,7 +634,7 @@ impl<'tcx> CellBorrows<'tcx> {
             return self.anything_asks(tcx, held);
         };
         may_be.iter().any(|&(f, args)| match tcx.is_closure_like(f) {
-            true => self.runs_asks(tcx, f, Some(args), held, drops),
+            true => self.runs_asks(recognition, f, Some(args), held, drops),
             false => self.call_asks(recognition, (f, f, args), None, held, drops),
         })
     }
@@ -648,14 +659,20 @@ impl<'tcx> CellBorrows<'tcx> {
     /// Whether running `body` of the crate's, of `args`, may ask of `held`.
     fn runs_asks(
         &self,
-        tcx: TyCtxt<'tcx>,
+        recognition: &Recognition<'_, 'tcx>,
         body: DefId,
         args: Option<ty::GenericArgsRef<'tcx>>,
         held: Borrow<'tcx>,
         drops: &dyn Fn(Ty<'tcx>) -> bool,
     ) -> bool {
+        let tcx = recognition.tcx;
         match self.of.get(&body) {
-            Some(Some(theirs)) => match instantiated(tcx, theirs, args, drops) {
+            Some(Some(theirs)) => match instantiated(
+                tcx,
+                theirs,
+                args,
+                (drops, &|ty| read_may_run(recognition, Some(&self.pointers), ty)),
+            ) {
                 Some(theirs) => theirs.asks(tcx, &self.closed, held),
                 None => self.anything_asks(tcx, held),
             },
@@ -668,7 +685,9 @@ impl<'tcx> Summary<'tcx> {
     /// Whether it may ask of `held`: one of its borrows may, or a drop its
     /// caller says may run anything.
     fn asks(&self, tcx: TyCtxt<'tcx>, closed: &IndexSet<DefId>, held: Borrow<'tcx>) -> bool {
-        !self.drops.is_empty() || self.cells.iter().any(|&theirs| asks(tcx, closed, theirs, held))
+        !self.drops.is_empty()
+            || !self.reads.is_empty()
+            || self.cells.iter().any(|&theirs| asks(tcx, closed, theirs, held))
     }
 }
 
@@ -765,13 +784,17 @@ fn instantiated<'tcx>(
     tcx: TyCtxt<'tcx>,
     summary: &Summary<'tcx>,
     args: Option<ty::GenericArgsRef<'tcx>>,
-    drops: &dyn Fn(Ty<'tcx>) -> bool,
+    (drops, reads): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> bool),
 ) -> Option<Summary<'tcx>> {
     // Of a body run of no args a type says, an impl's method std's code
     // runs, whose types are of its own parameters: not known (#240).
     let typed = |ty: &Ty<'tcx>| ty.has_param();
     if args.is_none()
         && (summary.drops.iter().any(typed)
+            || summary
+                .reads
+                .iter()
+                .any(|&ty| crate::lower::generic_facts::may_be_any_type(ty))
             || summary
                 .cells
                 .iter()
@@ -799,7 +822,22 @@ fn instantiated<'tcx>(
             false => {}
         }
     }
-    Some(Summary { cells, drops: kept })
+    // And each property read of a type parameter's value, of what the call
+    // makes it: one that may meet a getter of the program's runs anything.
+    let mut read = IndexSet::default();
+    for &ty in &summary.reads {
+        let ty = of(ty);
+        match crate::lower::generic_facts::may_be_any_type(ty) {
+            true => _ = read.insert(ty),
+            false if reads(ty) => return None,
+            false => {}
+        }
+    }
+    Some(Summary {
+        cells,
+        drops: kept,
+        reads: read,
+    })
 }
 
 /// The borrow `call`, a borrow's call, is: `c.borrow_mut()`'s of `c`, a
@@ -819,6 +857,7 @@ pub(in crate::lower) fn borrowed<'tcx>(
         thir,
         args: &args[..],
         at_hand: &at_hand,
+        pointers: None,
     };
     match called(recognition, id, generic_args, Some(given), &|_| false) {
         Called::Cell(cell) => Some(cell),
@@ -841,6 +880,9 @@ enum Called<'tcx> {
     /// A function of std's, of these generic arguments, which runs what its
     /// bounds say of them (`std_given`).
     Std(DefId, ty::GenericArgsRef<'tcx>),
+    /// A property read of a type parameter's value, of this type, which
+    /// runs code where a caller's instantiation says it may (#2109).
+    Read(Ty<'tcx>),
     /// What may be any code, the crate's too: a type parameter's or a
     /// `dyn`'s method, a shim, an intrinsic given a function.
     Any,
@@ -866,6 +908,9 @@ fn called<'tcx>(
     // amended).
     if tcx.is_lang_item(def_id, LangItem::CloneFn) && args.types().next().is_some_and(clones_itself) {
         return Called::Nothing;
+    }
+    if let Some(read) = generic_read(recognition, def_id, given) {
+        return Called::Read(read);
     }
     // A trait's binding, of a type parameter its bound reads (ADR 0307).
     if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args, given) {
@@ -1011,6 +1056,7 @@ fn direct<'tcx>(
         }
         Called::Any => found.reach.and(Reach::Anything),
         Called::Unseen => found.reach.and(Reach::Unseen),
+        Called::Read(ty) => _ = found.own.reads.insert(ty),
     };
     for (at, e) in thir.exprs.iter_enumerated() {
         match e.kind {
@@ -1020,6 +1066,7 @@ fn direct<'tcx>(
                         thir,
                         args: &args[..],
                         at_hand,
+                        pointers: Some(pointers),
                     };
                     let called = called(recognition, id, generic_args, Some(given), clones_itself);
                     // A borrow of a cell of a type, of its class by its

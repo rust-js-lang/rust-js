@@ -95,13 +95,14 @@ const timerQueue = [];
 
 - No corpus case's JS changes; React's scheduler's queues are its arrays.
 - A JS getter that calls back into Rust, borrowing a cell held where a
-  property is read, isn't seen only of the program's own Rust struct, read
-  through a cast to a JS value, `js::get(js::unknown(&**chunk), "reason")`,
-  or a type parameter, which a JS caller may forge with a getter where an
-  exported function takes one: its borrow passes where Rust's panics
-  (#2109). Of a JS object's type it's seen since
+  property is read, isn't seen only of a struct only the crate constructs,
+  plain data JS gives back as the crate gave it (ADR 0262's difference 60):
+  one JS hands over in its place with a getter passes where Rust's borrow
+  panics. Of a JS object's type, a struct's JS may make or give, and a type
+  parameter's by each caller's instantiation, it's seen since
   [1173](1173-a-property-read-runs-nothing-only-of-what-a-builtin-made.md)
-  (#2106): a property read runs nothing only of a value a builtin made.
+  (#2106, #2109): a property read runs nothing only of a value a builtin
+  made.
 
 ## What holds it
 

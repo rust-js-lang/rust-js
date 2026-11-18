@@ -11,6 +11,7 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 
 use super::at_hand::AtHand;
+use crate::lower::analysis::fn_pointers::FnPointers;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
@@ -148,12 +149,14 @@ pub(in crate::lower) fn resolve_runs_nothing<'tcx>(
 /// and it sets none of the crate's variables, which lowering marks its
 /// call so (`Known::RunsNothing`, ADR 0277, amended).
 /// What's known of a call: its arguments in `thir`, the first its receiver,
-/// and what of the crate is a value at hand (`AtHand`).
+/// what of the crate is a value at hand (`AtHand`), and which structs JS
+/// may make or give a value of (`FnPointers`), where the caller has them.
 #[derive(Clone, Copy)]
 pub(in crate::lower) struct CallArgs<'a, 'tcx> {
     pub(in crate::lower) thir: &'a Thir<'tcx>,
     pub(in crate::lower) args: &'a [ExprId],
     pub(in crate::lower) at_hand: &'a AtHand,
+    pub(in crate::lower) pointers: Option<&'a FnPointers<'tcx>>,
 }
 
 /// `given`, where the caller has it, the call's arguments, each `None`
@@ -216,12 +219,55 @@ fn read_of_what_is_at_hand<'tcx>(
     let Some(&receiver) = given.args.first() else {
         return false;
     };
-    // Of what isn't a JS object's type, the program's own Rust struct cast
-    // to `Unknown`, `js::get(js::unknown(&**chunk), "reason")`, or a type
-    // parameter's: as before #2106, nothing, though a JS caller may forge
-    // such a struct with a getter, #2109's (ADR 1173).
-    !recognition.is_js_object(read_of(recognition, given.thir, receiver))
+    // Of a type parameter's, its caller's to say (`generic_read`); of a
+    // JS object's, or a struct's JS may make or give, the program's own
+    // cast to `Unknown`, `js::get(js::unknown(&**chunk), "reason")`, only
+    // what's at hand (#2109).
+    let read = read_of(recognition, given.thir, receiver);
+    !crate::lower::generic_facts::may_be_any_type(read) && !read_may_run(recognition, given.pointers, read)
         || given.at_hand.holds(recognition, given.thir, receiver)
+}
+
+/// Of a property read, `this.name` or `this[key]`, of what a type
+/// parameter's value is, `T: Node`'s `get sortIndex` of a heap's element:
+/// its type, which each caller's instantiation says may run code or not
+/// (`read_may_run`), as a drop of a type parameter's is its caller's.
+pub(in crate::lower) fn generic_read<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    def_id: DefId,
+    given: Option<CallArgs<'_, 'tcx>>,
+) -> Option<Ty<'tcx>> {
+    let tcx = recognition.tcx;
+    if !is_binding(tcx, def_id) || !matches!(js_form(tcx, def_id), JsForm::Get(_) | JsForm::GetIndex) {
+        return None;
+    }
+    let given = given?;
+    let read = read_of(recognition, given.thir, *given.args.first()?);
+    crate::lower::generic_facts::may_be_any_type(read).then(|| tcx.erase_and_anonymize_regions(read))
+}
+
+/// Whether a property read of a value of `ty` may meet a getter of the
+/// program's, which may call back into it (#2106, #2109): of a JS object,
+/// or of a struct JS may make or give a value of, through a reference, a
+/// `Box`, an `Rc` or an `Arc`; not of a struct only the crate constructs,
+/// which JS gives back as the crate gave it (ADR 0262's difference 60),
+/// nor of std's, a `String`'s, nor a number's or anything else with no
+/// getter of the program's. Where which structs JS may make isn't known, any may.
+pub(in crate::lower) fn read_may_run<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    pointers: Option<&FnPointers<'tcx>>,
+    ty: Ty<'tcx>,
+) -> bool {
+    let mut ty = ty.peel_refs();
+    while let ty::Adt(_, args) = ty.kind()
+        && (ty.is_box() || recognition.is_std_type(ty, StdItem::Rc) || recognition.is_std_type(ty, StdItem::Arc))
+    {
+        ty = args.type_at(0).peel_refs();
+    }
+    crate::lower::generic_facts::may_be_any_type(ty)
+        || recognition.is_js_object(ty)
+        || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && !recognition.is_std(adt.did())
+            && pointers.is_none_or(|pointers| pointers.js_may_make(adt.did()) || pointers.js_may_give(adt.did())))
 }
 
 /// The type of what `receiver`, in `thir`, reads: through a borrow, a

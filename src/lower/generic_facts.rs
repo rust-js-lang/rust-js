@@ -24,7 +24,7 @@
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
 //! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `src/lower/generic_facts.rs makes_a_param_field_first` |
 //! | whether a type holds a function's type parameter, as `repeat_n`'s `RepeatN<T>` holds its `T`, so a std maker of a compiled iterator is given its drop (#1458) | Given | `src/lower/generic_facts.rs holds_type_parameter` |
-//! | whether a type names a type parameter, so what it is isn't known: of a walk for a kept raw pointer, it may be the `&mut`'s pointee or a reference to it, so it may keep it (#1781); of a type a `dyn` in a cell may be, its trait's impls may hold of it, so it may be (#1006) | Given | `src/lower/generic_facts.rs may_be_any_type` |
+//! | whether a type names a type parameter, so what it is isn't known: of a walk for a kept raw pointer, it may be the `&mut`'s pointee or a reference to it, so it may keep it (#1781); of a type a `dyn` in a cell may be, its trait's impls may hold of it, so it may be (#1006); of what a property read reads, a getter of the program's may answer it, each caller's instance settling it (#2109) | Given | `src/lower/generic_facts.rs may_be_any_type` |
 //! | whether each parameter a type names, of the body that made it, is another body's own, by index and name, so what its drop runs is asked in that body's env, where a caller's `SIZE` isn't and rustc crashes (#1608) | Instances | `src/lower/generic_facts.rs params_owned_by` |
 //! | whether what a `Box<I>` holds is stepped by a dictionary its caller gives, which may carry the crate's own `fold` or `count` std's `Box<I>` never calls, so no default passes on to it (#1611) | Given | `src/lower/generic_facts.rs boxed_steps_given` |
 //! | whether a clone of it is its caller's, which may run any code, so a `cycle()` of an array's items of it clones as std's `Cycle` does (#1630) | Given | `src/lower/generic_facts.rs clone_given_by_caller` |
@@ -646,7 +646,9 @@ pub(in crate::lower) fn type_parameter_count(ty: Ty<'_>, index: u32) -> usize {
 /// known: of generic code `pointer_may_keep` walks as its own, it may be
 /// the `&mut`'s pointee, or a reference or raw pointer to it (#1781); of a
 /// type `may_be_cell` asks whether a `dyn` may be, an impl of the `dyn`'s
-/// trait may hold of it (#1006).
+/// trait may hold of it (#1006); of what a property read reads, a getter
+/// of the program's may answer it, which each caller's instance settles,
+/// a body's summary keeping it till then (`cell_borrows`' `reads`, #2109).
 pub(in crate::lower) fn may_be_any_type(ty: Ty<'_>) -> bool {
     ty.has_param()
 }

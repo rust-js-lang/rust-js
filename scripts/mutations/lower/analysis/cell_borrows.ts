@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefCell`'s own `clone`, which holds it while what it holds clones, is taken to ask nothing, so a `Clone` that borrows it mutably runs on where Rust panics",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "        given.any\n            || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))\n            || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(tcx, body, args, held, drops))\n    }\n\n    /// Whether calling",
+    find: "        given.any\n            || given.cells.iter().any(|&theirs| asks(tcx, &self.closed, theirs, held))\n            || (given.bodies.iter()).any(|&(body, args)| self.runs_asks(recognition, body, args, held, drops))\n    }\n\n    /// Whether calling",
     replace: "        false\n    }\n\n    /// Whether calling",
     tests: ["test/corpus.test.ts", "-t", "^refcell_clone_borrows_itself.rs$"],
   },
@@ -152,8 +152,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a borrow held while a library's code runs is taken to run only what rust-js sees, so a consumer holds one of a cell the library borrows unchecked (ADR 0863)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "            Called::Any | Called::Unseen => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether a cell's own call",
-    replace: "            Called::Any => self.anything_asks(tcx, held),\n            Called::Unseen => false,\n        }\n    }\n\n    /// Whether a cell's own call",
+    find: "            Called::Any | Called::Unseen | Called::Read(_) => self.anything_asks(tcx, held),\n        }\n    }\n\n    /// Whether a cell's own call",
+    replace: "            Called::Any | Called::Read(_) => self.anything_asks(tcx, held),\n            Called::Unseen => false,\n        }\n    }\n\n    /// Whether a cell's own call",
     tests: ["test/crates.test.ts", "-t", "a library's RefCells are the values"],
   },
   {
@@ -326,7 +326,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a default's call of a trait of classes' method, of a `Self` not known, asks nothing of a borrow held across it, though one class's borrows its cell, which then doesn't panic as std's does (rd304)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "                (bodies.into_iter()).any(|(body, args)| self.runs_asks(tcx, body, Some(args), held, drops))\n",
+    find: "                (bodies.into_iter()).any(|(body, args)| self.runs_asks(recognition, body, Some(args), held, drops))\n",
     replace: "                bodies.is_empty()\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_field_held.rs$"],
   },
@@ -418,8 +418,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a call of what may be the crate's own code, an `F: Fn` argument's, is taken as code rust-js can't see while a guard is held after the call's arguments, so `log.borrow_mut().push(f())` where `f` borrows `log` never panics (#1669)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "            Called::Any => self.anything_asks(tcx, held),\n            // A cell's own call, and what it runs by its bounds,\n",
-    replace: "            Called::Any => false,\n            // A cell's own call, and what it runs by its bounds,\n",
+    find: "            Called::Any | Called::Read(_) => self.anything_asks(tcx, held),\n            // A cell's own call, and what it runs by its bounds,\n",
+    replace: "            Called::Any | Called::Read(_) => false,\n            // A cell's own call, and what it runs by its bounds,\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_borrowed_by_a_generic_callback.rs$"],
   },
   {
@@ -482,5 +482,21 @@ export const mutations: Mutation[] = [
     find: "    infcx.predicate_may_hold(&obligation)\n}\n",
     replace: "    let _ = infcx.predicate_may_hold(&obligation);\n    true\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^ref_cell_of_a_dyn_tail_beside_a_ref_cell_of_a_dyn.rs$"],
+  },
+  {
+    name: "generic-read-unkept",
+    breaks: "a property read of a type parameter's value is dropped from its body's summary, so a heap of a JS caller's tasks reads `sortIndex` plainly under its queue's borrow (#2109)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        Called::Read(ty) => _ = found.own.reads.insert(ty),\n",
+    replace: "        Called::Read(_) => {}\n",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "a task a JS caller gives"],
+  },
+  {
+    name: "generic-read-settled-plain",
+    breaks: "each instantiation settles a type parameter's property read as running nothing, so a heap of a JS caller's tasks reads `sortIndex` plainly under its queue's borrow (#2109)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "            false if reads(ty) => return None,\n",
+    replace: "            false if false => return None,\n",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "a task a JS caller gives"],
   },
 ];

@@ -2,9 +2,11 @@
 
 Status: Accepted (2026-11-18, the user's decision: fix, not accept; #2106).
 Amended 2026-11-18 (#2110): a variable is at hand only where every write
-of it is.
+of it is. Amended 2026-11-18 (#2109): of the program's own structs, as
+`fn_pointers.rs` says JS may make or give them, and of a type parameter's
+value, as each caller's instantiation says.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
-whose Consequence it narrows to #2109's case, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
+whose Consequence it narrows to ADR 0262's difference 60, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
 
 ## Context
@@ -26,14 +28,31 @@ whose getters are none of the program's (`cell_borrows/runs_nothing.rs`,
 collection kept, it's counted, as any call that may run the program's code
 is.
 
-Of a JS object's type (`Recognition::is_js_object`), that is: a read of
-what isn't one, the program's own Rust struct cast to a JS value,
-`js::get(js::unknown(&**chunk), "reason")`, or a type parameter's, the
-scheduler heap's `get sortIndex` of `T: Node`, still runs nothing, as
-before (`read_of` traces the receiver through borrows, derefs and casts).
-A JS caller may forge such a struct with a getter where an exported
-function takes one: #2109 (P1) is that case, and #2108 a collection's
-elements the program made, which the first needs.
+Which values may meet a getter of the program's is `read_may_run`'s,
+of the type read (`read_of` traces the receiver through borrows, derefs
+and casts to a JS value, then `Box`, `Rc` and `Arc`):
+
+- A JS object's type (`Recognition::is_js_object`).
+- The program's own struct where JS may make or give a value of it, as
+  `fn_pointers.rs`, its one owner, says (`js_may_make`, `js_may_give`,
+  ADR 1022): `js::get(js::unknown(chunk), "reason")` of the `&Chunk` an
+  exported function takes, which the crate never builds, is counted
+  (#2109). One only the crate constructs, which JS gives back as the crate
+  gave it, is plain data, ADR 0262's difference 60 (Tu, 2026-11-15): its
+  read runs nothing, as of the Flight server's `ReactPromise`, whose
+  `then` JS calls, or the scheduler's `Task`, which `cancelCallback`
+  takes. A getter JS adds to one, or an object of its own in its place,
+  isn't seen; difference 60 says JS mustn't.
+- A type parameter's, the scheduler heap's `get sortIndex` of `T: Node`:
+  its caller's to settle, as a drop of one is. `called` gives it as
+  `Called::Read(ty)`, the body's summary keeps it in `reads`, and each
+  instantiation (`instantiated`) settles it by `read_may_run`: a heap of
+  `Rc<Task>`s reads plainly, one of a JS caller's tasks is counted. Where
+  no instantiation says, it's counted.
+
+Nothing else, a `String`'s or a number's, has a getter of the program's.
+#2108, a collection's elements a builtin made, isn't needed for this; it's
+its own (P2).
 
 What a builtin made is `AtHand`'s, one crate-wide set of variables built
 to a fixed point over every body's THIR:
@@ -96,7 +115,11 @@ day, `firstDayOfWeek`, has no borrow check.
 - A borrow of a cell any such read is held across is counted in every body
   that borrows that cell, as the getter may re-enter any of them.
 - ADR 0580's Consequence and the guide's difference now name what's left,
-  #2109's.
+  difference 60's.
+- #2109 moves nothing: not the corpus, the snapshots nor React's port (the
+  Flight server's `ReactPromise` and the scheduler's `Task` are difference
+  60's), so neither its port change for `_serverReferenceCache` nor any
+  provenance of parameters or collections was needed.
 
 ## What holds it
 
@@ -112,3 +135,14 @@ Mutations `at-hand-of-any-variable`, `at-hand-of-any-capture`,
 `library-methods-create-unmarked`, and #2110's `at-hand-assignment-unread`,
 `at-hand-loan-unread`, `at-hand-mut-borrow-not-lending`,
 `at-hand-ref-mut-not-lending` and `at-hand-capture-assignment-unseen`.
+#2109's rows: the program's own `Chunk` a JS caller gives, cast to a JS
+value, keeps the check, its getter that notes again throwing as Rust's
+panic; one the crate constructs reads plainly; a generic heap of tasks the
+crate constructs reads `sortIndex` plainly under its queue's borrow, one of
+a JS caller's tasks keeps the check, its re-entering getter throwing.
+Mutations `struct-js-reach-ignored`, `struct-crate-built-counted`,
+`rc-not-peeled`, `generic-read-not-deferred`, `generic-read-unkept` and
+`generic-read-settled-plain`; `cast-to-js-value-not-traced` moved to the
+crate-built row; `impls-ask-nothing`, `unseen-never`,
+`class-trait-call-asks-nothing` and `any-call-asks-nothing-seen`
+re-anchored, caught.

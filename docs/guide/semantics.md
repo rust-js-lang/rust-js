@@ -835,14 +835,15 @@ prints or changes; only a load that can't make it first refuses it.
 
 Differences:
 
-- **A JS getter of a forged Rust struct isn't seen while a cell is
-  borrowed:** a property read of a JS object counts as code that may call
-  back unless a builtin made the object ([1173](../decisions/1173-a-property-read-runs-nothing-only-of-what-a-builtin-made.md)),
-  but one of the program's own struct, cast to a JS value or read through
-  a type parameter, still runs nothing, though a JS caller may hand over
-  an object of that type with a getter where an exported function takes
-  one. A borrow such a getter makes of a held cell passes, where Rust's
-  would panic (#2109).
+- **A JS getter of a struct only the crate constructs isn't seen while a
+  cell is borrowed:** a property read of a JS object, or of the program's
+  own struct JS may make or give, counts as code that may call back unless
+  a builtin made the object ([1173](../decisions/1173-a-property-read-runs-nothing-only-of-what-a-builtin-made.md),
+  #2106, #2109), a type parameter's as each caller's instantiation says;
+  one of a struct only the crate constructs is plain data, which JS gives
+  back as the crate gave it (60). An object of its own JS hands over in its
+  place, with a getter that borrows a held cell, passes, where Rust's
+  borrow would panic.
 
 What's refused is in [the limitations](limitations.md).
 
@@ -2546,7 +2547,8 @@ React and JSX are [their own pages](README.md#react).
     an object of its own nor one with a getter added; one JS can build, a
     `js::cast`'s, a binding's result or a WebIDL dictionary, is read anew
     (ADR 0262, the user's decision, 2026-11-15, #1950; [ADR 1022](../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
-    amended).
+    amended). So a property read of one runs none of the program's code,
+    though a cell is borrowed across it ([ADR 1173](../decisions/1173-a-property-read-runs-nothing-only-of-what-a-builtin-made.md), #2109).
 61. A parameter marked `none_undefined` whose body first gives it a
     literal default, `let width = width.unwrap_or(4.0);`, is the JS
     parameter `width = 4`, which JS applies to `undefined` alone: `null`,

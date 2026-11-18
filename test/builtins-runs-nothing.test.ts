@@ -191,12 +191,13 @@ impl Seen {
   expect(lib.Seen.note(seen, new Intl.Locale("en-GB"))).toBe(1);
 });
 
-// Of the program's own Rust struct, cast to a JS value, a property read
-// still runs nothing (#2109's case: a JS caller may forge one with a getter
-// where an exported function takes one); of a JS value a caller gave, it's
-// counted (#2106).
-test("a read of the program's own struct, cast to a JS value, is plain until #2109", async () => {
-  const { js, lib } = await compiled("runs-nothing-own-struct", `use std::cell::RefCell;
+// Of the program's own struct, cast to a JS value, a property read is
+// counted where JS may give one (#2109): an exported function takes it and
+// the crate never builds one, so a JS caller's object, whose getter may
+// call back, is what it reads. Of a struct only the crate constructs, which
+// JS gives back as the crate gave it, it runs nothing (ADR 0262's
+// difference 60).
+const chunked = (built: string) => `use std::cell::RefCell;
 
 pub struct Chunk {
     pub reason: String,
@@ -204,14 +205,15 @@ pub struct Chunk {
 
 // SAFETY: a struct of the program's is a JS object, never \`undefined\`.
 unsafe impl js::Defined for Chunk {}
-
+${built}
+#[derive(Default)]
 pub struct Seen {
     notes: RefCell<Vec<f64>>,
 }
 
 impl Seen {
     pub fn new() -> Seen {
-        Seen { notes: RefCell::new(Vec::new()) }
+        Seen::default()
     }
 
     pub fn note(&self, chunk: &Chunk) -> usize {
@@ -222,9 +224,90 @@ impl Seen {
         notes.len()
     }
 }
-`);
+`;
+
+test("a read of the program's own struct a JS caller gives, cast to a JS value, keeps its borrow checked", async () => {
+  const { js, lib } = await compiled("runs-nothing-own-struct", chunked(""));
+  expect(js).toContain("$borrowMut");
+  const seen = lib.Seen.new();
+  expect(lib.Seen.note(seen, { reason: "x" })).toBe(1);
+  // A getter that notes again meets the held borrow, as Rust's would.
+  const forged = {
+    get reason() {
+      return lib.Seen.note(seen, { reason: "y" });
+    },
+  };
+  expect(() => lib.Seen.note(seen, forged)).toThrow(/already/);
+});
+
+test("a read of a struct only the crate constructs, cast to a JS value, is plain", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-built-struct",
+    chunked(`
+pub fn chunk(reason: String) -> Chunk {
+    Chunk { reason }
+}
+`),
+  );
   expect(js).not.toContain("$borrowMut");
-  expect(lib.Seen.note(lib.Seen.new(), { reason: "x" })).toBe(1);
+  expect(lib.Seen.note(lib.Seen.new(), lib.chunk("x"))).toBe(1);
+});
+
+// A property read of a type parameter's value is its caller's to settle
+// (#2109), as a drop of one is: a heap of tasks only the crate constructs
+// reads `sortIndex` plainly under its queue's borrow; one of tasks a JS
+// caller gives keeps the check.
+const heap = (task: string, schedule: string) => `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub trait Node {
+    #[cfg_attr(rust_js, rust_js::link_name = "get sortIndex")]
+    fn sort_index(&self) -> f64 {
+        unreachable!()
+    }
+}
+
+pub struct Task {
+    pub sort_index: f64,
+}
+
+// SAFETY: a struct of the program's is a JS object, never \`undefined\`.
+unsafe impl js::Defined for Task {}
+
+impl Node for Rc<Task> {}
+
+fn smallest<T: Node>(heap: &[T]) -> f64 {
+    heap.iter().map(|node| node.sort_index()).fold(f64::INFINITY, f64::min)
+}
+
+thread_local! {
+    static QUEUE: RefCell<Vec<Rc<Task>>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn schedule(${schedule}) -> f64 {
+    QUEUE.with_borrow_mut(|queue| {
+        queue.push(${task});
+        smallest(queue)
+    })
+}
+`;
+
+test("a generic read of a task only the crate constructs is plain", async () => {
+  const { js, lib } = await compiled("runs-nothing-generic-built", heap("Rc::new(Task { sort_index })", "sort_index: f64"));
+  expect(js).not.toContain("$withBorrowMut");
+  expect([lib.schedule(3), lib.schedule(1), lib.schedule(2)]).toEqual([3, 1, 1]);
+});
+
+test("a generic read of a task a JS caller gives keeps its borrow checked", async () => {
+  const { js, lib } = await compiled("runs-nothing-generic-given", heap("task", "task: Rc<Task>"));
+  expect(js).toContain("$withBorrowMut");
+  expect(lib.schedule({ sortIndex: 3 })).toBe(3);
+  const forged = {
+    get sortIndex() {
+      return lib.schedule({ sortIndex: 1 });
+    },
+  };
+  expect(() => lib.schedule(forged)).toThrow(/already/);
 });
 
 test("a read of a JS value a caller gave, under a guard, keeps its borrow checked", async () => {

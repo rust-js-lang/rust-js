@@ -477,7 +477,10 @@ react.dev's TopNav passes the same closure instead.
   `const sibling = node.sibling;`, as upstream writes it. JS gives such a
   value back as the crate gave it; **a JS caller must not give an object
   of its own in its place, nor add a getter to one**, which would be read
-  where Rust reads it once, `undefined` where Rust's value is `Some`.
+  where Rust reads it once, `undefined` where Rust's value is `Some`. And
+  a property read of one runs none of the program's code, a cell borrowed
+  across it unchecked, as of plain data (ADR 1173, #2109): a getter JS adds
+  that borrows that cell passes where Rust's borrow panics.
   Listed in the guide's differences (`semantics.md`, 60).
 - **A value outside a parameter's declared type has no guaranteed
   meaning**, the second case's, which the user decided (Tu, 2026-11-18,
