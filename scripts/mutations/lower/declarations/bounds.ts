@@ -30,4 +30,12 @@ export const mutations: Mutation[] = [
     replace: "                let given: usize = 0;\n",
     tests: bounds,
   },
+  {
+    name: "type-map-record-key-erased",
+    breaks: "a record's reason field is widened to string and the record loses its generic parameter",
+    file: "src/lower/declarations/bounds.rs",
+    find: " || fields > 0 && is_type_map(tcx, bound)",
+    replace: "",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "written event aliases"],
+  },
 ];

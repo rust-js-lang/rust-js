@@ -1081,4 +1081,12 @@ export const mutations: Mutation[] = [
     replace: "            ) if let Some(boundary) = super::iterators::boundary::of_opaque(tcx, *alias).filter(|_| false) => {\n",
     tests: ["test/declarations-iterators.test.ts"],
   },
+  {
+    name: "generic-type-default-resolved",
+    breaks: "a written default type alias is expanded to its underlying Rust type",
+    file: "src/lower/declarations.rs",
+    find: "                    declared[\"default\"] = self.as_written(written, |out| out.ts(default));",
+    replace: "                    declared[\"default\"] = self.ts(default);",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "written event aliases"],
+  },
 ];
