@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-18: the map binding regression checks strict undefined comparisons and the behavior of missing, null, and object values in native Map and WeakMap.
+
 Changed on 2026-11-18: the constructor binding regression checks direct JavaScript construction from a property read, getter order, and TypeError for invalid targets.
 
 Changed on 2026-11-18: the argument regression checks JavaScript default syntax, arity, null, undefined, and fallbacks that read later arguments or have effects.

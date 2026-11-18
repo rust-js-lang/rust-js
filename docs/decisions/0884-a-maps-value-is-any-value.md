@@ -273,3 +273,13 @@ too, entries made before, and a held `get`; mutations
 (`mir/calls.ts`) and `any-value-declared-null` (`declarations.ts`). No
 corpus case: a value of any shape is the js crate's, which native Rust
 doesn't run; the test compares with upstream's JS.
+
+## Amendment: a native map read has an undefined missing value
+
+A native `Map` or `WeakMap` returns `undefined` for a key it lacks.
+Their `get` bindings declare that result with `none_undefined`, so a
+read of a non-optional value tests absence with `=== undefined`.
+A nested `Option` still uses the existing rules above for values that
+can themselves be undefined. This follows ADR 0262's first case.
+The regression in `test/js-collections.test.ts` covers both constructors
+and checks a missing key, a JavaScript null, and a stored object.

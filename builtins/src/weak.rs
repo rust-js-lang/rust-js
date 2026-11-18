@@ -30,11 +30,13 @@ pub struct WeakMap<K: WeakKey + ?Sized, V>(PhantomData<JsObject>, PhantomData<(*
 
 impl<K: WeakKey + ?Sized, V> WeakMap<K, V> {
     /// [`map.get(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WeakMap/get):
-    /// its value of `key`, `None` of a key it doesn't have; of an `Option`,
+    /// its value of `key`, `None` of a key it doesn't have, which JS gives as
+    /// `undefined`; of an `Option`,
     /// `Some(None)` of a key whose value is `None`, as a [`Map`]'s.
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn get(&self, key: &K) -> Option<V> {
         unreachable!()
     }
@@ -114,7 +116,8 @@ impl<K: WeakKey + ?Sized, V> core::ops::Deref for Map<K, V> {
 
 impl<K: ?Sized, V> Map<K, V> {
     /// [`map.get(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Map/get):
-    /// its value of `key`, `None` of a key it doesn't have. Of a value
+    /// its value of `key`, `None` of a key it doesn't have, which JS gives as
+    /// `undefined`. Of a value
     /// that may be `undefined` or `null`, an `Option`, `Some(None)` of a key
     /// whose value is `None`, apart from `None` of a key it lacks, as
     /// `map.has(key)` tells, where JS's `get` alone gives `undefined` of
@@ -122,6 +125,7 @@ impl<K: ?Sized, V> Map<K, V> {
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     #[cfg_attr(rust_js, rust_js::keeps_in_collection)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn get(&self, key: &K) -> Option<V> {
         unreachable!()
     }
