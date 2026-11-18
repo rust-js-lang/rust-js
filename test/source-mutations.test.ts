@@ -5,6 +5,7 @@ import { bunTest, fixture } from "./support";
 import {
   makeSourceWorkspace,
   markSourceLoad,
+  ofBindingsCrate,
   sourceWasLoaded,
 } from "../scripts/source-mutations";
 import { existsSync } from "node:fs";
@@ -193,4 +194,38 @@ test("a workspace worker failure rejects and removes its partial source tree", a
   await expect(executeSource(example)).rejects.toThrow(/ENOENT/);
   expect(existsSync(join(example.work,"sources","owner-value-control"))).toBe(false);
   expect(readFileSync(join(example.root,"owner.js"),"utf8")).toContain("value = 1");
+});
+
+// The bindings crates' Rust is compiled, not loaded: a test builds the
+// crates of its workspace's files as it starts (`buildReact`), so its
+// mutant is judged by its tests with no mark of its load, and one whose
+// tests don't build them is inconclusive, never a survivor (#2105).
+// Here the test reads the workspace's `lib.rs` as `buildReact` compiles it,
+// which a JS mark of its load, never Rust, would break.
+const bindingsMutation: Mutation = {
+  name: "bindings-value",
+  breaks: "wrong bound name",
+  file: "builtins/src/lib.rs",
+  find: '"replaceAll"',
+  replace: '"replace"',
+  tests: ["test/owner.test.ts"],
+};
+const builtTest =
+  'import {test, expect} from "bun:test"; import {readFileSync} from "node:fs"; const buildReact = () => readFileSync(import.meta.dir + "/../builtins/src/lib.rs", "utf8"); test("bound", () => { const rust = buildReact(); expect(rust).not.toContain("appendFileSync"); expect(rust).toContain(\'"replaceAll"\'); });';
+
+function bindingsSource(name: string, testSource: string) {
+  const example = exampleSource(name, testSource);
+  mkdirSync(join(example.root, "builtins", "src"), { recursive: true });
+  writeFileSync(join(example.root, "builtins", "src", "lib.rs"), '#[link_name = "replaceAll"]\npub fn replace_all() {}\n');
+  return { ...example, files: [...example.files, "builtins/src/lib.rs"] };
+}
+
+test("a mutant of the bindings crates' Rust is judged by the tests that build them, and inconclusive where none does", async () => {
+  expect([ofBindingsCrate("builtins/src/lib.rs"), ofBindingsCrate("webapi/src/a.rs"), ofBindingsCrate("builtins/build.sh"), ofBindingsCrate("src/lower.rs")]).toEqual([true, true, false, false]);
+  const caught = bindingsSource("source-mutation-bindings", builtTest);
+  expect((await executeSource(caught, bindingsMutation)).result).toBe("caught");
+  const unbuilt = bindingsSource("source-mutation-bindings-unbuilt", builtTest.replaceAll("buildReact", "read"));
+  expect((await executeSource(unbuilt, bindingsMutation)).result).toBe(
+    "INCONCLUSIVE: test/owner.test.ts doesn't build the bindings crates (`buildReact`), so the mutant of builtins/src/lib.rs is never compiled",
+  );
 });

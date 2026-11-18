@@ -1205,3 +1205,24 @@ named tests stopped reaching it, took a second whole-corpus run by hand
 not a test that ran out of time, and not a `(fail)` quoted in a failed
 test's diff. Mutations `catching-test-timed-out-counted` and
 `catching-test-without-its-file`.
+
+## Amendment: a mutant of the bindings crates' Rust is compiled by its tests (2026-11-18, #2105)
+
+A mutation of `builtins/src/*.rs`, the js crate's handwritten Rust, isn't
+the compiler's: it took the source mutations' path (#1848), whose proof
+that the mutant ran is a JS mark of its load appended to its file, and
+that path threw "source load proof is not supported for
+builtins/src/lib.rs", ending the whole run. `string-replace-all-is-first-only`
+(#2089) did, so every run that held it, a nightly's shard or a push
+changing that file, ended there.
+
+The bindings crates' Rust (builtins/src, webapi/src and react/src) is
+compiled, not loaded: each test that reads them builds them of its
+workspace's files into its own target as it starts, `buildReact`, whose
+inputs they are. So their mutant is written as it is, with no mark, and
+judged by its tests in its workspace as any source mutant is, its control
+first; the proof it was compiled is that each test file it names builds
+the crates (`unbuiltBy`), and one that doesn't is INCONCLUSIVE, never a
+survivor. `string-replace-all-is-first-only` is caught by its test, in
+about two minutes here. Mutations `source-bindings-unbuilt-judged` and
+`source-bindings-marked` are caught.

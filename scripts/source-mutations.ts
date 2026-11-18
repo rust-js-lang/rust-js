@@ -52,6 +52,26 @@ export function sourceWasLoaded(marker: string, name: string): boolean {
   );
 }
 
+/** The bindings crates' handwritten Rust, the js, webapi and react crates'
+ * sources, which a test compiles into its own target as it starts, of its
+ * workspace's files, by `buildReact` (test/support.ts), whose inputs they
+ * are (#2105). */
+const bindingsSources = ["builtins/src/", "webapi/src/", "react/src/"];
+
+/** Whether `file` is the bindings crates' Rust (`bindingsSources`): a
+ * mutant of it is compiled, not loaded, so no mark of its load is written
+ * in it; it's proved compiled as each of its tests builds the crates. */
+export function ofBindingsCrate(file: string): boolean {
+  return file.endsWith(".rs") && bindingsSources.some((dir) => file.startsWith(dir));
+}
+
+/** Of `tests`, a mutation's, as `root` holds them, each test file that
+ * doesn't build the bindings crates (`buildReact`), where a mutant of their
+ * Rust would never be compiled, its tests passing whatever it is. */
+export function unbuiltBy(root: string, tests: string[]): string[] {
+  return tests.filter((arg) => /^test\/.*\.test\.tsx?$/.test(arg) && !readFileSync(join(root, arg), "utf8").includes("buildReact"));
+}
+
 export type SourceRun = {
   passed: boolean;
   ran: number;
@@ -81,12 +101,23 @@ export async function sourceMutation(
   tests: number;
   bytes: number;
 }> {
-  if (!/\.(m?[jt]s|[jt]sx)$/.test(mutation.file))
+  // The bindings crates' Rust, compiled where a test builds them (#2105).
+  const compiled = ofBindingsCrate(mutation.file);
+  if (!compiled && !/\.(m?[jt]s|[jt]sx)$/.test(mutation.file))
     throw new Error(`source load proof is not supported for ${mutation.file}`);
   let build = 0,
     tests = 0,
     peak = 0;
   let output = "";
+  const unbuilt = compiled ? unbuiltBy(root, mutation.tests ?? []) : [];
+  if (compiled && unbuilt.length > 0)
+    return {
+      result: `INCONCLUSIVE: ${unbuilt.join(", ")} doesn't build the bindings crates (\`buildReact\`), so the mutant of ${mutation.file} is never compiled`,
+      output,
+      build,
+      tests,
+      bytes: 0,
+    };
   for (const changed of [false, true]) {
     const workspace = join(
       work,
@@ -105,7 +136,7 @@ export async function sourceMutation(
         if (typeof mutated !== "string") throw new Error(mutated.problem);
         source = mutated;
       }
-      writeFileSync(owner, markSourceLoad(source, marker, mutation.name));
+      writeFileSync(owner, compiled ? source : markSourceLoad(source, marker, mutation.name));
       const env = {
         RUST_JS_TYPESCRIPT: resolve(workspace, "typescript/index.js"),
       };
@@ -128,7 +159,7 @@ export async function sourceMutation(
       const tested = await test(workspace, env);
       tests += (performance.now() - testing) / 1000;
       output += tested.output;
-      if (!sourceWasLoaded(marker, mutation.name))
+      if (!compiled && !sourceWasLoaded(marker, mutation.name))
         return {
           result: "INCONCLUSIVE: mutated source was not executed",
           output,
