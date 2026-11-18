@@ -107,6 +107,14 @@ export const CREATES: Record<string, Creates> = {
     spec: "ECMA-402 Intl.Locale.prototype.maximize: Construct(%Intl.Locale%, maximal) of its [[Locale]]",
     proof: "test/builtins-runs-nothing.test.ts",
   },
+  "Intl.Locale.prototype.getTextInfo": {
+    spec: "Intl Locale Info, Intl.Locale.prototype.getTextInfo: OrdinaryObjectCreate(%Object.prototype%) of its direction",
+    proof: "test/at-hand-returns.test.ts",
+  },
+  "Intl.Locale.prototype.getWeekInfo": {
+    spec: "Intl Locale Info, Intl.Locale.prototype.getWeekInfo: OrdinaryObjectCreate(%Object.prototype%) of its first day, weekend and minimal days",
+    proof: "test/at-hand-returns.test.ts",
+  },
   "Intl.Locale.prototype.minimize": {
     spec: "ECMA-402 Intl.Locale.prototype.minimize: Construct(%Intl.Locale%, minimal) of its [[Locale]]",
     proof: "test/builtins-runs-nothing.test.ts",

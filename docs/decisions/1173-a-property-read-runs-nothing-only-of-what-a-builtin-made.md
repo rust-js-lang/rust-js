@@ -11,6 +11,8 @@ Amended 2026-11-19 (#2118): lowering's `Known::RunsNothing` asks it too.
 Amended 2026-11-19 (#2114): what a thread-local the crate alone reaches
 holds, and a local cell its closures share, every write of it at hand, is
 at hand read back.
+Amended 2026-11-19 (#2116): what a function returns, and what passes a
+value on, at hand where what it's made of is.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 whose Consequence it narrows to ADR 0262's difference 60, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
@@ -171,6 +173,26 @@ is at hand is; an `Rc`'s and a guard's `Deref` pass it on. React's noop
 renderer's `suspenseyThingCache` is back to its form before #2111. A
 struct's field, the lanes' `transitionLanes`, isn't a slot (#2108's).
 
+### What a function returns, and what passes a value on (#2116)
+
+A call of a function only calls reach (`only_called`, ADR 0577, the one
+owner of whose callers are all known) is at hand where the function's
+every value is, its body's and each `return`'s (`AtHand::returns`, a least
+fixed point as the closures'). What passes a value on is at hand where what
+it's made of is: `catch_unwind(f)`'s, of `f`'s value; an `Option`'s or a
+`Result`'s `unwrap_or(v)` and `or(v)`, of the value and `v`, and
+`unwrap_or_else(f)` and `or_else(f)`, of the value and what `f` makes. And
+`value.method?.()` (`js::optional_call`) of a method that creates its
+result, of a receiver at hand: `Intl.Locale.prototype.getWeekInfo` and
+`getTextInfo` create theirs, a fresh object at each call (Intl Locale
+Info's `OrdinaryObjectCreate`), in `CREATES`. A property of an object a
+builtin made isn't the builtin's value in general, the program or a JS
+caller may have stored its own on it, so the vercel-ui SDK's
+`locale.week_info`, its legacy `weekInfo` read through a cast, isn't at
+hand: its memo keeps its check, a listed port difference (the lead's
+decision, 2026-11-19; a fact a program could declare of such a field is
+the user's question).
+
 ## Why
 
 ADR 0262's third case: where a getter calls back, the results change. A
@@ -281,3 +303,11 @@ plainly; handed to a function, or given a JS caller's map, it keeps the
 check. Mutations `local-cell-writes-unread`, `local-cell-reads-unknown`,
 `local-cell-unaccounted-use-admitted` and `local-cell-clones-unseen`,
 caught.
+#2116's rows (test/at-hand-returns.test.ts): a locale a private function
+makes and returns, one `catch_unwind` gives or its fallback, and the week
+info a made locale's `getWeekInfo?.()` makes, read plainly under a memo's
+borrow; one a function also used as a value returns, one a function may
+return of a JS caller's, and a JS caller's fallback keep the check.
+Mutations `returns-unread`, `returns-each-return-unasked`,
+`returns-callers-unasked`, `catch-unwind-unread`, `fallback-unasked` and
+`week-info-not-creating`, caught.

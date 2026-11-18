@@ -50,6 +50,9 @@ pub(in crate::lower) struct AtHand {
     /// The crate's thread-locals whose value is at hand, which its
     /// contract says of them (`ItemFact::AtHand`).
     keys: IndexSet<DefId>,
+    /// The functions only calls reach (`only_called`) whose value, their
+    /// body's and each `return`'s, is at hand (#2116): a call of one is.
+    returns: IndexSet<DefId>,
 }
 
 /// The combinators whose closure is given the payload of what they're of.
@@ -114,6 +117,14 @@ impl AtHand {
             .filter(|body| tcx.is_closure_like(body.def_id))
             .filter_map(|body| Some((body.def_id, &body.thir, body.root()?)))
             .collect();
+        // Each function only calls reach, by its body: what it gives is
+        // what its callers get, `only_called`'s, the one owner of whose
+        // callers are known (ADR 0577).
+        let only_called = (crate::lower::session::caches(tcx).only_called.get().cloned()).unwrap_or_default();
+        let functions: Vec<(DefId, &Thir<'tcx>, ExprId)> = (whole.iter())
+            .filter(|body| only_called.contains_key(&body.def_id))
+            .filter_map(|body| Some((body.def_id, &body.thir, body.root()?)))
+            .collect();
         let bind = |pattern: &Pat<'tcx>, found: &mut Vec<LocalVarId>| {
             pattern.walk_always(|p| {
                 if let PatKind::Binding { var, .. } = p.kind {
@@ -157,7 +168,21 @@ impl AtHand {
                 }
             }
             // A closure whose value is at hand; a slot every write of which is.
-            let grown = at_hand.closures.len() + at_hand.slots.len() + at_hand.cells.len();
+            let grown = at_hand.closures.len() + at_hand.slots.len() + at_hand.cells.len() + at_hand.returns.len();
+            for &(function, thir, root) in &functions {
+                let returns = |e: &rustc_middle::thir::Expr<'tcx>| match e.kind {
+                    ExprKind::Return { value: Some(value) } => Some(value),
+                    _ => None,
+                };
+                if !at_hand.returns.contains(&function)
+                    && at_hand.holds(&in_body(thir), thir, root)
+                    && (thir.exprs.iter())
+                        .filter_map(returns)
+                        .all(|value| at_hand.holds(&in_body(thir), thir, value))
+                {
+                    at_hand.returns.insert(function);
+                }
+            }
             for &(closure, thir, root) in &roots {
                 if !at_hand.closures.contains(&closure) && at_hand.holds(&in_body(thir), thir, root) {
                     at_hand.closures.insert(closure);
@@ -178,7 +203,8 @@ impl AtHand {
                     at_hand.cells.extend(group.members.iter().copied());
                 }
             }
-            let grown = at_hand.closures.len() + at_hand.slots.len() + at_hand.cells.len() != grown;
+            let grown =
+                at_hand.closures.len() + at_hand.slots.len() + at_hand.cells.len() + at_hand.returns.len() != grown;
             // A thread-local whose initializer makes what's at hand.
             for &(key, thir, root) in &inits {
                 if !at_hand.keys.contains(&key) && at_hand.holds(&in_body(thir), thir, root) {
@@ -365,6 +391,23 @@ impl AtHand {
                 Some((callee, _)) if is_binding(tcx, callee) && matches!(js_form(tcx, callee), JsForm::This) => {
                     args.first().is_some_and(|&of| self.holds(recognition, thir, of))
                 }
+                // `value.method?.()` of a method that creates its result, of a
+                // receiver at hand: what it makes (#2116).
+                Some((callee, generic_args))
+                    if is_binding(tcx, callee)
+                        && matches!(js_form(tcx, callee), JsForm::OptionalCall { unchecked: false }) =>
+                {
+                    let method = generic_args.types().next().and_then(|path| match path.kind() {
+                        rustc_middle::ty::Tuple(path) => path.iter().find_map(crate::lower::fn_def),
+                        _ => None,
+                    });
+                    let receiver = args.first().and_then(|&path| match &thir[crate::lower::body_queries::strip(thir, path)].kind {
+                        ExprKind::Tuple { fields } => fields.first().copied(),
+                        _ => None,
+                    });
+                    method.is_some_and(|(method, _)| is_binding(tcx, method) && creates(tcx, method))
+                        && receiver.is_some_and(|receiver| self.holds(recognition, thir, receiver))
+                }
                 Some((callee, _)) if is_binding(tcx, callee) => {
                     matches!(js_form(tcx, callee), JsForm::New(_) | JsForm::Null) || creates(tcx, callee)
                 }
@@ -414,6 +457,29 @@ impl AtHand {
                             ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } if self.cells.contains(&id))) =>
                 {
                     true
+                }
+                // A call of a function every value of which is at hand (#2116).
+                Some((callee, _)) if self.returns.contains(&callee) => true,
+                // What `catch_unwind` gives where its closure returns: its value.
+                Some((callee, _))
+                    if recognition.is_std(callee) && matches!(tcx.item_name(callee).as_str(), "catch_unwind") =>
+                {
+                    args.first().is_some_and(|&made| self.makes_at_hand(recognition, thir, made))
+                }
+                // An `Option`'s or a `Result`'s value, or else its fallback,
+                // each at hand: `unwrap_or(v)`, `or_else(|| ..)`.
+                Some((callee, _))
+                    if args.first().is_some_and(|&of| {
+                        let of = thir[of].ty.peel_refs();
+                        recognition.is_lang_adt(of, LangItem::Option) || recognition.is_std_type(of, StdItem::Result)
+                    }) && matches!(tcx.item_name(callee).as_str(), "or" | "unwrap_or" | "or_else" | "unwrap_or_else") =>
+                {
+                    let [of, fallback] = &args[..] else { return false };
+                    self.holds(recognition, thir, *of)
+                        && match matches!(tcx.item_name(callee).as_str(), "or" | "unwrap_or") {
+                            true => self.holds(recognition, thir, *fallback),
+                            false => self.makes_at_hand(recognition, thir, *fallback),
+                        }
                 }
                 Some((callee, _)) => {
                     matches!(

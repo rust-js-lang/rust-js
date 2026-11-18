@@ -1420,6 +1420,7 @@ impl Locale {
     /// [`locale.getTextInfo()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo).
     #[cfg_attr(rust_js, rust_js::link_name = "getTextInfo")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn get_text_info(&self) -> TextInfo {
         unreachable!()
     }
@@ -1435,6 +1436,7 @@ impl Locale {
     /// [`locale.getWeekInfo()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getWeekInfo).
     #[cfg_attr(rust_js, rust_js::link_name = "getWeekInfo")]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    #[cfg_attr(rust_js, rust_js::creates)]
     pub fn get_week_info(&self) -> WeekInfo {
         unreachable!()
     }
