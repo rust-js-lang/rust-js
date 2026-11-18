@@ -737,6 +737,23 @@ pub fn removed(has_entry: bool, remove: fn() -> f64) -> Option<f64> {
 pub fn passed(value: Option<f64>) -> Option<f64> {
     value
 }
+
+fn zero() -> f64 {
+    0.0
+}
+
+fn twelve() -> f64 {
+    12.0
+}
+
+// The crate's own callers read the written null as None too.
+pub fn missing(has_entry: bool) -> bool {
+    removed(has_entry, zero).is_none()
+}
+
+pub fn removed_or(has_entry: bool) -> f64 {
+    removed(has_entry, twelve).unwrap_or(-1.0)
+}
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
   const output = readFileSync(join(dir, "lib.js"), "utf8");
@@ -748,4 +765,6 @@ pub fn passed(value: Option<f64>) -> Option<f64> {
   expect(lib.removed(true, () => 0)).toBeUndefined();
   expect(lib.removed(true, () => 12)).toBe(12);
   expect(lib.passed(null)).toBeUndefined();
+  expect([lib.missing(false), lib.missing(true)]).toEqual([true, true]);
+  expect([lib.removedOr(false), lib.removedOr(true)]).toEqual([-1, 12]);
 });
