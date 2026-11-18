@@ -465,4 +465,12 @@ export const mutations: Mutation[] = [
     replace: "            let options = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_fn_pointer_of_an_instance_given_options)\\.rs$"],
   },
+  {
+    name: "static-es-class-in-impl-module",
+    breaks: "a fieldless ES class is emitted beside its impl, while its declaration and re-export point to the struct's module",
+    file: "src/lower.rs",
+    find: "classes::class_of(tcx, def_id).and_then(|class| classes::implicit_constructor_home(tcx, class))",
+    replace: "classes::class_of(tcx, def_id).and_then(|_| None)",
+    tests: ["test/es-classes.test.ts", "-t", "implicit constructor lives with its struct"],
+  },
 ];
