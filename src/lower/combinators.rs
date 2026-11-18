@@ -898,14 +898,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Some(self.call_with(values.remove(0), Vec::new(), Role::Fallback, out))
             }
-            Comb::OrElse => Some(match tys[1].kind() {
-                ty::FnDef(def, _)
-                    if matches!(super::bindings::js_form(self.tcx, *def), super::bindings::JsForm::Null) =>
-                {
-                    Expr::null()
-                }
-                _ => self.call_with(values.remove(0), Vec::new(), Role::Fallback, out),
-            }),
+            // Of `js::null`, its call is `null` (`JsForm::Null`): `value ?? null`.
+            Comb::OrElse => Some(self.call_with(values.remove(0), Vec::new(), Role::Fallback, out)),
             Comb::Or if !values[0].has_effects() => Some(values.remove(0)),
             _ => None,
         };

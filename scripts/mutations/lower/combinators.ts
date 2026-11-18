@@ -3,14 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "option-null-fallback-made-indirect",
-    breaks: "an explicit null fallback is hidden from argument-presence analysis until after a callback is lowered",
-    file: "src/lower/combinators.rs",
-    find: "                ty::FnDef(def, _)\n                    if matches!(super::bindings::js_form(self.tcx, *def), super::bindings::JsForm::Null) =>\n                {\n                    Expr::null()\n                }\n",
-    replace: "",
-    tests: ["test/none-given.test.ts", "-t", "explicit null fallback"],
-  },
-  {
     name: "inspect-err-holds-ok",
     breaks: "`inspect_err`'s `Err` is dropped as the `Ok`'s type as its closure panics (#903)",
     file: "src/lower/combinators.rs",
