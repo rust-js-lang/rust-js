@@ -380,11 +380,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "adapter-of-it-a-holder",
-    breaks: "generic code's adapter of an iterator, `Take<Cycle<I>>`, whose item is `I::Item`, is taken for a holder, so the cycle it takes is held, `$held($cycleOf(..)).take(n)` (#1270)",
+    breaks: "generic code's iterator, what `IntoIterator::into_iter` of a parameter gives, whose item is `I::Item`, is taken for a holder, so it's held, `$held(IIntoIterator.intoIter(i))` (#1270)",
     file: "src/lower/mir/drops.rs",
     find: "                && (!self.recognition().may_hold_by_bounds(made, iterator) || compiled(made, at))",
     replace: "                && (!self.implements_iterator(made) || compiled(made, at))",
-    tests: ["test/corpus.test.ts", "-t", "^(cycled_iterators|held_cycle)\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_drops|option_insert_given_drops)\\.rs$"],
     snapshots: true,
   },
   {

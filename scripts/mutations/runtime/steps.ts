@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "    return $skipping(this, n);\n",
     replace: "    return Iterator.prototype.drop.call(this, n);\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_first_nth_panics.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_last_and_nth_passed_on|consumer_drops_what_is_left)\\.rs$"],
   },
   {
     name: "ends-after-not-on-unwind",
