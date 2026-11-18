@@ -169,7 +169,8 @@ where
     G: Given + 'static,
     C: js::Boolean + js::DefaultsTo<js::True>,
 {
-    if !cancelable.is_none_or(js::boolean) {
+    let cancelable = cancelable.map(js::boolean).unwrap_or(true);
+    if !cancelable {
         return unsafe {
             js::cast(Some(js::unknown_of(Committed {
                 given: js::Spread::new(given),

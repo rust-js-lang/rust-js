@@ -1234,13 +1234,16 @@ fn expr(e: &mut Expr) {
                 }
             }
             objects::spread_written_out(props, layout);
-            // Where one field is a method, each is (ADR 0882, amended).
-            let beside = props.iter().any(|prop| method(prop, false).is_some());
-            for prop in props.iter_mut() {
-                if let Some(method) = method(prop, beside)
-                    && passes::applies(Pass::Methods)
-                {
-                    *prop = method;
+            // A spread builds a data record whose closures keep their source form.
+            if !props.iter().any(|prop| matches!(prop, Prop::Spread(_))) {
+                // Where one field is a method, each is (ADR 0882, amended).
+                let beside = props.iter().any(|prop| method(prop, false).is_some());
+                for prop in props.iter_mut() {
+                    if let Some(method) = method(prop, beside)
+                        && passes::applies(Pass::Methods)
+                    {
+                        *prop = method;
+                    }
                 }
             }
         }

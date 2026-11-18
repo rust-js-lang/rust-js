@@ -38,12 +38,8 @@ function typeChecked(dir: string, file: string): string[] {
 test("createDetails' JS is upstream's body, of its three arguments", () => {
   const dir = compiled();
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // The getter and the spread are upstream's; `cancel` is a method where
-  // upstream writes an arrow property, which only `String(cancel)` tells
-  // (#1931); and `!(cancelable == null || cancelable)` is upstream's
-  // `!cancelable` of its default `cancelable = true` (#1910).
-  expect(js).toContain(`export function createDetails(given, source, cancelable) {
-  if (!(cancelable == null || cancelable)) {
+  expect(js).toContain(`export function createDetails(given, source, cancelable = true) {
+  if (!cancelable) {
     return {
       ...given,
       source,
@@ -53,7 +49,7 @@ test("createDetails' JS is upstream's body, of its three arguments", () => {
   return {
     ...given,
     source,
-    cancel() {
+    cancel: () => {
       canceled = true;
     },
     get canceled() {
@@ -74,15 +70,12 @@ test("createDetails runs Codex's contract as upstream's does", async () => {
   const rows = contract(ours);
   expect(rows.length).toBeGreaterThan(20);
   expect(rows).toEqual(contract(theirs));
-  // Upstream's default is of an omitted or `undefined` argument alone: its
-  // `null`, which both declarations refuse, makes a commit, where ours,
-  // whose body tests `== null`, makes a change (#1910).
+  // The default handles omission and undefined. Explicit null makes a commit.
   const cancels = (create: Factory) => Object.hasOwn(create({ reason: "press" }, "mouse", null as never), "cancel");
-  expect([cancels(ours), cancels(theirs)]).toEqual([true, false]);
-  // `cancel` is a method of ours, upstream's an arrow (#1931): neither has a
-  // prototype, nor reads `this`.
-  const [method, arrow] = [ours, theirs].map((create) => create({ reason: "press" }, "mouse").cancel as () => void);
-  expect([String(method).startsWith("cancel()"), String(arrow).startsWith("() =>"), "prototype" in method!, "prototype" in arrow!]).toEqual([true, true, false, false]);
+  expect([cancels(ours), cancels(theirs)]).toEqual([false, false]);
+  expect(ours.length).toBe(theirs.length);
+  const [candidate, reference] = [ours, theirs].map((create) => create({ reason: "press" }, "mouse").cancel as () => void);
+  expect([String(candidate).startsWith("() =>"), String(reference).startsWith("() =>"), "prototype" in candidate!, "prototype" in reference!]).toEqual([true, true, false, false]);
 });
 
 test("createDetails' declarations are Codex's type contract", () => {
