@@ -1166,6 +1166,14 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                 self.found
                     .coerced(tcx, results.expr_ty_adjusted(inner), results.expr_ty(expr))
             }
+            // A tuple or unit struct's constructor, called or given as a
+            // function, builds one as a literal does (#2115).
+            hir::ExprKind::Path(ref qpath)
+                if let Res::Def(DefKind::Ctor(rustc_hir::def::CtorOf::Struct, _), ctor) =
+                    results.qpath_res(qpath, expr.hir_id) =>
+            {
+                self.found.built.insert(tcx.parent(ctor));
+            }
             // A library's static or constant.
             hir::ExprKind::Path(ref qpath) => {
                 if let Res::Def(DefKind::Static { .. } | DefKind::Const | DefKind::AssocConst, id) =

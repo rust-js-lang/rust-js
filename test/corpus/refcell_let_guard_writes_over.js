@@ -53,7 +53,10 @@ function main() {
   $unborrow(v);
   let borrow;
   try {
-    borrow = $borrow(cell, true);
+    if (cell.borrows < 0) {
+      $alreadyMutablyBorrowed();
+    }
+    borrow = cell;
   } catch (error) {
     $cleanup(() => {
       if (p[0].borrows) {
@@ -71,7 +74,6 @@ function main() {
     tmp = p[0];
   } catch (error) {
     $cleanup(() => {
-      $unborrow(borrow);
       if (p[0].borrows) {
         $alreadyBorrowed();
       }
@@ -80,7 +82,6 @@ function main() {
     throw error;
   }
   console.log(`${borrow.length} ${tmp.length}`);
-  $unborrow(borrow);
   if (p[0].borrows) {
     $alreadyBorrowed();
   }

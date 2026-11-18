@@ -704,3 +704,77 @@ pub fn action(value: &js::Unknown) -> usize {
   expect(lib.action({ action: "go" })).toBe(2);
 });
 
+
+// A tuple struct's constructor builds one as a literal does (#2115):
+// `Chunk(reason)`, or `Chunk` given as a function, is the crate's own
+// construction, so a field read of one is plain (ADR 0262's difference 60);
+// one JS alone gives, cast from its value, keeps the read counted.
+const tupled = (note: string, built: string) =>
+  fielded(note, built).replace("pub struct Chunk {\n    pub reason: String,\n}", "pub struct Chunk(pub String);");
+
+const noteTupled = `    pub fn note(&self, chunk: &Chunk) -> usize {
+        let mut notes = self.notes.borrow_mut();
+        if !chunk.0.is_empty() {
+            notes.push(1.0);
+        }
+        notes.len()
+    }`;
+
+test("a field read of a tuple struct its constructor builds is plain", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-field-tuple-built",
+    tupled(
+      noteTupled,
+      `
+pub fn chunk(reason: String) -> Chunk {
+    Chunk(reason)
+}
+`,
+    ),
+  );
+  expect(js).not.toContain("$borrowMut");
+  expect(lib.Seen.note(lib.Seen.new(), lib.chunk("x"))).toBe(1);
+});
+
+test("a field read of a tuple struct its constructor, given as a function, builds is plain", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-field-tuple-mapped",
+    tupled(
+      noteTupled,
+      `
+pub fn chunk(reason: String) -> Chunk {
+    Some(reason).map(Chunk).unwrap()
+}
+`,
+    ),
+  );
+  expect(js).not.toContain("$borrowMut");
+  expect(lib.Seen.note(lib.Seen.new(), lib.chunk("x"))).toBe(1);
+});
+
+test("a field read of a tuple struct only a JS caller gives keeps its borrow checked", async () => {
+  const { js, lib } = await compiled(
+    "runs-nothing-field-tuple-given",
+    tupled(
+      `    pub fn note(&self, value: &js::Unknown) -> usize {
+        // SAFETY: the caller gives a chunk.
+        let chunk: &Chunk = unsafe { js::cast(Some(value)) };
+        let mut notes = self.notes.borrow_mut();
+        if !chunk.0.is_empty() {
+            notes.push(1.0);
+        }
+        notes.len()
+    }`,
+      "",
+    ),
+  );
+  expect(js).toContain("$borrowMut");
+  const seen = lib.Seen.new();
+  const forged = {
+    get 0() {
+      lib.Seen.note(seen, ["y"]);
+      return "x";
+    },
+  };
+  expect(() => lib.Seen.note(seen, forged)).toThrow(/already/);
+});

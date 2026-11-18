@@ -637,4 +637,12 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
   },
+  {
+    name: "constructor-not-building",
+    breaks: "a tuple struct's constructor isn't taken to build it, so a field read of one the crate builds as `Chunk(reason)` is counted as JS's may be (#2115)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                self.found.built.insert(tcx.parent(ctor));\n",
+    replace: "                let _ = ctor;\n",
+    tests: ["test/builtins-runs-nothing.test.ts", "-t", "tuple struct its constructor"],
+  },
 ];

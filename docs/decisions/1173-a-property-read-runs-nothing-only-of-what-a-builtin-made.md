@@ -13,6 +13,8 @@ holds, and a local cell its closures share, every write of it at hand, is
 at hand read back.
 Amended 2026-11-19 (#2116): what a function returns, and what passes a
 value on, at hand where what it's made of is.
+Amended 2026-11-19 (#2115): a tuple or unit struct's constructor
+builds it, as a literal does.
 Amends [0580](0580-a-call-asks-of-a-cell-only-what-it-may-borrow.md),
 whose Consequence it narrows to ADR 0262's difference 60, and [0867](0867-a-binding-that-runs-nothing-and-aggregate-error.md);
 adds `#[rust_js::creates]`.
@@ -193,6 +195,22 @@ hand: its memo keeps its check, a listed port difference (the lead's
 decision, 2026-11-19; a fact a program could declare of such a field is
 the user's question).
 
+### A struct its constructor builds (#2115)
+
+ADR 0262's difference 60 takes a struct only the crate constructs as
+plain data, `read_may_run`'s answer for it `false`. What the crate
+constructs, `FnPointers::built`, was only its literals', `Chunk { reason }`:
+a tuple struct made by its constructor, `Log(1)`, or the constructor given
+as a function, `.map(Log)`, a path to its `Ctor`, wasn't, so where JS may
+make any struct (`js_made.any`), its field reads were taken as JS's
+property reads, which a getter may answer, and counted. 10 corpus cases
+(`cell_taken_default_first`'s `Log` among them, which rustc's own lint
+says is "never constructed" for the same reason) and React's Fizz
+server's `request.trackedPostpones` came back to their forms before #2111,
+byte for byte. The issue's guess, that what rust-js's runtime gives back
+(a `Debug` formatter's value) made such a struct one JS may give, wasn't
+the cause: nothing reaches `js_given` there.
+
 ## Why
 
 ADR 0262's third case: where a getter calls back, the results change. A
@@ -311,3 +329,7 @@ return of a JS caller's, and a JS caller's fallback keep the check.
 Mutations `returns-unread`, `returns-each-return-unasked`,
 `returns-callers-unasked`, `catch-unwind-unread`, `fallback-unasked` and
 `week-info-not-creating`, caught.
+#2115's rows (test/builtins-runs-nothing.test.ts): a field read of a tuple
+struct its constructor builds, and one its constructor given as a function
+builds, plain; of one only a JS caller gives, counted, and a getter
+re-entering it panics. Mutation `constructor-not-building`, caught.

@@ -486,7 +486,11 @@ react.dev's TopNav passes the same closure instead.
   where Rust reads it once, `undefined` where Rust's value is `Some`. And
   a property read of one runs none of the program's code, a cell borrowed
   across it unchecked, as of plain data (ADR 1173, #2109): a getter JS adds
-  that borrows that cell passes where Rust's borrow panics.
+  that borrows that cell passes where Rust's borrow panics. The crate
+  constructs a struct with a literal, `Chunk { reason }`, and with its
+  constructor, a tuple or unit struct's, called, `Log(1)`, or given as a
+  function, `.map(Log)` (#2115): which is the same construction, a
+  clarification of the decision, not a widening of it.
   Listed in the guide's differences (`semantics.md`, 60).
 - **A value outside a parameter's declared type has no guaranteed
   meaning**, the second case's, which the user decided (Tu, 2026-11-18,
