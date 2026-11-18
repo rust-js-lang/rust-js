@@ -22,7 +22,10 @@
 //             combination). Rebased and checked so until it lands, no limit
 //   react     the React port at its pin (`react-in-rust.ts regen`), of a
 //             change to what compiles it (`touchesPort`), refused on any
-//             difference: a change the port takes moves the pin in this push
+//             difference: a change the port takes moves the pin in this push.
+//             It runs beside the round's check, started before it, its
+//             output in target/push-react.log: the phase is what's left of
+//             it once the check ends
 //   files     `git diff origin/main` holds only the pushed commits' files
 //   push      `git push origin HEAD:main`, once `origin/main` is where the
 //             check saw it: where it moved meanwhile, the branch is rebased and
@@ -40,8 +43,8 @@
 // `all (<why>)`, `some (N files, M cases)` or `none` and the map's commit and
 // how far behind it is (scripts/select.ts); the machine and agent each
 // machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
-import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { selectionFile } from "./select";
 import { devTimes, ownsTimes } from "./devTimes";
 import { touchesPort } from "./iteratorSlice";
@@ -79,7 +82,7 @@ const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
 
 class Refused extends Error {}
 
-function main() {
+async function main() {
   const bless = process.argv.includes("--bless-readability");
   const started = performance.now();
   const timed: [string, number][] = [];
@@ -102,8 +105,11 @@ function main() {
     written = true;
     devTimes("push", { started, phases: timed, selection, ok, note });
   };
+  // The round's React regen, where one runs beside its check.
+  let regen: Beside | undefined;
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
     process.on(signal, () => {
+      regen?.stop();
       note = `stopped by ${signal}`;
       writeLine();
       process.exit(1);
@@ -136,6 +142,15 @@ function main() {
         // of a change that isn't code goes straight on.
         const changed = lines(git("diff", "--name-only", "origin/main").out);
         const name = checked === "" ? "check" : "sanity";
+        // The React gate, beside the check: neither reads what the other
+        // writes, and the regen, 35 s a round on the Mac mini after a rebase
+        // that moved the compiler, ran after it. Beside `check:fast --all`
+        // it took 56 s and the check 262 s for 260 alone: 297 s one after
+        // the other, 262 s at once.
+        const incoming = reactBase === undefined ? undefined : lines(git("diff", "--name-only", reactBase, base).out);
+        const gate = reactGate(changed, incoming);
+        if (gate === "reused") console.log("push: the React port as the round before: the rebase's commits touch none of what compiles it");
+        if (gate === "run") regen = beside(["bun", "scripts/react-in-rust.ts", "regen"], reactLog);
         const code = changed.some((file) => /\.(rs|ts|tsx|js|jsx|mjs|cjs)$/.test(file));
         // CI's map of the nearest commit of `main` it recorded, where it's
         // nearer than the machine's (scripts/testMap.ts's `fetchMap`).
@@ -157,12 +172,11 @@ function main() {
         if (fetched.startsWith("no map fetched")) selection += ` [${fetched}]`;
         console.log(`push: selected ${selection}`);
         phase(name);
-        const incoming = reactBase === undefined ? undefined : lines(git("diff", "--name-only", reactBase, base).out);
-        const gate = reactGate(changed, incoming);
-        if (gate === "reused") console.log("push: the React port as the round before: the rebase's commits touch none of what compiles it");
-        if (gate === "run") {
-          if (sh(["bun", "scripts/react-in-rust.ts", "regen"]).code !== 0) {
-            throw new Refused("the React port differs at its pin (target/react-in-rust.diff): regenerate the port and move ports/react-in-rust.pin in this push");
+        if (regen !== undefined) {
+          const code = await regen.done;
+          regen = undefined;
+          if (code !== 0) {
+            throw new Refused(`the React port differs at its pin (target/react-in-rust.diff; its run's output in ${reactLog}): regenerate the port and move ports/react-in-rust.pin in this push`);
           }
           reactBase = base;
         }
@@ -199,9 +213,29 @@ function main() {
     note = e instanceof Refused ? e.message.split("\n")[0] : String(e).split("\n")[0];
     console.error(`push: not pushed: ${e instanceof Error ? e.message : e}`);
   } finally {
+    // A check that failed leaves no regen running past the push.
+    regen?.stop();
     writeLine();
   }
   process.exit(ok ? 0 : 1);
+}
+
+/** Where the React regen beside a round's check writes what it prints. */
+const reactLog = "target/push-react.log";
+
+/** A command run beside another, what it prints written to `log`: its
+ * exit code once it ends, and a way to stop it. */
+type Beside = { done: Promise<number>; stop: () => void };
+function beside(cmd: string[], log: string): Beside {
+  mkdirSync("target", { recursive: true });
+  const out = openSync(log, "w");
+  const child = spawn(cmd[0]!, cmd.slice(1), { stdio: ["ignore", out, out] });
+  closeSync(out);
+  const done = new Promise<number>((resolve) => {
+    child.on("error", () => resolve(1));
+    child.on("close", (code) => resolve(code ?? 1));
+  });
+  return { done, stop: () => child.kill() };
 }
 
 /** A command of a phase, its output shown; refused where it fails. */
@@ -357,4 +391,4 @@ function regenerate(file: string) {
   git("commit", "-q", "--amend", "--no-edit");
 }
 
-if (import.meta.main) main();
+if (import.meta.main) await main();
