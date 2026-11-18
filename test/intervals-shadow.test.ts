@@ -20,7 +20,28 @@ function shadowOf(source: string): string[] {
   writeFileSync(log, "");
   const out = runSync([compiler, "--intervals-shadow", log, input, "-o", join(dir, "case.js"), "--", "--edition=2024"], dir, 60_000);
   expect(out.code, out.stderr).toBe(0);
-  return readFileSync(log, "utf8").split("\n").filter(Boolean).map((line) => line.split("\t").slice(0, 2).join(" "));
+  return readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("proved-")).map((line) => line.split("\t").slice(0, 2).join(" "));
+}
+
+// The effects query's shadow (#2112 B, step 2): of each corpus case named,
+// each fact the walk's forgetting rules forget at a write that the query
+// would keep, its `effects-keeps` lines, a write the query can't see. Not
+// one the rules forget where a borrow is made, `assign ref mut`, which
+// writes nothing: the query forgets it at the write the borrow makes.
+function keptByTheQuery(names: string[]): string[] {
+  const dir = fixture("effects-shadow");
+  return names.flatMap((name) => {
+    const log = join(dir, `${name}.txt`);
+    writeFileSync(log, "");
+    const out = runSync([compiler, "--intervals-shadow", log, join(root, "test/corpus", name), "-o", join(dir, `${name}.js`)], dir, 120_000);
+    expect(out.code, out.stderr).toBe(0);
+    return readFileSync(log, "utf8")
+      .split("\n")
+      .filter((line) => line.startsWith("effects-keeps\t"))
+      .filter((line) => !/\tassign (ref|raw)/.test(line))
+      .map((line) => line.split("\t"))
+      .map(([, owner, , , what]) => `${name}: ${owner} at ${what}`);
+  });
 }
 
 test("an array's index in a loop to its length is proved by MIR's intervals", () => {
@@ -948,3 +969,28 @@ pub fn main() {
 }
 `)).toEqual(["proved-call-bounds find"]);
 });
+
+// What the forgetting rules forget at a write, the effects query forgets
+// too (#2112 B): a write through a raw pointer a closure or a call keeps,
+// one through a static's pointer, std's `NonNull` of one, a `RefMut`'s
+// `truncate`, `*guard = ..` and `remove`, a cell a parameter's field
+// holds that a call of the crate's may change, each `Vec` a call keeps
+// lent past it, a `Box`'s cell a closure clears. Each of #2112's C3
+// shapes whose rules were each a P0. The one fact kept: `Rc::clone` of
+// another `Rc`, which changes no cell, where the rules forget every
+// cell at a call that doesn't read one.
+test("the effects query keeps nothing the forgetting rules forget at a write", () => {
+  expect([
+    ...new Set(keptByTheQuery([
+      "raw_pointer_written_after_its_owner_reads.rs",
+      "vec_lent_to_code_that_keeps_a_pointer.rs",
+      "vec_lent_through_a_dyn_to_code_that_keeps_a_pointer.rs",
+      "table_rows_resized_unseen.rs",
+      "refcell_drained_in_a_loop.rs",
+      "split_collected_is_never_empty.rs",
+      "refcell_guard_bounds.rs",
+      "inner_while_exit_in_catch.rs",
+      "rc_refcell_bounds.rs",
+    ])),
+  ]).toEqual(["rc_refcell_bounds.rs: reassigned at call std::clone::Clone::clone"]);
+}, 600_000);

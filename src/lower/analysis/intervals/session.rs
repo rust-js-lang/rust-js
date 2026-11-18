@@ -175,6 +175,14 @@ pub(in crate::lower) fn shadow_check(
     shadow.borrow_mut().lines.insert(line);
 }
 
+/// A line of the effects query's shadow (`shadowed`), where the session
+/// records the shadow.
+pub(super) fn record_effects(tcx: TyCtxt<'_>, line: String) {
+    if let Some(shadow) = &crate::lower::session::caches(tcx).intervals_shadow {
+        shadow.borrow_mut().lines.insert(line);
+    }
+}
+
 /// Each check MIR's intervals prove, a line each,
 /// `proved-<kind><TAB>function<TAB>where`: what `--intervals-shadow` writes.
 pub(crate) fn shadow_report(tcx: TyCtxt<'_>) -> String {

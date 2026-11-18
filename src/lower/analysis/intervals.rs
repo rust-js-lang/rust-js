@@ -33,6 +33,8 @@ use std::collections::BTreeSet;
 
 mod arithmetic;
 mod called_on;
+mod shadowed;
+pub(in crate::lower) use called_on::carries_code;
 mod callers;
 mod calls;
 mod captures;
@@ -140,6 +142,9 @@ struct Walk<'a, 'tcx> {
     /// The crate's libraries, which `pointer_may_keep` asks, where the
     /// walk lowers a body; none of a walk for what callers give (#1947).
     libraries: Option<Libraries<'a, 'tcx>>,
+    /// What each statement may write, where the session records the
+    /// shadow: the query the rules are compared with (`shadowed`).
+    effects: Option<crate::lower::analysis::Effects>,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -163,6 +168,12 @@ fn proofs<'a, 'tcx>(
 ) -> Proofs {
     let mut walk = walk(tcx, typing_env, body, given);
     walk.libraries = libraries;
+    if crate::lower::session::caches(tcx).intervals_shadow.is_some() {
+        let made = body.local_decls.len();
+        walk.effects = Some(crate::lower::analysis::Effects::of(
+            tcx, typing_env, &walk.body, libraries, made,
+        ));
+    }
     walk.run()
 }
 
@@ -225,6 +236,7 @@ fn walk<'a, 'tcx>(
         kept_rows,
         formats_code,
         libraries: None,
+        effects: None,
     }
 }
 
@@ -281,6 +293,9 @@ fn facts<'tcx>(
 impl<'tcx> Walk<'_, 'tcx> {
     fn run(&self) -> Proofs {
         let entry = self.entries();
+        if let Some(effects) = &self.effects {
+            self.shadow_effects(effects, &entry);
+        }
         self.proved(&entry)
     }
 

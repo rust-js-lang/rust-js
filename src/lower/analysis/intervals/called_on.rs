@@ -431,7 +431,7 @@ impl State {
 /// parameter; and, where the body's formatting may run code
 /// (`formats_code`), std's `fmt::Arguments` and `Argument`, which hide
 /// the `Display` impls they're made of.
-fn carries_code<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, formats_code: bool) -> bool {
+pub(in crate::lower) fn carries_code<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, formats_code: bool) -> bool {
     ty.walk().any(|part| {
         part.as_type().is_some_and(|t| match *t.kind() {
             _ if is_type_parameter(t) => true,

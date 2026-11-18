@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "effects-closure-keeps-nothing",
+    breaks:
+      "a closure given a call keeps none of what it captures, so `&mut w as *mut _` stored by `take()` doesn't escape and `clear_it()` keeps `w`'s length (#1977)",
+    file: "src/lower/pointers/keeps.rs",
+    find: "                closure_may_keep(tcx, typing_env, libraries, (closure, closure_args), upvar)\n",
+    replace: "                false\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "keeps nothing the forgetting rules forget"],
+  },
+  {
     name: "pointer-kept-closures-unwalked",
     breaks: "a closure a body holds isn't looked into, so `kept_by_std_given_a_closure`'s, which std's `for_each` runs and which keeps the `&mut` it captures, keeps none, and its caller's box copied back misses the pointer's write (#1781)",
     file: "src/lower/pointers/keeps.rs",

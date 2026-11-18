@@ -20,7 +20,7 @@ impl Interval {
 }
 
 /// A comparison a `bool` local holds: `a op b`.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) struct Comparison {
     pub(super) op: BinOp,
     pub(super) a: Value,
@@ -45,7 +45,7 @@ impl Comparison {
 }
 
 /// What a comparison compares: a local or a constant.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) enum Value {
     Local(Local),
     Constant(i128),
@@ -57,7 +57,7 @@ pub(super) enum Value {
 
 /// What a relation's greater side is: a slice's length, by the local the
 /// slice is (`Len`), or an integer local.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub(super) enum Term {
     Len(Local),
     Int(Local),
@@ -156,7 +156,7 @@ pub(super) struct State {
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
 /// start is at least, and its end, which never changes while it's known.
 /// Each value its `next()` gives is at least the one and below the other.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) struct Ranged {
     pub(super) held: Held,
     pub(super) least: i128,
@@ -164,7 +164,7 @@ pub(super) struct Ranged {
 }
 
 /// What a range's values are bounded by.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) enum End {
     /// `a..b`: each value below `b`.
     Below(Value),
@@ -190,7 +190,7 @@ impl End {
 
 /// What holds a range: a local, the range; a `&mut` of it, lent to its
 /// `next()`; or what `next()` gave.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub(super) enum Held {
     Range,
     Lent,

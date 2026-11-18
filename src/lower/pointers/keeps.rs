@@ -57,6 +57,49 @@ pub(in crate::lower) fn pointer_may_keep<'tcx>(
     may_keep(tcx, typing_env, libraries, Start::Call(call), given, None)
 }
 
+/// Whether a call of `call` that may run code not std's may keep, past
+/// it, a pointer an argument of type `given` holds (#2112 B, what
+/// `analysis::Effects` asks): a closure, or a `&mut` of one, what its
+/// code keeps of each `&mut` it captures (`closure_may_keep`), and of
+/// what else it captures, any that may write
+/// (`holds_a_writing_pointer`); and the call keeps the closure, as
+/// `pointer_may_keep` says, never std's. Of another, std's keeps none but
+/// a `dyn`'s, whose code can't be seen; the crate's and a library's a
+/// `&mut` as `pointer_may_keep` says, and anything else, may.
+pub(in crate::lower) fn argument_may_keep<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    libraries: &Libraries<'_, 'tcx>,
+    call: (DefId, ty::GenericArgsRef<'tcx>),
+    given: Ty<'tcx>,
+    holds_a_writing_pointer: &dyn Fn(Ty<'tcx>) -> bool,
+) -> bool {
+    let std = crate::lower::recognition::is_std_crate(tcx, call.0);
+    let inner = match *given.kind() {
+        ty::Ref(_, to, _) => to,
+        _ => given,
+    };
+    if let ty::Closure(closure, closure_args) = *inner.kind() {
+        let kept_by_closure = (closure_args.as_closure().upvar_tys().iter()).any(|upvar| match *upvar.kind() {
+            ty::Ref(_, _, ty::Mutability::Mut) => {
+                closure_may_keep(tcx, typing_env, libraries, (closure, closure_args), upvar)
+            }
+            _ => holds_a_writing_pointer(upvar),
+        });
+        let kept_by_call = !std
+            && match *given.kind() {
+                ty::Ref(_, _, ty::Mutability::Mut) => pointer_may_keep(tcx, typing_env, libraries, call, given),
+                _ => true,
+            };
+        return kept_by_closure || kept_by_call;
+    }
+    match *given.kind() {
+        _ if std => matches!(inner.kind(), ty::Dynamic(..)),
+        ty::Ref(_, _, ty::Mutability::Mut) => pointer_may_keep(tcx, typing_env, libraries, call, given),
+        _ => true,
+    }
+}
+
 /// `pointer_may_keep` of a call given a `&mut dyn Fn*`, `given`, whose
 /// code is known to be the closure `behind`: a call of it through what
 /// it's given runs that closure, which is walked as the rest is, where

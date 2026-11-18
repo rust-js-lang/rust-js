@@ -78,7 +78,7 @@ async function shadow(
         clearTimeout(timer);
         const lines = readFileSync(log, "utf8").split("\n").filter(Boolean);
         if (file.row) {
-          rows.set(file.row, lines.map(site).sort().join("\n"));
+          rows.set(file.row, lines.filter((l) => l.startsWith("proved-")).map(site).sort().join("\n"));
           continue;
         }
         for (const line of lines.filter((l) => l.startsWith("proved-"))) {
