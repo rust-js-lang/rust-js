@@ -177,6 +177,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let read = Operand::Copy(place);
         let operand = operand.unwrap_or(&read);
+        if operand.place().is_some_and(|read| {
+            self.krate
+                .nulled_params
+                .js_nones()
+                .holds_written_null(self.tcx, state.body, read)
+        }) {
+            return Ok(value);
+        }
         let value = self.value_expr(value, span)?;
         Ok(Value::Expr(self.one_none_given(state, operand, value)))
     }

@@ -1582,7 +1582,8 @@ export function given(manifest) {
   is declared `| null`, `name?: string | null | undefined`; every other
   is `?: T | undefined`
   ([ADR 0935](../../decisions/0935-js-null-is-null-where-its-written.md),
-  amended).
+  amended). A returned local also keeps its explicit `js::null()` when
+  it can only receive null from that explicit write.
 - **A `Some` of what looks like `None` is boxed**: `Some(None)`, `Some(())`
   or a generic `T` that's either, `{ $someNone: 0 }`, so it isn't
   `undefined` ([ADR 0051](../../decisions/0051-generic-options.md)). A
