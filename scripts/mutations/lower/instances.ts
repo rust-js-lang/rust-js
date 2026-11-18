@@ -3,24 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "copying-iterator-items-unasked",
-    breaks:
-      "a library's function whose iterator gives copies of what it borrows, `ps.iter().copied()`, isn't taken to copy what the crate changes, so the crate imports its JS, which shares them, and a copy it changes changes its source (#2014)",
-    file: "src/lower/instances.rs",
-    find: "(self.holds)(made) && given(false) || self.gives(made) && given(true)",
-    replace: "(self.holds)(made) && given(false)",
-    tests: ["test/cross-crate-copies.test.ts", "-t", "copies of what it borrows"],
-  },
-  {
-    name: "copying-std-borrows-unseen",
-    breaks:
-      "std's of a lifetime, an `Iter<'_, P>`, given to a call isn't a borrow, so `ps.iter().copied()` isn't taken to copy what it reads (#2014)",
-    file: "src/lower/instances.rs",
-    find: "                                                || lent\n",
-    replace: "                                                || false\n",
-    tests: ["test/cross-crate-copies.test.ts", "-t", "copies of what it borrows"],
-  },
-  {
     name: "closure-placed-by-its-root-alone",
     breaks: "a closure an instance makes of a function rustc inlined into it is looked up by its typeck root alone, `joined`, which no module holds: a panic (#1029)",
     file: "src/lower/instances.rs",
@@ -37,78 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates-compiled-here.test.ts", "-t", "inlined function is placed"],
   },
   {
-    name: "library-changed-unshared",
-    breaks:
-      "a library's exported function that copies what its consumer changes in place, which the library changes too, so its JS copies it, is compiled by the consumer, where it is imported, `Dep.firstNotch(notches)`; React's Flight client's `close`, refused as it reads its library's private state (rd606)",
-    file: "src/lower/instances.rs",
-    find: "                .filter(|&&ty| !self.recognition.foreign.changes(library, ty))\n",
-    replace: "                .filter(|_| true)\n",
-    tests: [
-      "test/crates-compiled-here.test.ts",
-      "-t",
-      "a library's generic function is its program's",
-    ],
-  },
-  {
-    name: "instance-constant-not-copied",
-    breaks:
-      "a library's function that reads its `const SHAPE`, a `Copy` enum its consumer changes in place, isn't taken to copy it, so changing what it gives changes the constant (ADR 0914, amended)",
-    file: "src/lower/instances.rs",
-    find: "                    mir::Operand::Constant(constant) => self.copies |= (self.holds)(constant.ty()),\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: copy_enum"],
-  },
-  {
-    name: "instance-box-read-copied",
-    breaks:
-      "optimized MIR's copy of a `Box` it reads through is taken for a copy of what it holds, and a consumer compiles the library's `grow` itself, `const Tree = { grow(tree) { .. } }`, which it needn't (ADR 0914, amended)",
-    file: "src/lower/instances.rs",
-    find: "                    mir::Operand::Copy(place) if copy(place.ty(&self.body.local_decls, tcx).ty) => {\n",
-    replace:
-      "                    mir::Operand::Copy(place) if { let _ = &copy; true } => {\n",
-    tests: ["test/crates-compiled-here.test.ts", "-t", "grows a library.s boxed tree"],
-  },
-  {
-    name: "instance-trait-call-unresolved",
-    breaks:
-      "a library function's call of its trait's method isn't resolved to the impl's that copies a `Spot`, so `first_of` is its library's and shares what it gives (ADR 0914, amended)",
-    file: "src/lower/instances.rs",
-    find: "                                .map_or(callee, |instance| instance.def_id()),\n",
-    replace: "                                .map_or(callee, |_| callee),\n",
-    tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
-  },
-  {
-    name: "binding-result-copies",
-    breaks:
-      "a library's function whose binding call gives a `Vec<String>` the crate pushes to, `js::object::keys(props)`, is taken to copy it, and compiled again in the crate, React's PerformanceTrack's own `addObjectToProperties`",
-    file: "src/lower/instances.rs",
-    find: "                        Some(callee) if super::bindings::is_binding(tcx, callee) => false,\n",
-    replace: "",
-    tests: [
-      "test/cross-crate-items.test.ts",
-      "-t",
-      "binding's Vec is imported",
-    ],
-  },
-  {
-    name: "concat-copies-its-array",
-    breaks:
-      "a library's function of a slice's `concat()` of `Option<&Unknown>`s, which the crate pushes a `Vec` of, is compiled again, React's addValueToProperties' 620 lines in the reconciler (ADR 0914, amended)",
-    file: "src/lower/instances.rs",
-    find: "ty::Adt(_, made) => made.types().next().is_some_and(|item| (self.holds)(item)),",
-    replace: "ty::Adt(..) => true,",
-    tests: ["test/cross-crate-items.test.ts", "-t", "of a concat is imported"],
-  },
-  {
-    name: "concat-items-unasked",
-    breaks:
-      "a library's function of a `concat()` of `Vec<u32>`s the crate pushes to is imported, its library's JS sharing the arrays it was given, which the crate's push then changes (ADR 0914, amended)",
-    file: "src/lower/instances.rs",
-    find: "ty::Adt(_, made) => made.types().next().is_some_and(|item| (self.holds)(item)),",
-    replace: "ty::Adt(_, made) => made.types().next().is_some_and(|_| false),",
-    tests: ["test/cross-crate-items.test.ts", "-t", "of a concat is imported"],
-  },
-  {
     name: "instance-closure-holds-its-makers-params",
     breaks:
       "a closure a library's generic function gives std holds each of its type parameters, though it captures none, so React DOM copies the reconciler's runWithFiberInDEV, whose `CURRENT.with_borrow(|current| current.clone())` gives std no `()`, with a JS label and drop flags (ADR 0914, amended, gap rd85)",
@@ -116,15 +26,6 @@ export const mutations: Mutation[] = [
     find: "                walk.skip_current_subtree();\n",
     replace: "                continue;\n",
     tests: ["test/crates.test.ts", "-t", "given what may look like None"],
-  },
-  {
-    name: "library-body-copies-asked-monomorphized",
-    breaks:
-      "what a library's generic function copies is asked with no parameters of its own, so a consumer of one whose `[i32; N]` it iterates crashes rustc, `cannot find N/#0 in param-env` (#454)",
-    file: "src/lower/instances.rs",
-    find: "            typing_env: ty::TypingEnv::post_analysis(tcx, body.source.def_id()),\n",
-    replace: "            typing_env: ty::TypingEnv::fully_monomorphized(),\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: const_generic"],
   },
   {
     name: "instance-impl-consts-unasked",
@@ -161,37 +62,6 @@ export const mutations: Mutation[] = [
     find: "            && crate::lower::bindings::takes_rest(tcx, f)\n",
     replace: "",
     tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
-  },
-  {
-    name: "copies-settled-alone",
-    breaks:
-      "of functions that call each other, only the last asked is settled with the first's answer: the first stays asked, and each asked of it after answers no copy, so `outer`, which calls `inner`, which calls it and one that copies, is the library's, sharing what Rust copies (#884)",
-    file: "src/lower/instances.rs",
-    find: "            let settled = self.asking.borrow_mut().drain(depth..).collect::<Vec<_>>();\n",
-    replace: "            let settled = self.asking.borrow_mut().pop().into_iter().collect::<Vec<_>>();\n",
-    tests: [
-      "test/crates-compiled-here.test.ts",
-      "-t",
-      "a library's generic function is its program's",
-    ],
-  },
-  {
-    name: "impl-defaults-unasked",
-    breaks:
-      "whether a library's impl copies what the crate changes asks only the methods it writes, not its trait's defaults its exported dictionary holds, so a generic default's clone of a `Vec` the crate changes is shared (#1023)",
-    file: "src/lower/instances.rs",
-    find: "                .chain(defaults_used(tcx, id))\n",
-    replace: "                .chain(defaults_used(tcx, id).filter(|_| false))\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
-  },
-  {
-    name: "derive-asked-as-its-library",
-    breaks:
-      "a library's derive a body calls, which rust-js writes in place of the caller's types, is asked generically as its library's code, so a `Holder<T>`'s clone where `T::Item` is a `Vec` the crate changes is shared (#1023)",
-    file: "src/lower/instances.rs",
-    find: "                        Some(callee) if self.recognition.foreign.is_library(callee.krate) && !derived(callee) => {\n",
-    replace: "                        Some(callee) if self.recognition.foreign.is_library(callee.krate) => {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
   {
     name: "rc-param-impl-method-resolved",
@@ -349,22 +219,6 @@ export const mutations: Mutation[] = [
       "-t",
       "^trait_method_given_by_its_callers.rs$"
     ]
-  },
-  {
-    name: "supertrait-impls-uncopied",
-    breaks: "a library's impl whose dictionary holds its supertrait's `Clone` is its library's, `pointDup.Clone()` cloning none, so the consumer's change of the clone `duped` makes changes the value too (#1927)",
-    file: "src/lower/instances.rs",
-    find: "                .chain(supertrait_impls(tcx, id))\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "cloning through a supertrait"],
-  },
-  {
-    name: "used-defaults-uncopied",
-    breaks: "a library's impl whose used default clones `Self` is its library's, `pointTwice.again` cloning none, so the consumer's change of `a.again()` changes `a` too (#1927)",
-    file: "src/lower/instances.rs",
-    find: "        if defaults_used(tcx, imp).next().is_none() {\n            return false;\n",
-    replace: "        if true || defaults_used(tcx, imp).next().is_none() {\n            return false;\n",
-    tests: ["test/crates.test.ts", "-t", "cloning through a supertrait"],
   },
   {
     name: "called-own-trait-impl-unmatched",

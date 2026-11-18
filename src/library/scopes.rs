@@ -122,6 +122,7 @@ pub(crate) enum ContractField {
     LibraryDictionaryConsts,
     LibraryDynsDropNothing,
     LibraryCountedRcs,
+    LibraryElided,
     LibraryChanged,
     LibraryMergesIdentities,
     LibraryBuilt,
@@ -494,10 +495,17 @@ impl ContractField {
                 ClosedWorld(Agree("counts each as it does (ADR 0852)")),
                 "what the `Rc`s it counts point at",
             ),
+            LibraryElided => (
+                "Library.elided",
+                ClosedWorld(CompileOwn(
+                    "compiles its own of a function or impl where one of its shapes may be a type it changes and the library doesn't (ADR 0914, amended; #2112's change D)",
+                )),
+                "what each of its functions and impls leaves copies of out",
+            ),
             LibraryChanged => (
                 "Library.changed",
-                ClosedWorld(CompileOwn(
-                    "compiles its own of a function where it may copy what the consumer changes and it doesn't (ADR 0914); and copies a library's type, a tuple, an array or a `Vec` where a library changes one, so all a crate's JS shares is changed by none (ADR 0100, amended, #1871)",
+                ClosedWorld(Agree(
+                    "copies a library's type, a tuple, an array or a `Vec` where a library changes one, so all a crate's JS shares is changed by none (ADR 0100, amended, #1871); what a library's functions leave copies of out is `Library.elided`'s",
                 )),
                 "what its code changes in place, which its JS copies where Rust copies",
             ),
@@ -639,6 +647,7 @@ fields! {
     reexported => LibraryReexported,
     modules => LibraryModules,
     counted_rcs => LibraryCountedRcs,
+    elided => LibraryElided,
     with_this_arguments => LibraryWithThisArguments,
     changed => LibraryChanged,
     ref_cells => LibraryRefCells,

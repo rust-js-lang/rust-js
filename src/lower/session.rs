@@ -75,6 +75,12 @@ pub(crate) struct Caches {
     /// The std functions a recogniser took, each once, in the order it
     /// first did, where the session records them (`--recognizers-found`).
     pub recognized: Option<RefCell<IndexSet<&'static str>>>,
+    /// Of a library being lowered, each function's copies its copy policy
+    /// left out, by the shape of the type each was of: what a type nothing
+    /// in its crate changes in place is copied by nowhere (ADR 0914). Its
+    /// contract says them, so a consumer that changes one compiles the
+    /// function itself (#2112's change D).
+    pub elided: RefCell<crate::collections::IndexMap<DefId, std::collections::BTreeSet<crate::library::RcShape>>>,
 }
 
 thread_local! {
@@ -208,6 +214,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
             intervals: RefCell::default(),
             recognized: flags.records_recognized.then(RefCell::default),
+            elided: RefCell::default(),
         }));
     });
     Session(())

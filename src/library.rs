@@ -127,7 +127,10 @@ pub use dependencies::Dependencies;
 /// (#2017): an older library, listing none, would be read as having none.
 /// 45: `AtHand`, a thread-local whose value a builtin made, never replaced,
 /// whose methods a consumer's call takes at their word (#2111).
-pub const VERSION: u32 = 45;
+/// 46: `elided`, the shapes of the types a function's JS leaves copies of
+/// out, its own and its callees' (#2112's change D): an older library,
+/// listing none, would be read as copying all it should.
+pub const VERSION: u32 = 46;
 
 /// What begins the name a library's JS exports its private state by, for
 /// its consumers' compiles of its functions, `$$LIMIT` of `LIMIT` (#2017,
@@ -618,6 +621,13 @@ pub struct Library {
     /// does. None where it counts none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub counted_rcs: Vec<RcShape>,
+    /// Of each function and trait impl its JS has, by key, the shapes of
+    /// the types whose copies its JS, or what of its crate's it calls,
+    /// leaves out, as nothing in its crate changes one in place (ADR 0914,
+    /// amended): a consumer that changes one compiles it itself (#2112's
+    /// change D, library ABI 46). None of one that leaves none out.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub elided: Vec<Elided>,
     /// The parameters' tuple of each `function::with_this` function it
     /// makes that reads `js::arguments()` (ADR 1048, amended, #553): a
     /// consumer's call of a `dyn Fn`, a generic one or a pointer, of one of
@@ -862,6 +872,14 @@ fn leaves_nothing_unended(streams: &[bool; 2]) -> bool {
     !streams[0] && !streams[1]
 }
 
+/// What a library's function or trait impl leaves copies of out, by its
+/// key: the shapes of their types (`Library::elided`).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Elided {
+    pub key: String,
+    pub shapes: Vec<RcShape>,
+}
+
 /// A type an `Rc` points at, as a library's contract names it (ADR 0852):
 /// what makes it, an item by its key or a primitive's name, and the types
 /// it's made of; `_`, no `of`, where it may be any type, a type
@@ -962,6 +980,9 @@ pub struct Exports {
     pub dyns_drop_nothing: IndexSet<String>,
     /// What the `Rc`s it counts point at (ADR 0852).
     pub counted_rcs: Vec<RcShape>,
+    /// What each of its functions and trait impls leaves copies of out, by
+    /// key (#2112's change D).
+    pub elided: IndexMap<String, Vec<RcShape>>,
     /// The parameters' tuples of its `function::with_this` functions that
     /// read `js::arguments()` (ADR 1048, amended, #553).
     pub with_this_arguments: Vec<RcShape>,
@@ -1084,6 +1105,7 @@ impl Exports {
             reexported,
             modules,
             counted_rcs,
+            elided,
             with_this_arguments,
             changed,
             ref_cells,
@@ -1131,6 +1153,9 @@ impl Exports {
             makes_dropping_fn_dyns,
             dictionary_consts: dictionary_consts.map(|keys| keys.into_iter().collect()),
             dyns_drop_nothing: dyns_drop_nothing.into_iter().collect(),
+            elided: (elided.into_iter())
+                .map(|Elided { key, shapes }| (key, shapes))
+                .collect(),
             counted_rcs,
             with_this_arguments,
             changed,

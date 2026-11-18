@@ -821,12 +821,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn contains_mutated(&self, ty: Ty<'tcx>) -> bool {
         // Each type once: a type met along two paths isn't walked twice. It
         // ends at a `Box`, which is `Other`, so no answer depends on another.
-        if let Some(&mutated) = self.walks().mutated.borrow().get(&ty) {
-            return mutated;
+        let cached = self.walks().mutated.borrow().get(&ty).copied();
+        let mutated = cached.unwrap_or_else(|| {
+            let mutated = self.contains_mutated_uncached(ty);
+            self.walks().mutated.borrow_mut().insert(ty, mutated);
+            mutated
+        });
+        if !mutated {
+            self.elided(ty);
         }
-        let mutated = self.contains_mutated_uncached(ty);
-        self.walks().mutated.borrow_mut().insert(ty, mutated);
         mutated
+    }
+
+    /// `ty`, found changed in place by none of the crate's code, so what
+    /// copies it is left out: of a library's function, said in its
+    /// contract, so a consumer that changes it compiles the function itself
+    /// (`Caches::elided`, #2112's change D). Every such answer of the
+    /// function's, a copy's or not: more than it left out compiles more,
+    /// never less.
+    fn elided(&self, ty: Ty<'tcx>) {
+        if self.krate.library && !self.krate.compiled_once && self.may_be_object(ty) {
+            let shape = crate::lower::library::rc_shape(self.tcx, ty);
+            let caches = crate::lower::session::caches(self.tcx);
+            (caches.elided.borrow_mut())
+                .entry(self.tcx.typeck_root_def_id(self.item))
+                .or_default()
+                .insert(shape);
+        }
     }
 
     pub(super) fn contains_mutated_uncached(&self, ty: Ty<'tcx>) -> bool {
@@ -864,7 +885,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Is `ty` itself changed in place somewhere, not just a part of it?
     pub(super) fn mutated_itself(&self, ty: Ty<'tcx>) -> bool {
-        self.crosses_crates(ty) || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated))
+        let mutated =
+            self.crosses_crates(ty) || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated));
+        if !mutated {
+            self.elided(ty);
+        }
+        mutated
     }
 
     /// Might another crate change `ty` in place (ADR 0100)? A library's type,
@@ -892,13 +918,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// code changes too, as its contract says (#1871), and in
     /// `@rust-js/std`, compiled once for all, any.
     pub(super) fn vec_changed(&self, ty: Ty<'tcx>) -> bool {
-        self.krate.compiled_once
+        let changed = self.krate.compiled_once
             || self.krate.foreign.changed_by_a_library(ty)
             || self
                 .krate
                 .changed_vecs
                 .iter()
-                .any(|&changed| self.instance_of(ty, changed))
+                .any(|&changed| self.instance_of(ty, changed));
+        if !changed {
+            self.elided(ty);
+        }
+        changed
     }
 
     /// Might the array of `item`s that a `Vec<item>` and a boxed `[item]`
@@ -1106,75 +1136,6 @@ fn parameters_given<'tcx>(ty: Ty<'tcx>, general: Ty<'tcx>, given: &mut IndexMap<
 pub(super) struct Changed<'a, 'tcx> {
     pub(super) mutated: &'a IndexSet<Ty<'tcx>>,
     pub(super) vecs: &'a IndexSet<Ty<'tcx>>,
-}
-
-/// May a value of `ty` hold, by value, not behind a reference, what the
-/// crate changes in place, `changed`: the coarse question whether a
-/// library's function that copies or clones one is compiled here, where
-/// its library's JS, which copies what its own crate changes, may share
-/// one the crate then changes (ADR 0914, amended). `contains_mutated` is
-/// the exact one, of the crate's own copies.
-pub(super) fn may_hold_changed<'tcx>(
-    recognition: &super::recognition::Recognition<'_, 'tcx>,
-    changed: Changed<'_, 'tcx>,
-    ty: Ty<'tcx>,
-) -> bool {
-    fn walk<'tcx>(
-        recognition: &super::recognition::Recognition<'_, 'tcx>,
-        changed: Changed<'_, 'tcx>,
-        ty: Ty<'tcx>,
-        seen: &mut IndexSet<Ty<'tcx>>,
-    ) -> bool {
-        if !seen.insert(ty) {
-            return false;
-        }
-        let tcx = recognition.tcx;
-        let is = |general: &Ty<'tcx>| !recognition.is_unknown(*general) && instance_of(recognition, ty, *general);
-        let pointer_like = |ty: Ty<'tcx>| {
-            super::pointers::raw_pointee(tcx, ty).is_some()
-                || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::PhantomData))
-        };
-
-        match ty.kind() {
-            ty::Tuple(_) | ty::Array(..) if changed.mutated.iter().any(is) => true,
-            ty::Tuple(items) => items.iter().any(|item| walk(recognition, changed, item, seen)),
-            ty::Array(item, _) | ty::Slice(item) => walk(recognition, changed, *item, seen),
-            ty::Adt(..) if changed.mutated.iter().chain(changed.vecs).any(is) => true,
-            // A pointer to one, a shared `Rc`'s, holds none by value; nor a
-            // `PhantomData`; nor std's of a lifetime, which borrows what it
-            // reads, a `Ref` or an `Iter`; nor std's of pointers alone, the
-            // `Unique` optimized MIR reads a `Box` through.
-            ty::Adt(adt, args)
-                if pointer_like(ty)
-                    || super::recognition::rc_pointee(tcx, ty).is_some()
-                    || super::recognition::weak_pointee(tcx, ty).is_some()
-                    || (super::recognition::is_std_crate(tcx, adt.did())
-                        && (args.regions().next().is_some()
-                            || (adt.is_struct()
-                                && adt
-                                    .all_fields()
-                                    .all(|field| pointer_like(field.ty(tcx, args).skip_normalization()))))) =>
-            {
-                false
-            }
-            // A field's type as the bounds where it's asked say it is, a
-            // `T::Item` of `T: Iterator<Item = Vec<u32>>` a `Vec` (#1023).
-            ty::Adt(adt, args) => {
-                let field_ty = |field: &ty::FieldDef| {
-                    let ty = field.ty(tcx, args).skip_normalization();
-                    (tcx.try_normalize_erasing_regions(recognition.typing_env, ty::Unnormalized::new_wip(ty)))
-                        .unwrap_or(ty)
-                };
-                args.types().any(|arg| walk(recognition, changed, arg, seen))
-                    || (!super::recognition::is_std_crate(tcx, adt.did())
-                        && adt
-                            .all_fields()
-                            .any(|field| walk(recognition, changed, field_ty(field), seen)))
-            }
-            _ => false,
-        }
-    }
-    walk(recognition, changed, ty, &mut IndexSet::default())
 }
 
 /// Can one JS value be every use of a constant of `ty`, which Rust makes

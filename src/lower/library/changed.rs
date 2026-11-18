@@ -4,19 +4,10 @@
 
 use super::{Foreign, head_key, may_be_shape};
 use rustc_middle::ty::Ty;
-use rustc_span::def_id::CrateNum;
 
 impl<'tcx> Foreign<'_, 'tcx> {
-    /// Does the library `krate` change a value of `ty` in place, so that
-    /// its JS copies one where Rust does (ADR 0914, amended)? Not one whose
-    /// contract says none, or of a compiler that wrote no such fact.
-    pub(in crate::lower) fn changes(&self, krate: CrateNum, ty: Ty<'tcx>) -> bool {
-        (self.library(krate))
-            .is_some_and(|library| (library.changed.iter()).any(|shape| may_be_shape(self.tcx, shape, ty)))
-    }
-
     /// Does any of the crate's libraries change a value of `ty` in place, as
-    /// its contract says (`changes`)? What its JS shares with the crate's is
+    /// its contract says? What its JS shares with the crate's is
     /// changed only by code that changes it: the crate's own, a library's,
     /// whose contract lists it, or a consumer's, which compiles its own of
     /// what may copy it (ADR 0914, amended). So the crate copies a library's

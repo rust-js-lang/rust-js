@@ -19,6 +19,7 @@ pub(in crate::lower) fn exports<'tcx>(
     let Contracts {
         // What each type parameter is asked, `type_params`'s.
         drop_params: _,
+        elided,
         shown_params: _,
         dyn_debug_shown,
         written,
@@ -275,6 +276,16 @@ pub(in crate::lower) fn exports<'tcx>(
         held,
         reexported,
         modules,
+        elided: {
+            let mut all: Vec<crate::library::Elided> = (elided.iter())
+                .map(|(&id, shapes)| crate::library::Elided {
+                    key: key(tcx, id),
+                    shapes: shapes.iter().cloned().collect(),
+                })
+                .collect();
+            all.sort_by(|a, b| a.key.cmp(&b.key));
+            all
+        },
         counted_rcs: {
             let mut shapes: Vec<RcShape> = match counted.all {
                 true => vec![RcShape {

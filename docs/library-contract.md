@@ -71,8 +71,9 @@ new one is m6-react's to see first (#1462).
 | `Library.reexported` | local | what its modules re-export of its others' items | |
 | `Library.modules` | local | its modules, each a namespace a consumer may re-export | |
 | `Library.counted_rcs` | closed-world: agrees | what the `Rc`s it counts point at | counts each as it does (ADR 0852) |
+| `Library.elided` | closed-world: compiles its own | what each of its functions and impls leaves copies of out | compiles its own of a function or impl where one of its shapes may be a type it changes and the library doesn't (ADR 0914, amended; #2112's change D) |
 | `Library.with_this_arguments` | summary | the parameters of each `with_this` function it makes that reads `arguments` | |
-| `Library.changed` | closed-world: compiles its own | what its code changes in place, which its JS copies where Rust copies | compiles its own of a function where it may copy what the consumer changes and it doesn't (ADR 0914); and copies a library's type, a tuple, an array or a `Vec` where a library changes one, so all a crate's JS shares is changed by none (ADR 0100, amended, #1871) |
+| `Library.changed` | closed-world: agrees | what its code changes in place, which its JS copies where Rust copies | copies a library's type, a tuple, an array or a `Vec` where a library changes one, so all a crate's JS shares is changed by none (ADR 0100, amended, #1871); what a library's functions leave copies of out is `Library.elided`'s |
 | `Library.ref_cells` | holds | `RefCellFacts` | |
 | `Library.identities` | summary | its types equal only to themselves, by their impls | |
 | `Library.keyed` | local | its enums told apart by their keys, no tag, by their shape | |

@@ -1285,6 +1285,7 @@ pub fn lower_crate<'tcx>(
                     (&fns, &exported, &internal_exports),
                     &super::library::Contracts {
                         drop_params: &kept_drop_params,
+                        elided: &super::library::elided_through_calls(tcx, all_bodies),
                         shown_params: &shown_params.params,
                         dyn_debug_shown: shown_params.dyn_debug(tcx),
                         written: &written_params,

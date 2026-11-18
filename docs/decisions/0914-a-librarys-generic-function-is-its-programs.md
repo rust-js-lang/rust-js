@@ -2090,3 +2090,53 @@ compile that wasn't refused changes; a refusal lifted. Held by crate pair
 `library_trait_method_where_steps_param` against native Rust, and #1409's
 `library_instance_impl_asks_its_defaults_facts`; mutation
 `trait-method-where-unsaid`.
+
+## Amendment: a library says which copies it left out (2026-11-19, #2112's change D)
+
+A consumer compiles a library's function or impl itself where that one's
+JS leaves out a copy the consumer needs: a copy of a type the library never
+changes in place, which the consumer does (above, `instances::Copying`).
+Until now the consumer guessed which, scanning the library's MIR for what
+may copy, hold or give such a type: a place's copy, a constant, a call of
+std's that makes one of what it's given a reference to, an iterator whose
+items hold one by value (#2014), a concatenation's array, a binding's
+result, a supertrait's impl and a default generic over `Self` (#1927).
+Each rule was a shape found missing by a wrong answer, and the scan stayed
+open to the next.
+
+The library now says it, and the scan is gone. Wherever its copy policy
+answers that a type is changed in place by nothing of its crate
+(`mutated_itself`, `contains_mutated`, `vec_changed`), so a copy of it is
+left out, it records the type's shape (`RcShape`, as `shapes` names types
+across crates) under the function being lowered (`Caches::elided`), a
+closure's under its function. Every such answer is recorded, a copy's or
+not: more than it left out compiles more, never less. What its crate
+changes is never recorded, so a consumer that changes it too uses the
+library's JS, which copies it (rd606): the consumer's own filter of what
+the library changes, a second answer to that question, goes.
+
+Its contract's `Library.elided` (library ABI 46) gives, by key, each
+function and trait impl its JS has what it and what of its crate it calls
+or names leave out, through their calls, a trait's method through each of
+the crate's impls of it (`library::elided_through_calls`), as a consumer
+that compiles one compiles the private ones it calls too; an impl's, its
+methods' and the defaults it uses. A table of every one, not a fact of
+each item: a derived impl, a supertrait's, is no item, and is asked too.
+The consumer compiles a function or impl itself iff one of its shapes may
+be a type it changes in place, or a `Vec` of it does
+(`Copying::elided_changed`, `may_be_shape`); an impl's supertraits'
+impls are asked too, whose dictionaries its own holds.
+
+Measured: every crate pair and triple, 265, as native Rust; the crate
+corpus's 100 crates at their rows; React's port at its pin, every
+crate's JS unchanged; metamorphic's `library` rewrite of every corpus
+case, 2,693, as native.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change where
+the scan missed a copy, so Rust's behavior. Held by every pair of #1927,
+#2013 and #2014 against native Rust, `program_form`'s impl called through
+its dictionary, and pairs `library_elides_through_a_private_callee` and
+`library_elided_copies_said`; mutations `elided-unrecorded`,
+`elided-of-changed`, `elided-not-closed-over-calls`,
+`elided-impl-methods-dropped` and `elided-trait-method-impls-unfollowed`.
+The scan's sixteen mutations went with its code, `may_hold_changed`'s two among them.

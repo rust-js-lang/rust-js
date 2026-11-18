@@ -94,7 +94,7 @@ pub(super) fn asked(tcx: TyCtxt<'_>, asked: Vec<(DefId, LocalModId)>) -> Vec<(De
 }
 
 /// The provided methods of `imp`'s trait that `imp` doesn't write.
-fn defaults_used(tcx: TyCtxt<'_>, imp: DefId) -> impl Iterator<Item = DefId> + '_ {
+pub(in crate::lower) fn defaults_used(tcx: TyCtxt<'_>, imp: DefId) -> impl Iterator<Item = DefId> + '_ {
     let written = tcx.impl_item_implementor_ids(imp);
     (tcx.provided_trait_methods(tcx.impl_trait_id(imp)))
         .map(|item| item.def_id)
@@ -115,18 +115,16 @@ fn supertrait_impls(tcx: TyCtxt<'_>, imp: DefId) -> Vec<DefId> {
         .collect()
 }
 
-/// Which of a library's functions and impls may copy, or clone, a value
-/// of what the crate changes in place, which its library's JS, copying
-/// what its own crate changes, may then share: the crate compiles its own
-/// of each it uses (ADR 0914, amended). Asked of each once.
+/// Which of a library's functions and impls may leave out a copy, or a
+/// clone, of what the crate changes in place, which its library's JS,
+/// copying what its own crate changes, may then share: the crate compiles
+/// its own of each it uses (ADR 0914, amended). As its library's contract
+/// says, which names the types each leaves copies of out (`Library::elided`,
+/// #2112's change D). Asked of each once.
 pub(super) struct Copying<'a, 'tcx> {
     recognition: super::recognition::Recognition<'a, 'tcx>,
     changed: super::copies::Changed<'a, 'tcx>,
     known: std::cell::RefCell<IndexMap<DefId, bool>>,
-    /// Those asked whose answer isn't settled, first asked first: those
-    /// being asked, and those asked under them that call one of them, whose
-    /// answer is that one's (Tarjan's stack of what calls itself).
-    asking: std::cell::RefCell<IndexSet<DefId>>,
 }
 
 impl<'a, 'tcx> Copying<'a, 'tcx> {
@@ -146,291 +144,43 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
             recognition,
             changed,
             known: Default::default(),
-            asking: Default::default(),
         }
     }
 
     /// Whether `id`, a library's function or trait impl the crate uses,
-    /// may copy or clone a value of what the crate changes in place: an
-    /// impl's of its methods; a function's, of its MIR: a `copy` of a place
-    /// of one, a call of std's, or of what else its library doesn't compile,
-    /// that makes one of what it's given a reference to, a call of its
-    /// library's that may, and a closure it makes that may.
+    /// leaves out a copy or a clone of what the crate changes in place and
+    /// its library doesn't: one of the shapes its contract says it, or what
+    /// of its crate's it calls, leaves copies of out may be one. An impl's
+    /// supertraits' impls of its type too, whose dictionaries its own
+    /// holds, `pointDup.Clone()` of `trait Dup: Clone` (#1927).
     pub(super) fn copies(&self, id: DefId) -> bool {
-        self.copies_below(id).0
-    }
-
-    /// `copies`, and the first of `asking` the answer read, where it read
-    /// one: a call it makes of one that calls it. Of the least answer that
-    /// holds: functions that call each other copy where one of them does, so
-    /// each has the answer of the first asked, settled with it once it read
-    /// none asked before it. Each is walked once: one asked again before
-    /// then answers what the first will (#884).
-    fn copies_below(&self, id: DefId) -> (bool, usize) {
         let tcx = self.recognition.tcx;
-        if id.is_local() || !self.recognition.foreign.is_library(id.krate) {
-            return (false, usize::MAX);
-        }
-        if let Some(&known) = self.known.borrow().get(&id) {
-            return (known, usize::MAX);
-        }
-        if let Some(at) = self.asking.borrow().get_index_of(&id) {
-            return (false, at);
-        }
-        let depth = self.asking.borrow().len();
-        self.asking.borrow_mut().insert(id);
-        let (copies, read) = match tcx.def_kind(id) {
-            // Its methods, and its trait's defaults it doesn't write, which
-            // its dictionary holds too (#1023); and its supertraits' impls
-            // of its type, whose dictionaries it holds, `pointDup.Clone()`
-            // of `trait Dup: Clone` (#1927).
-            DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter().copied())
-                .chain(defaults_used(tcx, id))
-                .chain(supertrait_impls(tcx, id))
-                .map(|method| self.copies_below(method))
-                .fold((self.default_copies(id), usize::MAX), |(a, at), (b, bt)| {
-                    (a || b, at.min(bt))
-                }),
-            DefKind::Fn | DefKind::AssocFn | DefKind::Closure if tcx.is_mir_available(id) => {
-                self.body_copies(tcx.optimized_mir(id))
-            }
-            _ => (false, usize::MAX),
-        };
-        if read >= depth {
-            let settled = self.asking.borrow_mut().drain(depth..).collect::<Vec<_>>();
-            self.known
-                .borrow_mut()
-                .extend(settled.into_iter().map(|asked| (asked, copies)));
-            return (copies, usize::MAX);
-        }
-        (copies, read)
-    }
-
-    /// What the crate changes that `library` doesn't, what it changes in
-    /// place and its `Vec`s: what the library changes too, its JS copies as
-    /// Rust does (rd606).
-    fn unshared(&self, library: rustc_span::def_id::CrateNum) -> (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) {
-        let unshared = |changed: &IndexSet<Ty<'tcx>>| -> IndexSet<Ty<'tcx>> {
-            (changed.iter())
-                .filter(|&&ty| !self.recognition.foreign.changes(library, ty))
-                .copied()
-                .collect()
-        };
-        (unshared(self.changed.mutated), unshared(self.changed.vecs))
-    }
-
-    /// Whether a default of its trait `imp` uses may copy what the crate
-    /// changes: its MIR is generic over `Self`, whose `self.clone()` it
-    /// can't resolve to `imp`'s type's, so one of a type that may hold what
-    /// the crate changes is taken to copy it (#1927).
-    fn default_copies(&self, imp: DefId) -> bool {
-        let tcx = self.recognition.tcx;
-        if defaults_used(tcx, imp).next().is_none() {
+        if id.is_local() {
             return false;
         }
-        let (mutated, vecs) = self.unshared(imp.krate);
-        let changed = super::copies::Changed {
-            mutated: &mutated,
-            vecs: &vecs,
+        if let Some(&known) = self.known.borrow().get(&id) {
+            return known;
+        }
+        let Some(elided) = self.recognition.foreign.elided(id) else {
+            return false;
         };
-        let recognition = super::recognition::Recognition {
-            typing_env: ty::TypingEnv::post_analysis(tcx, imp),
-            ..self.recognition
-        };
-        let own = tcx
-            .impl_trait_ref(imp)
-            .instantiate_identity()
-            .skip_normalization()
-            .self_ty();
-        super::copies::may_hold_changed(&recognition, changed, tcx.erase_and_anonymize_regions(own))
+        let copies = self.elided_changed(elided)
+            || matches!(tcx.def_kind(id), DefKind::Impl { of_trait: true })
+                && supertrait_impls(tcx, id).into_iter().any(|imp| self.copies(imp));
+        self.known.borrow_mut().insert(id, copies);
+        copies
     }
 
-    /// `copies` of `body`, a library's MIR, generic over its own
-    /// parameters: asked where it is, whose bounds and const parameters'
-    /// types are its own, `N` of `fn sum_n<const N: usize>(a: [i32; N])`
-    /// (#454).
-    fn body_copies(&self, body: &mir::Body<'tcx>) -> (bool, usize) {
+    /// Whether any of `elided`, the shapes a library's function leaves
+    /// copies of out, may be a type the crate changes in place, or a `Vec`
+    /// of it does. What the library changes too is none of them: its JS
+    /// copies that as Rust does (rd606).
+    fn elided_changed(&self, elided: &[crate::library::RcShape]) -> bool {
         let tcx = self.recognition.tcx;
-        let recognition = super::recognition::Recognition {
-            typing_env: ty::TypingEnv::post_analysis(tcx, body.source.def_id()),
-            ..self.recognition
-        };
-        // What the crate changes that the body's library doesn't.
-        let (mutated, vecs) = self.unshared(body.source.def_id().krate);
-        let changed = super::copies::Changed {
-            mutated: &mutated,
-            vecs: &vecs,
-        };
-        let holds = |ty: Ty<'tcx>| {
-            let ty = tcx.erase_and_anonymize_regions(ty);
-            super::copies::may_hold_changed(&recognition, changed, ty)
-        };
-        struct Found<'b, 'a, 'tcx> {
-            copying: &'b Copying<'a, 'tcx>,
-            /// The crate's, asked where `body` is.
-            recognition: super::recognition::Recognition<'a, 'tcx>,
-            body: &'b mir::Body<'tcx>,
-            holds: &'b dyn Fn(Ty<'tcx>) -> bool,
-            copies: bool,
-            read: usize,
-        }
-        impl<'tcx> Found<'_, '_, 'tcx> {
-            /// Whether `made` is an iterator, or what makes one, whose items
-            /// hold by value what the crate changes: its `Item`, an
-            /// `Iterator`'s or an `IntoIterator`'s (#2014).
-            fn gives(&self, made: Ty<'tcx>) -> bool {
-                let tcx = self.recognition.tcx;
-                let item_of = |of: super::recognition::StdItem| {
-                    let item = super::recognition::trait_method(tcx, super::recognition::std_item(tcx, of), "Item");
-                    let projection = Ty::new_projection(tcx, ty::IsRigid::No, item, [made]);
-                    tcx.try_normalize_erasing_regions(
-                        self.recognition.typing_env,
-                        ty::Unnormalized::new_wip(projection),
-                    )
-                    .ok()
-                };
-                [
-                    super::recognition::StdItem::Iterator,
-                    super::recognition::StdItem::IntoIterator,
-                ]
-                .into_iter()
-                .filter_map(item_of)
-                .any(|item| (self.holds)(item))
-            }
-        }
-        impl Found<'_, '_, '_> {
-            /// What `id`, a function it calls or a closure it makes, copies.
-            fn ask(&mut self, id: DefId) {
-                let (copies, read) = self.copying.copies_below(id);
-                self.copies |= copies;
-                self.read = self.read.min(read);
-            }
-        }
-        impl<'tcx> mir::visit::Visitor<'tcx> for Found<'_, '_, 'tcx> {
-            fn visit_operand(&mut self, operand: &mir::Operand<'tcx>, location: mir::Location) {
-                let tcx = self.recognition.tcx;
-                let copy = |ty: Ty<'tcx>| tcx.type_is_copy_modulo_regions(self.recognition.typing_env, ty);
-                match operand {
-                    // A `Copy` value's, not what optimized MIR copies of a
-                    // `Box` it reads through.
-                    mir::Operand::Copy(place) if copy(place.ty(&self.body.local_decls, tcx).ty) => {
-                        self.copies |= (self.holds)(place.ty(&self.body.local_decls, tcx).ty)
-                    }
-                    // A constant's, each use of which is a value of its own
-                    // (ADR 0031).
-                    mir::Operand::Constant(constant) => self.copies |= (self.holds)(constant.ty()),
-                    _ => {}
-                }
-                self.super_operand(operand, location);
-            }
-            fn visit_rvalue(&mut self, rvalue: &mir::Rvalue<'tcx>, location: mir::Location) {
-                if let mir::Rvalue::Aggregate(kind, _) = rvalue
-                    && let mir::AggregateKind::Closure(closure, _) = **kind
-                {
-                    self.ask(closure);
-                }
-                self.super_rvalue(rvalue, location);
-            }
-            fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: mir::Location) {
-                let tcx = self.recognition.tcx;
-                if let TerminatorKind::Call {
-                    func,
-                    args,
-                    destination,
-                    ..
-                } = &terminator.kind
-                {
-                    // A trait's method, the impl's it resolves to, where it does.
-                    let resolved = func.const_fn_def().map(|(callee, args)| {
-                        let typing_env = self.recognition.typing_env;
-                        match tcx.trait_of_assoc(callee) {
-                            Some(_) => super::items::resolve_instance_in(tcx, typing_env, callee, args)
-                                .ok()
-                                .flatten()
-                                .map_or(callee, |instance| instance.def_id()),
-                            None => callee,
-                        }
-                    });
-                    // A derive's, which rust-js writes in place where it's
-                    // called, of the caller's types (ADR 0052): its library
-                    // has no JS of it, so it's asked as std's, of what it
-                    // makes here, a `Holder<T>` whose `T::Item` the caller's
-                    // bounds say is a `Vec` (#1023). Not a serde derive's
-                    // codec, which its library exports (ADR 0077).
-                    let derived = |callee: DefId| {
-                        tcx.trait_impl_of_assoc(callee).is_some_and(|imp| {
-                            tcx.is_automatically_derived(imp)
-                                && super::serde::serde_trait(tcx, tcx.impl_trait_id(imp)).is_none()
-                        })
-                    };
-                    self.copies |= match resolved {
-                        // Its library's, which may copy one itself.
-                        Some(callee) if self.recognition.foreign.is_library(callee.krate) && !derived(callee) => {
-                            self.ask(callee);
-                            false
-                        }
-                        // A binding's, whose result is JS's own, the same
-                        // however its caller is compiled, `js::object::keys`'s
-                        // `Vec<String>`.
-                        Some(callee) if super::bindings::is_binding(tcx, callee) => false,
-                        // A slice's `concat()`, an array of its own made of
-                        // its parts' items, `[...a, ...b]`: what it may share
-                        // of what it's given is its items, `addValueToProperties`'
-                        // `Option<&Unknown>`s (ADR 0914, amended).
-                        Some(_)
-                            if let Some((callee, generic)) = func.const_fn_def()
-                                && self.recognition.classify(callee, generic)
-                                    == Some(super::Std::Comb(super::combinators::Comb::Concat)) =>
-                        {
-                            match destination.ty(&self.body.local_decls, tcx).ty.kind() {
-                                ty::Adt(_, made) => made.types().next().is_some_and(|item| (self.holds)(item)),
-                                _ => true,
-                            }
-                        }
-                        // Another's, std's: one that makes what it's given a
-                        // reference to, `Cell::get`, `clone`, `to_vec`; or
-                        // an iterator that gives it, each item copied or cloned
-                        // as it's stepped, `ps.iter().copied()` (#2014). Given
-                        // a borrow: a reference, a raw pointer, or std's of a
-                        // lifetime, an `Iter<'_, P>`, which reads what it lends.
-                        Some(_) => {
-                            let made = destination.ty(&self.body.local_decls, tcx).ty;
-                            let given = |lent: bool| {
-                                args.iter().any(|arg| {
-                                    (arg.node.ty(&self.body.local_decls, tcx).walk())
-                                        .filter_map(|part| part.as_type())
-                                        .any(|part| {
-                                            part.is_ref()
-                                                || super::pointers::raw_pointee(tcx, part).is_some()
-                                                || lent
-                                                    && matches!(part.kind(), ty::Adt(adt, of)
-                                                        if super::recognition::is_std_crate(tcx, adt.did()) && of.regions().next().is_some())
-                                        })
-                                })
-                            };
-                            // A value made of what's given, a fresh one that
-                            // shares none of it, `collect()` of a `split`'s
-                            // `&str`s, isn't one: only one whose items are
-                            // copies is, of what an iterator it's given lends.
-                            (self.holds)(made) && given(false) || self.gives(made) && given(true)
-                        }
-                        // A fn pointer's, a `dyn`'s: code of its own.
-                        None => false,
-                    };
-                }
-                self.super_terminator(terminator, location);
-            }
-        }
-        let mut found = Found {
-            copying: self,
-            recognition,
-            body,
-            holds: &holds,
-            copies: false,
-            read: usize::MAX,
-        };
-        mir::visit::Visitor::visit_body(&mut found, body);
-        (found.copies, found.read)
+        (elided.iter()).any(|shape| {
+            (self.changed.mutated.iter().chain(self.changed.vecs))
+                .any(|&ty| super::library::may_be_shape(tcx, shape, tcx.erase_and_anonymize_regions(ty)))
+        })
     }
 }
 

@@ -6,12 +6,14 @@ mod built_types;
 mod cells;
 mod changed;
 mod compiled_here;
+mod elided;
 mod exports;
 mod internal;
 mod reached;
 mod written_into;
 pub(super) use bound::bound;
 pub(super) use compiled_here::merging;
+pub(super) use elided::elided_through_calls;
 pub(super) use exports::exports;
 pub(super) use internal::{internal_exports, internal_state};
 
@@ -150,6 +152,9 @@ pub(in crate::lower) fn seen_outside(tcx: TyCtxt<'_>, library: bool, id: DefId) 
 /// its type parameters (ADR 0145).
 pub(super) struct Contracts<'a, 'tcx> {
     pub(super) drop_params: &'a IndexMap<DefId, Vec<u32>>,
+    /// Each function's elided copies, its own and its callees' (#2112's
+    /// change D): `elided_through_calls`'.
+    pub(super) elided: &'a IndexMap<DefId, std::collections::BTreeSet<RcShape>>,
     /// The type parameters each function shows pretty or in hex (#1331).
     pub(super) shown_params: &'a IndexMap<DefId, IndexMap<u32, super::analysis::Shown>>,
     /// What it, and the libraries it uses, show of a `dyn Debug` they're
@@ -513,7 +518,7 @@ fn head_key(tcx: TyCtxt<'_>, head: &super::analysis::Head) -> String {
 
 /// What a library's contract calls `ty`, a type an `Rc` it counts points
 /// at, `_` where it may be any (ADR 0852).
-fn rc_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>) -> RcShape {
+pub(in crate::lower) fn rc_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>) -> RcShape {
     match super::analysis::head(tcx, ty) {
         Some((head, args)) => RcShape {
             of: Some(head_key(tcx, &head)),
@@ -528,7 +533,7 @@ fn rc_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>) -> RcShape 
 
 /// May `ty` be the type `shape` names, a library's, a type parameter of
 /// either any type (ADR 0852)? As `rc_counts::may_be` says of two types.
-fn may_be_shape<'tcx>(tcx: TyCtxt<'tcx>, shape: &RcShape, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
+pub(in crate::lower) fn may_be_shape<'tcx>(tcx: TyCtxt<'tcx>, shape: &RcShape, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
     match (&shape.of, super::analysis::head(tcx, ty)) {
         (Some(of), Some((head, args))) => {
             *of == head_key(tcx, &head)

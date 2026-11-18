@@ -360,19 +360,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates-compiled-here.test.ts", "-t", "program's, alone or a dependency"],
   },
   {
-    name: "borrowing-std-type-holds",
-    breaks:
-      "a std type of a lifetime, the `Values` of a map of `Vec`s only the consumer changes, is taken to hold one by value, and a consumer compiles the library's `longest`, which it needn't (ADR 0914, amended)",
-    file: "src/lower/copies.rs",
-    find: "                        && (args.regions().next().is_some()\n",
-    replace: "                        && (false\n",
-    tests: [
-      "test/crates.test.ts",
-      "-t",
-      "a library.s RefCells are the values they hold",
-    ],
-  },
-  {
     name: "own-copy-option-tested",
     breaks:
       "a copy of an `Option` of a value that's its own copy tests it, `value == null ? value : value` (ADR 0051, amended)",
@@ -400,15 +387,6 @@ export const mutations: Mutation[] = [
     replace: "        false\n            && adt.variants().iter().all(|v| {\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_told_by_length"],
     snapshots: true,
-  },
-  {
-    name: "held-field-unnormalized",
-    breaks:
-      "whether a value may hold what the crate changes reads a field's `T::Item` as it's written, not as the bounds where it's asked say, a `Vec`, so a library's generic default's clone of a `Holder<T>` is shared (#1023)",
-    file: "src/lower/copies.rs",
-    find: "                        .unwrap_or(ty)\n",
-    replace: "                        .map(|_| ty)\n                        .unwrap_or(ty)\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_own_methods_through_its_dictionary"],
   },
   {
     name: "items-changed-as-vecs-unasked",
@@ -592,5 +570,26 @@ export const mutations: Mutation[] = [
     find: "        let told_apart = (self.contains_mutated(from) || self.contains_mutated(to)) && self.is_copy(from);\n",
     replace: "        let told_apart = self.contains_mutated(from) && self.is_copy(from);\n",
     tests: ["test/corpus.test.ts", "-t", "^array_map_of_an_identity.rs$"],
+  },
+  {
+    name: "elided-unrecorded",
+    breaks: "a library records none of the copies it leaves out, so a consumer that changes a `Spot` its `first_spot` hands out uses the library's JS, which hands out the slice's own (#2112's change D)",
+    file: "src/lower/copies.rs",
+    find: "        if self.krate.library && !self.krate.compiled_once && self.may_be_object(ty) {\n",
+    replace: "        if false && self.krate.library && !self.krate.compiled_once && self.may_be_object(ty) {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_elided_copies_said"],
+  },
+  {
+    name: "elided-of-changed",
+    breaks:
+      "a library says it leaves out the copies of a type its own crate changes, whose JS copies it, so a consumer that changes it too compiles its own of the function, where it is imported, `Dep.firstNotch(notches)` (rd606, #2112's change D)",
+    file: "src/lower/copies.rs",
+    find: "            mutated\n        });\n        if !mutated {\n            self.elided(ty);\n",
+    replace: "            mutated\n        });\n        {\n            self.elided(ty);\n",
+    tests: [
+      "test/crates-compiled-here.test.ts",
+      "-t",
+      "a library's generic function is its program's",
+    ],
   },
 ];
