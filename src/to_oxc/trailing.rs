@@ -392,8 +392,8 @@ pub(super) fn placed<'a>(trailing: &'a [Trailing], map: &SourceMap, generated_li
             }
             continue;
         }
-        if comment.inside
-            && comment.before_value
+        if comment.before_value
+            && comment.text.starts_with("/*")
             && let Some((line, column)) = equals()
         {
             inside

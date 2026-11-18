@@ -1077,7 +1077,9 @@ one inside an expression after the code right before it, `37 /* "%" */`,
 or right after an `=` before the value, as written, `export const NoMode =
 /*   */ 0b0000000;` of `pub const NO_MODE: u32 = /*   */ 0b0000000;`, a
 block comment on a line of its own between them, as rustfmt writes a
-long one, too, and one ending the line before a setter's call after the
+long one, too. When rustfmt leaves the comment on the line ending with
+`=` and moves the value to the next line, the JavaScript still keeps the
+comment before the value. A comment ending the line before a setter's call is after the
 place it sets, `internals /* Priority */` then `.set_p(priority)` as
 `internals.p /* Priority */ = priority`, and one rustfmt writes on a line
 of its own between an `if`'s condition and its `{` after the condition,
