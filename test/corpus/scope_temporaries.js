@@ -126,21 +126,13 @@ function main() {
     console.log(`drop ${value$4.a[0]}`);
   }
   let pair = early(false);
-  let pair$0$live = true;
   if (pair != null) {
-    pair$0$live = false;
     console.log(`late ${pair.b}`);
     console.log(`drop ${pair.a[0]}`);
   } else {
     console.log("late none");
   }
-  if (pair != null) {
-    if (pair$0$live) {
-      console.log(`drop ${pair.a[0]}`);
-    }
-  }
 
-  pair$0$live = false;
   function check(n) {
     const value = make(n);
     const result = Noisy.big(value);

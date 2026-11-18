@@ -211,17 +211,6 @@ function main() {
       throw error;
     }
     dDrop_drop(d);
-  } else {
-    try {
-      if (next != null) {
-        dDrop_drop(next[1]);
-      }
-    } catch (error) {
-      $cleanup(() => {
-        it.return();
-      }, error);
-      throw error;
-    }
   }
   const rest = enumerateDoubleEndedIterator_rfold(
     it,

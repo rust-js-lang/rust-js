@@ -19,22 +19,14 @@ function main() {
   let pending = [1];
 
   function flush() {
-    const old = pending;
+    const n = pending;
     pending = undefined;
-    let old$0$live = true;
     let result;
-    if (old != null) {
-      old$0$live = false;
-      const n = old;
+    if (n != null) {
       result = n[0];
       noisyDrop_drop(n);
     } else {
       result = 0;
-    }
-    if (old != null) {
-      if (old$0$live) {
-        noisyDrop_drop(old);
-      }
     }
     return result;
   }

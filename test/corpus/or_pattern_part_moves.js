@@ -12,58 +12,36 @@ function loudDrop_drop(loud) {
 
 const Mapped = {
   earliest(mapped, dropT) {
-    let mapped$0$live = true;
-    let mapped$0$live$1 = true;
     let result;
-    let t;
-    if (mapped.TAG === "Single") {
-      mapped$0$live$1 = false;
-      t = mapped._0;
-      result = t;
-    } else if (mapped.TAG === "Ambiguous") {
-      mapped$0$live = false;
-      t = mapped._0;
+    if (mapped.TAG === "Single" || mapped.TAG === "Ambiguous") {
+      const t = mapped._0;
       result = t;
     } else {
       result = undefined;
     }
-    if (mapped.TAG === "Single") {
-      if (mapped$0$live$1) {
-        dropT?.(mapped._0);
+    if (mapped.TAG !== "Single") {
+      if (mapped.TAG === "Ambiguous") {
+        dropT?.(mapped._1);
       }
-    } else if (mapped.TAG === "Ambiguous") {
-      if (mapped$0$live) {
-        dropT?.(mapped._0);
-      }
-      dropT?.(mapped._1);
     }
     return result;
   },
 
   latest(mapped, dropT) {
-    let mapped$1$live = true;
-    let mapped$0$live = true;
     let result;
     let t;
     if (mapped.TAG === "Single") {
-      mapped$0$live = false;
       t = mapped._0;
       result = t;
     } else if (mapped.TAG === "Ambiguous") {
-      mapped$1$live = false;
       t = mapped._1;
       result = t;
     } else {
       result = undefined;
     }
-    if (mapped.TAG === "Single") {
-      if (mapped$0$live) {
+    if (mapped.TAG !== "Single") {
+      if (mapped.TAG === "Ambiguous") {
         dropT?.(mapped._0);
-      }
-    } else if (mapped.TAG === "Ambiguous") {
-      dropT?.(mapped._0);
-      if (mapped$1$live) {
-        dropT?.(mapped._1);
       }
     }
     return result;
@@ -71,31 +49,28 @@ const Mapped = {
 };
 
 function middle(shape) {
-  let shape$1$live = true;
   let result;
+  let m;
   if (shape.TAG === "Pair") {
-    shape$1$live = false;
-  } else if (shape.TAG !== "Triple") {
-    console.log("none");
-    result = undefined;
-    if (shape.TAG === "Pair") {
-      loudDrop_drop(shape._0);
-      loudDrop_drop(shape._1);
-    } else if (shape.TAG === "Triple") {
-      loudDrop_drop(shape._0);
-      loudDrop_drop(shape._1);
-      loudDrop_drop(shape._2);
+    m = shape._1;
+  } else {
+    if (shape.TAG !== "Triple") {
+      console.log("none");
+      result = undefined;
+      if (shape.TAG === "Pair") {
+        loudDrop_drop(shape._0);
+      } else if (shape.TAG === "Triple") {
+        loudDrop_drop(shape._0);
+        loudDrop_drop(shape._2);
+      }
+      return result;
     }
-    return result;
+    m = shape._1;
   }
-  const m = shape._1;
   console.log(`got ${m[0]}`);
   result = m;
   if (shape.TAG === "Pair") {
     loudDrop_drop(shape._0);
-    if (shape$1$live) {
-      loudDrop_drop(shape._1);
-    }
   } else if (shape.TAG === "Triple") {
     loudDrop_drop(shape._0);
     loudDrop_drop(shape._2);
@@ -104,11 +79,9 @@ function middle(shape) {
 }
 
 function name(shape) {
-  let shape$0$live = true;
   let result;
   let first;
   if (shape.TAG === "Pair") {
-    shape$0$live = false;
     first = shape._0;
   } else {
     if (shape.TAG !== "Triple") {
@@ -121,9 +94,6 @@ function name(shape) {
   result = first[0];
   loudDrop_drop(first);
   if (shape.TAG === "Pair") {
-    if (shape$0$live) {
-      loudDrop_drop(shape._0);
-    }
     loudDrop_drop(shape._1);
   } else if (shape.TAG === "Triple") {
     loudDrop_drop(shape._0);

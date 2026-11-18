@@ -94,24 +94,13 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
       }, error);
       throw error;
     }
-  } else {
-    try {
-      if (item != null) {
-        loudDrop_drop(item);
-      }
-    } catch (error) {
-      $cleanup(() => {
-        dropIIntoIter?.(it);
-      }, error);
-      throw error;
-    }
   }
   let it$live = false;
   const iter = it;
-  let loud;
   while (true) {
+    let item;
     try {
-      loud = $next(iter);
+      item = $next(iter);
     } catch (error) {
       $cleanup(() => {
         dropIIntoIter?.(iter);
@@ -121,7 +110,7 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
       }, error);
       throw error;
     }
-    if (loud == null) {
+    if (item == null) {
       try {
         dropIIntoIter?.(iter);
       } catch (error) {
@@ -135,7 +124,6 @@ function bagExtendLoud_extend(bag, items, dropI, dropIIntoIter) {
       it$live = false;
       return;
     }
-    const item = loud;
     if (item[0] === "stop") {
       loudDrop_drop(item);
       try {

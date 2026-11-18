@@ -806,11 +806,18 @@ fn comments_of(
                 // And a `match`'s, `match &new_last {`, right before
                 // its first arm, whose pattern the `if` MIR makes of
                 // it starts at (ADR 0444, amended).
-                // And a `_` arm's whose `default` is fallen to.
+                // And a `_` arm's whose `default` is fallen to. And a `{`
+                // with nothing before it but the comment, whose JS starts
+                // past it: a plain block's, whose statements are its
+                // function's, the first a temporary its `let` is made of,
+                // `let (x, name) = Ref::map_split(c.borrow(), ..)`'s; and
+                // an `if`'s after its test, `&& !hydrating\n // why\n {`,
+                // whose first statement it's above (#2112's change D).
                 let default = cases::opens_default(rest) && case_starts.binary_search(&at).is_ok();
                 let opens = (rest.match_indices('{')).all(|(i, _)| {
                     let head = rest[..i].trim_end();
-                    head.ends_with('|')
+                    head.is_empty()
+                        || head.ends_with('|')
                         || macro_opening(&rest[..=i])
                         || unsafe_opening(head)
                         || match_opening(head) && rest[i + 1..].trim().is_empty()

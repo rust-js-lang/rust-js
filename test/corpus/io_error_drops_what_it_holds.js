@@ -304,17 +304,6 @@ function main() {
       }, error);
       throw error;
     }
-  } else {
-    try {
-      if (e !== undefined) {
-        $ioErrorDrop(e);
-      }
-    } catch (error) {
-      $cleanup(() => {
-        $ioErrorDrop(plain);
-      }, error);
-      throw error;
-    }
   }
   try {
     $out("end\n");

@@ -682,3 +682,26 @@ export {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.act(), lib.captureOwnerStack(), lib.useId(), lib.useRef(), lib.useState(), lib.useReference()]).toEqual([1, 2, 3, 4, 5, 4]);
 });
+
+// A comment above a plain block, `// map_split: ..\n{ let (x, name) =
+// Ref::map_split(c.borrow(), ..); .. }`, whose JS has none of its own: its
+// statements are the function's, the first a temporary the block's first
+// `let` is made of, which starts past the block's `{`. It was left out
+// where the block wasn't a `try` (#2112's change D).
+test("a comment above a block of no JS of its own is above its first statement", async () => {
+  const { js, lib } = await compiled("comment-above-a-plain-block", `use std::cell::{Ref, RefCell};
+
+pub fn split() -> String {
+    let c = RefCell::new((1, String::from("a")));
+    let before = c.try_borrow_mut().is_ok();
+    // map_split: both halves hold it.
+    {
+        let (x, name) = Ref::map_split(c.borrow(), |p| (&p.0, &p.1));
+        drop(x);
+        format!("{before} {} {}", *name, c.try_borrow_mut().is_ok())
+    }
+}
+`);
+  expect(js).toMatch(/\n  \/\/ map_split: both halves hold it\.\n  const guard = \$borrow\(c, true\);\n/);
+  expect((lib.split as () => string)()).toBe("true a false");
+});

@@ -48,8 +48,8 @@ function tHolding(TIterator, HeldSize, dropT, dropTItem, dropTItemItem, dropTIte
       heldAll(self, SelfItemIntoIterator) {
         const all = [];
         const iter = self;
-        let tmp;
         while (true) {
+          let tmp;
           try {
             tmp = TIterator.next(iter);
           } catch (error) {
@@ -170,8 +170,8 @@ function tJoining(TIterator, HeldSize, dropT, dropTItem, dropTItemItem, dropTIte
         let extra$live = true;
         const all = [];
         const iter = self;
-        let tmp;
         while (true) {
+          let tmp;
           try {
             tmp = TIterator.next(iter);
           } catch (error) {

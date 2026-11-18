@@ -159,8 +159,8 @@ export const mutations: Mutation[] = [
     name: "comment-across-closure-lost",
     breaks: "a comment before a closure whose body is in its place is lost, as its opening's `{` is between them",
     file: "src/to_oxc.rs",
-    find: "                    head.ends_with('|')\n                        || macro_opening",
-    replace: "                    false\n                        || macro_opening",
+    find: "                        || head.ends_with('|')\n                        || macro_opening",
+    replace: "                        || false\n                        || macro_opening",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
   },
   {
@@ -790,5 +790,13 @@ export const mutations: Mutation[] = [
     find: " && !starts::bound_between(module, (last, at)) && {\n",
     replace: " && {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment above a binding of no JS is right above"],
+  },
+  {
+    name: "plain-block-opening-unseen",
+    breaks: "a comment above a plain block whose JS has none of its own is left out, its first statement a temporary past the block's `{` (#2112's change D)",
+    file: "src/to_oxc.rs",
+    find: "                    head.is_empty()\n                        || head.ends_with('|')\n",
+    replace: "                    head.ends_with('|')\n",
+    tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment above a block of no JS of its own is above its first statement"],
   },
 ];

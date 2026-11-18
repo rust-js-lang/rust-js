@@ -76,10 +76,10 @@ function dropping(w, IIterator) {
 function ofItems(w, IIterator, dropT, dropI) {
   const all = [];
   const iter = w;
-  let tmp;
   while (true) {
+    let item;
     try {
-      tmp = wrapperIterator_next(iter, IIterator, dropI, dropT);
+      item = wrapperIterator_next(iter, IIterator, dropI, dropT);
     } catch (error) {
       $cleanup(() => {
         console.log(`drop ${iter[1]}`);
@@ -90,7 +90,7 @@ function ofItems(w, IIterator, dropT, dropI) {
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (item == null) {
       console.log(`drop ${iter[1]}`);
       try {
         dropI?.(iter[0]);
@@ -104,7 +104,6 @@ function ofItems(w, IIterator, dropT, dropI) {
       }
       break;
     }
-    const item = tmp;
     try {
       all.push(item);
     } catch (error) {

@@ -71,10 +71,9 @@ function tExt(
       flat(self, SelfItemIntoIterator) {
         const out = [];
         const iter = self;
-        let tmp;
         let iter$1;
-        let tmp$1;
         while (true) {
+          let tmp;
           try {
             tmp = TIterator.next(iter);
           } catch (error) {
@@ -112,8 +111,9 @@ function tExt(
             throw error;
           }
           while (true) {
+            let tmp;
             try {
-              tmp$1 = SelfItemIntoIterator.IntoIterIterator().next(iter$1);
+              tmp = SelfItemIntoIterator.IntoIterIterator().next(iter$1);
             } catch (error) {
               $cleanup(() => {
                 dropTItemIntoIter?.(iter$1);
@@ -124,7 +124,7 @@ function tExt(
               }, error);
               throw error;
             }
-            if (tmp$1 == null) {
+            if (tmp == null) {
               try {
                 dropTItemIntoIter?.(iter$1);
               } catch (error) {
@@ -138,7 +138,7 @@ function tExt(
               }
               break;
             }
-            const item = $someValue(tmp$1);
+            const item = $someValue(tmp);
             try {
               out.push(item);
             } catch (error) {

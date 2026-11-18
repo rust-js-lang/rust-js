@@ -14,20 +14,13 @@ export function main() {
 
   function bump() {
     const tryBorrowMut = $tryBorrow($fieldCell(tally, "count"), true);
-    let value$0$live = true;
     let result;
     if (tryBorrowMut.TAG === "Ok") {
-      value$0$live = false;
       tryBorrowMut._0.value = (tryBorrowMut._0.value + 1) >>> 0;
       result = tryBorrowMut._0.value;
       $unborrow(tryBorrowMut._0);
     } else {
       result = 0;
-    }
-    if (tryBorrowMut.TAG === "Ok") {
-      if (value$0$live) {
-        $unborrow(tryBorrowMut._0);
-      }
     }
     return result;
   }

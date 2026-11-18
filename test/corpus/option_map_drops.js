@@ -142,20 +142,12 @@ function main() {
         try {
           const result = checked(12);
           const value = result.TAG === "Ok" ? { TAG: "Ok", _0: [result._0] } : result;
-          let value$0$live = true;
           if (value.TAG === "Ok") {
-            value$0$live = false;
             console.log(`ok ${value._0[0][0]}`);
             dDrop_drop(value._0[0]);
           } else {
             console.log(`err ${value._0}`);
           }
-          if (value.TAG === "Ok") {
-            if (value$0$live) {
-              dDrop_drop(value._0[0]);
-            }
-          }
-          value$0$live = false;
           const generic = wrappedResult(checked(2));
           console.log(`generic ${generic.TAG === "Ok" ? generic._0[0][0] : 0}`);
           try {

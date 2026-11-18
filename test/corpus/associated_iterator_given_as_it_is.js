@@ -109,9 +109,7 @@ function keptSource_items(kept, IClone, dropI) {
 }
 
 function advance(it, replacement, IIterator, dropI, dropIItem) {
-  let replacement$0$live = true;
   if (replacement != null) {
-    replacement$0$live = false;
     const other = $someValue(replacement);
     try {
       dropI?.(it);
@@ -123,41 +121,15 @@ function advance(it, replacement, IIterator, dropI, dropIItem) {
     }
     $assign(it, other);
   } else {
-    let next;
-    try {
-      next = IIterator.next(it);
-    } catch (error) {
-      $cleanup(() => {
-        if (replacement != null) {
-          dropI?.($someValue(replacement));
-        }
-      }, error);
-      throw error;
-    }
-    try {
-      if (next != null) {
-        dropIItem?.($someValue(next));
-      }
-    } catch (error) {
-      $cleanup(() => {
-        if (replacement != null) {
-          dropI?.($someValue(replacement));
-        }
-      }, error);
-      throw error;
-    }
-  }
-  if (replacement != null) {
-    if (replacement$0$live) {
-      dropI?.($someValue(replacement));
+    const next = IIterator.next(it);
+    if (next != null) {
+      dropIItem?.($someValue(next));
     }
   }
 }
 
 function fromTheBack(it, replacement, IDoubleEndedIterator, dropI) {
-  let replacement$0$live = true;
   if (replacement != null) {
-    replacement$0$live = false;
     const other = $someValue(replacement);
     try {
       dropI?.(it);
@@ -169,25 +141,7 @@ function fromTheBack(it, replacement, IDoubleEndedIterator, dropI) {
     }
     $assign(it, other);
   }
-  let result;
-  try {
-    result = IDoubleEndedIterator.next_back(it);
-  } catch (error) {
-    $cleanup(() => {
-      if (replacement != null) {
-        if (replacement$0$live) {
-          dropI?.($someValue(replacement));
-        }
-      }
-    }, error);
-    throw error;
-  }
-  if (replacement != null) {
-    if (replacement$0$live) {
-      dropI?.($someValue(replacement));
-    }
-  }
-  return result;
+  return IDoubleEndedIterator.next_back(it);
 }
 
 function second(source, SSource) {

@@ -144,10 +144,10 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
   console.log("own rfold");
   let acc$live = true;
   let acc = init;
-  let nextBack;
   while (true) {
+    let x;
     try {
-      nextBack = countDoubleEndedIterator_nextBack(count);
+      x = countDoubleEndedIterator_nextBack(count);
     } catch (error) {
       $cleanup(() => {
         if (acc$live) {
@@ -157,36 +157,21 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
       }, error);
       throw error;
     }
-    if (nextBack != null) {
-      const x = nextBack;
-      acc$live = false;
-      let tmp;
-      try {
-        tmp = f(acc, x);
-      } catch (error) {
-        $cleanup(() => {
-          dropF?.(f);
-        }, error);
-        throw error;
-      }
-      acc$live = true;
-      acc = tmp;
-      continue;
+    if (x == null) {
+      break;
     }
+    acc$live = false;
+    let tmp;
     try {
-      if (nextBack != null) {
-        dDrop_drop(nextBack);
-      }
+      tmp = f(acc, x);
     } catch (error) {
       $cleanup(() => {
-        if (acc$live) {
-          dropB?.(acc);
-        }
         dropF?.(f);
       }, error);
       throw error;
     }
-    break;
+    acc$live = true;
+    acc = tmp;
   }
   acc$live = false;
   const result = acc;

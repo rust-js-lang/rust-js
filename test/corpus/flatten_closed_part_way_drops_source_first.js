@@ -165,10 +165,10 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
   console.log("own fold");
   let acc$live = true;
   let acc = init;
-  let next;
   while (true) {
+    let d;
     try {
-      next = foldsIterator_next(folds);
+      d = foldsIterator_next(folds);
     } catch (error) {
       $cleanup(() => {
         if (acc$live) {
@@ -178,36 +178,21 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
       }, error);
       throw error;
     }
-    if (next != null) {
-      const d = next;
-      acc$live = false;
-      let tmp;
-      try {
-        tmp = f(acc, d);
-      } catch (error) {
-        $cleanup(() => {
-          dropF?.(f);
-        }, error);
-        throw error;
-      }
-      acc$live = true;
-      acc = tmp;
-      continue;
+    if (d == null) {
+      break;
     }
+    acc$live = false;
+    let tmp;
     try {
-      if (next != null) {
-        dDrop_drop(next);
-      }
+      tmp = f(acc, d);
     } catch (error) {
       $cleanup(() => {
-        if (acc$live) {
-          dropB?.(acc);
-        }
         dropF?.(f);
       }, error);
       throw error;
     }
-    break;
+    acc$live = true;
+    acc = tmp;
   }
   acc$live = false;
   const result = acc;

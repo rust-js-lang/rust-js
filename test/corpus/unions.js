@@ -112,6 +112,8 @@ function main() {
   console.log("()");
   const boxed = 5;
   console.log(`${(boxed + 1) | 0}`);
+
+  // A union's own `Drop` runs; its fields are never dropped.
   const held = { noisy: ["inside"] };
   console.log(`${$unionField(held, "noisy")[0]}`);
   console.log("drop holder");

@@ -488,10 +488,10 @@ function main() {
   });
   run("for", () => {
     const iter = $iter(ds({ start: 180, end: 184 }));
-    let tmp;
     while (true) {
+      let d;
       try {
-        tmp = $next(iter);
+        d = $next(iter);
       } catch (error) {
         $cleanup(() => {
           for (const item of iter) {
@@ -500,13 +500,12 @@ function main() {
         }, error);
         throw error;
       }
-      if (tmp == null) {
+      if (d == null) {
         for (const item of iter) {
           dDrop_drop(item);
         }
         return;
       }
-      const d = tmp;
       try {
         boom(d, 182);
       } catch (error) {

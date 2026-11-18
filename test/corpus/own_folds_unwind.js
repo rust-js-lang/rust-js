@@ -39,8 +39,8 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
   console.log("own fold");
   let acc$live = true;
   let acc = init;
-  let next;
   while (true) {
+    let next;
     try {
       next = wrapIterator_next(wrap, dropT);
     } catch (error) {
@@ -67,46 +67,16 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
       }, error);
       throw error;
     }
-    if (next != null) {
-      const x = $someValue(next);
-      acc$live = false;
-      let tmp;
-      try {
-        tmp = f(acc, x);
-      } catch (error) {
-        $cleanup(() => {
-          dropF?.(f);
-          try {
-            $dropItems(wrap.items, (item) => {
-              dropT?.(item);
-            });
-          } catch (error) {
-            $cleanup(() => {
-              if (wrap.extra != null) {
-                dropT?.($someValue(wrap.extra));
-              }
-            }, error);
-            throw error;
-          }
-          if (wrap.extra != null) {
-            dropT?.($someValue(wrap.extra));
-          }
-        }, error);
-        throw error;
-      }
-      acc$live = true;
-      acc = tmp;
-      continue;
+    if (next == null) {
+      break;
     }
+    const x = $someValue(next);
+    acc$live = false;
+    let tmp;
     try {
-      if (next != null) {
-        dropT?.($someValue(next));
-      }
+      tmp = f(acc, x);
     } catch (error) {
       $cleanup(() => {
-        if (acc$live) {
-          dropB?.(acc);
-        }
         dropF?.(f);
         try {
           $dropItems(wrap.items, (item) => {
@@ -126,7 +96,8 @@ function wrapIterator_fold(wrap, init, f, dropT, dropB, dropF) {
       }, error);
       throw error;
     }
-    break;
+    acc$live = true;
+    acc = tmp;
   }
   acc$live = false;
   const result = acc;
@@ -176,8 +147,8 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
   console.log("own rfold");
   let acc$live = true;
   let acc = init;
-  let nextBack;
   while (true) {
+    let nextBack;
     try {
       nextBack = wrapDoubleEndedIterator_nextBack(wrap, dropT);
     } catch (error) {
@@ -204,46 +175,16 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
       }, error);
       throw error;
     }
-    if (nextBack != null) {
-      const x = $someValue(nextBack);
-      acc$live = false;
-      let tmp;
-      try {
-        tmp = f(acc, x);
-      } catch (error) {
-        $cleanup(() => {
-          dropF?.(f);
-          try {
-            $dropItems(wrap.items, (item) => {
-              dropT?.(item);
-            });
-          } catch (error) {
-            $cleanup(() => {
-              if (wrap.extra != null) {
-                dropT?.($someValue(wrap.extra));
-              }
-            }, error);
-            throw error;
-          }
-          if (wrap.extra != null) {
-            dropT?.($someValue(wrap.extra));
-          }
-        }, error);
-        throw error;
-      }
-      acc$live = true;
-      acc = tmp;
-      continue;
+    if (nextBack == null) {
+      break;
     }
+    const x = $someValue(nextBack);
+    acc$live = false;
+    let tmp;
     try {
-      if (nextBack != null) {
-        dropT?.($someValue(nextBack));
-      }
+      tmp = f(acc, x);
     } catch (error) {
       $cleanup(() => {
-        if (acc$live) {
-          dropB?.(acc);
-        }
         dropF?.(f);
         try {
           $dropItems(wrap.items, (item) => {
@@ -263,7 +204,8 @@ function wrapDoubleEndedIterator_rfold(wrap, init, f, dropT, dropB, dropF) {
       }, error);
       throw error;
     }
-    break;
+    acc$live = true;
+    acc = tmp;
   }
   acc$live = false;
   const result = acc;
@@ -315,10 +257,10 @@ function ownedIterator_fold(owned, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    let next;
     while (true) {
+      let x;
       try {
-        next = ownedIterator_next(owned);
+        x = ownedIterator_next(owned);
       } catch (error) {
         $cleanup(() => {
           if (acc$live) {
@@ -328,36 +270,21 @@ function ownedIterator_fold(owned, init, f, dropB, dropF) {
         }, error);
         throw error;
       }
-      if (next != null) {
-        const x = next;
-        acc$live = false;
-        let tmp;
-        try {
-          tmp = f(acc, x);
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
-        acc$live = true;
-        acc = tmp;
-        continue;
+      if (x == null) {
+        break;
       }
+      acc$live = false;
+      let tmp;
       try {
-        if (next != null) {
-          dDrop_drop(next);
-        }
+        tmp = f(acc, x);
       } catch (error) {
         $cleanup(() => {
-          if (acc$live) {
-            dropB?.(acc);
-          }
           dropF?.(f);
         }, error);
         throw error;
       }
-      break;
+      acc$live = true;
+      acc = tmp;
     }
     acc$live = false;
     result = acc;

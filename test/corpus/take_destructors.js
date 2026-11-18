@@ -484,10 +484,10 @@ function main() {
       }, error);
       throw error;
     }
-    let tmp$2;
     while (true) {
+      let n;
       try {
-        tmp$2 = $next(iter);
+        n = $next(iter);
       } catch (error) {
         $cleanup(() => {
           if (owned$live) {
@@ -528,10 +528,9 @@ function main() {
         }, error);
         throw error;
       }
-      if (tmp$2 == null) {
+      if (n == null) {
         break;
       }
-      const n = tmp$2;
       console.log(`lent got ${n[0]}`);
       nDrop_drop(n);
     }

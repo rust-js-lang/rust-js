@@ -1224,3 +1224,21 @@ neither evaluation nor results. The constructor test in
 `test/lowering-comment-fields.test.ts` holds both forms and the
 `constructor-field-docs-lost` and `declared-field-documented-in-constructor`
 mutations exercise both directions.
+
+## Amendment: a block's opening with nothing but the comment before it (2026-11-19, #2112's change D)
+
+A comment is before the statement whose code follows it, where only that
+statement's start is between them, no `;`, `{` or `}` but listed openings,
+`unsafe {` among them. A `{` with nothing but the comment before it is one
+now: a plain block's, whose statements are its function's, the first a
+temporary its `let` is made of, `// map_split: ..\n{ let (x, name) =
+Ref::map_split(c.borrow(), ..)`, which starts past the `{`; and an `if`'s
+after its test, `&& !get_is_hydrating()\n// We don't cut it ..\n{`, which
+is above the block's first statement. Each was left out, or put far from its
+code, where no `try` the block made was there to hold it: four corpus cases'
+comments come back (`ref_cell_guards_mapped`'s two, `lock_poisoning`'s and
+`unions`'), and React's port's two move next to their code.
+
+Held by test/lowering-comments-ends.test.ts's row and mutation
+`plain-block-opening-unseen`.
+

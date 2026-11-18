@@ -128,8 +128,8 @@ function main() {
       [$some(undefined), $some(undefined)],
       [undefined, undefined],
     ]);
-    let tmp;
     while (true) {
+      let tmp;
       try {
         tmp = $next(iter);
       } catch (error) {

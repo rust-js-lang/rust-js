@@ -212,10 +212,10 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp;
   while (true) {
+    let d;
     try {
-      tmp = $next(iter);
+      d = $next(iter);
     } catch (error) {
       $cleanup(() => {
         if (it$live$1) {
@@ -257,10 +257,9 @@ function main() {
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (d == null) {
       break;
     }
-    const d = tmp;
     console.log(`got ${d[0]}`);
     dDrop_drop(d);
   }

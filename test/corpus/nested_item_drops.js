@@ -49,10 +49,9 @@ function firsts(
     }, error);
     throw error;
   }
-  let tmp;
   let it;
-  let next;
   while (true) {
+    let tmp;
     try {
       tmp = $nextSome(iter);
     } catch (error) {
@@ -89,6 +88,7 @@ function firsts(
       }, error);
       throw error;
     }
+    let next;
     try {
       next = IItemIntoIterator.IntoIterIterator().next(it);
     } catch (error) {
@@ -105,21 +105,6 @@ function firsts(
       const first = $someValue(next);
       try {
         out.push(first);
-      } catch (error) {
-        $cleanup(() => {
-          dropIItemIntoIter?.(it);
-          dropIIntoIter?.(iter);
-          $dropItems(out, (item) => {
-            dropIItemItem?.(item);
-          });
-        }, error);
-        throw error;
-      }
-    } else {
-      try {
-        if (next != null) {
-          dropIItemItem?.($someValue(next));
-        }
       } catch (error) {
         $cleanup(() => {
           dropIItemIntoIter?.(it);
@@ -235,10 +220,8 @@ function groupsFirstOfNext_firstOfNext(
   dropIItemIntoIter,
 ) {
   const value = IIterator.next(groups[0]);
-  let value$0$live = true;
   let result;
   if (value != null) {
-    value$0$live = false;
     const inner = $someValue(value);
     const value$1 = $held(IItemIntoIterator.intoIter(inner));
     let next;
@@ -260,11 +243,6 @@ function groupsFirstOfNext_firstOfNext(
     dropIItemIntoIter?.(value$1);
   } else {
     result = 0;
-  }
-  if (value != null) {
-    if (value$0$live) {
-      dropIItem?.($someValue(value));
-    }
   }
   return result;
 }

@@ -46,22 +46,13 @@ function render(name, other) {
       () => {
         const x = cell.value.value;
         const request = x != null ? $upgrade(x) : undefined;
-        let value$0$live = true;
         if (request != null) {
-          value$0$live = false;
           console.log(`${request.value.name} is ready`);
           $rcDrop(request, (value) => {
             $rcDrop(value.onReady, $dispose);
           });
         } else {
           console.log("no request");
-        }
-        if (request != null) {
-          if (value$0$live) {
-            $rcDrop(request, (value) => {
-              $rcDrop(value.onReady, $dispose);
-            });
-          }
         }
       },
       () => {

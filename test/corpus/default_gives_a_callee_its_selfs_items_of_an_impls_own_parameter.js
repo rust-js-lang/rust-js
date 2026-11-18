@@ -37,8 +37,8 @@ function room(it, JItemSize, dropJ, dropJItem) {
     }, error);
     throw error;
   }
-  let tmp;
   while (true) {
+    let tmp;
     try {
       tmp = $nextSome(iter);
     } catch (error) {

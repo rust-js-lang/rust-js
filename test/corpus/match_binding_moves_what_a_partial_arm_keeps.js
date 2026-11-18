@@ -31,12 +31,11 @@ function flatten(subs) {
     }, error);
     throw error;
   }
-  let tmp;
   let iter$1;
-  let tmp$1;
   while (true) {
+    let sub;
     try {
-      tmp = $next(iter);
+      sub = $next(iter);
     } catch (error) {
       $cleanup(() => {
         $dropItems(iter, dropNode);
@@ -44,7 +43,7 @@ function flatten(subs) {
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (sub == null) {
       try {
         $dropItems(iter, dropNode);
       } catch (error) {
@@ -56,7 +55,6 @@ function flatten(subs) {
       break;
     }
     sub$kind$live = true;
-    const sub = tmp;
     if (sub.kind.TAG === "Group") {
       try {
         iter$1 = $iter(sub.kind._0);
@@ -71,8 +69,9 @@ function flatten(subs) {
         throw error;
       }
       while (true) {
+        let sub2;
         try {
-          tmp$1 = $next(iter$1);
+          sub2 = $next(iter$1);
         } catch (error) {
           $cleanup(() => {
             $dropItems(iter$1, dropNode);
@@ -84,7 +83,7 @@ function flatten(subs) {
           }, error);
           throw error;
         }
-        if (tmp$1 == null) {
+        if (sub2 == null) {
           try {
             $dropItems(iter$1, dropNode);
           } catch (error) {
@@ -99,7 +98,6 @@ function flatten(subs) {
           }
           break;
         }
-        const sub2 = tmp$1;
         kind2$live = true;
         const kind2 = sub2.kind;
         if (kind2.TAG === "Text") {
@@ -253,10 +251,10 @@ function textsIfLet(subs) {
     }, error);
     throw error;
   }
-  let tmp;
   while (true) {
+    let sub;
     try {
-      tmp = $next(iter);
+      sub = $next(iter);
     } catch (error) {
       $cleanup(() => {
         $dropItems(iter, dropNode);
@@ -266,7 +264,7 @@ function textsIfLet(subs) {
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (sub == null) {
       try {
         $dropItems(iter, dropNode);
       } catch (error) {
@@ -280,7 +278,6 @@ function textsIfLet(subs) {
       kept$live = false;
       return [text, kept];
     }
-    const sub = tmp;
     kind$live = true;
     const kind = sub.kind;
     if (kind.TAG === "Text") {
@@ -355,10 +352,10 @@ function textsLetElse(subs) {
     }, error);
     throw error;
   }
-  let tmp;
   while (true) {
+    let sub;
     try {
-      tmp = $next(iter);
+      sub = $next(iter);
     } catch (error) {
       $cleanup(() => {
         $dropItems(iter, dropNode);
@@ -368,7 +365,7 @@ function textsLetElse(subs) {
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (sub == null) {
       try {
         $dropItems(iter, dropNode);
       } catch (error) {
@@ -382,7 +379,6 @@ function textsLetElse(subs) {
       kept$live = false;
       return [text, kept];
     }
-    const sub = tmp;
     const kind = sub.kind;
     if (kind.TAG !== "Text") {
       try {

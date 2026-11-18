@@ -213,31 +213,20 @@ function depth(node) {
       }, error);
       throw error;
     }
-    if (parent != null) {
-      try {
-        $rcDrop(cur, dropNode);
-      } catch (error) {
-        $cleanup(() => {
-          cur = parent;
-          $rcDrop(cur, dropNode);
-        }, error);
-        throw error;
-      }
-      cur = parent;
-      depth = (depth + 1) >>> 0;
-      continue;
+    if (parent == null) {
+      break;
     }
     try {
-      if (parent != null) {
-        $rcDrop(parent, dropNode);
-      }
+      $rcDrop(cur, dropNode);
     } catch (error) {
       $cleanup(() => {
+        cur = parent;
         $rcDrop(cur, dropNode);
       }, error);
       throw error;
     }
-    break;
+    cur = parent;
+    depth = (depth + 1) >>> 0;
   }
   const result = depth;
   $rcDrop(cur, dropNode);

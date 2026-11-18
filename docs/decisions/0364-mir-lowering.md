@@ -1790,3 +1790,28 @@ Case of [0262](0262-when-rust-and-js-disagree.md): none, no output
 changes. Held by test/drops-shadow.test.ts and four mutations of
 `mir/elaborated.rs`, caught.
 
+## Amendment: the drop dataflow runs without borrowck's imaginary edges (2026-11-19, #2112's change D)
+
+The built MIR keeps edges only borrowck follows: a `match`'s `falseEdge` to
+an arm it didn't take, a loop's `falseUnwind`. rustc's `CleanupPostBorrowck`
+makes them the `goto`s they are before `ElaborateDrops` runs; rust-js's
+dataflow of what's there followed them, so a value always there, or never,
+read as maybe there, and was given a flag: `acc$live` of every fold over a
+type parameter, a temporary held across a loop's imaginary unwind and so
+declared before it. The shadow above counted 10 such flags on the normal
+path, rust-js's alone. The dataflow now runs on the body as rustc's reads it
+(`flowing`, of `elaborated` and `dead_drops` alike).
+
+Never taken, the edges made no other drop, only a flag more: 72 corpus
+snapshots move, 409 lines in, 1,424 out (43 flags' declarations and 40
+cleanups gone), each case's run as native Rust's; React's port: no line.
+docs/readability.txt, blessed: `$iter`'s share of 10,000 lines grows, 86.1
+to 86.4, its count the same, 3,219, as the lines fall, 373,773 to 372,764;
+`while (true)`, renamed `x$1`s and role fallbacks fall.
+The shadow, again: on the normal path 7,441 agree, none disagree, 4
+`flag-ours` (an enum variant's own path, maybe there where it's live,
+which rustc's ladder tests the discriminant of instead), 97 unmatched.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no answer changes.
+Held by each moved snapshot and test/drops-shadow.test.ts.
+

@@ -169,6 +169,8 @@ function main() {
       throw new Error("relocked");
     } catch (error) {
       $cleanup(() => {
+        // Taken as a panic unwinds: their drops poison nothing, released
+        // whether or not what they hold may panic.
         let held = $lock(count);
         held.value = (held.value + 1) >>> 0;
         $unlock(held);
@@ -206,9 +208,7 @@ function main() {
     $unlock(value._0.data);
   }
   const lock = $locked(count, true);
-  let lock$0$live = true;
   if (lock.TAG === "Err") {
-    lock$0$live = false;
     console.log(
       `poisoned lock: another task failed inside | PoisonError { .. } | ${lock._0.data.value}`,
     );
@@ -216,11 +216,7 @@ function main() {
   } else {
     console.log("ok");
   }
-  if (lock.TAG === "Err") {
-    if (lock$0$live) {
-      $unlock(lock._0.data);
-    }
-  } else {
+  if (lock.TAG !== "Err") {
     if (lock.TAG === "Ok") {
       $unlock(lock._0);
     }
@@ -228,17 +224,13 @@ function main() {
       $unlock(lock._0.data);
     }
   }
-  lock$0$live = false;
   const tryLock = $tryLock(count, true);
-  let tryLock$0$0$live = true;
   if (tryLock.TAG === "Err") {
     if (tryLock._0.TAG === "Poisoned") {
-      tryLock$0$0$live = false;
       const shown = "poisoned lock: another task failed inside";
       console.log(`try ${shown} ${tryLock._0._0.data.value}`);
       $unlock(tryLock._0._0.data);
     } else {
-      tryLock$0$0$live = false;
       console.log(
         `try ${tryLock._0 === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"}`,
       );
@@ -265,13 +257,7 @@ function main() {
   } else {
     console.log("try ok");
   }
-  if (tryLock.TAG === "Err") {
-    if (tryLock._0.TAG === "Poisoned") {
-      if (tryLock$0$0$live) {
-        $unlock(tryLock._0._0.data);
-      }
-    }
-  } else {
+  if (tryLock.TAG !== "Err") {
     if (tryLock.TAG === "Ok") {
       $unlock(tryLock._0);
     }
@@ -281,7 +267,6 @@ function main() {
       }
     }
   }
-  tryLock$0$0$live = false;
   caught = $catchUnwind(() => {
     const value = $lock(count, "lock it");
     $unlock(value);

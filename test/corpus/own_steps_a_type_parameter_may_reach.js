@@ -54,10 +54,10 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    let next;
     while (true) {
+      let x;
       try {
-        next = foldsIterator_next(folds);
+        x = foldsIterator_next(folds);
       } catch (error) {
         $cleanup(() => {
           if (acc$live) {
@@ -67,36 +67,21 @@ function foldsIterator_fold(folds, init, f, dropB, dropF) {
         }, error);
         throw error;
       }
-      if (next != null) {
-        const x = next;
-        acc$live = false;
-        let tmp;
-        try {
-          tmp = f(acc, x);
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
-        acc$live = true;
-        acc = tmp;
-        continue;
+      if (x == null) {
+        break;
       }
+      acc$live = false;
+      let tmp;
       try {
-        if (next != null) {
-          dDrop_drop(next);
-        }
+        tmp = f(acc, x);
       } catch (error) {
         $cleanup(() => {
-          if (acc$live) {
-            dropB?.(acc);
-          }
           dropF?.(f);
         }, error);
         throw error;
       }
-      break;
+      acc$live = true;
+      acc = tmp;
     }
     acc$live = false;
     result = acc;
@@ -124,10 +109,10 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
   let acc = init;
   let result;
   try {
-    let nextBack;
     while (true) {
+      let x;
       try {
-        nextBack = foldsDoubleEndedIterator_nextBack(folds);
+        x = foldsDoubleEndedIterator_nextBack(folds);
       } catch (error) {
         $cleanup(() => {
           if (acc$live) {
@@ -137,36 +122,21 @@ function foldsDoubleEndedIterator_rfold(folds, init, f, dropB, dropF) {
         }, error);
         throw error;
       }
-      if (nextBack != null) {
-        const x = nextBack;
-        acc$live = false;
-        let tmp;
-        try {
-          tmp = f(acc, x);
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
-        acc$live = true;
-        acc = tmp;
-        continue;
+      if (x == null) {
+        break;
       }
+      acc$live = false;
+      let tmp;
       try {
-        if (nextBack != null) {
-          dDrop_drop(nextBack);
-        }
+        tmp = f(acc, x);
       } catch (error) {
         $cleanup(() => {
-          if (acc$live) {
-            dropB?.(acc);
-          }
           dropF?.(f);
         }, error);
         throw error;
       }
-      break;
+      acc$live = true;
+      acc = tmp;
     }
     acc$live = false;
     result = acc;

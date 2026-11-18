@@ -149,9 +149,6 @@ function parsePair(a, b, both, BNamed, dropB) {
 }
 
 function main() {
-  let value$0$live = false;
-  let value$0$0$live = false;
-  let value$0$1$live = false;
   const option = make(2);
   let kept$1;
   try {
@@ -331,51 +328,29 @@ function main() {
               try {
                 try {
                   const value = parse("16", dNamed);
-                  let value$0$live$1 = true;
                   if (value.TAG === "Ok") {
-                    value$0$live$1 = false;
                     console.log(`parsed ${value._0[0]}`);
                     dDrop_drop(value._0);
                   } else {
                     console.log(`${value._0}`);
                   }
-                  if (value.TAG === "Ok") {
-                    if (value$0$live$1) {
-                      dDrop_drop(value._0);
-                    }
-                  }
-                  value$0$live$1 = false;
                   const value$1 = parse("x", dNamed);
-                  let value$0$live$2 = true;
                   if (value$1.TAG === "Ok") {
-                    value$0$live$2 = false;
                     console.log(`parsed ${value$1._0[0]}`);
                     dDrop_drop(value$1._0);
                   } else {
                     console.log(`${value$1._0}`);
                   }
-                  if (value$1.TAG === "Ok") {
-                    if (value$0$live$2) {
-                      dDrop_drop(value$1._0);
-                    }
-                  }
-                  value$0$live$2 = false;
                   let iter = $iter(["0x17", "18", "0xy", "z"]);
                   let flag;
                   while ((flag = $next(iter)) != null) {
                     const value = parseFlag(flag, dNamed);
-                    value$0$live = true;
                     if (value.TAG === "Ok") {
-                      value$0$live = false;
                       console.log(`flag ${value._0[0]}`);
                       dDrop_drop(value._0);
                     } else {
                       console.log(`${value._0}`);
                     }
-                    if (value.TAG === "Ok" && value$0$live) {
-                      dDrop_drop(value._0);
-                    }
-                    value$0$live = false;
                   }
                   iter = $iter([
                     ["19", "20", true],
@@ -388,12 +363,8 @@ function main() {
                     const b = value$2[1];
                     const both = value$2[2];
                     const value = parsePair(a, b, both, dNamed, dDrop_drop);
-                    value$0$1$live = true;
-                    value$0$0$live = true;
                     if (value.TAG === "Ok") {
-                      value$0$0$live = false;
                       const d = value._0[0];
-                      value$0$1$live = false;
                       const e = value._0[1];
                       function map(e) {
                         const result = e[0];
@@ -412,16 +383,6 @@ function main() {
                     } else {
                       console.log(`${value._0}`);
                     }
-                    if (value.TAG === "Ok") {
-                      if (value$0$0$live) {
-                        dDrop_drop(value._0[0]);
-                      }
-                      if (value$0$1$live && value._0[1] != null) {
-                        dDrop_drop(value._0[1]);
-                      }
-                    }
-                    value$0$1$live = false;
-                    value$0$0$live = false;
                   }
                   console.log("end");
                 } catch (error) {

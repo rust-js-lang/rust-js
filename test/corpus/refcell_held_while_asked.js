@@ -45,10 +45,8 @@ function peekClone_clone(peek) {
 const Node = {
   asks(node) {
     const me = $upgrade(node.me);
-    let value$0$live = true;
     let result;
     if (me != null) {
-      value$0$live = false;
       try {
         const tryBorrowMut = $tryBorrow(me.value, true);
         result = tryBorrowMut.TAG === "Err";
@@ -66,13 +64,6 @@ const Node = {
       }
     } else {
       result = false;
-    }
-    if (me != null) {
-      if (value$0$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
     }
     return result;
   },

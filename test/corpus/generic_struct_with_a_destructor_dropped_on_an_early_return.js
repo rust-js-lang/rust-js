@@ -117,17 +117,6 @@ function chainParser_parse(chain, input, LParser, RParser, dropL, dropR) {
   }
   if (result$1.TAG !== "Err") {
     const rest = result$1._0;
-    try {
-      if (result$1.TAG === "Err") {
-        LParser.$dropInput?.(result$1._0);
-      }
-    } catch (error) {
-      $cleanup(() => {
-        LParser.$dropInput?.(rest);
-        dropR?.(chain[1]);
-      }, error);
-      throw error;
-    }
     return RParser.parse(chain[1], rest);
   }
   const result = result$1;

@@ -305,11 +305,9 @@ function opened(t, open, fresh, TSrc) {
     }, error);
     throw error;
   }
-  let maybe$0$1$live = true;
   let result;
   if (maybe != null) {
     const held = maybe[0];
-    maybe$0$1$live = false;
     const it = maybe[1];
     fresh$live = false;
     try {
@@ -337,21 +335,6 @@ function opened(t, open, fresh, TSrc) {
   } else {
     result = [];
   }
-  try {
-    if (maybe != null) {
-      if (maybe$0$1$live) {
-        TSrc.$dropMaybe?.(maybe[1]);
-      }
-    }
-  } catch (error) {
-    $cleanup(() => {
-      if (fresh$live) {
-        TSrc.$dropItem?.(fresh);
-      }
-    }, error);
-    throw error;
-  }
-  maybe$0$1$live = false;
   if (fresh$live) {
     TSrc.$dropItem?.(fresh);
   }

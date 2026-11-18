@@ -70,9 +70,7 @@ function main() {
     }, error);
     throw error;
   }
-  let tmp$0$live = true;
   if (tmp.TAG === "Err") {
-    tmp$0$live = false;
     const e = tmp._0;
     try {
       console.log(`err ${e.impl.Display().fmt(e.value)}`);
@@ -101,22 +99,6 @@ function main() {
     const n = tmp._0;
     console.log(`${n}`);
   }
-  try {
-    if (tmp.TAG === "Err") {
-      if (tmp$0$live) {
-        tmp._0.impl.$drop?.(tmp._0.value);
-      }
-    }
-  } catch (error) {
-    $cleanup(() => {
-      $dropItems(items, (item) => {
-        item.impl.$drop?.(item.value);
-      });
-      shown.impl.$drop?.(shown.value);
-    }, error);
-    throw error;
-  }
-  tmp$0$live = false;
   console.log("end");
   try {
     $dropItems(items, (item) => {

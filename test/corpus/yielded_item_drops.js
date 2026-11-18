@@ -85,8 +85,8 @@ function third(iter, dropIItem) {
 
 function lastOne(iter, dropIItem) {
   let last = $nextSome(iter);
-  let tmp;
   while (true) {
+    let tmp;
     try {
       tmp = $nextSome(iter);
     } catch (error) {
@@ -97,38 +97,25 @@ function lastOne(iter, dropIItem) {
       }, error);
       throw error;
     }
-    if (tmp != null) {
-      const next = $someValue(tmp);
-      const value = $some(next);
-      try {
-        if (last != null) {
-          dropIItem?.($someValue(last));
-        }
-      } catch (error) {
-        $cleanup(() => {
-          last = value;
-          if (last != null) {
-            dropIItem?.($someValue(last));
-          }
-        }, error);
-        throw error;
-      }
-      last = value;
-      continue;
+    if (tmp == null) {
+      break;
     }
+    const next = $someValue(tmp);
+    const value = $some(next);
     try {
-      if (tmp != null) {
-        dropIItem?.($someValue(tmp));
+      if (last != null) {
+        dropIItem?.($someValue(last));
       }
     } catch (error) {
       $cleanup(() => {
+        last = value;
         if (last != null) {
           dropIItem?.($someValue(last));
         }
       }, error);
       throw error;
     }
-    break;
+    last = value;
   }
   return last;
 }

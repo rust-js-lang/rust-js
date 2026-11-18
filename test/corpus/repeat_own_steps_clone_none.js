@@ -272,10 +272,10 @@ function main() {
       }, 0)}`,
   );
   const iter = $repeatingN([170], 2, (value) => lClone_clone(value), lDrop_drop);
-  let tmp$2;
   while (true) {
+    let l;
     try {
-      tmp$2 = $next(iter);
+      l = $next(iter);
     } catch (error) {
       $cleanup(() => {
         iter.return();
@@ -285,12 +285,11 @@ function main() {
       }, error);
       throw error;
     }
-    if (tmp$2 == null) {
+    if (l == null) {
       iter.return();
       heldN$live = false;
       return;
     }
-    const l = tmp$2;
     console.log(`got ${l[0]}`);
     lDrop_drop(l);
   }

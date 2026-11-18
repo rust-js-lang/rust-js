@@ -104,21 +104,20 @@ function main() {
       2,
       loudDrop_drop,
     );
-    let tmp;
     while (true) {
+      let loud;
       try {
-        tmp = $next(iter);
+        loud = $next(iter);
       } catch (error) {
         $cleanup(() => {
           iter.return();
         }, error);
         throw error;
       }
-      if (tmp == null) {
+      if (loud == null) {
         iter.return();
         break;
       }
-      const loud = tmp;
       console.log(`got ${loud[0]}`);
       loudDrop_drop(loud);
     }
@@ -127,21 +126,20 @@ function main() {
       3,
       loudDrop_drop,
     );
-    let tmp$1;
     while (true) {
+      let loud;
       try {
-        tmp$1 = $next(iter);
+        loud = $next(iter);
       } catch (error) {
         $cleanup(() => {
           iter.return();
         }, error);
         throw error;
       }
-      if (tmp$1 == null) {
+      if (loud == null) {
         iter.return();
         break;
       }
-      const loud = tmp$1;
       console.log(`got ${loud[0]}`);
       loudDrop_drop(loud);
     }
@@ -274,10 +272,10 @@ function main() {
         2,
         loudDrop_drop,
       );
-      let tmp$1;
       while (true) {
+        let loud;
         try {
-          tmp$1 = $next(iter);
+          loud = $next(iter);
         } catch (error) {
           $cleanup(() => {
             iter.return();
@@ -289,11 +287,10 @@ function main() {
           }, error);
           throw error;
         }
-        if (tmp$1 == null) {
+        if (loud == null) {
           iter.return();
           break;
         }
-        const loud = tmp$1;
         console.log(`got ${loud[0]}`);
         loudDrop_drop(loud);
       }

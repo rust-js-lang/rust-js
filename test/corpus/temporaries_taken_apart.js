@@ -53,7 +53,6 @@ function allMoved([a, b]) {
 }
 
 function main() {
-  let two$0$live = false;
   const x = make(3);
   loudDrop_drop(make(4));
   console.log(`after let ${x[0]}`);
@@ -83,9 +82,7 @@ function main() {
       }, error);
       throw error;
     }
-    two$0$live = true;
     if (two.TAG === "Both") {
-      two$0$live = false;
       console.log(`both ${two._0[0]}`);
       loudDrop_drop(two._0);
     } else if (two.TAG === "One") {
@@ -95,9 +92,6 @@ function main() {
     }
     try {
       if (two.TAG === "Both") {
-        if (two$0$live) {
-          loudDrop_drop(two._0);
-        }
         loudDrop_drop(two._1);
       } else if (two.TAG === "One") {
         loudDrop_drop(two._0);
@@ -109,7 +103,6 @@ function main() {
       }, error);
       throw error;
     }
-    two$0$live = false;
     console.log(`after match ${n}`);
   }
 
@@ -121,29 +114,29 @@ function main() {
 
   const z = make(7);
   const value$1 = make(8);
+  if (z != null) {
+    console.log(`if ${z[0]}`);
+    loudDrop_drop(z);
+  }
+  loudDrop_drop(value$1);
+  // `ref b` keeps the temporary for the block, less what `a` moves out.
+  const before = make(1);
+  const a = make(40);
+  const b = make(41);
+  const c = make(42);
+  const value$2 = make(43);
+  console.log(`in ${before[0]} ${a[0]} ${b[0]} ${c[0]}`);
+  loudDrop_drop(c);
+  loudDrop_drop(value$2);
+  loudDrop_drop(a);
+  loudDrop_drop(b);
+  loudDrop_drop(before);
+  const kept = make(9);
+  const whole = kept[0];
+  loudDrop_drop(kept);
   try {
     try {
       try {
-        if (z != null) {
-          console.log(`if ${z[0]}`);
-          loudDrop_drop(z);
-        }
-        loudDrop_drop(value$1);
-        // `ref b` keeps the temporary for the block, less what `a` moves out.
-        const before = make(1);
-        const a = make(40);
-        const b = make(41);
-        const c = make(42);
-        const value = make(43);
-        console.log(`in ${before[0]} ${a[0]} ${b[0]} ${c[0]}`);
-        loudDrop_drop(c);
-        loudDrop_drop(value);
-        loudDrop_drop(a);
-        loudDrop_drop(b);
-        loudDrop_drop(before);
-        const kept = make(9);
-        const whole = kept[0];
-        loudDrop_drop(kept);
         someBorrowed([make(50), make(51)]);
         allBorrowed([make(52), make(53)]);
         allMoved([make(54), make(55)]);

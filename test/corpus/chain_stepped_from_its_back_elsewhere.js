@@ -52,41 +52,20 @@ function ownIterator_next(own) {
 }
 function ownIterator_fold(own, init, f, dropB, dropF) {
   console.log("own fold");
-  let acc$live = true;
   let acc = init;
-  while (true) {
-    const x = ownIterator_next(own);
-    if (x != null) {
-      acc$live = false;
-      let tmp;
-      try {
-        tmp = f(acc, x);
-      } catch (error) {
-        $cleanup(() => {
-          dropF?.(f);
-        }, error);
-        throw error;
-      }
-      acc$live = true;
-      acc = tmp;
-      continue;
-    }
+  let x;
+  while ((x = ownIterator_next(own)) != null) {
+    let tmp;
     try {
-      if (x != null) {
-        dDrop_drop(x);
-      }
+      tmp = f(acc, x);
     } catch (error) {
       $cleanup(() => {
-        if (acc$live) {
-          dropB?.(acc);
-        }
         dropF?.(f);
       }, error);
       throw error;
     }
-    break;
+    acc = tmp;
   }
-  acc$live = false;
   const result = acc;
   dropF?.(f);
   return result;

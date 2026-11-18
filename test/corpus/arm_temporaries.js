@@ -19,7 +19,6 @@ function make(name, give) {
 
 const Mapped = {
   andThen(mapped, f, dropU) {
-    let new$0$live = false;
     let min$0$0$live = false;
     let max$1$0$live = false;
     let result;
@@ -28,19 +27,11 @@ const Mapped = {
     } else if (mapped.TAG === "Single") {
       const v = mapped._0;
       const new$ = f(v);
-      new$0$live = true;
       if (new$ != null) {
-        new$0$live = false;
         result = { TAG: "Single", _0: new$ };
       } else {
         result = "None";
       }
-      if (new$ != null) {
-        if (new$0$live) {
-          dropU?.(new$);
-        }
-      }
-      new$0$live = false;
     } else {
       let { _0: min, _1: max } = mapped;
       min = f(min);
@@ -92,34 +83,18 @@ const Mapped = {
 };
 
 function first(k) {
-  let l$0$live = false;
   let result;
   if (k != null) {
     const held = ["held"];
     const l = make(k, true);
-    l$0$live = true;
     if (l != null) {
-      l$0$live = false;
       console.log(`got ${l[0]} with ${held[0]}`);
       result = $byteLen(l[0]);
       loudDrop_drop(l);
     } else {
       result = 0;
     }
-    try {
-      if (l != null) {
-        if (l$0$live) {
-          loudDrop_drop(l);
-        }
-      }
-      l$0$live = false;
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        loudDrop_drop(held);
-      }
-    }
+    loudDrop_drop(held);
     return result;
   } else {
     const loud = ["arm"];

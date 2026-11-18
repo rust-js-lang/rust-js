@@ -91,7 +91,6 @@ function valDrop_drop(val) {
 }
 
 function main() {
-  let copy$0$live = false;
   let iter;
   let iter$1;
   for (const n of [12, 30, 70]) {
@@ -225,14 +224,12 @@ function main() {
           m,
         ),
       );
-      copy$0$live = true;
       panicAt = 0;
       const old = LOG;
       LOG = "";
       const dropped = old;
       console.log(`${n} at ${at}: ${copy.TAG === "Ok"} | ${dropped}`);
       if (copy.TAG === "Ok") {
-        copy$0$live = false;
         const copy$1 = copy._0;
         calls = 0;
         let insert;
@@ -420,37 +417,6 @@ function main() {
         }
         LOG = "";
       }
-      try {
-        if (copy.TAG === "Ok" && copy$0$live) {
-          $dropItems($sortedEntries(copy._0, keyOrd_cmp), ([key, value]) => {
-            try {
-              keyDrop_drop(key);
-            } catch (error) {
-              $cleanup(() => {
-                valDrop_drop(value);
-              }, error);
-              throw error;
-            }
-            valDrop_drop(value);
-          });
-        }
-      } catch (error) {
-        $cleanup(() => {
-          $dropItems($sortedEntries(m, keyOrd_cmp), ([key, value]) => {
-            try {
-              keyDrop_drop(key);
-            } catch (error) {
-              $cleanup(() => {
-                valDrop_drop(value);
-              }, error);
-              throw error;
-            }
-            valDrop_drop(value);
-          });
-        }, error);
-        throw error;
-      }
-      copy$0$live = false;
     }
     LOG = "";
     let s;

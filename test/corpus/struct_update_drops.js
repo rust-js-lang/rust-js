@@ -93,22 +93,13 @@ function main() {
                 console.log(`drop ${value.y[0]}`);
               }
               const built = rebuild({ x: [12], y: [13], n: 5 }, false);
-              let built$0$live = true;
               if (built != null) {
-                built$0$live = false;
                 console.log(`built ${built.x[0]} ${built.y[0]}`);
                 console.log(`drop ${built.x[0]}`);
                 console.log(`drop ${built.y[0]}`);
               } else {
                 console.log("none");
               }
-              if (built != null) {
-                if (built$0$live) {
-                  console.log(`drop ${built.x[0]}`);
-                  console.log(`drop ${built.y[0]}`);
-                }
-              }
-              built$0$live = false;
               console.log("end");
             } catch (error) {
               throw $unwindsOn(error);

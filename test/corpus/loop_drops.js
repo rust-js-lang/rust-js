@@ -201,7 +201,6 @@ function main() {
   iter = $iter([["r1"], ["r2"]]);
   let tmp;
   let iter$1;
-  let tmp$1;
   outer: while (true) {
     try {
       tmp = $next(iter);
@@ -227,8 +226,9 @@ function main() {
         throw error;
       }
       while (true) {
+        let cell;
         try {
-          tmp$1 = $next(iter$1);
+          cell = $next(iter$1);
         } catch (error) {
           $cleanup(() => {
             for (const item of iter$1) {
@@ -241,7 +241,7 @@ function main() {
           }, error);
           throw error;
         }
-        if (tmp$1 == null) {
+        if (cell == null) {
           try {
             for (const item of iter$1) {
               noisyDrop_drop(item);
@@ -258,7 +258,6 @@ function main() {
           noisyDrop_drop(row);
           continue outer;
         }
-        const cell = tmp$1;
         if (cell[0] === "x2" && row[0] === "r1") {
           noisyDrop_drop(cell);
           try {

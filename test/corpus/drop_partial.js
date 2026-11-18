@@ -62,30 +62,17 @@ function main() {
   noisyDrop_drop(first);
   noisyDrop_drop(tuple[1]);
   const opt = ["o"];
-  let opt$0$live = true;
   if (opt != null) {
-    opt$0$live = false;
     consume(opt);
   }
   console.log("matched");
-  if (opt != null) {
-    if (opt$0$live) {
-      noisyDrop_drop(opt);
-    }
-  }
-  opt$0$live = false;
-  let shape$a$live = true;
   const shape = { TAG: "Two", a: ["sa"], b: ["sb"] };
   if (shape.TAG === "Two") {
-    shape$a$live = false;
     console.log(`two ${shape.a[0]}`);
     noisyDrop_drop(shape.a);
   }
   console.log("shape");
   if (shape.TAG === "Two") {
-    if (shape$a$live) {
-      noisyDrop_drop(shape.a);
-    }
     noisyDrop_drop(shape.b);
   } else {
     if (shape.TAG === "One") {
@@ -96,7 +83,6 @@ function main() {
       noisyDrop_drop(shape.b);
     }
   }
-  shape$a$live = false;
   const again = pair("ra", "rb", 4);
   try {
     consume(again.a);

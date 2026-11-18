@@ -248,8 +248,8 @@ function heldToItsEnd() {
   }
   const zipped = $held($lazyZip(filter, tmp, loudDrop_drop));
   let zipped$live = true;
-  let next;
   while (true) {
+    let next;
     try {
       next = $next(zipped);
     } catch (error) {
@@ -265,33 +265,14 @@ function heldToItsEnd() {
       }, error);
       throw error;
     }
-    if (next != null) {
-      const x = next[0];
-      const y = next[1];
-      console.log(`pair ${x[0]} ${y[0]}`);
-      loudDrop_drop(y);
-      loudDrop_drop(x);
-      continue;
+    if (next == null) {
+      break;
     }
-    try {
-      if (next != null) {
-        loudDrop_drop(next[0]);
-        loudDrop_drop(next[1]);
-      }
-    } catch (error) {
-      $cleanup(() => {
-        if (zipped$live) {
-          zipped.return();
-        }
-        if (b$live) {
-          for (const item of b) {
-            loudDrop_drop(item);
-          }
-        }
-      }, error);
-      throw error;
-    }
-    break;
+    const x = next[0];
+    const y = next[1];
+    console.log(`pair ${x[0]} ${y[0]}`);
+    loudDrop_drop(y);
+    loudDrop_drop(x);
   }
   console.log("zip done");
   zipped$live = false;

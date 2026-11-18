@@ -80,10 +80,10 @@ function main() {
       }, error);
       throw error;
     }
-    let loud;
     while (true) {
+      let item;
       try {
-        loud = $next(iter);
+        item = $next(iter);
       } catch (error) {
         $cleanup(() => {
           iter.return();
@@ -96,11 +96,10 @@ function main() {
         }, error);
         throw error;
       }
-      if (loud == null) {
+      if (item == null) {
         iter.return();
         break;
       }
-      const item = loud;
       console.log(`got ${item[0]}`);
       loudDrop_drop(item);
     }

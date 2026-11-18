@@ -92,8 +92,8 @@ function main() {
       "ab"[Symbol.iterator](),
       $closing($iter([[41], [42], [43]]), $dropEach(loudDrop_drop)),
     );
-    let tmp;
     while (true) {
+      let tmp;
       try {
         tmp = $next(iter);
       } catch (error) {

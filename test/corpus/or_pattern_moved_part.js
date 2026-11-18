@@ -11,11 +11,9 @@ function dDrop_drop(d) {
 }
 export function f(p) {
   let p$1$0$live = true;
-  let p$0$0$live = true;
   let result;
   let t;
   if (p[0] != null) {
-    p$0$0$live = false;
     t = p[0];
     result = t;
   } else if (p[1] != null) {
@@ -24,11 +22,6 @@ export function f(p) {
     result = t;
   } else {
     result = undefined;
-  }
-  if (p[0] != null) {
-    if (p$0$0$live) {
-      dDrop_drop(p[0]);
-    }
   }
   if (p[1] != null) {
     if (p$1$0$live) {

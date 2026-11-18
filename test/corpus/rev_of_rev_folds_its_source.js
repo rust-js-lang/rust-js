@@ -53,43 +53,22 @@ function ownIterator_sizeHint(own) {
 
 function ownIterator_fold(own, init, f, dropB, dropF) {
   console.log("own fold");
-  let acc$live = true;
   let acc = init;
   let result;
   try {
-    while (true) {
-      const d = ownIterator_next(own);
-      if (d != null) {
-        acc$live = false;
-        let tmp;
-        try {
-          tmp = f(acc, d);
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
-        acc$live = true;
-        acc = tmp;
-        continue;
-      }
+    let d;
+    while ((d = ownIterator_next(own)) != null) {
+      let tmp;
       try {
-        if (d != null) {
-          dDrop_drop(d);
-        }
+        tmp = f(acc, d);
       } catch (error) {
         $cleanup(() => {
-          if (acc$live) {
-            dropB?.(acc);
-          }
           dropF?.(f);
         }, error);
         throw error;
       }
-      break;
+      acc = tmp;
     }
-    acc$live = false;
     result = acc;
     dropF?.(f);
   } catch (error) {
@@ -108,36 +87,23 @@ function ownIterator_last(own) {
   try {
     while (true) {
       const d = ownIterator_next(own);
-      if (d != null) {
-        try {
-          if (last != null) {
-            dDrop_drop(last);
-          }
-        } catch (error) {
-          $cleanup(() => {
-            last = d;
-            if (last != null) {
-              dDrop_drop(last);
-            }
-          }, error);
-          throw error;
-        }
-        last = d;
-        continue;
+      if (d == null) {
+        break;
       }
       try {
-        if (d != null) {
-          dDrop_drop(d);
+        if (last != null) {
+          dDrop_drop(last);
         }
       } catch (error) {
         $cleanup(() => {
+          last = d;
           if (last != null) {
             dDrop_drop(last);
           }
         }, error);
         throw error;
       }
-      break;
+      last = d;
     }
     return last;
   } catch (error) {

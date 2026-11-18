@@ -46,9 +46,7 @@ function render(name) {
       () => {
         const x = cell.value.value;
         const request = x != null ? $upgrade(x) : undefined;
-        let value$0$live = true;
         if (request != null) {
-          value$0$live = false;
           console.log(`${request.value.name} is ready`);
           $rcDrop(request, (value) => {
             try {
@@ -64,22 +62,6 @@ function render(name) {
           });
         } else {
           console.log("no request");
-        }
-        if (request != null) {
-          if (value$0$live) {
-            $rcDrop(request, (value) => {
-              try {
-                console.log(`dropping ${value.name}`);
-                value.onReady.value();
-              } catch (error) {
-                $cleanup(() => {
-                  $rcDrop(value.onReady, $dispose);
-                }, error);
-                throw error;
-              }
-              $rcDrop(value.onReady, $dispose);
-            });
-          }
         }
       },
       () => {

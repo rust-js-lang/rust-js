@@ -71,10 +71,10 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
   let acc$live = true;
   let acc = init;
   const iter = own;
-  let tmp;
   while (true) {
+    let d;
     try {
-      tmp = ownIterator_next(iter);
+      d = ownIterator_next(iter);
     } catch (error) {
       $cleanup(() => {
         console.log("drop own");
@@ -88,7 +88,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
       }, error);
       throw error;
     }
-    if (tmp == null) {
+    if (d == null) {
       console.log("drop own");
       try {
         for (const item of iter.items) {
@@ -105,11 +105,10 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
       }
       break;
     }
-    const d = tmp;
     acc$live = false;
-    let tmp$1;
+    let tmp;
     try {
-      tmp$1 = f(acc, d);
+      tmp = f(acc, d);
     } catch (error) {
       $cleanup(() => {
         console.log("drop own");
@@ -121,7 +120,7 @@ function ownIterator_fold(own, init, f, dropB, dropF) {
       throw error;
     }
     acc$live = true;
-    acc = tmp$1;
+    acc = tmp;
   }
   acc$live = false;
   const result = acc;
@@ -153,10 +152,10 @@ function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
   let result;
   try {
     try {
-      let nextBack;
       while (true) {
+        let d;
         try {
-          nextBack = ownDoubleEndedIterator_nextBack(own);
+          d = ownDoubleEndedIterator_nextBack(own);
         } catch (error) {
           $cleanup(() => {
             if (acc$live) {
@@ -166,36 +165,21 @@ function ownDoubleEndedIterator_rfold(own, init, f, dropB, dropF) {
           }, error);
           throw error;
         }
-        if (nextBack != null) {
-          const d = nextBack;
-          acc$live = false;
-          let tmp;
-          try {
-            tmp = f(acc, d);
-          } catch (error) {
-            $cleanup(() => {
-              dropF?.(f);
-            }, error);
-            throw error;
-          }
-          acc$live = true;
-          acc = tmp;
-          continue;
+        if (d == null) {
+          break;
         }
+        acc$live = false;
+        let tmp;
         try {
-          if (nextBack != null) {
-            dDrop_drop(nextBack);
-          }
+          tmp = f(acc, d);
         } catch (error) {
           $cleanup(() => {
-            if (acc$live) {
-              dropB?.(acc);
-            }
             dropF?.(f);
           }, error);
           throw error;
         }
-        break;
+        acc$live = true;
+        acc = tmp;
       }
       acc$live = false;
       result = acc;

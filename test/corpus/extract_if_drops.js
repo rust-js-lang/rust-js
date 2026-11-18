@@ -126,8 +126,8 @@ function fromMaps() {
     }, error);
     throw error;
   }
-  let tmp;
   while (true) {
+    let tmp;
     try {
       tmp = $next(iter);
     } catch (error) {

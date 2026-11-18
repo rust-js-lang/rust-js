@@ -166,8 +166,7 @@ pub(in crate::lower) fn dead_drops<'tcx>(
     }
     let move_data = MoveData::gather_moves(body, tcx, drops);
     let unwinding = quiet_drops(tcx, body, drops);
-    let pruned = (!unwinding.is_empty()).then(|| without_unwinds(body, &unwinding));
-    let flow = pruned.as_ref().unwrap_or(body);
+    let flow = &flowing(body, &unwinding);
     let mut inits = maybe_inits(tcx, flow, &move_data);
     let mut dead = quiet;
     for (block, data) in body.basic_blocks.iter_enumerated() {
@@ -187,14 +186,22 @@ pub(in crate::lower) fn dead_drops<'tcx>(
     dead
 }
 
-/// `body` with no unwind from the `Drop` ending each of `quiet`.
-fn without_unwinds<'tcx>(body: &mir::Body<'tcx>, quiet: &IndexSet<BasicBlock>) -> mir::Body<'tcx> {
+/// `body` as rustc's `ElaborateDrops` reads it: no unwind from the `Drop`
+/// ending each of `quiet`, and none of the edges borrowck alone follows, a
+/// `match`'s `falseEdge` to the arm it didn't take and a loop's
+/// `falseUnwind`, which `CleanupPostBorrowck` makes the `goto`s they are
+/// (#2112's change D). Followed, they asked a flag of what's always there,
+/// or never: never taken, they made no other drop, but a flag more.
+fn flowing<'tcx>(body: &mir::Body<'tcx>, quiet: &IndexSet<BasicBlock>) -> mir::Body<'tcx> {
     let mut body = body.clone();
     for (block, data) in body.basic_blocks.as_mut().iter_enumerated_mut() {
-        if quiet.contains(&block)
-            && let TerminatorKind::Drop { unwind, .. } = &mut data.terminator_mut().kind
-        {
-            *unwind = UnwindAction::Unreachable;
+        let kind = &mut data.terminator_mut().kind;
+        match kind {
+            TerminatorKind::Drop { unwind, .. } if quiet.contains(&block) => *unwind = UnwindAction::Unreachable,
+            TerminatorKind::FalseEdge { real_target, .. } | TerminatorKind::FalseUnwind { real_target, .. } => {
+                *kind = TerminatorKind::Goto { target: *real_target };
+            }
+            _ => {}
         }
     }
     body
@@ -394,10 +401,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // rustc's elaboration finds of a drop of what isn't there
         // (`compute_dead_unwinds`). The dataflow runs on the body without
         // those edges, so what's made after a `Box::new(closure)` isn't
-        // taken to be dropped where the box's drop would unwind.
+        // taken to be dropped where the box's drop would unwind; and
+        // without the edges borrowck alone follows (`flowing`).
         let quiet = quiet_drops(tcx, body, &drops);
-        let pruned = (!quiet.is_empty()).then(|| without_unwinds(body, &quiet));
-        let flow = pruned.as_ref().unwrap_or(body);
+        let flow = &flowing(body, &quiet);
         let mut cursors = (!elaborated).then(|| {
             let inits = maybe_inits(tcx, flow, &move_data);
             let uninits = MaybeUninitializedPlaces::new(tcx, flow, &move_data)

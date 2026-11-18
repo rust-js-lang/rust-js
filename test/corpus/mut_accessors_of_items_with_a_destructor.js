@@ -360,25 +360,6 @@ function main() {
       }, error);
       throw error;
     }
-  } else {
-    try {
-      if (top != null) {
-        $peekMutDrop(top);
-      }
-    } catch (error) {
-      $cleanup(() => {
-        for (const item of h) {
-          dDrop_drop(item);
-        }
-        for (const item of q) {
-          dDrop_drop(item);
-        }
-        for (const item of v) {
-          dDrop_drop(item);
-        }
-      }, error);
-      throw error;
-    }
   }
   let h$live = false;
   try {
