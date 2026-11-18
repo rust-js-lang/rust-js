@@ -101,7 +101,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: ty::Ty<'tcx>,
         span: Span,
     ) -> R<Expr> {
-        let made_iterator = self.unspelled("iterator");
         // A `&mut` to one is it, whose impls pass on to its own: its
         // `next_back` and `nth_back`, not its `rfold`, which std's `&mut I`
         // folds by `I`'s `try_rfold` (ADR 0928).
@@ -128,12 +127,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .boxed_ty()
             .filter(|&inner| crate::lower::recognition::is_compiled_std_iterator(self.tcx, inner));
         let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);
-        let returned = |value: Expr| {
-            Expr::arrow(
-                vec![made_iterator.clone().into()],
-                vec![StmtKind::Return(Some(value)).at(js::Span::NONE)],
-            )
-        };
         let entry = match (double_ended, self.range_kind(ty)) {
             (true, Some(kind)) => kind.step(true).map(Expr::helper),
             (false, Some(RangeKind::Exclusive)) => Some(Expr::helper("$rangeLen")),
@@ -154,10 +147,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of one whose `len` is std's default, `Skip`'s (ADR 0918).
             (false, None) if let Some(len) = self.default_len(ty, trait_id) => Some(len),
             (true, None) if self.is_user_iterator(ty) => Some(self.user_next(ty, trait_id, name, span)?.0),
+            // The crate's, its own or its hint's (`user_len`, #2073).
             (false, None) if self.is_user_iterator(ty) => {
-                let mut made = Vec::new();
-                let len = self.exact_len_of(Expr::var(&made_iterator), ty, span, &mut made)?;
-                made.is_empty().then(|| returned(len))
+                let hint = self.own_size_hint(ty, span)?;
+                Some(self.user_len(ty, &hint, span)?)
             }
             // And a `repeat_n`'s or a `take(n)` of a `repeat`'s, whose runtime
             // form steps its back as its front (#1139).

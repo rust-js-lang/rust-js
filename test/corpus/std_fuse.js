@@ -209,7 +209,7 @@ function main() {
     [4],
     { next: steadyIterator_next, sizeHint: steadyIterator_sizeHint },
     { next_back: steadyDoubleEndedIterator_nextBack },
-    { len: (iterator) => $exactLen(steadyIterator_sizeHint(iterator)) },
+    { len: (it) => $exactLen(steadyIterator_sizeHint(it)) },
     { clone: (value) => [value[0]] },
     true,
   );

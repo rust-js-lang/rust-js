@@ -44,7 +44,7 @@ function main() {
   });
   const value = $sizeHint(held);
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${mapExactSizeIterator_len(held, { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) })}`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${mapExactSizeIterator_len(held, { len: (it) => $exactLen(countIterator_sizeHint(it)) })}`,
   );
   const value$1 = hint(
     iterator_map([5], (x) => (x * 3) >>> 0, {

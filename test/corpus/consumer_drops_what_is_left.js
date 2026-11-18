@@ -96,7 +96,7 @@ function countDrop_drop(count) {
 }
 
 function consume(n) {
-  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
   const skipped = $lazySkipWhile(
     $closing($iter(three()), $dropEach(loudDrop_drop)).take(n),
     (l) => l[0] < 11,

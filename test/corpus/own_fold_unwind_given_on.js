@@ -192,7 +192,7 @@ function main() {
       {
         len: (iterator) =>
           fuseExactSizeIterator_len(iterator, {
-            len: (iterator) => $exactLen(numsIterator_sizeHint(iterator)),
+            len: (it) => $exactLen(numsIterator_sizeHint(it)),
           }),
       },
       fuseClone({
@@ -241,7 +241,7 @@ function main() {
     copiedFold(
       made(),
       { next: numsIterator_next, sizeHint: numsIterator_sizeHint, fold: numsIterator_fold },
-      { len: (iterator) => $exactLen(numsIterator_sizeHint(iterator)) },
+      { len: (it) => $exactLen(numsIterator_sizeHint(it)) },
       {
         clone: (value) => ({
           ...value,

@@ -56,9 +56,7 @@ function lastOf(e, IDoubleEndedIterator, IExactSizeIterator) {
 
 function main() {
   const exactSizeIterator = { len: (iterator) => iterator.len() };
-  const countdownExactSizeIterator = {
-    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
-  };
+  const countdownExactSizeIterator = { len: (it) => $exactLen(countdownIterator_sizeHint(it)) };
   const e = iterator_enumerate([4], {
     next: countdownIterator_next,
     sizeHint: countdownIterator_sizeHint,

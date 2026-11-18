@@ -222,7 +222,7 @@ function own() {
 }
 
 function main() {
-  const ownExactSizeIterator = { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) };
+  const ownExactSizeIterator = { len: (it) => $exactLen(ownIterator_sizeHint(it)) };
   const revDoubleEndedIterator = {
     next_back: (iterator) =>
       revDoubleEndedIterator_nextBack(

@@ -79,9 +79,7 @@ function countdownDrop_drop(countdown) {
 }
 
 function main() {
-  const countdownExactSizeIterator = {
-    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
-  };
+  const countdownExactSizeIterator = { len: (it) => $exactLen(countdownIterator_sizeHint(it)) };
   const back = Array.from(
     $roomForHint(
       iterator_rev(

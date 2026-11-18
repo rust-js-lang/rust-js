@@ -97,7 +97,7 @@ function main() {
   const value$6 = Ends.pop(
     own,
     { next_back: countdownDoubleEndedIterator_nextBack },
-    { len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)) },
+    { len: (it) => $exactLen(countdownIterator_sizeHint(it)) },
   );
   console.log(
     `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}`,

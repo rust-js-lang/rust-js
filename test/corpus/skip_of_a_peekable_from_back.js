@@ -57,7 +57,7 @@ function countDoubleEndedIterator_nextBack(count) {
 }
 
 function main() {
-  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
   const peekableDoubleEndedIterator$1 = {
     next_back: (iterator) =>
       peekableDoubleEndedIterator_nextBack(iterator, {

@@ -129,7 +129,7 @@ function main() {
     len: (iterator) =>
       revExactSizeIterator_len(
         iterator,
-        { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) },
+        { len: (it) => $exactLen(countIterator_sizeHint(it)) },
         countDrop_drop,
       ),
   };
@@ -501,7 +501,7 @@ function main() {
       {
         len: (iterator) =>
           revExactSizeIterator_len(iterator, {
-            len: (iterator) => $exactLen(plainIterator_sizeHint(iterator)),
+            len: (it) => $exactLen(plainIterator_sizeHint(it)),
           }),
       },
     )}`,

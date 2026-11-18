@@ -85,8 +85,8 @@ export const mutations: Mutation[] = [
     name: "extension-own-len-refused",
     breaks: "the crate's iterator's `ExactSizeIterator` dictionary is refused",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "                made.is_empty().then(|| returned(len))\n",
-    replace: "                false.then(|| returned(len))\n",
+    find: "                Some(self.user_len(ty, &hint, span)?)\n",
+    replace: "                Some(self.user_len(ty, &hint, span)?).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
   {
@@ -156,9 +156,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `DoubleEndedIterator` dictionary is made `{ len }`, and an `ExactSizeIterator`'s `{ next_back }`",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n        let returned = |value: Expr| {\n",
+    find: "        let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n        let entry = match (double_ended, self.range_kind(ty)) {\n",
     replace:
-      "        let double_ended = !crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n        let returned = |value: Expr| {\n",
+      "        let double_ended = !crate::lower::recognition::is_double_ended(self.tcx, trait_id);\n        let entry = match (double_ended, self.range_kind(ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
   },
   {
@@ -398,5 +398,13 @@ export const mutations: Mutation[] = [
     find: "                Some(Passed::ByTry) => try_rfold.cloned().map(folded_by_try),\n",
     replace: "                Some(Passed::ByTry) => None,\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^lent_take_of_a_vec_folded_from_its_back with"],
+  },
+  {
+    name: "dictionary-len-of-own-by-hint",
+    breaks: "a dictionary of the crate's exact-sized iterator, given as it is, `{ len }`, isn't `user_len`'s where its impl writes its own `len`, but another arm's, as a `rev()` of it passes it on (#2073)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            (false, None) if self.is_user_iterator(ty) => {\n",
+    replace: "            (false, None) if self.is_user_iterator(ty) && self.recognition().own_len(ty).is_none() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_provided_methods_given_through_bounds\\.rs$"],
   },
 ];

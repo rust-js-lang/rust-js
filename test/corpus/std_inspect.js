@@ -55,9 +55,7 @@ function watched(it, IIterator) {
 
 function main() {
   const clone = { clone: (value) => value };
-  const countdownExactSizeIterator = {
-    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
-  };
+  const countdownExactSizeIterator = { len: (it) => $exactLen(countdownIterator_sizeHint(it)) };
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const seen = 0;
   let seen$1 = seen;

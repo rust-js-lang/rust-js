@@ -553,6 +553,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.own_method(ty, self.double_ended_iterator()?, name)
     }
 
+    /// The `ExactSizeIterator::len` the impl of the crate's iterator `ty`
+    /// writes, where it writes one: its length, never its hint's (#2073).
+    pub(in crate::lower) fn own_len(&self, ty: Ty<'tcx>) -> Option<DefId> {
+        self.own_method(ty, self.exact_size_iterator()?, "len")
+    }
+
     /// The method `name` of the trait `tr` the crate's iterator `ty`'s impl
     /// of it writes.
     /// Through a `Box`, only what std's `Box<I>` passes on (`Wrapper::passes`).

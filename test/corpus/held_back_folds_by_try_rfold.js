@@ -66,7 +66,7 @@ function count() {
 }
 
 function main() {
-  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
   const takeDoubleEndedIterator = {
     next_back: (iterator) =>
       takeIDoubleEndedIterator_nextBack(

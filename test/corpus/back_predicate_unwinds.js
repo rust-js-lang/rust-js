@@ -128,9 +128,7 @@ function generic(it, p, dropI) {
 }
 
 function main() {
-  const hintsExactSizeIterator$1 = {
-    len: (iterator) => $exactLen(hintsIterator_sizeHint(iterator)),
-  };
+  const hintsExactSizeIterator$1 = { len: (it) => $exactLen(hintsIterator_sizeHint(it)) };
   second("rfind", (p) => {
     const value = $iter(ds());
     let result;
@@ -438,7 +436,7 @@ function main() {
   });
   // Std's structs held, whose `rfind` is their own `try_rfold`.
   second("held rfind", (p) => {
-    const ownExactSizeIterator = { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) };
+    const ownExactSizeIterator = { len: (it) => $exactLen(ownIterator_sizeHint(it)) };
     const takeDoubleEndedIterator = {
       next_back: (iterator) =>
         takeIDoubleEndedIterator_nextBack(

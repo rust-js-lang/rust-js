@@ -293,9 +293,7 @@ function main() {
     }
   });
   run("own enumerate rev", () => {
-    const countExactSizeIterator = {
-      len: (iterator) => $exactLen(countIterator_sizeHint(iterator)),
-    };
+    const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
     const x = $foldDropping(
       iterator_map(
         iterator_rev(

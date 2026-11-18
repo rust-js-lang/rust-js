@@ -74,9 +74,7 @@ function lastOf(m, IDoubleEndedIterator) {
 function main() {
   const clone = { clone: (value) => value };
   const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
-  const countdownExactSizeIterator = {
-    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
-  };
+  const countdownExactSizeIterator = { len: (it) => $exactLen(countdownIterator_sizeHint(it)) };
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const calls = 0;
   let calls$1 = calls;

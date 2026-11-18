@@ -322,7 +322,7 @@ function main() {
         (iterator) =>
           mapExactSizeIterator_len(
             iterator,
-            { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) },
+            { len: (it) => $exactLen(ownIterator_sizeHint(it)) },
             dDrop_drop,
             (own) => {
               console.log("drop own");
@@ -364,7 +364,7 @@ function main() {
         (iterator) =>
           mapExactSizeIterator_len(
             iterator,
-            { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) },
+            { len: (it) => $exactLen(ownIterator_sizeHint(it)) },
             dDrop_drop,
             (own) => {
               console.log("drop own");
@@ -1084,7 +1084,7 @@ function main() {
       [],
       (acc, [, d]) => push(acc, d),
       { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
-      { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) },
+      { len: (it) => $exactLen(ownIterator_sizeHint(it)) },
       { next_back: ownDoubleEndedIterator_nextBack, rfold: ownDoubleEndedIterator_rfold },
       (own) => {
         console.log("drop own");

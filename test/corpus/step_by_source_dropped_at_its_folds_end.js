@@ -106,7 +106,7 @@ function main() {
       },
       { next: itIterator_next, sizeHint: itIterator_sizeHint },
       { next_back: itDoubleEndedIterator_nextBack, nthBack: itDoubleEndedIterator_nthBack },
-      { len: (iterator) => $exactLen(itIterator_sizeHint(iterator)) },
+      { len: (it) => $exactLen(itIterator_sizeHint(it)) },
       itDrop_drop,
       accDrop_drop,
     );

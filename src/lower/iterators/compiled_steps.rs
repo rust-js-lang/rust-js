@@ -60,7 +60,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(double_ended) if back => Some(self.user_next(ty, double_ended, "next_back", span)?.0),
             _ => None,
         };
-        let len = (len && self.user_exact_size(ty)).then(|| exact_len_by(&hint));
+        let len = match len && self.user_exact_size(ty) {
+            true => Some(self.user_len(ty, &hint, span)?),
+            false => None,
+        };
         let own = self.own_methods(ty, false, span)?;
         Ok(stepped_ends(value, next, boxed, back, len, hint, own))
     }
@@ -107,7 +110,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => None,
         };
         let hint = self.own_size_hint(ty, span)?;
-        let len = (len && self.user_exact_size(ty)).then(|| exact_len_by(&hint));
+        let len = match len && self.user_exact_size(ty) {
+            true => Some(self.user_len(ty, &hint, span)?),
+            false => None,
+        };
         let forward = self.own_methods(ty, false, span)?;
         let own = crate::lower::iterators::OwnMethods {
             fold: forward.rfold,
@@ -120,11 +126,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(stepped_ends(value, next, boxed, back, len, hint, own))
     }
 
+    /// `ExactSizeIterator::len` of the crate's exact-sized iterator `ty`,
+    /// made a JS iterator: its impl's own, where it writes one (#2073), else
+    /// std's default, its hint's, `hint` its own `size_hint` or std's,
+    /// which std's `len()` checks is exact (`exact_len_by`). The one answer
+    /// of what its dictionary's `len` is, where it's made knowing it and
+    /// where it's given as it is.
+    pub(in crate::lower) fn user_len(&mut self, ty: ty::Ty<'tcx>, hint: &Option<Expr>, span: Span) -> R<Expr> {
+        match self.recognition().own_len(ty) {
+            Some(_) => {
+                let exact = (self.recognition().exact_size_iterator()).expect("an `ExactSizeIterator`'s own `len`");
+                Ok(self.user_next(ty, exact, "len", span)?.0)
+            }
+            None => Ok(exact_len_by(hint)),
+        }
+    }
+
     /// The `size_hint` of the crate's iterator `ty`, where its impl has one
     /// of its own: what `size_hint()` gives of it made a JS iterator, as of
     /// it as it is. `None` of one that has std's, `(0, None)`, which
     /// `$sizeHint` gives too.
-    pub(super) fn own_size_hint(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+    pub(in crate::lower) fn own_size_hint(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         if !self.recognition().writes_size_hint(ty) {
             return Ok(None);
         }

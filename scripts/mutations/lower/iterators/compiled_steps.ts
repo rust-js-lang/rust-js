@@ -272,4 +272,12 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(inner) = ty.boxed_ty().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
+  {
+    name: "own-len-unasked",
+    breaks: "the crate's iterator that writes its own `ExactSizeIterator::len`, given to generic code, is given std's default over its `size_hint` in its dictionary, which panics where its hint isn't exact (#2073)",
+    file: "src/lower/iterators/compiled_steps.rs",
+    find: "        match self.recognition().own_len(ty) {\n",
+    replace: "        match self.recognition().own_len(ty).filter(|_| false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^own_provided_methods_given_through_bounds\\.rs$"],
+  },
 ];

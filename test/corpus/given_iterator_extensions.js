@@ -102,9 +102,7 @@ function main() {
   const exactSizeIterator = { len: (iterator) => iterator.len() };
   const countdownClone = { clone: (value) => [value[0]] };
   const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
-  const countdownExactSizeIterator = {
-    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
-  };
+  const countdownExactSizeIterator = { len: (it) => $exactLen(countdownIterator_sizeHint(it)) };
   const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const value = twice($iter([1, 2, 3]), { next: $next }, clone, exactSizeIterator, 4);
   console.log(`(${value[0]}, [${value[1].join(", ")}])`);

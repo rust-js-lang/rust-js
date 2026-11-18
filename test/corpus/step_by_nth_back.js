@@ -55,7 +55,7 @@ function countDoubleEndedIterator_rfold(count, init, f) {
 }
 
 function main() {
-  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
   const stepByDoubleEndedIterator = {
     next_back: (iterator) =>
       stepByDoubleEndedIterator_nextBack(

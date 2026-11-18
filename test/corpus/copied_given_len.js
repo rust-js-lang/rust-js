@@ -107,7 +107,7 @@ function lentPlain(it) {
 function main() {
   const refsClone = { clone: (value) => ({ ...value }) };
   const iterExactSizeIterator = { len: (iterator) => iterator.len() };
-  const refsExactSizeIterator = { len: (iterator) => $exactLen(refsIterator_sizeHint(iterator)) };
+  const refsExactSizeIterator = { len: (it) => $exactLen(refsIterator_sizeHint(it)) };
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   console.log(
     `${sized(

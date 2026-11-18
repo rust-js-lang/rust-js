@@ -78,7 +78,7 @@ function folded(i, d) {
 }
 
 function main() {
-  const everyExactSizeIterator = { len: (iterator) => $exactLen(everyIterator_sizeHint(iterator)) };
+  const everyExactSizeIterator = { len: (it) => $exactLen(everyIterator_sizeHint(it)) };
   const r = $foldBack(
     $enumerate(
       $closing(

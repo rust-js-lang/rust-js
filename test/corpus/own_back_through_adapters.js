@@ -184,7 +184,7 @@ function labelledRsum(count, label) {
 }
 
 function main() {
-  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
   console.log(
     `${$rev($mapEnds($iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack), (x) => (x * 2) | 0)).reduce((a, b) => (a + b) | 0, 0)}`,
   );

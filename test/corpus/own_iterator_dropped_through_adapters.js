@@ -125,7 +125,7 @@ function twiceDrop_drop(twice) {
 }
 
 function main() {
-  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
   console.log(
     `${$rev(
       $mapEnds(

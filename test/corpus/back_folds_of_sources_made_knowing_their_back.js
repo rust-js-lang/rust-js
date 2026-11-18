@@ -308,7 +308,7 @@ function main() {
             len: (iterator) =>
               revExactSizeIterator_len(
                 iterator,
-                { len: (iterator) => $exactLen(givesIterator_sizeHint(iterator)) },
+                { len: (it) => $exactLen(givesIterator_sizeHint(it)) },
                 givesDrop_drop,
                 dDrop_drop,
               ),
@@ -465,7 +465,7 @@ function main() {
                   {
                     len: (iterator) =>
                       revExactSizeIterator_len(iterator, {
-                        len: (iterator) => $exactLen(everyIterator_sizeHint(iterator)),
+                        len: (it) => $exactLen(everyIterator_sizeHint(it)),
                       }),
                   },
                   {

@@ -201,9 +201,9 @@ function numbersFoundBack(it) {
 }
 
 function main() {
-  const numsExactSizeIterator = { len: (iterator) => $exactLen(numsIterator_sizeHint(iterator)) };
+  const numsExactSizeIterator = { len: (it) => $exactLen(numsIterator_sizeHint(it)) };
   const exactSizeIterator = { len: (iterator) => $exactLen($sizeHint(iterator)) };
-  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
   const stepByDoubleEndedIterator = {
     next_back: (iterator) =>
       stepByDoubleEndedIterator_nextBack(

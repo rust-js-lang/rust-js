@@ -147,3 +147,31 @@ against native (it throws at main); the `boxed` rewrite leaves
 `test/metamorphic-known.txt`. Mutations `length-passed-on-unasked` and
 `enumerated-from-its-back-length-unasked`, caught;
 `enumerate-of-take-from-back-unknowing` re-anchored.
+
+
+## Amendment (2026-11-18): an iterator's own `len` is its dictionary's (#2073)
+
+A dictionary entry of a trait's provided method is the impl's own wherever
+the impl writes one; `own_methods` gave generic code a crate iterator's own
+`fold`, `nth`, `last`, `rfold`, `nth_back` and `count`, but its `len` was
+always std's default over its `size_hint`, `(it) => $exactLen(hint(it))`.
+An iterator that writes `len` and keeps std's `size_hint` was given to
+`fn len_of<I: ExactSizeIterator>` with a `len` of `$exactLen([0,
+undefined])`, which panicked `assertion left == right failed` where
+native gives its own length; one whose hint and `len` disagree got the
+hint's. Results changed, so Rust's behavior is kept (ADR 0262).
+
+One answer now, `user_len`: the impl's own `len` (`own_len`, beside
+`own_iterator_method`) where it writes one, else the hint's. Each place
+that gives the crate's exact-sized iterator its `len` asks it: made
+knowing its length (`user_iterator_knowing`, and reversed,
+`reversed_user_knowing`) and given as it is (`iterator_extension_dictionary`'s
+it, which used a second form of the hint's, `(iterator) => ...`; now
+`exact_len_by`'s one form).
+
+Corpus case `own_provided_methods_given_through_bounds` gives each of the
+eight provided methods a user impl commonly writes, `len`, `size_hint`,
+`count`, `last`, `nth`, `nth_back`, `fold` and `rfold`, to generic code
+by value, through a `&mut` and reversed, against native; at main only
+`len` differed, in all three. Mutations `own-len-unasked` and
+`dictionary-len-of-own-by-hint`, caught.

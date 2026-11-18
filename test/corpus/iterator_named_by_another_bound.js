@@ -198,9 +198,7 @@ function made(make, IIterator, dropI) {
 
 function main() {
   const CountdownIsCountdown = tIsT(countdownDrop_drop);
-  const countdownExactSizeIterator = {
-    len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
-  };
+  const countdownExactSizeIterator = { len: (it) => $exactLen(countdownIterator_sizeHint(it)) };
   console.log(
     `[${backwards(
       [3, "a"],
