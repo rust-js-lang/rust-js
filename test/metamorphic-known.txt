@@ -110,9 +110,6 @@ plain std loud-drop thread_local_with_nested.rs
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
 
-#2052 P0 (iterators): boxed as_is_map_stepped_from_its_back throws 'enumerated.iter.len is not a function' where native runs
-plain boxed as_is_map_stepped_from_its_back.rs
-
 #2059 P2 (validation): 'a read of x is of another variable spelled so, nearer' of two metamorphic rewrites
 plain std fact-write-fails recursive_eq.rs
 plain std dyn-ref shadow_beside_closure_own_of_its_name.rs

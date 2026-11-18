@@ -911,4 +911,12 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(it);\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^boxed_iterator_folded_as_std_passes_it_on.rs$|^boxed_iterator_folded_as_std_passes_it_on with"],
   },
+  {
+    name: "length-passed-on-unasked",
+    breaks: "an adapter made already that passes its source's length on, a `$mapEnds` of a range made for its back alone, is taken for one that knows its length by its type, so an `enumerate()` stepped from its back reads `len()` of what has none, a `TypeError` where native runs (#2052)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        if crate::lower::iterators::form_lacks_a_length(&value)\n",
+    replace: "        if false && crate::lower::iterators::form_lacks_a_length(&value)\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_boxed_beside_an_enumeration_from_its_back\\.rs$"],
+  },
 ];

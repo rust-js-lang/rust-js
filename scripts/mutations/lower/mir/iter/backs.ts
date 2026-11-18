@@ -593,8 +593,8 @@ export const mutations: Mutation[] = [
     name: "enumerate-of-take-from-back-unknowing",
     breaks: "an enumeration the crate steps from its back of a source whose JS knows no back is given it as it's made: of a `take()` of items with a destructor, `.take(n)`, `enumerated.iter.len is not a function` (#651); of a map, `ds().into_iter().map(f).enumerate().rfold(..)`, and of a slice's `cloned()`'s and the crate's iterator's `skip()`'s and `rev()`'s, `enumerated.iter.back is not a function` (#778)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty, receiver) => {\n",
-    replace: "                    None if false && self.stepped_from_its_back(output) && !self.has_a_back(iter_ty, receiver) => {\n",
+    find: "                    None if self.stepped_from_its_back(output) => {\n",
+    replace: "                    None if false && self.stepped_from_its_back(output) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^(enumerate_of_take_from_back|back_folds_of_sources_made_knowing_their_back|enumerate_of_droppers_from_back).rs$"],
   },
   {
@@ -891,5 +891,13 @@ export const mutations: Mutation[] = [
     find: "            && asked.back.is_none()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
+  },
+  {
+    name: "enumerated-from-its-back-length-unasked",
+    breaks: "an `enumerate()` stepped from its back over a source that has a back is given it as it is, though `Enumerate::next_back` counts by its length, which a map of a range made for its back alone lacks (#2052)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    None if self.stepped_from_its_back(output) => {\n",
+    replace: "                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty, receiver) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_as_it_is_boxed_beside_an_enumeration_from_its_back\\.rs$"],
   },
 ];

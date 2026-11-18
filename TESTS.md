@@ -1,5 +1,9 @@
 # Tests at a glance
 
+Changed on 2026-11-18 (#2052): corpus case
+`map_as_it_is_boxed_beside_an_enumeration_from_its_back.rs` holds an
+enumeration stepped from its back over a map made knowing its back alone.
+
 Changed on 2026-11-18 (#2051, #2056): test/iterator-steps.test.ts, three
 tests, holds each runtime wrapper that passes its source's steps on to
 reaching every step of `$stepNames`, and the two flattens to the same steps;

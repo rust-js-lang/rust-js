@@ -365,7 +365,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // a `Fuse`'s, given its compiled back and length (#383):
                     // made knowing them, or refused (`as_exact_size`), never
                     // stepped by what it lacks.
-                    None if self.stepped_from_its_back(output) && !self.has_a_back(iter_ty, receiver) => {
+                    // Its back, which it has, made knowing its length too,
+                    // which `Enumerate::next_back` counts by: a map of a
+                    // range made for its back alone (#2052).
+                    None if self.stepped_from_its_back(output) => {
                         let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
                         self.closing(it, held, span)?
                     }

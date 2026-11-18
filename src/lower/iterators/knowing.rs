@@ -535,6 +535,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.reversed_user_knowing(value, source, (back, true), span);
         }
+        // An adapter made already that passes its source's length on, as
+        // std's `Map` and `Enumerate` do, and what holds or lends one as it
+        // is (`passes_its_length_on`): its source made knowing its length
+        // too, not taken for one that knows it by its type, so what asks its
+        // `len`, an `enumerate()` stepped from its back, reads its source's.
+        // A `map(Some)` is no map as it is where a `Box` holds one of its
+        // type, so `as_double_ended` made it `$mapEnds` of a range that
+        // knew its back alone (#2052).
+        if crate::lower::iterators::form_lacks_a_length(&value)
+            && let Some((source_value, same)) = crate::lower::iterators::passes_its_length_on(&value)
+            && let Some(source) = self.back_source_ty(ty, same)
+        {
+            let source_value = stepped_value(source_value).unwrap_or_else(|| source_value.clone());
+            let known = self.as_exact_size(source_value, source, back, span)?;
+            return Ok(crate::lower::iterators::with_source(&value, known));
+        }
         // Of one whose form, or what it holds down to its type, knows its
         // back, its back too (#851).
         if self.knows_its_length_of(&value, ty)

@@ -764,6 +764,51 @@ pub(in crate::lower) fn back_source(e: &Expr) -> Option<(&Expr, bool)> {
     args.first().map(|source| (source, same))
 }
 
+/// What `e` steps, an adapter made already that passes its source's
+/// length on (`back_source`'s): of what holds or lends it as it is,
+/// `$held`'s, `$lent`'s and `$closing`'s, the value of its own type
+/// (`true`); of a map's and an enumeration's, `$mapEnds`' and
+/// `$enumerate`'s, its source's (`false`), as std's `Map` and `Enumerate`
+/// are `ExactSizeIterator`s where their source is. Not a filter's, which
+/// knows no length, nor a `take`'s or a `skip`'s, which count their own
+/// (#2052).
+pub(in crate::lower) fn passes_its_length_on(e: &Expr) -> Option<(&Expr, bool)> {
+    let js::ExprKind::Call(callee, _) = &e.kind else {
+        return None;
+    };
+    match callee.helper_name()? {
+        "$held" | "$lent" | "$closing" | "$mapEnds" | "$enumerate" => back_source(e),
+        _ => None,
+    }
+}
+
+/// Whether `e`'s form says it knows no length: an adapter that passes its
+/// source's on (`passes_its_length_on`) of what knows none, down to an
+/// `$iterator` its maker gave no `len`, a range made for its back alone
+/// (#2052). Not what its form doesn't say, which its type does.
+pub(in crate::lower) fn form_lacks_a_length(e: &Expr) -> bool {
+    if let Some((source, _)) = passes_its_length_on(e) {
+        return form_lacks_a_length(source);
+    }
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return false;
+    };
+    matches!(callee.helper_name(), Some("$iterator" | "$given"))
+        && args.get(4).is_none_or(|len| *len == Expr::js_undefined())
+}
+
+/// `e`, an adapter's call, of `source` in place of what it steps, its first
+/// argument (`back_source`'s).
+pub(in crate::lower) fn with_source(e: &Expr, source: Expr) -> Expr {
+    let mut e = e.clone();
+    if let js::ExprKind::Call(_, args) = &mut e.kind
+        && let Some(first) = args.first_mut()
+    {
+        *first = source;
+    }
+    e
+}
+
 /// Whether `e`'s form says it has no back (#851): an adapter of one whose
 /// back is its source's, of what lacks one. (JS's own iterator helper,
 /// `.map(f)`, never reaches what asks it of a form: what's stepped from its

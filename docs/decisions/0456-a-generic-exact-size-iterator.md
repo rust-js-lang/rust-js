@@ -116,3 +116,34 @@ retargeted. That the back step trusts the type, not the value's form, is
 #851's: one per-value fact for maps, chains, zips, enumerations, flattens
 and copies, as #814 made for counted adapters.
 
+
+## Amendment (2026-11-18): an adapter made already asks its source's length (#2052)
+
+`map(Some)` of what can't look like `None` is no map, its source as it is
+(#1342), but not where a `Box` holds one of its type: then `as_double_ended`
+made it `$mapEnds` of a range made for its back alone, `$iterator(range,
+$rangeNext, false, $rangeNextBack)`, with no `$rangeLen`. An `enumerate()`
+of it stepped from its back, whose `next_back` counts by its source's
+`len()`, was given it as it was, as it had a back, and `as_exact_size` took
+it for one that knows its length by its type, so the JS threw
+`enumerated.iter.len is not a function` where native ran (the metamorphic
+net's `boxed` rewrite of `as_is_map_stepped_from_its_back`).
+
+One rule now, by the form's question beside `form_lacks_a_back`:
+`form_lacks_a_length` says a form knows no length, down through what
+passes its source's on (`passes_its_length_on`: what holds or lends one as
+it is, `$held`, `$lent` and `$closing`, and a map's and an enumeration's,
+`$mapEnds` and `$enumerate`, as std's `Map` and `Enumerate` are
+`ExactSizeIterator`s where their source is) to an `$iterator` its maker
+gave no `len`. `as_exact_size` makes such a form's source know its length
+and puts it back in place. And `backs.rs` asks `as_exact_size` of an
+enumeration's source stepped from its back whether or not it has a back, as
+`Enumerate::next_back` counts by its length either way. A filter knows no
+length, and a `take`'s and a `skip`'s count their own, which their own
+branches make.
+
+Corpus case `map_as_it_is_boxed_beside_an_enumeration_from_its_back`,
+against native (it throws at main); the `boxed` rewrite leaves
+`test/metamorphic-known.txt`. Mutations `length-passed-on-unasked` and
+`enumerated-from-its-back-length-unasked`, caught;
+`enumerate-of-take-from-back-unknowing` re-anchored.
