@@ -132,3 +132,20 @@ drain reads its start twice, `end - start`.
 Held by corpus case `loop_start_read_in_place` against native Rust (a
 start, an end, a drain, and an end past the items, which panics), and the
 mutation `range-bound-spilled` (`lower/std_types/range.ts`).
+
+## Amendment: the range's question is `range_index`'s (2026-11-18)
+
+`SliceLength::Range`, named above, is gone, with `Drain`, `Swap`,
+`SwapRemove`, `Remove`, `Insert` and `Pop`. THIR's bounds analysis read
+them, and the MIR intervals that replaced it (ADR 1137, #1672) don't.
+Recognition's `range_index` answers whether a call slices by a range of
+`usize`s, and `call_indexes` which of its arguments index. `slice_length`
+keeps what the walk reads: `Len`, `IsEmpty`, `Index` and `Push`.
+
+Their four mutations survived every test, and each was retired by `bun
+scripts/mutations.ts --retire` on 31f151957: `vec-remove-length-unasked`,
+`drain-not-asked`, `range-from-not-a-range` and
+`range-of-an-array-unasked`. A screen of each against the whole corpus, in
+both builds with snapshots, failed no case either.
+`index-mut-unasked`, the fifth survivor of that file, is live: 7 corpus
+cases change with it, and it names `refcell_vec_bounds` now.

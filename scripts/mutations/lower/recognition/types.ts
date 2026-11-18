@@ -3,26 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "vec-remove-length-unasked",
-    breaks:
-      "a `Vec`'s `remove(0)` its test shows in bounds is `$removeAt(targets, 0)`, not `targets.shift()` (rd103)",
-    file: "src/lower/recognition/types.rs",
-    find: '        "remove" if is_vec(owner) => Some(SliceLength::Remove),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^vec_remove_insert_in_bounds.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "drain-not-asked",
-    breaks:
-      "a `Vec`'s `drain(0..i)` isn't judged by its range, and is `$drain(queue, 0, i)` where it's in bounds",
-    file: "src/lower/recognition/types.rs",
-    find: '        "drain" if vec(owner) => Some(SliceLength::Drain),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
-    snapshots: true,
-  },
-  {
     name: "js-object-itself-unknown",
     breaks:
       "`JsObject`, what `Kind::Object` holds, isn't a JS object, so its `Deref` to the `Unknown` it is isn't the object itself",
@@ -190,15 +170,12 @@ export const mutations: Mutation[] = [
   {
     name: "index-mut-unasked",
     breaks:
-      "`index_mut` asks nothing of a `Vec`'s length, so `&mut heap[0]` where it isn't empty is checked",
+      "`index_mut` asks nothing of a `Vec`'s length, so `queue[i] = x` doesn't show `i` below it, and a drain to it after is `$drain(queue, 0, i)`, not `queue.splice(0, i)`",
     file: "src/lower/recognition/types.rs",
     find: "        if !tcx.is_lang_item(trait_, LangItem::Index) && !tcx.is_lang_item(trait_, LangItem::IndexMut) {\n",
     replace: "        if !tcx.is_lang_item(trait_, LangItem::Index) {\n",
-    tests: [
-      "test/lowering-options.test.ts",
-      "-t",
-      "nullable result is written",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
+    snapshots: true,
   },
   {
     name: "held-types-no-async-block",
@@ -252,27 +229,6 @@ export const mutations: Mutation[] = [
     find: "StdPath::PathIter | StdPath::PathComponents | StdPath::PathAncestors",
     replace: "StdPath::PathIter | StdPath::PathAncestors",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
-  },
-  {
-    name: "range-from-not-a-range",
-    breaks:
-      "`&v[a..]` isn't asked of the length, so one from at most it keeps `$slice` (ADR 0806)",
-    file: "src/lower/recognition/types.rs",
-    find: "[LangItem::Range, LangItem::RangeTo, LangItem::RangeFrom, LangItem::RangeFull]",
-    replace: "[LangItem::Range, LangItem::RangeTo, LangItem::RangeFull]",
-    tests: ["test/corpus.test.ts", "-t", "slice_range_from_panic"],
-    snapshots: true,
-  },
-  {
-    name: "range-of-an-array-unasked",
-    breaks:
-      "an array's range isn't asked of its length, so `&items[..2]` of a `[u32; 5]` keeps `$slice` (ADR 0806)",
-    file: "src/lower/recognition/types.rs",
-    find: "            Some(ty) if (vec(ty) || ty.is_slice() || ty.is_array()) && range => Some(SliceLength::Range),\n",
-    replace:
-      "            Some(ty) if (vec(ty) || ty.is_slice()) && range => Some(SliceLength::Range),\n",
-    tests: ["test/corpus.test.ts", "-t", "slice_ranges_known"],
-    snapshots: true,
   },
   {
     name: "repeat-of-any-is-js",

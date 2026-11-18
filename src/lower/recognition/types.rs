@@ -910,28 +910,18 @@ pub(crate) fn is_err_variant(tcx: TyCtxt<'_>, variant: DefId) -> bool {
     tcx.is_lang_item(variant, LangItem::ResultErr)
 }
 
-/// What a function asks of a `Vec`'s or a slice's length: its `len()`,
-/// its `is_empty()`, or that each index it's given is below it, `v[i]` of
-/// a `Vec`, `swap(i, j)`, `swap_remove(i)`; or what it does to it, a
-/// `Vec`'s `push` one more, its `pop` one fewer where it has one; or that
-/// the range it's given ends at most at it, `&v[a..b]` of a `Vec`, a slice
-/// or an array, and a `Vec`'s `drain(a..b)`, which takes them out. What
-/// knows an index in bounds reads these (ADRs 0292, 0576, 0806, 0881).
+/// What a function asks of a `Vec`'s or a slice's length, or does to it,
+/// as the MIR intervals read it (ADR 1137): its `len()`, its `is_empty()`,
+/// an index `v[i]` or `&mut v[i]` of a `Vec`, below it, and a `Vec`'s
+/// `push`, one more. What a call's indexes and a range's end ask of it,
+/// `swap(i, j)`, `remove(i)`, `&v[a..b]`, `drain(a..b)`, `call_indexes` and
+/// `range_index` answer (#1672).
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum SliceLength {
     Len,
     IsEmpty,
     Index,
-    Range,
-    Drain,
-    Swap,
-    SwapRemove,
-    /// A `Vec`'s `remove(i)`, of an index below its length.
-    Remove,
-    /// A `Vec`'s `insert(i, v)`, of an index at most its length.
-    Insert,
     Push,
-    Pop,
 }
 
 pub(in crate::lower) fn slice_length<'tcx>(
@@ -950,17 +940,8 @@ pub(in crate::lower) fn slice_length<'tcx>(
         }
         let indexed = args.types().next().map(|ty| ty.peel_refs());
         let index = args.types().nth(1);
-        // A range of `usize`s, `a..b`, `..b`, `a..` or `..`.
-        let range = index.is_some_and(|i| {
-            matches!(i.kind(), ty::Adt(adt, range_args)
-                if [LangItem::Range, LangItem::RangeTo, LangItem::RangeFrom, LangItem::RangeFull]
-                    .into_iter()
-                    .any(|item| tcx.is_lang_item(adt.did(), item))
-                    && range_args.types().all(|t| t.is_usize()))
-        });
         return match indexed {
             Some(ty) if vec(ty) && index.is_some_and(|i| i.is_usize()) => Some(SliceLength::Index),
-            Some(ty) if (vec(ty) || ty.is_slice() || ty.is_array()) && range => Some(SliceLength::Range),
             _ => None,
         };
     }
@@ -971,18 +952,10 @@ pub(in crate::lower) fn slice_length<'tcx>(
     if !vec(owner) && !owner.is_slice() {
         return None;
     }
-    let is_vec = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Vec, adt.did()));
     match tcx.item_name(def_id).as_str() {
         "len" => Some(SliceLength::Len),
         "is_empty" => Some(SliceLength::IsEmpty),
-        "swap" => Some(SliceLength::Swap),
-        "swap_remove" => Some(SliceLength::SwapRemove),
         "push" if vec(owner) => Some(SliceLength::Push),
-        // A `Vec`'s, which panics past its length, not a `VecDeque`'s.
-        "remove" if is_vec(owner) => Some(SliceLength::Remove),
-        "insert" if is_vec(owner) => Some(SliceLength::Insert),
-        "drain" if vec(owner) => Some(SliceLength::Drain),
-        "pop" if vec(owner) => Some(SliceLength::Pop),
         _ => None,
     }
 }
