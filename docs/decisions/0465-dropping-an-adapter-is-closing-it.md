@@ -2641,3 +2641,36 @@ stage strands as it panics" holds it, a `$Steps` made directly whose
 `f` panics mid-fold: the accumulator dropped, then the source closed,
 then the panic going on. `flat-fold-unguarded` is back, aimed at that
 row, and caught.
+
+## Amendment: a `Vec`'s `IntoIter` is known by a mark, not by its steps (#2154)
+
+`$closing` took any iterator with an `advanceBackBy` of its own for a
+`Vec`'s `IntoIter` that `$slicing` had given its slice's steps. It then
+counted such an iterator by its `len()` and took its `last` from its
+back. A flatten has an `advanceBackBy` of its own too: std's
+`FlattenCompat::advance_back_by`. So a `skip(1).count()` in generic code
+of `vec![..].into_iter().flat_map(Own)`, stepped from its back, whose
+inner iterators have their own `count` and a destructor, threw
+`it.len is not a function` where native counts each inner (ADR 0262:
+results change).
+
+Now `$slicing` marks what it gives its steps, a runtime symbol
+(`$slicedKey`, read by `$sliced`), and so does `$given`'s JS iterator made
+of one. `$closing` asks `$sliced`, as does `$given` itself. That is the
+one answer of whether an iterator is one, set where the caller knows its
+type and never guessed from the steps it has. `$slicing`'s own guard,
+"given them already", still reads its steps: it keeps steps it has from
+being replaced, and decides no type.
+
+Held by `test/corpus/count_of_a_flatten_skipped_from_its_back.rs`,
+against native Rust: the flatten counted and its `last` taken after a
+`skip`, and a `Vec`'s `IntoIter` of items with a destructor done the same
+way.
+
+Mutations:
+- `closing-into-iter-by-its-steps` and `slicing-unmarked`, new.
+- `given-slicing-hidden` and `given-unit-value-read`, retargeted.
+
+`given-unit-value-read` survives, as it did before this change: no case
+gives `$given` a unit struct's `undefined` any more. It is listed with
+#2155's latent survivors.

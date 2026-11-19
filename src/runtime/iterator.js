@@ -174,7 +174,7 @@ function $given(value, iterator, boxed = false, back, len) {
   // JS iterator made of it, given its length, passes them over as it does
   // (#703, #704). A unit struct's value is `undefined`, which has none
   // (itertools' laziness tests).
-  if (value != null && $ownMethod(value, "advanceBackBy") && value.items !== undefined) {
+  if ($sliced(value) && value.lends === undefined) {
     $forward(it, value, {
       advanceBy: "advanceBy",
       advanceBackBy: "advanceBackBy",
@@ -182,6 +182,7 @@ function $given(value, iterator, boxed = false, back, len) {
       nthBack: back?.nthBack === undefined ? "nthBack" : undefined,
     });
     it.dropItem = value.dropItem;
+    it[$slicedKey] = true;
   }
   // Made of the value, which `$givenClone` clones.
   it.given = true;

@@ -372,4 +372,28 @@ export const mutations: Mutation[] = [
     replace: "    tryFold: undefined,\n",
     tests: ["test/corpus.test.ts", "-t", "^(collected_in_place_past_a_capturing_filter_whose_rejected_drop_panics|generic_code_steps_adapters_as_std)\\.rs$"],
   },
-];
+  {
+    name: "closing-into-iter-by-its-steps",
+    breaks: "a closed iterator is taken for a `Vec`'s `IntoIter` by its having an `advanceBackBy` of its own, so a flatten's, std's `FlattenCompat`'s, counted in generic code after a `skip`, asks a `len()` it hasn't and throws `it.len is not a function` (#2154)",
+    file: "src/runtime/closing.js",
+    find: "  const own = $sliced(it);\n",
+    replace: "  const own = $ownMethod(it, \"advanceBackBy\");\n",
+    tests: ["test/corpus.test.ts", "-t", "^count_of_a_flatten_skipped_from_its_back.rs$"],
+  },
+  {
+    name: "slicing-unmarked",
+    breaks: "a `Vec`'s `IntoIter` given its slice's steps by `$slicing` isn't marked one, so a JS iterator made of it for generic code that asks its length hides its slice's steps, and its `nth` there drops each, stopping at a panic (#703, #2154)",
+    file: "src/runtime/closing.js",
+    find: "  it.dropItem = drop;\n  it[$slicedKey] = true;\n  return it;\n}\n",
+    replace: "  it.dropItem = drop;\n  return it;\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|generic_count_second_panic_aborts|count_of_a_flatten_skipped_from_its_back).rs$"],
+  },
+
+  {
+    name: "given-unit-value-read",
+    breaks: "a unit struct's iterator, `undefined`, given as it is, is asked whether it's a `Vec`'s `IntoIter` given its slice's steps, which throws, \"Cannot read properties of undefined\" (itertools' laziness tests)",
+    file: "src/runtime/closing.js",
+    find: "  return it != null && it[$slicedKey] === true;\n",
+    replace: "  return it[$slicedKey] === true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it.rs$"],
+  },];

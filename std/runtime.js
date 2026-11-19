@@ -921,7 +921,7 @@ export function $given(value, iterator, boxed = false, back, len) {
   // JS iterator made of it, given its length, passes them over as it does
   // (#703, #704). A unit struct's value is `undefined`, which has none
   // (itertools' laziness tests).
-  if (value != null && $ownMethod(value, "advanceBackBy") && value.items !== undefined) {
+  if ($sliced(value) && value.lends === undefined) {
     $forward(it, value, {
       advanceBy: "advanceBy",
       advanceBackBy: "advanceBackBy",
@@ -929,6 +929,7 @@ export function $given(value, iterator, boxed = false, back, len) {
       nthBack: back?.nthBack === undefined ? "nthBack" : undefined,
     });
     it.dropItem = value.dropItem;
+    it[$slicedKey] = true;
   }
   // Made of the value, which `$givenClone` clones.
   it.given = true;
@@ -5209,8 +5210,12 @@ export function $closing(it, drop, slices = true) {
   // dropped as one slice too, by itself, as a `chain`'s `nth` asks it
   // (#250); how many there weren't. Of one given its own, `$slicing`'s,
   // which generic code's caller gives it, those (#703, #704).
-  // A `Vec`'s `IntoIter`, whose `last` is its own (#648).
-  const own = $ownMethod(it, "advanceBackBy");
+  // A `Vec`'s `IntoIter`, whose `last` is its own (#648). Given its own
+  // by `$slicing`, which marks it so (`$sliced`): not one that has an
+  // `advanceBackBy` of its own otherwise, a flatten's, std's
+  // `FlattenCompat`'s, whose `count` is its own, never a `len()` it hasn't
+  // (#2154).
+  const own = $sliced(it);
   const intoIter = own || (slices && it.items !== undefined && it.nthBack === undefined && drop !== undefined);
   const slice = own || (intoIter && drop.each !== undefined);
   const advanceBackBy = own ? (m) => it.advanceBackBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each, true);
@@ -5413,6 +5418,15 @@ export function $advanceSlice(it, m, each, back = false) {
 // iterator. A `Drain`'s, a
 // B-tree's and a `BinaryHeap`'s aren't: theirs are std's defaults, each
 // dropped as it's passed, a panic stopping them (#703, #704).
+// What marks a `Vec`'s or an array's `IntoIter` given its slice's steps,
+// `$slicing`'s, which only a caller that knows its type asks, or a JS
+// iterator made of one that passes them on (`$given`): the one answer of
+// whether it's one, never read of which steps it has, as a flatten has an
+// `advanceBackBy` of its own too (#2154).
+export const $slicedKey = Symbol("rust-js.sliced");
+export function $sliced(it) {
+  return it != null && it[$slicedKey] === true;
+}
 export function $slicing(it, drop) {
   // Of one lent, `by_ref()`'s, what it lends, given them, and they passed
   // on, as std's `&mut I` passes on `I`'s `advance_by`, `nth`,
@@ -5422,6 +5436,7 @@ export function $slicing(it, drop) {
     $slicing(it.lends, drop);
     $forward(it, it.lends, { advanceBy: "advanceBy", advanceBackBy: "advanceBackBy", nth: "nth", nthBack: "nthBack" });
     it.dropItem = drop;
+    it[$slicedKey] = true;
     return it;
   }
   // Given them already, or a JS iterator of its own, one closed, whose are.
@@ -5446,6 +5461,7 @@ export function $slicing(it, drop) {
   });
   $owns(it, "nth", "nthBack", "last", "count");
   it.dropItem = drop;
+  it[$slicedKey] = true;
   return it;
 }
 
