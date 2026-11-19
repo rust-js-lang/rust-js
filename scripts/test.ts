@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { stopGroup } from "../test/child";
 import { currentBuild, prune } from "../test/compiles";
 import { pruneKeptStores } from "../test/kept";
-import { balanced, browsers, caseFiles, casePoolJobs, casePoolWidth, nightly, shardArg, shardTimings, testFileSeconds } from "./shard";
+import { browsers, caseFiles, casePoolJobs, casePoolWidth, nightly, type ShardRun, shardArg, shardTimings, testFileSeconds, testShardFiles } from "./shard";
 import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -87,15 +87,16 @@ const caseJobs = casePoolJobs(index, count, cores)
 const kept = join(root, shardTimings);
 const timings = ["--timings=target/test-timings.json"];
 // Each shard's test files, dealt by what each took, the longest first, to
-// the shard with the least so far (`balanced`): `bun test --shard` gave
-// check 44022102403's shards 101 and 261 of 362 files, 1,127 and 1,894 of
-// their measured seconds, 282 s and 474 s of wall, and the second shard
-// ended 4.5 minutes after the first.
+// the shard with the least so far, as `plan` expected them
+// (`testShardFiles`): `bun test --shard` gave check 44022102403's shards
+// 101 and 261 of 362 files, 1,127 and 1,894 of their measured seconds,
+// 282 s and 474 s of wall, and the second shard ended 4.5 minutes after
+// the first.
 const seconds = testFileSeconds([
   join(root, "target", "test-timings.json"),
   ...(existsSync(kept) ? [...new Bun.Glob("**/*.json").scanSync(kept)].sort().map((file) => join(kept, file)) : []),
 ]);
-const dealt = (files: string[]) => (count > 1 ? balanced(files, index, count, seconds) : files);
+const dealt = (files: string[]) => (count > 1 ? testShardFiles(files, index, count, seconds) : files);
 // And past 25 minutes, it's stopped, and fails: a test worker on CI spun
 // for 34 minutes in a `spawnSync` of rustc, which had ended unreaped, past
 // its own timeout (2026-10-15), and the job ran on till it was cancelled.
@@ -144,7 +145,15 @@ const rest = dealt(
     (file) => !(Object.values(caseFiles) as string[]).includes(file) && !browsers.includes(file) && (atNight || !nightly.includes(file)),
   ),
 );
-const rested = rest.length === 0 ? Promise.resolve(0) : run(["--parallel", ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`), ...rest]);
+// What the shard measures of its parts, kept beside its files' times
+// (`ShardRun`), by which `plan` expects a shard's time (`testShards`).
+const began = performance.now();
+const wall = (from: number) => (performance.now() - from) / 1000;
+const measured: ShardRun = { count, rest: 0, recorded: 0, pool: { wall: 0, corpus: { seconds: 0, cases: 0 }, metamorphic: { seconds: 0 } }, browsers: { wall: 0, files: 0 } };
+const rested = (rest.length === 0 ? Promise.resolve(0) : run(["--parallel", ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`), ...rest])).then((code) => {
+  measured.rest = wall(began);
+  return code;
+});
 // The pool: a part starts as one ends, as many at once as `casePoolWidth`
 // says while the rest runs, and more as soon as it's ended. One not
 // started by the deadline fails. Each case built as a library too, a
@@ -162,7 +171,11 @@ const cases = await new Promise<number[]>((done) => {
       }
       active++;
       const name = `${file === caseFiles.corpus ? "corpus" : "metamorphic"}-${part}`;
+      const started = performance.now();
       void run([file, ...junit(name)], { RUST_JS_CASES: part }).then((code) => {
+        const kind = file === caseFiles.corpus ? measured.pool.corpus : measured.pool.metamorphic;
+        kind.seconds += wall(started);
+        measured.pool.wall = wall(began);
         codes.push(code);
         active--;
         fill();
@@ -178,6 +191,20 @@ const cases = await new Promise<number[]>((done) => {
 });
 const restCode = await rested;
 const pageFiles = dealt(selected ? browsers.filter((file) => selected.files.includes(file)) : browsers);
+const paged = performance.now();
 const pages = pageFiles.length === 0 ? 0 : Date.now() < deadline ? await run(["--parallel", ...timings, ...pageFiles, ...junit(`browsers-${of}`)]) : 1;
+measured.browsers = { wall: pageFiles.length === 0 ? 0 : wall(paged), files: pageFiles.length };
+// The corpus's cases its parts ran, a `1/count` of those selected, or of
+// every case; and the rest's files' recorded seconds, as `bun test` wrote
+// them, beside which the measures are kept.
+const ranCorpus = caseJobs.some((job) => job.file === caseFiles.corpus);
+const corpusCases = selected ? selected.cases.length : readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")).length;
+measured.pool.corpus.cases = ranCorpus ? Math.round(corpusCases / count) : 0;
+const written = join(root, "target", "test-timings.json");
+if (existsSync(written) && rest.length > 0) {
+  const kept: { files?: Record<string, number> } = JSON.parse(readFileSync(written, "utf8"));
+  measured.recorded = rest.reduce((sum, file) => sum + (kept.files?.[file] ?? 0) / 1000, 0);
+  writeFileSync(written, `${JSON.stringify({ ...kept, shard: measured }, null, 2)}\n`);
+}
 watchdog.kill();
 process.exit(restCode || cases.find((code) => code !== 0) || pages);

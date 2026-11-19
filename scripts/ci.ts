@@ -22,7 +22,7 @@ import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDec
 import { changedSince, type Mutation, mutationFile, mutations } from "./mutations";
 import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
-import { caseFiles, dealtByGroup, drivesBrowser, fewestShards, shardTimings, testFileSeconds, timingsUnder } from "./shard";
+import { browsers, caseFiles, dealtByGroup, drivesBrowser, fewestShards, type ShardFacts, shardFacts, shardTimings, testFileSeconds, timingsUnder } from "./shard";
 import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -335,8 +335,8 @@ async function plan(given?: string, testShardsGiven?: string) {
   console.log(`intervals=${touchesIntervals(changed)}`);
   console.log(`mutations=${mutating}`);
   console.log(`mutation_timings=${timings}`);
-  const testTimings = plannedTestTimings();
-  console.log(`test_timings=${testTimings}`);
+  const testTimes = plannedTestTimings();
+  console.log(`test_timings=${testTimes ? encodedTestTimings(testTimes.seconds) : ""}`);
   console.log(`wasm=${touchesWasm(changed)}`);
   console.log(`rustc=${touchesRustc(changed)}`);
   // The suite's selection (scripts/select.ts): by the newest test map of an
@@ -353,7 +353,7 @@ async function plan(given?: string, testShardsGiven?: string) {
   console.log(`tests=${testsOutput(selection)}`);
   // As many as a check started by hand or the nightly says, else as many
   // as its selection's expected time needs; check.yml's matrix is the list.
-  const testShardCount = testShards(selection, decodedTestTimings(testTimings), testShardsGiven);
+  const testShardCount = testShards(selection, testTimes, testShardsGiven);
   console.log(`test_shards=${testShardCount}`);
   console.log(`test_shard_list=${testShardList(testShardCount)}`);
   // The batch a failure is attributed in: since the newest check of
@@ -390,37 +390,56 @@ export function completedBase(all: Run[], head: string): string | undefined {
 export const TEST_SHARDS = [1, 2, 3, 4, 5, 6];
 
 /** What a test shard takes beside its run of the suite: its checkout,
- * the toolchain, packages and the browser, and the compiler built from
- * its cache, 195 and 218 s of check 44459055794's shards (a6b13d280). */
-export const TEST_SHARD_SETUP_SECONDS = 210;
+ * the toolchain, packages and the browser, the compiler from its cache,
+ * and what it uploads after: 98 and 37 s before its run of check
+ * 44480685461's first and third shards (896bcafd0), each some 10 s after;
+ * its second's install of the browser hung 7.7 min. */
+export const TEST_SHARD_SETUP_SECONDS = 100;
 
-/** A test shard's wall time per second of its files' recorded times:
- * they're timed as they run beside each other on its four cores, and
- * the files of cases run in their pool beside them, so a shard's run took
- * about half their sum, 873 of 1,826 and 927 of 1,875 s in check
- * 44459055794's two shards of everything (a6b13d280). */
-export const TEST_WALL_PER_RECORDED = 0.49;
+/** How long a test shard of a selection is expected to take, of `count`,
+ * its rest's files' shares of their wall, `load` (`testFileSeconds`): its
+ * setup; then the longer of its rest and its pool of the files of cases,
+ * which run beside each other, the pool's parts' seconds at what its wall
+ * took a second of them (`ShardFacts`), the corpus's cases selected and
+ * the metamorphic sample's a `1/count` of each; then its browsers' files,
+ * after both. Of check 44480685461's three shards the pool was each one's
+ * longest leg, 468 to 667 s of their 516 to 745 s runs, the rest 301 to
+ * 396, the browsers 10 to 79 after. */
+export function testShardSeconds(load: number, count: number, facts: ShardFacts, { cases, metamorphic, pages }: { cases: number; metamorphic: boolean; pages: number }): number {
+  const pooled = (cases * facts.secondsPerCase + (metamorphic ? facts.metamorphic : 0)) / count;
+  return TEST_SHARD_SETUP_SECONDS + Math.max(load, pooled * facts.poolWallPerSecond) + Math.ceil(pages / count) * facts.browserSeconds;
+}
 
-/** How many machines the suite's shards of a selection take, by the last
- * run's times of its files, `seconds` (`plannedTestTimings`): the fewest
- * of `TEST_SHARDS` each of whose shards, as `scripts/test.ts` deals them
- * (`dealtByGroup`), is expected to take `SHARD_BUDGET_SECONDS` or less, its
- * files every one of the suite's but the files of cases, whose pool the
- * calibration holds, where it selects everything, a file the last run
- * didn't time, a selection's that ran few, by the timed ones' median; its
- * setup and its files' recorded seconds at `TEST_WALL_PER_RECORDED`
- * (`fewestShards`, the mutations' rule). Of everything, four: each about
- * 11 min, where two took 18 and 19 and were the check's longest leg.
- * Where no run's times are kept, by count: one of a small selection, at
- * most 60 files and 400 corpus cases, two of more. As many as `given`,
- * a check started by hand's or the nightly's, where it's given. */
-export function testShards(selection: Selection, seconds: ReadonlyMap<string, number> = new Map(), given?: string, suite: () => string[] = suiteFiles): string {
+/** How many machines the suite's shards of a selection take, by the
+ * kept runs' times of its files and what their shards measured, `times`
+ * (`plannedTestTimings`): the fewest of `TEST_SHARDS` each of whose
+ * shards, as `scripts/test.ts` deals them (`testShardFiles`, of
+ * `dealtByGroup`), is expected to take `SHARD_BUDGET_SECONDS` or less
+ * (`testShardSeconds`, `fewestShards`, the mutations' rule), a file no run
+ * timed by the timed ones' median. Where no run kept them, by count: one of a small
+ * selection, at most 60 files and 400 corpus cases, two of more. As many
+ * as `given`, a check started by hand's or the nightly's, where it's
+ * given. */
+export function testShards(
+  selection: Selection,
+  times?: { seconds: ReadonlyMap<string, number>; facts: ShardFacts },
+  given?: string,
+  suite: () => string[] = suiteFiles,
+  corpusCases: () => number = () => readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")).length,
+): string {
   if (given !== undefined) return given;
-  if (seconds.size === 0) return !selection.all && selection.files.length <= 60 && selection.cases.length <= 400 ? "1" : "2";
+  if (times === undefined || times.seconds.size === 0) return !selection.all && selection.files.length <= 60 && selection.cases.length <= 400 ? "1" : "2";
   const cases: readonly string[] = Object.values(caseFiles);
-  const files = (selection.all ? suite() : selection.files).filter((file) => !cases.includes(file));
+  const chosen = selection.all ? suite() : selection.files;
+  const files = chosen.filter((file) => !cases.includes(file) && !browsers.includes(file));
+  const pool = {
+    cases: selection.all ? corpusCases() : selection.cases.length,
+    metamorphic: selection.all || selection.files.includes(caseFiles.metamorphic),
+    pages: chosen.filter((file) => browsers.includes(file)).length,
+  };
+  // The deal `testShardFiles` gives each shard, and its load.
   const expected = (count: number) =>
-    dealtByGroup(files, count, seconds, () => "suite").load.map((load) => TEST_SHARD_SETUP_SECONDS + TEST_WALL_PER_RECORDED * load);
+    dealtByGroup(files, count, times.seconds, () => "suite").load.map((load) => testShardSeconds(load, count, times.facts, pool));
   return String(fewestShards(TEST_SHARDS, expected, SHARD_BUDGET_SECONDS));
 }
 
@@ -492,7 +511,7 @@ export const TIMINGS_RUNS = 6;
  * each that ran the suite has: GitHub lists those by name, where its list
  * of all the repository's artifacts fails as often as not with a 500 that
  * three asks don't get past (#606). */
-function plannedTestTimings(): string {
+function plannedTestTimings(): { seconds: Map<string, number>; facts: ShardFacts } | undefined {
   try {
     const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
       gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
@@ -500,7 +519,7 @@ function plannedTestTimings(): string {
     const runs = timingsRuns(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
     if (runs.length === 0) {
       console.error("no run has kept its timings yet: the test shards split by file count");
-      return "";
+      return undefined;
     }
     // Each file's time the newest run's that timed it.
     const paths: string[] = [];
@@ -513,16 +532,20 @@ function plannedTestTimings(): string {
       const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
       paths.push(...files.map((entry) => join(entry.parentPath, entry.name)).sort());
     }
-    const seconds = testFileSeconds(paths);
-    if (seconds.size === 0) {
-      console.error("no run's timings could be read: the test shards split by file count");
-      return "";
+    // Of the runs that kept what their shards measured, each file's share
+    // of its rest's wall (`testFileSeconds`), and the pool's and browsers'
+    // measures (`shardFacts`).
+    const seconds = testFileSeconds(paths, true);
+    const facts = shardFacts(paths);
+    if (seconds.size === 0 || facts === undefined) {
+      console.error("no run kept its shards' measures yet: the test shards split by file count");
+      return undefined;
     }
     console.error(`the test shards balance by runs ${runs.join(", ")}'s timings, ${seconds.size} files', each the newest that timed it`);
-    return encodedTestTimings(seconds);
+    return { seconds, facts };
   } catch (error) {
     console.error(`the test files' times couldn't be read, ${error instanceof Error ? error.message : error}: the test shards split by file count`);
-    return "";
+    return undefined;
   }
 }
 

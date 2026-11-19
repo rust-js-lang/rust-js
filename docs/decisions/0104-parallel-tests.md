@@ -259,3 +259,73 @@ a selection's of a few files, left most untimed, and d1a21768d's check of
 everything, the first sized so, planned 2 shards of the last run's. Six
 runs' artifacts are about 100 KB more downloaded by `plan`, the shards
 none. Mutation `test-timings-of-one-run`.
+
+## Amendment: a shard's time is its measured parts, the pool among them (ioDG, 2026-11-19)
+
+Check 44480685461 (896bcafd0), a selection of 394 files and 2,799 cases,
+planned 3 shards at about 585 s each. They ran 516, 605 and 745 s, plus
+37 to 98 s of setup. One more ran 16.8 min only because its
+`playwright install` hung for 7.7 min. The deal was not at fault: the
+shards ran exactly the files `plan` dealt them, 766 s of recorded time
+each. The estimate was:
+
+- **The times were lower than the files take.** Each file's time came
+  from the newest of six runs that timed it, mostly checks of a few
+  files, where little ran beside it. These shards recorded 3,635 s for
+  the 2,298 plan expected, 1.58 times. A recorded time is a file's wall
+  beside whatever ran with it, so it means nothing without that load.
+- **The pool wasn't counted.** The files of cases were every shard's
+  longest leg, ending 468 to 667 s into the run, 170 to 270 s after the
+  rest, and the browsers' files ran 10 to 79 s after that. The 0.49
+  factor had folded the pool into the files' times of one full run.
+- **Setup was 37 to 98 s, not 210.**
+
+Now each shard keeps what its run measured beside its files' times,
+`shard` in its `test-timings.json` (`ShardRun`, scripts/test.ts):
+
+- the rest's wall and its files' recorded seconds;
+- each part of the pool's own seconds, the corpus's with its cases, and
+  the metamorphic sample's, and the pool's wall;
+- the browsers' wall and how many files ran.
+
+A file's time is its share of its rest's wall: its recorded time times
+wall over recorded, read by `testFileSeconds`. That is the mutations'
+share of their shard, 2e's lesson. `plan` reads only runs that kept
+these measures, `measuredOnly`; an earlier run's raw times are passed
+over. Until one such run is kept, the count rule stands.
+
+`shardFacts` gives what the pool and browsers take:
+
+- a corpus case's seconds;
+- the metamorphic sample's whole seconds;
+- the pool's wall per second of its parts, as its width gives it;
+- a browsers' file's wall.
+
+A shard's expected time is `testShardSeconds`: its setup
+(`TEST_SHARD_SETUP_SECONDS`, 100 s), then the longer of its rest's share
+sum and its pool's expected wall, a `1/count` of the cases and of the
+sample, then its share of the browsers' files. `TEST_WALL_PER_RECORDED`
+is gone.
+
+There is one deal, `testShardFiles` over `dealtByGroup`, which `bun run
+test` runs and `plan` sizes by. The runner had dealt by `balanced`, which
+agrees with it when every file is timed and deals untimed ones
+otherwise.
+
+Of that check's own measures, kept as
+`test/fixtures/test-timings-44480685461/`, three shards are expected at
+722 s each, about its runs' mean plus setup and past the 720 s budget, so
+four are planned at 578 s each. Without the pool, two would have been
+planned. Held by test/shards.test.ts's "a check's suite takes the
+machines its selection's expected time needs" and "a test shard keeps
+what its run measured beside its files' times".
+
+Mutations: `test-shards-pool-unmodelled`, `test-shards-setup-uncounted`
+(retargeted), `test-shards-browsers-uncounted`,
+`test-shards-corpus-of-a-selection-alone`,
+`test-shards-metamorphic-uncounted`, `test-shards-of-the-timed-alone`
+(retargeted), `test-file-times-raw`, `test-times-of-unmeasured-runs`,
+`shard-facts-metamorphic-of-one-shard` and `test-timings-last-wins`
+(retargeted). `test-shards-recorded-as-wall` is retired with the factor
+it tested. Each timings artifact is a few hundred bytes larger; no
+workflow or runner changes.

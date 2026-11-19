@@ -8,11 +8,11 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, TEST_WALL_PER_RECORDED, testShardList, testShards, timingsRuns } from "../scripts/ci";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
 import { mutations } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
-import { balancedByGroup, fewestShards, shareOfShard, slots, testFileSeconds } from "../scripts/shard";
+import { balancedByGroup, browsers, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles } from "../scripts/shard";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
@@ -126,43 +126,60 @@ test("a test shard is handed its files' times by plan, never downloading them", 
 });
 
 // The suite's shards are as many as its selection's expected time needs,
-// by the mutations' one rule (`fewestShards`): each shard's setup and its
-// files' recorded seconds at the wall each second of them took, measured
-// on check 44459055794's two shards of everything (a6b13d280): its files'
-// recorded 1,826 and 1,875 s, its runs' walls 873 and 927 s. That
-// selection, its very times, plans the shards that bring each under the
-// budget: not one, not the most.
+// by the mutations' one rule (`fewestShards`): each shard's setup, then the
+// longer of its rest's files, each its share of the wall its run measured,
+// and its pool of the files of cases, then its browsers' files
+// (`testShardSeconds`). Check 44480685461 (896bcafd0) of 394 files and
+// 2,799 cases, planned 3 by its files' raw recorded times alone, ran 516
+// to 745 s, the pool each shard's longest leg; its own measures, kept as
+// test/fixtures/test-timings-44480685461/, expect 722 s a shard of three,
+// past the budget, and plan four.
 test("a check's suite takes the machines its selection's expected time needs", () => {
   expect(fewestShards([1, 2, 4], (count) => [100 / count + 10], 40)).toBe(4);
   expect(fewestShards([1, 2, 4], (count) => [1000 / count], 40)).toBe(4);
   expect(fewestShards([1, 2, 4], () => [5], 40)).toBe(1);
   // Every shard within it, not any one.
   expect(fewestShards([1, 2, 4], (count) => (count === 1 ? [50] : count === 2 ? [10, 50] : [10, 10, 10, 10]), 40)).toBe(4);
-  expect(873 / 1826).toBeCloseTo(TEST_WALL_PER_RECORDED, 1);
-  expect(927 / 1875).toBeCloseTo(TEST_WALL_PER_RECORDED, 1);
-  const measured = testFileSeconds([join(root, "test/fixtures/test-timings-44459055794.json")]);
-  expect(measured.size).toBe(384);
-  const all = { all: true, files: [], cases: [], forms: [], why: "" };
-  const planned = Number(testShards(all, measured, undefined, () => [...measured.keys()]));
-  expect(planned).toBeGreaterThan(1);
-  expect(planned).toBeLessThan(TEST_SHARDS.at(-1)!);
-  expect(planned).toBe(4);
+  const paths = [1, 2, 3].map((k) => join(root, `test/fixtures/test-timings-44480685461/${k}.json`));
+  const seconds = testFileSeconds(paths, true);
+  const facts = shardFacts(paths)!;
+  expect(seconds.size).toBe(384);
+  // Each file its share of its shard's rest: the shares sum to the walls.
+  expect([...seconds.values()].reduce((a, b) => a + b, 0)).toBeCloseTo(396 + 300.8 + 328.8, 0);
+  expect(facts.poolWallPerSecond).toBeCloseTo((666.6 + 468.1 + 595.4) / (1203 + 518 + 951 + 221 + 1245 + 303), 3);
+  expect(facts.metamorphic).toBeCloseTo(518 + 221 + 303, 0);
+  expect(facts.browserSeconds).toBeCloseTo((78.8 + 48.4 + 9.4) / 9, 3);
+  const files = [...seconds.keys()];
+  const selection = { all: false, files: [...files, ...browsers, ...Object.values(caseFiles)], cases: Array.from({ length: 2799 }, (_, i) => `c${i}.rs`), forms: [], why: "" };
+  const pool = { cases: 2799, metamorphic: true, pages: browsers.length };
+  const expected = (count: number) => dealtByGroup(files, count, seconds, () => "suite").load.map((load) => testShardSeconds(load, count, facts, pool));
+  // Three, as the check ran: about its runs' mean, its setup beside them.
+  expect(Math.max(...expected(3))).toBeGreaterThan(SHARD_BUDGET_SECONDS);
+  expect(Math.max(...expected(3))).toBeCloseTo(TEST_SHARD_SETUP_SECONDS + (745 + 516 + 605) / 3, -2);
+  expect(Math.max(...expected(4))).toBeLessThanOrEqual(SHARD_BUDGET_SECONDS);
+  expect(testShards(selection, { seconds, facts })).toBe("4");
+  // The pool is the longer leg there: without it, two would do.
+  expect(testShards(selection, { seconds, facts: { ...facts, poolWallPerSecond: 0 } })).toBe("2");
   // Of everything, every suite file counts, those the last run didn't
   // time, a selection's that ran few, by the timed ones' median, never the
   // timed alone: of 100 files, 10 timed at a minute each, six machines.
+  const all = { all: true, files: [], cases: [], forms: [], why: "" };
+  const none = { secondsPerCase: 0, metamorphic: 0, poolWallPerSecond: 0, browserSeconds: 0 };
   const suite = Array.from({ length: 100 }, (_, i) => `test/f${i}.test.ts`);
   const few = new Map(suite.slice(0, 10).map((file) => [file, 60] as const));
-  expect([testShards(all, few, undefined, () => suite), testShards(all, few, undefined, () => [...few.keys()])]).toEqual(["6", "1"]);
+  expect([testShards(all, { seconds: few, facts: none }, undefined, () => suite, () => 0), testShards(all, { seconds: few, facts: none }, undefined, () => [...few.keys()], () => 0)]).toEqual(["6", "1"]);
+  // Of everything, the corpus's every case.
+  expect(testShards(all, { seconds: few, facts: { ...none, secondsPerCase: 1, poolWallPerSecond: 1 } }, undefined, () => [...few.keys()], () => 3000)).toBe("5");
   // As many as a check started by hand or the nightly says, given.
-  expect(testShards(all, measured, "2")).toBe("2");
-  // Each shard of it within the budget, and one fewer would not be.
-  const total = [...measured.values()].reduce((a, b) => a + b, 0);
-  expect(TEST_SHARD_SETUP_SECONDS + (TEST_WALL_PER_RECORDED * total) / planned).toBeLessThanOrEqual(SHARD_BUDGET_SECONDS);
-  expect(TEST_SHARD_SETUP_SECONDS + (TEST_WALL_PER_RECORDED * total) / (planned - 1)).toBeGreaterThan(SHARD_BUDGET_SECONDS);
-  // A small selection, one machine; with no run's times kept, by count.
+  expect(testShards(all, { seconds, facts }, "2")).toBe("2");
+  // A small selection, one machine; with no run's measures kept, by count.
   const some = (files: number, cases: number) => ({ all: false, files: Array.from({ length: files }, (_, i) => `test/f${i}.test.ts`), cases: Array.from({ length: cases }, (_, i) => `c${i}.rs`), forms: [], why: "" });
-  expect(testShards({ ...some(0, 0), files: ["test/compat.test.ts", "test/adr.test.ts"] }, measured)).toBe("1");
+  expect(testShards({ ...some(0, 0), files: ["test/compat.test.ts", "test/adr.test.ts"] }, { seconds, facts })).toBe("1");
   expect([testShards(some(5, 30)), testShards(some(60, 400)), testShards(some(61, 0)), testShards(some(0, 401)), testShards(all)]).toEqual(["1", "1", "2", "2", "2"]);
+  // An earlier run's raw times, no shard's measures kept, aren't `plan`'s.
+  const legacy = join(root, "test/fixtures/test-timings-44459055794.json");
+  expect(testFileSeconds([legacy], true).size).toBe(0);
+  expect(shardFacts([legacy])).toBeUndefined();
   // Handed on as the times `plan` encodes, and the matrix its list.
   expect([...decodedTestTimings(encodedTestTimings(new Map([["test/a.test.ts", 1.5]])))]).toEqual([["test/a.test.ts", 1.5]]);
   expect(decodedTestTimings("").size).toBe(0);
@@ -173,6 +190,34 @@ test("a check's suite takes the machines its selection's expected time needs", (
   expect(jobs.test.strategy?.matrix?.shard).toBe("${{ fromJSON(needs.plan.outputs.test_shard_list) }}");
   expect(jobs.plan.steps.find((step) => step.run?.includes("bun scripts/ci.ts plan"))?.run).toContain("--test-shards=");
   expect(JSON.stringify(jobs.test)).not.toContain("inputs.test_shards");
+});
+
+// What a shard's run measures is kept beside its files' times, so the
+// next `plan` reads each file's share and the pool's: the rest's wall and
+// its files' recorded seconds, each part of the pool's, the browsers'.
+test("a test shard keeps what its run measured beside its files' times", () => {
+  const suite = readFileSync(join(root, "scripts/test.ts"), "utf8");
+  expect(suite).toContain("JSON.stringify({ ...kept, shard: measured }");
+  expect(suite).toContain("measured.rest = wall(began);");
+  expect(suite).toContain("kind.seconds += wall(started);");
+  expect(suite).toContain("measured.browsers = {");
+  const dir = mkdtempSync(join(tmpdir(), "test-shares-"));
+  try {
+    const at = (name: string, timings: object) => {
+      writeFileSync(join(dir, name), JSON.stringify(timings));
+      return join(dir, name);
+    };
+    const shard = { count: 2, rest: 50, recorded: 200, pool: { wall: 90, corpus: { seconds: 100, cases: 50 }, metamorphic: { seconds: 40 } }, browsers: { wall: 30, files: 3 } };
+    const measured = at("measured.json", { version: 1, files: { "test/a.test.ts": 120_000, "test/b.test.ts": 80_000 }, shard });
+    const raw = at("raw.json", { version: 1, files: { "test/a.test.ts": 9000, "test/c.test.ts": 4000 } });
+    // A run's measured share first; a raw run's as it is, unless measured
+    // only, `plan`'s.
+    expect([...testFileSeconds([measured, raw])]).toEqual([["test/a.test.ts", 30], ["test/b.test.ts", 20], ["test/c.test.ts", 4]]);
+    expect([...testFileSeconds([measured, raw], true)]).toEqual([["test/a.test.ts", 30], ["test/b.test.ts", 20]]);
+    expect(shardFacts([measured, raw])).toEqual({ secondsPerCase: 2, metamorphic: 80, poolWallPerSecond: 90 / 140, browserSeconds: 10 });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 // The builds of the compiler a run makes at once, mutations' `--jobs`, are
@@ -391,10 +436,11 @@ test("a change's untimed mutations are dealt first, in turn, each its file's usu
   expect(() => balancedByGroup(["a"], 3, 2, seconds, (name) => files[name])).toThrow("a shard is 1 to 2");
 });
 
-// A check's test shards are dealt by what each file took (`balanced`), not
-// by `bun test --shard`, which gave check 44022102403's shards 101 and 261
-// of 362 files, 1,127 and 1,894 measured seconds, and its second shard
-// ended 4.5 minutes after its first. Dealt by those times, each has 1,511.
+// A check's test shards are dealt by what each file took
+// (`testShardFiles`), as `plan` expects them, not by `bun test --shard`,
+// which gave check 44022102403's shards 101 and 261 of 362 files, 1,127 and
+// 1,894 measured seconds, and its second shard ended 4.5 minutes after its
+// first. Dealt by those times, each has 1,511.
 test("a check's test shards are dealt by what each file took", () => {
   const dir = mkdtempSync(join(tmpdir(), "test-timings-"));
   try {
@@ -406,8 +452,14 @@ test("a check's test shards are dealt by what each file took", () => {
     const seconds = testFileSeconds([at("mine.json", { "test/a.test.ts": 4000 }), at("ci.json", { "test/a.test.ts": 9000, "test/b.test.ts": 3000, "test/c.test.ts": 2000, "test/d.test.ts": 1000 }), join(dir, "none.json")]);
     expect([...seconds]).toEqual([["test/a.test.ts", 4], ["test/b.test.ts", 3], ["test/c.test.ts", 2], ["test/d.test.ts", 1]]);
     const files = [...seconds.keys()];
-    const load = (index: number) => balanced(files, index, 2, seconds).reduce((sum, file) => sum + seconds.get(file)!, 0);
+    const load = (index: number) => testShardFiles(files, index, 2, seconds).reduce((sum, file) => sum + seconds.get(file)!, 0);
     expect([load(1), load(2)]).toEqual([5, 5]);
+    // The very deal `plan` expects, untimed ones too, each file once.
+    const some = [...files, "test/e.test.ts", "test/f.test.ts"];
+    const dealt = [1, 2, 3].map((index) => testShardFiles(some, index, 3, seconds));
+    expect(dealt).toEqual(dealtByGroup(some, 3, seconds, () => "suite").shards);
+    expect(dealt.flat().sort()).toEqual([...some].sort());
+    expect(() => testShardFiles(files, 3, 2, seconds)).toThrow("a shard is 1 to 2");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -416,4 +468,5 @@ test("a check's test shards are dealt by what each file took", () => {
   const suite = readFileSync(join(root, "scripts/test.ts"), "utf8");
   expect(suite).not.toContain("...shard,");
   expect(suite).toContain("const pageFiles = dealt(");
+  expect(suite).toContain("testShardFiles(files, index, count, seconds)");
 });

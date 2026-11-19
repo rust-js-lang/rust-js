@@ -145,6 +145,17 @@ export function dealtByGroup<T extends string>(items: T[], count: number, second
   return { shards: shards.map((shard) => shard.sort()), load };
 }
 
+/** The test files shard `index` of `count` runs of `files`, by their
+ * times, `seconds` (`testFileSeconds`): `dealtByGroup`'s, the one deal
+ * `plan` expects each shard's time by (`testShards`) and `bun run test`
+ * runs, so a shard runs what it was expected to (2e's lesson). */
+export function testShardFiles<T extends string>(files: T[], index: number, count: number, seconds: ReadonlyMap<string, number>): T[] {
+  if (!Number.isInteger(index) || !Number.isInteger(count) || index < 1 || index > count) {
+    throw new Error(`a shard is 1 to ${count}, not ${index}`);
+  }
+  return dealtByGroup(files, count, seconds, () => "suite").shards[index - 1]!;
+}
+
 /** The fewest of `choices`, machines a check may split work across, whose
  * every shard is expected to take `budget` seconds or less, `expected`'s
  * seconds of each shard of that many; else the most. The one rule that
@@ -154,22 +165,77 @@ export function fewestShards(choices: readonly number[], expected: (count: numbe
   return choices.find((count) => expected(count).every((seconds) => seconds <= budget)) ?? choices.at(-1)!;
 }
 
-/** What each took of the runs' `timings.json`s under `dir`, in seconds, by
- * its name, of the files in their sorted order, a later one's over an
- * earlier's: none where there's none. */
+/** What a test shard's run measured besides its files' times, which `bun
+ * run test` keeps beside them in its timings, `shard` (scripts/test.ts):
+ * of a shard of `count`, the rest of the suite's wall seconds, `rest`, and
+ * its files' recorded seconds, `recorded`, by which each file's time is its
+ * share of that wall (`testFileSeconds`); the pool of the files of cases,
+ * its wall from its first part's start to its last's end, and its parts'
+ * own seconds, the corpus's with how many cases they ran, the metamorphic
+ * sample's; and the browsers' files run after both, their wall and how many. */
+export type ShardRun = {
+  count: number;
+  rest: number;
+  recorded: number;
+  pool: { wall: number; corpus: { seconds: number; cases: number }; metamorphic: { seconds: number } };
+  browsers: { wall: number; files: number };
+};
+
 /** How long each test file took, in seconds, of the runs whose `bun test
- * --update-timings` files `paths` are (`{ version: 1, files: { [file]: ms } }`),
- * the first that timed a file its time. */
-export function testFileSeconds(paths: string[]): Map<string, number> {
+ * --update-timings` files `paths` are (`{ version: 1, files: { [file]: ms },
+ * shard? }`), the first that timed a file its time: of a run that kept what
+ * its shard measured (`ShardRun`), the file's share of its rest's wall, its
+ * recorded time times `rest / recorded`, as a mutation's time is its share
+ * of its shard (`shareOfShard`). A file's recorded time is its wall beside
+ * the others its run ran at once, so it's longer the more ran beside it:
+ * of six runs' raw times, mostly a few files' runs, a check of nearly
+ * everything took 1.58 times the 2,298 s plan expected (check
+ * 44480685461). `measuredOnly`, `plan`'s, passes over a run that kept no
+ * such share, an earlier one's; `plan.json`, which `plan` wrote of
+ * shares, is read as it is. */
+export function testFileSeconds(paths: string[], measuredOnly = false): Map<string, number> {
   const seconds = new Map<string, number>();
   for (const path of paths) {
     if (!existsSync(path)) continue;
-    const timings: { files?: Record<string, number> } = JSON.parse(readFileSync(path, "utf8"));
-    for (const [file, ms] of Object.entries(timings.files ?? {})) if (!seconds.has(file)) seconds.set(file, ms / 1000);
+    const timings: { files?: Record<string, number>; shard?: ShardRun } = JSON.parse(readFileSync(path, "utf8"));
+    if (measuredOnly && timings.shard === undefined) continue;
+    const share = timings.shard !== undefined && timings.shard.recorded > 0 ? timings.shard.rest / timings.shard.recorded : 1;
+    for (const [file, ms] of Object.entries(timings.files ?? {})) if (!seconds.has(file)) seconds.set(file, (ms / 1000) * share);
   }
   return seconds;
 }
 
+/** What the test shards' runs of `paths` measured of the parts of a shard
+ * its files' shares don't hold (`ShardRun`), for `plan` to expect each
+ * shard's time by: a corpus case's seconds in the pool; the metamorphic
+ * sample's whole seconds, a shard's times its count, the mean of the shards
+ * that ran it; the pool's wall per second of its parts, as its width,
+ * narrower while the rest runs, gives; and a browsers' file's wall. None
+ * where no run kept them. */
+export type ShardFacts = { secondsPerCase: number; metamorphic: number; poolWallPerSecond: number; browserSeconds: number };
+export function shardFacts(paths: string[]): ShardFacts | undefined {
+  const runs = paths.flatMap((path) => {
+    if (!existsSync(path)) return [];
+    const { shard }: { shard?: ShardRun } = JSON.parse(readFileSync(path, "utf8"));
+    return shard === undefined ? [] : [shard];
+  });
+  if (runs.length === 0) return undefined;
+  const sum = (of: (run: ShardRun) => number, runs_: ShardRun[] = runs) => runs_.reduce((total, run) => total + of(run), 0);
+  const cases = sum((run) => run.pool.corpus.cases);
+  const metamorphic = runs.filter((run) => run.pool.metamorphic.seconds > 0);
+  const pooled = sum((run) => run.pool.corpus.seconds + run.pool.metamorphic.seconds);
+  const pages = sum((run) => run.browsers.files);
+  return {
+    secondsPerCase: cases === 0 ? 0 : sum((run) => run.pool.corpus.seconds) / cases,
+    metamorphic: metamorphic.length === 0 ? 0 : sum((run) => run.pool.metamorphic.seconds * run.count, metamorphic) / metamorphic.length,
+    poolWallPerSecond: pooled === 0 ? 0 : sum((run) => run.pool.wall) / pooled,
+    browserSeconds: pages === 0 ? 0 : sum((run) => run.browsers.wall) / pages,
+  };
+}
+
+/** What each took of the runs' `timings.json`s under `dir`, in seconds, by
+ * its name, of the files in their sorted order, a later one's over an
+ * earlier's: none where there's none. */
 export function timingsUnder(dir: string): Map<string, number> {
   const seconds = new Map<string, number>();
   if (!existsSync(dir)) return seconds;
