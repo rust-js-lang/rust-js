@@ -115,12 +115,6 @@ plain std fact-write-fails recursive_eq.rs
 plain std dyn-ref shadow_beside_closure_own_of_its_name.rs
 plain std impl-ref shadow_beside_closure_own_of_its_name.rs
 
-#2060 P2 (validation): 'x is read, and nothing declares it' as lowered and by names reclaimed
-plain std loud else_break_ends_loop.rs
-plain std loud-drop else_break_ends_loop.rs
-plain std loud-step else_break_ends_loop.rs
-plain std fact-rc-counts else_break_ends_loop.rs
-
 #2061 P2 (crash): a rustc ICE compiling metamorphic field rewrites of closure_mut_ref and held_enumerate
 plain std field closure_mut_ref.rs
 plain std field held_enumerate.rs
