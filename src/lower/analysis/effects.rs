@@ -50,6 +50,7 @@ use rustc_mir_dataflow::Analysis;
 use rustc_mir_dataflow::impls::MaybeBorrowedLocals;
 use rustc_span::def_id::DefId;
 
+mod coarse;
 mod guards;
 mod named;
 mod types;

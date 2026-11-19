@@ -205,7 +205,13 @@ fn walk<'a, 'tcx>(
     };
     let unnamed = cell_borrows.map(|cells| move |ty| cells.unnamed_may_borrow(tcx, ty));
     let unnamed = unnamed.as_ref().map(|f| f as &dyn Fn(Ty<'tcx>) -> bool);
-    let effects = || crate::lower::analysis::Effects::of(tcx, typing_env, &walk.body, libraries, made, unnamed);
+    let effects = || match (libraries.is_none(), cell_borrows.is_none()) {
+        // Of what callers give and captures hold, a coarse answer, which
+        // fails closed (`Effects::coarse`); the precise query, where the
+        // lowering walks the body (#2112 B 3b).
+        (true, true) => crate::lower::analysis::Effects::coarse(tcx, typing_env, &walk.body, made),
+        _ => crate::lower::analysis::Effects::of(tcx, typing_env, &walk.body, libraries, made, unnamed),
+    };
     walk.effects = Some(match (libraries.is_none(), cell_borrows.is_none()) {
         // Of a component's rounds and the captures' walks, each its own
         // body's, the same each time (`Intervals::effects`).
