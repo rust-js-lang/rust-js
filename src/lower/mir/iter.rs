@@ -376,17 +376,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // which its compiled `Clone` clones (#382).
         let iterates = matches!(parted, Parted::Map | Parted::Filter) || self.implements_iterator(other_ty);
         // A chain's other side given as what makes an iterator, `a.iter()
-        // .chain(b)` of a `&[i32]`: its iterator, the chain's second part,
-        // made where the chain is, so a clone clones how far it's stepped
-        // (#1002).
+        // .chain(&b)` of a `Vec` or `chain([3])` of an array: its iterator,
+        // the chain's second part, made where the chain is as its
+        // `into_iter()` makes it (`value_into_iter`), a `$iter` of its
+        // items, so a clone clones how far it's stepped (#1002), as its
+        // type's clone reads it; not the collection itself, whose clone
+        // threw (#2149). One `value_into_iter` doesn't make, an `Option`'s
+        // or a map's, refused.
         let (other, other_ty) = match iterates {
             true => (other, other_ty),
             false
                 if let ty::Adt(_, chained) = output.kind()
                     && let Some(into) = chained.types().nth(1)
-                    && self.implements_iterator(into) =>
+                    && self.implements_iterator(into)
+                    && let Some(made) = self.value_into_iter(other.clone(), other_ty, into) =>
             {
-                (self.as_js_iterator(other, other_ty, span)?, into)
+                (made, into)
             }
             false => {
                 return Err(self.unsupported(

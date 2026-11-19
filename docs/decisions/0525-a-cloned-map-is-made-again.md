@@ -444,3 +444,29 @@ native Rust; the pair is off test/neighbours-known.txt. Mutation
 and by `generic_map_past_a_take_cloned_beside_another_bound.rs`, whose
 bound left with a parameter holds.
 
+
+## Amendment (2026-11-19, #2149): a chain's other side made as `into_iter()` makes it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change; a
+clone of the chain must step what Rust's clone steps.
+
+The #1002 amendment took a chain's other side given as what makes an
+iterator by `as_js_iterator`, which leaves a collection as it is: an
+array, a `Vec` given by value, a `&Vec`, a `&VecDeque`. The part's clone,
+of the side's iterator type, `$iter(b.items.slice(b.at, b.end))`, then
+read a bare array and threw: `[1, 2].iter().copied().chain([3]).cycle()`
+and `a.iter().chain(&b).cycle()` threw as their first turn ended
+(`chain_of_a_slice_cloned_apart`'s `makeChain($iter(a), b)` was one, its
+clone never called there). Now the side is made as its `into_iter()`
+makes it, `value_into_iter`, the one maker of a collection's iterator,
+`$iter(b)`, so each part is the iterator its type says. A side
+`value_into_iter` doesn't make, an `Option`'s or a map's, is refused,
+where `chain(Some(3))` and `chain(&btree)` of a cloned chain threw;
+their explicit `Some(3).into_iter()` and `btree.iter()` are iterators
+already and work.
+
+Held by `test/corpus/chain_cloned_apart_of_a_collection.rs`, against
+native Rust: a `cycle()` of a chain of an array, one stepped into its
+second side, a `Vec` given by value and a `&VecDeque`, each cloned.
+Mutation `chain-other-side-passed-as-it-is` (`lower/mir/iter.ts`);
+`chain-other-side-not-made-an-iterator` retargeted.

@@ -39,7 +39,7 @@ function main() {
     $cloning($lazyChain($iter(a), $iter(b)), () =>
       makeChain($iter(a.items.slice(a.at, a.end)), $iter(b.items.slice(b.at, b.end))),
     );
-  const s = makeChain($iter(a), b).reduce((a, b) => (a + b) | 0, 0);
+  const s = makeChain($iter(a), $iter(b)).reduce((a, b) => (a + b) | 0, 0);
   const stepped = iterator_chain(
     $iter(a),
     b,
