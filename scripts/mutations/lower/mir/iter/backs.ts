@@ -21,15 +21,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^compiled_map_given_back_reversed.rs$"],
   },
   {
-    name: "given-as-it-is-rev-unclosed",
-    breaks:
-      "`rev()` of a type parameter given as it is, stepped by its dictionary's `next_back`, never drops it: `drop a at 0` is lost (#971)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)\n",
-    replace: "                crate::lower::iterators::reversed_by(given)\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
-  },
-  {
     name: "given-enumeration-unclosed",
     breaks:
       "`back_kept`'s source, made knowing its back, is left unclosed: an `enumerate()` of a type parameter given as it is never drops it, `drop 0` and `drop 1` lost (#971), nor a map's, a filter's, an enumeration's or a hinted `skip(n)`'s source what it never gave, the crate's iterator with a destructor or a compiled `fuse()` (#223, #225, #1244), nor a `copied()` of the crate's iterator with a `Drop` taken as stepped from its back (#2152)",
@@ -285,7 +276,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of a lazy map of a range is refused, not stepped from its back",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None => {\n                let in_place = crate::lower::iterators::made_in_place(&receiver);\n                let it = self.as_double_ended(receiver, iter_ty, span)?;\n                let it = self.closing(it, iter_ty, span)?;\n                let it = match in_place {\n                    true => it.in_place(),\n                    false => it,\n                };\n                return Ok(crate::lower::iterators::reversed_by(it));\n            }",
+    find: "            None => {\n                let it = self.as_double_ended(receiver, iter_ty, span)?;\n                let it = self.closing(it, iter_ty, span)?;\n                return Ok(crate::lower::iterators::reversed_by(it));\n            }",
     replace: "            None => {\n                return Err(self.unsupported(span, \"`rev` of a lazy iterator, from its MIR\"));\n            }",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
@@ -332,7 +323,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "                    || self.recognition().reaches_its_own(output, OwnStep::Nth, Reach::Sure)\n",
     replace: "                    || false\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(own_nth_through_adapters|repeat_count_panics).rs$"],
   },
   {
     name: "rev-of-held-rev-taken-out",
@@ -351,7 +342,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "    // `Rev`'s `last` folds, which a drop that panics shows (#722).\n    if let Some(inner) = crate::lower::iterators::reversed_of(e)\n",
     replace: "    // `Rev`'s `last` folds, which a drop that panics shows (#722).\n    if false && let Some(inner) = crate::lower::iterators::reversed_of(e)\n",
-    tests: ["test/corpus.test.ts", "-t", "^(vec_extend_indexed|rev_given_to_generic_code).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rev_of_a_rev_of_a_range.rs$"],
     snapshots: true,
   },
   {
@@ -517,11 +508,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "generic-rev-unclosed",
-    breaks: "a generic `rev()` of a type parameter isn't closed: the crate's iterator it reverses is never dropped (#650)",
+    breaks: "a generic `rev()` of a type parameter isn't closed: the crate's iterator it reverses is never dropped (#650), nor one given as it is, `drop a at 0` lost (#971)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                let it = self.closing(it, iter_ty, span)?;\n                let it = match in_place {\n",
-    replace: "                let it = match in_place {\n",
-    tests: ["test/corpus.test.ts", "-t", "^rfold_and_rev_close_what_they_step.rs$"],
+    find: "                let it = self.closing(it, iter_ty, span)?;\n                return Ok(crate::lower::iterators::reversed_by(it));\n",
+    replace: "                return Ok(crate::lower::iterators::reversed_by(it));\n",
+    tests: ["test/corpus.test.ts", "-t", "^(rfold_and_rev_close_what_they_step|iterator_named_by_another_bound).rs$"],
   },
   {
     name: "copy-of-skip-backless",
@@ -563,15 +554,6 @@ export const mutations: Mutation[] = [
     find: "        && (crate::lower::iterators::is_stepped_items(it) || crate::lower::iterators::is_range_stepped(it))\n",
     replace: "        && (crate::lower::iterators::is_stepped_items(it)\n            || crate::lower::iterators::is_range_stepped(it)\n            || crate::lower::iterators::closed_parts(it).is_some())\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_rev_last_folds.rs$"],
-  },
-  {
-    name: "rev-reversed-inward-unread",
-    breaks:
-      "a range's map reversed inward, `$iterator(range, $rangeNextBack).map(f)`, is kept for a `rev()` made knowing its back, whose form `reversal` can't read: `(0..5).map(f).rev().rfold(mk(), g)` is refused (#718)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                && !(knowing && self.reversal_of(&reversed, iter_ty).is_none()) =>\n",
-    replace: "                && true =>\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
   },
   {
     name: "by-ref-knowing-unlent",
@@ -661,24 +643,6 @@ export const mutations: Mutation[] = [
     find: "        if let Some(held) = crate::lower::iterators::held_of(&value) {\n",
     replace: "        if let Some(held) = None::<&Expr> {\n",
     tests: ["test/corpus.test.ts", "-t", "^step_by_stepped_from_its_back.rs$"],
-  },
-  {
-    name: "rev-of-given-param-unknowing",
-    breaks: "`rev()` of a type parameter a struct holds, given as it is, stepped from its back, is made by its dictionary's `next_back` alone, which knows no back, and its `nth_back` is refused (#718)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "            None if !receiver_ty.is_mutable_ptr()\n",
-    replace: "            None if false\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_of_a_type_parameter_held_as_it_is.rs$"],
-  },
-  {
-    name: "rev-source-remade-unmarked",
-    breaks:
-      "what a `rev()` made in place reverses, made again to step from its back, loses its maker's mark, so where it's asked as an `ExactSizeIterator` it's taken as std's struct, `$knowing` of its compiled back (#730)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                let it = match in_place {\n                    true => it.in_place(),\n                    false => it,\n                };\n                return Ok(crate::lower::iterators::reversed_by(it));\n",
-    replace: "                let _ = in_place;\n                return Ok(crate::lower::iterators::reversed_by(it));\n",
-    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
-    snapshots: true,
   },
   {
     name: "back-stepped-temporary-remade-unmarked",
@@ -851,14 +815,6 @@ export const mutations: Mutation[] = [
     find: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), held, back, len) {\n",
     replace: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_an_iterator_passes_on_what_std_does\\.rs$"],
-  },
-  {
-    name: "rev-of-given-only-where-stepped-back",
-    breaks: "`rev()` of a type parameter given as it is is made of its dictionaries only where the crate steps it from its back or it drops what it holds, so one another trait's method gives, `Is::is(i).rev().nth(1)`, steps `next_back` twice where native calls its own `nth_back` (#2139), and its `rev().fold()` steps `next_back` where native calls its own `rfold` (#2147)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "            None if !receiver_ty.is_mutable_ptr()\n",
-    replace: "            None if !receiver_ty.is_mutable_ptr() && (self.reversed_made_knowing(output) || self.closes_to_drop(receiver_ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_nth_back_reaches_what_its_given.rs$"],
   },
   {
     name: "rev-of-a-lent-given-unlent",

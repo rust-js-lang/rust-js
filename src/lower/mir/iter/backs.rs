@@ -63,18 +63,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
         let reversed = match self.range_kind(iter_ty) {
             _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
-            // Of a type parameter given as it is: `$rev` of the JS iterator
-            // its dictionaries step, its back theirs, which `$rev` steps it
-            // forward by, `nth_back` its `nth` and `rfold` its `fold`, its
-            // own where it writes them, as std's `Rev` asks them, closed to
-            // drop it, the value itself, as `Rev` drops it (`$givenDrop`,
-            // #718, #971), wherever it's reached, a parameter's or what
-            // another trait's method gives (#2139, #2147).
-            None if !receiver_ty.is_mutable_ptr()
-                && let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) =>
-            {
-                crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)
-            }
             Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
             Some(_) => return Err(unsupported(self)),
             // Of a `&mut`, `by_ref()`'s, a type parameter's given as it is
@@ -165,18 +153,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // chain: what steps it from its back, as Rust's `Rev` does, its
             // closures run as `next_back` runs them (ADR 0535), never its
             // items from the front reversed (#382).
+            // Of a type parameter given as it is, the JS iterator its
+            // dictionaries step, its back theirs (`as_double_ended`), which
+            // `$rev` steps forward by, `nth_back` its `nth` and `rfold` its
+            // `fold`, its own where it writes them, as std's `Rev` asks
+            // them, wherever it's reached, a parameter's or what another
+            // trait's method gives (#718, #2139, #2147).
             // Closed to drop what it holds, a type parameter's by its drop,
-            // as `Rev` drops it (ADR 0516, #650).
-            // What steps it from its back is it, made again: made in place
-            // where it was (`made_in_place`).
+            // as `Rev` drops it (ADR 0516, #650, #971).
             None => {
-                let in_place = crate::lower::iterators::made_in_place(&receiver);
                 let it = self.as_double_ended(receiver, iter_ty, span)?;
                 let it = self.closing(it, iter_ty, span)?;
-                let it = match in_place {
-                    true => it.in_place(),
-                    false => it,
-                };
                 return Ok(crate::lower::iterators::reversed_by(it));
             }
         };

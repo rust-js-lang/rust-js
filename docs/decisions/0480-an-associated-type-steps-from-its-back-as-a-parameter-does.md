@@ -223,3 +223,45 @@ compiler's unit tests, `check:fast --all`, React's port at its pin and
 the crate corpus). One arm per form: the arm goes, the `&mut` arm's
 comment names the parameter, and `rev-of-a-lent-given-unlent` is
 retargeted to that arm's `lent_iterator`.
+
+## Amendment: `rev()`'s survivors, one form each (main's check 44462565602, #2155)
+
+Main's check of 06e68ed0e, and a run of every mutation of `backs.rs`,
+left six mutations uncaught. Each was run against the whole corpus with
+its snapshots, then `--retire`'s run, and a marker build where the site
+was reached:
+
+- An owned type parameter given as it is had its own `rev_called` arm,
+  `$rev(closing($given(..)))`. `rev_items`' last arm, `as_double_ended`,
+  then closing, then `$rev`, makes the same JS of it. With that arm
+  skipped (`rev-of-given-param-unknowing`, `rev-of-given-only-where-
+  stepped-back`), the unit tests, `check:fast --all` with snapshots,
+  React's port at its pin and the crate corpus all pass. One arm per
+  form: the arm goes, `rev_items`' comment names the parameter (#2139,
+  #2147), and `generic-rev-unclosed`, at that closing, also runs
+  `iterator_named_by_another_bound`, the case of the arm's own closing
+  mutation, `given-as-it-is-rev-unclosed`, whose site is gone.
+- `rev_items`' last arm marked what it made again as made in place where
+  the receiver was (#730). With the mark gone (`rev-source-remade-
+  unmarked`), the one test that changes is test/neighbours.test.ts's
+  #1892 row, `take_advanced_from_its_back_by_its_source` beside
+  `capacity_kept_by_clear_alone`: refused before, it now runs as native
+  Rust does. #730's case, `lengths_and_backs_given_on`, is the same with
+  or without the mark. The mark goes, the row comes off
+  test/neighbours-known.txt (#1892's other rows stay), and the mutation
+  goes with its site.
+- `reversed_in_place`'s `$rev($rev(it))` → `it` rule
+  (`rev-of-rev-kept`) is reached 21 times over `check:fast --all`. Its
+  cases had lost the form: `vec_extend_indexed`'s array is reversed
+  before the rule sees it, and `rev_given_to_generic_code`'s range is
+  given as it is. Without the rule, a range's `rev().rev()` reads
+  `$rev($rev(..))`. New case `rev_of_a_rev_of_a_range.rs`, against
+  native Rust, holds it by its snapshot.
+- `rev_items`' guard that keeps a chain reversed inward when what's made
+  knowing its back can't read it (`rev-reversed-inward-unread`, #718) is
+  reached 10 times, and with it taken away every test, snapshot, the
+  port and the crates are the same. That's an equivalent change: the
+  code stays, and the mutation is retired with that reason.
+
+`enumerate-of-own-nth-mapped` is caught by what `repeat_count_panics.rs`
+prints, which its tests now run.
