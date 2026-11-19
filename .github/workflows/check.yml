@@ -101,6 +101,7 @@ jobs:
       tests: ${{ steps.plan.outputs.tests }}
       batch_base: ${{ steps.plan.outputs.batch_base }}
       test_shards: ${{ steps.plan.outputs.test_shards }}
+      test_shard_list: ${{ steps.plan.outputs.test_shard_list }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -120,7 +121,7 @@ jobs:
       - id: plan
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bun scripts/ci.ts plan ${{ inputs.since && format('--since={0}', inputs.since) || '' }} >> "$GITHUB_OUTPUT"
+        run: bun scripts/ci.ts plan ${{ inputs.since && format('--since={0}', inputs.since) || '' }} ${{ inputs.test_shards && format('--test-shards={0}', inputs.test_shards) || '' }} >> "$GITHUB_OUTPUT"
       # What the suite's shards run of it.
       - if: ${{ inputs.part != 'mutations' }}
         uses: actions/upload-artifact@v7
@@ -496,10 +497,12 @@ jobs:
   # Of a push's check, the files and corpus cases its selection says the
   # change can affect (`plan`'s `tests`, scripts/select.ts): none, and the
   # shards are skipped; the nightly's, every one. On as many machines as
-  # the selection needs, `plan`'s `test_shards`: one of a small one, so the
-  # free plan's 20 jobs at once hold the map's recording and the nets beside.
+  # the selection's expected time needs, `plan`'s `test_shards` (scripts/
+  # ci.ts's `testShards`, the mutations' rule, `fewestShards`), each shard
+  # about 12 min at most, its matrix `plan`'s `test_shard_list`; a check
+  # started by hand's or the nightly's `test_shards` as given.
   test:
-    name: test (${{ matrix.shard }}/${{ inputs.test_shards || needs.plan.outputs.test_shards || '2' }})
+    name: test (${{ matrix.shard }}/${{ needs.plan.outputs.test_shards }})
     needs: plan
     if: ${{ inputs.part != 'mutations' && (inputs.nightly || needs.plan.outputs.tests != 'none') }}
     runs-on: ubuntu-latest
@@ -509,9 +512,9 @@ jobs:
       actions: read
     strategy:
       fail-fast: false
-      max-parallel: ${{ fromJSON(inputs.max_parallel || '4') }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '6') }}
       matrix:
-        shard: ${{ fromJSON((inputs.test_shards || needs.plan.outputs.test_shards) == '4' && '[1, 2, 3, 4]' || (inputs.test_shards || needs.plan.outputs.test_shards || '2') == '2' && '[1, 2]' || '[1]') }}
+        shard: ${{ fromJSON(needs.plan.outputs.test_shard_list) }}
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
@@ -550,7 +553,7 @@ jobs:
       - uses: ./.github/actions/native-outcomes
         with:
           step: restore
-          name: test-${{ matrix.shard }}-of-${{ inputs.test_shards || needs.plan.outputs.test_shards || '2' }}${{ inputs.nightly && '-nightly' || '' }}
+          name: test-${{ matrix.shard }}-of-${{ needs.plan.outputs.test_shards }}${{ inputs.nightly && '-nightly' || '' }}
           nightly: ${{ inputs.nightly && 'true' || 'false' }}
       - uses: actions/download-artifact@v8
         if: ${{ !inputs.nightly }}
@@ -562,12 +565,12 @@ jobs:
           # The nightly's counts each compile's decisions (ADR 1124).
           RUST_JS_DECISIONS: ${{ inputs.nightly && '/tmp/decisions.tsv' || '' }}
           RUST_JS_COMPILER: ${{ github.workspace }}/target/debug/rust-js
-        run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || needs.plan.outputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || ' --selection=target/selection.json' }}
+        run: bun run test --shard=${{ matrix.shard }}/${{ needs.plan.outputs.test_shards }}${{ inputs.nightly && ' --nightly' || ' --selection=target/selection.json' }}
       - if: always()
         uses: ./.github/actions/native-outcomes
         with:
           step: save
-          name: test-${{ matrix.shard }}-of-${{ inputs.test_shards || needs.plan.outputs.test_shards || '2' }}${{ inputs.nightly && '-nightly' || '' }}
+          name: test-${{ matrix.shard }}-of-${{ needs.plan.outputs.test_shards }}${{ inputs.nightly && '-nightly' || '' }}
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -593,7 +596,7 @@ jobs:
       - name: Bless what differs
         if: failure() && steps.test.outcome == 'failure'
         run: |
-          BLESS=1 RUST_JS_COMPILER="$PWD/target/debug/rust-js" bun scripts/test.ts --shard=${{ matrix.shard }}/${{ inputs.test_shards || needs.plan.outputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || ' --selection=target/selection.json' }} || true
+          BLESS=1 RUST_JS_COMPILER="$PWD/target/debug/rust-js" bun scripts/test.ts --shard=${{ matrix.shard }}/${{ needs.plan.outputs.test_shards }}${{ inputs.nightly && ' --nightly' || ' --selection=target/selection.json' }} || true
           git add -A
           git diff --cached --binary > bless.patch
       - if: failure() && steps.test.outcome == 'failure'

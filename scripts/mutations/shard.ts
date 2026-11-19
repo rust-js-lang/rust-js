@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "    for (const [file, ms] of Object.entries(timings.files ?? {})) seconds.set(file, ms / 1000);\n",
     tests: ["test/shards.test.ts", "-t", "a check's test shards are dealt by what each file took"],
   },
+  {
+    name: "fewest-shards-any-under-budget",
+    breaks: "the shard count is the fewest whose any shard is within the budget, not every one, so a selection of everything takes one machine",
+    file: "scripts/shard.ts",
+    find: "expected(count).every((seconds) => seconds <= budget)",
+    replace: "expected(count).some((seconds) => seconds <= budget)",
+    tests: ["test/shards.test.ts", "-t", "a check's suite takes the machines its selection's expected time needs"],
+  },
 ];

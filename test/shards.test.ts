@@ -8,11 +8,11 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, timingsRun } from "../scripts/ci";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, TEST_WALL_PER_RECORDED, testShardList, testShards, timingsRun } from "../scripts/ci";
 import { mutations } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
-import { balancedByGroup, shareOfShard, slots, testFileSeconds } from "../scripts/shard";
+import { balancedByGroup, fewestShards, shareOfShard, slots, testFileSeconds } from "../scripts/shard";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
@@ -123,6 +123,56 @@ test("a test shard is handed its files' times by plan, never downloading them", 
   const handed = jobs.test.steps.find((step) => step.run?.includes("bun scripts/ci.ts test-timings"));
   expect(handed?.env?.TIMES).toBe("${{ needs.plan.outputs.test_timings }}");
   expect(jobs.test.steps.filter((step) => /\bci\.ts timings\b|gh run download/.test(step.run ?? ""))).toEqual([]);
+});
+
+// The suite's shards are as many as its selection's expected time needs,
+// by the mutations' one rule (`fewestShards`): each shard's setup and its
+// files' recorded seconds at the wall each second of them took, measured
+// on check 44459055794's two shards of everything (a6b13d280): its files'
+// recorded 1,826 and 1,875 s, its runs' walls 873 and 927 s. That
+// selection, its very times, plans the shards that bring each under the
+// budget: not one, not the most.
+test("a check's suite takes the machines its selection's expected time needs", () => {
+  expect(fewestShards([1, 2, 4], (count) => [100 / count + 10], 40)).toBe(4);
+  expect(fewestShards([1, 2, 4], (count) => [1000 / count], 40)).toBe(4);
+  expect(fewestShards([1, 2, 4], () => [5], 40)).toBe(1);
+  // Every shard within it, not any one.
+  expect(fewestShards([1, 2, 4], (count) => (count === 1 ? [50] : count === 2 ? [10, 50] : [10, 10, 10, 10]), 40)).toBe(4);
+  expect(873 / 1826).toBeCloseTo(TEST_WALL_PER_RECORDED, 1);
+  expect(927 / 1875).toBeCloseTo(TEST_WALL_PER_RECORDED, 1);
+  const measured = testFileSeconds([join(root, "test/fixtures/test-timings-44459055794.json")]);
+  expect(measured.size).toBe(384);
+  const all = { all: true, files: [], cases: [], forms: [], why: "" };
+  const planned = Number(testShards(all, measured, undefined, () => [...measured.keys()]));
+  expect(planned).toBeGreaterThan(1);
+  expect(planned).toBeLessThan(TEST_SHARDS.at(-1)!);
+  expect(planned).toBe(4);
+  // Of everything, every suite file counts, those the last run didn't
+  // time, a selection's that ran few, by the timed ones' median, never the
+  // timed alone: of 100 files, 10 timed at a minute each, six machines.
+  const suite = Array.from({ length: 100 }, (_, i) => `test/f${i}.test.ts`);
+  const few = new Map(suite.slice(0, 10).map((file) => [file, 60] as const));
+  expect([testShards(all, few, undefined, () => suite), testShards(all, few, undefined, () => [...few.keys()])]).toEqual(["6", "1"]);
+  // As many as a check started by hand or the nightly says, given.
+  expect(testShards(all, measured, "2")).toBe("2");
+  // Each shard of it within the budget, and one fewer would not be.
+  const total = [...measured.values()].reduce((a, b) => a + b, 0);
+  expect(TEST_SHARD_SETUP_SECONDS + (TEST_WALL_PER_RECORDED * total) / planned).toBeLessThanOrEqual(SHARD_BUDGET_SECONDS);
+  expect(TEST_SHARD_SETUP_SECONDS + (TEST_WALL_PER_RECORDED * total) / (planned - 1)).toBeGreaterThan(SHARD_BUDGET_SECONDS);
+  // A small selection, one machine; with no run's times kept, by count.
+  const some = (files: number, cases: number) => ({ all: false, files: Array.from({ length: files }, (_, i) => `test/f${i}.test.ts`), cases: Array.from({ length: cases }, (_, i) => `c${i}.rs`), forms: [], why: "" });
+  expect(testShards({ ...some(0, 0), files: ["test/compat.test.ts", "test/adr.test.ts"] }, measured)).toBe("1");
+  expect([testShards(some(5, 30)), testShards(some(60, 400)), testShards(some(61, 0)), testShards(some(0, 401)), testShards(all)]).toEqual(["1", "1", "2", "2", "2"]);
+  // Handed on as the times `plan` encodes, and the matrix its list.
+  expect([...decodedTestTimings(encodedTestTimings(new Map([["test/a.test.ts", 1.5]])))]).toEqual([["test/a.test.ts", 1.5]]);
+  expect(decodedTestTimings("").size).toBe(0);
+  expect(testShardList("4")).toBe("[1,2,3,4]");
+  const jobs = (Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { outputs?: Record<string, string>; strategy?: { matrix?: { shard?: string } }; steps: { run?: string }[] }> }).jobs;
+  expect(jobs.plan.outputs?.test_shards).toBe("${{ steps.plan.outputs.test_shards }}");
+  expect(jobs.plan.outputs?.test_shard_list).toBe("${{ steps.plan.outputs.test_shard_list }}");
+  expect(jobs.test.strategy?.matrix?.shard).toBe("${{ fromJSON(needs.plan.outputs.test_shard_list) }}");
+  expect(jobs.plan.steps.find((step) => step.run?.includes("bun scripts/ci.ts plan"))?.run).toContain("--test-shards=");
+  expect(JSON.stringify(jobs.test)).not.toContain("inputs.test_shards");
 });
 
 // The builds of the compiler a run makes at once, mutations' `--jobs`, are

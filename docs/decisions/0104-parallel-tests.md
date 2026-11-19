@@ -217,3 +217,38 @@ checkout's new mtimes, where 38 of main's last 80 commits changed none of
 its sources. `scripts/test.ts` builds the compiler only where
 `RUST_JS_COMPILER` isn't given, as `buildCompiler` decides of a test.
 Held by `test/ci.test.ts`.
+
+## Amendment: the suite's shards are as many as its expected time needs (2026-11-19)
+
+A push's check ran its suite on one machine for a small selection and on
+two for anything larger, everything included. Of a change that selects
+everything, that made `test` the check's longest leg: check 44459055794
+(a6b13d280) ran 2 shards in 1,068 and 1,145 s, where its nets took at
+most 10.3 min and its mutations 6.8. Now `plan` sizes the suite as it
+sizes the mutations, by one rule, `fewestShards` (`scripts/shard.ts`):
+the fewest of `TEST_SHARDS`, 1 to 6, each of whose shards, as
+`scripts/test.ts` deals them, is expected within `SHARD_BUDGET_SECONDS`,
+720 s.
+
+A shard's expected time is its setup, `TEST_SHARD_SETUP_SECONDS`, 210 s,
+plus its files' recorded seconds times `TEST_WALL_PER_RECORDED`, 0.49:
+of everything, every suite file but the files of cases, whose pool the
+factor holds, each the last run didn't time, a selection's that ran few,
+by the timed ones' median.
+Files are timed as they run beside each other on a shard's four cores,
+with the files of cases in their pool beside them, so a shard's run is
+about half their sum. Check 44459055794's shards recorded 1,826 and
+1,875 s and ran in 873 and 927. Taking the recorded sum as wall time,
+2e's mistake for the mutations, would plan the most. Of that check's own
+times, kept as `test/fixtures/test-timings-44459055794.json`, everything
+plans 4 shards, each about 663 s expected; held by test/shards.test.ts's
+"a check's suite takes the machines its selection's expected time needs",
+which also checks that 3 would be past the budget. Where no run's times
+are kept, the count rule stands: one of at most 60 files and 400 cases,
+two of more. A check started by hand, or the nightly, given `test_shards`
+takes that many (`plan --test-shards=`). check.yml's test matrix is
+`plan`'s `test_shard_list`, its `max-parallel` 6.
+
+Mutations `test-shards-recorded-as-wall`, `test-shards-setup-uncounted`,
+`test-shards-given-ignored`, `test-shards-of-the-timed-alone` and
+`fewest-shards-any-under-budget`.

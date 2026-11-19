@@ -145,6 +145,15 @@ export function dealtByGroup<T extends string>(items: T[], count: number, second
   return { shards: shards.map((shard) => shard.sort()), load };
 }
 
+/** The fewest of `choices`, machines a check may split work across, whose
+ * every shard is expected to take `budget` seconds or less, `expected`'s
+ * seconds of each shard of that many; else the most. The one rule that
+ * sizes a check's mutations' machines (`mutationShards`) and its suite's
+ * (`testShards`), each by its own shards' expected seconds. */
+export function fewestShards(choices: readonly number[], expected: (count: number) => number[], budget: number): number {
+  return choices.find((count) => expected(count).every((seconds) => seconds <= budget)) ?? choices.at(-1)!;
+}
+
 /** What each took of the runs' `timings.json`s under `dir`, in seconds, by
  * its name, of the files in their sorted order, a later one's over an
  * earlier's: none where there's none. */

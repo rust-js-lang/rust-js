@@ -20,9 +20,9 @@ import { gunzipSync, gzipSync } from "node:zlib";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
 import { changedSince, type Mutation, mutationFile, mutations } from "./mutations";
-import { outcome, type Selection, selectChange } from "./select";
+import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
-import { dealtByGroup, drivesBrowser, shardTimings, testFileSeconds, timingsUnder } from "./shard";
+import { caseFiles, dealtByGroup, drivesBrowser, fewestShards, shardTimings, testFileSeconds, timingsUnder } from "./shard";
 import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -250,11 +250,11 @@ export function mutationShards(
   groupOf: (name: string) => string | undefined,
 ): string {
   const drives = new Map(chosen.map((m) => [m.name, m.tests !== undefined && browser(m.tests[0]!)]));
-  const fits = (count: number) => {
+  const expected = (count: number) => {
     const { shards, load } = dealtByGroup(chosen.map((m) => m.name), count, seconds, groupOf);
-    return shards.every((names, i) => SHARD_SETUP_SECONDS + SHARD_COMPILER_SECONDS + load[i]! + (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0) <= SHARD_BUDGET_SECONDS);
+    return shards.map((names, i) => SHARD_SETUP_SECONDS + SHARD_COMPILER_SECONDS + load[i]! + (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0));
   };
-  return String(MUTATION_SHARDS.find(fits) ?? MUTATION_SHARDS.at(-1));
+  return String(fewestShards(MUTATION_SHARDS, expected, SHARD_BUDGET_SECONDS));
 }
 
 /** Start the check of `branch`, as it's pushed: the local one, if it's
@@ -290,7 +290,7 @@ async function check(branch: string, shards: string | undefined, since?: string)
  * or the formatting code or the numbers', which run the formatting grid's
  * and the numbers grid's
  * (scripts/iteratorSlice.ts): as GitHub's step outputs. */
-async function plan(given?: string) {
+async function plan(given?: string, testShardsGiven?: string) {
   let since = given ?? "HEAD~1";
   let retry: string[] = [];
   if (given === undefined) {
@@ -335,7 +335,8 @@ async function plan(given?: string) {
   console.log(`intervals=${touchesIntervals(changed)}`);
   console.log(`mutations=${mutating}`);
   console.log(`mutation_timings=${timings}`);
-  console.log(`test_timings=${plannedTestTimings()}`);
+  const testTimings = plannedTestTimings();
+  console.log(`test_timings=${testTimings}`);
   console.log(`wasm=${touchesWasm(changed)}`);
   console.log(`rustc=${touchesRustc(changed)}`);
   // The suite's selection (scripts/select.ts): by the newest test map of an
@@ -350,7 +351,11 @@ async function plan(given?: string) {
   mkdirSync(join(root, "target"), { recursive: true });
   writeFileSync(join(root, "target", "selection.json"), JSON.stringify(selection));
   console.log(`tests=${testsOutput(selection)}`);
-  console.log(`test_shards=${testShards(selection)}`);
+  // As many as a check started by hand or the nightly says, else as many
+  // as its selection's expected time needs; check.yml's matrix is the list.
+  const testShardCount = testShards(selection, decodedTestTimings(testTimings), testShardsGiven);
+  console.log(`test_shards=${testShardCount}`);
+  console.log(`test_shard_list=${testShardList(testShardCount)}`);
   // The batch a failure is attributed in: since the newest check of
   // `main` that completed, red or green (scripts/attribute.ts).
   let batchBase = "";
@@ -380,11 +385,48 @@ export function completedBase(all: Run[], head: string): string | undefined {
     .find((run) => run.headBranch === "main" && run.status === "completed" && (run.conclusion === "success" || run.conclusion === "failure") && run.headSha && run.headSha !== head)?.headSha;
 }
 
-/** How many machines the suite's shards of a selection take: one of a
- * small one, at most 60 files and 400 corpus cases, whose setup would be
- * most of a second machine's minutes; two of more, everything's too. */
-export function testShards(selection: Selection): "1" | "2" {
-  return !selection.all && selection.files.length <= 60 && selection.cases.length <= 400 ? "1" : "2";
+/** The machines the suite may be split across: check.yml's test matrix
+ * is `plan`'s list of them (`testShardList`). */
+export const TEST_SHARDS = [1, 2, 3, 4, 5, 6];
+
+/** What a test shard takes beside its run of the suite: its checkout,
+ * the toolchain, packages and the browser, and the compiler built from
+ * its cache, 195 and 218 s of check 44459055794's shards (a6b13d280). */
+export const TEST_SHARD_SETUP_SECONDS = 210;
+
+/** A test shard's wall time per second of its files' recorded times:
+ * they're timed as they run beside each other on its four cores, and
+ * the files of cases run in their pool beside them, so a shard's run took
+ * about half their sum, 873 of 1,826 and 927 of 1,875 s in check
+ * 44459055794's two shards of everything (a6b13d280). */
+export const TEST_WALL_PER_RECORDED = 0.49;
+
+/** How many machines the suite's shards of a selection take, by the last
+ * run's times of its files, `seconds` (`plannedTestTimings`): the fewest
+ * of `TEST_SHARDS` each of whose shards, as `scripts/test.ts` deals them
+ * (`dealtByGroup`), is expected to take `SHARD_BUDGET_SECONDS` or less, its
+ * files every one of the suite's but the files of cases, whose pool the
+ * calibration holds, where it selects everything, a file the last run
+ * didn't time, a selection's that ran few, by the timed ones' median; its
+ * setup and its files' recorded seconds at `TEST_WALL_PER_RECORDED`
+ * (`fewestShards`, the mutations' rule). Of everything, four: each about
+ * 11 min, where two took 18 and 19 and were the check's longest leg.
+ * Where no run's times are kept, by count: one of a small selection, at
+ * most 60 files and 400 corpus cases, two of more. As many as `given`,
+ * a check started by hand's or the nightly's, where it's given. */
+export function testShards(selection: Selection, seconds: ReadonlyMap<string, number> = new Map(), given?: string, suite: () => string[] = suiteFiles): string {
+  if (given !== undefined) return given;
+  if (seconds.size === 0) return !selection.all && selection.files.length <= 60 && selection.cases.length <= 400 ? "1" : "2";
+  const cases: readonly string[] = Object.values(caseFiles);
+  const files = (selection.all ? suite() : selection.files).filter((file) => !cases.includes(file));
+  const expected = (count: number) =>
+    dealtByGroup(files, count, seconds, () => "suite").load.map((load) => TEST_SHARD_SETUP_SECONDS + TEST_WALL_PER_RECORDED * load);
+  return String(fewestShards(TEST_SHARDS, expected, SHARD_BUDGET_SECONDS));
+}
+
+/** check.yml's test matrix of `count` shards, `[1, .., count]`. */
+export function testShardList(count: string): string {
+  return JSON.stringify(Array.from({ length: Number(count) }, (_, i) => i + 1));
 }
 
 /** `plan`'s `tests` output: what the suite's shards run of a selection,
@@ -476,6 +518,13 @@ function plannedTestTimings(): string {
 export function encodedTestTimings(seconds: ReadonlyMap<string, number>): string {
   const files = Object.fromEntries([...seconds].sort(([a], [b]) => a.localeCompare(b)).map(([file, s]) => [file, Math.round(s * 1000)]));
   return gzipSync(JSON.stringify({ version: 1, files })).toString("base64");
+}
+
+/** `encodedTestTimings`' times, in seconds by file: none of `""`. */
+export function decodedTestTimings(encoded: string): Map<string, number> {
+  if (encoded === "") return new Map();
+  const { files } = JSON.parse(gunzipSync(Buffer.from(encoded, "base64")).toString()) as { files: Record<string, number> };
+  return new Map(Object.entries(files).map(([file, ms]) => [file, ms / 1000]));
 }
 
 /** In CI, before a test shard runs: the times `plan` gave every shard
@@ -698,18 +747,19 @@ if (import.meta.main) {
     ?? Bun.spawnSync(["git", "branch", "--show-current"], { cwd: root }).stdout.toString().trim();
   const shards = rest.find((arg) => arg.startsWith("--shards="))?.slice("--shards=".length);
   const since = rest.find((arg) => arg.startsWith("--since="))?.slice("--since=".length);
+  const testShardsGiven = rest.find((arg) => arg.startsWith("--test-shards="))?.slice("--test-shards=".length) || undefined;
   try {
     if (command === "status") status();
     else if (command === "check") await check(branch, shards, since);
     else if (command === "bless") bless(branch);
-    else if (command === "plan") await plan(since);
+    else if (command === "plan") await plan(since, testShardsGiven);
     else if (command === "test-timings") writeTestTimings(rest[0] ?? "");
     else if (command === "mutation-timings") writeMutationTimings(rest[0] ?? "");
     else if (command === "merge-mutation-timings") mergeMutationTimings(process.env.TIMES ?? "", rest[0] ?? "");
     else if (command === "nets") console.log(netsSummary(JSON.parse(process.env.STEPS ?? "{}")));
     else if (command === "prune-cache") await pruneCache(rest.includes("--dry-run"));
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | test-timings <times> | mutation-timings <times> | merge-mutation-timings <ran> | nets | prune-cache [--dry-run]");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan [--since=<rev>] [--test-shards=<n>] | test-timings <times> | mutation-timings <times> | merge-mutation-timings <ran> | nets | prune-cache [--dry-run]");
       process.exit(2);
     }
   } catch (error) {
