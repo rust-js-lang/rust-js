@@ -753,13 +753,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             pieces.push((self.tcx.mk_place_elem(place, elem), paths[i as usize]));
             i = end;
         }
-        // Last first, as rustc's ladder has them, each run in order.
+        // Last first, as rustc's ladder has them, each run in order, each
+        // after one whose drop panics still dropped (`each_ladder_step`).
+        let mut steps = Vec::new();
         for (part, subpath) in pieces.into_iter().rev() {
+            let mut step = Vec::new();
             match subpath {
-                Some(subpath) => self.elaborate_drop(state, block, (part, subpath), cleanup, span, out)?,
-                None => self.complete_drop(state, block, (part, path), span, out)?,
+                Some(subpath) => self.elaborate_drop(state, block, (part, subpath), cleanup, span, &mut step)?,
+                None => self.complete_drop(state, block, (part, path), span, &mut step)?,
             }
+            steps.push(step);
         }
+        self.each_ladder_step(steps, cleanup, span, out);
         if !cleanup && let Some(flag) = &state.naming.flags()[path] {
             out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
         }
@@ -768,7 +773,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// rustc's `drop_ladder`: each of `fields` of `place`, a struct's or a
     /// variant's whose path is `parts`, that's there, in order. One with no
-    /// path of its own is there as `path`'s flag says.
+    /// path of its own is there as `path`'s flag says. Each after one whose
+    /// drop panics still dropped as it unwinds, as the ladder's unwind
+    /// edges drop them (`each_ladder_step`, #2146).
     #[allow(clippy::too_many_arguments)]
     fn drop_ladder(
         &mut self,
@@ -780,6 +787,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        let mut steps = Vec::new();
         for (i, field_ty) in fields.into_iter().enumerate() {
             if self.drops(field_ty) == Drops::Nothing {
                 continue;
@@ -792,13 +800,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 parts,
                 |elem| matches!(elem, ProjectionElem::Field(at, _) if at == field),
             );
+            let mut step = Vec::new();
             match subpath {
                 Some(subpath) if drops.style(block, subpath, true) == Style::Dead => {}
-                Some(subpath) => self.elaborate_drop(state, block, (part, subpath), cleanup, span, out)?,
-                None => self.complete_drop(state, block, (part, path), span, out)?,
+                Some(subpath) => self.elaborate_drop(state, block, (part, subpath), cleanup, span, &mut step)?,
+                None => self.complete_drop(state, block, (part, path), span, &mut step)?,
             }
+            steps.push(step);
         }
+        self.each_ladder_step(steps, cleanup, span, out);
         Ok(())
+    }
+
+    /// A ladder's steps, each a part's drop, in turn: on the way out, as
+    /// drop glue runs them, each after one whose drop panics run as it
+    /// unwinds (`each_dropped`, #2146); in a cleanup, where a panic aborts,
+    /// each as it is.
+    fn each_ladder_step(&mut self, steps: Vec<Vec<Stmt>>, cleanup: bool, span: Span, out: &mut Vec<Stmt>) {
+        match cleanup {
+            true => out.extend(steps.into_iter().flatten()),
+            false => out.extend(crate::lower::drops::each_dropped(
+                steps,
+                self.js_span(span),
+                &mut self.catch_names(),
+            )),
+        }
     }
 
     /// rustc's `open_drop_for_multivariant`: of an enum some of which has

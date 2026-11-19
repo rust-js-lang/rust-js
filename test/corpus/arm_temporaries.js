@@ -55,10 +55,21 @@ const Mapped = {
       } else {
         result = "None";
       }
-      if (min != null) {
-        if (min$0$0$live) {
-          dropU?.(min);
+      try {
+        if (min != null) {
+          if (min$0$0$live) {
+            dropU?.(min);
+          }
         }
+      } catch (error) {
+        $cleanup(() => {
+          if (max$1 != null) {
+            if (max$1$0$live) {
+              dropU?.(max$1);
+            }
+          }
+        }, error);
+        throw error;
       }
       if (max$1 != null) {
         if (max$1$0$live) {

@@ -130,8 +130,17 @@ function pair(front, back, which, TDisplay, dropT) {
     }
   }
   console.log(`after match ${n}`);
-  if (pair$0$live) {
-    dropT?.(pair[0]);
+  try {
+    if (pair$0$live) {
+      dropT?.(pair[0]);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (pair$1$live) {
+        dropT?.(pair[1]);
+      }
+    }, error);
+    throw error;
   }
   if (pair$1$live) {
     dropT?.(pair[1]);
@@ -220,16 +229,44 @@ function trio(t, which, TDisplay, dropT) {
         }, error);
         throw error;
       }
-      dropT?.(whole.b);
+      try {
+        dropT?.(whole.b);
+      } catch (error) {
+        $cleanup(() => {
+          dropT?.(whole.c);
+        }, error);
+        throw error;
+      }
       dropT?.(whole.c);
     }
   }
   console.log(`after match ${n}`);
-  if (t$a$live) {
-    dropT?.(t.a);
+  try {
+    if (t$a$live) {
+      dropT?.(t.a);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (t$b$live) {
+        dropT?.(t.b);
+      }
+      if (t$c$live) {
+        dropT?.(t.c);
+      }
+    }, error);
+    throw error;
   }
-  if (t$b$live) {
-    dropT?.(t.b);
+  try {
+    if (t$b$live) {
+      dropT?.(t.b);
+    }
+  } catch (error) {
+    $cleanup(() => {
+      if (t$c$live) {
+        dropT?.(t.c);
+      }
+    }, error);
+    throw error;
   }
   if (t$c$live) {
     dropT?.(t.c);

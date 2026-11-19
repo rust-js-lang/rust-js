@@ -107,9 +107,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an array's items left are dropped though the array moved whole, in another branch",
     file: "src/lower/mir/drops.rs",
-    find: "                None => self.complete_drop(state, block, (part, path), span, out)?,\n            }\n        }\n        if !cleanup",
+    find: "                None => self.complete_drop(state, block, (part, path), span, &mut step)?,\n            }\n            steps.push(step);\n        }\n        self.each_ladder_step(steps, cleanup, span, out);\n        if !cleanup",
     replace:
-      "                None => self.drop_place(state, part, span, out)?,\n            }\n        }\n        if !cleanup",
+      "                None => self.drop_place(state, part, span, &mut step)?,\n            }\n            steps.push(step);\n        }\n        self.each_ladder_step(steps, cleanup, span, out);\n        if !cleanup",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
   },
   {
@@ -460,5 +460,13 @@ export const mutations: Mutation[] = [
     find: "                    Some(flag) => vec![StmtKind::If(Expr::var(flag), whole, None).at(self.js_span(span))],\n",
     replace: "                    Some(_) => whole,\n",
     tests: ["test/corpus.test.ts", "-t", "^match_binding_moves_what_a_partial_arm_keeps.rs$"],
+  },
+  {
+    name: "ladder-steps-in-turn-unguarded",
+    breaks: "what a partial move leaves is dropped one after another, so each field after one whose drop panics is never dropped, `drop b` lost after `a!` panics (#2146)",
+    file: "src/lower/mir/drops.rs",
+    find: "        match cleanup {\n            true => out.extend(steps.into_iter().flatten()),\n",
+    replace: "        match true {\n            true => out.extend(steps.into_iter().flatten()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^partial_move_rest_dropped_past_a_panic.rs$"],
   },
 ];

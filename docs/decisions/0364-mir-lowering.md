@@ -1815,3 +1815,25 @@ which rustc's ladder tests the discriminant of instead), 97 unmatched.
 Case of [0262](0262-when-rust-and-js-disagree.md): none, no answer changes.
 Held by each moved snapshot and test/drops-shadow.test.ts.
 
+
+## Amendment: what a partial move leaves is dropped as drop glue drops it, past a panic (2026-11-19, #2146)
+
+`drop_ladder`, rustc's `drop_ladder`, drops what's left of a struct, a
+tuple or an enum's variant some of whose fields moved, and
+`open_drop_array` drops what's left of an array. Each wrote its parts'
+drops one after another. So when one part's drop panicked, the parts after
+it were never dropped. rustc's ladder gives each step an unwind edge to the
+steps after it: after `let Three(_, _, last) = three;`, `a!`'s panic
+still drops `b`. Native printed `drop c`, `drop a!`, `drop b`, and JS
+stopped at `drop a!`. The whole value's drop was right. Each step is now
+collected apart and run by the one form drop glue runs, `each_dropped`
+(`each_ladder_step`). A step that may throw holds the steps after it in
+its `catch`, and one that can't stays as it is. In a cleanup, where a panic
+aborts, the steps stay one after another. Results changed (drops lost), so
+this follows ADR 0262's "preserve Rust's behavior". Three snapshots move,
+each a drop that may panic now holding the rest: `array_partial_moves`,
+`arm_temporaries` and `match_moves_a_part_or_the_whole`. Pinned by
+test/corpus/partial_move_rest_dropped_past_a_panic.rs (a struct, an enum's
+variant, an array, and the whole value, each under `catch_unwind`), and the
+metamorphic net's `loud-drop` rewrite of `or_pattern_part_moves`, which
+found it. Mutation `ladder-steps-in-turn-unguarded` is caught.
