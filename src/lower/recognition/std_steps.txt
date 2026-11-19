@@ -4,7 +4,9 @@
 # ExactSizeIterator std's impls of it write, read from rust-src; each
 # `<name>#<run>` line, what each step asked of what it holds, run natively
 # (test/std-steps.rs): `src` its source, `other` a chain's or a zip's
-# second, `inner` a flatten's inner iterators.
+# second, `inner` a flatten's inner iterators. `<name>#<run>` over sources
+# that write every step; `#nofold<run>` over ones that write none of the
+# folds, `#bare<run>` over ones that write only next, next_back, size_hint.
 Map writes: next size_hint fold try_fold next_back rfold try_rfold len is_empty
 Map#0 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.fold
 Map#0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
@@ -18,6 +20,30 @@ Map#2 |len: src.len |is_empty: src.is_empty
 Map#3 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.fold
 Map#3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
 Map#3 |len: src.len |is_empty: src.is_empty
+Map#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Map#nofold0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Map#nofold0 |len: src.len |is_empty: src.is_empty
+Map#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Map#nofold1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Map#nofold1 |len: src.len |is_empty: src.is_empty
+Map#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Map#nofold2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Map#nofold2 |len: src.len |is_empty: src.is_empty
+Map#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Map#nofold3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Map#nofold3 |len: src.len |is_empty: src.is_empty
+Map#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Map#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Map#bare0 |len: src.size_hint |is_empty: src.size_hint
+Map#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Map#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Map#bare1 |len: src.size_hint |is_empty: src.size_hint
+Map#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Map#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Map#bare2 |len: src.size_hint |is_empty: src.size_hint
+Map#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Map#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Map#bare3 |len: src.size_hint |is_empty: src.size_hint
 Filter writes: next size_hint fold try_fold count next_back rfold try_rfold
 Filter#0 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold src.try_fold |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.size_hint src.fold
 Filter#0 |next_back: src.try_rfold |nth_back: src.try_rfold src.try_rfold |advance_back_by: src.try_rfold src.try_rfold |rfold: src.rfold |try_rfold: src.try_rfold
@@ -27,6 +53,22 @@ Filter#2 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold src.tr
 Filter#2 |next_back: src.try_rfold |nth_back: src.try_rfold src.try_rfold |advance_back_by: src.try_rfold src.try_rfold |rfold: src.rfold |try_rfold: src.try_rfold
 Filter#3 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold src.try_fold |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.size_hint src.fold
 Filter#3 |next_back: src.try_rfold |nth_back: src.try_rfold src.try_rfold |advance_back_by: src.try_rfold src.try_rfold |rfold: src.rfold |try_rfold: src.try_rfold
+Filter#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.size_hint src.next src.next src.next src.next src.next src.next
+Filter#nofold0 |next_back: src.next_back |nth_back: src.next_back src.next_back src.next_back |advance_back_by: src.next_back src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back src.next_back
+Filter#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.size_hint src.next
+Filter#nofold1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Filter#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.size_hint src.next src.next src.next src.next src.next src.next
+Filter#nofold2 |next_back: src.next_back |nth_back: src.next_back src.next_back src.next_back |advance_back_by: src.next_back src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back src.next_back
+Filter#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.size_hint src.next src.next
+Filter#nofold3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Filter#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.size_hint src.next src.next src.next src.next src.next src.next
+Filter#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back src.next_back |advance_back_by: src.next_back src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back src.next_back
+Filter#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.size_hint src.next
+Filter#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Filter#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.size_hint src.next src.next src.next src.next src.next src.next
+Filter#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back src.next_back |advance_back_by: src.next_back src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back src.next_back
+Filter#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.size_hint src.next src.next
+Filter#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
 FilterMap writes: next size_hint fold try_fold next_back rfold try_rfold
 FilterMap#0 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold src.try_fold |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.fold
 FilterMap#0 |next_back: src.try_rfold |nth_back: src.try_rfold src.try_rfold |advance_back_by: src.try_rfold src.try_rfold |rfold: src.rfold |try_rfold: src.try_rfold
@@ -36,6 +78,22 @@ FilterMap#2 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold src
 FilterMap#2 |next_back: src.try_rfold |nth_back: src.try_rfold src.try_rfold |advance_back_by: src.try_rfold src.try_rfold |rfold: src.rfold |try_rfold: src.try_rfold
 FilterMap#3 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold src.try_fold |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.fold
 FilterMap#3 |next_back: src.try_rfold |nth_back: src.try_rfold src.try_rfold |advance_back_by: src.try_rfold src.try_rfold |rfold: src.rfold |try_rfold: src.try_rfold
+FilterMap#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+FilterMap#nofold0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+FilterMap#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+FilterMap#nofold1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+FilterMap#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+FilterMap#nofold2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+FilterMap#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+FilterMap#nofold3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+FilterMap#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+FilterMap#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+FilterMap#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+FilterMap#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+FilterMap#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+FilterMap#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+FilterMap#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+FilterMap#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
 Enumerate writes: next size_hint nth advance_by fold try_fold count next_back nth_back advance_back_by rfold try_rfold len is_empty
 Enumerate#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.count
 Enumerate#0 |next_back: src.next_back src.len |nth_back: src.nth_back(1) src.len |advance_back_by: src.advance_back_by(2) |rfold: src.len src.rfold |try_rfold: src.len src.try_rfold
@@ -49,6 +107,30 @@ Enumerate#2 |len: src.len |is_empty: src.is_empty
 Enumerate#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.count
 Enumerate#3 |next_back: src.next_back src.len |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.len src.rfold |try_rfold: src.len src.try_rfold
 Enumerate#3 |len: src.len |is_empty: src.is_empty
+Enumerate#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.count
+Enumerate#nofold0 |next_back: src.next_back src.len |nth_back: src.nth_back(1) src.len |advance_back_by: src.advance_back_by(2) |rfold: src.len src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.len src.next_back src.next_back
+Enumerate#nofold0 |len: src.len |is_empty: src.is_empty
+Enumerate#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next |try_fold: src.next |last: src.next |count: src.count
+Enumerate#nofold1 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.len src.next_back |try_rfold: src.len src.next_back
+Enumerate#nofold1 |len: src.len |is_empty: src.is_empty
+Enumerate#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.count
+Enumerate#nofold2 |next_back: src.next_back src.len |nth_back: src.nth_back(1) src.len |advance_back_by: src.advance_back_by(2) |rfold: src.len src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.len src.next_back src.next_back
+Enumerate#nofold2 |len: src.len |is_empty: src.is_empty
+Enumerate#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.count
+Enumerate#nofold3 |next_back: src.next_back src.len |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.len src.next_back src.next_back |try_rfold: src.len src.next_back src.next_back
+Enumerate#nofold3 |len: src.len |is_empty: src.is_empty
+Enumerate#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Enumerate#bare0 |next_back: src.next_back src.size_hint |nth_back: src.next_back src.next_back src.size_hint |advance_back_by: src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+Enumerate#bare0 |len: src.size_hint |is_empty: src.size_hint
+Enumerate#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Enumerate#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.size_hint src.next_back |try_rfold: src.size_hint src.next_back
+Enumerate#bare1 |len: src.size_hint |is_empty: src.size_hint
+Enumerate#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Enumerate#bare2 |next_back: src.next_back src.size_hint |nth_back: src.next_back src.next_back src.size_hint |advance_back_by: src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+Enumerate#bare2 |len: src.size_hint |is_empty: src.size_hint
+Enumerate#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Enumerate#bare3 |next_back: src.next_back src.size_hint |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+Enumerate#bare3 |len: src.size_hint |is_empty: src.size_hint
 Skip writes: next size_hint nth advance_by fold try_fold last count next_back nth_back advance_back_by rfold try_rfold
 Skip#0 |next: src.nth(1) |size_hint: src.size_hint |nth: src.nth(2) |advance_by: src.advance_by(3) |fold: src.nth(0) src.fold |try_fold: src.nth(0) src.try_fold |last: src.nth(0) src.last |count: src.nth(0) src.count
 Skip#0 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.nth_back(1) |advance_back_by: src.size_hint src.advance_back_by(2) |rfold: src.size_hint src.try_rfold |try_rfold: src.size_hint src.try_rfold
@@ -62,6 +144,30 @@ Skip#2 |len: src.size_hint |is_empty: src.size_hint
 Skip#3 |next: src.nth(1) |size_hint: src.size_hint |nth: src.nth(2) |advance_by: src.advance_by(3) |fold: src.nth(0) src.fold |try_fold: src.nth(0) src.try_fold |last: src.nth(0) src.last |count: src.nth(0) src.count
 Skip#3 |next_back: src.size_hint |nth_back: src.size_hint |advance_back_by: src.size_hint src.advance_back_by(0) |rfold: src.size_hint |try_rfold: src.size_hint
 Skip#3 |len: src.size_hint |is_empty: src.size_hint
+Skip#nofold0 |next: src.nth(1) |size_hint: src.size_hint |nth: src.nth(2) |advance_by: src.advance_by(3) |fold: src.nth(0) src.next src.next src.next src.next src.next |try_fold: src.nth(0) src.next src.next |last: src.nth(0) src.last |count: src.nth(0) src.count
+Skip#nofold0 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.nth_back(1) |advance_back_by: src.size_hint src.advance_back_by(2) |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+Skip#nofold0 |len: src.size_hint |is_empty: src.size_hint
+Skip#nofold1 |next: src.nth(1) |size_hint: src.size_hint |nth: src.nth(2) |advance_by: src.advance_by(3) |fold: src.nth(0) |try_fold: src.nth(0) |last: src.nth(0) |count: src.nth(0)
+Skip#nofold1 |next_back: src.size_hint |nth_back: src.size_hint |advance_back_by: src.size_hint src.advance_back_by(0) |rfold: src.size_hint |try_rfold: src.size_hint
+Skip#nofold1 |len: src.size_hint |is_empty: src.size_hint
+Skip#nofold2 |next: src.nth(1) |size_hint: src.size_hint |nth: src.nth(2) |advance_by: src.advance_by(3) |fold: src.nth(0) src.next src.next src.next src.next src.next |try_fold: src.nth(0) src.next src.next |last: src.nth(0) src.last |count: src.nth(0) src.count
+Skip#nofold2 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.nth_back(1) |advance_back_by: src.size_hint src.advance_back_by(2) |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+Skip#nofold2 |len: src.size_hint |is_empty: src.size_hint
+Skip#nofold3 |next: src.nth(1) |size_hint: src.size_hint |nth: src.nth(2) |advance_by: src.advance_by(3) |fold: src.nth(0) src.next |try_fold: src.nth(0) src.next |last: src.nth(0) src.last |count: src.nth(0) src.count
+Skip#nofold3 |next_back: src.size_hint |nth_back: src.size_hint |advance_back_by: src.size_hint src.advance_back_by(0) |rfold: src.size_hint |try_rfold: src.size_hint
+Skip#nofold3 |len: src.size_hint |is_empty: src.size_hint
+Skip#bare0 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Skip#bare0 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.next_back src.next_back |advance_back_by: src.size_hint src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+Skip#bare0 |len: src.size_hint |is_empty: src.size_hint
+Skip#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Skip#bare1 |next_back: src.size_hint |nth_back: src.size_hint |advance_back_by: src.size_hint |rfold: src.size_hint |try_rfold: src.size_hint
+Skip#bare1 |len: src.size_hint |is_empty: src.size_hint
+Skip#bare2 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Skip#bare2 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.next_back src.next_back |advance_back_by: src.size_hint src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+Skip#bare2 |len: src.size_hint |is_empty: src.size_hint
+Skip#bare3 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Skip#bare3 |next_back: src.size_hint |nth_back: src.size_hint |advance_back_by: src.size_hint |rfold: src.size_hint |try_rfold: src.size_hint
+Skip#bare3 |len: src.size_hint |is_empty: src.size_hint
 Take writes: next size_hint nth advance_by fold try_fold count next_back nth_back advance_back_by rfold try_rfold len
 Take#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.advance_by(3)
 Take#0 |next_back: src.len src.nth_back(2) |nth_back: src.len src.nth_back(3) |advance_back_by: src.len src.advance_back_by(4) |rfold: src.len src.nth_back(1) src.rfold |try_rfold: src.len src.nth_back(1) src.try_rfold
@@ -75,6 +181,30 @@ Take#2 |len: src.size_hint |is_empty: src.size_hint
 Take#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.advance_by(3)
 Take#3 |next_back: src.len src.nth_back(0) |nth_back: src.len src.nth_back(1) |advance_back_by: src.len src.advance_back_by(2) |rfold: src.len src.rfold |try_rfold: src.len src.try_rfold
 Take#3 |len: src.size_hint |is_empty: src.size_hint
+Take#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next |count: src.advance_by(3)
+Take#nofold0 |next_back: src.len src.nth_back(2) |nth_back: src.len src.nth_back(3) |advance_back_by: src.len src.advance_back_by(4) |rfold: src.len src.nth_back(1) src.next_back src.next_back src.next_back src.next_back |try_rfold: src.len src.nth_back(1) src.next_back src.next_back
+Take#nofold0 |len: src.size_hint |is_empty: src.size_hint
+Take#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next |try_fold: src.next |last: src.next |count: src.advance_by(3)
+Take#nofold1 |next_back: src.len src.nth_back(0) |nth_back: src.len src.nth_back(1) |advance_back_by: src.len src.advance_back_by(2) |rfold: src.len src.next_back |try_rfold: src.len src.next_back
+Take#nofold1 |len: src.size_hint |is_empty: src.size_hint
+Take#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next |count: src.advance_by(3)
+Take#nofold2 |next_back: src.len src.nth_back(2) |nth_back: src.len src.nth_back(3) |advance_back_by: src.len src.advance_back_by(4) |rfold: src.len src.nth_back(1) src.next_back src.next_back src.next_back src.next_back |try_rfold: src.len src.nth_back(1) src.next_back src.next_back
+Take#nofold2 |len: src.size_hint |is_empty: src.size_hint
+Take#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.advance_by(3)
+Take#nofold3 |next_back: src.len src.nth_back(0) |nth_back: src.len src.nth_back(1) |advance_back_by: src.len src.advance_back_by(2) |rfold: src.len src.next_back src.next_back |try_rfold: src.len src.next_back src.next_back
+Take#nofold3 |len: src.size_hint |is_empty: src.size_hint
+Take#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next |count: src.next src.next src.next
+Take#bare0 |next_back: src.size_hint src.next_back src.next_back src.next_back |nth_back: src.size_hint src.next_back src.next_back src.next_back src.next_back |advance_back_by: src.size_hint src.next_back src.next_back src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back
+Take#bare0 |len: src.size_hint |is_empty: src.size_hint
+Take#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Take#bare1 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.next_back |advance_back_by: src.size_hint src.next_back |rfold: src.size_hint src.next_back |try_rfold: src.size_hint src.next_back
+Take#bare1 |len: src.size_hint |is_empty: src.size_hint
+Take#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next |count: src.next src.next src.next
+Take#bare2 |next_back: src.size_hint src.next_back src.next_back src.next_back |nth_back: src.size_hint src.next_back src.next_back src.next_back src.next_back |advance_back_by: src.size_hint src.next_back src.next_back src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back
+Take#bare2 |len: src.size_hint |is_empty: src.size_hint
+Take#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Take#bare3 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.next_back src.next_back |advance_back_by: src.size_hint src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+Take#bare3 |len: src.size_hint |is_empty: src.size_hint
 StepBy writes: next size_hint nth fold try_fold next_back nth_back rfold try_rfold
 StepBy#0 |next: src.nth(0) |size_hint: src.size_hint |nth: src.next src.nth(1) |advance_by: src.next src.nth(1) |fold: src.next src.nth(1) src.nth(1) src.nth(1) |try_fold: src.next src.nth(1) |last: src.next src.nth(1) src.nth(1) src.nth(1) |count: src.next src.nth(1) src.nth(1) src.nth(1)
 StepBy#0 |next_back: src.len src.nth_back(0) |nth_back: src.len src.nth_back(2) |advance_back_by: src.len src.nth_back(0) src.len src.nth_back(1) |rfold: src.len src.nth_back(0) src.nth_back(1) src.nth_back(1) src.nth_back(1) |try_rfold: src.len src.nth_back(0) src.nth_back(1)
@@ -88,6 +218,30 @@ StepBy#2 |len: src.size_hint |is_empty: src.size_hint
 StepBy#3 |next: src.nth(0) |size_hint: src.size_hint |nth: src.next src.nth(1) |advance_by: src.next src.nth(1) |fold: src.next src.nth(1) |try_fold: src.next src.nth(1) |last: src.next src.nth(1) |count: src.next src.nth(1)
 StepBy#3 |next_back: src.len src.nth_back(0) |nth_back: src.len src.nth_back(2) |advance_back_by: src.len src.nth_back(0) src.len src.nth_back(1) |rfold: src.len src.nth_back(0) src.nth_back(1) |try_rfold: src.len src.nth_back(0) src.nth_back(1)
 StepBy#3 |len: src.size_hint |is_empty: src.size_hint
+StepBy#nofold0 |next: src.nth(0) |size_hint: src.size_hint |nth: src.next src.nth(1) |advance_by: src.next src.nth(1) |fold: src.next src.nth(1) src.nth(1) src.nth(1) |try_fold: src.next src.nth(1) |last: src.next src.nth(1) src.nth(1) src.nth(1) |count: src.next src.nth(1) src.nth(1) src.nth(1)
+StepBy#nofold0 |next_back: src.len src.nth_back(0) |nth_back: src.len src.nth_back(2) |advance_back_by: src.len src.nth_back(0) src.len src.nth_back(1) |rfold: src.len src.nth_back(0) src.nth_back(1) src.nth_back(1) src.nth_back(1) |try_rfold: src.len src.nth_back(0) src.nth_back(1)
+StepBy#nofold0 |len: src.size_hint |is_empty: src.size_hint
+StepBy#nofold1 |next: src.nth(0) |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+StepBy#nofold1 |next_back: src.len src.nth_back(1) |nth_back: src.len src.nth_back(3) |advance_back_by: src.len src.nth_back(1) |rfold: src.len src.nth_back(1) |try_rfold: src.len src.nth_back(1)
+StepBy#nofold1 |len: src.size_hint |is_empty: src.size_hint
+StepBy#nofold2 |next: src.nth(0) |size_hint: src.size_hint |nth: src.next src.nth(1) |advance_by: src.next src.nth(1) |fold: src.next src.nth(1) src.nth(1) src.nth(1) |try_fold: src.next src.nth(1) |last: src.next src.nth(1) src.nth(1) src.nth(1) |count: src.next src.nth(1) src.nth(1) src.nth(1)
+StepBy#nofold2 |next_back: src.len src.nth_back(0) |nth_back: src.len src.nth_back(2) |advance_back_by: src.len src.nth_back(0) src.len src.nth_back(1) |rfold: src.len src.nth_back(0) src.nth_back(1) src.nth_back(1) src.nth_back(1) |try_rfold: src.len src.nth_back(0) src.nth_back(1)
+StepBy#nofold2 |len: src.size_hint |is_empty: src.size_hint
+StepBy#nofold3 |next: src.nth(0) |size_hint: src.size_hint |nth: src.next src.nth(1) |advance_by: src.next src.nth(1) |fold: src.next src.nth(1) |try_fold: src.next src.nth(1) |last: src.next src.nth(1) |count: src.next src.nth(1)
+StepBy#nofold3 |next_back: src.len src.nth_back(0) |nth_back: src.len src.nth_back(2) |advance_back_by: src.len src.nth_back(0) src.len src.nth_back(1) |rfold: src.len src.nth_back(0) src.nth_back(1) |try_rfold: src.len src.nth_back(0) src.nth_back(1)
+StepBy#nofold3 |len: src.size_hint |is_empty: src.size_hint
+StepBy#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+StepBy#bare0 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.next_back src.next_back src.next_back |advance_back_by: src.size_hint src.next_back src.size_hint src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back src.next_back
+StepBy#bare0 |len: src.size_hint |is_empty: src.size_hint
+StepBy#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+StepBy#bare1 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.next_back |advance_back_by: src.size_hint src.next_back |rfold: src.size_hint src.next_back |try_rfold: src.size_hint src.next_back
+StepBy#bare1 |len: src.size_hint |is_empty: src.size_hint
+StepBy#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+StepBy#bare2 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.next_back src.next_back src.next_back |advance_back_by: src.size_hint src.next_back src.size_hint src.next_back src.next_back |rfold: src.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back src.next_back
+StepBy#bare2 |len: src.size_hint |is_empty: src.size_hint
+StepBy#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+StepBy#bare3 |next_back: src.size_hint src.next_back |nth_back: src.size_hint src.next_back src.next_back |advance_back_by: src.size_hint src.next_back src.size_hint src.next_back |rfold: src.size_hint src.next_back src.next_back |try_rfold: src.size_hint src.next_back src.next_back
+StepBy#bare3 |len: src.size_hint |is_empty: src.size_hint
 Chain writes: next size_hint nth advance_by fold try_fold last count next_back nth_back advance_back_by rfold try_rfold
 Chain#0 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.advance_by(1) src.next |advance_by: src.advance_by(2) |fold: src.fold other.fold |try_fold: src.try_fold |last: src.last other.last |count: src.count other.count
 Chain#0 |next_back: other.next_back |nth_back: other.advance_back_by(1) other.next_back |advance_back_by: other.advance_back_by(2) |rfold: other.rfold src.rfold |try_rfold: other.try_rfold
@@ -97,6 +251,22 @@ Chain#2 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.adva
 Chain#2 |next_back: other.next_back src.next_back |nth_back: other.advance_back_by(1) src.nth_back(1) |advance_back_by: other.advance_back_by(2) src.advance_back_by(2) |rfold: other.rfold src.rfold |try_rfold: other.try_rfold src.try_rfold
 Chain#3 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.advance_by(1) src.next other.nth(0) |advance_by: src.advance_by(2) other.advance_by(1) |fold: src.fold other.fold |try_fold: src.try_fold other.try_fold |last: src.last other.last |count: src.count other.count
 Chain#3 |next_back: other.next_back |nth_back: other.advance_back_by(1) other.next_back src.nth_back(0) |advance_back_by: other.advance_back_by(2) src.advance_back_by(1) |rfold: other.rfold src.rfold |try_rfold: other.try_rfold src.try_rfold
+Chain#nofold0 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.advance_by(1) src.next |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next other.next other.next other.next other.next |try_fold: src.next src.next |last: src.last other.last |count: src.count other.count
+Chain#nofold0 |next_back: other.next_back |nth_back: other.advance_back_by(1) other.next_back |advance_back_by: other.advance_back_by(2) |rfold: other.next_back other.next_back other.next_back other.next_back src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: other.next_back other.next_back
+Chain#nofold1 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.advance_by(1) other.nth(1) |advance_by: src.advance_by(2) other.advance_by(2) |fold: src.next other.next other.next other.next other.next |try_fold: src.next other.next other.next |last: src.last other.last |count: src.count other.count
+Chain#nofold1 |next_back: other.next_back |nth_back: other.advance_back_by(1) other.next_back |advance_back_by: other.advance_back_by(2) |rfold: other.next_back other.next_back other.next_back other.next_back src.next_back |try_rfold: other.next_back other.next_back
+Chain#nofold2 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.advance_by(1) src.next |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next other.next |try_fold: src.next src.next |last: src.last other.last |count: src.count other.count
+Chain#nofold2 |next_back: other.next_back src.next_back |nth_back: other.advance_back_by(1) src.nth_back(1) |advance_back_by: other.advance_back_by(2) src.advance_back_by(2) |rfold: other.next_back src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: other.next_back src.next_back src.next_back
+Chain#nofold3 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.advance_by(1) src.next other.nth(0) |advance_by: src.advance_by(2) other.advance_by(1) |fold: src.next src.next other.next other.next |try_fold: src.next src.next other.next |last: src.last other.last |count: src.count other.count
+Chain#nofold3 |next_back: other.next_back |nth_back: other.advance_back_by(1) other.next_back src.nth_back(0) |advance_back_by: other.advance_back_by(2) src.advance_back_by(1) |rfold: other.next_back other.next_back src.next_back src.next_back |try_rfold: other.next_back other.next_back src.next_back
+Chain#bare0 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next other.next other.next other.next other.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next other.next other.next other.next other.next |count: src.next src.next src.next src.next src.next src.next other.next other.next other.next other.next
+Chain#bare0 |next_back: other.next_back |nth_back: other.next_back other.next_back |advance_back_by: other.next_back other.next_back |rfold: other.next_back other.next_back other.next_back other.next_back src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: other.next_back other.next_back
+Chain#bare1 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next other.next |advance_by: src.next other.next other.next |fold: src.next other.next other.next other.next other.next |try_fold: src.next other.next other.next |last: src.next other.next other.next other.next other.next |count: src.next other.next other.next other.next other.next
+Chain#bare1 |next_back: other.next_back |nth_back: other.next_back other.next_back |advance_back_by: other.next_back other.next_back |rfold: other.next_back other.next_back other.next_back other.next_back src.next_back |try_rfold: other.next_back other.next_back
+Chain#bare2 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next other.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next other.next |count: src.next src.next src.next src.next src.next src.next other.next
+Chain#bare2 |next_back: other.next_back src.next_back |nth_back: other.next_back src.next_back src.next_back |advance_back_by: other.next_back src.next_back src.next_back |rfold: other.next_back src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: other.next_back src.next_back src.next_back
+Chain#bare3 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.next src.next other.next |advance_by: src.next src.next other.next |fold: src.next src.next other.next other.next |try_fold: src.next src.next other.next |last: src.next src.next other.next other.next |count: src.next src.next other.next other.next
+Chain#bare3 |next_back: other.next_back |nth_back: other.next_back other.next_back src.next_back |advance_back_by: other.next_back other.next_back src.next_back |rfold: other.next_back other.next_back src.next_back src.next_back |try_rfold: other.next_back other.next_back src.next_back
 Zip writes: next size_hint nth fold next_back
 Zip#0 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next src.next other.next |advance_by: src.next other.next src.next other.next |fold: src.next other.next src.next other.next src.next other.next src.next other.next |try_fold: src.next other.next src.next other.next |last: src.next other.next src.next other.next src.next other.next src.next other.next |count: src.next other.next src.next other.next src.next other.next src.next other.next
 Zip#0 |next_back: src.len other.len src.next_back src.next_back src.next_back other.next_back |nth_back: src.len other.len src.next_back src.next_back src.next_back other.next_back src.len other.len src.next_back other.next_back |advance_back_by: src.len other.len src.next_back src.next_back src.next_back other.next_back src.len other.len src.next_back other.next_back |rfold: src.len other.len src.next_back src.next_back src.next_back other.next_back src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back |try_rfold: src.len other.len src.next_back src.next_back src.next_back other.next_back src.len other.len src.next_back other.next_back
@@ -110,6 +280,30 @@ Zip#2 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hi
 Zip#3 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next src.next |advance_by: src.next other.next src.next |fold: src.next other.next src.next |try_fold: src.next other.next src.next |last: src.next other.next src.next |count: src.next other.next src.next
 Zip#3 |next_back: src.len other.len src.next_back other.next_back |nth_back: src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back |advance_back_by: src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back |rfold: src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back |try_rfold: src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back
 Zip#3 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
+Zip#nofold0 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next src.next other.next |advance_by: src.next other.next src.next other.next |fold: src.next other.next src.next other.next src.next other.next src.next other.next |try_fold: src.next other.next src.next other.next |last: src.next other.next src.next other.next src.next other.next src.next other.next |count: src.next other.next src.next other.next src.next other.next src.next other.next
+Zip#nofold0 |next_back: src.len other.len src.next_back src.next_back src.next_back other.next_back |nth_back: src.len other.len src.next_back src.next_back src.next_back other.next_back src.len other.len src.next_back other.next_back |advance_back_by: src.len other.len src.next_back src.next_back src.next_back other.next_back src.len other.len src.next_back other.next_back |rfold: src.len other.len src.next_back src.next_back src.next_back other.next_back src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back |try_rfold: src.len other.len src.next_back src.next_back src.next_back other.next_back src.len other.len src.next_back other.next_back
+Zip#nofold0 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
+Zip#nofold1 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Zip#nofold1 |next_back: src.len other.len other.next_back other.next_back other.next_back src.next_back other.next_back |nth_back: src.len other.len other.next_back other.next_back other.next_back src.next_back other.next_back |advance_back_by: src.len other.len other.next_back other.next_back other.next_back src.next_back other.next_back |rfold: src.len other.len other.next_back other.next_back other.next_back src.next_back other.next_back |try_rfold: src.len other.len other.next_back other.next_back other.next_back src.next_back other.next_back
+Zip#nofold1 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
+Zip#nofold2 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next |advance_by: src.next other.next |fold: src.next other.next |try_fold: src.next other.next |last: src.next other.next |count: src.next other.next
+Zip#nofold2 |next_back: src.len other.len src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back |nth_back: src.len other.len src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back |advance_back_by: src.len other.len src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back |rfold: src.len other.len src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back |try_rfold: src.len other.len src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back
+Zip#nofold2 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
+Zip#nofold3 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next src.next |advance_by: src.next other.next src.next |fold: src.next other.next src.next |try_fold: src.next other.next src.next |last: src.next other.next src.next |count: src.next other.next src.next
+Zip#nofold3 |next_back: src.len other.len src.next_back other.next_back |nth_back: src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back |advance_back_by: src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back |rfold: src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back |try_rfold: src.len other.len src.next_back other.next_back src.len other.len src.next_back other.next_back
+Zip#nofold3 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
+Zip#bare0 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next src.next other.next |advance_by: src.next other.next src.next other.next |fold: src.next other.next src.next other.next src.next other.next src.next other.next |try_fold: src.next other.next src.next other.next |last: src.next other.next src.next other.next src.next other.next src.next other.next |count: src.next other.next src.next other.next src.next other.next src.next other.next
+Zip#bare0 |next_back: src.size_hint other.size_hint src.next_back src.next_back src.next_back other.next_back |nth_back: src.size_hint other.size_hint src.next_back src.next_back src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back |advance_back_by: src.size_hint other.size_hint src.next_back src.next_back src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back |rfold: src.size_hint other.size_hint src.next_back src.next_back src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back |try_rfold: src.size_hint other.size_hint src.next_back src.next_back src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back
+Zip#bare0 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
+Zip#bare1 |next: src.next |size_hint: src.size_hint other.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Zip#bare1 |next_back: src.size_hint other.size_hint other.next_back other.next_back other.next_back src.next_back other.next_back |nth_back: src.size_hint other.size_hint other.next_back other.next_back other.next_back src.next_back other.next_back |advance_back_by: src.size_hint other.size_hint other.next_back other.next_back other.next_back src.next_back other.next_back |rfold: src.size_hint other.size_hint other.next_back other.next_back other.next_back src.next_back other.next_back |try_rfold: src.size_hint other.size_hint other.next_back other.next_back other.next_back src.next_back other.next_back
+Zip#bare1 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
+Zip#bare2 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next |advance_by: src.next other.next |fold: src.next other.next |try_fold: src.next other.next |last: src.next other.next |count: src.next other.next
+Zip#bare2 |next_back: src.size_hint other.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back |nth_back: src.size_hint other.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back |advance_back_by: src.size_hint other.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back |rfold: src.size_hint other.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back |try_rfold: src.size_hint other.size_hint src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back other.next_back
+Zip#bare2 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
+Zip#bare3 |next: src.next other.next |size_hint: src.size_hint other.size_hint |nth: src.next other.next src.next |advance_by: src.next other.next src.next |fold: src.next other.next src.next |try_fold: src.next other.next src.next |last: src.next other.next src.next |count: src.next other.next src.next
+Zip#bare3 |next_back: src.size_hint other.size_hint src.next_back other.next_back |nth_back: src.size_hint other.size_hint src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back |advance_back_by: src.size_hint other.size_hint src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back |rfold: src.size_hint other.size_hint src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back |try_rfold: src.size_hint other.size_hint src.next_back other.next_back src.size_hint other.size_hint src.next_back other.next_back
+Zip#bare3 |len: src.size_hint other.size_hint |is_empty: src.size_hint other.size_hint
 Rev writes: next size_hint nth advance_by fold try_fold next_back nth_back advance_back_by rfold try_rfold len is_empty
 Rev#0 |next: src.next_back |size_hint: src.size_hint |nth: src.nth_back(1) |advance_by: src.advance_back_by(2) |fold: src.rfold |try_fold: src.try_rfold |last: src.rfold |count: src.rfold
 Rev#0 |next_back: src.next |nth_back: src.nth(1) |advance_back_by: src.advance_by(2) |rfold: src.fold |try_rfold: src.try_fold
@@ -123,6 +317,30 @@ Rev#2 |len: src.len |is_empty: src.is_empty
 Rev#3 |next: src.next_back |size_hint: src.size_hint |nth: src.nth_back(1) |advance_by: src.advance_back_by(2) |fold: src.rfold |try_fold: src.try_rfold |last: src.rfold |count: src.rfold
 Rev#3 |next_back: src.next |nth_back: src.nth(1) |advance_back_by: src.advance_by(2) |rfold: src.fold |try_rfold: src.try_fold
 Rev#3 |len: src.len |is_empty: src.is_empty
+Rev#nofold0 |next: src.next_back |size_hint: src.size_hint |nth: src.nth_back(1) |advance_by: src.advance_back_by(2) |fold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_fold: src.next_back src.next_back |last: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |count: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back
+Rev#nofold0 |next_back: src.next |nth_back: src.nth(1) |advance_back_by: src.advance_by(2) |rfold: src.next src.next src.next src.next src.next src.next |try_rfold: src.next src.next
+Rev#nofold0 |len: src.len |is_empty: src.is_empty
+Rev#nofold1 |next: src.next_back |size_hint: src.size_hint |nth: src.nth_back(1) |advance_by: src.advance_back_by(2) |fold: src.next_back |try_fold: src.next_back |last: src.next_back |count: src.next_back
+Rev#nofold1 |next_back: src.next |nth_back: src.nth(1) |advance_back_by: src.advance_by(2) |rfold: src.next |try_rfold: src.next
+Rev#nofold1 |len: src.len |is_empty: src.is_empty
+Rev#nofold2 |next: src.next_back |size_hint: src.size_hint |nth: src.nth_back(1) |advance_by: src.advance_back_by(2) |fold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_fold: src.next_back src.next_back |last: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |count: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back
+Rev#nofold2 |next_back: src.next |nth_back: src.nth(1) |advance_back_by: src.advance_by(2) |rfold: src.next src.next src.next src.next src.next src.next |try_rfold: src.next src.next
+Rev#nofold2 |len: src.len |is_empty: src.is_empty
+Rev#nofold3 |next: src.next_back |size_hint: src.size_hint |nth: src.nth_back(1) |advance_by: src.advance_back_by(2) |fold: src.next_back src.next_back |try_fold: src.next_back src.next_back |last: src.next_back src.next_back |count: src.next_back src.next_back
+Rev#nofold3 |next_back: src.next |nth_back: src.nth(1) |advance_back_by: src.advance_by(2) |rfold: src.next src.next |try_rfold: src.next src.next
+Rev#nofold3 |len: src.len |is_empty: src.is_empty
+Rev#bare0 |next: src.next_back |size_hint: src.size_hint |nth: src.next_back src.next_back |advance_by: src.next_back src.next_back |fold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_fold: src.next_back src.next_back |last: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |count: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back
+Rev#bare0 |next_back: src.next |nth_back: src.next src.next |advance_back_by: src.next src.next |rfold: src.next src.next src.next src.next src.next src.next |try_rfold: src.next src.next
+Rev#bare0 |len: src.size_hint |is_empty: src.size_hint
+Rev#bare1 |next: src.next_back |size_hint: src.size_hint |nth: src.next_back |advance_by: src.next_back |fold: src.next_back |try_fold: src.next_back |last: src.next_back |count: src.next_back
+Rev#bare1 |next_back: src.next |nth_back: src.next |advance_back_by: src.next |rfold: src.next |try_rfold: src.next
+Rev#bare1 |len: src.size_hint |is_empty: src.size_hint
+Rev#bare2 |next: src.next_back |size_hint: src.size_hint |nth: src.next_back src.next_back |advance_by: src.next_back src.next_back |fold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_fold: src.next_back src.next_back |last: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |count: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back
+Rev#bare2 |next_back: src.next |nth_back: src.next src.next |advance_back_by: src.next src.next |rfold: src.next src.next src.next src.next src.next src.next |try_rfold: src.next src.next
+Rev#bare2 |len: src.size_hint |is_empty: src.size_hint
+Rev#bare3 |next: src.next_back |size_hint: src.size_hint |nth: src.next_back src.next_back |advance_by: src.next_back src.next_back |fold: src.next_back src.next_back |try_fold: src.next_back src.next_back |last: src.next_back src.next_back |count: src.next_back src.next_back
+Rev#bare3 |next_back: src.next |nth_back: src.next src.next |advance_back_by: src.next src.next |rfold: src.next src.next |try_rfold: src.next src.next
+Rev#bare3 |len: src.size_hint |is_empty: src.size_hint
 Fuse writes: next size_hint nth advance_by fold try_fold last count next_back nth_back rfold try_rfold len is_empty
 Fuse#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.fold |try_fold: src.try_fold |last: src.last |count: src.count
 Fuse#0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
@@ -136,6 +354,30 @@ Fuse#2 |len: src.len |is_empty: src.is_empty
 Fuse#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.fold |try_fold: src.try_fold |last: src.last |count: src.count
 Fuse#3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
 Fuse#3 |len: src.len |is_empty: src.is_empty
+Fuse#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Fuse#nofold0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Fuse#nofold0 |len: src.len |is_empty: src.is_empty
+Fuse#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next |try_fold: src.next |last: src.last |count: src.count
+Fuse#nofold1 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Fuse#nofold1 |len: src.len |is_empty: src.is_empty
+Fuse#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Fuse#nofold2 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Fuse#nofold2 |len: src.len |is_empty: src.is_empty
+Fuse#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Fuse#nofold3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Fuse#nofold3 |len: src.len |is_empty: src.is_empty
+Fuse#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Fuse#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Fuse#bare0 |len: src.size_hint |is_empty: src.size_hint
+Fuse#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Fuse#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Fuse#bare1 |len: src.size_hint |is_empty: src.size_hint
+Fuse#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Fuse#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Fuse#bare2 |len: src.size_hint |is_empty: src.size_hint
+Fuse#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Fuse#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Fuse#bare3 |len: src.size_hint |is_empty: src.size_hint
 Peekable writes: next size_hint nth fold try_fold last count next_back rfold try_rfold
 Peekable#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.last |count: src.count
 Peekable#0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
@@ -149,6 +391,30 @@ Peekable#2 |len: src.size_hint |is_empty: src.size_hint
 Peekable#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.last |count: src.count
 Peekable#3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
 Peekable#3 |len: src.size_hint |is_empty: src.size_hint
+Peekable#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Peekable#nofold0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Peekable#nofold0 |len: src.size_hint |is_empty: src.size_hint
+Peekable#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.last |count: src.count
+Peekable#nofold1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Peekable#nofold1 |len: src.size_hint |is_empty: src.size_hint
+Peekable#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Peekable#nofold2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Peekable#nofold2 |len: src.size_hint |is_empty: src.size_hint
+Peekable#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Peekable#nofold3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Peekable#nofold3 |len: src.size_hint |is_empty: src.size_hint
+Peekable#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Peekable#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Peekable#bare0 |len: src.size_hint |is_empty: src.size_hint
+Peekable#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Peekable#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Peekable#bare1 |len: src.size_hint |is_empty: src.size_hint
+Peekable#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Peekable#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Peekable#bare2 |len: src.size_hint |is_empty: src.size_hint
+Peekable#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Peekable#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Peekable#bare3 |len: src.size_hint |is_empty: src.size_hint
 Flatten writes: next size_hint advance_by fold try_fold last count next_back advance_back_by rfold try_rfold
 Flatten#0 |next: src.next inner.next |size_hint: src.size_hint |nth: src.try_fold inner.advance_by(1) inner.next |advance_by: src.try_fold inner.advance_by(2) |fold: src.fold inner.fold inner.fold |try_fold: src.try_fold inner.try_fold |last: src.fold inner.last inner.last |count: src.fold inner.count inner.count
 Flatten#0 |next_back: src.next_back inner.next_back |nth_back: src.try_rfold inner.advance_back_by(1) inner.next_back |advance_back_by: src.try_rfold inner.advance_back_by(2) |rfold: src.rfold inner.rfold inner.rfold |try_rfold: src.try_rfold inner.try_rfold
@@ -158,6 +424,22 @@ Flatten#2 |next: src.next inner.next src.next inner.next src.next |size_hint: sr
 Flatten#2 |next_back: src.next_back inner.next_back src.next_back inner.next_back src.next_back |nth_back: src.try_rfold inner.advance_back_by(1) inner.advance_back_by(1) |advance_back_by: src.try_rfold inner.advance_back_by(2) inner.advance_back_by(2) |rfold: src.rfold inner.rfold inner.rfold |try_rfold: src.try_rfold inner.try_rfold inner.try_rfold
 Flatten#3 |next: src.next inner.next |size_hint: src.size_hint |nth: src.try_fold inner.advance_by(1) inner.next src.next |advance_by: src.try_fold inner.advance_by(2) |fold: src.fold inner.fold |try_fold: src.try_fold inner.try_fold |last: src.fold inner.last |count: src.fold inner.count
 Flatten#3 |next_back: src.next_back inner.next_back |nth_back: src.try_rfold inner.advance_back_by(1) inner.next_back src.next_back |advance_back_by: src.try_rfold inner.advance_back_by(2) |rfold: src.rfold inner.rfold |try_rfold: src.try_rfold inner.try_rfold
+Flatten#nofold0 |next: src.next inner.next |size_hint: src.size_hint |nth: src.next inner.advance_by(1) inner.next |advance_by: src.next inner.advance_by(2) |fold: src.next inner.next inner.next inner.next inner.next src.next inner.next inner.next inner.next inner.next src.next |try_fold: src.next inner.next inner.next |last: src.next inner.last src.next inner.last src.next |count: src.next inner.count src.next inner.count src.next
+Flatten#nofold0 |next_back: src.next_back inner.next_back |nth_back: src.next_back inner.advance_back_by(1) inner.next_back |advance_back_by: src.next_back inner.advance_back_by(2) |rfold: src.next_back inner.next_back inner.next_back inner.next_back inner.next_back src.next_back inner.next_back inner.next_back inner.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back inner.next_back
+Flatten#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Flatten#nofold1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Flatten#nofold2 |next: src.next inner.next src.next inner.next src.next |size_hint: src.size_hint |nth: src.next inner.advance_by(1) src.next inner.advance_by(1) src.next |advance_by: src.next inner.advance_by(2) src.next inner.advance_by(2) src.next |fold: src.next inner.next src.next inner.next src.next |try_fold: src.next inner.next src.next inner.next src.next |last: src.next inner.last src.next inner.last src.next |count: src.next inner.count src.next inner.count src.next
+Flatten#nofold2 |next_back: src.next_back inner.next_back src.next_back inner.next_back src.next_back |nth_back: src.next_back inner.advance_back_by(1) src.next_back inner.advance_back_by(1) src.next_back |advance_back_by: src.next_back inner.advance_back_by(2) src.next_back inner.advance_back_by(2) src.next_back |rfold: src.next_back inner.next_back src.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back src.next_back inner.next_back src.next_back
+Flatten#nofold3 |next: src.next inner.next |size_hint: src.size_hint |nth: src.next inner.advance_by(1) inner.next src.next |advance_by: src.next inner.advance_by(2) src.next |fold: src.next inner.next inner.next src.next |try_fold: src.next inner.next inner.next src.next |last: src.next inner.last src.next |count: src.next inner.count src.next
+Flatten#nofold3 |next_back: src.next_back inner.next_back |nth_back: src.next_back inner.advance_back_by(1) inner.next_back src.next_back |advance_back_by: src.next_back inner.advance_back_by(2) src.next_back |rfold: src.next_back inner.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back inner.next_back src.next_back
+Flatten#bare0 |next: src.next inner.next |size_hint: src.size_hint |nth: src.next inner.next inner.next |advance_by: src.next inner.next inner.next |fold: src.next inner.next inner.next inner.next inner.next src.next inner.next inner.next inner.next inner.next src.next |try_fold: src.next inner.next inner.next |last: src.next inner.next inner.next inner.next inner.next src.next inner.next inner.next inner.next inner.next src.next |count: src.next inner.next inner.next inner.next inner.next src.next inner.next inner.next inner.next inner.next src.next
+Flatten#bare0 |next_back: src.next_back inner.next_back |nth_back: src.next_back inner.next_back inner.next_back |advance_back_by: src.next_back inner.next_back inner.next_back |rfold: src.next_back inner.next_back inner.next_back inner.next_back inner.next_back src.next_back inner.next_back inner.next_back inner.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back inner.next_back
+Flatten#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Flatten#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Flatten#bare2 |next: src.next inner.next src.next inner.next src.next |size_hint: src.size_hint |nth: src.next inner.next src.next inner.next src.next |advance_by: src.next inner.next src.next inner.next src.next |fold: src.next inner.next src.next inner.next src.next |try_fold: src.next inner.next src.next inner.next src.next |last: src.next inner.next src.next inner.next src.next |count: src.next inner.next src.next inner.next src.next
+Flatten#bare2 |next_back: src.next_back inner.next_back src.next_back inner.next_back src.next_back |nth_back: src.next_back inner.next_back src.next_back inner.next_back src.next_back |advance_back_by: src.next_back inner.next_back src.next_back inner.next_back src.next_back |rfold: src.next_back inner.next_back src.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back src.next_back inner.next_back src.next_back
+Flatten#bare3 |next: src.next inner.next |size_hint: src.size_hint |nth: src.next inner.next inner.next src.next |advance_by: src.next inner.next inner.next src.next |fold: src.next inner.next inner.next src.next |try_fold: src.next inner.next inner.next src.next |last: src.next inner.next inner.next src.next |count: src.next inner.next inner.next src.next
+Flatten#bare3 |next_back: src.next_back inner.next_back |nth_back: src.next_back inner.next_back inner.next_back src.next_back |advance_back_by: src.next_back inner.next_back inner.next_back src.next_back |rfold: src.next_back inner.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back inner.next_back src.next_back
 FlatMap writes: next size_hint advance_by fold try_fold last count next_back advance_back_by rfold try_rfold
 FlatMap#0 |next: src.next inner.next |size_hint: src.size_hint |nth: src.try_fold inner.advance_by(1) inner.next |advance_by: src.try_fold inner.advance_by(2) |fold: src.fold inner.fold inner.fold |try_fold: src.try_fold inner.try_fold |last: src.fold inner.last inner.last |count: src.fold inner.count inner.count
 FlatMap#0 |next_back: src.next_back inner.next_back |nth_back: src.try_rfold inner.advance_back_by(1) inner.next_back |advance_back_by: src.try_rfold inner.advance_back_by(2) |rfold: src.rfold inner.rfold inner.rfold |try_rfold: src.try_rfold inner.try_rfold
@@ -167,6 +449,22 @@ FlatMap#2 |next: src.next inner.next src.next inner.next src.next |size_hint: sr
 FlatMap#2 |next_back: src.next_back inner.next_back src.next_back inner.next_back src.next_back |nth_back: src.try_rfold inner.advance_back_by(1) inner.advance_back_by(1) |advance_back_by: src.try_rfold inner.advance_back_by(2) inner.advance_back_by(2) |rfold: src.rfold inner.rfold inner.rfold |try_rfold: src.try_rfold inner.try_rfold inner.try_rfold
 FlatMap#3 |next: src.next inner.next |size_hint: src.size_hint |nth: src.try_fold inner.advance_by(1) inner.next src.next |advance_by: src.try_fold inner.advance_by(2) |fold: src.fold inner.fold |try_fold: src.try_fold inner.try_fold |last: src.fold inner.last |count: src.fold inner.count
 FlatMap#3 |next_back: src.next_back inner.next_back |nth_back: src.try_rfold inner.advance_back_by(1) inner.next_back src.next_back |advance_back_by: src.try_rfold inner.advance_back_by(2) |rfold: src.rfold inner.rfold |try_rfold: src.try_rfold inner.try_rfold
+FlatMap#nofold0 |next: src.next inner.next |size_hint: src.size_hint |nth: src.next inner.advance_by(1) inner.next |advance_by: src.next inner.advance_by(2) |fold: src.next inner.next inner.next inner.next inner.next src.next inner.next inner.next inner.next inner.next src.next |try_fold: src.next inner.next inner.next |last: src.next inner.last src.next inner.last src.next |count: src.next inner.count src.next inner.count src.next
+FlatMap#nofold0 |next_back: src.next_back inner.next_back |nth_back: src.next_back inner.advance_back_by(1) inner.next_back |advance_back_by: src.next_back inner.advance_back_by(2) |rfold: src.next_back inner.next_back inner.next_back inner.next_back inner.next_back src.next_back inner.next_back inner.next_back inner.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back inner.next_back
+FlatMap#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+FlatMap#nofold1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+FlatMap#nofold2 |next: src.next inner.next src.next inner.next src.next |size_hint: src.size_hint |nth: src.next inner.advance_by(1) src.next inner.advance_by(1) src.next |advance_by: src.next inner.advance_by(2) src.next inner.advance_by(2) src.next |fold: src.next inner.next src.next inner.next src.next |try_fold: src.next inner.next src.next inner.next src.next |last: src.next inner.last src.next inner.last src.next |count: src.next inner.count src.next inner.count src.next
+FlatMap#nofold2 |next_back: src.next_back inner.next_back src.next_back inner.next_back src.next_back |nth_back: src.next_back inner.advance_back_by(1) src.next_back inner.advance_back_by(1) src.next_back |advance_back_by: src.next_back inner.advance_back_by(2) src.next_back inner.advance_back_by(2) src.next_back |rfold: src.next_back inner.next_back src.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back src.next_back inner.next_back src.next_back
+FlatMap#nofold3 |next: src.next inner.next |size_hint: src.size_hint |nth: src.next inner.advance_by(1) inner.next src.next |advance_by: src.next inner.advance_by(2) src.next |fold: src.next inner.next inner.next src.next |try_fold: src.next inner.next inner.next src.next |last: src.next inner.last src.next |count: src.next inner.count src.next
+FlatMap#nofold3 |next_back: src.next_back inner.next_back |nth_back: src.next_back inner.advance_back_by(1) inner.next_back src.next_back |advance_back_by: src.next_back inner.advance_back_by(2) src.next_back |rfold: src.next_back inner.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back inner.next_back src.next_back
+FlatMap#bare0 |next: src.next inner.next |size_hint: src.size_hint |nth: src.next inner.next inner.next |advance_by: src.next inner.next inner.next |fold: src.next inner.next inner.next inner.next inner.next src.next inner.next inner.next inner.next inner.next src.next |try_fold: src.next inner.next inner.next |last: src.next inner.next inner.next inner.next inner.next src.next inner.next inner.next inner.next inner.next src.next |count: src.next inner.next inner.next inner.next inner.next src.next inner.next inner.next inner.next inner.next src.next
+FlatMap#bare0 |next_back: src.next_back inner.next_back |nth_back: src.next_back inner.next_back inner.next_back |advance_back_by: src.next_back inner.next_back inner.next_back |rfold: src.next_back inner.next_back inner.next_back inner.next_back inner.next_back src.next_back inner.next_back inner.next_back inner.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back inner.next_back
+FlatMap#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+FlatMap#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+FlatMap#bare2 |next: src.next inner.next src.next inner.next src.next |size_hint: src.size_hint |nth: src.next inner.next src.next inner.next src.next |advance_by: src.next inner.next src.next inner.next src.next |fold: src.next inner.next src.next inner.next src.next |try_fold: src.next inner.next src.next inner.next src.next |last: src.next inner.next src.next inner.next src.next |count: src.next inner.next src.next inner.next src.next
+FlatMap#bare2 |next_back: src.next_back inner.next_back src.next_back inner.next_back src.next_back |nth_back: src.next_back inner.next_back src.next_back inner.next_back src.next_back |advance_back_by: src.next_back inner.next_back src.next_back inner.next_back src.next_back |rfold: src.next_back inner.next_back src.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back src.next_back inner.next_back src.next_back
+FlatMap#bare3 |next: src.next inner.next |size_hint: src.size_hint |nth: src.next inner.next inner.next src.next |advance_by: src.next inner.next inner.next src.next |fold: src.next inner.next inner.next src.next |try_fold: src.next inner.next inner.next src.next |last: src.next inner.next inner.next src.next |count: src.next inner.next inner.next src.next
+FlatMap#bare3 |next_back: src.next_back inner.next_back |nth_back: src.next_back inner.next_back inner.next_back src.next_back |advance_back_by: src.next_back inner.next_back inner.next_back src.next_back |rfold: src.next_back inner.next_back inner.next_back src.next_back |try_rfold: src.next_back inner.next_back inner.next_back src.next_back
 Inspect writes: next size_hint fold try_fold next_back rfold try_rfold len is_empty
 Inspect#0 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.fold
 Inspect#0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
@@ -180,6 +478,30 @@ Inspect#2 |len: src.len |is_empty: src.is_empty
 Inspect#3 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.fold
 Inspect#3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
 Inspect#3 |len: src.len |is_empty: src.is_empty
+Inspect#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Inspect#nofold0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Inspect#nofold0 |len: src.len |is_empty: src.is_empty
+Inspect#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Inspect#nofold1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Inspect#nofold1 |len: src.len |is_empty: src.is_empty
+Inspect#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Inspect#nofold2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Inspect#nofold2 |len: src.len |is_empty: src.is_empty
+Inspect#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Inspect#nofold3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Inspect#nofold3 |len: src.len |is_empty: src.is_empty
+Inspect#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Inspect#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Inspect#bare0 |len: src.size_hint |is_empty: src.size_hint
+Inspect#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Inspect#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Inspect#bare1 |len: src.size_hint |is_empty: src.size_hint
+Inspect#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Inspect#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Inspect#bare2 |len: src.size_hint |is_empty: src.size_hint
+Inspect#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Inspect#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Inspect#bare3 |len: src.size_hint |is_empty: src.size_hint
 Copied writes: next size_hint nth advance_by fold try_fold last count next_back advance_back_by rfold try_rfold len is_empty
 Copied#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.fold |try_fold: src.try_fold |last: src.last |count: src.count
 Copied#0 |next_back: src.next_back |nth_back: src.advance_back_by(1) src.next_back |advance_back_by: src.advance_back_by(2) |rfold: src.rfold |try_rfold: src.try_rfold
@@ -193,6 +515,30 @@ Copied#2 |len: src.len |is_empty: src.is_empty
 Copied#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.fold |try_fold: src.try_fold |last: src.last |count: src.count
 Copied#3 |next_back: src.next_back |nth_back: src.advance_back_by(1) src.next_back |advance_back_by: src.advance_back_by(2) |rfold: src.rfold |try_rfold: src.try_rfold
 Copied#3 |len: src.len |is_empty: src.is_empty
+Copied#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Copied#nofold0 |next_back: src.next_back |nth_back: src.advance_back_by(1) src.next_back |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Copied#nofold0 |len: src.len |is_empty: src.is_empty
+Copied#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next |try_fold: src.next |last: src.last |count: src.count
+Copied#nofold1 |next_back: src.next_back |nth_back: src.advance_back_by(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back |try_rfold: src.next_back
+Copied#nofold1 |len: src.len |is_empty: src.is_empty
+Copied#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Copied#nofold2 |next_back: src.next_back |nth_back: src.advance_back_by(1) src.next_back |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Copied#nofold2 |len: src.len |is_empty: src.is_empty
+Copied#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next |try_fold: src.next src.next |last: src.last |count: src.count
+Copied#nofold3 |next_back: src.next_back |nth_back: src.advance_back_by(1) src.next_back |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Copied#nofold3 |len: src.len |is_empty: src.is_empty
+Copied#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Copied#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Copied#bare0 |len: src.size_hint |is_empty: src.size_hint
+Copied#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Copied#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Copied#bare1 |len: src.size_hint |is_empty: src.size_hint
+Copied#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Copied#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Copied#bare2 |len: src.size_hint |is_empty: src.size_hint
+Copied#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Copied#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Copied#bare3 |len: src.size_hint |is_empty: src.size_hint
 Cloned writes: next size_hint fold try_fold next_back rfold try_rfold len is_empty
 Cloned#0 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.fold
 Cloned#0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
@@ -206,31 +552,95 @@ Cloned#2 |len: src.len |is_empty: src.is_empty
 Cloned#3 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.fold |try_fold: src.try_fold |last: src.fold |count: src.fold
 Cloned#3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.rfold |try_rfold: src.try_rfold
 Cloned#3 |len: src.len |is_empty: src.is_empty
+Cloned#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Cloned#nofold0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Cloned#nofold0 |len: src.len |is_empty: src.is_empty
+Cloned#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Cloned#nofold1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Cloned#nofold1 |len: src.len |is_empty: src.is_empty
+Cloned#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Cloned#nofold2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Cloned#nofold2 |len: src.len |is_empty: src.is_empty
+Cloned#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Cloned#nofold3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Cloned#nofold3 |len: src.len |is_empty: src.is_empty
+Cloned#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Cloned#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Cloned#bare0 |len: src.size_hint |is_empty: src.size_hint
+Cloned#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Cloned#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Cloned#bare1 |len: src.size_hint |is_empty: src.size_hint
+Cloned#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Cloned#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Cloned#bare2 |len: src.size_hint |is_empty: src.size_hint
+Cloned#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Cloned#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Cloned#bare3 |len: src.size_hint |is_empty: src.size_hint
 TakeWhile writes: next size_hint fold try_fold
 TakeWhile#0 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 TakeWhile#1 |next: src.next |size_hint: src.size_hint |nth: src.try_fold |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 TakeWhile#2 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 TakeWhile#3 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
+TakeWhile#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next |count: src.next src.next src.next src.next
+TakeWhile#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+TakeWhile#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next |count: src.next src.next src.next src.next
+TakeWhile#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+TakeWhile#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next |count: src.next src.next src.next src.next
+TakeWhile#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+TakeWhile#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next |count: src.next src.next src.next src.next
+TakeWhile#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
 SkipWhile writes: next size_hint fold try_fold
 SkipWhile#0 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold src.try_fold |advance_by: src.try_fold src.try_fold |fold: src.try_fold src.fold |try_fold: src.try_fold src.try_fold |last: src.try_fold src.fold |count: src.try_fold src.fold
 SkipWhile#1 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 SkipWhile#2 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold src.try_fold |advance_by: src.try_fold src.try_fold |fold: src.try_fold src.fold |try_fold: src.try_fold src.try_fold |last: src.try_fold src.fold |count: src.try_fold src.fold
 SkipWhile#3 |next: src.try_fold |size_hint: src.size_hint |nth: src.try_fold |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
+SkipWhile#nofold0 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+SkipWhile#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+SkipWhile#nofold2 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+SkipWhile#nofold3 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+SkipWhile#bare0 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+SkipWhile#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+SkipWhile#bare2 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+SkipWhile#bare3 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
 MapWhile writes: next size_hint fold try_fold
 MapWhile#0 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 MapWhile#1 |next: src.next |size_hint: src.size_hint |nth: src.try_fold |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 MapWhile#2 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 MapWhile#3 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
+MapWhile#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+MapWhile#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+MapWhile#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+MapWhile#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+MapWhile#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+MapWhile#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+MapWhile#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+MapWhile#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
 Scan writes: next size_hint fold try_fold
 Scan#0 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 Scan#1 |next: src.next |size_hint: src.size_hint |nth: src.try_fold |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 Scan#2 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 Scan#3 |next: src.next |size_hint: src.size_hint |nth: src.try_fold src.next |advance_by: src.try_fold |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
+Scan#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Scan#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Scan#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Scan#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Scan#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Scan#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Scan#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Scan#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
 Cycle writes: next size_hint advance_by try_fold
 Cycle#0 |next: src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.next |advance_by: src.advance_by(2) |try_fold: src.try_fold
 Cycle#1 |next: src.next src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.advance_by(1) |advance_by: src.advance_by(2) src.advance_by(2) |try_fold: src.try_fold src.try_fold
 Cycle#2 |next: src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.next |advance_by: src.advance_by(2) |try_fold: src.try_fold
 Cycle#3 |next: src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.next src.next |advance_by: src.advance_by(2) src.advance_by(1) |try_fold: src.try_fold src.try_fold
+Cycle#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.next |advance_by: src.advance_by(2) |try_fold: src.next src.next
+Cycle#nofold1 |next: src.next src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.advance_by(1) |advance_by: src.advance_by(2) src.advance_by(2) |try_fold: src.next src.next
+Cycle#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.next |advance_by: src.advance_by(2) |try_fold: src.next src.next
+Cycle#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.next src.next |advance_by: src.advance_by(2) src.advance_by(1) |try_fold: src.next src.next src.next
+Cycle#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |try_fold: src.next src.next
+Cycle#bare1 |next: src.next src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |try_fold: src.next src.next
+Cycle#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |try_fold: src.next src.next
+Cycle#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next src.next |advance_by: src.next src.next src.next |try_fold: src.next src.next src.next
 &mut I writes: next size_hint nth advance_by fold try_fold next_back nth_back advance_back_by rfold try_rfold len is_empty
 &mut I#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 &mut I#0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.try_rfold |try_rfold: src.try_rfold
@@ -244,6 +654,30 @@ Cycle#3 |next: src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.ne
 &mut I#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.try_fold |try_fold: src.try_fold |last: src.try_fold |count: src.try_fold
 &mut I#3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.try_rfold |try_rfold: src.try_rfold
 &mut I#3 |len: src.len |is_empty: src.is_empty
+&mut I#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+&mut I#nofold0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut I#nofold0 |len: src.len |is_empty: src.is_empty
+&mut I#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+&mut I#nofold1 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back |try_rfold: src.next_back
+&mut I#nofold1 |len: src.len |is_empty: src.is_empty
+&mut I#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+&mut I#nofold2 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut I#nofold2 |len: src.len |is_empty: src.is_empty
+&mut I#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+&mut I#nofold3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut I#nofold3 |len: src.len |is_empty: src.is_empty
+&mut I#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+&mut I#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut I#bare0 |len: src.size_hint |is_empty: src.size_hint
+&mut I#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+&mut I#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+&mut I#bare1 |len: src.size_hint |is_empty: src.size_hint
+&mut I#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+&mut I#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut I#bare2 |len: src.size_hint |is_empty: src.size_hint
+&mut I#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+&mut I#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut I#bare3 |len: src.size_hint |is_empty: src.size_hint
 &mut dyn I writes: next size_hint nth advance_by fold try_fold next_back nth_back advance_back_by rfold try_rfold len is_empty
 &mut dyn I#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
 &mut dyn I#0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
@@ -257,6 +691,30 @@ Cycle#3 |next: src.next |size_hint: src.size_hint |nth: src.advance_by(1) src.ne
 &mut dyn I#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
 &mut dyn I#3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
 &mut dyn I#3 |len: src.len |is_empty: src.is_empty
+&mut dyn I#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+&mut dyn I#nofold0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut dyn I#nofold0 |len: src.len |is_empty: src.is_empty
+&mut dyn I#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+&mut dyn I#nofold1 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back |try_rfold: src.next_back
+&mut dyn I#nofold1 |len: src.len |is_empty: src.is_empty
+&mut dyn I#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+&mut dyn I#nofold2 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut dyn I#nofold2 |len: src.len |is_empty: src.is_empty
+&mut dyn I#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.advance_by(2) |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+&mut dyn I#nofold3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.advance_back_by(2) |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut dyn I#nofold3 |len: src.len |is_empty: src.is_empty
+&mut dyn I#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+&mut dyn I#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut dyn I#bare0 |len: src.size_hint |is_empty: src.size_hint
+&mut dyn I#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+&mut dyn I#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+&mut dyn I#bare1 |len: src.size_hint |is_empty: src.size_hint
+&mut dyn I#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+&mut dyn I#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut dyn I#bare2 |len: src.size_hint |is_empty: src.size_hint
+&mut dyn I#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+&mut dyn I#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+&mut dyn I#bare3 |len: src.size_hint |is_empty: src.size_hint
 Box<I> writes: next size_hint nth last next_back nth_back len is_empty
 Box<I>#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.next src.next src.next src.next src.next src.next
 Box<I>#0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
@@ -270,6 +728,30 @@ Box<I>#2 |len: src.len |is_empty: src.is_empty
 Box<I>#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.last |count: src.next src.next
 Box<I>#3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
 Box<I>#3 |len: src.len |is_empty: src.is_empty
+Box<I>#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.next src.next src.next src.next src.next src.next
+Box<I>#nofold0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<I>#nofold0 |len: src.len |is_empty: src.is_empty
+Box<I>#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.last |count: src.next
+Box<I>#nofold1 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Box<I>#nofold1 |len: src.len |is_empty: src.is_empty
+Box<I>#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.last |count: src.next src.next src.next src.next src.next src.next
+Box<I>#nofold2 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<I>#nofold2 |len: src.len |is_empty: src.is_empty
+Box<I>#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.last |count: src.next src.next
+Box<I>#nofold3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<I>#nofold3 |len: src.len |is_empty: src.is_empty
+Box<I>#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Box<I>#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<I>#bare0 |len: src.size_hint |is_empty: src.size_hint
+Box<I>#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Box<I>#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Box<I>#bare1 |len: src.size_hint |is_empty: src.size_hint
+Box<I>#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Box<I>#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<I>#bare2 |len: src.size_hint |is_empty: src.size_hint
+Box<I>#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Box<I>#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<I>#bare3 |len: src.size_hint |is_empty: src.size_hint
 Box<dyn I> writes: next size_hint nth last next_back nth_back len is_empty
 Box<dyn I>#0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
 Box<dyn I>#0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
@@ -283,3 +765,27 @@ Box<dyn I>#2 |len: src.len |is_empty: src.is_empty
 Box<dyn I>#3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
 Box<dyn I>#3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
 Box<dyn I>#3 |len: src.len |is_empty: src.is_empty
+Box<dyn I>#nofold0 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Box<dyn I>#nofold0 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<dyn I>#nofold0 |len: src.len |is_empty: src.is_empty
+Box<dyn I>#nofold1 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Box<dyn I>#nofold1 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Box<dyn I>#nofold1 |len: src.len |is_empty: src.is_empty
+Box<dyn I>#nofold2 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Box<dyn I>#nofold2 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<dyn I>#nofold2 |len: src.len |is_empty: src.is_empty
+Box<dyn I>#nofold3 |next: src.next |size_hint: src.size_hint |nth: src.nth(1) |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Box<dyn I>#nofold3 |next_back: src.next_back |nth_back: src.nth_back(1) |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<dyn I>#nofold3 |len: src.len |is_empty: src.is_empty
+Box<dyn I>#bare0 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Box<dyn I>#bare0 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<dyn I>#bare0 |len: src.size_hint |is_empty: src.size_hint
+Box<dyn I>#bare1 |next: src.next |size_hint: src.size_hint |nth: src.next |advance_by: src.next |fold: src.next |try_fold: src.next |last: src.next |count: src.next
+Box<dyn I>#bare1 |next_back: src.next_back |nth_back: src.next_back |advance_back_by: src.next_back |rfold: src.next_back |try_rfold: src.next_back
+Box<dyn I>#bare1 |len: src.size_hint |is_empty: src.size_hint
+Box<dyn I>#bare2 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next src.next src.next src.next src.next |try_fold: src.next src.next |last: src.next src.next src.next src.next src.next src.next |count: src.next src.next src.next src.next src.next src.next
+Box<dyn I>#bare2 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back src.next_back src.next_back src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<dyn I>#bare2 |len: src.size_hint |is_empty: src.size_hint
+Box<dyn I>#bare3 |next: src.next |size_hint: src.size_hint |nth: src.next src.next |advance_by: src.next src.next |fold: src.next src.next |try_fold: src.next src.next |last: src.next src.next |count: src.next src.next
+Box<dyn I>#bare3 |next_back: src.next_back |nth_back: src.next_back src.next_back |advance_back_by: src.next_back src.next_back |rfold: src.next_back src.next_back |try_rfold: src.next_back src.next_back
+Box<dyn I>#bare3 |len: src.size_hint |is_empty: src.size_hint

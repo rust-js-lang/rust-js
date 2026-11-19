@@ -5664,9 +5664,9 @@ export function $skipping(iter, n, drop) {
   // let go of, dropped (#718).
   const nthBack = (k) => {
     const len = skipping.len();
-    if (k < len) return skipping.iter.nthBack(k);
+    if (k < len) return $nthBackOf(skipping.iter, k, drop);
     if (len > 0) {
-      const step = skipping.iter.nthBack(len - 1);
+      const step = $nthBackOf(skipping.iter, len - 1, drop);
       if (!step.done) drop?.(step.value);
     }
     return { done: true, value: undefined };
@@ -5700,18 +5700,16 @@ export function $skipping(iter, n, drop) {
   };
   $forward(skipping, iter, {
     advanceBy,
-    advanceBackBy: iter.back !== undefined ? advanceBackBy : undefined,
     count: iter.ownNth || iter.ownCount ? count : undefined,
     // Std's `fold` and `try_fold` of any source with an `nth`: its first
     // step taken while their frame holds only `init` and `f` (#768).
     fold: iter.nth !== undefined ? fold : undefined,
     tryFold: iter.nth !== undefined ? tryFold : undefined,
     nth: iter.ownNth ? nth : undefined,
-    nthBack: iter.nthBack !== undefined ? nthBack : undefined,
-    tryRfold: iter.tryRfold !== undefined || iter.back !== undefined ? tryRfold : undefined,
-    rfold: iter.tryRfold !== undefined || iter.back !== undefined ? rfold : undefined,
     last: typeof iter.last === "function" ? last : undefined,
   });
+  // Its back steps std's wherever it steps from its back (#2141).
+  $forwardBack(skipping, iter, { nthBack, tryRfold, rfold, advanceBackBy });
   $ownsAs(skipping, iter, "nth");
   // And its `nth_back`, its source's, as a `step_by` over it asks from its
   // back (#834).
@@ -5832,9 +5830,10 @@ export function $taking(iter, n, drop) {
   if (iter.ownNth && iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
   const of = (name, step) => (typeof iter[name] === "function" ? step : undefined);
   $forward(taking, iter, { advanceBy, count, nth: of("nth", nth), tryFold: of("tryFold", tryFold), fold: of("tryFold", fold) });
-  // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
-  // `nth_back` past what it won't give, where that reaches the crate's own.
-  if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) {
+  // And its `nth_back`, `rfold`, `try_rfold` and `advance_back_by`, std's,
+  // by its source's `nth_back` past what it won't give, wherever it steps
+  // from its back (`$forwardBack`, #2136).
+  if (iter.len !== undefined) {
     // What its source's `nth_back` past what it won't give finds, which
     // std's `Take` lets go of, dropped by `drop` (#718): `false` where it
     // found none.
@@ -5888,7 +5887,7 @@ export function $taking(iter, n, drop) {
       taking.n -= advanced;
       return m - advanced;
     };
-    $forward(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });
+    $forwardBack(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });
     // Its `nth_back` its source's, which drops what it passes over itself,
     // as a `step_by` over it asks from its back (#834).
     $ownsAs(taking, iter, "nthBack");
@@ -6540,7 +6539,7 @@ export function $enumerate(iter) {
   // from where it is, the crate's own where they reach it (#220).
   const rfold = (init, f, unwind, ends) => {
     let at = enumerated.count + enumerated.iter.len();
-    return enumerated.iter.rfold(init, (a, x) => f(a, [--at, x]), unwind, ends);
+    return $foldBack(enumerated.iter, init, (a, x) => f(a, [--at, x]), unwind, ends);
   };
   const tryRfold = (init, f, broke, unwind, ends) => {
     let at = enumerated.count + enumerated.iter.len();
@@ -6548,8 +6547,8 @@ export function $enumerate(iter) {
   };
   // Its `nth_back`: its source's, then where it is, its length asked only
   // of an item it found, as std's `?` returns first (#834).
-  const nthBack = (k) => {
-    const step = enumerated.iter.nthBack(k);
+  const nthBack = (k, drop) => {
+    const step = $nthBackOf(enumerated.iter, k, drop && ((x) => drop([0, x])));
     return step.done ? step : pair(step, enumerated.count + enumerated.iter.len());
   };
   // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
@@ -6584,22 +6583,22 @@ export function $enumerate(iter) {
   // pair's, where it has one, so a reversed `take`'s `count` of a `Vec`'s
   // drops what it passes as one slice, front to back (#2120). It counts
   // from the front, so nothing it counts moves.
-  const advanceBackBy = (m, drop) => enumerated.iter.advanceBackBy(m, drop && ((x) => drop([0, x])));
+  const advanceBackBy = (m, drop) => {
+    const advanced = $advanceBackBy(enumerated.iter, m, undefined, drop && ((x) => drop([0, x])));
+    return advanced.TAG === "Ok" ? 0 : advanced._0;
+  };
   // Each but its `count` and `try_fold` where its source has it.
   $forward(enumerated, iter, {
-    advanceBackBy: iter.advanceBackBy === undefined ? undefined : advanceBackBy,
     countItems,
     advanceBy: iter.advanceBy === undefined ? undefined : advanceBy,
     fold: iter.fold === undefined ? undefined : fold,
     tryFold,
-    rfold: iter.rfold === undefined ? undefined : rfold,
-    // Its `try_rfold` std's where its source has a back too: how many are
-    // left asked once, then its source's own, or std's of its back, an
-    // `rfind`'s (#738).
-    tryRfold: iter.tryRfold === undefined && iter.back === undefined ? undefined : tryRfold,
-    nthBack: iter.nthBack === undefined ? undefined : nthBack,
     nth: iter.nth === undefined ? undefined : nth,
   });
+  // Its back steps std's wherever it steps from its back: how many are
+  // left asked once, then its source's own, or std's of its back, an
+  // `rfind`'s (#738, #2140).
+  $forwardBack(enumerated, iter, { advanceBackBy, rfold, tryRfold, nthBack });
   return enumerated;
 }
 
@@ -22850,6 +22849,20 @@ export function $forward(adapter, source, steps, each) {
     }
   }
   return adapter;
+}
+
+// `adapter` given std's own `DoubleEndedIterator` steps, `steps`, wherever
+// it steps from its back, whatever `source` writes of them: std writes an
+// adapter's `nth_back`, `rfold`, `try_rfold` and `advance_back_by` whatever
+// its source writes, each asking its source's own step or the trait's
+// default of it (`$nthBackOf`, `$foldBack`, `$tryRfoldOf`,
+// `$advanceBackBy`). Given only where its source had that step, a `take`'s,
+// an `enumerate`'s or a `skip`'s fell back to `$Steps`' default over its own
+// `next_back`, which asks its source's length at each step where std's
+// asks it once (#2136, #2140, #2141).
+export function $forwardBack(adapter, source, steps) {
+  if (source.back === undefined) return adapter;
+  return $forward(adapter, source, steps);
 }
 
 // The flag that says an iterator's `step` is its own, `ownNth` of `nth`:

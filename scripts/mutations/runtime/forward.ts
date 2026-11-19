@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "  return adapter;\n",
     tests: ["test/corpus.test.ts", "-t", "^(step_by_compiled_source_nth|own_nth_through_closed_sources).rs$"],
   },
+  {
+    name: "forward-back-only-what-its-source-writes",
+    breaks: "an adapter's own back steps, std's, are given only where its source writes the same step, so a `take`'s, an `enumerate`'s or a `skip`'s over a source that writes only `next_back` step its own `next_back`, its source's length asked at each step (#2136, #2140, #2141)",
+    file: "src/runtime/forward.js",
+    find: "  return $forward(adapter, source, steps);\n",
+    replace: "  return $forward(adapter, source, Object.fromEntries(Object.entries(steps).filter(([name]) => source[name] !== undefined)));\n",
+    tests: ["test/corpus.test.ts", "-t", "^back_steps_of_a_source_that_writes_none.rs$"],
+  },
 ];

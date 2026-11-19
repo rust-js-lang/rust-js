@@ -5,7 +5,10 @@
 //! from std alone: what each impl writes, read from rust-src, and what each
 //! step asks, run natively over sources that print each step they're asked
 //! (test/std-steps.rs). The lowering asks it here, `Wrapper::passes` and
-//! `asks`.
+//! `asks`, of the runs over sources that write every step: a run over
+//! another kind, `Take#bare0`, shows the traits' defaults over the steps
+//! its sources write, not what std's step asks, and is the runtime net's
+//! alone (test/iterator-steps.test.ts).
 
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
@@ -47,7 +50,10 @@ fn catalog() -> &'static BTreeMap<&'static str, Steps> {
             let (head, cells) = line
                 .split_once(" |")
                 .expect("a catalog line is `<name>#<run> |<step>: ..`");
-            let (name, _run) = head.rsplit_once('#').expect("a run's line is `<name>#<run>`");
+            let (name, run) = head.rsplit_once('#').expect("a run's line is `<name>#<kind><run>`");
+            if !run.bytes().all(|b| b.is_ascii_digit()) {
+                continue;
+            }
             let steps = all.entry(name).or_default();
             let back = cells.starts_with("next_back:");
             for cell in cells.split(" |") {

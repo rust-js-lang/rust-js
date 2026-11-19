@@ -436,7 +436,7 @@ function $enumerate(iter) {
   // from where it is, the crate's own where they reach it (#220).
   const rfold = (init, f, unwind, ends) => {
     let at = enumerated.count + enumerated.iter.len();
-    return enumerated.iter.rfold(init, (a, x) => f(a, [--at, x]), unwind, ends);
+    return $foldBack(enumerated.iter, init, (a, x) => f(a, [--at, x]), unwind, ends);
   };
   const tryRfold = (init, f, broke, unwind, ends) => {
     let at = enumerated.count + enumerated.iter.len();
@@ -444,8 +444,8 @@ function $enumerate(iter) {
   };
   // Its `nth_back`: its source's, then where it is, its length asked only
   // of an item it found, as std's `?` returns first (#834).
-  const nthBack = (k) => {
-    const step = enumerated.iter.nthBack(k);
+  const nthBack = (k, drop) => {
+    const step = $nthBackOf(enumerated.iter, k, drop && ((x) => drop([0, x])));
     return step.done ? step : pair(step, enumerated.count + enumerated.iter.len());
   };
   // Std's `nth(k)`: its source's, counted `k` more, the crate's own where
@@ -480,22 +480,22 @@ function $enumerate(iter) {
   // pair's, where it has one, so a reversed `take`'s `count` of a `Vec`'s
   // drops what it passes as one slice, front to back (#2120). It counts
   // from the front, so nothing it counts moves.
-  const advanceBackBy = (m, drop) => enumerated.iter.advanceBackBy(m, drop && ((x) => drop([0, x])));
+  const advanceBackBy = (m, drop) => {
+    const advanced = $advanceBackBy(enumerated.iter, m, undefined, drop && ((x) => drop([0, x])));
+    return advanced.TAG === "Ok" ? 0 : advanced._0;
+  };
   // Each but its `count` and `try_fold` where its source has it.
   $forward(enumerated, iter, {
-    advanceBackBy: iter.advanceBackBy === undefined ? undefined : advanceBackBy,
     countItems,
     advanceBy: iter.advanceBy === undefined ? undefined : advanceBy,
     fold: iter.fold === undefined ? undefined : fold,
     tryFold,
-    rfold: iter.rfold === undefined ? undefined : rfold,
-    // Its `try_rfold` std's where its source has a back too: how many are
-    // left asked once, then its source's own, or std's of its back, an
-    // `rfind`'s (#738).
-    tryRfold: iter.tryRfold === undefined && iter.back === undefined ? undefined : tryRfold,
-    nthBack: iter.nthBack === undefined ? undefined : nthBack,
     nth: iter.nth === undefined ? undefined : nth,
   });
+  // Its back steps std's wherever it steps from its back: how many are
+  // left asked once, then its source's own, or std's of its back, an
+  // `rfind`'s (#738, #2140).
+  $forwardBack(enumerated, iter, { advanceBackBy, rfold, tryRfold, nthBack });
   return enumerated;
 }
 

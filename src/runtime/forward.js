@@ -37,6 +37,20 @@ function $forward(adapter, source, steps, each) {
   return adapter;
 }
 
+// `adapter` given std's own `DoubleEndedIterator` steps, `steps`, wherever
+// it steps from its back, whatever `source` writes of them: std writes an
+// adapter's `nth_back`, `rfold`, `try_rfold` and `advance_back_by` whatever
+// its source writes, each asking its source's own step or the trait's
+// default of it (`$nthBackOf`, `$foldBack`, `$tryRfoldOf`,
+// `$advanceBackBy`). Given only where its source had that step, a `take`'s,
+// an `enumerate`'s or a `skip`'s fell back to `$Steps`' default over its own
+// `next_back`, which asks its source's length at each step where std's
+// asks it once (#2136, #2140, #2141).
+function $forwardBack(adapter, source, steps) {
+  if (source.back === undefined) return adapter;
+  return $forward(adapter, source, steps);
+}
+
 // The flag that says an iterator's `step` is its own, `ownNth` of `nth`:
 // calling it runs one that drops what it passes, or takes the value and
 // drops it, itself (ADR 1092 §4). Compiled code reads it by this name.

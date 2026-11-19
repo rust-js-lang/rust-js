@@ -108,9 +108,10 @@ function $taking(iter, n, drop) {
   if (iter.ownNth && iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
   const of = (name, step) => (typeof iter[name] === "function" ? step : undefined);
   $forward(taking, iter, { advanceBy, count, nth: of("nth", nth), tryFold: of("tryFold", tryFold), fold: of("tryFold", fold) });
-  // And its `nth_back`, `rfold` and `try_rfold`, std's, by its source's
-  // `nth_back` past what it won't give, where that reaches the crate's own.
-  if (iter.nthBack !== undefined || iter.rfold !== undefined || iter.tryRfold !== undefined) {
+  // And its `nth_back`, `rfold`, `try_rfold` and `advance_back_by`, std's,
+  // by its source's `nth_back` past what it won't give, wherever it steps
+  // from its back (`$forwardBack`, #2136).
+  if (iter.len !== undefined) {
     // What its source's `nth_back` past what it won't give finds, which
     // std's `Take` lets go of, dropped by `drop` (#718): `false` where it
     // found none.
@@ -164,7 +165,7 @@ function $taking(iter, n, drop) {
       taking.n -= advanced;
       return m - advanced;
     };
-    $forward(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });
+    $forwardBack(taking, iter, { nthBack, rfold, tryRfold, advanceBackBy });
     // Its `nth_back` its source's, which drops what it passes over itself,
     // as a `step_by` over it asks from its back (#834).
     $ownsAs(taking, iter, "nthBack");

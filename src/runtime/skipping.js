@@ -162,9 +162,9 @@ function $skipping(iter, n, drop) {
   // let go of, dropped (#718).
   const nthBack = (k) => {
     const len = skipping.len();
-    if (k < len) return skipping.iter.nthBack(k);
+    if (k < len) return $nthBackOf(skipping.iter, k, drop);
     if (len > 0) {
-      const step = skipping.iter.nthBack(len - 1);
+      const step = $nthBackOf(skipping.iter, len - 1, drop);
       if (!step.done) drop?.(step.value);
     }
     return { done: true, value: undefined };
@@ -198,18 +198,16 @@ function $skipping(iter, n, drop) {
   };
   $forward(skipping, iter, {
     advanceBy,
-    advanceBackBy: iter.back !== undefined ? advanceBackBy : undefined,
     count: iter.ownNth || iter.ownCount ? count : undefined,
     // Std's `fold` and `try_fold` of any source with an `nth`: its first
     // step taken while their frame holds only `init` and `f` (#768).
     fold: iter.nth !== undefined ? fold : undefined,
     tryFold: iter.nth !== undefined ? tryFold : undefined,
     nth: iter.ownNth ? nth : undefined,
-    nthBack: iter.nthBack !== undefined ? nthBack : undefined,
-    tryRfold: iter.tryRfold !== undefined || iter.back !== undefined ? tryRfold : undefined,
-    rfold: iter.tryRfold !== undefined || iter.back !== undefined ? rfold : undefined,
     last: typeof iter.last === "function" ? last : undefined,
   });
+  // Its back steps std's wherever it steps from its back (#2141).
+  $forwardBack(skipping, iter, { nthBack, tryRfold, rfold, advanceBackBy });
   $ownsAs(skipping, iter, "nth");
   // And its `nth_back`, its source's, as a `step_by` over it asks from its
   // back (#834).

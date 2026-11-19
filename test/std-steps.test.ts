@@ -6,7 +6,9 @@
 // and wrapper writes itself, read from its impls in this toolchain's
 // rust-src; and what each of those steps asks of what it holds, run
 // natively, test/std-steps.rs's probe, each of its sources printing each
-// step it's asked with its argument. A toolchain whose std writes or asks
+// step it's asked with its argument, over sources of three kinds: ones
+// that write every step, ones that write none of the folds, and ones that
+// write only `next`, `next_back` and `size_hint`. A toolchain whose std writes or asks
 // another fails here, not as a wrong answer; `BLESS=1` writes the catalog
 // again, whose diff is what std changed.
 
@@ -102,7 +104,9 @@ function catalog(): string {
     "# ExactSizeIterator std's impls of it write, read from rust-src; each",
     "# `<name>#<run>` line, what each step asked of what it holds, run natively",
     "# (test/std-steps.rs): `src` its source, `other` a chain's or a zip's",
-    "# second, `inner` a flatten's inner iterators.",
+    "# second, `inner` a flatten's inner iterators. `<name>#<run>` over sources",
+    "# that write every step; `#nofold<run>` over ones that write none of the",
+    "# folds, `#bare<run>` over ones that write only next, next_back, size_hint.",
   ];
   for (const [name, file, type] of writers) {
     lines.push(`${name} writes: ${written(file, type).join(" ")}`);

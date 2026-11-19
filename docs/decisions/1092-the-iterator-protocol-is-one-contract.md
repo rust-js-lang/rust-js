@@ -1745,3 +1745,52 @@ reaches, and it doesn't reach `nth_back`. A type parameter bound by
 `nth`, `last` and `count`. Its dictionary, where it's given as it is,
 carries `nthBack: $nthBack`. ADR 0480's revision has the forms:
 `$copiedGiven`, and a copy the crate clones made of its source's value.
+
+## Amendment: the runtime net's sources of three kinds (2026-11-19, #2136, #2140, #2141)
+
+Step 1c's net held each runtime form to std's trace over sources that
+write every step. A form that gives std's own step only where its source
+writes the same step passed that net, because such a source always does.
+`$taking` was one: its `nth_back`, `rfold`, `try_rfold` and
+`advance_back_by` were std's only where its source wrote one of the
+first three. Over the crate's iterator that writes only `next`,
+`next_back` and `size_hint`, given to generic code, `take(3).rfold()`
+stepped its own `next_back` each time, one `next_back` fewer than std's
+(#2136).
+
+**The probe and the net run over three kinds of source.**
+`test/std-steps.rs` runs every adapter over sources that write every
+step (`Take#0`), over sources that write none of the folds
+(`Take#nofold0`: no `fold`, `try_fold`, `rfold` or `try_rfold`), and over
+sources that write only `next`, `next_back` and `size_hint`
+(`Take#bare0`). test/iterator-steps.test.ts holds each runtime form to
+each kind's trace. `recognition::std_steps` reads only the runs whose
+sources write every step. A run over another kind shows the traits'
+defaults over what its sources write, not what std's step asks.
+
+**A form gives std's own back steps whatever its source writes.**
+`$forwardBack` (forward.js) gives them wherever the form steps from its
+back. Each asks its source's own step or the trait's default of it:
+`$nthBackOf`, `$foldBack`, `$tryRfoldOf` and `$advanceBackBy`. The new
+kinds found two more forms with the same cause, and both use it now:
+- `$enumerate`'s `rfold`, `nth_back` and `advance_back_by` asked their
+  source's length at each step (#2140).
+- `$skipping`'s `nth_back` did the same (#2141).
+
+The other 25 forms pass every kind. `differs` stays empty.
+
+Case (ADR 0262): R. Which of the crate's steps std calls, and how often,
+is observable. Runtime only, so no snapshot moves. Corpus case
+`back_steps_of_a_source_that_writes_none` runs as native in both builds.
+New mutations: `forward-back-only-what-its-source-writes`,
+`taking-back-steps-only-of-its-sources`,
+`enumerate-back-steps-only-of-its-sources` and
+`skipping-nth-back-only-of-its-sources`. The mutations of the lines that
+moved are retargeted. Three of `$enumerate`'s were no longer caught by
+their cases, which now compile std's `Enumerate`:
+`enumerate-try-rfold-of-back-unasked` and
+`enumerate-nth-back-len-asked-at-end` are caught by the new case's
+`enumerate().rev()`, and `enumerate-rfold-unwind-lost` by
+`try_folds_of_stages_unwind`. Looking for those cases found #2142:
+`rposition` steps `next_back` one at a time, where std's asks
+`try_rfold`.

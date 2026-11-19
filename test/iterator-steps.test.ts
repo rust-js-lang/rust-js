@@ -221,36 +221,60 @@ const stdName: Record<string, string> = {
   tryRfold: "try_rfold",
 };
 
-/** A source of `items` that writes every step, each its own, recording
- * each it's asked, `src.nth(1)`, in `log`, as test/std-steps.rs's `Loud`. */
-function loud(name: string, items: unknown[], log: string[]): any {
+/** The kinds of source each run is over, as test/std-steps.rs's: one that
+ * writes every step, `""`, one that writes none of the folds, and one that
+ * writes only `next`, `next_back` and `size_hint`, the traits' defaults
+ * over them the rest, as `$iterator` makes the crate's. */
+const kinds = ["", "nofold", "bare"] as const;
+type SourceKind = (typeof kinds)[number];
+
+/** Each kind's steps besides `next`, `back` and `sizeHint`, and of those,
+ * the ones its own (`$ownStep`). */
+const kindSteps: Record<SourceKind, { writes: string[]; own: string[] }> = {
+  "": {
+    writes: ["len", "nth", "advanceBy", "fold", "tryFold", "count", "last", "nthBack", "advanceBackBy", "rfold", "tryRfold"],
+    own: ["fold", "rfold", "nth", "nthBack", "last", "count", "tryRfold"],
+  },
+  nofold: { writes: ["len", "nth", "advanceBy", "count", "last", "nthBack", "advanceBackBy"], own: ["nth", "nthBack", "last", "count"] },
+  bare: { writes: [], own: [] },
+};
+
+/** A source of `items` of `kind` that records each step it writes as it's
+ * asked, `src.nth(1)`, in `log`, as test/std-steps.rs's `Loud`. One that
+ * writes no `len` has std's default, its `size_hint`'s, as `$iterator`
+ * gives the crate's (`$exactLen`). */
+function loud(name: string, items: unknown[], log: string[], kind: SourceKind = ""): any {
   const done = { done: true, value: undefined };
   const say = (step: string, arg?: number) => log.push(`${name}.${stdName[step]}${arg === undefined ? "" : `(${arg})`}`);
   const it: any = new std.$Steps(() => (say("next"), items.length > 0 ? { done: false, value: items.shift() } : done));
   it.back = () => (say("back"), items.length > 0 ? { done: false, value: items.pop() } : done);
   it.sizeHint = () => (say("sizeHint"), [items.length, items.length]);
-  it.len = () => (say("len"), items.length);
-  it.nth = (k: number) => (say("nth", k), k < items.length ? (items.splice(0, k), { done: false, value: items.shift() }) : ((items.length = 0), done));
-  it.advanceBy = (m: number) => (say("advanceBy", m), m - items.splice(0, m).length);
-  it.fold = (init: unknown, f: (a: unknown, x: unknown) => unknown) => (say("fold"), items.splice(0).reduce(f, init));
-  it.tryFold = (init: unknown, f: (a: unknown, x: unknown) => unknown, broke: (a: unknown) => boolean) => {
-    say("tryFold");
-    let a = init;
-    while (items.length > 0 && !broke((a = f(a, items.shift())))) {}
-    return a;
+  const steps: Record<string, (...args: any[]) => unknown> = {
+    len: () => (say("len"), items.length),
+    nth: (k: number) => (say("nth", k), k < items.length ? (items.splice(0, k), { done: false, value: items.shift() }) : ((items.length = 0), done)),
+    advanceBy: (m: number) => (say("advanceBy", m), m - items.splice(0, m).length),
+    fold: (init: unknown, f: (a: unknown, x: unknown) => unknown) => (say("fold"), items.splice(0).reduce(f, init)),
+    tryFold: (init: unknown, f: (a: unknown, x: unknown) => unknown, broke: (a: unknown) => boolean) => {
+      say("tryFold");
+      let a = init;
+      while (items.length > 0 && !broke((a = f(a, items.shift())))) {}
+      return a;
+    },
+    count: () => (say("count"), items.splice(0).length),
+    last: () => (say("last"), items.length > 0 ? { done: false, value: items.splice(0).pop() } : done),
+    nthBack: (k: number) => (say("nthBack", k), items.splice(Math.max(items.length - k, 0)), items.length > 0 ? { done: false, value: items.pop() } : done),
+    advanceBackBy: (m: number) => (say("advanceBackBy", m), m - items.splice(Math.max(items.length - m, 0)).length),
+    rfold: (init: unknown, f: (a: unknown, x: unknown) => unknown) => (say("rfold"), items.splice(0).reduceRight(f, init)),
+    tryRfold: (init: unknown, f: (a: unknown, x: unknown) => unknown, broke: (a: unknown) => boolean) => {
+      say("tryRfold");
+      let a = init;
+      while (items.length > 0 && !broke((a = f(a, items.pop())))) {}
+      return a;
+    },
   };
-  it.count = () => (say("count"), items.splice(0).length);
-  it.last = () => (say("last"), items.length > 0 ? { done: false, value: items.splice(0).pop() } : done);
-  it.nthBack = (k: number) => (say("nthBack", k), items.splice(Math.max(items.length - k, 0)), items.length > 0 ? { done: false, value: items.pop() } : done);
-  it.advanceBackBy = (m: number) => (say("advanceBackBy", m), m - items.splice(Math.max(items.length - m, 0)).length);
-  it.rfold = (init: unknown, f: (a: unknown, x: unknown) => unknown) => (say("rfold"), items.splice(0).reduceRight(f, init));
-  it.tryRfold = (init: unknown, f: (a: unknown, x: unknown) => unknown, broke: (a: unknown) => boolean) => {
-    say("tryRfold");
-    let a = init;
-    while (items.length > 0 && !broke((a = f(a, items.pop())))) {}
-    return a;
-  };
-  for (const step of ["fold", "rfold", "nth", "nthBack", "last", "count", "tryRfold"]) it[std.$ownStep(step)] = true;
+  for (const step of kindSteps[kind].writes) it[step] = steps[step];
+  it.len ??= () => std.$exactLen(it.sizeHint());
+  for (const step of kindSteps[kind].own) it[std.$ownStep(step)] = true;
   return it;
 }
 
@@ -277,12 +301,12 @@ const asked: Record<string, (it: any) => unknown> = {
 /** Of a run, its sources: `src`, `other`, and `nested`, a flatten's, of up
  * to two `inner`s of the second length. */
 type Sources = { src: () => any; other: () => any; nested: () => any };
-const sourcesOf = ([a, b]: [number, number], log: string[]): Sources => {
+const sourcesOf = ([a, b]: [number, number], log: string[], kind: SourceKind): Sources => {
   const range = (from: number, n: number) => Array.from({ length: n }, (_, i) => from + i);
   return {
-    src: () => loud("src", range(1, a), log),
-    other: () => loud("other", range(6, b), log),
-    nested: () => loud("src", range(0, Math.min(a, 2)).map(() => loud("inner", range(1, b), log)), log),
+    src: () => loud("src", range(1, a), log, kind),
+    other: () => loud("other", range(6, b), log, kind),
+    nested: () => loud("src", range(0, Math.min(a, 2)).map(() => loud("inner", range(1, b), log, kind)), log, kind),
   };
 };
 
@@ -314,6 +338,9 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["Box<dyn I>", "$lent boxedUnsized", (s) => std.$lent(s.src(), "boxedUnsized")],
 ];
 
+/** Each run: its kind of source, its number and its sources' lengths. */
+const runs = kinds.flatMap((kind) => sizes.map((size, run) => [kind, run, size] as const));
+
 /** Each form's step that asks other than std's does, a wrong answer not
  * yet fixed, under its issue: none is let differ for good (#2112). */
 const differs: Record<string, string> = {
@@ -324,19 +351,20 @@ for (const [stdForm, form, make] of forms) {
     const wrong: string[] = [];
     const listed = new Set<string>();
     for (const step of Object.keys(asked)) {
-      for (const [run, size] of sizes.entries()) {
-        const want = stdRuns.get(`${stdForm}#${run} ${step}`);
+      for (const [kind, run, size] of runs) {
+        const want = stdRuns.get(`${stdForm}#${kind}${run} ${step}`);
         if (want === undefined) continue;
         const log: string[] = [];
-        const it = make(sourcesOf(size, log));
+        const it = make(sourcesOf(size, log, kind));
         // A form for one end: none of the other's steps.
         if ((/back|rfold/.test(step) && typeof it.back !== "function") || (step === "len" && typeof it.len !== "function")) continue;
         log.length = 0;
         asked[step]!(it);
         const got = log.join(" ");
         if (got === want) continue;
-        if (differs[`${form} ${step}`] === undefined) wrong.push(`${step}#${run}: std ${want}; ${got}`);
-        else listed.add(`${form} ${step}`);
+        const key = `${form} ${step}${kind === "" ? "" : ` ${kind}`}`;
+        if (differs[key] === undefined) wrong.push(`${step}#${kind}${run}: std ${want}; ${got}`);
+        else listed.add(key);
       }
     }
     expect(wrong).toEqual([]);
