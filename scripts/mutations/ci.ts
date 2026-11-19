@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: 'const failed = of("failure"), passed = of("success");',
     replace: 'const failed = of("cancelled"), passed = of("success");',
-    tests: ["test/ci.test.ts", "-t", "the short nets are the nets job's steps"],
+    tests: ["test/ci.test.ts", "-t", "the short nets are the steps of the jobs of nets"],
   },
   {
     name: "nets-skipped-said",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: 'const failed = of("failure"), passed = of("success");',
     replace: 'const failed = of("failure"), passed = all.filter((net) => outcomes[net.id]?.outcome !== "failure").map((net) => net.name);',
-    tests: ["test/ci.test.ts", "-t", "the short nets are the nets job's steps"],
+    tests: ["test/ci.test.ts", "-t", "the short nets are the steps of the jobs of nets"],
   },
   {
     name: "nets-foreground-steps-listed",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: "return steps.filter((step) => step.background).map(",
     replace: "return steps.filter((step) => step.background !== false).map(",
-    tests: ["test/ci.test.ts", "-t", "the short nets are the nets job's steps"],
+    tests: ["test/ci.test.ts", "-t", "the short nets are the steps of the jobs of nets"],
   },
   {
     name: "latent-survivors-retried",
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "  return text.split(\"\\n\").filter((line) => line.trim() !== \"\").map((line) => JSON.parse(line) as T);\n",
     replace: "  return JSON.parse(text) as T[];\n",
     tests: ["test/ci.test.ts", "-t", "what gh prints a value a line, over its pages, is read whole"],
+  },
+  {
+    name: "nets-of-one-job",
+    breaks: "the nets are read of the `nets` job alone, so the iterator and program nets, on machines of their own, are said by no summary",
+    file: "scripts/ci.ts",
+    find: "  const steps: Step[] = NET_JOBS.flatMap((job) => jobs[job]?.steps ?? []);\n",
+    replace: "  const steps: Step[] = jobs.nets?.steps ?? [];\n",
+    tests: ["test/ci.test.ts", "-t", "the short nets are the steps of the jobs of nets"],
   },
 ];

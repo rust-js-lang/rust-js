@@ -145,7 +145,7 @@ jobs:
   # Of a change to the iterators' code (scripts/iteratorSlice.ts's
   # `iteratorPaths`, its one list), as `plan` says: every corpus case built
   # with std's iterator structs alone (ADR 0908, `ITERATOR_FORMS=corpus`),
-  # against native Rust, on a machine of its own beside the `nets` job's
+  # against native Rust, on a machine of its own beside `nets-iterators`'
   # slices, as it runs some 8 min: a regression only that build shows,
   # #766's, reached `main` where only the nightly's `forms` ran it.
   iterator-forms:
@@ -179,29 +179,23 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # The nets of a check's change whose own run is a few minutes or less,
-  # each a step of one machine, run at once (background steps, ten at a
-  # time, the rest waiting for one to end): each a job of its own spent
-  # most of its minutes setting up, the checkout, packages and toolchain
-  # and the compiler, and the check's jobs waited for machines past the
-  # plan's 20 at once (docs/dev-loop.md). Each runs where `plan` says its
-  # change does, as before; one that fails is a step of its name, red, and
-  # the job's summary names it. The nightly runs each of its own.
-  nets:
+  # The iterator nets of a change to the iterators' code, the matrix's,
+  # the conformance table's and the copy matrix's slices, on a machine of
+  # their own, and the program nets on another (`nets-programs`): one job
+  # of every net ran them beside the rest, its longest steps, and was the
+  # check's longest leg (docs/dev-loop.md). Each job's summary says which
+  # of its nets failed, as `nets`' does.
+  nets-iterators:
     needs: [plan, build]
     if: >-
-      ${{ !inputs.nightly && (needs.plan.outputs.iterators == 'true' || needs.plan.outputs.formatting == 'true' ||
-      needs.plan.outputs.numbers == 'true' || needs.plan.outputs.memory == 'true' || needs.plan.outputs.intervals == 'true' || needs.plan.outputs.declarations == 'true' ||
-      needs.plan.outputs.async == 'true' || needs.plan.outputs.consumers == 'true' || needs.plan.outputs.std == 'true' ||
-      needs.plan.outputs.twins == 'true' || needs.plan.outputs.cases == 'true' || needs.plan.outputs.crates == 'true' ||
-      needs.plan.outputs.port == 'true') }}
+      ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
     steps:
-      # The metamorphic rewrites read what changed since `plan`'s `since`,
-      # and React's port its pin's history.
+      # A slice reads the rows its change names, by the change's history
+      # since it left `main`.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -237,6 +231,122 @@ jobs:
         if: needs.plan.outputs.iterators == 'true'
         background: true
         run: bun scripts/iteratorSlice.ts run copies 2
+      - wait-all:
+      # Which nets failed, by name, in the job's summary.
+      - name: Say which nets failed
+        if: always()
+        env:
+          STEPS: ${{ toJSON(steps) }}
+        run: bun scripts/ci.ts nets >> "$GITHUB_STEP_SUMMARY"
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nets-iterators
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+      # The slices' JUnit reports, as `iterator-forms`' (#2003).
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-nets-iterators
+          path: target/junit
+          if-no-files-found: ignore
+          retention-days: 14
+
+
+  # The program nets, the consumer net's and the twin net's slices, of a
+  # change to the iterators' or the drops' code, on a machine of their own
+  # (as `nets-iterators`).
+  nets-programs:
+    needs: [plan, build]
+    if: >-
+      ${{ !inputs.nightly && (needs.plan.outputs.consumers == 'true' || needs.plan.outputs.twins == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+    steps:
+      # A slice reads the rows its change names, by the change's history
+      # since it left `main`.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      # The consumer net (test/consumer-net.ts), of a change to the
+      # iterators' code or the drops' (`consumerPaths`).
+      - name: consumer net
+        id: consumers
+        if: needs.plan.outputs.consumers == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run consumers 2
+      # The twin net (test/twin-net.ts, #1205), of a change to the
+      # iterators' code (`twinPaths`): each table's slice in the plain build
+      # against the build of std's own bodies. All of it is the nightly's `twins`.
+      - name: twin net
+        id: twins
+        if: needs.plan.outputs.twins == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run twins 2
+      - wait-all:
+      # Which nets failed, by name, in the job's summary.
+      - name: Say which nets failed
+        if: always()
+        env:
+          STEPS: ${{ toJSON(steps) }}
+        run: bun scripts/ci.ts nets >> "$GITHUB_STEP_SUMMARY"
+      # The slices' JUnit reports, as `iterator-forms`' (#2003).
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-nets-programs
+          path: target/junit
+          if-no-files-found: ignore
+          retention-days: 14
+
+
+  # The nets of a check's change whose own run is a few minutes or less,
+  # each a step of one machine, run at once (background steps, ten at a
+  # time, the rest waiting for one to end): each a job of its own spent
+  # most of its minutes setting up, the checkout, packages and toolchain
+  # and the compiler, and the check's jobs waited for machines past the
+  # plan's 20 at once (docs/dev-loop.md). Each runs where `plan` says its
+  # change does, as before; one that fails is a step of its name, red, and
+  # the job's summary names it. The nightly runs each of its own.
+  nets:
+    needs: [plan, build]
+    if: >-
+      ${{ !inputs.nightly && (needs.plan.outputs.formatting == 'true' ||
+      needs.plan.outputs.numbers == 'true' || needs.plan.outputs.memory == 'true' || needs.plan.outputs.intervals == 'true' || needs.plan.outputs.declarations == 'true' ||
+      needs.plan.outputs.async == 'true' || needs.plan.outputs.std == 'true' || needs.plan.outputs.cases == 'true' || needs.plan.outputs.crates == 'true' ||
+      needs.plan.outputs.port == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+    steps:
+      # The metamorphic rewrites read what changed since `plan`'s `since`,
+      # and React's port its pin's history.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
       # The formatting grid's slice (test/format-grid.ts, #941), of a change
       # to the formatting code (`formatPaths`).
       - name: formatting grid slice
@@ -283,13 +393,6 @@ jobs:
         if: needs.plan.outputs.async == 'true'
         background: true
         run: bun scripts/iteratorSlice.ts run async 1
-      # The consumer net (test/consumer-net.ts), of a change to the
-      # iterators' code or the drops' (`consumerPaths`).
-      - name: consumer net
-        id: consumers
-        if: needs.plan.outputs.consumers == 'true'
-        background: true
-        run: bun scripts/iteratorSlice.ts run consumers 2
       # The std net (test/std-net.ts, #1171), of a change to std's
       # collections', slices', strings' or cells' code (`stdNetPaths`).
       - name: std net
@@ -297,14 +400,6 @@ jobs:
         if: needs.plan.outputs.std == 'true'
         background: true
         run: bun scripts/iteratorSlice.ts run std 1
-      # The twin net (test/twin-net.ts, #1205), of a change to the
-      # iterators' code (`twinPaths`): each table's slice in the plain build
-      # against the build of std's own bodies. All of it is the nightly's `twins`.
-      - name: twin net
-        id: twins
-        if: needs.plan.outputs.twins == 'true'
-        background: true
-        run: bun scripts/iteratorSlice.ts run twins 2
       # Each metamorphic rewrite of each corpus case the change adds or
       # edits since `plan`'s `since` (`changedCases`, #1164, #1165). Each
       # failure says how to reduce it, which the nightly's run does: a
@@ -344,7 +439,6 @@ jobs:
         with:
           name: nets
           path: |
-            target/iterator-matrix
             target/memory-net
             target/react-in-rust.diff
           if-no-files-found: ignore
@@ -357,7 +451,6 @@ jobs:
           path: target/junit
           if-no-files-found: ignore
           retention-days: 14
-
 
   lint:
     if: ${{ inputs.part != 'mutations' }}
@@ -519,8 +612,10 @@ jobs:
   # first it fails at is said, in the run's summary, an `attribution`
   # artifact and `bun run ci:status`: "<test> broke at <sha> (<subject>)".
   attribute-plan:
-    needs: [plan, test, iterator-forms, nets]
-    if: ${{ !cancelled() && !inputs.nightly && (needs.test.result == 'failure' || needs.iterator-forms.result == 'failure' || needs.nets.result == 'failure') }}
+    needs: [plan, test, iterator-forms, nets-iterators, nets-programs, nets]
+    if: >-
+      ${{ !cancelled() && !inputs.nightly && (needs.test.result == 'failure' || needs.iterator-forms.result == 'failure' ||
+      needs.nets-iterators.result == 'failure' || needs.nets-programs.result == 'failure' || needs.nets.result == 'failure') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

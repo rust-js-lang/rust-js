@@ -7,7 +7,7 @@
 //   bun scripts/ci.ts test-timings <times>  # in CI: the test files' times `plan` gave every shard, for them to balance by
 //   bun scripts/ci.ts mutation-timings <times>   # in CI: the mutations' times `plan` gave every shard, for them to balance by
 //   TIMES=<times> bun scripts/ci.ts merge-mutation-timings <ran> <out> # in CI: those and this run's shards' merged, for the next plan
-//   bun scripts/ci.ts nets                  # in CI: which of the `nets` job's nets ran, and which failed, from its `STEPS`
+//   bun scripts/ci.ts nets                  # in CI: which of a job of nets' nets ran, and which failed, from its `STEPS`
 //   bun scripts/ci.ts prune-cache [--dry-run]    # in CI, after each check, nightly and test map: each cache family's newest 8 kept
 //
 // A run whose snapshots or rustc's lists differ uploads what blessing them
@@ -358,15 +358,21 @@ export function testsOutput(selection: Selection): "all" | "some" | "none" {
   return selection.files.length === 0 && selection.cases.length === 0 ? "none" : "some";
 }
 
-/** Each net of check.yml's `nets` job, by its step's id, and its name:
- * the steps that run in the background, as the workflow lists them. */
+/** check.yml's jobs of nets, each a machine whose nets run at once:
+ * the iterator nets, the program nets, and the rest. */
+export const NET_JOBS = ["nets-iterators", "nets-programs", "nets"] as const;
+
+/** Each net of check.yml's jobs of nets (`NET_JOBS`), by its step's id,
+ * and its name: the steps that run in the background, as the workflow
+ * lists them. */
 export function nets(workflow = readFileSync(join(root, ".github/workflows/check.yml"), "utf8")): { id: string; name: string }[] {
   type Step = { id?: string; name?: string; background?: boolean };
-  const steps: Step[] = (Bun.YAML.parse(workflow) as { jobs: { nets?: { steps: Step[] } } }).jobs.nets?.steps ?? [];
+  const jobs = (Bun.YAML.parse(workflow) as { jobs: Record<string, { steps?: Step[] } | undefined> }).jobs;
+  const steps: Step[] = NET_JOBS.flatMap((job) => jobs[job]?.steps ?? []);
   return steps.filter((step) => step.background).map((step) => ({ id: step.id!, name: step.name! }));
 }
 
-/** The `nets` job's summary, of its steps' outcomes (GitHub's `steps`
+/** A job of nets' summary, of its steps' outcomes (GitHub's `steps`
  * context): each net that failed by name first, then each that passed;
  * one skipped, as its change didn't touch it, isn't said. */
 export function netsSummary(outcomes: Record<string, { outcome?: string }>, all = nets()): string {

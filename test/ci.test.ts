@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { dirname, join, relative } from "node:path";
-import { checkedSince, decodedTimings, encodedTestTimings, encodedTimings, jsonLines, latestRuns, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationJobsPassed, mutationShards, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
+import { checkedSince, decodedTimings, encodedTestTimings, encodedTimings, jsonLines, latestRuns, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationJobsPassed, mutationShards, NET_JOBS, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { downloaded } from "../scripts/artifacts";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
@@ -498,7 +498,7 @@ test("a workflow sets a part's setting only where a test file it runs reads it",
 // jobs and of the check it calls, check.yml's, by name, but `plan`, which
 // picks the mutations a branch's check runs, `seeds`, the day's number, and
 // `issue`, which files a red night as an issue; and `iterator-forms`, the
-// corpus with std's iterator structs, and `nets`, whose steps are the
+// corpus with std's iterator structs, and the jobs of nets, whose steps are the
 // tables' slices, the declarations' callers, the twin net, the crate
 // corpus's sample and React's port, which the nightly skips, as its
 // `matrix`, `conformance`, `forms`, `format`, `numbers`, `async`,
@@ -511,7 +511,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "check-mutations", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage", "test-times", "selector-audit", "clusters", "attribute-plan", "attribute", "attribute-report", "attribute-mutations", "ci-spend"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "check-mutations", "issue", "iterator-forms", ...NET_JOBS, "crater-report", "decision-coverage", "test-times", "selector-audit", "clusters", "attribute-plan", "attribute", "attribute-report", "attribute-mutations", "ci-spend"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -1016,22 +1016,33 @@ test("the WASM build takes rustc's crates as built where the cache holds the sam
   expect(build).toContain("built from other rustc sources");
 });
 
-// The nets of a few minutes are steps of one job, `nets`, each in the
-// background where `plan` says its change runs it: each a job of its own
-// spent most of its minutes setting up. A red `nets` says which net failed
-// by its step's name, and its summary names each (dev-loop change 3).
-test("the short nets are the nets job's steps, each where its change runs it, each failure named", () => {
+// The nets of a few minutes are steps of three jobs, `NET_JOBS`: the
+// iterator nets, the program nets and the rest, each in the background
+// where `plan` says its change runs it: each a job of its own spent most of
+// its minutes setting up, and one job of them all was the check's longest
+// leg, its iterator and program nets its longest steps (docs/dev-loop.md).
+// A red job says which net failed by its step's name, and its summary
+// names each (dev-loop change 3).
+test("the short nets are the steps of the jobs of nets, each where its change runs it, each failure named", () => {
   const listed = nets();
-  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "copies", "format", "numbers", "memory", "intervals", "declarations", "async", "consumers", "std", "twins", "metamorphic", "crates", "port"]);
+  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "copies", "consumers", "twins", "format", "numbers", "memory", "intervals", "declarations", "async", "std", "metamorphic", "crates", "port"]);
   type Step = { id?: string; if?: string; background?: boolean; "wait-all"?: null };
   const workflow = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { if?: string; steps: Step[] }> };
-  const job = workflow.jobs.nets!;
-  for (const step of job.steps.filter((s) => s.background)) {
-    const output = /^needs\.plan\.outputs\.(\w+) == 'true'$/.exec(step.if ?? "")?.[1];
-    expect([step.id, output !== undefined && job.if!.includes(`needs.plan.outputs.${output} == 'true'`)]).toEqual([step.id, true]);
+  expect(Object.keys(workflow.jobs).filter((name) => name.startsWith("nets"))).toEqual([...NET_JOBS]);
+  for (const name of NET_JOBS) {
+    const job = workflow.jobs[name]!;
+    const outputs: string[] = [];
+    for (const step of job.steps.filter((s) => s.background)) {
+      const output = /^needs\.plan\.outputs\.(\w+) == 'true'$/.exec(step.if ?? "")?.[1];
+      outputs.push(output ?? "");
+      expect([name, step.id, output !== undefined && job.if!.includes(`needs.plan.outputs.${output} == 'true'`)]).toEqual([name, step.id, true]);
+    }
+    // Its gate is its steps' and no other's: none starts a machine to run nothing.
+    const gated = [...job.if!.matchAll(/needs\.plan\.outputs\.(\w+) == 'true'/g)].map((m) => m[1]!);
+    expect([name, [...new Set(gated)].sort()]).toEqual([name, [...new Set(outputs)].sort()]);
+    const waits = job.steps.findIndex((s) => "wait-all" in s);
+    expect([name, waits]).toEqual([name, job.steps.findLastIndex((s) => s.background) + 1]);
   }
-  const waits = job.steps.findIndex((s) => "wait-all" in s);
-  expect(waits).toBe(job.steps.findLastIndex((s) => s.background) + 1);
   const summary = netsSummary({ iterators: { outcome: "failure" }, std: { outcome: "success" }, port: { outcome: "skipped" } }, listed);
   expect(summary).toContain("### 1 net failed: iterator matrix slice");
   expect(summary).toContain("- std net: passed");
@@ -1173,7 +1184,7 @@ test("each job that runs a slice uploads its JUnit reports, and attribution read
   type Step = { name?: string; run?: string; uses?: string; if?: string; with?: Record<string, string> };
   const check = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { needs?: string[]; if?: string; steps?: Step[] }> };
   const slicing = Object.entries(check.jobs).filter(([, job]) => (job.steps ?? []).some((step) => /iteratorSlice\.ts run (?!metamorphic)/.test(step.run ?? "")));
-  expect(slicing.map(([name]) => name).sort()).toEqual(["iterator-forms", "nets"]);
+  expect(slicing.map(([name]) => name).sort()).toEqual(["iterator-forms", ...NET_JOBS].sort());
   const plan = check.jobs["attribute-plan"]!;
   for (const [name, job] of slicing) {
     const upload = job.steps!.find((step) => step.uses?.startsWith("actions/upload-artifact") && step.with?.name?.startsWith("junit-"));
