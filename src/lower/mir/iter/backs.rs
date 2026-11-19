@@ -82,7 +82,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None if let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) => {
                 crate::lower::iterators::reversed_by(self.lent_iterator(given, receiver_ty))
             }
-            None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
             Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
             Some(_) => return Err(unsupported(self)),
             // Of a `&mut`, `by_ref()`'s: what it's to, lent, stepped from
@@ -721,21 +720,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().search_knows_its_back(iter_ty.peel_refs()) == Some(true);
         (by_its_type || structural() && !crate::lower::iterators::form_lacks_a_back(value))
             && !self.compiled_struct(iter_ty.peel_refs(), value)
-    }
-
-    /// `rev()` of `it`, an iterator of type `iter_ty` that steps from its
-    /// back: of a generic or a `dyn` one, a JS iterator stepped from its
-    /// back, its `Some` boxed where it may look like `None` (ADR 0051); of
-    /// one that knows its back, `$rev(it)` (ADRs 0429, 0516), of a type
-    /// parameter's given as it is, by its `DoubleEndedIterator` dictionary's
-    /// `next_back` (ADR 0487). A zip made here is `as_double_ended`'s,
-    /// `$zipEnds` (ADR 0493, #740). `None` of another.
-    pub(super) fn reversed(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
-        let boxed = self.iterator_item(iter_ty).is_none_or(|item| self.boxed_payload(item));
-        let double_ended = self.recognition().double_ended_iterator()?;
-        let next_back = crate::lower::recognition::extension_entry(self.tcx, double_ended);
-        let back = Expr::member(self.iterator_evidence(iter_ty, double_ended)?, next_back);
-        Some(crate::lower::iterators::stepped(it.clone(), back, boxed, None))
     }
 }
 

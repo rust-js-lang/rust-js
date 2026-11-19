@@ -196,3 +196,16 @@ Mutations: `rev-of-given-only-where-stepped-back`,
 `rev-of-a-lent-given-unlent` and `rev-of-a-lent-given-by-its-next-back`,
 caught. `given-as-it-is-rev-unclosed` and `rev-of-given-param-unknowing`
 are retargeted to the arm's new lines, and caught.
+
+## Amendment: the dictionary's `next_back` arm goes, unreached
+
+With a parameter given as it is always `$rev($given(..))`, lent where
+it's a `&mut`, `rev_called`'s later arm, `reversed`, a JS iterator
+stepped by the `DoubleEndedIterator` dictionary's `next_back`, is
+reached by nothing: it asks the same dictionary `given_js_iterator`
+does, so wherever it would answer, one of the two arms before it has.
+A marker build found it executed by none of `check:fast --all`, the
+corpus with std's iterator structs, the consumer net or the twin nets,
+and its mutation, `given-rev-refused`, survived the whole corpus with
+its snapshots. The arm, `reversed` and the mutation go together (ADR
+0093's unreached evidence).

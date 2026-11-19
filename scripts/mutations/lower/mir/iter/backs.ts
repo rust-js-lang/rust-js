@@ -193,15 +193,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_range.rs$"],
   },
   {
-    name: "given-rev-refused",
-    breaks: "`rev()` of an `I` given as it is is refused",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "        let back = Expr::member(self.iterator_evidence(iter_ty, double_ended)?, next_back);\n",
-    replace: "        let back: Expr = return None;\n",
-    tests: ["test/corpus.test.ts", "-t", "^given_iterator_extensions.rs$"],
-    snapshots: true,
-  },
-  {
     name: "given-map-source-raw",
     breaks:
       "a `map` of an `I` given as it is that knows its back is `$mapEnds` of its caller's value, a range, not a JS iterator",
@@ -237,7 +228,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "            clones.push(self.clone_in_place(Expr::var(part), ty, span, &mut cloned)?);\n",
     replace: "            let clone = match clones.is_empty() {\n                true => self.clone_in_place(Expr::var(part), ty, span, &mut cloned)?,\n                false => Expr::var(part),\n            };\n            clones.push(clone);\n",
-    tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cycle_of_a_map_whose_closure_counts.rs$"],
   },
   {
     name: "cloned-apart-unbound-shared",
