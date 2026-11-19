@@ -3,6 +3,7 @@
 //! copies, lengths, the relations `x < y`, each slice's least.
 
 use super::*;
+use rustc_index::bit_set::DenseBitSet;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) struct Interval {
@@ -161,10 +162,10 @@ pub(super) enum End {
 }
 
 impl End {
-    /// Whether it's of `local`, which a write of it makes stale.
-    pub(super) fn of(self, local: Local) -> bool {
+    /// Whether it's of a local `gone` says is written, which makes it stale.
+    pub(super) fn of_any(self, gone: &dyn Fn(Local) -> bool) -> bool {
         match self {
-            End::Below(Value::Local(l)) | End::AtMost(Value::Local(l)) | End::Items(l) | End::Indexes(l) => l == local,
+            End::Below(Value::Local(l)) | End::AtMost(Value::Local(l)) | End::Items(l) | End::Indexes(l) => gone(l),
             End::Below(Value::Constant(_) | Value::Range(..)) | End::AtMost(Value::Constant(_) | Value::Range(..)) => {
                 false
             }
@@ -354,34 +355,44 @@ impl State {
 
     /// `local` written: what it held, and each comparison of it, forgotten.
     pub(super) fn forget(&mut self, local: Local) {
-        self.intervals[local] = None;
-        self.comparisons.shift_remove(&local);
+        self.forget_each(&[local]);
+    }
+
+    /// Each of `locals` written, as `forget` forgets one: each fact looked
+    /// at once, however many there are, a call's hundreds the query says
+    /// it may write.
+    pub(super) fn forget_each(&mut self, locals: &[Local]) {
+        let mut gone = DenseBitSet::new_empty(self.intervals.len());
+        for &local in locals {
+            gone.insert(local);
+            self.intervals[local] = None;
+        }
+        let gone = |local: Local| gone.contains(local);
+        let term = |term: Term| match term {
+            Term::Len(local) | Term::Int(local) => gone(local),
+        };
+        let value = |value: Value| matches!(value, Value::Local(local) if gone(local));
         self.comparisons
-            .retain(|_, c| c.a != Value::Local(local) && c.b != Value::Local(local));
-        self.copies.retain(|&copy, &mut of| copy != local && of != local);
-        self.lens.retain(|&holder, &mut of| holder != local && of != local);
-        self.below
-            .retain(|&(x, y, _)| x != local && y != Term::Len(local) && y != Term::Int(local));
-        self.below_past.retain(|&(x, slice, _)| x != local && slice != local);
-        self.least.shift_remove(&local);
-        self.splits.shift_remove(&local);
-        self.empties.retain(|&holder, &mut of| holder != local && of != local);
-        self.ranges.shift_remove(&local);
-        self.ranges.retain(|_, ranged| !ranged.end.of(local));
-        self.sums.retain(|&sum, &mut (of, _, _)| sum != local && of != local);
-        self.gets
-            .retain(|&gave, &mut (index, _)| gave != local && index != local);
+            .retain(|&of, c| !gone(of) && !value(c.a) && !value(c.b));
+        self.copies.retain(|&copy, &mut of| !gone(copy) && !gone(of));
+        self.lens.retain(|&holder, &mut of| !gone(holder) && !gone(of));
+        self.below.retain(|&(x, y, _)| !gone(x) && !term(y));
+        self.below_past.retain(|&(x, slice, _)| !gone(x) && !gone(slice));
+        self.least.retain(|&of, _| !gone(of));
+        self.splits.retain(|&of| !gone(of));
+        self.empties.retain(|&holder, &mut of| !gone(holder) && !gone(of));
+        self.ranges.retain(|&of, ranged| !gone(of) && !ranged.end.of_any(&gone));
+        self.sums.retain(|&sum, &mut (of, _, _)| !gone(sum) && !gone(of));
+        self.gets.retain(|&gave, &mut (index, _)| !gone(gave) && !gone(index));
         self.positions
-            .retain(|&gave, &mut (slice, _)| gave != local && slice != local);
-        self.keys.retain(|&(map, key)| map != local && key != local);
+            .retain(|&gave, &mut (slice, _)| !gone(gave) && !gone(slice));
+        self.keys.retain(|&(map, key)| !gone(map) && !gone(key));
         self.has_keys
-            .retain(|&gave, &mut (map, key)| gave != local && map != local && key != local);
-        self.equal_lens.retain(|&(a, b)| a != local && b != local);
-        self.rows.retain(|&table, &mut row| table != local && row != local);
-        self.halves
-            .retain(|&half, &mut of| half != local && of != Term::Len(local) && of != Term::Int(local));
-        self.doubled
-            .retain(|&twice, &mut of| twice != local && of != Term::Len(local) && of != Term::Int(local));
+            .retain(|&gave, &mut (map, key)| !gone(gave) && !gone(map) && !gone(key));
+        self.equal_lens.retain(|&(a, b)| !gone(a) && !gone(b));
+        self.rows.retain(|&table, &mut row| !gone(table) && !gone(row));
+        self.halves.retain(|&half, &mut of| !gone(half) && !term(of));
+        self.doubled.retain(|&twice, &mut of| !gone(twice) && !term(of));
     }
 
     /// The comparison a `bool` holds, or what it copies holds: a test held
