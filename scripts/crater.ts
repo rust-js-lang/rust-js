@@ -218,8 +218,14 @@ export const craterCap = 6 * 2 ** 30;
 /** `target/crater/` held to `cap`, its least recently changed entries
  * first, its verdicts never, nothing kept below the disk's floor. */
 export function boundCrater({ dir = work, cap = craterCap, free = () => freeBytes(dir) }: { dir?: string; cap?: number; free?: () => number } = {}): { removed: number; size: number } {
-  if (!existsSync(dir)) return { removed: 0, size: 0 };
-  const entries: Kept[] = readdirSync(dir)
+  return evict(craterKept(dir), { cap, free, floor: floorBytes });
+}
+
+/** Each run's work in `dir`, but what it keeps, `kept`, with when it last
+ * changed. */
+export function craterKept(dir: string): Kept[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
     .filter((name) => name !== "kept")
     .map((name) => join(dir, name))
     .flatMap((path) => {
@@ -227,7 +233,6 @@ export function boundCrater({ dir = work, cap = craterCap, free = () => freeByte
       const seen = statSync(path, { throwIfNoEntry: false });
       return seen === undefined ? [] : [{ path, bytes: bytesOf(path), used: seen.mtimeMs }];
     });
-  return evict(entries, { cap, free, floor: floorBytes });
 }
 
 function spawned(

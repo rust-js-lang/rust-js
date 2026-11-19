@@ -276,8 +276,14 @@ Everything development writes has one known place (#1213, ADR 1118):
 `bun run disk` lists every store, its size, cap and oldest entry, and the
 total inside the checkouts against its 40 GiB budget; `bun run disk
 --prune` holds each to its cap, the tools' by `rustup toolchain uninstall`
-of an old pin, Cargo's GC and `bun pm cache rm`. `check:fast` prunes the
-stores inside the checkouts as it starts and warns past 90% of the budget.
+of an old pin, Cargo's GC and `bun pm cache rm`, and then the stores
+inside the checkouts to 90% of the budget together, the least recently
+used of all their entries first, as each store's cap alone let several
+worktrees' sum past it (#2163); a build, kept apps, kept compiles and the
+test maps keep their own bounds. `check:fast` prunes the stores inside the
+checkouts as it starts, and its measure made apart holds them to the
+budget so; past it with all they may lose gone, it names the largest
+holders, a stale worktree's build mostly, for someone to remove.
 `scripts/disk.ts` is their catalogue, and `test/disk-owners.test.ts` holds
 that no other script makes a path in the user's home.
 

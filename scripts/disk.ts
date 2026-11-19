@@ -13,8 +13,13 @@
 //                           `check:fast`'s, before its jobs: the stores
 //                           inside the checkouts held to their caps, and a
 //                           warning where the last measure of them is past
-//                           90% of the budget; a new measure made apart,
-//                           `--measure`, as walking `target/` takes 3.5 s
+//                           90% of the budget, naming the largest holders
+//                           where pruning couldn't take it under; a new
+//                           measure made apart, `--measure`, which holds
+//                           them to that 90% together, the least recently
+//                           used of all their entries first (#2163), as
+//                           walking `target/` takes 3.5 s and removing
+//                           gigabytes a minute
 
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -28,9 +33,9 @@ import { worktreeRoots } from "./strays";
 import { sanityRunsCap, sanityRunsStore } from "./select";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
-import { keptAppsCap, keptStores, pruneKeptStores, rustlantisCap, rustlantisStore } from "../test/kept";
-import { boundCrateProjects, crateProjectsCap } from "./crate-corpus";
-import { boundCrater, craterCap } from "./crater";
+import { keptAppsCap, keptBuilds, keptStores, pruneKeptStores, rustlantisCap, rustlantisStore } from "../test/kept";
+import { boundCrateProjects, crateProjectsCap, crateProjectsKept } from "./crate-corpus";
+import { boundCrater, craterCap, craterKept } from "./crater";
 import { bound as boundPorts, ports, portsCap } from "./react-in-rust";
 import { keptMaps, mapStore, pruneMaps } from "./testMap";
 
@@ -53,13 +58,23 @@ export type Store = {
   outside?: true;
   /** Of a store that's some of `dir`'s entries, which. */
   entries?: (name: string) => boolean;
+  /** Of a store whose entries are each its own, removed apart as its
+   * `bound` removes them: each, with when it was last used. What holds the
+   * stores inside the checkouts to the budget together evicts from these,
+   * the least recently used of all first (#2163). */
+  kept?: () => Kept[];
 };
 
 /** Each entry of `dir` held to `cap`, the least recently changed first, and
  * nothing kept below the disk's floor: a store with no bound of its own. */
 export function boundEntries(dir: string, cap: number, free: () => number) {
-  if (!existsSync(dir)) return { removed: 0, size: 0 };
-  const kept: Kept[] = readdirSync(dir).flatMap((name) => {
+  return evict(entriesOf(dir), { cap, free, floor: floorBytes });
+}
+
+/** Each entry of `dir`, kept, with when it last changed. */
+export function entriesOf(dir: string): Kept[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
     // A link is its own, as `bytesOf` takes it. One gone since it was
     // listed, another checkout's run's test removing its own directory
@@ -71,7 +86,27 @@ export function boundEntries(dir: string, cap: number, free: () => number) {
       throw error;
     }
   });
-  return evict(kept, { cap, free, floor: floorBytes });
+}
+
+/** What the stores inside the checkouts are held to together: the 90% of
+ * the budget past which `check:fast` warns, so a warning is what pruning
+ * can't reach, a build. Each store's cap alone let three worktrees' stores
+ * sum past the budget, which no prune took a byte from (#2163). */
+export const heldBytes = 0.9 * budgetBytes;
+
+/** `stores`, inside the checkouts, which take `total` bytes together, held
+ * to `held`: past it, the entries their `kept` gives, the least recently
+ * used of all of them first, removed until the total is under it or none
+ * is left, and nothing kept below the disk's floor. A build, and a store
+ * whose entries another holds or an index counts, keep what they have, and
+ * count. What it removed, and the total left. */
+export function holdToBudget(stores: Store[], total: number, { held = heldBytes, free = () => freeBytes(checkout) }: { held?: number; free?: () => number } = {}) {
+  if (total <= held) return { removed: 0, size: total };
+  const kept = stores.filter((store) => !store.outside).flatMap((store) => store.kept?.() ?? []);
+  const theirs = kept.reduce((n, entry) => n + entry.bytes, 0);
+  const rest = total - theirs;
+  const { removed, size } = evict(kept, { cap: Math.max(0, held - rest), free, floor: floorBytes });
+  return { removed, size: rest + size };
 }
 
 /** The repo's exact Rust toolchains, `1.100.0` (ADR 0109): what its
@@ -129,13 +164,13 @@ export function stores(): Store[] {
     ...keptStores
       .filter(({ dir }) => dir.startsWith(machineStore))
       // Held by `pruneKeptStores`, with the kept apps.
-      .map(({ dir, cap }) => ({ name: `.cache/${dir.slice(machineStore.length + 1)}`, dir, cap })),
+      .map(({ dir, cap }) => ({ name: `.cache/${dir.slice(machineStore.length + 1)}`, dir, cap, kept: () => keptBuilds(dir) })),
     { name: ".cache/test-maps", dir: mapStore, cap: keptMaps * 64 * 2 ** 20, bound: (free) => void pruneMaps(mapStore, keptMaps, free) },
-    { name: ".cache/tasks", dir: join(machineStore, "tasks"), cap: 16 * 2 ** 20, bound: (free) => void boundEntries(join(machineStore, "tasks"), 16 * 2 ** 20, free) },
-    { name: ".cache/job-times", dir: jobTimesStore, cap: jobTimesCap, bound: (free) => void boundEntries(jobTimesStore, jobTimesCap, free) },
-    { name: ".cache/check-logs", dir: checkLogsStore, cap: checkLogsCap, bound: (free) => void boundEntries(checkLogsStore, checkLogsCap, free) },
-    { name: ".cache/sanity-runs", dir: sanityRunsStore, cap: sanityRunsCap, bound: (free) => void boundEntries(sanityRunsStore, sanityRunsCap, free) },
-    { name: ".cache/rustlantis", dir: rustlantisStore, cap: rustlantisCap, bound: (free) => void boundEntries(rustlantisStore, rustlantisCap, free) },
+    { name: ".cache/tasks", dir: join(machineStore, "tasks"), cap: 16 * 2 ** 20, bound: (free) => void boundEntries(join(machineStore, "tasks"), 16 * 2 ** 20, free), kept: () => entriesOf(join(machineStore, "tasks")) },
+    { name: ".cache/job-times", dir: jobTimesStore, cap: jobTimesCap, bound: (free) => void boundEntries(jobTimesStore, jobTimesCap, free), kept: () => entriesOf(jobTimesStore) },
+    { name: ".cache/check-logs", dir: checkLogsStore, cap: checkLogsCap, bound: (free) => void boundEntries(checkLogsStore, checkLogsCap, free), kept: () => entriesOf(checkLogsStore) },
+    { name: ".cache/sanity-runs", dir: sanityRunsStore, cap: sanityRunsCap, bound: (free) => void boundEntries(sanityRunsStore, sanityRunsCap, free), kept: () => entriesOf(sanityRunsStore) },
+    { name: ".cache/rustlantis", dir: rustlantisStore, cap: rustlantisCap, bound: (free) => void boundEntries(rustlantisStore, rustlantisCap, free), kept: () => entriesOf(rustlantisStore) },
     { name: "the temp root", dir: tempRoot, cap: tempCap, bound: (free) => void boundEntries(tempRoot, tempCap, free) },
   ];
   // What rustc writes of a long type's name, or of its own crash, where it
@@ -165,11 +200,11 @@ export function stores(): Store[] {
     const bounded = own || !leasedIn(tree);
     const label = (path: string) => (tree === main ? `target/${path}` : `${resolve(tree).split("/").pop()}/target/${path}`);
     inChecks.push(
-      { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: bounded ? (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) : undefined },
-      { name: label("crater"), dir: at("crater"), cap: craterCap, bound: bounded ? (free) => void boundCrater({ dir: at("crater"), free }) : undefined },
+      { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: bounded ? (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) : undefined, kept: bounded ? () => crateProjectsKept(at("crate-corpus")) : undefined },
+      { name: label("crater"), dir: at("crater"), cap: craterCap, bound: bounded ? (free) => void boundCrater({ dir: at("crater"), free }) : undefined, kept: bounded ? () => craterKept(at("crater")) : undefined },
       { name: label("kept-apps"), dir: at("kept-apps"), cap: keptAppsCap },
       { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
-      { name: label("mutants"), dir: at("mutants"), cap: mutantsCap, bound: bounded ? (free) => void boundEntries(at("mutants"), mutantsCap, free) : undefined },
+      { name: label("mutants"), dir: at("mutants"), cap: mutantsCap, bound: bounded ? (free) => void boundEntries(at("mutants"), mutantsCap, free) : undefined, kept: bounded ? () => entriesOf(at("mutants")) : undefined },
       { name: label("native-sources"), dir: at("native-sources"), cap: 64 * 2 ** 20 },
       // The npm crates' packs, one key's, which their packer keeps alone
       // (scripts/package-npm-crates.ts): under 1 MiB.
@@ -212,6 +247,20 @@ const measured = join(machineStore, "disk.json");
 
 const size = (n: number) => (n >= GiB ? `${(n / GiB).toFixed(1)} GiB` : `${Math.round(n / 2 ** 20)} MiB`);
 
+/** What's said where the stores inside the checkouts are past what
+ * they're held to with every entry `holdToBudget` may take gone: the
+ * largest of what's left, a build mostly, each with its age, so a stale
+ * worktree's is seen and someone removes it (#2163). */
+export function overBudget(stores: Store[], left: number, sizeOf = bytesOfStore, ageOf = oldest): string {
+  const largest = stores
+    .filter((store) => !store.outside)
+    .map((store) => ({ store, bytes: sizeOf(store) }))
+    .sort((a, b) => b.bytes - a.bytes)
+    .slice(0, 3)
+    .map(({ store, bytes }) => `${store.name} ${size(bytes)}, its oldest ${ageOf(store)}`);
+  return `⚠ what development keeps inside the checkouts is ${size(left)} with every store pruned, past the ${size(heldBytes)} it's held to: the largest are ${largest.join("; ")}. A worktree no one uses goes with \`git worktree remove\` (AGENTS.md)`;
+}
+
 /** The least recently changed entry of `store`, its age in days. */
 function oldest(store: Store): string {
   try {
@@ -226,7 +275,8 @@ function oldest(store: Store): string {
 
 if (import.meta.main) {
   const prune = process.argv.includes("--prune");
-  const inside = process.argv.includes("--inside") || process.argv.includes("--measure");
+  const measure = process.argv.includes("--measure");
+  const inside = process.argv.includes("--inside") || measure;
   const quiet = process.argv.includes("--quiet");
   const all = stores().filter((store) => !inside || !store.outside);
   if (prune) {
@@ -234,18 +284,28 @@ if (import.meta.main) {
     for (const store of all) store.bound?.(() => freeBytes(store.dir));
   }
   if (quiet) {
-    const last = existsSync(measured) ? (JSON.parse(readFileSync(measured, "utf8")) as { total: number }).total : 0;
-    if (last > 0.9 * budgetBytes) console.log(`⚠ what development keeps inside the checkouts was ${size(last)}, past 90% of its ${size(budgetBytes)} budget: \`bun run disk\` says where`);
+    // The last measure, made apart, as it walks `target/` and may remove
+    // gigabytes: past what the stores are held to with all they may lose
+    // gone, it names the largest holders (#2163).
+    const last = existsSync(measured) ? (JSON.parse(readFileSync(measured, "utf8")) as { total: number; over?: string }) : { total: 0 };
+    if (last.over !== undefined) console.log(last.over);
+    else if (last.total > heldBytes) console.log(`⚠ what development keeps inside the checkouts was ${size(last.total)}, past 90% of its ${size(budgetBytes)} budget: \`bun run disk\` says where`);
     spawn("bun", [import.meta.path, "--measure"], { cwd: checkout, detached: true, stdio: "ignore" }).unref();
     process.exit(0);
   }
-  const sized = all.map((store) => ({ store, bytes: bytesOfStore(store) }));
-  const total = sized.filter(({ store }) => !store.outside).reduce((n, { bytes }) => n + bytes, 0);
+  let total = all.filter((store) => !store.outside).reduce((n, store) => n + bytesOfStore(store), 0);
+  let over: string | undefined;
+  if (prune || measure) {
+    total = holdToBudget(all, total).size;
+    if (total > heldBytes) over = overBudget(all, total);
+  }
   // A checkout that has kept nothing yet has no `.cache/`.
   mkdirSync(machineStore, { recursive: true });
-  writeFileSync(measured, JSON.stringify({ total, at: new Date().toISOString() }));
-  if (process.argv.includes("--measure")) process.exit(0);
+  writeFileSync(measured, JSON.stringify({ total, at: new Date().toISOString(), ...(over === undefined ? {} : { over }) }));
+  if (measure) process.exit(0);
+  const sized = all.map((store) => ({ store, bytes: bytesOfStore(store) }));
   const rows = sized.map(({ store, bytes }) => [store.name, size(bytes), store.cap === undefined ? (store.outside ? "-" : "a build") : size(store.cap), oldest(store), store.outside ? "outside" : ""]);
   for (const row of [["store", "size", "cap", "oldest", ""], ...rows]) console.log(row.map((cell, i) => (i ? cell.padStart(10) : cell.padEnd(32))).join(""));
-  console.log(`\ninside the checkouts: ${size(total)} of the ${size(budgetBytes)} budget; the disk has ${size(freeBytes(checkout))} free, its floor ${size(floorBytes)}`);
+  console.log(`\ninside the checkouts: ${size(sized.filter(({ store }) => !store.outside).reduce((n, { bytes }) => n + bytes, 0))} of the ${size(budgetBytes)} budget; the disk has ${size(freeBytes(checkout))} free, its floor ${size(floorBytes)}`);
+  if (over !== undefined) console.log(over);
 }

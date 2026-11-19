@@ -9,7 +9,7 @@ import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf } from "../tooling/bounded.js";
 import { floorBytes, mainCheckoutOf } from "./bounded";
-import { boundEntries, pinnedToolchains, unpinnedToolchains } from "../scripts/disk";
+import { boundEntries, entriesOf, holdToBudget, overBudget, pinnedToolchains, unpinnedToolchains, type Store } from "../scripts/disk";
 import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
@@ -495,6 +495,45 @@ test("a store's entries are held to its cap and the floor", () => {
   expect(readdirSync(dir)).toEqual(["new"]);
   boundEntries(dir, Number.POSITIVE_INFINITY, () => floorBytes - 1);
   expect(readdirSync(dir)).toEqual([]);
+});
+
+// The stores inside the checkouts are held to the budget together, not
+// each to its cap alone: three worktrees' stores, each under its cap,
+// summed to 37.9 of 40 GiB and no prune took a byte (#2163). Past it, the
+// least recently used of all their entries go first; a build stays, and
+// what's left past it is said with the largest holders.
+test("the stores inside the checkouts are held to the budget together, the least recently used of all first", () => {
+  const [a, b, build, tools] = ["budget-a", "budget-b", "budget-build", "budget-tools"].map((name) => fixture(name));
+  const entry = (dir: string, name: string, age: number) => {
+    writeFileSync(join(dir, name), Buffer.alloc(64 * 1024));
+    const when = Date.now() / 1000 - age;
+    utimesSync(join(dir, name), when, when);
+  };
+  entry(a, "oldest", 400);
+  entry(b, "older", 300);
+  entry(a, "newer", 200);
+  entry(b, "newest", 100);
+  entry(build, "binary", 500);
+  entry(tools, "a tool's own", 600);
+  const each = bytesOf(join(a, "oldest"));
+  const stores: Store[] = [
+    { name: "a", dir: a, cap: Number.POSITIVE_INFINITY, kept: () => entriesOf(a) },
+    { name: "b", dir: b, cap: Number.POSITIVE_INFINITY, kept: () => entriesOf(b) },
+    { name: "the build", dir: build },
+    { name: "outside", dir: tools, outside: true, kept: () => entriesOf(tools) },
+  ];
+  const free = () => floorBytes;
+  // Under what they're held to: nothing goes.
+  expect(holdToBudget(stores, 5 * each, { held: 5 * each, free })).toEqual({ removed: 0, size: 5 * each });
+  // Past it: the two oldest of both stores, never the build, however old.
+  expect(holdToBudget(stores, 5 * each, { held: 3 * each, free })).toEqual({ removed: 2, size: 3 * each });
+  expect([readdirSync(a), readdirSync(b), readdirSync(build), readdirSync(tools)]).toEqual([["newer"], ["newest"], ["binary"], ["a tool's own"]]);
+  // Held below what the build takes: every entry goes, and the build is what's left.
+  expect(holdToBudget(stores, 3 * each, { held: each / 2, free })).toEqual({ removed: 2, size: each });
+  expect(readdirSync(build)).toEqual(["binary"]);
+  const said = overBudget(stores, each, (store) => ({ "the build": 6 * 2 ** 30, outside: 7 * 2 ** 30 })[store.name] ?? 0, () => "3 d");
+  expect(said).toContain("the largest are the build 6.0 GiB, its oldest 3 d;");
+  expect(said).not.toContain("outside");
 });
 
 // An entry gone since it was listed is no longer kept: two checkouts' runs

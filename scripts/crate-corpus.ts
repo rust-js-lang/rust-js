@@ -52,20 +52,25 @@ export const crateProjectsCap = 4 * 2 ** 30;
  * (tooling/bounded.js's `evict`). How many it removed, and the size of
  * what's left. */
 export function boundCrateProjects({ dir = crateProjects, cap = crateProjectsCap, free = () => freeBytes(dir) }: { dir?: string; cap?: number; free?: () => number } = {}): { removed: number; size: number } {
+  return evict(crateProjectsKept(dir), { cap, free, floor: floorBytes });
+}
+
+/** Each crate's project in `dir`, with when it was last used, its `used`
+ * mark's time. */
+export function crateProjectsKept(dir: string): Kept[] {
   let names: string[];
   try {
     names = readdirSync(dir);
   } catch {
-    return { removed: 0, size: 0 };
+    return [];
   }
-  const kept: Kept[] = names
+  return names
     .map((name) => join(dir, name))
     .filter((path) => statSync(path).isDirectory())
     .map((path) => {
       const marked = join(path, "used");
       return { path, bytes: bytesOf(path), used: statSync(existsSync(marked) ? marked : path).mtimeMs };
     });
-  return evict(kept, { cap, free, floor: floorBytes });
 }
 
 export type Verdict = "runs" | "compiles" | "refused" | "blocked";

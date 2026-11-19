@@ -77,7 +77,6 @@ export function pruneKept(
   } catch {
     return { removed: 0, size: 0 };
   }
-  const kept: Kept[] = [];
   let removed = 0;
   for (const program of programs) {
     const dir = join(cache, program);
@@ -97,18 +96,42 @@ export function pruneKept(
       if (age > days * day || (build.startsWith(".building-") && age > 60 * 60)) {
         rmSync(path, { recursive: true, force: true });
         removed++;
-      } else if (!build.startsWith(".building-")) {
-        kept.push({ path, bytes: bytesOf(path), used });
       }
     }
   }
-  const evicted = evict(kept, { cap, free, floor: floorBytes });
+  const evicted = evict(keptBuilds(cache), { cap, free, floor: floorBytes });
   for (const program of programs) {
     try {
       if (readdirSync(join(cache, program)).length === 0) rmSync(join(cache, program), { recursive: true, force: true });
     } catch {}
   }
   return { removed: removed + evicted.removed, size: evicted.size };
+}
+
+/** Each build `pruneKept` keeps in `cache`, `<program>/<build>`, with when
+ * it was last used: what holding every store to the budget may evict
+ * (scripts/disk.ts `holdToBudget`, #2163). One half made, `.building-*`,
+ * isn't, as a run may be writing it. */
+export function keptBuilds(cache: string): Kept[] {
+  let programs: string[];
+  try {
+    programs = readdirSync(cache);
+  } catch {
+    return [];
+  }
+  return programs.flatMap((program) => {
+    let builds: string[];
+    try {
+      builds = readdirSync(join(cache, program));
+    } catch {
+      return [];
+    }
+    return builds.flatMap((build) => {
+      const path = join(cache, program, build);
+      const seen = statSync(path, { throwIfNoEntry: false });
+      return seen === undefined || build.startsWith(".building-") ? [] : [{ path, bytes: bytesOf(path), used: seen.mtimeMs }];
+    });
+  });
 }
 
 /** The checkout's stores before they were the machine's (#1047): native
