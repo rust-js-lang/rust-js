@@ -737,10 +737,10 @@ pub(super) fn is_optional_param(tcx: TyCtxt<'_>, def_id: DefId, index: usize) ->
     let Some(param) = sig.skip_binder().inputs().get(index) else {
         return false;
     };
-    let named = tcx
-        .fn_arg_idents(def_id)
-        .get(index)
-        .copied()
+    // A parameter's name, where it has one: a function's or a method's,
+    // not a constructor's, `Some`'s, which none names nullable.
+    let named = matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
+        .then(|| tcx.fn_arg_idents(def_id).get(index).copied().flatten())
         .flatten()
         .map(|ident| ident.name);
     matches!(param.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))

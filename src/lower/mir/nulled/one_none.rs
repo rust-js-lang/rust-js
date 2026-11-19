@@ -350,7 +350,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let taken = candidates.is_none_or(|made| {
                 made.iter().any(|&(f, _)| {
                     bindings::is_binding(self.tcx, f)
-                        && crate::lower::analysis::nulled_params::optional_argument(self.tcx, f, i)
+                        && crate::lower::bindings::is_optional_param(self.tcx, f, i)
                         && (self.option_of(operand.ty(state.body, self.tcx))).is_some_and(|payload| {
                             none_form(self.tcx, NonePlace::BindingArg(f, i, Some(payload))) == NoneForm::Undefined
                         })
@@ -439,7 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|&i| {
                 let ty = tys[i];
                 crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
-                    && crate::lower::analysis::nulled_params::optional_argument(self.tcx, f, i)
+                    && crate::lower::bindings::is_optional_param(self.tcx, f, i)
                     && self.option_of(ty).is_some_and(|payload| {
                         none_form(self.tcx, NonePlace::BindingArg(f, i, Some(payload))) == NoneForm::Undefined
                     })
@@ -517,7 +517,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         for (i, (operand, value)) in operands.iter().zip(values.iter_mut()).enumerate().skip(1) {
-            if !crate::lower::analysis::nulled_params::optional_argument(self.tcx, callee, i) {
+            if !crate::lower::bindings::is_optional_param(self.tcx, callee, i) {
                 continue;
             }
             let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
@@ -557,7 +557,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let inputs = sig.skip_binder().inputs();
             let takes = (inputs.iter().enumerate()).any(|(i, &ty)| {
                 crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
-                    && crate::lower::analysis::nulled_params::optional_argument(self.tcx, f, i)
+                    && crate::lower::bindings::is_optional_param(self.tcx, f, i)
             });
             if bindings::is_binding(self.tcx, f) && takes {
                 *value = Value::Expr(self.binding_fn_pointer(f, args.skip_binder(), (span, true), span)?);
@@ -590,7 +590,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Some` where it's given is there, `Some(view.byte_length())`'s
             // value, which a call of each count needs no test of (#1842).
             if crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
-                && crate::lower::analysis::nulled_params::optional_argument(self.tcx, binding, i)
+                && crate::lower::bindings::is_optional_param(self.tcx, binding, i)
                 && self.made_some(state, operand)
             {
                 let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
@@ -606,7 +606,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if traits.principal_def_id().is_some_and(|t| self.recognition().is_pair_trait(t)));
             if pair
                 || none_form(self.tcx, NonePlace::BindingArg(binding, i, Some(payload))) != NoneForm::Undefined
-                || !crate::lower::analysis::nulled_params::optional_argument(self.tcx, binding, i)
+                || !crate::lower::bindings::is_optional_param(self.tcx, binding, i)
                 || self.none_trusted(state, operand)
                 || !crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
             {

@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     name: "none-given-to-any-binding-parameter",
     breaks: "a binding's parameter of a type parameter, `js::set`'s `T`, which JS takes as it's given, is given `?? undefined` (#1840)",
     file: "src/lower/mir/nulled/one_none.rs",
-    find: "                || !crate::lower::analysis::nulled_params::optional_argument(self.tcx, binding, i)\n                || self.none_trusted(state, operand)\n",
+    find: "                || !crate::lower::bindings::is_optional_param(self.tcx, binding, i)\n                || self.none_trusted(state, operand)\n",
     replace: "                || self.none_trusted(state, operand)\n",
     tests: given1840,
   },

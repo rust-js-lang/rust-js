@@ -467,7 +467,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(i, (name, &ty))| {
                 let given = match normalized
                     && crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
-                    && crate::lower::analysis::nulled_params::optional_argument(self.tcx, def_id, i)
+                    && crate::lower::bindings::is_optional_param(self.tcx, def_id, i)
                     && self.option_of(ty).is_some_and(|payload| {
                         crate::lower::representation::none_form(
                             self.tcx,

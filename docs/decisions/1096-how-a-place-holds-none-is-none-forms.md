@@ -253,3 +253,22 @@ Mutations `no-null-written-null-unread`, `no-null-proved-unread`,
 `object-deref-unfollowed` and `omitted-prop-unread`, each caught; `js-nones-binding-results-
 trusted`, `returned-uses-as-they-are` and `returned-calls-as-they-are`
 re-anchored, caught.
+
+## Amendment: a binding's optional parameter has one owner (2026-11-19, #2112)
+
+Change C's fourth step (S3a). Whether a binding's parameter is a native
+optional argument, TypeScript's `x?`, had two answers: `bindings::
+is_optional_param`, an `Option` but not a setter's value (ADR 0648) nor
+a `#[rust_js::nullable]` one, and `nulled_params::optional_argument`, an
+`Option`, which `mir/nulled/one_none.rs` and `items.rs` asked. The second
+is gone; each asks the owner. Where they differed, a setter's value:
+`Error.prepareStackTrace = previous ?? undefined` is now `=
+previous`, what the getter gave set back as it is, as ADR 0648 says and
+upstream React writes, 18 sites in React's port's 3 files. A Rust-made
+`None` still writes `undefined`. ADR 0262's case: none observable, a
+read back gives `None` either way, so JS's behaviour. The owner reads a
+parameter's name only of a function or a method, which a constructor,
+`Option::Some`, given to a callback, isn't (its first form panicked on
+one). Mutations `optional-param-name-of-a-constructor` (corpus
+`held_filter_map_reversed`) and `none-given-to-any-binding-parameter`,
+re-anchored, caught.

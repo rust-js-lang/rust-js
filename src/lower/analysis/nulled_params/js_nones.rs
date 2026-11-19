@@ -190,19 +190,6 @@ pub(in crate::lower) enum AnyValue {
     Dyn,
 }
 
-/// Whether `binding`'s parameter `i` is an optional argument, declared an
-/// `Option`, `x?: T`, which a native takes `undefined` for none of, and
-/// not a type parameter, `js::set`'s `T`, which JS takes as it's given.
-pub(in crate::lower) fn optional_argument(tcx: TyCtxt<'_>, binding: DefId, i: usize) -> bool {
-    let inputs = tcx
-        .fn_sig(binding)
-        .instantiate_identity()
-        .skip_normalization()
-        .skip_binder()
-        .inputs();
-    matches!(inputs.get(i).map(|ty| ty.kind()), Some(ty::Adt(adt, _)) if tcx.is_lang_item(adt.did(), LangItem::Option))
-}
-
 /// Whether what `def` returns leaves for JS as an `Option` with one `None`
 /// (`one_none`), as `undefined`: a function JS calls (`js_facing`), not a
 /// nullable one's, whose `None` is `null` (ADR 0841), nor an `async`

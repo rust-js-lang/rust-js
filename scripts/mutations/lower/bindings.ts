@@ -474,4 +474,12 @@ export const mutations: Mutation[] = [
     replace: "    tcx.crate_name(def_id.krate).as_str() == \"webapi\"\n",
     tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
   },
+  {
+    name: "optional-param-name-of-a-constructor",
+    breaks: "whether a parameter is optional reads its name of what has none, a constructor's, `Option::Some`'s, and rustc panics, \"does not have a fn_arg_idents\", where a callback given a `Some` is asked (#2112 C S3a)",
+    file: "src/lower/bindings.rs",
+    find: "    let named = matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)\n        .then(|| tcx.fn_arg_idents(def_id).get(index).copied().flatten())\n        .flatten()\n",
+    replace: "    let named = Some(tcx.fn_arg_idents(def_id).get(index).copied().flatten())\n        .flatten()\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_filter_map_reversed.rs$"],
+  },
 ];

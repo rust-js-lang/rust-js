@@ -57,7 +57,7 @@ pub fn format_owner_stack(error: &JsError) -> String {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(node, "libnode.rmeta")}`, "--extern", `js=${join(node, "libjs.rmeta")}`, "-L", node]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`  let stack = error.stack ?? "";
-  Error.prepareStackTrace = prevPrepareStackTrace ?? undefined;
+  Error.prepareStackTrace = prevPrepareStackTrace;
   if (stack.startsWith("Error: react-stack-top-frame\\n")) {
     stack = stack.slice(29);
   }
