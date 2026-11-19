@@ -1163,6 +1163,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(length);
         }
+        // An enumeration made here, `src.map((x, i) => [i, x])`, counts its
+        // source, as std's `Enumerate::count` is `self.iter.count()`: its
+        // own `count` where it has one, which JS's `map` would step past
+        // (#2157). Not one counted through a `&mut`, `by_ref()`'s, whose
+        // `count` is std's default.
+        if !receiver_ty.is_ref()
+            && let Some(enumerated) = crate::lower::iterators::enumerated_of(&it)
+            && enumerated.form == crate::lower::iterators::EnumeratedForm::Mapped
+            && let Some(source_ty) = crate::lower::recognition::enumerated_source(self.tcx, iter_ty)
+        {
+            let source = enumerated.source.clone();
+            let source_item = self.recognition().iterator_item(source_ty);
+            return self.counted(source, source_item, (def_id, source_ty, source_ty), span);
+        }
         let n = self.fresh(Role::N);
         let x = self.fresh(Role::Item);
         let mut body = Vec::new();

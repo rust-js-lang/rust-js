@@ -564,10 +564,24 @@ pub(super) fn stepped_locals<'tcx>(
     // form of the side left to count in place.
     let mut zips_of_held: IndexSet<(rustc_span::def_id::DefId, mir::Local)> = IndexSet::default();
     // Each field of a struct or an enum's variant a back step is given,
-    // lent or whole, `self.it.next_back()` of `struct Evens { it: Filter<..> }`:
-    // each value MIR moves into it as it makes one, made knowing its back by
-    // its maker (#851).
-    let mut stepped_fields: IndexSet<SteppedField> = IndexSet::default();
+    // lent or whole, `self.it.next_back()` of `struct Evens { it: Filter<..> }`,
+    // and the trait whose step asks it, `DoubleEndedIterator` or
+    // `ExactSizeIterator`: each value MIR moves into it as it makes one,
+    // made knowing its back by its maker (#851), where that value's type
+    // has the trait, as the trait solver says of the instance. A generic
+    // impl's step, `impl<I: DoubleEndedIterator> DoubleEndedIterator for
+    // Own<I>`'s `self.0.next_back()`, never runs on an `Own<Count>` whose
+    // `Count` isn't one (#2153).
+    let mut stepped_fields: IndexSet<(SteppedField, rustc_span::def_id::DefId)> = IndexSet::default();
+    let field_stepped = |fields: &IndexSet<(SteppedField, rustc_span::def_id::DefId)>,
+                         field: SteppedField,
+                         (owner, value): (rustc_span::def_id::DefId, Ty<'tcx>)| {
+        let typing_env = ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(owner));
+        (fields.iter()).any(|&(of, asked)| {
+            of == field
+                && crate::lower::recognition::trait_holds_in(tcx, typing_env, erased(value), asked) != Some(false)
+        })
+    };
     let mut typed_sources: IndexSet<Ty<'tcx>> = IndexSet::default();
     let mut counted: IndexMap<(rustc_span::def_id::DefId, mir::Local), LengthAsked> = IndexMap::default();
     let mark = |stepped: &mut IndexMap<_, _>, at, how| {
@@ -686,7 +700,7 @@ pub(super) fn stepped_locals<'tcx>(
                 local
             };
             for &(field, local) in &into_fields {
-                if stepped_fields.contains(&field) {
+                if field_stepped(&stepped_fields, field, (owner, mir.local_decls[origin(local)].ty)) {
                     mark(&mut stepped, (owner, origin(local)), SteppedLocal::Given);
                 }
             }
@@ -844,8 +858,9 @@ pub(super) fn stepped_locals<'tcx>(
                 let lent_stepped_fields = (args.iter()).filter_map(|arg| match &arg.node {
                     mir::Operand::Move(place) | mir::Operand::Copy(place) => {
                         let field = *lent_field.get(&place.as_local()?)?;
-                        (field_of(tcx, mir, field).is_some_and(|of| stepped_fields.contains(&of)))
-                            .then(|| (None, erased(field.ty(&mir.local_decls, tcx).ty)))
+                        let value = field.ty(&mir.local_decls, tcx).ty;
+                        (field_of(tcx, mir, field).is_some_and(|of| field_stepped(&stepped_fields, of, (owner, value))))
+                            .then(|| (None, erased(value)))
                     }
                     _ => None,
                 });
@@ -993,7 +1008,7 @@ pub(super) fn stepped_locals<'tcx>(
                         if let Some(field) = field_of(tcx, mir, place)
                             && erased(place.ty(&mir.local_decls, tcx).ty) == asked_ty
                         {
-                            stepped_fields.insert(field);
+                            stepped_fields.insert((field, clause.def_id()));
                         }
                     }
                     for &(local, lent, ty, held) in &given {

@@ -1932,3 +1932,26 @@ stands for, `enumerate-back-own-unclosed`, `enumerate-back-source-unclosed`,
 `range-by-ref-a-js-iterator`, `by-ref-knowing-unlent`,
 `back-filter-keeps-dropped` and `hinted-receiver-as-it-is` are
 retargeted to the new lines.
+
+## Amendment: a field is stepped from its back of an instance that has the trait (#2153)
+
+A field a back step is given was kept by its ADT, its variant and its
+index alone: `impl<I: DoubleEndedIterator> DoubleEndedIterator for
+Own<I>`'s `self.0.next_back()` marked `Own`'s field, and so every value
+MIR moved into one, `Count(0)` of `Own(Count(0))` too, where `Own<Count>`
+isn't double-ended and that `next_back` never runs. `made_knowing`, which
+answers by type, then took the program's other `Count(0)`, in
+`Count(0).enumerate().count()`, as made knowing its back, so the held flip
+left its `enumerate()` hand-written, JS's `map`, which counted by stepping
+where std's `Enumerate::count` asks `Count`'s own `count` (ADR 0262:
+results change). Now the field is kept with the trait whose step asks it,
+`DoubleEndedIterator` or `ExactSizeIterator`, and a value moved into it,
+or written beside a `&mut` of it, is marked only where the trait solver
+doesn't say its type lacks that trait (`trait_holds_in` of the instance,
+`field_stepped`). One fact, by rustc's answer of the instance, never by
+matching the impl's header.
+
+Held by `test/corpus/enumerate_count_of_an_iterator_stepped_from_its_back.rs`,
+against native Rust: its snapshot holds a held `map` of `Count` moved into
+`Own`, beside another of its type, std's compiled struct. Mutation
+`stepped-field-of-any-instance`.

@@ -631,4 +631,15 @@ export const mutations: Mutation[] = [
     replace: "                if recognition.iterator_method(callee) == Some(crate::lower::recognition::IterMethod::NextBack)\n",
     tests: ["test/corpus.test.ts", "-t", "^len_of_a_held_copy_of_a_map.rs$"],
   },
+  {
+    name: "stepped-field-of-any-instance",
+    breaks:
+      "a value moved into a field a generic impl steps from its back, `impl<I: DoubleEndedIterator> DoubleEndedIterator for Own<I>`'s `self.0`, is marked stepped from its back though its type isn't double-ended, `Own(first)` of a `map` of the crate's `Count`, so another value of its type is taken as made knowing its back and its `enumerate()` isn't std's struct (#2153)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                && crate::lower::recognition::trait_holds_in(tcx, typing_env, erased(value), asked) != Some(false)\n",
+    replace:
+      "                && (crate::lower::recognition::trait_holds_in(tcx, typing_env, erased(value), asked) != Some(false) || true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_count_of_an_iterator_stepped_from_its_back.rs$"],
+    snapshots: true,
+  },
 ];

@@ -876,15 +876,13 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const n = $count(
-      $holding(
-        take.map(f),
-        () => {
-          dDrop_drop(g);
-        },
-        "after",
-      ).map((x, i) => [i, x]),
-    );
+    const n = $holding(
+      take.map(f),
+      () => {
+        dDrop_drop(g);
+      },
+      "after",
+    ).reduce((n) => n + 1, 0);
     $print(`| ${n} | `);
   });
   case$("flat_map", (g) => {

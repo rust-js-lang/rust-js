@@ -202,26 +202,24 @@ function main() {
   );
   console.log(`[${counted.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   console.log(
-    `${$count(
-      $closing(
-        $iterator(
-          queue(25),
-          queueDoubleEndedIterator_nextBack,
-          false,
-          undefined,
-          undefined,
-          queueIterator_sizeHint,
-        ),
-        (it) => {
-          for (const item of it.of[0]) {
-            loudDrop_drop(item);
-          }
-        },
-      ).map((x, i) => [i, x]),
-      (value) => {
-        loudDrop_drop(value[1]);
+    `${$closing(
+      $iterator(
+        queue(25),
+        queueDoubleEndedIterator_nextBack,
+        false,
+        undefined,
+        undefined,
+        queueIterator_sizeHint,
+      ),
+      (it) => {
+        for (const item of it.of[0]) {
+          loudDrop_drop(item);
+        }
       },
-    )}`,
+    ).reduce((n, item) => {
+      loudDrop_drop(item);
+      return n + 1;
+    }, 0)}`,
   );
   const everyOther = $collectDropping(
     $roomForHint(

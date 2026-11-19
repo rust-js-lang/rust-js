@@ -898,4 +898,13 @@ export const mutations: Mutation[] = [
     replace: "        if let (Some((Parted::Copied, ..)), [receiver_ty], [_]) = (parted, arg_tys, values.as_slice())\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_copied_cloned|copied_structs_stepped_from_their_back).rs$"],
   },
+  {
+    name: "enumeration-counted-by-its-map",
+    breaks:
+      "a `count()` of an enumeration made here, `src.map((x, i) => [i, x])`, counts JS's `map` by stepping it, never its source's own `count`, which std's `Enumerate::count` asks, of the crate's iterator stepped from its back (#2157)",
+    file: "src/lower/mir/iter.rs",
+    find: "            && enumerated.form == crate::lower::iterators::EnumeratedForm::Mapped\n",
+    replace: "            && enumerated.form == crate::lower::iterators::EnumeratedForm::Mapped\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_count_of_an_iterator_stepped_from_its_back.rs$"],
+  },
 ];

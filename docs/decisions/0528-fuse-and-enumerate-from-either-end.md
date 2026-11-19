@@ -215,3 +215,23 @@ captures and a function, by `rfold`, `next_back`, `rev().take(..)` and
 `enumerated-source-uncounted` (`lower/analysis/back_stepped.ts`) and
 `counted-range-map-length-unknown` (`lower/iterators/knowing.ts`);
 `back-stepped-range-map-length-always` refitted.
+
+## Amendment: an enumeration made here counts its source (#2157)
+
+A `count()` of an enumeration made here, `src.map((x, i) => [i, x])`,
+counted JS's `map` by stepping it. std's `Enumerate::count` is
+`self.iter.count()`, so the crate's iterator's own `count` was never
+called where the held flip leaves the chain hand-written, as it does of a
+source made knowing its back (ADR 1136): `let mut ends = Ends(0, 6);
+ends.next_back(); ends.enumerate().count()`, and the same of another value
+of its type (ADR 0262: results change). Now `counted` counts the
+enumeration's source with its own item type (`enumerated_of`, the
+`Mapped` form), so it's `$count(src)` where the source has its own
+`count`, and the source's own form otherwise. Not one counted through a
+`&mut`, `by_ref()`'s, whose `count` is std's default. A `$enumerate`
+already forwards its source's `nth` and `fold`; the probes of own `nth`,
+`fold` and `last` through a hand-written enumerate or map of the crate's
+iterator made knowing its back found no other difference.
+
+Held by `test/corpus/enumerate_count_of_an_iterator_stepped_from_its_back.rs`,
+against native Rust. Mutation `enumeration-counted-by-its-map`.
