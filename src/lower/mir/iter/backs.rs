@@ -247,8 +247,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or a `dyn` one that knows its back (ADR 0429).
     /// What keeps `receiver`'s back, of type `iter_ty`, where it knows its
     /// back (ADR 0455): `by_ref()`'s, itself, a `$iter` or a `$iterator`,
-    /// which closing doesn't end, not lent; a map's, `$mapEnds`, which steps
-    /// it from either end and doesn't close it. `None` of another.
+    /// which closing doesn't end, lent; else the adapter, a copy's, a map's
+    /// `$mapEnds`, an enumeration's, a `skip(n)`'s or a `take(n)`'s, a
+    /// filter's `$filterEnds`, of its source made knowing what it's asked
+    /// (`back_kept_source`), closed here, once, to drop what it holds, as
+    /// the adapter holds it (ADR 0465), where it's owned, not through a
+    /// `&mut` (#749): no arm makes a source it leaves unclosed (#2152).
+    /// `None` of another.
     pub(super) fn back_kept(
         &mut self,
         method: Option<IterMethod>,
@@ -260,16 +265,77 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What it's given, a `&mut` of what it steps or not: what's closed to
         // drop it is what's owned.
         let held = arg_tys.first().copied().unwrap_or(iter_ty);
+        let Some(kept) = self.back_kept_source(method, receiver, (iter_ty, output, held), span)? else {
+            return Ok(None);
+        };
+        let (it, over) = match kept {
+            // The one exception: `by_ref()`'s, lent, which its owner drops.
+            BackKept::Lent(it) => return Ok(Some(it)),
+            BackKept::Held(it, over) => (self.closing(it, held, span)?, over),
+        };
+        let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
+        // Its items' drop, which a `skip(n)`, a `take(n)` or a filter drops
+        // each it passes over by.
+        let dropping = |cx: &mut Self, mut given: Vec<Expr>| -> R<Vec<Expr>> {
+            if let Some(item) = cx.iterator_item(output) {
+                given.extend(cx.std_drop_function(item, span)?);
+            }
+            Ok(given)
+        };
+        Ok(Some(match over {
+            Over::Copy => it,
+            Over::Map { len } => {
+                let f = self.unary_callback(values.next().expect("the function"), own);
+                let mapped = Expr::call_helper("$mapEnds", vec![it, f]);
+                match len {
+                    true => crate::lower::iterators::made_knowing_its_length(mapped),
+                    false => mapped,
+                }
+            }
+            Over::Enumerate => crate::lower::iterators::enumerated_knowing(it),
+            Over::Hinted { skip } => {
+                let given = dropping(self, vec![it, values.next().expect("how many")])?;
+                Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given)
+            }
+            Over::Counted { skip } => {
+                let given = dropping(self, vec![it, values.next().expect("how many")])?;
+                // Its length follows from its back, of its source made
+                // exact-sized, an array's `$iter`: what a variable that holds
+                // it asks there, a crate's that reads a `Vec`'s capacity
+                // (#1317), `knows_its_length_of` answers of a `take` or a
+                // `skip` kept over an array's items made knowing its back.
+                let made = Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given);
+                crate::lower::iterators::made_knowing_its_back(made)
+            }
+            Over::Filter => {
+                let p = self.unary_callback(values.next().expect("the test"), own);
+                let given = dropping(self, vec![it, p])?;
+                Expr::call_helper("$filterEnds", given)
+            }
+        }))
+    }
+
+    /// `back_kept`'s source, of `receiver` of type `iter_ty`, given as a
+    /// `held`, made knowing what the adapter, `method`'s, giving an
+    /// `output`, is asked, and what's made of it: `by_ref()`'s lent, as it
+    /// is; each other's to be closed, then made the adapter.
+    fn back_kept_source(
+        &mut self,
+        method: Option<IterMethod>,
+        receiver: &Expr,
+        (iter_ty, output, held): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
+        span: Span,
+    ) -> R<Option<BackKept>> {
         Ok(Some(match method {
             // A range's, the range, whose `&mut` it is: what steps it after
             // moves its start, `$rangeNext(it)`, as Rust's does, not a JS
             // iterator of it, which would be stepped as a range again.
-            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => receiver.clone(),
+            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => BackKept::Lent(receiver.clone()),
             // Of one that knows its back, lent knowing it, as std's `&mut I`
             // passes on `I`'s back and length, never its ownership (#749).
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
                 let back = self.as_double_ended(receiver.clone(), iter_ty, span)?;
-                self.lent_iterator(back, held)
+                BackKept::Lent(self.lent_iterator(back, held))
             }
             // A copy that's its source, of numbers, stepped from its back:
             // its source made knowing its back, a `skip`'s or a `take`'s of a
@@ -287,7 +353,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // (`knowing_held`), not the `next` alone its dictionary
                 // has (#778). Of the crate's own iterator, or a library's,
                 // its own `next_back` (#2068).
-                self.as_double_ended(receiver.clone(), iter_ty, span)?
+                BackKept::Held(self.as_double_ended(receiver.clone(), iter_ty, span)?, Over::Copy)
             }
             // A map of one that knows its length, too (ADR 0456).
             // Of a type parameter given as it is, of the JS iterator made of
@@ -317,17 +383,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => receiver.clone(),
                 };
-                // An owning source of items with a destructor, closed to drop
-                // what it hasn't given, as a map's is (ADR 0465); not one
-                // through a `&mut`, `by_ref()`'s, its owner's (#749).
-                let it = self.closing(it, held, span)?;
-                let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
-                let f = self.unary_callback(values.next().expect("the function"), own);
-                let mapped = Expr::call_helper("$mapEnds", vec![it, f]);
-                match len {
-                    true => crate::lower::iterators::made_knowing_its_length(mapped),
-                    false => mapped,
-                }
+                BackKept::Held(it, Over::Map { len })
             }
             // An enumeration of one, its index from the back where it is
             // (ADR 0528), made of a source as capable as its type is, a
@@ -351,14 +407,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let back = of_param || self.knows_its_back(iter_ty) || self.user_double_ended(iter_ty);
                 let len = of_param || self.knows_its_length(iter_ty) || self.user_exact_size(iter_ty);
                 let it = match self.given_stepped(receiver.clone(), held, back, len) {
-                    // Closed to drop it, as a map's is, where it's owned, not
-                    // through a `&mut` (#223, #225), a type parameter's
-                    // value too (#971).
-                    Some(it) => self.closing(it, held, span)?,
-                    // The crate's, closed so too.
+                    Some(it) => it,
+                    // The crate's, what it can be made to know.
                     None if self.is_user_iterator(iter_ty) => {
-                        let knowing = self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?;
-                        self.closing(knowing, held, span)?
+                        self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?
                     }
                     // Of another the crate steps from its back whose JS knows
                     // neither its back nor its length, which its index from
@@ -372,37 +424,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // which `Enumerate::next_back` counts by: a map of a
                     // range made for its back alone (#2052).
                     None if self.stepped_from_its_back(output) => {
-                        let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
-                        self.closing(it, held, span)?
+                        self.as_exact_size(receiver.clone(), iter_ty, true, span)?
                     }
-                    None => self.closing(receiver.clone(), held, span)?,
+                    None => receiver.clone(),
                 };
-                crate::lower::iterators::enumerated_knowing(it)
+                BackKept::Held(it, Over::Enumerate)
             }
             // A `skip(n)` or a `take(n)` the crate steps from its back, held
             // where it's given or a chain's side, which MIR holds in a
             // variable before it's stepped (#718): made knowing its back and
             // its length where it's made, `$skipping` or `$taking` of its
-            // source made knowing them and closed to drop what it holds, as a
-            // map's is, given its items' drop, as `as_exact_size` makes one in
-            // place. Not one through a `&mut`, its owner's.
+            // source made knowing them, given its items' drop, as
+            // `as_exact_size` makes one in place. Not one through a `&mut`,
+            // its owner's.
             // One generic code asks the hint of, given it (#1236): `$taking`
             // or `$skipping` of its source, each std's hint of its source's,
             // which JS's own `.take(n)` and `.drop(n)` know none of; given
-            // its items' drop, and its source closed to drop what it holds,
-            // as above, so what's left drops as a drop of it panics (#1244).
+            // its items' drop, so what's left drops as a drop of it panics
+            // (#1244).
             Some(IterMethod::Skip | IterMethod::Take) if self.made_knowing_its_hint(output) && !held.is_ref() => {
                 // As a JS iterator: generic code's given its dictionary,
                 // `$given(it, IIterator)`, not the range it may be (#1240).
                 let it = self.as_js_iterator(receiver.clone(), iter_ty, span)?;
-                let it = self.closing(it, held, span)?;
-                let n = values.next().expect("how many");
-                let mut given = vec![it, n];
-                if let Some(item) = self.iterator_item(output) {
-                    given.extend(self.std_drop_function(item, span)?);
-                }
                 let skip = method == Some(IterMethod::Skip);
-                Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given)
+                BackKept::Held(it, Over::Hinted { skip })
             }
             // And one whose length is asked, counted, of a map's values say,
             // where a crate that reads a `Vec`'s capacity grows one by it
@@ -412,19 +457,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let skip = method == Some(IterMethod::Skip);
                 let it = self.as_exact_size(receiver.clone(), iter_ty, true, span)?;
-                let it = self.closing(it, held, span)?;
-                let n = values.next().expect("how many");
-                let mut given = vec![it, n];
-                if let Some(item) = self.iterator_item(output) {
-                    given.extend(self.std_drop_function(item, span)?);
-                }
-                // Its length follows from its back, of its source made
-                // exact-sized, an array's `$iter`: what a variable that holds
-                // it asks there, a crate's that reads a `Vec`'s capacity
-                // (#1317), `knows_its_length_of` answers of a `take` or a
-                // `skip` kept over an array's items made knowing its back.
-                let made = Expr::call_helper(if skip { "$skipping" } else { "$taking" }, given);
-                crate::lower::iterators::made_knowing_its_back(made)
+                BackKept::Held(it, Over::Counted { skip })
             }
             // A filter of one (ADR 0526), given its items' drop, of items with
             // a destructor, which drops each it doesn't keep as it passes it
@@ -441,16 +474,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => receiver.clone(),
                 };
-                // Closed to drop what it holds, as a map's is, the crate's
-                // iterator or a compiled `fuse()` of it (#225).
-                let it = self.closing(it, held, span)?;
-                let own = arg_tys.get(1).is_some_and(|ty| self.is_called_as_written(*ty));
-                let p = self.unary_callback(values.next().expect("the test"), own);
-                let mut given = vec![it, p];
-                if let Some(item) = self.iterator_item(output) {
-                    given.extend(self.std_drop_function(item, span)?);
-                }
-                Expr::call_helper("$filterEnds", given)
+                BackKept::Held(it, Over::Filter)
             }
             _ => return Ok(None),
         }))
@@ -872,4 +896,24 @@ fn given_by_a_call(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name().is_none())
         && !crate::lower::iterators::made_array(e)
         && !crate::lower::iterators::is_js_iterator(e)
+}
+
+/// `back_kept_source`'s: what `by_ref()` lends, as it is, or a source to
+/// close, then make `back_kept`'s adapter of.
+enum BackKept {
+    Lent(Expr),
+    Held(Expr, Over),
+}
+
+/// What `back_kept` makes of a source it's closed: a copy's, itself; a
+/// map's, `$mapEnds`, knowing its length or not; an enumeration's; a
+/// `skip(n)`'s or a `take(n)`'s, given its hint or counted from its back;
+/// a filter's, `$filterEnds`.
+enum Over {
+    Copy,
+    Map { len: bool },
+    Enumerate,
+    Hinted { skip: bool },
+    Counted { skip: bool },
+    Filter,
 }

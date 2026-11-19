@@ -1902,3 +1902,33 @@ same question twice is filed to be made one answer (#2069).
 Test: test/cross-crate-iterators.test.ts, "an adapter of a library's
 iterator given to its double-ended function steps from its back";
 mutation `copied-user-iterator-unknowing`.
+
+## Amendment (2026-11-19, #2152): what `back_kept` makes of a source is closed once
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change; a
+`Drop` must run where Rust runs it.
+
+`back_kept` makes an adapter of a source made knowing its back: a map's
+`$mapEnds`, an enumeration's, a `skip(n)`'s or a `take(n)`'s, a
+filter's `$filterEnds`, each arm closing its source to drop what it
+holds (ADR 0465), and a `copied()` that's its source (#2068), whose arm
+closed nothing. So `Own(Loud(..).copied())`, of the crate's iterator
+with a `Drop`, where a generic `impl<I: DoubleEndedIterator>
+DoubleEndedIterator for Own<I>` makes the copy's type one taken as
+stepped from its back, never dropped `Loud`: dropped, stepped or
+collected by generic code, as the metamorphic net's `generic-instances`
+rewrite of `consumed_adapter_drops` found. Each arm now gives its source
+(`back_kept_source`, `BackKept::Held`) and `back_kept` closes it in one
+place before it makes the adapter; `by_ref()`'s, lent, which its owner
+drops, is the one exception (`BackKept::Lent`). Byte-identical but for
+the copy: the corpus's every snapshot is as it was.
+
+Held by `test/corpus/copied_of_a_dropped_iterator_known_from_its_back.rs`,
+against native Rust. Mutation `given-enumeration-unclosed` is retargeted
+to the one closing, with the cases of the four per-arm mutations it
+stands for, `enumerate-back-own-unclosed`, `enumerate-back-source-unclosed`,
+`filter-back-own-unclosed` and `hinted-skip-source-unclosed`, and
+`map-ends-source-unclosed`, whose sites are gone; `map-of-mut-closed`,
+`range-by-ref-a-js-iterator`, `by-ref-knowing-unlent`,
+`back-filter-keeps-dropped` and `hinted-receiver-as-it-is` are
+retargeted to the new lines.

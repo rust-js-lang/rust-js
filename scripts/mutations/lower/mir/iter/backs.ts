@@ -32,11 +32,11 @@ export const mutations: Mutation[] = [
   {
     name: "given-enumeration-unclosed",
     breaks:
-      "an `enumerate()` of a type parameter given as it is, made knowing its back, never drops it: `drop 0` and `drop 1` are lost (#971)",
+      "`back_kept`'s source, made knowing its back, is left unclosed: an `enumerate()` of a type parameter given as it is never drops it, `drop 0` and `drop 1` lost (#971), nor a map's, a filter's, an enumeration's or a hinted `skip(n)`'s source what it never gave, the crate's iterator with a destructor or a compiled `fuse()` (#223, #225, #1244), nor a `copied()` of the crate's iterator with a `Drop` taken as stepped from its back (#2152)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                    Some(it) => self.closing(it, held, span)?,\n",
-    replace: "                    Some(it) => it,\n",
-    tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
+    find: "            BackKept::Held(it, over) => (self.closing(it, held, span)?, over),\n",
+    replace: "            BackKept::Held(it, over) => (it, over),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(iterator_named_by_another_bound|rev_lazy_drops|own_iterator_dropped_from_back|owned_items_through_fuse|own_iterator_dropped_through_adapters|skip_hinted_closes_its_source|copied_of_a_dropped_iterator_known_from_its_back).rs$"],
   },
   {
     name: "range-map-made-lengthless",
@@ -301,20 +301,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(map_stepped_from_its_back|range_map_rfold_holding).rs$"],
   },
   {
-    name: "map-ends-source-unclosed",
-    breaks:
-      "a map made knowing its back, of a `Vec`'s items with a destructor, doesn't close its source, so what it never gave isn't dropped",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                // through a `&mut`, `by_ref()`'s, its owner's (#749).\n                let it = self.closing(it, held, span)?;\n",
-    replace: "                // through a `&mut`, `by_ref()`'s, its owner's (#749).\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
-  },
-  {
     name: "range-by-ref-a-js-iterator",
     breaks:
       "`by_ref()` of a range is a JS iterator of it, which what steps it after steps as a range again: `take` gives nothing, and the range never moves",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => receiver.clone(),\n",
+    find: "            Some(IterMethod::ByRef) if self.range_kind(iter_ty).is_some() => BackKept::Lent(receiver.clone()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_steps.rs$"],
   },
@@ -383,44 +374,12 @@ export const mutations: Mutation[] = [
   },
 
   {
-    name: "enumerate-back-own-unclosed",
-    breaks:
-      "an `enumerate()` of the crate's iterator with a destructor stepped from its back isn't closed to drop it (#223)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                        let knowing = self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?;\n                        self.closing(knowing, held, span)?\n",
-    replace:
-      "                        self.user_iterator_knowing(receiver.clone(), held, (back, len), span)?\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
-  },
-  {
-    name: "enumerate-back-source-unclosed",
-    breaks:
-      "what an `enumerate()` stepped from its back steps, a compiled `fuse()`, isn't closed to drop it (#225)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                    None => self.closing(receiver.clone(), held, span)?,\n",
-    replace: "                    None => receiver.clone(),\n",
-    tests: ["test/corpus.test.ts", "-t", "^owned_items_through_fuse.rs$"],
-  },
-  {
     name: "back-kept-closes-borrowed",
     breaks:
       "an adapter stepped from its back of a `&mut` of the crate's iterator drops what it borrows (#225)",
     file: "src/lower/mir/iter/backs.rs",
     find: "        let held = arg_tys.first().copied().unwrap_or(iter_ty);\n",
     replace: "        let held = iter_ty;\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^own_iterator_dropped_through_adapters.rs$",
-    ],
-  },
-  {
-    name: "filter-back-own-unclosed",
-    breaks:
-      "a `filter` stepped from its back of the crate's iterator with a destructor, or a `fuse()` of it, isn't closed to drop it (#225)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                // iterator or a compiled `fuse()` of it (#225).\n                let it = self.closing(it, held, span)?;\n",
-    replace: "                // iterator or a compiled `fuse()` of it (#225).\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -486,9 +445,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a filter stepped from its back, of items with a destructor, drops none it doesn't keep",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                let mut given = vec![it, p];\n                if let Some(item) = self.iterator_item(output) {\n",
-    replace:
-      "                let mut given = vec![it, p];\n                if let Some(item) = self.iterator_item(output).filter(|_| false) {\n",
+    find: "                let given = dropping(self, vec![it, p])?;\n",
+    replace: "                let given = vec![it, p];\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_closed_items.rs$"],
   },
   {
@@ -620,8 +578,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`by_ref()` of what knows its back, a type parameter's, is the value itself, not lent, so `Total::sum` of it reaches the crate's own `fold`, which drops what the caller still owns (#749)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                self.lent_iterator(back, held)\n",
-    replace: "                back\n",
+    find: "                BackKept::Lent(self.lent_iterator(back, held))\n",
+    replace: "                BackKept::Lent(back)\n",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_lends.rs$"],
     snapshots: true,
   },
@@ -639,8 +597,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map()` of a `by_ref()` of a type parameter's iterator that knows its back is closed to drop it, so a collect of a `take(2)` of it drops what its owner still holds, and its owner drops it again (#749)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                // through a `&mut`, `by_ref()`'s, its owner's (#749).\n                let it = self.closing(it, held, span)?;\n",
-    replace: "                // through a `&mut`, `by_ref()`'s, its owner's (#749).\n                let it = self.closing(it, iter_ty, span)?;\n",
+    find: "            BackKept::Held(it, over) => (self.closing(it, held, span)?, over),\n",
+    replace: "            BackKept::Held(it, over) => (self.closing(it, iter_ty, span)?, over),\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
   {
@@ -800,19 +758,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
   },
   {
-    name: "hinted-skip-source-unclosed",
-    breaks: "a `skip(n)` generic code asks the hint of is made `$skipping` of its source unclosed, so where a drop of what's left panics the rest aren't dropped, where `IntoIter`'s drop goes on (#1244)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "                let it = self.closing(it, held, span)?;\n                let n = values.next().expect(\"how many\");\n                let mut given = vec![it, n];\n                if let Some(item) = self.iterator_item(output) {\n                    given.extend(self.std_drop_function(item, span)?);\n                }\n                let skip = method == Some(IterMethod::Skip);\n                Expr::call_helper(",
-    replace: "                let n = values.next().expect(\"how many\");\n                let mut given = vec![it, n];\n                if let Some(item) = self.iterator_item(output) {\n                    given.extend(self.std_drop_function(item, span)?);\n                }\n                let skip = method == Some(IterMethod::Skip);\n                Expr::call_helper(",
-    tests: ["test/corpus.test.ts", "-t", "^skip_hinted_closes_its_source.rs$"],
-  },
-  {
     name: "hinted-receiver-as-it-is",
     breaks: "a `skip(1)` made for its hint of a range generic code is given with its dictionary steps the range object itself, `(0, None)`, not `$given(it, IIterator)` (#1240)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                let it = self.as_js_iterator(receiver.clone(), iter_ty, span)?;\n                let it = self.closing(it, held, span)?;\n",
-    replace: "                let it = self.closing(receiver.clone(), held, span)?;\n",
+    find: "                let it = self.as_js_iterator(receiver.clone(), iter_ty, span)?;\n",
+    replace: "                let it = receiver.clone();\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
   },
   {
