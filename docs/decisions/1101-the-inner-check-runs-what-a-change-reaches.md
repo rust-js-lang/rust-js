@@ -881,7 +881,9 @@ test pattern names a test of its file ran minutes into check:fast: a
 retarget or a test moved by concept failed there. Now `bun run push`'s
 second phase, `fast`, right after the rebase, runs push-guard's `undone`,
 the one rule the hook runs too, and those two tests (`FAST_TESTS`),
-about a second together, before the build. And rows a push takes off a
+about a second together, before the build. Since d4c76fa8b's first push,
+refused minutes in by another of that file's tests, a catalog naming a
+file not its own, `FAST_TESTS` is the file whole, about 4 s. And rows a push takes off a
 `test/*-known.txt`, each under the heading of an issue one of its commits
 `Fixes`, are that issue fixed, not an undoing of the commit that listed
 them (`fixedRowsOnly`, `fixedIssues`); rows under another issue's

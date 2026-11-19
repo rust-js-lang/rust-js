@@ -170,4 +170,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/push.test.ts", "-t", "a push's fast phase runs first"],
   },
+  {
+    name: "push-fast-tests-picked",
+    breaks: "the fast phase runs two picked tests of the mutation catalog's file, not the file whole, so a catalog naming a file not its own refuses minutes into check:fast (d4c76fa8b's first push)",
+    file: "scripts/push.ts",
+    find: 'export const FAST_TESTS = ["test/mutations.test.ts"];\n',
+    replace: 'export const FAST_TESTS = ["test/mutations.test.ts", "-t", "every mutation applies to the compiler as it is, once"];\n',
+    tests: ["test/push.test.ts", "-t", "a push's fast phase runs first"],
+  },
 ];

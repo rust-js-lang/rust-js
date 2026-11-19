@@ -180,9 +180,6 @@ test("a push's fast phase runs first, push-guard's rule and the catalog's quick 
   expect(fast).toBeGreaterThan(0);
   expect(main.slice(fast, main.indexOf("\n", fast))).toContain("...FAST_TESTS]");
   expect(fast).toBeLessThan(at('run("build"'));
-  // Each of its tests is one of its file's.
-  const [file, flag, pattern] = FAST_TESTS;
-  expect(flag).toBe("-t");
-  const names = readFileSync(join(root, file!), "utf8");
-  for (const name of pattern!.split("|")) expect([name, names.includes(`test("${name}`)]).toEqual([name, true]);
+  // The mutation catalog's test file, whole: none of its tests picked.
+  expect(FAST_TESTS).toEqual(["test/mutations.test.ts"]);
 });

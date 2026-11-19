@@ -7,9 +7,8 @@
 //             a ratchet, an ADR's two amendments, a line set (`remakeable`)
 //   fast      in seconds, what would otherwise refuse it minutes later:
 //             push-guard's `undone`, which git's hook runs as it pushes, at
-//             the end; and the mutation catalog's tests that each mutation
-//             applies once and names a test of its file (`FAST_TESTS`),
-//             which check:fast runs minutes in
+//             the end; and the mutation catalog's test file whole
+//             (`FAST_TESTS`), which check:fast runs minutes in
 //   build     the compiler
 //   std       std/ made again (`bun run std`), refused where it differs from
 //             what's committed
@@ -62,14 +61,12 @@ import { refusal, undone } from "./push-guard";
 /** The phases, in the order they run. */
 export const phases = ["rebase", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
 
-/** The `fast` phase's tests: the mutation catalog's whose failure, a
- * `find` its code moved past or a test renamed or moved, check:fast found
- * minutes in, about a second together. */
-export const FAST_TESTS = [
-  "test/mutations.test.ts",
-  "-t",
-  "every mutation applies to the compiler as it is, once|each mutation's test pattern names a test of its file",
-];
+/** The `fast` phase's tests: the mutation catalog's file whole, whose
+ * failure, a `find` its code moved past, a test renamed or moved, or a
+ * catalog that names another file than its own, check:fast found minutes
+ * in: about 4 s on the Mac mini, where its two tests picked alone let the
+ * last through (d4c76fa8b's first push). */
+export const FAST_TESTS = ["test/mutations.test.ts"];
 export type Phase = (typeof phases)[number];
 
 
