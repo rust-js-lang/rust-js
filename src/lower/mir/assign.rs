@@ -306,18 +306,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }),
                     value => value,
                 };
-                self.one_none_returned(state, *place, None, value, span)?
+                self.one_none_returned(state, *place, (None, None), value, span)?
             }
             Rvalue::Aggregate(..) => value?,
             // What's `null` or a value already, as it is (ADR 0949).
             Rvalue::Use(operand, _) => {
                 let nulled = self.nulled(state, operand);
                 let value = self.nullable_written(state, *place, value?, nulled, span)?;
-                self.one_none_returned(state, *place, Some(operand), value, span)?
+                self.one_none_returned(state, *place, (Some(operand), None), value, span)?
             }
             _ => {
                 let value = self.nullable_written(state, *place, value?, false, span)?;
-                self.one_none_returned(state, *place, None, value, span)?
+                self.one_none_returned(state, *place, (None, None), value, span)?
             }
         };
         // A `#[rust_js::nullable]` field assigned, `p.title = None`: its

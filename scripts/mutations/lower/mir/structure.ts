@@ -748,7 +748,7 @@ export const mutations: Mutation[] = [
     name: "returned-calls-as-they-are",
     breaks: "what a function JS calls returns of a call, `id(value)` of JS's `null`, is `null` (#1840)",
     file: "src/lower/mir/structure.rs",
-    find: "                        let value = self.one_none_returned(state, *destination, None, value, span)?;\n",
+    find: "                        let value = self.one_none_returned(state, *destination, (None, callee), value, span)?;\n",
     replace: "",
     tests: given1840,
   },

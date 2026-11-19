@@ -892,6 +892,16 @@ impl<'tcx> Graph<'_, '_, 'tcx> {
                 }
                 _ => return self.unseen(&dest, &tys),
             }
+            // A JS object's `Deref` to the class it extends, `Error`'s to
+            // `JsError`: the object itself (ADR 0024), which holds what it's
+            // given (#2112).
+            if crate::lower::recognition::is_js_object_deref(tcx, tcx.parent(target))
+                && let Some(from) = given.first()
+            {
+                let both = self.shares(destination.ty(body, tcx).ty);
+                self.flow(from, &dest, both);
+                return;
+            }
             // A closure's or a function's, called through `Fn`: given the
             // tuple of its arguments.
             if !self.bodies.contains_key(&target)

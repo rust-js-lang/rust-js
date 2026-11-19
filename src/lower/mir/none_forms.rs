@@ -45,6 +45,29 @@ impl NoneForms {
     }
 }
 
+impl<'tcx> FnCx<'_, 'tcx> {
+    /// Whether `operand`, an `Option` written where `None` is `undefined`
+    /// alone, gives no `null` as it is (#2112, Change C's third step), where
+    /// the taint says it may hold one (`none_trusted`, which answers a
+    /// constant, a value made `Some` of what holds no JS `null`, and a place
+    /// it finds none in): a place every `null` of which is a written
+    /// `js::null()`, JS's on purpose (`JsNones::holds_written_null`, ADR
+    /// 0935), a local a test proved `Some` there (`proved_present`), or a
+    /// prop `jsx!` omitted, Rust's `None` (`omitted_prop`). A
+    /// call's write of `js::null()`, or of `?`'s `None`, Rust's own, is
+    /// `one_none_returned`'s, which knows the call.
+    pub(super) fn gives_no_null(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+        let Some(place) = operand.place().filter(|place| place.projection.is_empty()) else {
+            return false;
+        };
+        let (tcx, body) = (self.tcx, state.body);
+        let js_nones = self.krate.nulled_params.js_nones();
+        js_nones.holds_written_null(tcx, body, place)
+            || self.proved_present(state, place.local)
+            || self.omitted_prop(state, place.local)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NoneForms;

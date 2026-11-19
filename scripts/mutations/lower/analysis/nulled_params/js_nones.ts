@@ -155,4 +155,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && crate::lower::recognition::is_js_error_type(tcx, adt.did()) {\n                    found.types.insert(ty);\n",
     tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
   },
+  {
+    name: "object-deref-unfollowed",
+    breaks: "a JS object's `Deref` to the class it extends is taken for another crate's value, its `null` unknown, so a `Some` of an error `new` made is coalesced at an exit (#2112, ADR 0024)",
+    file: "src/lower/analysis/nulled_params/js_nones.rs",
+    find: "            if crate::lower::recognition::is_js_object_deref(tcx, tcx.parent(target))\n",
+    replace: "            if false\n",
+    tests: ["test/one-none-exits.test.ts", "-t", "a Some of an error new made, given"],
+  },
 ];

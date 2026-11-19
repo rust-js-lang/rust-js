@@ -1089,7 +1089,7 @@ export const mutations: Mutation[] = [
     name: "returned-uses-as-they-are",
     breaks: "what a function JS calls returns, its parameter JS gave `null`, is `null` (#1840)",
     file: "src/lower/mir/assign.rs",
-    find: "                self.one_none_returned(state, *place, Some(operand), value, span)?\n",
+    find: "                self.one_none_returned(state, *place, (Some(operand), None), value, span)?\n",
     replace: "                value\n",
     tests: given1840,
   },

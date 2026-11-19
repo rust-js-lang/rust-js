@@ -203,3 +203,53 @@ read and leaves unit tests' fixtures out. Parameters' forms
 (`own_param_none_form`) and fields' (`NonePlace::Field`) stay where they
 are, the owner of def-keyed forms; Change C's later steps (#2112) fold
 the taint (`js_nones`) and the `Known`-fact halves into this owner.
+
+## Amendment: what an exit gives as it is is MIR's (2026-11-19, #2112)
+
+Change C's third step (S2). An exit that gives `None` as `undefined`
+alone (`one_none_given`: a binding's optional argument, a function JS
+calls) gives `value ?? undefined` where what's written may hold a `null`
+JS gave. It asked `never_null(&Expr)` whether the value's JS was never
+`null`, a judgement of the JS's shape and its `Known` facts, beside the
+taint's (`none_trusted`). Now `NoneForms`' owner answers by MIR,
+`gives_no_null`: a place every `null` of which is a written `js::null()`,
+JS's on purpose (`JsNones::holds_written_null`, ADR 0935), or a local a
+test proved `Some` there (`proved_present`). A call's write of
+`js::null()`, or of `?`'s `None`, Rust's own (`FromResidual`), is given
+as it is by `one_none_returned`, which now knows the call's callee. The
+taint follows a JS object's `Deref` to the class it extends, the object
+itself (`recognition::is_js_object_deref`, ADR 0024), so a `Some` of an
+error `new` made, `Some::<&JsError>(js::error::new(..))`, holds no `null`
+JS gave. And a prop `jsx!` omitted, a local each write of which is
+react's `__omitted()` (`omitted_prop`, `bindings::is_omitted`, ADR
+0213), is Rust's `None`, never a `null` JS gave: MIR's answer, as the
+taint can't give it, a `Box<dyn Fn>`'s or a `Ref`'s sharing the class of
+the props' field another crate's JS may make.
+
+Measured as a differential before the switch, `never_null`'s answer
+against the MIR one where the decision is live: zero disagreements over
+every suite `check:fast --all` runs and React's port. (A first one, over
+the corpus, the snapshots and the port alone, missed 1,061 in the JSX
+and Next.js tests, each a prop `jsx!` omitted, which the gate's refusal
+of flattened props found: a differential runs over every suite.) and after it, no output
+moves, of the corpus, the snapshots, React's port and the vercel-ui SDK.
+Each arm stays only where a test catches its removal: arms that the
+taint already decided (a constant, a local read `undefined` alone, a
+local made `Some`, a payload check, and a `new` result's) went, as their
+mutations survived every program. Kept: the written `js::null()` arm
+(React's Fizz server's `js::null()` arguments, which a ladder would have
+left out, `undefined` for JS's `null`), the proved arm (React DOM's
+scroll-end `clearTimeout(existingTimer)`), the per-write `js::null()`
+and `?` returns, and the `Deref` passthrough (React's Flight server's
+`destroy(Some(js::error::new(..)))`), and the omitted prop's
+(test/jsx-props-resolved, whose flattened props it would refuse). `never_null` keeps its two other
+callers, a callback's arguments (`ones_given_to_a_callback`) and the
+items `function::bind` binds (`ones_bound`), for Change C's later
+steps.
+
+Rows: test/one-none-exits.test.ts, 7 tests; test/snapshots/throws.
+Mutations `no-null-written-null-unread`, `no-null-proved-unread`,
+`returned-js-null-coalesced`, `returned-residual-coalesced` and
+`object-deref-unfollowed` and `omitted-prop-unread`, each caught; `js-nones-binding-results-
+trusted`, `returned-uses-as-they-are` and `returned-calls-as-they-are`
+re-anchored, caught.

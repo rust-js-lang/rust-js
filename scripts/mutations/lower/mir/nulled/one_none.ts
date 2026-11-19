@@ -158,4 +158,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-truthy.test.ts"],
   },
+  {
+    name: "returned-js-null-coalesced",
+    breaks: "`js::null()` returned from a function that gives `None` as `undefined` is coalesced, `undefined`, where it's JS's `null` on purpose (#2112, ADR 0935)",
+    file: "src/lower/mir/nulled/one_none.rs",
+    find: "                crate::lower::bindings::is_js_null(self.tcx, called)\n                    || ",
+    replace: "                false\n                    || ",
+    tests: ["test/one-none-exits.test.ts", "-t", "returned beside a binding.s null is JS"],
+  },
+  {
+    name: "returned-residual-coalesced",
+    breaks: "`?`'s `None` returned is coalesced, `undefined ?? undefined`, where it's Rust's own (#2112)",
+    file: "src/lower/mir/nulled/one_none.rs",
+    find: "                    || self.tcx.is_lang_item(called, LangItem::TryTraitFromResidual)\n",
+    replace: "",
+    tests: ["test/snapshots.test.ts", "-t", "throws"],
+  },
 ];

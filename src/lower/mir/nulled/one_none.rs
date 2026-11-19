@@ -22,6 +22,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || !(self.krate.nulled_params.js_nones()).may_hold_null(self.tcx, state.body, place)
     }
 
+    /// Whether `local` is what `jsx!` gives a prop it isn't given, each of
+    /// its writes a call of react's `__omitted` (`bindings::is_omitted`, ADR
+    /// 0213): Rust's `None`, never a `null` JS gave (#2112).
+    pub(in crate::lower::mir) fn omitted_prop(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
+        self.whole_writes(state, local).is_some_and(|writes| {
+            !writes.is_empty()
+                && writes.iter().all(|write| {
+                    matches!(write, Write::Call(_, func, _)
+                        if func.const_fn_def().is_some_and(|(callee, _)| crate::lower::bindings::is_omitted(self.tcx, callee)))
+                })
+        })
+    }
+
     /// Whether `operand`, an `Option`, is a `Some` where it's read: a
     /// variable each write of which makes one, `Some(view.byte_length())`,
     /// or moves or copies what does, or a field so (`made_some_or_none`).
@@ -135,7 +148,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `None` (`nulled_params::one_none`) that may hold one JS gave
     /// (`none_trusted`), `value ?? undefined`, Rust's; else as it is
     /// (#1840, #1843).
-    /// A value whose JS is never `null` (`never_null`) is as it is.
+    /// What gives no `null` as it is, by MIR (`gives_no_null`, #2112), is as
+    /// it is.
     pub(in crate::lower::mir) fn one_none_given(
         &self,
         state: &State<'_, 'tcx>,
@@ -143,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         value: Expr,
     ) -> Expr {
         let ty = operand.ty(state.body, self.tcx);
-        match !never_null(&value)
+        match !self.gives_no_null(state, operand)
             && crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
             && !self.none_trusted(state, operand)
         {
@@ -161,11 +175,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &State<'_, 'tcx>,
         place: Place<'tcx>,
-        operand: Option<&Operand<'tcx>>,
+        (operand, called): (Option<&Operand<'tcx>>, Option<rustc_span::def_id::DefId>),
         value: Value<'tcx>,
         span: Span,
     ) -> R<Value<'tcx>> {
+        // `js::null()`'s `null`, JS's on purpose (ADR 0935), and `?`'s
+        // `None`, Rust's own (`FromResidual::from_residual`), as they are.
         if place != Place::from(mir::RETURN_PLACE)
+            || called.is_some_and(|called| {
+                crate::lower::bindings::is_js_null(self.tcx, called)
+                    || self.tcx.is_lang_item(called, LangItem::TryTraitFromResidual)
+            })
             || state.writer.is_some()
             || !crate::lower::analysis::nulled_params::returns_one_none(
                 self.tcx,
