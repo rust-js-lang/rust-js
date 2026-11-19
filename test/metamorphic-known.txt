@@ -129,3 +129,6 @@ plain std field held_enumerate.rs
 plain dyn-ref generic_nth_back_reaches_what_its_given.rs
 plain impl-ref generic_nth_back_reaches_what_its_given.rs
 plain impl-owned generic_nth_back_reaches_what_its_given.rs
+
+#2146 P0: the fields a partial move leaves, dropped inline, stop at the first whose drop panics: Rust's drop glue drops the rest as it unwinds
+plain std loud-drop or_pattern_part_moves.rs

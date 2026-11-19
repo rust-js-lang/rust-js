@@ -1,6 +1,8 @@
 // An or-pattern that moves part of a value with a destructor: what each
 // alternative leaves is dropped, as chrono's `MappedLocalTime::earliest` and
-// `latest` leave the other end of an ambiguous time.
+// `latest` leave the other end of an ambiguous time. Moved only where an
+// `if` runs, each alternative's move is its own: what's left drops at the
+// end of its scope by which alternative moved, never the moved part again.
 struct Loud(&'static str);
 
 impl Drop for Loud {
@@ -29,6 +31,19 @@ impl<T> Mapped<T> {
             _ => None,
         }
     }
+}
+
+fn taken_if(mapped: Mapped<Loud>, take: bool) -> Option<Loud> {
+    let taken = if take {
+        match mapped {
+            Mapped::Single(t) | Mapped::Ambiguous(t, _) => Some(t),
+            Mapped::None => None,
+        }
+    } else {
+        None
+    };
+    println!("left");
+    taken
 }
 
 enum Shape {
@@ -65,6 +80,15 @@ fn main() {
     println!("none {}", n.is_none());
     let numbers = Mapped::Ambiguous(1, 2).latest();
     println!("numbers {numbers:?}");
+    let d = taken_if(Mapped::Ambiguous(Loud("d1"), Loud("d2")), true);
+    println!("taken {}", d.as_ref().map_or("none", |l| l.0));
+    let e = taken_if(Mapped::Ambiguous(Loud("e1"), Loud("e2")), false);
+    println!("taken {}", e.as_ref().map_or("none", |l| l.0));
+    let f = taken_if(Mapped::Single(Loud("f")), true);
+    println!("taken {}", f.as_ref().map_or("none", |l| l.0));
+    let g = taken_if(Mapped::Single(Loud("g")), false);
+    println!("taken {}", g.as_ref().map_or("none", |l| l.0));
+    println!("taken none {}", taken_if(Mapped::None, true).is_none());
 
     let m = middle(Shape::Triple(Loud("t1"), Loud("t2"), Loud("t3")));
     println!("middle {}", m.as_ref().map_or("none", |l| l.0));

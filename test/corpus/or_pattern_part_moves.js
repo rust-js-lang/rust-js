@@ -48,6 +48,35 @@ const Mapped = {
   },
 };
 
+function takenIf(mapped, take) {
+  let mapped$0$live = true;
+  let mapped$0$live$1 = true;
+  let taken;
+  if (take && mapped.TAG === "Single") {
+    mapped$0$live$1 = false;
+    const t = mapped._0;
+    taken = t;
+  } else if (take && mapped.TAG === "Ambiguous") {
+    mapped$0$live = false;
+    const t = mapped._0;
+    taken = t;
+  } else {
+    taken = undefined;
+  }
+  console.log("left");
+  if (mapped.TAG === "Single") {
+    if (mapped$0$live$1) {
+      loudDrop_drop(mapped._0);
+    }
+  } else if (mapped.TAG === "Ambiguous") {
+    if (mapped$0$live) {
+      loudDrop_drop(mapped._0);
+    }
+    loudDrop_drop(mapped._1);
+  }
+  return taken;
+}
+
 function middle(shape) {
   let result;
   let m;
@@ -117,29 +146,84 @@ function main() {
         try {
           const numbers = Mapped.latest({ TAG: "Ambiguous", _0: 1, _1: 2 });
           console.log(`numbers ${numbers == null ? "None" : `Some(${numbers})`}`);
-
-          const m = middle({ TAG: "Triple", _0: ["t1"], _1: ["t2"], _2: ["t3"] });
-          console.log(`middle ${m?.[0] ?? "none"}`);
+          const d = takenIf({ TAG: "Ambiguous", _0: ["d1"], _1: ["d2"] }, true);
+          console.log(`taken ${d?.[0] ?? "none"}`);
           try {
-            const p = middle({ TAG: "Pair", _0: ["p1"], _1: ["p2"] });
-            console.log(`middle ${p?.[0] ?? "none"}`);
+            const e = takenIf({ TAG: "Ambiguous", _0: ["e1"], _1: ["e2"] }, false);
+            console.log(`taken ${e?.[0] ?? "none"}`);
             try {
-              const loud = middle("Empty");
-              console.log(`middle none ${loud == null}`);
-              if (loud != null) {
-                loudDrop_drop(loud);
-              }
+              const f = takenIf({ TAG: "Single", _0: ["f"] }, true);
+              console.log(`taken ${f?.[0] ?? "none"}`);
+              try {
+                const g = takenIf({ TAG: "Single", _0: ["g"] }, false);
+                console.log(`taken ${g?.[0] ?? "none"}`);
+                try {
+                  const loud = takenIf("None", true);
+                  console.log(`taken none ${loud == null}`);
+                  if (loud != null) {
+                    loudDrop_drop(loud);
+                  }
 
-              console.log(`name ${name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] })}`);
-              console.log(`name ${name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] })}`);
-              console.log(`name ${name("Empty")}`);
-              console.log("end");
+                  const m = middle({ TAG: "Triple", _0: ["t1"], _1: ["t2"], _2: ["t3"] });
+                  console.log(`middle ${m?.[0] ?? "none"}`);
+                  try {
+                    const p = middle({ TAG: "Pair", _0: ["p1"], _1: ["p2"] });
+                    console.log(`middle ${p?.[0] ?? "none"}`);
+                    try {
+                      const value = middle("Empty");
+                      console.log(`middle none ${value == null}`);
+                      if (value != null) {
+                        loudDrop_drop(value);
+                      }
+
+                      console.log(
+                        `name ${name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] })}`,
+                      );
+                      console.log(`name ${name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] })}`);
+                      console.log(`name ${name("Empty")}`);
+                      console.log("end");
+                    } catch (error) {
+                      throw $unwindsOn(error);
+                    } finally {
+                      if ($live()) {
+                        if (p != null) {
+                          loudDrop_drop(p);
+                        }
+                      }
+                    }
+                  } catch (error) {
+                    throw $unwindsOn(error);
+                  } finally {
+                    if ($live()) {
+                      if (m != null) {
+                        loudDrop_drop(m);
+                      }
+                    }
+                  }
+                } catch (error) {
+                  throw $unwindsOn(error);
+                } finally {
+                  if ($live()) {
+                    if (g != null) {
+                      loudDrop_drop(g);
+                    }
+                  }
+                }
+              } catch (error) {
+                throw $unwindsOn(error);
+              } finally {
+                if ($live()) {
+                  if (f != null) {
+                    loudDrop_drop(f);
+                  }
+                }
+              }
             } catch (error) {
               throw $unwindsOn(error);
             } finally {
               if ($live()) {
-                if (p != null) {
-                  loudDrop_drop(p);
+                if (e != null) {
+                  loudDrop_drop(e);
                 }
               }
             }
@@ -147,8 +231,8 @@ function main() {
             throw $unwindsOn(error);
           } finally {
             if ($live()) {
-              if (m != null) {
-                loudDrop_drop(m);
+              if (d != null) {
+                loudDrop_drop(d);
               }
             }
           }

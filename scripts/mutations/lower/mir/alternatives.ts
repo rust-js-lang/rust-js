@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "alike-alternatives-moved",
-    breaks: "an or-pattern's alternatives that move a part out are one, so what's left of the variant drops as the earlier alternative's moved, `drop a1` before it's used (rd430)",
+    breaks: "an or-pattern's alternatives that move a part out are one, so the later alternative's move, made only where an `if` runs, never clears its drop flag and what it moved drops again, `drop d1` twice (rd430)",
     file: "src/lower/mir/alternatives.rs",
     find: "            (Operand::Copy(x), Operand::Copy(y)) => place(x, y),\n",
     replace: "            (Operand::Copy(x), Operand::Copy(y)) | (Operand::Move(x), Operand::Move(y)) => place(x, y),\n",
