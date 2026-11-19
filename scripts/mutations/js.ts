@@ -50,12 +50,4 @@ export const mutations: Mutation[] = [
     replace: "        known::found(self.0 & known.bit());\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a case's JS without a fact a reader found"],
   },
-  {
-    name: "proved-read-known-as-nothing-more",
-    breaks: "a read a test proved there takes no other knowledge, so `kind.object()`'s `t ? v : undefined` of it isn't `t` where it's tested, `const object = typeof value === \"object\" && value !== null ? value : undefined; if (object != null)` in React DOM's hydration (#1933)",
-    file: "src/js.rs",
-    find: "        self.part(&[Known::NoneUndefined, Known::NoneNull, Known::Proved])\n",
-    replace: "        self.part(&[Known::NoneUndefined, Known::NoneNull])\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "object"],
-  },
 ];

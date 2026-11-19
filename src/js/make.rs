@@ -1093,7 +1093,8 @@ impl Expr {
     /// array, a function, a `new`, a template, a regex or JSX, never is; nor
     /// what an operator gives but `&&`, `||` and `??`, which may give an
     /// operand that may be; nor what lowering knows is `Known::Defined`,
-    /// `Known::Present` or, where it's read, `Known::Proved`. An item's read,
+    /// `Known::Present`. What MIR proves where it's read is `presence`'s
+    /// (#2112 C S4), which its uses ask beside this. An item's read,
     /// `Known::Item`, may be: a `const`'s or a thread-local's `None` is
     /// `undefined`, `const sigil = undefined;` (#1957).
     /// Anything else, a variable or a call, may be. The one answer of
@@ -1101,8 +1102,6 @@ impl Expr {
     /// storage asks (`Storage::written`).
     pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
-            // What a test proved where it's read (#1933).
-            _ if self.facts.has(Known::Proved) || self.facts.has(Known::ProvedDefined) => false,
             _ if [Known::Defined, Known::Present, Known::NoneNull]
                 .into_iter()
                 .any(|known| self.facts.has(known)) =>

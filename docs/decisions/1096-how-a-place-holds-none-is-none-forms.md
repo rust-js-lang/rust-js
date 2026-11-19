@@ -272,3 +272,58 @@ parameter's name only of a function or a method, which a constructor,
 one). Mutations `optional-param-name-of-a-constructor` (corpus
 `held_filter_map_reversed`) and `none-given-to-any-binding-parameter`,
 re-anchored, caught.
+
+## Amendment: what a test proved of a read is asked, never carried (2026-11-19, #2112)
+
+Change C's fifth step (S4). What a test proved of an `Option` where it's
+read was a fact stamped on the read's JS, `Known::Proved` (`Some` there)
+and `Known::ProvedDefined` (never `undefined`, maybe `null`), by
+`operands.rs` of a variable's read and `field_read_marked` of a field's
+or a slice end's. Copies, presence tests and `of_presence` carried it to
+other expressions, past the test that proved it, so tidy had to forget it
+as it began (`forget_proved`, #1942) and a contract checked none was
+left. It's now MIR's one answer, `NoneForms::presence(state, operand)`:
+`Presence::{Present, Defined, Unknown}`, asked where each use is lowered.
+
+- An `unwrap()` or `unwrap_or(d)`'s receiver: `calls::Given::receiver`,
+  filled with the other per-call MIR facts (`call_given`).
+- A value stored in a nullable place: `stored_given`, an `Option` proved
+  there is `null` or a value already, `Given::Nulled`; so a `Cell` set, a
+  plain assignment, a `*r = v`. A call that gives its `Option` through,
+  `js::cast(found)` or `found.map(js::unknown)`, returned from a nullable
+  function, is what's proved of `found` (`call_nulled`, `call_presence`).
+- A binding's trailing optional argument, `optional_ladder`'s
+  `surely_there`: `may_be_undefined` alone; its answer with the facts gone
+  is the same at every site, so it asks nothing more.
+
+`presence` follows a temporary to what it copies (`copied_from`): a copy
+or borrow written in the block being read, or a call that goes straight
+on to it and gives its `Option` through (`passes_through`). Only
+straight-line code: a test edge starts a block, so what's proved where
+the use is lowered, a proof no write since its test breaks, held where
+the copy was made. A copy taken before a test, `let t = x; if x.is_some()
+{ t.unwrap_or(d) }`, isn't followed. The `js::cast` check is one
+predicate, `is_its_argument`, which `written_given` asks too.
+
+Proof: before switching, probes compared each decision as it was with
+the decision after stripping the facts from every node, OR'd with
+`presence`, over every suite of `check:fast --all` and React's port:
+`unwrap`/`unwrap_or`, `may_be_undefined` where a nullable place stores
+(`Storage::written`'s callers, `store_again`), the `*r = v` branch of
+`assign`, the ladder's `surely_there`, and `never_null`. They agreed at
+every site once `presence` followed copies, `map` and `js::cast`. With
+the facts deleted, every suite's output and the port are byte-identical.
+ADR 0262's case: none observable, no output moves. `Known::Proved`,
+`Known::ProvedDefined`, `forget_proved`, tidy's "proved forgotten" pass,
+the `NOTHING_PROVED` contract and `field_read_marked` are gone, and so is
+what only bridged them: `assign`'s `never_undefined` under `*r = v`, which
+`stored_given` now answers;
+architecture-nones holds that none comes back and that the proofs are
+asked by `presence` alone. Mutations moved from `operands.rs` to
+`none_forms.rs` with the proofs they break, and a slice end's to
+`proved_present`, which asks it; new ones for following copies, `map`,
+`js::cast` and `stored_given`. What the first probes took for a proof
+read through a reference, `&(*x)`, was a reference stored, no decision:
+following one moved nothing, so `presence` doesn't. Two survivors in the
+files this touches, `js-null-given-undefined` and `option-identity-map`,
+survive before it too (1b3681486), reported, not this change's.

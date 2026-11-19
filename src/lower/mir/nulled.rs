@@ -240,12 +240,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// given `?? null` until it's found so, and lowered again once it is.
     /// A call of the crate's function with such a parameter is told it as
     /// it's given on (`given_on_param`, rd624).
+    /// So is what MIR proves `Some`, or never `undefined`, where it's read
+    /// (`presence`, #2112 C S4): a value already, or `null`.
     pub(super) fn stored_given(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Given {
-        match self.stored_from(state, operand) {
+        let given = match self.stored_from(state, operand) {
             (Given::Nulled, Some(param)) if !self.settled.nulled.is_nulled(state.body.source.def_id(), param) => {
                 Given::Unknown
             }
             (given, _) => given,
+        };
+        match given {
+            Given::Unknown if self.presence(state, operand) != super::Presence::Unknown => Given::Nulled,
+            given => given,
         }
     }
 
@@ -555,6 +561,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> bool {
         let write = Write::Call(state.at, func, args);
         self.written_given(state, local, &write, &mut Vec::new()) == (Given::Nulled, None)
+            || self.call_presence(state, local, (func, args)) != super::Presence::Unknown
+    }
+
+    /// Whether `def_id` is a binding that's its argument in JS, `js::cast`'s
+    /// (rd632).
+    pub(super) fn is_its_argument(&self, def_id: rustc_span::def_id::DefId) -> bool {
+        bindings::is_binding(self.tcx, def_id) && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
     }
 
     /// What `write` of `local` gives a nullable place (`stored_given`).
@@ -602,8 +615,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A binding that's its argument in JS, `js::cast(Some(js::unknown(options)))`
         // of an `Option`: what it's given (rd632).
-        if bindings::is_binding(self.tcx, def_id)
-            && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)
+        if self.is_its_argument(def_id)
             && self.option_of(state.body.local_decls[local].ty).is_some()
             && let [arg] = args
             && self.option_of(arg.node.ty(state.body, self.tcx)).is_some()

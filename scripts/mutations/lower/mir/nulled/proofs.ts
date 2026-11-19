@@ -251,4 +251,28 @@ export const mutations: Mutation[] = [
       "a variable a part of an && shows there"
     ]
   },
+  {
+    name: "passes-through-no-cast",
+    breaks: "`js::cast(found)` of an `Option` isn't the `Option` it's given to what's proved of it, so a nullable function returns it `?? null` under `js::truthy(found)` (#2112 C S4)",
+    file: "src/lower/mir/nulled/proofs.rs",
+    find: "        let cast = self.is_its_argument(callee)\n",
+    replace: "        let cast = false && self.is_its_argument(callee)\n",
+    tests: ["test/lowering-nullable-truthy.test.ts"],
+  },
+  {
+    name: "passes-through-no-map",
+    breaks: "`Option::map`'s result isn't proved where its receiver is, so `createDetails`' `cancelable.map(js::boolean).unwrap_or(true)` of a parameter JS defaults is coalesced (#2112 C S4)",
+    file: "src/lower/mir/nulled/proofs.rs",
+    find: "        (mapped || cast).then_some(from)\n",
+    replace: "        cast.then_some(from)\n",
+    tests: ["test/create-details.test.ts", "-t", "upstream's body"],
+  },
+  {
+    name: "ended-present-unmarked-in-place",
+    breaks: "a `last()` proved `Some`, read in place, `keys.at(-1)`, isn't marked proved, so its `unwrap()` keeps `$unwrap` (#1860)",
+    file: "src/lower/mir/nulled/proofs.rs",
+    find: "        if self.ended_present(state, local) || self.present_on_all_paths(state, local, state.at) {\n",
+    replace: "        if self.present_on_all_paths(state, local, state.at) {\n",
+    tests: ["test/lowering-collections.test.ts", "-t", "a split collected straight"],
+  },
 ];

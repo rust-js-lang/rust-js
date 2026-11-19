@@ -653,7 +653,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Value::Expr(e) => Value::Expr(held_by_its_temporary(state, local, e)),
                         read => read,
                     };
-                    let read = self.field_read_marked(state, operand, read);
                     super::operands::none_read(state, operand, read)
                 }
                 None => self.mir_operand(state, operand, out)?,

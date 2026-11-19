@@ -68,6 +68,82 @@ impl<'tcx> FnCx<'_, 'tcx> {
     }
 }
 
+/// What MIR proves of an `Option` where an operand reads it (#2112's
+/// Change C, S4): `Some` there, a test of it every path takes first; never
+/// `undefined` there, though maybe `null`; or nothing. The one answer of
+/// each use, asked where the use is lowered, never carried on its JS.
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum Presence {
+    #[default]
+    Unknown,
+    Present,
+    Defined,
+}
+
+impl<'tcx> FnCx<'_, 'tcx> {
+    /// What MIR proves of `operand`, an `Option`, where it's read: of a
+    /// variable a test proved (`proved_present`), what a closure's `with`
+    /// lends of a thread-local `Some` wherever it runs (`present_item_read`),
+    /// a capture a test in the closure proved (`capture_read_proved`), a
+    /// struct's `RefCell` field read where a test of it proved it
+    /// (`field_read_proved`): `Present`; of one a test proved defined
+    /// (`proved_defined`): `Defined`.
+    pub(in crate::lower::mir) fn presence(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Presence {
+        self.presence_of(state, (operand, state.at), 0)
+    }
+
+    /// What MIR proves of the `Option` a call of `func` on `args` gives
+    /// `local`, where the call's lowered: of one that gives its `Option`
+    /// through (`passes_through`), `js::cast(found)`'s, what's proved of it.
+    pub(in crate::lower::mir) fn call_presence(
+        &self,
+        state: &State<'_, 'tcx>,
+        local: Local,
+        (func, args): (&Operand<'tcx>, &[rustc_span::Spanned<Operand<'tcx>>]),
+    ) -> Presence {
+        match self.passes_through(state, local, func, args) {
+            Some(from) => self.presence_of(state, (&Operand::Copy(from), state.at), 0),
+            None => Presence::Unknown,
+        }
+    }
+
+    /// `presence`, of a temporary followed to what it copies, a few deep
+    /// (`copied_from`): what's proved where it's lowered of what it copies.
+    fn presence_of(
+        &self,
+        state: &State<'_, 'tcx>,
+        (operand, block): (&Operand<'tcx>, BasicBlock),
+        depth: usize,
+    ) -> Presence {
+        let Some(place) = operand.place() else {
+            return Presence::Unknown;
+        };
+        if self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_none() {
+            return Presence::Unknown;
+        }
+        // A local's whole read; a capture's or a thread-local's through
+        // the place they're read by.
+        let whole = place.projection.is_empty();
+        if (whole && self.proved_present(state, place.local))
+            || self.present_item_read(state, place)
+            || self.capture_read_proved(state, place)
+            || (whole && self.field_read_proved(state, place.local))
+        {
+            return Presence::Present;
+        }
+        if whole && self.proved_defined(state, place.local) {
+            return Presence::Defined;
+        }
+        if depth >= 4 || !place.projection.is_empty() {
+            return Presence::Unknown;
+        }
+        let Some((from, at)) = self.copied_from(state, (place.local, block)) else {
+            return Presence::Unknown;
+        };
+        self.presence_of(state, (&Operand::Copy(from), at), depth + 1)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NoneForms;

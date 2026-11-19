@@ -332,7 +332,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let unwrap = crate::lower::body_queries::the_call_at(self.frame.thir, span);
                 if (unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))
                     || list[0].facts.has(js::Known::Present)
-                    || list[0].facts.has(js::Known::Proved))
+                    || call.receiver == crate::lower::mir::Presence::Present)
                     && !list[1..].iter().any(Expr::has_effects)
                 {
                     let value = list.into_iter().next().expect("the `Option`");
@@ -374,7 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Of one a test proved there, `proved_present`'s, its value:
                 // the default, which does nothing and whose drop does nothing,
                 // never read (#1933 step 4).
-                if option.facts.has(js::Known::Proved)
+                if call.receiver == crate::lower::mir::Presence::Present
                     && !default.has_effects()
                     && self.drops(generic_args.type_at(0)) == crate::lower::drops::Drops::Nothing
                 {

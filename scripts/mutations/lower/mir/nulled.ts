@@ -323,8 +323,8 @@ export const mutations: Mutation[] = [
     name: "cast-of-a-nulled-unfollowed",
     breaks: "a `js::cast` of an `Option` that's `null` or a value isn't taken as so, so hydrateRoot's `options ?? null` is `options != null ? (options ?? null) : null` (rd632)",
     file: "src/lower/mir/nulled.rs",
-    find: "            && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)\n",
-    replace: "            && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This) && false\n",
+    find: "        bindings::is_binding(self.tcx, def_id) && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This)\n",
+    replace: "        bindings::is_binding(self.tcx, def_id) && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::This) && false\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a cast of an Option is what it's given"],
   },
   {
@@ -565,5 +565,13 @@ export const mutations: Mutation[] = [
     find: "        if let Some(crate::lower::Std::LocalWith { tried: false }) = known\n",
     replace: "        if let Some(crate::lower::Std::LocalWith { tried: false }) = known && false\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a thread-local's with"],
+  },
+  {
+    name: "stored-given-presence-unasked",
+    breaks: "an `Option` a test proved where it's stored in a nullable place may still be `undefined` to it, `return value ?? null` where `value.is_some() && flag` holds (#1933, #2112 C S4)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            Given::Unknown if self.presence(state, operand) != super::Presence::Unknown => Given::Nulled,\n",
+    replace: "",
+    tests: ["test/lowering-nullable-tests.test.ts", "test/lowering-nullable-truthy.test.ts"],
   },
 ];

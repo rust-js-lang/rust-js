@@ -14,19 +14,11 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "proved-store-through-a-borrow-unread",
-    breaks: "an `Option` a test proved there, stored through a `RefCell`'s borrow of a nullable field, `*value = deferred` under `deferred.is_some()`, is `deferred ?? null`, left for tidy to guess (#1933 step 4 (B))",
-    file: "src/lower/mir/assign.rs",
-    find: "        let never_undefined = matches!(&value, Value::Expr(e) if !e.may_be_undefined());\n",
-    replace: "        let never_undefined = false;\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "stored through a borrow"],
-  },
-  {
     name: "store-through-a-borrow-as-it-is",
     breaks: "what's stored through a `RefCell`'s borrow of a nullable field is taken to be never `undefined`, so a `None` written again after its test, `deferred = None`, is stored `undefined`, which the crate's `=== null` reads as a `Some` (#1933 step 4 (B))",
     file: "src/lower/mir/assign.rs",
-    find: "        let never_undefined = matches!(&value, Value::Expr(e) if !e.may_be_undefined());\n",
-    replace: "        let never_undefined = matches!(&value, Value::Expr(_));\n",
+    find: "                    && matches!(rvalue, Rvalue::Use(operand, _) if self.stored_given(state, operand) == Given::Nulled) =>\n",
+    replace: "                    && matches!(rvalue, Rvalue::Use(..)) =>\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "stored through a borrow"],
   },
   {

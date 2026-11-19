@@ -66,6 +66,9 @@ pub(super) struct Call<'c, 'tcx> {
     /// `position`, whether its `Option` is a found index, only tested and
     /// its index taken: `-1` its `None` (`FoundIndexes::through`, #2074).
     pub(super) found_index: bool,
+    /// What MIR proves of its first argument where it's read
+    /// (`Given::receiver`).
+    pub(super) receiver: crate::lower::mir::Presence,
     pub(super) span: Span,
 }
 
@@ -89,6 +92,9 @@ pub(super) struct Given<'c> {
     pub(super) in_bounds: bool,
     /// Whether it's an `and_then` whose `Option` is a found index.
     pub(super) found_index: bool,
+    /// What MIR proves of its first argument where it's read, an `Option`
+    /// receiver's (`mir::Presence`, #2112 C S4).
+    pub(super) receiver: crate::lower::mir::Presence,
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
@@ -113,6 +119,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             fresh_string,
             in_bounds,
             found_index,
+            receiver,
         } = given;
         Call {
             def_id,
@@ -130,6 +137,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             fresh_string,
             in_bounds,
             found_index,
+            receiver,
             span,
         }
     }

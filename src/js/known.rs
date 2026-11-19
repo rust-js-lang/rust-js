@@ -102,20 +102,6 @@ knowns! {
     /// `t` holds (`Expr::presence`, ADR 0910). Never `undefined`, so a
     /// nullable place stores it as it is too.
     Present,
-    /// There where lowering read it: an `Option` a test of it proved
-    /// there, every path to the read taking the edge `None` never takes
-    /// (`proved_present`, #1933), never `undefined` to a nullable place's
-    /// storage and its value to an `unwrap()`. Not `Present`, which isn't
-    /// of where it's read: tidy, which moves code past the test, `x == null
-    /// ? null : x` made `x ?? null`, forgets it as it begins (#1942).
-    Proved,
-    /// Defined where lowering read it, never `undefined` though maybe
-    /// `null`: an `Option` a test proved so there, `js::classify(x)` not
-    /// `Kind::Undefined` or `js::strict_equals(x, None)` false, on every
-    /// path to the read (`proved_defined`, #1933 step 4 (D)). A nullable
-    /// place stores it as it is; not `Proved`, as its `null` is a `None`.
-    /// Tidy forgets it as it begins, with `Proved`.
-    ProvedDefined,
     /// The `None` a `take()` writes over a place rust-js made, a variable
     /// or a crate struct's field, a plain data property, read into a
     /// `const` just before (ADR 0996): nothing but that `const` sees the
@@ -417,8 +403,6 @@ impl Known {
             | Known::Chars
             | Known::Defined
             | Known::Present
-            | Known::Proved
-            | Known::ProvedDefined
             | Known::Own
             | Known::Taken
             | Known::ArrayItems
@@ -567,37 +551,6 @@ pub fn found_names() -> Vec<String> {
         .filter(|known| found & known.bit() != 0)
         .map(|known| known.name())
         .collect()
-}
-
-impl super::Expr {
-    /// This, which a test of it proved there where lowering reads it
-    /// (`Known::Proved`): never `undefined` to a nullable place's storage
-    /// (`may_be_undefined`) and its value to an `unwrap()`, there; not
-    /// `Present`, which the lowering builds other forms of, and which
-    /// tidy's passes take for true wherever they move it. Tidy forgets it
-    /// as it begins (`forget_proved`, #1933, #1942).
-    pub fn proved(self) -> super::Expr {
-        super::Expr {
-            facts: self.facts.with(Known::Proved),
-            ..self
-        }
-    }
-
-    /// This, which a test proved defined there where lowering reads it
-    /// (`Known::ProvedDefined`): never `undefined` to a nullable place's
-    /// storage, there. Tidy forgets it as it begins (`forget_proved`).
-    pub fn proved_defined(self) -> super::Expr {
-        super::Expr {
-            facts: self.facts.with(Known::ProvedDefined),
-            ..self
-        }
-    }
-
-    /// This, what a test proved of it forgotten, where it's read now past
-    /// where the test held (#1933, #1942): `Proved` and `ProvedDefined`.
-    pub fn forget_proved(&mut self) {
-        self.facts = self.facts.without(Known::Proved).without(Known::ProvedDefined);
-    }
 }
 
 #[cfg(test)]

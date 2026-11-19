@@ -1045,7 +1045,7 @@ pub fn pushed_or(mut list: Option<Vec<u32>>, fallback: Vec<u32>) -> usize {
 // getTaskName's `cachedEntry` and its ref's `refProp`, and
 // `js::strict_equals(x, None)`'s false one, given as they are by a
 // nullable function, `return entry;`, MIR's answer (`proved_defined`,
-// `Known::ProvedDefined`, #1933 step 4 (D)), not tidy's. Through the
+// `Presence::Defined`, #1933 step 4 (D)), not tidy's. Through the
 // `bool` `matches!` sets in each arm, a variable of it or its negation
 // too, and so of `matches!(x, Some(_))`'s; not where it's written
 // between, nor on `Kind::Undefined`'s own edge, nor past the test, nor of

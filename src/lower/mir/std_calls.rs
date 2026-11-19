@@ -95,6 +95,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             fresh_string: self.fresh_string_read_into(state),
             in_bounds: crate::lower::analysis::call_bounds_proved(self.tcx, state.body, state.at),
             found_index: state.facts.found_index_through(state.at),
+            receiver: match &state.body[state.at].terminator().kind {
+                mir::TerminatorKind::Call { args, .. } => {
+                    args.first().map_or(crate::lower::mir::Presence::Unknown, |arg| {
+                        self.presence(state, &arg.node)
+                    })
+                }
+                _ => crate::lower::mir::Presence::Unknown,
+            },
         }
     }
 

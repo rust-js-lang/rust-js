@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/tidy-stages.test.ts", "-t", "a case's JS without a fact a reader found"],
   },
   {
-    name: "proved-defined-unforgotten",
-    breaks: "tidy keeps what a test proved defined of a read, so one it moves past the test, two arms alike made one, `if !js::strict_equals(x, None) { x } else { x }`, is given as `undefined` where Rust's `None` is `null` (#1933 step 4 (D))",
-    file: "src/js/known.rs",
-    find: "        self.facts = self.facts.without(Known::Proved).without(Known::ProvedDefined);\n",
-    replace: "        self.facts = self.facts.without(Known::Proved);\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "moved past the test"],
-  },
-  {
     name: "iterator-fact-only-permits",
     breaks:
       "`Known::Iterator` is taken to only permit, so the net forgets it: a `while let` of a `by_ref()`'s steps, not known to be a JS iterator, is stepped as an array and never ends its loop as Rust does (ADR 1127)",

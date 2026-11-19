@@ -65,29 +65,22 @@ test("what may look like None is may_look_like_none's alone", () => {
   expect(asking).toEqual([]);
 });
 
-// What a test proved of an `Option` where lowering reads it,
-// `Known::Proved`, is MIR's one answer, `proved_present` (#1933): made
-// only where an operand's read asks it, `.proved()`, and forgotten, with its
-// `Present`, only by tidy's first pass, as tidy moves code past the test
-// that proved it (#1942). Tidy's contracts hold that none is left after
-// (`NOTHING_PROVED`).
-test("a read a test proved there is MIR's to say, and tidy's to forget as it begins", () => {
+// What a test proved of an `Option` where it's read is MIR's one answer,
+// `NoneForms::presence`, asked where each use is lowered (#2112 C S4): an
+// `unwrap()`'s receiver (`Given::receiver`), a value stored
+// (`stored_given`). It was a fact stamped on the read's JS,
+// `Known::Proved`/`ProvedDefined`, which copies carried past the test and
+// tidy had to forget as it began (#1942); no such fact is made again.
+test("what a test proved of a read is presence's, asked where it's used, never carried on its JS", () => {
   const sources = files("src").filter((file) => file.endsWith(".rs"));
   const lines = (pattern: RegExp) => sources.flatMap((file) =>
     read(file).split("\n").filter((line) => !/^\s*\/\//.test(line) && pattern.test(line)).map(() => file));
-  // A local's own tests (`proved_present`), what a closure's `with` lends it
-  // of a thread-local tested where it's made (`present_item_read`), and a
-  // field's (`field_read_proved`, #1933).
-  expect(lines(/\.proved\(\)/)).toEqual(["src/lower/mir/operands.rs", "src/lower/mir/operands.rs"]);
-  expect(lines(/Expr::forget_proved\b|\.forget_proved\(\)/)).toEqual(["src/lower/mir/tidy/stages.rs"]);
-  expect(lines(/\.with\((?:js::)?Known::Proved\)/)).toEqual(["src/js/known.rs"]);
-  // And what a test proved defined there (`proved_defined`, #1933 step 4
-  // (D)): made only of an operand's read, forgotten with `Proved`.
-  expect(lines(/\.proved_defined\(\)/)).toEqual(["src/lower/mir/operands.rs"]);
-  expect(lines(/\.with\((?:js::)?Known::ProvedDefined\)/)).toEqual(["src/js/known.rs"]);
-  expect(read("src/js/known.rs")).toContain(".without(Known::Proved).without(Known::ProvedDefined)");
-  expect(read("src/lower/mir/tidy/contracts.rs")).toContain("e.facts.has(crate::js::Known::ProvedDefined)");
-  expect(read("src/lower/mir/tidy/contracts.rs")).toContain("&[JUMPS_LAND, DECLARED_ONCE, NOTHING_PROVED]");
+  expect(lines(/Known::Proved|\.proved\(\)|\.proved_defined\(\)|forget_proved/)).toEqual([]);
+  // The proofs are asked by `presence` alone, outside the analysis that
+  // makes them.
+  const askers = lines(/\.(?:proved_present|proved_defined|present_item_read|capture_read_proved|field_read_proved|ended_present)\(/)
+    .filter((file) => !file.startsWith("src/lower/mir/nulled"));
+  expect([...new Set(askers)]).toEqual(["src/lower/mir/none_forms.rs"]);
 });
 
 // That a test says an `Option` is there is MIR's alone to say (#1933):

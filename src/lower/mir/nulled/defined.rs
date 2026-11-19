@@ -1,18 +1,18 @@
 //! What a test proved defined where lowering reads it, never `undefined`
-//! though maybe `null` (`Known::ProvedDefined`, #1933 step 4 (D)): of
+//! though maybe `null` (`Presence::Defined`, #1933 step 4 (D)): of
 //! `js::classify(local)`, a switch whose edge isn't `Kind::Undefined`'s,
 //! `!matches!(js::classify(x), Kind::Undefined)`'s true one; and of
 //! `js::strict_equals(local, None)`, JS's `x === undefined`, its false
 //! edge. Split by concept from `nulled`, whose `proved_by` it asks, as
 //! `proved_present` does: every way to the read takes the edge, and
-//! nothing writes the local since the test. Not `Proved`: a `null` there
+//! nothing writes the local since the test. Not `Present`: a `null` there
 //! is a `None`, which an `unwrap()` mustn't take for a value.
 
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `local` is proved defined there where the block lowered now
-    /// runs (`proved_by`): a read of it there is `Known::ProvedDefined`, so
+    /// runs (`proved_by`): a read of it there is `Presence::Defined`, so
     /// a nullable place stores it as it is, no `?? null`.
     pub(in crate::lower::mir) fn proved_defined(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
         self.proved_by(state, local, Self::defined_edge, state.at)

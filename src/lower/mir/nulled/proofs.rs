@@ -466,4 +466,69 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Some(writes)
     }
+
+    /// The place `local` holds a copy of, a move of or a borrow of, where its
+    /// one whole write is that (`whole_writes`), read in `block`: what a
+    /// temporary MIR reads a variable or a capture into before it's given,
+    /// `_5 = copy (*_1).0`, written in `block`; or of a call that goes on to
+    /// `block` and gives its `Option` through (`passes_through`),
+    /// `found.map(js::unknown)`'s or `js::cast(found)`'s, its argument; with
+    /// the block it's read in. Only so, straight-line code with no test
+    /// between, so what's proved of the place where the block lowered now
+    /// runs, a proof no write since its test breaks, held where it was
+    /// copied; a copy taken before a test, which may hold what the place
+    /// held then, isn't followed (#2112 C S4).
+    // helper: what `NoneForms::presence` follows a copy to, of the proofs it asks
+    pub(in crate::lower::mir) fn copied_from(
+        &self,
+        state: &State<'_, 'tcx>,
+        (local, block): (Local, BasicBlock),
+    ) -> Option<(Place<'tcx>, BasicBlock)> {
+        let writes = self.whole_writes(state, local)?;
+        match &writes[..] {
+            [Write::Call(at, func, args)] => {
+                let into = matches!(
+                    state.body.basic_blocks[*at].terminator().kind,
+                    mir::TerminatorKind::Call { target: Some(target), .. } if target == block
+                );
+                let from = self.passes_through(state, local, func, args)?;
+                into.then_some((from, *at))
+            }
+            [Write::Assign(rvalue)] => {
+                let statements = &state.body.basic_blocks[block].statements;
+                let copied_here = (statements.iter())
+                    .any(|st| matches!(&st.kind, mir::StatementKind::Assign(a) if a.0.local == local));
+                let from = match rvalue {
+                    Rvalue::Use(Operand::Copy(place) | Operand::Move(place), _) | Rvalue::CopyForDeref(place) => *place,
+                    Rvalue::Ref(_, mir::BorrowKind::Fake(_), _) => return None,
+                    Rvalue::Ref(_, _, place) | Rvalue::Reborrow(_, _, place) => *place,
+                    _ => return None,
+                };
+                copied_here.then_some((from, block))
+            }
+            _ => None,
+        }
+    }
+
+    /// The `Option` a call of `func` on `args`, written to `local`, gives
+    /// through: `Option::map`'s receiver, `Some` where it is; a binding
+    /// that's its argument in JS of an `Option` (`is_its_argument`),
+    /// `js::cast(found)`'s, the same value.
+    // helper: what a call gives through, of `copied_from` and `NoneForms::call_presence`
+    pub(in crate::lower::mir) fn passes_through(
+        &self,
+        state: &State<'_, 'tcx>,
+        local: Local,
+        func: &Operand<'tcx>,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+    ) -> Option<Place<'tcx>> {
+        let (callee, generic_args) = func.const_fn_def()?;
+        let mapped =
+            self.recognition().classify(callee, generic_args) == Some(crate::lower::recognition::Std::OptionMap);
+        let cast = self.is_its_argument(callee)
+            && args.len() == 1
+            && self.option_of(state.body.local_decls[local].ty).is_some();
+        let from = args.first()?.node.place()?;
+        (mapped || cast).then_some(from)
+    }
 }

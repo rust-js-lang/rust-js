@@ -41,6 +41,7 @@ mod local_facts;
 pub(in crate::lower) mod locals;
 mod nested_options;
 mod none_forms;
+pub(in crate::lower) use none_forms::Presence;
 mod noted;
 mod nulled;
 mod offsets;

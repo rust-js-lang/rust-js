@@ -87,39 +87,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = self.value_expr(read, span)?;
             return Ok(Value::Expr(self.projection(held, ty)));
         }
-        // An `Option` a test of it proved there where it's read
-        // (`proved_present`, #1902, #1933): `Known::Proved`, which tidy
-        // forgets. Of a variable's read, not of a value read in place, a
-        // temporary's `t ? v : undefined`, whose test says it already
-        // (`Expr::presence`, ADR 0910).
-        let read = match read {
-            Value::Expr(e)
-                if matches!(e.kind, js::ExprKind::Var(_))
-                    && let Some(place) = operand.place()
-                    && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
-                    && (place.projection.is_empty() && self.proved_present(state, place.local)
-                        // Or what a closure's `with` lends it of a thread-local
-                        // that's `Some` wherever it runs (`present_item_read`,
-                        // #1933 step 4 (G)), or what a capture refers to that
-                        // a test in the closure proved (`capture_read_proved`).
-                        || self.present_item_read(state, place)
-                        || self.capture_read_proved(state, place)) =>
-            {
-                Value::Expr(e.proved())
-            }
-            // And one a test proved defined there, not `undefined` though
-            // maybe `null` (`proved_defined`, #1933 step 4 (D)).
-            Value::Expr(e)
-                if matches!(e.kind, js::ExprKind::Var(_))
-                    && let Some(place) = operand.place()
-                    && place.projection.is_empty()
-                    && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
-                    && self.proved_defined(state, place.local) =>
-            {
-                Value::Expr(e.proved_defined())
-            }
-            read => self.field_read_marked(state, operand, read),
-        };
         match none_read(state, operand, read) {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);
@@ -134,36 +101,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }))
             }
             value => Ok(value),
-        }
-    }
-
-    /// `read`, of `operand`, an `Option` a temporary or a variable holds
-    /// of a struct's `RefCell` field, `node.sibling.borrow().clone()`,
-    /// read where a test of the same field proved it (`field_read_proved`,
-    /// #1933 step 1(b)), or one a slice's `first()` or `last()` gave of
-    /// one MIR proves not empty (`ended_present`, #1860): `Known::Proved`,
-    /// which tidy forgets, as `proved_present`'s is; read as a variable, or
-    /// where it's made, `node.sibling`, a temporary's read (`take_operands`).
-    pub(super) fn field_read_marked(
-        &self,
-        state: &State<'_, 'tcx>,
-        operand: &Operand<'tcx>,
-        read: Value<'tcx>,
-    ) -> Value<'tcx> {
-        match read {
-            Value::Expr(e)
-                if let Some(place) = operand.place()
-                    && place.projection.is_empty()
-                    && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
-                    && (self.field_read_proved(state, place.local)
-                        // Or a slice's `first()` or `last()` of one MIR
-                        // proves not empty, read in place, `keys.at(-1)`
-                        // (`ended_present`, #1860).
-                        || self.ended_present(state, place.local)) =>
-            {
-                Value::Expr(e.proved())
-            }
-            read => read,
         }
     }
 

@@ -1111,12 +1111,4 @@ export const mutations: Mutation[] = [
     replace: "    let fixed = match true {\n",
     tests: ["test/match-trees.test.ts", "-t", "seed 2$"],
   },
-  {
-    name: "proved-kept-into-tidy",
-    breaks: "what a test proved of a read is kept as tidy begins, and a fold that moves it past the test, `x == null ? null : x` made `x ?? null`, drops the `?? null`: `undefined` for `None` at a nullable exit (#1942)",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::each_expr_mut(b, &mut Expr::forget_proved)\n",
-    replace: "                let _ = b;\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "moved past the test"],
-  },
 ];

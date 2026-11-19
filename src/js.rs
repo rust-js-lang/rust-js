@@ -680,12 +680,11 @@ impl Facts {
 
     /// What an `Option`'s presence test says of the `None` it tests for,
     /// `Known::NoneUndefined` or `Known::NoneNull`, which a test made
-    /// again of the same `Option`, its negation, keeps; and what a test
-    /// proved of a read there, `Known::Proved`, no other knowledge of it,
-    /// so a fact made of it, `Present` of an `Option` made where it's
+    /// again of the same `Option`, its negation, keeps; no other knowledge
+    /// of it, so a fact made of it, `Present` of an `Option` made where it's
     /// tested (ADR 0910), is made as of any read (#1933).
     pub fn of_presence(self) -> Facts {
-        self.part(&[Known::NoneUndefined, Known::NoneNull, Known::Proved])
+        self.part(&[Known::NoneUndefined, Known::NoneNull])
     }
 
     /// The one `None` an `Option`'s is only ever, `Known::NoneUndefined`
