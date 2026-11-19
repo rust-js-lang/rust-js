@@ -304,3 +304,43 @@ What ends a guard is said in one place (`effects/guards.rs`'
 past its drop is one mutation, `effects-guard-outlives-its-drop`, caught
 by `refcell_written_through_a_clone_under_its_guard`'s
 `after_a_dropped_guard`, run against native.
+
+## Parked (2026-11-19, step 3b): where its compile time goes, and what's left
+
+Step 3b is parked on branch `handoff/change-b-3b-m6`, behind the lead's
+decision, by campaign 2's scope (changes clearly better than today's):
+not yet so, at 3.4 times the React port's cold compile and 28 fewer
+proofs. Measured on the M6 (12 cores, quiet, a fresh `CARGO_TARGET_DIR`):
+
+| | main | 3b | 3b, memo | 3b, memo, coarse |
+|---|---|---|---|---|
+| React port, cold | 36 s | 478 s | 300 s | 123 s |
+| corpus sites MIR proves | | 2,276 | 2,276 | 2,248 |
+| port files moved, its pin | 0 | 12 | 12 | 15 |
+
+- Where it goes: `Effects::of`, not the walk's dataflow. Of
+  `react_reconciler`'s `parameter_intervals`, 154 of 165 s; of that, the
+  flow's fixed point, 132 s, nearly all `Flow::deep` asking `reachable`
+  of classes of 600 to 1,000 targets, each an `IndexMap` cloned and
+  extended at each call of each pass.
+- The memo (commit "Effects memoised per body"): a body of a recursive
+  component was built again each round, and by `captures` (up to 10
+  times; 200 of the reconciler's 269 s were repeats). Keyed by the body's
+  address and `DefId`, each input `Effects::of` reads explicit; on each
+  of 10,866 hits over the corpus and the port, a rebuild compared every
+  field, 0 different.
+- The coarse query (`effects/coarse.rs`) for the analysis walks given no
+  libraries nor cells: everything a pointer may change escaped from the
+  start, a direct write its local, any other everything escaped. It
+  fails closed; it loses 28 corpus proofs (25 wraps, `match_trees_
+  chained` 13), and three port files gain checks, `SchedulerMinHeap`'s
+  `heap[i]` among them.
+- Left, the lowering's own `Effects::of`, once a body (the reconciler's
+  big bodies about 69 s). Ways on, each days: (i) a dense or sparse-aware
+  bitset `Targets` (a dense byte array was slower, a byte for each of up
+  to two thousand targets copied at each use); (ii) `deep` and
+  `reachable` not recomputed for each call within a pass, an SCC
+  condensation of the reach graph each pass; (iii) a union-find points-to
+  for the classes, near-linear, less precise.
+- Found on the way, landed on main: the query's answer depended on the
+  order targets came in (879214113, the amendment above).
