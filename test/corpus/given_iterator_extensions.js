@@ -7,7 +7,6 @@ import {
   $exactLen,
   $given,
   $iter,
-  $iterator,
   $lazyChain,
   $lazyRange,
   $next,
@@ -18,6 +17,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $rev,
   $roomForHint,
 } from "@rust-js/std";
 
@@ -73,7 +73,7 @@ function passedOn(iter, IIterator, IClone, IDoubleEndedIterator, IExactSizeItera
     last($given(IClone.clone(iter), IIterator, true, IDoubleEndedIterator)),
     size($given(IClone.clone(iter), IIterator, true, undefined, IExactSizeIterator.len)),
     $collectDropping(
-      $roomForHint($iterator(iter, IDoubleEndedIterator.next_back, true), IItemSize, false),
+      $roomForHint($rev($given(iter, IIterator, true, IDoubleEndedIterator)), IItemSize, false),
     ),
   ];
 }
@@ -88,7 +88,7 @@ function handedOn(iter, IIterator, IClone, IDoubleEndedIterator) {
 
 function backwards(iter, IIterator, IClone, IDoubleEndedIterator, IItemSize) {
   return $collectDropping(
-    $roomForHint($iterator(iter, IDoubleEndedIterator.next_back, true), IItemSize, false),
+    $roomForHint($rev($given(iter, IIterator, true, IDoubleEndedIterator)), IItemSize, false),
   );
 }
 

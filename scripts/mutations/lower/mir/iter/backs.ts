@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of a type parameter given as it is, stepped by its dictionary's `next_back`, never drops it: `drop a at 0` is lost (#971)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None if (self.reversed_made_knowing(output) || self.closes_to_drop(receiver_ty))\n",
-    replace: "            None if self.reversed_made_knowing(output)\n",
+    find: "                crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)\n            }\n            // Of a `&mut` to one, lent",
+    replace: "                crate::lower::iterators::reversed_by(given)\n            }\n            // Of a `&mut` to one, lent",
     tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
   },
   {
@@ -717,8 +717,8 @@ export const mutations: Mutation[] = [
     name: "rev-of-given-param-unknowing",
     breaks: "`rev()` of a type parameter a struct holds, given as it is, stepped from its back, is made by its dictionary's `next_back` alone, which knows no back, and its `nth_back` is refused (#718)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            None if (self.reversed_made_knowing(output) || self.closes_to_drop(receiver_ty))\n",
-    replace: "            None if false && self.closes_to_drop(receiver_ty)\n",
+    find: "            None if !receiver_ty.is_mutable_ptr()\n",
+    replace: "            None if false\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_of_a_type_parameter_held_as_it_is.rs$"],
   },
   {
@@ -910,5 +910,29 @@ export const mutations: Mutation[] = [
     find: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), held, back, len) {\n",
     replace: "                // another adapter, made knowing it, or refused (ADR 0545).\n                let it = match self.given_stepped(receiver.clone(), iter_ty, back, len) {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_of_an_iterator_passes_on_what_std_does\\.rs$"],
+  },
+  {
+    name: "rev-of-given-only-where-stepped-back",
+    breaks: "`rev()` of a type parameter given as it is is made of its dictionaries only where the crate steps it from its back or it drops what it holds, so one another trait's method gives, `Is::is(i).rev().nth(1)`, steps `next_back` twice where native calls its own `nth_back` (#2139), and its `rev().fold()` steps `next_back` where native calls its own `rfold` (#2147)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            None if !receiver_ty.is_mutable_ptr()\n",
+    replace: "            None if !receiver_ty.is_mutable_ptr() && (self.reversed_made_knowing(output) || self.closes_to_drop(receiver_ty))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_nth_back_reaches_what_its_given.rs$"],
+  },
+  {
+    name: "rev-of-a-lent-given-unlent",
+    breaks: "`rev()` of a `&mut` to a type parameter given as it is passes on all its steps, so its `rev().fold()` calls `I`'s own `rfold` where std's `&mut I` folds by its `try_rfold`, `own rfold` printed where native steps `next_back` (#2139)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                crate::lower::iterators::reversed_by(self.lent_iterator(given, receiver_ty))\n",
+    replace: "                crate::lower::iterators::reversed_by(given)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(generic_nth_back_reaches_what_its_given|mut_of_an_iterator_passes_on_what_std_does).rs$"],
+  },
+  {
+    name: "rev-of-a-lent-given-by-its-next-back",
+    breaks: "`rev()` of a `&mut` to a type parameter another trait's method gives, `GetMut::get_mut(i).rev().nth(1)`, is its dictionary's `next_back` alone, which steps it twice where std's `&mut I` passes `nth_back` on to its own (#2139)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            None if let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) => {\n",
+    replace: "            None if false && let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_nth_back_reaches_what_its_given.rs$"],
   },
 ];

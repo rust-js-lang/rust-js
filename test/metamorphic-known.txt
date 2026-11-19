@@ -124,8 +124,3 @@ plain std fact-rc-counts else_break_ends_loop.rs
 #2061 P2 (crash): a rustc ICE compiling metamorphic field rewrites of closure_mut_ref and held_enumerate
 plain std field closure_mut_ref.rs
 plain std field held_enumerate.rs
-
-#2139 P0: generic code's nth_back of a type parameter reached through another trait's method (impl/dyn MetamorphGetMut<I>) misses its caller's own
-plain dyn-ref generic_nth_back_reaches_what_its_given.rs
-plain impl-ref generic_nth_back_reaches_what_its_given.rs
-plain impl-owned generic_nth_back_reaches_what_its_given.rs

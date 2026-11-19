@@ -9,6 +9,7 @@ import {
   $iterator,
   $lent,
   $mapEnds,
+  $rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -110,10 +111,16 @@ const Held = {
       .reduce((n) => n + 1, 0);
   },
   rcounted(held, RIterator, RDoubleEndedIterator) {
-    return $iterator(held.inner, RDoubleEndedIterator.next_back).reduce((n) => n + 1, 0);
+    return $rev($lent($given(held.inner, RIterator, false, RDoubleEndedIterator))).reduce(
+      (n) => n + 1,
+      0,
+    );
   },
   rfolded(held, RIterator, RDoubleEndedIterator) {
-    return $iterator(held.inner, RDoubleEndedIterator.next_back).reduce((a, b) => (a + b) >>> 0, 0);
+    return $rev($lent($given(held.inner, RIterator, false, RDoubleEndedIterator))).reduce(
+      (a, b) => (a + b) >>> 0,
+      0,
+    );
   },
   forward(held, RIterator) {
     return $lent($given(held.inner, RIterator))

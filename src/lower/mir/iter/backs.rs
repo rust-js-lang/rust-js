@@ -63,16 +63,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let unsupported = |cx: &Self| cx.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"));
         let reversed = match self.range_kind(iter_ty) {
             _ if self.is_user_iterator(iter_ty) => self.reversed_user(receiver, receiver_ty, span)?,
-            // Of a type parameter given as it is that the crate steps from
-            // its back (`reversed_made_knowing`), or that drops what it
-            // holds: `$rev` of the JS iterator its dictionaries step, its
-            // back theirs, which `$rev` steps it forward by, `nth_back` its
-            // `nth`, as std's `Rev` does, closed to drop it, the value
-            // itself, as `Rev` drops it (`$givenDrop`, #718, #971).
-            None if (self.reversed_made_knowing(output) || self.closes_to_drop(receiver_ty))
+            // Of a type parameter given as it is: `$rev` of the JS iterator
+            // its dictionaries step, its back theirs, which `$rev` steps it
+            // forward by, `nth_back` its `nth` and `rfold` its `fold`, its
+            // own where it writes them, as std's `Rev` asks them, closed to
+            // drop it, the value itself, as `Rev` drops it (`$givenDrop`,
+            // #718, #971), wherever it's reached, a parameter's or what
+            // another trait's method gives (#2139, #2147).
+            None if !receiver_ty.is_mutable_ptr()
                 && let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) =>
             {
                 crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)
+            }
+            // Of a `&mut` to one, lent: what std's `&mut I` passes on of
+            // it, its `nth_back` its own, its `rfold` by its `try_rfold`
+            // (`$lent`, ADR 0928), never closed, as a `Rev<&mut I>` drops
+            // nothing of its `I` (#755, #2139).
+            None if let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) => {
+                crate::lower::iterators::reversed_by(self.lent_iterator(given, receiver_ty))
             }
             None if let Some(reversed) = self.reversed(&receiver, iter_ty) => reversed,
             Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),

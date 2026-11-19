@@ -159,3 +159,40 @@ since #2130's `$copiedGiven`.
 Case (ADR 0262): R. A throw where Rust steps is a wrong answer. Corpus
 case `cloned_of_a_generic_source_cloned_and_stepped_from_its_back` runs
 as native in both builds. Mutation: `given-cloned-backless`.
+
+## Amendment: a type parameter another trait's method gives is reversed as one given as it is (2026-11-19, #2139, #2147)
+
+`rev_called` made `$rev` of a type parameter's given JS iterator, which
+knows its own `nth_back` and `rfold`, only where the crate stepped the
+`rev()` from its back, or where the parameter drops what it holds. Any
+other use went to `reversed`, a JS iterator of the dictionary's
+`next_back` alone, which knows none of the parameter's own steps. A
+parameter reached as a parameter's own type was right, since its caller
+gives it as a JS iterator (#2134). One reached only through another
+trait's method, `Is::is(i)` or `GetMut::get_mut(i)` of `impl Is<I>`,
+`&mut impl GetMut<I>` or `&mut dyn GetMut<I>`, was wrong in two ways.
+Its `rev().nth(1)` stepped `next_back` twice where native calls its own
+`nth_back` (#2139). By value, its `rev().fold()` stepped `next_back`
+where native calls its own `rfold` (#2147). Now a type parameter given as
+it is is always `$rev` of its given JS iterator, closed to drop it,
+whatever is asked of it. A `&mut` to one is lent first (`$lent`), so it
+passes on only what std's `&mut I` passes on: its `nth_back` its own, its
+`rfold` by its `try_rfold` (ADR 0928), never closed. ioDC's first try
+gave the `&mut` one unlent, and `mut_of_an_iterator_passes_on_what_std_does`
+then called `R`'s own `rfold` through `by_ref().rev()`.
+
+Case (ADR 0262): R, results change. Three snapshots move, each a
+`$iterator(it, I.next_back)` becoming `$rev($given(it, ..))` (lent where
+it's a `&mut`): `filter_map_of_given_from_its_back`,
+`given_iterator_extensions` and `mut_of_an_iterator_passes_on_what_std_does`,
+each run as native. `generic_nth_back_reaches_what_its_given` adds each
+form through another trait (by value, `&mut impl` and `&mut dyn`, `nth`
+and `fold`), each run as native. Its metamorphic rewrites `dyn-ref`,
+`impl-ref` and `impl-owned`, which found #2139, are taken off the known
+list. The readability baseline's `renamed x$1` share grows 447.6 to
+447.7, all of it the added lines' `println!("{:?}", f(..))` temporaries,
+`value$10` and on, as the case's existing lines already name theirs.
+Mutations: `rev-of-given-only-where-stepped-back`,
+`rev-of-a-lent-given-unlent` and `rev-of-a-lent-given-by-its-next-back`,
+caught. `given-as-it-is-rev-unclosed` and `rev-of-given-param-unknowing`
+are retargeted to the arm's new lines, and caught.

@@ -443,8 +443,8 @@ test("what's stepped from its back is asked where a value is made, or as a type'
     "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
     "src/lower/mir/std_calls/iterators.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
     "src/lower/mir/iter/backs.rs": [
-      3,
-      "`back_kept`, the maker of an enumeration it steps from its back, and `rev_called`, a `rev()`'s, twice: of a type parameter given as it is, and of what `rev_items` makes",
+      2,
+      "`back_kept`, the maker of an enumeration it steps from its back, and `rev_called`, a `rev()`'s, of what `rev_items` makes; a type parameter given as it is is made knowing its back whatever's asked of it (#2139)",
     ],
     "src/lower/iterators/knowing.rs": [
       10,

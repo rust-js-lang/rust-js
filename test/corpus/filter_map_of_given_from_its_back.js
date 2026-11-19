@@ -10,6 +10,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
+  $rev,
   $some,
   $someValue,
 } from "@rust-js/std";
@@ -25,7 +26,7 @@ function oksIterator_next(oks, IIterator) {
 }
 
 function oksDoubleEndedIterator_nextBack(oks, IIterator, IDoubleEndedIterator) {
-  return $lent($iterator(oks.iter, IDoubleEndedIterator.next_back))
+  return $lent($rev($lent($given(oks.iter, IIterator, false, IDoubleEndedIterator))))
     .map((x) => (x.TAG === "Ok" ? x._0 : undefined))
     .find((item) => item != null);
 }
@@ -51,7 +52,7 @@ function somesIterator_next(somes, IIterator) {
 }
 
 function somesDoubleEndedIterator_nextBack(somes, IIterator, IDoubleEndedIterator) {
-  return $lent($iterator(somes.iter, IDoubleEndedIterator.next_back))
+  return $lent($rev($lent($given(somes.iter, IIterator, false, IDoubleEndedIterator))))
     .map((x) => (x.TAG === "Ok" ? $some(x._0) : undefined))
     .find((item) => item != null);
 }
