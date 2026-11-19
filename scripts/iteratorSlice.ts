@@ -66,6 +66,8 @@ export const iteratorPaths = [
   "src/lower/mir/iter.rs",
   "src/lower/mir/iter/**",
   "src/lower/mir/vec_growth.rs",
+  // Where a std iterator method's MIR call is lowered (the owner table's row, #2162).
+  "src/lower/mir/std_calls/iterators.rs",
   // What a type parameter read as an iterator is given for a `&mut` to one (#992).
   "src/lower/mut_refs/given.rs",
   "src/lower/recognition/adapter_types.rs",
