@@ -6,7 +6,7 @@
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
 //   bun scripts/ci.ts test-timings <times>  # in CI: the test files' times `plan` gave every shard, for them to balance by
 //   bun scripts/ci.ts mutation-timings <times>   # in CI: the mutations' times `plan` gave every shard, for them to balance by
-//   TIMES=<times> bun scripts/ci.ts merge-mutation-timings <ran> <out> # in CI: those and this run's shards' merged, for the next plan
+//   TIMES=<times> bun scripts/ci.ts merge-mutation-timings <ran>  # in CI: those and this run's shards' merged, for the next plan
 //   bun scripts/ci.ts nets                  # in CI: which of a job of nets' nets ran, and which failed, from its `STEPS`
 //   bun scripts/ci.ts prune-cache [--dry-run]    # in CI, after each check, nightly and test map: each cache family's newest 8 kept
 //
@@ -19,7 +19,7 @@ import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
-import { changedSince, type Mutation, mutations } from "./mutations";
+import { changedSince, type Mutation, mutationFile, mutations } from "./mutations";
 import { outcome, type Selection, selectChange } from "./select";
 import { downloaded } from "./artifacts";
 import { dealtByGroup, drivesBrowser, shardTimings, testFileSeconds, timingsUnder } from "./shard";
@@ -222,31 +222,37 @@ export const MUTATION_SHARDS = [1, 2, 4, 8, 16];
  * packages, the toolchain and the caches restored (m1-lisa's measure of
  * main's checks, 2026-11-19). */
 export const SHARD_SETUP_SECONDS = 60;
+/** And the compiler as it is, built before any mutant: 87 to 130 s of
+ * each shard's `phases.json` (main's check 44441824204). */
+export const SHARD_COMPILER_SECONDS = 120;
 /** And beside them, where a test one of its mutations runs drives a
  * browser (`drivesBrowser`): Chromium installed. */
 export const SHARD_BROWSER_SECONDS = 420;
 /** The longest a check's mutation shard is meant to take, about the suite's
- * shards' time: its machines are the fewest that keep each under it. */
-export const SHARD_BUDGET_SECONDS = 600;
+ * shards' time, 11 and 15 min of main's check 44441824204: its machines
+ * are the fewest that keep each under it. Twelve minutes, so a shard whose
+ * test drives a browser, 10 min before its first mutant, still has room. */
+export const SHARD_BUDGET_SECONDS = 720;
 
 /** Machines for a check's mutations, `chosen`: the fewest of
- * `MUTATION_SHARDS` whose every shard, as the shards deal them by what
- * each took, `seconds` (`dealtByGroup`, each's untimed by its file's), is
- * expected to take `SHARD_BUDGET_SECONDS` or less: its mutations' times,
- * its setup, and a browser's where one of its tests drives one,
- * `browser`. Sized by count, twenty a machine, one shard of a change's
- * slow mutations took 21 min while others took 4 (main's checks of
- * 2026-11-19); else the most. */
+ * `MUTATION_SHARDS` whose every shard, as the shards deal them by each's
+ * share of its shard, `seconds` (`dealtByGroup`, each's untimed by its
+ * file's, `groupOf`, the catalog's `mutationFile` as the shards' own), is
+ * expected to take `SHARD_BUDGET_SECONDS` or less: its mutations' shares,
+ * its setup, the compiler as it is, and a browser's where one of its tests
+ * drives one, `browser`. Sized by count, twenty a machine, one shard of a
+ * change's slow mutations took 21 min while others took 4 (main's checks
+ * of 2026-11-19); else the most. */
 export function mutationShards(
-  chosen: { name: string; file: string; tests?: string[] }[],
+  chosen: { name: string; tests?: string[] }[],
   seconds: ReadonlyMap<string, number>,
   browser: (file: string) => boolean,
+  groupOf: (name: string) => string | undefined,
 ): string {
-  const fileOf = new Map(chosen.map((m) => [m.name, m.file]));
   const drives = new Map(chosen.map((m) => [m.name, m.tests !== undefined && browser(m.tests[0]!)]));
   const fits = (count: number) => {
-    const { shards, load } = dealtByGroup(chosen.map((m) => m.name), count, seconds, (name) => fileOf.get(name));
-    return shards.every((names, i) => SHARD_SETUP_SECONDS + load[i]! + (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0) <= SHARD_BUDGET_SECONDS);
+    const { shards, load } = dealtByGroup(chosen.map((m) => m.name), count, seconds, groupOf);
+    return shards.every((names, i) => SHARD_SETUP_SECONDS + SHARD_COMPILER_SECONDS + load[i]! + (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0) <= SHARD_BUDGET_SECONDS);
   };
   return String(MUTATION_SHARDS.find(fits) ?? MUTATION_SHARDS.at(-1));
 }
@@ -269,7 +275,7 @@ async function check(branch: string, shards: string | undefined, since?: string)
   const chosen = await changedSince(base);
   const count = chosen.length;
   const timings = plannedMutationTimings();
-  const machines = mutationShards(chosen, timings === "" ? new Map() : decodedTimings(timings, mutations.map((m) => m.name)), (file) => drivesBrowser(root, file));
+  const machines = mutationShards(chosen, timings === "" ? new Map() : decodedTimings(timings, mutations.map((m) => m.name)), (file) => drivesBrowser(root, file), mutationFile);
   // The suite's machines are the workflow's own, unless `--shards=` says.
   const suite = shards === undefined ? [] : ["-f", `test_shards=${shards}`];
   gh(["workflow", "run", workflow, `--ref=${branch}`, ...suite, "-f", `since=${base}`, "-f", `mutation_shards=${machines}`], { write: true });
@@ -313,7 +319,7 @@ async function plan(given?: string) {
   const changed = Bun.spawnSync(["git", "diff", "--name-only", since, "HEAD"], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   console.log(`since=${since}`);
   console.log(`retry=${retry.join(",")}`);
-  console.log(`shards=${mutationShards(chosen, seconds, (file) => drivesBrowser(root, file))}`);
+  console.log(`shards=${mutationShards(chosen, seconds, (file) => drivesBrowser(root, file), mutationFile)}`);
   console.log(`iterators=${touchesIterators(changed)}`);
   console.log(`formatting=${touchesFormatting(changed)}`);
   console.log(`numbers=${touchesNumbers(changed)}`);
@@ -488,8 +494,16 @@ function writeTestTimings(encoded: string) {
   console.log(`the shards balance by ${testFileSeconds([file]).size} files' times, in ${shardTimings}`);
 }
 
+/** The artifact of a run's merged mutations' times, each its share of its
+ * shard (`shareOfShard`), named here alone: rustc-tests.yml uploads it by
+ * the name `merge-mutation-timings` gives it, and `plan` reads it by this.
+ * Renamed as its times' meaning changed: `mutation-timings-merged`'s were
+ * each mutation's from its tests' asking for a slot, a nightly's minutes
+ * behind thousands of others, which no plan should size by. */
+export const MERGED_MUTATION_TIMES = "mutation-shares-merged";
+
 /** The run whose merged mutations' times a check's `plan` reads: the
- * newest of `main` that kept `mutation-timings-merged` (the
+ * newest of `main` that kept `MERGED_MUTATION_TIMES` (the
  * `mutation-timings` job's, rustc-tests.yml), still kept; or none, and the
  * shards deal in turn. A merged file carries what each run before it
  * timed, the nightly's every mutation and each check's since, the later
@@ -498,7 +512,7 @@ function writeTestTimings(encoded: string) {
  * times, one of which GitHub's storage turned away (check of 6d9fcfb45). */
 export function mergedTimingsRun(artifacts: (Artifact & { branch: string })[]): number | undefined {
   return [...artifacts]
-    .filter((a) => a.name === "mutation-timings-merged" && !a.expired && a.branch === "main")
+    .filter((a) => a.name === MERGED_MUTATION_TIMES && !a.expired && a.branch === "main")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.run;
 }
 
@@ -542,15 +556,15 @@ export function jsonLines<T>(text: string): T[] {
 function plannedMutationTimings(): string {
   try {
     const listed: { name: string; workflow_run: { id: number; head_branch: string }; created_at: string; expired: boolean }[] = jsonLines(
-      gh(["api", "--paginate", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=mutation-timings-merged", "--jq", ".artifacts[] | {name, workflow_run, created_at, expired}"]),
+      gh(["api", "--paginate", `repos/{owner}/{repo}/actions/artifacts?per_page=100&name=${MERGED_MUTATION_TIMES}`, "--jq", ".artifacts[] | {name, workflow_run, created_at, expired}"]),
     );
     const run = mergedTimingsRun(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, branch: a.workflow_run.head_branch, createdAt: a.created_at, expired: a.expired })));
     if (run === undefined) {
       console.error("no run of main kept its merged mutations' times: the mutation shards deal in turn");
       return "";
     }
-    const dir = join(root, "target", "mutation-timings-merged");
-    if (!downloaded(run, ["--name=mutation-timings-merged"], dir)) {
+    const dir = join(root, "target", MERGED_MUTATION_TIMES);
+    if (!downloaded(run, [`--name=${MERGED_MUTATION_TIMES}`], dir)) {
       console.error(`run ${run}'s merged mutations' times couldn't be read: the mutation shards deal in turn`);
       return "";
     }
@@ -587,21 +601,25 @@ export function mergedTimings(base: ReadonlyMap<string, number>, ran: ReadonlyMa
 
 /** In CI, after a run's mutation shards (rustc-tests.yml's
  * `mutation-timings`): the times its plan gave them (`encoded`, none of a
- * first nightly's) and each shard's own under `ran`, merged into `out`,
- * uploaded as `mutation-timings-merged` for the next plan. None where no
- * shard's times were read: no file, so no upload, and the next plan reads
- * an older run's. */
-function mergeMutationTimings(encoded: string, ran: string, out: string) {
+ * first nightly's) and each shard's own under `ran`, merged into
+ * target/`MERGED_MUTATION_TIMES`/timings.json, and its artifact's name and
+ * path said as GitHub's step outputs, which upload it for the next plan.
+ * None where no shard's times were read: no file and no outputs, so no
+ * upload, and the next plan reads an older run's. */
+function mergeMutationTimings(encoded: string, ran: string) {
   const own = timingsUnder(ran);
   if (own.size === 0) {
-    console.log(`no shard's times under ${ran}: nothing merged`);
+    console.error(`no shard's times under ${ran}: nothing merged`);
     return;
   }
   const base = encoded === "" ? new Map<string, number>() : decodedTimings(encoded, mutations.map((m) => m.name));
   const merged = mergedTimings(base, own);
-  mkdirSync(join(out, ".."), { recursive: true });
-  writeFileSync(out, timingsJson(merged));
-  console.log(`${merged.size} mutations' times merged, ${own.size} of this run's shards over ${base.size} of its plan's, in ${out}`);
+  const out = join("target", MERGED_MUTATION_TIMES, "timings.json");
+  mkdirSync(join(root, out, ".."), { recursive: true });
+  writeFileSync(join(root, out), timingsJson(merged));
+  console.error(`${merged.size} mutations' times merged, ${own.size} of this run's shards over ${base.size} of its plan's, in ${out}`);
+  console.log(`artifact=${MERGED_MUTATION_TIMES}`);
+  console.log(`path=${out}`);
 }
 
 /** The Actions cache's entries each family keeps, the newest by when they
@@ -687,11 +705,11 @@ if (import.meta.main) {
     else if (command === "plan") await plan(since);
     else if (command === "test-timings") writeTestTimings(rest[0] ?? "");
     else if (command === "mutation-timings") writeMutationTimings(rest[0] ?? "");
-    else if (command === "merge-mutation-timings") mergeMutationTimings(process.env.TIMES ?? "", rest[0] ?? "", rest[1] ?? "");
+    else if (command === "merge-mutation-timings") mergeMutationTimings(process.env.TIMES ?? "", rest[0] ?? "");
     else if (command === "nets") console.log(netsSummary(JSON.parse(process.env.STEPS ?? "{}")));
     else if (command === "prune-cache") await pruneCache(rest.includes("--dry-run"));
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | test-timings <times> | mutation-timings <times> | merge-mutation-timings <ran> <out> | nets | prune-cache [--dry-run]");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | test-timings <times> | mutation-timings <times> | merge-mutation-timings <ran> | nets | prune-cache [--dry-run]");
       process.exit(2);
     }
   } catch (error) {

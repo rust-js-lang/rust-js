@@ -81,6 +81,37 @@ export function balancedByGroup<T extends string>(items: T[], index: number, cou
  * dealt in turn. */
 export const UNTIMED_SECONDS = 15;
 
+/** A mutation shard's test slots: `run` starts each work once fewer than
+ * `limit` run, in the order they asked. `holder`, where given, gains the
+ * seconds the work held its slot, never those it waited for one: timed
+ * from its asking, a nightly's mutation waited minutes behind thousands of
+ * others' tests, its median 482 s and 90th percentile 987, where a check's
+ * run of the same took 2 to 8 (main's merged times of run 44441216357). */
+export function slots(limit: number): <T>(work: () => Promise<T>, holder?: { seconds: number }) => Promise<T> {
+  let running = 0;
+  const waiting: (() => void)[] = [];
+  return async (work, holder) => {
+    while (running >= limit) await new Promise<void>((resume) => waiting.push(resume));
+    running++;
+    const began = performance.now();
+    try {
+      return await work();
+    } finally {
+      if (holder !== undefined) holder.seconds += (performance.now() - began) / 1000;
+      running--;
+      waiting.splice(0).forEach((resume) => resume());
+    }
+  };
+}
+
+/** A mutation's share of its shard's time, as its `timings.json` keeps
+ * it, so a shard's mutations' shares sum to what their part of it takes:
+ * its build's own seconds over the shard's build workers, `jobs`, and the
+ * seconds its tests held a slot over the shard's test slots, `testSlots`. */
+export function shareOfShard(own: { build: number; tests: number }, jobs: number, testSlots: number): { build: number; tests: number } {
+  return { build: own.build / jobs, tests: own.tests / testSlots };
+}
+
 /** `balancedByGroup`'s deal of `items` to `count` shards: each shard's
  * items, sorted, and what it's expected to take, in seconds, its untimed
  * items by their estimate. `plan` sizes the mutations' machines by it, as

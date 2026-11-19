@@ -1249,3 +1249,35 @@ caught one names in its result line and `caughtBy` its retarget. No
 catalog is edited for a sweep. The corpus in 12 parts took 117 s as the
 compiler is here. Mutations `whole-corpus-in-one-process` and
 `corpus-sweep-keeps-settings` are caught.
+
+## Amendment: a mutation's time is its share of its shard, and the plan estimates as the shards do (2026-11-19)
+
+Sized by expected time (26af155a2), main's check 44441824204 gave its
+change's five mutations 16 machines, 11 of which ran nothing. Two faults.
+The plan estimated a mutation no run had timed by the timed ones of its
+file among the mutations it chose, where the shards take its file's in
+the whole catalog; two new mutations of `scripts/ci.ts`, none of whose
+file's twelve timed ones was chosen, were each the catalog's 90th
+percentile, 987 s, and one such never fit a shard. And that percentile
+was a nightly's wait, not its work: a mutation's tests were timed from
+their asking for a slot, so a nightly's, behind thousands of others,
+recorded a median of 482 s where a check's run of the same took 2 to 8.
+
+Now each mutation's time is its share of its shard (`shareOfShard`): its
+build's own seconds over the shard's build workers, and the seconds its
+tests held a slot (`slots`), never those they waited for one, over the
+test slots. A shard's mutations' shares sum to what their part of it
+takes: of 40 mutations of `backs.rs` here at CI's two workers and four
+slots, 48 s of shares for 54 s of the mutants' phase. The plan and the
+shards estimate an untimed one alike, by the catalog's `mutationFile`.
+A shard is expected to take its setup, the compiler as it is (120 s,
+87 to 130 s of 44441824204's shards' `phases.json`), its mutations'
+shares and a browser's install where one drives one, within 12 minutes,
+about the suite's shards' 11 and 15. The merged times are a new artifact,
+`MERGED_MUTATION_TIMES`, named in `scripts/ci.ts` alone and uploaded by
+the name the merge says, so the old one's waits are never read: until a
+nightly times every mutation again, each untimed is `UNTIMED_SECONDS`.
+The check of 44441824204's mutations with the times its plan read now
+takes one machine. Mutations `mutation-shards-grouped-by-the-chosen`,
+`mutation-shards-compiler-uncounted`, `slot-held-from-asking` and
+`share-of-shard-unshared` are caught.

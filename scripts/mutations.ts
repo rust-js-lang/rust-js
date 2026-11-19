@@ -25,7 +25,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, compilerBuilds, drivesBrowser, machine, memoryBudget, shardArg, timedShard } from "./shard";
+import { caseParts, compilerBuilds, drivesBrowser, machine, memoryBudget, shardArg, shareOfShard, slots, timedShard } from "./shard";
 import { casesReaching, ensureMap, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -72,6 +72,17 @@ for (const path of [...new Bun.Glob("**/*.ts").scanSync(join(import.meta.dir, "m
   lists.push({ path, mutations: (await import(`./mutations/${path}`)).mutations });
 }
 export const mutations: Mutation[] = lists.flatMap((list) => list.mutations);
+
+const fileByName = new Map(mutations.map((m) => [m.name, m.file]));
+/** The file of the catalog's mutation `name`, whose build it shares: what
+ * its time is estimated by where no run timed it (`dealtByGroup`), alike
+ * where the shards deal and where a check's plan sizes them. The plan's
+ * own, of the mutations it chose alone, estimated a new one by the
+ * catalog's 90th percentile where none of its file was chosen, and gave
+ * check 44441824204's five mutations 16 machines, 11 of them running none. */
+export function mutationFile(name: string): string | undefined {
+  return fileByName.get(name);
+}
 
 /** The code whose job is how the JS reads, docs/architecture.md's
  * "Readability and printing" and "Body readability passes", as globs of
@@ -1720,7 +1731,7 @@ async function main() {
   }
   const sharded = shardArg(args);
   if (sharded) {
-    const names = timedShard(chosen.map((m) => m.name), sharded.index, sharded.count, args.find((arg) => arg.startsWith("--timings="))?.slice(10), (name) => mutations.find((m) => m.name === name)?.file);
+    const names = timedShard(chosen.map((m) => m.name), sharded.index, sharded.count, args.find((arg) => arg.startsWith("--timings="))?.slice(10), mutationFile);
     chosen = chosen.filter((m) => names.includes(m.name));
   }
   // The corpus harness's mutants (#918): of a change to the harness, and
@@ -1896,27 +1907,19 @@ async function main() {
   // binary alone.
   const ofUnit = (unit: boolean) => sited.filter((s) => (s.mutation.unitTests !== undefined) === unit);
   const queue: Sited[][] = [...batches(ofUnit(true), size), ...batches(ofUnit(false), size), ...sited.filter((s) => s.site === undefined).map((s) => [s])];
-  // What each took, its build's share and its tests, in seconds.
+  // What each took of the shard's time, its build's share and its tests'
+  // (`shareOfShard`), in seconds: what the shards and a check's plan deal
+  // and size them by.
   const took = new Map<Mutation, { build: number; tests: number }>();
   // As many mutants' tests at once as there are cores, `--tests=N`: a test
   // run is a core's, where a build is two or three of them. A mutant whose
   // compiler writes another runtime runs beside the others too, as its
   // runtime is its target's own (`ownRuntime`, #720).
-  let testing = 0;
-  const waiters: (() => void)[] = [];
-  const wake = () => waiters.splice(0).forEach((resume) => resume());
-  const turn = () => new Promise<void>((resume) => waiters.push(resume));
   const testsAtOnce = Number(args.find((arg) => arg.startsWith("--tests="))?.slice("--tests=".length)) || ownShare(machine().cores);
-  const beside = async <T>(work: () => Promise<T>) => {
-    while (testing >= testsAtOnce) await turn();
-    testing++;
-    try {
-      return await work();
-    } finally {
-      testing--;
-      wake();
-    }
-  };
+  const slotted = slots(testsAtOnce);
+  const beside = <T>(work: () => Promise<T>) => slotted(work);
+  // Of one mutation's tests, each run in a slot, the seconds they held it.
+  const holding = (holder: { seconds: number }) => <T>(work: () => Promise<T>) => slotted(work, holder);
   // A mutation of how the JS reads (`readabilityOwners`) that its tests
   // miss, judged by the corpus's snapshots (#864): each case that reaches
   // its site, by the test map, or every case where there's none or it
@@ -1943,7 +1946,7 @@ async function main() {
     await recording;
     return casesReaching(mutation.file, lines[0], lines[1], caseNames);
   };
-  const snapshotsJudge = async (mutation: Mutation, mutant: string): Promise<{ caught: boolean; said: string; output: string }> => {
+  const snapshotsJudge = async (mutation: Mutation, mutant: string, own: <T>(work: () => Promise<T>) => Promise<T>): Promise<{ caught: boolean; said: string; output: string }> => {
     const reached = await reaching(mutation);
     // Never every case: without a map CI's run fails (`noMap`, its
     // `test-map` job keeps one), and a site the map can't place is the
@@ -1958,7 +1961,7 @@ async function main() {
     const parts = Math.max(1, Math.min(caseParts(machine().cores), Math.ceil(chosen.length / 50)));
     const ran = await Promise.all(
       Array.from({ length: parts }, (_, i) =>
-        beside(() => test(["test/corpus.test.ts", "-t", named(chosen)], mutant, "alone", { env: { RUST_JS_CASES: `${i + 1}/${parts}` } })),
+        own(() => test(["test/corpus.test.ts", "-t", named(chosen)], mutant, "alone", { env: { RUST_JS_CASES: `${i + 1}/${parts}` } })),
       ),
     );
     const output = ran.map((r) => r.output).join("\n");
@@ -1966,7 +1969,7 @@ async function main() {
     const of = `${chosen.length} cases`;
     if (failed.length === 0) return { caught: false, said: `of ${of}, each is its snapshot`, output };
     // Each that caught it is its snapshot as the compiler is.
-    const control = await beside(() => test(["test/corpus.test.ts", "-t", named(failed)], unmutated, "alone", { bail: false }));
+    const control = await own(() => test(["test/corpus.test.ts", "-t", named(failed)], unmutated, "alone", { bail: false }));
     if (!control.passed) return { caught: false, said: `of ${of}, ${failed.join(", ")} isn't its snapshot as the compiler is either`, output: `${output}\n${control.output}` };
     return { caught: true, said: `caught by the snapshots of ${failed.join(", ")}, of ${of}`, output };
   };
@@ -2007,14 +2010,14 @@ async function main() {
     const logged = join(work, "logs", `${log}.log`);
     mkdirSync(join(work, "logs"), { recursive: true });
     if (mutation.unitTests !== undefined) {
-      const started = performance.now();
-      const p = await beside(() => unitTest(compiler, mutation.unitTests!, mutation.name));
+      const held = { seconds: 0 };
+      const p = await holding(held)(() => unitTest(compiler, mutation.unitTests!, mutation.name));
       writeFileSync(logged, p.stdout + p.stderr);
       const verdict = judgeUnit(p);
       if (verdict === "inconclusive") console.log(`--- ${log}, inconclusive: its log's end\n${(p.stdout + p.stderr).split("\n").slice(-60).join("\n")}\n---`);
       const result = verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: \`cargo test ${mutation.unitTests}\` passed with it` : `INCONCLUSIVE: see ${logged}`;
       const unit = (p.stdout + p.stderr).match(/^test (\S+) \.\.\. FAILED$/m)?.[1];
-      return { result, tests: (performance.now() - started) / 1000, by: verdict === "caught" ? `cargo test ${unit ?? mutation.unitTests}` : undefined };
+      return { result, tests: held.seconds, by: verdict === "caught" ? `cargo test ${unit ?? mutation.unitTests}` : undefined };
     }
     const mutant = join(bin, mutation.name);
     mkdirSync(bin, { recursive: true });
@@ -2024,17 +2027,19 @@ async function main() {
     } catch {
       cpSync(compiler, mutant);
     }
-    const started = performance.now();
-    const byTests = await testsInParts(mutation.tests!, mutant, mutation.snapshots ?? false, mutation.env, beside);
+    // The seconds its tests held a slot, not those they waited for one.
+    const held = { seconds: 0 };
+    const own = holding(held);
+    const byTests = await testsInParts(mutation.tests!, mutant, mutation.snapshots ?? false, mutation.env, own);
     const { ran, exit } = byTests;
     const twice = confirming
-      ? await judgeTwice(exit, byTests.output, mutation.tests!, (tests) => testsInParts(tests, mutant, mutation.snapshots ?? false, mutation.env, beside))
+      ? await judgeTwice(exit, byTests.output, mutation.tests!, (tests) => testsInParts(tests, mutant, mutation.snapshots ?? false, mutation.env, own))
       : { verdict: judge(exit, byTests.output), again: "", flake: undefined };
     let output = byTests.output + twice.again;
     let verdict = twice.verdict;
     let by = exit.overgrown ? "its compiler growing past what a run of tests is given" : catchingTest(byTests.output);
     if (verdict === "survived" && ofReadabilityOwner(mutation.file)) {
-      const bySnapshots = await snapshotsJudge(mutation, mutant);
+      const bySnapshots = await snapshotsJudge(mutation, mutant, own);
       output += `\n--- the snapshots of the cases that reach it (#864): ${bySnapshots.said}\n${bySnapshots.output}`;
       if (bySnapshots.caught) {
         verdict = "caught";
@@ -2042,7 +2047,7 @@ async function main() {
         console.log(`${log}: its tests passed; ${bySnapshots.said}`);
       }
     }
-    const tests = (performance.now() - started) / 1000;
+    const tests = held.seconds;
     rmSync(mutant, { force: true });
     runtimes.delete(mutant);
     // Its log, whatever it says, for what it caught or didn't; and its
@@ -2060,14 +2065,20 @@ async function main() {
     if (sources.has(batch[0].mutation)) {
       const mutation = batch[0].mutation;
       const execute = async (ownsTestSlot = false) => {
+        const held = { seconds: 0 };
         const answer = await sourceMutation(mutation, template, work, tracked,
           (directory, env, tests = mutation.tests!) => {
             const run = () => test(tests, unmutated, mutation.snapshots, {directory, env: {...env, ...mutation.env}});
-            return ownsTestSlot ? run() : beside(run);
+            return ownsTestSlot ? run() : holding(held)(run);
           }, async (exit, output, again) => (confirming ? judgeTwice(exit, output, mutation.tests!, again) : { verdict: judge(exit, output), again: "" }), mutate);
         results.set(mutation, answer.result);
         if (answer.result === "caught") caughtBy.set(mutation, catchingTest(answer.output));
-        took.set(mutation, {build: answer.build, tests: answer.tests});
+        // One that holds a test slot throughout, its build and its tests,
+        // takes its share of the slots; one built by a worker, its build's
+        // of the workers and its tests' of the slots.
+        took.set(mutation, ownsTestSlot
+          ? shareOfShard({ build: answer.build, tests: answer.tests }, testsAtOnce, testsAtOnce)
+          : shareOfShard({ build: answer.build, tests: held.seconds }, jobs, testsAtOnce));
         mkdirSync(join(work, "logs"), {recursive: true});
         writeFileSync(join(work, "logs", mutation.name + ".log"), answer.output);
         console.log(`source ${mutation.name}: ${answer.result}; peak workspace ${answer.bytes} bytes`);
@@ -2117,7 +2128,7 @@ async function main() {
     }
     const tested = batch.map(async ({ mutation }) => {
       const judged = await judgeMutant(mutation, kept, mutation.name);
-      took.set(mutation, { build: building / batch.length, tests: judged.tests });
+      took.set(mutation, shareOfShard({ build: building / batch.length, tests: judged.tests }, jobs, testsAtOnce));
       results.set(mutation, judged.result);
       caughtBy.set(mutation, judged.by);
       if (freshKept === undefined) return;
@@ -2173,7 +2184,7 @@ async function main() {
   const summary = process.env.GITHUB_STEP_SUMMARY;
   if (summary) {
     const cell = (s: string) => s.replaceAll("|", "\\|");
-    const lines = ["## Mutations", "", "| Mutation | Breaks | Result | Build | Tests |", "|---|---|---|---|---|"];
+    const lines = ["## Mutations", "", "| Mutation | Breaks | Result | Its build's share | Its tests' share |", "|---|---|---|---|---|"];
     for (const [mutation, result] of rows) {
       const time = took.get(mutation);
       lines.push(`| ${mutation.name} | ${cell(mutation.breaks)} | ${cell(result)} | ${time ? shown(time.build) : ""} | ${time ? shown(time.tests) : ""} |`);

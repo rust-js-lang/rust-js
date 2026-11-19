@@ -1168,7 +1168,10 @@ builds the guide's site and deploys it to GitHub Pages (`bun run deploy`).
   `scripts/shard.ts`, by the time each took where `--timings=<dir>` gives
   them: main's merged times, which `plan` hands every shard alike and
   `bun scripts/ci.ts mutation-timings <times>` writes out; each run merges
-  its own over them, `mutation-timings-merged`, for the next plan.
+  its own over them, the artifact `MERGED_MUTATION_TIMES` names
+  (`scripts/ci.ts`), for the next plan. A mutation's time is its share of
+  its shard (`shareOfShard`): its build's over the build workers, and the
+  seconds its tests held a slot, never those they waited, over the slots.
 - `scripts/ci.ts`: `bun run ci:check`, `ci:status`, `ci:bless`, and a
   push's `plan`.
 - `scripts/port.ts`: `bun run port measure` and `compare`, of the

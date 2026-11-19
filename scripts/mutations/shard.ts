@@ -43,6 +43,22 @@ export const mutations: Mutation[] = [
     tests: ["test/shards.test.ts", "-t", "reads its times of the runs"],
   },
   {
+    name: "slot-held-from-asking",
+    breaks: "a mutation's tests are timed from asking for a slot, their wait behind others' tests counted as theirs: a nightly's mutations took 482 s at the median, and a check's plan sized its shards by them",
+    file: "scripts/shard.ts",
+    find: "  return async (work, holder) => {\n    while (running >= limit) await new Promise<void>((resume) => waiting.push(resume));\n    running++;\n    const began = performance.now();\n",
+    replace: "  return async (work, holder) => {\n    const began = performance.now();\n    while (running >= limit) await new Promise<void>((resume) => waiting.push(resume));\n    running++;\n",
+    tests: ["test/shards.test.ts", "-t", "its tests timed only as they hold a slot"],
+  },
+  {
+    name: "share-of-shard-unshared",
+    breaks: "a mutation's time is its own build's and tests', not its share of a shard of two build workers and four test slots, and a check's shards are sized several times over",
+    file: "scripts/shard.ts",
+    find: "  return { build: own.build / jobs, tests: own.tests / testSlots };\n",
+    replace: "  return { build: own.build, tests: own.tests };\n",
+    tests: ["test/shards.test.ts", "-t", "its tests timed only as they hold a slot"],
+  },
+  {
     name: "untimed-mutations-as-the-median",
     breaks: "a change's untimed mutations are estimated as the timed ones' median, not their file's or the 90th percentile, and a shard of several of them takes twice another's (run 43976170163)",
     file: "scripts/shard.ts",

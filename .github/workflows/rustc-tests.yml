@@ -538,8 +538,9 @@ jobs:
 
   # The times the next plan hands its shards (scripts/ci.ts's
   # `merge-mutation-timings`): this run's plan's, each mutation this run's
-  # shards timed over it, one small artifact, `mutation-timings-merged`,
-  # where a plan read six runs' every shard's. Only where it had the plan's
+  # shards timed over it, one small artifact, named by the merge's output
+  # (`MERGED_MUTATION_TIMES`, the one name plan reads), where a plan read
+  # six runs' every shard's. Only where it had the plan's
   # to merge into, or ran every mutation, the nightly's, so what's merged
   # never loses what was known. Each step may fail without failing the
   # run: the next plan reads an older run's.
@@ -565,15 +566,17 @@ jobs:
           pattern: mutation-timings-*
           path: target/mutation-timings-ran
       - name: Merge them
+        id: merge
         continue-on-error: true
         env:
           TIMES: ${{ inputs.mutation_timings }}
-        run: bun scripts/ci.ts merge-mutation-timings target/mutation-timings-ran target/mutation-timings-merged/timings.json
+        run: bun scripts/ci.ts merge-mutation-timings target/mutation-timings-ran >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v7
+        if: ${{ steps.merge.outputs.path != '' }}
         continue-on-error: true
         with:
-          name: mutation-timings-merged
-          path: target/mutation-timings-merged/timings.json
+          name: ${{ steps.merge.outputs.artifact }}
+          path: ${{ steps.merge.outputs.path }}
           if-no-files-found: ignore
           retention-days: 14
 

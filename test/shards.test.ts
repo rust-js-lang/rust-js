@@ -4,15 +4,15 @@
 // many jobs of each kind run at once on a machine's cores and memory.
 
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTimings, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, timingsRun } from "../scripts/ci";
+import { decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, timingsRun } from "../scripts/ci";
 import { mutations } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
-import { balancedByGroup, testFileSeconds } from "../scripts/shard";
+import { balancedByGroup, shareOfShard, slots, testFileSeconds } from "../scripts/shard";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
@@ -73,14 +73,21 @@ test("a mutation shard reads its times of the runs' timings.json under the direc
 test("a check's mutation shards balance by the newest merged times of main, handed alike to each", () => {
   const artifact = (name: string, run: number, createdAt: string, branch = "main", expired = false) => ({ name, run, createdAt, branch, expired });
   const artifacts = [
-    artifact("mutation-timings-merged", 9, "2026-11-17T03:00:00Z", "main", true),
-    artifact("mutation-timings-merged", 8, "2026-11-17T02:00:00Z", "other"),
+    artifact(MERGED_MUTATION_TIMES, 9, "2026-11-17T03:00:00Z", "main", true),
+    artifact(MERGED_MUTATION_TIMES, 8, "2026-11-17T02:00:00Z", "other"),
     artifact("mutation-timings-1", 7, "2026-11-17T01:30:00Z"),
-    artifact("mutation-timings-merged", 5, "2026-11-17T01:00:00Z"),
-    artifact("mutation-timings-merged", 3, "2026-11-16T01:00:00Z"),
+    artifact(MERGED_MUTATION_TIMES, 5, "2026-11-17T01:00:00Z"),
+    artifact(MERGED_MUTATION_TIMES, 3, "2026-11-16T01:00:00Z"),
   ];
   expect(mergedTimingsRun(artifacts)).toBe(5);
   expect(mergedTimingsRun(artifacts.slice(0, 3))).toBeUndefined();
+  // Never the old name's, whose times were each mutation's from its tests'
+  // asking for a slot; and the workflow uploads by the name the merge
+  // gives, which is `MERGED_MUTATION_TIMES`, never one of its own.
+  expect(mergedTimingsRun([artifact("mutation-timings-merged", 10, "2026-11-18T01:00:00Z")])).toBeUndefined();
+  const workflows = readdirSync(join(root, ".github/workflows")).map((file) => readFileSync(join(root, ".github/workflows", file), "utf8"));
+  expect(workflows.filter((text) => /mutation-(timings|shares)-merged/.test(text))).toEqual([]);
+  expect(workflows.filter((text) => text.includes("name: ${{ steps.merge.outputs.artifact }}"))).toHaveLength(1);
   // Each of the checkout's mutations in turn, a tenth of a second each: a
   // catalog of another count refused, never read askew.
   const names = ["b", "a", "c", "d"];
@@ -233,26 +240,75 @@ test("the suite's files of cases are small parts of one pool, wider once the res
 });
 
 // A check's mutations on the fewest machines of `MUTATION_SHARDS` whose
-// every shard, dealt as the shards deal by what each took, is expected to
-// end in `SHARD_BUDGET_SECONDS`: its mutations' times, its setup, and a
-// browser's install where one of its tests drives one. Sized by count, one
-// shard of a change's slow mutations took 21 min and another 4.
+// every shard, dealt as the shards deal by each's share of its shard, is
+// expected to end in `SHARD_BUDGET_SECONDS`: its mutations' shares, its
+// setup, the compiler as it is, and a browser's install where one of its
+// tests drives one. Sized by count, one shard of a change's slow mutations
+// took 21 min and another 4.
 test("a check's mutations are split by their expected time, each shard under its budget", () => {
-  const m = (name: string, file = `src/${name}.rs`, tests = ["test/corpus.test.ts", "-t", name]) => ({ name, file, tests });
+  const m = (name: string, tests = ["test/corpus.test.ts", "-t", name]) => ({ name, tests });
   const none = () => false;
-  expect(mutationShards([], new Map(), none)).toBe("1");
-  // Untimed, each a check's twentieth of five minutes, `UNTIMED_SECONDS`.
-  expect(mutationShards(Array.from({ length: 36 }, (_, i) => m(`u${i}`)), new Map(), none)).toBe("1");
-  expect(mutationShards(Array.from({ length: 37 }, (_, i) => m(`u${i}`)), new Map(), none)).toBe("2");
+  const own = (name: string) => `src/${name}.rs`;
+  expect(mutationShards([], new Map(), none, own)).toBe("1");
+  // Untimed, each a check's twentieth of five minutes, `UNTIMED_SECONDS`,
+  // beside the setup and the compiler as it is.
+  expect(mutationShards(Array.from({ length: 36 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("1");
+  expect(mutationShards(Array.from({ length: 37 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("2");
   // Timed: two of 300 s fit one shard each, never one, whatever their count.
   const slow = [m("a"), m("b")];
-  expect(mutationShards(slow, new Map([["a", 300], ["b", 300]]), none)).toBe("2");
-  expect(mutationShards(slow, new Map([["a", 200], ["b", 300]]), none)).toBe("1");
+  expect(mutationShards(slow, new Map([["a", 300], ["b", 300]]), none, own)).toBe("2");
+  expect(mutationShards(slow, new Map([["a", 200], ["b", 300]]), none, own)).toBe("1");
   // A browser's install where a test drives one: the shard it's dealt to.
-  const browsing = [m("a", "src/a.rs", ["test/browser.test.ts"]), m("b")];
-  expect(mutationShards(browsing, new Map([["a", 100], ["b", 100]]), (file) => file === "test/browser.test.ts")).toBe("2");
+  const browsing = [m("a", ["test/browser.test.ts"]), m("b")];
+  expect(mutationShards(browsing, new Map([["a", 100], ["b", 100]]), (file) => file === "test/browser.test.ts", own)).toBe("2");
   // One longer than the budget alone takes the most.
-  expect(mutationShards([m("a")], new Map([["a", 4000]]), none)).toBe(String(MUTATION_SHARDS.at(-1)));
+  expect(mutationShards([m("a")], new Map([["a", 4000]]), none, own)).toBe(String(MUTATION_SHARDS.at(-1)));
+});
+
+// Check 44441824204's five mutations, with the merged times its plan read
+// (run 44441216357's): two new ones of scripts/ci.ts, untimed, whose file's
+// twelve timed mutations took 3 to 8 s, and three of 2 to 3 s, among a
+// catalog of 11,776 whose 90th percentile was 987 s. Estimated by the
+// catalog's file, as the shards estimate them, they take one machine; by
+// the chosen alone's, none of whose file was timed, each was 987 s, and
+// they took 16, 11 of them running nothing.
+test("a check's untimed mutations are estimated by their file's mutations in the catalog, as the shards estimate them", () => {
+  const chosen = ["mutation-shards-of-setup-alone", "mutation-shards-browser-uncounted", "control-settings-unset", "untimed-mutations-as-the-median", "untimed-mutations-to-the-least"];
+  const files = new Map<string, string>([
+    ["mutation-shards-of-setup-alone", "scripts/ci.ts"],
+    ["mutation-shards-browser-uncounted", "scripts/ci.ts"],
+    ["control-settings-unset", "scripts/mutations.ts"],
+    ["untimed-mutations-as-the-median", "scripts/shard.ts"],
+    ["untimed-mutations-to-the-least", "scripts/shard.ts"],
+  ]);
+  const seconds = new Map<string, number>([["control-settings-unset", 2.4], ["untimed-mutations-as-the-median", 2.9], ["untimed-mutations-to-the-least", 2.3]]);
+  [3, 3.3, 3.3, 3.4, 3.6, 3.7, 3.7, 3.7, 3.7, 3.9, 7.3, 7.7].forEach((time, i) => {
+    files.set(`ci-${i}`, "scripts/ci.ts");
+    seconds.set(`ci-${i}`, time);
+  });
+  // The rest of the catalog, its times a nightly's: 90% of them 482 s,
+  // the slowest tenth 987.
+  for (let i = 0; i < 200; i++) {
+    files.set(`src-${i}`, `src/${i}.rs`);
+    seconds.set(`src-${i}`, i < 180 ? 482 : 987);
+  }
+  const none = () => false;
+  expect(mutationShards(chosen.map((name) => ({ name, tests: ["test/shards.test.ts"] })), seconds, none, (name) => files.get(name))).toBe("1");
+});
+
+// A mutation's time is its share of its shard: of its tests, the seconds
+// they held a slot, never those they waited for one, over the slots; of
+// its build, its own over the shard's build workers. Timed from asking, a
+// nightly's waited minutes, and a check's plan sized by them.
+test("a mutation's time is its share of its shard, its tests timed only as they hold a slot", async () => {
+  const run = slots(1);
+  const sleep = (ms: number) => new Promise((resume) => setTimeout(resume, ms));
+  const first = { seconds: 0 };
+  const second = { seconds: 0 };
+  await Promise.all([run(() => sleep(200), first), run(() => sleep(50), second)]);
+  expect(first.seconds).toBeGreaterThanOrEqual(0.19);
+  expect(second.seconds).toBeLessThan(0.15);
+  expect(shareOfShard({ build: 10, tests: 8 }, 2, 4)).toEqual({ build: 5, tests: 2 });
 });
 
 // The shards balance by the newest run's timings that are still kept, of
