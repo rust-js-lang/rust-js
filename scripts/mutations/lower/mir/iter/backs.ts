@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of a type parameter given as it is, stepped by its dictionary's `next_back`, never drops it: `drop a at 0` is lost (#971)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)\n            }\n            // Of a `&mut` to one, lent",
-    replace: "                crate::lower::iterators::reversed_by(given)\n            }\n            // Of a `&mut` to one, lent",
+    find: "                crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)\n",
+    replace: "                crate::lower::iterators::reversed_by(given)\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_named_by_another_bound.rs$"],
   },
   {
@@ -547,7 +547,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/backs.rs",
     find: "            && !self.compiled_struct(iter_ty.peel_refs(), value)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(impl_trait_hides_std_adapters|returned_impl_ends).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(impl_trait_hides_std_adapters|returned_impl_ends|clone_of_a_compiled_adapter_knowing_its_back).rs$"],
   },
   {
     name: "rfold-receiver-unclosed",
@@ -914,16 +914,8 @@ export const mutations: Mutation[] = [
     name: "rev-of-a-lent-given-unlent",
     breaks: "`rev()` of a `&mut` to a type parameter given as it is passes on all its steps, so its `rev().fold()` calls `I`'s own `rfold` where std's `&mut I` folds by its `try_rfold`, `own rfold` printed where native steps `next_back` (#2139)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                crate::lower::iterators::reversed_by(self.lent_iterator(given, receiver_ty))\n",
-    replace: "                crate::lower::iterators::reversed_by(given)\n",
+    find: "                    self.lent_iterator(back, receiver_ty)\n",
+    replace: "                    back\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_nth_back_reaches_what_its_given|mut_of_an_iterator_passes_on_what_std_does).rs$"],
-  },
-  {
-    name: "rev-of-a-lent-given-by-its-next-back",
-    breaks: "`rev()` of a `&mut` to a type parameter another trait's method gives, `GetMut::get_mut(i).rev().nth(1)`, is its dictionary's `next_back` alone, which steps it twice where std's `&mut I` passes `nth_back` on to its own (#2139)",
-    file: "src/lower/mir/iter/backs.rs",
-    find: "            None if let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) => {\n",
-    replace: "            None if false && let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_nth_back_reaches_what_its_given.rs$"],
   },
 ];

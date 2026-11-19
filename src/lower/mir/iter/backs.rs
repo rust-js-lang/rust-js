@@ -75,18 +75,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 crate::lower::iterators::reversed_by(self.closing(given, receiver_ty, span)?)
             }
-            // Of a `&mut` to one, lent: what std's `&mut I` passes on of
-            // it, its `nth_back` its own, its `rfold` by its `try_rfold`
-            // (`$lent`, ADR 0928), never closed, as a `Rev<&mut I>` drops
-            // nothing of its `I` (#755, #2139).
-            None if let Some(given) = self.given_js_iterator(receiver.clone(), iter_ty, true, false) => {
-                crate::lower::iterators::reversed_by(self.lent_iterator(given, receiver_ty))
-            }
             Some(kind) if let Some(step) = kind.step(true) => self.stepped_by(receiver, Expr::helper(step)),
             Some(_) => return Err(unsupported(self)),
-            // Of a `&mut`, `by_ref()`'s: what it's to, lent, stepped from
-            // its back, its slice's steps its own (`slicing`), and never
-            // closed, as a `Rev<&mut I>` drops nothing of its `I` (#755).
+            // Of a `&mut`, `by_ref()`'s, a type parameter's given as it is
+            // too: what it's to, lent, stepped from its back, as std's `&mut
+            // I` passes on of it, its `nth_back` its own, its `rfold` by its
+            // `try_rfold` (`$lent`, ADR 0928), its slice's steps its own
+            // (`slicing`), and never closed, as a `Rev<&mut I>` drops nothing
+            // of its `I` (#755, #2139).
             None if receiver_ty.is_mutable_ptr() => {
                 let lends = !std::ptr::eq(crate::lower::iterators::unlent(&receiver), &receiver);
                 let back = match self.has_a_back(iter_ty, &receiver) {

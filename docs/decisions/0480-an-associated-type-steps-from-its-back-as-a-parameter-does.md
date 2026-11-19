@@ -209,3 +209,17 @@ corpus with std's iterator structs, the consumer net or the twin nets,
 and its mutation, `given-rev-refused`, survived the whole corpus with
 its snapshots. The arm, `reversed` and the mutation go together (ADR
 0093's unreached evidence).
+
+## Amendment: a `&mut` to a parameter given as it is is the `&mut` arm's
+
+With `reversed` gone, `rev_called`'s arm of a `&mut` to a type
+parameter given as it is, `$rev($lent($given(..)))`, repeated the arm
+after it, of every `&mut`, `by_ref()`'s: that one's `as_double_ended`
+gives the parameter's `$given` with its back, lends it and reverses it,
+the same JS. Its mutation, `rev-of-a-lent-given-by-its-next-back`,
+which took the arm away, survived main's check (44457147120), the whole
+corpus with its snapshots (2,810 tests) and `--retire`'s run (the
+compiler's unit tests, `check:fast --all`, React's port at its pin and
+the crate corpus). One arm per form: the arm goes, the `&mut` arm's
+comment names the parameter, and `rev-of-a-lent-given-unlent` is
+retargeted to that arm's `lent_iterator`.
