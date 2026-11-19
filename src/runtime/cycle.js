@@ -38,8 +38,11 @@ function $cycleOf(iterator, clone, next, boxed = false, drop) {
 // which it carries (ADR 0544). A `$Steps`, whose `take` closes it though a
 // clone throws, a panic, as Rust drops a `Take` that holds it as it
 // unwinds (#708). Its lifecycle `$closing`'s, `$close`'s, never taken
-// (#870).
+// (#870). What it steps it holds, each fresh clone too, so it's dropped
+// where the `Cycle` drops it, never as it's done: a clone first, then the
+// one it replaces, as `self.iter = self.orig.clone()` (#2160).
 function $cycleFrom(orig, iter, clone, next, boxed, drop) {
+  iter.hold?.();
   const cycled = new $Steps(
     () => {
       if (cycled.$state === "closed") return { done: true, value: undefined };
@@ -50,6 +53,7 @@ function $cycleFrom(orig, iter, clone, next, boxed, drop) {
         // Rust's assignment writes it as it unwinds, so what's closed then
         // is the fresh one, not the one dropped again (#1585).
         const fresh = clone(cycled.orig);
+        fresh.hold?.();
         $unwinds(
           () => drop?.(cycled.iter),
           () => {

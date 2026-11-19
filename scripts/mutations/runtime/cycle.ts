@@ -23,9 +23,9 @@ export const mutations: Mutation[] = [
     name: "cycle-restart-drop-first",
     breaks: "`Cycle` drops the iterator it replaces before it clones the next, not after",
     file: "src/runtime/cycle.js",
-    find: "        const fresh = clone(cycled.orig);\n        $unwinds(\n          () => drop?.(cycled.iter),\n",
-    replace: "        drop?.(cycled.iter);\n        const fresh = clone(cycled.orig);\n        $unwinds(\n          () => undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
+    find: "        const fresh = clone(cycled.orig);\n        fresh.hold?.();\n        $unwinds(\n          () => drop?.(cycled.iter),\n",
+    replace: "        drop?.(cycled.iter);\n        const fresh = clone(cycled.orig);\n        fresh.hold?.();\n        $unwinds(\n          () => undefined,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(cycled_iterators|cloned_apart_map_drops_its_closure).rs$"],
   },
   {
     name: "cycle-close-order",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/cycle.js",
     find: "          () => {\n            cycled.iter = fresh;\n          },\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cycle_clone_or_drop_panics_drops_what_it_holds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure.rs$"],
   },
   {
     name: "cycle-clone-unwinding-keeps-orig-clone",
@@ -106,5 +106,23 @@ export const mutations: Mutation[] = [
     find: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n  return cycled;\n}",
     replace: "  cycled.sizeHint = () => (items.length === 0 ? [0, 0] : [4294967295, undefined]);\n  return Iterator.from({ next: cycled.next });\n}",
     tests: ["test/corpus.test.ts", "-t", "^cycle_taken_grows_as_std.rs$"],
+  },
+  {
+    name: "cycle-fresh-unheld",
+    breaks:
+      "what a `Cycle` steps after it restarts isn't held, so it's dropped as it ends, before the clone that replaces it, where `self.iter = self.orig.clone()` clones first (#2160)",
+    file: "src/runtime/cycle.js",
+    find: "        fresh.hold?.();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure.rs$"],
+  },
+  {
+    name: "cycle-first-unheld",
+    breaks:
+      "what a `Cycle` a temporary steps first isn't held, so a `cycle().take(5)` drops it as it ends, before the clone that replaces it (#2160)",
+    file: "src/runtime/cycle.js",
+    find: "function $cycleFrom(orig, iter, clone, next, boxed, drop) {\n  iter.hold?.();\n",
+    replace: "function $cycleFrom(orig, iter, clone, next, boxed, drop) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure.rs$"],
   },
 ];

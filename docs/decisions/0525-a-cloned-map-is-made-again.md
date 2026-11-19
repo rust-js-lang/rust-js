@@ -470,3 +470,37 @@ native Rust: a `cycle()` of a chain of an array, one stepped into its
 second side, a `Vec` given by value and a `&VecDeque`, each cloned.
 Mutation `chain-other-side-passed-as-it-is` (`lower/mir/iter.ts`);
 `chain-other-side-not-made-an-iterator` retargeted.
+
+
+## Amendment (2026-11-19, #2160): a cloned map's function with a destructor is closed to drop it
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C, results change; each
+`Map` and `Filter` drops its own closure, a clone its closure's clone.
+
+A `map` or a `filter` cloned apart was made by `makeMap(it, f)` alone,
+never closed to drop `f` as one not cloned apart is
+([0485](0485-an-adapter-holding-a-function-is-closed-to-drop-it.md),
+`holding_function`), so its `.return()` closed its source and dropped
+nothing of its function. `vec![10, 20].into_iter().map(move |x| { let m
+= &m; x + m.0 }).cycle()` of a `Loud` printed none of the three drops
+native prints. Now the maker wraps what it makes in `closing_function`
+with its own `f`, `$holding(it.map(f), () => $dispose(f), "after")`, and
+a clone, made by the maker again with `$clone(f)`, holds and drops its
+own; the back forms, `$mapEnds` and `$filterEnds`, alike.
+
+Seen through `cycle()`, a second rule: `$cycleFrom` holds what it steps,
+each fresh clone too, so it's dropped where the `Cycle` drops it, not as
+it's done. Unheld, a fresh clone, or the first of a temporary cycle,
+`cycle().take(5)`, closed itself as it ended, before the clone replacing
+it, where `self.iter = self.orig.clone()` clones first.
+
+Held by `test/corpus/cloned_apart_map_drops_its_closure.rs`, against
+native Rust in both builds: the original dropped alone, a clone dropped
+before it, a filter's clone, a cycle restarted twice held by a variable
+and as a temporary taken from, and a drop that panics as the cycle
+restarts. Mutations `cloned-apart-map-function-undropped`
+(`lower/mir/iter.ts`), `cycle-fresh-unheld` and `cycle-first-unheld`
+(`runtime/cycle.ts`); #2155's latent survivor
+`cycle-replaced-drop-unwinding-keeps-old` retargeted to the case, caught;
+`cycle-restart-drop-first`'s tests gain it, as `cycled_iterators.rs`
+alone no longer tells the two orders apart.

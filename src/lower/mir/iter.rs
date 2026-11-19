@@ -408,6 +408,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let own = self.is_called_as_written(other_ty);
         let back = self.stepped_from_its_back(output);
+        // A map's or a filter's function with a destructor: each one made,
+        // a clone too, closed to drop its own, as one not cloned apart is
+        // (`holding_function`, ADR 0485, #2160).
+        let held = (matches!(parted, Parted::Map | Parted::Filter))
+            .then(|| self.recognition().held_function(output))
+            .flatten()
+            .filter(|&function| self.drops(function) != crate::lower::drops::Drops::Nothing);
         let adapter = self.cloned_apart_adapter(
             (name.as_str(), parts, names),
             (vec![receiver_ty, other_ty], output),
@@ -424,15 +431,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `$mapEnds` and a filter `$filterEnds`, as one not cloned
                 // apart is (ADRs 0455, 0526, 0984), closed to drop what it
                 // holds as `as_double_ended` makes it.
+                let holding = |cx: &mut Self, adapter: Expr, f: Expr| match held {
+                    Some(function) => cx.closing_function(adapter, output, (f, function), span),
+                    None => Ok(adapter),
+                };
                 if matches!(parted, Parted::Map | Parted::Filter) && back {
                     let source = cx.as_double_ended(a, receiver_ty, span)?;
-                    let callback = cx.unary_callback(b, own);
+                    let callback = cx.unary_callback(b.clone(), own);
                     let ends = if parted == Parted::Map {
                         "$mapEnds"
                     } else {
                         "$filterEnds"
                     };
-                    return Ok(Expr::call_helper(ends, vec![source, callback]));
+                    return holding(cx, Expr::call_helper(ends, vec![source, callback]), b);
                 }
                 let a_value = a.clone();
                 // Each source closed to drop what it holds, as the adapter not
@@ -443,8 +454,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Its source given its function, `it.map(f)`; a copy's,
                     // which has none, is `copied_cloned_apart`'s.
                     Parted::Map | Parted::Filter | Parted::Copied => {
-                        let callback = cx.unary_callback(b, own);
-                        Expr::call(Expr::member(a, name.as_str()), vec![callback])
+                        let callback = cx.unary_callback(b.clone(), own);
+                        holding(cx, Expr::call(Expr::member(a, name.as_str()), vec![callback]), b)?
                     }
                     // Its sides made knowing theirs, as a chain not cloned apart
                     // is (#718, #739).

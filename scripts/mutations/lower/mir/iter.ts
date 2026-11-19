@@ -21,6 +21,15 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^enumerate_next_back_of_items.rs$"],
   },
   {
+    name: "cloned-apart-map-function-undropped",
+    breaks:
+      "a `map` cloned apart whose closure holds a value with a destructor is never closed to drop it: `vec![10, 20].into_iter().map(f).cycle()` drops none of its three closures where Rust drops each (#2160)",
+    file: "src/lower/mir/iter.rs",
+    find: "            .filter(|&function| self.drops(function) != crate::lower::drops::Drops::Nothing);\n        let adapter = self.cloned_apart_adapter(\n",
+    replace: "            .filter(|_| false);\n        let adapter = self.cloned_apart_adapter(\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_apart_map_drops_its_closure.rs$"],
+  },
+  {
     name: "cloned-apart-filter-unknowing",
     breaks:
       "a held `filter()` cloned apart and stepped from its back is JS's `it.filter(f)`, which has no back: `TypeError: it.back is not a function` (ADR 0984)",
