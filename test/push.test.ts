@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { appendedBoth, lineSet, lowerRatchets, mergedChanges, mergedLineSet, ratchets, regenerated, remakeable } from "../scripts/push";
+import { appendedBoth, beside, lineSet, lowerRatchets, mergedChanges, mergedLineSet, ratchets, regenerated, remakeable } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -149,4 +149,17 @@ test("a rebase's conflict in a line set keeps what neither side took off and wha
   expect(remakeable(["test/metamorphic-known.txt", "test/sig-binders.txt"])).toBe(true);
   expect(remakeable(["test/metamorphic.test.ts"])).toBe(false);
   expect(lineSet("docs/readability.txt")).toBe(false);
+});
+
+test("what runs beside a round's check, stopped, leaves nothing it started running", async () => {
+  // A tree as the React regen's is, bun, node, cargo and rust-js: here a
+  // shell and the two it starts. Killing only the shell left the rest.
+  const it = beside(["sh", "-c", "sleep 300 & sleep 300 & wait"], join(root, "target", "push-beside.test.log"));
+  const running = () => spawnSync("pgrep", ["-g", String(it.group)]).stdout.toString().split("\n").filter(Boolean);
+  for (let i = 0; i < 250 && running().length < 3; i++) await Bun.sleep(20);
+  expect(running().length).toBe(3);
+  it.stop();
+  expect(await it.done).not.toBe(0);
+  for (let i = 0; i < 250 && running().length > 0; i++) await Bun.sleep(20);
+  expect(running()).toEqual([]);
 });

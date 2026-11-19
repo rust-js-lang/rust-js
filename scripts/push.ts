@@ -235,18 +235,44 @@ async function main() {
 const reactLog = "target/push-react.log";
 
 /** A command run beside another, what it prints written to `log`: its
- * exit code once it ends, and a way to stop it. */
-type Beside = { done: Promise<number>; stop: () => void };
-function beside(cmd: string[], log: string): Beside {
+ * exit code once it ends, a way to stop it, and its process group's id.
+ * It runs in a group of its own, which `stop` ends whole: killing only the
+ * direct child left what it started, the React regen's node, cargo and
+ * rust-js, running hours past a failed push. A signal that ends the push
+ * ends the group first, as the group no longer shares the terminal's. */
+export type Beside = { done: Promise<number>; stop: () => void; group: number };
+export function beside(cmd: string[], log: string): Beside {
   mkdirSync("target", { recursive: true });
   const out = openSync(log, "w");
-  const child = spawn(cmd[0]!, cmd.slice(1), { stdio: ["ignore", out, out] });
+  const child = spawn(cmd[0]!, cmd.slice(1), { stdio: ["ignore", out, out], detached: true });
   closeSync(out);
+  const group = child.pid!;
+  let ended = false;
+  const stop = () => {
+    if (ended) return;
+    ended = true;
+    process.off("exit", stop);
+    for (const signal of signals) process.off(signal, ends);
+    try {
+      process.kill(-group, "SIGTERM");
+    } catch {
+      // The group has ended already.
+    }
+  };
+  const ends = (signal: NodeJS.Signals) => {
+    stop();
+    process.kill(process.pid, signal);
+  };
+  const signals = ["SIGINT", "SIGTERM", "SIGHUP"] as const;
+  process.once("exit", stop);
+  for (const signal of signals) process.once(signal, ends);
   const done = new Promise<number>((resolve) => {
     child.on("error", () => resolve(1));
+    // What it started may outlive it: the group is still ended by `stop`
+    // or as the push exits.
     child.on("close", (code) => resolve(code ?? 1));
   });
-  return { done, stop: () => child.kill() };
+  return { done, stop, group };
 }
 
 /** A command of a phase, its output shown; refused where it fails. */

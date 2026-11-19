@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "  return conflicts.every((file) => file in regenerated || ratchets.includes(file) || decision(file) || lineSet(file));\n",
     tests: ["test/push.test.ts", "-t", "TESTS.md"],
   },
+  {
+    name: "beside-stops-only-its-child",
+    breaks: "a failed push stops only the React regen's direct child, so its node, cargo and rust-js run on for hours past it (two compilers 4 h after one push, 2026-11-19)",
+    file: "scripts/push.ts",
+    find: '      process.kill(-group, "SIGTERM");\n',
+    replace: '      process.kill(group, "SIGTERM");\n',
+    tests: ["test/push.test.ts", "-t", "beside"],
+  },
 ];
