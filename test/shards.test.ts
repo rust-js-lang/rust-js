@@ -132,8 +132,11 @@ test("a test shard is handed its files' times by plan, never downloading them", 
 // (`testShardSeconds`). Check 44480685461 (896bcafd0) of 394 files and
 // 2,799 cases, planned 3 by its files' raw recorded times alone, ran 516
 // to 745 s, the pool each shard's longest leg; its own measures, kept as
-// test/fixtures/test-timings-44480685461/, expect 722 s a shard of three,
-// past the budget, and plan four.
+// test/fixtures/test-timings-44480685461/, expect 722 s a shard of three
+// at their mean, 835 at their slowest pace, past the budget, and plan four.
+// Check 44493804830 (d4c76fa8b), planned 2 at the mean, 678 s each, took
+// 1,102 s on a slow runner and 688 on a fast one; at its slowest pace, 1.25
+// of its own measures, two are expected at 1,032 s, and it plans four.
 test("a check's suite takes the machines its selection's expected time needs", () => {
   expect(fewestShards([1, 2, 4], (count) => [100 / count + 10], 40)).toBe(4);
   expect(fewestShards([1, 2, 4], (count) => [1000 / count], 40)).toBe(4);
@@ -153,18 +156,34 @@ test("a check's suite takes the machines its selection's expected time needs", (
   const selection = { all: false, files: [...files, ...browsers, ...Object.values(caseFiles)], cases: Array.from({ length: 2799 }, (_, i) => `c${i}.rs`), forms: [], why: "" };
   const pool = { cases: 2799, metamorphic: true, pages: browsers.length };
   const expected = (count: number) => dealtByGroup(files, count, seconds, () => "suite").load.map((load) => testShardSeconds(load, count, facts, pool));
-  // Three, as the check ran: about its runs' mean, its setup beside them.
+  // Three, as the check ran: about its runs' mean, its setup beside them,
+  // at its slowest shard's pace, the pool's wall over what the mean expects.
+  expect(facts.pace).toBeCloseTo(1.156, 3);
   expect(Math.max(...expected(3))).toBeGreaterThan(SHARD_BUDGET_SECONDS);
-  expect(Math.max(...expected(3))).toBeCloseTo(TEST_SHARD_SETUP_SECONDS + (745 + 516 + 605) / 3, -2);
+  expect(Math.max(...expected(3))).toBeCloseTo(facts.pace * (TEST_SHARD_SETUP_SECONDS + (745 + 516 + 605) / 3), -2);
   expect(Math.max(...expected(4))).toBeLessThanOrEqual(SHARD_BUDGET_SECONDS);
   expect(testShards(selection, { seconds, facts })).toBe("4");
-  // The pool is the longer leg there: without it, two would do.
-  expect(testShards(selection, { seconds, facts: { ...facts, poolWallPerSecond: 0 } })).toBe("2");
+  // The pool is the longer leg there: without it, three would do; and at
+  // the mean, as if every runner were as fast, two.
+  expect(testShards(selection, { seconds, facts: { ...facts, poolWallPerSecond: 0 } })).toBe("3");
+  expect(testShards(selection, { seconds, facts: { ...facts, poolWallPerSecond: 0, pace: 1 } })).toBe("2");
+  // Check 44493804830's, its slow shard expected about as it ran.
+  const slowPaths = [1, 2].map((k) => join(root, `test/fixtures/test-timings-44493804830/${k}.json`));
+  const slow = { seconds: testFileSeconds(slowPaths, true), facts: shardFacts(slowPaths)! };
+  const slowFiles = [...slow.seconds.keys()];
+  const slowExpected = (count: number) =>
+    dealtByGroup(slowFiles, count, slow.seconds, () => "suite").load.map((load) => testShardSeconds(load, count, slow.facts, { cases: 2801, metamorphic: true, pages: browsers.length }));
+  expect(slow.facts.pace).toBeCloseTo(1.247, 3);
+  // Within a tenth of the 1,102 s its slow shard took.
+  expect(Math.abs(Math.max(...slowExpected(2)) - 1102) / 1102).toBeLessThan(0.1);
+  expect(Math.max(...slowExpected(3))).toBeGreaterThan(SHARD_BUDGET_SECONDS);
+  const slowSelection = { ...selection, files: [...slowFiles, ...browsers, ...Object.values(caseFiles)], cases: Array.from({ length: 2801 }, (_, i) => `c${i}.rs`) };
+  expect(testShards(slowSelection, slow)).toBe("4");
   // Of everything, every suite file counts, those the last run didn't
   // time, a selection's that ran few, by the timed ones' median, never the
   // timed alone: of 100 files, 10 timed at a minute each, six machines.
   const all = { all: true, files: [], cases: [], forms: [], why: "" };
-  const none = { secondsPerCase: 0, metamorphic: 0, poolWallPerSecond: 0, browserSeconds: 0 };
+  const none = { secondsPerCase: 0, metamorphic: 0, poolWallPerSecond: 0, browserSeconds: 0, pace: 1 };
   const suite = Array.from({ length: 100 }, (_, i) => `test/f${i}.test.ts`);
   const few = new Map(suite.slice(0, 10).map((file) => [file, 60] as const));
   expect([testShards(all, { seconds: few, facts: none }, undefined, () => suite, () => 0), testShards(all, { seconds: few, facts: none }, undefined, () => [...few.keys()], () => 0)]).toEqual(["6", "1"]);
@@ -214,7 +233,11 @@ test("a test shard keeps what its run measured beside its files' times", () => {
     // only, `plan`'s.
     expect([...testFileSeconds([measured, raw])]).toEqual([["test/a.test.ts", 30], ["test/b.test.ts", 20], ["test/c.test.ts", 4]]);
     expect([...testFileSeconds([measured, raw], true)]).toEqual([["test/a.test.ts", 30], ["test/b.test.ts", 20]]);
-    expect(shardFacts([measured, raw])).toEqual({ secondsPerCase: 2, metamorphic: 80, poolWallPerSecond: 90 / 140, browserSeconds: 10 });
+    expect(shardFacts([measured, raw])).toEqual({ secondsPerCase: 2, metamorphic: 80, poolWallPerSecond: 90 / 140, browserSeconds: 10, pace: 1 });
+    // Of two runs of the same parts, one's pool twice the other's wall: the
+    // slower's pace, its wall over what their mean expects of it, 180 / 135.
+    const slower = at("slower.json", { version: 1, files: {}, shard: { ...shard, pool: { ...shard.pool, wall: 180 } } });
+    expect(shardFacts([measured, slower])?.pace).toBeCloseTo(4 / 3, 6);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

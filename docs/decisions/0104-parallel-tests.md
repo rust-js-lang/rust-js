@@ -329,3 +329,40 @@ Mutations: `test-shards-pool-unmodelled`, `test-shards-setup-uncounted`
 (retargeted). `test-shards-recorded-as-wall` is retired with the factor
 it tested. Each timings artifact is a few hundred bytes larger; no
 workflow or runner changes.
+
+## Amended: every shard is expected at the slowest pace (2026-11-19)
+
+The first check planned from kept measures, 44493804830 (d4c76fa8b,
+everything), planned 2 shards at 678 s each. They took 1,102 and 688 s.
+The slow shard's runner was slow at everything: its build of the
+compiler's three crates took 149 s against 88, its rest 495 s against
+306 of the same 417 expected, and its pool 827 s against 499.
+
+GitHub's standard runners come in tiers. That same build took 88 to
+94 s, 104 to 125 s or 138 to 152 s in 52 test shards of main's 34
+checks of 2026-11-18 and 19, and 20 of them were the slowest. So at
+least one of two shards is slow 62% of the time, and a check waits on
+its slowest shard.
+
+`shardFacts` now gives a `pace` too: each kept run's pool wall over
+what the runs' mean expects of its parts, the slowest of them, at least
+1. `testShardSeconds` multiplies the whole shard, setup included, by
+it. Over the six kept shards the paces were 0.68 to 1.48. Of
+44493804830's own measures (test/fixtures/test-timings-44493804830/,
+pace 1.25), 2 shards are expected at 1,032 s, within a tenth of the
+1,102 s the slow one took, 3 at 724 s, and 4 are planned at 587 s. The
+older fixture's pace is 1.16, and it still plans 4.
+
+A constant factor was considered and dropped. The tiers' build times
+give 1.3 of the middle, but the slow runner ran the pool 1.63 times the
+model, more than its build, so a constant measured by builds would still
+plan 3 shards, about 790 s on a slow runner.
+
+Each shard also keeps its processor's name, `ShardRun`'s `cpu`, so a
+later plan can tell the tiers apart rather than take the slowest of a
+window. Mutations: `shard-pace-of-the-mean`, `test-shard-pace-unasked`.
+
+Separately, no test shard had kept its JUnit reports: bun writes none
+into a directory that isn't there. `junitReport` makes it, and
+check.yml's `junit-<shard>` upload now fails a shard whose suite ran and
+kept none. Mutation: `test-junit-directory-unmade`.

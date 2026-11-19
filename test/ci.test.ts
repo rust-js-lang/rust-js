@@ -17,7 +17,7 @@ import { lostObject } from "../scripts/testMap";
 import { portRefusal, reactGate } from "../scripts/push";
 import { unrerunnable } from "../scripts/attribute";
 import { changedCases, PORT_DOES_NOT_COMPILE, runs, sliceReport, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
-import { browsers, drivesBrowser } from "../scripts/shard";
+import { browsers, drivesBrowser, junitReport, junitReports } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, unparted, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
@@ -843,7 +843,29 @@ test("the nightly's test times follow each of its jobs, the suite's reports amon
   const others = Object.keys(nightly.jobs).filter((id) => !["test-times", "issue", "decision-coverage", "seeds", "crater-report", "selector-audit", "clusters", "ci-spend"].includes(id));
   expect(others.filter((id) => !times.needs!.includes(id))).toEqual([]);
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("name: junit-${{ matrix.shard }}");
-  expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain('"--reporter=junit"');
+  expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain("junitReport(junitDir, name)");
+});
+
+// bun writes no JUnit report into a directory that isn't there, and says so
+// and passes: no test shard kept one until scripts/test.ts made it, so a red
+// check's `attribute` saw no failing test of the suite, and the nightly no
+// suite's times. Its upload fails a shard whose suite ran and kept none.
+test("each test shard whose suite ran keeps its JUnit reports, or fails", () => {
+  type Step = { id?: string; uses?: string; if?: string; with?: Record<string, string> };
+  const check = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { steps?: Step[] }> };
+  const steps = check.jobs.test!.steps!;
+  expect(steps.some((step) => step.id === "test")).toBe(true);
+  const upload = steps.find((step) => step.uses?.startsWith("actions/upload-artifact") && step.with?.name === "junit-${{ matrix.shard }}");
+  expect([upload?.if, upload?.with?.path, upload?.with?.["if-no-files-found"]]).toEqual(["always() && steps.test.outcome != 'skipped'", junitReports, "error"]);
+  // Each report's directory made as it's asked for.
+  const dir = mkdtempSync(join(tmpdir(), "junit-"));
+  try {
+    const reports = join(dir, junitReports);
+    expect(junitReport(reports, "corpus 1/16")).toEqual(["--reporter=junit", `--reporter-outfile=${join(reports, "corpus-1-16.xml")}`]);
+    expect(existsSync(reports)).toBe(true);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 // Miri judges the program native Rust runs, its arithmetic wrapping: at

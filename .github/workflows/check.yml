@@ -588,12 +588,14 @@ jobs:
       # Each run's JUnit report: the nightly's suite's times, which
       # nightly.yml's `test-times` merges, and a failed check's failing
       # tests, which `attribute` runs again at each commit of its batch.
-      - if: always()
+      # A shard whose suite ran and kept none fails here: a missing
+      # directory once starved both unseen for days (scripts/test.ts).
+      - if: always() && steps.test.outcome != 'skipped'
         uses: actions/upload-artifact@v7
         with:
           name: junit-${{ matrix.shard }}
           path: target/junit
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 14
       # What differs, blessed, as a patch to read and apply: never pushed.
       - name: Bless what differs

@@ -3,6 +3,14 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "test-shard-pace-unasked",
+    breaks: "a test shard's expected time leaves out the slowest pace its runs measured, so a check whose shard lands on a slow runner takes half as long again as planned (check 44493804830, 1,102 s of 678)",
+    file: "scripts/ci.ts",
+    find: "  return facts.pace * (TEST_SHARD_SETUP_SECONDS",
+    replace: "  return (TEST_SHARD_SETUP_SECONDS",
+    tests: ["test/shards.test.ts", "-t", "machines its selection"],
+  },
+  {
     name: "nets-failure-unnamed",
     breaks: "a red `nets` job's summary names no net that failed",
     file: "scripts/ci.ts",
@@ -142,8 +150,8 @@ export const mutations: Mutation[] = [
     name: "test-shards-setup-uncounted",
     breaks: "a check's suite takes its shards without each one's setup, its checkout, toolchain, packages and the compiler, so check 44480685461's selection plans three machines, each past the budget",
     file: "scripts/ci.ts",
-    find: "  return TEST_SHARD_SETUP_SECONDS + Math.max(",
-    replace: "  return Math.max(",
+    find: "  return facts.pace * (TEST_SHARD_SETUP_SECONDS + Math.max(",
+    replace: "  return facts.pace * (Math.max(",
     tests: ["test/shards.test.ts", "-t", "a check's suite takes the machines its selection's expected time needs"],
   },
   {
@@ -166,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "test-shards-browsers-uncounted",
     breaks: "a check's suite expects no time of the browsers' files, which run after the rest and the pool, so check 44480685461's selection plans three machines past the budget",
     file: "scripts/ci.ts",
-    find: " + Math.ceil(pages / count) * facts.browserSeconds;",
-    replace: ";",
+    find: " + Math.ceil(pages / count) * facts.browserSeconds);",
+    replace: ");",
     tests: ["test/shards.test.ts", "-t", "a check's suite takes the machines its selection's expected time needs"],
   },
   {

@@ -3,6 +3,22 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "test-junit-directory-unmade",
+    breaks: "the suite asks bun for JUnit reports in a directory it never made, which bun writes none into and passes: no test shard keeps `junit-<shard>`, so a red check's `attribute` sees no failing suite test and the nightly no suite's times (check 44493804830)",
+    file: "scripts/shard.ts",
+    find: "  mkdirSync(dir, { recursive: true });\n  return [\"--reporter=junit\"",
+    replace: "  return [\"--reporter=junit\"",
+    tests: ["test/ci.test.ts", "-t", "keeps its JUnit reports, or fails"],
+  },
+  {
+    name: "shard-pace-of-the-mean",
+    breaks: "the test shards are expected at their runs' mean pace, as if every runner were as fast: check 44493804830 planned 2 at 678 s, and its slow runner's took 1,102 s",
+    file: "scripts/shard.ts",
+    find: "    pace: Math.max(1, ...paces),\n",
+    replace: "    pace: 1,\n",
+    tests: ["test/shards.test.ts", "-t", "(keeps what its run measured|machines its selection)"],
+  },
+  {
     name: "case-pool-never-widens",
     breaks: "a test shard's files of cases stay at half its cores once the rest of the suite has ended, two of four idle (check 43700659375)",
     file: "scripts/shard.ts",

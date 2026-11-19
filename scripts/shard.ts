@@ -4,7 +4,7 @@
 // of a machine's cores and memory the work run at once on it may hold.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { availableParallelism, freemem, platform, totalmem } from "node:os";
 
@@ -175,6 +175,10 @@ export function fewestShards(choices: readonly number[], expected: (count: numbe
  * sample's; and the browsers' files run after both, their wall and how many. */
 export type ShardRun = {
   count: number;
+  /** Its machine's processor, as Node names it: GitHub's runners come in
+   * tiers of speed (`ShardFacts`' `pace`), which a later plan may tell
+   * apart by it. None of a run before 2026-11-19's. */
+  cpu?: string;
   rest: number;
   recorded: number;
   pool: { wall: number; corpus: { seconds: number; cases: number }; metamorphic: { seconds: number } };
@@ -210,9 +214,17 @@ export function testFileSeconds(paths: string[], measuredOnly = false): Map<stri
  * shard's time by: a corpus case's seconds in the pool; the metamorphic
  * sample's whole seconds, a shard's times its count, the mean of the shards
  * that ran it; the pool's wall per second of its parts, as its width,
- * narrower while the rest runs, gives; and a browsers' file's wall. None
- * where no run kept them. */
-export type ShardFacts = { secondsPerCase: number; metamorphic: number; poolWallPerSecond: number; browserSeconds: number };
+ * narrower while the rest runs, gives; a browsers' file's wall; and the
+ * slowest pace of a run, its pool's wall over what these expect of it,
+ * which `plan` expects every shard at, as a check waits on its slowest.
+ * GitHub's standard runners come in tiers: the same build of the
+ * compiler's three crates took 88 to 94 s, 104 to 125 s or 138 to 152 s in
+ * 52 test shards of main's 34 checks of 2026-11-18 and 19, 20 the slowest,
+ * so one of two shards is slow 62% of the time. Check 44493804830's two,
+ * 678 s each expected at the mean, took 1,102 s on a slow one (its build
+ * 149 s, its pool 827 s, pace 1.48) and 688 s on a fast one (88 s, 499 s,
+ * 0.89). None where no run kept them. */
+export type ShardFacts = { secondsPerCase: number; metamorphic: number; poolWallPerSecond: number; browserSeconds: number; pace: number };
 export function shardFacts(paths: string[]): ShardFacts | undefined {
   const runs = paths.flatMap((path) => {
     if (!existsSync(path)) return [];
@@ -225,11 +237,20 @@ export function shardFacts(paths: string[]): ShardFacts | undefined {
   const metamorphic = runs.filter((run) => run.pool.metamorphic.seconds > 0);
   const pooled = sum((run) => run.pool.corpus.seconds + run.pool.metamorphic.seconds);
   const pages = sum((run) => run.browsers.files);
+  const secondsPerCase = cases === 0 ? 0 : sum((run) => run.pool.corpus.seconds) / cases;
+  const metamorphicSeconds = metamorphic.length === 0 ? 0 : sum((run) => run.pool.metamorphic.seconds * run.count, metamorphic) / metamorphic.length;
+  const poolWallPerSecond = pooled === 0 ? 0 : sum((run) => run.pool.wall) / pooled;
+  // Each run's pool's wall over what the mean expects of its parts.
+  const paces = runs.flatMap((run) => {
+    const expected = (run.pool.corpus.cases * secondsPerCase + (run.pool.metamorphic.seconds > 0 ? metamorphicSeconds / run.count : 0)) * poolWallPerSecond;
+    return expected > 0 ? [run.pool.wall / expected] : [];
+  });
   return {
-    secondsPerCase: cases === 0 ? 0 : sum((run) => run.pool.corpus.seconds) / cases,
-    metamorphic: metamorphic.length === 0 ? 0 : sum((run) => run.pool.metamorphic.seconds * run.count, metamorphic) / metamorphic.length,
-    poolWallPerSecond: pooled === 0 ? 0 : sum((run) => run.pool.wall) / pooled,
+    secondsPerCase,
+    metamorphic: metamorphicSeconds,
+    poolWallPerSecond,
     browserSeconds: pages === 0 ? 0 : sum((run) => run.browsers.wall) / pages,
+    pace: Math.max(1, ...paces),
   };
 }
 
@@ -406,6 +427,21 @@ export function shardArg(args: string[]): { index: number; count: number } | und
  * scripts/ci.ts test-timings` writes there what `plan` read of them, and
  * `bun run test` reads each file in it. */
 export const shardTimings = "target/shard-timings";
+
+/** Where the suite's runs keep their JUnit reports (`junitReport`), which
+ * check.yml uploads as each test shard's `junit-<shard>`. */
+export const junitReports = "target/junit";
+
+/** `bun test`'s arguments for a JUnit report of the run `name` in `dir`,
+ * the directory made first: bun writes no report into one that isn't
+ * there, saying so and passing, and no test shard kept one until it was
+ * made (check 44493804830's 14 `JUnitReportFailed` a shard), so a red
+ * check's `attribute` saw no failing test of the suite, and the nightly no
+ * suite's times. check.yml's upload fails a shard that kept none. */
+export function junitReport(dir: string, name: string): string[] {
+  mkdirSync(dir, { recursive: true });
+  return ["--reporter=junit", `--reporter-outfile=${join(dir, `${name.replace(/\W+/g, "-")}.xml`)}`];
+}
 
 /** The files that run a browser, beside a dev server, Vite's, Next.js's,
  * the playground's and the pilot's, or on a page of its own,

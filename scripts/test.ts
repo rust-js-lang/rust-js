@@ -11,12 +11,13 @@
 // CI's `plan`), runs only the files and the corpus's cases it selected,
 // unless it's `all`.
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpus } from "node:os";
 import { join } from "node:path";
 
 import { stopGroup } from "../test/child";
 import { currentBuild, prune } from "../test/compiles";
 import { pruneKeptStores } from "../test/kept";
-import { browsers, caseFiles, casePoolJobs, casePoolWidth, nightly, type ShardRun, shardArg, shardTimings, testFileSeconds, testShardFiles } from "./shard";
+import { browsers, caseFiles, casePoolJobs, casePoolWidth, junitReport, junitReports, nightly, type ShardRun, shardArg, shardTimings, testFileSeconds, testShardFiles } from "./shard";
 import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -133,8 +134,10 @@ const ignored = [...Object.values(caseFiles), ...browsers, ...(atNight ? [] : ni
 // bun's JUnit reporter measures them, one report a run in target/junit/,
 // which nightly.yml's `test-times` merges (scripts/testTimes.ts).
 // And CI's every run's, which a failed check's `attribute` reads the
-// failing tests of (scripts/attribute.ts).
-const junit = (name: string) => (atNight || selectionArg ? ["--reporter=junit", `--reporter-outfile=target/junit/${name.replace(/\W+/g, "-")}.xml`] : []);
+// failing tests of (scripts/attribute.ts), each made where its directory
+// is (`junitReport`).
+const junitDir = join(root, junitReports);
+const junit = (name: string) => (atNight || selectionArg ? junitReport(junitDir, name) : []);
 const of = `${index}-of-${count}`;
 let restRunning = true;
 // Of a selection, the files it selected but the case files' and the
@@ -149,7 +152,7 @@ const rest = dealt(
 // (`ShardRun`), by which `plan` expects a shard's time (`testShards`).
 const began = performance.now();
 const wall = (from: number) => (performance.now() - from) / 1000;
-const measured: ShardRun = { count, rest: 0, recorded: 0, pool: { wall: 0, corpus: { seconds: 0, cases: 0 }, metamorphic: { seconds: 0 } }, browsers: { wall: 0, files: 0 } };
+const measured: ShardRun = { count, cpu: cpus()[0]?.model ?? "", rest: 0, recorded: 0, pool: { wall: 0, corpus: { seconds: 0, cases: 0 }, metamorphic: { seconds: 0 } }, browsers: { wall: 0, files: 0 } };
 const rested = (rest.length === 0 ? Promise.resolve(0) : run(["--parallel", ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`), ...rest])).then((code) => {
   measured.rest = wall(began);
   return code;
