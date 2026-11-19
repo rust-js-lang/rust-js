@@ -158,7 +158,7 @@ pub(in crate::lower) struct Effects {
     cells: IndexSet<Target>,
     fixed_length: IndexSet<Target>,
     /// What `stale` gave of each location asked.
-    stale: std::cell::RefCell<IndexMap<Location, IndexMap<Local, Written>>>,
+    stale: std::cell::RefCell<IndexMap<Location, std::rc::Rc<IndexMap<Local, Written>>>>,
     /// Of each location that runs code, what a `RefCell` guard held there
     /// points to: no code but through the guard writes it, as another
     /// borrow of the cell panics, in JS too, where `cell_borrows` counts
@@ -234,12 +234,12 @@ impl Effects {
     /// Each local nothing known of survives what's at `location`: each
     /// whose own storage it may replace, or, of a pointer, what it points
     /// to.
-    pub(in crate::lower) fn stale(&self, location: Location) -> IndexMap<Local, Written> {
+    pub(in crate::lower) fn stale(&self, location: Location) -> std::rc::Rc<IndexMap<Local, Written>> {
         if let Some(stale) = self.stale.borrow().get(&location) {
-            return stale.clone();
+            return std::rc::Rc::clone(stale);
         }
-        let stale = self.stale_guarded(location, true);
-        self.stale.borrow_mut().insert(location, stale.clone());
+        let stale = std::rc::Rc::new(self.stale_guarded(location, true));
+        self.stale.borrow_mut().insert(location, std::rc::Rc::clone(&stale));
         stale
     }
 
@@ -1184,11 +1184,19 @@ fn call_runs_code<'tcx>(
     // (`named::is_a_rest`); nor of what it holds a call std's named runs
     // none of (`named::runs_none_of_what_it_holds`), whatever it is.
     let code = |t: Ty<'tcx>| crate::lower::analysis::carries_code(tcx, t, true) && !named::is_a_rest(tcx, t);
+    // A call std names, as it's written, before what it resolves to.
+    if is_std_crate(tcx, callee) && named::runs_none_of_what_it_holds(tcx, callee, args) {
+        return false;
+    }
+    // What the call is, where it resolves: a std trait's method the crate's
+    // impl gives is the crate's code; std's impl, `Rc`'s `Clone`, runs what
+    // its own bounds say, not the trait's `Self: Clone`.
+    let (callee, args) = match crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args) {
+        Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => (instance.def_id(), instance.args),
+        _ => (callee, args),
+    };
     if !is_std_crate(tcx, callee) {
         return true;
-    }
-    if named::runs_none_of_what_it_holds(tcx, callee, args) {
-        return false;
     }
     // Std's generic code runs a type argument's only through a bound on it
     // that gives a method, `T: Clone`, `F: FnMut(&T)`, or its drop:

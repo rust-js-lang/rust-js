@@ -29,7 +29,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             StatementKind::Assign(assign) => assign.0.as_local(),
             _ => None,
         };
-        forget_stale(effects.stale(location), assigned, state);
+        forget_stale(&effects.stale(location), assigned, state);
     }
 
     /// `block`'s terminator's transfer: the rules' each way out, then, of
@@ -49,7 +49,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         };
         let stale = effects.stale(self.body.terminator_loc(block));
         for (_, out) in &mut outs {
-            forget_stale(stale.clone(), assigned, out);
+            forget_stale(&stale, assigned, out);
         }
         outs
     }
@@ -62,11 +62,19 @@ impl<'tcx> Walk<'_, 'tcx> {
 
 /// What the query says may be written of each of `stale` but `assigned`,
 /// forgotten of `state` (`State::written`).
-pub(super) fn forget_stale(stale: IndexMap<Local, Written>, assigned: Option<Local>, state: &mut State) {
-    for (local, written) in stale {
-        if Some(local) != assigned {
-            state.written(local, written);
-        }
+pub(super) fn forget_stale(stale: &IndexMap<Local, Written>, assigned: Option<Local>, state: &mut State) {
+    let of = |extent: Written| -> Vec<Local> {
+        (stale.iter())
+            .filter(|&(&local, &written)| written == extent && Some(local) != assigned)
+            .map(|(&local, _)| local)
+            .collect()
+    };
+    state.forget_all_about_each(&of(Written::Whole));
+    for local in of(Written::Grows) {
+        state.written(local, Written::Grows);
+    }
+    for local in of(Written::Items) {
+        state.written(local, Written::Items);
     }
 }
 
@@ -75,11 +83,21 @@ impl State {
     /// replace it: what `forget` forgets, and what it's an iterator of, a
     /// `push` made it hold, what it lends (#2112 B).
     pub(super) fn forget_all_about(&mut self, local: Local) {
-        self.forget(local);
+        self.forget_all_about_each(&[local]);
+    }
+
+    /// Each of `locals` replaced, as `forget_all_about` one, each fact
+    /// looked at once.
+    pub(super) fn forget_all_about_each(&mut self, locals: &[Local]) {
+        if locals.is_empty() {
+            return;
+        }
+        self.forget_each(locals);
+        let gone = |local: Local| locals.contains(&local);
         self.iterates
-            .retain(|&iterator, &mut slice| iterator != local && slice != local);
-        self.pushed.shift_remove(&local);
-        self.lending.retain(|&lend, &mut of| lend != local && of != local);
+            .retain(|&iterator, &mut slice| !gone(iterator) && !gone(slice));
+        self.pushed.retain(|&local| !gone(local));
+        self.lending.retain(|&lend, &mut of| !gone(lend) && !gone(of));
     }
 
     /// `local` written, as `written` says: replaced, nothing of it known;
