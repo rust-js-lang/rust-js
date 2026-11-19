@@ -276,12 +276,35 @@ fn sizes() -> (usize, usize) {
     SIZES[RUN.get()]
 }
 
+/// Of a consumer whose predicate is asked each item, one that holds at
+/// the second it's asked, as the probe's `try_fold` breaks at its second:
+/// so what a consumer asks of a source as it stops is seen, not only what
+/// it asks as it runs out.
+macro_rules! second {
+    () => {{
+        let mut asked = 0;
+        move |_| {
+            asked += 1;
+            asked == 2
+        }
+    }};
+}
+
 /// Each of `Iterator`'s steps asked of `$make`, a fresh one each, by
 /// `Iterator`'s path, so a `&mut dyn`'s is the `&mut`'s impl's, not the
-/// `dyn`'s: what its sources were asked, a cell each.
+/// `dyn`'s: what its sources were asked, a cell each. And std's consumers
+/// whose bodies ask particular steps of it, `position`'s its `try_fold`,
+/// `max_by`'s its `fold` (#2142).
 macro_rules! front {
     ($name:expr, $make:expr) => {
-        front!($name, $make, ["next", "size_hint", "nth", "advance_by", "fold", "try_fold", "last", "count"])
+        front!(
+            $name,
+            $make,
+            [
+                "next", "size_hint", "nth", "advance_by", "fold", "try_fold", "last", "count", "position", "find", "find_map", "any",
+                "all", "max_by", "min_by"
+            ]
+        )
     };
     ($name:expr, $make:expr, $steps:expr) => {{
         print!("{}#{}{}", $name, KIND.get(), RUN.get());
@@ -297,6 +320,19 @@ macro_rules! front {
                 "try_fold" => drop(Iterator::try_fold(&mut it, 0u32, |a, _| if a == 1 { None } else { Some(a + 1) })),
                 "last" => drop(Iterator::last(it)),
                 "count" => drop(Iterator::count(it)),
+                "position" => drop(Iterator::position(&mut it, second!())),
+                "find" => drop(Iterator::find(&mut it, second!())),
+                "find_map" => drop(Iterator::find_map(&mut it, {
+                    let mut found = second!();
+                    move |x| found(x).then_some(())
+                })),
+                "any" => drop(Iterator::any(&mut it, second!())),
+                "all" => drop(Iterator::all(&mut it, {
+                    let mut found = second!();
+                    move |x| !found(x)
+                })),
+                "max_by" => drop(Iterator::max_by(it, |_, _| std::cmp::Ordering::Equal)),
+                "min_by" => drop(Iterator::min_by(it, |_, _| std::cmp::Ordering::Equal)),
                 _ => unreachable!(),
             }
         }
@@ -308,7 +344,7 @@ macro_rules! front {
 macro_rules! back {
     ($name:expr, $make:expr) => {{
         print!("{}#{}{}", $name, KIND.get(), RUN.get());
-        for step in ["next_back", "nth_back", "advance_back_by", "rfold", "try_rfold"] {
+        for step in ["next_back", "nth_back", "advance_back_by", "rfold", "try_rfold", "rfind"] {
             print!(" |{step}:");
             let mut it = $make;
             match step {
@@ -317,6 +353,7 @@ macro_rules! back {
                 "advance_back_by" => drop(DoubleEndedIterator::advance_back_by(&mut it, 2)),
                 "rfold" => drop(DoubleEndedIterator::rfold(it, 0u32, |a, _| a + 1)),
                 "try_rfold" => drop(DoubleEndedIterator::try_rfold(&mut it, 0u32, |a, _| if a == 1 { None } else { Some(a + 1) })),
+                "rfind" => drop(DoubleEndedIterator::rfind(&mut it, second!())),
                 _ => unreachable!(),
             }
         }
@@ -341,12 +378,30 @@ macro_rules! exact {
     }};
 }
 
+/// Of both ends and exact-sized: `rposition`, which asks its length, then
+/// folds it from its back (#2142).
+macro_rules! exact_ends {
+    ($name:expr, $make:expr) => {{
+        print!("{}#{}{}", $name, KIND.get(), RUN.get());
+        for step in ["rposition"] {
+            print!(" |{step}:");
+            let mut it = $make;
+            match step {
+                "rposition" => drop(Iterator::rposition(&mut it, second!())),
+                _ => unreachable!(),
+            }
+        }
+        println!();
+    }};
+}
+
 /// Each of the three traits' steps it has.
 macro_rules! every {
     ($name:expr, $make:expr) => {{
         front!($name, $make);
         back!($name, $make);
         exact!($name, $make);
+        exact_ends!($name, $make);
     }};
 }
 

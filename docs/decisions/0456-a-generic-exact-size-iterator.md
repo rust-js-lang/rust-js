@@ -175,3 +175,30 @@ eight provided methods a user impl commonly writes, `len`, `size_hint`,
 by value, through a `&mut` and reversed, against native; at main only
 `len` differed, in all three. Mutations `own-len-unasked` and
 `dictionary-len-of-own-by-hint`, caught.
+
+## Amendment: `rposition` folds from the back by the iterator's own `try_rfold` (#2142)
+
+`$rposition` of a JS iterator that knows its back and its length asked
+its `len()`, then stepped `back()` one item at a time. Std's `rposition`
+is `let n = self.len(); self.try_rfold(n, ..)`, so the iterator's own
+`try_rfold` is what's asked. They differ where an adapter's `try_rfold`
+asks its source otherwise than its `next_back` does: `Enumerate`'s asks
+its source's length once, its `next_back` at every step. So
+`src.enumerate().rposition(p)` of a generic `I` printed `hint back hint
+back ..` where native prints `hint hint back back ..` (found by the
+tables, ioDC). Now it's the iterator's length, then `$tryRfoldOf`: its
+own `try_rfold` where it has one, a compiled `Enumerate`'s among them,
+else std's default of its `next_back`. A slice's items and a `$iter`
+stay as they were. ADR 0262's case: results change, Rust's behavior
+kept. Held by `test/corpus/rposition_asks_try_rfold.rs` (a generic `I`'s
+enumeration, the crate's own iterator's `rposition`, and a `&mut` of one,
+in both builds) and the mutation `rposition-of-a-js-iterator-by-next-back`.
+
+The steps' catalog's probe, test/std-steps.rs, now asks each adapter
+std's consumers whose bodies ask particular steps of it: `position`,
+`find`, `find_map`, `any`, `all`, `max_by` and `min_by`, from the front;
+`rfind`, from the back; and `rposition`, of one that's also exact-sized;
+each a predicate that holds at the second item, so what a consumer asks
+as it stops is seen. test/iterator-steps.test.ts holds each of the
+runtime's forms to them, each asked as the lowering asks it; every form
+asks what std's does.

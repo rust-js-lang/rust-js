@@ -279,8 +279,15 @@ function loud(name: string, items: unknown[], log: string[], kind: SourceKind = 
 }
 
 const count = (a: number) => a + 1;
+/** test/std-steps.rs's `second!()`: a predicate that holds at the second
+ * item it's asked of. */
+const second = () => {
+  let asked = 0;
+  return () => ++asked === 2;
+};
 /** Each step asked as the lowering asks it, test/std-steps.rs's arguments:
- * `nth(1)`, `advance_by(2)`, a `try_fold` that breaks at its second item. */
+ * `nth(1)`, `advance_by(2)`, a `try_fold` that breaks at its second item,
+ * and of std's consumers, a predicate that holds at its second (#2142). */
 const asked: Record<string, (it: any) => unknown> = {
   next: (it) => it.next(),
   size_hint: (it) => std.$sizeHint(it),
@@ -296,6 +303,24 @@ const asked: Record<string, (it: any) => unknown> = {
   rfold: (it) => std.$foldBack(it, 0, count),
   try_rfold: (it) => std.$tryRfoldOf(it, 0, count, (a: number) => a === 2),
   len: (it) => it.len(),
+  position: (it) => std.$position(it, second()),
+  find: (it) => it.find(second()),
+  find_map: (it) => {
+    const found = second();
+    return std
+      .$lent(it)
+      .map((x: unknown) => (found() ? x : undefined))
+      .find((item: unknown) => item != null);
+  },
+  any: (it) => it.some(second()),
+  all: (it) => {
+    const found = second();
+    return it.every(() => !found());
+  },
+  max_by: (it) => std.$maxBy(it, () => 0),
+  min_by: (it) => std.$minBy(it, () => 0),
+  rfind: (it) => std.$findBack(it, second()),
+  rposition: (it) => std.$rposition(it, second()),
 };
 
 /** Of a run, its sources: `src`, `other`, and `nested`, a flatten's, of up
@@ -357,7 +382,7 @@ for (const [stdForm, form, make] of forms) {
         const log: string[] = [];
         const it = make(sourcesOf(size, log, kind));
         // A form for one end: none of the other's steps.
-        if ((/back|rfold/.test(step) && typeof it.back !== "function") || (step === "len" && typeof it.len !== "function")) continue;
+        if ((/back|rfold|rfind|rposition/.test(step) && typeof it.back !== "function") || (/^len$|rposition/.test(step) && typeof it.len !== "function")) continue;
         log.length = 0;
         asked[step]!(it);
         const got = log.join(" ");
