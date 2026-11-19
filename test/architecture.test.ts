@@ -537,28 +537,7 @@ test("each owner's rule finds what its owner has", () => {
   expect(unfound.map(([what]) => what)).toEqual([]);
 });
 
-// The architecture's table of owners names, for each concept, the module
-// that owns it and what the others ask it: each is there. Seventeen of the
-// functions it named had gone when lowering from MIR came (the third
-// architecture audit).
-test("each owner and question the architecture names is there", () => {
-  const doc = read("docs/architecture.md");
-  const table = doc.slice(doc.indexOf("| Concept | Owner | What the others ask |"), doc.indexOf("**Calls.**"));
-  const rows = [...table.matchAll(/^\|[^|]*\|([^|]*)\|([^|]*)\|$/gm)].slice(2);
-  const names = (cell: string) => [...cell.matchAll(/`([^`]+)`/g)].map(m => m[1]);
-  // A module, `shortcuts.rs`, is a file; anything else, a function or a type.
-  const isModule = (name: string) => /\.rs$|\/$/.test(name);
-  const found = (module: string) => sources.some(file => file.startsWith(`src/lower/${module}`) || file === `src/${module}`);
-  const asked = rows.flatMap(([, , ask]) => names(ask));
-  const code = sources.map(read).join("\n");
-  expect(asked.length).toBeGreaterThan(20);
-  // Each item the code defines, found in one pass: a regex of each name
-  // over all of it took 21 to 30 s beside check:fast's other jobs.
-  const defined = new Set([...code.matchAll(/\b(?:fn|struct|enum|trait)\s+(\w+)/g)].map(m => m[1]));
-  expect(asked.filter(name => isModule(name) ? !found(name) : !defined.has(name))).toEqual([]);
-  expect(rows.flatMap(([, owner]) => names(owner)).filter(owner => !found(owner))).toEqual([]);
-  // It reads every module the architecture names, 1 s alone: past 5 s beside check:fast's other jobs.
-}, underLoad(30_000));
+// The table of owners' checks are test/architecture-owners.test.ts' (ADR 1175).
 
 // Each decision is in the index, once, and one superseded or replaced,
 // wholly or in part, says so there: 64 weren't in it, and five didn't say

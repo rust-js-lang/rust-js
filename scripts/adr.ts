@@ -13,6 +13,7 @@
 
 import { readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { ownerTable } from "./owners.ts";
 
 const root = join(import.meta.dir, "..");
 const dir = "docs/decisions";
@@ -76,18 +77,13 @@ export function mostAmended(texts: Map<string, string>, least: number): [string,
     .sort(([a, x], [b, y]) => y - x || a.localeCompare(b));
 }
 
-/** The rows of the architecture's table of semantic owners, each concept
+/** The rows of the architecture's table of semantic owners, each question
  * with its row's length, the longest first: a row that takes a paragraph
  * to say what its owner answers is a list of cases too. */
 export function ownerRows(architecture: string): [string, number][] {
-  const from = architecture.indexOf("### Semantic owners");
-  const to = architecture.indexOf("**Calls.**", from);
-  if (from < 0 || to < 0) throw new Error("docs/architecture.md: no table of semantic owners before `**Calls.**`");
-  return architecture
-    .slice(from, to)
-    .split("\n")
-    .filter((line) => line.startsWith("| ") && !line.startsWith("| Concept") && !line.startsWith("|---"))
-    .map((line): [string, number] => [line.split(" | ")[0].slice(2), line.length])
+  const lines = architecture.split("\n");
+  return ownerTable(architecture)
+    .map((row): [string, number] => [row.question, lines[row.line - 1]!.length])
     .sort(([, x], [, y]) => y - x);
 }
 

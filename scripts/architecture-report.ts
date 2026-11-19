@@ -6,6 +6,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileSizes } from "./file-sizes.ts";
+import { ownersState } from "./owners.ts";
 
 const root = join(import.meta.dir, "..");
 const files: string[] = [];
@@ -102,3 +103,12 @@ section(
     .slice(0, 12)
     .map(([name, n]) => `${String(n).padStart(3)}  ${name}`),
 );
+
+// The table of owners' two checks (ADR 1175): what's classified, and each
+// primitive read outside its table.
+const table = ownersState(root);
+const helpers = table.all.filter(c => c.helper).length;
+section("The owner table", [
+  `${table.rows.length} rows; ${table.all.length} answers visible outside their modules: ${table.all.length - helpers - table.unclassified.length} named in rows, ${helpers} helpers, ${table.unclassified.length} unclassified`,
+  ...table.outside.map(line => `primitive read outside its owners: ${line}`),
+]);

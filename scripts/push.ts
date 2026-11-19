@@ -57,6 +57,7 @@ import { selectionFile } from "./select";
 import { devTimes, ownsTimes } from "./devTimes";
 import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
 import { refusal, undone } from "./push-guard";
+import { UNCLASSIFIED } from "./owners";
 
 /** The phases, in the order they run. */
 export const phases = ["rebase", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
@@ -65,8 +66,10 @@ export const phases = ["rebase", "fast", "build", "std", "mutants", "check", "sa
  * failure, a `find` its code moved past, a test renamed or moved, or a
  * catalog that names another file than its own, check:fast found minutes
  * in: about 4 s on the Mac mini, where its two tests picked alone let the
- * last through (d4c76fa8b's first push). */
-export const FAST_TESTS = ["test/mutations.test.ts"];
+ * last through (d4c76fa8b's first push). And the table of owners' file,
+ * about 1.3 s: an answer a change adds without a row or a helper mark
+ * (ADR 1175). */
+export const FAST_TESTS = ["test/mutations.test.ts", "test/architecture-owners.test.ts"];
 export type Phase = (typeof phases)[number];
 
 
@@ -366,9 +369,11 @@ export function lowerRatchets(text: string): string | undefined {
  * the rustc suite's three (ADR 0089). Two changes that each took a line
  * off one conflict on rebase where the lines are neighbours: m1-lisa's
  * #2054 and m6-lily's #2056 off test/metamorphic-known.txt stopped a push
- * (2026-11-18). */
+ * (2026-11-18). And the owners' ratchet, test/owners-unclassified.txt, two
+ * areas' sweeps take lines off at once (ADR 1175). */
 export const lineSet = (file: string) =>
-  /^test\/[\w-]+-known\.txt$/.test(file) || ["test/rustc-known-failures.txt", "test/rustc-native-failures.txt", "test/rustc-out-of-scope.txt"].includes(file);
+  /^test\/[\w-]+-known\.txt$/.test(file) ||
+  ["test/rustc-known-failures.txt", "test/rustc-native-failures.txt", "test/rustc-out-of-scope.txt", UNCLASSIFIED].includes(file);
 
 /** `text`, a line set's merged with git's diff3 conflict markers (`git
  * merge-file --diff3`), each conflict resolved as a set: a line either

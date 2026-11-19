@@ -1,0 +1,121 @@
+// The table of semantic owners' two checks (scripts/owners.ts, ADR 1175):
+// one that reads less than the rule says lets a second answerer in unseen.
+import type { Mutation } from "../mutations";
+
+const file = "scripts/owners.ts";
+const of = (name: string) => ["test/architecture-owners.test.ts", "-t", name];
+
+export const mutations: Mutation[] = [
+  {
+    name: "owners-row-api-unread",
+    breaks: "a row's API cell is read as empty, so an answer a row names is called unclassified, and the table names nothing",
+    file,
+    find: "api: ticked(api), primitives",
+    replace: "api: [], primitives",
+    tests: of("a row is four cells"),
+  },
+  {
+    name: "owners-named-under-any-owner",
+    breaks: "a function named as a row's API passes wherever it is, so a second answerer spelled like the owner's is classified",
+    file,
+    find: " && row.owners.some((owner) => ofOwner(owner, candidate.file, files));",
+    replace: ";",
+    tests: of("a candidate is visible outside its module"),
+  },
+  {
+    name: "owners-helper-mark-unread",
+    breaks: "a `// helper:` mark is never read, so a marked helper is called unclassified",
+    file,
+    find: "helper ||= HELPER_MARK.test(source[above]!);",
+    replace: "helper ||= false;",
+    tests: of("a candidate is visible outside its module"),
+  },
+  {
+    name: "owners-helper-mark-past-a-blank-line",
+    breaks: "a mark above a blank line marks the function after it, someone else's",
+    file,
+    find: "/^\\s*(?:\\/\\/|#\\[)/.test(source[above]!)",
+    replace: "/^\\s*(?:\\/\\/|#\\[|$)/.test(source[above]!)",
+    tests: of("a candidate is visible outside its module"),
+  },
+  {
+    name: "owners-pub-super-a-candidate",
+    breaks: "a `pub(super)` function, whose answer only its parent's modules ask, is held to the table",
+    file,
+    find: "const VISIBLE = /^\\s*pub(?:\\((?:crate|in",
+    replace: "const VISIBLE = /^\\s*pub(?:\\((?:crate|super|in",
+    tests: of("a candidate is visible outside its module"),
+  },
+  {
+    name: "owners-js-tree-option-an-answer",
+    breaks: "an `Option` of a JS tree, lowering's output, is called an answer",
+    file,
+    find: "if (option) return !JS_TREE.test(option[1]!);",
+    replace: "if (option) return true;",
+    tests: of("an answer is a bool"),
+  },
+  {
+    name: "owners-named-and-marked",
+    breaks: "a function both a row names and a mark calls a helper passes, saying two things",
+    file,
+    find: "both: all.filter((c) => c.helper && named(c))",
+    replace: "both: all.filter((c) => c.helper && named(c) && false)",
+    tests: of("a candidate is visible outside its module"),
+  },
+  {
+    name: "owners-primitive-read-outside",
+    breaks: "a primitive read outside its row's owners passes, a second answerer of the owner's question",
+    file,
+    find: "for (const file of readers.filter((file) => !own(file))) outside.push(",
+    replace: "for (const file of readers.filter((file) => !own(file) && false)) outside.push(",
+    tests: of("a primitive is its owners' alone"),
+  },
+  {
+    name: "owners-primitive-unread",
+    breaks: "a primitive no owner reads, a row's typo or a gone call, holds nothing and passes",
+    file,
+    find: "if (!readers.some(own)) unread.push(",
+    replace: "if (false) unread.push(",
+    tests: of("a primitive is its owners' alone"),
+  },
+  {
+    name: "owners-primitive-inside-a-word",
+    breaks: "a primitive is found inside a longer name, `fn_sig` in `poly_fn_sig`",
+    file,
+    find: '${/^\\w/.test(token) ? "(?<![\\\\w$])" : ""}',
+    replace: "",
+    tests: of("a primitive is its owners' alone"),
+  },
+  {
+    name: "owners-submodule-not-its-modules",
+    breaks: "an owner `x.rs` doesn't cover its submodules `x/`, so its own parts are called outsiders",
+    file,
+    find: "return base.endsWith(\".rs\") && file.startsWith(`${base.slice(0, -3)}/`);",
+    replace: "return false;",
+    tests: of("an owner is its module"),
+  },
+  {
+    name: "owners-cell-split-at-escaped-pipe",
+    breaks: "a cell's `\\|` splits it, so a row with one is refused or misread",
+    file,
+    find: ".split(/(?<!\\\\)\\|/);",
+    replace: ".split(/\\|/);",
+    tests: of("a row is four cells"),
+  },
+  {
+    name: "owners-comments-read-as-code",
+    breaks: "a primitive or a `pub fn` named in a comment is read as code",
+    file,
+    find: '    if (c === "/" && text[i + 1] === "/") {\n      while (i < n && text[i] !== "\\n") i++;\n      continue;\n    }\n    if (c === "/" && text[i + 1] === "*") {\n      const from = i;',
+    replace: '    if (c === "/" && text[i + 1] === "*") {\n      const from = i;',
+    tests: of("code is the source"),
+  },
+  {
+    name: "owners-test-modules-read",
+    breaks: "a `#[cfg(test)]` module's functions and reads are held to the table as the crate's",
+    file,
+    find: "return tests < 0 ? out : out.slice(0, tests);",
+    replace: "return out;",
+    tests: of("code is the source"),
+  },
+];

@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-19 (#2162, ADR 1175): test/architecture-owners.test.ts, nine tests in push's fast phase, holds the table of semantic owners complete for the front end and each row's primitive its owners' alone; the old check that the table's modules and APIs are there moved into it from test/architecture.test.ts.
+
 Changed on 2026-11-19: `test/ci.test.ts`'s tests of how the suite and the mutations are split into shards, and how many jobs run at once, are `test/shards.test.ts`, fourteen tests, split by concept near the cap.
 
 Changed on 2026-11-19 (#2058): corpus `own_write_fmt_through_generic_dyn_and_macro`, and it and `own_write_fmt_given_a_held_arguments` in `tidy-stages`' few cases.

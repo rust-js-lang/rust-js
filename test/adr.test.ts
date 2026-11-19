@@ -63,12 +63,12 @@ test("a decision's amendments are its headings that say so", () => {
 });
 
 test("the semantic owners' rows are read with their lengths, the longest first", () => {
-  const short = "| A short concept | `a.rs` | `ask` |";
-  const long = `| A long concept, ${"its cases, ".repeat(8)}| \`b.rs\` | \`ask\` |`;
-  const page = ["# Architecture", "### Semantic owners", "", "| Concept | Owner | What the others ask |", "|---|---|---|", short, long, "", "**Calls.** The rest.", "| not | a | row |"].join("\n");
+  const short = "| Is it short? | `a.rs` | `ask` | |";
+  const long = `| Is it long, ${"its cases, ".repeat(8)}? | \`b.rs\` | \`ask\` | |`;
+  const page = ["# Architecture", "### Semantic owners", "", "| Question | Owner | API | Primitive |", "|---|---|---|---|", short, long, "", "**Calls.** The rest.", "| not | a | row |"].join("\n");
   expect(ownerRows(page)).toEqual([
-    [`A long concept, ${"its cases, ".repeat(8)}`.trimEnd(), long.length],
-    ["A short concept", short.length],
+    [`Is it long, ${"its cases, ".repeat(8)}?`, long.length],
+    ["Is it short?", short.length],
   ]);
   expect(() => ownerRows("# Architecture\n")).toThrow("no table of semantic owners");
 });

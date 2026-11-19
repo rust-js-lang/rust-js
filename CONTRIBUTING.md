@@ -104,6 +104,17 @@ When contributing code:
   runtime file's properties set to `true` or `false`, and the count only
   shrinks: a new one is an enum's state, or says on the line above it why
   it isn't one, `// Flags, not a state: ..`.
+- **Each answer others ask is the owner table's.** A function of the
+  front end visible outside its module (`pub`, `pub(crate)`,
+  `pub(in crate::…)`) that answers a question, a `bool`, an `Option` or
+  an enum of answers, is named in a row of
+  [the architecture's semantic owners](docs/architecture.md#semantic-owners),
+  under its owner, or marked `// helper: <reason>` above its `fn`; a row
+  whose answer bottoms out in one primitive names it, and only its owners
+  read it. `test/architecture-owners.test.ts` holds both
+  ([ADR 1175](docs/decisions/1175-the-owner-table-kept-complete.md)). A
+  second module answering a row's question is filed as
+  `kind: duplicated authority`, not given a row of its own.
 - **Separate transformations from external effects where practical.** Keep
   compiler decisions testable from explicit inputs. Give filesystem access,
   process execution, and user-facing output clear owners; orchestration
