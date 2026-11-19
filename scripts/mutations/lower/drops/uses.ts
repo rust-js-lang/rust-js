@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/uses.rs",
     find: "        for (id, names) in other.names {\n            self.names.entry(id).or_default().extend(names);\n        }\n",
     replace: "        self.names.extend(other.names);\n",
-    tests: ["test/crates.test.ts", "-t", "library_copies_unused_drops_each_lowering"],
+    tests: ["test/cross-crate-copies.test.ts", "-t", "copies each leave out the drops they don't use"],
   },
   {
     name: "drops-by-need-uses-unnoted",

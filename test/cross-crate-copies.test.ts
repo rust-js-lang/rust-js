@@ -5,8 +5,9 @@
 // crate that uses it, and runs what it wrote.
 
 import { beforeAll, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { compiled } from "./crates";
+import { chain, compiled, pairs } from "./crates";
 import { buildReact, fixture } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -48,3 +49,17 @@ pub fn first(ps: &[P]) -> Option<P> {
   const { changed } = await import(join(dir, "app", "lib.js"));
   expect(changed()).toEqual([0, 0, 9, 1, 10, 2]);
 });
+
+// A library's generic functions each lowered as two copies, each declaring
+// the engine's drop as a name of its own, which neither uses: each copy
+// leaves its own out, not the last one's alone, and the two are merged
+// (ADR 1150).
+test("a library's copies each leave out the drops they don't use", () => {
+  const out = chain(pairs, "library_copies_unused_drops_each_lowering", ["dep", "app"]);
+  const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
+  // One `encode`, its copies merged, and none of them, nor `inner`, given
+  // the engine's drop: only the impl a consumer asks for takes it.
+  expect(dep).toContain("function inner(engine, input, out, EEngine) {\n");
+  expect(dep).toContain("  encode(chunked, bytes, sink, EEngine, SSink) {\n");
+  expect(dep.match(/\bencode\(chunked/g)).toHaveLength(1);
+}, 300_000);

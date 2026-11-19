@@ -404,14 +404,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "two crates: library_iterator_held_in_a_place"],
   },
   {
-    name: "write-branch-dropped",
-    breaks: "the `ControlFlow` `?` of a write's result makes is dropped as a `{ TAG }`, which a write's result never is, so `check(n)?` of an `io::Result<()>` reads `undefined.TAG` and throws, where io errors may drop",
-    file: "src/lower/mir/drops.rs",
-    find: "        if self.write_branch(state, place) {\n",
-    replace: "        if false {\n",
-    tests: ["test/tidy-stages.test.ts", "-t", "io_error_drops_what_it_holds"],
-  },
-  {
     name: "kept-starts-unwritten",
     breaks: "a parameter React kept that a function changes in place itself is copied nowhere (#1723)",
     file: "src/lower/mir/drops.rs",

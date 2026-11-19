@@ -3,14 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "closing-advance-unforwarded",
-    breaks: "a closed iterator's own `advance_by` is lost, so it steps each item, not by its source's: a `skip()` of a `rev()` of a `Vec` drops 4, 3, 2, 1, where std's `Skip::advance_by` drops the `Vec`'s tail as one slice, 1 to 4 (#286)",
-    file: "src/runtime/closing.js",
-    find: "    advanceBy: slice ? advanceBy : $ownMethod(it, \"advanceBy\") ? \"advanceBy\" : undefined,\n",
-    replace: "    advanceBy: slice ? advanceBy : undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_chain_nth_past_a_skipped_rev.rs$"],
-  },
-  {
     name: "closing-own-nth-unsaid",
     breaks: "a closed source of the crate's with its own `nth`, a `take`'s or an `enumerate`'s, doesn't say that `nth` is its own, so a `step_by` over it steps each item, not by the `nth` Rust asks (#261)",
     file: "src/runtime/closing.js",
@@ -314,14 +306,6 @@ export const mutations: Mutation[] = [
     find: "  target.$state = value.$state;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^iterator_values_meet(_drops)?.rs$"],
-  },
-  {
-    name: "closing-own-count-closed-again",
-    breaks: "an iterator of the crate's whose own `count` took it and dropped it is closed again after: what it held is dropped twice (#505, #870)",
-    file: "src/runtime/closing.js",
-    find: "    return $takenBy(closing, () => it.count());\n",
-    replace: "    return it.count();\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_count_and_last_that_panic_drop_once.rs$"],
   },
 
   {

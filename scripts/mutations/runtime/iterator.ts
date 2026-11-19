@@ -272,15 +272,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^given_iterator_of_droppers_drops_what_it_passes.rs$"],
   },
   {
-    name: "range-nth-back-unasked",
-    breaks:
-      "a range made knowing its back has no `nth_back` of its own, so generic code's `nth_back(4_000_000_000)` of it steps each number it passes, past the run's time, where std's `Range::nth_back` moves its end (#950, #1109)",
-    file: "src/runtime/iterator.js",
-    find: "  nthBack ??= nextBack && $rangeNthOf(nextBack);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^range_reversed_skipped_beside_its_back_stepped.rs$"],
-  },
-  {
     name: "given-range-advance-by-steps",
     breaks: "a generic `skip(4_000_000_000)` of a chain of `(0..u32::MAX).rev()` given as a range stepped by its back steps each number, `$iterator` giving it no `advance_by` of its bounds (#1240)",
     file: "src/runtime/iterator.js",

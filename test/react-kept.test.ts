@@ -83,6 +83,24 @@ pub fn Stepped() -> JSX::Element {
     jsx! { <button onClick={move |_| dispatch.dispatch(Step { by: vec![10] })}>{*total}</button> }
 }
 
+pub struct Tally {
+    pub n: u32,
+}
+
+fn tallied(tally: &Tally, mut step: Step) -> Tally {
+    step.by.push(1);
+    Tally {
+        n: tally.n + step.by.iter().sum::<u32>(),
+    }
+}
+
+/// A reducer's action, changed, where its state is no node React renders:
+/// a reducer by \`use_reducer\`'s word alone, not as a component is.
+pub fn Tallied() -> JSX::Element {
+    let (tally, dispatch) = use_reducer(tallied, Tally { n: 0 });
+    jsx! { <button onClick={move |_| dispatch.dispatch(Step { by: vec![10] })}>{tally.n}</button> }
+}
+
 pub struct Nudge {
     pub points: Vec<Point>,
 }
@@ -144,7 +162,7 @@ const driver = `import { expect, test } from "bun:test";
 import { StrictMode, createElement } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
-import { Apart, Changed, Forwarding, Moved, Nudged, Passed, Seeded, Shifted, Stepped, Updated } from "./lib.jsx";
+import { Apart, Changed, Forwarding, Moved, Nudged, Passed, Seeded, Shifted, Stepped, Tallied, Updated } from "./lib.jsx";
 
 const shown = (element) => {
   const container = document.createElement("div");
@@ -170,6 +188,7 @@ test("each renders Rust's answer under StrictMode", () => {
   expect(items).toEqual([{ x: 1 }, { x: 2 }]);
   expect(clicked(shown(createElement(Stepped)))).toBe("11");
   expect(clicked(shown(createElement(Nudged)))).toBe("11");
+  expect(clicked(shown(createElement(Tallied)))).toBe("11");
   const seed = { by: [5] };
   expect(shown(createElement(Seeded, { seed })).textContent).toBe("6");
   expect(seed).toEqual({ by: [5] });
@@ -190,7 +209,8 @@ test("what React keeps and gives again is copied where it's changed, Rust's answ
   expect(js).toContain("export function Apart({ at }) {\n  at = { ...at };\n  at.x++;\n");
   // Given on unchanged, to React: as it is.
   expect(js).toContain("export function Passed(props) {\n  return <Moved at={props.at} />;\n}");
-  expect(js).toContain("  step = { ...step, by: step.by.slice() };\n  step.by.push(1);\n");
+  expect(js).toContain("function counted(total, step) {\n  step = { ...step, by: step.by.slice() };\n  step.by.push(1);\n");
+  expect(js).toContain("function tallied(tally, step) {\n  step = { ...step, by: step.by.slice() };\n  step.by.push(1);\n");
   writeFileSync(join(dir, "driver.test.jsx"), driver);
   const p = bunTest(["--preload", "./test/happydom.js", join(dir, "driver.test.jsx")]);
   const output = p.stdout + p.stderr;

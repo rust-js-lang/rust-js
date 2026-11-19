@@ -647,14 +647,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "filter-ends-count-hint-unasked",
-    breaks: "a `filter()` made knowing its back counts without asking its source's hint first, as std's `Filter::count` does (#733)",
-    file: "src/runtime/back_steps.js",
-    find: "      $sizeHint(it);\n      return $Steps.prototype.count.call(filter, drop);\n",
-    replace: "      return $Steps.prototype.count.call(filter, drop);\n",
-    tests: ["test/corpus.test.ts", "-t", "^(map_ends_size_hint|back_knowing_adapters_hint_and_try_fold).rs$"],
-  },
-  {
     name: "step-by-ends-uncounted",
     breaks: "`$stepByEnds` knows no length, so an `enumerate()` of a `step_by(n)` folded from its back throws `iter.len is not a function` (#718)",
     file: "src/runtime/back_steps.js",

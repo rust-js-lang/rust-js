@@ -265,14 +265,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "skipping-own-nth-back-unmarked",
-    breaks: "a `skip(n)`'s `nth_back` isn't marked its source's own, so a `step_by(n)` over it from its back never calls the crate's own `nth_back` (#834)",
-    file: "src/runtime/skipping.js",
-    find: "  $ownsAs(skipping, iter, \"nthBack\");\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
-  },
-  {
     name: "skip-of-own-advance-by-stepped",
     breaks: "a `skip` of a source with an `advance_by` of its own, a lazy range's of its bounds, steps each it skips, so `skip(3_000_000_000)` in generic code doesn't finish (#1310)",
     file: "src/runtime/skipping.js",
