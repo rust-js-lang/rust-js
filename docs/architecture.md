@@ -315,8 +315,10 @@ test/architecture-owners.test.ts ([ADR 1175](decisions/1175-the-owner-table-kept
 to these rules, and `bun scripts/owners.ts` reports where it stands.
 
 - **Completeness.** Each function of `src/lower.rs` and `src/lower/`
-  visible outside its module (`pub`, `pub(crate)`, `pub(in crate::…)`; not
-  `pub(super)`) that answers a question, returning `bool`, an `Option` of
+  visible outside its module (`pub`, `pub(crate)`, `pub(in crate::…)`, and
+  `pub(super)` in `src/lower.rs` or a module right under `src/lower/`,
+  whose parent is the whole front end; not a nested module's `pub(super)`)
+  that answers a question, returning `bool`, an `Option` of
   what isn't a JS tree (`Expr`, `ExprKind`, `Stmt`, `StmtKind`, `Pattern`,
   `Prop`, `Function`, `Value`, `js::…`), a fieldless enum or an enum a
   row's API names, or one of those in `R<…>` or a `Result`, is named in a
@@ -344,7 +346,7 @@ area's sweep phrases it as one.
 | A temporary's name: what made it suggests, rust-analyzer's way, the call the source writes by its name or the program's type it holds, else its role's word, which preparation spells, the first its scope lets it be (`prepare::temporaries`); the words any name lowering picks is made of, a `Role`'s, and what `spill` and `fresh` take, a `Base` (ADR 0569, #890) | `temporary_names.rs` | `call_suggestion`, `held_type_name`, `suggested`, `Role`, `Base` | |
 | Drop behavior and placement | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` | |
 | A function's drop slots: their numbering, its type parameters, then its associated types, then the types built of them; a body given its drops keyed by each slot's type (ADR 0421, amended, #887) | `traits/drop_params.rs`; `drops/scopes.rs` | `drop_slot`, `slot_index`, `item_slot`, `slot_item`; `give_drop_param`, `given_drop`, `lend_drop_param` | |
-| JS iterator versus array representation | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped`, `stepped_by`, `stepped_range` | |
+| JS iterator versus array representation; which of JS's own iterator forms a value is, `values()`, `keys()`, `entries()` or a lazy range (`own_form`, the one answer) | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped`, `stepped_by`, `stepped_range`, `own_form`, `OwnForm` | |
 | Generic iterator evidence | `iterators.rs` | `given_as_it_is`, `iterator_dictionary`, `iterator_evidence`; which functions step one, `analysis/iterator_steps.rs` | |
 | Array stepping and lent iterators | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` | |
 | What a `&mut` to a type is in JS, the one answer each operation on one matches: a box, a generic code's box, the object, a guard's object, a value given as it is or the value itself (#614, ADR 1086); and what's moved out of one whole, a copy apart, `$apart`, or a flattened state's copy of its variant's keys (#658, #659, ADR 1044, amended) | `representation/mut_ref.rs` | `MutRefForm` and its methods, each a match of every form, `is_cell`, `is_generic_box`, `is_the_object`, `is_the_value`, `written_in_place` (no site names or compares a form, #821), `mut_ref_form`, `mut_ref_form_in`, `param_form`, `param_is_box`, `handles_mut`, `moved_out`, `is_flattened_state` | |

@@ -732,7 +732,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// calls of `HELD_COMPILED`'s makers of a type compiled for this build
     /// (`makes_held_compiled`), each its THIR call, asked of each at the
     /// span (`each_call_at`, #1671 change 3 M5).
-    pub(in crate::lower::mir) fn adapter_in_place(&self, _def_id: rustc_span::def_id::DefId, span: Span) -> bool {
+    pub(super) fn adapter_in_place(&self, _def_id: rustc_span::def_id::DefId, span: Span) -> bool {
         self.frame.facts.in_place_adapters.made_at(self.frame.thir, span)
     }
 
@@ -753,7 +753,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made in place, `v.iter().map(f).rfold(..)`'s `rfold`: the
     /// recognizers', as what it steps is theirs, not its compiled impl's
     /// (ADR 0871), as its maker marked it (`made_in_place`, #730).
-    pub(in crate::lower::mir) fn steps_adapter_in_place(
+    pub(super) fn steps_adapter_in_place(
         &self,
         def_id: rustc_span::def_id::DefId,
         generic_args: ty::GenericArgsRef<'tcx>,

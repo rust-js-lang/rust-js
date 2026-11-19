@@ -311,7 +311,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value isn't an iterator, where one goes: one of the crate's own, or a
     /// range, an object (ADR 0129), where `input` is an `Iterator` or an
     /// `IntoIterator`. A range is itself anywhere else.
-    pub(in crate::lower) fn given_as_iterator(&self, callee: DefId, input: ty::Ty<'tcx>, ty: ty::Ty<'tcx>) -> bool {
+    fn given_as_iterator(&self, callee: DefId, input: ty::Ty<'tcx>, ty: ty::Ty<'tcx>) -> bool {
         // As it is, with its dictionary (ADR 0411), or as its trait's impl
         // takes it.
         if let ty::Param(param) = input.kind()
@@ -925,7 +925,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether the crate clones an iterator of type `ty` (`cloned_apart`'s
     /// analysis), however its clone is made.
-    pub(in crate::lower) fn iterator_cloned(&self, ty: ty::Ty<'tcx>) -> bool {
+    fn iterator_cloned(&self, ty: ty::Ty<'tcx>) -> bool {
         cloned_apart(
             (self.tcx, self.recognition().typing_env),
             self.krate.cloned,

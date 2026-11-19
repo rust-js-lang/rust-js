@@ -175,9 +175,14 @@ export function jsCode(text: string): string {
 }
 
 /** A function visible outside its module: `pub`, `pub(crate)` or
- * `pub(in crate::…)`, not `pub(super)`, whose answer a module beside it
- * alone may ask. */
+ * `pub(in crate::…)`; `pub(super)` too in `src/lower.rs` or a module right
+ * under `src/lower/` (`TOP`), whose parent is the whole front end. Not a
+ * nested module's `pub(super)`, whose answer only its parent's modules may
+ * ask. */
 const VISIBLE = /^\s*pub(?:\((?:crate|in\s+crate(?:::\w+)*)\))?\s+(?:(?:const|unsafe|async)\s+)*fn\s+(\w+)/;
+const VISIBLE_TOP = /^\s*pub(?:\((?:crate|super|in\s+crate(?:::\w+)*)\))?\s+(?:(?:const|unsafe|async)\s+)*fn\s+(\w+)/;
+/** A file whose `pub(super)` reaches the whole front end. */
+export const TOP = (file: string) => file === "src/lower.rs" || /^src\/lower\/[^/]+\.rs$/.test(file);
 /** A JS tree type: an `Option` of one is lowering's output, not an answer. */
 export const JS_TREE = /\b(?:Expr|ExprKind|Stmt|StmtKind|Pattern|Prop|Function|Value)\b|\bjs::/;
 
@@ -253,7 +258,7 @@ export function candidates(file: string, text: string, enums: ReadonlySet<string
   const found: Candidate[] = [];
   let offset = 0;
   for (let at = 0; at < lines.length; offset += lines[at]!.length + 1, at++) {
-    const visible = VISIBLE.exec(lines[at]!);
+    const visible = (TOP(file) ? VISIBLE_TOP : VISIBLE).exec(lines[at]!);
     if (!visible) continue;
     const returns = returnType(code, offset + visible.index + visible[0].length);
     if (returns === undefined || !answers(returns, enums)) continue;

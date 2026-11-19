@@ -78,7 +78,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether std's `method` of an iterator, giving `output`, takes its
     /// items by `fold`, `for_each` or `reduce`: what calls the crate's own
     /// `fold`, which takes the iterator and drops it (#162).
-    pub(in crate::lower) fn consumes_by_fold(&self, method: DefId, output: Ty<'tcx>) -> bool {
+    pub(super) fn consumes_by_fold(&self, method: DefId, output: Ty<'tcx>) -> bool {
         let recognition = self.recognition();
         recognition.folds_what_it_consumes(method)
             || recognition.rfolds_what_it_consumes(method)
@@ -94,11 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// after the fold its function drops before what's left (#789); of keys
     /// with a destructor, the fold drops the iterator before `let (_, x)`
     /// drops the kept key (#1649). So its drop is the consumer's, there.
-    pub(in crate::lower::mir) fn keyed_consumer_closes(
-        &self,
-        method: Option<IterMethod>,
-        arg_tys: &[Ty<'tcx>],
-    ) -> bool {
+    pub(super) fn keyed_consumer_closes(&self, method: Option<IterMethod>, arg_tys: &[Ty<'tcx>]) -> bool {
         let (Some(IterMethod::MaxByKey(_)), [iter, f, ..]) = (method, arg_tys) else {
             return false;
         };

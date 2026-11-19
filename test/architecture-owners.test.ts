@@ -133,12 +133,14 @@ test("a candidate is visible outside its module, and a helper's mark is above it
     "#[cfg(test)]",
     "mod tests { pub fn t() -> bool { true } }",
   ].join("\n");
-  const found = candidates("src/lower/x.rs", source, new Set(["Side"]));
+  const found = candidates("src/lower/x/z.rs", source, new Set(["Side"])).map((c) => ({ ...c, file: "src/lower/x.rs" }));
   expect(found.map(({ name, helper, line }) => [name, helper, line])).toEqual([
     ["asks", false, 1],
     ["helped", true, 6],
     ["side", false, 10],
   ]);
+  // A `pub(super)` of a module right under src/lower/ reaches the whole front end.
+  expect(candidates("src/lower/x.rs", source, new Set(["Side"])).map((c) => c.name)).toEqual(["asks", "beside", "helped", "side"]);
   const files = ["src/lower/x.rs", "src/lower/y.rs"];
   const row = { line: 9, question: "", owners: ["x.rs"], api: ["asks", "Held::helped"], primitives: [] };
   const elsewhere = { ...found[0]!, file: "src/lower/y.rs" };

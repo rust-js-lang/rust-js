@@ -632,7 +632,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// `FromIterator`, the trait `collect` makes what it collects with.
-    pub(in crate::lower) fn is_from_iterator(&self, trait_id: DefId) -> bool {
+    fn is_from_iterator(&self, trait_id: DefId) -> bool {
         self.tcx.is_diagnostic_item(sym::FromIterator, trait_id)
     }
 
@@ -1152,7 +1152,7 @@ pub(in crate::lower) fn iterator_held(ty: Ty<'_>) -> Ty<'_> {
 
 /// Whether a `ty` is a `Box` of the iterator it steps, or a reference to
 /// one (`iterator_held`).
-pub(in crate::lower) fn behind_a_box(ty: Ty<'_>) -> bool {
+fn behind_a_box(ty: Ty<'_>) -> bool {
     ty.peel_refs().boxed_ty().is_some()
 }
 

@@ -112,7 +112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// std's (ADR 1092's table), not of a type parameter's, whose JS
     /// adapters may be JS's own (#733). A flatten asked its hint is std's
     /// struct, compiled, whose hint of `[T; N]` is `N` times its source's.
-    pub(in crate::lower) fn adapted_hint_known(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub(super) fn adapted_hint_known(&self, ty: ty::Ty<'tcx>) -> bool {
         self.adapted_hint_known_of(ty, true)
     }
 

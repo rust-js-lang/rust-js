@@ -106,7 +106,7 @@ When contributing code:
   it isn't one, `// Flags, not a state: ..`.
 - **Each answer others ask is the owner table's.** A function of the
   front end visible outside its module (`pub`, `pub(crate)`,
-  `pub(in crate::…)`) that answers a question, a `bool`, an `Option` or
+  `pub(in crate::…)`, a top module's `pub(super)`) that answers a question, a `bool`, an `Option` or
   an enum of answers, is named in a row of
   [the architecture's semantic owners](docs/architecture.md#semantic-owners),
   under its owner, or marked `// helper: <reason>` above its `fn`; a row

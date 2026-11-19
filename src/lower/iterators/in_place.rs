@@ -34,7 +34,7 @@ const HELPERS_STEPPING_ALL: [(&str, Option<usize>); 9] = [
 
 /// Whether `name` is one of the runtime's helpers that steps its first
 /// argument till its first `done` (`HELPERS_STEPPING_ALL`).
-pub(in crate::lower) fn steps_all(name: &str) -> bool {
+pub(super) fn steps_all(name: &str) -> bool {
     HELPERS_STEPPING_ALL.iter().any(|(helper, _)| *helper == name)
 }
 

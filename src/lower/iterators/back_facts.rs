@@ -145,7 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its front's steps (`chars_asked_whole`), so that what's made of it
     /// is made knowing its back, `$mapEnds` and the like, and otherwise
     /// JS's own adapters.
-    pub(in crate::lower) fn text_knows_its_back(&self, ty: ty::Ty<'tcx>) -> Option<bool> {
+    pub(super) fn text_knows_its_back(&self, ty: ty::Ty<'tcx>) -> Option<bool> {
         let text = self.recognition();
         (text.is_str_chars(ty) || text.is_char_indices(ty)).then(|| self.chars_asked_whole(ty))
     }
@@ -164,7 +164,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its hint, `$skipping`, or its back, which knows its hint too,
     /// `$mapEnds` of an array's `$iter`, as `hint_asked.rs` marks it: in
     /// this function and each whose value of it may leave it (#1427).
-    pub(in crate::lower) fn made_knowing_here(&self, ty: ty::Ty<'tcx>) -> bool {
+    pub(super) fn made_knowing_here(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         let owner = self.tcx.typeck_root_def_id(self.frame.owner);
         self.made_knowing_its_hint(ty) || self.krate.hinted.knowing_in.contains(&(owner, ty))
@@ -191,7 +191,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `knows_its_back_of`'s, `wrapped` where a form holds `value`: a
     /// variable of an array's iterator's type holds a JS iterator only where
     /// a form holds it, `$closing(it)`; alone it may be the array itself.
-    pub(in crate::lower) fn knows_its_back_beneath(&self, value: &Expr, ty: ty::Ty<'tcx>, wrapped: bool) -> bool {
+    fn knows_its_back_beneath(&self, value: &Expr, ty: ty::Ty<'tcx>, wrapped: bool) -> bool {
         if crate::lower::iterators::knows_its_back_by_form(value) {
             return true;
         }
@@ -212,7 +212,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The type of what a form of type `ty` holds (`back_source`'s): its
     /// own, or its source's.
-    pub(in crate::lower) fn back_source_ty(&self, ty: ty::Ty<'tcx>, same: bool) -> Option<ty::Ty<'tcx>> {
+    pub(super) fn back_source_ty(&self, ty: ty::Ty<'tcx>, same: bool) -> Option<ty::Ty<'tcx>> {
         let ty = ty.peel_refs();
         match same {
             true => Some(ty),
@@ -226,7 +226,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether a value of `ty` has a back by its type alone: an array's
     /// iterator, or one its type's structure says knows it.
-    pub(in crate::lower) fn has_its_back_by_type(&self, ty: ty::Ty<'tcx>) -> bool {
+    fn has_its_back_by_type(&self, ty: ty::Ty<'tcx>) -> bool {
         let outer = self.asking_made.replace(true);
         let knows = self.steps_an_array(ty) || self.knows_its_back(ty);
         self.asking_made.set(outer);

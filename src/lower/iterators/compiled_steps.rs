@@ -552,7 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as the crate's own is (#162), the caller's fold dropping them, so its
     /// own `B` and `F` are `()` and a function of it, which nothing drops.
     /// `None` where std's isn't compiled.
-    pub(in crate::lower) fn compiled_fold_of(
+    pub(super) fn compiled_fold_of(
         &self,
         ty: ty::Ty<'tcx>,
         (trait_id, method): (DefId, &str),
@@ -573,7 +573,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The trait's `fold` or `rfold`, `method`, of `ty` and what it's
     /// called with as a dictionary's entry: given no drops of what it folds
     /// into and by, so its own `B` and `F` are `()` and a function of it.
-    pub(in crate::lower) fn fold_of(
+    pub(super) fn fold_of(
         &self,
         ty: ty::Ty<'tcx>,
         (trait_id, method): (DefId, &str),

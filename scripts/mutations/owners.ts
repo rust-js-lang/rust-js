@@ -47,6 +47,14 @@ export const mutations: Mutation[] = [
     tests: of("a candidate is visible outside its module"),
   },
   {
+    name: "owners-top-pub-super-not-a-candidate",
+    breaks: "a `pub(super)` function of a module right under `src/lower/`, which the whole front end may ask, is left out of the table",
+    file,
+    find: "const visible = (TOP(file) ? VISIBLE_TOP : VISIBLE).exec(lines[at]!);",
+    replace: "const visible = VISIBLE.exec(lines[at]!);",
+    tests: of("a candidate is visible outside its module"),
+  },
+  {
     name: "owners-js-tree-option-an-answer",
     breaks: "an `Option` of a JS tree, lowering's output, is called an answer",
     file,

@@ -50,7 +50,11 @@ with comments and `'..'`, `".."` and `` `..` `` literals blanked.
 **Completeness.** A candidate is a function of `src/lower.rs` or a file
 under `src/lower/` whose line begins `pub fn`, `pub(crate) fn` or
 `pub(in crate::…) fn` (with `const`, `unsafe` or `async` between) in its
-code, so not `pub(super)` nor private, whose return type is one of:
+code, or `pub(super) fn` where the file is `src/lower.rs` or a file right
+under `src/lower/` (`src/lower/<x>.rs`), whose parent module is the whole
+front end, so `pub(super)` reaches as far as `pub(in crate::lower)`; not a
+nested module's `pub(super)`, which only its parent's modules see, nor a
+private one; whose return type is one of:
 
 - `bool`;
 - `Option<T>` where `T` names no JS tree type, `Expr`, `ExprKind`,
@@ -69,8 +73,11 @@ its `fn` line. Never both. A candidate that's neither is listed in
 test/owners-unclassified.txt as `<path> <name>`, sorted, once; the test
 fails on an unclassified candidate the file doesn't list and on a listed
 line that's no longer an unclassified candidate (classified, renamed or
-gone), so the list only falls. Its first count is 1,229 of 1,549
-candidates; 320 are named by the rows that existed.
+gone), so the list only falls. Its first count was 1,229 of 1,549
+candidates, 320 named by the rows that existed; a top module's
+`pub(super)` (the rule's second step, found as the sweep began: the
+spelling left 308 answers the whole front end asks out of the table)
+added 308.
 
 **Exclusivity.** Each token in backticks of a row's Primitive cell is
 matched as written, any run of spaces in it matching any run, with a word
@@ -106,7 +113,8 @@ area and routed to the owner, not given a row of its own.
   `scripts/adr.ts`'s `ownerRows` reads the rows by the same parser.
 - The checker's own mutations, scripts/mutations/owners.ts, are each
   caught: a row's API unread, a name passing under any owner, a helper
-  mark unread or read past a blank line, `pub(super)` held, an `Option` of
+  mark unread or read past a blank line, a nested `pub(super)` held, a
+  top module's `pub(super)` left out, an `Option` of
   a JS tree held, both a row and a mark, a primitive read outside its
   owners or by none of them, matched inside a word, a module's
   submodules not its own, a `\|` split, comments and test modules read as
