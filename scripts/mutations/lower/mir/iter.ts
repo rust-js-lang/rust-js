@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                if matches!(parted, Parted::Map | Parted::Filter) && back {\n",
     replace: "                if false && matches!(parted, Parted::Map | Parted::Filter) && back {\n",
-    tests: ["test/corpus.test.ts", "-t", "^counted_adapters_given.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(counted_adapters_given|clone_of_a_compiled_adapter_over_a_copied_map).rs$"],
   },
   {
     name: "mir-mut-loop-items-unhandled",

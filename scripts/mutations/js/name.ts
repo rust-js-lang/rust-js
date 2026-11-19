@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     file: "src/js/name.rs",
     find: "            Ok(source) if source.is_temporary() || source.is_unread() => (source.suffix_root(), Id::WORD),\n",
     replace: "            Ok(source) if false => (source.suffix_root(), Id::WORD),\n",
-    tests: ["test/corpus.test.ts", "-t", "^(option_combinator_drops|combinators_owned_drops)\\.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(option_combinator_drops|combinators_owned_drops|panic_in_own_next_drops|default_matches_its_tuple_whole)\\.rs$"],
     snapshots: true,
   },
   {

@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "  $ownsAs(closing, it, \"nth\");\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(step_by_compiled_source_nth|own_nth_through_closed_sources).rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(step_by_compiled_source_nth|own_nth_through_closed_sources|rev_made_knowing_its_back).rs$"],
   },
   {
     name: "closing-drops-none",
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "  closing.sizeHint = () => $sizeHint(it);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(size_hint_of_adapters|skip_advanced_from_its_back_by_its_source).rs$"],
   },
   {
     name: "close-while-taking-unchecked",
