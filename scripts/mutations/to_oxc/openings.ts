@@ -68,7 +68,8 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/openings.rs",
     find: "    item_after_visibility(statement).starts_with(\"use \")\n",
     replace: "    false\n",
-    tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
+    tests: ["test/snapshots.test.ts", "-t", "^counter: the generated JS is its snapshot$"],
+    snapshots: true,
   },
   {
     name: "receiver-not-only",
