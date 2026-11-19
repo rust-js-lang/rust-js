@@ -372,12 +372,4 @@ export const mutations: Mutation[] = [
     replace: "  it.dropItem = drop;\n  return it;\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|generic_count_second_panic_aborts|count_of_a_flatten_skipped_from_its_back).rs$"],
   },
-
-  {
-    name: "given-unit-value-read",
-    breaks: "a unit struct's iterator, `undefined`, given as it is, is asked whether it's a `Vec`'s `IntoIter` given its slice's steps, which throws, \"Cannot read properties of undefined\" (itertools' laziness tests)",
-    file: "src/runtime/closing.js",
-    find: "  return it != null && it[$slicedKey] === true;\n",
-    replace: "  return it[$slicedKey] === true;\n",
-    tests: ["test/corpus.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it.rs$"],
-  },];
+];

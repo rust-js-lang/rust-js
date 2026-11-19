@@ -245,7 +245,7 @@ function $advanceSlice(it, m, each, back = false) {
 // `advanceBackBy` of its own too (#2154).
 const $slicedKey = Symbol("rust-js.sliced");
 function $sliced(it) {
-  return it != null && it[$slicedKey] === true;
+  return it[$slicedKey] === true;
 }
 function $slicing(it, drop) {
   // Of one lent, `by_ref()`'s, what it lends, given them, and they passed

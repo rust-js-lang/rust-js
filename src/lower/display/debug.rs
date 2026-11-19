@@ -667,31 +667,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // An empty iterator, std's `Empty`, which shows no state.
             ty::Adt(..) if self.recognition().is_iter_empty(ty) => Ok(Expr::str("Empty")),
-            // A `Cycle` a struct holds, which keeps what it started with and
-            // what it steps (ADR 0544): `Cycle { orig: .., iter: .. }`.
-            ty::Adt(..) if let Some(source) = self.held_cycle(ty) => {
-                let cycle_name = js::Name::declared("cycle".to_string());
-                let it = Expr::var(&cycle_name);
-                let orig = self.debug_string_with(Expr::member(it.clone(), "orig"), source, span, pretty)?;
-                let iter = self.debug_string_with(Expr::member(it, "iter"), source, span, pretty)?;
-                let plain = join(vec![
-                    Expr::str("Cycle { orig: "),
-                    orig.clone(),
-                    Expr::str(", iter: "),
-                    iter.clone(),
-                    Expr::str(" }"),
-                ]);
-                let fields = vec![
-                    join(vec![Expr::str("orig: "), orig]),
-                    join(vec![Expr::str("iter: "), iter]),
-                ];
-                let shown = self.pretty_or(pretty, plain, "Cycle {", Expr::array(fields), "}");
-                let show = Expr::arrow(
-                    vec![cycle_name.clone().into()],
-                    vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
-                );
-                Ok(self.applied(show, value))
-            }
             ty::Adt(_, args) if self.is_set(ty) => {
                 let items = self.in_order_of(value, ty, span)?;
                 self.debug_items(items, args.type_at(0), "{", "}", span, pretty)

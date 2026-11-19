@@ -658,9 +658,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(..) if crate::lower::recognition::is_va_list(self.tcx, ty) => {
                 Ok(Expr::builtin(place, "slice", Vec::new()))
             }
-            // A `Cycle` a struct holds: the one it carries, of clones of what
-            // it started with and what it steps (ADR 0544).
-            ty::Adt(..) if self.held_cycle(ty).is_some() => Ok(Expr::call_helper("$clone", vec![place])),
             // A `repeat(x)`'s and a `repeat_n(x, n)`'s: the one it carries,
             // std's derived `Clone`, of a clone of its value, a `repeat_n`'s
             // count copied (repeat.rs:71, repeat_n.rs:68, #1139, #1579).

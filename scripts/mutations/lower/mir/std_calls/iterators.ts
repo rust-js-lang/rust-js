@@ -121,15 +121,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^into_iter_arguments.rs$"],
   },
   {
-    name: "held-cycle-of-array-generated",
-    breaks:
-      "a held `Cycle` of an array's iterator is a generator, which keeps neither it cycles",
-    file: "src/lower/mir/std_calls/iterators.rs",
-    find: "                if this.held_cycle(output).is_some()\n                    || arg_tys.first().is_none_or(",
-    replace: "                if arg_tys.first().is_none_or(",
-    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
-  },
-  {
     name: "next-if-some-unboxed",
     breaks:
       "`next_if` of items that may look like `None` gives a `None` item as `None` itself, where it's `Some(None)`",

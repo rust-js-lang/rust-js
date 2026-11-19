@@ -41,3 +41,19 @@ one holding a `Cycle` of an array's iterator, against native Rust.
 - Mutations make a held array's cycle a generator, refuse its `next`, its
   `Debug`, its clone and `Empty`'s, restart a clone, and give an empty one
   no end.
+
+
+## Amendment (2026-11-19, #2155): the held-adapter record and `held_cycle` removed
+
+A held `Cycle` is std's compiled struct since ADR 1136, its `Debug`, clone
+and steps compiled, so `held_cycle` never answered `Some`: a marker build
+over check:fast --all (every test file, the corpus whole), React's port
+and the crate corpus found it reached `Some` nowhere, and the corpus's
+four cases that hold a `Cycle` reach the compiled struct. Its four arms
+(`{:?}` and a framed writer's `Debug`, its clone, `cycle()`'s maker), the
+crate's `explicit_adapters` record and `analysis/held_adapters.rs` that
+made it, read by nothing else, are removed, with their mutations
+(`held-cycle-unwritten`, one of #2155's latent survivors,
+`held-cycle-debug-refused`, `held-cycle-clone-refused`,
+`held-cycle-of-array-generated`, `held-adapters-none`). Byte-identical
+output.

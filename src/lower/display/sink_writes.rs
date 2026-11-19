@@ -325,8 +325,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !adt.is_local() && crate::lower::recognition::std_crate(self.tcx, adt.krate).is_none() {
             return false;
         }
-        // Compiled into `@rust-js/std` for this build: of the plain one, not
-        // a `Cycle`, which the runtime holds (`held_cycle`).
+        // Compiled into `@rust-js/std` for this build.
         let std_framed = crate::lower::recognition::is_compiled_std(self.tcx, instance.def_id())
             && self.krate.foreign.lists_fmt_into(adt);
         (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed

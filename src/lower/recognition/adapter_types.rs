@@ -352,11 +352,6 @@ pub(crate) fn counted_adapter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(
     Some((kind, adt.did(), args.type_at(0)))
 }
 
-/// What std's `Cycle` adapter of type `ty` cycles, `I` of `Cycle<I>`.
-pub(crate) fn cycled_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-    adapter_source(tcx, ty, StdPath::IterCycle)
-}
-
 /// What std's `Zip` adapter of type `ty` zips, `A` and `B` of `Zip<A, B>`.
 pub(crate) fn zipped_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
     match ty.kind() {

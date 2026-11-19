@@ -441,14 +441,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^slice_iter_debug.rs$"],
   },
   {
-    name: "held-cycle-debug-refused",
-    breaks: "a held `Cycle`'s `Debug` is refused",
-    file: "src/lower/display/debug.rs",
-    find: "            ty::Adt(..) if let Some(source) = self.held_cycle(ty) => {\n",
-    replace: "            ty::Adt(..) if let Some(source) = self.held_cycle(ty).filter(|_| false) => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
-  },
-  {
     name: "debug-without-cells",
     breaks:
       "`{:?}` of a `Vec<&mut i32>` shows each cell, not what it points at",

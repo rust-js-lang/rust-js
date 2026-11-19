@@ -272,3 +272,19 @@ pairs that became one (`nth` of its own, `nth` past its end's drop) are
 one, with both cases. The corpus, the iterator matrix's, conformance
 table's and panic points' `take` cases agree with native Rust in both
 builds.
+
+
+## Amendment (2026-11-19, #2155): the held-adapter record and `held_cycle` removed
+
+A held `Cycle` is std's compiled struct since ADR 1136, its `Debug`, clone
+and steps compiled, so `held_cycle` never answered `Some`: a marker build
+over check:fast --all (every test file, the corpus whole), React's port
+and the crate corpus found it reached `Some` nowhere, and the corpus's
+four cases that hold a `Cycle` reach the compiled struct. Its four arms
+(`{:?}` and a framed writer's `Debug`, its clone, `cycle()`'s maker), the
+crate's `explicit_adapters` record and `analysis/held_adapters.rs` that
+made it, read by nothing else, are removed, with their mutations
+(`held-cycle-unwritten`, one of #2155's latent survivors,
+`held-cycle-debug-refused`, `held-cycle-clone-refused`,
+`held-cycle-of-array-generated`, `held-adapters-none`). Byte-identical
+output.

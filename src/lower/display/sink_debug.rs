@@ -176,29 +176,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return helper("$writeDebugMap", vec![items, write, write_value, pretty.clone()]);
         }
-        // A `Cycle` a struct holds, the runtime's, std's derived `Debug` of
-        // what it started with and what it steps (ADR 0544): `Cycle { orig:
-        // .., iter: .. }`, each field by its `Debug` (#1712).
-        if let Some(source) = self.held_cycle(ty) {
-            let Some(write) =
-                self.writing_fn(|cx, part| cx.debug_sink_writes(part, source, (options, pretty), span))?
-            else {
-                return Ok(None);
-            };
-            let field =
-                |name: &str| Expr::array(vec![Expr::str(name), Expr::member(value.clone(), name), write.clone()]);
-            if !value.reads_same() {
-                return Ok(None);
-            }
-            return helper(
-                "$writeDebugStruct",
-                vec![
-                    Expr::str("Cycle"),
-                    Expr::array(vec![field("orig"), field("iter")]),
-                    pretty.clone(),
-                ],
-            );
-        }
         // An iterator over an array or a slice, `IntoIter([2, 3])`, its
         // `debug_tuple` of what it has left (ADR 0473; #1712).
         if let Some(name) = self.recognition().shows_its_slice(ty) {

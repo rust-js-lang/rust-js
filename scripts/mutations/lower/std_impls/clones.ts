@@ -441,14 +441,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^copied_structs_apart.rs$"],
   },
   {
-    name: "held-cycle-clone-refused",
-    breaks: "a held `Cycle`'s clone is refused",
-    file: "src/lower/std_impls/clones.rs",
-    find: "            ty::Adt(..) if self.held_cycle(ty).is_some() => Ok(Expr::call_helper(\"$clone\", vec![place])),\n",
-    replace: "            ty::Adt(..) if self.held_cycle(ty).is_some() && false => Ok(Expr::call_helper(\"$clone\", vec![place])),\n",
-    tests: ["test/corpus.test.ts", "-t", "^held_cycle.rs$"],
-  },
-  {
     name: "boxed-slice-items-changed-unasked",
     breaks:
       "a boxed slice's clone, a `CString`'s too, is the same array where what `into_vec()` or `into_bytes_with_nul()` makes of it is changed in place (#1290)",

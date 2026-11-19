@@ -78,21 +78,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// Of a `Cycle` of type `ty` whose kind the crate's types hold, its
-    /// source: one that keeps what it started with and what it steps
-    /// wherever the crate makes one (ADRs 0542, 0544). The one answer, of
-    /// what's made and what's asked of it. `None` of another: every other
-    /// kind a type holds is std's struct where it's held (ADR 0871), whose
-    /// own `Debug`, clone and steps are compiled.
-    pub(in crate::lower) fn held_cycle(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
-        let ty::Adt(adapter, _) = ty.peel_refs().kind() else {
-            return None;
-        };
-        (self.krate.explicit_adapters.contains(&adapter.did()))
-            .then(|| crate::lower::recognition::cycled_source(self.tcx, ty))
-            .flatten()
-    }
-
     /// Whether `$sizeHint` finds the size of an iterator of type `ty` held
     /// by a struct, a compiled std iterator's, `Fuse`'s or `Peekable`'s,
     /// whose own hint is of it: a `$iter`'s, of an array's items or of what

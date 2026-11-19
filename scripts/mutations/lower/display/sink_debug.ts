@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_phantom_data)\\.rs$"],
   },
   {
-    name: "held-cycle-unwritten",
-    breaks: "the plain build's `Cycle`'s `Debug` in a framed writer is refused (#1712)",
-    file: "src/lower/display/sink_debug.rs",
-    find: "        if let Some(source) = self.held_cycle(ty) {\n",
-    replace: "        if let Some(source) = self.held_cycle(ty).filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
-  },
-  {
     name: "slice-iter-debug-unwritten",
     breaks: "an array's iterator's `Debug` in a framed writer, `IntoIter([1, 2])`, is refused (#1712)",
     file: "src/lower/display/sink_debug.rs",

@@ -29,9 +29,6 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     pub(in crate::lower) closure_facts: &'a analysis::ClosureFacts<'tcx>,
     /// The types the crate clones (ADR 0525).
     pub(in crate::lower) cloned: &'a analysis::Cloned<'tcx>,
-    /// The kinds of std's adapters explicit wherever the crate makes one
-    /// (ADR 0542): those its types hold, and those with a count it clones.
-    pub(in crate::lower) explicit_adapters: &'a IndexSet<DefId>,
     /// The map and filter types the crate steps from their back (ADR 0545).
     pub(in crate::lower) back_stepped: &'a analysis::BackStepped<'tcx>,
     /// The `take(n)`s, `skip(n)`s and `step_by(n)`s generic code asks the
@@ -304,7 +301,6 @@ carried! {
     wholes => CrateOnly,
     closure_facts => By(&[F::LibraryMakesDroppingAnys, F::LibraryMakesDroppingErrors, F::LibraryMakesDroppingFnDyns, F::LibraryMakesDroppingIterators, F::LibraryClonedClosures]),
     cloned => CrateOnly,
-    explicit_adapters => CrateOnly,
     back_stepped => CrateOnly,
     hinted => CrateOnly,
     chars_whole => CrateOnly,
@@ -384,6 +380,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(CARRIED.len(), 67);
+        assert_eq!(CARRIED.len(), 66);
     }
 }

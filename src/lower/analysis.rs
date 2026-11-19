@@ -37,7 +37,6 @@ pub(super) mod fn_pointers;
 mod generic_consts;
 mod given_again;
 pub(super) use fn_pointers::{Called, FnPointers, Holder};
-mod held_adapters;
 mod iterator_steps;
 mod js_given;
 pub(super) use js_given::{
@@ -232,11 +231,6 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub closure_facts: ClosureFacts<'tcx>,
     /// The types the crate clones, and those their clones clone (ADR 0525).
     pub cloned: clones::Cloned<'tcx>,
-    /// The kinds of std's iterator adapters the crate's types hold (ADR
-    /// 0542), which `held_cycle` asks of a `Cycle`, the one of them that's
-    /// explicit wherever the crate makes one (ADR 0544): each other kind is
-    /// std's struct where it's held (ADR 0871), whatever this says of it.
-    pub explicit_adapters: IndexSet<DefId>,
     /// The map and filter types the crate steps from their back, each made
     /// knowing its back (ADR 0545).
     pub back_stepped: BackStepped<'tcx>,
@@ -706,9 +700,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Fn`, which then drops it (ADR 0521): a library's may be. A captured
     // `Rc` counted may make one, and a `dyn Fn` that drops may count an
     // `Rc`; both only grow, so a second pass settles them.
-    // The kinds of adapters the crate's types hold (ADR 0542), of which a
-    // `Cycle`'s is asked (`held_cycle`).
-    let explicit_adapters = held_adapters::held_adapters(tcx);
     let compiled = |id| foreign.compiled(id);
     let mut closure_facts = ClosureFacts::new(tcx, (all_bodies, calls.names()), &cloned, (library, &compiled));
     let (mut counted, given) = counted_with(&closure_facts);
@@ -1280,7 +1271,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         wholes,
         closure_facts,
         cloned,
-        explicit_adapters,
         back_stepped,
         hinted: hint_asked.hinted,
         chars_whole,

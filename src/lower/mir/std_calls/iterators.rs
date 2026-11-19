@@ -195,21 +195,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }))
             }),
             // `cycle()` of another iterator than std's over an array, cloned
-            // (ADR 0491); and one a struct holds, of an array's too, which
-            // keeps both it cycles (ADR 0544); and of an array's items it
+            // (ADR 0491); and of an array's items it
             // owns whose clone or drop shows (`clone_shows`), `Cycle::new`'s clone of all
             // of them, its first round theirs, moved, and each round after a
             // clone of all again, the one it ends dropped, as std's (#1583).
             Std::Step(StepOp::Cycle)
-                if this.held_cycle(output).is_some()
-                    || arg_tys.first().is_none_or(|t| match this.array_source(t.peel_refs()) {
-                        None => true,
-                        Some(owns) => {
-                            owns && this.iterator_item(t.peel_refs()).is_some_and(|item| {
-                                this.clone_shows(item) || this.drops(item) != crate::lower::drops::Drops::Nothing
-                            })
-                        }
-                    }) =>
+                if arg_tys.first().is_none_or(|t| match this.array_source(t.peel_refs()) {
+                    None => true,
+                    Some(owns) => {
+                        owns && this.iterator_item(t.peel_refs()).is_some_and(|item| {
+                            this.clone_shows(item) || this.drops(item) != crate::lower::drops::Drops::Nothing
+                        })
+                    }
+                }) =>
             {
                 lower(move |this, _, values, _| {
                     Ok(Value::Expr({
