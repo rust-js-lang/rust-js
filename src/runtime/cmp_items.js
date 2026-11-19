@@ -67,14 +67,16 @@ function $iterEqGiven(a, b, eq, dropA, dropB, firstA, firstB) {
 }
 
 // `it`, of a `TrustedLen` iterator, and how many it has left
-// (`$iterEqGiven`): its `len()` or its exact hint, or, of one `"pure"`, what
-// it gives, collected.
+// (`$iterEqGiven`): its hint, which std's `SpecIterEq` reads, exact of each
+// form its caller gives it as `true`, an array's `$iter`, a `Vec`'s or an
+// array's `IntoIter` and a range, as test/iterator-steps holds; never read of
+// whether it has a `len` of its own (#2159). Of one `"pure"`, what it gives,
+// collected.
 function $lengthFirst(it, first) {
   if (first === "pure") {
     const items = $foldToArray(it);
     return [$iter(items), items.length];
   }
-  if (typeof it.len === "function") return [it, it.len()];
   const [lower, upper] = $sizeHint(it);
   if (lower !== upper) throw new Error("rust-js: a `TrustedLen` iterator's length isn't known (#1182)");
   return [it, lower];

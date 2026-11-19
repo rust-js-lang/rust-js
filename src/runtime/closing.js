@@ -36,7 +36,7 @@ function $closing(it, drop, slices = true) {
   // `FlattenCompat`'s, whose `count` is its own, never a `len()` it hasn't
   // (#2154).
   const own = $sliced(it);
-  const intoIter = own || (slices && it.items !== undefined && it.nthBack === undefined && drop !== undefined);
+  const intoIter = own || (slices && $arrayIter(it) && it.nthBack === undefined && drop !== undefined);
   const slice = own || (intoIter && drop.each !== undefined);
   const advanceBackBy = own ? (m) => it.advanceBackBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each, true);
   const advanceBy = own ? (m) => it.advanceBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each);
@@ -252,7 +252,7 @@ function $slicing(it, drop) {
   // on, as std's `&mut I` passes on `I`'s `advance_by`, `nth`,
   // `advance_back_by` and `nth_back`; not its `last`, which takes it (#745).
   if (it.lends !== undefined) {
-    if (it.lends.items === undefined) return it;
+    if (!$arrayIter(it.lends)) return it;
     $slicing(it.lends, drop);
     $forward(it, it.lends, { advanceBy: "advanceBy", advanceBackBy: "advanceBackBy", nth: "nth", nthBack: "nthBack" });
     it.dropItem = drop;
@@ -260,7 +260,7 @@ function $slicing(it, drop) {
     return it;
   }
   // Given them already, or a JS iterator of its own, one closed, whose are.
-  if (it.items === undefined || $ownMethod(it, "advanceBackBy")) return it;
+  if (!$arrayIter(it) || $ownMethod(it, "advanceBackBy")) return it;
   $forward(it, it, {
     advanceBy: (m, each = drop) => $advanceSlice(it, m, each),
     advanceBackBy: (m, each = drop) => $advanceSlice(it, m, each, true),

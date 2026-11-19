@@ -1,3 +1,12 @@
+// What marks an array's iterator, `$iter`'s, which a clone, `$iter` of its
+// items again, is too: the one answer of whether an iterator is one, so its
+// `items`, `at` and `end` may be read, never read of whether it has an
+// `items` field, as a crate's struct may (#2159).
+const $arrayIterKey = Symbol("rust-js.arrayIter");
+function $arrayIter(it) {
+  return it != null && it[$arrayIterKey] === true;
+}
+
 // A JS iterator of an array that knows where it is (ADR 0071): an
 // `Iterator`, whose helpers, `map` and the like, step it as Rust's adapters
 // do. Of an iterator std hints no lower bound of, `lowerless`, a B-tree's
@@ -12,6 +21,7 @@ function $iter(items, lowerless) {
   if (typeof items.length !== "number") throw new TypeError("rust-js: an iterator stepped as an array's, which doesn't know its back");
   const it = Object.create(Iterator.prototype);
   it.items = items;
+  it[$arrayIterKey] = true;
   it.at = 0;
   // Where its back is, which `next_back()` steps down.
   it.end = items.length;
@@ -34,3 +44,4 @@ function $iter(items, lowerless) {
   }
   return it;
 }
+

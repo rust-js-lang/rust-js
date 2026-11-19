@@ -67,7 +67,7 @@ function $trustedZip(a, b) {
 // a range's start plus `i`, of a 64-bit one a BigInt's.
 function $getUnchecked(it, i, dictionary) {
   if (dictionary?.getUnchecked !== undefined) return dictionary.getUnchecked(it, i);
-  if (it.items !== undefined) return it.items[it.at + i];
+  if ($arrayIter(it)) return it.items[it.at + i];
   return typeof it.start === "bigint" ? it.start + BigInt(i) : it.start + i;
 }
 

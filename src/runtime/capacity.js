@@ -56,7 +56,7 @@ function $inPlaceCapacity(collected, source, sourceSize, size) {
 // `v.map(f)`'s, no `Vec`'s buffer (#1428).
 function $inPlaceCapacityFrom(collected, it, sourceSize, size) {
   let at = it;
-  while (at !== undefined && at !== null && !Array.isArray(at.items)) {
+  while (at !== undefined && at !== null && !$arrayIter(at)) {
     at = at.from?.[0] ?? at.iter;
   }
   if (at === undefined || at === null) return $untracked(collected);

@@ -71,7 +71,10 @@ test("each row's primitive is read by its owners alone", () => {
 test("a row is four cells, its owners and APIs the names it ticks", () => {
   expect(cells("| Is it `a \\| b`? | `x.rs` | `f`, `T::g` | |")).toEqual(["Is it `a \\| b`?", "`x.rs`", "`f`, `T::g`", ""]);
   const page = ["# A", "| Question | Owner | API | Primitive |", "|---|---|---|---|", "| Is it? | `x.rs`; `y/` | `f`, `T::g` | `tcx.q` |", "", "| not | a | row |"].join("\n");
-  expect(ownerTable(page)).toEqual([{ line: 4, question: "Is it?", owners: ["x.rs", "y/"], api: ["f", "T::g"], primitives: ["tcx.q"] }]);
+  expect(ownerTable(page)).toEqual([{ line: 4, question: "Is it?", owners: ["x.rs", "y/"], api: ["f", "T::g"], primitives: ["tcx.q"], guesses: [] }]);
+  // What a primitive replaced, after "instead of": guesses (#2159).
+  expect(ownerTable(page.replace("| `tcx.q` |", "| `$mark`, instead of `.items`, `typeof x.len` |"))[0]).toMatchObject({ primitives: ["$mark"], guesses: [".items", "typeof x.len"] });
+  expect(ownerTable(page.replace("| `tcx.q` |", "| instead of `.items` |"))[0]).toMatchObject({ primitives: [], guesses: [".items"] });
   expect(() => ownerTable(page.replace("| `tcx.q` |", "|"))).toThrow("a row of 3 cells");
   expect(() => ownerTable(page.replace("`x.rs`; `y/`", "the lowering"))).toThrow("names no owner");
   expect(() => ownerTable("# A\n")).toThrow("no table of semantic owners");
@@ -142,7 +145,7 @@ test("a candidate is visible outside its module, and a helper's mark is above it
   // A `pub(super)` of a module right under src/lower/ reaches the whole front end.
   expect(candidates("src/lower/x.rs", source, new Set(["Side"])).map((c) => c.name)).toEqual(["asks", "beside", "helped", "side"]);
   const files = ["src/lower/x.rs", "src/lower/y.rs"];
-  const row = { line: 9, question: "", owners: ["x.rs"], api: ["asks", "Held::helped"], primitives: [] };
+  const row = { line: 9, question: "", owners: ["x.rs"], api: ["asks", "Held::helped"], primitives: [], guesses: [] };
   const elsewhere = { ...found[0]!, file: "src/lower/y.rs" };
   expect(completeness([row], [...found, elsewhere], files)).toEqual({ unclassified: ["src/lower/x.rs side", "src/lower/y.rs asks"], both: ["src/lower/x.rs:6 helped"] });
 });
@@ -157,7 +160,10 @@ test("a primitive is its owners' alone, and read by one of them", () => {
     ["src/lower/x/y.rs", "tcx.fn_sig(e)"],
     ["src/lower/z.rs", "let s = tcx.fn_sig(f);"],
   ]);
-  const row = (primitives: string[]) => ({ line: 3, question: "", owners: ["x.rs"], api: [], primitives });
+  const row = (primitives: string[], guesses: string[] = []) => ({ line: 3, question: "", owners: ["x.rs"], api: [], primitives, guesses });
   expect(exclusivity([row(["tcx.fn_sig"])], code)).toEqual({ outside: ["`tcx.fn_sig` (line 3) in src/lower/z.rs"], unread: [] });
   expect(exclusivity([row(["tcx.gone"])], code)).toEqual({ outside: [], unread: ["`tcx.gone` (line 3)"] });
+  // A guess a primitive replaced is its owners' alone too, though none reads it.
+  expect(exclusivity([row([], ["tcx.fn_sig"])], code)).toEqual({ outside: ["`tcx.fn_sig` (line 3) in src/lower/z.rs"], unread: [] });
+  expect(exclusivity([row([], ["tcx.gone"])], code)).toEqual({ outside: [], unread: [] });
 });

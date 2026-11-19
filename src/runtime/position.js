@@ -14,12 +14,12 @@ function $position(items, found) {
 // (`$tryRfoldOf`): an `enumerate()`'s asks its source's length once, where
 // its `next_back` asks it at each step (#2142).
 function $rposition(items, found) {
-  if (!Array.isArray(items) && items.items === undefined) {
+  if (!Array.isArray(items) && !$arrayIter(items)) {
     let i = items.len();
     const hit = $tryRfoldOf(items, false, (_, item) => (i--, found(item)), (hit) => hit);
     return hit ? i : undefined;
   }
-  const iter = items.items !== undefined;
+  const iter = $arrayIter(items);
   const [array, at, end] = iter ? [items.items, items.at, items.end] : [items, 0, items.length];
   // Each taken before `f` is asked of it, as `next_back` takes it, so what
   // `f` owns, and drops as it unwinds, a panic, is no longer the `$iter`'s

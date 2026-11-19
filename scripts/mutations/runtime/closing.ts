@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     name: "slicing-unsaid",
     breaks: "a `Vec`'s `IntoIter` given generic code or stepped by `nth` isn't given its own `advance_by`, so a panicking drop among what it passes stops it, where std's slice drops the rest (#703)",
     file: "src/runtime/closing.js",
-    find: "  if (it.items === undefined || $ownMethod(it, \"advanceBackBy\")) return it;\n",
+    find: "  if (!$arrayIter(it) || $ownMethod(it, \"advanceBackBy\")) return it;\n",
     replace: "  return it;\n",
     tests: ["test/corpus.test.ts", "-t", "^(nth_passes_a_slice_or_each|nth_passed_drops_unwind).rs$"],
   },

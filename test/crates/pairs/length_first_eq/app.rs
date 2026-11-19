@@ -2,7 +2,8 @@
 //! print as they drop: none compared, `b`'s dropped, then `a`'s, where a
 //! filter, which isn't `TrustedLen`, is compared item by item; a range and a
 //! slice's copies, collected first, which drop nothing; a `Vec`'s iterator
-//! and a `VecDeque` given whole, counted.
+//! and a `VecDeque` given whole, counted; a slice's iterator and an array's
+//! by value, counted too (#2159).
 use std::collections::VecDeque;
 
 #[derive(Debug)]
@@ -37,4 +38,8 @@ pub fn main() {
     println!("{}", dep::equal(0..2u32, vec![L(0), L(1)]));
     println!("{}", dep::equal(vec![L(9)].into_iter(), [L(9), L(10)]));
     println!("{}", dep::equal(VecDeque::from([L(11), L(12)]), vec![L(11)]));
+    let w = [L(13), L(14)];
+    println!("{}", dep::equal(w.iter(), w[..1].iter()));
+    println!("{}", dep::equal(w.iter(), w.iter()));
+    println!("{}", dep::equal([L(17)].into_iter(), vec![L(17), L(18)]));
 }

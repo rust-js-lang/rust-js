@@ -123,3 +123,15 @@ area and routed to the owner, not given a row of its own.
   modules-linking, readability passes, the runtime) first, then m6-lily's
   (nullability, ranges and numbers, `&mut`s, functions and calls, classes
   and JS objects, declarations).
+
+## Amendment (2026-11-20, #2159): a primitive's replaced guesses
+
+A Primitive cell may name, after the words "instead of", the guesses its primitive replaced: a type's shape that stood in for a mark, such as `.items !== undefined` for `$iter`'s mark or `typeof it.len` for "an `ExactSizeIterator`". Its tokens before those words are the row's primitives, as before. **The tokens after them are its guesses.** Each guess is matched as a primitive is, and must match the code of no source outside the row's owners. Unlike a primitive, no owner needs to read it, since a guess is typically replaced everywhere. A cell may name guesses alone.
+
+So a shape replaced by a mark can't come back in another file unseen. scripts/owners.ts's `INSTEAD_OF` parts the cell, and `OwnerRow.guesses` holds them.
+
+Held by:
+- test/architecture-owners.test.ts's fixtures ("a row is four cells", "a primitive is its owners' alone");
+- the mutations `owners-guesses-unread` and `owners-guess-held-read` (scripts/mutations/owners.ts).
+
+The first two rows are the runtime's: whether an iterator is an array's, `$arrayIter`, instead of `.items !== undefined` and `.items === undefined`; and how many a `TrustedLen` side has left, `$lengthFirst`, instead of `typeof it.len`.

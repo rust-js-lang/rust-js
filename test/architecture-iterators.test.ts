@@ -6,6 +6,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { iteratorPaths, touchesIterators } from "../scripts/iteratorSlice";
+import { ownerPath, sources } from "../scripts/owners";
 import { root } from "./support";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
@@ -206,11 +207,12 @@ test("a consumer's closure folded by value is dropped by $consume alone", () => 
 // module docs/architecture.md says owns a rule of iterators or their steps
 // is one of its paths, and each of its paths is a file there is.
 test("the iterator matrix's slice runs of each module that owns a rule of iterators", () => {
+  const files = sources(root);
   const owners = read("docs/architecture.md")
     .split("\n")
     .filter((line) => line.startsWith("| ") && /iterat|step/i.test(line.split("|")[1] ?? ""))
     .flatMap((line) => [...(line.split("|")[2] ?? "").matchAll(/`([\w/]+(?:\.rs|\.js|\/))`/g)].map((m) => m[1]))
-    .map((module) => (module.startsWith("src/") ? module : `src/lower/${module}`))
+    .map((module) => ownerPath(module!, files))
     .map((module) => (module.endsWith("/") ? `${module}x.rs` : module));
   expect(owners).toContain("src/lower/recognition/own_steps.rs");
   expect(owners.filter((module) => !touchesIterators([module]))).toEqual([]);

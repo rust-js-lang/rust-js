@@ -329,7 +329,10 @@ to these rules, and `bun scripts/owners.ts` reports where it stands.
   needs a row or a mark, and one classified comes off the list.
 - **Exclusivity.** A row's primitive is read, outside comments and
   literals, in no source of `src/` (and the runtime's JS) but its owners',
-  and in one of theirs.
+  and in one of theirs. What its Primitive cell names after "instead of"
+  is a guess the primitive replaced, a type's shape that stood in for a
+  mark: read in no source but its owners', though none of theirs need
+  read it (#2159).
 - **Owners.** An owner is a path from `src/` where it starts so; else a
   module of the front end, `iterators.rs`, which is `src/lower/iterators.rs`
   and its submodules, or a folder, `drops/`; else one at `src/`'s root,
@@ -354,6 +357,8 @@ area's sweep phrases it as one.
 | Does an iterator know its back, `$nextBack`, and what made it so: its type (`knows_its_back`), what its form holds (`knows_its_back_of`, `knows_its_back_by_form`, `was_made_knowing_its_back`), its maker (`made_knowing_its_back_by_its_maker`, `reversed_made_knowing`), or the crate's stepping it from its back (`made_stepped_from_its_back`, `made_counted_from_its_back`)? And is a string's `Chars` asked whole? (ADRs 0429, 0542, 0545, 0987; #814, #851, #1186) | `iterators.rs` | `knows_its_back`, `knows_its_back_by_form`, `was_made_knowing_its_back`, `form_lacks_a_back`, `made_knowing_its_back_by_its_maker`, `reversed_made_knowing`, `made_stepped_from_its_back`, `made_counted_from_its_back`, `chars_asked_whole`, `reversal`, `reversal_of`, `is_reversed` | |
 | Does an iterator know its length, its `len()`: by its type, as an adapter that keeps its source's, or its own runtime form's? (ADR 0456) | `iterators.rs` | `knows_its_length`, `knows_its_length_of`, `len_of_its_own`, `maps_what_knows_its_length`, `knows_its_given_length`, `was_made_knowing_its_length`, `form_lacks_a_length`, `count_bound` | |
 | Is an iterator's `size_hint()` std's: known as it's made, held by a compiled std struct, made a `dyn`, or made knowing it where generic code asks it? (#1236, #1333, #1427, #1476) | `iterators.rs` | `held_hint_known`, `hint_known_as_made`, `hint_known_made_dyn`, `struct_hint_known`, `made_knowing_its_hint`, `form_knows_no_hint`, `binding_made` | |
+| Is an iterator an array's, `$iter`'s, whose `items`, `at` and `end` may be read, its clone too? (#2159) | `runtime/iter.js` | `$arrayIter`, `$iter` | `$arrayIterKey`, instead of `.items !== undefined`, `.items === undefined` |
+| How many has a `TrustedLen` iterator left that generic code's `eq` compares by its length first: its hint, which std's `SpecIterEq` reads, exact of each form its caller counts? (#1182, #2159) | `runtime/cmp_items.js` | `$lengthFirst`, `$iterEqGiven` | instead of `typeof it.len` |
 | Is a type parameter's iterator given as it is, or given by its trait, and what bounds it as an iterator? (ADRs 0411, 0488, 0511, 0551, 0552) | `iterators.rs` | `iterator_given_as_it_is`, `param_given_as_it_is`, `holds_into_iter`, `given_by_its_trait`, `bound_as_iterator`, `bound_by_iterator`, `named_by_another_bound` | |
 | What form is a lowered iterator value, `IterValue`: a JS value, closed, lent, enumerated, zipped, a stepped range, a string's, an array made, a map of items, mapped lazily; and which bounds of it are read? | `iterators.rs` | `IterValue::of`, `IterValue::js`, `closed`, `lent`, `lent_of`, `is_lent`, `is_knowing`, `is_range_stepped`, `enumerated_of`, `zip_parts`, `made_string_iterator`, `bounds_read`, `made_array`, `is_items_map`, `lazily_mapped` | |
 | What does a `Vec` grow by, and does an `extend` or a `collect` reserve its room by a hint the program asks? (#1236, #1333) | `iterators.rs` | `collect_hint_seen`, `extend_grows`, `extend_reserves`, `extend_room`, `given_growth_kept`, `grows_vec_by`, `room_of`, `vec_grown_by` | |

@@ -75,4 +75,12 @@ export const mutations: Mutation[] = [
     replace: "        same = eq ? eq(p, q.value) : p === q.value;\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_eq_drops_the_pair_though_one_panics.rs$"],
   },
+  {
+    name: "length-first-hint-unread",
+    breaks: "generic code's `eq` counts a `TrustedLen` side its caller gives as `true` as empty, not by its hint, which std's `SpecIterEq` reads (#2159)",
+    file: "src/runtime/cmp_items.js",
+    find: "  const [lower, upper] = $sizeHint(it);\n  if (lower !== upper)",
+    replace: "  const [lower, upper] = [0, 0];\n  if (lower !== upper)",
+    tests: ["test/iterator-steps.test.ts", "-t", "LengthFirst form"],
+  },
 ];

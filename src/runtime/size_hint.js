@@ -16,7 +16,7 @@ function $sizeHint(it, iterator) {
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
   // it is (ADR 0411).
   if (typeof it?.of?.next === "function") return $sizeHint(it.of);
-  const left = Array.isArray(it?.items) ? it.end - it.at : undefined;
+  const left = $arrayIter(it) ? it.end - it.at : undefined;
   if (left !== undefined) return [left, left];
   // Of a form of rust-js's own, `$Steps`, std's default, none known; of
   // JS's own iterator, a string's or an array's `drop(n)`, which knows no

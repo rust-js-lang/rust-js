@@ -398,3 +398,47 @@ for (const [stdForm, form, make] of forms) {
     expect(fixed).toEqual([]);
   });
 }
+
+// An array's iterator is known by `$iter`'s mark, `$arrayIter`, never by an
+// `items` field, which a crate's struct may have (#2159): its clone, `$iter`
+// of its items again, is one too.
+test("an array's iterator is known by its mark, not its shape", () => {
+  const it = std.$iter([1, 2, 3]);
+  expect(std.$arrayIter(it)).toBe(true);
+  expect(std.$arrayIter(std.$iter(it.items.slice(it.at, it.end)))).toBe(true);
+  const struct = { items: [1, 2, 3], at: 0, end: 3, len: () => 3 };
+  expect([std.$arrayIter(struct), std.$arrayIter(undefined), std.$arrayIter([1])]).toEqual([false, false, false]);
+});
+
+// Each form generic code's `eq` is given `LengthFirst` `true` of
+// (`length_first`, `counts_where_given`, #1182) is counted by its hint, as
+// std's `SpecIterEq` reads it: exact, its length, and its `len()` where it
+// has one, as `$lengthFirst` reads no `len` (#2159).
+test("each LengthFirst form's hint is exact and its length", () => {
+  const drop = std.$dropEach(() => {});
+  const forms: [string, () => any][] = [
+    ["a slice's or a Vec's iterator, `$iter`", () => std.$iter([1, 2, 3])],
+    ["one stepped from both ends", () => {
+      const it = std.$iter([1, 2, 3, 4]);
+      it.next();
+      it.back();
+      return it;
+    }],
+    ["an array or a Vec given whole, `$intoIter`", () => std.$intoIter([1, 2])],
+    ["a Vec's IntoIter of items with a destructor, `$closing`", () => std.$closing(std.$iter([1, 2, 3]), drop)],
+    ["one that drops each as it's passed", () => std.$closing(std.$intoIter([1, 2]), drop, false)],
+    ["a range", () => std.$lazyRange(0, 3)],
+    ["an empty range", () => std.$lazyRange(3, 3)],
+  ];
+  const wrong: string[] = [];
+  for (const [name, make] of forms) {
+    let n = 0;
+    for (const it = make(); !it.next().done; ) n++;
+    const it = make();
+    const hint = std.$sizeHint(it);
+    const len = typeof it.len === "function" ? it.len() : n;
+    const [, counted] = std.$lengthFirst(make(), true);
+    if (hint[0] !== n || hint[1] !== n || len !== n || counted !== n) wrong.push(`${name}: ${n} items, hint ${JSON.stringify(hint)}, len ${len}, counted ${counted}`);
+  }
+  expect(wrong).toEqual([]);
+});

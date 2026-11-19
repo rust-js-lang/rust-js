@@ -5216,7 +5216,7 @@ export function $closing(it, drop, slices = true) {
   // `FlattenCompat`'s, whose `count` is its own, never a `len()` it hasn't
   // (#2154).
   const own = $sliced(it);
-  const intoIter = own || (slices && it.items !== undefined && it.nthBack === undefined && drop !== undefined);
+  const intoIter = own || (slices && $arrayIter(it) && it.nthBack === undefined && drop !== undefined);
   const slice = own || (intoIter && drop.each !== undefined);
   const advanceBackBy = own ? (m) => it.advanceBackBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each, true);
   const advanceBy = own ? (m) => it.advanceBy(m, drop?.each) : (m) => $advanceSlice(it, m, drop.each);
@@ -5432,7 +5432,7 @@ export function $slicing(it, drop) {
   // on, as std's `&mut I` passes on `I`'s `advance_by`, `nth`,
   // `advance_back_by` and `nth_back`; not its `last`, which takes it (#745).
   if (it.lends !== undefined) {
-    if (it.lends.items === undefined) return it;
+    if (!$arrayIter(it.lends)) return it;
     $slicing(it.lends, drop);
     $forward(it, it.lends, { advanceBy: "advanceBy", advanceBackBy: "advanceBackBy", nth: "nth", nthBack: "nthBack" });
     it.dropItem = drop;
@@ -5440,7 +5440,7 @@ export function $slicing(it, drop) {
     return it;
   }
   // Given them already, or a JS iterator of its own, one closed, whose are.
-  if (it.items === undefined || $ownMethod(it, "advanceBackBy")) return it;
+  if (!$arrayIter(it) || $ownMethod(it, "advanceBackBy")) return it;
   $forward(it, it, {
     advanceBy: (m, each = drop) => $advanceSlice(it, m, each),
     advanceBackBy: (m, each = drop) => $advanceSlice(it, m, each, true),
@@ -6011,6 +6011,15 @@ export function $removeOpt(items, index) {
   return index < items.length ? items.splice(index, 1)[0] : undefined;
 }
 
+// What marks an array's iterator, `$iter`'s, which a clone, `$iter` of its
+// items again, is too: the one answer of whether an iterator is one, so its
+// `items`, `at` and `end` may be read, never read of whether it has an
+// `items` field, as a crate's struct may (#2159).
+export const $arrayIterKey = Symbol("rust-js.arrayIter");
+export function $arrayIter(it) {
+  return it != null && it[$arrayIterKey] === true;
+}
+
 // A JS iterator of an array that knows where it is (ADR 0071): an
 // `Iterator`, whose helpers, `map` and the like, step it as Rust's adapters
 // do. Of an iterator std hints no lower bound of, `lowerless`, a B-tree's
@@ -6025,6 +6034,7 @@ export function $iter(items, lowerless) {
   if (typeof items.length !== "number") throw new TypeError("rust-js: an iterator stepped as an array's, which doesn't know its back");
   const it = Object.create(Iterator.prototype);
   it.items = items;
+  it[$arrayIterKey] = true;
   it.at = 0;
   // Where its back is, which `next_back()` steps down.
   it.end = items.length;
@@ -6047,6 +6057,7 @@ export function $iter(items, lowerless) {
   }
   return it;
 }
+
 
 export function $next(it) {
   const step = it.next();
@@ -15015,7 +15026,7 @@ export function $inPlaceCapacity(collected, source, sourceSize, size) {
 // `v.map(f)`'s, no `Vec`'s buffer (#1428).
 export function $inPlaceCapacityFrom(collected, it, sourceSize, size) {
   let at = it;
-  while (at !== undefined && at !== null && !Array.isArray(at.items)) {
+  while (at !== undefined && at !== null && !$arrayIter(at)) {
     at = at.from?.[0] ?? at.iter;
   }
   if (at === undefined || at === null) return $untracked(collected);
@@ -18553,7 +18564,7 @@ export function $stdIterator(struct, steps, knows) {
 
 export function $rest(it) {
   // A JS iterator, a generic one's (ADR 0061): what's left of it.
-  if (it.items === undefined) {
+  if (!$arrayIter(it)) {
     return Array.from(it);
   }
   const rest = it.items.slice(it.at, it.end);
@@ -18998,7 +19009,7 @@ export function $sizeHint(it, iterator) {
   // What a `$iterator` steps, a JS iterator's, an array's `$iter` given as
   // it is (ADR 0411).
   if (typeof it?.of?.next === "function") return $sizeHint(it.of);
-  const left = Array.isArray(it?.items) ? it.end - it.at : undefined;
+  const left = $arrayIter(it) ? it.end - it.at : undefined;
   if (left !== undefined) return [left, left];
   // Of a form of rust-js's own, `$Steps`, std's default, none known; of
   // JS's own iterator, a string's or an array's `drop(n)`, which knows no
@@ -21339,7 +21350,7 @@ export function $trustedZip(a, b) {
 // a range's start plus `i`, of a 64-bit one a BigInt's.
 export function $getUnchecked(it, i, dictionary) {
   if (dictionary?.getUnchecked !== undefined) return dictionary.getUnchecked(it, i);
-  if (it.items !== undefined) return it.items[it.at + i];
+  if ($arrayIter(it)) return it.items[it.at + i];
   return typeof it.start === "bigint" ? it.start + BigInt(i) : it.start + i;
 }
 
@@ -23467,14 +23478,16 @@ export function $iterEqGiven(a, b, eq, dropA, dropB, firstA, firstB) {
 }
 
 // `it`, of a `TrustedLen` iterator, and how many it has left
-// (`$iterEqGiven`): its `len()` or its exact hint, or, of one `"pure"`, what
-// it gives, collected.
+// (`$iterEqGiven`): its hint, which std's `SpecIterEq` reads, exact of each
+// form its caller gives it as `true`, an array's `$iter`, a `Vec`'s or an
+// array's `IntoIter` and a range, as test/iterator-steps holds; never read of
+// whether it has a `len` of its own (#2159). Of one `"pure"`, what it gives,
+// collected.
 export function $lengthFirst(it, first) {
   if (first === "pure") {
     const items = $foldToArray(it);
     return [$iter(items), items.length];
   }
-  if (typeof it.len === "function") return [it, it.len()];
   const [lower, upper] = $sizeHint(it);
   if (lower !== upper) throw new Error("rust-js: a `TrustedLen` iterator's length isn't known (#1182)");
   return [it, lower];
@@ -23671,12 +23684,12 @@ export function $position(items, found) {
 // (`$tryRfoldOf`): an `enumerate()`'s asks its source's length once, where
 // its `next_back` asks it at each step (#2142).
 export function $rposition(items, found) {
-  if (!Array.isArray(items) && items.items === undefined) {
+  if (!Array.isArray(items) && !$arrayIter(items)) {
     let i = items.len();
     const hit = $tryRfoldOf(items, false, (_, item) => (i--, found(item)), (hit) => hit);
     return hit ? i : undefined;
   }
-  const iter = items.items !== undefined;
+  const iter = $arrayIter(items);
   const [array, at, end] = iter ? [items.items, items.at, items.end] : [items, 0, items.length];
   // Each taken before `f` is asked of it, as `next_back` takes it, so what
   // `f` owns, and drops as it unwinds, a panic, is no longer the `$iter`'s

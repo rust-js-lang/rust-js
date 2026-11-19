@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "generic-size-hint-stepped-whole",
     breaks: "`size_hint()` of a generic iterator partly stepped counts the items it's past",
     file: "src/runtime/size_hint.js",
-    find: "Array.isArray(it?.items) ? it.end - it.at : undefined;",
-    replace: "Array.isArray(it?.items) ? it.items.length : undefined;",
+    find: "$arrayIter(it) ? it.end - it.at : undefined;",
+    replace: "$arrayIter(it) ? it.items.length : undefined;",
     tests: ["test/corpus.test.ts", "-t", "size_hint"],
   },
   {

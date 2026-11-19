@@ -168,3 +168,13 @@ sees the type it hides: a type parameter of the caller's it hides is
 any other. Generic code's `eq` of an `impl Iterator` made of its type
 parameter is answered, not refused. Corpus case `eq_of_opaque_iterators`,
 both builds; mutation `eq-side-of-an-opaque-type-unrevealed`.
+
+## Amendment (2026-11-20, #2159): a side's length is its hint
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. `$lengthFirst` counted a side its caller gives as `true` by its `len()` where it had a `len` property, else by its exact hint. A `len` property stood in for "an `ExactSizeIterator`". Std's `SpecIterEq` reads neither the trait nor `len()`: it reads `size_hint()`, exact of a `TrustedLen`.
+
+**`$lengthFirst` reads the hint alone.** Each form a caller counts is `$iter`, `$intoIter`, `$closing` of either, or `$lazyRange`. test/iterator-steps.test.ts's "each LengthFirst form's hint is exact and its length" holds each one exact, equal to its length and to its `len()` where it has one.
+
+When this was decided, every side the #1182 cases reach logged the same: corpus `eq_of_opaque_iterators`, and `test/crates/pairs/length_first_eq`, which now gives a slice's iterator and an array's `IntoIter` too, against native. A slice's `IterMut` is refused there today (#2169), and its JS is `$iter` too.
+
+The row "How many has a `TrustedLen` iterator left…" names `typeof it.len` as the guess it replaced. Mutation: `length-first-hint-unread` (runtime/cmp_items.ts).

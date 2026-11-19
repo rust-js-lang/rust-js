@@ -209,3 +209,23 @@ the name holds one, and tidy then reads the name in place. The runtime's
 `in place/stepped once`, by iterators.rs's `stepped_once`, its owner, writes `$iter($iter(x), ..)`
 as `$iter(x)`: `summed($iter([1, 2]), $iter([4]))`. Four snapshots changed,
 each that alone; mutation `iter-of-an-iter-kept`.
+
+## Amendment (2026-11-20, #2159): an array's iterator is known by its mark
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Output is unchanged, and so is every answer for an array's iterator. Some runtime helpers took any object with an `items` field for `$iter`'s and read it by index:
+- `$closing`'s and `$slicing`'s `IntoIter` (closing.js, three sites);
+- `$getUnchecked` (lazy_zip.js);
+- `$rposition` (position.js, two sites);
+- `$rest`;
+- `$sizeHint`;
+- `$inPlaceCapacityFrom` (capacity.js).
+
+No case reached them with a crate's struct, which is wrapped by `$iterator` first. The issue's probe went through generic and direct `position`, `rposition`, `zip`, `skip`, `nth_back`, `rev`, `len`, `cycle`, `eq` and `cmp` of a struct with `items`, `at` and `end`, and every result matched native.
+
+**`$iter` marks what it makes with a runtime symbol, and `$arrayIter(it)`, iter.js's, is the one answer of whether an iterator is one.** A clone, `$iter` of its items again, is one too. A copy by `Object.assign` keeps the mark, as it keeps `items`. These sites ask it.
+
+docs/architecture.md's owner table holds it: the row's primitive is `$arrayIterKey`, read only by iter.js. `.items !== undefined` and `.items === undefined`, the guesses it replaced, may be read by no other source either (ADR 1175, amended).
+
+Held by:
+- test/iterator-steps.test.ts's "an array's iterator is known by its mark, not its shape";
+- the mutations `array-iter-by-shape` and `array-iter-unmarked` (runtime/iter.ts).

@@ -7,7 +7,10 @@
 //                 under that row's owner, or is marked a helper with its
 //                 reason; test/owners-unclassified.txt lists what's left,
 //                 a ratchet that only falls.
-//   exclusivity   a row's primitive is read in no file but its owners'.
+//   exclusivity   a row's primitive is read in no file but its owners',
+//                 and by one of them; a guess it names after "instead of",
+//                 a type's shape that stood in for it, is read in no file
+//                 but its owners'.
 //
 // test/architecture-owners.test.ts runs both; `bun run architecture`
 // reports them.
@@ -36,9 +39,16 @@ export type OwnerRow = {
   owners: string[];
   /** Each name of its API cell. */
   api: string[];
-  /** Each token of its Primitive cell. */
+  /** Each token of its Primitive cell before "instead of". */
   primitives: string[];
+  /** Each token of its Primitive cell after "instead of": a guess the
+   * primitive replaced, which only its owners may read (#2159). */
+  guesses: string[];
 };
+
+/** What parts a Primitive cell: the primitives before it, the guesses they
+ * replaced after it. */
+export const INSTEAD_OF = /\binstead of\b/;
 
 /** A row's cells: split at each `|` not escaped `\|`, which GitHub splits
  * at inside a code span too. */
@@ -64,25 +74,32 @@ export function ownerTable(page: string): OwnerRow[] {
     const [question, owner, api, primitive] = row as [string, string, string, string];
     const owners = ticked(owner);
     if (owners.length === 0) throw new Error(`${OWNER_PAGE}:${i + 1}: a row that names no owner module`);
-    rows.push({ line: i + 1, question, owners, api: ticked(api), primitives: ticked(primitive) });
+    const [held, replaced = ""] = primitive.split(INSTEAD_OF);
+    rows.push({ line: i + 1, question, owners, api: ticked(api), primitives: ticked(held!), guesses: ticked(replaced) });
   }
   return rows;
 }
 
-/** Whether `file`, a repository path, is of `owner`, as the table spells
- * it: a path from `src/` where it starts so; else a module of the front
- * end, `iterators.rs`, `src/lower/iterators.rs` and its submodules,
- * `src/lower/iterators/`, or a folder, `drops/`; else one at `src/`'s
- * root, `names.rs`, or the runtime's, `runtime/steps.js`. */
-export function ofOwner(owner: string, file: string, files: readonly string[]): boolean {
-  const under = (base: string) => {
-    if (file === base || (base.endsWith("/") && file.startsWith(base))) return true;
-    return base.endsWith(".rs") && file.startsWith(`${base.slice(0, -3)}/`);
-  };
-  if (owner.startsWith("src/")) return under(owner);
+/** The repository path `owner` names, as the table spells it: a path
+ * from `src/` where it starts so; else a module of the front end,
+ * `iterators.rs`, `src/lower/iterators.rs`, or a folder, `drops/`, where
+ * it or its submodules are files; else one at `src/`'s root, `names.rs`,
+ * or the runtime's, `runtime/steps.js`. The one rule of it, which
+ * test/architecture-iterators asks too. */
+export function ownerPath(owner: string, files: readonly string[]): string {
+  if (owner.startsWith("src/")) return owner;
   const lowered = `src/lower/${owner}`;
   const exists = files.some((f) => f === lowered || f.startsWith(lowered.endsWith(".rs") ? `${lowered.slice(0, -3)}/` : lowered));
-  return under(exists ? lowered : `src/${owner}`);
+  return exists ? lowered : `src/${owner}`;
+}
+
+/** Whether `file`, a repository path, is of `owner` (`ownerPath`): that
+ * module and its submodules, `src/lower/iterators/`, or what a folder
+ * holds. */
+export function ofOwner(owner: string, file: string, files: readonly string[]): boolean {
+  const base = ownerPath(owner, files);
+  if (file === base || (base.endsWith("/") && file.startsWith(base))) return true;
+  return base.endsWith(".rs") && file.startsWith(`${base.slice(0, -3)}/`);
 }
 
 /** Whether `owner` names a module there is. */
@@ -299,20 +316,21 @@ export function primitivePattern(token: string): RegExp {
   return new RegExp(`${/^\w/.test(token) ? "(?<![\\w$])" : ""}${escaped}${/\w$/.test(token) ? "(?![\\w$])" : ""}`);
 }
 
-/** What exclusivity finds: each primitive read in a file not its row's
- * owners', `token in file`, and each read by none of its owners, which
- * holds nothing. `code` is each source's code (`rustCode`, `jsCode`). */
+/** What exclusivity finds: each primitive or guess read in a file not its
+ * row's owners', `token in file`, and each primitive read by none of its
+ * owners, which holds nothing; a guess may be read by none, replaced
+ * everywhere. `code` is each source's code (`rustCode`, `jsCode`). */
 export function exclusivity(rows: OwnerRow[], code: ReadonlyMap<string, string>) {
   const files = [...code.keys()];
   const outside: string[] = [];
   const unread: string[] = [];
   for (const row of rows) {
-    for (const token of row.primitives) {
+    const own = (file: string) => row.owners.some((owner) => ofOwner(owner, file, files));
+    for (const [token, guess] of [...row.primitives.map((t) => [t, false] as const), ...row.guesses.map((t) => [t, true] as const)]) {
       const pattern = primitivePattern(token);
       const readers = files.filter((file) => pattern.test(code.get(file)!));
-      const own = (file: string) => row.owners.some((owner) => ofOwner(owner, file, files));
       for (const file of readers.filter((file) => !own(file))) outside.push(`\`${token}\` (line ${row.line}) in ${file}`);
-      if (!readers.some(own)) unread.push(`\`${token}\` (line ${row.line})`);
+      if (!guess && !readers.some(own)) unread.push(`\`${token}\` (line ${row.line})`);
     }
   }
   return { outside, unread };

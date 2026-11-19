@@ -66,4 +66,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "never stepped as an empty array"],
   },
+  {
+    name: "array-iter-by-shape",
+    breaks: "an array's iterator is known by an `items` field, so a crate's struct with one is stepped by index as `$iter`'s items (#2159)",
+    file: "src/runtime/iter.js",
+    find: "  return it != null && it[$arrayIterKey] === true;\n",
+    replace: "  return it != null && it.items !== undefined;\n",
+    tests: ["test/iterator-steps.test.ts", "-t", "known by its mark"],
+  },
+  {
+    name: "array-iter-unmarked",
+    breaks: "`$iter` doesn't mark what it makes, so no array's iterator is known as one: its `rposition`, `size_hint` and slice steps are a JS iterator's (#2159)",
+    file: "src/runtime/iter.js",
+    find: "  it[$arrayIterKey] = true;\n",
+    replace: "",
+    tests: ["test/iterator-steps.test.ts", "-t", "known by its mark"],
+  },
 ];
