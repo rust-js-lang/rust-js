@@ -127,6 +127,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.copied_items_knowing(it, item, output, back, span)
     }
 
+    /// `it`, what generic code was given of type `source`, made knowing its
+    /// back where `back` says it's to know it and its back is given, its
+    /// `DoubleEndedIterator`'s evidence, as a source a copy is in JS is
+    /// (`given_stepped`): a `copied()`'s and a `cloned()`'s alike, so a
+    /// clone of either stepped from its back steps what it's made of
+    /// (#2130, #2137).
+    fn given_knowing_its_back(&mut self, it: Expr, source: Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
+        let double_ended = ty::TraitRef::new(
+            self.tcx,
+            self.recognition().double_ended_iterator().expect("std's"),
+            [source.peel_refs()],
+        );
+        match back && self.evidence_for(double_ended).is_some() {
+            true => self.as_double_ended(it, source.peel_refs(), span),
+            false => Ok(it),
+        }
+    }
+
     /// `copied_items`, made knowing its back where `back` says.
     fn copied_items_knowing(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
         // Of one that knows its length and not its back, the map that
@@ -139,26 +157,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // says, a `cloned()` of items whose clone is the item, `$cloned`,
         // which is it where it has none of its own that std's `Cloned`
         // hides, as it's made (#2122).
+        // Of its source made knowing its back where it's to know it, as a
+        // `copied()`'s is (#2137).
         if let Some(source) = crate::lower::recognition::cloned_source(self.tcx, output)
             && self.given_source(source)
             && !self.needs_clone(item.peel_refs())
             && !self.asks_as_its_source(output, source)
         {
+            let it = self.given_knowing_its_back(it, source, back, span)?;
             return Ok(Expr::call_helper("$cloned", vec![it]));
         }
         // A `copied()`'s, `$copiedGiven` (`copied_given`, #2130), of its
-        // source made knowing its back where it's to know it and its back is
-        // given, as a source a copy is in JS is (`given_stepped`).
+        // source made knowing its back where it's to know it.
         if let Some(source) = source.filter(|_| self.copied_given(output)) {
-            let double_ended = ty::TraitRef::new(
-                self.tcx,
-                self.recognition().double_ended_iterator().expect("std's"),
-                [source.peel_refs()],
-            );
-            let it = match back && self.evidence_for(double_ended).is_some() {
-                true => self.as_double_ended(it, source.peel_refs(), span)?,
-                false => it,
-            };
+            let it = self.given_knowing_its_back(it, source, back, span)?;
             return Ok(Expr::call_helper("$copiedGiven", vec![it]));
         }
         let it = match source {

@@ -143,3 +143,19 @@ retargeted. `source-own-count-unasked` went with its code: since #2112's
 step 1b, `count()` asks the catalog, whose `reaches_its_own` asks
 `source_writes` itself. So `repeat_n`'s own `count` was a second answer,
 one that also said yes of a `by_ref()`'s, whose `count` is std's default.
+
+**Amended (2026-11-19, #2137): a `cloned()` of what generic code is
+given is made knowing its back as a `copied()` is.** Generic
+`i.cloned().clone().next_back()` threw `it.back is not a function`.
+The `cloned()` was cloned apart and made of `$cloned($given(it,
+IIterator))`, and its source was never given its back, because only
+the clone was stepped from it. The `$cloned` form and the
+`$copiedGiven` form now ask one helper, `given_knowing_its_back`. It
+makes what generic code was given knowing its back wherever the copy
+is to know it and its `DoubleEndedIterator` evidence is given.
+`copied().clone().nth_back()`, #2137's own case, already ran as native
+since #2130's `$copiedGiven`.
+
+Case (ADR 0262): R. A throw where Rust steps is a wrong answer. Corpus
+case `cloned_of_a_generic_source_cloned_and_stepped_from_its_back` runs
+as native in both builds. Mutation: `given-cloned-backless`.

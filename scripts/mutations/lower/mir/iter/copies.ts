@@ -107,4 +107,12 @@ export const mutations: Mutation[] = [
     replace: "        false\n            && (self",
     tests: ["test/corpus.test.ts", "-t", "^copied_hides_its_sources_own_nth_back.rs$"],
   },
+  {
+    name: "given-cloned-backless",
+    breaks: "a `cloned()` of what generic code is given is never made knowing its back, so a clone of it stepped from its back throws, `it.back is not a function`, where a `copied()`'s steps (#2137)",
+    file: "src/lower/mir/iter/copies.rs",
+    find: "            let it = self.given_knowing_its_back(it, source, back, span)?;\n            return Ok(Expr::call_helper(\"$cloned\", vec![it]));\n",
+    replace: "            return Ok(Expr::call_helper(\"$cloned\", vec![it]));\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_of_a_generic_source_cloned_and_stepped_from_its_back.rs$"],
+  },
 ];
