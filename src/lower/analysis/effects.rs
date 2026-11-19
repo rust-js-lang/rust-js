@@ -297,6 +297,30 @@ impl Effects {
     }
 }
 
+/// What code given what `start` holds may write: each target, and what
+/// `reachable` reaches from it, with what it may do to it; of `whole`, the
+/// place's own storage, what it reaches alone. Each target's cap a join of
+/// every way to it, never an overwrite, so the answer is the targets', not
+/// the order they come in (#2112 B 3b: an `insert` here made it the
+/// order's, `ReactFlightClient`'s `written` one write more or less).
+fn reached_from(start: &Targets, whole: Option<Target>, reachable: impl Fn(Target) -> Targets) -> Targets {
+    let mut given = Targets {
+        places: IndexMap::default(),
+        unknown: start.unknown,
+    };
+    for (&t, &cap) in &start.places {
+        if Some(t) == whole {
+            given.extend(&reachable(t));
+            continue;
+        }
+        let at = given.places.entry(t).or_insert(cap);
+        *at = (*at).max(cap);
+        let reached = reachable(t);
+        given.extend(&if cap >= ITEMS { reached } else { reached.inside() });
+    }
+    given
+}
+
 /// The targets `place` reaches through its derefs, of the map `held`: of
 /// none, its local's storage. Each replaced only where each pointer it
 /// goes through may replace, or what it reaches is a cell.
@@ -732,20 +756,8 @@ impl<'tcx> Flow<'_, 'tcx> {
     /// reaches, however many down, as `reachable` says, not itself.
     fn reached_by(&self, place: &Place<'tcx>) -> Targets {
         let start = through(&self.writes, None, place);
-        let mut given = Targets {
-            places: IndexMap::default(),
-            unknown: start.unknown,
-        };
-        for (&t, &cap) in &start.places {
-            if !place.is_indirect() && t == Target::Whole(place.local) {
-                given.extend(&self.reachable(t, true));
-                continue;
-            }
-            given.places.insert(t, cap);
-            let reached = self.reachable(t, true);
-            given.extend(&if cap >= ITEMS { reached } else { reached.inside() });
-        }
-        given
+        let whole = (!place.is_indirect()).then_some(Target::Whole(place.local));
+        reached_from(&start, whole, |t| self.reachable(t, true))
     }
 
     /// A write to `place`: its local's storage, and of a write through a
@@ -1052,4 +1064,33 @@ fn borrowed_at_writes<'tcx>(
         }
     }
     at
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{INSIDE, IndexMap, Local, Target, Targets, WHOLE, reached_from};
+
+    fn targets(places: &[(Target, u8)]) -> Targets {
+        Targets {
+            places: places.iter().copied().collect::<IndexMap<_, _>>(),
+            unknown: false,
+        }
+    }
+
+    // `b` reaches what `a` points to whole; `a` itself is given only
+    // inside. Whichever comes first, `a` is reached whole: the join keeps
+    // the more of the two ways to it, as the fixed point's monotone
+    // transfer must (#2112 B 3b).
+    #[test]
+    fn what_code_reaches_is_the_targets_never_their_order() {
+        let (a, b) = (Target::Pointee(Local::from_u32(1)), Target::Pointee(Local::from_u32(2)));
+        let reachable = |t: Target| match t == b {
+            true => targets(&[(a, WHOLE)]),
+            false => Targets::default(),
+        };
+        let forward = reached_from(&targets(&[(a, INSIDE), (b, WHOLE)]), None, reachable);
+        let backward = reached_from(&targets(&[(b, WHOLE), (a, INSIDE)]), None, reachable);
+        assert_eq!(forward.places.get(&a), Some(&WHOLE));
+        assert_eq!(backward.places.get(&a), Some(&WHOLE));
+    }
 }

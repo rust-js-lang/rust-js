@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "                Written::Whole\n",
     tests: proofs,
   },
+  {
+    name: "reached-cap-overwritten",
+    breaks: "what code given a place may write takes each target's cap from the last way to it, an overwrite, so the answer is the order the targets come in, and a write lowered to `Items` leaves a fact a `Whole` write forgets (#2112 B 3b)",
+    file: "src/lower/analysis/effects.rs",
+    find: "        let at = given.places.entry(t).or_insert(cap);\n        *at = (*at).max(cap);\n",
+    replace: "        given.places.insert(t, cap);\n",
+    unitTests: "lower::analysis::effects::tests::what_code_reaches_is_the_targets_never_their_order",
+  },
 ];

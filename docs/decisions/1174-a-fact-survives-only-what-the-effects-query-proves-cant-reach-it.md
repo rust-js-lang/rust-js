@@ -197,3 +197,29 @@ guard keeps what it covers only while it's held"; the shadow saying a keep
 `effects-guards-cover-nothing`. A guard kept past its drop shows only once
 the rules are gone, where they forget first now: step 3b's native row
 holds it.
+
+## Amendment (2026-11-19, #2112 B 3b): the query's answer is the targets', never their order
+
+Found measuring step 3b's cold compile: a second form of `Targets`, dense
+over a body's targets, iterated them in local order where the `IndexMap`
+iterated them in insertion order, and 7 of the React port's 7,942 bodies
+then had other `Effects`, compared field by field, sorted. A monotone
+dataflow over a finite lattice reaches one least fixed point whatever
+the order, so a join wasn't one: `Flow::reached_by`, what code given a
+place may write, took each target's cap by `insert`, an overwrite, after
+an earlier target's `reachable` may have reached it with more. The later
+way lowered it: `ReactFlightClient`'s `trigger_error_on_chunk`, a call's
+`written` at one block, was `Pointee(_30)` whole and nothing more in one
+order, `_26` to `_30` items and `_34`, `_35`, `_48` whole in the other.
+A lowered cap reads as a write that does less, so a fact could survive a
+write it should forget: a wrong answer, latent, none found in a program
+(the corpus, the snapshots and the React port print the same JS either
+way, and a short try at a program of its shape found none).
+
+`reached_from` joins, each target's cap the most of every way to it, and
+is a function of the targets alone, `reachable` given. With it, the two
+forms' `Effects` are equal for each of the port's 11,138 builds (each
+written in one write, so concurrent compiles' records don't interleave).
+A unit test runs it over the same targets in both orders,
+`lower::analysis::effects::tests::what_code_reaches_is_the_targets_never_their_order`;
+mutation `reached-cap-overwritten`, the `insert` back, is caught by it.
