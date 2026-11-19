@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_range.js",
     find: "  range.sizeHint = () => {\n    if (ended()) return [0, 0];\n",
     replace: "  range.unhinted = () => {\n    if (ended()) return [0, 0];\n",
-    tests: ["test/corpus.test.ts", "-t", "^counted_iterators_held_ask_room.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(counted_iterators_held_ask_room|extend_of_a_reversed_stepped_range_grows_by_its_hint).rs$"],
   },
   {
     name: "lazy-range-back-hint-counted-apart",

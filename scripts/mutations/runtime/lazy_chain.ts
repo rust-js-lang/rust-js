@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "        folded = $foldDropping(second, folded, f, unwind, ends);\n",
     replace: "        folded = $foldDropping(second, folded, f, unwind);\n",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(consumer_closure_dropped_first|chain_fold_drops_the_consumers_closure_before_its_second_sides).rs$"],
   },
   {
     name: "chain-back-a-first",
