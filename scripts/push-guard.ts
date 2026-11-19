@@ -11,7 +11,12 @@
 // whole change, each line it added and took away in each file, applies to
 // what's pushed again, where it didn't to the remote, the push undoes it
 // too: f7d5e10ec took 02df83a40's memory cap out of four files so, each
-// file another's edit too, never one of them as it was (#1097).
+// file another's edit too, never one of them as it was (#1097). But rows
+// a push takes off a known list, `test/*-known.txt`, each under the heading
+// of an issue one of its commits `Fixes`, are what fixing that issue is,
+// not an undoing of the commit that listed them: #2146's, #2139's and one
+// before were refused so, and their authors had to name that commit.
+// `bun run push` runs it first, its `fast` phase, as well as git's hook.
 //
 //   git push                       the hook runs it, given git's lines on stdin
 //   bun scripts/push-guard.ts <remote-sha> <local-sha>
@@ -50,8 +55,12 @@ const blob = (cwd: string, commit: string, file: string) => git(cwd, ["rev-parse
  * last day, whose whole change applies to `local` again where it didn't to
  * `remote`; each of a commit no commit of the push names. */
 export function undone(cwd: string, remote: string, local: string, { now = Date.now() / 1000, recent = 20 } = {}): Undone[] {
-  const changed = (git(cwd, ["diff", "--name-only", "--no-renames", remote, local]) ?? "").split("\n").filter(Boolean);
   const messages = git(cwd, ["log", "--format=%B", `${remote}..${local}`]) ?? "";
+  const fixes = fixedIssues(messages);
+  const changed = (git(cwd, ["diff", "--name-only", "--no-renames", remote, local]) ?? "")
+    .split("\n")
+    .filter(Boolean)
+    .filter((file) => !fixedRowsOnly(file, git(cwd, ["show", `${remote}:${file}`]) ?? "", git(cwd, ["diff", "-U0", "--no-renames", remote, local, "--", file]) ?? "", fixes));
   const named = (commit: string) => messages.includes(commit.slice(0, 9));
   const found: Undone[] = [];
   // Each recent commit of the remote's of a file it changes whose whole
@@ -59,7 +68,8 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
   const scratch = mkdtempSync(join(tmpdir(), "push-guard-"));
   try {
     const since = `--since=@${Math.floor(now - day)}`;
-    const recentCommits = (git(cwd, ["log", `-n${recent}`, since, "--format=%H %s", remote, "--", ...changed]) ?? "").split("\n").filter(Boolean);
+    // None where it changes none but fixed rows: `git log --` of no file is of every one.
+    const recentCommits = changed.length === 0 ? [] : (git(cwd, ["log", `-n${recent}`, since, "--format=%H %s", remote, "--", ...changed]) ?? "").split("\n").filter(Boolean);
     for (const line of recentCommits) {
       const [commit, ...words] = line.split(" ");
       if (named(commit)) continue;
@@ -100,6 +110,40 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
     }
   }
   return found;
+}
+
+/** The issues the commits `messages` fix: each `#<n>` of a `Fixes ..`,
+ * up to its line's end or the parenthesis that closes it. */
+export function fixedIssues(messages: string): Set<string> {
+  return new Set([...messages.matchAll(/\bFixes\b([^)\n]*)/g)].flatMap((m) => [...m[1]!.matchAll(/#(\d+)/g)].map((n) => n[1]!)));
+}
+
+/** Whether `diff`, `git diff -U0` of `file` as the remote has it, `before`,
+ * only takes rows off a known list, `test/<name>-known.txt`, each under an
+ * issue's heading, `#<n> ..`, of `fixes`, the heading too where it goes
+ * with them: one added, or under another's heading, a `#difference`'s say,
+ * isn't. */
+export function fixedRowsOnly(file: string, before: string, diff: string, fixes: Set<string>): boolean {
+  if (!/^test\/[^/]+-known\.txt$/.test(file)) return false;
+  const lines = before.split("\n");
+  let removed = 0;
+  for (const line of diff.split("\n")) {
+    if (line.startsWith("+") && !line.startsWith("+++")) return false;
+    const hunk = line.match(/^@@ -(\d+)(?:,(\d+))? \+/);
+    if (hunk === null) continue;
+    const from = Number(hunk[1]);
+    const count = hunk[2] === undefined ? 1 : Number(hunk[2]);
+    for (let at = from - 1; at < from - 1 + count; at++) {
+      // A blank line between sections goes with either.
+      if (lines[at]!.trim() === "") continue;
+      let heading = at;
+      while (heading >= 0 && !lines[heading]!.startsWith("#")) heading--;
+      const issue = heading < 0 ? undefined : lines[heading]!.match(/^#(\d+)\b/)?.[1];
+      if (issue === undefined || !fixes.has(issue)) return false;
+      removed++;
+    }
+  }
+  return removed > 0;
 }
 
 /** What to say of `found`: nothing, or the refusal, each file and what it

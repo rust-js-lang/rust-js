@@ -813,7 +813,10 @@ checked:
 - **Each change is a commit on `main`, pushed directly**: no branches, no
   pull requests. Its message is titled `feat(rust-js): …`.
 - **`bun run push` is the one way to push** (`scripts/push.ts`). It
-  rebases onto `origin/main` (a conflict stops it, aborted), rebuilds,
+  rebases onto `origin/main` (a conflict stops it, aborted); refuses, in
+  seconds, what would refuse it later (`fast`: push-guard's rule below,
+  and the mutation catalog's tests that each mutation applies once and
+  names a test of its file, `FAST_TESTS`); rebuilds,
   makes `std/` again and refuses where it differs from what's committed,
   type-checks each mutation of a file the change touches, or of a
   mutation list it touches (`bun scripts/mutations.ts --typecheck=<base>`,
@@ -875,7 +878,9 @@ checked:
   it edited too). Squash onto the merge base and rebase; to revert a
   commit on purpose, or take away all a recent commit added, a slow spot's
   row once it's fixed say, name it in the message ("This reverts commit
-  <sha>").
+  <sha>"). Rows taken off a `test/*-known.txt` under the heading of an
+  issue a pushed commit `Fixes` are that issue fixed, never a revert.
+  `bun run push` runs the same rule first, in its `fast` phase.
 - **A push that fails**, GitHub down say, isn't a reason to stop: keep
   committing on `main` locally, and push when it works again.
 - **The check comes with the push**: its mutations are those of what

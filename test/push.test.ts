@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { appendedBoth, beside, lineSet, lowerRatchets, mergedChanges, mergedLineSet, ratchets, regenerated, remakeable } from "../scripts/push";
+import { appendedBoth, beside, FAST_TESTS, lineSet, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, regenerated, remakeable } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -162,4 +162,27 @@ test("what runs beside a round's check, stopped, leaves nothing it started runni
   expect(await it.done).not.toBe(0);
   for (let i = 0; i < 250 && running().length > 0; i++) await Bun.sleep(20);
   expect(running()).toEqual([]);
+});
+
+// What would refuse a push minutes in, or at its end, refuses it first, in
+// seconds (`fast`): push-guard's `undone`, the rule git's hook runs as it
+// pushes, after the whole check; and the mutation catalog's tests of a
+// `find` its code moved past or a test renamed, which check:fast reaches
+// minutes in.
+test("a push's fast phase runs first, push-guard's rule and the catalog's quick tests", () => {
+  expect(phases.slice(0, 3)).toEqual(["rebase", "fast", "build"]);
+  const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  const main = source.slice(source.indexOf("async function main"));
+  const at = (text: string) => main.indexOf(text);
+  expect(at('undone(process.cwd(), base, "HEAD")')).toBeGreaterThan(0);
+  expect(at('undone(process.cwd(), base, "HEAD")')).toBeLessThan(at('run("build"'));
+  const fast = at('run("fast", ');
+  expect(fast).toBeGreaterThan(0);
+  expect(main.slice(fast, main.indexOf("\n", fast))).toContain("...FAST_TESTS]");
+  expect(fast).toBeLessThan(at('run("build"'));
+  // Each of its tests is one of its file's.
+  const [file, flag, pattern] = FAST_TESTS;
+  expect(flag).toBe("-t");
+  const names = readFileSync(join(root, file!), "utf8");
+  for (const name of pattern!.split("|")) expect([name, names.includes(`test("${name}`)]).toEqual([name, true]);
 });

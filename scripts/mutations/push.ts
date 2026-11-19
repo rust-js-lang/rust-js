@@ -154,4 +154,20 @@ export const mutations: Mutation[] = [
     replace: '      process.kill(group, "SIGTERM");\n',
     tests: ["test/push.test.ts", "-t", "beside"],
   },
+  {
+    name: "push-fast-unguarded",
+    breaks: "a push that undoes another's commit is refused only by git's hook as it pushes, after its whole check, not first",
+    file: "scripts/push.ts",
+    find: '      const found = undone(process.cwd(), base, "HEAD");\n      if (found.length > 0) throw new Refused(refusal(found));\n',
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "a push's fast phase runs first"],
+  },
+  {
+    name: "push-fast-tests-after-build",
+    breaks: "the mutation catalog's quick tests run after the build, not first",
+    file: "scripts/push.ts",
+    find: '      run("fast", ["bun", "test", ...FAST_TESTS]);\n',
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "a push's fast phase runs first"],
+  },
 ];

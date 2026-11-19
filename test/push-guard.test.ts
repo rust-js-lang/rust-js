@@ -3,10 +3,10 @@
 // pushed onto, as `git reset --soft origin/main` after a fetch makes one,
 // as 4163f3865 undid 12e759c57.
 import { expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { refusal, undone } from "../scripts/push-guard";
+import { fixedIssues, fixedRowsOnly, refusal, undone } from "../scripts/push-guard";
 import { fixture, root, run } from "./support";
 
 test("a push that undoes a commit already on the remote is refused, but one that names it", () => {
@@ -101,4 +101,38 @@ test("a file as it was before a commit that a later commit already undid undoes 
 test("the guard runs before a push", () => {
   expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.prepare).toBe("git config core.hooksPath .githooks");
   expect(readFileSync(join(root, ".githooks", "pre-push"), "utf8")).toContain("scripts/push-guard.ts");
+});
+
+// Rows taken off a known list, each under the heading of an issue a commit
+// of the push `Fixes`, are that issue fixed, not the commit that listed
+// them undone: #2146's, #2139's and one before were refused so. Rows under
+// another issue's heading, or a row added, still undo it.
+test("rows taken off a known list under an issue the push fixes undo nothing", () => {
+  const dir = fixture("push-guard-known");
+  const git = (...args: string[]) => run(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], undefined, { GIT_DIR: join(dir, ".git"), GIT_WORK_TREE: dir }).trim();
+  git("init", "-q", "-b", "main");
+  mkdirSync(join(dir, "test"), { recursive: true });
+  const commit = (message: string, files: Record<string, string>) => {
+    for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, name), text);
+    git("add", "-A");
+    git("commit", "-q", "-m", message);
+    return git("rev-parse", "HEAD");
+  };
+  const known = "test/metamorphic-known.txt";
+  commit("base", { [known]: "// the list\n\n#5 another\nplain a.rs\n" });
+  const listed = commit("list #7's rows", { [known]: "// the list\n\n#5 another\nplain a.rs\n\n#7 a bug\nplain b.rs\nstd c.rs\n" });
+  const fix = (message: string, text: string) => {
+    git("checkout", "-q", listed);
+    return commit(message, { [known]: text });
+  };
+  const without7 = "// the list\n\n#5 another\nplain a.rs\n\n#7 a bug\n";
+  expect(undone(dir, listed, fix("the fix (Fixes #7)", without7))).toEqual([]);
+  expect(undone(dir, listed, fix("the fix (Fixes #6, #7; ADR 1 amended)", "// the list\n\n#5 another\nplain a.rs\n"))).toEqual([]);
+  const base = "// the list\n\n#5 another\nplain a.rs\n";
+  expect(undone(dir, listed, fix("the fix (Fixes #8)", base)).map((u) => u.commit)).toEqual([listed]);
+  expect(undone(dir, listed, fix("no fix", base)).map((u) => u.commit)).toEqual([listed]);
+  expect(fixedRowsOnly(known, "#5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(true);
+  expect(fixedRowsOnly(known, "#5 x\nplain a.rs\n", "@@ -2 +2 @@\n-plain a.rs\n+plain b.rs\n", fixedIssues("Fixes #5"))).toBe(false);
+  expect(fixedRowsOnly(known, "#difference 5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(false);
+  expect(fixedRowsOnly("src/a-known.txt", "#5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(false);
 });

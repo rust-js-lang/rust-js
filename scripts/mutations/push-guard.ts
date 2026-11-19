@@ -18,4 +18,28 @@ export const mutations: Mutation[] = [  {
     replace: "      if (appliesTo(",
     tests: ["test/push-guard.test.ts", "-t", "a later commit already undid"],
   },
+  {
+    name: "push-guard-fixed-rows-undo",
+    breaks: "rows a push takes off a known list under an issue it fixes are read as undoing the commit that listed them, and the push refused (#2146, #2139)",
+    file: "scripts/push-guard.ts",
+    find: "    .filter((file) => !fixedRowsOnly(",
+    replace: "    .filter((file) => file !== \"\" || !fixedRowsOnly(",
+    tests: ["test/push-guard.test.ts", "-t", "rows taken off a known list"],
+  },
+  {
+    name: "push-guard-fixed-rows-any-heading",
+    breaks: "rows a push takes off a known list are let go under any issue's heading, not only one it fixes, so a stale tree's removal of another's rows undoes them unseen",
+    file: "scripts/push-guard.ts",
+    find: "      if (issue === undefined || !fixes.has(issue)) return false;\n",
+    replace: "      if (issue === undefined) return false;\n",
+    tests: ["test/push-guard.test.ts", "-t", "rows taken off a known list"],
+  },
+  {
+    name: "push-guard-first-fixed-issue",
+    breaks: "of a commit that fixes several issues, `Fixes #6, #7`, only the first is read",
+    file: "scripts/push-guard.ts",
+    find: "[...m[1]!.matchAll(/#(\\d+)/g)].map((n) => n[1]!)",
+    replace: "[...m[1]!.matchAll(/#(\\d+)/g)].slice(0, 1).map((n) => n[1]!)",
+    tests: ["test/push-guard.test.ts", "-t", "rows taken off a known list"],
+  },
 ];

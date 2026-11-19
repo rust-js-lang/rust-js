@@ -869,3 +869,27 @@ conflict in a line set keeps what neither side took off and what either
 added, a line both changed stops"; mutations
 `line-set-conflict-stops-the-push`, `line-set-keeps-what-a-side-took-off`,
 `line-set-merges-a-line-both-changed`.
+
+## Amendment: a fast phase refuses first what would refuse a push later (2026-11-19)
+
+Two refusals came late. Push-guard's, that a push undoes a commit on
+`main`, ran only as git's pre-push hook, after the whole check: 4 to 8
+minutes on the Mac mini, spent each time on #2146's, #2139's and one
+before, whose known-list rows it took for an undoing. And the mutation
+catalog's tests that each mutation's `find` applies once and that its
+test pattern names a test of its file ran minutes into check:fast: a
+retarget or a test moved by concept failed there. Now `bun run push`'s
+second phase, `fast`, right after the rebase, runs push-guard's `undone`,
+the one rule the hook runs too, and those two tests (`FAST_TESTS`),
+about a second together, before the build. And rows a push takes off a
+`test/*-known.txt`, each under the heading of an issue one of its commits
+`Fixes`, are that issue fixed, not an undoing of the commit that listed
+them (`fixedRowsOnly`, `fixedIssues`); rows under another issue's
+heading, a `#difference`'s, or a row added still are. A snapshot of a new
+corpus case and the readability baseline stay the corpus run's: which
+cases snapshot is the harness's to say, and the baseline needs the
+corpus compiled. Held by test/push.test.ts's "a push's fast phase runs
+first" and test/push-guard.test.ts's "rows taken off a known list";
+mutations `push-fast-unguarded`, `push-fast-tests-after-build`,
+`push-guard-fixed-rows-undo`, `push-guard-fixed-rows-any-heading` and
+`push-guard-first-fixed-issue`.

@@ -5,6 +5,11 @@
 //   rebase    onto origin/main; a conflict stops it, the rebase aborted, but
 //             one each side's change merges mechanically: a blessed baseline,
 //             a ratchet, an ADR's two amendments, a line set (`remakeable`)
+//   fast      in seconds, what would otherwise refuse it minutes later:
+//             push-guard's `undone`, which git's hook runs as it pushes, at
+//             the end; and the mutation catalog's tests that each mutation
+//             applies once and names a test of its file (`FAST_TESTS`),
+//             which check:fast runs minutes in
 //   build     the compiler
 //   std       std/ made again (`bun run std`), refused where it differs from
 //             what's committed
@@ -52,9 +57,19 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, write
 import { selectionFile } from "./select";
 import { devTimes, ownsTimes } from "./devTimes";
 import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
+import { refusal, undone } from "./push-guard";
 
 /** The phases, in the order they run. */
-export const phases = ["rebase", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
+export const phases = ["rebase", "fast", "build", "std", "mutants", "check", "sanity", "react", "files", "push"] as const;
+
+/** The `fast` phase's tests: the mutation catalog's whose failure, a
+ * `find` its code moved past or a test renamed or moved, check:fast found
+ * minutes in, about a second together. */
+export const FAST_TESTS = [
+  "test/mutations.test.ts",
+  "-t",
+  "every mutation applies to the compiler as it is, once|each mutation's test pattern names a test of its file",
+];
 export type Phase = (typeof phases)[number];
 
 
@@ -139,6 +154,12 @@ async function main() {
       const remade = rebase();
       phase("rebase");
       const base = git("rev-parse", "origin/main").out.trim();
+      // What git's hook refuses as it pushes, and the catalog's own tests,
+      // before minutes of building and checking.
+      const found = undone(process.cwd(), base, "HEAD");
+      if (found.length > 0) throw new Refused(refusal(found));
+      run("fast", ["bun", "test", ...FAST_TESTS]);
+      phase("fast");
       if (checked === "" || git("rev-parse", "HEAD").out.trim() !== checked) {
         for (const file of new Set([...remade, ...(bless ? ["docs/readability.txt"] : [])])) regenerate(file);
         run("build", ["cargo", "build", "--quiet"]);
