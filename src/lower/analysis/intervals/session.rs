@@ -22,6 +22,41 @@ pub(crate) struct Intervals {
     /// Each body's address, of `bodies`' each: what's asked of a block is
     /// of the body proved, never another's.
     proved: Vec<usize>,
+    /// What each body's statements may write (`analysis::Effects::of`), of
+    /// a walk given no libraries and no cell borrows: the call graph's
+    /// components' rounds (`callers`) and the captures' walks
+    /// (`captures`), which walk a body of a component once a round, each
+    /// of its `Effects` the same (#2112 B 3b). Its inputs, each explicit:
+    /// the body, by its address and its `DefId`, MIR the session holds,
+    /// never another's of the same `DefId`; the typing env, the body's own
+    /// `post_analysis`, which `walk` asserts; and the body's rewrites,
+    /// `captures::as_locals` and the fields', of the body alone. Nothing
+    /// else: not what callers give a parameter (`Given`), nor another
+    /// body's summary, which a round refines.
+    effects: IndexMap<(usize, rustc_span::def_id::DefId), std::rc::Rc<crate::lower::analysis::Effects>>,
+}
+
+impl Intervals {
+    /// Of a walk given no libraries and no cell borrows, `body`'s
+    /// `Effects`, made by `make` the first time it's asked (`effects`).
+    pub(super) fn effects_of<'tcx>(
+        tcx: TyCtxt<'tcx>,
+        body: &Body<'tcx>,
+        make: impl FnOnce() -> crate::lower::analysis::Effects,
+    ) -> std::rc::Rc<crate::lower::analysis::Effects> {
+        let key = (std::ptr::from_ref(body).addr(), body.source.def_id());
+        let caches = crate::lower::session::caches(tcx);
+        if let Some(known) = caches.intervals.borrow().effects.get(&key) {
+            return std::rc::Rc::clone(known);
+        }
+        let made = std::rc::Rc::new(make());
+        caches
+            .intervals
+            .borrow_mut()
+            .effects
+            .insert(key, std::rc::Rc::clone(&made));
+        made
+    }
 }
 
 /// What `--intervals-shadow` records: each line.

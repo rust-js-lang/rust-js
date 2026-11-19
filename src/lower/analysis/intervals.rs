@@ -128,7 +128,7 @@ struct Walk<'a, 'tcx> {
     kept_rows: IndexSet<Ty<'tcx>>,
     /// What each statement may write, the one answer of what nothing known
     /// of may survive it (`analysis::Effects`, #2112 B).
-    effects: Option<crate::lower::analysis::Effects>,
+    effects: Option<std::rc::Rc<crate::lower::analysis::Effects>>,
     /// Each statement's location, by its address, which the transfer asks
     /// the query of (`transfer`).
     located: IndexMap<usize, Location>,
@@ -172,6 +172,7 @@ fn walk<'a, 'tcx>(
     ),
 ) -> Walk<'a, 'tcx> {
     let made = body.local_decls.len();
+    let original = body;
     let (body, captured) = match captures::as_locals(tcx, body) {
         Some((rewritten, captured)) => (std::borrow::Cow::Owned(rewritten), captured),
         None => (std::borrow::Cow::Borrowed(body), Vec::new()),
@@ -204,9 +205,16 @@ fn walk<'a, 'tcx>(
     };
     let unnamed = cell_borrows.map(|cells| move |ty| cells.unnamed_may_borrow(tcx, ty));
     let unnamed = unnamed.as_ref().map(|f| f as &dyn Fn(Ty<'tcx>) -> bool);
-    walk.effects = Some(crate::lower::analysis::Effects::of(
-        tcx, typing_env, &walk.body, libraries, made, unnamed,
-    ));
+    let effects = || crate::lower::analysis::Effects::of(tcx, typing_env, &walk.body, libraries, made, unnamed);
+    walk.effects = Some(match (libraries.is_none(), cell_borrows.is_none()) {
+        // Of a component's rounds and the captures' walks, each its own
+        // body's, the same each time (`Intervals::effects`).
+        (true, true) => {
+            debug_assert_eq!(typing_env, ty::TypingEnv::post_analysis(tcx, original.source.def_id()));
+            session::Intervals::effects_of(tcx, original, effects)
+        }
+        _ => std::rc::Rc::new(effects()),
+    });
     walk.located = (walk.body.basic_blocks.iter_enumerated())
         .flat_map(|(block, data)| {
             (data.statements.iter().enumerate())

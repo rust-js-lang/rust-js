@@ -56,7 +56,7 @@ impl<'tcx> Walk<'_, 'tcx> {
 
     /// The effects query, where the session asks it of the transfer.
     fn by_effects(&self) -> Option<&crate::lower::analysis::Effects> {
-        self.effects.as_ref()
+        self.effects.as_deref()
     }
 }
 
