@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/iter.js",
     find: "  return it != null && it[$arrayIterKey] === true;\n",
     replace: "  return it != null && it.items !== undefined;\n",
-    tests: ["test/iterator-steps.test.ts", "-t", "known by its mark"],
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "known by its mark"],
   },
   {
     name: "array-iter-unmarked",
@@ -80,6 +80,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/iter.js",
     find: "  it[$arrayIterKey] = true;\n",
     replace: "",
-    tests: ["test/iterator-steps.test.ts", "-t", "known by its mark"],
+    tests: ["test/corpus.test.ts", "test/lowering-generic-iterators.test.ts", "-t", "^dyn_iterator_size_hints.rs$|known by its mark"],
   },
 ];

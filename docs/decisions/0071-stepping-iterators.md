@@ -227,5 +227,5 @@ No case reached them with a crate's struct, which is wrapped by `$iterator` firs
 docs/architecture.md's owner table holds it: the row's primitive is `$arrayIterKey`, read only by iter.js. `.items !== undefined` and `.items === undefined`, the guesses it replaced, may be read by no other source either (ADR 1175, amended).
 
 Held by:
-- test/iterator-steps.test.ts's "an array's iterator is known by its mark, not its shape";
+- test/lowering-generic-iterators.test.ts's "an array's iterator is known by its mark, not its shape";
 - the mutations `array-iter-by-shape` and `array-iter-unmarked` (runtime/iter.ts).

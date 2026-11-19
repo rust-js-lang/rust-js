@@ -81,6 +81,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/cmp_items.js",
     find: "  const [lower, upper] = $sizeHint(it);\n  if (lower !== upper)",
     replace: "  const [lower, upper] = [0, 0];\n  if (lower !== upper)",
-    tests: ["test/iterator-steps.test.ts", "-t", "LengthFirst form"],
+    tests: ["test/crates.test.ts", "test/iterator-steps.test.ts", "-t", "length_first_eq|LengthFirst form"],
   },
 ];

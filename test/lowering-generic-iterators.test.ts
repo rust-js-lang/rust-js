@@ -304,6 +304,23 @@ test("an iterator that doesn't know its back is never stepped as an empty array"
   expect([...$iter([1, 2])]).toEqual([1, 2]);
 });
 
+// An array's iterator is known by `$iter`'s mark, `$arrayIter`, never by an
+// `items` field, which a crate's struct may have (#2159): its clone, `$iter`
+// of its items again, is one too.
+test("an array's iterator is known by its mark, not its shape", async () => {
+  // The runtime a compiled module imports, a mutant's too.
+  const dir = fixture("array-iter-mark");
+  writeFileSync(join(dir, "lib.rs"), "pub fn none() {}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  writeFileSync(join(dir, "iter.js"), 'export { $iter, $arrayIter } from "@rust-js/std";\n');
+  const { $iter, $arrayIter } = await import(join(dir, "iter.js"));
+  const it = $iter([1, 2, 3]);
+  expect($arrayIter(it)).toBe(true);
+  expect($arrayIter($iter(it.items.slice(it.at, it.end)))).toBe(true);
+  const struct = { items: [1, 2, 3], at: 0, end: 3, len: () => 3 };
+  expect([$arrayIter(struct), $arrayIter(undefined), $arrayIter([1])]).toEqual([false, false, false]);
+});
+
 // A generic collect of items with a destructor asks its caller their
 // in-place layout only where its lowering reads it, a \`Vec\` it collects
 // itself: not one a \`B: FromIterator\` bound's dictionary collects, nor one

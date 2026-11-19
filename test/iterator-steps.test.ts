@@ -399,17 +399,6 @@ for (const [stdForm, form, make] of forms) {
   });
 }
 
-// An array's iterator is known by `$iter`'s mark, `$arrayIter`, never by an
-// `items` field, which a crate's struct may have (#2159): its clone, `$iter`
-// of its items again, is one too.
-test("an array's iterator is known by its mark, not its shape", () => {
-  const it = std.$iter([1, 2, 3]);
-  expect(std.$arrayIter(it)).toBe(true);
-  expect(std.$arrayIter(std.$iter(it.items.slice(it.at, it.end)))).toBe(true);
-  const struct = { items: [1, 2, 3], at: 0, end: 3, len: () => 3 };
-  expect([std.$arrayIter(struct), std.$arrayIter(undefined), std.$arrayIter([1])]).toEqual([false, false, false]);
-});
-
 // Each form generic code's `eq` is given `LengthFirst` `true` of
 // (`length_first`, `counts_where_given`, #1182) is counted by its hint, as
 // std's `SpecIterEq` reads it: exact, its length, and its `len()` where it
