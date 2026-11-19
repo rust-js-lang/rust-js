@@ -98,4 +98,20 @@ export const mutations: Mutation[] = [
     replace: "  const steps: Step[] = jobs.nets?.steps ?? [];\n",
     tests: ["test/ci.test.ts", "-t", "the short nets are the steps of the jobs of nets"],
   },
+  {
+    name: "mutation-shards-of-setup-alone",
+    breaks: "a check's mutation shards are sized by their setup alone, not their mutations' times, so two of 300 s share one 11-min shard",
+    file: "scripts/ci.ts",
+    find: "SHARD_SETUP_SECONDS + load[i]! + (",
+    replace: "SHARD_SETUP_SECONDS + (",
+    tests: ["test/ci.test.ts", "-t", "a check's mutations are split by their expected time"],
+  },
+  {
+    name: "mutation-shards-browser-uncounted",
+    breaks: "a mutation shard whose test drives a browser is sized without the browser's install, 7 min more than it's sized for",
+    file: "scripts/ci.ts",
+    find: "(names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0)",
+    replace: "0",
+    tests: ["test/ci.test.ts", "-t", "a check's mutations are split by their expected time"],
+  },
 ];

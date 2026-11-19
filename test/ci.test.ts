@@ -515,10 +515,27 @@ test("the nightly, here, has each job the nightly has", () => {
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
-// A check's mutations on as many machines as keeps each near twenty, about
-// as long as the suite takes on its two: MIR's run suites of seconds each.
-test("a check's mutations are split to about twenty a machine", () => {
-  expect([0, 20, 21, 40, 41, 80, 81, 160, 161, 400].map(mutationShards)).toEqual(["1", "1", "2", "2", "4", "4", "8", "8", "16", "16"]);
+// A check's mutations on the fewest machines of `MUTATION_SHARDS` whose
+// every shard, dealt as the shards deal by what each took, is expected to
+// end in `SHARD_BUDGET_SECONDS`: its mutations' times, its setup, and a
+// browser's install where one of its tests drives one. Sized by count, one
+// shard of a change's slow mutations took 21 min and another 4.
+test("a check's mutations are split by their expected time, each shard under its budget", () => {
+  const m = (name: string, file = `src/${name}.rs`, tests = ["test/corpus.test.ts", "-t", name]) => ({ name, file, tests });
+  const none = () => false;
+  expect(mutationShards([], new Map(), none)).toBe("1");
+  // Untimed, each a check's twentieth of five minutes, `UNTIMED_SECONDS`.
+  expect(mutationShards(Array.from({ length: 36 }, (_, i) => m(`u${i}`)), new Map(), none)).toBe("1");
+  expect(mutationShards(Array.from({ length: 37 }, (_, i) => m(`u${i}`)), new Map(), none)).toBe("2");
+  // Timed: two of 300 s fit one shard each, never one, whatever their count.
+  const slow = [m("a"), m("b")];
+  expect(mutationShards(slow, new Map([["a", 300], ["b", 300]]), none)).toBe("2");
+  expect(mutationShards(slow, new Map([["a", 200], ["b", 300]]), none)).toBe("1");
+  // A browser's install where a test drives one: the shard it's dealt to.
+  const browsing = [m("a", "src/a.rs", ["test/browser.test.ts"]), m("b")];
+  expect(mutationShards(browsing, new Map([["a", 100], ["b", 100]]), (file) => file === "test/browser.test.ts")).toBe("2");
+  // One longer than the budget alone takes the most.
+  expect(mutationShards([m("a")], new Map([["a", 4000]]), none)).toBe(String(MUTATION_SHARDS.at(-1)));
 });
 
 const run = (headBranch: string, databaseId: number, status: string, conclusion: string, headSha = `sha${databaseId}`) =>

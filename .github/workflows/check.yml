@@ -22,7 +22,7 @@ on:
         type: string
         default: 'origin/main'
       mutation_shards:
-        description: 'Machines the mutations are split across, as many as keeps each near forty: ci:check counts them.'
+        description: 'Machines the mutations are split across, the fewest whose every shard is expected to end in 10 min: ci:check sizes them by the mutations'' times.'
         type: choice
         options: ['1', '2', '4', '8', '16']
         default: '1'
@@ -839,10 +839,11 @@ jobs:
       max_parallel: ${{ inputs.max_parallel }}
 
   # The mutations the change touches (ADR 0093): those in the functions and
-  # tests it changes, and those it adds or edits, on as many machines as
-  # ci:check counts they need, and what the last check didn't catch beside
-  # them; of a change that touches none, as `plan` says, none. Nightly runs
-  # all of them, on 16 machines.
+  # tests it changes, and those it adds or edits, and what the last check
+  # didn't catch beside them, on the fewest machines whose every shard is
+  # expected to end in 10 min, by the mutations' times (`plan`'s `shards`,
+  # scripts/ci.ts's `mutationShards`); of a change that touches none, as
+  # `plan` says, none. Nightly runs all of them, on 16 machines.
   mutations:
     needs: plan
     if: ${{ inputs.part != 'suite' && (inputs.nightly || needs.plan.outputs.mutations == 'true') }}

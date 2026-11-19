@@ -499,12 +499,16 @@ jobs:
           kill -- -"$runner" "$watching" 2>/dev/null || true
           exit "$status"
       # What each mutation took, its build and its tests, passed or not: for
-      # the shards to be balanced by, and to see where a run's time goes.
+      # the shards to be balanced by, and to see where a run's time goes;
+      # and the shard's phases, each with its time, `phases.json`, a few
+      # hundred bytes, which no merge reads.
       - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: mutation-timings-${{ matrix.shard }}
-          path: target/mutants/timings.json
+          path: |
+            target/mutants/timings.json
+            target/mutants/phases.json
           if-no-files-found: ignore
       # What it found of each mutation, of the commit it ran at: the next
       # check of `main` runs what changed since and what this didn't catch

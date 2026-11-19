@@ -73,8 +73,21 @@ export function balancedByGroup<T extends string>(items: T[], index: number, cou
   if (!Number.isInteger(index) || !Number.isInteger(count) || index < 1 || index > count) {
     throw new Error(`a shard is 1 to ${count}, not ${index}`);
   }
+  return dealtByGroup(items, count, seconds, groupOf).shards[index - 1]!;
+}
+
+/** What a mutation no run timed is expected to take where no run timed
+ * any: a check's twenty a machine in five minutes or so. Alike, they're
+ * dealt in turn. */
+export const UNTIMED_SECONDS = 15;
+
+/** `balancedByGroup`'s deal of `items` to `count` shards: each shard's
+ * items, sorted, and what it's expected to take, in seconds, its untimed
+ * items by their estimate. `plan` sizes the mutations' machines by it, as
+ * each shard deals its own by it. */
+export function dealtByGroup<T extends string>(items: T[], count: number, seconds: ReadonlyMap<string, number>, groupOf: (item: string) => string | undefined): { shards: T[][]; load: number[] } {
   const all = [...seconds.values()].sort((a, b) => a - b);
-  const p90 = all.length === 0 ? 1 : all[Math.min(all.length - 1, Math.floor(all.length * 0.9))]!;
+  const p90 = all.length === 0 ? UNTIMED_SECONDS : all[Math.min(all.length - 1, Math.floor(all.length * 0.9))]!;
   const byGroup = new Map<string, number[]>();
   for (const [name, time] of seconds) {
     const group = groupOf(name);
@@ -88,17 +101,17 @@ export function balancedByGroup<T extends string>(items: T[], index: number, cou
   const untimed = items.filter((item) => !seconds.has(item)).sort((a, b) => estimate(b) - estimate(a) || byName(a, b));
   const timed = items.filter((item) => seconds.has(item)).sort((a, b) => seconds.get(b)! - seconds.get(a)! || byName(a, b));
   const load = new Array<number>(count).fill(0);
-  const mine: T[] = [];
+  const shards: T[][] = Array.from({ length: count }, () => []);
   untimed.forEach((item, k) => {
     load[k % count] = load[k % count]! + estimate(item);
-    if (k % count === index - 1) mine.push(item);
+    shards[k % count]!.push(item);
   });
   for (const item of timed) {
     const least = leastLoaded(load);
     load[least] = load[least]! + seconds.get(item)!;
-    if (least === index - 1) mine.push(item);
+    shards[least]!.push(item);
   }
-  return mine.sort();
+  return { shards: shards.map((shard) => shard.sort()), load };
 }
 
 /** What each took of the runs' `timings.json`s under `dir`, in seconds, by

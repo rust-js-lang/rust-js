@@ -1664,6 +1664,16 @@ export function retiredBy(message: string): Set<string> {
 
 async function main() {
   const args = process.argv.slice(2);
+  // Where the run's time goes, phase by phase, written beside its
+  // mutations' times, `phases.json`, which CI uploads with them: of a
+  // shard, its setup, the compiler as it is, the pre-check and its mutants.
+  const phases: { phase: string; seconds: number }[] = [];
+  let phaseBegan = performance.now();
+  const phaseEnded = (phase: string) => {
+    const now = performance.now();
+    phases.push({ phase, seconds: Math.round((now - phaseBegan) / 100) / 10 });
+    phaseBegan = now;
+  };
   // A flag it doesn't know is refused, not run past: `--list`, before it
   // was one, ran all a change's mutations (#923); and one that takes a
   // value given none, a bare `--changed`, which ran every one (#2001).
@@ -1766,8 +1776,10 @@ async function main() {
   const buildsItself = buildsUnmutated({ crate: chosen.some(m => !sources.has(m)), harness, given: existsSync(given) });
   if (buildsItself) snapshotCrate(join(work, "snapshot"));
   if (retiring !== undefined) return retire(chosen);
+  phaseEnded("setup");
   const unmutated = buildsItself ? await build() : given;
   if (typeof unmutated !== "string") throw new Error(`the compiler as it is ${unmutated.problem}`);
+  phaseEnded("the compiler as it is");
   // And they use the compiler they're given: with one that compiles
   // nothing, each fails, or a mutation passing them would say nothing.
   // Its directory too: a run of source mutations alone builds no
@@ -1855,6 +1867,7 @@ async function main() {
     }
   }
   if (problems.length > 0) throw new Error(problems.join("\n\n"));
+  phaseEnded("each mutation's tests as the compiler is");
   // Each build by one of `--jobs` workers, each building in a crate of its
   // own, as many as the cores and the memory hold (`compilerBuilds`): two
   // on a CI machine's four cores, the second's first build cold, a minute or
@@ -2172,6 +2185,9 @@ async function main() {
   const slowest = [...took].sort(([, a], [, b]) => b.build + b.tests - (a.build + a.tests)).slice(0, 10);
   for (const [mutation, time] of slowest) console.log(`slow\t${mutation.name}\tbuild ${shown(time.build)}, tests ${shown(time.tests)}`);
   writeFileSync(join(work, "timings.json"), JSON.stringify(Object.fromEntries([...took].map(([mutation, time]) => [mutation.name, time])), null, 2) + "\n");
+  phaseEnded("the mutants, built and judged");
+  writeFileSync(join(work, "phases.json"), JSON.stringify(phases, null, 2) + "\n");
+  for (const { phase, seconds } of phases) console.log(`phase\t${phase}\t${shown(seconds)}`);
   writeResults(
     new Map(rows.map(([mutation, result]) => [mutation.name, result])),
     new Map(rows.flatMap(([mutation, result]) => {

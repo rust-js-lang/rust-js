@@ -19,10 +19,10 @@ import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
-import { changedSince, mutations } from "./mutations";
+import { changedSince, type Mutation, mutations } from "./mutations";
 import { outcome, type Selection, selectChange } from "./select";
 import { downloaded } from "./artifacts";
-import { shardTimings, testFileSeconds, timingsUnder } from "./shard";
+import { dealtByGroup, drivesBrowser, shardTimings, testFileSeconds, timingsUnder } from "./shard";
 import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -218,11 +218,37 @@ function attributionOf(run: number, name: string): string[] {
  * but the few its other jobs hold for their first minutes. */
 export const MUTATION_SHARDS = [1, 2, 4, 8, 16];
 
-/** Machines for a check's mutations, as many as keeps each near twenty,
- * five minutes or so, as long as the suite on its two. */
-export function mutationShards(count: number): string {
-  const wanted = Math.ceil(count / 20);
-  return String(MUTATION_SHARDS.find((n) => n >= wanted) ?? MUTATION_SHARDS.at(-1));
+/** What a mutation shard takes beside its mutations: its checkout, its
+ * packages, the toolchain and the caches restored (m1-lisa's measure of
+ * main's checks, 2026-11-19). */
+export const SHARD_SETUP_SECONDS = 60;
+/** And beside them, where a test one of its mutations runs drives a
+ * browser (`drivesBrowser`): Chromium installed. */
+export const SHARD_BROWSER_SECONDS = 420;
+/** The longest a check's mutation shard is meant to take, about the suite's
+ * shards' time: its machines are the fewest that keep each under it. */
+export const SHARD_BUDGET_SECONDS = 600;
+
+/** Machines for a check's mutations, `chosen`: the fewest of
+ * `MUTATION_SHARDS` whose every shard, as the shards deal them by what
+ * each took, `seconds` (`dealtByGroup`, each's untimed by its file's), is
+ * expected to take `SHARD_BUDGET_SECONDS` or less: its mutations' times,
+ * its setup, and a browser's where one of its tests drives one,
+ * `browser`. Sized by count, twenty a machine, one shard of a change's
+ * slow mutations took 21 min while others took 4 (main's checks of
+ * 2026-11-19); else the most. */
+export function mutationShards(
+  chosen: { name: string; file: string; tests?: string[] }[],
+  seconds: ReadonlyMap<string, number>,
+  browser: (file: string) => boolean,
+): string {
+  const fileOf = new Map(chosen.map((m) => [m.name, m.file]));
+  const drives = new Map(chosen.map((m) => [m.name, m.tests !== undefined && browser(m.tests[0]!)]));
+  const fits = (count: number) => {
+    const { shards, load } = dealtByGroup(chosen.map((m) => m.name), count, seconds, (name) => fileOf.get(name));
+    return shards.every((names, i) => SHARD_SETUP_SECONDS + load[i]! + (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0) <= SHARD_BUDGET_SECONDS);
+  };
+  return String(MUTATION_SHARDS.find(fits) ?? MUTATION_SHARDS.at(-1));
 }
 
 /** Start the check of `branch`, as it's pushed: the local one, if it's
@@ -240,8 +266,10 @@ async function check(branch: string, shards: string | undefined, since?: string)
   const base = since ?? (branch === "main" ? (checkedSince(runs(), branch, runMutationsPassed) ?? `${local}~1`) : "origin/main");
   // As many machines as the mutations it runs need, which are this
   // checkout's, as it's pushed.
-  const count = (await changedSince(base)).length;
-  const machines = mutationShards(count);
+  const chosen = await changedSince(base);
+  const count = chosen.length;
+  const timings = plannedMutationTimings();
+  const machines = mutationShards(chosen, timings === "" ? new Map() : decodedTimings(timings, mutations.map((m) => m.name)), (file) => drivesBrowser(root, file));
   // The suite's machines are the workflow's own, unless `--shards=` says.
   const suite = shards === undefined ? [] : ["-f", `test_shards=${shards}`];
   gh(["workflow", "run", workflow, `--ref=${branch}`, ...suite, "-f", `since=${base}`, "-f", `mutation_shards=${machines}`], { write: true });
@@ -267,23 +295,25 @@ async function plan(given?: string) {
       retry = base?.retry ?? [];
     } catch {}
   }
-  let count = 0;
+  let touched: Mutation[] = [];
   try {
-    count = (await changedSince(since)).length;
+    touched = await changedSince(since);
   } catch {
     since = "HEAD~1";
-    count = (await changedSince(since)).length;
+    touched = await changedSince(since);
   }
   // The mutations run only where the change touches one, its site, its
   // list or its tests: what the last check didn't catch, of code as it
   // was, isn't caught now either. A run of none is passed over by the
   // next one's `resultsBase`, which keeps the base and what to retry.
-  const mutating = count > 0;
-  count += retry.length;
+  const mutating = touched.length > 0;
+  const chosen = [...touched, ...mutations.filter((m) => retry.includes(m.name) && !touched.includes(m))];
+  const timings = plannedMutationTimings();
+  const seconds = timings === "" ? new Map<string, number>() : decodedTimings(timings, mutations.map((m) => m.name));
   const changed = Bun.spawnSync(["git", "diff", "--name-only", since, "HEAD"], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   console.log(`since=${since}`);
   console.log(`retry=${retry.join(",")}`);
-  console.log(`shards=${mutationShards(count)}`);
+  console.log(`shards=${mutationShards(chosen, seconds, (file) => drivesBrowser(root, file))}`);
   console.log(`iterators=${touchesIterators(changed)}`);
   console.log(`formatting=${touchesFormatting(changed)}`);
   console.log(`numbers=${touchesNumbers(changed)}`);
@@ -298,7 +328,7 @@ async function plan(given?: string) {
   console.log(`memory=${touchesMemory(changed)}`);
   console.log(`intervals=${touchesIntervals(changed)}`);
   console.log(`mutations=${mutating}`);
-  console.log(`mutation_timings=${plannedMutationTimings()}`);
+  console.log(`mutation_timings=${timings}`);
   console.log(`test_timings=${plannedTestTimings()}`);
   console.log(`wasm=${touchesWasm(changed)}`);
   console.log(`rustc=${touchesRustc(changed)}`);

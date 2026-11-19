@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "untimed-mutations-to-the-least",
     breaks: "a change's untimed mutations are dealt to the least loaded shard, all to one when they're estimated alike, not in turn",
     file: "scripts/shard.ts",
-    find: "    load[k % count] = load[k % count]! + estimate(item);\n    if (k % count === index - 1) mine.push(item);\n",
-    replace: "    const at = leastLoaded(load.map((l, i) => (i === 0 ? -1 : l)));\n    load[at] = load[at]! + estimate(item);\n    if (at === index - 1) mine.push(item);\n",
+    find: "    load[k % count] = load[k % count]! + estimate(item);\n    shards[k % count]!.push(item);\n",
+    replace: "    const at = leastLoaded(load.map((l, i) => (i === 0 ? -1 : l)));\n    load[at] = load[at]! + estimate(item);\n    shards[at]!.push(item);\n",
     tests: ["test/ci.test.ts", "-t", "a change's untimed mutations are dealt first"],
   },
   {
