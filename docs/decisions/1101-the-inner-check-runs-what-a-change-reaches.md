@@ -893,3 +893,16 @@ first" and test/push-guard.test.ts's "rows taken off a known list";
 mutations `push-fast-unguarded`, `push-fast-tests-after-build`,
 `push-guard-fixed-rows-undo`, `push-guard-fixed-rows-any-heading` and
 `push-guard-first-fixed-issue`.
+
+## Amendment (2026-11-19): rows taken off under an issue the push `Refs`
+
+push-guard read rows a push takes off a `test/*-known.txt` as that
+issue fixed only under the heading of an issue it `Fixes`. A partial fix
+of an issue of many rows, #1892's one neighbours row of four, which the
+issue keeps open for the rest, cites it `Refs`, and was refused as undoing
+the commit that listed the row. Now `fixedIssues` reads the issues a push
+names, `Fixes` or `Refs`: naming the issue is what makes taking its rows
+off deliberate. Rows under an issue no commit names, under a
+`#difference`, or a row added still undo the commit that listed them.
+test/push-guard.test.ts: a `Refs` row comes off, one under an unnamed
+issue is still refused. Mutation `push-guard-refs-rows-undo`.

@@ -104,10 +104,12 @@ test("the guard runs before a push", () => {
 });
 
 // Rows taken off a known list, each under the heading of an issue a commit
-// of the push `Fixes`, are that issue fixed, not the commit that listed
-// them undone: #2146's, #2139's and one before were refused so. Rows under
-// another issue's heading, or a row added, still undo it.
-test("rows taken off a known list under an issue the push fixes undo nothing", () => {
+// of the push names, `Fixes` it or `Refs` it, a partial fix of an issue of
+// many rows, are that issue fixed, not the commit that listed them undone:
+// #2146's, #2139's and one before were refused so, and #1892's one row of
+// four. Rows under another issue's heading, under one no commit names, or a
+// row added, still undo it.
+test("rows taken off a known list under an issue the push names undo nothing", () => {
   const dir = fixture("push-guard-known");
   const git = (...args: string[]) => run(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], undefined, { GIT_DIR: join(dir, ".git"), GIT_WORK_TREE: dir }).trim();
   git("init", "-q", "-b", "main");
@@ -131,7 +133,18 @@ test("rows taken off a known list under an issue the push fixes undo nothing", (
   const base = "// the list\n\n#5 another\nplain a.rs\n";
   expect(undone(dir, listed, fix("the fix (Fixes #8)", base)).map((u) => u.commit)).toEqual([listed]);
   expect(undone(dir, listed, fix("no fix", base)).map((u) => u.commit)).toEqual([listed]);
+  // One row more of #7 listed, then taken off: a partial fix that
+  // `Refs` #7 undoes nothing; one that names it nowhere undoes the listing.
+  git("checkout", "-q", listed);
+  const oneMore = commit("list one more of #7's rows", { [known]: "// the list\n\n#5 another\nplain a.rs\n\n#7 a bug\nplain b.rs\nstd c.rs\nstd d.rs\n" });
+  const partly = (message: string) => {
+    git("checkout", "-q", oneMore);
+    return commit(message, { [known]: "// the list\n\n#5 another\nplain a.rs\n\n#7 a bug\nplain b.rs\nstd c.rs\n" });
+  };
+  expect(undone(dir, oneMore, partly("one of its rows (Refs #7)"))).toEqual([]);
+  expect(undone(dir, oneMore, partly("one of its rows, the issue unnamed")).map((u) => u.commit)).toEqual([oneMore]);
   expect(fixedRowsOnly(known, "#5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(true);
+  expect(fixedRowsOnly(known, "#5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("(Refs #2, #5; ADR 1 amended)"))).toBe(true);
   expect(fixedRowsOnly(known, "#5 x\nplain a.rs\n", "@@ -2 +2 @@\n-plain a.rs\n+plain b.rs\n", fixedIssues("Fixes #5"))).toBe(false);
   expect(fixedRowsOnly(known, "#difference 5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(false);
   expect(fixedRowsOnly("src/a-known.txt", "#5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(false);

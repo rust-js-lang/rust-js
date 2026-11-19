@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [  {
     replace: "[...m[1]!.matchAll(/#(\\d+)/g)].slice(0, 1).map((n) => n[1]!)",
     tests: ["test/push-guard.test.ts", "-t", "rows taken off a known list"],
   },
+  {
+    name: "push-guard-refs-rows-undo",
+    breaks: "rows a push takes off a known list under an issue it `Refs`, a partial fix of an issue of many rows, are read as undoing the commit that listed them, so #1892's one fixed row of four was refused",
+    file: "scripts/push-guard.ts",
+    find: "/\\b(?:Fixes|Refs)\\b([^)\\n]*)/g",
+    replace: "/\\bFixes\\b([^)\\n]*)/g",
+    tests: ["test/push-guard.test.ts", "-t", "rows taken off a known list"],
+  },
 ];

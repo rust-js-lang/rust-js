@@ -112,15 +112,19 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
   return found;
 }
 
-/** The issues the commits `messages` fix: each `#<n>` of a `Fixes ..`,
- * up to its line's end or the parenthesis that closes it. */
+/** The issues the commits `messages` name: each `#<n>` of a `Fixes ..`
+ * or a `Refs ..`, up to its line's end or the parenthesis that closes it.
+ * A `Refs` is a partial fix of an issue of many rows, the rows it takes off
+ * a known list fixed and the rest left under it (#1892's, 2026-11-19);
+ * naming the issue is what makes their removal deliberate. */
 export function fixedIssues(messages: string): Set<string> {
-  return new Set([...messages.matchAll(/\bFixes\b([^)\n]*)/g)].flatMap((m) => [...m[1]!.matchAll(/#(\d+)/g)].map((n) => n[1]!)));
+  return new Set([...messages.matchAll(/\b(?:Fixes|Refs)\b([^)\n]*)/g)].flatMap((m) => [...m[1]!.matchAll(/#(\d+)/g)].map((n) => n[1]!)));
 }
 
 /** Whether `diff`, `git diff -U0` of `file` as the remote has it, `before`,
  * only takes rows off a known list, `test/<name>-known.txt`, each under an
- * issue's heading, `#<n> ..`, of `fixes`, the heading too where it goes
+ * issue's heading, `#<n> ..`, of `fixes`, the issues the push names
+ * (`fixedIssues`), the heading too where it goes
  * with them: one added, or under another's heading, a `#difference`'s say,
  * isn't. */
 export function fixedRowsOnly(file: string, before: string, diff: string, fixes: Set<string>): boolean {
