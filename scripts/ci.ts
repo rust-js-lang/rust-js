@@ -471,11 +471,16 @@ export type Artifact = { name: string; run: number; createdAt: string; expired: 
 /** The run whose shards' timings this run's are balanced by: the newest
  * that uploaded any, `timings-<shard>`, still kept; or none, when no run
  * has, and the shards split by file count, as a first run's do. */
-export function timingsRun(artifacts: Artifact[]): number | undefined {
-  return [...artifacts]
-    .filter((a) => /^timings-\d+$/.test(a.name) && !a.expired)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.run;
+export function timingsRuns(artifacts: Artifact[], count = TIMINGS_RUNS): number[] {
+  const newest = [...artifacts].filter((a) => /^timings-\d+$/.test(a.name) && !a.expired).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return [...new Set(newest.map((a) => a.run))].slice(0, count);
 }
+
+/** How many runs' test times `plan` reads, each file's the newest run's
+ * that timed it: one run's alone, a selection's of a few files, left the
+ * rest untimed, and d1a21768d's check of everything, its first sized by
+ * time, planned 2 shards of the last run's 144. */
+export const TIMINGS_RUNS = 6;
 
 /** In CI, `plan`'s: the test files' times of the last run's `timings-*`
  * artifacts, read once and handed to every test shard alike as its output
@@ -492,19 +497,28 @@ function plannedTestTimings(): string {
     const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
       gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
     );
-    const run = timingsRun(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
-    if (run === undefined) {
+    const runs = timingsRuns(listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
+    if (runs.length === 0) {
       console.error("no run has kept its timings yet: the test shards split by file count");
       return "";
     }
-    const dir = join(root, "target", "test-timings-ran");
-    if (!downloaded(run, ["--pattern=timings-*"], dir)) {
-      console.error(`run ${run}'s timings couldn't be read: the test shards split by file count`);
+    // Each file's time the newest run's that timed it.
+    const paths: string[] = [];
+    for (const run of runs) {
+      const dir = join(root, "target", "test-timings-ran", String(run));
+      if (!downloaded(run, ["--pattern=timings-*"], dir)) {
+        console.error(`run ${run}'s timings couldn't be read: passed over`);
+        continue;
+      }
+      const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
+      paths.push(...files.map((entry) => join(entry.parentPath, entry.name)).sort());
+    }
+    const seconds = testFileSeconds(paths);
+    if (seconds.size === 0) {
+      console.error("no run's timings could be read: the test shards split by file count");
       return "";
     }
-    const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
-    const seconds = testFileSeconds(files.map((entry) => join(entry.parentPath, entry.name)).sort());
-    console.error(`the test shards balance by run ${run}'s timings, ${seconds.size} files'`);
+    console.error(`the test shards balance by runs ${runs.join(", ")}'s timings, ${seconds.size} files', each the newest that timed it`);
     return encodedTestTimings(seconds);
   } catch (error) {
     console.error(`the test files' times couldn't be read, ${error instanceof Error ? error.message : error}: the test shards split by file count`);

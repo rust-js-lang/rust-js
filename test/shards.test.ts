@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, TEST_WALL_PER_RECORDED, testShardList, testShards, timingsRun } from "../scripts/ci";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, TEST_WALL_PER_RECORDED, testShardList, testShards, timingsRuns } from "../scripts/ci";
 import { mutations } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
@@ -361,8 +361,9 @@ test("a mutation's time is its share of its shard, its tests timed only as they 
   expect(shareOfShard({ build: 10, tests: 8 }, 2, 4)).toEqual({ build: 5, tests: 2 });
 });
 
-// The shards balance by the newest run's timings that are still kept, of
-// any branch; none, and they split by file count.
+// The shards balance by the newest runs' timings that are still kept, of
+// any branch, each file's the newest that timed it; none, and they split
+// by file count.
 test("the shards balance by the newest kept timings", () => {
   const artifact = (name: string, run: number, createdAt: string, expired = false) => ({ name, run, createdAt, expired });
   const artifacts = [
@@ -373,9 +374,10 @@ test("the shards balance by the newest kept timings", () => {
     artifact("timings-1", 2, "2026-10-21T07:00:00Z"),
     artifact("timings-extra", 6, "2026-10-21T11:00:00Z"),
   ];
-  expect(timingsRun(artifacts)).toBe(3);
-  expect(timingsRun(artifacts.filter((a) => a.run !== 3))).toBe(2);
-  expect(timingsRun([artifact("bless-test-1", 7, "2026-10-21T12:00:00Z")])).toBeUndefined();
+  expect(timingsRuns(artifacts)).toEqual([3, 2]);
+  expect(timingsRuns(artifacts, 1)).toEqual([3]);
+  expect(timingsRuns(artifacts.filter((a) => a.run !== 3))).toEqual([2]);
+  expect(timingsRuns([artifact("bless-test-1", 7, "2026-10-21T12:00:00Z")])).toEqual([]);
 });
 
 test("a change's untimed mutations are dealt first, in turn, each its file's usual or the timed ones' 90th percentile, so no shard takes several", () => {

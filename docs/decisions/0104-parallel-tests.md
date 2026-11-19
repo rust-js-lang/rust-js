@@ -252,3 +252,10 @@ takes that many (`plan --test-shards=`). check.yml's test matrix is
 Mutations `test-shards-recorded-as-wall`, `test-shards-setup-uncounted`,
 `test-shards-given-ignored`, `test-shards-of-the-timed-alone` and
 `fewest-shards-any-under-budget`.
+
+The times are the newest `TIMINGS_RUNS`, six, runs' that kept them, each
+file's the newest run's that timed it (`timingsRuns`): one run's alone,
+a selection's of a few files, left most untimed, and d1a21768d's check of
+everything, the first sized so, planned 2 shards of the last run's. Six
+runs' artifacts are about 100 KB more downloaded by `plan`, the shards
+none. Mutation `test-timings-of-one-run`.

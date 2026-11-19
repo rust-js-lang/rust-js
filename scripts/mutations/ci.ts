@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "(selection.all ? [...seconds.keys()] : selection.files)",
     tests: ["test/shards.test.ts", "-t", "a check's suite takes the machines its selection's expected time needs"],
   },
+  {
+    name: "test-timings-of-one-run",
+    breaks: "`plan` reads the test files' times of the newest run alone, a selection's of a few files, so a check of everything finds most files untimed and plans too few shards: d1a21768d's planned 2",
+    file: "scripts/ci.ts",
+    find: "export function timingsRuns(artifacts: Artifact[], count = TIMINGS_RUNS): number[] {",
+    replace: "export function timingsRuns(artifacts: Artifact[], count = 1): number[] {",
+    tests: ["test/shards.test.ts", "-t", "the shards balance by the newest kept timings"],
+  },
 ];
