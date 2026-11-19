@@ -132,6 +132,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !crate::lower::recognition::is_std_crate(self.tcx, callee) {
             return Ok(());
         }
+        // Nor a std trait's method that resolves to the crate's impl, which
+        // is one of the crate's functions, its `Arguments` the function as
+        // any is (#1695), whether it writes it a piece at a time or reads
+        // it as text, `args.to_string()` (#2058): what rustc resolves the
+        // call to says, not the trait's path.
+        if let Ok(Some(instance)) = crate::lower::traits::resolve(self.tcx, self.typing_env, callee, generic_args)
+            && !crate::lower::recognition::is_std_crate(self.tcx, instance.def_id())
+        {
+            return Ok(());
+        }
         for (i, value) in values.iter_mut().enumerate() {
             let (Some(operand), Some(&ty)) = (operands.get(i), arg_tys.get(i)) else {
                 continue;

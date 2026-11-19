@@ -2,6 +2,8 @@
 
 Changed on 2026-11-19: `test/ci.test.ts`'s tests of how the suite and the mutations are split into shards, and how many jobs run at once, are `test/shards.test.ts`, fourteen tests, split by concept near the cap.
 
+Changed on 2026-11-19 (#2058): corpus `own_write_fmt_through_generic_dyn_and_macro`, and it and `own_write_fmt_given_a_held_arguments` in `tidy-stages`' few cases.
+
 Changed on 2026-11-19 (#2112, Change C's third step): test/one-none-exits.test.ts, seven tests, holds what an exit that gives `None` as `undefined` gives as it is, by MIR.
 
 Changed on 2026-11-19 (#2112, Change C's second step): a unit test, `lower::mir::none_forms::tests`, holds that a local made `null` is never read as `undefined` alone.

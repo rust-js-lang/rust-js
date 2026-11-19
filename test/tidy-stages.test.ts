@@ -67,6 +67,12 @@ beforeAll(() => {
 // assignments, matches, early exits and drops, and preparation's in their
 // tests, fallbacks, loops and objects.
 const few = [
+  // A writer's own `write_fmt` given an `fmt::Arguments`, reading it as text
+  // or writing it a piece at a time, called by its trait's path, through a
+  // type parameter, a `dyn` or `write!`: without `write_fmt`'s recogniser,
+  // given the function too, as the impl's body takes it (#2058).
+  "own_write_fmt_given_a_held_arguments.rs",
+  "own_write_fmt_through_generic_dyn_and_macro.rs",
   "assignment_order.rs",
   "calculator.rs",
   "catch_unwind_drops.rs",

@@ -73,3 +73,22 @@ it passes it on, `writeFmt: (arg0, arg1) => countingWrite_writeFmt(arg0
 .value, () => arg1)`. What it writes is the text whole, as this ADR
 writes a `write!` into a writer. Held by corpus case
 `writer_with_its_own_write_fmt` against native Rust, and three mutations.
+
+## Amendment (2026-11-19, #2058): what a call resolves to says whose it is
+
+A std trait's method that resolves to a writer's own `write_fmt` is the
+crate's function, its `fmt::Arguments` the function that makes the text
+as any of the crate's functions takes it (#1695): where the call names
+the trait's method, `std::fmt::Write::write_fmt`, its `Arguments` was
+taken for one std formats and called to its text, `args()`, unless the
+writer wrote it a piece at a time. A writer that read it as text,
+`args.to_string()`, then called a string, `TypeError: args is not a
+function`, a wrong answer where `write_fmt`'s recogniser is left out
+(`tidy-stages`, the nightly), latent as the shipped compiler recognises
+the call. `arguments_formatted` asks rustc's resolution of the call
+(`traits::resolve`): an instance whose body isn't std's is the crate's,
+given the function. Rows: corpus `own_write_fmt_given_a_held_arguments`
+and `own_write_fmt_through_generic_dyn_and_macro` (a type parameter's
+bound, a `dyn`, `write!`), each in `tidy-stages`' few cases, run without
+each recogniser against native. Mutation `own-write-fmt-by-trait-path`,
+caught.

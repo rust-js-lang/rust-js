@@ -101,4 +101,12 @@ export const mutations: Mutation[] = [
     replace: "                    Rvalue::Aggregate(_, operands) if false => {\n                        for operand in operands.iter() {\n",
     tests: ["test/corpus.test.ts", "-t", "^arguments_given_to_a_generic_writer.rs$"],
   },
+  {
+    name: "own-write-fmt-by-trait-path",
+    breaks: "a std trait's method that resolves to the crate's own `write_fmt` is taken for std's, so an `Arguments` it reads as text is given as its text, `args()`, where its body calls the function it takes, `args is not a function`, without `write_fmt`'s recogniser (#2058)",
+    file: "src/lower/mir/given_arguments.rs",
+    find: "            && !crate::lower::recognition::is_std_crate(self.tcx, instance.def_id())\n",
+    replace: "            && false\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "own_write_fmt"],
+  },
 ];
