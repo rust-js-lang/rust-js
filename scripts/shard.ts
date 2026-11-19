@@ -81,24 +81,28 @@ export function balancedByGroup<T extends string>(items: T[], index: number, cou
  * dealt in turn. */
 export const UNTIMED_SECONDS = 15;
 
-/** A mutation shard's test slots: `run` starts each work once fewer than
- * `limit` run, in the order they asked. `holder`, where given, gains the
- * seconds the work held its slot, never those it waited for one: timed
- * from its asking, a nightly's mutation waited minutes behind thousands of
- * others' tests, its median 482 s and 90th percentile 987, where a check's
- * run of the same took 2 to 8 (main's merged times of run 44441216357). */
-export function slots(limit: number): <T>(work: () => Promise<T>, holder?: { seconds: number }) => Promise<T> {
+/** A mutation shard's test slots: `run` starts each work once those
+ * running leave `weight` of `limit` free, or none runs, in the order they
+ * asked. `weight`, the cores the work keeps busy, one of a test file's run,
+ * `casePartCores` of a part of a file of cases: counted one each, a sweep
+ * of mutants against the whole corpus ran 12 parts at once on 12 cores, a
+ * load of 32 (2026-11-19). `holder`, where given, gains the seconds the
+ * work held its slot, never those it waited for one: timed from its
+ * asking, a nightly's mutation waited minutes behind thousands of others'
+ * tests, its median 482 s and 90th percentile 987, where a check's run of
+ * the same took 2 to 8 (main's merged times of run 44441216357). */
+export function slots(limit: number): <T>(work: () => Promise<T>, holder?: { seconds: number }, weight?: number) => Promise<T> {
   let running = 0;
   const waiting: (() => void)[] = [];
-  return async (work, holder) => {
-    while (running >= limit) await new Promise<void>((resume) => waiting.push(resume));
-    running++;
+  return async (work, holder, weight = 1) => {
+    while (running > 0 && running + weight > limit) await new Promise<void>((resume) => waiting.push(resume));
+    running += weight;
     const began = performance.now();
     try {
       return await work();
     } finally {
       if (holder !== undefined) holder.seconds += (performance.now() - began) / 1000;
-      running--;
+      running -= weight;
       waiting.splice(0).forEach((resume) => resume());
     }
   };
@@ -279,6 +283,13 @@ export function timingsUnder(dir: string): Map<string, number> {
  * of them timing out: it's bound by its CPU time. */
 export function caseParts(cores: number): number {
   return Math.max(2, Math.floor(cores / 2));
+}
+
+/** The cores a part of a file of cases keeps busy, of `cores`, by
+ * `caseParts`' rule: what a run that starts such parts beside other work
+ * counts each as (`slots`). */
+export function casePartCores(cores: number): number {
+  return Math.max(1, Math.floor(cores / caseParts(cores)));
 }
 
 /** How many parts a file of cases is cut in where a pool of the `cores`

@@ -25,7 +25,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, compilerBuilds, drivesBrowser, machine, memoryBudget, shardArg, shareOfShard, slots, timedShard } from "./shard";
+import { caseParts, casePartCores, compilerBuilds, drivesBrowser, machine, memoryBudget, shardArg, shareOfShard, slots, timedShard } from "./shard";
 import { casesReaching, ensureMap, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -980,7 +980,7 @@ export function ofWholeCorpus(tests: string[]): boolean {
 }
 
 /** `tests` with `compiler`, as `test` runs them, but the corpus whole in
- * `parts` at once, each its `RUST_JS_CASES` and its own slot of `beside`,
+ * `parts` at once, each its `RUST_JS_CASES` and its own slots of `beside`,
  * each to its first failure: what they printed together, passed where
  * every part did, the exit of the first that failed. */
 async function testsInParts(
@@ -988,12 +988,14 @@ async function testsInParts(
   compiler: string,
   snapshots: Snapshots,
   env: Record<string, string> | undefined,
-  beside: <T>(work: () => Promise<T>) => Promise<T>,
+  beside: <T>(work: () => Promise<T>, weight?: number) => Promise<T>,
   parts = caseParts(machine().cores),
 ): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
   if (!ofWholeCorpus(tests)) return beside(() => test(tests, compiler, snapshots, { env }));
+  // Each part the cores it keeps busy of the slots (`casePartCores`).
+  const weight = casePartCores(machine().cores);
   const ran = await Promise.all(
-    Array.from({ length: parts }, (_, i) => beside(() => test(tests, compiler, snapshots, { env: { ...env, RUST_JS_CASES: `${i + 1}/${parts}` } }))),
+    Array.from({ length: parts }, (_, i) => beside(() => test(tests, compiler, snapshots, { env: { ...env, RUST_JS_CASES: `${i + 1}/${parts}` } }), weight)),
   );
   const failed = ran.find((part) => !part.passed);
   return {
@@ -1833,9 +1835,12 @@ async function main() {
   const ranOf = (run: { compiler: string; snapshots: boolean; env: Record<string, string> }) => `${run.compiler}\0${run.snapshots}\0${envKey(run.env)}`;
   let reports = 0;
   const printedBy = new Map<string, string>();
+  // Each run in the cores' slots, a corpus part the cores it keeps busy
+  // (`casePartCores`), not one each.
+  const slot = slots(machine().cores);
   await Promise.all(
-    Array.from({ length: Math.min(machine().cores, runs.length) }, async () => {
-      for (let run = runs.shift(); run !== undefined; run = runs.shift()) {
+    runs.map((run) =>
+      slot(async () => {
         const report = join(work, "reports", `${++reports}.xml`);
         mkdirSync(dirname(report), { recursive: true });
         const args = [`--reporter=junit`, `--reporter-outfile=${report}`, run.file, ...(run.pattern === undefined ? [] : ["-t", run.pattern])];
@@ -1855,8 +1860,8 @@ async function main() {
         const results = byFile.get(run.file) ?? new Map<string, boolean>();
         for (const [name, passed] of testResults(junit)) if (results.get(name) !== false) results.set(name, passed);
         byFile.set(run.file, results);
-      }
-    }),
+      }, undefined, run.part ? casePartCores(machine().cores) : 1),
+    ),
   );
   const problems: string[] = [];
   for (const set of sets) {
@@ -1917,9 +1922,9 @@ async function main() {
   // runtime is its target's own (`ownRuntime`, #720).
   const testsAtOnce = Number(args.find((arg) => arg.startsWith("--tests="))?.slice("--tests=".length)) || ownShare(machine().cores);
   const slotted = slots(testsAtOnce);
-  const beside = <T>(work: () => Promise<T>) => slotted(work);
+  const beside = <T>(work: () => Promise<T>, weight?: number) => slotted(work, undefined, weight);
   // Of one mutation's tests, each run in a slot, the seconds they held it.
-  const holding = (holder: { seconds: number }) => <T>(work: () => Promise<T>) => slotted(work, holder);
+  const holding = (holder: { seconds: number }) => <T>(work: () => Promise<T>, weight?: number) => slotted(work, holder, weight);
   // A mutation of how the JS reads (`readabilityOwners`) that its tests
   // miss, judged by the corpus's snapshots (#864): each case that reaches
   // its site, by the test map, or every case where there's none or it

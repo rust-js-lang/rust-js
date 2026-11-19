@@ -12,7 +12,7 @@ import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestT
 import { mutations } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
-import { balancedByGroup, browsers, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles } from "../scripts/shard";
+import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles } from "../scripts/shard";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
@@ -427,6 +427,37 @@ test("a mutation's time is its share of its shard, its tests timed only as they 
   expect(first.seconds).toBeGreaterThanOrEqual(0.19);
   expect(second.seconds).toBeLessThan(0.15);
   expect(shareOfShard({ build: 10, tests: 8 }, 2, 4)).toEqual({ build: 5, tests: 2 });
+});
+
+// A part of a file of cases keeps the cores `caseParts` gives it busy, two
+// of 12, and holds that many slots: counted one each, a sweep of mutants
+// against the whole corpus ran 12 parts at once on 12 cores, a load of 32.
+test("a corpus part holds the cores it keeps busy of a run's slots", async () => {
+  expect([casePartCores(12), casePartCores(4), casePartCores(2), casePartCores(1)]).toEqual([2, 2, 1, 1]);
+  const run = slots(4);
+  let busy = 0;
+  let most = 0;
+  const work = (weight: number) =>
+    run(
+      async () => {
+        busy += weight;
+        most = Math.max(most, busy);
+        await new Promise((resume) => setTimeout(resume, 20));
+        busy -= weight;
+      },
+      undefined,
+      weight,
+    );
+  await Promise.all([work(2), work(2), work(2), work(1), work(1), work(2)]);
+  expect(most).toBe(4);
+  // A part waits where three single runs leave one core of four.
+  most = 0;
+  await Promise.all([work(1), work(1), work(1), work(2)]);
+  expect(most).toBeLessThanOrEqual(4);
+  // One heavier than the whole runs alone, never waits forever.
+  most = 0;
+  await Promise.all([work(6), work(1)]);
+  expect(most).toBe(6);
 });
 
 // The shards balance by the newest runs' timings that are still kept, of

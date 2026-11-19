@@ -3,6 +3,22 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "case-part-cores-one",
+    breaks: "a part of a file of cases counts as one core of a run's slots, where it keeps two busy: a sweep of mutants against the whole corpus ran 12 parts at once on 12 cores, a load of 32 (2026-11-19)",
+    file: "scripts/shard.ts",
+    find: "  return Math.max(1, Math.floor(cores / caseParts(cores)));\n",
+    replace: "  return 1;\n",
+    tests: ["test/shards.test.ts", "-t", "holds the cores it keeps busy"],
+  },
+  {
+    name: "slots-weight-unasked",
+    breaks: "a run's slots start a corpus part wherever one slot is free, so three single runs and a part keep five cores of four busy",
+    file: "scripts/shard.ts",
+    find: "while (running > 0 && running + weight > limit)",
+    replace: "while (running > 0 && running >= limit)",
+    tests: ["test/shards.test.ts", "-t", "holds the cores it keeps busy"],
+  },
+  {
     name: "test-junit-directory-unmade",
     breaks: "the suite asks bun for JUnit reports in a directory it never made, which bun writes none into and passes: no test shard keeps `junit-<shard>`, so a red check's `attribute` sees no failing suite test and the nightly no suite's times (check 44493804830)",
     file: "scripts/shard.ts",
@@ -62,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "slot-held-from-asking",
     breaks: "a mutation's tests are timed from asking for a slot, their wait behind others' tests counted as theirs: a nightly's mutations took 482 s at the median, and a check's plan sized its shards by them",
     file: "scripts/shard.ts",
-    find: "  return async (work, holder) => {\n    while (running >= limit) await new Promise<void>((resume) => waiting.push(resume));\n    running++;\n    const began = performance.now();\n",
-    replace: "  return async (work, holder) => {\n    const began = performance.now();\n    while (running >= limit) await new Promise<void>((resume) => waiting.push(resume));\n    running++;\n",
+    find: "  return async (work, holder, weight = 1) => {\n    while (running > 0 && running + weight > limit) await new Promise<void>((resume) => waiting.push(resume));\n    running += weight;\n    const began = performance.now();\n",
+    replace: "  return async (work, holder, weight = 1) => {\n    const began = performance.now();\n    while (running > 0 && running + weight > limit) await new Promise<void>((resume) => waiting.push(resume));\n    running += weight;\n",
     tests: ["test/shards.test.ts", "-t", "its tests timed only as they hold a slot"],
   },
   {
