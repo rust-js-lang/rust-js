@@ -178,3 +178,19 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): none. `$lengthFirst` counted a
 When this was decided, every side the #1182 cases reach logged the same: corpus `eq_of_opaque_iterators`, and `test/crates/pairs/length_first_eq`, which now gives a slice's iterator and an array's `IntoIter` too, against native. A slice's `IterMut` is refused there today (#2169), and its JS is `$iter` too.
 
 The row "How many has a `TrustedLen` iterator left…" names `typeof it.len` as the guess it replaced. Mutation: `length-first-hint-unread` (runtime/cmp_items.ts).
+
+## Amendment (2026-11-20, #2168): an endless side is `"endless"`
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's behaviour is preserved. Before this, a caller gave generic code's `eq` a side that runs nothing and drops nothing as `"pure"`, to be collected first, though it never ends: `0u32..`, `repeat(x)`, a zip of two such. `$foldToArray` then threw `RangeError: Invalid array length`, where std's `SpecIterEq` gives `false` at once. Std reads each side's `size_hint`, and an endless `TrustedLen`'s is `(usize::MAX, None)`. Std's rule:
+- an upper bound of `None` against a `Some` is unequal, with nothing stepped;
+- two `None`s are compared item by item.
+
+**`length_first` gives `"endless"` of a type with no end its type knows,** which `endless_by_type` (recognition/lengths.rs) answers. That covers a `RangeFrom` or a `repeat()`, through the adapters that keep each item, or a chain or a zip of such. **`$lengthFirst` counts an `"endless"` side as no length, `undefined`,** which `$iterEq`'s length comparison then reads as std reads `None`. A map of one, which runs the program's code, was refused before. Now std's answer is given, its function never called against a side of a known length.
+
+`endless_by_type` takes a `rev()` too. A `Rev` keeps each item, and `repeat(x).rev()` was given as `"pure"`; its collect into a `Vec` is std's `capacity overflow`, as a `repeat(x)`'s is (ADR 0940).
+
+Held by:
+- corpus `generic_eq_of_an_endless_trusted_len.rs`, against native: endless against finite and finite against endless, two endless sides, `0u64..`, `0u8..`, a zip and a chain of endless ones, a map of `0..` whose function prints, a `repeat` of what drops, and a finite `repeat(x).take(n)` beside;
+- the mutations `length-first-endless-collected` (lower/mir/iter/closing.ts) and `length-first-endless-counted` (runtime/cmp_items.ts).
+
+`repeat(x).rev()` is refused in the plain build (#2127), so it's in no case and no mutation holds the `Rev` arm until then. It was probed with `--std-iterators`, where it matches native.

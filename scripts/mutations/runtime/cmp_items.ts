@@ -83,4 +83,12 @@ export const mutations: Mutation[] = [
     replace: "  const [lower, upper] = [0, 0];\n  if (lower !== upper)",
     tests: ["test/crates.test.ts", "test/iterator-steps.test.ts", "-t", "length_first_eq|LengthFirst form"],
   },
+  {
+    name: "length-first-endless-counted",
+    breaks: "an endless side generic code's `eq` is given is counted by its hint, which has no upper bound, so it throws where std compares it as no length (#2168)",
+    file: "src/runtime/cmp_items.js",
+    find: "  if (first === \"endless\") return [it, undefined];\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_eq_of_an_endless_trusted_len.rs$"],
+  },
 ];

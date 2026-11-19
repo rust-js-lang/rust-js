@@ -424,10 +424,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// or an `IntoIterator`, by its length first, as std's `SpecIterEq` does
     /// of a `TrustedLen`, `LengthFirst` (#1182): `true` where its JS knows
     /// how many it has, an array given whole, an array's or a `Vec`'s
-    /// iterator, `$iter`, or a range; `"pure"` where stepping it runs
-    /// nothing and drops nothing, so it's collected first; `false` of one
-    /// that isn't `TrustedLen`. Refused of another, which std's wouldn't
-    /// step or drop as JS's would.
+    /// iterator, `$iter`, or a range; `"endless"` where its type has no end,
+    /// `endless_by_type`'s, whose hint is `(usize::MAX, None)`, which std
+    /// compares as no length, never collected (#2168); `"pure"` where
+    /// stepping it runs nothing and drops nothing, so it's collected first;
+    /// `false` of one that isn't `TrustedLen`. Refused of another, which
+    /// std's wouldn't step or drop as JS's would.
     pub(in crate::lower) fn length_first(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let iter = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, ty);
         let Some(trusted) = crate::lower::recognition::fact_trait(self.tcx, TypeFact::TrustedLen) else {
@@ -446,6 +448,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let whole = self.slice_item(ty.peel_refs()).is_some() && !self.implements_iterator(ty);
         if whole || self.recognition().counts_where_given(iter) {
             return Ok(Expr::bool(true));
+        }
+        if self.recognition().endless_by_type(iter) {
+            return Ok(Expr::str("endless"));
         }
         let runs_code = crate::lower::recognition::steps_run_code(self.tcx, self.typing_env, iter);
         let drops = self

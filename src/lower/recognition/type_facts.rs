@@ -83,8 +83,9 @@ pub(crate) enum TypeFact {
     /// Of what generic code's `eq` compares, an `Iterator` or an
     /// `IntoIterator` its caller gives: whether std's `SpecIterEq` compares
     /// its length first, a `TrustedLen`'s, and how JS counts it, `true`
-    /// where its value reports it, `"pure"` where it's collected first,
-    /// which runs nothing and drops nothing, or `false` of another (#1182).
+    /// where its value reports it, `"endless"` where its type has no end,
+    /// its length none (#2168), `"pure"` where it's collected first, which
+    /// runs nothing and drops nothing, or `false` of another (#1182).
     LengthFirst,
     /// How std's `SpecFromIter` collects an iterator into a `Vec`: in
     /// place, by its fold, a `TrustedLen`'s, or by `next` (#1239).

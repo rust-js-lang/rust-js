@@ -57,7 +57,8 @@ function $iterEq(a, b, eq, dropA, dropB, lengths) {
 
 // `a.eq(b)` of generic code, each side's `LengthFirst` its caller's (#1182):
 // where both are `TrustedLen`, std's `SpecIterEq` compares their lengths
-// first, each read where JS knows it, `true`, or of one collected first,
+// first, each read where JS knows it, `true`, none of one with no end,
+// `"endless"`, as std's hint's `None` (#2168), or of one collected first,
 // `"pure"`, whose steps run nothing and drop nothing; else item by item.
 function $iterEqGiven(a, b, eq, dropA, dropB, firstA, firstB) {
   if (!firstA || !firstB) return $iterEq(a, b, eq, dropA, dropB);
@@ -70,9 +71,12 @@ function $iterEqGiven(a, b, eq, dropA, dropB, firstA, firstB) {
 // (`$iterEqGiven`): its hint, which std's `SpecIterEq` reads, exact of each
 // form its caller gives it as `true`, an array's `$iter`, a `Vec`'s or an
 // array's `IntoIter` and a range, as test/iterator-steps holds; never read of
-// whether it has a `len` of its own (#2159). Of one `"pure"`, what it gives,
-// collected.
+// whether it has a `len` of its own (#2159). Of one `"endless"`, none, as
+// std's hint of it is `(usize::MAX, None)`: unequal to any length, and two
+// such compared item by item, never collected (#2168). Of one `"pure"`,
+// what it gives, collected.
 function $lengthFirst(it, first) {
+  if (first === "endless") return [it, undefined];
   if (first === "pure") {
     const items = $foldToArray(it);
     return [$iter(items), items.length];

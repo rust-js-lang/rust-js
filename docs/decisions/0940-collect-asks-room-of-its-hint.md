@@ -452,3 +452,7 @@ point of each shape, against a `Vec`'s and a filter's) and
 their metamorphic rewrites, and seven mutations. A range collected into an
 `Rc<[T]>` reads `Array.from($roomForCounted(..))` where a `Vec`'s reads
 `Array.from({ length }, f)`, which knows its length: readability only.
+
+## Amendment (2026-11-20, #2168): a `rev()` keeps no end
+
+`endless_by_type` takes `Rev` among the adapters that keep each item. `repeat(x).rev()` has no end its type knows, and its hint is `(usize::MAX, None)`, as `repeat(x)`'s is. So a collect of it into a `Vec` is std's `capacity overflow`, before it's stepped, and generic code's `eq` of it is `"endless"` (ADR 1014, amended). Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's behaviour is preserved.

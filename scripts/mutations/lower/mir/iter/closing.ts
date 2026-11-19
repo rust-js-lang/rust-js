@@ -372,6 +372,14 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
   },
   {
+    name: "length-first-endless-collected",
+    breaks: "generic code's `eq` of an endless `TrustedLen` side, `0..` or `repeat(x)`, collects it first, which never ends, where std compares its hint's `None` with the other's length (#2168)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        if self.recognition().endless_by_type(iter) {\n            return Ok(Expr::str(\"endless\"));\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_eq_of_an_endless_trusted_len.rs$"],
+  },
+  {
     name: "length-first-given-unasked",
     breaks: "generic code's `eq` reads no `LengthFirst` of its sides, comparing item by item where std compares two `TrustedLen`s' lengths first (#1182)",
     file: "src/lower/mir/iter/closing.rs",

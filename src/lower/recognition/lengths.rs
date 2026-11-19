@@ -219,7 +219,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Whether an iterator of type `ty` has no end its type knows: a
     /// `RangeFrom` or a `repeat()`, through std's adapters that keep each
-    /// item, or a chain or a zip of such. Of a `TrustedLen` one, `collect()`
+    /// item, a `rev()` too (#2168), or a chain or a zip of such. Of a `TrustedLen` one, `collect()`
     /// into a `Vec` panics `capacity overflow` before it steps it, its upper
     /// bound none (ADR 0940).
     pub(in crate::lower) fn endless_by_type(&self, ty: Ty<'tcx>) -> bool {
@@ -235,7 +235,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 | StdPath::IterFuse
                 | StdPath::IterPeekable
                 | StdPath::IterCopied
-                | StdPath::IterCloned,
+                | StdPath::IterCloned
+                | StdPath::IterRev,
             ) => sources.next().is_some_and(|source| self.endless_by_type(source)),
             Some(StdPath::IterChain) => sources.take(2).any(|source| self.endless_by_type(source)),
             Some(StdPath::IterZip) => sources.take(2).all(|source| self.endless_by_type(source)),
