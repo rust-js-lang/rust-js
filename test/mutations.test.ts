@@ -264,6 +264,16 @@ test("a mutation's tests hold one `-t`, the one `bun test` reads", () => {
   expect(twice).toEqual([]);
 });
 
+// A mutation names the corpus cases that catch it, `-t`, never the whole
+// corpus: a run of it builds and runs 2,800 cases for each mutant, as many
+// minutes of a CI shard as the rest of the shard's mutations, where its
+// catching cases take seconds (the queue's CI wall time, 2a). `--corpus`
+// runs one against the whole corpus, to find them.
+test("no mutation names the whole corpus: each names its catching cases by `-t`", () => {
+  const whole = mutations.filter((m) => ofWholeCorpus(m.tests ?? [])).map((m) => `${m.name}: find its catching cases with \`bun scripts/mutations.ts --corpus ${m.name}\` and name them with -t`);
+  expect(whole).toEqual([]);
+});
+
 // A matrix's rows a mutation runs are named by a pattern of their ids,
 // `ITERATOR_MATRIX=/ \| copied \| (clone|dup) \| len$/`, never by an
 // issue's known rows, `#1983`: the issue's fix takes them from the known

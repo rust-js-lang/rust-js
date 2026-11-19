@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "    match &items.kind {\n        js::ExprKind::Array(_) => true,\n",
     replace: "    match &items.kind {\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(result_given_as_items|mut_kept_by_what_a_call_gives_back|generic_mut_lent_by_std).rs$"],
     snapshots: true,
   },
   {
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/eager.rs",
     find: "                Some((items, 0)) if !fresh(&items) =>",
     replace: "                Some((items, 0)) if true =>",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(written_breaks_beside_an_else|back_steps_beside_a_live_drop|cloned_items_from_both_ends).rs$"],
     snapshots: true,
   },
   {

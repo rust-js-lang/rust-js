@@ -685,7 +685,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/moves.rs",
     find: "        if left_called || (role_arrow && !is_temporary(name) && !applied) {\n",
     replace: "        if left_called {\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(chain_under_a_held_map_from_its_back|held_function_drops|adapter_functions_dropped).rs$"],
     snapshots: true,
   },
 ];

@@ -338,7 +338,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "            && let Some(k) = marks.iter().position(|mark| mark == marked)\n",
     replace: "            && let Some(k) = None::<usize>.filter(|_| marks.contains(marked))\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
     snapshots: true,
   },
   {
@@ -356,7 +356,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        if let Some(to) = names.get(name) {\n",
     replace: "        if let Some(to) = names.get(name).filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(adapters_over_own_next_that_panics|array_partial_moves|back_folds_of_sources_made_knowing_their_back).rs$"],
     snapshots: true,
   },
   {

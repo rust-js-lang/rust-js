@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/sources.rs",
     find: "                            if above > 0\n                                && block.stmts.is_empty()\n",
     replace: "                            if block.stmts.is_empty()\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(loop_ends_branch|default_value_exits|guarded_arms_leave_their_loop).rs$"],
     snapshots: true,
   },
   {

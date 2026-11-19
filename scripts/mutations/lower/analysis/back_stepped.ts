@@ -310,7 +310,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/back_stepped.rs",
     find: "                                if counted || held || zip_length && zips_of_held.contains(&(owner, local)) =>\n",
     replace: "                                if true =>\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(back_steps_beside_a_live_drop|len_made_in_place|back_steps_of_a_source_that_writes_none).rs$"],
     snapshots: true,
   },
   {

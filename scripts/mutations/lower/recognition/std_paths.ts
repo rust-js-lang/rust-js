@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/std_paths.rs",
     find: "        && std::iter::successors(std_path_parent(tcx, id), |&at| std_path_parent(tcx, at))\n",
     replace: "        && std::iter::successors(std_path_parent(tcx, id), |_| None)\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(fs_dirs_and_metadata|char_from_code|fs_write_only_fails).rs$"],
   },
   {
     name: "std-item-in-its-own-module",
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/std_paths.rs",
     find: "    (super::is_std_crate(tcx, id) && std_path_parent(tcx, id).is_some_and(|at| is_std_module(tcx, at, module)))\n",
     replace: "    (super::is_std_crate(tcx, id) && tcx.opt_parent(id).is_some_and(|at| is_std_module(tcx, at, module)))\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(adapters_over_own_next_that_panics|adapters_own_nth_fold|adapters_own_work_that_panics).rs$"],
     snapshots: true,
   },
   {

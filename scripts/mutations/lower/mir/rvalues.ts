@@ -870,6 +870,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "crate::lower::recognition::StdPath::SliceIterMut))\n",
     replace: "crate::lower::recognition::StdPath::SliceIter))\n",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^pointer_to_a_lent_slot.rs$"],
   },
 ];

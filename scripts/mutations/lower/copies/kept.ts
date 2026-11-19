@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/copies/kept.rs",
     find: "            && self.krate.given_again.contains(&id)\n",
     replace: "",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_of_a_value_given_as_it_is|adapter_drops|adapter_size_hints).rs$"],
   },
   {
     name: "react-compiler-net-catches-a-skip",

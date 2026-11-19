@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch/passed_on.rs",
     find: "!shared || self.mut_ref_form(w).read_is_itself()",
     replace: "!shared || true",
-    tests: ["test/corpus.test.ts"],
+    tests: ["test/corpus.test.ts", "-t", "^(mut_ref_compare|std_lends_beside_an_address|dedup_by_in_generic_code).rs$"],
   },
   {
     name: "passed-on-one-level-only",
