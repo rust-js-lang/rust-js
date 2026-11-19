@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: '.filter((a) => a.name === "mutation-timings-merged" && !a.expired && a.branch === "main")',
     replace: '.filter((a) => a.name === "mutation-timings-merged" && a.branch === "main")',
-    tests: ["test/ci.test.ts", "-t", "newest merged times of main, handed alike"],
+    tests: ["test/shards.test.ts", "-t", "newest merged times of main, handed alike"],
   },
   {
     name: "merged-timings-of-any-branch",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: '.filter((a) => a.name === "mutation-timings-merged" && !a.expired && a.branch === "main")',
     replace: '.filter((a) => a.name === "mutation-timings-merged" && !a.expired)',
-    tests: ["test/ci.test.ts", "-t", "newest merged times of main, handed alike"],
+    tests: ["test/shards.test.ts", "-t", "newest merged times of main, handed alike"],
   },
   {
     name: "merged-timings-plan-over-run",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: "  return new Map([...base, ...ran]);\n",
     replace: "  return new Map([...ran, ...base]);\n",
-    tests: ["test/ci.test.ts", "-t", "newest merged times of main, handed alike"],
+    tests: ["test/shards.test.ts", "-t", "newest merged times of main, handed alike"],
   },
   {
     name: "encoded-timings-catalog-unchecked",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: "  if (count !== catalog.length) throw new Error(",
     replace: "  if (false) throw new Error(",
-    tests: ["test/ci.test.ts", "-t", "newest merged times of main, handed alike"],
+    tests: ["test/shards.test.ts", "-t", "newest merged times of main, handed alike"],
   },
   {
     name: "gh-pages-read-as-one",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: "SHARD_SETUP_SECONDS + load[i]! + (",
     replace: "SHARD_SETUP_SECONDS + (",
-    tests: ["test/ci.test.ts", "-t", "a check's mutations are split by their expected time"],
+    tests: ["test/shards.test.ts", "-t", "a check's mutations are split by their expected time"],
   },
   {
     name: "mutation-shards-browser-uncounted",
@@ -112,6 +112,6 @@ export const mutations: Mutation[] = [
     file: "scripts/ci.ts",
     find: "(names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0)",
     replace: "0",
-    tests: ["test/ci.test.ts", "-t", "a check's mutations are split by their expected time"],
+    tests: ["test/shards.test.ts", "-t", "a check's mutations are split by their expected time"],
   },
 ];

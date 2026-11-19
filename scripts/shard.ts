@@ -235,7 +235,7 @@ export function memoryBudget(total = totalmem(), free = availableMemory()): numb
  * and its memory, in GB, all of it and what's free (`availableMemory`).
  * The one authority on how much of the machine there is: every runner asks
  * `atOnce` how many of a kind of job to start together, or `machine()`
- * itself, never the OS (test/ci.test.ts holds it). */
+ * itself, never the OS (test/shards.test.ts holds it). */
 export type Machine = { cores: number; totalGB: number; freeGB: number };
 export function machine(): Machine {
   return { cores: availableParallelism(), totalGB: totalmem() / 2 ** 30, freeGB: availableMemory() / 2 ** 30 };

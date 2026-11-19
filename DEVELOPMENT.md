@@ -1175,8 +1175,8 @@ builds the guide's site and deploys it to GitHub Pages (`bun run deploy`).
   react.dev port beside this checkout.
 - `scripts/timing.ts`: each step's time kept, said against its usual, and
   `bun run timings`.
-- `test/ci.test.ts`: the shards, the changed mutations, each branch's
-  latest run.
+- `test/shards.test.ts`: the shards, and how many jobs run at once;
+  `test/ci.test.ts`: the jobs, their gates, each branch's latest run.
 
 ## Costs and limits
 

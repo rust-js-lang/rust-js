@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "scripts/shard.ts",
     find: "return restRunning ? caseParts(cores) : pooledParts(cores);",
     replace: "return caseParts(cores);",
-    tests: ["test/ci.test.ts", "-t", "small parts of one pool"],
+    tests: ["test/shards.test.ts", "-t", "small parts of one pool"],
   },
   {
     name: "case-pool-metamorphic-one-file",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "scripts/shard.ts",
     find: "return ([\"metamorphic\", \"corpus\"] as const).flatMap",
     replace: "return ([\"corpus\"] as const).flatMap",
-    tests: ["test/ci.test.ts", "-t", "small parts of one pool"],
+    tests: ["test/shards.test.ts", "-t", "small parts of one pool"],
   },
   {
     name: "balanced-dealt-to-the-busiest",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "scripts/shard.ts",
     find: "if (load[i]! < load[least]!) least = i;",
     replace: "if (load[i]! > load[least]!) least = i;",
-    tests: ["test/ci.test.ts", "-t", "mutations shard by their times"],
+    tests: ["test/shards.test.ts", "-t", "mutations shard by their times"],
   },
   {
     name: "balanced-unknown-takes-nothing",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "scripts/shard.ts",
     find: "const time = (item: T) => seconds.get(item) ?? usual;",
     replace: "const time = (item: T) => seconds.get(item) ?? 0;",
-    tests: ["test/ci.test.ts", "-t", "mutations shard by their times"],
+    tests: ["test/shards.test.ts", "-t", "mutations shard by their times"],
   },
   {
     name: "timed-shard-ignores-timings",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "scripts/shard.ts",
     find: "  if (dir === undefined) return shard(items, index, count);\n",
     replace: "  if (dir === undefined || dir !== undefined) return shard(items, index, count);\n",
-    tests: ["test/ci.test.ts", "-t", "reads its times of the runs"],
+    tests: ["test/shards.test.ts", "-t", "reads its times of the runs"],
   },
   {
     name: "untimed-mutations-as-the-median",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "scripts/shard.ts",
     find: "    return known.length === 0 ? p90 : known[known.length >> 1]!;\n",
     replace: "    return all[all.length >> 1] ?? 1;\n",
-    tests: ["test/ci.test.ts", "-t", "a change's untimed mutations are dealt first"],
+    tests: ["test/shards.test.ts", "-t", "a change's untimed mutations are dealt first"],
   },
   {
     name: "untimed-mutations-to-the-least",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "scripts/shard.ts",
     find: "    load[k % count] = load[k % count]! + estimate(item);\n    shards[k % count]!.push(item);\n",
     replace: "    const at = leastLoaded(load.map((l, i) => (i === 0 ? -1 : l)));\n    load[at] = load[at]! + estimate(item);\n    shards[at]!.push(item);\n",
-    tests: ["test/ci.test.ts", "-t", "a change's untimed mutations are dealt first"],
+    tests: ["test/shards.test.ts", "-t", "a change's untimed mutations are dealt first"],
   },
   {
     name: "test-timings-last-wins",
@@ -64,6 +64,6 @@ export const mutations: Mutation[] = [
     file: "scripts/shard.ts",
     find: "    for (const [file, ms] of Object.entries(timings.files ?? {})) if (!seconds.has(file)) seconds.set(file, ms / 1000);\n",
     replace: "    for (const [file, ms] of Object.entries(timings.files ?? {})) seconds.set(file, ms / 1000);\n",
-    tests: ["test/ci.test.ts", "-t", "a check's test shards are dealt by what each file took"],
+    tests: ["test/shards.test.ts", "-t", "a check's test shards are dealt by what each file took"],
   },
 ];
