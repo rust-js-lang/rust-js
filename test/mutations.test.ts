@@ -234,7 +234,6 @@ test("each mutation's test pattern names a test of its file", () => {
     }
     return named.get(file)!;
   };
-  const unread: string[] = [];
   const unmatched = mutations.flatMap((m) => {
     const [file, ...args] = m.tests ?? [];
     const at = args.indexOf("-t");
@@ -242,16 +241,13 @@ test("each mutation's test pattern names a test of its file", () => {
     const { names, dynamic } = namesOf(file);
     const pattern = new RegExp(args[at + 1]);
     if (names.some((name) => pattern.test(name))) return [];
-    if (dynamic) {
-      unread.push(`${m.name} (${file})`);
-      return [];
-    }
+    if (dynamic) return [];
     return [`${m.name}: ${file} -t ${args[at + 1]}`];
   });
-  // Its blind spot, said: each mutation whose pattern names none of its
-  // file's literal names, of a file naming others where they run, which a
-  // CI mutations run alone checks.
-  if (unread.length > 0) console.warn(`${unread.length} mutations' patterns unread, of tests their files name where they run: ${unread.join(", ")}`);
+  // Of a file naming others where they run, a pattern that names none of
+  // its literal names isn't read here: the runner's controls run each
+  // mutation's tests as the compiler is first and refuse one that runs
+  // nothing (scripts/mutations.ts), on a push, CI's run and each night's.
   expect(unmatched).toEqual([]);
 });
 
