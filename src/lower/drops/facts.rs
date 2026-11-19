@@ -856,7 +856,7 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Seen<'c, 'a, 'tcx> {
 }
 
 /// A place: a variable, or a part of one, or what a reference points to.
-pub(in crate::lower) fn is_place(kind: &ExprKind<'_>) -> bool {
+fn is_place(kind: &ExprKind<'_>) -> bool {
     matches!(
         kind,
         ExprKind::VarRef { .. }

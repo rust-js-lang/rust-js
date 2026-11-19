@@ -113,7 +113,7 @@ impl<'tcx> RefCells<'tcx> {
     /// Where `field`, a crate's struct's `RefCell` field that isn't quiet
     /// (`quiet_field`), is first lent, bound or moved, or borrowed where
     /// another borrow of it may be.
-    pub(in crate::lower) fn loud_at(&self, field: DefId) -> Option<rustc_span::Span> {
+    fn loud_at(&self, field: DefId) -> Option<rustc_span::Span> {
         self.loud_at.get(&field).copied()
     }
 
@@ -187,7 +187,7 @@ impl<'tcx> RefCells<'tcx> {
     /// 0863): as every one is where generic code has one of a type
     /// parameter's value, and as one made a `RefCell<dyn T>` is, and one
     /// that may be one of those.
-    pub(in crate::lower) fn boxes(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    fn boxes(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
         self.boxes_itself(tcx, ty) || self.library_has(tcx, ty, |f| &f.boxed).is_some()
     }
 
@@ -210,11 +210,11 @@ impl<'tcx> RefCells<'tcx> {
     /// its key's own borrows count too (ADR 0960, amended).
     /// Whether `guard` is a guard type a map of a guard gives, which
     /// releases the cell it was made of as it drops, counted (#1275).
-    pub(in crate::lower) fn maps_to(&self, tcx: TyCtxt<'tcx>, guard: Ty<'tcx>) -> bool {
+    pub(super) fn maps_to(&self, tcx: TyCtxt<'tcx>, guard: Ty<'tcx>) -> bool {
         self.mapped_guards.contains(&tcx.erase_and_anonymize_regions(guard))
     }
 
-    pub(in crate::lower) fn quiet(
+    pub(super) fn quiet(
         &self,
         recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
         borrows: &crate::lower::analysis::CellBorrows<'tcx>,
@@ -427,7 +427,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `RefCell`'s own `replace` or `take`, which give the old one back
     /// (#1930). alien-signals' `ACTIVE_SUB.set(prev_sub.clone())` in a
     /// guard's drop, `activeSub = prevSub`.
-    pub(in crate::lower) fn quiet_cell_write(&self, callee: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    pub(super) fn quiet_cell_write(&self, callee: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
         let tcx = self.tcx;
         let name = tcx.item_name(callee);
         let Some(imp) = tcx.inherent_impl_of_assoc(callee) else {
@@ -1205,7 +1205,7 @@ pub(in crate::lower) fn holds_itself<'tcx>(tcx: TyCtxt<'tcx>, held: Ty<'tcx>) ->
 /// declared (#503). An untagged enum's payload, its value (ADR 0214), is a
 /// `RefCell` only of an object (`untagged::held_payloads`), the object; and
 /// std's generic enums' are declared `T`.
-pub(in crate::lower) fn object_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
+fn object_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
     let owner = tcx.parent(field);
     match tcx.def_kind(owner) {
         DefKind::Struct => {

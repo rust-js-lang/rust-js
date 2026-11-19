@@ -26,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// through each std adapter it's made of, each one's `Item`, which a
     /// `Peekable` holds peeked, and a flatten's inner iterator, which its
     /// type's arguments don't name (#861).
-    pub(in crate::lower) fn close_may_panic(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
+    fn close_may_panic(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         if !seen.insert(ty) {
             return false;
         }

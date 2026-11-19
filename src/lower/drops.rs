@@ -330,7 +330,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// never unwinds: one of no type parameters `never_unwinding` holds, a
     /// generic one as it's given `args` (#861), the guide's `Defer` of a
     /// closure that can't panic. Each asked once a function.
-    pub(in crate::lower) fn drop_never_unwinds(&self, drop: DefId, args: GenericArgsRef<'tcx>) -> bool {
+    fn drop_never_unwinds(&self, drop: DefId, args: GenericArgsRef<'tcx>) -> bool {
         if self.krate.never_unwinding.contains(&drop) {
             return true;
         }
@@ -453,7 +453,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Is `drop`, a type's `Drop::drop`, one rust-js runs (ADR 0100)?
-    pub(in crate::lower) fn runs_drop(&self, drop: DefId) -> bool {
+    fn runs_drop(&self, drop: DefId) -> bool {
         self.drop_query().runs_drop(drop)
     }
 

@@ -152,7 +152,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// Is `drop`, a type's `Drop::drop`, one rust-js runs: the crate's own, a
     /// library's it exports (ADR 0100), or one the crate compiles itself,
     /// which its library's JS doesn't export (ADR 0914, amended)?
-    pub(in crate::lower) fn runs_drop(&self, drop: DefId) -> bool {
+    pub(super) fn runs_drop(&self, drop: DefId) -> bool {
         let foreign = self.recognition.foreign;
         drop.is_local() || foreign.compiled(drop)
     }
@@ -187,7 +187,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// its type has one (ADR 0178), a std trait's too, `Add`'s `Output` (ADR
     /// 0497). Not an `async fn`'s, which has no name. An iterator's, of no
     /// dictionary, is a slot's, found first (ADRs 0421, 0489).
-    pub(in crate::lower) fn item_drop_of(&self, ty: Ty<'tcx>) -> Option<(ty::TraitRef<'tcx>, DefId)> {
+    pub(super) fn item_drop_of(&self, ty: Ty<'tcx>) -> Option<(ty::TraitRef<'tcx>, DefId)> {
         let tcx = self.recognition.tcx;
         let ty::Alias(
             _,
@@ -243,7 +243,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// Whether dropping a `ty` drops a `ty` again, inside what it holds: a
     /// list's node in a `Box` of itself, a trie's in a map of its `Rc`s.
     /// Its drop is then a function that calls itself.
-    pub(in crate::lower) fn drops_itself(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn drops_itself(&self, ty: Ty<'tcx>) -> bool {
         let mut walk = Walk {
             visited: Some(IndexSet::default()),
             ..Walk::new()
@@ -270,7 +270,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
     /// counts, the last one running what its value's drop runs.
     /// A type parameter runs what its drop runs where a caller gives one,
     /// and nothing where none does: so the JS runs (#1815).
-    pub(in crate::lower) fn drop_may_ask(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn drop_may_ask(&self, ty: Ty<'tcx>) -> bool {
         self.drops_in(
             ty,
             &mut Walk {
@@ -280,7 +280,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         ) != Drops::Nothing
     }
 
-    pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
         self.drops(ty) == Drops::Runs
     }
 

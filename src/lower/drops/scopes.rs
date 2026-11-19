@@ -34,6 +34,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Declare drop functions once, at the top of the body that's starting:
     /// what the enclosing one had, to give back to `end_hoisting`.
+    // helper: the enclosing body's state, handed back to `end_hoisting`.
     pub(in crate::lower) fn begin_hoisting(&mut self) -> Option<Hoisted<'tcx>> {
         self.drop_state.hoisted.replace(Hoisted::default())
     }

@@ -138,7 +138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether dropping a `ty` reads it once, so a value that isn't a
     /// variable can be dropped where it's made: `noisyDrop_drop(["x"])`.
-    pub(in crate::lower) fn drops_once(&self, ty: Ty<'tcx>) -> bool {
+    fn drops_once(&self, ty: Ty<'tcx>) -> bool {
         match ty.kind() {
             // Its drop drops what it holds, not the function.
             ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..) => true,
