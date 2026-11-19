@@ -5,7 +5,7 @@ use super::*;
 
 /// Whether `stmts` jump for loop `label`: an unnamed `break` or `continue`
 /// of its own, or one that names it, however deep.
-pub(in crate::lower::mir::tidy) fn own_jumps(stmts: &[Stmt], label: Option<&js::Name>) -> bool {
+pub(super) fn own_jumps(stmts: &[Stmt], label: Option<&js::Name>) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
         StmtKind::Break(None) | StmtKind::Continue(None) => true,
         StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => Some(l) == label,
@@ -626,7 +626,7 @@ pub(in crate::lower::mir::tidy) fn returns_into_branches(stmts: &mut [Stmt]) {
 /// none: one that reads as it's written wherever it's put, in each branch
 /// that goes on to it (ADR 0754), or for each `break` of a block it follows
 /// (ADR 0755).
-pub(in crate::lower::mir::tidy) fn returns_one_value(stmt: &Stmt) -> bool {
+pub(super) fn returns_one_value(stmt: &Stmt) -> bool {
     let one_value =
         |e: &Expr| e.is_constant() || matches!(e.kind, ExprKind::Var(_)) || matches!(e.kind, ExprKind::Undefined);
     // A function's call of such, `made(kind, mode)`, reads as written
@@ -706,7 +706,7 @@ fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &js::Name) -> bool {
 }
 
 /// Whether `stmts` always end with a `break label`.
-pub(in crate::lower::mir::tidy) fn leaves(stmts: &[Stmt], label: &js::Name) -> bool {
+pub(super) fn leaves(stmts: &[Stmt], label: &js::Name) -> bool {
     match stmts.last().map(|s| &s.kind) {
         Some(StmtKind::Break(Some(l))) => l == label,
         Some(StmtKind::If(_, then, Some(otherwise))) => leaves(then, label) && leaves(otherwise, label),
@@ -1024,7 +1024,7 @@ pub(in crate::lower::mir::tidy) fn returning_chain(stmts: &[Stmt]) -> Option<(Ve
 
 /// Whether of `c ? yes : no` one is `true` or `false`: `c || no` or `c &&
 /// yes`, not `?:`.
-pub(in crate::lower::mir::tidy) fn boolean_branch(yes: &Expr, no: &Expr) -> bool {
+fn boolean_branch(yes: &Expr, no: &Expr) -> bool {
     matches!(yes.kind, ExprKind::Bool(_)) || matches!(no.kind, ExprKind::Bool(_))
 }
 

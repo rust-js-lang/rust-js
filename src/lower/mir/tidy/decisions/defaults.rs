@@ -112,7 +112,7 @@ fn copied_into_branches(stmts: &mut Vec<Stmt>, i: usize) -> bool {
 /// variable (`copied_into_branches`). Not one it computes, `x =
 /// compute(3)`, which the block's label stays for, as only the paths to
 /// it may run it (#583).
-pub(in crate::lower::mir::tidy) fn given_without_block(last: &Stmt) -> bool {
+pub(super) fn given_without_block(last: &Stmt) -> bool {
     matches!(&last.kind, StmtKind::Assign(target, value)
         if matches!(target.kind, ExprKind::Var(_)) && (given_first(value) || copied(value)))
 }

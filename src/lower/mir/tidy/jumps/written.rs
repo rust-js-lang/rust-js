@@ -10,7 +10,7 @@ use super::*;
 /// MIR made of it, `break` where the loop goes on to what's after it: the
 /// `else` it wrote, which an early exit of MIR's, `if (!t) { e } a`, isn't,
 /// nor a `while`'s test (ADR 0879).
-pub(in crate::lower::mir::tidy) fn written_else(stmt: &Stmt, elses: &[(js::Span, js::Span, js::Span)]) -> bool {
+pub(super) fn written_else(stmt: &Stmt, elses: &[(js::Span, js::Span, js::Span)]) -> bool {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     let StmtKind::If(_, first, Some(second)) = &stmt.kind else {
         return false;
@@ -72,7 +72,7 @@ pub(in crate::lower::mir::tidy) fn written_order(
 /// `written_branches` of a chain's values, `yes` where its tests hold and
 /// `no` where one doesn't, each where it's written: `if a && b { x } else {
 /// true }`'s, whose branches MIR nests in the tests (ADR 0879).
-pub(in crate::lower::mir::tidy) fn written_values(
+pub(super) fn written_values(
     span: js::Span,
     (yes, no): (&Expr, &Expr),
     elses: &[(js::Span, js::Span, js::Span)],

@@ -614,7 +614,7 @@ fn around_loops(stmts: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
 
 /// Whether `inner`, in place of the statement at `i` of `stmts`, declares
 /// nothing declared beside it.
-pub(in crate::lower::mir::tidy) fn fits_in_place(stmts: &[Stmt], i: usize, inner: &[Stmt]) -> bool {
+pub(super) fn fits_in_place(stmts: &[Stmt], i: usize, inner: &[Stmt]) -> bool {
     let inner: IndexSet<&str> = declared(inner).collect();
     !(stmts.iter().enumerate())
         .any(|(j, s)| j != i && declared(std::slice::from_ref(s)).any(|name| inner.contains(name)))

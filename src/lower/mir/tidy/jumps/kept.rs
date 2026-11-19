@@ -169,7 +169,7 @@ fn kept_in_branch(branch: &mut Vec<Stmt>, span: js::Span, (continues, breaks): B
     }
 }
 
-pub(in crate::lower::mir::tidy) fn tests_continue(continues: &[(js::Span, js::Span)], span: js::Span) -> bool {
+pub(super) fn tests_continue(continues: &[(js::Span, js::Span)], span: js::Span) -> bool {
     continues
         .iter()
         .any(|(test, _)| written(std::slice::from_ref(test), span))

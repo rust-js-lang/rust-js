@@ -1093,12 +1093,7 @@ pub(in crate::lower::mir::tidy) fn innermost_jumps(stmts: &mut [Stmt]) {
 /// Each `break block` in `stmts` a `continue` of the loop around, labeled
 /// `looped`, written if `write`: `None` where one inside a loop of its own
 /// would need the loop's label, and it has none.
-pub(in crate::lower::mir::tidy) fn continues(
-    stmts: &mut [Stmt],
-    block: &js::Name,
-    looped: Option<&Name>,
-    write: bool,
-) -> Option<()> {
+fn continues(stmts: &mut [Stmt], block: &js::Name, looped: Option<&Name>, write: bool) -> Option<()> {
     fn each(stmts: &mut [Stmt], block: &js::Name, looped: Option<&Name>, inner: bool, write: bool) -> Option<()> {
         for stmt in stmts {
             match &mut stmt.kind {

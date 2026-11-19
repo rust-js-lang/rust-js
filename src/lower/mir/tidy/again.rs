@@ -31,7 +31,7 @@ impl Again {
 
     /// Whether the stages run again now, which they do where a pass found
     /// they must: then they're running.
-    pub(in crate::lower::mir) fn take(&self) -> bool {
+    pub(super) fn take(&self) -> bool {
         match self.0.get() {
             State::Idle => false,
             State::Must => {
@@ -49,7 +49,7 @@ impl Again {
     }
 
     /// Whether the stages are running again.
-    pub(in crate::lower::mir) fn running(&self) -> bool {
+    pub(super) fn running(&self) -> bool {
         self.0.get() == State::Running
     }
 }
