@@ -526,14 +526,17 @@ jobs:
         with:
           node-version: '24'
       # Each of what the suite needs at once (parallel steps): the
-      # toolchain, and the packages with their browser.
+      # toolchain, and the packages with their browser, Chromium alone: the
+      # runner's image has every library it asks, and `--with-deps` only
+      # added fonts through apt, whose mirror hung 7.7 min (check
+      # 44480685461), so no workflow asks it (test/ci.test.ts).
       - parallel:
           - name: Install pinned Rust toolchain
             run: rustup show
           - name: Install packages and the browser
             run: |
               bun install --frozen-lockfile
-              bunx --bun playwright install --with-deps chromium
+              bunx --bun playwright install chromium
       # The debug compiler the suite runs, of the compiler's sources: built
       # only where they changed, else the cache's.
       - uses: ./.github/actions/build-rust-js
@@ -812,7 +815,7 @@ jobs:
       # The browser, while the WASM builds: the tests after need it.
       - name: Install the browser
         id: browser
-        run: bunx --bun playwright install --with-deps chromium
+        run: bunx --bun playwright install chromium
         background: true
       - name: Build WASM from the candidate sources
         env:

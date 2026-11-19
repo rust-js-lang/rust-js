@@ -676,11 +676,30 @@ test("check:fast installs where a workspace the root depends on isn't linked, it
 // its shard went red. Each shard asks whether what it runs drives one
 // (`mutations.ts --browser`, `drivesBrowser`) and installs it then: of each
 // file that imports Playwright, and only of those.
+// Chromium alone, never with Playwright's system packages: the runner's
+// image has every library it asks, and `--with-deps` only added nine font
+// packages through apt, whose Azure mirror timed out on each until a check's
+// test shard hung 7.7 min (check 44480685461's shard 2). The browser tests
+// measure text and boxes against each other in one page, ours beside
+// React's, a panel beside its trigger, never against fixed pixels, so the
+// image's own fonts answer as those did.
+test("no workflow installs the browser's system packages", () => {
+  const dir = join(root, ".github/workflows");
+  const installs = readdirSync(dir).flatMap((name) =>
+    readFileSync(join(dir, name), "utf8")
+      .split("\n")
+      .filter((line) => line.includes("playwright install") && !line.trimStart().startsWith("#"))
+      .map((line) => [name, line.trim()]),
+  );
+  expect(installs.length).toBeGreaterThan(4);
+  expect(installs.filter(([, line]) => !line.endsWith("playwright install chromium"))).toEqual([]);
+});
+
 test("CI's mutations install the browser a mutation's test drives", () => {
   const workflow = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
   const job = workflow.slice(workflow.indexOf("\n  mutations:\n"));
   expect(job).toContain('--browser)" >> "$GITHUB_OUTPUT"');
-  expect(job).toContain("if: steps.browser.outputs.needed == 'browser'\n        name: Install the browser\n        run: bunx --bun playwright install --with-deps chromium");
+  expect(job).toContain("if: steps.browser.outputs.needed == 'browser'\n        name: Install the browser\n        run: bunx --bun playwright install chromium");
   expect(job.indexOf("Install the browser")).toBeLessThan(job.indexOf("Put back each known bug"));
   for (const file of browsers) expect([file, drivesBrowser(root, file)]).toEqual([file, true]);
   expect(drivesBrowser(root, "test/none-given.test.ts")).toBe(true);

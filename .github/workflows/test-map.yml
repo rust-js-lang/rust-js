@@ -166,7 +166,7 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-      - run: bunx --bun playwright install --with-deps chromium
+      - run: bunx --bun playwright install chromium
       - uses: actions/download-artifact@v8
         with:
           name: test-map-build

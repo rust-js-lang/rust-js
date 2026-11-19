@@ -300,7 +300,7 @@ jobs:
       - name: Install packages and the browser
         run: |
           bun install --frozen-lockfile
-          bunx --bun playwright install --with-deps chromium
+          bunx --bun playwright install chromium
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
       - name: Run part ${{ matrix.part }} of 2

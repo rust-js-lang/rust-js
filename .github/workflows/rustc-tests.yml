@@ -467,7 +467,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
       - if: steps.browser.outputs.needed == 'browser'
         name: Install the browser
-        run: bunx --bun playwright install --with-deps chromium
+        run: bunx --bun playwright install chromium
       # Incremental, as a dev build is on the Mac: Cargo gave CI's rustc no
       # `-C incremental`, so each mutant built alone compiled the crate
       # whole, 96–102 s, where a build that knows the last one's takes
