@@ -154,7 +154,55 @@ const unreferencedOnly = (lines: string[]) =>
 
 /** The compiler's sources as the map's commit has them: a file's text, and
  * each line of `src/` that names `word`, as `git grep -w` finds it. */
-export type Sources = { text: (file: string) => string | undefined; naming: (word: string) => { file: string; line: number }[] };
+export type Sources = {
+  text: (file: string) => string | undefined;
+  naming: (word: string) => { file: string; line: number }[];
+  /** Of `names`, those code beyond the crate's own names anywhere, where a
+   * method of that name may be a trait's: std's and rustc's, their
+   * metadata and std's sources, and each dependency's sources
+   * (`namedBeyondTheCrate`). None given: every one, as it can't say. */
+  beyond?: (names: string[]) => Set<string>;
+};
+
+/** Of `names`, those std's, rustc's or a dependency's code names, a word
+ * of it anywhere: the sysroot's crates' metadata, each target's, which
+ * holds every item's name, rustc's internal crates' too, std's sources,
+ * and the sources of each package Cargo resolves but the crate itself.
+ * Where any can't be read, every one of `names`, as it can't say. About
+ * 2 s, a single pass of each file's words. */
+export function namedBeyondTheCrate(names: string[]): Set<string> {
+  const wanted = new Set(names);
+  const found = new Set<string>();
+  if (wanted.size === 0) return found;
+  const sysroot = Bun.spawnSync(["rustc", "--print", "sysroot"], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  const metadata = Bun.spawnSync(["cargo", "metadata", "--format-version", "1", "--offline"], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  if (sysroot.exitCode !== 0 || metadata.exitCode !== 0) return wanted;
+  const sys = sysroot.stdout.toString().trim();
+  const scan = (path: string) => {
+    for (const m of readFileSync(path).toString("latin1").matchAll(/[A-Za-z_]\w*/g)) if (wanted.has(m[0])) found.add(m[0]);
+  };
+  const walk = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== "target" && entry.name !== ".git") walk(path);
+      } else if (entry.name.endsWith(".rs")) scan(path);
+    }
+  };
+  try {
+    const rustlib = join(sys, "lib", "rustlib");
+    for (const target of readdirSync(rustlib)) {
+      const lib = join(rustlib, target, "lib");
+      if (existsSync(lib) && statSync(lib).isDirectory()) for (const file of readdirSync(lib)) if (file.endsWith(".rmeta")) scan(join(lib, file));
+    }
+    walk(join(rustlib, "src", "rust", "library"));
+    const packages = (JSON.parse(metadata.stdout.toString()) as { packages: { manifest_path: string }[] }).packages;
+    for (const { manifest_path } of packages) if (resolve(dirname(manifest_path)) !== resolve(root)) walk(dirname(manifest_path));
+  } catch {
+    return wanted;
+  }
+  return found;
+}
 
 /** The sources at `commit`, by git. */
 export function sourcesAt(commit: string): Sources {
@@ -172,6 +220,7 @@ export function sourcesAt(commit: string): Sources {
           const m = /^[^:]+:([^:]+):(\d+):/.exec(line);
           return m ? [{ file: m[1]!, line: Number(m[2]) }] : [];
         }),
+    beyond: namedBeyondTheCrate,
   };
 }
 
@@ -232,6 +281,14 @@ const withoutLength = (line: string) => line.replace(/;\s*\d+\s*\]/g, "; _]");
 
 /** `line` with its visibility left out, `pub(super) fn f(` as `fn f(`. */
 const withoutVisibility = (line: string) => line.replace(/\bpub(?:\([^)]*\))?\s+/g, "");
+
+/** A line that declares an item named `name`: a function, a method of a
+ * trait or an impl, a type, a constant, a module or a macro. */
+const declaring = (name: string) => new RegExp(`\\b(?:fn|const|static|struct|enum|union|trait|type|mod|macro_rules!)\\s+${name}\\b`);
+
+/** The prelude's functions, which a glob's call falls back to where the
+ * crate's own of that name is no longer seen. */
+const preludeFunctions = new Set(["drop"]);
 export type Change = { file: string; hunks: Hunk[] | "new" };
 
 /** What a change runs: the files and cases it can affect, or all of them,
@@ -531,6 +588,38 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     }
     return scoped;
   };
+  // A visibility change that can't change what a name resolves to: of a
+  // function declared once in the sources, never by a line the change adds,
+  // and not the prelude's; of a method, `self` among its parameters, whose
+  // name no code beyond the crate names either, so no trait's method,
+  // std's, rustc's or a dependency's, can be found in its place.
+  let visibilityOnly = 0;
+  const addedLines = changes.flatMap(({ hunks }) => (hunks === "new" ? [] : hunks.flatMap(([, , added = []]) => added)));
+  let beyond: Set<string> | undefined;
+  const namedBeyond = (name: string) => {
+    if (beyond === undefined) {
+      const names = [...new Set(changes.flatMap(({ hunks }) => (hunks === "new" ? [] : hunks.flatMap(([, , , removed = []]) => removed.flatMap((line) => [...line.matchAll(/\bfn\s+(\w+)/g)].map((m) => m[1]!))))))];
+      beyond = sources.beyond?.(names) ?? new Set(names);
+    }
+    return beyond.has(name);
+  };
+  const visibilityAlone = (file: string, from: number, removed: string[]): boolean => {
+    const name = removed.join(" ").match(/\bfn\s+(\w+)/)?.[1];
+    if (name === undefined || preludeFunctions.has(name)) return false;
+    const lines = (sources.text(file) ?? "").split("\n");
+    const start = from - 1 + removed.findIndex((line) => /\bfn\s+\w+/.test(line));
+    let signature = "";
+    for (let at = start; at < Math.min(lines.length, start + 16); at++) {
+      signature += ` ${lines[at]!.replace(/\/\/.*$/, "")}`;
+      if (/[{;]\s*$/.test(lines[at]!)) break;
+    }
+    if (!signature.includes(`fn ${name}`)) return false;
+    if (/[(,]\s*(?:&\s*(?:'\w+\s+)?)?(?:mut\s+)?self\b/.test(signature) && namedBeyond(name)) return false;
+    const declares = declaring(name);
+    const declared = sources.naming(name).filter((site) => declares.test(linesOf(site.file)[site.line - 1] ?? ""));
+    const own = removed.filter((line) => declares.test(line)).length;
+    return declared.length === 1 && own === 1 && addedLines.filter((line) => declares.test(line)).length === 1;
+  };
   for (const { file, hunks } of changes) {
     const sites = map.includes[file];
     if (sites !== undefined && hunks !== "new") {
@@ -558,9 +647,19 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       if (count === 0 && removed !== undefined && unreferencedOnly(added) && !insideAt(file, from)) continue;
       // A function's signature line whose change is only its visibility,
       // or its docs, `pub(super) fn f(` for `fn f(`: that function's change.
+      // Of a function whose name nothing else in the sources declares,
+      // nor the change adds, nothing: if it compiles, each call and path
+      // resolves to it as before, as no other item of that name can be
+      // found in its place; of a method, rustc's method probe passing over
+      // one it can't see for a trait's method of its name, where no code
+      // beyond the crate names it (#2162).
       if (removed !== undefined && count > 0 && removed.length === added.length && removed.length > 0) {
         const same = removed.every((line, i) => withoutVisibility(line) === withoutVisibility(added[i]!) || (commentOnly(line) && commentOnly(added[i]!)));
         const signature = removed.some((line) => /\bfn\s+\w+/.test(line));
+        if (signature && same && visibilityAlone(file, from, removed)) {
+          visibilityOnly++;
+          continue;
+        }
         const next = signature && same ? following(file, from + count - 1) : undefined;
         if (next !== undefined) {
           touched.add(next);
@@ -617,7 +716,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     cases: pickedCases,
     forms: pickedForms,
     functions: [...touched],
-    why: `${touched.size} of the compiler's functions changed`,
+    why: `${touched.size} of the compiler's functions changed${visibilityOnly === 0 ? "" : `, ${visibilityOnly} visibility change${visibilityOnly === 1 ? "" : "s"} of names declared once, which select nothing`}`,
   };
 }
 

@@ -908,3 +908,16 @@ off deliberate. Rows under an issue no commit names, under a
 `#difference`, or a row added still undo the commit that listed them.
 test/push-guard.test.ts: a `Refs` row comes off, one under an unnamed
 issue is still refused. Mutation `push-guard-refs-rows-undo`.
+
+## Amendment (2026-11-20, #2162): a visibility change of a name declared once
+
+Change E's sweep narrows answers' visibility in many files. Before this, each narrowing's signature hunk was "that function's change", so a push selected nearly every test (396 files, 2,805 cases, 400–630 s).
+
+**A signature hunk whose change is only its visibility, or its comments, selects nothing where nothing else can resolve in its place.** Three conditions:
+1. The function's name is declared once in the sources at the map's commit (`fn`, a trait's or an impl's method, `const`, `static`, a type, `mod`, a macro).
+2. No line the change adds declares it.
+3. It isn't the prelude's `drop`, which a glob's call falls back to.
+
+Of a method, `self` among its parameters, there's a fourth condition. rustc's method probe passes over an inherent method a caller can't see and takes a trait's method of that name, std's or a dependency's too: a private `len` beside a trait's `len` gives the trait's, as probed. So a method selects nothing only where no code beyond the crate names it: the sysroot's crates' metadata, std's sources and the sources of each package Cargo resolves (`namedBeyondTheCrate`, a single pass, about 1.7 s). Otherwise the hunk is that function's change, as before.
+
+If it compiles, each use resolves to the item it did before, so what the compiler does is the same. The select line says how many hunks were selected nothing this way. Held by test/test-map.test.ts's "a visibility change of a name declared once selects nothing" and four mutations (scripts/mutations/test-map.ts).

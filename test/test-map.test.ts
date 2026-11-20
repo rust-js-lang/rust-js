@@ -575,6 +575,41 @@ test("a comment, a new item nothing refers to, and a signature's visibility sele
   ]);
 });
 
+// A signature's visibility alone, of a name the sources declare once, the
+// change adds no other of, and no code beyond the crate names where it's a
+// method's, selects nothing: if it compiles, each use resolves to it as
+// before (#2162's sweep, whose narrowings selected every test). Of a name
+// declared twice, a method's whose name std's or a dependency's code names,
+// which rustc's method probe may take for a trait's where the crate's own
+// isn't seen, or the prelude's `drop`: that function's change, as before.
+test("a visibility change of a name declared once selects nothing", () => {
+  const lines = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  lines[28] = "fn second(x: u32) -> u32 {";
+  const declared: Record<string, { file: string; line: number }[]> = { second: [{ file: "src/a.rs", line: 29 }] };
+  const sources = (method: boolean, twice: boolean, beyond: string[] = []): Sources => ({
+    text: (file) => (file === "src/a.rs" ? lines.map((line, i) => (i === 28 && method ? "fn second(&self, x: u32) -> u32 {" : line)).join("\n") : file === "src/b.rs" ? "pub fn second() {}" : undefined),
+    naming: (word) => [...(declared[word] ?? []), ...(twice ? [{ file: "src/b.rs", line: 1 }] : [])],
+    beyond: (names) => new Set(names.filter((name) => beyond.includes(name))),
+  });
+  const narrowed = (line: string, was: string): Change => ({ file: "src/a.rs", hunks: [[29, 1, [line], [was]]] });
+  const free = narrowed("pub(super) fn second(x: u32) -> u32 {", "fn second(x: u32) -> u32 {");
+  const nothing = pick(map, [free], files, cases, sources(false, false));
+  expect(nothing).toMatchObject({ kind: "picked", functions: [], why: expect.stringContaining("1 visibility change of names declared once, which select nothing") });
+  const its = { kind: "picked", files: ["test/two.test.ts", "test/reads.test.ts", "test/iterator-forms.test.ts"], cases: ["x.rs"] };
+  expect(pick(map, [free], files, cases, sources(false, true))).toMatchObject(its);
+  const method = narrowed("pub(super) fn second(&self, x: u32) -> u32 {", "fn second(&self, x: u32) -> u32 {");
+  expect(pick(map, [method], files, cases, sources(true, false))).toMatchObject({ functions: [] });
+  expect(pick(map, [method], files, cases, sources(true, false, ["second"]))).toMatchObject(its);
+  // A change that adds another of its name: that function's change.
+  // The prelude's `drop`, which a glob's call falls back to: its change.
+  lines[28] = "fn drop(x: u32) -> u32 {";
+  declared.drop = [{ file: "src/a.rs", line: 29 }];
+  expect(pick(map, [narrowed("pub(super) fn drop(x: u32) -> u32 {", "fn drop(x: u32) -> u32 {")], files, cases, sources(false, false))).toMatchObject(its);
+  lines[28] = "fn second(x: u32) -> u32 {";
+  const another = pick(map, [free, { file: "src/c.rs", hunks: [[3, 0, ["fn second() {}"], []]] }], files, cases, sources(false, false));
+  expect(another.kind === "all" || !another.why.includes("visibility change")).toBe(true);
+});
+
 // A private `use` changed, or a function's signature (ADR 1101, amended):
 // selected as the code they can change, where the push's select-all of
 // 191ad93e9 ran the crate corpus and every net for `use crate::js::{..,
