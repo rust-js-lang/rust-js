@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `value` reads only variables that never change, so it's the
     /// same read before or after anything else: a `useState` value, a
     /// parameter, and elements of them.
-    pub(super) fn reads_unchanging(&self, value: &Expr, out: &[Stmt]) -> bool {
+    fn reads_unchanging(&self, value: &Expr, out: &[Stmt]) -> bool {
         if !value.reads_only_vars() {
             return false;
         }

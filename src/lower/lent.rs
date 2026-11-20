@@ -605,7 +605,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `force_mut`'s; a `Peekable`'s peeked item, `peek`'s and `peek_mut`'s;
     /// a `Result`'s payload, `as_ref`'s and `as_mut`'s, its `Ok`'s or its
     /// `Err`'s. The one catalog of what #1475 records.
-    pub(in crate::lower) fn lends_object_of(&self, def_id: DefId, receiver: Ty<'tcx>) -> Option<&'static [Lend]> {
+    fn lends_object_of(&self, def_id: DefId, receiver: Ty<'tcx>) -> Option<&'static [Lend]> {
         let name = self.tcx.item_name(def_id);
         let lock = self.recognition().is_lock_cell(receiver);
         match name.as_str() {
@@ -623,7 +623,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// lowering records as stored there, at its offset (`lent_record`,
     /// #1475): of a type known here, each slot's offset known and its
     /// payload no `$some` box, whose object is where the record says.
-    pub(in crate::lower) fn lend_recorded(&self, def_id: DefId, receiver: Ty<'tcx>) -> bool {
+    fn lend_recorded(&self, def_id: DefId, receiver: Ty<'tcx>) -> bool {
         !receiver.has_non_region_param()
             && self.lends_object_of(def_id, receiver).is_some_and(|lents| {
                 lents.iter().all(|&l| {
@@ -712,7 +712,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`lent_place`); or a heap's `PeekMut`'s, whose top's handle is one
     /// on the heap's first item, `$ptr(heap, 0)`, in its buffer's
     /// allocation (`$peekMutTop`). The one answer of whether one is placed.
-    pub(in crate::lower) fn lend_placed(&self, def_id: DefId, receiver: Ty<'tcx>, lent: Ty<'tcx>) -> bool {
+    fn lend_placed(&self, def_id: DefId, receiver: Ty<'tcx>, lent: Ty<'tcx>) -> bool {
         if !self.mut_ref_form(lent).is_cell() {
             return false;
         }
@@ -823,7 +823,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// variant's offset (#1474). Of generic code's receiver, the one each
     /// instance its callers give shares; `None` where they differ, or where
     /// a layout isn't known.
-    pub(in crate::lower) fn lent_offset(&self, receiver: Ty<'tcx>, lent: Lend) -> Option<u64> {
+    fn lent_offset(&self, receiver: Ty<'tcx>, lent: Lend) -> Option<u64> {
         if !receiver.has_non_region_param() {
             return self.recognition().lend_offset(receiver, lent);
         }

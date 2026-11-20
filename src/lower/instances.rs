@@ -407,7 +407,7 @@ pub(in crate::lower) fn consumer_compiles(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// any decides what each takes, as generic code calls them by the trait's
 /// dictionary, passing what the declaration takes (#1233). `None` of a
 /// method of another trait, a function of none.
-pub(in crate::lower) fn method_family(tcx: TyCtxt<'_>, id: DefId) -> Option<Vec<DefId>> {
+fn method_family(tcx: TyCtxt<'_>, id: DefId) -> Option<Vec<DefId>> {
     let declared = tcx.trait_item_of(id).or(tcx.trait_of_assoc(id).map(|_| id))?;
     let tr = tcx.parent(declared);
     if !tr.is_local() || tcx.visibility(tr).is_public() {

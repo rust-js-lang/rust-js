@@ -28,7 +28,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `unsupported_part`, for a type inside the ones in `seen`. A type
     /// inside itself (`Tree` in `Node(Box<Tree>, ..)`) is being checked
     /// already, further out.
-    pub(super) fn unsupported_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> Option<Ty<'tcx>> {
+    fn unsupported_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> Option<Ty<'tcx>> {
         if ty.is_bool()
             || ty.is_unit()
             || ty.is_never()

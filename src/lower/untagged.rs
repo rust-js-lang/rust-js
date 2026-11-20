@@ -404,7 +404,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// What JS can tell a payload of type `ty` is, if anything: not an
     /// `Option`'s `undefined`, a `()`, a generic `T` or an enum.
-    pub(super) fn untagged_kind(&self, ty: Ty<'tcx>) -> Option<Kind> {
+    fn untagged_kind(&self, ty: Ty<'tcx>) -> Option<Kind> {
         let ty = self.untagged_payload(ty);
         if self.is_string_like(ty) || ty.is_char() {
             return Some(Kind::String);
@@ -607,7 +607,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// What JS can tell `variant` is: its payload's kind, or of one without
     /// fields, its name's string.
-    pub(super) fn untagged_variant_kind(&self, variant: &VariantDef, args: GenericArgsRef<'tcx>) -> Option<Kind> {
+    fn untagged_variant_kind(&self, variant: &VariantDef, args: GenericArgsRef<'tcx>) -> Option<Kind> {
         if let Some(kind) = unit_kind(self.tcx, variant) {
             return Some(kind);
         }

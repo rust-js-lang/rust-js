@@ -184,7 +184,7 @@ impl CrateFacts<'_, '_> {
     /// a `const` written in a function's body, nor a function a block makes
     /// and gives, each declared where it's written (ADRs 0296, 0308, 0031
     /// amended), whose name is its body's ("names are ids", ADR 1150).
-    pub(in crate::lower) fn at_module_top(&self, def_id: DefId) -> bool {
+    fn at_module_top(&self, def_id: DefId) -> bool {
         !self.local_functions.contains_key(&def_id)
             && !self.named_expressions.contains(&def_id)
             && !self.local_consts.contains_key(&def_id)

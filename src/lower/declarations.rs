@@ -333,7 +333,7 @@ pub(in crate::lower) fn type_name(tcx: TyCtxt<'_>, did: DefId) -> String {
 /// "trigger-press"]`, `#[rust_js::name = true]`, whose value and type are
 /// that literal (ADRs 0013, 1164): the literal; not a class's or a
 /// namespace's, whose name says what they are.
-pub(super) fn named_unit(tcx: TyCtxt<'_>, did: DefId) -> Option<super::bindings::UnitValue> {
+fn named_unit(tcx: TyCtxt<'_>, did: DefId) -> Option<super::bindings::UnitValue> {
     if tcx.def_kind(did) != DefKind::Struct || super::classes::is_class(tcx, did) {
         return None;
     }

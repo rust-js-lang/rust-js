@@ -208,7 +208,7 @@ fn unread(declared: &str, why: &str) -> String {
 }
 
 /// `text`, a TypeScript type, read, or why it isn't one the reader reads.
-pub(in crate::lower) fn read(text: &str) -> Result<Written, String> {
+fn read(text: &str) -> Result<Written, String> {
     let mut reader = Reader { text, at: 0 };
     let written = reader.ty()?;
     reader.space();
