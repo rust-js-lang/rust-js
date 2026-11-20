@@ -74,7 +74,9 @@ through the crate's own `fold` and `nth` wherever std's does.**
   stepped does, `$iterator({ start, end }, $rangeInclusiveNext)`.
 - **Behind a `dyn Iterator`, `fold` is std's**: `Box<I>` and `&mut I`
   forward `nth` only, so the `dyn` is made without the crate's `fold`
-  (`behind_a_dyn`).
+  (`behind_a_dyn`; since #2217, `own_methods` given the wrapper,
+  `seen_through`, by std's catalog, which leaves out its `count` and
+  `last` too, ADR 1092's amendment).
 - **An iterator a helper steps till it ends** is given no `size_hint`
   nothing asks, as one `toArray()` steps wasn't
   (`HELPERS_STEPPING_ALL`, the one list of those helpers).

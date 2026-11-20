@@ -367,11 +367,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-double-ended-made-forgetting-its-back",
-    breaks:
-      "a range made a `dyn DoubleEndedIterator` is a JS iterator with no back",
+    breaks: "a range made a `dyn DoubleEndedIterator` is a JS iterator with no back",
     file: "src/lower/mir/rvalues.rs",
-    find: "                                    true => this.as_double_ended(value, iterator, span)?,\n",
-    replace: "                                    true => this.as_js_iterator(value, iterator, span)?,\n",
+    find: "                                    true => this.as_double_ended(value, iterator, span),\n",
+    replace: "                                    true => this.as_js_iterator(value, iterator, span),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
   },
   {
@@ -476,12 +475,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "dyn-iterator-as-made",
-    breaks:
-      "a `dyn Iterator` of the crate's iterator keeps its own `fold`, which std's `Box` doesn't give it",
+    breaks: "a `dyn Iterator` of the crate's iterator is made seen through no wrapper, so it keeps its own `fold`, `count` and `last`, which std's `Box<dyn I>` doesn't give it, and a flatten of boxes calls the crate's `count` (#162, #2217)",
     file: "src/lower/mir/rvalues.rs",
-    find: "                                Ok(this.lent_through(crate::lower::iterators::behind_a_dyn(it), &lends))\n",
-    replace: "                                Ok(this.lent_through(it, &lends))\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
+    find: "                                let it = this.seen_through(wrapper, |this| match back {\n",
+    replace: "                                let it = this.seen_through(None, |this| match back {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(own_fold_and_nth|dyn_wrapper_hides_the_crates_own_steps).rs$"],
   },
   {
     name: "dyn-debug-pair-unheld",

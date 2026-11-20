@@ -507,6 +507,11 @@ struct FnCx<'a, 'tcx> {
     /// form's or its mark's, not whether what's made is to be made knowing
     /// it (`has_a_back`'s, #851).
     asking_made: Cell<bool>,
+    /// While the crate's iterator is made the JS iterator behind a `dyn`
+    /// wrapper, `Box<dyn Iterator>` or `&mut dyn Iterator`, that wrapper:
+    /// what `own_methods` gives what's made there is what the wrapper passes
+    /// on as its own, std's catalog's (`seen_through`, #2217).
+    seen_through: Cell<Option<crate::lower::recognition::Wrapper>>,
 }
 
 /// What a body being lowered has of its own, which a nested one, a

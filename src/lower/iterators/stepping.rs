@@ -2,7 +2,7 @@
 //! iterated, and stepped from its back.
 
 use super::*;
-use crate::lower::recognition::Wrapper;
+use crate::lower::recognition::{Passed, Wrapper};
 use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -854,9 +854,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$iterator`'s (#162, #182), and its `rfold` and `nth_back` (#220).
     /// Stepped from its back, `back`, as `rev()` steps it, its `rfold` and
     /// its `nth_back`, std's `Rev`'s `fold` and `nth`, and std's `last`, a
-    /// fold (#217). Through a `&mut`, std passes `nth` and `nth_back` on,
-    /// but its folds are the iterator's `try_fold` and `try_rfold`, and its
-    /// `last` its fold's (#216). One that takes evidence of its impl's
+    /// fold (#217). Through a wrapper, each the wrapper passes on as the
+    /// iterator's own alone, std's catalog's (`Wrapper::passes`): through a
+    /// `&mut`, its `nth` and `nth_back`, its folds the iterator's `try_fold`
+    /// and `try_rfold` and its `last` and `count` its fold's (#216); behind
+    /// a `dyn`, a `Box<dyn Iterator>`'s or a `&mut dyn Iterator`'s, the
+    /// wrapper it's made the JS iterator of (`seen_through`), none of its
+    /// folds, its `last` or its `count`, which every later use would ask of
+    /// it as its own (#162, #2217). One that takes evidence of its impl's
     /// parameters besides its drops, the sides' dictionaries of either's
     /// `Either<L, R>`, is a function of what the runtime gives that gives
     /// it those of `ty` (#475); of its own, which no caller would give the
@@ -867,30 +872,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         back: bool,
         span: Span,
     ) -> R<crate::lower::iterators::OwnMethods> {
-        let folds = !ty.is_ref();
+        let through = (self.seen_through.get()).or_else(|| Wrapper::of(self.tcx, self.typing_env, ty));
+        let passed = |step: &str| through.is_none_or(|wrapper| wrapper.passes(step) == Passed::Own);
         Ok(match back {
             true => crate::lower::iterators::OwnMethods {
-                fold: self.own_fold(ty, ("rfold", folds), span)?,
-                nth: self.own_method(ty, ("nth_back", true), span)?,
+                fold: self.own_fold(ty, ("rfold", passed("rfold")), span)?,
+                nth: match passed("nth_back") {
+                    true => self.own_method(ty, ("nth_back", true), span)?,
+                    false => None,
+                },
                 ..Default::default()
             },
             // Its back's too, which std's adapters stepped from their back
             // ask (#220).
             false => crate::lower::iterators::OwnMethods {
-                fold: self.own_fold(ty, ("fold", folds), span)?,
-                nth: self.own_method(ty, ("nth", false), span)?,
-                last: match folds {
+                fold: self.own_fold(ty, ("fold", passed("fold")), span)?,
+                nth: match passed("nth") {
+                    true => self.own_method(ty, ("nth", false), span)?,
+                    false => None,
+                },
+                last: match passed("last") {
                     true => self.own_method(ty, ("last", false), span)?,
                     false => None,
                 },
-                rfold: self.own_fold(ty, ("rfold", folds), span)?,
-                nth_back: self.own_method(ty, ("nth_back", true), span)?,
-                count: match folds {
+                rfold: self.own_fold(ty, ("rfold", passed("rfold")), span)?,
+                nth_back: match passed("nth_back") {
+                    true => self.own_method(ty, ("nth_back", true), span)?,
+                    false => None,
+                },
+                count: match passed("count") {
                     true => self.own_method(ty, ("count", false), span)?,
                     false => None,
                 },
             },
         })
+    }
+
+    /// `make`'s, the crate's iterator made the JS iterator behind a `dyn`
+    /// wrapper, `wrapper`, `Box<dyn Iterator>` or `&mut dyn Iterator`: what
+    /// `own_methods` gives what's made there is what the wrapper passes on,
+    /// as nothing reaches the rest through it (#2217). Restored as `make`
+    /// ends, a panic too, so it never reaches a make after it.
+    pub(in crate::lower) fn seen_through<T>(
+        &mut self,
+        wrapper: Option<Wrapper>,
+        make: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let outer = self.seen_through.replace(wrapper);
+        let made = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| make(&mut *self)));
+        self.seen_through.set(outer);
+        made.unwrap_or_else(|panic| std::panic::resume_unwind(panic))
     }
 
     /// The impl's `name`, of `Iterator`, or of `DoubleEndedIterator`,

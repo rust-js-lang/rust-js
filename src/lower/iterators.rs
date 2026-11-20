@@ -58,20 +58,6 @@ pub(in crate::lower) fn stepped(value: Expr, next: Expr, boxed: bool, back: Opti
     stepped_ends(value, next, boxed, back, None, None, OwnMethods::default())
 }
 
-/// `it`, an iterator of the crate's made a JS one, behind a `dyn Iterator`:
-/// std's `Box<I>` and `&mut I` give `nth` to its own, but `fold` is std's,
-/// of `next`, which `$iterator` isn't given then (#162).
-pub(in crate::lower) fn behind_a_dyn(mut it: Expr) -> Expr {
-    let own = iterator_parts(&it).is_some_and(|given| given.len() > 6);
-    if let js::ExprKind::Call(_, given) = &mut it.kind
-        && own
-    {
-        given[6] = Expr::js_undefined();
-        fewest_iterator_args(given);
-    }
-    it
-}
-
 /// A `$iterator` call's arguments, `given`, without those at the end that
 /// are its defaults: an `undefined`, and `boxed`'s `false`.
 pub(in crate::lower) fn fewest_iterator_args(given: &mut Vec<Expr>) {

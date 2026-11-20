@@ -163,11 +163,6 @@ function main() {
     upIterator_sizeHint,
     undefined,
     upIterator_nth,
-    upIterator_last,
-    undefined,
-    undefined,
-    undefined,
-    upIterator_count,
   );
   console.log(`${d.reduce((a, b) => (a + b) >>> 0, 0)}`);
 }

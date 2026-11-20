@@ -225,15 +225,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
   {
-    name: "dyn-keeps-own-fold",
-    breaks:
-      "a `Box<dyn Iterator>` of the crate's iterator folds by its own `fold`, where std's `Box` folds by `next`",
-    file: "src/lower/iterators.rs",
-    find: "        given[6] = Expr::js_undefined();\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
-  },
-  {
     name: "sliced-not-made",
     breaks:
       "a slice's range in bounds, `items.slice(0, 3)`, isn't an array made here, so its `to_vec()` copies it again, `.slice(0, 3).slice()` (ADR 0806)",

@@ -605,12 +605,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 true => self.unsized_box_lends(iterator),
                                 false => Vec::new(),
                             };
+                            // The crate's iterator made the JS iterator with only
+                            // what the `dyn` wrapper passes on as its own, std's
+                            // catalog's, never its count, last or folds (#162,
+                            // #2217).
+                            let wrapper = crate::lower::recognition::Wrapper::of(self.tcx, self.typing_env, *to);
                             let made = |this: &mut Self, value: Expr| -> R<Expr> {
-                                let it = match back {
-                                    true => this.as_double_ended(value, iterator, span)?,
-                                    false => this.as_js_iterator(value, iterator, span)?,
-                                };
-                                Ok(this.lent_through(crate::lower::iterators::behind_a_dyn(it), &lends))
+                                let it = this.seen_through(wrapper, |this| match back {
+                                    true => this.as_double_ended(value, iterator, span),
+                                    false => this.as_js_iterator(value, iterator, span),
+                                })?;
+                                Ok(this.lent_through(it, &lends))
                             };
                             if !carried {
                                 return Ok(Value::Expr(made(self, value)?));

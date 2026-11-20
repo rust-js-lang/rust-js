@@ -276,25 +276,18 @@ export const mutations: Mutation[] = [
   },
   {
     name: "own-methods-mut-ref-folds",
-    breaks:
-      "a `&mut` of the crate's iterator is given its own `fold` and `rfold`, which std's `&mut I` doesn't reach (#216, #217)",
+    breaks: "a `&mut` of the crate's iterator is given its own `fold` and `rfold`, which std's `&mut I` doesn't reach (#216, #217)",
     file: "src/lower/iterators/stepping.rs",
-    find: "        let folds = !ty.is_ref();\n",
-    replace: "        let folds = true;\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(adapters_own_nth_fold|rev_own_back_methods).rs$",
-    ],
+    find: "        let through = (self.seen_through.get()).or_else(|| Wrapper::of(self.tcx, self.typing_env, ty));\n",
+    replace: "        let through = self.seen_through.get();\n",
+    tests: ["test/corpus.test.ts", "-t", "^(adapters_own_nth_fold|rev_own_back_methods).rs$"],
   },
   {
     name: "own-methods-back-forward",
-    breaks:
-      "`rev()` of the crate's iterator is given its forward `nth`, so `rev().nth(1)` counts from the front (#217)",
+    breaks: "`rev()` of the crate's iterator is given its forward `nth`, so `rev().nth(1)` counts from the front (#217)",
     file: "src/lower/iterators/stepping.rs",
-    find: '                fold: self.own_fold(ty, ("rfold", folds), span)?,\n                nth: self.own_method(ty, ("nth_back", true), span)?,\n',
-    replace:
-      '                fold: self.own_fold(ty, ("fold", folds), span)?,\n                nth: self.own_method(ty, ("nth", false), span)?,\n',
+    find: "                fold: self.own_fold(ty, (\"rfold\", passed(\"rfold\")), span)?,\n                nth: match passed(\"nth_back\") {\n                    true => self.own_method(ty, (\"nth_back\", true), span)?,\n",
+    replace: "                fold: self.own_fold(ty, (\"fold\", passed(\"fold\")), span)?,\n                nth: match passed(\"nth\") {\n                    true => self.own_method(ty, (\"nth\", false), span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
   },
   {
@@ -617,5 +610,13 @@ export const mutations: Mutation[] = [
     find: "        if hides {\n            lends.push(Wrapper::BoxUnsized);\n",
     replace: "        if false {\n            lends.push(Wrapper::BoxUnsized);\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
+  },
+  {
+    name: "seen-through-unrestored",
+    breaks: "what a `dyn` coercion's wrapper says of the crate's iterator stays after its make, so a later make of that type, a plain `Own(3).count()`, is made without its own `count` (#2217)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "        self.seen_through.set(outer);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_wrapper_hides_the_crates_own_steps.rs$"],
   },
 ];

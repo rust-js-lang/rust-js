@@ -730,7 +730,7 @@ Step 11 gives value.rs the accessors the last named reads lacked.
 - `emit()` marks an `$iterator` of the crate's own or a dictionary's steps
   `Known::IterOwn`.
 - `iterator_parts` gives an `$iterator`'s arguments, not `$given`'s. It is
-  read by `behind_a_dyn`, by tidy's `stepped_in_place` dropping a hint, and
+  read by `behind_a_dyn` (gone since #2217), by tidy's `stepped_in_place` dropping a hint, and
   by `reversal`'s range stepped from its end.
 - `is_range_stepped` moves to value.rs.
 - `is_knowing` reads `IterKnowing`, for tidy's `stepped_in_place`.
@@ -2235,3 +2235,34 @@ Mutations: `filter-count-unowned` (steps.ts), `filter-ends-count-unowned`
 (back_steps.ts), `taking-count-unowned` (taking.ts),
 `skipping-last-unowned` (skipping.ts), `chain-last-unowned`
 (lazy_chain.ts). Case (ADR 0262): R.
+
+## Amendment (2026-11-21, #2217): behind a `dyn`, the crate's iterator carries what the wrapper passes on
+
+A `Box<dyn Iterator>` of the crate's iterator called its own `count`
+where std's `Box<I: ?Sized>` passes `count` on to nothing, so `count` is
+the trait's default over `next`. The calls came through a flatten of
+boxes, a `skip` or a `chain` of one, and, with `--std-iterators`, the
+box's own `count` and `last`. The coercion made the crate's iterator a
+JS `$iterator` with its own steps. `behind_a_dyn` then blanked its `fold`
+argument alone, a JS-shape edit that kept a partial copy of the catalog.
+Its `count` and `last` stayed, and every later use asked them of the JS
+iterator as its own.
+
+`behind_a_dyn` is gone. `own_methods` (iterators/stepping.rs) gives each
+step only where the wrapper the iterator is seen through passes it on as
+the iterator's own (`Wrapper::passes`, std's catalog):
+- behind a `dyn`, the coercion's wrapper, `Box<dyn I>` or `&mut dyn I`,
+  given by `seen_through`. That is scoped to the make, and restored on
+  every exit, a panic too;
+- through a `&mut I` or a `Box<I>`, the type's own wrapper. That
+  replaces `folds = !ty.is_ref()`, a hand-written mirror of `&mut I`'s
+  row.
+
+ADR 0262 case: results change (the crate's code ran where Rust's doesn't),
+so Rust's behavior is preserved. Two snapshots move, each losing a
+`count` (and a `last`) argument std never calls through the wrapper.
+Corpus case `dyn_wrapper_hides_the_crates_own_steps` covers a flatten, a
+skip and a chain of boxes, and `count`, `last`, `fold` and `nth` of a
+`Box<dyn>`. It also checks that a `&mut`, a `&mut dyn`, a sized `Box` and a
+`Peekable` pass on what std's do, in both builds. A `skip(n).last()` of a
+`&mut dyn` is #2218's.

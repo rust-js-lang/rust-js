@@ -611,7 +611,7 @@ pub(in crate::lower) fn repeating_n_parts(e: &Expr) -> Option<&[Expr]> {
 
 /// What `e`, an `$iterator` `emit()` wrote (`Form::Own` or `Form::Range`),
 /// is given, its value and its step first: what's asked of its own steps,
-/// `nth` or `size_hint` (`behind_a_dyn`, tidy's `stepped_in_place`), and of
+/// `nth` or `size_hint` (tidy's `stepped_in_place`), and of
 /// a range's step, from either end. Not `$given`'s.
 pub(in crate::lower) fn iterator_parts(e: &Expr) -> Option<&[Expr]> {
     match &e.kind {

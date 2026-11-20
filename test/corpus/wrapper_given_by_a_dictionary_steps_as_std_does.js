@@ -288,11 +288,6 @@ function main() {
     undefined,
     undefined,
     countdownIterator_nth,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countdownIterator_count,
   );
   console.log(`bare dyn ${it.reduce((n) => n + 1, 0)}`);
 }

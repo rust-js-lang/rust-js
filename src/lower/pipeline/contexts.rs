@@ -106,5 +106,6 @@ pub(super) fn fn_cx<'a, 'tcx>(
         made_into: None,
         made_from: Vec::new(),
         asking_made: std::cell::Cell::new(false),
+        seen_through: std::cell::Cell::new(None),
     }
 }
