@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     name: "receiver-taken-at-its-word",
     breaks: "a binding's method is taken at its word of any receiver, so a JS caller's `Intl.Locale` subclass whose `maximize` calls back into the memo passes its held borrow where Rust panics (#2111)",
     file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
-    find: "        && receiver.runs_its_own(recognition, (def_id, args)))",
+    find: "        && receiver_runs_its_own(recognition, (def_id, args), given))",
     replace: "        && true)",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a JS caller's locale's method keeps"],
   },
@@ -231,5 +231,13 @@ export const mutations: Mutation[] = [
     find: "    (read_may_run(recognition, given.pointers, read) && !given.at_hand.holds(recognition, given.thir, lhs))",
     replace: "    read_may_run(recognition, given.pointers, read)",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "a locale the memo made, cast"],
+  },
+  {
+    name: "call-receiver-taken-at-its-word",
+    breaks: "a call of a binding that runs nothing is taken at its word of any receiver, `may_run`'s question too, which asked no receiver (#2119)",
+    file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
+    find: "    (binding_runs_nothing(tcx, id) && receiver_runs_its_own(recognition, (id, args), given))\n",
+    replace: "    (binding_runs_nothing(tcx, id) && true)\n",
+    tests: ["test/builtins-runs-nothing.test.ts", "test/lowering-cell-borrows.test.ts", "test/js-collections.test.ts"],
   },
 ];

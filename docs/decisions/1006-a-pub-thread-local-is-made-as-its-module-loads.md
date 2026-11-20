@@ -713,3 +713,26 @@ The ports: React's ReactFlightServer still destructures its four
   `static-own-unnamed`, `field-behind-reference-owned`,
   `shared-places-unlisted`, `kin-unjoined`, `initializer-as-is-read-through`
   and `field-as-is-read-through` (`analysis/lazy_locals.ts`).
+
+## Amendment: every asker asks a binding's receiver (2026-11-20, #2119)
+
+What a thread-local's initializer runs as its module loads, and what a
+function runs before its return, are `may_run`'s answers. Of a binding's
+method that runs nothing, `may_run` alone didn't ask whether its receiver
+is one a JS caller may have handed over (`Receiver::Unasked`): it took the
+method to be its own of any receiver, where the borrow analysis and
+lowering asked (#2111). It asks as they do now, of the receiver's type,
+having no call's arguments (`call_runs_nothing(.., None)`), and `Receiver`
+goes: each asker passes what it has of the call. A receiver a JS caller may
+have handed over may be its subclass, whose override runs what the method
+is given.
+
+Measured, main against the change: React's port at its pin, compiled cold,
+every crate's JS unchanged; the corpus, no snapshot moved, each case as
+native. Its premise left, that a binding's JS doesn't call the crate's
+exported functions back, is the default Tu decided (ADR 0262's
+Consequences); a binding that may says so (the next amendment).
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no answer changes.
+Held by mutations `receiver-taken-at-its-word` and
+`call-receiver-taken-at-its-word`, caught.

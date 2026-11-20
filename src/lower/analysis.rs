@@ -935,7 +935,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             trait_impls: &trait_impls,
             foreign: &foreign,
         };
-        cell_borrows::call_runs_nothing(&recognition, (id, args), cell_borrows::Receiver::Unasked)
+        cell_borrows::call_runs_nothing(&recognition, (id, args), None)
     };
     let runs = may_run::Runs::new(
         tcx,

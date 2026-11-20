@@ -52,14 +52,17 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
 /// borrow held across it and a thread-local made as its module loads ask
 /// (`may_run::may_run`, ADR 1006, amended).
 /// A binding's method is its own only of a receiver no JS caller handed
-/// over (`receiver_runs_its_own`, #2111), where `receiver` asks it.
+/// over (`receiver_runs_its_own`, #2111), asked of the call's arguments,
+/// `given`, where the asker has them; of none, of the receiver's type
+/// alone. Every asker asks it, `may_run` too, whose model took every
+/// receiver's method to be its own (#2119).
 pub(in crate::lower) fn call_runs_nothing<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     (id, args): (DefId, ty::GenericArgsRef<'tcx>),
-    receiver: Receiver<'_, 'tcx>,
+    given: Option<CallArgs<'_, 'tcx>>,
 ) -> bool {
     let tcx = recognition.tcx;
-    (binding_runs_nothing(tcx, id) && receiver.runs_its_own(recognition, (id, args)))
+    (binding_runs_nothing(tcx, id) && receiver_runs_its_own(recognition, (id, args), given))
         || is_js_object_deref(tcx, tcx.parent(id))
         || crate::lower::untagged::from_gives_its_argument(recognition.foreign, id)
 }
@@ -173,38 +176,11 @@ pub(in crate::lower) fn binding_call_runs_nothing<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
-    receiver: Receiver<'_, 'tcx>,
+    given: Option<CallArgs<'_, 'tcx>>,
 ) -> bool {
-    let given = match receiver {
-        Receiver::Asked(given) => given,
-        Receiver::Unasked => None,
-    };
     (runs_nothing_but_its_receiver(recognition, def_id, args, given)
-        && receiver.runs_its_own(recognition, (def_id, args)))
+        && receiver_runs_its_own(recognition, (def_id, args), given))
         || read_of_what_is_at_hand(recognition, def_id, given)
-}
-
-/// Whether a binding's method's receiver is asked of where its word is
-/// (#2111): the borrow analysis asks, of the call's arguments where it has
-/// them, `Asked`, and lowering's `Known::RunsNothing` too, of the THIR
-/// call its MIR call is (`CellBorrows::lowered_call_runs_nothing`, #2118).
-/// One asker doesn't: `may_run`, whose model has no binding let JS call the
-/// crate's exports back (its doc, #2119).
-#[derive(Clone, Copy)]
-pub(in crate::lower) enum Receiver<'a, 'tcx> {
-    Asked(Option<CallArgs<'a, 'tcx>>),
-    Unasked,
-}
-
-impl<'tcx> Receiver<'_, 'tcx> {
-    /// Whether the call runs the binding's own method (`receiver_runs_its_own`),
-    /// or, where it isn't asked, is taken to.
-    fn runs_its_own(self, recognition: &Recognition<'_, 'tcx>, call: (DefId, ty::GenericArgsRef<'tcx>)) -> bool {
-        match self {
-            Receiver::Asked(given) => receiver_runs_its_own(recognition, call, given),
-            Receiver::Unasked => true,
-        }
-    }
 }
 
 /// What a binding says it runs, of what it's given: nothing

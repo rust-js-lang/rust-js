@@ -139,11 +139,10 @@ impl Impls {
 /// crate's a value a drop drops holds, and what each of those runs in turn;
 /// each thread-local, `static` and `const` they read by its name, and what
 /// the initializer of a thread-local read runs, which may make it there.
-/// Its premise: a binding's JS, a callback it's given, a JS caller's
-/// override of a method or a getter, never calls the crate's exported
-/// functions back, so a `runs_nothing` method runs nothing whatever its
-/// receiver (`Receiver::Unasked`); not a recorded difference, the user's
-/// to decide (#2119).
+/// Its premise: a binding's JS, a callback it's given or a getter, never
+/// calls the crate's exported functions back. A `runs_nothing` method's
+/// receiver is asked as every asker asks it (`receiver_runs_its_own`): one
+/// a JS caller may have handed over may be its override (#2119).
 /// `None` where it may run what rust-js can't follow: a `dyn Fn`'s call but
 /// of what its call was given (`given_dyn`, rd542), a type parameter's call
 /// of what it's given, a fn pointer that may be anything (ADR 0907), a drop

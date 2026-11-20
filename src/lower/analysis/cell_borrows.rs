@@ -27,7 +27,6 @@ mod std_given;
 mod unnamed;
 use at_hand::AtHand;
 pub(in crate::lower) use may_be_cell::{may_be_cell, unsized_in_place};
-pub(in crate::lower) use runs_nothing::Receiver;
 use runs_nothing::{CallArgs, field_access_may_run, generic_read, read_may_run};
 pub(in crate::lower) use runs_nothing::{
     binding_call_runs_nothing, binding_runs_nothing, call_runs_nothing, resolve_runs_nothing,
@@ -694,7 +693,7 @@ impl<'tcx> CellBorrows<'tcx> {
             at_hand: &self.at_hand,
             pointers: Some(&self.pointers),
         });
-        binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(given))
+        binding_call_runs_nothing(recognition, def_id, args, given)
     }
 
     /// What each fn pointer the crate calls may be (ADR 0907), its owner's
@@ -996,7 +995,7 @@ fn called<'tcx>(
         return Called::Read(read);
     }
     // A trait's binding, of a type parameter its bound reads (ADR 0307).
-    if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args, Receiver::Asked(given)) {
+    if !tcx.is_closure_like(def_id) && binding_call_runs_nothing(recognition, def_id, args, given) {
         return Called::Nothing;
     }
     let instance = match crate::lower::items::resolve_instance_in(tcx, recognition.typing_env, def_id, args) {
@@ -1073,7 +1072,7 @@ fn called<'tcx>(
             class: None,
         });
     }
-    if call_runs_nothing(recognition, (id, instance.args), Receiver::Asked(given)) {
+    if call_runs_nothing(recognition, (id, instance.args), given) {
         return Called::Nothing;
     }
     // A method std derives, `Clone::clone` of `#[derive(Clone)]`, runs what
