@@ -334,4 +334,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-moves.test.ts", "-t", "a binding closures take is one const"],
   },
+  {
+    name: "some-of-a-caught-null-a-none-alone",
+    breaks: "a local each write of which is a `Some` of a caught JS `null` or a literal `None` is taken for one whose `None` is `undefined` alone, so its test is `held !== undefined`: `is_some()` says `Some` where `unwrap_or(d)` gives `d`, one value two answers (a wrong answer, ADR 0030; #2184)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                        && variant.as_u32() == 1\n",
+    replace: "                        && variant.as_u32() == 1\n                        && false\n",
+    tests: ["test/js-errors.test.ts", "-t", "Some of a caught null"],
+  },
 ];

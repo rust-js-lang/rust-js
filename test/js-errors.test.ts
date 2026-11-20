@@ -374,6 +374,56 @@ pub fn thrown(source: &str) -> Option<&'static JsError> {
   delete g.fallback;
 });
 
+// A local each write of which is a `Some(..)` or a literal `None`, where a
+// `Some`'s payload is a caught JS `null`, a `None` JS gave (ADR 0030): one
+// value to each reader, `None`, as `.err()` gives it, never a `Some` to
+// `is_some()` that `unwrap_or` takes for a `None`. Its test is `!= null`,
+// not `!== undefined` (`mir_nones` asks `payload_may_be_null`, #2184).
+test("a Some of a caught null is None to every reader of one local", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-error-some-of-caught-null");
+  const held = "let held = match js::eval(source) {\n        Ok(_) => None,\n        Err(e) => Some(e),\n    };";
+  writeFileSync(join(dir, "lib.rs"), `use js::{JsError, Unknown};
+
+pub fn by_err(source: &str) -> bool {
+    js::eval(source).err().is_some()
+}
+
+pub fn by_if_let(source: &str) -> bool {
+    ${held}
+    if let Some(_) = held { true } else { false }
+}
+
+pub fn by_is_some(source: &str) -> bool {
+    ${held}
+    held.is_some()
+}
+
+pub fn by_unwrap_or(source: &str, d: &'static JsError) -> Option<&'static Unknown> {
+    ${held}
+    held.unwrap_or(d).as_unknown()
+}
+
+pub fn by_match(source: &str, d: &'static JsError) -> Option<&'static Unknown> {
+    ${held}
+    let picked = match held {
+        Some(e) => e,
+        None => d,
+    };
+    picked.as_unknown()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).not.toContain("held !== undefined");
+  const lib = await import(join(dir, "lib.js"));
+  const d = new Error("d");
+  for (const source of ["throw null", "throw undefined", "1"]) {
+    expect([source, lib.byErr(source), lib.byIfLet(source), lib.byIsSome(source), lib.byUnwrapOr(source, d), lib.byMatch(source, d)]).toEqual([source, false, false, false, d, d]);
+  }
+  const x = lib.byUnwrapOr("throw new Error('x')", d);
+  expect([lib.byIfLet("throw new Error('x')"), lib.byIsSome("throw new Error('x')"), x instanceof Error && x.message]).toEqual([true, true, "x"]);
+});
+
 // #1939: a caught `null`, or `undefined`, is a `JsError`'s `None` (ADR
 // 0030), and an export's `None` is `undefined` alone (#1840): of `.err()`,
 // `.ok()`, `Option::from`, a match arm's `Some(e)`, a field written and a

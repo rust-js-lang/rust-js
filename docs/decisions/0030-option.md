@@ -276,3 +276,16 @@ library; a binding's default parameter; `thrown()`'s `=== undefined`);
 mutations js-error-holds-no-none (`js_nones.rs`),
 some-of-a-caught-null-trusted (`one_none.rs`),
 some-of-a-caught-null-returned-as-is (`assign.rs`).
+
+## Amendment: a `Some` of a caught `null` is no `None` alone (2026-11-20, #2184)
+
+A local each write of which is a `Some(..)` or a literal `None` was taken
+for one whose `None` is `undefined` alone (`mir_nones`, ADR 0298), so its
+test was `held !== undefined`, even where a `Some`'s payload was a caught
+`null`, a `None` JS gave: `let held = match js::eval(s) { Ok(_) => None,
+Err(e) => Some(e) }` of `throw null` was a `Some` to `is_some()` and `if
+let`, and a `None` to `unwrap_or(d)` and a `match`'s `??`, one value two
+answers. `mir_nones` now asks `payload_may_be_null`, the one answer
+`made_some` asks: such a local's test is `!= null`, and every reader takes
+it for the `None` `.err()` gives. A field of one, and a binding given one,
+were tested `!= null` already. js-errors holds each reader's answer.

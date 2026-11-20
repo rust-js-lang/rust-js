@@ -149,6 +149,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let write = match &assign.1 {
+                // A `Some` of what may itself be JS's `null`, a caught one,
+                // which is a `None` JS gave (ADR 0030, #1939), isn't one of a
+                // `None` alone: its test is `!= null`, as `made_some` takes
+                // it for no `Some` (`payload_may_be_null`, the one answer).
+                Rvalue::Aggregate(kind, operands)
+                    if let AggregateKind::Adt(did, variant, ..) = **kind
+                        && tcx.is_lang_item(did, LangItem::Option)
+                        && variant.as_u32() == 1
+                        && (operands.iter().filter_map(Operand::place)).any(|payload| {
+                            (self.krate.nulled_params.js_nones()).payload_may_be_null(tcx, body, payload)
+                        }) =>
+                {
+                    unknown.insert(assign.0.local);
+                    continue;
+                }
                 Rvalue::Aggregate(kind, _)
                     if let AggregateKind::Adt(did, variant, ..) = **kind
                         && tcx.is_lang_item(did, LangItem::Option) =>
