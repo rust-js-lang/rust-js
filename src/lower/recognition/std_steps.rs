@@ -197,6 +197,21 @@ impl Wrapper {
         Some((wrapper, held))
     }
 
+    /// How a `&mut` of type `by` lends the iterator it holds: of a sized
+    /// one or an unsized one, a `dyn`'s. Of a `&mut` of a `&mut`,
+    /// `(&mut d).find(..)` of a `d: &mut dyn Iterator`, the innermost's, as
+    /// a sized `&mut I` passes each of its steps on to its `I`'s (#2180).
+    pub(in crate::lower) fn lending<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, by: Ty<'tcx>) -> Wrapper {
+        let mut held = by;
+        while let ty::Ref(_, to, _) = *held.kind() {
+            held = to;
+        }
+        match held.is_sized(tcx, typing_env) {
+            true => Wrapper::MutRefSized,
+            false => Wrapper::MutRefUnsized,
+        }
+    }
+
     /// Its catalog name.
     fn name(self) -> &'static str {
         match self {

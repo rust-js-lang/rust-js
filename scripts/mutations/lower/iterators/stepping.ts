@@ -530,14 +530,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "a std body compiled given a generic iterator takes an array too"],
   },
   {
-    name: "lent-dyn-as-sized",
-    breaks: "a `&mut dyn` iterator is lent as a sized one's, `$lent(it)`, so its `rfold` is its iterator's `try_rfold`, where std's unsized `&mut I` takes the default (#1991)",
-    file: "src/lower/iterators/stepping.rs",
-    find: "            ty::Ref(_, to, _) if !to.is_sized(self.tcx, self.typing_env) => Wrapper::MutRefUnsized,\n",
-    replace: "            ty::Ref(_, to, _) if !to.is_sized(self.tcx, self.typing_env) => Wrapper::MutRefSized,\n",
-    tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
-  },
-  {
     name: "dyn-given-unlent",
     breaks: "a `&mut dyn DoubleEndedIterator` given as a type parameter isn't lent, so generic code's `rfold` of it, or std's compiled `Rev`'s, folds by what it lends's own `rfold`, a `take()`'s `nth_back(len - n - 1)`: what it skips dropped back to front, where Rust drops them as one slice (#1996)",
     file: "src/lower/iterators/stepping.rs",

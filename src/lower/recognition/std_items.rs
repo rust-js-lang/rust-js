@@ -112,6 +112,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             _ => return None,
         };
+        // Of an iterator trait's, only what std's `&mut I` passes on to
+        // `I`'s own, its steps catalog's (`Wrapper::passes`): of an unsized
+        // `I`, a `dyn`'s, its impl writes `try_fold` and `try_rfold`, but as
+        // the traits' defaults over its `next` and `next_back` (#2180).
+        let iterator = super::sorts::is_iterator_trait(tcx, trait_id);
+        if iterator
+            && let Some(wrapper) = super::Wrapper::of(tcx, self.typing_env, generic_args.type_at(0))
+            && wrapper.passes(tcx.item_name(def_id).as_str()) != super::Passed::Own
+        {
+            return None;
+        }
         self.std_impl_writes(def_id, generic_args).then(|| {
             let args = tcx.mk_args_from_iter(std::iter::once(inner.into()).chain(generic_args.iter().skip(1)));
             (args, shared)

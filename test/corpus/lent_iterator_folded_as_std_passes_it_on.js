@@ -899,7 +899,7 @@ function dynTryFoldOfASkip() {
       ),
   );
   try {
-    let r = $tryFoldSome(b, 0, (acc, x) => {
+    let r = $tryFoldSome($lent(b, "lentUnsized"), 0, (acc, x) => {
       let result;
       if (x[0] < 4) {
         result = (((acc * 10) >>> 0) + x[0]) >>> 0;

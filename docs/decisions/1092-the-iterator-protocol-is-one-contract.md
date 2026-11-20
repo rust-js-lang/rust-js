@@ -1872,3 +1872,40 @@ and chains of two), not this table's.
 
 Case (ADR 0262): R. Which of the crate's steps std calls through each
 path is observable.
+
+## Amendment: a `&mut dyn` lent to a step is std's unsized `&mut I` (2026-11-20, #2180)
+
+The paths table's first run found that a `&mut dyn Iterator` lent to a
+step taking `&mut self`, `(&mut d).find(..)`, `.try_fold(..)` or
+`.rfind(..)`, reached the referent's own `try_fold` and `try_rfold`.
+std's `impl Iterator for &mut I` writes those two, but only a sized `I`'s
+specialization forwards them. An unsized `I`'s are the traits' defaults
+over `next` and `next_back`, as the catalog's `&mut dyn I` runs say. So
+a `skip(1)`'s `try_fold` asked the crate's `nth(0)` where std asks
+`nth(1)`. Three deciders said otherwise, and each now asks the catalog's
+owner:
+
+- **What a `&mut` passes through to its `W`**
+  (`passed_through_mut_ref`). Of an iterator trait, it passes a step
+  through only where `Wrapper::passes` says the step is `I`'s own, not
+  wherever std's impl has a body. Of a sized `I` that's the same answer.
+- **How a `&mut` lends** (`Wrapper::lending`, which `lent_iterator`
+  asks in place of its own match). Of a `&mut` of a `&mut`, it's the
+  innermost referent's, since a sized `&mut I` passes each step on to its
+  `I`.
+- **A step whose `Self` is a `&mut` of an unsized iterator.** It's lent
+  so before any branch steps it (`unsized_self_lent`, which
+  `mir_iter_method` asks first). The back steps and `try_fold`'s helper
+  never lent their receiver, which suits a sized `&mut` but not an
+  unsized one.
+
+One snapshot moves: `lent_iterator_folded_as_std_passes_it_on`'s
+`Iterator::try_fold(&mut b, ..)` of a `&mut dyn` is
+`$tryFoldSome($lent(b, "lentUnsized"), ..)`, where it was the `Take`'s
+own `try_fold`. That made no difference over a `Vec`'s items, which
+write no steps of their own.
+
+Case (ADR 0262): R. Corpus case `mut_dyn_lent_steps_as_std_does` runs
+as native in both builds, and so do the table's 26 case-builds that
+were listed under #2180. Mutations: `lending-of-the-outer-ref-only`,
+`mut-ref-passes-what-its-impl-writes` and `mut-dyn-self-unlent`.

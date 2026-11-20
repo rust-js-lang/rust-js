@@ -555,4 +555,12 @@ export const mutations: Mutation[] = [
     replace: "            r::copied_source(self.tcx, ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^len_of_a_reversed_copy_of_a_map.rs$"],
   },
+  {
+    name: "mut-dyn-self-unlent",
+    breaks: "a step of a `Self` that's a `&mut dyn Iterator` itself, `(&mut d).find(..)` or `.rfind(..)`, is its referent's, never lent as std's unsized `&mut I` lends it, so a `take(3)`'s `rfind` asks its own `try_rfold`, the crate's `nth_back(1)`, where std steps it by `next_back`, `nth_back(2)` (#2180)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "        if lent && !values.is_empty() {\n",
+    replace: "        if lent && !values.is_empty() && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_dyn_lent_steps_as_std_does.rs$"],
+  },
 ];

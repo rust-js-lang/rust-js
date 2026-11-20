@@ -221,17 +221,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `$lent(it)`: a generic iterator lent as a `&mut`, `by`, which steps
     /// `it` and can't close it, as its lender goes on stepping it (ADR 0071),
-    /// as `by` lends it, of a sized iterator or not (`Wrapper`, #1991); of one
-    /// already lent, `by_ref()`'s, itself, a JS iterator nothing closes.
+    /// as `by` lends it, of a sized iterator or not (`Wrapper::lending`,
+    /// #1991, #2180); of one already lent, `by_ref()`'s, itself, a JS
+    /// iterator nothing closes.
     pub(in crate::lower) fn lent_iterator(&mut self, it: Expr, by: Ty<'tcx>) -> Expr {
         if is_lent(&it) {
             return it;
         }
-        let how = match by.kind() {
-            ty::Ref(_, to, _) if !to.is_sized(self.tcx, self.typing_env) => Wrapper::MutRefUnsized,
-            _ => Wrapper::MutRefSized,
-        };
-        IterValue::js(it).lent(how).emit()
+        IterValue::js(it)
+            .lent(Wrapper::lending(self.tcx, self.typing_env, by))
+            .emit()
     }
 
     /// Of a function JS calls, `function`, each of its parameters,

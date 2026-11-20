@@ -382,4 +382,12 @@ export const mutations: Mutation[] = [
     replace: "        _ if is_std_def(tcx, tr, StdItem::From) => Some((second, first, false)),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
   },
+  {
+    name: "mut-ref-passes-what-its-impl-writes",
+    breaks: "a step std's `&mut I` writes is passed on to `I`'s own whatever the steps catalog says, so of a `&mut dyn Iterator` its `try_fold`, the trait's default over `next` in std, is a `skip(1)`'s own, asking the crate's `nth(0)` where std asks `nth(1)` (#2180)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "            && wrapper.passes(tcx.item_name(def_id).as_str()) != super::Passed::Own\n",
+    replace: "            && wrapper.passes(tcx.item_name(def_id).as_str()) != super::Passed::Own\n            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_dyn_lent_steps_as_std_does.rs$"],
+  },
 ];

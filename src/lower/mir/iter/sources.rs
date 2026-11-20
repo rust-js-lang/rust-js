@@ -2,6 +2,7 @@
 //! iterator; and the callbacks it's given.
 
 use super::*;
+use crate::lower::recognition::Wrapper;
 use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -73,6 +74,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// reads its `len()` asks (#387): of a type parameter given as it is,
     /// the JS iterator made of it given its length, and its back where it
     /// knows it and its bounds give one (#1983).
+    /// `values`, a std iterator method's, its receiver of type
+    /// `receiver_ty` first: of a `Self` that's a `&mut` of an unsized
+    /// iterator itself, lent to a step that takes `&mut self`, `(&mut
+    /// d).find(..)` of a `d: &mut dyn Iterator`, the receiver lent as that
+    /// `&mut dyn I`, whose steps std's impl passes on only in part, its
+    /// `try_fold` and `try_rfold` the traits' defaults (`Wrapper::lending`,
+    /// #2180), so whatever branch steps it steps those.
+    pub(super) fn unsized_self_lent(&mut self, mut values: Vec<Expr>, receiver_ty: Ty<'tcx>) -> Vec<Expr> {
+        let lent = matches!(receiver_ty.kind(), ty::Ref(_, through, Mutability::Mut) if through.is_mutable_ptr())
+            && Wrapper::lending(self.tcx, self.typing_env, receiver_ty) == Wrapper::MutRefUnsized;
+        if lent && !values.is_empty() {
+            let receiver = values.remove(0);
+            values.insert(0, self.lent_iterator(receiver, receiver_ty));
+        }
+        values
+    }
+
     pub(super) fn method_source(
         &mut self,
         value: Expr,

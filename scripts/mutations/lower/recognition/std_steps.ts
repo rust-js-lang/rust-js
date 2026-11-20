@@ -48,4 +48,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
     snapshots: true,
   },
+  {
+    name: "lending-of-the-outer-ref-only",
+    breaks: "a `&mut` of a `&mut dyn Iterator` lends as a sized `&mut I`, by its first referent alone, so `(&mut d).find(..)` of a `skip(1)` reaches its own `try_fold`, which asks the crate's `nth(0)` where std's default asks `nth(1)` (#2180)",
+    file: "src/lower/recognition/std_steps.rs",
+    find: "        while let ty::Ref(_, to, _) = *held.kind() {\n            held = to;\n        }\n",
+    replace: "        if let ty::Ref(_, to, _) = *held.kind() {\n            held = to;\n        }\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_dyn_lent_steps_as_std_does.rs$"],
+  },
+  {
+    name: "lent-dyn-as-sized",
+    breaks: "a `&mut dyn` iterator is lent as a sized one's, `$lent(it)`, so its `rfold` is its iterator's `try_rfold`, where std's unsized `&mut I` takes the default (#1991; `Wrapper::lending`'s since #2180)",
+    file: "src/lower/recognition/std_steps.rs",
+    find: "            false => Wrapper::MutRefUnsized,\n",
+    replace: "            false => Wrapper::MutRefSized,\n",
+    tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
+  },
 ];
