@@ -603,8 +603,7 @@ function main() {
   ];
   for (const [i, src] of programs.entries()) {
     const value = run(src);
-    const kind = value.TAG;
-    if (kind === "Ok") {
+    if (value.TAG === "Ok") {
       console.log(`${i}: ${value._0.join(" | ")}`);
     } else {
       console.log(`${i}: error: ${value._0}`);

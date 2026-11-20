@@ -73,19 +73,20 @@ function recordDebug_fmt(record) {
 }
 
 export function describe(v) {
+  const kind = v.TAG;
   if (v === "Null") {
     return "null";
   }
-  if (v.TAG === "Bool") {
+  if (kind === "Bool") {
     return `bool ${v._0}`;
   }
-  if (v.TAG === "Number") {
+  if (kind === "Number") {
     return `number ${$jsonNumberText(v._0)}`;
   }
-  if (v.TAG === "String") {
+  if (kind === "String") {
     return `string ${v._0}`;
   }
-  if (v.TAG === "Array") {
+  if (kind === "Array") {
     return `array of ${v._0.length}`;
   }
   return `object with ${v._0.size}`;

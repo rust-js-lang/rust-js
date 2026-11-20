@@ -113,6 +113,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// presence, an untagged one's kind, a keyed one's keys, an
     /// `Ordering`'s number, a write's result.
     pub(in crate::lower) fn held_tag(&self, subject: &Expr, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> Option<Expr> {
+        (self.tag_held(ty, adt)).then(|| Expr::member(subject.clone(), bindings::tag_key(self.tcx, adt.did())))
+    }
+
+    /// Whether the test that a value is `variant` of `adt` reads its tag:
+    /// a variant of fields's, or any of an enum whose tag is declared; not
+    /// one without fields, the value itself its name (`unit_variant`).
+    pub(in crate::lower) fn test_reads_tag(&self, adt: ty::AdtDef<'tcx>, variant: VariantIdx) -> bool {
+        !adt.variant(variant).fields.is_empty() || bindings::declared_tag(self.tcx, adt.did()).is_some()
+    }
+
+    /// Whether a switch over a value of the enum `ty` reads its tag once
+    /// (`held_tag`): of an enum told by an object's tag that JS may have
+    /// made or given.
+    pub(in crate::lower) fn tag_held(&self, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> bool {
         let told_by_tag = !self.tcx.is_lang_item(adt.did(), LangItem::Option)
             && !self.is_write_result(ty)
             && !bindings::is_untagged(self.tcx, adt.did())
@@ -121,8 +135,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .all(|v| crate::lower::recognition::ordering_value(self.tcx, adt.did(), v.name).is_none())
             && (adt.variants().iter())
                 .any(|v| !v.fields.is_empty() || bindings::declared_tag(self.tcx, adt.did()).is_some());
-        (told_by_tag && self.fields_read_once(ty))
-            .then(|| Expr::member(subject.clone(), bindings::tag_key(self.tcx, adt.did())))
+        told_by_tag && self.fields_read_once(ty)
     }
 
     /// `variant_test_of`, of the tag `tag` where it's given (`held_tag`).

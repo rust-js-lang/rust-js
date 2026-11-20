@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "held-tag-never",
     breaks: "an enum JS gives is tested by its tag read anew for each arm, so a getter answering it anew picks another arm than Rust's one read of its discriminant (#2208)",
     file: "src/lower/representation/variants.rs",
-    find: "        (told_by_tag && self.fields_read_once(ty))\n",
-    replace: "        (false && told_by_tag && self.fields_read_once(ty))\n",
+    find: "        told_by_tag && self.fields_read_once(ty)\n",
+    replace: "        false && told_by_tag && self.fields_read_once(ty)\n",
     tests: ["test/getter-reads.test.ts", "-t", "getter_enum_tag"],
   },
   {

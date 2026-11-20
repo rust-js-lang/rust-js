@@ -2692,11 +2692,13 @@ pub fn grow(shape: &mut Shape) {
 
 ```js
 export function size(shape) {
-  return shape.TAG === "Circle" || shape.TAG === "Square" ? shape.r : -shape._0;
+  const kind = shape.TAG;
+  return kind === "Circle" || kind === "Square" ? shape.r : -shape._0;
 }
 
 export function grow(shape) {
-  if (shape.TAG === "Circle" || shape.TAG === "Square") {
+  const kind = shape.TAG;
+  if (kind === "Circle" || kind === "Square") {
     shape.r++;
   }
 }
@@ -3676,10 +3678,11 @@ pub fn describe(v: &Value) -> String {
 import { $debugStr, $displayF64 } from "@rust-js/std";
 
 export function describe(v) {
-  if (v.TAG === "Number") {
+  const kind = v.TAG;
+  if (kind === "Number") {
     return `number ${$displayF64(v._0)}`;
   }
-  if (v.TAG === "Text") {
+  if (kind === "Text") {
     return `string ${$debugStr(v._0)}`;
   }
   return `boolean ${v._0}`;

@@ -922,8 +922,8 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('  if (message.TAG === "resize") {');
-  expect(js).toContain('  } else if (message.TAG === "start") {');
+  expect(js).toContain('  const kind = message.TAG;\n  if (kind === "resize") {');
+  expect(js).toContain('  } else if (kind === "start") {');
   expect(js).not.toContain("!==");
   const lib = await import(join(dir, "mir.js"));
   const log: string[] = [];

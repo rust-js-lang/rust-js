@@ -458,11 +458,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.push(StmtKind::Expr(value).at(self.js_span(span)));
                 }
                 // Of an enum JS may have made or given, its tag read once,
-                // where more than one case tests it, as Rust reads its
-                // discriminant once: a getter may answer each read anew
-                // (`held_tag`, ADR 1022, #2208).
+                // where its tests would read it more than once, as Rust
+                // reads its discriminant once: a getter may answer each read
+                // anew (`held_tag`, ADR 1022, #2208). Each value tested
+                // whose test reads it (`test_reads_tag`), but those of the
+                // arm that's what's left.
+                let reads_tag = |value: u128| match &subject {
+                    Value::Discriminant(_, enum_ty, ..) => match enum_ty.kind() {
+                        ty::Adt(adt, _) => (adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
+                            .is_some_and(|(variant, _)| self.test_reads_tag(*adt, variant)),
+                        _ => false,
+                    },
+                    _ => false,
+                };
+                let mut groups: IndexMap<BasicBlock, usize> = IndexMap::default();
+                for (value, target) in targets.iter().filter(|&(_, target)| reached(target)) {
+                    *groups.entry(target).or_default() += usize::from(reads_tag(value));
+                }
+                // What's left without an `otherwise`: the arm written last,
+                // as the chain orders them, else the fewest reads of any.
+                let left = match reached(targets.otherwise()) {
+                    true => 0,
+                    false => match (groups.keys())
+                        .map(|&b| written_at(state.body, b).map(|at| (at, b)))
+                        .collect::<Option<Vec<_>>>()
+                    {
+                        Some(written) => written.iter().max().map_or(0, |&(_, last)| groups[&last]),
+                        None => groups.values().copied().min().unwrap_or(0),
+                    },
+                };
+                let reads = groups.values().sum::<usize>() - left;
                 let held = match &subject {
-                    Value::Discriminant(enum_value, enum_ty, ..) if ways.len() > 1 => match enum_ty.kind() {
+                    Value::Discriminant(enum_value, enum_ty, ..) if reads > 1 => match enum_ty.kind() {
                         ty::Adt(adt, _) => self.held_tag(enum_value, *enum_ty, *adt),
                         _ => None,
                     },
