@@ -51,6 +51,7 @@ const owners: Record<string, string[]> = {
     "src/lower/mir/places.rs",
     "src/lower/mir/rvalues.rs",
     "src/lower/mir/structure.rs",
+    "src/lower/mir/switch_tests.rs",
     "src/lower/mir/temporaries.rs",
   ],
   // What lowering a function found of drops, which the pipeline gathers

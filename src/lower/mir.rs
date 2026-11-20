@@ -64,6 +64,7 @@ mod scopes;
 mod std_calls;
 mod stored;
 mod structure;
+mod switch_tests;
 mod temporaries;
 mod threaded;
 mod tidy;
