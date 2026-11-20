@@ -1126,7 +1126,7 @@ impl Expr {
     /// storage asks (`Storage::written`).
     pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
-            _ if [Known::Defined, Known::Present, Known::NoneNull]
+            _ if [Known::Defined, Known::Present]
                 .into_iter()
                 .any(|known| self.facts.has(known)) =>
             {

@@ -908,7 +908,7 @@ pub(super) fn none_read<'tcx>(state: &State<'_, 'tcx>, operand: &Operand<'tcx>, 
         .filter(|place| matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]))
         .and_then(|place| state.facts.options().none_forms.read(place.local));
     let said = |e: Expr, none| Expr {
-        facts: e.facts.with(none),
+        facts: e.facts.with_none(none),
         ..e
     };
     match (read, none) {

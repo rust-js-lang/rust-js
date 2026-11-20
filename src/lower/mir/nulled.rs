@@ -157,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = (self.take_operands(state, operands, out)?.into_iter().next()).expect("one operand");
         let value = self.value_expr(value, span)?;
         let value = Expr {
-            facts: value.facts.with(none),
+            facts: value.facts.with_none(none),
             ..value
         };
         Ok(Some(Expr::presence(value, some, js::OnlyNone::of(none))))
@@ -954,7 +954,7 @@ enum Write<'b, 'tcx> {
 pub(super) fn stored_nulled(value: Expr) -> Expr {
     let none = crate::lower::representation::NoneForm::Null.trust(crate::lower::representation::Writers::Exact);
     Expr {
-        facts: none.map_or(value.facts, |none| value.facts.with(none)),
+        facts: none.map_or(value.facts, |none| value.facts.with_none(none)),
         ..value
     }
 }

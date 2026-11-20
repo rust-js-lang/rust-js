@@ -39,7 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if matches!(place.projection.as_slice(), [] | [PlaceElem::Deref])
             && let Some(none) = state.facts.options().none_forms.read(place.local)
         {
-            e.facts = e.facts.with(none);
+            e.facts = e.facts.with_none(none);
         }
 
         // A field's path, `element.editable`: whether it's a `bool`, which
@@ -382,7 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let read = self.project(base, ty.ty, i);
                 Ok(match self.field_none_trust(ty.ty, i) {
                     Some(none) => Expr {
-                        facts: read.facts.with(none),
+                        facts: read.facts.with_none(none),
                         ..read
                     },
                     None => read,

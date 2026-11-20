@@ -493,3 +493,32 @@ on it.
 Mutations `and-then-of-closure-of-nullable-none-undefined` and
 `and-then-of-a-binding-nulled` follow the code, caught;
 `closure-returned-callee-unknown`, new, caught.
+
+## Amendment: a read whose `None` is `null` alone is never `undefined` (2026-11-20, #2112)
+
+What a nullable place stores as it is, never `made ?? null`, asked
+`Expr::may_be_undefined`, which took a read stamped `Known::NoneNull` for
+never `undefined`. Most of `Storage::written`'s callers pass no answer of
+MIR's, and those after lowering have none to ask: a write through a
+handle's setter (`tidy::values::handles`), an applied arrow's
+(`js::applied`), 93 such decisions over check:fast and React's port, each
+a read of a place MIR says is `null` alone. The lead's decision (option
+(b)): "never `undefined`" of such a read is true of the place everywhere,
+a value fact, so `Known::Defined` carries it, written beside the `None`
+by the one way a read says it, `Facts::with_none`; `may_be_undefined` no
+longer reads `NoneNull`. Each reader of `Defined` says `!== undefined`
+only (the amendment above). Making it an explicit answer where the write
+is lowered is phase 3's.
+
+React's port moves one line, at two places: `suspense_state.and_then(|s|
+s.dehydrated)` of a nullable field only the crate makes, now `Defined`, is
+`suspenseState != null ? suspenseState.dehydrated : null`, upstream's own
+shape, where it was `suspenseState?.dehydrated`: `and_then`'s `None` of a
+closure that gives what's never `undefined` is `null` (ADR 0841,
+amended). Case A of ADR 0262: the same value's `None`, read through `==
+null` only, the local stored nowhere, the lead's decision. The pin moves
+to `a4b7a4d`; the corpus is unchanged.
+
+Mutation `null-none-not-defined`, new, caught; `item-read-never-undefined`,
+`defined-may-be-undefined`, `present-may-be-undefined` and
+`alias-none-forgotten` follow the code, caught.

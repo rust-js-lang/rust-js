@@ -225,7 +225,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<Name>) {
                                 let none = e.facts.only_none();
                                 *e = of.clone().or_at(e.span).or_at(at);
                                 if let Some(none) = none {
-                                    e.facts = e.facts.with(none);
+                                    e.facts = e.facts.with_none(none);
                                 }
                             }
                         });

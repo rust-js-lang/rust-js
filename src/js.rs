@@ -678,6 +678,17 @@ impl Facts {
         Facts(part)
     }
 
+    /// These with `none`, the one `None` an `Option`'s read is, and of a
+    /// `null` alone, that it's never `undefined` (`Known::Defined`), which a
+    /// nullable place stores as it is (`Storage::written`, ADR 0841): the
+    /// one way a read says what MIR says of its `None` (#2112 C S5).
+    pub fn with_none(self, none: Known) -> Facts {
+        match none {
+            Known::NoneNull => self.with(none).with(Known::Defined),
+            _ => self.with(none),
+        }
+    }
+
     /// What an `Option`'s presence test says of the `None` it tests for,
     /// `Known::NoneUndefined` or `Known::NoneNull`, which a test made
     /// again of the same `Option`, its negation, keeps; no other knowledge

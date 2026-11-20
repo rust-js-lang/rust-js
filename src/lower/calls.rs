@@ -555,7 +555,7 @@ pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) ->
     if let Some(none) = none_given_by(tcx, def_id)
         && matches!(output.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
     {
-        facts = facts.with(none);
+        facts = facts.with_none(none);
     }
     // Of a `bool` it gives, that it's one, as a `bool` constant's and a
     // global's read are (ADRs 0031, 0953): `canUseDOM &&
