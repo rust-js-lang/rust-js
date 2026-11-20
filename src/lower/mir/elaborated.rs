@@ -1,13 +1,14 @@
 //! rustc's own drop elaboration of the crate's bodies, beside rust-js's
-//! (`drops.rs`), compared drop by drop where the session records it,
-//! `--drops-shadow` (#2112's change D, step 1): rust-js lowers the built
-//! MIR and elaborates its drops itself, of the parts JS drops; rustc's
-//! `ElaborateDrops` is crate-private and runs after passes that renumber the
-//! blocks, so each `Drop` is found again in rustc's body by where it's
-//! written, its span, scope and whether it unwinds, and what of the dropped
-//! place each side drops there, never, always or as a flag says, is
-//! compared. A `Drop` that can't be found again, or is found twice, is
-//! counted apart from a disagreement: `unmatched`.
+//! (`drops.rs`), compared drop by drop in every compile (#2112's change D):
+//! rust-js lowers the built MIR and elaborates its drops itself, of the
+//! parts JS drops; rustc's `ElaborateDrops` is crate-private and runs after
+//! passes that renumber the blocks, so each `Drop` is found again in rustc's
+//! body by where it's written, its span, scope and whether it unwinds, and
+//! what of the dropped place each side drops there, never, always or as a
+//! flag says, is compared. A `Drop` that can't be found again, or is found
+//! twice, is counted apart from a disagreement: `unmatched`. A disagreement
+//! on the normal path is refused (change D's (c), ADR 0364): the JS would
+//! drop otherwise than Rust does. `--drops-shadow` writes each verdict.
 
 use super::drops::{Elaboration, Style};
 use super::prepared::Mir;
@@ -24,12 +25,13 @@ use rustc_span::Span;
 use rustc_span::def_id::LocalDefId;
 
 /// Keeps rustc's body of `local`, its drops elaborated, beside rust-js's
-/// own of it, where the session compares them (`--drops-shadow`): of a
-/// function or a closure, not a coroutine, whose elaborated body is its
-/// state machine's.
+/// own of it, which every compile compares them by: of a function or a
+/// closure, not a coroutine, whose elaborated body is its state machine's.
+/// rustc's query steals `local`'s built MIR alone, which `mir` is a copy of
+/// already; borrowck, which it runs first, only borrows the built MIR of the
+/// closures in it.
 pub(in crate::lower) fn with_elaborated<'tcx>(tcx: TyCtxt<'tcx>, local: LocalDefId, mir: &mut Mir<'tcx>) {
-    if crate::lower::session::caches(tcx).drops_shadow.is_none()
-        || !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)
+    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)
         || tcx.is_coroutine(local.to_def_id())
     {
         return;
@@ -251,12 +253,82 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
     found
 }
 
+/// What the comparison says of a `Drop`: rust-js's elaboration drops each
+/// part of it as rustc's does, or one otherwise; only one side asks a flag
+/// where the other knows, which only running it says alike or not; or which
+/// of rustc's `Drop`s it is can't be said.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Verdict {
+    Agree,
+    Disagree,
+    FlagOurs,
+    FlagTheirs,
+    Unmatched,
+}
+
+impl Verdict {
+    /// How `--drops-shadow` writes it.
+    fn word(self) -> &'static str {
+        match self {
+            Verdict::Agree => "agree",
+            Verdict::Disagree => "disagree",
+            Verdict::FlagOurs => "flag-ours",
+            Verdict::FlagTheirs => "flag-theirs",
+            Verdict::Unmatched => "unmatched",
+        }
+    }
+}
+
+impl When {
+    /// How a refusal says it: "rust-js drops it always".
+    fn word(self) -> &'static str {
+        match self {
+            When::Never => "never",
+            When::Flagged => "as its drop flag says",
+            When::Always => "always",
+        }
+    }
+}
+
+/// A part the two sides drop otherwise: the part, rust-js's answer, rustc's.
+type Differ = (String, When, When);
+
+/// Each part that differs, as a refusal and `--drops-shadow` say it.
+fn said(differ: &[Differ]) -> String {
+    (differ.iter())
+        .map(|(what, ours, theirs)| format!("`{what}`: rust-js drops it {}, rustc {}", ours.word(), theirs.word()))
+        .collect::<Vec<_>>()
+        .join("; ")
+}
+
+/// A place of `body` as its source names it: its variable, where one is
+/// it, then each step, `(*(node as variant 1).0)`.
+fn spelled(body: &mir::Body<'_>, (local, steps): &PathKey) -> String {
+    let mut out = (body.var_debug_info.iter())
+        .find_map(|info| match info.value {
+            mir::VarDebugInfoContents::Place(place) if place.local == *local && place.projection.is_empty() => {
+                Some(info.name.to_string())
+            }
+            _ => None,
+        })
+        .unwrap_or_else(|| format!("{local:?}"));
+    for step in steps {
+        out = match step.strip_prefix('@') {
+            Some(variant) => format!("({out} as variant {variant})"),
+            None if step == "*" => format!("(*{out})"),
+            None => out + step,
+        };
+    }
+    out
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of each `Drop` of `mir`'s body that drops what JS drops, whether
-    /// rust-js's `elaboration` drops each part of it when rustc's does, a
-    /// line each, where the session records them (`--drops-shadow`):
+    /// rust-js's `elaboration` drops each part of it when rustc's does:
     /// `agree`, `disagree` with each part that differs, or `unmatched` with
-    /// why it can't be said.
+    /// why it can't be said. A disagreement on the normal path is refused,
+    /// in every compile; each verdict is a line where the session records
+    /// them (`--drops-shadow`).
     pub(super) fn shadow_drops(
         &self,
         mir: &Mir<'tcx>,
@@ -264,9 +336,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         quiet_guards: &IndexSet<Local>,
     ) {
         let tcx = self.tcx;
-        let Some(lines) = &crate::lower::session::caches(tcx).drops_shadow else {
+        let caches = crate::lower::session::caches(tcx);
+        let recording = caches.drops_shadow.as_ref();
+        if recording.is_none() && (mir.elaborated.is_none() || elaboration.is_none()) {
             return;
-        };
+        }
         let body = &mir.body;
         // Of a type as rust-js's body has it, normalized where it's lowered:
         // a copied default's rustc body is only instantiated,
@@ -298,23 +372,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let info = body.basic_blocks[block].terminator().source_info;
             (info.span, info.scope, body.basic_blocks[block].is_cleanup)
         };
-        let mut out = Vec::new();
-        let line = |verdict: &str, block: BasicBlock, detail: &str| {
-            let (span, _, cleanup) = site_of(block);
-            let at = source_map.span_to_diagnostic_string(span);
-            // A cleanup's apart: rust-js's body has no unwinding of what
-            // can't throw (ADR 0301), whose cleanups rustc's reaches.
-            let path = if cleanup { "cleanup" } else { "normal" };
-            format!("{verdict}\t{path}\t{function}\t{at}\t{detail}")
-        };
+        let mut out: Vec<(Verdict, BasicBlock, String)> = Vec::new();
         let (Some(elaborated), Some(elaboration)) = (&mir.elaborated, elaboration) else {
             let why = if mir.elaborated.is_none() {
                 "no rustc body"
             } else {
                 "no rust-js elaboration"
             };
-            out.extend(sites.iter().map(|&(block, _)| line("unmatched", block, why)));
-            lines.borrow_mut().extend(out);
+            out.extend(
+                sites
+                    .iter()
+                    .map(|&(block, _)| (Verdict::Unmatched, block, why.to_string())),
+            );
+            self.say_shadowed(&function, &out, &site_of, source_map);
             return;
         };
         let theirs = theirs(tcx, elaborated, &js_drops);
@@ -383,71 +453,109 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 LookupResult::Parent(_) => {
                     let ours = whole(block, place).unwrap_or(When::Always);
                     let theirs_when = (at_site.iter()).filter(|t| t.covers(&key)).map(|t| t.when).max();
-                    match theirs_when {
-                        _ if alike.len() > 1 && multiset() == Some(true) => {
-                            out.push(line("agree", block, "behind a pointer, alike drops as a multiset"))
-                        }
-                        _ if alike.len() > 1 => out.push(line(
-                            "unmatched",
+                    out.push(match theirs_when {
+                        _ if alike.len() > 1 && multiset() == Some(true) => (
+                            Verdict::Agree,
                             block,
-                            "ambiguous: behind a pointer, drops written alike",
-                        )),
-                        None => out.push(line(
-                            "unmatched",
+                            "behind a pointer, alike drops as a multiset".to_string(),
+                        ),
+                        _ if alike.len() > 1 => (
+                            Verdict::Unmatched,
                             block,
-                            "no rustc drop where it's written: behind a pointer",
-                        )),
+                            "ambiguous: behind a pointer, drops written alike".to_string(),
+                        ),
+                        None => (
+                            Verdict::Unmatched,
+                            block,
+                            "no rustc drop where it's written: behind a pointer".to_string(),
+                        ),
                         Some(theirs_when) if theirs_when == ours => {
-                            out.push(line("agree", block, "behind a pointer, whole"))
+                            (Verdict::Agree, block, "behind a pointer, whole".to_string())
                         }
-                        Some(theirs_when) => out.push(line(
-                            "disagree",
+                        Some(theirs_when) => (
+                            Verdict::Disagree,
                             block,
-                            &format!("{key:?} behind a pointer: rust-js {ours:?}, rustc {theirs_when:?}"),
-                        )),
-                    }
+                            said(&[(format!("{} behind a pointer", spelled(body, &key)), ours, theirs_when)]),
+                        ),
+                    });
                     continue;
                 }
             };
             let parts = self.parts_compared(body, elaboration, block, path, &at_site);
-            match parts {
-                Err(why) => out.push(line("unmatched", block, &why)),
-                Ok((differ, compared)) if differ.is_empty() => {
-                    out.push(line("agree", block, &format!("{compared} compared")))
-                }
-                Ok(_) if alike.len() > 1 && multiset() == Some(true) => out.push(line(
-                    "agree",
+            out.push(match parts {
+                Err(why) => (Verdict::Unmatched, block, why),
+                Ok((differ, compared)) if differ.is_empty() => (Verdict::Agree, block, format!("{compared} compared")),
+                Ok(_) if alike.len() > 1 && multiset() == Some(true) => (
+                    Verdict::Agree,
                     block,
-                    &format!("alike drops as a multiset, {}", alike.len()),
-                )),
-                Ok((differ, _)) if alike.len() > 1 => out.push(line(
-                    "unmatched",
+                    format!("alike drops as a multiset, {}", alike.len()),
+                ),
+                Ok((differ, _)) if alike.len() > 1 => (
+                    Verdict::Unmatched,
                     block,
-                    &format!("ambiguous: two drops written alike; {}", differ.join("; ")),
-                )),
-                Ok((differ, _)) if at_site.is_empty() => out.push(line(
-                    "unmatched",
+                    format!("ambiguous: two drops written alike; {}", said(&differ)),
+                ),
+                Ok((differ, _)) if at_site.is_empty() => (
+                    Verdict::Unmatched,
                     block,
-                    &format!("no rustc drop where it's written; {}", differ.join("; ")),
-                )),
+                    format!("no rustc drop where it's written; {}", said(&differ)),
+                ),
                 // A difference only of whether a flag is asked runs alike
                 // where the flag holds the other's answer, which only
                 // running it says: counted apart.
                 Ok((differ, _)) => {
-                    let ours = differ.iter().all(|d| d.contains("rust-js Flagged"));
-                    let theirs = differ.iter().all(|d| d.contains("rustc Flagged"));
+                    let ours = differ.iter().all(|&(_, ours, _)| ours == When::Flagged);
+                    let theirs = differ.iter().all(|&(_, _, theirs)| theirs == When::Flagged);
                     let verdict = match (ours, theirs) {
                         // rust-js asks a flag where rustc knows.
-                        (true, false) => "flag-ours",
+                        (true, false) => Verdict::FlagOurs,
                         // rustc asks one where rust-js knows.
-                        (false, true) => "flag-theirs",
-                        _ => "disagree",
+                        (false, true) => Verdict::FlagTheirs,
+                        _ => Verdict::Disagree,
                     };
-                    out.push(line(verdict, block, &differ.join("; ")))
+                    (verdict, block, said(&differ))
                 }
+            });
+        }
+        self.say_shadowed(&function, &out, &site_of, source_map);
+    }
+
+    /// Each of `function`'s verdicts said: a disagreement on the normal
+    /// path refused, as the JS would drop otherwise than Rust does; a
+    /// cleanup's apart, as rust-js's body has no unwinding of what can't
+    /// throw (ADR 0301), whose cleanups rustc's reaches. And each a line
+    /// where the session records them (`--drops-shadow`).
+    fn say_shadowed(
+        &self,
+        function: &str,
+        verdicts: &[(Verdict, BasicBlock, String)],
+        site_of: &dyn Fn(BasicBlock) -> SiteKey,
+        source_map: &rustc_span::source_map::SourceMap,
+    ) {
+        for (verdict, block, detail) in verdicts {
+            let (span, _, cleanup) = site_of(*block);
+            if *verdict == Verdict::Disagree && !cleanup {
+                crate::lower::refusal::error(
+                    self.tcx,
+                    span,
+                    format!(
+                        "rust-js: this drop in `{function}` is elaborated otherwise than rustc's drop elaboration, so its JS would drop otherwise than Rust: {detail} (#2112's change D)"
+                    ),
+                );
             }
         }
-        lines.borrow_mut().extend(out);
+        let caches = crate::lower::session::caches(self.tcx);
+        let Some(lines) = &caches.drops_shadow else {
+            return;
+        };
+        lines
+            .borrow_mut()
+            .extend(verdicts.iter().map(|(verdict, block, detail)| {
+                let (span, _, cleanup) = site_of(*block);
+                let at = source_map.span_to_diagnostic_string(span);
+                let path = if cleanup { "cleanup" } else { "normal" };
+                format!("{}\t{path}\t{function}\t{at}\t{detail}", verdict.word())
+            }));
     }
 
     /// Whether what of `place` is none of `parts`, nor holds one, has what
@@ -514,7 +622,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         block: BasicBlock,
         path: MovePathIndex,
         theirs: &[&Theirs],
-    ) -> Result<(Vec<String>, usize), String> {
+    ) -> Result<(Vec<Differ>, usize), String> {
         let move_data = &elaboration.move_data;
         let ours_of = |node: MovePathIndex| match elaboration.presence(block, node) {
             (false, _) => When::Never,
@@ -533,7 +641,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut compare = |what: String, ours: When, theirs: When| {
             compared += 1;
             if ours != theirs {
-                differ.push(format!("{what}: rust-js {ours:?}, rustc {theirs:?}"));
+                differ.push((what, ours, theirs));
             }
         };
         for &leaf in &leaves {
@@ -556,11 +664,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match under.len() {
                         0 => When::Never,
                         1 => under[0],
-                        _ => return Err(format!("{key:?}: rustc drops its parts unalike")),
+                        _ => return Err(format!("`{}`: rustc drops its parts unalike", spelled(body, &key))),
                     }
                 }
             };
-            compare(format!("{key:?}"), ours_of(leaf), theirs_when);
+            compare(spelled(body, &key), ours_of(leaf), theirs_when);
         }
         // The rest of it, where parts of it are paths of their own: rustc's
         // `Drop`s of it, or of what of it is under none of those parts.
@@ -592,7 +700,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|t| t.when)
                 .max()
                 .unwrap_or(When::Never);
-            compare(format!("{key:?} (the rest)"), ours_of(node), rest);
+            compare(format!("{} (the rest)", spelled(body, &key)), ours_of(node), rest);
         }
         Ok((differ, compared))
     }

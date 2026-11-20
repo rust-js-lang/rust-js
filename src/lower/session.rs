@@ -63,6 +63,9 @@ pub(crate) struct Caches {
     /// That this session takes nothing MIR's intervals prove,
     /// `--without-intervals`'s (#2112 B).
     pub without_intervals: bool,
+    /// That this session's drop elaboration is blind to moves,
+    /// `--without-moves`'s (#2112's change D).
+    pub without_moves: bool,
     /// That what MIR's intervals keep is asked of the effects query too,
     /// `--intervals-by-effects`'s (#2112 B step 3a).
     pub intervals_by_effects: bool,
@@ -175,6 +178,8 @@ pub(crate) struct Flags {
     pub without_mutated: Vec<String>,
     /// Whether nothing MIR's intervals prove is taken.
     pub without_intervals: bool,
+    /// Whether the drop elaboration is blind to moves.
+    pub without_moves: bool,
     /// Whether what they keep is asked of the effects query too.
     pub intervals_by_effects: bool,
     /// Whether the functions a recogniser takes are recorded.
@@ -228,6 +233,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             without_recognizers: flags.without_recognizers.into_iter().collect(),
             without_mutated: flags.without_mutated.into_iter().collect(),
             without_intervals: flags.without_intervals,
+            without_moves: flags.without_moves,
             intervals_by_effects: flags.intervals_by_effects,
             intervals_shadow: flags.records_intervals_shadow.then(RefCell::default),
             drops_shadow: flags.records_drops_shadow.then(RefCell::default),

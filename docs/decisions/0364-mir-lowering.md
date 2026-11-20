@@ -1878,3 +1878,57 @@ for (c), which refuses a normal path's disagreement. Mutations
 `shadow-derefer-copies-unread`, `shadow-behind-a-pointer-never`,
 `shadow-alike-multiset-unread` and `shadow-multiset-keeps-dead-drops`, each
 caught.
+
+## Amendment: a normal path's drop that disagrees with rustc's is refused, in every compile (2026-11-20, #2112's change D (c))
+
+The comparison above ran only where `--drops-shadow` asked for it, so it
+told a test what disagreed and let every other compile write the JS. Now
+every compile keeps rustc's elaborated body of each function and closure
+beside its own (`with_elaborated`), compares each `Drop` (`shadow_drops`),
+and refuses each normal-path `disagree` at the drop's span. The error names
+the function, the place as its variable spells it, and both answers:
+``rust-js: this drop in `main` is elaborated otherwise than rustc's drop
+elaboration, so its JS would drop otherwise than Rust: `whole.0`: rust-js
+drops it always, rustc never``. `--drops-shadow` still writes each verdict.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change. A drop
+rust-js makes where rustc's elaboration makes none, or the reverse, runs a
+destructor Rust doesn't run, or skips one it does. Where rust-js's
+elaboration disagrees with rustc's, it can't say it preserves Rust's
+behavior, so it's a compile error.
+
+What isn't refused, and why:
+- **A cleanup's disagreement.** rust-js's body has no unwinding of what
+  can't throw (ADR 0301), whose cleanups rustc's reaches, so the two
+  aren't compared one to one there.
+- **`flag-ours` and `flag-theirs`.** Only one side asks a flag where the
+  other knows. The flag holds the other side's answer wherever only
+  running it says.
+- **`unmatched`.** Which of rustc's drops it is can't be said. There are
+  35 over the corpus, listed by kind in #2177, which matches them.
+- **Non-local bodies** (std's, a library's instances). They have no rustc
+  body to compare, so they're unmatched.
+
+Fetching rustc's body steals only that body's own built MIR, which rust-js
+has copied just before (`mir_drops_elaborated_and_const_checked` takes
+`mir_promoted(def)` alone, and borrowck only borrows a closure's), so the
+order bodies are read in can't lose one.
+
+It can't fire on today's corpus, the React port or the crates: none
+disagrees. Over the corpus's 2,807 cases on the normal path, 7,673 agree, 6
+are `flag-ours`, 35 are unmatched. Its cost: the corpus compiled warm on 11
+workers, 270.8 CPU-seconds without the comparison and 271.9 with it, +0.4%;
+the JS byte-identical in all 2,720 cases that compile. The React port's
+regeneration, alternated twice each: 56.8 and 57.1 CPU-seconds without it,
+57.1 and 57.3 with it, +0.4%, its JS what the pin committed with either.
+
+`--without-moves`, a test hook as `--without-mutated` (#1665) and
+`--without-intervals` are, makes rust-js's elaboration blind to moves: each
+drop drops all of what it drops, a moved part too. A knob that only drops
+the flags couldn't show the refusal: a difference only of a flag is counted
+apart by design. test/drops-shadow.test.ts compiles drop_partial.rs with
+the hook and expects the four refusals, the first at its line 42, and
+without it a clean compile. A cleanup's disagreement, drop_functions.rs's,
+compiles. Mutations caught: `shadow-disagreement-unrefused`,
+`shadow-refuses-cleanups`, `shadow-compared-only-where-recorded`,
+`shadow-elaborated-only-where-recorded` and `shadow-flag-only-refused`.

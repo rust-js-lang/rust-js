@@ -414,6 +414,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (inits, uninits)
         });
         let mut states = IndexMap::default();
+        // `--without-moves`: every path there before each drop, as if
+        // nothing had moved, a test's wrong elaboration, which the
+        // comparison with rustc's refuses (`elaborated.rs`).
+        let moveless = crate::lower::session::caches(tcx).without_moves;
         let mut flagged = IndexVec::from_elem(false, &move_data.move_paths);
         let mut behind = IndexSet::default();
         for (block, data) in body.basic_blocks.iter_enumerated() {
@@ -438,6 +442,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             on_all_children_bits(&move_data, path, |child| {
                 let state = match &cursors {
+                    Some(_) if moveless => (true, false),
                     Some((inits, uninits)) => (inits.get().contains(child), uninits.get().contains(child)),
                     None => (true, false),
                 };

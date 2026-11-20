@@ -21,6 +21,14 @@ compiles: one that compiles fails the test, so the page is kept true. A
 change that lifts a refusal removes its line here; one that adds a refusal
 a person can meet adds one.
 
+One error guards rust-js itself rather than a feature: each compile checks
+its own drop elaboration against rustc's, and a drop it would make
+otherwise than rustc's, a value dropped that Rust never drops there or the
+reverse, is refused with the place and both answers, ``rust-js: this drop
+in `main` is elaborated otherwise than rustc's drop elaboration``. No
+program is known to meet it; one that does is a rust-js bug to report
+([ADR 0364](../decisions/0364-mir-lowering.md), #2112).
+
 Where to see more:
 
 - **rustc's own run-pass tests**: each in scope that fails is in

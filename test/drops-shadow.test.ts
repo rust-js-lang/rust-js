@@ -106,3 +106,30 @@ test("each normal-path verdict of the partial moves, behind a pointer and alike,
     unmatched: 8,
   });
 });
+
+// Change D's (c): a drop the normal path's elaboration drops otherwise than
+// rustc's is refused, in every compile, the place and both answers named.
+// `--without-moves` makes rust-js's elaboration blind to moves, each drop
+// dropping all of what it drops, so a moved part's drop is one rustc's
+// never has; without it the case compiles.
+test("a normal path's drop that disagrees with rustc's elaboration is refused", () => {
+  const dir = fixture("drops-shadow-refused");
+  const compile = (...knob: string[]) =>
+    runSync([compiler, ...knob, join(root, "test/corpus/drop_partial.rs"), "-o", join(dir, "drop_partial.js"), "--", "--edition=2024"], dir, 120_000);
+  expect(compile().code).toBe(0);
+  const refused = compile("--without-moves");
+  expect(refused.code).not.toBe(0);
+  const errors = refused.stderr.split("\n").filter((line) => line.startsWith("error: rust-js: this drop"));
+  expect(errors).toContain(
+    "error: rust-js: this drop in `main` is elaborated otherwise than rustc's drop elaboration, so its JS would drop otherwise than Rust: `whole.0`: rust-js drops it always, rustc never (#2112's change D)",
+  );
+  expect(errors.length).toBe(4);
+  expect(refused.stderr).toContain("drop_partial.rs:42:5");
+});
+
+// A cleanup's disagreement is apart, never refused: rust-js's body has no
+// unwinding of what can't throw (ADR 0301), whose cleanups rustc's reaches.
+test("a cleanup's drop that disagrees with rustc's elaboration compiles", () => {
+  const cleanups = shadowOf("drop_functions.rs").filter(([verdict, path]) => verdict === "disagree" && path === "cleanup");
+  expect(cleanups.length).toBeGreaterThan(0);
+});

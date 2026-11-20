@@ -119,6 +119,11 @@ pub(crate) struct Build {
     /// fact the intervals kept past a write (#2112 B). A test hook, not a
     /// way to build: `test/tidy-stages.test.ts`' variant.
     pub without_intervals: bool,
+    /// `--without-moves`: rust-js's drop elaboration blind to moves, each
+    /// drop dropping all of what it drops, a moved part too, to see that
+    /// the comparison with rustc's refuses it (#2112's change D). A test
+    /// hook, not a way to build: `test/drops-shadow.test.ts`' refusal.
+    pub without_moves: bool,
     /// `--intervals-by-effects`: what MIR's intervals keep through a
     /// statement asked of the effects query too, each local it says may be
     /// written forgotten (#2112 B step 3a). A test hook till the query is
@@ -241,6 +246,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let js_made_all = flag(&mut ours, "--js-made-all");
     let no_thir_hints = flag(&mut ours, "--no-thir-hints");
     let without_intervals = flag(&mut ours, "--without-intervals");
+    let without_moves = flag(&mut ours, "--without-moves");
     let intervals_by_effects = flag(&mut ours, "--intervals-by-effects");
     let std_paths_first = flag(&mut ours, "--std-paths-first");
     let mut dependencies = Vec::new();
@@ -330,6 +336,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_recognizers,
         without_mutated,
         without_intervals,
+        without_moves,
         intervals_by_effects,
         intervals_shadow,
         drops_shadow,

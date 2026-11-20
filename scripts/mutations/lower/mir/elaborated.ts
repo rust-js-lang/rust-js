@@ -1,6 +1,7 @@
 // Mutations of src/lower/mir/elaborated.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
+const refused = ["test/drops-shadow.test.ts", "-t", "a normal path's drop that disagrees with rustc's elaboration is refused"];
 const flatten = ["test/drops-shadow.test.ts", "-t", "a match's enum moved in part and whole is dropped where rustc drops it"];
 
 export const mutations: Mutation[] = [
@@ -56,8 +57,8 @@ export const mutations: Mutation[] = [
     name: "shadow-alike-multiset-unread",
     breaks: "two drops written alike at one place, `?`'s, aren't compared as a multiset, so they stay unmatched (#2112's change D (b))",
     file: "src/lower/mir/elaborated.rs",
-    find: "                Ok(_) if alike.len() > 1 && multiset() == Some(true) => out.push(line(\n",
-    replace: "                Ok(_) if alike.len() > 1 && false => out.push(line(\n",
+    find: "                Ok(_) if alike.len() > 1 && multiset() == Some(true) => (\n",
+    replace: "                Ok(_) if alike.len() > 1 && false => (\n",
     tests: ["test/drops-shadow.test.ts", "-t", "two drops written alike are compared as a multiset"],
   },
   {
@@ -67,5 +68,45 @@ export const mutations: Mutation[] = [
     find: "                    if when != When::Never {\n",
     replace: "                    if true {\n",
     tests: ["test/drops-shadow.test.ts", "-t", "two drops written alike are compared as a multiset"],
+  },
+  {
+    name: "shadow-disagreement-unrefused",
+    breaks: "a drop the normal path's elaboration drops otherwise than rustc's compiles, so a moved part rust-js drops again, which rustc never drops, runs in the JS (#2112's change D (c))",
+    file: "src/lower/mir/elaborated.rs",
+    find: "            if *verdict == Verdict::Disagree && !cleanup {\n",
+    replace: "            if false && *verdict == Verdict::Disagree && !cleanup {\n",
+    tests: refused,
+  },
+  {
+    name: "shadow-refuses-cleanups",
+    breaks: "a cleanup's disagreement is refused, where rust-js's body has no unwinding of what can't throw (ADR 0301): a `dyn Fn`'s drop past a panic refuses the crate (#2112's change D (c))",
+    file: "src/lower/mir/elaborated.rs",
+    find: "            if *verdict == Verdict::Disagree && !cleanup {\n",
+    replace: "            if *verdict == Verdict::Disagree {\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "a cleanup's drop that disagrees with rustc's elaboration compiles"],
+  },
+  {
+    name: "shadow-compared-only-where-recorded",
+    breaks: "the comparison runs only where `--drops-shadow` records it, so a compile without it never refuses a disagreement (#2112's change D (c))",
+    file: "src/lower/mir/elaborated.rs",
+    find: "        if recording.is_none() && (mir.elaborated.is_none() || elaboration.is_none()) {\n",
+    replace: "        if recording.is_none() {\n",
+    tests: refused,
+  },
+  {
+    name: "shadow-elaborated-only-where-recorded",
+    breaks: "rustc's elaborated body is kept only where `--drops-shadow` records the comparison, so a compile without it compares nothing and never refuses a disagreement (#2112's change D (c))",
+    file: "src/lower/mir/elaborated.rs",
+    find: "    if !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)\n",
+    replace: "    if crate::lower::session::caches(tcx).drops_shadow.is_none()\n        || !matches!(tcx.def_kind(local), DefKind::Fn | DefKind::AssocFn | DefKind::Closure)\n",
+    tests: refused,
+  },
+  {
+    name: "shadow-flag-only-refused",
+    breaks: "a difference only of rust-js asking a flag where rustc knows is a disagreement, which only running it says, so `drop_partial.rs`' and `or_pattern_part_moves.rs`' flagged drops are refused (#2112's change D (c))",
+    file: "src/lower/mir/elaborated.rs",
+    find: "                        (true, false) => Verdict::FlagOurs,\n",
+    replace: "                        (true, false) => Verdict::Disagree,\n",
+    tests: ["test/drops-shadow.test.ts", "-t", "each normal-path verdict of the partial moves, behind a pointer and alike, is pinned"],
   },
 ];
