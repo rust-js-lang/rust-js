@@ -237,11 +237,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/patterns.rs",
     find: "                    unknown.insert(of.local);\n                }\n                _ => {}\n",
     replace: "                }\n                _ => {}\n",
-    tests: [
-      "test/lowering-written-branches.test.ts",
-      "-t",
-      "an if a branch of which adds to its variable is as written",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^proved_option_stored_through_a_borrow.rs$"],
+    snapshots: true,
   },
   {
     name: "nones-of-any-call",
