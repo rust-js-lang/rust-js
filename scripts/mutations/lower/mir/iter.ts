@@ -550,6 +550,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "flatten-of-options-counted-as-its-filter",
+    breaks:
+      "a flatten of `Option`s made in place, a filter of the `Some`s, is counted by `$count`, the filter's own, std's `Filter::count`, which asks the crate's own `size_hint` where std's `Flatten::count` asks none (#2197)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let inners_own = self.recognition().counts_by_its_own(iter_ty);\n",
+    replace: "        let inners_own = self.recognition().reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
+  },
+  {
     name: "len-of-mut-items-left",
     breaks:
       "`len()` of a `by_ref()` of a `Vec`'s `IntoIter` reads `it.end - it.at` of the lent value, which has neither: `NaN` (#745)",

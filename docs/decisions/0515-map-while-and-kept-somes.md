@@ -43,3 +43,31 @@ its `Some` is one.
 as `Some([object Object])` and wasn't `None` (#145). It takes each out of
 its box as `filter_map` does, `.map($someValue)`, through a reference too.
 Held by `test/corpus/flatten_boxed_options.rs`.
+
+## Amendment: a flatten of `Option`s counts as std's `Flatten` does (#2197)
+
+A flatten of `Option`s made in place, or a `flat_map` whose function returns
+one, is a filter of the `Some`s. A filter of a `$Steps`, a crate iterator
+made knowing its hint, has its own `count`, std's `Filter::count`, which
+asks its source's `size_hint` first (filter.rs:141). Std's `Flatten::count`
+is `FlattenCompat`'s fold of its inners' counts, and asks no hint. The
+count consumer chose `$count` by the type, a flatten that writes `count`,
+and so ran the filter's: where the crate asked its iterator's hint anywhere,
+here a `zip`'s `len()`, a crate-wide fact that makes each one knowing, the
+crate's own `size_hint` was asked once more than native Rust asks it.
+
+The count consumer asks recognition's `counts_by_its_own`, which asks
+`flattened_options`, the one owner of that form: the `Option`s it flattens
+have no own `count` to reach, so it's counted by its fold, `.reduce`, as a
+`filter_map`'s is. Generic code given one counts it by `$count`, the form's
+own, as it can't know the type: the form itself must answer `Flatten`'s
+and `FilterMap`'s `count`, #2199 (its metamorphic `generic-instances`
+rewrite listed there). Case R of ADR 0262 (which of
+the crate's steps std calls is observable). Held by
+`test/corpus/flatten_of_options_counted_asks_no_hint.rs` and the mutation
+`flatten-of-options-counted-as-its-filter`; the conformance table's
+`own Every | flatten option | count | none` is off its known list.
+
+The rule that this is one instance of, a runtime form standing for a std
+adapter it's not named for, with consumers re-deciding from the type which
+of the form's steps to call, is Change A's step 3 (#2112).

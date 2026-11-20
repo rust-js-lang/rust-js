@@ -610,6 +610,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// Whether std's `count` of a `ty`, an iterator, reaches the crate's own
+    /// steps where the form it's made as answers it by its own `count`,
+    /// `$count`'s: `reaches_its_own`'s, but not of a flatten of `Option`s,
+    /// which the recognizers make a filter of the `Some`s
+    /// (`flattened_options`), whose own `count` is std's `Filter::count`,
+    /// which asks its source's hint first. Std's `Flatten::count` of it is
+    /// its fold of its inner `Option`s, which have no own `count` to reach,
+    /// so it's counted by its fold, std's struct's too (#2197). The one
+    /// answer, of a count where it's made and of generic code's dictionary.
+    pub(in crate::lower) fn counts_by_its_own(&self, ty: Ty<'tcx>) -> bool {
+        self.flattened_options(ty).is_none() && self.reaches_its_own(ty, OwnStep::Count, Reach::Sure)
+    }
+
     /// A B-tree's `iter()`, `keys()`, `range()` and the like: its items in
     /// order, an array's (ADR 0059), `$treeRange`'s of a range (ADR 0325).
     /// Its `extract_if()`, which takes them as it's stepped, is asked

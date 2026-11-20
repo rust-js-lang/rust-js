@@ -1230,7 +1230,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let in_place_flatten = crate::lower::recognition::flattened_source(self.tcx, iter_ty).is_some()
             && !self.compiled_struct(iter_ty, &it);
-        let inners_own = self.recognition().reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);
+        // Not a flatten of `Option`s, a filter of the `Some`s made in place,
+        // whose own count is `Filter::count`'s (#2197).
+        let inners_own = self.recognition().counts_by_its_own(iter_ty);
         // And a filter's, std's `Filter::count`, which asks its source's
         // hint first, where that may reach what the program sees (#733).
         let filtered = crate::lower::recognition::filtered_source(self.tcx, iter_ty);
