@@ -26,6 +26,7 @@ mod stmt_facts;
 mod stmt_walk;
 pub use stmt_facts::StmtFacts;
 mod storage;
+pub use storage::Undefined;
 mod template;
 pub mod undefined_arguments;
 pub mod undefined_keys;

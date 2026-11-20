@@ -969,7 +969,7 @@ fn expr(e: &mut Expr) {
             Vec::new(),
             vec![StmtKind::Return(Some((**place).clone())).at(place.span)],
         );
-        let written = storage.written(Expr::var(param.clone()), false);
+        let written = storage.written(Expr::var(param.clone()), js::Undefined::ByForm);
         // A flattened state's, each of its keys set on its object (ADR
         // 1044); an object's whole, `$assign` (#968).
         let sets = storage.written_in_place(place, Expr::var(param.clone()), &mut |_, value, _| value, place.span);

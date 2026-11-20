@@ -966,7 +966,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && form == crate::lower::representation::NoneForm::Null =>
             {
                 let nulled = nulled || self.any_none_made_null(ty);
-                form.storage().written(self.any_given_to_js(value, ty, true), nulled)
+                form.storage()
+                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))
             }
             // Entries written where they're given of such a value, an
             // `Option` of what never looks like `None`: each `null` for
@@ -1027,7 +1028,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             pair.push(
                                 crate::lower::representation::NoneForm::Null
                                     .storage()
-                                    .written(value, false),
+                                    .written(value, js::Undefined::ByForm),
                             );
                             Expr {
                                 kind: js::ExprKind::Array(pair),

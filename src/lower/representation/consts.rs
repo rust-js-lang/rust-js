@@ -395,7 +395,7 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
                                 super::NonePlace::Field(f, Some(f.ty(tcx, args).skip_normalization())),
                             );
                             let v = match form {
-                                super::NoneForm::Null => form.storage().written(v, false),
+                                super::NoneForm::Null => form.storage().written(v, js::Undefined::ByForm),
                                 _ => v,
                             };
                             Prop::Field(field_key(tcx, f).text().to_owned(), v)

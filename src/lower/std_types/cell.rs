@@ -254,10 +254,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is, its `None` `null` (#665).
         let written = |cell: &Expr, value: Expr| match cell.kind {
             js::ExprKind::Handle(_, storage) if call.read_alike => storage.written_alike(value),
-            js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),
+            js::ExprKind::Handle(_, storage) => storage.written(value, js::Undefined::never_if(given_nulled)),
             _ if null_for_none && call.read_alike => none_form.storage().written_alike(value),
             // A nullable thread-local's, its `None` `null` (ADR 0586, amended).
-            _ if null_for_none => none_form.storage().written(value, given_nulled),
+            _ if null_for_none => none_form
+                .storage()
+                .written(value, js::Undefined::never_if(given_nulled)),
             // A JS-made struct's field read among them, a getter's that may
             // be `undefined` elsewhere, MIR says it isn't here (rd628).
             _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => Expr {

@@ -640,7 +640,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let form = none_form(self.tcx, NonePlace::ForeignParam(self.krate.foreign, callee.0, i));
                 if form == NoneForm::Null && nulled.get(i) != Some(&true) {
                     let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
-                    *value = Value::Expr(form.storage().written(given, false));
+                    *value = Value::Expr(form.storage().written(given, js::Undefined::ByForm));
                 }
             }
         }

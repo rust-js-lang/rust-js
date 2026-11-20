@@ -368,7 +368,7 @@ pub(in crate::lower) fn nullable_made(made: Expr) -> Expr {
             if let Some(Prop::Field(_, value)) = props.first_mut() {
                 *value = NoneForm::Null
                     .storage()
-                    .written(std::mem::replace(value, Expr::taken()), false);
+                    .written(std::mem::replace(value, Expr::taken()), js::Undefined::ByForm);
             }
             Expr {
                 kind: js::ExprKind::Object(props, layout),

@@ -39,8 +39,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Some(&frames)` given to a binding's `#[rust_js::nullable]` `Option<&dyn Any>`, webapi's `animate`'s, is the pair that downcasts it, `{value, impl}`, not `frames` (rd170)",
     file: "src/lower/mir/calls.rs",
-    find: "                form.storage().written(self.any_given_to_js(value, ty, true), nulled)\n",
-    replace: "                form.storage().written(value, nulled)\n",
+    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
+    replace: "                    .written(value, js::Undefined::never_if(nulled))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -134,8 +134,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what's `null` or a value already given to a binding's nullable parameter, a nullable function's result or a nullable field's read, is `value ?? null`, `JSON.stringify(items, chosen(all) ?? null, 0)`",
     file: "src/lower/mir/calls.rs",
-    find: "                form.storage().written(self.any_given_to_js(value, ty, true), nulled)\n",
-    replace: "                form.storage().written(self.any_given_to_js(value, ty, true), false)\n",
+    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
+    replace: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::ByForm)\n",
     // A nullable function's result and a nullable field's read, `null` or a
     // value already, given as they are; a `Some(..)`'s value is there by its
     // own fact (#1932).
@@ -785,8 +785,8 @@ export const mutations: Mutation[] = [
     name: "nullable-any-given-as-optional",
     breaks: "a nullable parameter's `Option<&dyn Any>` is given as an optional one's, `?.value`, its `None` `undefined` (#1581)",
     file: "src/lower/mir/calls.rs",
-    find: "                form.storage().written(self.any_given_to_js(value, ty, true), nulled)\n",
-    replace: "                form.storage().written(self.any_given_to_js(value, ty, false), nulled)\n",
+    find: "                    .written(self.any_given_to_js(value, ty, true), js::Undefined::never_if(nulled))\n",
+    replace: "                    .written(self.any_given_to_js(value, ty, false), js::Undefined::never_if(nulled))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

@@ -584,3 +584,36 @@ read keeps its `Defined`. `Facts::of_presence`, `only_none` and
 port. The architecture test "no fact a JS node carries says what an
 Option's None is" holds it; "whether a `None` is `null` is none_form's
 alone" now holds `js::OnlyNone` to its one maker.
+
+## Amendment: a write is told whether what it's given may be `undefined` (2026-11-21, #2112)
+
+`Storage::written(made, given)` takes its answer explicitly, a
+`js::Undefined`: MIR's that what's given is `null` or a value already,
+`Never`; where lowering has none, what its JS form says alone, `ByForm`;
+and past lowering, where MIR isn't at hand, its form and the marks
+lowering wrote from MIR's answers, `Known::Defined` and `Known::Present`,
+`ByFacts`. `Expr::may_be_undefined` takes the same answer, so the
+predicate and the write can't disagree. Each of lowering's writes asks
+`Never` or `ByForm`, never the marks; `tidy::values::handles`,
+`js::applied` and `Expr::store_again` ask `ByFacts` (Campaign 3's L637,
+whose Source cell names the three). `ByForm` can only add a `?? null` the
+marks would have left out, never drop one, so no write is wrong for it.
+
+`Expr::store_again` re-stores every item's `x ?? null` by the marks after
+`applied` inlines what it applies, so where lowering's `ByForm` adds a
+`?? null` a mark would have dropped, it drops it again: a third reader of
+the marks past lowering, until it's narrowed to what `applied`
+substitutes. Until then, an answer lowering is given of MIR in place of
+a mark changes nothing it prints, and lands where it does (#2112's re-plan:
+S3c's constructor tests, then `store_again` narrowed).
+
+One line moved: corpus `any_mapped_to_a_nullable_parameter`'s
+`(frames != null ? map(frames) : null) ?? { value: null }` is
+`(frames != null ? map(frames) : undefined) ?? { value: null }`: the
+`Some` arm `Option::map`'s lowering made is marked `Known::Present`, a
+constructor's own mark, which `ByForm` doesn't read, so its write is `(..)
+?? null`, which tidy folds into the `?? { value: null }` after it. Case
+A ([0262](0262-when-rust-and-js-disagree.md)'s first): `??` reads `null`
+and `undefined` alike. S3c's constructor test restores `: null`. Held by
+that case's snapshot, which mutation `lowering-trusts-facts`
+(`js/make.ts`) fails, and the mutations of each write.

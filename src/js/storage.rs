@@ -4,6 +4,32 @@
 use super::*;
 use crate::collections::IndexMap;
 
+/// What a nullable place's write is told of whether what it's given may
+/// be `undefined` (`Storage::written`, `Expr::may_be_undefined`): that MIR
+/// says it's `null` or a value already, `Never`; where lowering has no
+/// such answer, what its JS form says alone, a constant or an object made
+/// here never is, `ByForm`; and after lowering, where MIR isn't at hand,
+/// its form and what lowering marked it from MIR's answers,
+/// `Known::Defined` and `Known::Present`, which a pass that moves an
+/// expression keeps, `ByFacts` (#2112 C S5, Campaign 3's L637).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Undefined {
+    Never,
+    ByForm,
+    ByFacts,
+}
+
+impl Undefined {
+    /// `Never` where MIR says what's given is `nulled`, `null` or a value
+    /// already; else what its form says, `ByForm`.
+    pub fn never_if(nulled: bool) -> Undefined {
+        match nulled {
+            true => Undefined::Never,
+            false => Undefined::ByForm,
+        }
+    }
+}
+
 impl Storage {
     /// A flattened state's storage of its `keys` (rd380, ADR 1044), each
     /// type's kept for the compile, as a handle's storage is copied.
@@ -108,20 +134,23 @@ impl Storage {
     }
 
     /// What a place stored so holds, of `made`, an `Option`'s JS where it's
-    /// `NullForNone`: a `None` is `null`; what's `nulled`, `null` or a
-    /// value already, as MIR tells, and what's never `undefined`
-    /// (`may_be_undefined`), a constant, an object made here or a `Some`'s
-    /// value, as it is; a test's branches each so, `c ? f(c) : null` of `c ?
-    /// f(c) : undefined`; else `made ?? null` (ADRs 0275, 0772, 0791). The
-    /// one answer, where a struct is made, a `Cell` set, a nullable
-    /// parameter given, and a handle's setter printed.
-    pub fn written(self, made: Expr, nulled: bool) -> Expr {
+    /// `NullForNone`: a `None` is `null`; what's `null` or a value already,
+    /// as MIR tells (`Undefined::Never`), and what's never `undefined` as
+    /// `given` says (`may_be_undefined`), a constant, an object made here,
+    /// as it is; a test's branches each so, `c ? f(c) : null` of `c ? f(c) :
+    /// undefined`; else `made ?? null` (ADRs 0275, 0772, 0791). The one
+    /// answer, where a struct is made, a `Cell` set, a nullable parameter
+    /// given, and a handle's setter printed.
+    pub fn written(self, made: Expr, given: Undefined) -> Expr {
         match self {
             Storage::AsGiven | Storage::InPlace(_) | Storage::Assigned => made,
-            Storage::NullForNone if nulled && !matches!(made.kind, ExprKind::Undefined | ExprKind::GivenUndefined) => {
+            Storage::NullForNone
+                if given == Undefined::Never
+                    && !matches!(made.kind, ExprKind::Undefined | ExprKind::GivenUndefined) =>
+            {
                 made
             }
-            Storage::NullForNone => match null_for_none(&made) {
+            Storage::NullForNone => match null_for_none(&made, given) {
                 Some(stored) => stored,
                 None => Expr::bin(Op::Coalesce, made, Expr::null()),
             },
@@ -152,16 +181,16 @@ impl Storage {
 /// `made` stored with its `None` `null`, where that's what it is, or each
 /// branch of its test is: `undefined` is `null`, and what's never
 /// `undefined` is itself; `None` where it may be `undefined` otherwise.
-pub(super) fn null_for_none(made: &Expr) -> Option<Expr> {
+pub(super) fn null_for_none(made: &Expr, given: Undefined) -> Option<Expr> {
     match &made.kind {
         ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null().or_at(made.span)),
-        _ if !made.may_be_undefined() => Some(made.clone()),
+        _ if !made.may_be_undefined(given) => Some(made.clone()),
         ExprKind::Cond(test, yes, no) => Some(Expr {
             facts: made.facts,
             kind: ExprKind::Cond(
                 test.clone(),
-                Box::new(null_for_none(yes)?),
-                Box::new(null_for_none(no)?),
+                Box::new(null_for_none(yes, given)?),
+                Box::new(null_for_none(no, given)?),
             ),
             span: made.span,
             held_as: Default::default(),

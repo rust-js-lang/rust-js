@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable `Cell` field's `set(None)`, `take()` and `replace(..)` write `undefined`, where it's made `null`",
     file: "src/lower/std_types/cell.rs",
-    find: "            js::ExprKind::Handle(_, storage) => storage.written(value, given_nulled),\n",
+    find: "            js::ExprKind::Handle(_, storage) => storage.written(value, js::Undefined::never_if(given_nulled)),\n",
     replace: "            js::ExprKind::Handle(_, _) => value,\n",
     tests: [
       "test/lowering-nullable.test.ts",
@@ -485,7 +485,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local set what may be `undefined` holds it, `NEXT = fiber.stateNode`, where Rust's `None` is `null` (ADR 0586, amended)",
     file: "src/lower/std_types/cell.rs",
-    find: "            _ if null_for_none => none_form.storage().written(value, given_nulled),\n",
+    find: "            _ if null_for_none => none_form\n                .storage()\n                .written(value, js::Undefined::never_if(given_nulled)),\n",
     replace: "",
     tests: [
       "test/lowering-nullable-reads.test.ts",

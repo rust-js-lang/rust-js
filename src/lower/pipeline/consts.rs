@@ -170,7 +170,7 @@ pub(super) fn lower_consts<'b, 'tcx>(
             Some(key) => none_form(tcx, NonePlace::LocalOption(key.to_def_id())),
         };
         let value = match key {
-            _ if form == NoneForm::Null => form.storage().written(value, false),
+            _ if form == NoneForm::Null => form.storage().written(value, js::Undefined::ByForm),
             Some(key) if nullable(key) => crate::lower::std_types::cell::nullable_made(value),
             _ => value,
         };

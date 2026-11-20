@@ -348,7 +348,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // field's `Vec`, `lanes[index] = transitions`, stores it as
                 // it is (#1933 step 4 (F)).
                 Value::Expr(super::nulled::stored_nulled(
-                    form.storage().written(self.value_expr(value, span)?, nulled),
+                    form.storage()
+                        .written(self.value_expr(value, span)?, js::Undefined::never_if(nulled)),
                 ))
             }
             // Written through a reference, a `RefCell`'s borrow of a
@@ -494,7 +495,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let value = self.value_expr(value, span)?;
-        Ok(Value::Expr(form.storage().written(value, nulled)))
+        Ok(Value::Expr(
+            form.storage().written(value, js::Undefined::never_if(nulled)),
+        ))
     }
 
     /// `rest = p.rest` of a `let`'s pattern, `let P { href, rest, .. } = p`:

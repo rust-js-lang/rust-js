@@ -19,7 +19,7 @@ fn written_as_stored(body: &mut Vec<Stmt>, storage_of: &dyn Fn(&Expr) -> Option<
                     && key == js::HELD
                     && let Some(storage) = storage_of(of)
                 {
-                    *value = storage.written(std::mem::replace(value, Expr::taken()), false);
+                    *value = storage.written(std::mem::replace(value, Expr::taken()), js::Undefined::ByFacts);
                 }
             }
         })

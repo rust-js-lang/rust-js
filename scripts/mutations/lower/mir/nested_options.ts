@@ -26,7 +26,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Option` of an `Option` made of an `Option` whose `None` is `undefined` keeps it, so its `Some(None)` is its `None` (ADR 1017)",
     file: "src/lower/mir/nested_options.rs",
-    find: "                NoneForm::Nested.of_some().storage().written(held, nulled)\n",
+    find: "                NoneForm::Nested\n                    .of_some()\n                    .storage()\n                    .written(held, js::Undefined::never_if(nulled))\n",
     replace: "                { let _ = nulled; held }\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
   },
@@ -50,8 +50,8 @@ export const mutations: Mutation[] = [
     name: "nested-field-given-none-undefined",
     breaks: "a boxed `Some(None)` given a nested field is `undefined`, read back as `None` (#470)",
     file: "src/lower/mir/nested_options.rs",
-    find: "            false => NoneForm::Nested.of_some().storage().written(value, false),\n        };\n        // Its `None` of any form",
-    replace: "            false => value,\n        };\n        // Its `None` of any form",
+    find: "            false => NoneForm::Nested\n                .of_some()\n                .storage()\n                .written(value, js::Undefined::ByForm),\n        };\n",
+    replace: "            false => value,\n        };\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
   },
   {
@@ -345,8 +345,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a box stored in a nullable field of what may be `undefined` is `$someValue(x) ?? null`, its `Some(undefined)` `null`, a `None` (rd645)",
     file: "src/lower/mir/nested_options.rs",
-    find: "            true => value,\n            false => NoneForm::Nested.of_some().storage().written(value, false),\n",
-    replace: "            true => NoneForm::Nested.of_some().storage().written(value.clone(), false),\n            false => NoneForm::Nested.of_some().storage().written(value, false),\n",
+    find: "            true => value,\n            false => NoneForm::Nested\n                .of_some()\n                .storage()\n                .written(value, js::Undefined::ByForm),\n",
+    replace: "            true => NoneForm::Nested.of_some().storage().written(value.clone(), js::Undefined::ByForm),\n            false => NoneForm::Nested.of_some().storage().written(value, js::Undefined::ByForm),\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
   {

@@ -627,7 +627,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A swap's either side too, `mem::swap(&mut x, &mut other.0)` of a
         // nullable parameter: each place given what's written to it so (#1018).
         let stored = |stores: bool, e: Expr| match stores {
-            true => crate::lower::representation::NoneForm::Null.storage().written(e, false),
+            true => crate::lower::representation::NoneForm::Null
+                .storage()
+                .written(e, js::Undefined::ByForm),
             false => e,
         };
         let (a, a_stores) = match self.unhandled(&a) {

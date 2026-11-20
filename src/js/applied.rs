@@ -674,7 +674,8 @@ fn through_handles(body: &mut Vec<Stmt>) {
                     && key == crate::js::HELD
                     && let ExprKind::Handle(place, storage) = &of.kind
                 {
-                    let written = storage.written(std::mem::replace(value, Expr::taken()), false);
+                    let written =
+                        storage.written(std::mem::replace(value, Expr::taken()), crate::js::Undefined::ByFacts);
                     stmt.kind = StmtKind::Assign((**place).clone(), written);
                 }
             }

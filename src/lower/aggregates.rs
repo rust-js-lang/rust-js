@@ -610,7 +610,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What one optional field holds, given another, is as it is,
         // `undefined` where it's absent (ADR 0810, amended).
         let copied = given == Given::Optional && form == NoneForm::Optional;
-        let stored = form.storage().written(held, given == Given::Nulled || copied);
+        let stored = form
+            .storage()
+            .written(held, js::Undefined::never_if(given == Given::Nulled || copied));
         match cell {
             true => Expr::object(vec![Prop::Field(js::HELD.into(), stored)]),
             false => stored,

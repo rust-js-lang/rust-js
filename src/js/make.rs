@@ -1122,12 +1122,15 @@ impl Expr {
     /// `undefined`, `const sigil = undefined;` (#1957).
     /// Anything else, a variable or a call, may be. The one answer of
     /// whether a JS value may be `undefined`, which a nullable place's
-    /// storage asks (`Storage::written`).
-    pub fn may_be_undefined(&self) -> bool {
+    /// storage asks (`Storage::written`), as `given` says: lowering's, by
+    /// its form alone; of what's past lowering, its facts too. What MIR says
+    /// is `null` or a value, `Undefined::Never`, `written` answers itself.
+    pub fn may_be_undefined(&self, given: super::Undefined) -> bool {
         match &self.kind {
-            _ if [Known::Defined, Known::Present]
-                .into_iter()
-                .any(|known| self.facts.has(known)) =>
+            _ if given == super::Undefined::ByFacts
+                && [Known::Defined, Known::Present]
+                    .into_iter()
+                    .any(|known| self.facts.has(known)) =>
             {
                 false
             }
@@ -1145,10 +1148,10 @@ impl Expr {
             | ExprKind::Unary(..) => false,
             // `a ?? b` and `a || b` give `b` or what's not `undefined`; `a &&
             // b`, either.
-            ExprKind::Binary(Op::Coalesce | Op::Or, _, b) => b.may_be_undefined(),
-            ExprKind::Binary(Op::And, a, b) => a.may_be_undefined() || b.may_be_undefined(),
+            ExprKind::Binary(Op::Coalesce | Op::Or, _, b) => b.may_be_undefined(given),
+            ExprKind::Binary(Op::And, a, b) => a.may_be_undefined(given) || b.may_be_undefined(given),
             ExprKind::Binary(..) => false,
-            ExprKind::Cond(_, a, b) => a.may_be_undefined() || b.may_be_undefined(),
+            ExprKind::Cond(_, a, b) => a.may_be_undefined(given) || b.may_be_undefined(given),
             _ => true,
         }
     }
@@ -1165,7 +1168,7 @@ impl Expr {
     pub fn store_again(&mut self) {
         if let ExprKind::Binary(Op::Coalesce, made, null) = &self.kind
             && matches!(null.kind, ExprKind::Null)
-            && let Some(stored) = null_for_none(made)
+            && let Some(stored) = null_for_none(made, super::Undefined::ByFacts)
         {
             let span = self.span;
             *self = stored.or_at(span);

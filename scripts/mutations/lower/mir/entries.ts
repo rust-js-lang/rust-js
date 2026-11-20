@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "swap-into-a-nullable-place-as-given",
     breaks: "`mem::swap(&mut x, &mut other.0)` of a nullable parameter writes `undefined` for `None`, which its `=== null` test reads as `Some` (#1018)",
     file: "src/lower/mir/entries.rs",
-    find: "            true => crate::lower::representation::NoneForm::Null.storage().written(e, false),\n",
+    find: "            true => crate::lower::representation::NoneForm::Null\n                .storage()\n                .written(e, js::Undefined::ByForm),\n",
     replace: "            true => e,\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_beside_a_wrapper.rs$"],
   },
