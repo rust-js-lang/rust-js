@@ -454,13 +454,26 @@ impl<'tcx> BackStepped<'tcx> {
         }
     }
 
-    /// Whether a value of type `ty`, in `owner`'s body `mir`, is made knowing
-    /// its back or its length where it's made: of a type whose question is a
-    /// type's, or of the type of a local this body steps from its back or
-    /// counts there (`LengthAsked::Counted`). The one answer of what's
-    /// stepped from its back, which the held flip asks of a chain's source
-    /// (`decide_held`, #1681).
-    pub(in crate::lower) fn made_knowing(
+    /// The local `owner`'s `local` lends where it's a `&mut` of a whole
+    /// one, `borrows`', else `local`: what's asked of a value by its MIR
+    /// identity is asked of the local that holds it.
+    pub(in crate::lower) fn lent(
+        &self,
+        owner: rustc_span::def_id::DefId,
+        local: rustc_middle::mir::Local,
+    ) -> rustc_middle::mir::Local {
+        self.borrows.get(&(owner, local)).copied().unwrap_or(local)
+    }
+
+    /// Whether a chain of type `ty` stays hand-written in `owner`'s body
+    /// `mir`, the held flip's policy (`decide_held`, #1681): of a type whose
+    /// question is a type's, or of the type of any local the body steps from
+    /// its back or counts there (`LengthAsked::Counted`). Not whether this
+    /// value is stepped from its back, which `stepped_from_its_back` alone
+    /// answers, by its MIR identity: a policy of readability, as std's
+    /// compiled structs read longer than the hand-written forms that are
+    /// correct where they're kept (#2157, #2158, #2176).
+    pub(in crate::lower) fn keeps_hand_written(
         &self,
         recognition: Recognition<'_, 'tcx>,
         (owner, mir): (rustc_span::def_id::DefId, &rustc_middle::mir::Body<'tcx>),

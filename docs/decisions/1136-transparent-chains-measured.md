@@ -691,3 +691,50 @@ or by a test of its own, found none. New corpus case
 test/cross-crate-iterators.test.ts; mutations
 `transparent-library-iterator-unseen` and
 `transparent-opaque-iterator-unrevealed`.
+
+## Amendment: the held flip keeps a type hand-written, a readability policy (2026-11-20, #2158, #2175)
+
+`BackStepped::made_knowing`, which the held flip asks of a chain's source
+and of its root, answers by type. It says yes where any local of the same
+type in the body is stepped from its back or counted there. Its name and
+doc called it the one answer of what's stepped from its back. That is the
+value question, which `stepped_from_its_back` already answers by the MIR
+identity of what holds a value. So two answers to one question looked to
+exist (#2158).
+
+A by-value answer was built and measured. It asked of the MIR local that
+holds the chain's source or root, found through `span_join` by a variable's
+binding, a call's destination (of its callee, since a `for` loop's
+`into_iter` shares the iterator call's span) or a value's assignment. Every
+place it disagreed with the type answer was probed: the joined local was
+always a different value from the stepped ones of its type. The #2158 shape
+each time, and each answer native's. But 19 corpus snapshots grew,
++2,141/-989 lines. Each chain the type answer keeps hand-written
+(`$iterator(..)`, `$mapEnds`, `$lazyChain`) became std's compiled structs
+with their dictionaries, which read longer. Campaign 2 takes only clearly
+better changes (#2112, as Change C was dropped on #2157 at 1.43× growth), so
+the lead chose to keep the type answer as what it is: a policy.
+
+**The type answer is renamed `keeps_hand_written`, "does a chain of this
+type stay hand-written in this body?"** It's a deliberate readability
+policy that over-approximates, not a second answer of whether a value is
+stepped from its back. The hand-written forms it keeps are correct since
+#2157. It has its own row in the owner table, and `stepped_from_its_back`
+stays the value question's one owner. That compiled std structs read longer
+than the hand forms is its own readability issue, #2176.
+
+With it:
+- `mir/jsx_props.rs`'s `thir_call` made its own join of MIR's call to
+  THIR's, the one call of a function at a span (#2175). That join is now
+  span_join's `the_call_of_at`, and `thir_call` takes it apart.
+- mir/locals.rs's debug assertion of one `Name` per variable asks
+  span_join's `var_local` for the MIR local a variable is bound to.
+- `BackStepped::lent` is the one lookup of the local a `&mut` lends, which
+  `stepped_from_its_back` and `made_counted_from_its_back` each wrote.
+
+No output changes. Held by
+`test/corpus/held_chain_beside_another_value_stepped_from_its_back.rs`
+against native Rust: its snapshot pins the policy, chains of `Ends` kept
+hand-written beside another `Ends` stepped from its back. Mutation
+`hand-written-of-no-other-value`; `held-flip-of-a-source-made-knowing-its-back`
+and `mir-jsx-shapeless` retargeted.

@@ -24,7 +24,7 @@ mod present_item;
 mod set_reads;
 mod span_join;
 pub(in crate::lower) use collect_sources::CollectSource;
-pub(in crate::lower) use span_join::{each_call_at, the_call_at, the_one};
+pub(in crate::lower) use span_join::{each_call_at, the_call_at, the_call_of_at, the_one, var_local};
 mod total_orders;
 mod values;
 mod whole_casts;

@@ -339,6 +339,15 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^closing_maps_given_counted.rs$"],
   },
   {
+    name: "hand-written-of-no-other-value",
+    breaks: "the held flip's policy keeps no chain hand-written for another value of its type stepped from its back, so a held `map` of `Ends` beside one is std's compiled struct (#2158)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                .any(|&(of, local)| of == owner && erased(mir.local_decls[local].ty) == ty)\n",
+    replace: "                .any(|_| false)\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^held_chain_beside_another_value_stepped_from_its_back.rs$"],
+  },
+  {
     name: "own-method-receiver-unrecorded",
     breaks: "the receiver of `DoubleEndedIterator`'s own method, a map of the crate's iterator `count().map(f).rfold(..)`, isn't recorded though no form of its own steps it from its back, and it's refused (#851)",
     file: "src/lower/analysis/back_stepped.rs",
@@ -599,7 +608,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "held-length-flips-held",
-    breaks: "a variable asked its length makes the held flip (`made_knowing`) take its type as made knowing, so a held `step_by` of a reversed range, std's struct, is made in place, a change of form where none is asked (#1795)",
+    breaks: "a variable asked its length makes the held flip (`keeps_hand_written`) keep its type hand-written, so a held `step_by` of a reversed range, std's struct, is made in place, a change of form where none is asked (#1795)",
     file: "src/lower/analysis/back_stepped.rs",
     find: "                        .filter(|(_, how)| **how == LengthAsked::Counted)\n",
     replace: "",

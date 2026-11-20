@@ -132,8 +132,8 @@ pub(in crate::lower) const HELD_FLIPPED: [&str; 19] = [
 /// (`InPlace`), once the analysis knows what's stepped from its back: what
 /// it takes out of the ground. A chain that starts on a variable holding an
 /// iterator apart, `held`'s (`Transparency::Held`), whose value is std's
-/// struct, not one made knowing its back or its length
-/// (`BackStepped::made_knowing`), is std's compiled structs: its
+/// struct, not one of a type the body keeps hand-written
+/// (`BackStepped::keeps_hand_written`), is std's compiled structs: its
 /// `HELD_FLIPPED` adapters are taken out, std's body the meaning where the
 /// hand-written form isn't proved to be it (#1681's step iii). Of each body,
 /// the crate's and its initializers', the harness's too, as each is
@@ -182,7 +182,7 @@ fn held_links<'tcx>(
     let thir = &body.thir;
     let held_apart = |source: ExprId| {
         matches!(thir[strip(thir, source)].kind, ExprKind::VarRef { .. })
-            && !back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty)
+            && !back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty)
     };
     let flipped_link = |link: ExprId| match thir[link].kind {
         ExprKind::Call { fun, .. } if matches!(*thir[fun].ty.kind(), ty::FnDef(callee, _) if flipped.contains(&callee)) => {
@@ -190,7 +190,8 @@ fn held_links<'tcx>(
         }
         _ => None,
     };
-    let made_knowing = |source: ExprId| back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty);
+    let hand_written =
+        |source: ExprId| back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty);
     // What the ground made in place, a JS iterator: a call, or a variable
     // a `let` binds one to, `let a = v.iter().map(f)`, made in place as
     // what it's given to, `a.zip(b)`, was (`let_made`). A link given one,
@@ -220,7 +221,7 @@ fn held_links<'tcx>(
             // .rfold(..)`'s, `$mapEnds` as it is, which std's struct would
             // be given that knowing only by each of std's back dictionaries,
             // three times its JS.
-            _ => !chain.source.is_some_and(made_knowing) && !made_knowing(chain.links[0]),
+            _ => !chain.source.is_some_and(hand_written) && !hand_written(chain.links[0]),
         })
         // Its links are from what's called last to what's called on the
         // source.

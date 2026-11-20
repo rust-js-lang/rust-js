@@ -354,22 +354,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
             }
             // And one `Name` per Rust variable: a binding THIR names
-            // (`FnCx::bind`) is the local MIR binds it to, by its span,
+            // (`FnCx::bind`) is the local MIR binds it to (`span_join::var_local`),
             // never a second variable of its word (ADR 1150).
             for (var, bound) in &self.locals.vars {
                 let js::ExprKind::Var(bound) = &bound.place.kind else {
                     continue;
                 };
-                let span = self.tcx.hir_span(var.0);
-                let local = (body.var_debug_info.iter()).find_map(|info| match info.value {
-                    mir::VarDebugInfoContents::Place(place)
-                        if place.projection.is_empty() && info.source_info.span == span =>
-                    {
-                        Some(place.local)
-                    }
-                    _ => None,
-                });
-                if let Some(local) = local {
+                if let Some(local) = crate::lower::body_queries::var_local(self.tcx, body, *var) {
                     assert!(
                         locals.names[local] == *bound,
                         "{bound:?}, a binding, and {:?}, the local MIR binds it to, are two names of one variable (ADR 1150)",
