@@ -19,7 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn binding_values(
         &mut self,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
-        (mut args, present): (Vec<Expr>, &[bool]),
+        (mut args, present): (Vec<Expr>, &[crate::lower::mir::ArgProof]),
         (fun_span, named): (js::Span, Span),
         span: Span,
         out: &mut Vec<js::Stmt>,
@@ -603,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         mut value: Expr,
         named: Option<(DefId, usize)>,
-        (optionals, present): (&[(bool, bool)], &[bool]),
+        (optionals, present): (&[(bool, bool)], &[crate::lower::mir::ArgProof]),
         (at, out): (js::Span, &mut Vec<js::Stmt>),
     ) -> Expr {
         // Each count's call where the call is written, so a comment before
@@ -631,8 +631,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             use js::ExprKind as K;
             matches!(arg.kind, K::Null)
                 || arg.has_null_fallback()
-                || ((!arg.may_be_undefined() || present.get(i) == Some(&true))
-                    && !arg.facts.has(js::Known::NoneNull)
+                || ((!arg.may_be_undefined() || present.get(i).is_some_and(|p| p.present))
+                    && !present.get(i).is_some_and(|p| p.null)
                     && !matches!(arg.kind, K::Binary(Op::Coalesce | Op::Or | Op::And, ..) | K::Cond(..)))
         };
         let run = (0..given)

@@ -46,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let pointers = self.krate.cell_borrows.pointers();
         // Of one that may be JS's, each `Option` Rust's `None` (#1840).
         let present = match pointers.may_be(self.tcx, fn_ptr) {
-            None => super::present_or_defined(&self.presences(state, &operands[1..])),
+            None => self.arg_proofs(state, &operands[1..]),
             Some(_) => Vec::new(),
         };
         if !pointers.rust_only(self.tcx, fn_ptr) {

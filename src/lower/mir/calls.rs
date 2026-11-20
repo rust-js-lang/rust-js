@@ -278,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (true, Value::Expr(call)) => Value::Expr(self.optional_ladder(
                         call,
                         None,
-                        (&optionals, &super::present_or_defined(&present)),
+                        (&optionals, &self.arg_proofs_in_a_tuple(state)),
                         (self.js_span(span), out),
                     )),
                     (_, call) => call,
@@ -530,7 +530,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let present = match &state.body[state.at].terminator().kind {
             mir::TerminatorKind::Call { args, .. } => {
                 let operands: Vec<&Operand<'tcx>> = args.iter().map(|arg| &arg.node).collect();
-                super::present_or_defined(&self.presences(state, &operands))
+                self.arg_proofs(state, &operands)
             }
             _ => Vec::new(),
         };

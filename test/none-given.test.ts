@@ -871,3 +871,39 @@ pub fn send_null(callback: &dyn Fn(Option<f64>)) {
   expect(received).toEqual([[null], [null], [3], [], [], [3], [null]]);
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("callback(value ?? null)");
 });
+
+// A local whose `None` is `null` alone, a `js::null()` it's made of,
+// given to a binding's optional argument, `String(value)`: Rust's `None`
+// there is no argument, `String()`'s "", never `String(null)`'s "null";
+// MIR says it's `null` where it's `None` (`ArgProof::null`), so its call
+// is the one of each count, as a `dyn Fn`'s too (#2112 C S5).
+test("a held js::null given to a binding's optional argument is no argument", async () => {
+  const dir = fixture("held-null-optional-argument");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "String")]
+fn text(value: Option<f64>) -> String {
+    match value {
+        None => String::new(),
+        Some(v) => format!("{v}"),
+    }
+}
+
+pub fn shown(flag: bool) -> String {
+    let held: Option<f64> = if flag { Some(2.0) } else { js::null() };
+    text(held)
+}
+
+// The same, called as a \`dyn Fn\`, whose call is given a tuple of it.
+pub fn shown_through(flag: bool) -> String {
+    let f: &dyn Fn(Option<f64>) -> String = &text;
+    let held: Option<f64> = if flag { Some(2.0) } else { js::null() };
+    f(held)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
+  const { shown, shownThrough } = await import(join(dir, "lib.js"));
+  expect([shown(true), shown(false), shownThrough(true), shownThrough(false)]).toEqual(["2", "", "2", ""]);
+  // A `dyn Fn` may be JS's own function, so its call is the one of each
+  // count too.
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return held != null ? f(held) : f();");
+});
+

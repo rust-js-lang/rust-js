@@ -448,3 +448,21 @@ snapshot holding the tests; mutations `capture-nones-unrecorded`,
 `receiver-none-of-the-reference`, `as-ref-none-not-followed` and
 `drop-variants-none-unasked`, new, caught (`snapshots: true`). The read
 stamps themselves go next.
+
+## Amendment: a trailing argument's `null` is MIR's (2026-11-20, #2112)
+
+The first reader of the read stamps moved to MIR's answer: a call of each
+count of a function's trailing `Option`s (`optional_ladder`) asked whether
+an argument's read was stamped `Known::NoneNull`, `null` where it's
+`None`, which JS is given as it is, never left out. It's now told so per
+argument, beside what's proved of its presence, `ArgProof { present,
+null }` (`NoneForms::arg_proofs`, of `place_none`), the one record the
+three call sites build. A differential of the stamp and MIR's answer over
+check:fast and React's port found 7 differences, none of which changes a
+call: 5 where MIR says `null` of an argument that may be `undefined` and
+isn't proved there, already not left out; 2 where a `js::null()` is given
+as it is, `null`, which the ladder never leaves out. No output moves.
+Test `none-given`'s "a held js::null given to a binding's optional
+argument is no argument" holds it; mutation `trailing-null-left-out`, new,
+caught; `trailing-some-never-undefined-tested`, `trailing-some-present-
+unasked` and `pointer-somes-unseen` follow the code, caught.

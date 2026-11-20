@@ -80,14 +80,17 @@ pub(in crate::lower) enum Presence {
     Defined,
 }
 
-/// Of each, whether it's never `undefined` there, `Present` or `Defined`:
-/// what a call of each count of a function's trailing `Option`s asks of
-/// each argument (`optional_ladder`, #2178).
-pub(in crate::lower::mir) fn present_or_defined(presences: &[Presence]) -> Vec<bool> {
-    presences
-        .iter()
-        .map(|presence| *presence != Presence::Unknown)
-        .collect()
+/// What MIR proves of an argument where a call reads it, which a call of
+/// each count of a function's trailing `Option`s asks of it
+/// (`optional_ladder`, #2178): that it's never `undefined` there,
+/// `Present` or `Defined` (`presence`); and that its `None` is `null`
+/// alone (`place_none`), which JS is given as it is, never left out.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+// Flags, not a state: what's proved of its presence and of its `None` are
+// apart, a value or `null` both.
+pub(in crate::lower) struct ArgProof {
+    pub(in crate::lower) present: bool,
+    pub(in crate::lower) null: bool,
 }
 
 impl<'tcx> FnCx<'_, 'tcx> {
@@ -142,6 +145,35 @@ impl<'tcx> FnCx<'_, 'tcx> {
     /// `presences` of the items of the tuple the call being lowered gives a
     /// closure, each its field.
     pub(in crate::lower::mir) fn presences_in_a_tuple(&self, state: &State<'_, 'tcx>) -> Vec<Presence> {
+        let fields = self.tuple_given(state);
+        self.presences(state, &fields.iter().collect::<Vec<_>>())
+    }
+
+    /// What MIR proves of each of `operands` where the call being lowered
+    /// reads it (`ArgProof`).
+    pub(in crate::lower::mir) fn arg_proofs(
+        &self,
+        state: &State<'_, 'tcx>,
+        operands: &[&Operand<'tcx>],
+    ) -> Vec<ArgProof> {
+        (operands.iter())
+            .map(|operand| ArgProof {
+                present: self.presence(state, operand) != Presence::Unknown,
+                null: operand.place().and_then(|place| self.place_none(state, place)) == Some(js::OnlyNone::Null),
+            })
+            .collect()
+    }
+
+    /// `arg_proofs` of the items of the tuple the call being lowered gives
+    /// a closure, each its field.
+    pub(in crate::lower::mir) fn arg_proofs_in_a_tuple(&self, state: &State<'_, 'tcx>) -> Vec<ArgProof> {
+        let fields = self.tuple_given(state);
+        self.arg_proofs(state, &fields.iter().collect::<Vec<_>>())
+    }
+
+    /// The items of the tuple the call being lowered gives a closure, each
+    /// its field.
+    fn tuple_given(&self, state: &State<'_, 'tcx>) -> Vec<Operand<'tcx>> {
         let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
             return Vec::new();
         };
@@ -153,8 +185,9 @@ impl<'tcx> FnCx<'_, 'tcx> {
         };
         (tys.iter().enumerate())
             .map(|(i, ty)| {
-                let field = tuple.project_deeper(&[PlaceElem::Field(rustc_abi::FieldIdx::from_usize(i), ty)], self.tcx);
-                self.presence(state, &Operand::Copy(field))
+                Operand::Copy(
+                    tuple.project_deeper(&[PlaceElem::Field(rustc_abi::FieldIdx::from_usize(i), ty)], self.tcx),
+                )
             })
             .collect()
     }
