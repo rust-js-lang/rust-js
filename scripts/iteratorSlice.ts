@@ -83,6 +83,15 @@ export const iteratorPaths = [
   "src/lower/recognition/std_items.rs",
   "src/lower/recognition/compiled_std.rs",
   "src/lower/recognition/zip_folds.rs",
+  // Owners of the owner table's rows of iterators (#2162): a type known by its
+  // bounds as an iterator, a std iterator method that keeps each item, a
+  // string's iterators, std's `Iterator` trait (#2174), a range no step
+  // leaves exhausted.
+  "src/lower/recognition/traits.rs",
+  "src/lower/recognition/methods.rs",
+  "src/lower/recognition/chars.rs",
+  "src/lower/recognition/sorts.rs",
+  "src/lower/mir/noted.rs",
   "src/lower/analysis/iterator_steps.rs",
   "src/lower/analysis/type_facts/knowing.rs",
   "src/lower/analysis/back_stepped.rs",
