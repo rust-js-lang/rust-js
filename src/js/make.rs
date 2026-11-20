@@ -111,9 +111,9 @@ impl Expr {
     /// user, 2026-10-28: one form, never its truth). The one test of an
     /// `Option`'s being there, which `null_test` reads. Of one whose `None`
     /// is only `undefined` or only `null` (`Known::NoneUndefined`,
-    /// `Known::NoneNull`), the test says so, written `option !== undefined`
-    /// or `option !== null` (`stmt_walk::strict_presence`; ADR 0298,
-    /// amended by the user, 2026-10-28: by what its `None` can be).
+    /// `Known::NoneNull`), the test says so, `option !== undefined` or
+    /// `option !== null`, its own operator (`Op::NoneNe`, #2112 C S5; ADR
+    /// 0298, amended by the user, 2026-10-28: by what its `None` can be).
     pub fn presence(option: Expr, set: bool) -> Expr {
         // Of one made where it's tested, `t ? v : undefined` of a `v`
         // that's there, the test it's made by, `t` (ADR 0910). Not of a
@@ -127,14 +127,17 @@ impl Expr {
             return if set { test } else { test.negated_test() };
         }
         let none = option.facts.of_presence();
-        let test = Expr::bin(if set { Op::LooseNe } else { Op::LooseEq }, option, Expr::null());
-        match none.only_none().is_some() {
-            true => Expr {
-                facts: test.facts.and(none),
-                ..test
-            },
-            false => test,
-        }
+        // Of one whose `None` is only one of `undefined` and `null`, the test
+        // of that one, `x !== undefined` (`Op::NoneNe`, #2112 C S5).
+        let op = match (none.only_none(), set) {
+            (Some(Known::NoneUndefined), true) => Op::NoneNe(super::OnlyNone::Undefined),
+            (Some(Known::NoneUndefined), false) => Op::NoneEq(super::OnlyNone::Undefined),
+            (Some(_), true) => Op::NoneNe(super::OnlyNone::Null),
+            (Some(_), false) => Op::NoneEq(super::OnlyNone::Null),
+            (None, true) => Op::LooseNe,
+            (None, false) => Op::LooseEq,
+        };
+        Expr::bin(op, option, Expr::null())
     }
 
     /// This, the property a binding's write assigns, which a setter may
@@ -569,20 +572,19 @@ impl Expr {
             return Expr::unary(UnaryOp::Not, (**value).clone());
         }
         // `!(a === b)` is `a !== b`, for every `a` and `b`.
-        if let (UnaryOp::Not, ExprKind::Binary(eq @ (Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe), a, b)) =
-            (op, &arg.kind)
+        if let (UnaryOp::Not, ExprKind::Binary(eq, a, b)) = (op, &arg.kind)
+            && let Some(ne) = match eq {
+                Op::Eq => Some(Op::Ne),
+                Op::Ne => Some(Op::Eq),
+                // A test of being set, of either form (`Op::negated_test`).
+                _ => eq.negated_test(),
+            }
         {
-            let ne = match eq {
-                Op::Eq => Op::Ne,
-                Op::Ne => Op::Eq,
-                Op::LooseEq => Op::LooseNe,
-                _ => Op::LooseEq,
-            };
-            // An `Option`'s presence negated says what its `None` is, as
-            // the test did (`Known::NoneUndefined`), and JS's `==` of any
-            // value may still run a `valueOf` (`Known::Getter`).
+            // JS's `==` of any value may still run a `valueOf`
+            // (`Known::Getter`); an `Option`'s presence negated is of the
+            // `None` its operator says (`Op::negated_test`).
             return Expr {
-                facts: arg.facts.of_presence().and(arg.facts.of_evaluation()),
+                facts: arg.facts.of_evaluation(),
                 kind: ExprKind::Binary(ne, a.clone(), b.clone()),
                 span: arg.span,
                 held_as: Default::default(),
@@ -596,6 +598,7 @@ impl Expr {
         // value of any type but `"object"` and `"undefined"` is there, and a
         // place read twice with nothing run between is the same value (ADR
         // 0298, amended).
+        // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
         if op == Op::And
             && let Some(tested) = super::stmt_walk::null_test(&rhs, true)
             && super::stmt_walk::taken_place(tested)
@@ -632,8 +635,8 @@ impl Expr {
         // answer, as a person writes it.
         if let (ExprKind::Num(a), ExprKind::Num(b)) = (&lhs.kind, &rhs.kind) {
             let answer = match op {
-                Op::Eq | Op::LooseEq => Some(a == b),
-                Op::Ne | Op::LooseNe => Some(a != b),
+                Op::Eq | Op::LooseEq | Op::NoneEq(_) => Some(a == b),
+                Op::Ne | Op::LooseNe | Op::NoneNe(_) => Some(a != b),
                 Op::Lt => Some(a < b),
                 Op::Le => Some(a <= b),
                 Op::Gt => Some(a > b),
@@ -648,8 +651,8 @@ impl Expr {
         // "Ok"`.
         if let (ExprKind::Str(a), ExprKind::Str(b)) = (&lhs.kind, &rhs.kind) {
             match op {
-                Op::Eq | Op::LooseEq => return Expr::bool(a == b),
-                Op::Ne | Op::LooseNe => return Expr::bool(a != b),
+                Op::Eq | Op::LooseEq | Op::NoneEq(_) => return Expr::bool(a == b),
+                Op::Ne | Op::LooseNe | Op::NoneNe(_) => return Expr::bool(a != b),
                 _ => {}
             }
         }
@@ -658,8 +661,9 @@ impl Expr {
         let nothing = |e: &Expr| matches!(e.kind, ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null);
         if nothing(&lhs) && nothing(&rhs) {
             match op {
-                Op::LooseEq => return Expr::bool(true),
-                Op::LooseNe => return Expr::bool(false),
+                // A test of being set of either form: `None` isn't set.
+                Op::LooseEq | Op::NoneEq(_) => return Expr::bool(true),
+                Op::LooseNe | Op::NoneNe(_) => return Expr::bool(false),
                 _ => {}
             }
         }
@@ -682,7 +686,16 @@ impl Expr {
         let compared = matches!(
             lhs.kind,
             ExprKind::Binary(
-                Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge,
+                Op::Eq
+                    | Op::Ne
+                    | Op::LooseEq
+                    | Op::LooseNe
+                    | Op::NoneEq(_)
+                    | Op::NoneNe(_)
+                    | Op::Lt
+                    | Op::Le
+                    | Op::Gt
+                    | Op::Ge,
                 ..
             ) | ExprKind::Unary(UnaryOp::Not, _)
         );
@@ -696,6 +709,7 @@ impl Expr {
             }
         }
         // `a != null && !!a` is `!!a`: neither is truthy.
+        // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
         if op == Op::And
             && let Some(tested) = null_test(&lhs, true)
             && let ExprKind::Unary(UnaryOp::Not, inner) = &rhs.kind
@@ -707,6 +721,7 @@ impl Expr {
         // `a != null && Array.isArray(a)` is `Array.isArray(a)`: no array is
         // `null` or `undefined`. A chain after it, `&& ..`, is made from the
         // left, this first.
+        // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
         if op == Op::And
             && let Some(tested) = null_test(&lhs, true)
             && let ExprKind::Call(callee, args) = &rhs.kind
@@ -780,6 +795,7 @@ impl Expr {
         // any `!!a`, which an empty string fails, `!s.is_empty()`'s; of an
         // `Option` never falsy's, `presence`'s, which is `a != null`
         // (`null_test`, ADR 0298, amended).
+        // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
         if let Some(tested) = null_test(&test, true)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Member(object, property) = &then.kind
@@ -794,6 +810,7 @@ impl Expr {
         // `a != null ? a[k] : undefined` is `a?.[k]`, of a key too, a
         // symbol's: `?.` skips the key where `a` is, as the test does (ADR
         // 0647).
+        // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
         if let Some(tested) = null_test(&test, true)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Index(object, key) = &then.kind
@@ -807,6 +824,7 @@ impl Expr {
         }
         // `a != null ? a.m(x) : undefined` is `a?.m(x)`: `?.` skips the call,
         // its arguments too, where `a` is, as the test does.
+        // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
         if let Some(tested) = null_test(&test, true)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Call(callee, args) = &then.kind
@@ -1216,7 +1234,9 @@ fn null_apart(op: Op, lhs: &Expr, rhs: &Expr) -> Option<Expr> {
     let strict = if present { Op::Eq } else { Op::Ne };
     let x = match &lhs.kind {
         ExprKind::Binary(o, x, u) if *o == strict && matches!(u.kind, ExprKind::Undefined) => &**x,
-        _ => null_test(lhs, !present).filter(|_| lhs.facts.only_none() == Some(Known::NoneUndefined))?,
+        _ => null_test(lhs, !present).filter(|_| {
+            matches!(&lhs.kind, ExprKind::Binary(op, ..) if matches!(op, Op::NoneEq(super::OnlyNone::Undefined) | Op::NoneNe(super::OnlyNone::Undefined)))
+        })?,
     };
     if !taken_place(x) || rhs.facts.of_presence() != Facts::default() {
         return None;

@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`x === null` is taken for `x === undefined`, so a `match`'s `Kind::Null` arm after `Kind::Undefined`'s is dropped",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                        matches!(p, Op::LooseEq | Op::LooseNe) || k.kind == l.kind\n",
+    find: "                        p.tests_set().is_some() || k.kind == l.kind\n",
     replace: "                        true\n",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
   },
@@ -212,8 +212,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let-else of what `filter` keeps tests `const h = x ? x : undefined` for `null`, not `!x`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,\n",
-    replace: "            Op::LooseEq => false,\n",
+    find: "            false => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,\n",
+    replace: "            false => false,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "what .filter. keeps"],
   },
   {
@@ -632,9 +632,9 @@ export const mutations: Mutation[] = [
     breaks:
       'a let-else\'s exit that reads the `Option` it kept, `None`, is given what was filtered, `""`, `Some("")` where Rust says `None`',
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,\n",
+    find: "            false => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,\n",
     replace:
-      "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),\n",
+      "            false => otherwise.is_none() && then.last().is_some_and(ends),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
   },
   {

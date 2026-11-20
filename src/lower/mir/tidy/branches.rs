@@ -737,7 +737,7 @@ pub(super) fn same_test(a: &Expr, b: &Expr) -> bool {
                     // `== null` is `== undefined`; `=== null` isn't
                     // `=== undefined` (ADR 0676).
                     (ExprKind::Null | ExprKind::Undefined, ExprKind::Null | ExprKind::Undefined) => {
-                        matches!(p, Op::LooseEq | Op::LooseNe) || k.kind == l.kind
+                        p.tests_set().is_some() || k.kind == l.kind
                     }
                     (ExprKind::Str(k), ExprKind::Str(l)) => k == l,
                     _ => k.as_int().is_some() && k.as_int() == l.as_int(),
@@ -815,25 +815,28 @@ pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
     match (&test.kind, &by.kind) {
         (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),
         // `x != null` where `x != null`.
-        (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::LooseNe, y, also))
-            if [null, also]
-                .iter()
-                .all(|n| matches!(n.kind, ExprKind::Null | ExprKind::Undefined)) =>
+        (ExprKind::Binary(set, x, null), ExprKind::Binary(also_set, y, also))
+            if set.tests_set() == Some(true)
+                && also_set.tests_set() == Some(true)
+                && [null, also]
+                    .iter()
+                    .all(|n| matches!(n.kind, ExprKind::Null | ExprKind::Undefined)) =>
         {
             js::same_path(x, y)
         }
         // `x != null` where `typeof x === "number"`: of any kind but
         // `object`, `null`'s, and `undefined`.
-        (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, kind, name))
-            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+        (ExprKind::Binary(set, x, null), ExprKind::Binary(Op::Eq, kind, name))
+            if set.tests_set() == Some(true)
+                && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
                 && let ExprKind::Unary(UnaryOp::Typeof, y) = &kind.kind =>
         {
             js::same_path(x, y) && matches!(&name.kind, ExprKind::Str(t) if t != "object" && t != "undefined")
         }
         // Not where `x === undefined`, of a `None` given to JS as it is
         // too, `strict_equals(x, None)`'s (ADR 0620, amended).
-        (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, y, literal))
-            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
+        (ExprKind::Binary(set, x, null), ExprKind::Binary(Op::Eq, y, literal))
+            if set.tests_set() == Some(true) && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
         {
             js::same_path(x, y)
                 && literal.is_constant()
@@ -902,7 +905,18 @@ pub(super) fn is_boolean(e: &Expr, booleans: &IndexSet<js::Path>) -> bool {
         ExprKind::Member(..) => e.path().is_some_and(|path| booleans.contains(&path)),
         ExprKind::Call(..) if e.called_path().is_some_and(|path| booleans.contains(&path)) => true,
         ExprKind::Binary(
-            Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf | Op::In,
+            Op::Eq
+            | Op::Ne
+            | Op::LooseEq
+            | Op::LooseNe
+            | Op::NoneEq(_)
+            | Op::NoneNe(_)
+            | Op::Lt
+            | Op::Le
+            | Op::Gt
+            | Op::Ge
+            | Op::InstanceOf
+            | Op::In,
             ..,
         ) => true,
         ExprKind::Binary(Op::And | Op::Or, a, b) => is_boolean(a, booleans) && is_boolean(b, booleans),
@@ -998,18 +1012,19 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Nam
         let StmtKind::If(guard, then, otherwise) = &checked.kind else {
             continue;
         };
-        let ExprKind::Binary(op @ (Op::LooseEq | Op::LooseNe), tested, null) = &guard.kind else {
+        let ExprKind::Binary(op, tested, null) = &guard.kind else {
             continue;
         };
+        let Some(set) = op.tests_set() else { continue };
         if !matches!(&tested.kind, ExprKind::Var(t) if t == h)
             || !matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
         {
             continue;
         }
-        let kept = match op {
+        let kept = match set {
             // The exit's `h` is `undefined`, which `x` may not be.
-            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,
-            _ => {
+            false => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,
+            true => {
                 otherwise.as_deref().is_none_or(|o| js::mentions_of(o, h) == 0)
                     && js::mentions_of(&stmts[i + 1..], h) == 0
             }
@@ -1020,9 +1035,9 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Nam
         let Some(x) = variable else {
             // `h` kept, `x` itself, tested by its truth.
             let (h, x) = (h.clone(), x.clone());
-            let truth = match op {
-                Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(h)),
-                _ => Expr::var(h),
+            let truth = match set {
+                false => Expr::unary(UnaryOp::Not, Expr::var(h)),
+                true => Expr::var(h),
             };
             if let StmtKind::Const(_, value) = &mut stmts[i - 1].kind {
                 *value = Expr { span: value.span, ..x };
@@ -1035,9 +1050,9 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Nam
             }
             continue;
         };
-        let truth = match op {
-            Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(&x)),
-            _ => Expr::var(&x),
+        let truth = match set {
+            false => Expr::unary(UnaryOp::Not, Expr::var(&x)),
+            true => Expr::var(&x),
         };
         // `h`, read as `x`: it goes, the test where it was.
         let h = h.clone();

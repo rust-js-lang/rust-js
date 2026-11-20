@@ -550,6 +550,7 @@ fn optional_handler(value: &Expr) -> Option<Expr> {
     else {
         return None;
     };
+    // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
     let tested = js::null_test(test, true)?;
     let js::ExprKind::Var(handler) = &tested.kind else {
         return None;

@@ -642,8 +642,12 @@ fn opaque(part: &Expr) -> (Expr, bool) {
             let items = done.iter().cloned().chain([last]).collect();
             (Expr::sequence(items), negated)
         }
-        ExprKind::Binary(op @ (Op::Ne | Op::LooseNe), a, b) => {
-            let op = if *op == Op::Ne { Op::Eq } else { Op::LooseEq };
+        ExprKind::Binary(op, a, b) if *op == Op::Ne || op.tests_set() == Some(true) => {
+            let op = if *op == Op::Ne {
+                Op::Eq
+            } else {
+                op.negated_test().expect("a test of being set")
+            };
             (Expr::bin(op, (**a).clone(), (**b).clone()), true)
         }
         _ => (part.clone(), false),

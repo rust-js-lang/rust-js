@@ -61,8 +61,9 @@ pub(in crate::lower) fn copied_source(copy: &Expr) -> Option<&Expr> {
             _ => None,
         },
         js::ExprKind::Cond(test, source, copied) => match &test.kind {
-            js::ExprKind::Binary(Op::LooseEq, tested, null)
-                if matches!(null.kind, js::ExprKind::Null)
+            js::ExprKind::Binary(op, tested, null)
+                if op.tests_set() == Some(false)
+                    && matches!(null.kind, js::ExprKind::Null)
                     && tested.kind == source.kind
                     && copied_source(copied).is_some_and(|inner| inner.kind == source.kind) =>
             {

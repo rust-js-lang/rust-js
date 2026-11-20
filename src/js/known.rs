@@ -180,8 +180,8 @@ knowns! {
     /// TypeScript types `T | undefined`, `#[rust_js::optional]`'s,
     /// `window.event`, or a variable each of whose writes is one, a
     /// `Some(..)` or the crate's `None` (`OptionWrites::nones`). Of its
-    /// test, `x != null`, the test is written `x !== undefined`
-    /// (`stmt_walk::strict_presence`, ADR 0298, amended).
+    /// test, `x != null`, the test is made `x !== undefined`
+    /// (`Expr::presence`, `Op::NoneNe`, ADR 0298, amended).
     NoneUndefined,
     /// Of an `Option`, that its `None` is only ever `null`, never
     /// `undefined`: a call of a function whose result is

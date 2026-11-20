@@ -77,8 +77,10 @@ pub(super) fn failing(test: &Expr) -> Vec<(Expr, Set)> {
 pub(super) fn present_failing(test: &Expr) -> Vec<Expr> {
     match &test.kind {
         ExprKind::Binary(Op::Or, a, b) => [present_failing(a), present_failing(b)].concat(),
-        ExprKind::Binary(Op::LooseEq, subject, none)
-            if matches!(none.kind, ExprKind::Null | ExprKind::Undefined) && is_subject(subject) =>
+        ExprKind::Binary(op, subject, none)
+            if op.tests_set() == Some(false)
+                && matches!(none.kind, ExprKind::Null | ExprKind::Undefined)
+                && is_subject(subject) =>
         {
             vec![(**subject).clone()]
         }
@@ -91,7 +93,9 @@ pub(super) fn present_failing(test: &Expr) -> Vec<Expr> {
 /// 0)`, not `e != null && e[0] === 0` (#791).
 pub(super) fn present_said_by(present: &[Expr], test: &Expr) -> bool {
     match &test.kind {
-        ExprKind::Binary(Op::LooseNe, subject, none) if matches!(none.kind, ExprKind::Null | ExprKind::Undefined) => {
+        ExprKind::Binary(op, subject, none)
+            if op.tests_set() == Some(true) && matches!(none.kind, ExprKind::Null | ExprKind::Undefined) =>
+        {
             present.iter().any(|p| same_subject(p, subject))
         }
         _ => false,

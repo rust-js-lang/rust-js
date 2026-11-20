@@ -336,6 +336,7 @@ impl Expr {
         match &self.kind {
             ExprKind::Binary(Op::Ne, x, empty) if matches!(&empty.kind, ExprKind::Str(s) if s.is_empty()) => Some(x),
             ExprKind::Binary(Op::And, present, text)
+                // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
                 if let Some(x) = text.text_truth()
                     && null_test(present, true).is_some_and(|tested| same_path(tested, x)) =>
             {
@@ -380,6 +381,7 @@ impl Expr {
                 }
                 let mut all = Vec::new();
                 parts(self, &mut all);
+                // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
                 let set_and_true = |i: usize| {
                     null_test(&all[i], true).is_some_and(|x| all.get(i + 1).is_some_and(|next| same_path(next, x)))
                 };

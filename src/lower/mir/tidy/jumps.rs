@@ -681,8 +681,10 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
         let mut then = then.into_iter().peekable();
         // The binding of what it tests is set, first, tested itself.
         let bound = match (&test.kind, then.peek().map(|s| &s.kind)) {
-            (ExprKind::Binary(Op::LooseNe, x, null), Some(StmtKind::Const(b, value)))
-                if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && js::same_path(x, value) =>
+            (ExprKind::Binary(op, x, null), Some(StmtKind::Const(b, value)))
+                if op.tests_set() == Some(true)
+                    && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+                    && js::same_path(x, value) =>
             {
                 Some(b.clone())
             }

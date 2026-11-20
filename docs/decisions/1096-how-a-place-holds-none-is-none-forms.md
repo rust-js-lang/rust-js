@@ -352,3 +352,24 @@ is never taken, so behaviour is the same, and the JS reads better. A
 say may be a caught `null` (ADR 0030, #1939); one whose payload may look
 like `None`, a null pointer, an `any` value, is boxed, `$some`, and its
 `unwrap` still unboxes it (`some_of_what_may_be_nullish`).
+
+## Amendment: a strict test of being set is its own operator (2026-11-20, #2112)
+
+Change C's S5, its second part's first step. An `Option`'s test of being
+set where its `None` is only one, `x !== undefined` (ADR 0298, amended),
+was a loose `x != null` carrying `Known::NoneUndefined`, which tidy's
+passes moved and the printer read to write it strict
+(`strict_presence`). It's now its own operator, `Op::NoneNe(OnlyNone)` and
+`Op::NoneEq(OnlyNone)`, its right operand `null` as a loose one's, which
+the printer writes as that `None`: the decision carried as the JS it is.
+A program's own `===`, `Op::Eq`, is never one: `Op::tests_set` is the one
+answer of whether an operator tests an `Option`'s being set, which
+`null_test` and each pass that folds, merges or moves such a test ask,
+and a ternary of `js::strict_equals` never folds into `?.` or `??` (a
+lowering-nullable-tests row). A strict test folds as the loose one did:
+it's made only of a read whose `None` is only that one, whose payload is
+boxed where it may look like `None`, so its operand is never the other
+nullish; a `Some` of a caught JS `null` (ADR 0030) is the one question
+left, which the loose test's fold met alike (under investigation). Output
+is byte-identical; the facts still decide which operator `Expr::presence`
+makes, until its callers give MIR's answer.

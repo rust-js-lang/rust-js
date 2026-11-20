@@ -60,6 +60,8 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<js::Name>, plain: &IndexS
             | Op::Ne
             | Op::LooseEq
             | Op::LooseNe
+            | Op::NoneEq(_)
+            | Op::NoneNe(_)
             | Op::Lt
             | Op::Le
             | Op::Gt

@@ -806,6 +806,7 @@ fn kept_by_truth(a: &Expr) -> Option<Expr> {
     conjuncts(test, &mut parts);
     let mut kept = (**x).clone();
     // The first test, `x != null`, of what the value reads a part of.
+    // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
     if let Some(present) = js::null_test(&parts[0], true)
         && parts[1..].iter().all(|p| !p.has_effects())
         && let Some(chained) = optional_first(&kept, present)
@@ -863,6 +864,7 @@ fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
     let StmtKind::If(test, then, None) = &stmt.kind else {
         return None;
     };
+    // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
     let tested = js::null_test(test, false)?;
     let [
         Stmt {
@@ -1014,6 +1016,7 @@ fn expr(e: &mut Expr) {
     }
     // `x == null || !x` is `!x`: `null` and `undefined` are falsy (ADR 0313);
     // of text, `x == null || x === ""`, its truth's too (`text_truth`, rd732).
+    // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
     if let ExprKind::Binary(js::Op::Or, null_test, not) = &e.kind
         && let Some(x) = js::null_test(null_test, false)
     {

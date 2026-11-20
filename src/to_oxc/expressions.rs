@@ -228,11 +228,17 @@ impl<'a> Cx<'a> {
             ExprKind::Binary(op, l, r) => {
                 // An `Option`'s test of the one `None` it can be, `x !==
                 // undefined` (ADR 0298, amended).
-                let strict = js::strict_presence(e);
-                let (op, r) = match &strict {
-                    Some((op, none)) => (op, none),
-                    None => (op, &**r),
+                // An `Option`'s test of the one `None` it can be, `x !==
+                // undefined`, of the `None` its operator says (`Op::NoneNe`,
+                // ADR 0298, amended; #2112 C S5).
+                let only = match op {
+                    Op::NoneEq(none) | Op::NoneNe(none) => Some(match none {
+                        js::OnlyNone::Undefined => js::Expr::js_undefined(),
+                        js::OnlyNone::Null => js::Expr::null(),
+                    }),
+                    _ => None,
                 };
+                let r = only.as_ref().unwrap_or(&**r);
                 // Its right operand's comments are before it (ADR 0444,
                 // amended), placed as a branch's are.
                 let (l, r) = (self.expr(l), self.branch(r));
@@ -819,6 +825,8 @@ fn binary_op(op: Op) -> Result<BinaryOperator, LogicalOperator> {
         Op::Ne => BinaryOperator::StrictInequality,
         Op::LooseEq => BinaryOperator::Equality,
         Op::LooseNe => BinaryOperator::Inequality,
+        Op::NoneEq(_) => BinaryOperator::StrictEquality,
+        Op::NoneNe(_) => BinaryOperator::StrictInequality,
         Op::InstanceOf => BinaryOperator::Instanceof,
         Op::In => BinaryOperator::In,
         Op::Lt => BinaryOperator::LessThan,

@@ -1073,6 +1073,40 @@ impl UnaryOp {
     }
 }
 
+/// The one `None` an `Option`'s test of being set tests for, where it can
+/// be only one (`Op::NoneEq`, `Op::NoneNe`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum OnlyNone {
+    Undefined,
+    Null,
+}
+
+impl Op {
+    /// Whether this is a test of an `Option`'s being set, `x != null` or
+    /// `x !== undefined`, `Some(true)`, or of its not being set, `x ==
+    /// null` or `x === undefined`, `Some(false)`; `None` of any other
+    /// operator, a program's own `===` too. The one answer, `null_test`'s
+    /// and each pass's that reads such a test (#2112 C S5).
+    pub fn tests_set(self) -> Option<bool> {
+        match self {
+            Op::LooseNe | Op::NoneNe(_) => Some(true),
+            Op::LooseEq | Op::NoneEq(_) => Some(false),
+            _ => None,
+        }
+    }
+
+    /// The test of the other answer, `!=` of `==` and `!==` of `===`.
+    pub fn negated_test(self) -> Option<Op> {
+        Some(match self {
+            Op::LooseNe => Op::LooseEq,
+            Op::LooseEq => Op::LooseNe,
+            Op::NoneNe(none) => Op::NoneEq(none),
+            Op::NoneEq(none) => Op::NoneNe(none),
+            _ => return None,
+        })
+    }
+}
+
 #[derive(Clone, Copy, PartialEq)]
 pub enum Op {
     Or,
@@ -1088,6 +1122,14 @@ pub enum Op {
     /// options, where `null` and `undefined` are both `None`.
     LooseEq,
     LooseNe,
+    /// `===` and `!==` of an `Option`'s test of being set where its `None`
+    /// is only the one `OnlyNone` says, `x !== undefined`, its right
+    /// operand `null` as a loose one's, written as that `None`
+    /// (`Expr::presence`, ADR 0298, amended; #2112 C S5): a test of being
+    /// set, as `LooseEq` and `LooseNe` are (`tests_set`), never a
+    /// program's own `===`, `Eq`.
+    NoneEq(OnlyNone),
+    NoneNe(OnlyNone),
     /// `x instanceof C`: a `#[link_name = "instanceof C"]` binding.
     InstanceOf,
     /// `key in x`: a `#[link_name = "in []"]` binding.

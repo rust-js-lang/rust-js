@@ -316,14 +316,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-shadows.test.ts", "-t", "a binding of what take\\(\\) gives names it"],
   },
   {
-    name: "strict-presence-kinds-swapped",
-    breaks: "`window.event`, whose `None` is `undefined`, is tested `=== null`, so an event that's none is taken for one and its `type` read of `undefined` throws (a wrong answer, ADR 0298, amended)",
-    file: "src/js/stmt_walk.rs",
-    find: "        Known::NoneUndefined => Expr::js_undefined(),\n        _ => Expr::null(),\n",
-    replace: "        Known::NoneUndefined => Expr::null(),\n        _ => Expr::js_undefined(),\n",
-    tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
-  },
-  {
     name: "class-handle-this-unnamed",
     breaks: "a handle a class's method hands on, `bump(&self.reads)`, reads `this` in its accessors, the handle's own, so the field is never set (#359, #449)",
     file: "src/js/stmt_walk.rs",

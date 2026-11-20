@@ -1026,8 +1026,8 @@ fn says(subject: &Expr, e: &Expr, valued: &dyn Fn(&Expr) -> bool) -> bool {
 fn present_said(mut tests: Vec<Expr>, valued: &dyn Fn(&Expr) -> bool) -> Vec<Expr> {
     let said: Vec<bool> = (tests.iter())
         .map(|t| match &t.kind {
-            ExprKind::Binary(Op::LooseNe, subject, none)
-                if matches!(none.kind, ExprKind::Null | ExprKind::Undefined) =>
+            ExprKind::Binary(op, subject, none)
+                if op.tests_set() == Some(true) && matches!(none.kind, ExprKind::Null | ExprKind::Undefined) =>
             {
                 tests.iter().any(|other| says(subject, other, valued))
             }

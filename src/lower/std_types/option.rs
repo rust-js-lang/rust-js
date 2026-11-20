@@ -787,7 +787,17 @@ pub(in crate::lower) fn nullish_or(
     part_never_nullish: bool,
 ) -> Option<Expr> {
     let tested = match &test.kind {
-        js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
+        // A strict test of being set, `x !== undefined` or `x !== null`
+        // (`Op::NoneNe`), folds as a loose one does: it's made only of a read
+        // whose `None` is only that one, whose payload is unboxed only where
+        // it can't look like `None` (`boxed_payload`), so `x` is never the
+        // other, JS's `null` where it's `undefined`'s or `undefined` where
+        // it's `null`'s, and `?.` and `??` hold of it alike (#2112 C S5).
+        js::ExprKind::Binary(op, tested, null)
+            if op.tests_set() == Some(true) && matches!(null.kind, js::ExprKind::Null) =>
+        {
+            tested
+        }
         _ => return None,
     };
     if !matches!(&tested.kind, js::ExprKind::Var(v) if v == m) || no.mentions_name(m) {
@@ -878,7 +888,17 @@ pub(in crate::lower) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
     // `x != null`, which holds only where it isn't. Text's filter by its
     // truth is `x || undefined`, above (ADR 0635).
     let tested = match &present.kind {
-        js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
+        // A strict test of being set, `x !== undefined` or `x !== null`
+        // (`Op::NoneNe`), folds as a loose one does: it's made only of a read
+        // whose `None` is only that one, whose payload is unboxed only where
+        // it can't look like `None` (`boxed_payload`), so `x` is never the
+        // other, JS's `null` where it's `undefined`'s or `undefined` where
+        // it's `null`'s, and `?.` and `??` hold of it alike (#2112 C S5).
+        js::ExprKind::Binary(op, tested, null)
+            if op.tests_set() == Some(true) && matches!(null.kind, js::ExprKind::Null) =>
+        {
+            tested
+        }
         _ => return None,
     };
     let tests_it = matches!(&tested.kind, js::ExprKind::Var(v) if v == name);

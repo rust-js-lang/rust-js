@@ -101,9 +101,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`!(a < b || c)` of a float or a truthy value is De Morgan'd, `a >= b`, wrong of `NaN`",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "                true\n            }\n            _ => false,\n        }\n    }\n",
+    find: "            | ExprKind::Unary(UnaryOp::Not, _) => true,\n            _ => false,\n        }\n    }\n",
     replace:
-      "                true\n            }\n            _ => true,\n        }\n    }\n",
+      "            | ExprKind::Unary(UnaryOp::Not, _) => true,\n            _ => true,\n        }\n    }\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",

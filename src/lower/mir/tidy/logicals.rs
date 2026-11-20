@@ -848,6 +848,7 @@ pub(super) fn unchained_past(test: &mut Expr, body: &mut [Stmt]) {
             return parts(b, set);
         }
         unchain(test, set);
+        // A strict test of being set folds as a loose one (`null_test`, #2112 C S5).
         let Some(mut path) = js::null_test(test, true).map(unchained) else {
             return;
         };
@@ -1064,9 +1065,8 @@ pub(super) fn unwritten_negations(body: &mut [Stmt], negations: &[(js::Span, boo
     fn exact(e: &Expr) -> bool {
         match &e.kind {
             ExprKind::Binary(Op::And | Op::Or, a, b) => exact(a) && exact(b),
-            ExprKind::Binary(Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe, ..) | ExprKind::Unary(UnaryOp::Not, _) => {
-                true
-            }
+            ExprKind::Binary(Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::NoneEq(_) | Op::NoneNe(_), ..)
+            | ExprKind::Unary(UnaryOp::Not, _) => true,
             _ => false,
         }
     }

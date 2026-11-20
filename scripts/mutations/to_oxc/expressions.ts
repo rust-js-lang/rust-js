@@ -400,14 +400,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-numbers.test.ts", "-t", "constant expression of literals"],
   },
   {
-    name: "strict-presence-unprinted",
-    breaks: "an `Option`'s test of the one `None` it can be is printed `x != null`, where upstream's `currentEvent === undefined` is what it says (ADR 0298, amended)",
-    file: "src/to_oxc/expressions.rs",
-    find: "                let strict = js::strict_presence(e);\n",
-    replace: "                let strict: Option<(js::Op, js::Expr)> = None;\n",
-    tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
-  },
-  {
     name: "unseen-noncharacters-raw",
     breaks: "a noncharacter, U+FFFE or U+10FFFF, is written raw, which no font draws (#176)",
     file: "src/to_oxc/expressions.rs",
@@ -542,5 +534,13 @@ export const mutations: Mutation[] = [
     find: "                    if let Some(text) = text.get_mut(beside) {\n                        *text = false;\n                    }\n",
     replace: "                    let _ = beside;\n",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a tag broken onto lines keeps its mappings in order"],
+  },
+  {
+    name: "strict-presence-written-of-the-other-none",
+    breaks: "an `Option`'s strict test of its one `None`, `undefined`, is written of the other, `x !== null`, which is true of `undefined`, so a `None` reads as there (#2112 C S5)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                        js::OnlyNone::Undefined => js::Expr::js_undefined(),\n",
+    replace: "                        js::OnlyNone::Undefined => js::Expr::null(),\n",
+    tests: ["test/lowering-written-branches.test.ts", "test/lowering-bindings.test.ts", "test/none-given.test.ts"],
   },
 ];

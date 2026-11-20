@@ -38,9 +38,12 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
     else {
         return None;
     };
-    let ExprKind::Binary(Op::LooseNe, subject, none) = &present.kind else {
+    let ExprKind::Binary(op, subject, none) = &present.kind else {
         return None;
     };
+    if op.tests_set() != Some(true) {
+        return None;
+    }
     let after = &stmts[i + 1..];
     if !matches!(none.kind, ExprKind::Null | ExprKind::Undefined)
         || !after.last().is_some_and(ends)

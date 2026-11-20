@@ -205,6 +205,30 @@ pub fn alike_classify(x: Option<&'static Unknown>) -> Option<&'static Unknown> {
   }
 });
 
+// A program's own `js::strict_equals`, JS's `x !== null`, is no test of an
+// `Option`'s being set (`Op::tests_set`, #2112 C S5): its ternary never
+// folds into `?.` or `??`, `x?.a`, which of an `undefined` `x` gives
+// `undefined` where the program's `x.a` throws.
+test("a program's strict_equals ternary never folds into ?. or ??", async () => {
+  const dir = fixture("nullable-tests-strict-equals-unfolded");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use js::Unknown;
+
+pub fn read(x: &'static Unknown) -> bool {
+    let a = if !js::strict_equals(x, js::null::<&Unknown>()) { js::get(x, "a") } else { None };
+    a.is_some()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-name", "read", "--crate-type=lib", "--edition=2024", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("x !== null ? x.a : undefined");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.read({ a: 1 }), lib.read(null)]).toEqual([true, false]);
+  expect(() => lib.read(undefined)).toThrow(TypeError);
+});
+
 // What a test proved of a read is no other knowledge of it: an `Option`
 // made of it where it's tested, `kind.object()`'s `t ? v : undefined`, is
 // there where `t` holds, its test `t` (ADR 0910), as of any read (React

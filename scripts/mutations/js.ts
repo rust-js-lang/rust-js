@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "        known::found(self.0 & known.bit());\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a case's JS without a fact a reader found"],
   },
+  {
+    name: "strict-presence-no-test-of-being-set",
+    breaks: "a strict test of an `Option`'s being set, `x !== undefined`, isn't one to the passes that fold, merge and move such tests, so what they made of the loose one they no longer make (#2112 C S5)",
+    file: "src/js.rs",
+    find: "            Op::LooseNe | Op::NoneNe(_) => Some(true),\n",
+    replace: "            Op::LooseNe => Some(true),\n",
+    tests: ["test/lowering-written-branches.test.ts", "test/lowering-bindings.test.ts", "test/none-given.test.ts"],
+  },
+  {
+    name: "program-strict-equality-a-test-of-being-set",
+    breaks: "a program's own `js::strict_equals`, `x !== null`, is taken for a test of an `Option`'s being set, so its ternary folds into `x?.a`, which of an `undefined` `x` gives `undefined` where `x.a` throws (#2112 C S5)",
+    file: "src/js.rs",
+    find: "            Op::LooseEq | Op::NoneEq(_) => Some(false),\n",
+    replace: "            Op::LooseEq | Op::NoneEq(_) | Op::Eq => Some(false),\n            Op::Ne => Some(true),\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "strict_equals ternary never folds"],
+  },
 ];

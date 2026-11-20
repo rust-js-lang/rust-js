@@ -60,32 +60,24 @@ impl Module {
 /// `x` of `x != null`, whether `x` is set, or of `x == null` where `set`
 /// isn't: `undefined` as `null`, which `==` holds alike (`Expr::presence`,
 /// ADR 0298). The one answer to what a test of being set is.
+///
+/// A strict one, `x !== undefined` or `x !== null` (`Op::NoneNe`), is one
+/// too: `Expr::presence` makes it only of a read whose `None` is only that
+/// one (`NoneForm::trust`), whose payload is boxed where it may look like
+/// `None` (`boxed_payload`), so `x` is never the other nullish, and each
+/// pass that folds a test of being set into `??` or `?.` holds of it as of
+/// a loose one, as each did of the loose test the strict one is printed of
+/// (#2112 C S5). A `Some` of a caught JS `null` (ADR 0030) is the one
+/// question left of that: the same fold of the loose test meets it.
 pub(crate) fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
-    let op = if set { Op::LooseNe } else { Op::LooseEq };
     match &test.kind {
-        ExprKind::Binary(o, x, null) if *o == op && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) => {
+        ExprKind::Binary(o, x, null)
+            if o.tests_set() == Some(set) && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
+        {
             Some(x)
         }
         _ => None,
     }
-}
-
-/// How a test of being set is written, of an `Option` whose `None` is only
-/// one of `undefined` and `null` (`Known::NoneUndefined`,
-/// `Known::NoneNull`, `Expr::presence`'s): `x !== undefined` or `x !==
-/// null`, and `===` of one not set, as upstream's JS tests `window.event`
-/// and `node.textContent` (ADR 0298, amended). `None` of any other test,
-/// written `x != null` as it is.
-pub(crate) fn strict_presence(test: &Expr) -> Option<(Op, Expr)> {
-    let set = null_test(test, true).is_some();
-    if !set && null_test(test, false).is_none() {
-        return None;
-    }
-    let none = match test.facts.only_none()? {
-        Known::NoneUndefined => Expr::js_undefined(),
-        _ => Expr::null(),
-    };
-    Some((if set { Op::Ne } else { Op::Eq }, none))
 }
 
 /// Whether `place`, what a `take()` writes, is one rust-js made, read and
