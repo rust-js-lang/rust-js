@@ -769,4 +769,13 @@ export const mutations: Mutation[] = [
     replace: ");\n",
     tests: ["test/corpus.test.ts", "-t", "^own_into_iterator_given_where_any_goes.rs$"],
   },
+  {
+    name: "receiver-none-of-the-reference",
+    breaks: "`is_none()`'s receiver is asked of the reference it's given, not the `Option` that refers to, so a test through a capture is loose (#2112 C S5)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                            true => place.project_deeper(&[PlaceElem::Deref], self.tcx),\n",
+    replace: "                            true => place,\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
+    snapshots: true,
+  },
 ];

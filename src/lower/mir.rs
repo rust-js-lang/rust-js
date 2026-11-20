@@ -143,7 +143,7 @@ enum Value<'tcx> {
     /// The variant of an enum, read to choose a branch: the enum, its type,
     /// and whether it's an untagged one given of what's there, never
     /// `undefined` nor `null`, `classify(Some(value))`'s (ADR 0676).
-    Discriminant(Expr, Ty<'tcx>, bool),
+    Discriminant(Expr, Ty<'tcx>, bool, Option<js::OnlyNone>),
     /// A shared reference to a place, which nothing changes while it's held
     /// (borrowck says so): the place, read where it's used.
     Place(Expr),

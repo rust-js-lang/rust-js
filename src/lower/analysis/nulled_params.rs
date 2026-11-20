@@ -88,6 +88,9 @@ pub(in crate::lower) struct NulledSeen {
     /// `null` or a value, by index: what its body reads of each is so
     /// (`stored_in`, #1933 step 4 (F)).
     captured: IndexMap<DefId, IndexSet<usize>>,
+    /// Of each closure lowered where it's made, the one `None` each capture
+    /// its maker gives can be, by index, MIR's (`place_none`, #2112 C S5).
+    captured_nones: IndexMap<DefId, Vec<Option<crate::js::OnlyNone>>>,
 }
 
 /// What lowering saw of the calls of the crate's functions with nullable
@@ -371,6 +374,7 @@ impl NulledFound {
             calls,
             returns,
             captured: _,
+            captured_nones: _,
         } = seen;
         self.seen.seen.extend(calls.seen);
         self.seen.unnulled.extend(calls.unnulled);
@@ -420,6 +424,21 @@ impl NulledSeen {
     /// its maker gave it (`captures_nulled`).
     pub(in crate::lower) fn captured_nulled(&self, closure: DefId, i: usize) -> bool {
         self.captured.get(&closure).is_some_and(|nulled| nulled.contains(&i))
+    }
+
+    /// That the closure `closure`'s maker gives each capture, by index, the
+    /// one `None` of `nones` it can be, as it's made where its body is
+    /// lowered.
+    pub(in crate::lower) fn captures_nones(&mut self, closure: DefId, nones: Vec<Option<crate::js::OnlyNone>>) {
+        self.captured_nones.insert(closure, nones);
+    }
+
+    /// The one `None` the closure `closure`'s capture `i` can be, as its
+    /// maker gave it (`captures_nones`).
+    pub(in crate::lower) fn captured_none(&self, closure: DefId, i: usize) -> Option<crate::js::OnlyNone> {
+        self.captured_nones
+            .get(&closure)
+            .and_then(|nones| nones.get(i).copied().flatten())
     }
 }
 

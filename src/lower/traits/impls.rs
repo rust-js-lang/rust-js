@@ -306,7 +306,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(None);
             };
             return Ok(Some(Expr::cond(
-                Expr::presence(value.clone(), true),
+                Expr::presence(value.clone(), true, None),
                 made,
                 Expr::js_undefined(),
             )));

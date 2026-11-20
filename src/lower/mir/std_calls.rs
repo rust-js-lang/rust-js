@@ -95,6 +95,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             fresh_string: self.fresh_string_read_into(state),
             in_bounds: crate::lower::analysis::call_bounds_proved(self.tcx, state.body, state.at),
             found_index: state.facts.found_index_through(state.at),
+            // The `Option` it's called of, what a reference to one refers to:
+            // its one `None`, MIR's (`place_none`).
+            receiver_none: match &state.body[state.at].terminator().kind {
+                mir::TerminatorKind::Call { args, .. } => {
+                    (args.first().and_then(|arg| arg.node.place())).and_then(|place| {
+                        let of = match place.ty(state.body, self.tcx).ty.is_ref() {
+                            true => place.project_deeper(&[PlaceElem::Deref], self.tcx),
+                            false => place,
+                        };
+                        self.place_none(state, of)
+                    })
+                }
+                _ => None,
+            },
             receiver: match &state.body[state.at].terminator().kind {
                 mir::TerminatorKind::Call { args, .. } => {
                     args.first().map_or(crate::lower::mir::Presence::Unknown, |arg| {

@@ -278,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let (last, earlier) = copies.split_last().expect("an enum of variants");
         earlier.iter().rev().fold(copy(&last.0), |otherwise, (keys, variants)| {
-            let test = self.variants_test(of.clone(), ty, adt, variants, &[], false);
+            let test = self.variants_test(of.clone(), ty, adt, variants, &[], (false, None));
             Expr::cond(test, copy(keys), otherwise)
         })
     }

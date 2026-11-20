@@ -502,7 +502,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Of an enum's variants, the test that it's one of them, as
                 // its owner tells: an untagged one's, what they are together,
                 // `Object | Array`'s `typeof value === "object"` (ADR 0668).
-                if let Value::Discriminant(enum_value, enum_ty, present) = &subject
+                if let Value::Discriminant(enum_value, enum_ty, present, none) = &subject
                     && let ty::Adt(adt, _) = enum_ty.kind()
                 {
                     for (test, target, values) in grouped.iter_mut().filter(|(.., values)| values.len() > 1) {
@@ -524,14 +524,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                     .map_or(js::Span::NONE, |&(_, at)| self.js_span(at))
                             })
                             .collect();
-                        *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, &spans, *present);
+                        *test = self.mir_variant_test(
+                            enum_value.clone(),
+                            *enum_ty,
+                            *adt,
+                            &variants,
+                            &spans,
+                            (*present, *none),
+                        );
                     }
                 }
                 // An untagged enum of one class and kinds JS tells by their
                 // value, a form entry's `File | string`: the class's branch
                 // last, what's left, and each other's tested, so no
                 // `instanceof` of a global the host may lack runs (rd506).
-                if let Value::Discriminant(enum_value, enum_ty, present) = &subject
+                if let Value::Discriminant(enum_value, enum_ty, present, none) = &subject
                     && let ty::Adt(adt, args) = enum_ty.kind()
                     && bindings::is_untagged(self.tcx, adt.did())
                     && let Some(class) = self.recognition().lone_class_variant(*adt, args)
@@ -556,8 +563,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     others.sort_by_key(|&(b, _)| written_at(state.body, b));
                     grouped = (others.into_iter())
                         .map(|(target, variants)| {
-                            let test =
-                                self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, &[], *present);
+                            let test = self.mir_variant_test(
+                                enum_value.clone(),
+                                *enum_ty,
+                                *adt,
+                                &variants,
+                                &[],
+                                (*present, *none),
+                            );
                             (test, target, Vec::new())
                         })
                         .collect();
@@ -656,7 +669,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // ReferenceError where the host lacks the global: refused
                 // (#555).
                 if alike.is_none()
-                    && let Value::Discriminant(_, enum_ty, _) = &subject
+                    && let Value::Discriminant(_, enum_ty, ..) = &subject
                     && let ty::Adt(adt, _) = enum_ty.kind()
                     && bindings::is_untagged(self.tcx, adt.did())
                 {
@@ -980,7 +993,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => failed,
                 })
             }
-            Value::Discriminant(enum_value, enum_ty, present) => {
+            Value::Discriminant(enum_value, enum_ty, present, none) => {
                 let ty::Adt(adt, _) = enum_ty.kind() else {
                     return Err(self.unsupported(span, "a discriminant of this type, from its MIR"));
                 };
@@ -1003,7 +1016,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(crate::lower::refusal::error(self.tcx, span, message));
                     }
                 }
-                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &[variant], &[], *present))
+                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &[variant], &[], (*present, *none)))
             }
             _ => {
                 let subject = self.value_expr(subject.clone(), span)?;
@@ -1079,6 +1092,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `isValidElement(child)`, gives a `bool`, which tidy writes a test of
     /// as one. `present`, as `variant_test` has it; each of `variants`
     /// `written` where it's given.
+    #[track_caller]
     pub(in crate::lower) fn mir_variant_test(
         &mut self,
         subject: Expr,
@@ -1086,9 +1100,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         adt: ty::AdtDef<'tcx>,
         variants: &[VariantIdx],
         written: &[js::Span],
-        present: bool,
+        (present, none): (bool, Option<js::OnlyNone>),
     ) -> Expr {
-        let test = self.variants_test(subject, ty, adt, variants, written, present);
+        let test = self.variants_test(subject, ty, adt, variants, written, (present, none));
         if bindings::is_untagged(self.tcx, adt.did()) {
             test.clone().each_mut(&mut |e| {
                 if let Some(path) = e.called_path() {

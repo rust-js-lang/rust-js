@@ -92,4 +92,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/js-builtins.test.ts", "-t", "an ArrayBufferView is any typed array"],
   },
+  {
+    name: "deref-field-trust-unasked",
+    breaks: "what a reference to a field refers to isn't the field's trust, so `match &holder.label` of a nullable field a closure reads through a capture is tested `!= null`, not `!== null` (#2112 C S5)",
+    file: "src/lower/mir/none_forms.rs",
+    find: "                .or_else(|| self.read_none_trust(state.body, place, 0)),\n",
+    replace: ",\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
+    snapshots: true,
+  },
 ];

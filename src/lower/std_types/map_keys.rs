@@ -255,7 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return self.key_parts(key, inner, span);
                 }
                 let some = self.key_parts(key.clone(), inner, span)?;
-                Ok(Expr::cond(Expr::presence(key.clone(), false), key, some))
+                Ok(Expr::cond(Expr::presence(key.clone(), false, None), key, some))
             }
             ty::Adt(adt, args) if adt.is_enum() => {
                 let mut value = key.clone();

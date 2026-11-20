@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     name: "captures-nulled-unsaid",
     breaks: "a closure's capture its maker gives `null` or a value isn't said so, so the closure stores it back `prevTask ?? null`, left for tidy to guess, React's Fizz `request.currentTask = prevTask` (#1933 step 4 (F))",
     file: "src/lower/mir/rvalues/aggregate.rs",
-    find: "                self.note_captures_nulled(state, *def_id, &operands);\n",
+    find: "                self.note_captures(state, *def_id, &operands);\n",
     replace: "",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "capture given null or a value"],
   },

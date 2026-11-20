@@ -396,3 +396,55 @@ value. React's port moves one line, `prevCachePool !== null`, upstream's
 a let is tested as the field is"; mutation `cast-none-not-followed`, new,
 caught; `passes-through-no-cast` and `passes-through-no-map` follow the
 code into `gives_its_option`, caught.
+
+## Amendment: a test of being set is made of MIR's `None` (2026-11-20, #2112)
+
+`Expr::presence`, the one test of an `Option`'s being there, chose its
+operator of the read stamps its operand carried, `Known::NoneUndefined`
+and `Known::NoneNull`, which lowering set as it read and carried through
+what it built. It's now given the one `None` its operand can be, MIR's
+(`NoneForms::place_none`): `x !== undefined` or `x !== null` where it says
+one, `x != null` where it says neither or a caller has no operand to ask.
+A differential of the two answers over check:fast and React's port, each
+test logged where they differed, came down from 53 to 25 before the
+switch, by making MIR's answer whole:
+
+- `as_ref()` of a shared `Option` is the `Option` itself in JS
+  (`Std::Pointee`, ADR 0023): `gives_its_option` answers it with
+  `js::cast`, so `o.as_ref().map(..)` of a local `None` reads `o`'s.
+- A closure's capture holds what its maker gave it: where a closure is
+  made, each capture's `place_none` is noted (`NulledSeen::captures_nones`,
+  beside `captures_nulled`), and in its body a read of the capture, or
+  through a shared borrow of one (`capture_read`, `capture_lent`, the
+  state's owner `mir/nulled.rs`), answers of that. React's Flight servers'
+  `debug_channel_readable.is_none()` in `renderToPipeableStream`'s pipe
+  closure, `debugChannelReadable === undefined`, upstream's.
+- The receiver of `is_none()` and its kind is the `Option` its reference
+  is to (`Given::receiver_none`, of `place_none`); what a reference refers
+  to is its writes', or of a borrow of a field, the field's trust
+  (`read_none_trust`).
+- A drop of an `Option` by its variants, one moved out of in part, asks
+  the place's `None` (`open_drop_variants`).
+
+Of the 25 left: 21 where MIR knows the one `None` and the read stamps
+didn't, each test made stricter, the user's lead's decision with each JS
+difference shown: React's port's `updateQueue.events !== null` and
+`onStartGestureTransitionFinish !== null`, upstream's own, and
+`createTask !== undefined`, ADR 0811's optional property, whose `None` is
+`undefined`; DOM's `textContent !== null` and `window.event !==
+undefined`, as their declared types say. 4 where only the stamps knew, a
+field of a struct built where it's read, `Plain { v: v.clone() }.v` of a
+nullable `v`, which MIR reads as a plain field, either: tested `== null`,
+the lead's decision, as a loose test is never wrong and seeing through an
+aggregate's write and `Option::clone` isn't worth its machinery for a
+shape only the none matrix writes.
+
+Case A of ADR 0262: no observable difference, a test of the same value
+made tighter or looser. React's port moves three lines (the pin), the
+guide's interop/global-scope.md one fence. Corpus case
+`option_none_forms_through_captures` runs each against native, its
+snapshot holding the tests; mutations `capture-nones-unrecorded`,
+`capture-lent-unfollowed`, `deref-field-trust-unasked`,
+`receiver-none-of-the-reference`, `as-ref-none-not-followed` and
+`drop-variants-none-unasked`, new, caught (`snapshots: true`). The read
+stamps themselves go next.

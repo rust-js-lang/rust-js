@@ -37,7 +37,7 @@ function restored(request, task, clear) {
 
 function shown(request) {
   const task = request.currentTask;
-  return task != null ? `task ${task.id}` : "none";
+  return task !== null ? `task ${task.id}` : "none";
 }
 
 function main() {

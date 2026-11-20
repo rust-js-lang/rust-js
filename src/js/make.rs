@@ -114,7 +114,8 @@ impl Expr {
     /// `Known::NoneNull`), the test says so, `option !== undefined` or
     /// `option !== null`, its own operator (`Op::NoneNe`, #2112 C S5; ADR
     /// 0298, amended by the user, 2026-10-28: by what its `None` can be).
-    pub fn presence(option: Expr, set: bool) -> Expr {
+    #[track_caller]
+    pub fn presence(option: Expr, set: bool, given: Option<super::OnlyNone>) -> Expr {
         // Of one made where it's tested, `t ? v : undefined` of a `v`
         // that's there, the test it's made by, `t` (ADR 0910). Not of a
         // `v` that's only never `undefined`, an `Option` that may be
@@ -126,14 +127,11 @@ impl Expr {
             let test = (**test).clone();
             return if set { test } else { test.negated_test() };
         }
-        let none = option.facts.of_presence();
         // Of one whose `None` is only one of `undefined` and `null`, the test
         // of that one, `x !== undefined` (`Op::NoneNe`, #2112 C S5).
-        let op = match (none.only_none(), set) {
-            (Some(Known::NoneUndefined), true) => Op::NoneNe(super::OnlyNone::Undefined),
-            (Some(Known::NoneUndefined), false) => Op::NoneEq(super::OnlyNone::Undefined),
-            (Some(_), true) => Op::NoneNe(super::OnlyNone::Null),
-            (Some(_), false) => Op::NoneEq(super::OnlyNone::Null),
+        let op = match (given, set) {
+            (Some(none), true) => Op::NoneNe(none),
+            (Some(none), false) => Op::NoneEq(none),
             (None, true) => Op::LooseNe,
             (None, false) => Op::LooseEq,
         };

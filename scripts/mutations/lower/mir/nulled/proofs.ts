@@ -275,4 +275,13 @@ export const mutations: Mutation[] = [
     replace: "        if self.present_on_all_paths(state, local, state.at) {\n",
     tests: ["test/lowering-collections.test.ts", "-t", "a split collected straight"],
   },
+  {
+    name: "as-ref-none-not-followed",
+    breaks: "`o.as_ref().map(..)` of a local `None` reads `o`'s `None` through a temporary MIR doesn't follow, so its test is `!= null`, not `!== undefined` (#2112 C S5)",
+    file: "src/lower/mir/nulled/proofs.rs",
+    find: "        (cast || lent).then_some(from)\n",
+    replace: "        cast.then_some(from)\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
+    snapshots: true,
+  },
 ];

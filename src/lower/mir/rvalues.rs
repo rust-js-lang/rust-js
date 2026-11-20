@@ -367,7 +367,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     let discriminant = self.take_operands(state, &[l], out)?.remove(0);
                     let enum_ty = match &discriminant {
-                        Value::Discriminant(_, enum_ty, _) => *enum_ty,
+                        Value::Discriminant(_, enum_ty, ..) => *enum_ty,
                         _ => ty,
                     };
                     let test = self.switch_test(&discriminant, enum_ty, variant.to_bits_unchecked(), span, None)?;
@@ -748,7 +748,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // An enum's discriminant, `ordering as i32`'s: the enum made a
                 // number, as `cast` makes it.
                 let v = match self.mir_operand(state, operand, out)? {
-                    Value::Discriminant(value, enum_ty, _) => {
+                    Value::Discriminant(value, enum_ty, ..) => {
                         return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));
                     }
                     v => self.value_expr(v, Span::default())?,
@@ -819,8 +819,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::Discriminant(place) => {
                 let ty = place.ty(decls, tcx).ty;
                 let present = place.projection.is_empty() && state.facts.options().present.contains(&place.local);
+                // The one `None` it can be there, MIR's (`place_none`).
+                let none = self.place_none(state, *place);
                 let subject = self.mir_place(state, *place, span, out)?;
-                return Ok(Value::Discriminant(subject, ty, present));
+                return Ok(Value::Discriminant(subject, ty, present, none));
             }
             Rvalue::Aggregate(kind, operands) => return self.mir_aggregate(state, kind, operands, span, out),
             // `[x; N]` (ADR 0107); an item that's a constant is a named one's,

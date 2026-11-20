@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     breaks:
       "dropping a map of keys and values with destructors drops its values alone",
     file: "src/lower/drops/parts.rs",
-    find: "                            let mut value_dropped = Vec::new();\n                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;\n",
+    find: "                            let mut value_dropped = Vec::new();\n                            self.drop_in((Expr::var(&key), None), key_ty, span, made, &mut body)?;\n",
     replace:
       "                            let mut value_dropped = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^map_key_drops.rs$"],
@@ -191,8 +191,8 @@ export const mutations: Mutation[] = [
     name: "projection-dropped-unnormalized",
     breaks: "an associated type its bounds say is another isn't dropped as that one, so `Iterator::count`'s closure inlined in std's `FlattenCompat::count` can't drop its item, and std's bodies don't compile (#736)",
     file: "src/lower/drops/parts.rs",
-    find: "                    && normal != ty =>\n            {\n                self.drop_in(value, normal, span, made, out)?;\n",
-    replace: "                    && normal != ty\n                    && false =>\n            {\n                self.drop_in(value, normal, span, made, out)?;\n",
+    find: "                    && normal != ty =>\n            {\n                self.drop_in((value, none), normal, span, made, out)?;\n",
+    replace: "                    && normal != ty\n                    && false =>\n            {\n                self.drop_in((value, none), normal, span, made, out)?;\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
   {

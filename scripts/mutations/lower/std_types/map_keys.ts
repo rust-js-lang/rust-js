@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` of a struct holding a fiber reads the `None`'s fields, a throw (#398)",
     file: "src/lower/std_types/map_keys.rs",
-    find: "                Ok(Expr::cond(Expr::presence(key.clone(), false), key, some))\n",
+    find: "                Ok(Expr::cond(Expr::presence(key.clone(), false, None), key, some))\n",
     replace: "                Ok(some)\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_inside_keys.rs$"],
   },

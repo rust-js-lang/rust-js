@@ -320,8 +320,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = if boxed { self.some(value) } else { value };
                 Expr::cond(ok, value, otherwise)
             }
-            Std::IsSome => Expr::presence(arg(), true),
-            Std::IsNone => Expr::presence(arg(), false),
+            Std::IsSome => Expr::presence(arg(), true, call.receiver_none),
+            Std::IsNone => Expr::presence(arg(), false, call.receiver_none),
             Std::Unwrap => {
                 // `expect` has a message too.
                 let list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
@@ -458,7 +458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             true => option,
                             false => self.spill_subject(base, option, (true, base != Base::Role(Role::Option)), out),
                         };
-                        let present = Expr::presence(option.clone(), true);
+                        let present = Expr::presence(option.clone(), true, call.receiver_none);
                         (option, present)
                     }
                 };
@@ -520,7 +520,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     js::ExprKind::Var(_) => option,
                     _ => self.spill_subject(Role::Option, option, (true, false), out),
                 };
-                let present = Expr::presence(option.clone(), true);
+                let present = Expr::presence(option.clone(), true, call.receiver_none);
                 let value = match self.recognition().option_copied(def_id) {
                     true => self.copy_if_needed(Expr::held(option), item),
                     false => self.clone_value(Expr::held(option), item, span, out)?,

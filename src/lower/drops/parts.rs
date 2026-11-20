@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A `ty`'s drop, written in place: its own `drop`, then its parts'.
     pub(super) fn drop_parts(
         &mut self,
-        value: Expr,
+        (value, none): (Expr, Option<js::OnlyNone>),
         ty: Ty<'tcx>,
         span: Span,
         made: &mut Made<'tcx>,
@@ -78,7 +78,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             // A `Pin` is its pointer (ADR 0329).
             ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
-                self.drop_in(value, args.type_at(0), span, made, out)?
+                self.drop_in((value, none), args.type_at(0), span, made, out)?
             }
             ty::Adt(..) if let Some(item) = self.dropped_as_items(ty) => {
                 self.drop_items(value, item, span, made, out)?
@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     let name = self.fresh(Role::Item);
                     let mut body = Vec::new();
-                    self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
+                    self.drop_in((Expr::var(&name), None), item, span, made, &mut body)?;
                     out.push(loop_dropped(items, js::Pattern::Name(name), body, js_span));
                 } else {
                     let entries = match self.is_sorted(ty) {
@@ -157,13 +157,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut body = Vec::new();
                     let pattern = match value_ty {
                         None => {
-                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;
+                            self.drop_in((Expr::var(&key), None), key_ty, span, made, &mut body)?;
                             js::Pattern::Name(key)
                         }
                         Some(value_ty) => {
                             let mut value_dropped = Vec::new();
-                            self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;
-                            self.drop_in(Expr::var(&item), value_ty, span, made, &mut value_dropped)?;
+                            self.drop_in((Expr::var(&key), None), key_ty, span, made, &mut body)?;
+                            self.drop_in((Expr::var(&item), None), value_ty, span, made, &mut value_dropped)?;
                             body = each_dropped(vec![body, value_dropped], js_span, &mut self.catch_names());
                             js::Pattern::names_array([keys.then_some(key), values.then_some(item)])
                         }
@@ -189,13 +189,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => value,
                     false => Expr::held(value),
                 };
-                self.drop_in(value, inner, span, made, out)?
+                self.drop_in((value, none), inner, span, made, out)?
             }
             // A `OnceCell`'s `Option`, `{ value }`, `undefined` where it's
             // not set (ADR 0519).
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::OnceCell) => {
                 let held = Ty::new_option(self.tcx, args.type_at(0));
-                self.drop_in(Expr::held(value), held, span, made, out)?
+                self.drop_in((Expr::held(value), None), held, span, made, out)?
             }
             // A counted `Rc`: `$rcDrop(rc, drop)`, `drop` what the last drops of
             // what it points at, if that has a destructor, of a `dyn` its
@@ -207,7 +207,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.drops(pointee) == Drops::Runs {
                     let name = self.fresh(Role::Value);
                     let mut body = Vec::new();
-                    self.drop_in(Expr::var(&name), pointee, span, made, &mut body)?;
+                    self.drop_in((Expr::var(&name), None), pointee, span, made, &mut body)?;
                     quiet = !may_throw(&body);
                     // `(value) => { dropNode(value); }` is `dropNode`.
                     let drop = match body.as_slice() {
@@ -303,7 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (self.tcx).try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
                     && normal != ty =>
             {
-                self.drop_in(value, normal, span, made, out)?;
+                self.drop_in((value, none), normal, span, made, out)?;
             }
             // `ZZone.$dropOffset?.(value)`: its impl's, if its type has one (ADR 0178).
             ty::Alias(..) if let Some(drop) = self.item_drop(ty) => {
@@ -317,7 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // variant's, the rest run though one panics (#887). A union's
             // fields are never dropped, which Rust holds to what has no
             // destructor, or a `ManuallyDrop` (ADR 0406).
-            ty::Tuple(_) | ty::Adt(..) => self.drop_glue(value, ty, span, made, out)?,
+            ty::Tuple(_) | ty::Adt(..) => self.drop_glue((value, none), ty, span, made, out)?,
             _ => return Err(self.unsupported(span, &format!("dropping `{ty}`"))),
         }
         Ok(())
@@ -381,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let name = self.fresh(Role::Item);
         let mut body = Vec::new();
-        self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
+        self.drop_in((Expr::var(&name), None), item, span, made, &mut body)?;
         let js_span = self.js_span(span);
         out.push(items_dropped(items, js::Pattern::Name(name), body, js_span));
         Ok(())

@@ -69,6 +69,8 @@ pub(super) struct Call<'c, 'tcx> {
     /// What MIR proves of its first argument where it's read
     /// (`Given::receiver`).
     pub(super) receiver: crate::lower::mir::Presence,
+    /// The one `None` its first argument can be (`Given::receiver_none`).
+    pub(super) receiver_none: Option<js::OnlyNone>,
     pub(super) span: Span,
 }
 
@@ -95,6 +97,9 @@ pub(super) struct Given<'c> {
     /// What MIR proves of its first argument where it's read, an `Option`
     /// receiver's (`mir::Presence`, #2112 C S4).
     pub(super) receiver: crate::lower::mir::Presence,
+    /// The one `None` its first argument, an `Option`, can be where it's
+    /// read, `NoneForms::read`'s (#2112 C S5).
+    pub(super) receiver_none: Option<js::OnlyNone>,
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
@@ -120,6 +125,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             in_bounds,
             found_index,
             receiver,
+            receiver_none,
         } = given;
         Call {
             def_id,
@@ -138,6 +144,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             in_bounds,
             found_index,
             receiver,
+            receiver_none,
             span,
         }
     }

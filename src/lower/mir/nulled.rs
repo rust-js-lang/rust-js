@@ -54,7 +54,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// field's value, `state.clones.borrow()`, or a `Deref` of it (ADR 0863,
     /// rd647). The `Option` a `let` holds of it then says so
     /// (`mir_nones`).
-    pub(super) fn read_none_trust(
+    pub(in crate::lower::mir) fn read_none_trust(
         &self,
         body: &mir::Body<'tcx>,
         place: Place<'tcx>,
@@ -160,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts: value.facts.with(none),
             ..value
         };
-        Ok(Some(Expr::presence(value, some)))
+        Ok(Some(Expr::presence(value, some, js::OnlyNone::of(none))))
     }
 
     /// Of a call of `func` with `args`, an `as_ref()` or `as_deref()`, or a `Cell`'s `get()`, of a
@@ -325,21 +325,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // getActiveElement's `doc.activeElement ?? doc.body` (rd16). Its
         // `Err`'s, a `Box<dyn Any>`, is never an `Option` a nullable place
         // stores.
-        // A closure's capture, `(*_1).k`, or what a reference it captured
-        // refers to, `*((*_1).k)`: `null` or a value where its maker gave it
-        // so (`captures_nulled`, #1933 step 4 (F)), and the closure writes
-        // nothing it captured, which a `&mut` capture's would.
-        let closure = state.body.source.def_id();
-        let env = match place.projection.as_slice() {
-            [PlaceElem::Deref, rest @ ..] => rest,
-            rest => rest,
-        };
-        if self.tcx.is_closure_like(closure)
-            && place.local == Local::from_u32(1)
-            && let [PlaceElem::Field(capture, _), through @ ..] = env
-            && matches!(through, [] | [PlaceElem::Deref])
-            && self.nulled_seen.borrow().captured_nulled(closure, capture.as_usize())
-            && !self.writes_its_captures(state)
+        // A closure's capture: `null` or a value where its maker gave it so
+        // (`captures_nulled`, #1933 step 4 (F)).
+        if let Some(capture) = self.capture_read(state, place)
+            && self
+                .nulled_seen
+                .borrow()
+                .captured_nulled(state.body.source.def_id(), capture)
         {
             return (Given::Nulled, None);
         }
@@ -422,8 +414,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// That the closure `closure`, made of `operands`, is given each capture
     /// of them `stored_given` says is `null` or a value, so its body reads
-    /// it so (`NulledSeen::captures_nulled`, #1933 step 4 (F)).
-    pub(super) fn note_captures_nulled(
+    /// it so (`NulledSeen::captures_nulled`, #1933 step 4 (F)); and each
+    /// the one `None` it can be, MIR's (`place_none`, #2112 C S5).
+    pub(super) fn note_captures(
         &self,
         state: &State<'_, 'tcx>,
         closure: rustc_span::def_id::DefId,
@@ -433,7 +426,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|(_, o)| self.stored_given(state, o) == Given::Nulled)
             .map(|(i, _)| i)
             .collect();
-        self.nulled_seen.borrow_mut().captures_nulled(closure, nulled);
+        let nones: Vec<Option<js::OnlyNone>> = (operands.iter())
+            .map(|o| o.place().and_then(|place| self.place_none(state, place)))
+            .collect();
+        let mut seen = self.nulled_seen.borrow_mut();
+        seen.captures_nulled(closure, nulled);
+        seen.captures_nones(closure, nones);
+    }
+
+    /// The capture `place` reads in the closure whose body this is, by
+    /// index: `(*_1).k`, or what a reference it captured refers to,
+    /// `*((*_1).k)`, where the closure writes nothing it captured, which a
+    /// `&mut` capture's would; what its maker gave it is what it holds.
+    pub(super) fn capture_read(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> Option<usize> {
+        let env = match place.projection.as_slice() {
+            [PlaceElem::Deref, rest @ ..] => rest,
+            rest => rest,
+        };
+        let [PlaceElem::Field(capture, _), through @ ..] = env else {
+            return None;
+        };
+        (self.tcx.is_closure_like(state.body.source.def_id())
+            && place.local == Local::from_u32(1)
+            && matches!(through, [] | [PlaceElem::Deref])
+            && !self.writes_its_captures(state))
+        .then(|| capture.as_usize())
+    }
+
+    /// Of a read of a closure's capture, or through a borrow of one
+    /// (`capture_read`, `capture_lent`), the one `None` its maker gave it,
+    /// if any (`NulledSeen::captured_none`); `None` of any other read.
+    pub(super) fn capture_none(&self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> Option<Option<js::OnlyNone>> {
+        let lent = match place.projection.as_slice() {
+            [PlaceElem::Deref] => self.capture_lent(state, place.local),
+            _ => None,
+        };
+        let capture = lent.or_else(|| self.capture_read(state, place))?;
+        Some(
+            self.nulled_seen
+                .borrow()
+                .captured_none(state.body.source.def_id(), capture),
+        )
+    }
+
+    /// The capture `local`, a reference, is to: its one write a shared
+    /// borrow of one (`capture_read`), `_5 = &(*_1).0` of a method of
+    /// `&self` called of it.
+    pub(super) fn capture_lent(&self, state: &State<'_, 'tcx>, local: Local) -> Option<usize> {
+        let writes = self.whole_writes(state, local)?;
+        let [Write::Assign(Rvalue::Ref(_, mir::BorrowKind::Shared, of))] = &writes[..] else {
+            return None;
+        };
+        self.capture_read(state, *of)
     }
 
     /// Whether the closure whose body this is writes what it captured, or

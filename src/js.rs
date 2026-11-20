@@ -1081,6 +1081,18 @@ pub enum OnlyNone {
     Null,
 }
 
+impl OnlyNone {
+    /// The one `None` a fact of it says, `Known::NoneUndefined`'s or
+    /// `Known::NoneNull`'s.
+    pub fn of(known: Known) -> Option<OnlyNone> {
+        match known {
+            Known::NoneUndefined => Some(OnlyNone::Undefined),
+            Known::NoneNull => Some(OnlyNone::Null),
+            _ => None,
+        }
+    }
+}
+
 impl Op {
     /// Whether this is a test of an `Option`'s being set, `x != null` or
     /// `x !== undefined`, `Some(true)`, or of its not being set, `x ==

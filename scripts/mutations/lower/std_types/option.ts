@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "                    Some((kept, value)) => (value, kept),\n",
     replace:
-      "                    Some((kept, value)) => (value.clone(), js::Expr::presence(value, true)),\n",
+      "                    Some((kept, value)) => (value.clone(), js::Expr::presence(value, true, None)),\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",

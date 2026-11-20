@@ -476,8 +476,8 @@ export const mutations: Mutation[] = [
     name: "presence-says-none-is-undefined",
     breaks: "every `Option`'s presence test says its `None` is `undefined`, `x !== undefined`, so a `None` a `.d.ts` admits as `null`, given by JS, is read as a `Some` (#822)",
     file: "src/js/make.rs",
-    find: "        let none = option.facts.of_presence();\n",
-    replace: "        let none = Facts::of(Known::NoneUndefined);\n",
+    find: "        let op = match (given, set) {\n",
+    replace: "        let op = match (Some(super::OnlyNone::Undefined), set) {\n",
     tests: ["test/declarations-conformance.test.ts"],
   },
   {
@@ -517,8 +517,8 @@ export const mutations: Mutation[] = [
     name: "strict-presence-of-the-other-none",
     breaks: "a test of being set of an `Option` whose `None` is only `undefined`, `window.event`, is made of `null`'s, `x !== null`, true of its `None`, so an event that's none is taken for one and its `type` read of `undefined` throws (a wrong answer, ADR 0298, amended; #2112 C S5)",
     file: "src/js/make.rs",
-    find: "            (Some(Known::NoneUndefined), true) => Op::NoneNe(super::OnlyNone::Undefined),\n",
-    replace: "            (Some(Known::NoneUndefined), true) => Op::NoneNe(super::OnlyNone::Null),\n",
+    find: "            (Some(none), true) => Op::NoneNe(none),\n",
+    replace: "            (Some(_), true) => Op::NoneNe(super::OnlyNone::Null),\n",
     tests: ["test/lowering-option-truth.test.ts", "test/lowering-bindings.test.ts"],
   },
   {

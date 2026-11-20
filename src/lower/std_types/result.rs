@@ -32,7 +32,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's `None`, `o == null` (ADR 0298), or an `Err`.
     pub(in crate::lower) fn tried_failed(&self, subject: Expr, ty: Ty<'tcx>) -> Expr {
         match self.option_of(ty) {
-            Some(_) => Expr::presence(subject, false),
+            Some(_) => Expr::presence(subject, false, None),
             None => is(subject, false),
         }
     }

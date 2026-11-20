@@ -489,7 +489,7 @@ pub fn run_in(task: &ConsoleTask, x: f64) -> f64 {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const createTask = __DEV__ ? console.createTask : undefined;\n");
   expect(js).toContain("return (createTask != null ? createTask(name) : undefined) ?? undefined;");
-  expect(js).toContain('export function debugTask() {\n  const createTask = console.createTask;\n  return (createTask != null ? createTask("lazy()") : undefined) ?? undefined;\n}');
+  expect(js).toContain('export function debugTask() {\n  const createTask = console.createTask;\n  return (createTask !== undefined ? createTask("lazy()") : undefined) ?? undefined;\n}');
   expect(js).toContain("return task.run(() => x * 2);");
   const host = console as any;
   expect(host.createTask).toBeUndefined();

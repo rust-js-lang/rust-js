@@ -45,6 +45,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of one is where the first of `variants` it tests is `written`, where
     /// that's given, an or-pattern's alternative: what a comment before it
     /// is before (ADR 0444, amended).
+    #[track_caller]
     pub(in crate::lower) fn variants_test(
         &self,
         subject: Expr,
@@ -52,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         adt: ty::AdtDef<'tcx>,
         variants: &[VariantIdx],
         written: &[js::Span],
-        present: bool,
+        (present, none): (bool, Option<js::OnlyNone>),
     ) -> Expr {
         if bindings::is_untagged(self.tcx, adt.did()) {
             let variants: Vec<&ty::VariantDef> = variants.iter().map(|&v| adt.variant(v)).collect();
@@ -73,7 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         (variants.iter().enumerate())
             .map(|(i, &variant)| {
-                let test = self.variant_test(subject.clone(), ty, adt, variant, present);
+                let test = self.variant_test_of(subject.clone(), ty, adt, variant, (present, none));
                 match written.get(i) {
                     Some(&span) if test.span.is_none() => Expr { span, ..test },
                     _ => test,
@@ -89,6 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `otherwise` (ADR 0284), an `Ordering`'s number, or its tag. An
     /// untagged one `present`, `classify(Some(value))`'s, is never
     /// `undefined` nor `null`, which no test leaves out then (ADR 0676).
+    #[track_caller]
     pub(in crate::lower) fn variant_test(
         &self,
         subject: Expr,
@@ -97,10 +99,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         variant: VariantIdx,
         present: bool,
     ) -> Expr {
+        self.variant_test_of(subject, ty, adt, variant, (present, None))
+    }
+
+    /// `variant_test`, an `Option`'s presence of the one `None` MIR says
+    /// it can be where it's read, `none` (`NoneForms`, #2112 C S5).
+    #[track_caller]
+    pub(in crate::lower) fn variant_test_of(
+        &self,
+        subject: Expr,
+        ty: Ty<'tcx>,
+        adt: ty::AdtDef<'tcx>,
+        variant: VariantIdx,
+        (present, none): (bool, Option<js::OnlyNone>),
+    ) -> Expr {
         let def = adt.variant(variant);
         if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
             let some = self.tcx.is_lang_item(def.def_id, LangItem::OptionSome);
-            return Expr::presence(subject, some);
+            return Expr::presence(subject, some, none);
         }
         // A write's result's `Ok`, `undefined`, and its `Err`, the error it
         // caught (ADRs 0187, 0462).
@@ -117,7 +133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(keyed) = self.krate.flattened.keyed(self.tcx, adt) {
             return match keyed.tell(variant) {
                 Some(key) => bindings::keyed_test(subject, key),
-                None => self.variants_test(subject, ty, adt, &[variant], &[], present),
+                None => self.variants_test(subject, ty, adt, &[variant], &[], (present, none)),
             };
         }
         // A discriminated union's `otherwise`: an object whose tag is none

@@ -889,7 +889,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, true) => {
                 let mut whole = Vec::new();
                 let whole_ty = branch.as_ref().map_or(ty, |(_, tried_ty)| *tried_ty);
-                self.drop_value(subject.clone(), whole_ty, span, &mut whole)?;
+                self.drop_value_of(
+                    (subject.clone(), self.place_none(state, place)),
+                    whole_ty,
+                    span,
+                    &mut whole,
+                )?;
                 Some(match &state.naming.flags()[path] {
                     Some(flag) => vec![StmtKind::If(Expr::var(flag), whole, None).at(self.js_span(span))],
                     None => whole,
@@ -909,7 +914,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => failed,
                     }
                 }
-                None => self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false),
+                None => {
+                    let none = self.place_none(state, place);
+                    self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], (false, none))
+                }
             };
             chain = Some(match (dropped.is_empty(), chain) {
                 (true, Some(rest)) if !rest.is_empty() => {
@@ -936,7 +944,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let ty = place.ty(&state.body.local_decls, self.tcx).ty;
         let value = self.mir_place(state, place, span, out)?;
-        self.drop_value(value, ty, span, out)
+        // Its `None`, where it's an `Option`, the one MIR says (`place_none`).
+        self.drop_value_of((value, self.place_none(state, place)), ty, span, out)
     }
 
     /// Whether `place` is what `?` of a write's result made, its

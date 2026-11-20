@@ -121,6 +121,9 @@ fn drop_shim<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'t
 struct Glue<'b, 'tcx> {
     body: &'b mir::Body<'tcx>,
     value: Expr,
+    /// The one `None` `value`, an `Option`, can be where MIR drops it
+    /// (`NoneForms::place_none`), its variant's test's (#2112 C S5).
+    none: Option<js::OnlyNone>,
     ty: Ty<'tcx>,
     span: Span,
     parts: IndexMap<Option<Place<'tcx>>, Vec<Stmt>>,
@@ -133,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// panics.
     pub(super) fn drop_glue(
         &mut self,
-        value: Expr,
+        (value, none): (Expr, Option<js::OnlyNone>),
         ty: Ty<'tcx>,
         span: Span,
         made: &mut Made<'tcx>,
@@ -143,6 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut glue = Glue {
             body: &body,
             value,
+            none,
             ty,
             span,
             parts: IndexMap::default(),
@@ -259,7 +263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let tested = |cx: &Self, variants: &[VariantIdx]| {
             (variants.iter())
-                .map(|&variant| cx.variant_test(glue.value.clone(), glue.ty, adt, variant, false))
+                .map(|&variant| cx.variant_test_of(glue.value.clone(), glue.ty, adt, variant, (false, glue.none)))
                 .reduce(|a, b| Expr::bin(Op::Or, a, b))
         };
         if let [(variants, _)] = groups.as_slice()
@@ -333,7 +337,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let dictionary = Expr::member(value, js::DICTIONARY);
                         dropped.push(dyn_dropped(dictionary, part, js_span));
                     }
-                    _ => self.drop_in(part, field_ty, span, made, &mut dropped)?,
+                    _ => self.drop_in((part, None), field_ty, span, made, &mut dropped)?,
                 }
             }
         }

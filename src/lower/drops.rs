@@ -477,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut parts = Vec::new();
         for (place, ty) in places {
             let mut dropped = Vec::new();
-            self.drop_in(place, ty, span, made, &mut dropped)?;
+            self.drop_in((place, None), ty, span, made, &mut dropped)?;
             parts.push(dropped);
         }
         out.extend(parts::each_dropped(parts, self.js_span(span), &mut self.catch_names()));
@@ -501,9 +501,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Drop `value`, a `ty`: its own `drop`, then each part's, in Rust's
     /// order. `value` is read more than once, so it must read the same.
     pub(super) fn drop_value(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
+        self.drop_value_of((value, None), ty, span, out)
+    }
+
+    /// `drop_value`, of `value` an `Option` whose `None` is only the one
+    /// `none` says where MIR drops it (`NoneForms::place_none`), which its
+    /// drop glue's test of its variant is of (#2112 C S5).
+    pub(super) fn drop_value_of(
+        &mut self,
+        (value, none): (Expr, Option<js::OnlyNone>),
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
         let mut made = Made::default();
         let mut code = Vec::new();
-        self.drop_in(value, ty, span, &mut made, &mut code)?;
+        self.drop_in((value, none), ty, span, &mut made, &mut code)?;
         out.extend(made.defs);
         out.extend(code);
         Ok(())
@@ -563,7 +576,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    fn drop_in(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, made: &mut Made<'tcx>, out: &mut Vec<Stmt>) -> R<()> {
+    fn drop_in(
+        &mut self,
+        (value, none): (Expr, Option<js::OnlyNone>),
+        ty: Ty<'tcx>,
+        span: Span,
+        made: &mut Made<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
         let ty = self.reveal(ty);
         match self.drops(ty) {
             Drops::Nothing => return Ok(()),
@@ -610,7 +630,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => made.functions.push((ty, name.clone())),
             }
             let mut body = Vec::new();
-            self.drop_parts(Expr::var(&param), ty, span, made, &mut body)?;
+            self.drop_parts((Expr::var(&param), None), ty, span, made, &mut body)?;
             if !parts::may_throw(&body) {
                 self.drop_state.quiet.insert(name.clone());
             }
@@ -622,7 +642,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Expr(self.drop_function_call(&name, value)).at(js_span));
             return Ok(());
         }
-        self.drop_parts(value, ty, span, made, out)
+        self.drop_parts((value, none), ty, span, made, out)
     }
 
     /// A call of `name`, a drop function made here, of `value`: known never

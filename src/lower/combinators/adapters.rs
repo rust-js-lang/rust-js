@@ -351,7 +351,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let kept = generic_args.types().nth(1);
         let present = || {
             let item = self.fresh(crate::lower::Base::Named("item"));
-            let test = Expr::presence(Expr::var(&item), true);
+            let test = Expr::presence(Expr::var(&item), true, None);
             Expr::arrow(
                 vec![item.clone().into()],
                 vec![StmtKind::Return(Some(test)).at(js::Span::NONE)],

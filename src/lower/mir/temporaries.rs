@@ -832,7 +832,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// else, `o != null ? 1 : 0` of an `Option`; each a BigInt of a 64-bit
     /// `repr`'s (#1131).
     fn discriminant_number(&mut self, discriminant: &Value<'tcx>, span: Span) -> R<Expr> {
-        let Value::Discriminant(_, enum_ty, _) = discriminant else {
+        let Value::Discriminant(_, enum_ty, ..) = discriminant else {
             unreachable!("a discriminant");
         };
         let enum_ty = *enum_ty;

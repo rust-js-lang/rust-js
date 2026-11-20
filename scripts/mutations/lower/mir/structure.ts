@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
     breaks:
       'an or-pattern of an untagged enum\'s variants tests each, `Array.isArray(v) || (typeof v === "object" && !Array.isArray(v))`, not what they are together',
     file: "src/lower/mir/structure.rs",
-    find: "                        *test = self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &variants, &spans, *present);\n",
+    find: "                        *test = self.mir_variant_test(\n                            enum_value.clone(),\n                            *enum_ty,\n                            *adt,\n                            &variants,\n                            &spans,\n                            (*present, *none),\n                        );\n",
     replace: "",
     tests: [
       "test/lowering-switches.test.ts",
@@ -697,8 +697,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` whose arms do the same JS, no test left, is refused as though it told its classes by `instanceof` (#555)",
     file: "src/lower/mir/structure.rs",
-    find: "                if alike.is_none()\n                    && let Value::Discriminant(_, enum_ty, _) = &subject\n",
-    replace: "                if let Value::Discriminant(_, enum_ty, _) = &subject\n",
+    find: "                if alike.is_none()\n                    && let Value::Discriminant(_, enum_ty, ..) = &subject\n",
+    replace: "                if let Value::Discriminant(_, enum_ty, ..) = &subject\n",
     tests: ["test/lowering-switches.test.ts", "-t", "arms are alike in JS"],
   },
   {

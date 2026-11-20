@@ -102,6 +102,31 @@ impl<'tcx> FnCx<'_, 'tcx> {
         self.presence_of(state, (operand, state.at), 0)
     }
 
+    /// The one `None` `place`, an `Option`, can be where it's read, of
+    /// `undefined` and `null`: a local's or what it refers to, `read`'s; a
+    /// closure's capture, or a borrow of one, what its maker gave it
+    /// (`captured_none`); a
+    /// field's, the trust its read may have (`read_none_trust`). What a test
+    /// of it's made of (`Expr::presence`, #2112 C S5).
+    pub(in crate::lower::mir) fn place_none(
+        &self,
+        state: &State<'_, 'tcx>,
+        place: Place<'tcx>,
+    ) -> Option<js::OnlyNone> {
+        if let Some(none) = self.capture_none(state, place) {
+            return none;
+        }
+        match place.projection.as_slice() {
+            [] => state.facts.options().none_forms.read(place.local),
+            // What a reference refers to: its writes', or, of a borrow of a
+            // field, the field's trust.
+            [PlaceElem::Deref] => (state.facts.options().none_forms.read(place.local))
+                .or_else(|| self.read_none_trust(state.body, place, 0)),
+            _ => self.read_none_trust(state.body, place, 0),
+        }
+        .and_then(js::OnlyNone::of)
+    }
+
     /// What MIR proves of each of `operands`, read where the call being
     /// lowered is (`presence`), which a call of each count of a function's
     /// trailing `Option`s asks (`optional_ladder`, #1876) and what gives one

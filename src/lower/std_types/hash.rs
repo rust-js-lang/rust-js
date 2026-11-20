@@ -624,7 +624,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 self.hash_writes(held, item, hasher, span, &mut some)?;
                 let none = vec![hasher.write(&self.hasher_key("write_isize"), vec![Expr::int(0)])];
-                let present = Expr::presence(value, true);
+                let present = Expr::presence(value, true, None);
                 out.push(StmtKind::If(present, some, Some(none)).at(js::Span::NONE));
             }
             // Its state as Rust's is, `range_state`'s: its bounds, then of

@@ -41,9 +41,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an enum some of which has moved drops what's left of a variant when it's another",
     file: "src/lower/mir/drops.rs",
-    find: "                None => self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false),\n",
+    find: "                    self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], (false, none))\n",
     replace:
-      "                None => Expr::unary(js::UnaryOp::Not, self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], false)),\n",
+      "                    Expr::unary(js::UnaryOp::Not, self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], (false, none)))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -460,5 +460,14 @@ export const mutations: Mutation[] = [
     find: "        match cleanup {\n            true => out.extend(steps.into_iter().flatten()),\n",
     replace: "        match true {\n            true => out.extend(steps.into_iter().flatten()),\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_move_rest_dropped_past_a_panic.rs$"],
+  },
+  {
+    name: "drop-variants-none-unasked",
+    breaks: "an `Option` of a value with a destructor, dropped by its variants, isn't told its one `None`, so its drop's test is loose (#2112 C S5)",
+    file: "src/lower/mir/drops.rs",
+    find: "                    let none = self.place_none(state, place);\n",
+    replace: "                    let none = None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
+    snapshots: true,
   },
 ];

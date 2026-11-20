@@ -271,7 +271,7 @@ fn taken_option(made: &Stmt, written: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Op
     }
     let mut taken = vec![made.clone(), written.clone()];
     taken.extend(some.iter().cloned());
-    let test = Expr::presence(place.clone(), set);
+    let test = Expr::presence(place.clone(), set, None);
     Some(match set {
         true => StmtKind::If(test, taken, otherwise.clone()),
         false => StmtKind::If(test, then.clone(), Some(taken)),
