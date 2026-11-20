@@ -165,10 +165,19 @@ impl<'tcx> FnCx<'_, 'tcx> {
     }
 
     /// `arg_proofs` of the items of the tuple the call being lowered gives
-    /// a closure, each its field.
-    pub(in crate::lower::mir) fn arg_proofs_in_a_tuple(&self, state: &State<'_, 'tcx>) -> Vec<ArgProof> {
-        let fields = self.tuple_given(state);
-        self.arg_proofs(state, &fields.iter().collect::<Vec<_>>())
+    /// a closure, each its field, of `presences`, theirs
+    /// (`presences_in_a_tuple`), each beside its `None`'s `null`.
+    pub(in crate::lower::mir) fn arg_proofs_in_a_tuple(
+        &self,
+        state: &State<'_, 'tcx>,
+        presences: &[Presence],
+    ) -> Vec<ArgProof> {
+        (presences.iter().zip(self.tuple_given(state)))
+            .map(|(presence, field)| ArgProof {
+                present: *presence != Presence::Unknown,
+                null: field.place().and_then(|place| self.place_none(state, place)) == Some(js::OnlyNone::Null),
+            })
+            .collect()
     }
 
     /// The items of the tuple the call being lowered gives a closure, each

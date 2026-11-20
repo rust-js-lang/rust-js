@@ -278,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (true, Value::Expr(call)) => Value::Expr(self.optional_ladder(
                         call,
                         None,
-                        (&optionals, &self.arg_proofs_in_a_tuple(state)),
+                        (&optionals, &self.arg_proofs_in_a_tuple(state, &present)),
                         (self.js_span(span), out),
                     )),
                     (_, call) => call,
