@@ -6,7 +6,10 @@
 // Kind::Function(_) = js::classify(exports) { register(exports.unwrap()) }`.
 // Not on an arm `Kind::Null` or `Kind::Undefined` shares, nor one past a
 // write, nor of a test of another value; `otherwise` where both are named
-// elsewhere. Each compiled and run.
+// elsewhere. A `js::cast` of a nullable field, which in JS is the field
+// itself, held in a `let`: tested as the field is, `=== null`
+// (`gives_its_option`), as React's `updateSuspenseOffscreenState` reads
+// `prevCachePool`. Each compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -123,4 +126,36 @@ pub fn another(x: Option<&'static Unknown>, y: Option<&'static Unknown>) -> Opti
   expect([lib.undefinedLeft(o), lib.undefinedLeft(undefined), lib.undefinedLeft(null)]).toEqual([o, null, null]);
   expect([lib.rewritten({ value: f }, false), lib.rewritten({ value: f }, true), lib.rewritten({}, false)]).toEqual([f, null, null]);
   expect([lib.another(o, f), lib.another(undefined, f), lib.another(o, null)]).toEqual([o, null, null]);
+});
+
+test("a js::cast of a nullable field held in a let is tested as the field is", async () => {
+  const { dir, fn } = compile(
+    "nullable-cast-held",
+    `use js::Unknown;
+
+pub struct Pool {
+    pub n: u32,
+}
+
+pub struct State {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pool: Option<&'static Unknown>,
+}
+
+fn pooled(state: &State) -> u32 {
+    let pool: Option<&Pool> = unsafe { js::cast(state.pool) };
+    if let Some(pool) = pool { pool.n } else { 0 }
+}
+
+pub fn run(pool: Option<&'static Unknown>) -> u32 {
+    let state = State { pool };
+    pooled(&state)
+}
+`,
+  );
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("pool !== null");
+  expect(fn("run")).not.toContain("== null");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.run({ n: 4 }), lib.run(undefined), lib.run(null)]).toEqual([4, 0, 0]);
 });

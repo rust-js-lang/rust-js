@@ -214,6 +214,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 .or_default()
                                 .push(Write::Made(Some(none)));
                         }
+                        // The `Option` it's given, as it is in JS, `js::cast`'s
+                        // (`gives_its_option`): what that holds, or, of a
+                        // field read, what it's trusted.
+                        _ if destination.projection.is_empty()
+                            && let Some(of) = self.gives_its_option(body, destination.local, func, args) =>
+                        {
+                            let write = match of.projection.is_empty() {
+                                true => Some(Write::Of(of.local)),
+                                false => self.read_none_trust(body, of, 0).map(|none| Write::Made(Some(none))),
+                            };
+                            match write {
+                                Some(write) => writes.entry(destination.local).or_default().push(write),
+                                None => {
+                                    unknown.insert(destination.local);
+                                }
+                            }
+                        }
                         _ => {
                             unknown.insert(destination.local);
                         }

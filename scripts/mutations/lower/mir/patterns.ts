@@ -342,4 +342,12 @@ export const mutations: Mutation[] = [
     replace: "                        && variant.as_u32() == 1\n                        && false\n",
     tests: ["test/js-errors.test.ts", "-t", "Some of a caught null"],
   },
+  {
+    name: "cast-none-not-followed",
+    breaks: "a `js::cast` of a nullable field held in a `let`, React's `prevCachePool`, is tested `!= null`, not `!== null` as the field is: MIR's `None` forms don't follow the cast, which is its argument in JS (#2112 C S5)",
+    file: "src/lower/mir/patterns.rs",
+    find: "                            && let Some(of) = self.gives_its_option(body, destination.local, func, args) =>\n",
+    replace: "                            && let Some(of) = self.gives_its_option(body, destination.local, func, args).filter(|_| false) =>\n",
+    tests: ["test/lowering-nullable-classified.test.ts", "-t", "a js::cast of a nullable field held in a let"],
+  },
 ];

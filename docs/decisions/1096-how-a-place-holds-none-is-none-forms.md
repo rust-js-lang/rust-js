@@ -373,3 +373,26 @@ nullish; a `Some` of a caught JS `null` (ADR 0030) is the one question
 left, which the loose test's fold met alike (under investigation). Output
 is byte-identical; the facts still decide which operator `Expr::presence`
 makes, until its callers give MIR's answer.
+
+## Amendment: a `js::cast` holds the `None` it's given (2026-11-20, #2112)
+
+`mir_nones`, MIR's answer of the one `None` a local's writes give, knew
+a call's result only of `none_given_by` and `as_ref_of_null_or_value`:
+`let prev_cache_pool: Option<&SpawnedCachePool> = unsafe {
+js::cast(prev_offscreen_state.cache_pool) }` of React's
+`updateSuspenseOffscreenState` held a `None` it couldn't tell, so its test
+was `!= null`, where the nullable field it casts, which only the crate
+makes, is `null` alone and upstream writes `!== null`. A call that's its
+argument in JS, `js::cast(found)` (`is_its_argument`), is that argument:
+`gives_its_option` (`mir/nulled/proofs.rs`) answers it once, which
+`passes_through`, of what's proved of it, and `mir_nones` both ask; a
+local it's given is followed as a copy is, a field read by its trust
+(`read_none_trust`).
+
+Case A of ADR 0262: no observable difference, a tighter test of the same
+value. React's port moves one line, `prevCachePool !== null`, upstream's
+(the pin to `c947516`); the corpus is unchanged. Test
+`lowering-nullable-classified`'s "a js::cast of a nullable field held in
+a let is tested as the field is"; mutation `cast-none-not-followed`, new,
+caught; `passes-through-no-cast` and `passes-through-no-map` follow the
+code into `gives_its_option`, caught.

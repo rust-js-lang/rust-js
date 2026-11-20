@@ -525,10 +525,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (callee, generic_args) = func.const_fn_def()?;
         let mapped =
             self.recognition().classify(callee, generic_args) == Some(crate::lower::recognition::Std::OptionMap);
-        let cast = self.is_its_argument(callee)
-            && args.len() == 1
-            && self.option_of(state.body.local_decls[local].ty).is_some();
         let from = args.first()?.node.place()?;
-        (mapped || cast).then_some(from)
+        match mapped {
+            true => Some(from),
+            false => self.gives_its_option(state.body, local, func, args),
+        }
+    }
+
+    /// The `Option` a call of `func` on `args`, written to `local`, is in
+    /// JS as it is: `js::cast(found)`'s argument, a binding that's its
+    /// argument (`is_its_argument`). Its `None` is that one's, and so is its
+    /// presence.
+    // helper: what a call is as it is, of `passes_through` and `mir_nones`
+    pub(in crate::lower::mir) fn gives_its_option(
+        &self,
+        body: &mir::Body<'tcx>,
+        local: Local,
+        func: &Operand<'tcx>,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+    ) -> Option<Place<'tcx>> {
+        let (callee, _) = func.const_fn_def()?;
+        let [arg] = args else { return None };
+        let from = arg.node.place()?;
+        let cast = self.is_its_argument(callee) && self.option_of(body.local_decls[local].ty).is_some();
+        cast.then_some(from)
     }
 }
