@@ -209,6 +209,25 @@ function main() {
       }),
     )}`,
   );
+  const skipped = iterator_skip([4], 1, {
+    next: countdownIterator_next,
+    fold: countdownIterator_fold,
+    nth: countdownIterator_nth,
+    count: countdownIterator_count,
+  });
+  console.log(
+    `mut skip ${total(
+      skipped,
+      {
+        next: $jsIterator.next,
+        sizeHint: $jsIterator.sizeHint,
+        nth: $jsIterator.nth,
+        advanceBy: $jsIterator.advanceBy,
+        lent: ["lent"],
+      },
+      tIsT,
+    )}`,
+  );
 
   let it = $lent(
     iterator_map([3], (x) => (x * 2) >>> 0, {

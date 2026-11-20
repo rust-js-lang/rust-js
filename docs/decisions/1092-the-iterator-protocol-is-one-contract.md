@@ -2078,3 +2078,13 @@ today's wrapper changes (they reproduce at 36c35435f):
 
 Case (ADR 0262): R. Which of the crate's steps std calls through each
 path is observable.
+
+**#2190, fixed.** A dictionary that says its value is lent steps it
+through the lend, so `$given` reads none of its entries that are
+`undefined` as steps of its own. Those are entries it passed on of the
+named `$jsIterator`, `sizeHint` and `advanceBy`, which `$jsIterator`
+doesn't have. The lend's `fold`, by what it holds's `try_fold`, then
+steps a `skip` as std's `&mut I` does, asking the crate's `nth(0)`.
+Corpus `wrapper_given_by_a_dictionary_steps_as_std_does` holds the row,
+and its 12 case-builds are off the known list. Mutation:
+`given-lent-absent-entry-own`.

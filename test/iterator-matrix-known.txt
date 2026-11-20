@@ -44,7 +44,3 @@ points:std 9487,11507,11997,12011-12012
 #2189 len() of a &mut Box of a std adapter throws: r.len is not a function, where std's &mut I and Box<I> pass len on
 paths:plain 242,1049,1692,2636,2977,4116
 paths:std 242,1049,1692,2636,2977,4116,4303,4451
-
-#2190 A &mut of a skip given through a trait folds by next, asking the crate's nth(1), where std's &mut I folds by Skip::try_fold's nth(0)
-paths:plain 1175-1176,1231-1232,1267,1295
-paths:std 1175-1176,1231-1232,1267,1295

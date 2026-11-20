@@ -112,8 +112,8 @@ export const mutations: Mutation[] = [
     name: "own-steps-not-the-value",
     breaks: "std's struct given with `fold: $foldOf` is wrapped, losing its own `advance_by`, so a chain's `nth` steps each item of a reversed `Vec` back to front (ADR 0912)",
     file: "src/runtime/iterator.js",
-    find: '      ([name, step]) => name === "getUnchecked" || name === "lent" || $askedStep(step, boxed) === name,\n',
-    replace: '      ([name, step]) => name === "getUnchecked" || name === "lent" || (name === "next" && step === $next),\n',
+    find: '        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || $askedStep(step, boxed) === name,\n',
+    replace: '        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || (name === "next" && step === $next),\n',
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
   {
@@ -201,8 +201,8 @@ export const mutations: Mutation[] = [
     name: "given-boxed-steps-not-own",
     breaks: "a value of a type parameter whose dictionary boxes its `Some`, `$nextSome`'s, is made a JS iterator whose `nth` asks the value's, which a JS array iterator has none of: generic `skip(1).last()` throws (#522)",
     file: "src/runtime/iterator.js",
-    find: '      ([name, step]) => name === "getUnchecked" || name === "lent" || $askedStep(step, boxed) === name,\n',
-    replace: '      ([name, step]) => name === "getUnchecked" || name === "lent" || $askedStep(step) === name,\n',
+    find: '        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || $askedStep(step, boxed) === name,\n',
+    replace: '        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || $askedStep(step) === name,\n',
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_own_last with"],
   },
   {
@@ -312,6 +312,14 @@ export const mutations: Mutation[] = [
     file: "src/runtime/iterator.js",
     find: "  for (const kind of iterator.lent ?? []) value = $lent(value, kind);\n",
     replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
+  },
+  {
+    name: "given-lent-absent-entry-own",
+    breaks: "a dictionary that lends its value, whose entries passed on of the named `$jsIterator` are `undefined` where it has none, is read as one with steps of its own, so a `&mut` of a `skip` given through a trait is wrapped by `next` and asks the crate's `nth(1)`, where std's `&mut I` folds by `Skip::try_fold`'s `nth(0)` (#2190)",
+    file: "src/runtime/iterator.js",
+    find: "        name === \"getUnchecked\" || name === \"lent\" || (lends && step === undefined) || $askedStep(step, boxed) === name,\n",
+    replace: "        name === \"getUnchecked\" || name === \"lent\" || $askedStep(step, boxed) === name,\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
   },
 ];

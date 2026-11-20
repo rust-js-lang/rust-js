@@ -900,9 +900,14 @@ export function $given(value, iterator, boxed = false, back, len) {
   // innermost first, so what it steps is the wrapper's, never the JS
   // iterator's own `fold` (`wrapper_lends`, #2185, #2187).
   for (const kind of iterator.lent ?? []) value = $lent(value, kind);
+  // Of one it lends, an entry its dictionary passes on of what it's of,
+  // `$jsIterator.sizeHint`, that has none: no step of its own, the lend's,
+  // which steps as the wrapper does (#2190).
+  const lends = iterator.lent !== undefined;
   const own = (dictionary) =>
     Object.entries(dictionary).every(
-      ([name, step]) => name === "getUnchecked" || name === "lent" || $askedStep(step, boxed) === name,
+      ([name, step]) =>
+        name === "getUnchecked" || name === "lent" || (lends && step === undefined) || $askedStep(step, boxed) === name,
     );
   if (own(iterator) && len === undefined && (back === undefined || own(back))) {
     return value;

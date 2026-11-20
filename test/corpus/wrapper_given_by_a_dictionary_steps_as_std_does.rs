@@ -7,7 +7,9 @@
 // `fold` and `count` to the traits' defaults over its `next`, its sized
 // `&mut I` folds by `I`'s `try_fold`, and a `dyn`'s vtable holds no `fold`,
 // so none of them asks the crate's own `fold` under a `map`; a `skip`'s
-// `nth` is passed on, so `nth(1)` asks the crate's `nth(2)`.
+// `nth` is passed on, so `nth(1)` asks the crate's `nth(2)`; and a `&mut`
+// of a `skip` folds by `Skip::try_fold`, which asks the crate's `nth(0)`,
+// never by its `next`'s `nth(1)` (#2190).
 struct Countdown(u32);
 
 impl Iterator for Countdown {
@@ -100,6 +102,8 @@ fn main() {
     let mut held = Box::new(Countdown(3).map(|x| x * 2));
     println!("mut box {}", total(&mut held));
     println!("mut of a parameter {}", lent(Countdown(3).map(|x| x * 2)));
+    let mut skipped = Countdown(4).skip(1);
+    println!("mut skip {}", total(&mut skipped));
 
     let it: Box<dyn Iterator<Item = u32>> = Box::new(Countdown(3).map(|x| x * 2));
     println!("dyn {}", total(it));
