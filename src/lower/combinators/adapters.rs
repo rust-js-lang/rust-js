@@ -357,11 +357,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(test)).at(js::Span::NONE)],
             )
         };
-        // The `Some`s of `made`: JS's filter of what's there, or `$somes`,
-        // as the form's owner chooses (`in_place_form`, #2199).
+        // The `Some`s of `made`: JS's filter of what's there, `$somes`, or a
+        // flatten's items of them, `$someItems`, as the form's owner chooses
+        // (`in_place_form`, #2199, #2205).
         let form = self.in_place_form(comb, receiver_ty, output);
         let somes = |made: Expr| match form {
             Some(InPlaceForm::Somes) => Expr::call_helper("$somes", vec![made]),
+            Some(InPlaceForm::SomeItems) => Expr::call_helper("$someItems", vec![made]),
             _ => method(made, "filter", vec![present()]),
         };
         let item_ty = || self.iterator_item(receiver_ty);

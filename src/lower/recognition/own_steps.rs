@@ -256,6 +256,46 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .any(|step| self.reaches_its_own(ty, step, Reach::Sure))
     }
 
+    /// Whether an iterator of type `ty`, or one it holds through std's
+    /// adapters, a `Box` or a reference, is the crate's that writes `nth`
+    /// or `nth_back`, or of a type whose steps aren't seen: one generic
+    /// code doesn't know (`is_unknown`), a `dyn`'s or an opaque type's. What
+    /// an adapter between asks in place of `next`, and asks otherwise of
+    /// what it holds by `next` than by `try_fold`: `Skip::next` asks
+    /// `nth(n)` where its `try_fold` asks `nth(n - 1)` and folds, and
+    /// `StepBy`'s first `next` asks `nth(0)` where its `try_fold` asks
+    /// `next`; of the crate's iterator that writes neither, each asks its
+    /// `next` alike. So a form that steps it by `try_fold` stands for std's
+    /// adapter that steps it by `next` only where this is false, a filter
+    /// of the `Some`s for a flatten of `Option`s (#2205). Of the type
+    /// alone, each value of it alike, as its impls say.
+    pub(in crate::lower) fn own_nth_within(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(super::iterators::iterator_held(ty));
+        if self.is_user_iterator(ty) {
+            return self.own_iterator_method(ty, "nth").is_some() || self.own_back_method(ty, "nth_back").is_some();
+        }
+        if matches!(
+            ty.kind(),
+            ty::Dynamic(..)
+                | ty::Alias(
+                    _,
+                    ty::AliasTy {
+                        kind: ty::Opaque { .. },
+                        ..
+                    }
+                )
+        ) {
+            return true;
+        }
+        // Of a type generic code doesn't know, what its caller's may write,
+        // `reaches_its_own`'s answer of what it may be given.
+        if !matches!(ty.kind(), ty::Adt(..)) {
+            return self.reaches_its_own(ty, OwnStep::Nth, Reach::May);
+        }
+        adapted_iterators(self.tcx, self.typing_env, ty)
+            .is_some_and(|held| held.into_iter().any(|held| self.own_nth_within(held)))
+    }
+
     /// Whether std's `fold` of a `ty`, an iterator, asks an `nth` that
     /// reaches the crate's own (#182), or may, of a type parameter.
     pub(in crate::lower) fn folds_by_its_own_nth(&self, ty: Ty<'tcx>) -> bool {

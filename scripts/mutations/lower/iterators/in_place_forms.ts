@@ -26,16 +26,24 @@ export const mutations: Mutation[] = [
     name: "in-place-somes-filter-of-any-source",
     breaks: "the `Some`s as JS writes them, `.filter((item) => item != null)`, read as chosen of any source, so the net runs them only where std's row is theirs and never where a source's hint runs the crate's code, which a crate-wide fact can't then hide (#2112, the lead's guard)",
     file: "src/lower/iterators/in_place_forms.rs",
-    find: "            InPlaceForm::SomesFilter => Where::HintRunsNothing,\n",
-    replace: "",
+    find: '                ("FilterMap", HintRunsNothing),\n',
+    replace: '                ("FilterMap", Always),\n',
     unitTests: "lower::iterators::in_place_forms::tests::in_place_forms",
   },
   {
-    name: "in-place-somes-not-a-flatten",
-    breaks: "the `Some`s' forms named for `FilterMap` and `FlatMap<Option>` alone, so the net never runs them against `Flatten<Option>`'s row, whose `next` is its source's `next` (#2205)",
+    name: "in-place-somes-filter-flatten-of-any-source",
+    breaks: "the `Some`s as JS writes them read as chosen for a flatten of `Option`s of any source, so the net runs them where a crate's `nth` between is asked otherwise by their `try_fold` than by std's `next` (#2205)",
     file: "src/lower/iterators/in_place_forms.rs",
-    find: '                &["FilterMap", "Flatten<Option>", "FlatMap<Option>"]\n',
-    replace: '                &["FilterMap", "FlatMap<Option>"]\n',
+    find: '                ("Flatten<Option>", StepsRunNothing),\n',
+    replace: '                ("Flatten<Option>", Always),\n',
+    unitTests: "lower::iterators::in_place_forms::tests::in_place_forms",
+  },
+  {
+    name: "in-place-some-items-not-a-flatten",
+    breaks: "a flatten's items of its `Option`s named for `FlatMap<Option>` alone, so the net never runs them against `Flatten<Option>`'s row (#2205)",
+    file: "src/lower/iterators/in_place_forms.rs",
+    find: '                &[("Flatten<Option>", Always), ("FlatMap<Option>", Always)]\n',
+    replace: '                &[("FlatMap<Option>", Always)]\n',
     unitTests: "lower::iterators::in_place_forms::tests::in_place_forms",
   },
   {
@@ -99,8 +107,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the `Some`s of a source whose `size_hint` runs the crate's code are JS's filter, whose own `count` in the runtime is `Filter::count`'s, so generic code counting a `filter_map` of the crate's iterator asks its `size_hint`, which std's `FilterMap` never asks (#2199)",
     file: "src/lower/iterators/in_place_forms.rs",
-    find: "                let somes = match self.recognition().hint_reaches_own_where(receiver_ty, true) {\n",
-    replace: "                let somes = match false {\n",
+    find: "                    IterComb::FilterMap => Some(match hint_runs {\n",
+    replace: "                    IterComb::FilterMap => Some(match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
   },
   {
@@ -108,9 +116,28 @@ export const mutations: Mutation[] = [
     breaks:
       "the `Some`s of a variable whose type's `size_hint` runs none of the crate's code, `take.map(f)` of a slice's, are `$somes(take.map(f))`, where upstream writes JS's `filter((item) => item != null)` (#2199)",
     file: "src/lower/iterators/in_place_forms.rs",
-    find: "                let somes = match self.recognition().hint_reaches_own_where(receiver_ty, true) {\n",
-    replace: "                let somes = match true {\n",
+    find: "                    IterComb::FilterMap => Some(match hint_runs {\n",
+    replace: "                    IterComb::FilterMap => Some(match true {\n",
     tests: ["test/corpus.test.ts", "-t", "^(adapter_functions_dropped|fold_drops_moved_function_first).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "flatten-of-options-a-filter",
+    breaks:
+      "a flatten of `Option`s, or a `flat_map` to them, made in place over the crate's iterator is a filter of the `Some`s, which steps its source by `try_fold`, so a `skip(1)` between asks the crate's `nth(0)` and a `next` where std's `Flatten` asks `nth(1)`, and a `step_by`'s first step asks no `nth(0)` (#2205)",
+    file: "src/lower/iterators/in_place_forms.rs",
+    find: "                let items = match hint_runs || recognition.own_nth_within(receiver_ty) {\n",
+    replace: "                let items = match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_steps_its_source_by_next.rs$"],
+  },
+  {
+    name: "flatten-of-options-items-of-any-type",
+    breaks:
+      "a flatten of `Option`s of a source whose steps run none of the crate's code, a slice's, is `$someItems(..)`, where JS writes `filter((item) => item != null)` (#2205)",
+    file: "src/lower/iterators/in_place_forms.rs",
+    find: "                let items = match hint_runs || recognition.own_nth_within(receiver_ty) {\n",
+    replace: "                let items = match true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
     snapshots: true,
   },
 ];

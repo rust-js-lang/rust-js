@@ -720,7 +720,7 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// `$rev` (ADR 0516), `$closing` (ADR 0518), `$holding` (#710), `$mapEnds` (ADR 0455),
 /// std's `Copied` and `Cloned`, `$copied` and `$cloned` (#2122), and a
 /// `Copied` of what generic code was given, `$copiedGiven` (#2130),
-/// `$filterEnds` (ADR 0526), `$somes` (#2199), `$filterDropping` (#651), `$enumerate` (ADR 0528), `$taking` and
+/// `$filterEnds` (ADR 0526), `$somes` (#2199), `$someItems` (#2205), `$filterDropping` (#651), `$enumerate` (ADR 0528), `$taking` and
 /// `$skipping` (ADR 0542), `$memchrIter` (ADR 0529), `$stdIterator` (ADR
 /// 0561), `$lazyScan` (ADR 0517) and `$lazyMapWhile`, not fused, a B-tree
 /// set's algebra, std's iterators (`$treeSetAlgebra`, #943), a hash set's
@@ -740,7 +740,7 @@ pub(in crate::lower) fn is_stepped_items(e: &Expr) -> bool {
 /// `$stepsOf`, never armed to close itself at its end (#2039),
 /// and each of its generators,
 /// which the runtime package's test holds this list to; a range's, its own.
-pub(crate) const ITERATOR_HELPERS: [&str; 61] = [
+pub(crate) const ITERATOR_HELPERS: [&str; 62] = [
     "$stdIterator",
     "$stepsOf",
     "$chars",
@@ -753,6 +753,7 @@ pub(crate) const ITERATOR_HELPERS: [&str; 61] = [
     "$flattenEnds",
     "$filterEnds",
     "$somes",
+    "$someItems",
     "$filterDropping",
     "$enumerate",
     "$stepBy",
@@ -907,11 +908,12 @@ pub(in crate::lower) fn with_linked_source(it: &Expr) -> Option<Expr> {
     let js::ExprKind::Call(callee, args) = &it.kind else {
         return None;
     };
-    // The `Some`s, `$somes`'s, a filter of what it steps (#2199).
-    if callee.helper_name() == Some("$somes")
+    // The `Some`s, `$somes`'s, a filter of what it steps (#2199), and a
+    // flatten's items of them, `$someItems`'s (#2205).
+    if let Some(helper) = (["$somes", "$someItems"].into_iter()).find(|&h| callee.helper_name() == Some(h))
         && let [kept] = args.as_slice()
     {
-        return with_linked_source(kept).map(|linked| Expr::call_helper("$somes", vec![linked]));
+        return with_linked_source(kept).map(|linked| Expr::call_helper(helper, vec![linked]));
     }
     let js::ExprKind::Member(object, name) = &callee.kind else {
         return None;

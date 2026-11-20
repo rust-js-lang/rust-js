@@ -197,4 +197,13 @@ export const mutations: Mutation[] = [
     replace: "                OwnStep::Fold => sources.extend(self.nth_folded_by(source, asked)),\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_through_try_fold_reaches_own_nth.rs$"],
   },
+  {
+    name: "own-nth-within-never",
+    breaks:
+      "a flatten of `Option`s over a boxed iterator of the crate's with its own `nth` and no `size_hint` is a filter of the `Some`s, which steps it by `try_fold`, so a `skip(1)` between asks its `nth(0)` and a `next` where std's `Flatten` asks `nth(1)` (#2205)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            return self.own_iterator_method(ty, \"nth\").is_some() || self.own_back_method(ty, \"nth_back\").is_some();\n",
+    replace: "            return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_steps_its_source_by_next.rs$"],
+  },
 ];

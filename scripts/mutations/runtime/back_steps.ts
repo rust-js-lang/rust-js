@@ -870,4 +870,13 @@ export const mutations: Mutation[] = [
     replace: "  const kept = it.filter(present);\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
+  {
+    name: "some-items-filtered",
+    breaks:
+      "`$someItems`' `next` is a filter's of the `Some`s, its source's `try_fold`, so a flatten of `Option`s over a `skip(1)` of the crate's iterator asks its `nth(0)` and a `next`, where std's `Flatten` asks `nth(1)` (#2205)",
+    file: "src/runtime/back_steps.js",
+    find: '  kept.next = step("next");\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_steps_its_source_by_next.rs$"],
+  },
 ];

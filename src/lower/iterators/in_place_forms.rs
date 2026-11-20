@@ -33,8 +33,17 @@ pub(in crate::lower) enum InPlaceForm {
     /// `$somes` of a map that knows its back: `$filterEnds`' of it.
     SomesOfEnds,
     /// `src.map(f).filter((item) => item != null)`: the `Some`s as JS
-    /// writes them, where asking the source's hint runs nothing.
+    /// writes them, where asking the source's hint runs nothing, and of a
+    /// flatten, where its steps reach nothing of the crate's by `try_fold`
+    /// that they wouldn't by `next`.
     SomesFilter,
+    /// `$someItems(src.map(f))`: a flatten's items of its `Option`s,
+    /// std's `FlattenCompat` of one-shot inner iterators, which steps its
+    /// source by `next` (#2205).
+    SomeItems,
+    /// `$someItems` of a map that knows its back: `$somes` of ends', its
+    /// steps from its back its source's `next_back`.
+    SomeItemsOfEnds,
     /// `$enumerate(src)`.
     Enumerate,
     /// `$skipping(src, n)`.
@@ -96,6 +105,12 @@ pub(in crate::lower) enum Where {
     /// Where asking the source's `size_hint` runs nothing of the crate's
     /// (`hint_reaches_own_where` false).
     HintRunsNothing,
+    /// Where what std's adapter asks of its source by `next` its form may
+    /// ask by `try_fold`: no crate's iterator within it writes `nth` or
+    /// `nth_back`, nor is a type within unseen (`own_nth_within` false),
+    /// and asking its hint runs nothing of the crate's
+    /// (`hint_reaches_own_where` false).
+    StepsRunNothing,
     /// Of an array's items (`bounded_by_items`), whose steps run nothing
     /// of the crate's.
     OfArrayItems,
@@ -110,9 +125,10 @@ pub(in crate::lower) enum Where {
 
 #[cfg(test)]
 impl Where {
-    pub(in crate::lower) const ALL: [Where; 5] = [
+    pub(in crate::lower) const ALL: [Where; 6] = [
         Where::Always,
         Where::HintRunsNothing,
+        Where::StepsRunNothing,
         Where::OfArrayItems,
         Where::NoOwnNth,
         Where::PlainInners,
@@ -124,6 +140,7 @@ impl Where {
         match self {
             Where::Always => &[],
             Where::HintRunsNothing => &["hint_reaches_own_where"],
+            Where::StepsRunNothing => &["own_nth_within", "hint_reaches_own_where"],
             Where::OfArrayItems => &["bounded_by_items"],
             Where::NoOwnNth => &["reaches_its_own"],
             Where::PlainInners => &["reaches_its_own", "drops"],
@@ -132,7 +149,7 @@ impl Where {
 }
 
 impl InPlaceForm {
-    pub(in crate::lower) const ALL: [InPlaceForm; 30] = [
+    pub(in crate::lower) const ALL: [InPlaceForm; 32] = [
         InPlaceForm::StepsMap,
         InPlaceForm::MapEnds,
         InPlaceForm::Copied,
@@ -142,6 +159,8 @@ impl InPlaceForm {
         InPlaceForm::Somes,
         InPlaceForm::SomesOfEnds,
         InPlaceForm::SomesFilter,
+        InPlaceForm::SomeItems,
+        InPlaceForm::SomeItemsOfEnds,
         InPlaceForm::Enumerate,
         InPlaceForm::Skipping,
         InPlaceForm::Taking,
@@ -166,31 +185,46 @@ impl InPlaceForm {
     ];
 
     /// The std types it stands for, as std_steps.txt names its rows, or
-    /// of a consumer, std's method, `nth`.
+    /// of a consumer, std's method, `nth`; and of each, where it's chosen
+    /// for it, as the net runs it (`Where`): a form may stand for one std
+    /// type wherever it's made and for another only where its steps agree.
     #[cfg(test)]
-    pub(in crate::lower) fn stands_for(self) -> &'static [&'static str] {
+    pub(in crate::lower) fn stands_for(self) -> &'static [(&'static str, Where)] {
+        use Where::*;
         match self {
-            InPlaceForm::StepsMap | InPlaceForm::MapEnds => &["Map", "Cloned", "Inspect"],
-            InPlaceForm::Copied => &["Copied"],
-            InPlaceForm::StepsFilter | InPlaceForm::FilterEnds | InPlaceForm::FilterDropping => &["Filter"],
-            InPlaceForm::Somes | InPlaceForm::SomesOfEnds | InPlaceForm::SomesFilter => {
-                &["FilterMap", "Flatten<Option>", "FlatMap<Option>"]
+            InPlaceForm::StepsMap | InPlaceForm::MapEnds => &[("Map", Always), ("Cloned", Always), ("Inspect", Always)],
+            InPlaceForm::Copied => &[("Copied", Always)],
+            InPlaceForm::StepsFilter | InPlaceForm::FilterEnds | InPlaceForm::FilterDropping => &[("Filter", Always)],
+            InPlaceForm::Somes | InPlaceForm::SomesOfEnds => &[("FilterMap", Always)],
+            // A filter's `next` its source's `try_fold`, as `FilterMap`'s is;
+            // a flatten's its source's `next`, which asks the same of it
+            // only where no `nth` of the crate's is between (#2205).
+            InPlaceForm::SomesFilter => &[
+                ("FilterMap", HintRunsNothing),
+                ("Flatten<Option>", StepsRunNothing),
+                ("FlatMap<Option>", StepsRunNothing),
+            ],
+            InPlaceForm::SomeItems | InPlaceForm::SomeItemsOfEnds => {
+                &[("Flatten<Option>", Always), ("FlatMap<Option>", Always)]
             }
-            InPlaceForm::Enumerate => &["Enumerate"],
-            InPlaceForm::Skipping => &["Skip"],
-            InPlaceForm::Taking => &["Take"],
-            InPlaceForm::StepBy | InPlaceForm::StepByEnds | InPlaceForm::StepByFilter => &["StepBy"],
-            InPlaceForm::LazyChain => &["Chain"],
-            InPlaceForm::LazyZip | InPlaceForm::ZipEnds => &["Zip"],
-            InPlaceForm::Rev => &["Rev"],
-            InPlaceForm::FlatMap | InPlaceForm::FlattenEnds | InPlaceForm::StepsFlatMap => &["Flatten", "FlatMap"],
-            InPlaceForm::LazyTakeWhile => &["TakeWhile"],
-            InPlaceForm::LazySkipWhile => &["SkipWhile"],
-            InPlaceForm::LazyMapWhile => &["MapWhile"],
-            InPlaceForm::LazyScan => &["Scan"],
-            InPlaceForm::CycleFrom => &["Cycle"],
-            InPlaceForm::Nth | InPlaceForm::NthDropTake => &["nth"],
-            InPlaceForm::FindMapFind => &["find_map"],
+            InPlaceForm::Enumerate => &[("Enumerate", Always)],
+            InPlaceForm::Skipping => &[("Skip", Always)],
+            InPlaceForm::Taking => &[("Take", Always)],
+            InPlaceForm::StepBy | InPlaceForm::StepByEnds => &[("StepBy", Always)],
+            InPlaceForm::StepByFilter => &[("StepBy", OfArrayItems)],
+            InPlaceForm::LazyChain => &[("Chain", Always)],
+            InPlaceForm::LazyZip | InPlaceForm::ZipEnds => &[("Zip", Always)],
+            InPlaceForm::Rev => &[("Rev", Always)],
+            InPlaceForm::FlatMap | InPlaceForm::FlattenEnds => &[("Flatten", Always), ("FlatMap", Always)],
+            InPlaceForm::StepsFlatMap => &[("Flatten", PlainInners), ("FlatMap", PlainInners)],
+            InPlaceForm::LazyTakeWhile => &[("TakeWhile", Always)],
+            InPlaceForm::LazySkipWhile => &[("SkipWhile", Always)],
+            InPlaceForm::LazyMapWhile => &[("MapWhile", Always)],
+            InPlaceForm::LazyScan => &[("Scan", Always)],
+            InPlaceForm::CycleFrom => &[("Cycle", Always)],
+            InPlaceForm::Nth => &[("nth", Always)],
+            InPlaceForm::NthDropTake => &[("nth", NoOwnNth)],
+            InPlaceForm::FindMapFind => &[("find_map", Always)],
         }
     }
 
@@ -207,6 +241,8 @@ impl InPlaceForm {
             InPlaceForm::Somes => "$somes",
             InPlaceForm::SomesOfEnds => "$somes of ends",
             InPlaceForm::SomesFilter => "$Steps.filter of somes",
+            InPlaceForm::SomeItems => "$someItems",
+            InPlaceForm::SomeItemsOfEnds => "$someItems of ends",
             InPlaceForm::Enumerate => "$enumerate",
             InPlaceForm::Skipping => "$skipping",
             InPlaceForm::Taking => "$taking",
@@ -230,18 +266,6 @@ impl InPlaceForm {
             InPlaceForm::FindMapFind => "$Steps.map.find",
         }
     }
-
-    /// Where it's chosen, as the net runs it (`Where`).
-    #[cfg(test)]
-    pub(in crate::lower) fn chosen(self) -> Where {
-        match self {
-            InPlaceForm::SomesFilter => Where::HintRunsNothing,
-            InPlaceForm::StepByFilter => Where::OfArrayItems,
-            InPlaceForm::NthDropTake => Where::NoOwnNth,
-            InPlaceForm::StepsFlatMap => Where::PlainInners,
-            _ => Where::Always,
-        }
-    }
 }
 
 /// The owner's table, `in_place_forms.txt`: each form's std types, its
@@ -256,8 +280,8 @@ pub(in crate::lower) fn table() -> String {
          # answers it, each an owner of class 1 or 2 (#2112, #2200).\n",
     );
     for form in InPlaceForm::ALL {
-        for std in form.stands_for() {
-            out.push_str(&format!("{std} | {} | {:?}\n", form.name(), form.chosen()));
+        for (std, at) in form.stands_for() {
+            out.push_str(&format!("{std} | {} | {at:?}\n", form.name()));
         }
     }
     for at in Where::ALL {
@@ -280,27 +304,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         output: Ty<'tcx>,
     ) -> Option<InPlaceForm> {
         let form = match comb {
-            // The `Some`s: `$somes` where the source's `size_hint` may run
-            // the crate's code, whose own `count` is std's `FilterMap`'s and
-            // `Flatten`'s, not `Filter::count`'s, which asks that hint first
-            // (#2199). Its type says, of every value of it alike, whatever
-            // form a fact made it (`hint_reaches_own_where`, of a type
+            // The `Some`s of a `filter_map`: `$somes` where the source's
+            // `size_hint` may run the crate's code, whose own `count` is
+            // std's `FilterMap`'s, its fold, not `Filter::count`'s, which
+            // asks that hint first (#2199). A flatten of `Option`s, or a
+            // `flat_map` to them (`flattened_options`), std's
+            // `FlattenCompat`, steps its source by `next` where a filter
+            // steps it by `try_fold`: `$someItems` where the source's steps
+            // may reach a crate's `nth` or `nth_back` between, which asks it
+            // otherwise, or its hint the crate's code (#2205). Its type says
+            // each, of every value of it alike, whatever form a fact made it
+            // (`hint_reaches_own_where`, `own_nth_within`, of a type
             // parameter's and what a `dyn` holds too): no fact chooses it.
-            // Of a `filter_map`, a `flat_map` to `Option`s and a flatten of
-            // them (`flattened_options`).
             IterComb::FilterMap | IterComb::FlatMap | IterComb::Flatten => {
-                let somes = match self.recognition().hint_reaches_own_where(receiver_ty, true) {
-                    true => InPlaceForm::Somes,
+                let recognition = self.recognition();
+                let hint_runs = recognition.hint_reaches_own_where(receiver_ty, true);
+                let mapped = recognition.flattened_options(output).map(|(_, _, mapped)| mapped);
+                let items = match hint_runs || recognition.own_nth_within(receiver_ty) {
+                    true => InPlaceForm::SomeItems,
                     false => InPlaceForm::SomesFilter,
                 };
-                let mapped = self
-                    .recognition()
-                    .flattened_options(output)
-                    .map(|(_, _, mapped)| mapped);
                 match comb {
-                    IterComb::FilterMap => Some(somes),
-                    IterComb::FlatMap => (mapped == Some(true)).then_some(somes),
-                    _ => (mapped == Some(false)).then_some(somes),
+                    IterComb::FilterMap => Some(match hint_runs {
+                        true => InPlaceForm::Somes,
+                        false => InPlaceForm::SomesFilter,
+                    }),
+                    IterComb::FlatMap => (mapped == Some(true)).then_some(items),
+                    _ => (mapped == Some(false)).then_some(items),
                 }
             }
             IterComb::Nth => Some(
@@ -411,7 +441,10 @@ mod tests {
         names.dedup();
         assert_eq!(names.len(), InPlaceForm::ALL.len());
         for at in Where::ALL {
-            assert!(at == Where::Always || InPlaceForm::ALL.iter().any(|form| form.chosen() == at));
+            assert!(
+                at == Where::Always
+                    || (InPlaceForm::ALL.iter()).any(|form| form.stands_for().iter().any(|&(_, chosen)| chosen == at))
+            );
         }
     }
 }

@@ -16,7 +16,7 @@ import { join } from "node:path";
 
 import * as std from "../std/runtime.js";
 import { ownerTable } from "../scripts/owners";
-import { stdRuns } from "./std-steps-catalog";
+import { stdAnswers, stdRuns } from "./std-steps-catalog";
 
 const steps = [...std.$stepNames].filter((step) => step !== "next");
 
@@ -280,6 +280,7 @@ const second = () => {
 const asked: Record<string, (it: any) => unknown> = {
   next: (it) => it.next(),
   size_hint: (it) => std.$sizeHint(it),
+  size_hint_after_next: (it) => (it.next(), std.$sizeHint(it)),
   nth: (it) => std.$nth(it, 1),
   advance_by: (it) => std.$advanceBy(it, 2),
   fold: (it) => std.$foldOf(it, 0, count),
@@ -344,15 +345,24 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["Filter", "$filterEnds", (s) => std.$filterEnds(s.src(), odd)],
   ["Filter", "$Steps.filter", (s) => s.src().filter(odd)],
   ["Filter", "$filterDropping", (s) => std.$filterDropping(s.src(), odd, () => {})],
-  // The `Some`s, a `filter_map`'s, a flatten of `Option`s' and a
-  // `flat_map` to them made in place, of a map and of a map that knows its
-  // back: a filter whose own `count` is their fold, never asking its
-  // source's hint (#2199); and as JS writes them where the hint runs
-  // nothing.
-  ...["FilterMap", "Flatten<Option>", "FlatMap<Option>"].flatMap((name): [string, string, (s: Sources) => any][] => [
-    [name, "$somes", (s) => std.$somes(s.src().map(same))],
-    [name, "$somes of ends", (s) => std.$somes(std.$mapEnds(s.src(), same))],
-    [name, "$Steps.filter of somes", (s) => s.src().map(same).filter(present)],
+  // The `Some`s, a `filter_map`'s made in place, of a map and of a map
+  // that knows its back: a filter whose own `count` is its fold, never
+  // asking its source's hint (#2199); and as JS writes them where the hint
+  // runs nothing, which a flatten of `Option`s or a `flat_map` to them is
+  // made as too where their steps run nothing of the crate's.
+  ["FilterMap", "$somes", (s) => std.$somes(s.src().map(same))],
+  ["FilterMap", "$somes of ends", (s) => std.$somes(std.$mapEnds(s.src(), same))],
+  ...["FilterMap", "Flatten<Option>", "FlatMap<Option>"].map((name): [string, string, (s: Sources) => any] => [
+    name,
+    "$Steps.filter of somes",
+    (s) => s.src().map(same).filter(present),
+  ]),
+  // A flatten of `Option`s' or a `flat_map` to them made in place
+  // elsewhere: std's `FlattenCompat` of one-shot inner iterators, which
+  // steps its source by `next` (#2205).
+  ...["Flatten<Option>", "FlatMap<Option>"].flatMap((name): [string, string, (s: Sources) => any][] => [
+    [name, "$someItems", (s) => std.$someItems(s.src().map(same))],
+    [name, "$someItems of ends", (s) => std.$someItems(std.$mapEnds(s.src(), same))],
   ]),
   ["Enumerate", "$enumerate", (s) => std.$enumerate(s.src())],
   ["Skip", "$skipping", (s) => std.$skipping(s.src(), 1)],
@@ -418,6 +428,9 @@ const whereAsks = new Map(
 const whereRuns: Record<string, { kinds: readonly SourceKind[]; unseen?: RegExp }> = {
   Always: { kinds },
   HintRunsNothing: { kinds, unseen: /^\w+\.size_hint$/ },
+  // Of a source that writes no step `next` and `try_fold` would ask apart,
+  // `bare`'s, its hint unseen: no `nth` of the crate's between (#2205).
+  StepsRunNothing: { kinds: ["bare"], unseen: /^\w+\.size_hint$/ },
   OfArrayItems: { kinds: [] },
   NoOwnNth: { kinds: ["bare"] },
   PlainInners: { kinds: ["bare"] },
@@ -429,46 +442,20 @@ const runsOf = (stdName: string, form: string) => {
 };
 const seen = (trace: string, unseen?: RegExp) => (unseen === undefined ? trace : trace.split(" ").filter((call) => !unseen.test(call)).join(" "));
 
+/** What a step answered, as std's catalog prints it, Rust's `Debug`:
+ * `size_hint`'s pair, `(4, Some(4))`, and `len`'s number; `usize::MAX`
+ * by name, a JS `usize`'s 2^32 - 1 and std's 2^64 - 1 alike. */
+const usize = (n: number) => (n === 2 ** 32 - 1 ? "usize::MAX" : String(n));
+const answered = (step: string, answer: any) =>
+  step.startsWith("size_hint") ? `(${usize(answer[0])}, ${answer[1] == null ? "None" : `Some(${usize(answer[1])})`})` : usize(answer);
+const native = (answer: string | undefined) => answer?.replaceAll("18446744073709551615", "usize::MAX");
+
 /** Each run: its kind of source, its number and its sources' lengths. */
 const runs = kinds.flatMap((kind) => sizes.map((size, run) => [kind, run, size] as const));
 
 /** Each form's step that asks other than std's does, a wrong answer not
  * yet fixed, under its issue: none is let differ for good (#2112). */
-const differs: Record<string, string> = {
-  // A flatten of `Option`s' or a `flat_map` to them made in place, a filter
-  // of the `Some`s, steps its source by `try_fold` where std's
-  // `FlattenCompat` steps it by `next`.
-  "Flatten<Option> | $somes next": "#2205",
-  "Flatten<Option> | $somes nth": "#2205",
-  "Flatten<Option> | $somes max_by": "#2205",
-  "Flatten<Option> | $somes min_by": "#2205",
-  "Flatten<Option> | $somes of ends next": "#2205",
-  "Flatten<Option> | $somes of ends nth": "#2205",
-  "Flatten<Option> | $somes of ends next_back": "#2205",
-  "Flatten<Option> | $somes of ends nth_back": "#2205",
-  "Flatten<Option> | $somes of ends advance_back_by": "#2205",
-  "Flatten<Option> | $somes of ends max_by": "#2205",
-  "Flatten<Option> | $somes of ends min_by": "#2205",
-  "Flatten<Option> | $Steps.filter of somes next": "#2205",
-  "Flatten<Option> | $Steps.filter of somes nth": "#2205",
-  "Flatten<Option> | $Steps.filter of somes max_by": "#2205",
-  "Flatten<Option> | $Steps.filter of somes min_by": "#2205",
-  "FlatMap<Option> | $somes next": "#2205",
-  "FlatMap<Option> | $somes nth": "#2205",
-  "FlatMap<Option> | $somes max_by": "#2205",
-  "FlatMap<Option> | $somes min_by": "#2205",
-  "FlatMap<Option> | $somes of ends next": "#2205",
-  "FlatMap<Option> | $somes of ends nth": "#2205",
-  "FlatMap<Option> | $somes of ends next_back": "#2205",
-  "FlatMap<Option> | $somes of ends nth_back": "#2205",
-  "FlatMap<Option> | $somes of ends advance_back_by": "#2205",
-  "FlatMap<Option> | $somes of ends max_by": "#2205",
-  "FlatMap<Option> | $somes of ends min_by": "#2205",
-  "FlatMap<Option> | $Steps.filter of somes next": "#2205",
-  "FlatMap<Option> | $Steps.filter of somes nth": "#2205",
-  "FlatMap<Option> | $Steps.filter of somes max_by": "#2205",
-  "FlatMap<Option> | $Steps.filter of somes min_by": "#2205",
-};
+const differs: Record<string, string> = {};
 
 for (const [stdForm, form, make] of [...forms, ...lentForms]) {
   test(`${form} asks what it holds as std's ${stdForm} does`, () => {
@@ -489,11 +476,16 @@ for (const [stdForm, form, make] of [...forms, ...lentForms]) {
         // (#2193, #2194).
         if (/back|rfold|rfind|rposition/.test(step) && typeof it.back !== "function") continue;
         log.length = 0;
-        asked[step]!(it);
-        const got = seen(log.join(" "), unseen);
-        if (got === want) continue;
+        const answer = asked[step]!(it);
+        // What it answered too, of `size_hint` and `len`: std's one-shot
+        // `Flatten`'s hint is `(0, upper)` where the generic one's is
+        // `(lo, None)`, which no trace tells apart (#2205).
+        const [got, wanted] = [seen(log.join(" "), unseen), stdAnswers.get(`${stdForm}#${kind}${run} ${step}`)];
+        const gave = wanted === undefined ? undefined : answered(step, answer);
+        if (got === want && gave === native(wanted)) continue;
         const key = `${stdForm} | ${form} ${step}${kind === "" ? "" : ` ${kind}`}`;
-        if (differs[key] === undefined) wrong.push(`${step}#${kind}${run}: std ${want}; ${got}`);
+        const told = gave === native(wanted) ? "" : ` = ${native(wanted)}`;
+        if (differs[key] === undefined) wrong.push(`${step}#${kind}${run}: std ${want}${told}; ${got}${told && ` = ${gave}`}`);
         else listed.add(key);
       }
       // And where std's length asks no `len` of what it holds that writes
@@ -509,8 +501,10 @@ for (const [stdForm, form, make] of [...forms, ...lentForms]) {
         const log: string[] = [];
         const it = make(sourcesOf(size, log, kind, true));
         log.length = 0;
-        const got = typeof it.len === "function" ? (it.len(), seen(log.join(" "), unseen)) : "no len";
-        if (got !== want) wrong.push(`len#${kind}${run} of sources with no len: std ${want}; ${got}`);
+        const length = typeof it.len === "function" ? it.len() : undefined;
+        const got = length === undefined ? "no len" : seen(log.join(" "), unseen);
+        const [wanted, gave] = [native(stdAnswers.get(`${stdForm}#${kind}${run} len`)), length === undefined ? undefined : answered("len", length)];
+        if (got !== want || gave !== wanted) wrong.push(`len#${kind}${run} of sources with no len: std ${want} = ${wanted}; ${got} = ${gave}`);
       }
     }
     expect(wrong).toEqual([]);

@@ -21,16 +21,26 @@ export const stdWrites: Map<string, string[]> = (() => {
   return writes;
 })();
 
-/** The catalog's runs: of each `<name>#<run> <step>`, what was asked. */
-export const stdRuns: Map<string, string> = (() => {
+/** The catalog's runs: of each `<name>#<run> <step>`, what was asked; and
+ * of `size_hint` and `len`, what it answered, after ` = `, `(4, Some(4))`
+ * (#2205). */
+const [runs, answers] = (() => {
   const runs = new Map<string, string>();
+  const answers = new Map<string, string>();
   for (const line of text.split("\n")) {
     if (line.startsWith("#") || !line.includes(" |")) continue;
     const [head, ...cells] = line.split(" |");
     for (const cell of cells) {
       const at = cell.indexOf(":");
-      runs.set(`${head} ${cell.slice(0, at)}`, cell.slice(at + 1).trim());
+      const key = `${head} ${cell.slice(0, at)}`;
+      const [asked, answered] = cell.slice(at + 1).split(" = ");
+      runs.set(key, asked!.trim());
+      if (answered !== undefined) answers.set(key, answered.trim());
     }
   }
-  return runs;
+  return [runs, answers];
 })();
+export const stdRuns: Map<string, string> = runs;
+/** Of each `<name>#<run> size_hint` and `len`, what std's answered,
+ * Rust's `Debug` of it: `(4, Some(4))`, `4`. */
+export const stdAnswers: Map<string, string> = answers;

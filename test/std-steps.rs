@@ -4,7 +4,10 @@
 //! they're asked it, with its argument, `src.nth(1)`. Each step of each is
 //! asked once of a fresh one, in each of `SIZES`' runs over each kind of
 //! source, and what its sources were asked is one line's cell, `Skip#0
-//! |fold: src.nth(0) src.fold`, `Take#bare0` of the `bare` kind's. test/std-steps.test.ts runs it natively, unstable features on
+//! |fold: src.nth(0) src.fold`, `Take#bare0` of the `bare` kind's; of
+//! `size_hint`, its `size_hint` after a `next` and `len`, what it answered
+//! too, `= (4, Some(4))` after what it asked, so a form's answer is held to
+//! std's, not only what it asks (#2205). test/std-steps.test.ts runs it natively, unstable features on
 //! (`try_fold`, `advance_by` and `is_empty` are written here as std's own
 //! sources write them), and writes what it prints as the catalog,
 //! src/lower/recognition/std_steps.txt (#2112).
@@ -302,7 +305,7 @@ macro_rules! front {
             $make,
             [
                 "next", "size_hint", "nth", "advance_by", "fold", "try_fold", "last", "count", "position", "find", "find_map", "any",
-                "all", "max_by", "min_by"
+                "all", "max_by", "min_by", "size_hint_after_next"
             ]
         )
     };
@@ -313,7 +316,13 @@ macro_rules! front {
             let mut it = $make;
             match step {
                 "next" => drop(Iterator::next(&mut it)),
-                "size_hint" => drop(Iterator::size_hint(&it)),
+                "size_hint" => print!(" = {:?}", Iterator::size_hint(&it)),
+                // Its hint once it's begun, a flatten's of the inner
+                // iterator it's in too.
+                "size_hint_after_next" => {
+                    drop(Iterator::next(&mut it));
+                    print!(" = {:?}", Iterator::size_hint(&it));
+                }
                 "nth" => drop(Iterator::nth(&mut it, 1)),
                 "advance_by" => drop(Iterator::advance_by(&mut it, 2)),
                 "fold" => drop(Iterator::fold(it, 0u32, |a, _| a + 1)),
@@ -369,7 +378,7 @@ macro_rules! exact {
             print!(" |{step}:");
             let it = $make;
             match step {
-                "len" => drop(ExactSizeIterator::len(&it)),
+                "len" => print!(" = {}", ExactSizeIterator::len(&it)),
                 "is_empty" => drop(ExactSizeIterator::is_empty(&it)),
                 _ => unreachable!(),
             }

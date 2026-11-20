@@ -47,7 +47,7 @@ test("the committed @rust-js/std's helpers are the compiler's, each exported onc
 // that runs code, asked as they're stepped (#1501), and each of the runtime's
 // generators (ADR 0472), and a hash set's `union`, std's lazy chain of it
 // (#1219): the compiler's list, held to the runtime.
-test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $copied, $cloned, $copiedGiven, $filterEnds, $somes, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $stepsOf, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $zipEnds, $trustedZipEnds, $stepBy, $flattenEnds, $flatMap, $lazyRange, $lazyRangeBack, $treeSetAlgebra, $hashSetUnion, $mapExtractIf, $splice, $splicing, $decodeUtf16, $cycle, $chars, $charIndices, $repeatingWith, $onceWith, $lazySplitBy, $lazyRsplitBy, $lazySplitTerminatorBy, $lazySplitInclusiveBy, $lazyMatchesBy, $lazyMatchIndicesBy, $lazySliceSplitBy, $lazySliceSplitByMut, $lazyChunkBy, $lazyChunkByMut and the runtime's generators", () => {
+test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf, $repeating, $repeatingN, $rev, $closing, $holding, $mapEnds, $copied, $cloned, $copiedGiven, $filterEnds, $somes, $someItems, $filterDropping, $enumerate, $taking, $skipping, $memchrIter, $stdIterator, $stepsOf, $successors, $lazyScan, $lazyMapWhile, $lazyTakeWhile, $lazySkipWhile, $lazyChain, $lazyZip, $trustedZip, $zipEnds, $trustedZipEnds, $stepBy, $flattenEnds, $flatMap, $lazyRange, $lazyRangeBack, $treeSetAlgebra, $hashSetUnion, $mapExtractIf, $splice, $splicing, $decodeUtf16, $cycle, $chars, $charIndices, $repeatingWith, $onceWith, $lazySplitBy, $lazyRsplitBy, $lazySplitTerminatorBy, $lazySplitInclusiveBy, $lazyMatchesBy, $lazyMatchIndicesBy, $lazySliceSplitBy, $lazySliceSplitByMut, $lazyChunkBy, $lazyChunkByMut and the runtime's generators", () => {
   const printed = run([compiler, "--runtime-module"]);
   const generators = [...printed.matchAll(/^export function\* (\$[\w$]+)/gm)].map((m) => m[1]);
   const source = readFileSync(join(root, "src", "lower", "iterators.rs"), "utf8");
@@ -81,6 +81,7 @@ test("the compiler's iterator helpers are $iterator, $given, $intoIter, $cycleOf
       "$copiedGiven",
       "$filterEnds",
       "$somes",
+      "$someItems",
       "$filterDropping",
       "$enumerate",
       "$taking",

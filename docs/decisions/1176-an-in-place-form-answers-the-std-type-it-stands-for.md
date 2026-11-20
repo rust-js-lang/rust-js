@@ -136,3 +136,89 @@ Mutations: the catalog's `step-by-*`, `nth-own-by-drop`, `somes-*` and
 scripts/mutations/lower/iterators/in_place_forms.ts. New ones:
 `in-place-somes-filter-of-any-source` and
 `in-place-somes-not-a-flatten`, caught by the table's unit test.
+
+## Amended: a flatten of `Option`s is std's `Flatten` of them, and the net holds what a step answers (2026-11-21, #2205)
+
+**The form.** A flatten of `Option`s, or a `flat_map` to them, is std's
+`FlattenCompat` over one-shot inner iterators (core's flatten.rs, the
+`OneShot` specialization). It steps its source by `next` and
+`next_back`, where a filter of the `Some`s steps it by `try_fold`. A
+`skip(n)` between asks the crate's `nth(n)` by `next`, but `nth(n - 1)`
+and a `next` by `try_fold`; a `step_by`'s first `next` asks `nth(0)`.
+- **`$someItems(it)`**, a runtime form: `$somes`' filter of the `Some`s,
+  whose folds are its source's with the function moved into them, as
+  std's `flatten_one(fold)` is, and whose count and last are their fold.
+  But its `next` and `next_back` step its source by `next` and
+  `next_back` until one gives a `Some`, fused as std's `Fuse` holds it.
+  Its `advance_back_by` is its source's `try_rfold`, as its `advance_by` is
+  its `try_fold`.
+- **Its hint is std's one-shot one**, none to its source's upper bound,
+  none at all once it's ended. The generic `FlattenCompat`'s, `$flatHint`'s,
+  is `(lo, None)`.
+- **Not `$flatMap` of one-item arrays.** That was tried first. Its steps
+  answer the rows, but its hint is the generic one, and its fold drops
+  what drops with the consumer's function after the source's rest, where
+  std's one-shot fold moves the function into the source's fold, so it
+  drops first. The conformance table's `boxed dyn | flatten option | fold
+  holding` rows found that.
+- **It's chosen** where a crate's iterator within the source writes `nth`
+  or `nth_back`, or a type within is unseen (`own_nth_within`, own_steps.rs,
+  class 1), or where the source's hint may run the crate's code
+  (`hint_reaches_own_where`). Elsewhere it's JS's filter, which asks
+  what std's `Flatten` asks there.
+
+**The owner's table** gives each (std type, form) pair its own `Where`
+(`stands_for`), as one form stands for one type wherever it's made and
+for another only where their steps agree:
+- `$somes` and `$somes` of ends stand for `FilterMap` alone.
+- JS's filter of the `Some`s stands for `FilterMap` where the hint runs
+  nothing, and for `Flatten<Option>` and `FlatMap<Option>` under a new
+  `Where`, `StepsRunNothing` (`own_nth_within` and
+  `hint_reaches_own_where` false). The net runs that over sources that
+  write only `next`, `next_back` and `size_hint`, the hint left out.
+- `$someItems` and `$someItems` of ends stand for the two always.
+- `chosen` is gone.
+
+**The net holds what a step answers.** std's catalog (test/std-steps.rs)
+now prints what `size_hint` and `len` answered, `= (0, Some(4))`, after
+what they asked. It gains a step, `size_hint_after_next`, the hint once a
+`next` has begun it. The net compares each form's answer with std's,
+`usize::MAX` by name. A trace alone missed the hint `$flatMap` would have
+given here. Every other form's answers agree with std's, fresh and after
+a `next`.
+
+**A known difference no consumer reaches.** JS's filter of the `Some`s
+doesn't fuse its source, where std's `Flatten` does. After its source's
+`None`, a `next` asks its source again, and the source is dropped when
+the filter is, not at that `None`. `$someItems` steps it no more after it,
+but drops it with itself too, and a fold after its end asks its source
+again. No in-place chain reaches this today: a chain bound to a variable
+is std's compiled structs, and every in-place consumer stops at the first
+`None`. A future consumer that steps an in-place flatten past its end must
+check this first.
+
+**What `own_nth_within` decides alone.** A boxed iterator of the crate's
+with its own `nth` and no `size_hint`, `Box::new(Counter(..)).skip(1)`, is
+made in place with no hint fact, and its `nth` alone chooses `$someItems`.
+Elsewhere, an in-place chain over a crate iterator with its own `nth` is in
+place because a type-keyed hint fact put it there, which needs the crate's
+`size_hint`, so `hint_reaches_own_where` answers too. `$someItems`' hint is held by
+the net, not by a corpus case: every hint asked of an in-place flatten of
+`Option`s is asked of std's compiled structs. Its mutation waits for #2206,
+which lets the net run against a mutant's runtime, as does its `next_back`'s:
+a filter's, its source's `rfind`, asks what `next_back` does of every
+source a program gives it, a `skip`'s length once either way.
+
+**Moves.** Corpus `flatten_of_options_counted_asks_no_hint`'s flattens
+(both in place over the crate's iterator and given to generic code) are
+`$someItems`; nothing else moved. React's port is unchanged.
+
+Corpus: `flatten_of_options_steps_its_source_by_next`, the issue's case
+from either end, boxed, and in generic code. Mutations: `flatten-of-options-a-filter`,
+`flatten-of-options-items-of-any-type`, `some-items-filtered`,
+`own-nth-within-never`,
+`in-place-somes-filter-flatten-of-any-source` and
+`in-place-some-items-not-a-flatten`. `in-place-somes-not-a-flatten`
+is gone with the list it mutated. `in-place-somes-filter-of-any-source`,
+`somes-never`, `somes-of-any-type`, `filter-map-ends-unmade` and
+`somes-not-made-knowing` were retargeted.

@@ -58,6 +58,9 @@ fn catalog() -> &'static BTreeMap<&'static str, Steps> {
             let back = cells.starts_with("next_back:");
             for cell in cells.split(" |") {
                 let (step, asked) = cell.split_once(':').expect("a cell is `<step>: <asked>`");
+                // What it answered, `size_hint`'s and `len`'s, after ` = `:
+                // the runtime net's alone (#2205).
+                let asked = asked.split_once(" = ").map_or(asked, |(asked, _)| asked);
                 if back && !steps.back.contains(&step) {
                     steps.back.push(step);
                 }

@@ -6503,6 +6503,45 @@ export function $somes(it) {
   return kept;
 }
 
+// The items of `it`'s `Option`s, std's `Flatten` of them or a `flat_map` to
+// them, made in place where the source's steps may reach the crate's own
+// `nth` or `nth_back`, or its hint the crate's code: std's `FlattenCompat`
+// over one-shot inner iterators (flatten.rs:848). Its folds are a filter's
+// of the `Some`s, `$somes`', each its source's, the function moved into it
+// as std's `flatten_one(fold)` is (#734); its count and last their fold.
+// But its `next` and `next_back` are its source's, until one gives a
+// `Some`, where a filter's are its source's `try_fold`, so a `skip(1)`
+// between asks the crate's `nth(1)`, not `nth(0)` and a `next` (#2205);
+// its source fused, as std's `Fuse` holds it, stepped no more once it's
+// given `None`. Its hint std's one-shot one (flatten.rs:864): none to its
+// source's upper bound, none at all once it's ended. Of a JS iterator
+// generic code was given that knows no back, JS's own `filter`, which
+// steps it by `next`.
+export function $someItems(it) {
+  const kept = $somes(it);
+  if (!(kept instanceof $Steps)) return kept;
+  let ended = false;
+  const step = (by) => () => {
+    for (;;) {
+      if (ended) return { done: true, value: undefined };
+      const at = it[by]();
+      if (at.done) ended = true;
+      if (at.done || at.value != null) return at;
+    }
+  };
+  kept.next = step("next");
+  // From its back the same, its `advance_back_by` its source's `try_rfold`,
+  // as its `advance_by` is its `try_fold`, `$Steps`' (flatten.rs:948).
+  if (kept.back !== undefined) {
+    kept.back = step("back");
+    $forward(kept, it, {
+      advanceBackBy: (m, drop) => (m === 0 ? 0 : kept.tryRfold(m, (k, x) => (drop?.(x), k - 1), (k) => k === 0)),
+    });
+  }
+  kept.sizeHint = () => (ended ? [0, 0] : [0, $sizeHint(it)[1]]);
+  return kept;
+}
+
 // A filter of a JS iterator that knows its back, `it.filter(p)`, which
 // knows it too, as Rust's `Filter` is double-ended where its source is:
 // each of its source's items `p` keeps, from either end, `p` asked of each

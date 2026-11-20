@@ -3,14 +3,15 @@
 // returns one, is std's `FlattenCompat::count`, its source's `fold`, which
 // never asks its source's `size_hint` (#2197). Where the crate asks the
 // hint of its iterator's type elsewhere, a `zip`'s `len()` here, each one
-// is made knowing its hint, so the flatten is made in place, a filter of
-// the `Some`s; that filter's own `count` is std's `Filter::count`, which
+// is made knowing its hint, so the flatten is made in place, where a
+// filter of the `Some`s' own `count` would be std's `Filter::count`, which
 // asks its source's hint first, where `Flatten`'s doesn't. A
 // `filter_map`'s, std's default of its `fold`, asks none either. Generic
 // code given one counts it by its own `count`, as it can't know its type:
-// made `$somes`, whose own is std's (#2199). Of a source whose hint runs
-// none of the crate's code, whatever value it is, a slice's items, it's
-// JS's filter.
+// a `filter_map` made `$somes`, whose own is std's (#2199), a flatten
+// `$someItems`, std's `Flatten` of them (#2205). Of a source whose steps
+// and hint run none of the crate's code, whatever value it is, a slice's
+// items, it's JS's filter.
 
 /// Counts up to `.1` from `.0`, with its own `size_hint` and `fold`.
 struct Own(u32, u32);

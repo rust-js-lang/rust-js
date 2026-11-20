@@ -6,6 +6,7 @@ import {
   $iterator,
   $rangeNext,
   $sizeHint,
+  $someItems,
   $somes,
   iterator_zip,
 } from "@rust-js/std";
@@ -55,7 +56,7 @@ function main() {
   );
   console.log(`zip len ${$exactLen($sizeHint(zipped))}`);
 
-  let n = $somes(
+  let n = $someItems(
     $iterator(
       [0, 5],
       ownIterator_next,
@@ -67,7 +68,7 @@ function main() {
     ),
   ).reduce((n) => n + 1, 0);
   console.log(`flatten count ${n}`);
-  n = $somes(
+  n = $someItems(
     $iterator(
       [0, 5],
       ownIterator_next,
@@ -105,7 +106,7 @@ function main() {
   console.log(`filter count ${n}`);
 
   n = counted(
-    $somes(
+    $someItems(
       $iterator(
         [0, 5],
         ownIterator_next,
@@ -119,7 +120,7 @@ function main() {
   );
   console.log(`generic flatten count ${n}`);
   n = counted(
-    $somes(
+    $someItems(
       $iterator(
         [0, 5],
         ownIterator_next,

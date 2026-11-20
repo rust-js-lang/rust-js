@@ -936,19 +936,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 }
             }
-            // JS's filter of what's there, or `$somes`, whose own `count`
-            // is std's (#2199), which steps from its back as `$filterEnds`
-            // where its source does.
+            // JS's filter of what's there, its predicate; or `$somes`, whose
+            // own `count` is std's (#2199), which steps from its back as
+            // `$filterEnds` where its source does, or a flatten's items of
+            // them, `$someItems`, likewise (#2205): the helper.
             let filtered = match &kept.kind {
                 js::ExprKind::Call(callee, args)
                     if let js::ExprKind::Member(filtered, method) = &callee.kind
                         && method == "filter"
                         && let [present] = args.as_slice() =>
                 {
-                    Some((&**filtered, Some(present)))
+                    Some((&**filtered, Ok(present)))
                 }
-                js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$somes") && args.len() == 1 => {
-                    Some((&args[0], None))
+                js::ExprKind::Call(callee, args)
+                    if let Some(helper) =
+                        (["$somes", "$someItems"].into_iter()).find(|&h| callee.helper_name() == Some(h))
+                        && let [made] = args.as_slice() =>
+                {
+                    Some((made, Err(helper)))
                 }
                 _ => None,
             };
@@ -961,8 +966,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => source_value,
                 };
                 let some = match present {
-                    Some(present) => Expr::call_helper("$filterEnds", vec![mapped, present.clone()]),
-                    None => Expr::call_helper("$somes", vec![mapped]),
+                    Ok(present) => Expr::call_helper("$filterEnds", vec![mapped, present.clone()]),
+                    Err(helper) => Expr::call_helper(helper, vec![mapped]),
                 };
                 return Ok(match unboxed {
                     Some(unbox) => Expr::call_helper("$mapEnds", vec![some, unbox.clone()]),
