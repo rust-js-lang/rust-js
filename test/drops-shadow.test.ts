@@ -65,3 +65,44 @@ test("a match's enum moved in part and whole is dropped where rustc drops it", (
   const ends = flatten.filter(([, , , at]) => at.includes(":45:5:")).map(([verdict, , , , detail]) => `${verdict} ${detail}`);
   expect(ends.sort()).toEqual(["agree 1 compared", "agree 2 compared"]);
 });
+
+// Change D's (b): a drop behind a pointer, `*it = other`'s or a capture's
+// `d = ..`, compared whole, rustc's place read through `Derefer`'s copies;
+// and two of rust-js's drops written alike at one place, `?`'s, compared as
+// a multiset of what each side drops there, a dead one left out.
+const behind = ["closure_in_closure_sets_a_capture.rs", "associated_iterator_dropped.rs"];
+const alike = ["default_matches_its_tuple_whole.rs", "array_parts_moved_in_a_copied_default.rs"];
+
+test("a drop behind a pointer is compared whole, as the writer drops it", () => {
+  const lines = shadowOf("associated_iterator_dropped.rs").filter(([, path]) => path === "normal");
+  const put = lines.filter(([, , , at]) => at.includes(":67:5:"));
+  expect(put.map(([verdict, , , , detail]) => `${verdict} ${detail}`)).toEqual(["agree behind a pointer, whole"]);
+  expect(lines.filter(([verdict]) => verdict !== "agree")).toEqual([]);
+  // A capture's `d = D(..)`, rustc's `drop((*_t))` of `_t = copy ((*_1).0)`.
+  const capture = shadowOf("closure_in_closure_sets_a_capture.rs").filter(([, path]) => path === "normal");
+  expect(capture.filter(([verdict]) => verdict !== "agree")).toEqual([]);
+  expect(capture.filter(([, , , , detail]) => detail === "behind a pointer, whole").length).toBe(1);
+});
+
+test("two drops written alike are compared as a multiset", () => {
+  const lines = shadowOf("default_matches_its_tuple_whole.rs").filter(([, path]) => path === "normal");
+  const at = lines.filter(([, , , where]) => where.includes(":22:37:")).map(([verdict]) => verdict);
+  expect(at.sort()).toEqual(["agree", "agree"]);
+});
+
+// The normal path's verdicts over these cases, each pinned: none disagrees,
+// the baseline a refusal of a disagreement (change D's (c)) starts from.
+test("each normal-path verdict of the partial moves, behind a pointer and alike, is pinned", () => {
+  const tally = new Map<string, number>();
+  for (const name of [...partial, ...behind, ...alike]) {
+    for (const [verdict, path] of shadowOf(name)) {
+      if (path === "normal") tally.set(verdict, (tally.get(verdict) ?? 0) + 1);
+    }
+  }
+  expect(Object.fromEntries(["agree", "disagree", "flag-ours", "unmatched"].map((v) => [v, tally.get(v) ?? 0]))).toEqual({
+    agree: 193,
+    disagree: 0,
+    "flag-ours": 4,
+    unmatched: 8,
+  });
+});

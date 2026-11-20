@@ -1837,3 +1837,44 @@ test/corpus/partial_move_rest_dropped_past_a_panic.rs (a struct, an enum's
 variant, an array, and the whole value, each under `catch_unwind`), and the
 metamorphic net's `loud-drop` rewrite of `or_pattern_part_moves`, which
 found it. Mutation `ladder-steps-in-turn-unguarded` is caught.
+
+## Amendment: the shadow compares drops behind a pointer and drops written alike (2026-11-20, #2112's change D (b))
+
+The shadow left 100 of the normal path's drops unmatched over the corpus.
+Two kinds made up 73 of them, and each is now compared:
+
+- **Behind a pointer (48).** The old value dropped on an assignment through
+  a `&mut`, `*it = other`, or through a capture, `d = D(..)` in a closure,
+  `drop((*((*_1).0)))`. Such a place has no move path, so rust-js's writer
+  drops all of it where `Elaboration::drops` says so. The shadow asks that
+  same answer, the one the writer emits by, and compares it whole with
+  rustc's `Drop` at the site. rustc's place is read through `Derefer`'s
+  copies: `_t = copy ((*_1).0); drop((*_t))` is `(*((*_1).0))`. In this
+  toolchain `Derefer` writes a plain copy, and the body's `LocalInfo`, which
+  would mark it `DerefTemp`, is cleared. So a copy is read as `Derefer`'s
+  by its shape: a local assigned once, a copy of a projected place of
+  reference or pointer type. A user's own such copy points where the place
+  does all the same, and at worst leaves a drop unmatched.
+- **Written alike (25).** Two of rust-js's drops of one place at one site,
+  `?`'s: one where the value is there, one where `?` moved it. rustc's
+  elaboration leaves the dead one out. Each side's drops there are compared
+  as a multiset of (place, when), what drops nothing left out. Equal means
+  agree. Unequal, or with a part dropped at a time on either side, stays
+  unmatched, never a disagreement the comparison can't stand behind.
+
+Measured over the corpus's 2,807 cases: on the normal path 7,673 agree,
+none disagree, 6 `flag-ours`, 35 unmatched. Of those 35:
+- 19 have no rustc body (stolen, or a coroutine's).
+- 8 are "the rest" of an array whose every element moved, or of a box's
+  contents, which rustc frees without a `Drop`. The comparator's
+  `rest_drops` doesn't take those apart.
+- 7 are alike drops whose multisets differ.
+- 1 is behind a pointer with no rustc `Drop` at its site.
+No output changes (ADR 0262: none).
+
+test/drops-shadow.test.ts pins the normal path's four counts over its
+cases, agree 193, disagree 0, `flag-ours` 4, unmatched 8. That's the baseline
+for (c), which refuses a normal path's disagreement. Mutations
+`shadow-derefer-copies-unread`, `shadow-behind-a-pointer-never`,
+`shadow-alike-multiset-unread` and `shadow-multiset-keeps-dead-drops`, each
+caught.

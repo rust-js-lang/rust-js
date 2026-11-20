@@ -9,7 +9,7 @@
 //! compared. A `Drop` that can't be found again, or is found twice, is
 //! counted apart from a disagreement: `unmatched`.
 
-use super::drops::Elaboration;
+use super::drops::{Elaboration, Style};
 use super::prepared::Mir;
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::FnCx;
@@ -54,24 +54,31 @@ enum When {
 type PathKey = (Local, Vec<String>);
 
 fn path_key(place: Place<'_>) -> PathKey {
-    let steps = (place.projection.iter())
-        .filter_map(|step| match step {
-            ProjectionElem::Field(field, _) => Some(format!(".{}", field.as_u32())),
-            ProjectionElem::Downcast(_, variant) => Some(format!("@{}", variant.as_u32())),
-            ProjectionElem::Deref => Some("*".to_string()),
-            ProjectionElem::Index(_) => Some("[i]".to_string()),
-            ProjectionElem::ConstantIndex { offset, from_end, .. } => {
-                Some(format!("[{offset}{}]", if from_end { "$" } else { "" }))
-            }
-            ProjectionElem::Subslice { from, to, from_end } => {
-                Some(format!("[{from}..{to}{}]", if from_end { "$" } else { "" }))
-            }
-            ProjectionElem::OpaqueCast(_) | ProjectionElem::UnwrapUnsafeBinder(_) | ProjectionElem::PhantomDeref => {
-                None
-            }
-        })
-        .collect();
-    (place.local, steps)
+    path_key_through(place, &IndexMap::default())
+}
+
+/// The place's key, each local `derefs` holds a copy of a place in, as
+/// rustc's `Derefer` makes one before a deref, `_t = deref_copy (_1.0);
+/// drop((*_t))`, read as that place, `(*(_1.0))`.
+fn path_key_through(place: Place<'_>, derefs: &IndexMap<Local, PathKey>) -> PathKey {
+    let (local, mut steps) = match derefs.get(&place.local) {
+        Some((local, steps)) => (*local, steps.clone()),
+        None => (place.local, Vec::new()),
+    };
+    steps.extend((place.projection.iter()).filter_map(|step| match step {
+        ProjectionElem::Field(field, _) => Some(format!(".{}", field.as_u32())),
+        ProjectionElem::Downcast(_, variant) => Some(format!("@{}", variant.as_u32())),
+        ProjectionElem::Deref => Some("*".to_string()),
+        ProjectionElem::Index(_) => Some("[i]".to_string()),
+        ProjectionElem::ConstantIndex { offset, from_end, .. } => {
+            Some(format!("[{offset}{}]", if from_end { "$" } else { "" }))
+        }
+        ProjectionElem::Subslice { from, to, from_end } => {
+            Some(format!("[{from}..{to}{}]", if from_end { "$" } else { "" }))
+        }
+        ProjectionElem::OpaqueCast(_) | ProjectionElem::UnwrapUnsafeBinder(_) | ProjectionElem::PhantomDeref => None,
+    }));
+    (local, steps)
 }
 
 /// Whether `a` is `b` or holds it.
@@ -126,6 +133,37 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
             }
         }
     }
+    // Each local assigned once, a copy of a reference a place holds before
+    // a deref, as `Derefer` makes one, `_t = copy ((*_1).0)`, by the place
+    // it copies. Its `LocalInfo::DerefTemp` is cleared in this body; a
+    // user's own such copy points where the place does all the same.
+    let mut copies: IndexMap<Local, (usize, Option<Place<'tcx>>)> = IndexMap::default();
+    for data in body.basic_blocks.iter() {
+        for statement in &data.statements {
+            if let StatementKind::Assign(assign) = &statement.kind
+                && let Some(local) = assign.0.as_local()
+            {
+                let entry = copies.entry(local).or_insert((0, None));
+                entry.0 += 1;
+                let pointer = body.local_decls[local].ty.is_ref() || body.local_decls[local].ty.is_raw_ptr();
+                if let Rvalue::Use(Operand::Copy(of), _) | Rvalue::CopyForDeref(of) = &assign.1
+                    && pointer
+                    && !of.projection.is_empty()
+                {
+                    entry.1 = Some(*of);
+                }
+            }
+        }
+    }
+    let mut derefs: IndexMap<Local, PathKey> = IndexMap::default();
+    for (&local, &(count, of)) in &copies {
+        if count == 1
+            && let Some(of) = of
+        {
+            let key = path_key_through(of, &derefs);
+            derefs.insert(local, key);
+        }
+    }
     let is_flag = |local: Local| body.local_decls[local].ty.is_bool() && written.get(&local) == Some(&true);
     let tests_a_flag = |block: BasicBlock| {
         matches!(&body.basic_blocks[block].terminator().kind, TerminatorKind::SwitchInt { discr: Operand::Copy(place) | Operand::Move(place), .. }
@@ -158,7 +196,7 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
         let values = (adt.discriminants(tcx))
             .map(|(variant, value)| (value.val, variant.as_u32()))
             .collect();
-        Some((path_key(*of), values, adt.variants().len() as u32))
+        Some((path_key_through(*of, &derefs), values, adt.variants().len() as u32))
     };
     let reachable = mir::traversal::reachable_as_bitset(body);
     let predecessors = body.basic_blocks.predecessors();
@@ -205,7 +243,7 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
         let info = data.terminator().source_info;
         found.push(Theirs {
             site: (info.span, info.scope, data.is_cleanup),
-            place: path_key(*place),
+            place: path_key_through(*place, &derefs),
             when: if flagged { When::Flagged } else { When::Always },
             except,
         });
@@ -280,35 +318,109 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return;
         };
         let theirs = theirs(tcx, elaborated, &js_drops);
+        // What rust-js's elaboration drops of all of `place` where `block`
+        // ends, as the writer asks it (`Elaboration::style`, and behind a
+        // pointer `Elaboration::drops`); none where it drops it a part at a
+        // time.
+        let whole = |block: BasicBlock, place: Place<'tcx>| match elaboration.move_data.rev_lookup.find(place.as_ref())
+        {
+            LookupResult::Exact(path) => match elaboration.style(block, path, true) {
+                Style::Dead => Some(When::Never),
+                Style::Static => Some(When::Always),
+                Style::Conditional => Some(When::Flagged),
+                Style::Open => None,
+            },
+            LookupResult::Parent(_) => Some(if elaboration.drops(block, place) {
+                When::Always
+            } else {
+                When::Never
+            }),
+        };
+        let overlapping = |a: &PathKey, b: &PathKey| holds(a, b) || holds(b, a);
         for &(block, place) in &sites {
             let site = site_of(block);
             let key = path_key(place);
             // Two of rust-js's at one place where they're written, of what
-            // holds the other: rustc's can't be told apart, but where
-            // rustc's there all say what this one does.
-            let alike = (sites.iter())
-                .filter(|&&(other, other_place)| {
-                    let other_key = path_key(other_place);
-                    site_of(other) == site && (holds(&key, &other_key) || holds(&other_key, &key))
-                })
-                .count();
+            // holds the other: rustc's can't be told apart one by one.
+            let alike: Vec<(BasicBlock, Place<'tcx>)> = (sites.iter())
+                .filter(|&&(other, other_place)| site_of(other) == site && overlapping(&key, &path_key(other_place)))
+                .copied()
+                .collect();
+            let at_site: Vec<&Theirs> = (theirs.iter())
+                .filter(|theirs| theirs.site == site && overlapping(&key, &theirs.place))
+                .collect();
+            // Compared as a multiset: what each side drops there, whole, of
+            // each place, a drop that drops nothing left out, as rustc's
+            // elaboration leaves a dead one out. Unlike, or of a part at a
+            // time on either side, it's unmatched.
+            let multiset = || -> Option<bool> {
+                let mut ours: Vec<(PathKey, When)> = Vec::new();
+                for &(other, other_place) in &alike {
+                    let when = whole(other, other_place)?;
+                    if when != When::Never {
+                        ours.push((path_key(other_place), when));
+                    }
+                }
+                let mut rustcs: Vec<(PathKey, When)> = Vec::new();
+                for t in theirs
+                    .iter()
+                    .filter(|t| t.site == site && alike.iter().any(|&(_, p)| overlapping(&path_key(p), &t.place)))
+                {
+                    if !t.except.is_empty() {
+                        return None;
+                    }
+                    rustcs.push((t.place.clone(), t.when));
+                }
+                ours.sort();
+                rustcs.sort();
+                Some(ours == rustcs)
+            };
             let path = match elaboration.move_data.rev_lookup.find(place.as_ref()) {
                 LookupResult::Exact(path) => path,
+                // Behind a pointer, which has no move path: all of it, as
+                // the writer drops it, against rustc's `Drop` there, its
+                // place read through `Derefer`'s copies.
                 LookupResult::Parent(_) => {
-                    out.push(line("unmatched", block, "no move path: behind a pointer"));
+                    let ours = whole(block, place).unwrap_or(When::Always);
+                    let theirs_when = (at_site.iter()).filter(|t| t.covers(&key)).map(|t| t.when).max();
+                    match theirs_when {
+                        _ if alike.len() > 1 && multiset() == Some(true) => {
+                            out.push(line("agree", block, "behind a pointer, alike drops as a multiset"))
+                        }
+                        _ if alike.len() > 1 => out.push(line(
+                            "unmatched",
+                            block,
+                            "ambiguous: behind a pointer, drops written alike",
+                        )),
+                        None => out.push(line(
+                            "unmatched",
+                            block,
+                            "no rustc drop where it's written: behind a pointer",
+                        )),
+                        Some(theirs_when) if theirs_when == ours => {
+                            out.push(line("agree", block, "behind a pointer, whole"))
+                        }
+                        Some(theirs_when) => out.push(line(
+                            "disagree",
+                            block,
+                            &format!("{key:?} behind a pointer: rust-js {ours:?}, rustc {theirs_when:?}"),
+                        )),
+                    }
                     continue;
                 }
             };
-            let at_site: Vec<&Theirs> = (theirs.iter())
-                .filter(|theirs| theirs.site == site && (holds(&key, &theirs.place) || holds(&theirs.place, &key)))
-                .collect();
             let parts = self.parts_compared(body, elaboration, block, path, &at_site);
             match parts {
                 Err(why) => out.push(line("unmatched", block, &why)),
                 Ok((differ, compared)) if differ.is_empty() => {
                     out.push(line("agree", block, &format!("{compared} compared")))
                 }
-                Ok((differ, _)) if alike > 1 => out.push(line(
+                Ok(_) if alike.len() > 1 && multiset() == Some(true) => out.push(line(
+                    "agree",
+                    block,
+                    &format!("alike drops as a multiset, {}", alike.len()),
+                )),
+                Ok((differ, _)) if alike.len() > 1 => out.push(line(
                     "unmatched",
                     block,
                     &format!("ambiguous: two drops written alike; {}", differ.join("; ")),
