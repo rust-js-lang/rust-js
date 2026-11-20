@@ -567,3 +567,20 @@ receiver `Known::Present`; and `never_null`, what's given a callback as it
 is, took a value `Known::Present`, where its caller had MIR's presences.
 Neither decided anything: without them check:fast's whole suite, React's
 port and the crate corpus were as they were. Both went.
+
+## Amendment: the read stamps are gone (2026-11-21, #2112)
+
+Change C's last step (S5's deletion; Campaign 3, #2200, retiring the
+`Known` catalogue's `NoneNull` and `NoneUndefined`): every reader of the
+read stamps asks MIR's answer (`NoneForms::place_none`, `js::OnlyNone`)
+where a test or a store is lowered, so the stamps went. `NoneForm::trust`,
+`NoneForms::read`, `read_none_trust`, `field_none_trust` and
+`none_given_by` answer a `js::OnlyNone`; `Facts::with_none` writes of a
+`null` alone only `Known::Defined`, never `undefined`, the value fact a
+nullable place stores as it is (the lead's (b)); `Expr::known_as` asks
+that an expression is known nothing but `Known::Own`; tidy's alias of a
+read keeps its `Defined`. `Facts::of_presence`, `only_none` and
+`OnlyNone::of` went. Byte-identical: check:fast's whole suite and React's
+port. The architecture test "no fact a JS node carries says what an
+Option's None is" holds it; "whether a `None` is `null` is none_form's
+alone" now holds `js::OnlyNone` to its one maker.

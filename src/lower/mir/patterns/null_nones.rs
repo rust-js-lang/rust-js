@@ -126,7 +126,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // But one whose `None` is `null`, `js::null()`'s (rd623).
                 let null = (func.const_fn_def())
                     .and_then(|(def_id, _)| crate::lower::calls::none_given_by(self.tcx, def_id))
-                    == Some(js::Known::NoneNull);
+                    == Some(js::OnlyNone::Null);
                 if !null {
                     called.insert(destination.local);
                 }

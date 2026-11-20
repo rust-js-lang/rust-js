@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     name: "made-null-read-as-undefined",
     breaks: "a local the body makes `null` keeps `mir_nones`' `NoneUndefined`, the two analyses disagreeing again, its read's test `x !== undefined` true of its stored `null` (#2112)",
     file: "src/lower/mir/none_forms.rs",
-    find: "        reads.retain(|local, none| !made_null.contains(local) || matches!(none, js::Known::NoneNull));\n",
+    find: "        reads.retain(|local, none| !made_null.contains(local) || matches!(none, js::OnlyNone::Null));\n",
     replace: "",
     unitTests: "lower::mir::none_forms::tests::a_local_made_null_is_never_read_as_undefined_alone",
   },

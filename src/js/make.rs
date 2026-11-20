@@ -81,10 +81,9 @@ impl Expr {
 
     /// This, which lowering knows is never `undefined`, though maybe
     /// `null` (`Known::Defined`); one it knows otherwise of, a getter's
-    /// read say, as it is. What it knows of the `None` it can be, of an
-    /// `Option`'s read (`Known::NoneNull`), is no other knowledge, nor is
-    /// that it's a field no getter answers (`Known::Own`), which says how
-    /// it's read, not what.
+    /// read say, as it is. That it's a field no getter answers
+    /// (`Known::Own`) is no other knowledge: it says how it's read, not
+    /// what.
     pub fn defined(self) -> Expr {
         self.known_as(Known::Defined)
     }
@@ -97,7 +96,7 @@ impl Expr {
     }
 
     fn known_as(self, known: Known) -> Expr {
-        match self.facts.of_presence() == self.facts.without(Known::Own) {
+        match self.facts.without(Known::Own) == Facts::default() {
             true => Expr {
                 facts: self.facts.with(known),
                 ..self
@@ -110,8 +109,8 @@ impl Expr {
     /// null` where it's not, whatever it holds (ADR 0298, amended by the
     /// user, 2026-10-28: one form, never its truth). The one test of an
     /// `Option`'s being there, which `null_test` reads. Of one whose `None`
-    /// is only `undefined` or only `null` (`Known::NoneUndefined`,
-    /// `Known::NoneNull`), the test says so, `option !== undefined` or
+    /// MIR says is only `undefined` or only `null` (`given`, `place_none`),
+    /// the test says so, `option !== undefined` or
     /// `option !== null`, its own operator (`Op::NoneNe`, #2112 C S5; ADR
     /// 0298, amended by the user, 2026-10-28: by what its `None` can be).
     #[track_caller]

@@ -88,18 +88,18 @@ impl NoneForm {
     }
 
     /// What a reader of the place, written by `writers`, may trust its
-    /// `None` is, the one answer of it (#819): `Known::NoneNull`, tested
-    /// `=== null`, or `Known::NoneUndefined`, `=== undefined`; `None` where
+    /// `None` is, the one answer of it (#819): `null`, tested `=== null`,
+    /// or `undefined`, `=== undefined`; `None` where
     /// it may be either, tested `== null`. A nullable place's is `null`,
     /// stored so; a plain one's `undefined` only where each value is
     /// exactly so, as a plain write stores what it's given; an optional
     /// one's may be left out, and a held one, nested or of a value, is
     /// read through its own form (ADRs 1017, rd645).
-    pub(in crate::lower) fn trust(self, writers: Writers) -> Option<js::Known> {
+    pub(in crate::lower) fn trust(self, writers: Writers) -> Option<js::OnlyNone> {
         match (self, writers) {
             (_, Writers::Loose) => None,
-            (NoneForm::Null, Writers::Crate | Writers::Exact) => Some(js::Known::NoneNull),
-            (NoneForm::Undefined, Writers::Exact) => Some(js::Known::NoneUndefined),
+            (NoneForm::Null, Writers::Crate | Writers::Exact) => Some(js::OnlyNone::Null),
+            (NoneForm::Undefined, Writers::Exact) => Some(js::OnlyNone::Undefined),
             (NoneForm::Undefined, Writers::Crate)
             | (NoneForm::Optional | NoneForm::Nested | NoneForm::Value | NoneForm::Either, _) => None,
         }

@@ -678,33 +678,15 @@ impl Facts {
         Facts(part)
     }
 
-    /// These with `none`, the one `None` an `Option`'s read is, and of a
-    /// `null` alone, that it's never `undefined` (`Known::Defined`), which a
-    /// nullable place stores as it is (`Storage::written`, ADR 0841): the
-    /// one way a read says what MIR says of its `None` (#2112 C S5).
-    pub fn with_none(self, none: Known) -> Facts {
+    /// These of a read whose `None` MIR says is `none` alone: of `null`,
+    /// that it's never `undefined` (`Known::Defined`), which a nullable
+    /// place stores as it is (`Storage::written`, ADR 0841), a value fact
+    /// true of it wherever it goes; of `undefined`, nothing. What its test
+    /// is asks MIR (`place_none`, #2112 C S5).
+    pub fn with_none(self, none: OnlyNone) -> Facts {
         match none {
-            Known::NoneNull => self.with(none).with(Known::Defined),
-            _ => self.with(none),
-        }
-    }
-
-    /// What an `Option`'s presence test says of the `None` it tests for,
-    /// `Known::NoneUndefined` or `Known::NoneNull`, which a test made
-    /// again of the same `Option`, its negation, keeps; no other knowledge
-    /// of it, so a fact made of it, `Present` of an `Option` made where it's
-    /// tested (ADR 0910), is made as of any read (#1933).
-    pub fn of_presence(self) -> Facts {
-        self.part(&[Known::NoneUndefined, Known::NoneNull])
-    }
-
-    /// The one `None` an `Option`'s is only ever, `Known::NoneUndefined`
-    /// or `Known::NoneNull`, where these say one of them alone.
-    pub fn only_none(self) -> Option<Known> {
-        match (self.has(Known::NoneUndefined), self.has(Known::NoneNull)) {
-            (true, false) => Some(Known::NoneUndefined),
-            (false, true) => Some(Known::NoneNull),
-            _ => None,
+            OnlyNone::Null => self.with(Known::Defined),
+            OnlyNone::Undefined => self,
         }
     }
 
@@ -1083,18 +1065,6 @@ impl UnaryOp {
 pub enum OnlyNone {
     Undefined,
     Null,
-}
-
-impl OnlyNone {
-    /// The one `None` a fact of it says, `Known::NoneUndefined`'s or
-    /// `Known::NoneNull`'s.
-    pub fn of(known: Known) -> Option<OnlyNone> {
-        match known {
-            Known::NoneUndefined => Some(OnlyNone::Undefined),
-            Known::NoneNull => Some(OnlyNone::Null),
-            _ => None,
-        }
-    }
 }
 
 impl Op {

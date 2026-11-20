@@ -497,7 +497,10 @@ pub(super) fn gives_null_for_none(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rus
 /// `gives_null_for_none` isn't; nor the crate's own nullable function's,
 /// which may give back as it is a nullable field's value that an object
 /// JS made holds `undefined` in.
-pub(super) fn none_given_by(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_span::def_id::DefId) -> Option<Known> {
+pub(super) fn none_given_by(
+    tcx: rustc_middle::ty::TyCtxt<'_>,
+    def_id: rustc_span::def_id::DefId,
+) -> Option<js::OnlyNone> {
     use super::representation::{NonePlace, Writers, none_form};
     none_form(tcx, NonePlace::CallResult(def_id)).trust(Writers::Exact)
 }
@@ -522,7 +525,7 @@ pub(super) fn and_then_given<'tcx>(
     // whose `?.` reads as JS's, `node?.firstChild` (ADR 0298, amended): of a
     // closure, one it gives back the call of, MIR's (`closure_returned_callee`).
     let bindings_null =
-        |def_id| super::bindings::is_binding(tcx, def_id) && none_given_by(tcx, def_id) == Some(Known::NoneNull);
+        |def_id| super::bindings::is_binding(tcx, def_id) && none_given_by(tcx, def_id) == Some(js::OnlyNone::Null);
     let none = match f.kind() {
         ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) && !super::bindings::is_binding(tcx, *def_id) => {
             Expr::null()

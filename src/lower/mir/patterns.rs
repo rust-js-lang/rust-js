@@ -102,11 +102,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `analysis/nulled_params.rs`); nor one written any other way, a
     /// field's read, a cast's, a `take()`'s, through a `&mut` or a pointer,
     /// or in part (ADR 0298, amended).
-    fn mir_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> IndexMap<Local, js::Known> {
+    fn mir_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> IndexMap<Local, js::OnlyNone> {
         // What a write gives: a `None` of one kind, a `Some` (`None` here),
         // or what another local holds.
         enum Write {
-            Made(Option<js::Known>),
+            Made(Option<js::OnlyNone>),
             Of(Local),
         }
         let tcx = self.tcx;
@@ -254,7 +254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // What each holds, until none changes: `Err` of one that may hold
         // either, `Ok(None)` of one only ever `Some`.
-        let mut held: IndexMap<Local, Result<Option<js::Known>, ()>> =
+        let mut held: IndexMap<Local, Result<Option<js::OnlyNone>, ()>> =
             (writes.keys()).filter(|&&l| known(l)).map(|&l| (l, Ok(None))).collect();
         // A function's own nullable parameter each call gives `null` or a
         // value, written only whole by statements, each `null` for `None`,

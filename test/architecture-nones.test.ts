@@ -21,7 +21,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 // answer "is `None` `null` here" are asked only by the owner, which
 // `bindings` defines them for, and only the owner makes what a write
 // stores, `Storage::NullForNone`, and what a reader trusts,
-// `Known::NoneNull` and `Known::NoneUndefined`; others only read them. A
+// `js::OnlyNone::Null` and `js::OnlyNone::Undefined`; others only read them. A
 // field's kept cell says it stores `null` where `cells.rs` makes it,
 // `Known::NullStored`. The shape predicates, `is_optional`, `is_held`,
 // `holds_value`, `holds_nested` and `nullable_option`, answer another
@@ -38,13 +38,13 @@ test("whether a `None` is `null` is none_form's alone", () => {
       .filter((line) => new RegExp(`(?<![\\w])(?:${predicates})\\(`).test(line) && !new RegExp(`\\bfn (?:${predicates})\\(`).test(line))
       .map((line) => `${file}: ${line.trim()}`));
   expect(asking).toEqual([]);
-  // What's made of them: a reader's match of a storage or a test of a
-  // fact, `matches!(none, Known::NoneNull)` too, reads it; anything else
-  // makes it.
-  const reads = [/\.has\((?:js::)?Known::/, /== Some\((?:js::)?Known::/, /matches!\(\w+, (?:js::)?Known::None(?:Null|Undefined)\)/, /matches!\(.*Storage::NullForNone/, /Handle\([^)]*Storage::NullForNone\)\s*=>/];
+  // What's made of them: a reader's match of a storage or a test of an
+  // answer, `matches!(none, js::OnlyNone::Null)` too, reads it; anything
+  // else makes it.
+  const reads = [/\.has\((?:js::)?Known::/, /== Some\((?:js::)?OnlyNone::/, /matches!\(\w+, (?:js::)?OnlyNone::(?:Null|Undefined)\)/, /matches!\(.*Storage::NullForNone/, /Handle\([^)]*Storage::NullForNone\)\s*=>/];
   const making = lowering.flatMap((file) =>
     code(file)
-      .filter((line) => /\b(?:Storage::NullForNone|Known::NoneNull|Known::NoneUndefined)\b/.test(line) && !reads.some((read) => read.test(line)))
+      .filter((line) => /\b(?:Storage::NullForNone|OnlyNone::Null|OnlyNone::Undefined)\b/.test(line) && !reads.some((read) => read.test(line)))
       .map((line) => `${file}: ${line.trim()}`));
   expect(making).toEqual([]);
   const nullStored = lowering.filter((file) => code(file).some((line) => /\.with\((?:js::)?Known::NullStored\)/.test(line)));
@@ -100,3 +100,19 @@ test("tidy decides no Option is there from a test of it", () => {
   expect(found).toEqual([]);
   expect(read("src/decisions.rs")).not.toMatch(/name: "tidy-(?:present-in|nulled-as-they-are)"/);
 });
+
+// What an `Option`'s `None` can be is MIR's answer (`NoneForms::place_none`,
+// a `js::OnlyNone`), asked where a test or a store is lowered, never a
+// fact riding a JS node (#2112 C S5, Campaign 3's class 4, #2200): the read
+// stamps `Known::NoneNull` and `Known::NoneUndefined` decided tests and
+// stores from what lowering wrote on the node, and are gone, with the
+// `Facts` that read them.
+test("no fact a JS node carries says what an Option's None is", () => {
+  const known = read("src/js/known.rs");
+  expect(known).not.toMatch(/^\s*None(?:Null|Undefined),/m);
+  const facts = read("src/js.rs");
+  expect(facts).not.toMatch(/\bfn (?:of_presence|only_none|same_none)\(/);
+  const named = files("src").filter((file) => file.endsWith(".rs") && /\bKnown::None(?:Null|Undefined)\b/.test(read(file)));
+  expect(named).toEqual([]);
+});
+

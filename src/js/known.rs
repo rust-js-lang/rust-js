@@ -175,21 +175,6 @@ knowns! {
     /// `if (a) { ..; return; } else if (b) { return; }` (ADR 0237,
     /// amended), not an `if` after.
     Else,
-    /// Of an `Option`, that its `None` is only ever `undefined`, never
-    /// `null`, as its representation guarantees: a binding's result
-    /// TypeScript types `T | undefined`, `#[rust_js::optional]`'s,
-    /// `window.event`, or a variable each of whose writes is one, a
-    /// `Some(..)` or the crate's `None` (`OptionWrites::nones`). Of its
-    /// test, `x != null`, the test is made `x !== undefined`
-    /// (`Expr::presence`, `Op::NoneNe`, ADR 0298, amended).
-    NoneUndefined,
-    /// Of an `Option`, that its `None` is only ever `null`, never
-    /// `undefined`: a call of a function whose result is
-    /// `#[rust_js::nullable]`, a binding's TypeScript types `T | null`,
-    /// `node.textContent`, or a variable each of whose writes is one or a
-    /// `Some(..)`. Of its test, `x != null`, the test is written `x !==
-    /// null` (ADR 0298, amended).
-    NoneNull,
     /// The test of a `let … else`'s guard, `if (parentA == null) { break; }`,
     /// where the program wrote it: never the test of the loop it's first in,
     /// `while ((parentA = a.return) != null)` (ADRs 0860, 0879, amended).
@@ -412,8 +397,6 @@ impl Known {
             | Known::RunsNothing
             | Known::Boolean
             | Known::Diverges
-            | Known::NoneUndefined
-            | Known::NoneNull
             | Known::Whole
             | Known::ReceiverIterated
             | Known::Text

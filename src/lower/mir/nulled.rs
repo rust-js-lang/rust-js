@@ -29,12 +29,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What a read of field `i` of `ty`, a struct, may trust its `None`
     /// is, the owner's answer (`NoneForm::trust`, #819): of a nullable
-    /// field declared an `Option` or a cell of one, `Known::NoneNull`,
+    /// field declared an `Option` or a cell of one, `null`,
     /// tested `=== null`, where the crate alone writes it, of a struct only
     /// it makes (`only_the_crate_makes`), or that each constructor of it
     /// sets first (`constructed`, rd628); JS that makes its struct may
     /// leave it out, so it's tested `== null` (rd647, #519, ADR 1072).
-    pub(super) fn field_none_trust(&self, ty: Ty<'tcx>, i: usize) -> Option<js::Known> {
+    pub(super) fn field_none_trust(&self, ty: Ty<'tcx>, i: usize) -> Option<js::OnlyNone> {
         use crate::lower::representation::{NonePlace, Writers, none_form};
         let ty::Adt(adt, _) = ty.kind() else { return None };
         let field = self.struct_field_def(ty, i)?;
@@ -59,7 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &mir::Body<'tcx>,
         place: Place<'tcx>,
         depth: usize,
-    ) -> Option<js::Known> {
+    ) -> Option<js::OnlyNone> {
         if depth > 8 {
             return None;
         }
@@ -160,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             facts: value.facts.with_none(none),
             ..value
         };
-        Ok(Some(Expr::presence(value, some, js::OnlyNone::of(none))))
+        Ok(Some(Expr::presence(value, some, Some(none))))
     }
 
     /// Of a call of `func` with `args`, an `as_ref()` or `as_deref()`, or a `Cell`'s `get()`, of a
@@ -171,7 +171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &mir::Body<'tcx>,
         func: &Operand<'tcx>,
         args: &[rustc_span::Spanned<Operand<'tcx>>],
-    ) -> Option<js::Known> {
+    ) -> Option<js::OnlyNone> {
         let (def_id, generic_args) = func.const_fn_def()?;
         let [arg] = args else { return None };
         let given = arg.node.place()?;
@@ -949,7 +949,7 @@ enum Write<'b, 'tcx> {
 }
 
 /// `value`, `null` or a value, stored where a `None` is `null`: so marked
-/// (`NoneForm::Null`'s trust, `Known::NoneNull`), so a handle that stores as
+/// (`NoneForm::Null`'s trust, never `undefined`, `Known::Defined`), so a handle that stores as
 /// the place does takes it as it is (ADRs 0791, 0861; #1933 step 4 (F)).
 pub(super) fn stored_nulled(value: Expr) -> Expr {
     let none = crate::lower::representation::NoneForm::Null.trust(crate::lower::representation::Writers::Exact);

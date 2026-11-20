@@ -4,8 +4,8 @@
 //! of it may trust (`mir_nones`, ADR 0298), answered together, so the two
 //! can't disagree. They were two analyses of one local, each read alone:
 //! over the corpus, 70 locals the body makes `null` were also said to hold
-//! only `undefined`, each read stamped `Known::NoneUndefined`, whose test is
-//! `x !== undefined`, and true of a stored `null`. Only the first
+//! only `undefined`, each read tested `x !== undefined`, which is true
+//! of a stored `null`. Only the first
 //! analysis's restrictions, that such a local is read only by a nullable
 //! place or a test that reads `null` and `undefined` alike, kept the stamp
 //! unread. Here a local made `null` is trusted only to hold `null`, never
@@ -15,19 +15,19 @@ use super::*;
 use crate::collections::{IndexMap, IndexSet};
 
 /// Each `Option` local's `None`: the ones the body makes `null`, and what
-/// reads may trust of the rest, and of those, `NoneNull` alone.
+/// reads may trust of the rest, and of those, `null` alone.
 #[derive(Default)]
 pub(super) struct NoneForms {
     made_null: IndexSet<Local>,
-    reads: IndexMap<Local, js::Known>,
+    reads: IndexMap<Local, js::OnlyNone>,
 }
 
 impl NoneForms {
     /// Of `made_null`, the locals the body makes `null` (`mir_null_nones`),
     /// and `reads`, the one `None` each other local's writes give
     /// (`mir_nones`): a local made `null` keeps only `NoneNull`.
-    pub(super) fn of(made_null: IndexSet<Local>, mut reads: IndexMap<Local, js::Known>) -> Self {
-        reads.retain(|local, none| !made_null.contains(local) || matches!(none, js::Known::NoneNull));
+    pub(super) fn of(made_null: IndexSet<Local>, mut reads: IndexMap<Local, js::OnlyNone>) -> Self {
+        reads.retain(|local, none| !made_null.contains(local) || matches!(none, js::OnlyNone::Null));
         NoneForms { made_null, reads }
     }
 
@@ -38,9 +38,9 @@ impl NoneForms {
     }
 
     /// What a read of `local`, or through a reference to it, may trust of
-    /// its `None`: `Known::NoneUndefined` or `Known::NoneNull`, where every
+    /// its `None`: `undefined` or `null` alone, where every
     /// write gives that one; `None` where they may give either.
-    pub(super) fn read(&self, local: Local) -> Option<js::Known> {
+    pub(super) fn read(&self, local: Local) -> Option<js::OnlyNone> {
         self.reads.get(&local).copied()
     }
 }
@@ -127,7 +127,6 @@ impl<'tcx> FnCx<'_, 'tcx> {
                 .or_else(|| self.read_none_trust(state.body, place, 0)),
             _ => self.read_none_trust(state.body, place, 0),
         }
-        .and_then(js::OnlyNone::of)
     }
 
     /// What MIR proves of each of `operands`, read where the call being
@@ -277,7 +276,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
 mod tests {
     use super::NoneForms;
     use crate::collections::{IndexMap, IndexSet};
-    use crate::js::Known;
+    use crate::js;
     use rustc_middle::mir::Local;
 
     // A local made `null`, which `mir_nones` says holds only `undefined`, as
@@ -289,14 +288,14 @@ mod tests {
         let forms = NoneForms::of(
             IndexSet::from_iter([made, nulled]),
             IndexMap::from_iter([
-                (made, Known::NoneUndefined),
-                (other, Known::NoneUndefined),
-                (nulled, Known::NoneNull),
+                (made, js::OnlyNone::Undefined),
+                (other, js::OnlyNone::Undefined),
+                (nulled, js::OnlyNone::Null),
             ]),
         );
         assert!(forms.made_null(made) && forms.made_null(nulled) && !forms.made_null(other));
         assert_eq!(forms.read(made), None);
-        assert_eq!(forms.read(other), Some(Known::NoneUndefined));
-        assert_eq!(forms.read(nulled), Some(Known::NoneNull));
+        assert_eq!(forms.read(other), Some(js::OnlyNone::Undefined));
+        assert_eq!(forms.read(nulled), Some(js::OnlyNone::Null));
     }
 }

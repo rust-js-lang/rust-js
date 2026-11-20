@@ -227,7 +227,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/patterns.rs",
     find: "                        Write::Of(of) => held.get(&of).copied().unwrap_or(Err(())),\n",
     replace:
-      "                        Write::Of(of) => held.get(&of).copied().unwrap_or(Ok(Some(js::Known::NoneUndefined))),\n",
+      "                        Write::Of(of) => held.get(&of).copied().unwrap_or(Ok(Some(js::OnlyNone::Undefined))),\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
   },
   {
@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/patterns.rs",
     find: "                        _ => {\n                            unknown.insert(destination.local);\n                        }\n",
     replace:
-      "                        _ => writes.entry(destination.local).or_default().push(Write::Made(Some(js::Known::NoneUndefined))),\n",
+      "                        _ => writes.entry(destination.local).or_default().push(Write::Made(Some(js::OnlyNone::Undefined))),\n",
     tests: ["test/corpus.test.ts", "-t", "^option_none_kinds.rs$"],
     snapshots: true,
   },
