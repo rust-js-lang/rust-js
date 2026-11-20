@@ -819,17 +819,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether a value of `ty` may be changed in place, it or a part of it,
+    /// a copy decision: where a copy of it, or of a part of it, is left
+    /// out, the types its walk found unchanged recorded (`elided`), the
+    /// same whoever asked first (#2204).
     pub(super) fn contains_mutated(&self, ty: Ty<'tcx>) -> bool {
         // Each type once: a type met along two paths isn't walked twice. It
         // ends at a `Box`, which is `Other`, so no answer depends on another.
-        let cached = self.walks().mutated.borrow().get(&ty).copied();
-        let mutated = cached.unwrap_or_else(|| {
+        // What the walk found unchanged is kept with it, so an answer read
+        // again records what the walk did, whoever asked first.
+        let cached = self.walks().mutated.borrow().get(&ty).cloned();
+        let (mutated, found) = cached.unwrap_or_else(|| {
+            self.walks().unchanged.borrow_mut().push(Vec::new());
             let mutated = self.contains_mutated_uncached(ty);
-            self.walks().mutated.borrow_mut().insert(ty, mutated);
-            mutated
+            let mut found = self.walks().unchanged.borrow_mut().pop().expect("pushed");
+            if !mutated {
+                found.push(ty);
+            }
+            let walked = (mutated, std::rc::Rc::from(found));
+            self.walks().mutated.borrow_mut().insert(ty, walked.clone());
+            walked
         });
-        if !mutated {
-            self.elided(ty);
+        for &unchanged in found.iter() {
+            self.elided(unchanged);
         }
         mutated
     }
@@ -838,9 +850,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// copies it is left out: of a library's function, said in its
     /// contract, so a consumer that changes it compiles the function itself
     /// (`Caches::elided`, #2112's change D). Every such answer of the
-    /// function's, a copy's or not: more than it left out compiles more,
-    /// never less.
+    /// function's copy decisions: more than it left out compiles more,
+    /// never less. The one place the contract is written; inside a walk,
+    /// gathered for the walk's answer instead, which its decision records
+    /// (#2204).
     fn elided(&self, ty: Ty<'tcx>) {
+        if let Some(walk) = self.walks().unchanged.borrow_mut().last_mut() {
+            walk.push(ty);
+            return;
+        }
         if self.krate.library && !self.krate.compiled_once && self.may_be_object(ty) {
             let shape = crate::lower::library::rc_shape(self.tcx, ty);
             let caches = crate::lower::session::caches(self.tcx);

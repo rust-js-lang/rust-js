@@ -584,12 +584,20 @@ export const mutations: Mutation[] = [
     breaks:
       "a library says it leaves out the copies of a type its own crate changes, whose JS copies it, so a consumer that changes it too compiles its own of the function, where it is imported, `Dep.firstNotch(notches)` (rd606, #2112's change D)",
     file: "src/lower/copies.rs",
-    find: "            mutated\n        });\n        if !mutated {\n            self.elided(ty);\n",
-    replace: "            mutated\n        });\n        {\n            self.elided(ty);\n",
+    find: "            if !mutated {\n                found.push(ty);\n            }\n",
+    replace: "            {\n                found.push(ty);\n            }\n",
     tests: [
       "test/crates-compiled-here.test.ts",
       "-t",
       "a library's generic function is its program's",
     ],
+  },
+  {
+    name: "elided-walk-parts-unrecorded",
+    breaks: "a copy decision records only the type it asked of, not the parts its walk found unchanged, so a consumer that changes a part of what a library's function left a copy of out uses the library's JS (#2204)",
+    file: "src/lower/copies.rs",
+    find: "        for &unchanged in found.iter() {\n",
+    replace: "        for &unchanged in found.iter().filter(|&&t| t == ty) {\n",
+    tests: ["test/crates.test.ts", "test/crates-compiled-here.test.ts", "test/cross-crate-copies.test.ts"],
   },
 ];

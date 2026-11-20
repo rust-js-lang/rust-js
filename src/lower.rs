@@ -541,6 +541,10 @@ struct Given<'tcx> {
 /// What walks of types found, kept so a type met again, along another path
 /// through a type, isn't walked again: `Foo2(Foo1, Foo1)` of `Foo1(Foo0,
 /// Foo0)` is walked once, not 2^n times.
+/// What `contains_mutated`'s walk of a type found: whether it may be changed
+/// in place, and the types it found unchanged on the way (#2204).
+type Walked<'tcx> = (bool, Rc<[Ty<'tcx>]>);
+
 struct TypeWalks<'tcx> {
     /// What `unsupported_in` found of each struct and enum it looked into.
     representable: RefCell<IndexMap<Ty<'tcx>, Option<Ty<'tcx>>>>,
@@ -548,8 +552,14 @@ struct TypeWalks<'tcx> {
     /// inside, is the one a walk took as fine, being inside itself.
     assumed: Cell<usize>,
     /// What `contains_mutated` and `needs_clone_in` found of each type, and
-    /// how far out `needs_clone_in` assumed.
-    mutated: RefCell<IndexMap<Ty<'tcx>, bool>>,
+    /// how far out `needs_clone_in` assumed: of `contains_mutated`'s, with
+    /// the types its walk found unchanged, which a copy decision records
+    /// in a library's contract (#2204).
+    mutated: RefCell<IndexMap<Ty<'tcx>, Walked<'tcx>>>,
+    /// While a walk of `contains_mutated` runs, a list each walk inside it
+    /// gathers the types it finds unchanged into, innermost last, rather
+    /// than the contract (`copies.rs`'s `elided`).
+    unchanged: RefCell<Vec<Vec<Ty<'tcx>>>>,
     clones: RefCell<IndexMap<Ty<'tcx>, bool>>,
     clone_assumed: Cell<usize>,
 }
@@ -560,6 +570,7 @@ impl Default for TypeWalks<'_> {
             representable: RefCell::new(IndexMap::default()),
             assumed: Cell::new(usize::MAX),
             mutated: RefCell::new(IndexMap::default()),
+            unchanged: RefCell::new(Vec::new()),
             clones: RefCell::new(IndexMap::default()),
             clone_assumed: Cell::new(usize::MAX),
         }

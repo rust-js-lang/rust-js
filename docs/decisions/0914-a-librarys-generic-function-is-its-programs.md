@@ -2151,3 +2151,27 @@ of the typing environment its caller is in. test/architecture-traits.test.ts
 holds that nothing else does. No answer changes (case of
 [0262](0262-when-rust-and-js-disagree.md): none).
 
+
+## Amendment: the contract is written where a copy is decided, not by the walk (2026-11-21, #2204)
+
+`contains_mutated` recorded each type it found unchanged in the library's
+contract as it answered, from its own recursion too. So the contract
+depended on what was asked, not only on what was decided. A caller that
+only wanted to know, #2201's first fix asking at every move whether the
+moved value may change, grew `Library.elided`, and the pilot app then
+compiled the models crate's `validate` itself instead of importing it.
+
+- The walk is pure. While it runs, `elided` gathers what it finds
+  unchanged into the walk's own list, kept in `TypeWalks::mutated` with
+  its answer: the type, its parts, and what `mutated_itself` and
+  `vec_changed` found unchanged on the way.
+- `elided` writes the contract in one place: where a copy decision answers
+  (`contains_mutated`, `mutated_itself`, `vec_changed`, asked outside a
+  walk), it records the list its walk kept. An answer read again from the
+  cache records what its walk did, whoever asked first, so contracts are
+  byte-identical to before.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no output
+changes. Held by the library-contract suites (crates, crates-compiled-here,
+cross-crate-copies, pilot), mutation `elided-of-changed` retargeted, and
+`elided-walk-parts-unrecorded`, which records only the type asked of.
