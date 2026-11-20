@@ -600,4 +600,12 @@ export const mutations: Mutation[] = [
     replace: "        for &unchanged in found.iter().filter(|&&t| t == ty) {\n",
     tests: ["test/crates.test.ts", "test/crates-compiled-here.test.ts", "test/cross-crate-copies.test.ts"],
   },
+  {
+    name: "changed-in-place-records",
+    breaks: "asking whether a type may be changed in place records it in a library's contract as a copy left out, so #2201's ask at a move makes a consumer that changes it compile the library's function itself (#2204)",
+    file: "src/lower/copies.rs",
+    find: "        self.walks().unchanged.borrow_mut().push(Vec::new());\n        let mutated = self.contains_mutated(ty);\n        self.walks().unchanged.borrow_mut().pop();\n",
+    replace: "        let mutated = self.contains_mutated(ty);\n",
+    tests: ["test/cross-crate-copies.test.ts", "-t", "a library's contract lists no copy its function only asked about"],
+  },
 ];

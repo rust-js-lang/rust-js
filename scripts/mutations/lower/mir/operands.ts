@@ -404,4 +404,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/react-kept.test.ts", "-t", "copied where it's changed"],
   },
+  {
+    name: "moved-unsettled",
+    breaks: "what's kept to be read later of a variable isn't read before the variable is moved, so `println!(\"{:?} {}\", c.clone(), c.sum::<i32>())` formats the clone of the range `sum` stepped, `3..=2` (#2201)",
+    file: "src/lower/mir/operands.rs",
+    find: "            self.settle_moved(state, place.local, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^format_argument_read_before_its_variable_moves.rs$"],
+  },
 ];

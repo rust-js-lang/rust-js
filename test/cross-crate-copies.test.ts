@@ -63,3 +63,35 @@ test("a library's copies each leave out the drops they don't use", () => {
   expect(dep).toContain("  encode(chunked, bytes, sink, EEngine, SSink) {\n");
   expect(dep.match(/\bencode\(chunked/g)).toHaveLength(1);
 }, 300_000);
+
+// A library's contract says which copies its functions leave out
+// (`Library.elided`), written where a copy is decided, never by asking
+// whether a type may be changed (#2204): `shown` asks that of `Plain` at
+// its move into `take`, to read `p.x` before it (#2201), and leaves no copy
+// of a `Plain` out, so its contract says none, and its consumer, which
+// changes a `Plain`, imports it.
+test("a library's contract lists no copy its function only asked about", () => {
+  const dir = fixture("cross-crate-asked-only");
+  const { app } = compiled(dir, `pub struct Plain {
+    pub x: i32,
+    pub y: i32,
+}
+
+pub fn take(p: Plain) -> i32 {
+    p.y
+}
+
+pub fn shown(p: Plain) -> String {
+    format!("{} {}", { p.x }, take(p))
+}
+`, `pub fn changed() -> String {
+    let mut p = dep::Plain { x: 1, y: 2 };
+    p.x += 10;
+    dep::shown(p)
+}
+`);
+  const manifest = JSON.parse(readFileSync(join(dir, "dep", "lib.manifest.json"), "utf8"));
+  expect(manifest.library.elided ?? []).toEqual([]);
+  expect(app).toContain("shown(p)");
+  expect(app).not.toContain("function shown(");
+});

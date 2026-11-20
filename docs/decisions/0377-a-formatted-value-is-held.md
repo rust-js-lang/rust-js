@@ -109,3 +109,52 @@ this decision's are, `value`, so docs/readability.txt's role fallbacks and
 renames grew by 0.2 and 0.1 in 10,000 lines, blessed: the order is Rust's,
 and the IIFEs that made the same arguments where they were written,
 `((value) => ..)(once(3))`, are gone.
+
+## Amendment (2026-11-20, #2201): a value kept is read before what it reads is moved
+
+#1294 keeps a format argument's subject unevaluated until `Arguments::new`
+when making it does nothing, on the ground that nothing changes what it
+reads until it's shown. Borrowck guarantees that of the temporary the
+argument borrows. The subject, though, is that temporary's value written
+in place, and it reads the variable the value was made of. A later
+argument may move that variable. In Rust a move doesn't change the moved
+value, but in JS it hands the same object to its new owner, which may
+change it in place: `sum` steps a range, and a `mut` parameter, a method's
+`mut self` or a closure writes a struct's field. So
+`println!("{:?} {}", c.clone(), c.sum::<i32>())` printed `3..=2 3` where
+native prints `1..=2 3`. A copied field (`{ p.x }`) and a struct's clone
+showed the same thing.
+
+- Where an operand moves a variable, `settle_moved` (mir/temporaries.rs),
+  asked by `mir_operand`, reads first whatever is kept to be read later
+  that reads that variable and is read past the move: a value read in
+  place, the clone's, is held in a `const` it's then read by; if a pending
+  value that does nothing reads it, what's pending is made first. One that
+  does something is already made in its order with what else does
+  (`admit`). No format argument is kept
+  across a move, since `format_args!` makes its arguments only once every
+  argument's value is made.
+- Only where the new owner may change it in place: an iterator, which it
+  may step, as the trait solver says (or may say, of what a caller gives),
+  or a type the crate's code changes in place, the copy policy's question
+  `changed_in_place`, which records nothing in a library's contract
+  (#2204). Asking `contains_mutated`, a copy decision, recorded the type as
+  one whose copies are left out, so a consumer compiled the pilot's
+  `validate` itself; and `may_be_object`, true of nearly every type, held
+  the React port's object literals' fields in `const`s.
+- Ordinary call and tuple arguments were already right: they're written in
+  place in order, `two({ start: c.start, end: c.end }, $iterator(c, ..))`.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change, so
+Rust's order is kept. Held by corpus case
+format_argument_read_before_its_variable_moves (a range made by `..=` and
+by a clone, a field copied, a struct's clone moved to a function, to a
+method's `mut self`, into a closure and into a block that changes it, of a
+struct with a destructor and of one without, and a range moved into a
+closure that steps it), and mutations `moved-unsettled`,
+`moved-in-place-kept` and `moved-pending-unflushed`. A bare variable read
+isn't held, since read later it's the same object; only a read into it
+sees a change. One snapshot gains a `const` where a value is read past a
+move into a tuple, which changes nothing, but the move doesn't say what
+owns the value after it: stock_orders (`item.sku` before `[.., item]`,
+#2203). The React port's JS is unchanged.

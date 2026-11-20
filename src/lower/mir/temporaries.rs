@@ -322,6 +322,70 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.settle(state, &[block], Some(&guard), out);
     }
 
+    /// Each value kept to be read later that reads `moved`, which is moved
+    /// here: read before the move, as Rust reads it. Borrowck keeps what a
+    /// kept value reads unchanged while it's borrowed, but a move hands the
+    /// same JS object to its new owner, which may change it in place: a
+    /// range `sum` steps, a struct a `mut` parameter writes. A value read
+    /// in place, `c.clone()`'s of `println!("{:?} {}", c.clone(),
+    /// c.sum::<i32>())`, held as a `const` and read in place by it; what's
+    /// pending, made first (#2201). Only what's read past here. A format
+    /// argument isn't made till every argument's value is, so none is kept
+    /// across a move.
+    pub(super) fn settle_moved(&mut self, state: &mut State<'_, 'tcx>, moved: Local, out: &mut Vec<Stmt>) -> R<()> {
+        let name = state.locals.names[moved].clone();
+        let reads = |e: &Expr| {
+            let mut found = false;
+            e.visit_names(&mut |n| found |= *n == name);
+            found
+        };
+        fn value_reads<'tcx>(value: &Value<'tcx>, reads: &dyn Fn(&Expr) -> bool) -> bool {
+            match value {
+                Value::Expr(e)
+                | Value::Fmt(_, _, e)
+                | Value::Printing(e, _)
+                | Value::DynDebug(_, _, e)
+                | Value::Discriminant(e, ..)
+                | Value::Place(e)
+                | Value::Ref(e)
+                | Value::Branch(e, _)
+                | Value::Tested(e) => reads(e),
+                Value::List(items, _) => items.iter().any(|item| value_reads(item, reads)),
+                Value::View(parts, _) => parts.iter().any(reads),
+                Value::Cut(test, cut, _) => reads(test) || reads(cut),
+                Value::Writes(..) => false,
+            }
+        }
+        // Only what's read past here: one read here is read in its order,
+        // and one never read again needn't be made. Of what's pending, one
+        // that does nothing, which may be read past what runs meanwhile; one
+        // that does something is made in its order with what else does
+        // (`admit`).
+        let does_nothing = |value: &Value<'tcx>| !matches!(value, Value::Expr(e) if e.has_effects());
+        let at = state.location();
+        let later = |local: Local| super::queries::read_past(state.body, at, local);
+        if state
+            .pending
+            .iter()
+            .any(|&(local, ref value)| does_nothing(value) && value_reads(value, &reads) && later(local))
+        {
+            self.flush(state, out)?;
+        }
+        // Not the variable itself, which read later is the same object:
+        // only a read into it sees what its new owner changes.
+        let settled: Vec<Local> = (state.in_place.iter())
+            .filter(|(_, e)| !matches!(e.kind, js::ExprKind::Var(_)) && reads(e))
+            .map(|(&l, _)| l)
+            .filter(|&local| later(local))
+            .collect();
+        for local in settled {
+            let expr = state.in_place.swap_remove(&local).expect("found");
+            let held = self.spill(Role::Value, expr, out);
+            state.in_place.insert(local, held);
+        }
+        Ok(())
+    }
+
     /// As `block`'s switch branches, its test made, each value kept to be
     /// read in place that a drop after it would settle: read here, where
     /// every branch has it, not in the one branch that drops, past which the

@@ -682,4 +682,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^inspect_chained_with_a_vecs_items_where_capacity_is_read.rs$"],
   },
+  {
+    name: "moved-in-place-kept",
+    breaks: "a value read in place that reads a variable moved after it is read where it's used, so the clone of a range `sum` stepped is formatted, `3..=2` (#2201)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            .filter(|&local| later(local))\n            .collect();\n        for local in settled {\n",
+    replace: "            .filter(|&local| later(local) && false)\n            .collect();\n        for local in settled {\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_argument_read_before_its_variable_moves.rs$"],
+  },
+  {
+    name: "moved-pending-unflushed",
+    breaks: "what's pending that reads a variable moved here isn't made first, so it's read after the move (#2201)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "            .any(|&(local, ref value)| does_nothing(value) && value_reads(value, &reads) && later(local))\n",
+    replace: "            .any(|&(local, ref value)| does_nothing(value) && value_reads(value, &reads) && later(local) && false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^format_argument_read_before_its_variable_moves.rs$"],
+  },
 ];

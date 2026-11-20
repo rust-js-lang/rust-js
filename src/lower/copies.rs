@@ -819,6 +819,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// May a value of `ty` be changed in place, it or a part of it, by the
+    /// crate's code or another crate's: the question, which records
+    /// nothing (#2204). A copy decision asks it and records what it leaves
+    /// out: `contains_mutated`, `mutated_itself`, `vec_changed`.
+    pub(super) fn changed_in_place(&self, ty: Ty<'tcx>) -> bool {
+        self.walks().unchanged.borrow_mut().push(Vec::new());
+        let mutated = self.contains_mutated(ty);
+        self.walks().unchanged.borrow_mut().pop();
+        mutated
+    }
+
     /// Whether a value of `ty` may be changed in place, it or a part of it,
     /// a copy decision: where a copy of it, or of a part of it, is left
     /// out, the types its walk found unchanged recorded (`elided`), the

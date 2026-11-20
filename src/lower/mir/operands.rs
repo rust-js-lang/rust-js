@@ -28,6 +28,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let span = state.body.local_decls[place.local].source_info.span;
             return Err(self.unsupported(span, "copying a closure that changes what it captured"));
         }
+        // What's kept to be read later of what's moved, read first, where
+        // its new owner may change it in place: an iterator, which it may
+        // step, `sum` a range, as the trait solver says or may say of what
+        // a caller gives; or what the crate's code changes in place, the
+        // copy policy's question, which records nothing (#2201, #2204).
+        if let Operand::Move(place) = operand
+            && let moved = operand.ty(&state.body.local_decls, self.tcx)
+            && (self.recognition().trait_holds(
+                moved,
+                crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::Iterator),
+            ) != Some(false)
+                || self.changed_in_place(moved))
+        {
+            self.settle_moved(state, place.local, out)?;
+        }
         let read = self.mir_operand_read(state, operand, out)?;
         // A place a raw pointer is taken to or into, moved: a copy of its
         // own, at another address, the place keeping its object (#1535).

@@ -93,7 +93,12 @@ function money(cents) {
 
 const Inventory = {
   new(items) {
-    items = new Map(items.values().map((item) => [item.sku, item]));
+    items = new Map(
+      items.values().map((item) => {
+        const value = item.sku;
+        return [value, item];
+      }),
+    );
     return { items, log: [] };
   },
 
