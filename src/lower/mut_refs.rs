@@ -146,11 +146,13 @@ impl<'tcx> Within<'tcx> {
     }
 }
 
-/// What a dictionary's entry adapts within of `ty`, a parameter's or the
-/// result's type (`Within`): what it is past its shared references, which
-/// are the value; `None` of a `&mut`, which the entry makes its impl's own
-/// apart, one level (ADR 0454).
-pub(in crate::lower) fn adapted_part<'tcx>(ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+/// What `ty` is in JS past its shared references, which JS holds as the
+/// value itself; `None` of a `&mut`, whose JS is its handle (ADR 0099): what
+/// a dictionary's entry adapts within of a parameter's or the result's type
+/// (`Within`), which makes a `&mut` its impl's own apart, one level (ADR
+/// 0454); and what std's `Ord` of a number asks, which of a `&mut` is std's
+/// `Ord for &mut A` and never a number's own (#2188).
+pub(in crate::lower) fn past_shared_refs<'tcx>(ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let mut at = ty;
     while let ty::Ref(_, inner, Mutability::Not) = *at.kind() {
         at = inner;
@@ -557,7 +559,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .skip_normalization()
                 .skip_binder();
             for ty in (method_sig.inputs_and_output.iter()).filter_map(|ty| self.past_own(ty, param_env)) {
-                match adapted_part(ty) {
+                match past_shared_refs(ty) {
                     Some(part) => {
                         (self.within(part, param_env, self.instantiated(part, generic_args))).given_as_it_is(&mut takes)
                     }

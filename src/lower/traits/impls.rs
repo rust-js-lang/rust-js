@@ -5,7 +5,7 @@ use super::*;
 use crate::lower::temporary_names::{Base, Role};
 
 mod defaults;
-use crate::lower::mut_refs::{Within, adapted_part};
+use crate::lower::mut_refs::{Within, past_shared_refs};
 
 /// What an impl's entry makes of what its caller through the dictionary
 /// gives its method and of what the method gives back (`entry_forms`).
@@ -1159,7 +1159,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip_normalization()
             .skip_binder();
         let within = |declared: Option<&Ty<'tcx>>, actual: Option<&Ty<'tcx>>| {
-            let (declared, actual) = (adapted_part(*declared?)?, adapted_part(*actual?)?);
+            let (declared, actual) = (past_shared_refs(*declared?)?, past_shared_refs(*actual?)?);
             Some(self.within(declared, trait_env, actual))
         };
         let plain = self.formatter_param(method).is_none();

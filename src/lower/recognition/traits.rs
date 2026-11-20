@@ -350,8 +350,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let name = self.tcx.item_name(id);
         // A number's `max` and `cmp` are its own methods'; its `<` is JS's, as
-        // a copied default's `self < Self::zero()` of an `f64` calls it.
-        if Num::of(tr.self_ty().peel_refs()).is_some()
+        // a copied default's `self < Self::zero()` of an `f64` calls it. Not
+        // of a `&mut` to one, whose `max` gives a reference (#2188).
+        if crate::lower::mut_refs::past_shared_refs(tr.self_ty())
+            .and_then(Num::of)
+            .is_some()
             && !matches!(name.as_str(), "partial_cmp" | "lt" | "le" | "gt" | "ge")
         {
             return None;

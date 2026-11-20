@@ -712,4 +712,12 @@ export const mutations: Mutation[] = [
     replace: "            true => ty.ty_adt_def().map(|adt| adt.did()),\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's formatting impls of a reference"],
   },
+  {
+    name: "ord-of-a-mut-ref-a-numbers",
+    breaks: "`Ord::max` of `&mut i32`s, `cmp::max(&mut a, &mut b)`'s, is taken for a number's own method, as a shared reference's is, and refused where std's `Ord for &mut A` gives the chosen reference (#2188)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        if crate::lower::mut_refs::past_shared_refs(tr.self_ty())\n",
+    replace: "        if Some(tr.self_ty().peel_refs())\n",
+    tests: ["test/corpus.test.ts", "-t", "^ord_of_mut_refs.rs$"],
+  },
 ];

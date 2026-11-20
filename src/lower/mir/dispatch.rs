@@ -12,6 +12,7 @@ pub(super) enum Forms {
     Callers,
 }
 
+mod cells_compared;
 mod known_calls;
 mod passed_on;
 
@@ -1065,43 +1066,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(operation) = self.recognition().json_call(def_id, generic_args) {
             return self.mir_json_call(state, operation, values, span, out);
         }
-        // `x == &mut 1`, `p > q`, of `&mut`s to what JS can't change in place:
-        // of what they point at (ADR 0099), not the handles.
-        if let Some(trait_id) = tcx.trait_of_assoc(def_id)
-            && matches!(
-                self.recognition().trait_call(def_id, trait_id),
-                Some(TraitCall::Equality { .. } | TraitCall::Ordering)
-            )
-            && generic_args.types().any(|t| self.is_cell(t))
-        {
-            let pointee = |t: Ty<'tcx>| match *t.kind() {
-                ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell(t) => inner,
-                _ => t,
-            };
-            let peeled = tcx.mk_args_from_iter(generic_args.iter().map(|a| match a.as_type() {
-                Some(t) => pointee(t).into(),
-                None => a,
-            }));
-            let mut tys = Vec::new();
-            let mut given = Vec::new();
-            for (value, &ty) in values.into_iter().zip(&arg_tys) {
-                let (value, ty) = match *ty.kind() {
-                    ty::Ref(region, inner, m)
-                        if let ty::Ref(_, target, _) = *inner.kind()
-                            && self.is_cell(inner) =>
-                    {
-                        let value = match value {
-                            Value::Ref(place) => Value::Expr(place),
-                            value => Value::Expr(Expr::held(self.value_expr(value, span)?)),
-                        };
-                        (value, Ty::new_ref(tcx, region, target, m))
-                    }
-                    _ => (value, ty),
-                };
-                given.push(value);
-                tys.push(ty);
-            }
-            return self.mir_call_values_of(state, (def_id, peeled), (given, &tys, nulled), output, span, out);
+        // `x == &mut 1`, `p > q`, `ra.max(rb)` of cells: of what they point
+        // at (ADR 0099), `cells_compared`'s (#2188).
+        if let Some(value) = self.cells_compared(
+            state,
+            (def_id, generic_args),
+            (&mut values, &arg_tys, nulled),
+            output,
+            span,
+            out,
+        )? {
+            return Ok(value);
         }
         // A constructor called, `f(Shape::Rect)`'s: the arrow making what it
         // makes (ADR 0125), applied.

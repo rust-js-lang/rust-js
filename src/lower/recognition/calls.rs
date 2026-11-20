@@ -824,9 +824,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(op);
         }
-        // `cmp`, `max` and `min` of what JS's `<` orders the same way.
+        // `cmp`, `max` and `min` of what JS's `<` orders the same way, never through a `&mut` (#2188).
         if tcx.is_diagnostic_item(sym::Ord, trait_) {
-            let peeled = ty.peel_refs();
+            let peeled = crate::lower::mut_refs::past_shared_refs(ty)?;
             let comparable = Num::of(peeled).is_some() || peeled.is_bool() || self.is_string_like(peeled);
             return match tcx.item_name(def_id).as_str() {
                 "cmp" if comparable => Some(Std::Cmp),

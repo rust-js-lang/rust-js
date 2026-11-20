@@ -297,14 +297,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
-    name: "mir-cell-compare-handles",
-    breaks: "MIR's `p > q` of `&mut` numbers compares the handles",
-    file: "src/lower/mir/dispatch.rs",
-    find: "            && generic_args.types().any(|t| self.is_cell(t))\n",
-    replace: "            && false\n",
-    tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
-  },
-  {
     name: "mir-iter-made-dropped",
     breaks:
       "MIR's `last()` of what looks like `None` reads items it never holds",

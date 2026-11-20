@@ -526,7 +526,7 @@ pub(in crate::lower) fn method_dictionary<'tcx>(
         };
         let unadapted = |ty: Ty<'tcx>| {
             let mut given = Vec::new();
-            match super::mut_refs::adapted_part(ty) {
+            match super::mut_refs::past_shared_refs(ty) {
                 Some(part) => {
                     let form = |_: Ty<'tcx>| super::MutRefForm::GenericBox;
                     (super::mut_refs::within_shape(tcx, (part, part), (&adapted, &form), &|_| true))

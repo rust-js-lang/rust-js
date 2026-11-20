@@ -864,3 +864,42 @@ have left at `0`. It runs against native in both builds.
 `hasher_finished_through_a_mut_box_refused` goes, as does the refusal and
 its mutation `box-hasher-mut-finish-unnamed`. Mutation
 `box-hasher-shared-not-read-through` is new, and caught.
+
+## Amendment: `max` and `min` of `&mut`s give one of them back (2026-11-20, #2188)
+
+`ra.max(rb)` of two `&mut i32` printed `undefined` where native prints
+`2`, and `*rc.min(rd) += 10` threw a `TypeError`. `x == &mut 1` and `p > q`
+of cells compare what they point at by calling the pointee's method with
+what each points at, `Ord::max::<i32>` here, which `Math.max` lowered of
+the handles themselves. That's right of a method that reads them through
+`&self`, `cmp` and `lt`, and wrong of `max`, `min` and `clamp`, which take
+the `&mut`s themselves and give one back: std's `Ord for &mut A`, whose
+`max` is `other < self`, compared through the references, the chosen one
+given.
+
+A comparison of cells is now `cells_compared`'s
+(`mir/dispatch/cells_compared.rs`, split from the dispatcher, whose
+`mir_call_values_of` it shortens to 202 lines). One `ordering_call`
+recognises as `max` or `min` is written in place by it,
+`(rb.value < ra.value ? ra : rb)`, with no dictionary, whose `PartialOrd`
+of a `&mut` would read it as generic code's box. Recognition takes a
+`Self` for a number's own method past its shared references alone,
+`mut_refs::past_shared_refs` (the rule `adapted_part` held, renamed for
+it): a `&mut`'s JS is its handle. `ordering_call` and `classify_trait_method`
+both ask it, one answer to one question; `classify`'s is read today only
+where nothing tells `MaxOf` apart from none, so it has no mutation of its
+own: one would survive, not caught by any output. `cmp::max(&mut a, &mut
+b)` is the same. `clamp` of cells, whose helper is given their
+`PartialOrd`, is refused where it's called: "rust-js does not support
+`clamp` of `&mut` references yet: it gives one of them back, which its
+helper can't". An object's `&mut` and a generic function given `&mut`s
+are refused, as before.
+
+Case C of ADR 0262: results change. Corpus case `ord_of_mut_refs` runs
+`max`, `min`, `cmp`, `cmp::max` and `cmp::min` of `&mut` numbers, and
+`min` of `&mut String`s, against native; diagnostics' "clamp of &muts to
+numbers is refused where it's called" and the guide's limitations hold
+the refusal. Mutations `max-of-mut-refs-their-pointees`,
+`clamp-of-mut-refs-given-its-helper` and `ord-of-a-mut-ref-a-numbers` are
+new, and caught; `mir-cell-compare-handles` follows the block to
+`cells_compared.rs`.
