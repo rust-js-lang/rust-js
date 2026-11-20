@@ -504,6 +504,19 @@ react.dev's TopNav passes the same closure instead.
   parameter, `is_none()`, still does. Only a JS caller outside the
   declared types sees it. Listed in the guide's differences
   (`semantics.md`, 61).
+- **A binding's JS is taken not to call the crate's exports back**, the
+  second case's, a decided exception, the user's decision (2026-11-20,
+  #2119): what a thread-local's initializer runs as its module loads, and
+  what a function runs before its return, are `may_run`'s answers, which
+  take a binding's call to run only what it's given. A binding whose JS
+  may call an exported function back says so, `#[rust_js::calls_back]`,
+  and its call runs any function JS can call: a thread-local whose
+  initializer calls it is made at its first use. Taking every unmarked
+  binding to call back refused React's port, whose feature flags are read
+  of a binding's data, so it's the mark's to say. Results change only
+  where an unmarked binding's JS calls an export as its module loads, or
+  before a function's return. Listed in the guide's differences
+  (`semantics.md`, 30) ([1006](1006-a-pub-thread-local-is-made-as-its-module-loads.md), amended).
 
 ## Amendment: the stack's depth
 

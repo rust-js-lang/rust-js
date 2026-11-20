@@ -2322,7 +2322,11 @@ React and JSX are [their own pages](README.md#react).
     so what a binding's call in it does, a std call's own panic, and what
     it shares with other such initializers alone are done then, where Rust
     does them at its first use, or never, of one never used or `set` first
-    (ADR 1006, amended, the user's decisions, #554).
+    (ADR 1006, amended, the user's decisions, #554). A binding's JS is taken
+    to call none of the crate's exported functions back, so its call in
+    one is done then too, unless the binding says it may,
+    `#[rust_js::calls_back]`, whose thread-local is made at its first use
+    (ADR 0262's Consequences, the user's decision, #2119).
 31. A library's item its package's default entry re-exports is imported
     by the package's name, so a host that resolves another of its
     conditions, `react-server`, gets that condition's module, where the

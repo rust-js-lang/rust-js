@@ -55,4 +55,28 @@ export const mutations: Mutation[] = [
     replace: "            true if false => {",
     tests: ["test/lowering-passed-on.test.ts", "-t", "reads only its parameters is refused"],
   },
+  {
+    name: "calls-back-beside-runs-nothing",
+    breaks: "`#[rust_js::calls_back]` beside `#[rust_js::runs_nothing]`, which say opposite things, is accepted (#2119)",
+    file: "src/lower/bindings/effects.rs",
+    find: "        } else if runs_nothing(tcx, def) {\n",
+    replace: "        } else if false && runs_nothing(tcx, def) {\n",
+    tests: ["test/bindings-calls-back.test.ts", "-t", "beside a mark"],
+  },
+  {
+    name: "calls-back-beside-runs-only-given",
+    breaks: "`#[rust_js::calls_back]` beside `#[rust_js::runs_only_given]`, which say opposite things, is accepted (#2119)",
+    file: "src/lower/bindings/effects.rs",
+    find: "        } else if runs_only_given(tcx, def) {\n",
+    replace: "        } else if false && runs_only_given(tcx, def) {\n",
+    tests: ["test/bindings-calls-back.test.ts", "-t", "beside a mark"],
+  },
+  {
+    name: "calls-back-off-a-binding",
+    breaks: "`#[rust_js::calls_back]` on a function of the program's, whose body is its own, is accepted (#2119)",
+    file: "src/lower/bindings/effects.rs",
+    find: "        let refused = if !(function && super::is_binding(tcx, def)) {\n",
+    replace: "        let refused = if false && !(function && super::is_binding(tcx, def)) {\n",
+    tests: ["test/bindings-calls-back.test.ts", "-t", "isn't a binding"],
+  },
 ];

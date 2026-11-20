@@ -237,4 +237,12 @@ export const mutations: Mutation[] = [
     replace: "                _ = made;\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_builder_written_step_by_step.rs$"],
   },
+  {
+    name: "calls-back-unread",
+    breaks: "a binding that says its JS may call the crate back is taken to run only what it's given, so a thread-local whose initializer calls it is made as its module loads, where its JS calls an export that isn't there yet (#2119)",
+    file: "src/lower/analysis/may_run.rs",
+    find: "            if crate::lower::bindings::calls_back(tcx, callee) {\n",
+    replace: "            if false && crate::lower::bindings::calls_back(tcx, callee) {\n",
+    tests: ["test/bindings-calls-back.test.ts", "-t", "made at its first use"],
+  },
 ];

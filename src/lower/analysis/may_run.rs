@@ -35,6 +35,10 @@ pub(in crate::lower) struct Runs<'a, 'tcx> {
     /// Each closure the crate makes a `dyn Fn` of only to hand it to JS:
     /// what a drop of one may drop beside what `drop_runs` says.
     fn_dyns: Vec<ty::Ty<'tcx>>,
+    /// Each of its functions JS can call (`analysis::exported_function`):
+    /// what a binding that says it calls the crate back may run
+    /// (`bindings::calls_back`, #2119).
+    exported: Vec<DefId>,
     pointers: &'a FnPointers<'tcx>,
     std_runs: &'a StdRuns<'a, 'tcx>,
     drop_runs: &'a DropRuns<'a, 'tcx>,
@@ -65,6 +69,10 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
                 .map(|(&init, &key)| (key.to_def_id(), init.to_def_id()))
                 .collect(),
             impls: Impls::of_crate(tcx),
+            exported: (bodies.iter())
+                .map(|body| body.def_id)
+                .filter(|&id| crate::lower::analysis::exported_function(tcx, id))
+                .collect(),
             fn_dyns,
             pointers,
             std_runs,
@@ -83,12 +91,23 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
     pub(in crate::lower) fn of(&self, start: DefId) -> Option<Vec<DefId>> {
         may_run(
             self.tcx,
-            (&self.bodies, &self.made_of, &self.impls, &self.fn_dyns),
+            (&self.bodies, &self.made_of, &self.impls, &self.fn_dyns, &self.exported),
             (self.pointers, self.std_runs, self.drop_runs, self.runs_nothing),
             start,
         )
     }
 }
+
+/// What `may_run` reads of the crate: its bodies by their ids, each
+/// thread-local's initializer by its key, its impls, each closure it makes a
+/// `dyn Fn` of only to hand it to JS, and each function JS can call.
+type Crate<'a, 'tcx> = (
+    &'a IndexMap<DefId, &'a Body<'tcx>>,
+    &'a IndexMap<DefId, DefId>,
+    &'a Impls,
+    &'a [ty::Ty<'tcx>],
+    &'a [DefId],
+);
 
 /// What std's `id`, called of `args`, may run of the crate's bodies
 /// (`CellBorrows::std_runs`), each of the args its type says, where it
@@ -140,7 +159,9 @@ impl Impls {
 /// each thread-local, `static` and `const` they read by its name, and what
 /// the initializer of a thread-local read runs, which may make it there.
 /// Its premise: a binding's JS, a callback it's given or a getter, never
-/// calls the crate's exported functions back. A `runs_nothing` method's
+/// calls the crate's exported functions back, but a binding that says it
+/// may, `#[rust_js::calls_back]`, whose call runs any function JS can call:
+/// the default Tu decided (ADR 0262's Consequences, #2119). A `runs_nothing` method's
 /// receiver is asked as every asker asks it (`receiver_runs_its_own`): one
 /// a JS caller may have handed over may be its override (#2119).
 /// `None` where it may run what rust-js can't follow: a `dyn Fn`'s call but
@@ -152,12 +173,7 @@ impl Impls {
 /// whose captures' destructors its drop runs.
 fn may_run<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (bodies, made_of, impls, fn_dyns): (
-        &IndexMap<DefId, &Body<'tcx>>,
-        &IndexMap<DefId, DefId>,
-        &Impls,
-        &[ty::Ty<'tcx>],
-    ),
+    (bodies, made_of, impls, fn_dyns, exported): Crate<'_, 'tcx>,
     (pointers, std_runs, drop_runs, runs_nothing): (
         &FnPointers<'tcx>,
         &StdRuns<'_, 'tcx>,
@@ -348,6 +364,11 @@ fn may_run<'tcx>(
         // body runs of the crate's: std's, by the bounds it's called under;
         // a binding's that runs nothing, none; another's, what it's given.
         let runs_given = |callee: DefId, callee_args: ty::GenericArgsRef<'tcx>, work: &mut Vec<_>| {
+            // A binding that says its JS may call the crate back runs any
+            // function JS can call, beside what it's given (#2119).
+            if crate::lower::bindings::calls_back(tcx, callee) {
+                work.extend(exported.iter().map(|&f| (f, identity(f))));
+            }
             if runs_nothing(callee, callee_args) {
                 return true;
             }

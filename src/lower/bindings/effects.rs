@@ -36,6 +36,49 @@ pub(in crate::lower) fn creates(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }
 
+/// `#[rust_js::calls_back]`: a binding whose JS may call the crate's
+/// exported functions back while it runs, beyond what it's given: a
+/// registry that runs the hooks the app registered, a host that re-enters
+/// the module. What its call runs is then any function JS can call
+/// (`may_run`, #2119). One that doesn't say so is taken to call none back,
+/// the default Tu decided (ADR 0262's Consequences).
+pub(in crate::lower) fn calls_back(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("calls_back")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// Report each `#[rust_js::calls_back]` that can't be said: of what isn't a
+/// binding, whose body is the program's, or beside what says the binding
+/// runs no code of the program's, `#[rust_js::runs_nothing]` or
+/// `#[rust_js::runs_only_given]`. False if there was one.
+pub(in crate::lower) fn reject_unsaid_calls_back(tcx: TyCtxt<'_>) -> bool {
+    let mut valid = true;
+    for def in tcx.hir_crate_items(()).definitions() {
+        let def = def.to_def_id();
+        if !calls_back(tcx, def) {
+            continue;
+        }
+        let function = matches!(tcx.def_kind(def), DefKind::Fn | DefKind::AssocFn);
+        let refused = if !(function && super::is_binding(tcx, def)) {
+            Some("it's on a binding, a function JS's code is: this one's body is the program's")
+        } else if runs_nothing(tcx, def) {
+            Some("`#[rust_js::runs_nothing]` says it runs no code of the program's: drop one of the two")
+        } else if runs_only_given(tcx, def) {
+            Some("`#[rust_js::runs_only_given]` says it runs only what it's given: drop one of the two")
+        } else {
+            None
+        };
+        if let Some(why) = refused {
+            tcx.dcx().span_err(
+                tcx.def_span(def),
+                format!("rust-js: `#[rust_js::calls_back]` can't be said of this (#2119): {why}"),
+            );
+            valid = false;
+        }
+    }
+    valid
+}
+
 /// `#[rust_js::runs_only_given]`: a binding that runs no code but its own
 /// and what it's given, as `console.error(..)` and `Math.max(..)` do: a
 /// getter, `toString` or a proxy's trap of a value it reads (ADR 0898).

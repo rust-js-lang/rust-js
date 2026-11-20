@@ -736,3 +736,32 @@ Consequences); a binding that may says so (the next amendment).
 Case of [0262](0262-when-rust-and-js-disagree.md): none, no answer changes.
 Held by mutations `receiver-taken-at-its-word` and
 `call-receiver-taken-at-its-word`, caught.
+
+## Amendment: a binding that calls the crate back says so (2026-11-20, #2119)
+
+`may_run` took a binding's call to run only what it's given: its JS was
+never taken to call one of the crate's exported functions back. Measured
+taking every unmarked binding to call any export back (the user's
+"measure, then fix"): the corpus moved one case, `Math.max`'s thread-local
+made lazy, and React's port didn't compile, five `pub` thread-locals of
+`ReactFeatureFlags.www.rs` refused, as `react_feature_flags()`, a binding
+of data, would have run every export of `shared`, one of which calls a
+`dyn Fn`. So the user chose the mark: a binding whose JS may call the crate
+back says `#[rust_js::calls_back]`, read beside `runs_nothing` and
+`runs_only_given` (`bindings::calls_back`), and `may_run` takes its call to
+run every function JS can call (`analysis::exported_function`), beside
+what it's given. One that doesn't say so is taken to call none back, the
+decided default (ADR 0262's Consequences). Beside `runs_nothing` or
+`runs_only_given`, which say it runs none of the program's code, or on
+what isn't a binding, it's refused (`reject_unsaid_calls_back`).
+
+Nothing is marked: the corpus and React's port don't move.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change, so
+Rust's behavior, where a marked binding's JS calls an export; the default's
+exception is that ADR's. Held by test/bindings-calls-back.test.ts, its
+thread-local made at its first use and run in Rust's order, unmarked made
+as its module loads, each refusal; mutations `calls-back-unread`,
+`calls-back-beside-runs-nothing`, `calls-back-beside-runs-only-given` and
+`calls-back-off-a-binding`, caught.
+
