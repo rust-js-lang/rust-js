@@ -211,7 +211,7 @@ function main() {
   shown("by next, relayed", v);
   // Into a `B` of the caller's, a `Vec`.
   v = built(
-    $lazyRange(0, 3).map((x) => (x * 3) >>> 0),
+    iterator_map({ start: 0, end: 3 }, (x) => (x * 3) >>> 0, { next: $rangeNext }),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collectVec(
@@ -406,7 +406,7 @@ function main() {
   shown(
     "mapped, by next",
     mapped(
-      $lazyRange(0, 5).filter((x) => x % 2 === 0),
+      iterator_filter({ start: 0, end: 5 }, (x) => x % 2 === 0, { next: $rangeNext }),
       false,
     ),
   );

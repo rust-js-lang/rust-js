@@ -137,10 +137,14 @@ function main() {
   console.log(
     `${value$28 == null ? "None" : `Some(${value$28})`} ${value$29 == null ? "None" : `Some(${value$29})`}`,
   );
-  const down = $iterator({ start: 1, end: 9 }, $rangeInclusiveNextBack);
-  const value$30 = $rangeInclusiveNthBack(down.of, 3);
+  const down = iterator_rev(
+    { start: 1, end: 9 },
+    { next: $rangeInclusiveNext },
+    { next_back: $rangeInclusiveNextBack, nthBack: $rangeInclusiveNthBack },
+  );
+  const value$30 = $rangeInclusiveNthBack(down.iter, 3);
   const value$31 = $next(down);
-  const value$32 = $rangeInclusiveNthBack(down.of, 10);
+  const value$32 = $rangeInclusiveNthBack(down.iter, 10);
   console.log(
     `${value$30 == null ? "None" : `Some(${value$30})`} ${value$31 == null ? "None" : `Some(${value$31})`} ${value$32 == null ? "None" : `Some(${value$32})`}`,
   );

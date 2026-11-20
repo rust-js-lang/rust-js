@@ -2,23 +2,30 @@
 
 import {
   $cleanup,
-  $closing,
   $collectDropping,
   $count,
-  $enumerate,
   $exactLen,
+  $foldOf,
   $held,
-  $iterator,
-  $lazyChain,
   $lent,
   $live,
+  $next,
   $nthDropping,
   $range,
-  $rev,
   $roomForHint,
-  $skipping,
-  $stepBy,
+  $tryOf,
   $unwindsOn,
+  enumerateDoubleEndedIterator_advanceBackBy,
+  enumerateDoubleEndedIterator_nextBack,
+  enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_rfold,
+  enumerateDoubleEndedIterator_tryRfold,
+  iterator_chain,
+  iterator_enumerate,
+  iterator_map,
+  iterator_rev,
+  iterator_skip,
+  iterator_stepBy,
 } from "@rust-js/std";
 
 export function entry() {
@@ -49,52 +56,45 @@ function queue(from) {
 }
 
 function main() {
-  console.log(
-    `${$count(
-      $enumerate(
-        $closing(
-          $iterator(
-            queue(1),
-            queueIterator_next,
-            false,
-            queueDoubleEndedIterator_nextBack,
-            (it) => $exactLen(queueIterator_sizeHint(it)),
-            queueIterator_sizeHint,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              loudDrop_drop(item);
-            }
-          },
-        ),
-      ),
-      (value) => {
-        loudDrop_drop(value[1]);
-      },
-    )}`,
+  const queueExactSizeIterator = { len: (it) => $exactLen(queueIterator_sizeHint(it)) };
+  const iter = iterator_enumerate(
+    queue(1),
+    { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+    (queue) => {
+      for (const item of queue[0]) {
+        loudDrop_drop(item);
+      }
+    },
+    loudDrop_drop,
   );
-  const enumerate = $held(
-    $enumerate(
-      $closing(
-        $iterator(
-          queue(5),
-          queueIterator_next,
-          false,
-          queueDoubleEndedIterator_nextBack,
-          (it) => $exactLen(queueIterator_sizeHint(it)),
-          queueIterator_sizeHint,
-        ),
-        (it) => {
-          for (const item of it.of[0]) {
-            loudDrop_drop(item);
-          }
-        },
-      ),
+  let result;
+  try {
+    result = $count(iter, (value) => {
+      loudDrop_drop(value[1]);
+    });
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  console.log(`${result}`);
+  const value$1 = $held(
+    iterator_enumerate(
+      queue(5),
+      { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+      (queue) => {
+        for (const item of queue[0]) {
+          loudDrop_drop(item);
+        }
+      },
+      loudDrop_drop,
     ),
   );
   try {
     const nth = $nthDropping(
-      $lent(enumerate),
+      $lent(value$1),
       1,
       (value) => {
         loudDrop_drop(value[1]);
@@ -102,9 +102,9 @@ function main() {
       false,
     );
     function map([i, l]) {
-      const result = [i, l[0]];
+      const result$1 = [i, l[0]];
       loudDrop_drop(l);
-      return result;
+      return result$1;
     }
     const value = nth != null ? map(nth) : undefined;
     console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
@@ -112,30 +112,36 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      enumerate.return();
+      value$1.return();
     }
   }
   const back = $collectDropping(
     $roomForHint(
-      $closing(
-        $iterator(
+      iterator_map(
+        iterator_rev(
           queue(10),
-          queueDoubleEndedIterator_nextBack,
-          false,
-          undefined,
-          undefined,
-          queueIterator_sizeHint,
+          { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+          { next_back: queueDoubleEndedIterator_nextBack },
+          (queue) => {
+            for (const item of queue[0]) {
+              loudDrop_drop(item);
+            }
+          },
+          loudDrop_drop,
         ),
-        (it) => {
-          for (const item of it.of[0]) {
-            loudDrop_drop(item);
-          }
+        (l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
         },
-      ).map((l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }),
+        { next: $next, fold: $foldOf },
+        (rev) => {
+          rev.return();
+        },
+        undefined,
+        undefined,
+        loudDrop_drop,
+      ),
       4,
       false,
     ),
@@ -143,29 +149,39 @@ function main() {
   console.log(`[${back.join(", ")}]`);
   const rest = $collectDropping(
     $roomForHint(
-      $skipping(
-        $closing(
-          $iterator(
+      iterator_map(
+        iterator_skip(
+          iterator_rev(
             queue(15),
-            queueDoubleEndedIterator_nextBack,
-            false,
-            undefined,
-            undefined,
-            queueIterator_sizeHint,
+            { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+            { next_back: queueDoubleEndedIterator_nextBack },
+            (queue) => {
+              for (const item of queue[0]) {
+                loudDrop_drop(item);
+              }
+            },
+            loudDrop_drop,
           ),
-          (it) => {
-            for (const item of it.of[0]) {
-              loudDrop_drop(item);
-            }
+          1,
+          { next: $next, fold: $foldOf },
+          (rev) => {
+            rev.return();
           },
+          loudDrop_drop,
         ),
-        1,
+        (l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        },
+        { next: $next, fold: $foldOf },
+        (skip) => {
+          skip.return();
+        },
+        undefined,
+        undefined,
         loudDrop_drop,
-      ).map((l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }),
+      ),
       4,
       false,
     ),
@@ -173,79 +189,181 @@ function main() {
   console.log(`[${rest.join(", ")}]`);
   const counted = $collectDropping(
     $roomForHint(
-      $rev(
-        $enumerate(
-          $closing(
-            $iterator(
-              queue(20),
-              queueIterator_next,
-              false,
-              queueDoubleEndedIterator_nextBack,
-              (it) => $exactLen(queueIterator_sizeHint(it)),
-              queueIterator_sizeHint,
-            ),
-            (it) => {
-              for (const item of it.of[0]) {
+      iterator_map(
+        iterator_rev(
+          iterator_enumerate(
+            queue(20),
+            { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+            (queue) => {
+              for (const item of queue[0]) {
                 loudDrop_drop(item);
               }
             },
+            loudDrop_drop,
           ),
+          { next: $next, fold: $foldOf },
+          {
+            next_back: (iterator) =>
+              enumerateDoubleEndedIterator_nextBack(
+                iterator,
+                queueExactSizeIterator,
+                { next_back: queueDoubleEndedIterator_nextBack },
+                (queue) => {
+                  for (const item of queue[0]) {
+                    loudDrop_drop(item);
+                  }
+                },
+                loudDrop_drop,
+              ),
+            rfold: (iterator, init, f, unwind, ends) =>
+              enumerateDoubleEndedIterator_rfold(
+                iterator,
+                init,
+                f,
+                { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+                queueExactSizeIterator,
+                { next_back: queueDoubleEndedIterator_nextBack },
+                (queue) => {
+                  for (const item of queue[0]) {
+                    loudDrop_drop(item);
+                  }
+                },
+                unwind,
+                ends,
+                loudDrop_drop,
+              ),
+            nthBack: (iterator, k) =>
+              enumerateDoubleEndedIterator_nthBack(
+                iterator,
+                k,
+                { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+                queueExactSizeIterator,
+                { next_back: queueDoubleEndedIterator_nextBack },
+                (queue) => {
+                  for (const item of queue[0]) {
+                    loudDrop_drop(item);
+                  }
+                },
+                loudDrop_drop,
+              ),
+            tryRfold: (iterator, init, f, broke, unwind, ends) =>
+              enumerateDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+                queueExactSizeIterator,
+                { next_back: queueDoubleEndedIterator_nextBack },
+                $tryOf(broke),
+                (queue) => {
+                  for (const item of queue[0]) {
+                    loudDrop_drop(item);
+                  }
+                },
+                unwind,
+                ends,
+                undefined,
+                loudDrop_drop,
+              ),
+            advanceBackBy: (iterator, n) =>
+              enumerateDoubleEndedIterator_advanceBackBy(
+                iterator,
+                n,
+                { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+                { next_back: queueDoubleEndedIterator_nextBack },
+                (queue) => {
+                  for (const item of queue[0]) {
+                    loudDrop_drop(item);
+                  }
+                },
+                loudDrop_drop,
+              ),
+          },
+          (enumerate) => {
+            enumerate.return();
+          },
+          (value) => {
+            loudDrop_drop(value[1]);
+          },
         ),
-      ).map(([i, l]) => {
-        const result = [i, l[0]];
-        loudDrop_drop(l);
-        return result;
-      }),
+        ([i, l]) => {
+          const result = [i, l[0]];
+          loudDrop_drop(l);
+          return result;
+        },
+        { next: $next, fold: $foldOf },
+        (rev) => {
+          rev.return();
+        },
+        undefined,
+        undefined,
+        (value) => {
+          loudDrop_drop(value[1]);
+        },
+      ),
       8,
       false,
     ),
   );
   console.log(`[${counted.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  console.log(
-    `${$closing(
-      $iterator(
-        queue(25),
-        queueDoubleEndedIterator_nextBack,
-        false,
-        undefined,
-        undefined,
-        queueIterator_sizeHint,
-      ),
-      (it) => {
-        for (const item of it.of[0]) {
+  const iter$1 = iterator_enumerate(
+    iterator_rev(
+      queue(25),
+      { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+      { next_back: queueDoubleEndedIterator_nextBack },
+      (queue) => {
+        for (const item of queue[0]) {
           loudDrop_drop(item);
         }
       },
-    ).reduce((n, item) => {
-      loudDrop_drop(item);
-      return n + 1;
-    }, 0)}`,
+      loudDrop_drop,
+    ),
+    { next: $next, fold: $foldOf },
+    (rev) => {
+      rev.return();
+    },
+    loudDrop_drop,
   );
+  let result$1;
+  try {
+    result$1 = $count(iter$1, (value) => {
+      loudDrop_drop(value[1]);
+    });
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$1.return();
+    }
+  }
+  console.log(`${result$1}`);
   const everyOther = $collectDropping(
     $roomForHint(
-      $stepBy(
-        $closing(
-          $iterator(
-            queue(30),
-            queueIterator_next,
-            false,
-            undefined,
-            undefined,
-            queueIterator_sizeHint,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
+      iterator_map(
+        iterator_stepBy(
+          queue(30),
+          2,
+          { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+          (queue) => {
+            for (const item of queue[0]) {
               loudDrop_drop(item);
             }
           },
+          loudDrop_drop,
         ),
-        2,
+        (l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        },
+        { next: $next, fold: $foldOf },
+        (stepBy) => {
+          stepBy.return();
+        },
+        undefined,
+        undefined,
         loudDrop_drop,
-      ).map((l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      }),
+      ),
       4,
       false,
     ),
@@ -264,23 +382,40 @@ function main() {
     throw error;
   }
   const chain = $held(
-    $lazyChain(
-      $closing(
-        $iterator(value, queueIterator_next, false, undefined, undefined, queueIterator_sizeHint),
-        (it) => {
-          for (const item of it.of[0]) {
+    iterator_chain(
+      value,
+      tmp,
+      { next: queueIterator_next, sizeHint: queueIterator_sizeHint },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: queueIterator_next, sizeHint: queueIterator_sizeHint };
+        },
+        $dropItem: loudDrop_drop,
+        $dropIntoIter(queue) {
+          for (const item of queue[0]) {
             loudDrop_drop(item);
           }
         },
-      ),
-      $closing(
-        $iterator(tmp, queueIterator_next, false, undefined, undefined, queueIterator_sizeHint),
-        (it) => {
-          for (const item of it.of[0]) {
-            loudDrop_drop(item);
-          }
-        },
-      ),
+      },
+      (queue) => {
+        for (const item of queue[0]) {
+          loudDrop_drop(item);
+        }
+      },
+      (queue) => {
+        for (const item of queue[0]) {
+          loudDrop_drop(item);
+        }
+      },
+      loudDrop_drop,
+      (queue) => {
+        for (const item of queue[0]) {
+          loudDrop_drop(item);
+        }
+      },
     ),
   );
   try {

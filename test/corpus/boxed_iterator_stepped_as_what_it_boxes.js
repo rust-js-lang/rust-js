@@ -12,6 +12,7 @@ import {
   $rangeNextBack,
   $roomForHint,
   iterator_map,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -76,7 +77,9 @@ function main() {
     `${value$5 == null ? "None" : `Some(${$debugStr(value$5, "'")})`} ${last == null ? "None" : `Some(${$debugStr(last, "'")})`}`,
   );
   let boxed = { start: 0, end: 5 };
-  console.log(`[${Array.from($iterator(boxed, $rangeNext).take(2)).join(", ")}]`);
+  console.log(
+    `[${Array.from($roomForHint(iterator_take(boxed, 2, { next: $rangeNext }), 4, false)).join(", ")}]`,
+  );
   boxed = $iter([1, 2, 3]);
   console.log(
     `[${Array.from(

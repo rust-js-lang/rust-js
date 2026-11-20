@@ -3,38 +3,56 @@
 import {
   $catchUnwind,
   $cleanup,
-  $enumerate,
   $exactLen,
   $filterEnds,
-  $foldBack,
   $foldOf,
   $folded,
   $iterator,
   $knowing,
+  $last,
   $lazyChain,
   $lent,
   $live,
-  $mapEnds,
   $next,
-  $nextBack,
   $nth,
-  $nthBack,
   $rev,
   $roomForHint,
-  $skipping,
+  $sizeHint,
   $taking,
   $tryOf,
   $unwindsOn,
+  enumerateDoubleEndedIterator_advanceBackBy,
+  enumerateDoubleEndedIterator_nextBack,
+  enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_rfold,
+  enumerateDoubleEndedIterator_tryRfold,
+  filterDoubleEndedIterator_nextBack,
+  filterDoubleEndedIterator_rfold,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_rfold,
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
+  iterator_enumerate,
+  iterator_filter,
   iterator_fuse,
   iterator_map,
+  iterator_rev,
+  iterator_skip,
+  iterator_take,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
+  skipDoubleEndedIterator_advanceBackBy,
+  skipDoubleEndedIterator_nextBack,
+  skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_rfold,
+  skipDoubleEndedIterator_tryRfold,
+  takeIDoubleEndedIterator_advanceBackBy,
+  takeIDoubleEndedIterator_nextBack,
+  takeIDoubleEndedIterator_nthBack,
+  takeIDoubleEndedIterator_rfold,
+  takeIDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -184,54 +202,252 @@ function labelledRsum(count, label) {
 }
 
 function main() {
+  const skipExactSizeIterator = { len: (iterator) => $exactLen($sizeHint(iterator)) };
   const countExactSizeIterator = { len: (it) => $exactLen(countIterator_sizeHint(it)) };
+  const mapDoubleEndedIterator$1 = {
+    next_back: (iterator) =>
+      mapDoubleEndedIterator_nextBack(iterator, {
+        next_back: countDoubleEndedIterator_nextBack,
+        rfold: countDoubleEndedIterator_rfold,
+        nthBack: countDoubleEndedIterator_nthBack,
+      }),
+    rfold: (iterator, init, f, unwind, ends) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
+  const skipDoubleEndedIterator = {
+    next_back: (iterator) =>
+      skipDoubleEndedIterator_nextBack(
+        iterator,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+      ),
+    rfold: (iterator, init, f, unwind, ends) =>
+      skipDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        undefined,
+        unwind,
+        ends,
+      ),
+    nthBack: (iterator, k) =>
+      skipDoubleEndedIterator_nthBack(
+        iterator,
+        k,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      skipDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        $tryOf(broke),
+        undefined,
+        unwind,
+        ends,
+      ),
+    advanceBackBy: (iterator, n) =>
+      skipDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+      ),
+  };
+  const takeDoubleEndedIterator = {
+    next_back: (iterator) =>
+      takeIDoubleEndedIterator_nextBack(
+        iterator,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        countExactSizeIterator,
+      ),
+    rfold: (iterator, init, f, unwind, ends) =>
+      takeIDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        countExactSizeIterator,
+        undefined,
+        unwind,
+        ends,
+      ),
+    nthBack: (iterator, k) =>
+      takeIDoubleEndedIterator_nthBack(
+        iterator,
+        k,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        countExactSizeIterator,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      takeIDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        countExactSizeIterator,
+        $tryOf(broke),
+        undefined,
+        unwind,
+        ends,
+      ),
+    advanceBackBy: (iterator, n) =>
+      takeIDoubleEndedIterator_advanceBackBy(
+        iterator,
+        n,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        countExactSizeIterator,
+      ),
+  };
+  const mapDoubleEndedIterator = {
+    next_back: (iterator) => mapDoubleEndedIterator_nextBack(iterator, takeDoubleEndedIterator),
+    rfold: (iterator, init, f, unwind, ends) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
   console.log(
-    `${$rev($mapEnds($iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack), (x) => (x * 2) | 0)).reduce((a, b) => (a + b) | 0, 0)}`,
+    `${iterator_rev(
+      iterator_map(count(), (x) => (x * 2) | 0, {
+        next: countIterator_next,
+        sizeHint: countIterator_sizeHint,
+      }),
+      { next: $next, fold: $foldOf },
+      mapDoubleEndedIterator$1,
+    ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
-    `${$foldBack(
-      $filterEnds(
-        $iterator(
-          count(),
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          undefined,
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
-        ),
-        (x) => x % 2 === 1,
-      ),
+    `${filterDoubleEndedIterator_rfold(
+      iterator_filter(count(), (x) => x % 2 === 1, {
+        next: countIterator_next,
+        sizeHint: countIterator_sizeHint,
+      }),
       0,
       (a, x) => (a + x) | 0,
+      { next: countIterator_next, sizeHint: countIterator_sizeHint },
+      {
+        next_back: countDoubleEndedIterator_nextBack,
+        rfold: countDoubleEndedIterator_rfold,
+        nthBack: countDoubleEndedIterator_nthBack,
+      },
     )}`,
   );
-  const last = Array.from(
-    $folded(
-      $rev(
-        $mapEnds(
-          $iterator(
-            count(),
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            undefined,
-            countIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-          ),
-          (x) => (x * 2) | 0,
-        ),
-      ),
+  const last = $last(
+    iterator_rev(
+      iterator_map(count(), (x) => (x * 2) | 0, {
+        next: countIterator_next,
+        sizeHint: countIterator_sizeHint,
+      }),
+      { next: $next, fold: $foldOf },
+      mapDoubleEndedIterator$1,
     ),
-  ).at(-1);
+  );
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
     `${$rev($lazyChain($iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack), $iterator(count(), countIterator_next, false, countDoubleEndedIterator_nextBack, undefined, countIterator_sizeHint, undefined, undefined, undefined, countDoubleEndedIterator_rfold, countDoubleEndedIterator_nthBack))).reduce((n) => n + 1, 0)}`,
@@ -274,88 +490,111 @@ function main() {
   console.log(`${second == null ? "None" : `Some(${second})`}`);
   let pair = $nth(
     $lent(
-      $rev(
-        $enumerate(
-          $iterator(
-            count(),
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-          ),
-        ),
+      iterator_rev(
+        iterator_enumerate(count(), { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) =>
+            enumerateDoubleEndedIterator_nextBack(iterator, countExactSizeIterator, {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            }),
+          rfold: (iterator, init, f, unwind, ends) =>
+            enumerateDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              countExactSizeIterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+              undefined,
+              unwind,
+              ends,
+            ),
+          nthBack: (iterator, k) =>
+            enumerateDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              countExactSizeIterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            enumerateDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              countExactSizeIterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+              $tryOf(broke),
+              undefined,
+              unwind,
+              ends,
+            ),
+          advanceBackBy: (iterator, n) =>
+            enumerateDoubleEndedIterator_advanceBackBy(
+              iterator,
+              n,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+                nthBack: countDoubleEndedIterator_nthBack,
+              },
+            ),
+        },
       ),
     ),
     1,
   );
-  const indexed = $foldBack(
-    $enumerate(
-      $iterator(
-        count(),
-        countIterator_next,
-        false,
-        countDoubleEndedIterator_nextBack,
-        (it) => $exactLen(countIterator_sizeHint(it)),
-        countIterator_sizeHint,
-        undefined,
-        undefined,
-        undefined,
-        countDoubleEndedIterator_rfold,
-        countDoubleEndedIterator_nthBack,
-      ),
-    ),
+  const indexed = enumerateDoubleEndedIterator_rfold(
+    iterator_enumerate(count(), { next: countIterator_next, sizeHint: countIterator_sizeHint }),
     0,
     (a, [i, x]) => (a + Math.imul(i | 0, x)) | 0,
+    { next: countIterator_next, sizeHint: countIterator_sizeHint },
+    countExactSizeIterator,
+    {
+      next_back: countDoubleEndedIterator_nextBack,
+      rfold: countDoubleEndedIterator_rfold,
+      nthBack: countDoubleEndedIterator_nthBack,
+    },
   );
   console.log(`${pair == null ? "None" : `Some((${pair[0]}, ${pair[1]}))`} ${indexed}`);
   console.log(
-    `${$foldBack(
-      $taking(
-        $iterator(
-          count(),
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
-        ),
-        5,
-      ),
+    `${takeIDoubleEndedIterator_rfold(
+      iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
       0,
       (a, x) => (a + x) | 0,
+      { next: countIterator_next, sizeHint: countIterator_sizeHint },
+      {
+        next_back: countDoubleEndedIterator_nextBack,
+        rfold: countDoubleEndedIterator_rfold,
+        nthBack: countDoubleEndedIterator_nthBack,
+      },
+      countExactSizeIterator,
     )}`,
   );
   console.log(
     `[${Array.from(
       $roomForHint(
-        $rev(
-          $taking(
-            $iterator(
-              count(),
-              countIterator_next,
-              false,
-              countDoubleEndedIterator_nextBack,
-              (it) => $exactLen(countIterator_sizeHint(it)),
-              countIterator_sizeHint,
-              undefined,
-              undefined,
-              undefined,
-              countDoubleEndedIterator_rfold,
-              countDoubleEndedIterator_nthBack,
-            ),
-            5,
-          ),
+        iterator_rev(
+          iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+          { next: $next, fold: $foldOf },
+          takeDoubleEndedIterator,
         ),
         4,
         false,
@@ -364,46 +603,20 @@ function main() {
   );
   const fourth = $nth(
     $lent(
-      $rev(
-        $taking(
-          $iterator(
-            count(),
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-          ),
-          5,
-        ),
+      iterator_rev(
+        iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
       ),
     ),
     1,
   );
   const skipped = $nth(
     $lent(
-      $rev(
-        $skipping(
-          $iterator(
-            count(),
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-          ),
-          2,
-        ),
+      iterator_rev(
+        iterator_skip(count(), 2, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+        { next: $next, fold: $foldOf },
+        skipDoubleEndedIterator,
       ),
     ),
     1,
@@ -411,74 +624,80 @@ function main() {
   console.log(
     `${fourth == null ? "None" : `Some(${fourth})`} ${skipped == null ? "None" : `Some(${skipped})`}`,
   );
-  const trimmed = Array.from(
-    $folded(
-      $rev(
-        $skipping(
-          $taking(
-            $iterator(
-              count(),
-              countIterator_next,
-              false,
-              countDoubleEndedIterator_nextBack,
-              (it) => $exactLen(countIterator_sizeHint(it)),
-              countIterator_sizeHint,
-              undefined,
-              undefined,
-              undefined,
-              countDoubleEndedIterator_rfold,
-              countDoubleEndedIterator_nthBack,
-            ),
-            5,
+  const trimmed = $last(
+    iterator_rev(
+      iterator_skip(
+        iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+        2,
+        { next: $next, fold: $foldOf },
+      ),
+      { next: $next, fold: $foldOf },
+      {
+        next_back: (iterator) =>
+          skipDoubleEndedIterator_nextBack(
+            iterator,
+            { next: $next, fold: $foldOf },
+            takeDoubleEndedIterator,
           ),
-          2,
-        ),
-      ),
+        rfold: (iterator, init, f, unwind, ends) =>
+          skipDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $next, fold: $foldOf },
+            takeDoubleEndedIterator,
+            undefined,
+            unwind,
+            ends,
+          ),
+        nthBack: (iterator, k) =>
+          skipDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: $next, fold: $foldOf },
+            takeDoubleEndedIterator,
+          ),
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
+          skipDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next, fold: $foldOf },
+            takeDoubleEndedIterator,
+            $tryOf(broke),
+            undefined,
+            unwind,
+            ends,
+          ),
+        advanceBackBy: (iterator, n) =>
+          skipDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf },
+            takeDoubleEndedIterator,
+          ),
+      },
     ),
-  ).at(-1);
-  const odd = $nextBack(
-    $filterEnds(
-      $taking(
-        $iterator(
-          count(),
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
-        ),
-        5,
-      ),
+  );
+  const odd = filterDoubleEndedIterator_nextBack(
+    iterator_filter(
+      iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
       (x) => x % 2 === 1,
+      { next: $next, fold: $foldOf },
     ),
+    { next: $next, fold: $foldOf },
+    takeDoubleEndedIterator,
   );
   const doubled = Array.from(
     $lent(
-      $rev(
-        $mapEnds(
-          $taking(
-            $iterator(
-              count(),
-              countIterator_next,
-              false,
-              countDoubleEndedIterator_nextBack,
-              (it) => $exactLen(countIterator_sizeHint(it)),
-              countIterator_sizeHint,
-              undefined,
-              undefined,
-              undefined,
-              countDoubleEndedIterator_rfold,
-              countDoubleEndedIterator_nthBack,
-            ),
-            5,
-          ),
+      iterator_rev(
+        iterator_map(
+          iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
           (x) => (x * 2) | 0,
+          { next: $next, fold: $foldOf },
         ),
+        { next: $next, fold: $foldOf },
+        mapDoubleEndedIterator,
       ),
     )
       .drop(1)
@@ -488,45 +707,21 @@ function main() {
     `${trimmed == null ? "None" : `Some(${trimmed})`} ${odd == null ? "None" : `Some(${odd})`} ${doubled == null ? "None" : `Some(${doubled})`}`,
   );
   console.log(
-    `${$rev(
-      $taking(
-        $iterator(
-          count(),
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
-        ),
-        5,
+    `${iterator_take(
+      iterator_rev(
+        iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
       ),
-    )
-      .take(2)
-      .reduce((a, b) => (a + b) | 0, 0)}`,
+      2,
+      { next: $next, fold: $foldOf, nth: $nth },
+    ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   const found = $lent(
-    $rev(
-      $taking(
-        $iterator(
-          count(),
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
-        ),
-        5,
-      ),
+    iterator_rev(
+      iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+      { next: $next, fold: $foldOf },
+      takeDoubleEndedIterator,
     ),
   ).find((x) => x % 2 === 0);
   const it = count();
@@ -608,76 +803,94 @@ function main() {
       ),
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const skippedLast = Array.from(
-    $folded(
-      $rev(
-        $taking(
-          $skipping(
-            $iterator(
-              count(),
-              countIterator_next,
-              false,
-              countDoubleEndedIterator_nextBack,
-              (it) => $exactLen(countIterator_sizeHint(it)),
-              countIterator_sizeHint,
-              undefined,
-              undefined,
-              undefined,
-              countDoubleEndedIterator_rfold,
-              countDoubleEndedIterator_nthBack,
-            ),
-            1,
+  const skippedLast = $last(
+    iterator_rev(
+      iterator_take(
+        iterator_skip(count(), 1, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+        5,
+        { next: $next, fold: $foldOf },
+      ),
+      { next: $next, fold: $foldOf },
+      {
+        next_back: (iterator) =>
+          takeIDoubleEndedIterator_nextBack(
+            iterator,
+            { next: $next, fold: $foldOf },
+            skipDoubleEndedIterator,
+            skipExactSizeIterator,
           ),
-          5,
-        ),
-      ),
+        rfold: (iterator, init, f, unwind, ends) =>
+          takeIDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $next, fold: $foldOf },
+            skipDoubleEndedIterator,
+            skipExactSizeIterator,
+            undefined,
+            unwind,
+            ends,
+          ),
+        nthBack: (iterator, k) =>
+          takeIDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: $next, fold: $foldOf },
+            skipDoubleEndedIterator,
+            skipExactSizeIterator,
+          ),
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
+          takeIDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next, fold: $foldOf },
+            skipDoubleEndedIterator,
+            skipExactSizeIterator,
+            $tryOf(broke),
+            undefined,
+            unwind,
+            ends,
+          ),
+        advanceBackBy: (iterator, n) =>
+          takeIDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, fold: $foldOf },
+            skipDoubleEndedIterator,
+            skipExactSizeIterator,
+          ),
+      },
     ),
-  ).at(-1);
-  pair = $nthBack(
-    $enumerate(
-      $iterator(
-        count(),
-        countIterator_next,
-        false,
-        countDoubleEndedIterator_nextBack,
-        (it) => $exactLen(countIterator_sizeHint(it)),
-        countIterator_sizeHint,
-        undefined,
-        undefined,
-        undefined,
-        countDoubleEndedIterator_rfold,
-        countDoubleEndedIterator_nthBack,
-      ),
-    ),
+  );
+  pair = enumerateDoubleEndedIterator_nthBack(
+    iterator_enumerate(count(), { next: countIterator_next, sizeHint: countIterator_sizeHint }),
     1,
+    { next: countIterator_next, sizeHint: countIterator_sizeHint },
+    countExactSizeIterator,
+    {
+      next_back: countDoubleEndedIterator_nextBack,
+      rfold: countDoubleEndedIterator_rfold,
+      nthBack: countDoubleEndedIterator_nthBack,
+    },
   );
   console.log(
     `${skippedLast == null ? "None" : `Some(${skippedLast})`} ${pair == null ? "None" : `Some((${pair[0]}, ${pair[1]}))`}`,
   );
   console.log(
-    `${$rev(
-      $mapEnds(
-        $taking(
-          $iterator(
-            count(),
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-          ),
-          5,
+    `${iterator_take(
+      iterator_rev(
+        iterator_map(
+          iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+          (x) => (x * 2) | 0,
+          { next: $next, fold: $foldOf },
         ),
-        (x) => (x * 2) | 0,
+        { next: $next, fold: $foldOf },
+        mapDoubleEndedIterator,
       ),
-    )
-      .take(2)
-      .reduce((a, b) => (a + b) | 0, 0)}`,
+      2,
+      { next: $next, fold: $foldOf },
+    ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
     `${$rev(
@@ -846,49 +1059,7 @@ function main() {
       0,
       (a, x) => (a + x) | 0,
       { next: $next, fold: $foldOf },
-      {
-        next_back: (iterator) =>
-          mapDoubleEndedIterator_nextBack(iterator, {
-            next_back: countDoubleEndedIterator_nextBack,
-            rfold: countDoubleEndedIterator_rfold,
-            nthBack: countDoubleEndedIterator_nthBack,
-          }),
-        rfold: (iterator, init, f, unwind, ends) =>
-          mapDoubleEndedIterator_rfold(
-            iterator,
-            init,
-            f,
-            { next: countIterator_next, sizeHint: countIterator_sizeHint },
-            {
-              next_back: countDoubleEndedIterator_nextBack,
-              rfold: countDoubleEndedIterator_rfold,
-              nthBack: countDoubleEndedIterator_nthBack,
-            },
-            undefined,
-            undefined,
-            undefined,
-            unwind,
-            ends,
-          ),
-        tryRfold: (iterator, init, f, broke, unwind, ends) =>
-          mapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: countIterator_next, sizeHint: countIterator_sizeHint },
-            {
-              next_back: countDoubleEndedIterator_nextBack,
-              rfold: countDoubleEndedIterator_rfold,
-              nthBack: countDoubleEndedIterator_nthBack,
-            },
-            $tryOf(broke),
-            undefined,
-            undefined,
-            undefined,
-            unwind,
-            ends,
-          ),
-      },
+      mapDoubleEndedIterator$1,
     )}`,
   );
   const oddLast = Array.from(

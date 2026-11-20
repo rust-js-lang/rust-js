@@ -2,19 +2,35 @@
 
 import {
   $cmp,
-  $enumerate,
   $exactLen,
-  $filterEnds,
+  $foldOf,
   $iterator,
   $lazyChain,
-  $lazyZip,
   $lent,
-  $mapEnds,
   $maxByKey,
+  $next,
   $rev,
   $roomForHint,
   $rposition,
-  $stepBy,
+  $tryOf,
+  enumerateDoubleEndedIterator_advanceBackBy,
+  enumerateDoubleEndedIterator_nextBack,
+  enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_rfold,
+  enumerateDoubleEndedIterator_tryRfold,
+  filterDoubleEndedIterator_nextBack,
+  filterDoubleEndedIterator_rfold,
+  filterDoubleEndedIterator_tryRfold,
+  iterator_enumerate,
+  iterator_filter,
+  iterator_map,
+  iterator_rev,
+  iterator_skip,
+  iterator_stepBy,
+  iterator_zip,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -41,35 +57,134 @@ function cd(n) {
   return { lo: 0, hi: n };
 }
 function main() {
+  const countdownExactSizeIterator = { len: (it) => $exactLen(countdownIterator_sizeHint(it)) };
   console.log(
-    `[${Array.from($roomForHint($iterator(cd(5), countdownDoubleEndedIterator_nextBack, false, undefined, undefined, countdownIterator_sizeHint), 4, false)).join(", ")}]`,
-  );
-  console.log(
-    `[${Array.from($roomForHint($rev($mapEnds($iterator(cd(5), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), (x) => (x * 2) >>> 0)), 4, false)).join(", ")}]`,
-  );
-  console.log(
-    `[${Array.from($roomForHint($rev($filterEnds($iterator(cd(6), countdownIterator_next, false, countdownDoubleEndedIterator_nextBack, undefined, countdownIterator_sizeHint), (x) => x % 2 === 0)), 4, false)).join(", ")}]`,
+    `[${Array.from(
+      $roomForHint(
+        iterator_rev(
+          cd(5),
+          { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+          { next_back: countdownDoubleEndedIterator_nextBack },
+        ),
+        4,
+        false,
+      ),
+    ).join(", ")}]`,
   );
   console.log(
     `[${Array.from(
       $roomForHint(
-        $lazyZip(
-          $iterator(
+        iterator_rev(
+          iterator_map(cd(5), (x) => (x * 2) >>> 0, {
+            next: countdownIterator_next,
+            sizeHint: countdownIterator_sizeHint,
+          }),
+          { next: $next, fold: $foldOf },
+          {
+            next_back: (iterator) =>
+              mapDoubleEndedIterator_nextBack(iterator, {
+                next_back: countdownDoubleEndedIterator_nextBack,
+              }),
+            rfold: (iterator, init, f, unwind, ends) =>
+              mapDoubleEndedIterator_rfold(
+                iterator,
+                init,
+                f,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                { next_back: countdownDoubleEndedIterator_nextBack },
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+            tryRfold: (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                { next_back: countdownDoubleEndedIterator_nextBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          },
+        ),
+        4,
+        false,
+      ),
+    ).join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from(
+      $roomForHint(
+        iterator_rev(
+          iterator_filter(cd(6), (x) => x % 2 === 0, {
+            next: countdownIterator_next,
+            sizeHint: countdownIterator_sizeHint,
+          }),
+          { next: $next, fold: $foldOf },
+          {
+            next_back: (iterator) =>
+              filterDoubleEndedIterator_nextBack(
+                iterator,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                { next_back: countdownDoubleEndedIterator_nextBack },
+              ),
+            rfold: (iterator, init, f, unwind, ends) =>
+              filterDoubleEndedIterator_rfold(
+                iterator,
+                init,
+                f,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                { next_back: countdownDoubleEndedIterator_nextBack },
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+            tryRfold: (iterator, init, f, broke, unwind, ends) =>
+              filterDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                { next_back: countdownDoubleEndedIterator_nextBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          },
+        ),
+        4,
+        false,
+      ),
+    ).join(", ")}]`,
+  );
+  console.log(
+    `[${Array.from(
+      $roomForHint(
+        iterator_zip(
+          cd(4),
+          iterator_rev(
             cd(4),
-            countdownIterator_next,
-            false,
-            undefined,
-            undefined,
-            countdownIterator_sizeHint,
+            { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+            { next_back: countdownDoubleEndedIterator_nextBack },
           ),
-          $iterator(
-            cd(4),
-            countdownDoubleEndedIterator_nextBack,
-            false,
-            undefined,
-            undefined,
-            countdownIterator_sizeHint,
-          ),
+          { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+          { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
         ),
         8,
         false,
@@ -81,17 +196,58 @@ function main() {
   console.log(
     `[${Array.from(
       $roomForHint(
-        $rev(
-          $enumerate(
-            $iterator(
-              cd(5),
-              countdownIterator_next,
-              false,
-              countdownDoubleEndedIterator_nextBack,
-              (it) => $exactLen(countdownIterator_sizeHint(it)),
-              countdownIterator_sizeHint,
-            ),
-          ),
+        iterator_rev(
+          iterator_enumerate(cd(5), {
+            next: countdownIterator_next,
+            sizeHint: countdownIterator_sizeHint,
+          }),
+          { next: $next, fold: $foldOf },
+          {
+            next_back: (iterator) =>
+              enumerateDoubleEndedIterator_nextBack(iterator, countdownExactSizeIterator, {
+                next_back: countdownDoubleEndedIterator_nextBack,
+              }),
+            rfold: (iterator, init, f, unwind, ends) =>
+              enumerateDoubleEndedIterator_rfold(
+                iterator,
+                init,
+                f,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                countdownExactSizeIterator,
+                { next_back: countdownDoubleEndedIterator_nextBack },
+                undefined,
+                unwind,
+                ends,
+              ),
+            nthBack: (iterator, k) =>
+              enumerateDoubleEndedIterator_nthBack(
+                iterator,
+                k,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                countdownExactSizeIterator,
+                { next_back: countdownDoubleEndedIterator_nextBack },
+              ),
+            tryRfold: (iterator, init, f, broke, unwind, ends) =>
+              enumerateDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                countdownExactSizeIterator,
+                { next_back: countdownDoubleEndedIterator_nextBack },
+                $tryOf(broke),
+                undefined,
+                unwind,
+                ends,
+              ),
+            advanceBackBy: (iterator, n) =>
+              enumerateDoubleEndedIterator_advanceBackBy(
+                iterator,
+                n,
+                { next: countdownIterator_next, sizeHint: countdownIterator_sizeHint },
+                { next_back: countdownDoubleEndedIterator_nextBack },
+              ),
+          },
         ),
         8,
         false,
@@ -101,7 +257,20 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($roomForHint($stepBy($iterator(cd(7), countdownIterator_next, false, undefined, undefined, countdownIterator_sizeHint).drop(2), 2), 4, false)).join(", ")}]`,
+    `[${Array.from(
+      $roomForHint(
+        iterator_stepBy(
+          iterator_skip(cd(7), 2, {
+            next: countdownIterator_next,
+            sizeHint: countdownIterator_sizeHint,
+          }),
+          2,
+          { next: $next, fold: $foldOf },
+        ),
+        4,
+        false,
+      ),
+    ).join(", ")}]`,
   );
   const it = cd(6);
   const next = countdownIterator_next(it);

@@ -82,11 +82,19 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(
-    `count ${$count($enumerate(it), (value) => {
-      dDrop_drop(value[1]);
-    })}`,
+  const iter = iterator_enumerate(
+    it,
+    { next: $next, fold: $foldOf },
+    (peekable) => {
+      peekable.return();
+    },
+    dDrop_drop,
   );
+  const result = $count(iter, (value) => {
+    dDrop_drop(value[1]);
+  });
+  iter.return();
+  console.log(`count ${result}`);
   it = $held(
     iterator_peekable(
       [0, 4],
@@ -104,7 +112,7 @@ function main() {
     }, error);
     throw error;
   }
-  const iter = iterator_enumerate(
+  const iter$1 = iterator_enumerate(
     it,
     { next: $next, fold: $foldOf },
     (peekable) => {
@@ -112,11 +120,11 @@ function main() {
     },
     dDrop_drop,
   );
-  const result = $count(iter, (value) => {
+  const result$1 = $count(iter$1, (value) => {
     dDrop_drop(value[1]);
   });
-  iter.return();
-  console.log(`count ${result}`);
+  iter$1.return();
+  console.log(`count ${result$1}`);
   console.log(
     `count ${$count($enumerate(iterator_fuse({ start: 1, end: 5 }, { next: $rangeNext }, true)))}`,
   );

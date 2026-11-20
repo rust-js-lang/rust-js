@@ -108,7 +108,7 @@ function main() {
   const value = endsDoubleEndedIterator_nextBack(other);
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(
-    `${$count($iterator([1, 4], endsIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, endsIterator_count))}`,
+    `${$count(iterator_enumerate([1, 4], { next: endsIterator_next, count: endsIterator_count }))}`,
   );
 
   // A held map of `Count`, moved into `Own`, and another of its type.

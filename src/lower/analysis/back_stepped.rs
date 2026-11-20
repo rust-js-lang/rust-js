@@ -454,30 +454,42 @@ impl<'tcx> BackStepped<'tcx> {
         }
     }
 
-    /// Whether a value of type `ty`, in `owner`'s body `mir`, is made knowing
-    /// its back or its length where it's made: of a type whose question is a
-    /// type's, or of the type of a local this body steps from its back or
-    /// counts there (`LengthAsked::Counted`). The one answer of what's
+    /// The local `owner`'s `local` lends where it's a `&mut` of a whole
+    /// one, `borrows`', else `local`: what's asked of a value by its MIR
+    /// identity is asked of the local that holds it.
+    pub(in crate::lower) fn lent(
+        &self,
+        owner: rustc_span::def_id::DefId,
+        local: rustc_middle::mir::Local,
+    ) -> rustc_middle::mir::Local {
+        self.borrows.get(&(owner, local)).copied().unwrap_or(local)
+    }
+
+    /// Whether the value `owner`'s MIR local `local` holds, of type `ty`,
+    /// is made knowing its back or its length where it's made: of a type
+    /// whose question is a type's, or of a local the body steps from its
+    /// back or counts there (`LengthAsked::Counted`), by its MIR identity,
+    /// never another value of its type (#2158). The one answer of what's
     /// stepped from its back, which the held flip asks of a chain's source
-    /// (`decide_held`, #1681).
+    /// and root (`decide_held`, #1681).
     pub(in crate::lower) fn made_knowing(
         &self,
         recognition: Recognition<'_, 'tcx>,
-        (owner, mir): (rustc_span::def_id::DefId, &rustc_middle::mir::Body<'tcx>),
-        ty: Ty<'tcx>,
+        owner: rustc_span::def_id::DefId,
+        (local, ty): (rustc_middle::mir::Local, Ty<'tcx>),
     ) -> bool {
+        let local = self.lent(owner, local);
+        self.typed_knowing(recognition, ty)
+            || self.locals.contains_key(&(owner, local))
+            || self.lengths.get(&(owner, local)) == Some(&LengthAsked::Counted)
+    }
+
+    /// Whether a value of type `ty` is made knowing its back wherever it's
+    /// made, its type's question (`typed`).
+    fn typed_knowing(&self, recognition: Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
         let tcx = recognition.tcx;
-        let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
-        let ty = erased(ty);
-        self.typed.contains(&ty)
-            || (self.locals.keys())
-                .chain(
-                    self.lengths
-                        .iter()
-                        .filter(|(_, how)| **how == LengthAsked::Counted)
-                        .map(|(at, _)| at),
-                )
-                .any(|&(of, local)| of == owner && erased(mir.local_decls[local].ty) == ty)
+        self.typed
+            .contains(&tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs())))
     }
 }
 

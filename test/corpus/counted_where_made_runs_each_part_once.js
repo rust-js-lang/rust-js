@@ -5,9 +5,7 @@ import {
   $exactLen,
   $iterEq,
   $iterator,
-  $lazyChain,
   $lazyRange,
-  $lazyZip,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
@@ -16,6 +14,7 @@ import {
   $sizeHint,
   $unwrap,
   $zipEnds,
+  iterator_chain,
   iterator_stepBy,
   iterator_zip,
 } from "@rust-js/std";
@@ -30,14 +29,45 @@ function made(n) {
 }
 
 function main() {
+  const rangeIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $rangeNext }),
+  };
   const zipped = $iterEq(
-    $lazyZip($lazyRange(0, made(2)), $iterator({ start: made(1), end: made(4) }, $rangeNext)),
-    $lazyZip($lazyRange(0, 2), $lazyRange(1, 3)),
+    iterator_zip(
+      { start: 0, end: made(2) },
+      { start: made(1), end: made(4) },
+      { next: $rangeNext },
+      rangeIntoIterator,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ),
+    iterator_zip(
+      { start: 0, end: 2 },
+      { start: 1, end: 3 },
+      { next: $rangeNext },
+      rangeIntoIterator,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ),
     $eq,
   );
   console.log(`zipped eq: ${zipped}`);
   const chained = $iterEq(
-    $lazyChain($lazyRange(0, made(2)), $iterator({ start: made(1), end: made(4) }, $rangeNext)),
+    iterator_chain(
+      { start: 0, end: made(2) },
+      { start: made(1), end: made(4) },
+      { next: $rangeNext },
+      rangeIntoIterator,
+    ),
     $lazyRange(0, 5),
   );
   console.log(`chained eq: ${chained}`);
@@ -64,7 +94,7 @@ function main() {
       { start: 0, end: made(2) },
       { start: made(1), end: made(4) },
       { next: $rangeNext },
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
+      rangeIntoIterator,
       true,
       true,
       true,

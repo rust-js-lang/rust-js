@@ -7,9 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a JSX call from MIR has no THIR call for its shape: props in the struct's order",
     file: "src/lower/mir/jsx_props.rs",
-    find: "        crate::lower::body_queries::the_one(calls)\n    }\n\n    /// Where each argument",
-    replace:
-      "        crate::lower::body_queries::the_one(calls).filter(|_| false)\n    }\n\n    /// Where each argument",
+    find: "        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span)?;\n",
+    replace: "        let call = crate::lower::body_queries::the_call_of_at(thir, def_id, fn_span).filter(|_| false)?;\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",

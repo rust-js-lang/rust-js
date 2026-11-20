@@ -218,16 +218,13 @@ function main() {
       }
     }
   }
-  const past = $iterator(
+  const past = iterator_take(
     count(),
-    countIterator_next,
-    false,
+    2,
+    { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
     undefined,
-    undefined,
-    countIterator_sizeHint,
-    undefined,
-    countIterator_nth,
-  ).take(2);
+    dDrop_drop,
+  );
   let none = $nthDropping($lent(past), 4, dDrop_drop, false);
   function map(d) {
     const result = d[0];

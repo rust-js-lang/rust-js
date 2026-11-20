@@ -691,3 +691,50 @@ or by a test of its own, found none. New corpus case
 test/cross-crate-iterators.test.ts; mutations
 `transparent-library-iterator-unseen` and
 `transparent-opaque-iterator-unrevealed`.
+
+## Amendment: the held flip asks the value, not its type (2026-11-20, #2158, #2175)
+
+`BackStepped::made_knowing`, which the held flip asks of a chain's source
+and of its root, answered by type. It said a value is made knowing its back
+if any local of the same type in the body is stepped from its back or counted
+there. So one stepped value of a type kept every chain of that type in the
+body hand-written. `let mut other = Ends(2, 9); other.next_back();` made
+`Ends(1, 4).map(f)` and a variable's `apart.map(f)` hand-written, where without
+it each is std's compiled struct. `stepped_locals` and `stepped_from_its_back`
+already answered by the MIR identity of what holds a value. The type answer
+was a second rule.
+
+Now `made_knowing` asks of the MIR local that holds the value. It answers
+yes where the local's type is a type's question (`typed`), the body steps the
+local from its back, or the body counts it. The held flip finds that local by
+the join's owner, `body_queries/span_join.rs`:
+- a variable's, through a borrow or a deref of it: the one whole local its
+  binding's span names in MIR's debug info (`var_local`). mir/locals.rs's
+  debug assertion of one `Name` per variable asks the same join.
+- a call's result: the destination of the one MIR call at its `fn_span`
+  (`call_destination`).
+- a value made where it's written, `Down(2)` of `Down(2).chain(Down(3))`:
+  the one whole local MIR assigns at its span (`assigned_local`). The
+  sides of a chain stepped from its back where it's made are marked so by
+  their MIR identity, and stay hand-written.
+
+A span that's no one local's is made knowing. That is the hand-written
+form, today's answer for such a type, and correct since #2157, only longer.
+`stepped_from_its_back` and `made_counted_from_its_back` ask BackStepped's
+`lent` for the local a `&mut` lends. The held flip peels a source's borrow
+before its join, so `made_knowing` asks of the local itself.
+
+`mir/jsx_props.rs`'s `thir_call` made its own join of MIR's call to THIR's,
+the one call of a function at a span (#2175). That join is now span_join's
+`the_call_of_at`, and `thir_call` takes it apart.
+
+Only the form changes (ADR 0262's first case): both forms give native's
+answers. `filters_held_double_ended.rs`'s two `evens_or_tens(..).rev()`,
+beside its `both` of their type stepped from its back, are std's `Rev` now,
+its snapshot moved, its answers native's. Held by
+`test/corpus/held_chain_beside_another_value_stepped_from_its_back.rs`
+against native Rust. Its snapshot holds both chains as std's structs beside
+the stepped `other`, and a variable stepped from its back, or lent `&mut` and
+stepped so, still hand-written. Mutations: `made-knowing-by-its-body`,
+`made-knowing-of-a-value-made-here`, `made-knowing-borrow-unpeeled`, and
+`held-flip-of-a-source-made-knowing-its-back` retargeted.

@@ -2,17 +2,18 @@
 
 import {
   $foldOf,
-  $iterator,
   $next,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $roomForHint,
   $tryOf,
   filterDoubleEndedIterator_nextBack,
   filterDoubleEndedIterator_rfold,
   filterDoubleEndedIterator_tryRfold,
   iterator_filter,
   iterator_map,
+  iterator_rev,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
@@ -54,6 +55,15 @@ function evensOrTens(evens) {
 }
 
 function main() {
+  const mapIterator = {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+  };
+  const twoIterator = {
+    next: (iterator) => twoIterator_next(iterator, { next: $next, fold: $foldOf }, mapIterator),
+  };
   const mapDoubleEndedIterator = {
     next_back: (iterator) =>
       mapDoubleEndedIterator_nextBack(iterator, {
@@ -121,41 +131,18 @@ function main() {
         ends,
       ),
   };
+  const twoDoubleEndedIterator = {
+    next_back: (iterator) =>
+      twoDoubleEndedIterator_nextBack(iterator, filterDoubleEndedIterator, mapDoubleEndedIterator),
+  };
   const evens = Array.from(
-    $iterator(
-      evensOrTens(true),
-      (iterator) =>
-        twoDoubleEndedIterator_nextBack(
-          iterator,
-          filterDoubleEndedIterator,
-          mapDoubleEndedIterator,
-        ),
-      true,
-    ),
+    $roomForHint(iterator_rev(evensOrTens(true), twoIterator, twoDoubleEndedIterator), 4, false),
   );
   const tens = Array.from(
-    $iterator(
-      evensOrTens(false),
-      (iterator) =>
-        twoDoubleEndedIterator_nextBack(
-          iterator,
-          filterDoubleEndedIterator,
-          mapDoubleEndedIterator,
-        ),
-      true,
-    ),
+    $roomForHint(iterator_rev(evensOrTens(false), twoIterator, twoDoubleEndedIterator), 4, false),
   );
   const both = evensOrTens(true);
-  const next = twoIterator_next(
-    both,
-    { next: $next, fold: $foldOf },
-    {
-      next: $next,
-      fold: $foldOf,
-      getUnchecked: (iterator, i) =>
-        mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
-    },
-  );
+  const next = twoIterator_next(both, { next: $next, fold: $foldOf }, mapIterator);
   const arg = twoDoubleEndedIterator_nextBack(
     both,
     filterDoubleEndedIterator,

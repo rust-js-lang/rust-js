@@ -3,10 +3,13 @@
 import {
   $flattenEnds,
   $iter,
-  $iterator,
+  $knowing,
   $next,
   $nextBack,
+  $tryOf,
+  flattenDoubleEndedIterator_advanceBackBy,
   flattenDoubleEndedIterator_nextBack,
+  flattenDoubleEndedIterator_tryRfold,
   iterator_flatten,
 } from "@rust-js/std";
 
@@ -153,7 +156,14 @@ function main() {
   console.log(
     `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`}`,
   );
-  const h = $iterator([0], flakyIterator_next).flatMap((item) => item);
+  const h = iterator_flatten(
+    [0],
+    { next: flakyIterator_next },
+    intoIterator,
+    false,
+    undefined,
+    false,
+  );
   const value$14 = $next(h);
   const value$15 = $next(h);
   const value$16 = $next(h);
@@ -195,9 +205,51 @@ function main() {
   );
   console.log(
     `[${both(
-      $flattenEnds(
-        $iterator([0], flakyIterator_next, false, flakyDoubleEndedIterator_nextBack),
-        (item) => $iter(item),
+      $knowing(
+        iterator_flatten([0], { next: flakyIterator_next }, intoIterator, false, undefined, false),
+        (iterator) =>
+          flattenDoubleEndedIterator_nextBack(
+            iterator,
+            { next_back: flakyDoubleEndedIterator_nextBack },
+            intoIterator,
+            { next: $next },
+            { next_back: $nextBack },
+            false,
+            false,
+          ),
+        undefined,
+        undefined,
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          flattenDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: flakyIterator_next },
+            { next_back: flakyDoubleEndedIterator_nextBack },
+            intoIterator,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+            false,
+            false,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+        (iterator, n) =>
+          flattenDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: flakyIterator_next },
+            { next_back: flakyDoubleEndedIterator_nextBack },
+            intoIterator,
+            { next: $next },
+            { next_back: $nextBack },
+            false,
+            false,
+          ),
       ),
     )
       .map((item) => (item == null ? "None" : `Some(${item})`))

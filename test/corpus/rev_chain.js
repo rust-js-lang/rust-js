@@ -5,11 +5,19 @@ import {
   $debugStr,
   $iter,
   $iterator,
+  $knowing,
   $lazyChain,
   $mapEnds,
+  $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
+  $tryOf,
+  iterator_map,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_tryRfold,
+  mapExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -28,7 +36,31 @@ function main() {
     `[${Array.from(
       $rev(
         $lazyChain(
-          $mapEnds($iterator({ start: 1, end: 3 }, $rangeNext, false, $rangeNextBack), t),
+          $knowing(
+            iterator_map({ start: 1, end: 3 }, t, { next: $rangeNext }),
+            (iterator) =>
+              mapDoubleEndedIterator_nextBack(iterator, {
+                next_back: $rangeNextBack,
+                nthBack: $rangeNthBack,
+              }),
+            (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
+            undefined,
+            undefined,
+            (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $rangeNext },
+                { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+                $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          ),
           $mapEnds($iterator({ start: 10, end: 12 }, $rangeNext, false, $rangeNextBack), t),
         ),
       ).take(3),

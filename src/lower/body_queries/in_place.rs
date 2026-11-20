@@ -180,17 +180,41 @@ fn held_links<'tcx>(
     (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
 ) -> IndexSet<ExprId> {
     let thir = &body.thir;
-    let held_apart = |source: ExprId| {
-        matches!(thir[strip(thir, source)].kind, ExprKind::VarRef { .. })
-            && !back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty)
+    // Whether the value `at` gives is made knowing its back or its length,
+    // asked of the MIR local that holds it (`BackStepped::made_knowing`,
+    // #2158): a variable's, through a borrow of it, or a call's result,
+    // each by its span (`span_join`), or one made where it's written, the
+    // local it's made in. Any other, a field's, or a span that's no one
+    // local's, made knowing, the hand-written form.
+    let made_knowing = |at: ExprId| {
+        let mut place = strip(thir, at);
+        while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = thir[place].kind {
+            place = strip(thir, arg);
+        }
+        let local = match thir[place].kind {
+            ExprKind::VarRef { id } => super::var_local(recognition.tcx, mir, id),
+            ExprKind::Call { fun, fn_span, .. } => match *thir[fun].ty.kind() {
+                ty::FnDef(callee, _) => super::call_destination(mir, callee, fn_span),
+                _ => None,
+            },
+            ExprKind::Adt(_)
+            | ExprKind::Literal { .. }
+            | ExprKind::Array { .. }
+            | ExprKind::Repeat { .. }
+            | ExprKind::Tuple { .. }
+            | ExprKind::Closure(_) => super::assigned_local(mir, thir[place].span),
+            _ => None,
+        };
+        local.is_none_or(|local| back_stepped.made_knowing(*recognition, body.def_id, (local, thir[at].ty)))
     };
+    let held_apart =
+        |source: ExprId| matches!(thir[strip(thir, source)].kind, ExprKind::VarRef { .. }) && !made_knowing(source);
     let flipped_link = |link: ExprId| match thir[link].kind {
         ExprKind::Call { fun, .. } if matches!(*thir[fun].ty.kind(), ty::FnDef(callee, _) if flipped.contains(&callee)) => {
             Some(link)
         }
         _ => None,
     };
-    let made_knowing = |source: ExprId| back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty);
     // What the ground made in place, a JS iterator: a call, or a variable
     // a `let` binds one to, `let a = v.iter().map(f)`, made in place as
     // what it's given to, `a.zip(b)`, was (`let_made`). A link given one,
