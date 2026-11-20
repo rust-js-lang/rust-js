@@ -523,6 +523,17 @@ test("a library that passes a dyn on makes none; one whose ? converts into one d
   expect(native).toBe('["[", "bad ", "12", "]"]\n');
 }, underLoad(300_000));
 
+// So does one that converts its error into a `Box<dyn Error>` by `.into()`,
+// std's `Into`, by the conversion's direction, `recognition::conversion`'s
+// (#2166).
+test("a library whose .into() converts into a dyn makes one", () => {
+  const native = piecewiseChain(piecewisePairs, "dyn_made_by_a_librarys_into", [
+    "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
+    "#1797",
+  ]);
+  expect(native).toBe('["[", "bad ", "12", "]"]\n');
+}, underLoad(300_000));
+
 // A library frames each writer function another crate can reach, as a
 // consumer may name one a `fn` pointer its framed writer calls (#1760).
 test("a library's writer function a consumer names a fn pointer writes a piece at a time", () => {

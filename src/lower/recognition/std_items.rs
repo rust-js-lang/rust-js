@@ -817,6 +817,40 @@ pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && is_std_path(tcx, id, StdPath::StrFromStr)
 }
 
+/// What std's conversion trait `tr`, of `args`, converts, `(to, from,
+/// tried)`: `From<T>`'s and `TryFrom<T>`'s `Self` from its `T`, `Into<U>`'s
+/// and `TryInto<U>`'s `U` from its `Self`; `tried` of the `Try` ones, whose
+/// result is a `Result`. The one answer of a conversion's direction
+/// (#2166).
+pub(crate) fn conversion_by_trait<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    tr: DefId,
+    args: rustc_middle::ty::GenericArgsRef<'tcx>,
+) -> Option<(rustc_middle::ty::Ty<'tcx>, rustc_middle::ty::Ty<'tcx>, bool)> {
+    let mut types = args.types();
+    let (first, second) = (types.next()?, types.next()?);
+    match () {
+        _ if is_std_def(tcx, tr, StdItem::From) => Some((first, second, false)),
+        _ if is_std_def(tcx, tr, StdItem::Into) => Some((second, first, false)),
+        _ if is_std_def(tcx, tr, StdItem::TryFrom) => Some((first, second, true)),
+        _ if is_std_def(tcx, tr, StdItem::TryInto) => Some((second, first, true)),
+        _ => None,
+    }
+}
+
+/// What a call of `def_id` with `args`, `From::from` or `Into::into`,
+/// converts, `(to, from)` (`conversion_by_trait`).
+pub(crate) fn conversion<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: rustc_middle::ty::GenericArgsRef<'tcx>,
+) -> Option<(rustc_middle::ty::Ty<'tcx>, rustc_middle::ty::Ty<'tcx>)> {
+    match conversion_by_trait(tcx, tcx.trait_of_assoc(def_id)?, args)? {
+        (to, from, false) => Some((to, from)),
+        (.., true) => None,
+    }
+}
+
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
     match item {
         // Known by its crate and name: `core`'s `OnceCell` and `LazyCell`,

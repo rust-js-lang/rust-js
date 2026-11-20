@@ -677,14 +677,9 @@ pub(super) fn error_dyns_drop<'tcx>(
                 recognition.is_io_error(tcx.type_of(imp).instantiate_identity().skip_normalization())
             });
             let made = of_io_error.then(|| recognition.classify(callee, args)).flatten();
-            let from = match (made, tcx.trait_of_assoc(callee)) {
+            let from = match (made, crate::lower::recognition::conversion(tcx, callee, args)) {
                 (Some(Std::IoError(IoErrorOp::New | IoErrorOp::Other)), _) => types.last().copied(),
-                (_, Some(tr)) if is_std_def(tcx, tr, StdItem::From) && types.len() == 2 && boxed_error(types[0]) => {
-                    Some(types[1])
-                }
-                (_, Some(tr)) if is_std_def(tcx, tr, StdItem::Into) && types.len() == 2 && boxed_error(types[1]) => {
-                    Some(types[0])
-                }
+                (_, Some((to, from))) if types.len() == 2 && boxed_error(to) => Some(from),
                 _ if tcx.is_lang_item(callee, LangItem::TryTraitFromResidual)
                     && types.len() == 2
                     && error_of(types[0]).is_some_and(boxed_error) =>

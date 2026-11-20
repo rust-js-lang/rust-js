@@ -118,12 +118,12 @@ pub(crate) fn tree_built_entries<'tcx>(
     args: ty::GenericArgsRef<'tcx>,
 ) -> Option<Ty<'tcx>> {
     let trait_id = tcx.trait_of_assoc(def_id)?;
+    // A conversion's, `From::from`'s or `Into::into`'s, what it makes
+    // (`conversion`, #2166).
     let made = match tcx.item_name(def_id).as_str() {
         "collect" if is_iterator_trait(tcx, trait_id) => args.types().nth(1)?,
         "from_iter" if trait_id == std_item(tcx, StdItem::FromIterator) => args.types().next()?,
-        "from" if trait_id == std_item(tcx, StdItem::From) => args.types().next()?,
-        "into" if trait_id == std_item(tcx, StdItem::Into) => args.types().nth(1)?,
-        _ => return None,
+        _ => super::conversion(tcx, def_id, args)?.0,
     };
     let ty::Adt(adt, of) = made.kind() else { return None };
     // `alloc`'s, which a `#![no_std]` crate may not load (#983).

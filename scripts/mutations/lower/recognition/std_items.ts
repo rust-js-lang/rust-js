@@ -358,4 +358,28 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^hasher_written_through_a_box.rs$"],
   },
+  {
+    name: "conversion-into-backwards",
+    breaks: "`.into()` is taken to convert its target into its receiver, so a value with a destructor `.into()`'d into a `Box<dyn Error>` isn't seen made one, and the box never drops it (#2166)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        _ if is_std_def(tcx, tr, StdItem::Into) => Some((second, first, false)),\n",
+    replace: "        _ if is_std_def(tcx, tr, StdItem::Into) => Some((first, second, false)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_made_by_into_drops.rs$"],
+  },
+  {
+    name: "conversion-try-from-untried",
+    breaks: "a `TryFrom` is taken for a `From`, so generic code's dictionary of one gives the value where it gives a `Result` of it (#1284, #2166)",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        _ if is_std_def(tcx, tr, StdItem::TryFrom) => Some((first, second, true)),\n",
+    replace: "        _ if is_std_def(tcx, tr, StdItem::TryFrom) => Some((first, second, false)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^(conversions_through_generic_code|try_from_int_tested|char_try_from|std_conversions|newtype_conversions).rs$"],
+  },
+  {
+    name: "from-dictionary-backwards",
+    breaks: "a `From<U>` dictionary of a `W` converts a `W` into a `U`",
+    file: "src/lower/recognition/std_items.rs",
+    find: "        _ if is_std_def(tcx, tr, StdItem::From) => Some((first, second, false)),\n",
+    replace: "        _ if is_std_def(tcx, tr, StdItem::From) => Some((second, first, false)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
+  },
 ];

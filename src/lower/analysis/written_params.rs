@@ -285,20 +285,24 @@ pub(super) fn written_params<'tcx>(
             Some((pointer_target(tcx, body.thir[source].ty), expr.ty))
         }
         ExprKind::Call { fun, .. } => fn_def(body.thir[fun].ty).and_then(|(callee, args)| {
-            let residual = tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual);
-            let converts = residual
-                || tcx.trait_of_assoc(callee).is_some_and(|tr| {
-                    use crate::lower::recognition::{StdItem, is_std_def};
-                    is_std_def(tcx, tr, StdItem::From) || is_std_def(tcx, tr, StdItem::Into)
-                });
+            // A conversion, `From::from` or `Into::into`, to a pair `dyn`
+            // from what isn't one, by the trait's direction
+            // (`recognition::conversion`, #2166).
+            if let Some((to, from)) = crate::lower::recognition::conversion(tcx, callee, args) {
+                return (fmt_dyn(to) && !fmt_dyn(from)).then_some((from, to));
+            }
+            // `?`'s residual, a `Result<Infallible, E>`, made a pair `dyn`:
+            // its `E`.
+            if !tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual) {
+                return None;
+            }
             let made_into = args.types().find(|&ty| fmt_dyn(ty))?;
             let given = args.types().find(|&ty| !fmt_dyn(ty))?;
-            // `?`'s residual, a `Result<Infallible, E>`: its `E`.
-            let made_of = match (residual, given.kind()) {
-                (true, ty::Adt(_, parts)) => parts.types().last().unwrap_or(given),
+            let made_of = match given.kind() {
+                ty::Adt(_, parts) => parts.types().last().unwrap_or(given),
                 _ => given,
             };
-            converts.then_some((made_of, made_into))
+            Some((made_of, made_into))
         }),
         _ => None,
     };

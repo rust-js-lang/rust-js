@@ -998,14 +998,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => None,
             };
         }
-        let tr = tcx.trait_of_assoc(def_id)?;
-        let mut types = args.types();
-        let (first, second) = (types.next()?, types.next()?);
-        let (to, from) = match () {
-            _ if is_std_def(tcx, tr, StdItem::From) => (first, second),
-            _ if is_std_def(tcx, tr, StdItem::Into) => (second, first),
-            _ => return None,
-        };
+        let (to, from) = super::conversion(tcx, def_id, args)?;
         (self.is_io_error(to) && self.is_io_error_kind(from)).then_some(IoErrorOp::FromKind)
     }
 

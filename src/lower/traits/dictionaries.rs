@@ -1043,7 +1043,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
             )]));
         }
-        if let Some(made) = self.conversion_dictionary(tr, ty, span)? {
+        if let Some(made) = self.conversion_dictionary(tr, span)? {
             return Ok(made);
         }
         if self.tcx.is_lang_item(tr.def_id, LangItem::Copy) {

@@ -8,26 +8,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `x.into()` of a `T: Into<U>` (ADR 0108), and `W::from(u)` of a `W:
     /// From<U>` (ADR 0477): std's conversion, of a `T` to itself too (ADR
     /// 0387), or the crate's `From`; `None` of another trait.
-    pub(super) fn conversion_dictionary(
-        &mut self,
-        tr: ty::TraitRef<'tcx>,
-        ty: Ty<'tcx>,
-        span: Span,
-    ) -> R<Option<Expr>> {
+    pub(super) fn conversion_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Option<Expr>> {
         // `x.try_into()` of a `U: TryFrom<T>` and `W::try_from(u)` too,
         // std's `Result` of one (#1284).
-        let tried =
-            is_std_def(self.tcx, tr.def_id, StdItem::TryInto) || is_std_def(self.tcx, tr.def_id, StdItem::TryFrom);
-        let into = is_std_def(self.tcx, tr.def_id, StdItem::Into) || is_std_def(self.tcx, tr.def_id, StdItem::TryInto);
-        if tried || into || is_std_def(self.tcx, tr.def_id, StdItem::From) {
+        // Its direction, `recognition::conversion_by_trait`'s, of its `Self`
+        // and its argument (#2166).
+        if let Some((target, source, tried)) =
+            crate::lower::recognition::conversion_by_trait(self.tcx, tr.def_id, tr.args)
+        {
             let method = (self.tcx.associated_items(tr.def_id).in_definition_order())
                 .find(|item| item.is_fn())
                 .expect("a conversion's method")
                 .def_id;
-            let (target, source) = match into {
-                true => (tr.args.type_at(1), ty),
-                false => (ty, tr.args.type_at(1)),
-            };
             let from = std_item(self.tcx, if tried { StdItem::TryFrom } else { StdItem::From });
             let from = (self.tcx.associated_items(from).in_definition_order())
                 .find(|item| item.is_fn())

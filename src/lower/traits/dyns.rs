@@ -149,22 +149,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::call(Expr::member(dictionary, "fmt"), values)))
     }
 
-    /// What `From::from` or `Into::into` makes, and from what.
+    /// What `From::from` or `Into::into` makes, and from what
+    /// (`recognition::conversion`).
     pub(in crate::lower) fn converted(
         &self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
     ) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
-        let tr = self.tcx.trait_of_assoc(def_id)?;
-        let mut types = args.types();
-        let (first, second) = (types.next()?, types.next()?);
-        if is_std_def(self.tcx, tr, StdItem::From) {
-            Some((first, second))
-        } else if is_std_def(self.tcx, tr, StdItem::Into) {
-            Some((second, first))
-        } else {
-            None
-        }
+        crate::lower::recognition::conversion(self.tcx, def_id, args)
     }
 
     /// The dictionary of a `Box<dyn Error>`, `to`, made from a `from` by std's

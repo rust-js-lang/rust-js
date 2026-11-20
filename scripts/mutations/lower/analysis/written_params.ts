@@ -172,8 +172,8 @@ export const mutations: Mutation[] = [
     name: "makes-fmt-dyns-conversions-left",
     breaks: "a library's `?` that converts its error into a `Box<dyn Error>` isn't taken to make a `dyn`, which a consumer writing one may meet without `fmtInto` (#1712)",
     file: "src/lower/analysis/written_params.rs",
-    find: "            converts.then_some((made_of, made_into))\n",
-    replace: "            (false && converts).then_some((made_of, made_into))\n",
+    find: "            Some((made_of, made_into))\n",
+    replace: "            None\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library that passes a dyn on makes none"],
   },
   {
@@ -280,5 +280,13 @@ export const mutations: Mutation[] = [
     find: "        !self.of_dyn(tr) && !self.given_adts.contains(&adt) && self.made_adts.contains(&adt)\n",
     replace: "        !self.of_dyn(tr) && !self.adts.contains(&adt) && self.made_adts.contains(&adt)\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
+  },
+  {
+    name: "makes-fmt-dyns-from-into-left",
+    breaks: "a `From`/`Into` conversion of a value into a `Box<dyn Debug>` or `Box<dyn Display>` isn't taken to make a pair `dyn`, which a consumer writing one may meet without `fmtInto` (#1712, #2166)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "                return (fmt_dyn(to) && !fmt_dyn(from)).then_some((from, to));\n",
+    replace: "                return None;\n",
+    tests: ["test/writer-sink.test.ts", "-t", "into\\(\\) converts into a dyn"],
   },
 ];

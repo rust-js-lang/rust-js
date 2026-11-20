@@ -29,14 +29,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
   },
   {
-    name: "from-dictionary-backwards",
-    breaks: "a `From<U>` dictionary of a `W` converts a `W` into a `U`",
-    file: "src/lower/traits/dictionaries/conversions.rs",
-    find: "                false => (ty, tr.args.type_at(1)),\n",
-    replace: "                false => (tr.args.type_at(1), ty),\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_from.rs$"],
-  },
-  {
     name: "std-try-conversion-unanswered",
     breaks: "a `TryFrom<&[u8]>` bound given an array of std's, `[u8; 2]`, is refused, its conversion no dictionary's (#1284)",
     file: "src/lower/traits/dictionaries/conversions.rs",
