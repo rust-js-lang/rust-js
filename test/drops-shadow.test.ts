@@ -86,8 +86,10 @@ test("a drop behind a pointer is compared whole, as the writer drops it", () => 
 
 test("two drops written alike are compared as a multiset", () => {
   const lines = shadowOf("default_matches_its_tuple_whole.rs").filter(([, path]) => path === "normal");
-  const at = lines.filter(([, , , where]) => where.includes(":22:37:")).map(([verdict]) => verdict);
-  expect(at.sort()).toEqual(["agree", "agree"]);
+  // One agrees alone; the other as a multiset of the whole, not part by
+  // part, which only a place with parts needs (#2177).
+  const at = lines.filter(([, , , where]) => where.includes(":22:37:")).map(([verdict, , , , detail]) => `${verdict} ${detail}`);
+  expect(at.sort()).toEqual(["agree 1 compared", "agree alike drops as a multiset, 2"]);
 });
 
 // A box's deref as `ElaborateBoxDerefs` writes it, `_p = copy (_b.0) as
