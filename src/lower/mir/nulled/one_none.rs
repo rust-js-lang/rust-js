@@ -596,5 +596,4 @@ pub(super) fn never_null(value: &Expr) -> bool {
             | K::New(..)
     ) || value.has_null_fallback()
         || matches!(&value.kind, K::Binary(js::Op::Coalesce, _, given) if matches!(given.kind, K::Undefined))
-        || value.facts.has(js::Known::Present)
 }

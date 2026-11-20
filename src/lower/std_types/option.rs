@@ -331,7 +331,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // takes first (`proved_present`, #1933).
                 let unwrap = crate::lower::body_queries::the_call_at(self.frame.thir, span);
                 if (unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))
-                    || list[0].facts.has(js::Known::Present)
                     || call.receiver == crate::lower::mir::Presence::Present)
                     && !list[1..].iter().any(Expr::has_effects)
                 {

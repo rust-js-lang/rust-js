@@ -558,3 +558,12 @@ one: the guard went, check:fast's whole suite and React's port as they
 were. `trait_call`, `eq_values` and `eq_value` take `same_none` each, one
 name for each, every caller giving it (the lead's: no second spelling of
 one call).
+
+## Amendment: two `Known::Present` readers MIR answered beside (2026-11-20, #2112)
+
+S5 phase 3's first step (Campaign 3, #2200's class 4 row L408): `unwrap`'s
+value as it is, of what MIR proves there (`Given::receiver`), also took a
+receiver `Known::Present`; and `never_null`, what's given a callback as it
+is, took a value `Known::Present`, where its caller had MIR's presences.
+Neither decided anything: without them check:fast's whole suite, React's
+port and the crate corpus were as they were. Both went.
