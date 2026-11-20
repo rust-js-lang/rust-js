@@ -21,7 +21,6 @@ import {
   primitivePattern,
   returnType,
   rustCode,
-  UNCLASSIFIED,
 } from "../scripts/owners";
 
 const state = ownersState(root);
@@ -49,18 +48,14 @@ test("each owner and API a row names is there", () => {
 });
 
 // Every answer a module beyond its own may ask is a row's or a helper's,
-// and what's neither is on the ratchet, which only falls (ADR 1175).
+// with no list of exceptions: the sweeps' ratchet reached 0 and went
+// (ADR 1175, amended).
 test("each answer visible outside its module is a row's API or a helper", () => {
   expect(state.all.length).toBeGreaterThan(1000);
   expect(state.both).toEqual([]);
-  const listed = new Set(state.ratchet);
-  const left = new Set(state.unclassified);
-  // New: name it in a row of docs/architecture.md's "Semantic owners", under
-  // its owner, or mark it `// helper: <reason>` above its `fn`.
-  expect(state.unclassified.filter((line) => !listed.has(line))).toEqual([]);
-  // Classified, renamed or gone: take its line off the ratchet.
-  expect(state.ratchet.filter((line) => !left.has(line))).toEqual([]);
-  expect(state.ratchet, `${UNCLASSIFIED} is sorted, each line once`).toEqual([...new Set(state.ratchet)].sort());
+  // Name it in a row of docs/architecture.md's "Semantic owners", under its
+  // owner, or mark it `// helper: <reason>` above its `fn`.
+  expect(state.unclassified).toEqual([]);
 });
 
 test("each row's primitive is read by its owners alone", () => {

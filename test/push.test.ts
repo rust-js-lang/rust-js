@@ -145,7 +145,7 @@ test("a rebase's conflict in a line set keeps what neither side took off and wha
   // Every known list is a line set, and the rustc suite's lists.
   const known = readdirSync(join(root, "test")).filter((name) => name.endsWith("-known.txt"));
   expect(known.length).toBeGreaterThan(5);
-  for (const name of [...known, "rustc-known-failures.txt", "rustc-native-failures.txt", "rustc-out-of-scope.txt", "owners-unclassified.txt"]) expect([name, lineSet(`test/${name}`) && existsSync(join(root, "test", name))]).toEqual([name, true]);
+  for (const name of [...known, "rustc-known-failures.txt", "rustc-native-failures.txt", "rustc-out-of-scope.txt"]) expect([name, lineSet(`test/${name}`) && existsSync(join(root, "test", name))]).toEqual([name, true]);
   expect(remakeable(["test/metamorphic-known.txt", "test/sig-binders.txt"])).toBe(true);
   expect(remakeable(["test/metamorphic.test.ts"])).toBe(false);
   expect(lineSet("docs/readability.txt")).toBe(false);

@@ -1,5 +1,0 @@
-# The front end's answers visible outside their modules that no row of
-# docs/architecture.md's "Semantic owners" names and no `// helper:` mark
-# marks (ADR 1175, #2162): what the sweeps have left to classify. Only
-# falls: test/architecture-owners.test.ts refuses a line added, and one
-# whose answer is classified, renamed or gone until it comes off.

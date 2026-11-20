@@ -93,9 +93,9 @@ primitives of rows, so only the mark's owner reads them (#2159's
 aren't asked: the TypeScript the checkout has is 7's, which has no
 in-process API.
 
-**Merging.** test/owners-unclassified.txt is a line set to `bun run push`
-(scripts/push.ts `lineSet`): two sweeps that each take lines off merge as
-sets.
+**Merging.** test/owners-unclassified.txt was a line set to `bun run push`
+(scripts/push.ts `lineSet`): two sweeps that each took lines off merged as
+sets. It went with the list (the amendment below).
 
 **Rows written before this.** They keep their concept as the Question
 cell until their area's sweep phrases each as a question. A second
@@ -135,3 +135,13 @@ Held by:
 - the mutations `owners-guesses-unread` and `owners-guess-held-read` (scripts/mutations/owners.ts).
 
 The first two rows are the runtime's: whether an iterator is an array's, `$arrayIter`, instead of `.items !== undefined` and `.items === undefined`; and how many a `TrustedLen` side has left, `$lengthFirst`, instead of `typeof it.len`.
+
+## Amendment: the table is complete, and the ratchet goes (2026-11-20, #2162)
+
+The sweeps took test/owners-unclassified.txt from 1,229 lines to 0: the
+Mac mini's share and m6-lily's, the last five mir/nulled's (a0c190927).
+With nothing left to classify, a list of exceptions is a second way to
+pass the test, so it goes: the file, its `lineSet` entry in
+scripts/push.ts, and `UNCLASSIFIED`. Completeness is strict: every
+candidate is named in a row or marked `// helper: <reason>`, and
+test/architecture-owners.test.ts fails on any that's neither, naming it.

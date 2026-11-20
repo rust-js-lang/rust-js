@@ -5,8 +5,8 @@
 //   completeness  every function of the front end visible outside its
 //                 module that answers a question is an API a row names,
 //                 under that row's owner, or is marked a helper with its
-//                 reason; test/owners-unclassified.txt lists what's left,
-//                 a ratchet that only falls.
+//                 reason; none is neither (the sweeps' ratchet reached 0
+//                 and went, #2162).
 //   exclusivity   a row's primitive is read in no file but its owners',
 //                 and by one of them; a guess it names after "instead of",
 //                 a type's shape that stood in for it, is read in no file
@@ -20,10 +20,6 @@ import { join } from "node:path";
 
 /** The page whose table it is. */
 export const OWNER_PAGE = "docs/architecture.md";
-/** The candidates neither a row names nor a helper mark marks, one
- * `path name` line each, sorted: what the sweeps (#2162) still have to
- * classify. */
-export const UNCLASSIFIED = "test/owners-unclassified.txt";
 /** The table's header row. */
 export const HEADER = "| Question | Owner | API | Primitive |";
 /** The mark that says a candidate is a helper, not an answer others ask:
@@ -291,12 +287,12 @@ export function candidates(file: string, text: string, enums: ReadonlySet<string
 export const names = (row: OwnerRow, candidate: Candidate, files: readonly string[]) =>
   row.api.some((api) => api === candidate.name || api.endsWith(`::${candidate.name}`)) && row.owners.some((owner) => ofOwner(owner, candidate.file, files));
 
-/** A candidate's line in the ratchet. */
+/** A candidate as completeness says it: its file and its name. */
 export const listed = (candidate: Candidate) => `${candidate.file} ${candidate.name}`;
 
 /** What completeness finds: the candidates no row names and no mark marks,
- * as the ratchet lists them, sorted; and those both a row names and a mark
- * marks, which say two things. */
+ * sorted, which must be none; and those both a row names and a mark marks,
+ * which say two things. */
 export function completeness(rows: OwnerRow[], all: Candidate[], files: readonly string[]) {
   const named = (candidate: Candidate) => rows.some((row) => names(row, candidate, files));
   return {
@@ -358,10 +354,7 @@ export function ownersState(root: string) {
   const enums = fieldlessEnums([...code.entries()].filter(([file]) => file.endsWith(".rs")).map(([, c]) => c));
   for (const row of rows) for (const api of row.api) enums.add(api.replace(/^.*::/, ""));
   const all = files.filter(ofFrontEnd).flatMap((file) => candidates(file, text.get(file)!, enums));
-  const ratchet = readFileSync(join(root, UNCLASSIFIED), "utf8")
-    .split("\n")
-    .filter((line) => line !== "" && !line.startsWith("#"));
-  return { files, text, code, rows, all, ratchet, ...completeness(rows, all, files), ...exclusivity(rows, code) };
+  return { files, text, code, rows, all, ...completeness(rows, all, files), ...exclusivity(rows, code) };
 }
 
 if (import.meta.main) {

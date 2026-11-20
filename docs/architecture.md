@@ -324,9 +324,8 @@ to these rules, and `bun scripts/owners.ts` reports where it stands.
   row's API names, or one of those in `R<…>` or a `Result`, is named in a
   row's API cell, by its name or `Type::name`, its file of that row's
   owners; or it's marked `// helper: <reason>` in the comment and
-  attribute lines directly above its `fn`. Not both. What's neither is
-  listed in test/owners-unclassified.txt, which only falls: a new answer
-  needs a row or a mark, and one classified comes off the list.
+  attribute lines directly above its `fn`. Not both, and never neither:
+  a new answer needs a row or a mark.
 - **Exclusivity.** A row's primitive is read, outside comments and
   literals, in no source of `src/` (and the runtime's JS) but its owners',
   and in one of theirs. What its Primitive cell names after "instead of"
