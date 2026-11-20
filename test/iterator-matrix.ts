@@ -28,6 +28,7 @@ import { join } from "node:path";
 
 import { random } from "./generate";
 import { prelude } from "./iterator-matrix-prelude";
+import { ownClone, pathFns, type Path } from "./iterator-paths";
 import { pointsRunner } from "./panic-points";
 import { casesOf, tableOf } from "./matrix-tables";
 import { knownHeading, root, target } from "./support";
@@ -48,9 +49,11 @@ export const builds: [name: string, flags: string[]][] = [
  * numbers grid (#940), the panic points across `.await`, the async
  * table (#942), every std method that takes an iterator by value, the
  * consumer net, or each std method that changes a collection in place or
- * calls what it's given, the std net (#1171), `ITERATOR_TABLE`'s. */
-export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers" | "async" | "consumers" | "std" | "copies";
-export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers", "async", "consumers", "std", "copies"];
+ * calls what it's given, the std net (#1171), or each adapter through each
+ * step std's writes, by each path generic and boxed code reaches it, the
+ * paths table (test/iterator-paths.ts, #2112), `ITERATOR_TABLE`'s. */
+export type Table = "matrix" | "conformance" | "points" | "unwind" | "format" | "numbers" | "async" | "consumers" | "std" | "copies" | "paths";
+export const tables: Table[] = ["matrix", "conformance", "points", "unwind", "format", "numbers", "async", "consumers", "std", "copies", "paths"];
 export const table: Table = (() => {
   const which = partSetting("ITERATOR_TABLE") ?? "matrix";
   if (!(tables as string[]).includes(which)) throw new Error(`ITERATOR_TABLE=${which}: ${tables.map((t) => `\`${t}\``).join(", ")}`);
@@ -469,8 +472,9 @@ export const setters: Setter[] = ["rfold", "nth_back", "rfind"];
  * forward consumer of the same type, `paired` (#731); or of its site
  * `drop+drop`, where the drop that panics is followed by another's, which
  * as the first unwinds aborts natively, `aborts`, a program of its own
- * (`batches`, #847). */
-export type Variant = { kind: "plain" } | { kind: "captures" } | { kind: "paired"; setter: Setter } | { kind: "aborts" };
+ * (`batches`, #847); or given its consumer by a path, the paths table's
+ * (test/iterator-paths.ts). */
+export type Variant = { kind: "plain" } | { kind: "captures" } | { kind: "paired"; setter: Setter } | { kind: "aborts" } | { kind: "path"; path: Path };
 
 export type Case = { n: number; id: string; source: Source; chain: Adapter[]; consumer: Consumer; site: Site; variant: Variant };
 
@@ -534,8 +538,7 @@ const forward = ["count", "last", "nth", "vec", "fold"];
 export function allCases(): Case[] {
   const out: Case[] = [];
   const add = (source: Source, chain: Adapter[], consumer: Consumer, site: Site, variant: Variant) => {
-    const tail =
-      variant.kind === "plain" || variant.kind === "aborts" ? "" : variant.kind === "captures" ? " | captures" : ` | after ${variant.setter}`;
+    const tail = variant.kind === "captures" ? " | captures" : variant.kind === "paired" ? ` | after ${variant.setter}` : "";
     const id = `${source.name} | ${chain.map((a) => a.name).join(".") || "-"} | ${consumer.name} | ${site}${tail}`;
     out.push({ n: out.length, id, source, chain, consumer, site, variant });
   };
@@ -1091,7 +1094,8 @@ function caseFn(c: Case, n: number): string {
   if (chain.some((a) => a.name === "chain") && source.shape.item === "&D") body.push("let tail = vec![D(6), D(7)];");
   if (chain.some((a) => a.name === "chain") && source.shape.item === "&S") body.push("let tail = texts_of(&[6, 7]);");
   if (site === "stage") body.push("let mut calls = 0;");
-  if (consumer.closure) body.push("let mut seen = 0;");
+  // Of a path, its consumer's own, where the path gives it (`pathFns`).
+  if (consumer.closure && c.variant.kind !== "path") body.push("let mut seen = 0;");
   let shape = source.shape;
   let expr = source.generic ? "src" : source.expr(site);
   let panicked = false;
@@ -1125,7 +1129,9 @@ function caseFn(c: Case, n: number): string {
     }
     body.push(setterText(variant.setter, expr));
   }
-  body.push(consumer.text(expr, site === "points" ? "point" : site === "consumer"));
+  const consumed = (it: string) => consumer.text(it, site === "points" ? "point" : site === "consumer");
+  if (variant.kind === "path") return pathFns({ ...c, variant }, name, body, expr, shape, consumed);
+  body.push(consumed(expr));
   if (variant.kind === "captures") {
     const captured = capturing(body.join("\n    "));
     body.splice(0, body.length, ...Array.from({ length: captured.guards }, (_, k) => `let g${k + 1} = D(${91 + k});`), captured.text);
@@ -1226,7 +1232,10 @@ function withTwice(text: string): string {
 /** A program of `cases`, which runs each in turn. */
 export function program(cases: Case[], of: Table = table): string {
   const used = new Set(cases.map((c) => c.source.name.replace(/^generic /, "")));
-  const iterators = owns.filter((own) => used.has(`own ${own.name}`)).map((own) => ownIterator(own, of !== "matrix"));
+  // Of the paths table, each `Clone`, which a clone and a `cycle()` ask.
+  const iterators = owns
+    .filter((own) => used.has(`own ${own.name}`))
+    .map((own) => ownIterator(own, of !== "matrix") + (of === "paths" ? `\n\n${ownClone(own.name)}` : ""));
   const fns = cases.map((c, n) => caseFn(c, n));
   const runner = of === "points" ? "run_points" : "run";
   const main = `fn main() {\n${cases.map((c, n) => `    ${runner}(${JSON.stringify(c.id)}, case_${n});`).join("\n")}\n}`;
@@ -1260,17 +1269,18 @@ export function segments(stdout: string): Map<string, string> {
 const header = `// The iterator matrix's cases (ADR 1090), the conformance table's (ADR
 // 1092), the points table's (#817), the unwind table's (#854), the
 // formatting grid's (#941), the numbers grid's (#940), the async table's
-// (#942), the consumer net's and the copy matrix's that don't run as
-// native Rust does yet, each under its issue, \`#<issue>
+// (#942), the consumer net's, the copy matrix's and the paths table's
+// that don't run as native Rust does yet, each under its issue, \`#<issue>
 // <title>\`: a line a build, \`plain\` or \`std\` of the matrix's,
 // \`conformance:plain\` or \`unwind:std\` of a table's, the numbers of its
 // cases in \`allCases()\`, \`conformanceCases()\`, \`pointsCases()\`,
 // \`unwindCases()\`, \`formatCases()\`, \`numberCases()\`,
-// \`asyncCases()\`, \`consumerCases()\` or \`copyCases()\` as ranges. Each listed
-// must still fail, so the list only shrinks: \`bun test/iterator-matrix.ts
-// take-off\` takes off what the last runs found fixed. Its numbers are of
-// each table's generator version below; a change to a table's cases makes
-// its rows again, with each issue's cases found again.
+// \`asyncCases()\`, \`consumerCases()\`, \`copyCases()\` or \`pathsCases()\`
+// as ranges. Each listed must still fail, so the list only shrinks: \`bun
+// test/iterator-matrix.ts take-off\` takes off what the last runs found
+// fixed. Its numbers are of each table's generator version below; a change
+// to a table's cases makes its rows again, with each issue's cases found
+// again.
 `;
 
 // `bun test/iterator-matrix.ts take-off`: the known failures the last runs

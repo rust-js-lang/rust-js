@@ -1794,3 +1794,81 @@ their cases, which now compile std's `Enumerate`:
 `try_folds_of_stages_unwind`. Looking for those cases found #2142:
 `rposition` steps `next_back` one at a time, where std's asks
 `try_rfold`.
+
+## Amendment: the paths table, each adapter's steps by each path (2026-11-20, #2112 Change A, step 2a)
+
+Step 1 held each runtime form to std's trace, but only as the lowering
+gives it to a consumer directly. Generic and boxed code reaches an
+adapter by other paths, each with its own impl of the steps: `&mut I`'s,
+which forwards `try_fold` only of a sized `I`; `Box<I>`'s, which writes
+seven steps and leaves the rest to the traits' defaults; a type
+parameter's dictionary; an `impl Iterator` a function returns; a clone;
+and `Cycle`, which clones what it steps. A form that's right given
+directly can be wrong by one of them, and only a case that takes that
+path shows it.
+
+**The paths table, `ITERATOR_TABLE=paths` (test/iterator-paths.ts),
+is made from the catalog.** Its rows are, of each adapter A of
+`std_steps.txt` and each step s that A writes, the consumer that asks s:
+the one named s, else each whose trace over a `Map` asks `src.s`
+(`try_rfold` is asked by `rfind`). `advance_by`, `advance_back_by` and
+`is_empty` have no stable consumer, and the table says so. Each row runs
+by each of eight paths:
+
+- `&mut`: `let r = &mut w;`.
+- `&mut dyn`: `let d: &mut dyn DoubleEndedIterator<Item = T> = &mut w;`,
+  with no `len`.
+- `Box`: `Box::new(E)`.
+- `Box dyn`: `let b: Box<dyn …<Item = T> + '_> = Box::new(E);`.
+- `generic`: `fn case_N_consume(it: impl …)`.
+- `impl`: `fn case_N_make() -> impl … { E }`, for sources that borrow
+  nothing.
+- `clone`: the consumer is given `w.clone()`, then `w` is dropped.
+- `cycle`: `E.cycle().take(7)`.
+
+A consumer that steps by `&mut self`, such as `try_fold` or `nth`, is given
+a reference lent, `(&mut r)`. Called on the `&mut` itself, a method call
+reborrows and reaches the referent's own step, never `&mut I`'s. The
+sources are the crate's iterator that writes every step it can and one
+that writes none, each `Clone` printing as it clones, or a slice's items
+for `copied()` and `cloned()`. The sites are `none` and `consumer`. That
+makes 2,869 cases in 48 programs, each run natively and in both builds,
+as every iterator table is.
+
+It's cheap enough to run whole, so it does, in each push of the
+iterators' code (a step of `nets-iterators`) and in `check:fast`:
+20 s cold in 4 parts on the Mac mini, 6 s warm.
+
+**What its first run found** (both builds alike, so the lowering's):
+- #2179: a `Box` of a std adapter steps as the adapter itself, its
+  `fold`, `count` and `try_fold` reaching the crate's own `fold`, which
+  std's `Box<I>` never asks (80 case-builds).
+- #2180: a `&mut dyn Iterator` lent to `try_fold` or `try_rfold`, as in
+  `(&mut d).find(..)`, forwards them to the referent's own, where std's
+  unsized `&mut I` steps by `next` (26).
+
+Both are listed under their issues in test/iterator-matrix-known.txt
+until fixed. It refuses 177 of its 5,738 case-builds (#2181): a clone or
+`cycle()` of a flatten, a generic `rfold` or `cycle()` of a chain with a
+`Vec<D>`, and `size_hint()` of a lent `copied()`.
+
+**What it catches of #1979's survivors.** #1979's sweep of 2026-11-18
+(comment 6985986246) routed its runtime survivors and its iterator
+analysis's to this step. Of them, 41 are still listed and still in the
+catalogs; 21 more were caught or retired since, and 9 are listed but
+retired. Each of the 41 was run against all of the table. One is caught,
+`enumerate-nth-by-next`, retargeted to the rows that catch it. The other
+40 survive for the same reason: the table's chains are one adapter long,
+and in both builds an adapter of the crate's iterator given straight to
+its path is std's compiled struct. So its JS reaches only a few of the
+runtime's hand-written forms: `$enumerate`, `$skipping`, `$taking`,
+`$stepByEnds` and `$zipEnds` of generic code, `$cycleOf` and `$peek`.
+The survivors mutate others: `$lazyChain`, `$flatMap`, `$filterEnds`,
+the lazy `$Steps`, a held `Cycle`, lazy_range.js and `$consume`. They
+also mutate the analysis that chooses those forms over two adapters
+(`skip` of an `enumerate`) or across a library. Those need rows that
+reach the forms; that's the next step's question (2b, the library path,
+and chains of two), not this table's.
+
+Case (ADR 0262): R. Which of the crate's steps std calls through each
+path is observable.

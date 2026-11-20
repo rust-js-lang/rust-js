@@ -1,17 +1,18 @@
 // The iterator matrix's cases (ADR 1090), the conformance table's (ADR
 // 1092), the points table's (#817), the unwind table's (#854), the
 // formatting grid's (#941), the numbers grid's (#940), the async table's
-// (#942), the consumer net's and the copy matrix's that don't run as
-// native Rust does yet, each under its issue, `#<issue>
+// (#942), the consumer net's, the copy matrix's and the paths table's
+// that don't run as native Rust does yet, each under its issue, `#<issue>
 // <title>`: a line a build, `plain` or `std` of the matrix's,
 // `conformance:plain` or `unwind:std` of a table's, the numbers of its
 // cases in `allCases()`, `conformanceCases()`, `pointsCases()`,
 // `unwindCases()`, `formatCases()`, `numberCases()`,
-// `asyncCases()`, `consumerCases()` or `copyCases()` as ranges. Each listed
-// must still fail, so the list only shrinks: `bun test/iterator-matrix.ts
-// take-off` takes off what the last runs found fixed. Its numbers are of
-// each table's generator version below; a change to a table's cases makes
-// its rows again, with each issue's cases found again.
+// `asyncCases()`, `consumerCases()`, `copyCases()` or `pathsCases()`
+// as ranges. Each listed must still fail, so the list only shrinks: `bun
+// test/iterator-matrix.ts take-off` takes off what the last runs found
+// fixed. Its numbers are of each table's generator version below; a change
+// to a table's cases makes its rows again, with each issue's cases found
+// again.
 // generator 7fbc1959a81f
 // generator conformance 8faec5aa2791
 // generator points 1118af2341f6
@@ -22,6 +23,7 @@
 // generator consumers fedf533331c1
 // generator std 2627198495d7
 // generator copies 85599ed6142e
+// generator paths a25f0ca331e1
 
 #1180 capacity() of a collect std may make in place, its source's, not kept yet: an error naming #1180
 plain 96690,96744,96852,96906,96960,97014,97065,97119,97173,97227,97281,97332,98048-98049,98101,98195-98196,98234-98235,98273-98274,98312-98313,98349-98350,98388-98389,98427-98428,98466,98519,98521,98557-98558,98596-98597,98649,98743-98744,98782-98783,98821-98822,98860-98861,98897-98898,98936-98937,98975-98976,99014-99015,99067,99069,99105-99106,99144-99145,99369-99370,99408-99409,99484-99485,99615,99617,99692-99693,99745,99839-99840,99878-99879,99917-99918,99956-99957,99993-99994,100032-100033,100071-100072,100110-100111,100163,100165,100201-100202,100238-100239,100291,100380-100381,100417-100418,100454-100455,100491-100492,100528-100529,100565-100566,101190,101284-101285,101323-101324,101362-101363,101401-101402,101438-101439,101477-101478,101555-101556,101608,101610,101646-101647,101685-101686,101738,101832-101833,101871-101872,101910-101911,101949-101950,101986-101987,102025-102026,102064-102065,102103,102156,102158,102194-102195,102247,102249,102301,102405,102407,102455,102509,102511,102563,102565,102610,102612,102664,102666,102718,102720,102768,102822,102824,102869,102907-102908,158389,158595
@@ -38,3 +40,11 @@ conformance:plain 37976
 conformance:std 31708,31710,36502,36504,37976,38023-38025,38027
 points:plain 11997
 points:std 9487,11507,11997,12011-12012
+
+#2179 A Box of a std adapter steps as the adapter itself
+paths:plain 40-41,176-177,236,323-324,470-471,530,645-646,677-678,721,1006-1007,1038-1039,1160-1161,1236,1405-1406,1536-1537,1612,1727-1728,1803,1890-1891,1966,2053-2054,2129,2216-2217,2621-2622
+paths:std 40-41,176-177,236,323-324,470-471,530,645-646,677-678,721,1006-1007,1038-1039,1160-1161,1236,1405-1406,1536-1537,1612,1727-1728,1803,1890-1891,1966,2053-2054,2129,2216-2217,2621-2622
+
+#2180 A &mut dyn Iterator lent to try_fold or try_rfold forwards to the referent's own
+paths:plain 572-573,673-674,763-764,933-934,1034-1035,1092-1093,1839
+paths:std 572-573,673-674,763-764,933-934,1034-1035,1092-1093,1839

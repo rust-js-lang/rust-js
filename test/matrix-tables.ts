@@ -21,6 +21,7 @@ import {
   aborts,
   type Table,
 } from "./iterator-matrix";
+import { pathsCases, pathStrata } from "./iterator-paths";
 import { numberCases, numberProgram, numberStrata, type NumberCase } from "./number-grid";
 import { refused, stdNetCases, stdNetProgram, stdNetStrata, type NetCase } from "./std-net";
 import { buildReact, target } from "./support";
@@ -125,9 +126,20 @@ const copiesTable: TableOf<CopyCase> = {
   slice: (all) => slice(all, copyStrata),
 };
 
+/** The paths table (#2112), test/iterator-paths.ts's cases: each adapter
+ * through each step std's writes, by each path generic and boxed code
+ * reaches it; its slice, each path with each adapter, consumer and site. */
+const pathsTable: TableOf<Case> = {
+  cases: pathsCases,
+  program: (batch) => program(batch, "paths"),
+  batches: (all) => batches(all),
+  slice: (all) => slice(all, pathStrata),
+};
+
 /** The table `of`, as test/iterator-matrix.test.ts runs it. */
 export function tableOf(of: Table): TableOf<Row> {
   if (of === "copies") return copiesTable;
+  if (of === "paths") return pathsTable;
   if (of === "std") return stdTable;
   if (of === "consumers") return consumersTable;
   if (of === "unwind") return unwindTable;

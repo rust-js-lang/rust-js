@@ -206,7 +206,13 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "    nth: iter.nth === undefined ? undefined : nth,\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
+    // Swept against the whole corpus, it survived (#1979). The paths
+    // table's rows of an `enumerate` of the crate's iterator that writes
+    // `nth`, asked `nth`, catch it in one program (#2112): its generic row's
+    // is `$enumerate` there, where alone, with no other use of its type in
+    // the crate, it's std's compiled `Enumerate`.
+    tests: ["test/iterator-matrix.test.ts"],
+    env: { ITERATOR_TABLE: "paths", ITERATOR_MATRIX: "/^own Every \\| enumerate \\| nth \\| /" },
   },
   {
     name: "enumerate-fold-by-next",

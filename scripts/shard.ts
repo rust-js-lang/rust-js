@@ -550,6 +550,8 @@ export type Part = { setting: string; value: string; runs: "push" | "nightly"; b
 export const parts: Part[] = [
   { setting: "ITERATOR_TABLE", value: "matrix", runs: "push", by: "scripts/iteratorSlice.ts" },
   { setting: "ITERATOR_TABLE", value: "conformance", runs: "push", by: "scripts/iteratorSlice.ts" },
+  // Each adapter through each step std's writes, by each path (#2112).
+  { setting: "ITERATOR_TABLE", value: "paths", runs: "push", by: "scripts/iteratorSlice.ts" },
   { setting: "ITERATOR_FORMS", value: "corpus", runs: "push", by: "scripts/iteratorSlice.ts" },
   // Of each change, what scripts/iteratorRows.ts picks: `/<regex>/`, the
   // rows it names, `pairs`, a sample of each adapter with each consumer, or

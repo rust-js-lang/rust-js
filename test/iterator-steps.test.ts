@@ -15,6 +15,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import * as std from "../std/runtime.js";
+import { stdRuns } from "./std-steps-catalog";
 
 const steps = [...std.$stepNames].filter((step) => step !== "next");
 
@@ -181,19 +182,6 @@ for (const [name, make] of [
 // can see is listed with why (ADR 0262's case N); any other is a wrong
 // answer.
 
-/** The catalog's runs: of each `<name>#<run>` and step, what was asked. */
-const stdRuns = (() => {
-  const runs = new Map<string, string>();
-  for (const line of readFileSync(join(import.meta.dir, "../src/lower/recognition/std_steps.txt"), "utf8").split("\n")) {
-    if (line.startsWith("#") || !line.includes(" |")) continue;
-    const [head, ...cells] = line.split(" |");
-    for (const cell of cells) {
-      const at = cell.indexOf(":");
-      runs.set(`${head} ${cell.slice(0, at)}`, cell.slice(at + 1).trim());
-    }
-  }
-  return runs;
-})();
 
 /** test/std-steps.rs's `SIZES`: the sources' lengths of each run. */
 const sizes: [number, number][] = [

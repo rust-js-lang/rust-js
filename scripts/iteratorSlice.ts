@@ -11,6 +11,7 @@
 //   bun scripts/iteratorSlice.ts run matrix [parts]        the matrix's slice, in parts at once, against native Rust
 //   bun scripts/iteratorSlice.ts run conformance [parts]   the conformance table's
 //   bun scripts/iteratorSlice.ts run copies [parts]        the copy matrix's slice (test/copy-matrix.ts)
+//   bun scripts/iteratorSlice.ts run paths [parts]         the paths table, all of it (test/iterator-paths.ts, #2112)
 //   bun scripts/iteratorSlice.ts run forms [parts]         the corpus with std's iterator structs
 //   bun scripts/iteratorSlice.ts run rows [parts]          the rows of both tables the change names (scripts/iteratorRows.ts, #818)
 //   bun scripts/iteratorSlice.ts run format [parts]        the formatting grid's slice (#941), of a change to the formatting code
@@ -118,6 +119,8 @@ export const iteratorPaths = [
   "test/iterator-matrix-prelude.ts",
   "test/iterator-matrix.test.ts",
   "test/iterator-matrix-known.txt",
+  "test/iterator-paths.ts",
+  "test/std-steps-catalog.ts",
   "test/iterator-forms.test.ts",
   "test/copy-matrix.ts",
   "scripts/iteratorSlice.ts",
@@ -476,6 +479,10 @@ export const runs = {
   // Each compiled form copied each way and stepped by each ability beside
   // its original, its slice (test/copy-matrix.ts): some 25 s in 10 parts.
   copies: [{ name: "the copy matrix's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "copies" } }],
+  // Each adapter through each step std's writes, by each path generic and
+  // boxed code reaches it (test/iterator-paths.ts, #2112): all of it, 48
+  // batches, 20 s cold in 4 parts on the Mac mini.
+  paths: [{ name: "the paths table", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "paths", ITERATOR_MATRIX: "all" } }],
   forms: [{ name: "the corpus with std's iterator structs", file: "test/iterator-forms.test.ts", env: { ITERATOR_FORMS: "corpus" } }],
   format: [{ name: "the formatting grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "format" } }],
   numbers: [{ name: "the numbers grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "numbers" } }],
@@ -649,7 +656,7 @@ function changeRows(parts: number): Run[] {
 
 if (import.meta.main) {
   const [command, of, count, list] = process.argv.slice(2);
-  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|forms|format|numbers|declarations|async|consumers|memory|intervals|twins|twinsAll|rows [parts [cases]] | metamorphic [parts [since]]");
+  if (command !== "run" || !(of in runs || of === "rows")) throw new Error("usage: bun scripts/iteratorSlice.ts run matrix|conformance|paths|forms|format|numbers|declarations|async|consumers|memory|intervals|twins|twinsAll|rows [parts [cases]] | metamorphic [parts [since]]");
   const parts = count === undefined ? caseParts(machine().cores * 2) : Number(count);
   process.exit((await run(of as keyof typeof runs | "rows", parts, list)) ? 0 : 1);
 }

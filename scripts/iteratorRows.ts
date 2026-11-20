@@ -64,8 +64,9 @@ export function reached(names: Set<string>, calls: Map<string, Set<string>> = ad
 
 // The points tables, the iterators' (#817) and the unwind table's (#854),
 // have no rows a change picks yet: #818 decides. The formatting grid
-// (#941) runs its slice of a change to the formatting code.
-type Picking = Exclude<Table, "points" | "unwind" | "format" | "numbers" | "async" | "consumers" | "std" | "copies">;
+// (#941) runs its slice of a change to the formatting code, and the paths
+// table (#2112) runs whole, as cheap as a change's rows.
+type Picking = Exclude<Table, "points" | "unwind" | "format" | "numbers" | "async" | "consumers" | "std" | "copies" | "paths">;
 
 /** The seconds each table's rows a change runs take, all its picks
  * together: some 2.5 minutes of the matrix's and 40 s of the table's alone,

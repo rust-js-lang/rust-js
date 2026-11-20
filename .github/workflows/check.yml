@@ -224,6 +224,15 @@ jobs:
         if: needs.plan.outputs.iterators == 'true'
         background: true
         run: bun scripts/iteratorSlice.ts run conformance 1
+      # And the paths table, all of it (test/iterator-paths.ts, #2112): each
+      # adapter through each step std's adapter writes, by each path generic
+      # and boxed code reaches it, `&mut I`, `Box<dyn I>`, a clone and the
+      # rest. Its 48 batches take some 20 s in 4 parts on the Mac mini.
+      - name: iterator paths table
+        id: paths
+        if: needs.plan.outputs.iterators == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run paths 2
       # And the copy matrix's slice (test/copy-matrix.ts, ADR 1090,
       # amended): each compiled form copied each way and stepped by each
       # ability beside its original. The nightly's `copies` runs all of it.
