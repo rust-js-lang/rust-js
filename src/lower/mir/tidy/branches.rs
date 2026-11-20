@@ -838,12 +838,7 @@ pub(super) fn implies(by: &Expr, test: &Expr) -> bool {
         (ExprKind::Binary(set, x, null), ExprKind::Binary(Op::Eq, y, literal))
             if set.tests_set() == Some(true) && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
         {
-            js::same_path(x, y)
-                && literal.is_constant()
-                && !matches!(
-                    literal.kind,
-                    ExprKind::Null | ExprKind::Undefined | ExprKind::GivenUndefined
-                )
+            js::same_path(x, y) && literal.is_constant() && !literal.is_nullish()
         }
         (ExprKind::Binary(Op::Eq, kind, name), ExprKind::Binary(Op::Eq, y, literal))
             if let ExprKind::Unary(UnaryOp::Typeof, x) = &kind.kind =>

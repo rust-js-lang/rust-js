@@ -87,8 +87,8 @@ export const mutations: Mutation[] = [
     name: "truth-kept-unfallen",
     breaks: "`(a || undefined) ?? b`, a `filter` by truth's then `or(b)`, stays, not `a || b`",
     file: "src/prepare.rs",
-    find: "            parts(y, &mut chained)\n",
-    replace: "            return None\n",
+    find: "        last if last.is_nullish() => parts(y, &mut chained),\n",
+    replace: "        last if last.is_nullish() => return None,\n",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
   },
   {

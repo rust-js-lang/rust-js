@@ -846,13 +846,7 @@ fn fallen_to(chain: &Expr, y: &Expr) -> Option<Expr> {
     parts(chain, &mut chained);
     match chained.pop()? {
         _ if chained.is_empty() => return None,
-        last if matches!(
-            last.kind,
-            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null
-        ) =>
-        {
-            parts(y, &mut chained)
-        }
+        last if last.is_nullish() => parts(y, &mut chained),
         _ => return None,
     }
     chained.into_iter().reduce(|a, b| Expr::bin(js::Op::Or, a, b))

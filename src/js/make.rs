@@ -658,8 +658,7 @@ impl Expr {
         }
         // And of `undefined` or `null` both, `None == null`, a test of an
         // `Option` written out: `==` holds of them, `!=` doesn't.
-        let nothing = |e: &Expr| matches!(e.kind, ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null);
-        if nothing(&lhs) && nothing(&rhs) {
+        if lhs.is_nullish() && rhs.is_nullish() {
             match op {
                 // A test of being set of either form: `None` isn't set.
                 Op::LooseEq | Op::NoneEq(_) => return Expr::bool(true),
@@ -913,6 +912,15 @@ impl Expr {
             ExprKind::BigInt(n) => Some(n),
             _ => None,
         }
+    }
+
+    /// A literal JS's `== null` holds of: `undefined`, a given `undefined`
+    /// or `null`, the one answer of which constant is nullish (#2182).
+    pub fn is_nullish(&self) -> bool {
+        matches!(
+            self.kind,
+            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null
+        )
     }
 
     /// Literals can be evaluated at any time, so they never need a temporary.
@@ -1176,8 +1184,7 @@ impl Expr {
             ExprKind::BigInt(n) => *n == 0,
             ExprKind::BigUint(n) => *n == 0,
             ExprKind::Str(s) => s.is_empty(),
-            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null => true,
-            _ => false,
+            _ => self.is_nullish(),
         }
     }
 

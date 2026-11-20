@@ -521,4 +521,12 @@ export const mutations: Mutation[] = [
     replace: "            (Some(Known::NoneUndefined), true) => Op::NoneNe(super::OnlyNone::Null),\n",
     tests: ["test/lowering-option-truth.test.ts", "test/lowering-bindings.test.ts"],
   },
+  {
+    name: "nullish-not-of-undefined",
+    breaks: "`undefined` isn't nullish: `x || undefined`, a filter by truth's fallen to, is never `x || y`, and `None == undefined` isn't folded (#2182)",
+    file: "src/js/make.rs",
+    find: "            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null\n        )\n    }\n\n    /// Literals",
+    replace: "            ExprKind::GivenUndefined | ExprKind::Null\n        )\n    }\n\n    /// Literals",
+    tests: ["test/lowering-options.test.ts", "-t", "a filter by truth then a fallback is JS's"],
+  },
 ];
