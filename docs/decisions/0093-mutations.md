@@ -1291,3 +1291,23 @@ A push type-checks its change's mutations (`--typecheck`). Those in a function's
 This can mask an error. One mutant can remove the only use of what another removes, so the batch type-checks where one alone wouldn't. That's accepted because CI's shard builds each mutant alone. There, a mutant that doesn't build says plainly that it was built alone, and that a push's type-check applied it together with others, which can hide its error (`aloneProblem`).
 
 Held by test/mutation-changes.test.ts's "a change's mutants are type-checked many to a check", and the mutations `typecheck-unsited-each-alone` and `built-alone-unsaid` (scripts/mutations/runner.ts).
+
+## Amendment (2026-11-21, #2206): the runtime net runs against the mutant's runtime
+
+test/iterator-steps.test.ts, the runtime net, imported `../std/runtime.js`,
+the checkout's. So a runtime mutation it alone could catch passed it
+anyway. The runner's control said so: the file passed "with a compiler that
+compiles nothing", and the runner refused it as a mutation's test. Runtime
+code no program reaches apart had no mutation as a result: `$someItems`'
+`next_back` and its hint once it's ended (#2205).
+
+The net now imports `helpersModule` (test/support.ts), the
+`@rust-js/std` runtime the tests' JS imports. That's the mutant's own where
+the runner installs one in its target, the checkout's otherwise, and an
+empty module for the control, where the net then fails. A runtime mutation
+the net catches is caught, and the control still holds the net to the
+runtime it's given. `some-items-back-by-its-filter` and
+`some-items-hint-unended` are the first two caught this way, by the net
+alone. Any other test that holds runtime code imports it the same way.
+test/std-fresh.test.ts reads the checkout's on purpose: it checks the
+checkout.

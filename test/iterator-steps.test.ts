@@ -14,9 +14,15 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import * as std from "../std/runtime.js";
+import { helpersModule } from "./support";
 import { ownerTable } from "../scripts/owners";
 import { stdAnswers, stdRuns } from "./std-steps-catalog";
+
+// The runtime the JS the tests write imports, `@rust-js/std`'s: a mutant's
+// own where the mutation runner gives its tests one, so a runtime mutation
+// this net alone catches is caught, and one that compiles nothing gives an
+// empty module, which fails here (#2206).
+const std: any = await import(helpersModule);
 
 const steps = [...std.$stepNames].filter((step) => step !== "next");
 

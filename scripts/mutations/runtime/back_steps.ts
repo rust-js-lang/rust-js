@@ -879,4 +879,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_steps_its_source_by_next.rs$"],
   },
+  {
+    name: "some-items-back-by-its-filter",
+    breaks:
+      "`$someItems`' `next_back` is a filter's of the `Some`s, its source's `rfind`, a `try_rfold` where that's its own, where std's `Flatten` steps its source by `next_back` (#2205); no program shows it apart, a `skip`'s length asked once either way, so the runtime net holds it (#2206)",
+    file: "src/runtime/back_steps.js",
+    find: '    kept.back = step("back");\n',
+    replace: "",
+    tests: ["test/iterator-steps.test.ts"],
+  },
+  {
+    name: "some-items-hint-unended",
+    breaks:
+      "`$someItems`' hint asks its source's once it's ended, where std's `Fuse` asks nothing and answers `(0, Some(0))`; every hint a program asks of a flatten of `Option`s is std's compiled structs', so the runtime net holds it (#2206)",
+    file: "src/runtime/back_steps.js",
+    find: "  kept.sizeHint = () => (ended ? [0, 0] : [0, $sizeHint(it)[1]]);\n",
+    replace: "",
+    tests: ["test/iterator-steps.test.ts"],
+  },
 ];

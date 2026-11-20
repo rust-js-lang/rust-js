@@ -204,10 +204,11 @@ Elsewhere, an in-place chain over a crate iterator with its own `nth` is in
 place because a type-keyed hint fact put it there, which needs the crate's
 `size_hint`, so `hint_reaches_own_where` answers too. `$someItems`' hint is held by
 the net, not by a corpus case: every hint asked of an in-place flatten of
-`Option`s is asked of std's compiled structs. Its mutation waits for #2206,
-which lets the net run against a mutant's runtime, as does its `next_back`'s:
-a filter's, its source's `rfind`, asks what `next_back` does of every
-source a program gives it, a `skip`'s length once either way.
+`Option`s is asked of std's compiled structs. So is its `next_back`: a
+filter's, its source's `rfind`, asks what `next_back` does of every source
+a program gives it, a `skip`'s length once either way. Since #2206 the net
+runs against a mutant's runtime, and `some-items-hint-unended` and
+`some-items-back-by-its-filter` are caught by it alone.
 
 **Moves.** Corpus `flatten_of_options_counted_asks_no_hint`'s flattens
 (both in place over the crate's iterator and given to generic code) are
