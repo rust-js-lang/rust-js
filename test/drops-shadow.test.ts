@@ -100,10 +100,10 @@ test("each normal-path verdict of the partial moves, behind a pointer and alike,
     }
   }
   expect(Object.fromEntries(["agree", "disagree", "flag-ours", "unmatched"].map((v) => [v, tally.get(v) ?? 0]))).toEqual({
-    agree: 193,
+    agree: 196,
     disagree: 0,
     "flag-ours": 4,
-    unmatched: 8,
+    unmatched: 5,
   });
 });
 

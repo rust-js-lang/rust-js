@@ -19,6 +19,7 @@ use rustc_hir::def::DefKind;
 use rustc_middle::mir::{
     self, BasicBlock, Local, Operand, Place, ProjectionElem, Rvalue, StatementKind, TerminatorKind,
 };
+use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{Ty, TyCtxt};
 use rustc_mir_dataflow::move_paths::{LookupResult, MovePathIndex};
 use rustc_span::Span;
@@ -290,13 +291,15 @@ impl When {
     }
 }
 
-/// A part the two sides drop otherwise: the part, rust-js's answer, rustc's.
-type Differ = (String, When, When);
+/// A part the two sides drop otherwise: the part, rust-js's answer,
+/// rustc's, and whether it's the rest of a value parts of which are paths
+/// of their own, which `rest_drops` can't always take apart (#2177).
+type Differ = (String, When, When, bool);
 
 /// Each part that differs, as a refusal and `--drops-shadow` say it.
 fn said(differ: &[Differ]) -> String {
     (differ.iter())
-        .map(|(what, ours, theirs)| format!("`{what}`: rust-js drops it {}, rustc {}", ours.word(), theirs.word()))
+        .map(|(what, ours, theirs, _)| format!("`{what}`: rust-js drops it {}, rustc {}", ours.word(), theirs.word()))
         .collect::<Vec<_>>()
         .join("; ")
 }
@@ -475,7 +478,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(theirs_when) => (
                             Verdict::Disagree,
                             block,
-                            said(&[(format!("{} behind a pointer", spelled(body, &key)), ours, theirs_when)]),
+                            said(&[(
+                                format!("{} behind a pointer", spelled(body, &key)),
+                                ours,
+                                theirs_when,
+                                false,
+                            )]),
                         ),
                     });
                     continue;
@@ -502,18 +510,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
                 // A difference only of whether a flag is asked runs alike
                 // where the flag holds the other's answer, which only
-                // running it says: counted apart.
+                // running it says: counted apart. Judged by the parts that
+                // differ where any does: the rest of a value, whose parts
+                // `rest_drops` may not take apart (a box's contents rustc
+                // frees by a call), never makes a disagreement the
+                // comparison can't stand behind, only an unmatched (#2177).
                 Ok((differ, _)) => {
-                    let ours = differ.iter().all(|&(_, ours, _)| ours == When::Flagged);
-                    let theirs = differ.iter().all(|&(_, _, theirs)| theirs == When::Flagged);
-                    let verdict = match (ours, theirs) {
+                    let parts: Vec<&Differ> = differ.iter().filter(|&&(.., rest)| !rest).collect();
+                    let only_the_rest = parts.is_empty();
+                    let judged = if only_the_rest { differ.iter().collect() } else { parts };
+                    let ours = judged.iter().all(|&&(_, ours, ..)| ours == When::Flagged);
+                    let theirs = judged.iter().all(|&&(_, _, theirs, _)| theirs == When::Flagged);
+                    match (ours, theirs) {
                         // rust-js asks a flag where rustc knows.
-                        (true, false) => Verdict::FlagOurs,
+                        (true, false) => (Verdict::FlagOurs, block, said(&differ)),
                         // rustc asks one where rust-js knows.
-                        (false, true) => Verdict::FlagTheirs,
-                        _ => Verdict::Disagree,
-                    };
-                    (verdict, block, said(&differ))
+                        (false, true) => (Verdict::FlagTheirs, block, said(&differ)),
+                        _ if only_the_rest => (
+                            Verdict::Unmatched,
+                            block,
+                            format!("the rest, which isn't taken apart (#2177); {}", said(&differ)),
+                        ),
+                        _ => (Verdict::Disagree, block, said(&differ)),
+                    }
                 }
             });
         }
@@ -596,6 +615,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             rustc_middle::ty::Closure(_, args) => {
                 (args.as_closure().upvar_tys().iter().enumerate()).any(|(index, ty)| field(index, ty))
             }
+            // An array of a known length, each element in turn, as its
+            // `ConstantIndex` paths take it apart.
+            rustc_middle::ty::Array(_, len) if let Some(len) = len.try_to_target_usize(tcx) => (0..len).any(|offset| {
+                let at = ProjectionElem::ConstantIndex {
+                    offset,
+                    min_length: len,
+                    from_end: false,
+                };
+                self.rest_drops(body, tcx.mk_place_elem(place, at), parts, depth - 1)
+            }),
             _ => true,
         }
     }
@@ -638,10 +667,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         });
         let mut differ = Vec::new();
         let mut compared = 0;
-        let mut compare = |what: String, ours: When, theirs: When| {
+        let mut compare = |what: String, ours: When, theirs: When, rest: bool| {
             compared += 1;
             if ours != theirs {
-                differ.push((what, ours, theirs));
+                differ.push((what, ours, theirs, rest));
             }
         };
         for &leaf in &leaves {
@@ -668,7 +697,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             };
-            compare(spelled(body, &key), ours_of(leaf), theirs_when);
+            compare(spelled(body, &key), ours_of(leaf), theirs_when, false);
         }
         // The rest of it, where parts of it are paths of their own: rustc's
         // `Drop`s of it, or of what of it is under none of those parts.
@@ -700,7 +729,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|t| t.when)
                 .max()
                 .unwrap_or(When::Never);
-            compare(format!("{} (the rest)", spelled(body, &key)), ours_of(node), rest);
+            compare(format!("{} (the rest)", spelled(body, &key)), ours_of(node), rest, true);
         }
         Ok((differ, compared))
     }

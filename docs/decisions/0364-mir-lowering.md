@@ -1932,3 +1932,31 @@ without it a clean compile. A cleanup's disagreement, drop_functions.rs's,
 compiles. Mutations caught: `shadow-disagreement-unrefused`,
 `shadow-refuses-cleanups`, `shadow-compared-only-where-recorded`,
 `shadow-elaborated-only-where-recorded` and `shadow-flag-only-refused`.
+
+## Amendment: the rest of a value never makes a disagreement (2026-11-20, #2177)
+
+(c) refused rustc's tests/ui/drop/or-pattern-drop-order.rs, whose JS ran as
+native: an array of arrays matched by value, its or-patterns binding one
+element of each inner array. The comparison's "rest" of the outer array and
+each inner one read as rust-js dropping it always and rustc never, as
+`rest_drops` didn't take an array apart (its last arm, "something it drops").
+A field moved out of a pair a struct holds in a `Box`, whose contents rustc
+frees by a call, not a `Drop`, was refused the same way. Both were false
+refusals: the comparison, not the elaboration, was wrong.
+
+- `rest_drops` takes an array of a known length apart element by element,
+  as its `ConstantIndex` paths do, so the array's rest is compared: over the
+  corpus, 15 more of the normal path's drops agree (7,688), and unmatched
+  falls 35 to 30.
+- A difference only of the rest of a value never makes a `disagree`. Where
+  only the rest differs it's `unmatched` ("the rest, which isn't taken
+  apart"), or `flag-ours`/`flag-theirs` where only a flag differs; where a
+  part differs, the parts alone decide, as before. The refusal stands
+  behind what's compared part by part.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no output changes;
+two refusals lifted. Held by corpus cases
+array_of_arrays_bound_by_or_patterns_drops_the_rest and
+boxed_field_moved_out_drops_the_rest (each refused by 267dd2457, each run as
+native now), test/drops-shadow.test.ts's pin (agree 196, unmatched 5), and
+mutations `shadow-array-rest-whole` and `shadow-rest-difference-refused`.
