@@ -27,12 +27,11 @@ import { buildReactNative } from "../test/react-native-crate";
 import { cargoApp } from "../test/cargo-app";
 import { buildNode } from "../test/node-crate";
 import { buildSerde } from "../test/serde-crate";
-import { buildCompiler, buildReact, compiler, KeptApp, root, target } from "../test/support";
+import { buildCompiler, buildReact, compiler, fixture, KeptApp, root, target } from "../test/support";
 import { machine } from "./shard";
 
 const check = process.argv.includes("--check");
 const guide = join(root, "docs/guide");
-const work = join(target, "docs");
 /** The apps' one Cargo target, kept between runs as each app is (`KeptApp`,
  * #882): each app's own built `webapi`, `react` and `js` again, about 4
  * CPU-seconds of each of the 14, where since #892 they're one unit in every
@@ -155,11 +154,13 @@ function appTurn(): { ready: Promise<void>; done: () => void } {
   return { ready: Promise.resolve(), done };
 }
 
-/** Where the example is compiled: made anew each run, and removed once its
- * output is read, as nothing's found there again. An app's Cargo build
- * there is 290 MB; kept, the guide's were 2.7 GB of each worktree (#914).
- * `RUST_JS_KEEP_FIXTURES=1` keeps them to look at, as the tests' are. */
-const exampleDir = (example: Example, n: number) => join(work, relative(guide, example.page).replace(/\//g, "_"), String(n));
+/** Where the example is compiled: this run's own, a fixture claimed as the
+ * tests' are (`fixture`), so another run in the checkout compiles in its
+ * own (#2198); made empty, and removed once its output is read, as
+ * nothing's found there again. An app's Cargo build there is 290 MB; kept,
+ * the guide's were 2.7 GB of each worktree (#914). `RUST_JS_KEEP_FIXTURES=1`
+ * keeps them to look at, as the tests' are. */
+const exampleDir = (example: Example, n: number) => fixture(`docs-${relative(guide, example.page).replace(/\//g, "_")}-${n}`);
 
 /** What the example's output fences say, compiled: each fence's new body. */
 async function compile(example: Example, n: number): Promise<{ bodies: string[]; problem?: string }> {
@@ -172,7 +173,23 @@ async function compile(example: Example, n: number): Promise<{ bodies: string[];
   const app = example.dependencies !== undefined || next !== "";
   const kept = app ? new KeptApp(`docs-${relative(guide, example.page).replace(/\//g, "_")}-${n}`) : undefined;
   const dir = kept?.dir ?? exampleDir(example, n);
-  if (!kept) rmSync(dir, { recursive: true, force: true });
+  try {
+    return await compileIn(example, n, dir, kept, { code, crate, next });
+  } finally {
+    if (!kept && !process.env.RUST_JS_KEEP_FIXTURES) rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/** `compile`'s of the example at fence `n`, in `dir`, the app's where it's
+ * `kept`: of the example's `code`, its `crate` lines and Next.js's, `next`. */
+async function compileIn(
+  example: Example,
+  n: number,
+  dir: string,
+  kept: KeptApp | undefined,
+  { code, crate, next }: { code: string; crate: (name: string, dir: string) => string; next: string },
+): Promise<{ bodies: string[]; problem?: string }> {
+  const app = kept !== undefined;
   for (const { path, code } of example.sources) {
     // Its header names the file, and isn't a comment of its code: a blank line, so lines keep their numbers.
     // A stylesheet is as it's written, its header a comment of its own.
@@ -281,8 +298,6 @@ async function main() {
       while (next < jobs.length) {
         const job = jobs[next++];
         const { bodies, problem } = await compile(job.example, job.n);
-        // A kept app's stays; the others' are made anew each run.
-        if (!process.env.RUST_JS_KEEP_FIXTURES) rmSync(exampleDir(job.example, job.n), { recursive: true, force: true });
         if (problem) problems.push(problem);
         else results.push({ page: job.page, example: job.example, bodies });
       }

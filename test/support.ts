@@ -488,7 +488,10 @@ const outsideFixtures = join(tempRoot, "rust-js-fixtures");
 // Named by its file's hash, a letter first: what a test looks for in the
 // JS, a block's `bb5` or a word of its name, never in the path its header
 // names, as `-bb6e90b4` was (`\bbb\d+`), and `strict-switches` would be.
-const scope = `x${createHash("sha256").update(basename(Bun.main)).digest("hex").slice(0, 8)}`;
+/** The fixtures' directory of the script or test file `main`, as each
+ * process names its own (`scope`). */
+export const fixturesOf = (main: string) => join(fixtures, `x${createHash("sha256").update(basename(main)).digest("hex").slice(0, 8)}`);
+const scope = basename(fixturesOf(Bun.main));
 const counts = new Map<string, number>();
 let owned: string[] | undefined;
 
