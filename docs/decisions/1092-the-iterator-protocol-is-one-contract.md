@@ -2042,3 +2042,39 @@ New mutations: `box-dictionary-lent-unsaid`, `mut-ref-dictionary-lent-unsaid`,
 `lent-of-a-lend-lent-again`.
 Retargeted to the shared answer: `box-given-as-its-value` and
 `box-of-std-iterator-as-its-value`.
+
+## Amendment: the paths table's trait and nested-wrapper paths (2026-11-20, #2112 Change A, step 2b)
+
+Five wrapper bugs (#2179, #2180, #2185, #2186, #2187) were each found by a
+neighbour probe or a metamorphic rewrite, not by the paths table, because
+it gave each adapter to its consumer by one wrapper at a time and never
+through a trait. So the table gains six paths, made as the others are
+(test/iterator-paths.ts's `pathFns`), so the next of the family fails the
+table:
+
+- `trait`, `trait Box`, `trait &mut`: generic code given the adapter, a
+  `Box` of it or a `&mut` of it through a trait, `fn case_N_consume<I:
+  Bounds>(it: impl Is<I>) { let it: I = Is::is(it); .. }`, so `I` comes
+  with its dictionary (#2185's shape). The program carries `Is` once.
+- `Box Box`, `&mut Box`: the wrappers nested, `Box::new(Box::new(E))` and
+  `let mut w = Box::new(E); let r = &mut w;`.
+- `Box J`: generic code's `Box<J>` of a type parameter's value,
+  `fn case_N_consume<J: Bounds>(j: J) { consumed(Box::new(j)) }`.
+
+The table goes from 2,869 cases to 5,125, in 86 programs, still all of it
+per push of the iterators' code: 20 s on the Mac mini in 12 parts.
+
+**What its first run found** (both builds alike), each listed under its
+issue in test/iterator-matrix-known.txt until fixed, and each older than
+today's wrapper changes (they reproduce at 36c35435f):
+- #2189: `len()` of a `&mut Box` of std's adapter throws, `r.len is not a
+  function`, and of a `&mut Box` of the crate's iterator it's the default
+  hint's, where std's `&mut I` and `Box<I>` pass `len` on (14 case-builds).
+- #2190: a `&mut` of a `skip` given through a trait folds by `next`,
+  asking the crate's `nth(1)`, where std's `&mut I` folds by
+  `Skip::try_fold`'s `nth(0)`: its dictionary's entries read off the
+  named `$jsIterator` are `undefined` where it has none, which `$given`
+  took for steps of the dictionary's own (12).
+
+Case (ADR 0262): R. Which of the crate's steps std calls through each
+path is observable.

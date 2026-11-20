@@ -2,7 +2,12 @@
 // lowers, through each step std's adapter writes itself, reached by each
 // path generic and boxed code reaches it by: a `&mut I`, a `&mut dyn I`, a
 // `Box<I>`, a `Box<dyn I>`, a generic function's parameter, an `impl
-// Iterator` a function returns, a clone, and a `cycle()`. Its rows are
+// Iterator` a function returns, a clone, and a `cycle()`; and, as #2185's
+// family found them (step 2b), generic code given it through a trait,
+// `fn f<I>(it: impl Is<I>)`, so `I` comes with its dictionary, of the
+// adapter, a `Box` of it and a `&mut` of it, and the wrappers nested: a
+// `Box` of a `Box`, a `&mut` of a `Box`, and generic code's `Box<J>` of
+// a type parameter's value. Its rows are
 // std's steps catalog's (src/lower/recognition/std_steps.txt, read by
 // test/std-steps-catalog.ts): of each adapter A and each step s that A
 // writes, the consumer that asks s, so a hand-written form that passes on
@@ -15,8 +20,12 @@ import { adapters, consumers, sources, stepAdapters, stepConsumers, type Case, t
 import { stdRuns, stdWrites } from "./std-steps-catalog";
 
 /** How a case's iterator reaches its consumer. */
-export type Path = "&mut" | "&mut dyn" | "Box" | "Box dyn" | "generic" | "impl" | "clone" | "cycle";
-export const paths: Path[] = ["&mut", "&mut dyn", "Box", "Box dyn", "generic", "impl", "clone", "cycle"];
+export type Path = "&mut" | "&mut dyn" | "Box" | "Box dyn" | "generic" | "impl" | "clone" | "cycle" | "trait" | "trait Box" | "trait &mut" | "Box Box" | "&mut Box" | "Box J";
+export const paths: Path[] = ["&mut", "&mut dyn", "Box", "Box dyn", "generic", "impl", "clone", "cycle", "trait", "trait Box", "trait &mut", "Box Box", "&mut Box", "Box J"];
+
+/** The trait generic code is given its iterator through, so `I` comes with
+ * its dictionary (`trait` paths, #2185). */
+export const isTrait = "trait Is<T> {\n    fn is(self) -> T;\n}\n\nimpl<T> Is<T> for T {\n    fn is(self) -> T {\n        self\n    }\n}";
 
 /** The catalog's adapters, by std's name, that are paths here, not rows:
  * a `Cycle` is `cycle()`'s path (endless, it's stepped by a `take(7)`), and
@@ -160,6 +169,19 @@ export function pathFns(c: Case & { variant: { kind: "path"; path: Path } }, nam
       return fn(`${name}()`, [...body, `let w = ${expr};`, ...seen, consumed("w.clone()"), "drop(w);"]);
     case "cycle":
       return fn(`${name}()`, [...body, ...seen, consumed(`${expr}.cycle().take(7)`)]);
+    case "trait":
+    case "trait Box":
+    case "trait &mut": {
+      const given = path === "trait" ? expr : path === "trait Box" ? `Box::new(${expr})` : "&mut w";
+      const before = path === "trait &mut" ? [`let mut w = ${expr};`] : [];
+      return [fn(`${name}()`, [...body, ...before, `${name}_consume(${given});`]), fn(`${name}_consume<I: ${bounds(c, shape, false)}>(it: impl Is<I>)`, [`let ${mut}it: I = Is::is(it);`, ...seen, consumed("it")])].join("\n\n");
+    }
+    case "Box Box":
+      return fn(`${name}()`, [...body, ...seen, consumed(`Box::new(Box::new(${expr}))`)]);
+    case "&mut Box":
+      return fn(`${name}()`, [...body, `let mut w = Box::new(${expr});`, `let ${lent ? "mut " : ""}r = &mut w;`, ...seen, consumed(reference("r"))]);
+    case "Box J":
+      return [fn(`${name}()`, [...body, `${name}_consume(${expr});`]), fn(`${name}_consume<J: ${bounds(c, shape, false)}>(j: J)`, [...seen, consumed("Box::new(j)")])].join("\n\n");
   }
 }
 

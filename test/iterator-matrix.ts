@@ -28,7 +28,7 @@ import { join } from "node:path";
 
 import { random } from "./generate";
 import { prelude } from "./iterator-matrix-prelude";
-import { ownClone, pathFns, type Path } from "./iterator-paths";
+import { isTrait, ownClone, pathFns, type Path } from "./iterator-paths";
 import { pointsRunner } from "./panic-points";
 import { casesOf, tableOf } from "./matrix-tables";
 import { knownHeading, root, target } from "./support";
@@ -1237,6 +1237,7 @@ export function program(cases: Case[], of: Table = table): string {
     .filter((own) => used.has(`own ${own.name}`))
     .map((own) => ownIterator(own, of !== "matrix") + (of === "paths" ? `\n\n${ownClone(own.name)}` : ""));
   const fns = cases.map((c, n) => caseFn(c, n));
+  if (cases.some((c) => c.variant.kind === "path" && c.variant.path.startsWith("trait"))) fns.unshift(isTrait);
   const runner = of === "points" ? "run_points" : "run";
   const main = `fn main() {\n${cases.map((c, n) => `    ${runner}(${JSON.stringify(c.id)}, case_${n});`).join("\n")}\n}`;
   if (cases.some((c) => c.site === "drop+drop")) {
