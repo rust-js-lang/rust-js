@@ -307,6 +307,22 @@ pub fn entries(keys: Vec<String>) -> Vec<Entry> {
 pub fn production(env: Option<&String>) -> bool {
     env.map(String::as_str) == Some("production")
 }
+pub fn nested(option: Option<Option<u32>>) -> Option<Option<u32>> {
+    option.map(|x| x)
+}
+pub fn replaced(option: Option<Option<u32>>, other: Option<u32>) -> Option<Option<u32>> {
+    option.map(|_| other)
+}
+pub fn nested_answers() -> String {
+    format!(
+        "{:?} {:?} {:?} {:?} {:?}",
+        nested(Some(Some(1))),
+        nested(Some(None)),
+        nested(None),
+        replaced(Some(None), Some(2)),
+        replaced(None, Some(2)),
+    )
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
@@ -315,6 +331,12 @@ pub fn production(env: Option<&String>) -> bool {
   const lib = await import(join(dir, "mir.js"));
   expect(lib.entries(["a", "", "b"])).toEqual([{ key: "a" }, { key: "b" }]);
   expect([lib.production("production"), lib.production(undefined), lib.production("dev")]).toEqual([true, false, false]);
+  // An `Option` of one, boxed (ADR 0051), mapped by what gives it as it
+  // is, is it, its box the same, never `$some($someValue(option))`; one
+  // mapped to another value of its type is that value (#2167).
+  expect(js).toContain("export function nested(option) {\n  return option;\n}");
+  expect(js).not.toMatch(/export function replaced\(option, other\) \{\n  return option;/);
+  expect(lib.nestedAnswers()).toBe("Some(Some(1)) Some(None) None Some(Some(2)) None");
 });
 
 // ADR 0311: `.flatten()` of a read of items that may be `None` is the JS read
