@@ -58,7 +58,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         for (source, asked) in self.asked_sources(ty, step) {
             match asked {
                 OwnStep::NthBack => found.push(source),
-                OwnStep::Fold | OwnStep::Rfold | OwnStep::TryRfold => {
+                OwnStep::Fold | OwnStep::TryFold | OwnStep::Rfold | OwnStep::TryRfold => {
                     found.extend(self.nth_back_sources(source, asked))
                 }
                 OwnStep::Nth | OwnStep::Last | OwnStep::Count => {}

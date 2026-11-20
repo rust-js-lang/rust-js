@@ -441,3 +441,43 @@ Since #773, the own-`nth` terms were reached only by an iterator whose
 gives what `next` wouldn't, `step_by(3)` of it and of a chain of two,
 against native Rust, which `step-by-own-nth-filtered` and
 `chain-nths-unseen` change.
+
+## Amendment: a fold reaches the crate's own `nth` through a `try_fold` (2026-11-20, #2195)
+
+`OwnStep` listed only the steps a crate's iterator may write, so where
+std's catalog says a step asks its source's `try_fold`, `asked_of` dropped
+it: `of_method("try_fold")` was `None`. `Take::fold` is its source's
+`try_fold`, and `Skip::try_fold` asks its source's `nth(n - 1)`. So
+`Count(0).fuse().skip(1).take(3).last()` wasn't seen to reach the crate's
+`nth` through `Fuse`, which passes `nth` on. `last_called` made it
+`Array.from(..).at(-1)`, stepped by `next`, which asked `nth(1)` where
+native asks `nth(0)`. Without the `fuse()`, std's compiled `Take` made it
+right by its own fold.
+
+`OwnStep::TryFold` is now a step the walk follows. No crate's iterator
+writes it (its `Try` is unstable): a crate iterator's `try_fold` is std's
+default over `next` and reaches nothing of its own. std's adapters still
+pass it on. `reaches_its_own` follows it as the catalog says, and an `nth`
+asked by either fold-like step (`OwnStep::folds`: `fold` and `try_fold`)
+is still `nth_folded_sources`' answer, which now follows `try_fold` as
+well as `fold` (`nth_folded_by`). So every consumer that asks either one,
+`by_its_fold`, a dictionary's `$foldOf`, `$folded`, gets the answer, not
+`last` alone. `nth_back_folded_sources` (slice_steps.rs) follows
+`try_fold` too, as std's `Rev::try_fold` asks `try_rfold`.
+
+Measured: no snapshot of the corpus, the tables or the port moved; the
+new answers reach only the forms that were wrong. Corpus
+`fold_through_try_fold_reaches_own_nth` holds `last`, `fold`, `sum`,
+`count`, `max` and a generic `last` of a `take` of a `skip` through a
+`fuse` and a `peekable`, a `step_by`'s, a fold by value of a closure that
+drops, and a `Vec`'s `take(3).rev().take(2)` folded. Mutation
+`fold-not-through-try-fold` (`lower/recognition/own_steps.ts`); two finds
+follow the changed lines. Two more were tried and dropped as equivalent:
+counting a `try_fold`'s `nth` as reached by `reaches_its_own` gives the
+same JS and runs the same, as the runtime's fold closes what it folds
+either way; and `nth_back_folded_sources` not following `try_fold` gives
+the same JS for every consumer tried (`fold`, `last`, `sum`, `count`), as
+the runtime's folds already ask what std's do.
+
+Case (ADR 0262): R. Which of the crate's steps std calls, and with which
+`n`, is observable.

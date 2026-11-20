@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `skip`'s `rfold`, its `try_rfold`, isn't followed to a `take`'s, so a `take(3).fuse().skip(1).rev()` collected into a `String` steps by `next`, dropping 4 before 5 (#697)",
     file: "src/lower/recognition/slice_steps.rs",
-    find: "                OwnStep::Fold | OwnStep::Rfold | OwnStep::TryRfold => {\n",
-    replace: "                OwnStep::TryRfold => {}\n                OwnStep::Fold | OwnStep::Rfold => {\n",
+    find: "                OwnStep::Fold | OwnStep::TryFold | OwnStep::Rfold | OwnStep::TryRfold => {\n",
+    replace: "                OwnStep::TryRfold => {}\n                OwnStep::Fold | OwnStep::TryFold | OwnStep::Rfold => {\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^a take's rev, consumed by fold or by next"],
   },
   {

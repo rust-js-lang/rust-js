@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `step_by`'s or a `skip`'s `fold` is taken to reach the crate's own as its `nth` does, which `nth_folded_sources` answers, so a fold that drops what it folds is refused (#2112)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "            .filter(|&(_, asked)| !(matches!(step, OwnStep::Fold) && matches!(asked, OwnStep::Nth)))\n",
+    find: "            .filter(|&(_, asked)| !(step.folds() && matches!(asked, OwnStep::Nth)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(folded_functions_drop_before_the_rest|own_nth_through_adapters|adapters_own_nth_fold).rs$"],
   },
@@ -187,5 +187,14 @@ export const mutations: Mutation[] = [
     find: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count | OwnStep::NthBack)\n",
     replace: "        matches!(self, OwnStep::Nth | OwnStep::Last | OwnStep::Count)\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_nth_back_reaches_what_its_given.rs$"],
+  },
+  {
+    name: "fold-not-through-try-fold",
+    breaks:
+      "what a fold asks of a source's `try_fold` isn't followed, so `fuse().skip(1).take(3).last()` steps by `next`, asking the crate's own `nth(1)`, where std's `Take::fold` is its source's `try_fold`, whose `Skip` asks `nth(0)` (#2195)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "                asked if asked.folds() => sources.extend(self.nth_folded_by(source, asked)),\n",
+    replace: "                OwnStep::Fold => sources.extend(self.nth_folded_by(source, asked)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^fold_through_try_fold_reaches_own_nth.rs$"],
   },
 ];

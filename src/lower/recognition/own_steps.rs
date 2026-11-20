@@ -7,10 +7,14 @@ use super::*;
 
 /// A step of std's `Iterator` or `DoubleEndedIterator`, beside `next` and
 /// `next_back`, that the crate's iterator may write and std's adapters
-/// pass on to what they hold.
+/// pass on to what they hold; and `try_fold`, which no crate's iterator
+/// writes (its `Try` is unstable), but through which std's adapters reach
+/// what it does: `Take::fold` is its source's `try_fold`, and
+/// `Skip::try_fold` asks its source's `nth(n - 1)` (#2195).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(in crate::lower) enum OwnStep {
     Fold,
+    TryFold,
     Rfold,
     TryRfold,
     Nth,
@@ -38,8 +42,9 @@ pub(in crate::lower) enum Reach {
 
 impl OwnStep {
     /// Each of them.
-    const ALL: [OwnStep; 7] = [
+    const ALL: [OwnStep; 8] = [
         OwnStep::Fold,
+        OwnStep::TryFold,
         OwnStep::Rfold,
         OwnStep::TryRfold,
         OwnStep::Nth,
@@ -52,6 +57,7 @@ impl OwnStep {
     pub(in crate::lower) fn method(self) -> &'static str {
         match self {
             OwnStep::Fold => "fold",
+            OwnStep::TryFold => "try_fold",
             OwnStep::Rfold => "rfold",
             OwnStep::TryRfold => "try_rfold",
             OwnStep::Nth => "nth",
@@ -59,6 +65,12 @@ impl OwnStep {
             OwnStep::Last => "last",
             OwnStep::Count => "count",
         }
+    }
+
+    /// Whether it folds what it's taken from its front, `fold` or
+    /// `try_fold`: an `nth` either asks is `nth_folded_sources`' answer.
+    fn folds(self) -> bool {
+        matches!(self, OwnStep::Fold | OwnStep::TryFold)
     }
 
     /// Whether it's `DoubleEndedIterator`'s, not `Iterator`'s.
@@ -132,9 +144,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// of a crate's iterator writes: of that iterator, and through a `&mut`
     /// of it where std's impl for it passes the step on; of each std
     /// adapter, through each step it asks of what it holds, std's catalog's
-    /// (`OwnStep::asked_of`), but a fold's `nth`: a `step_by`'s or a
-    /// `skip`'s `fold` reaching the crate's own `nth` is
-    /// `nth_folded_sources`' answer, which folds it by its own;
+    /// (`OwnStep::asked_of`), its `try_fold` too, but a fold's `nth`, from
+    /// its `fold` or its `try_fold`: a `step_by`'s or a `skip`'s reaching the
+    /// crate's own `nth` is `nth_folded_sources`' answer, which folds it by
+    /// its own;
     /// of a type generic code doesn't know, a type parameter or an
     /// associated type, `T::IntoIter` (`is_unknown`, #1595), as `reach`
     /// says. The one answer, each step's (ADR 1089).
@@ -162,7 +175,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         let adapter = named.as_str();
         (step.asked_of(adapter).into_iter())
-            .filter(|&(_, asked)| !(matches!(step, OwnStep::Fold) && matches!(asked, OwnStep::Nth)))
+            .filter(|&(_, asked)| !(step.folds() && matches!(asked, OwnStep::Nth)))
             .any(|(at, asked)| {
                 self.asked_source(ty, args, at)
                     .is_some_and(|source| self.reaches_its_own(source, asked, reach))
@@ -252,8 +265,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// What std's `fold` of a `ty`, an iterator, asks an `nth` of, as std's
     /// catalog says (`asked_of`): a `skip`'s source, its `nth(n - 1)`, and a
     /// `step_by`'s, each step its `nth`; and those of each adapter's whose
-    /// `fold` is its source's.
+    /// `fold` is its source's `fold` or `try_fold`, a `take`'s (#2195).
     pub(in crate::lower) fn nth_folded_sources(&self, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
+        self.nth_folded_by(ty, OwnStep::Fold)
+    }
+
+    /// What std's `step` of a `ty`, its `fold` or its `try_fold`, asks an
+    /// `nth` of, `nth_folded_sources`' answer.
+    fn nth_folded_by(&self, ty: Ty<'tcx>, step: OwnStep) -> Vec<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else {
             return Vec::new();
@@ -263,13 +282,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         let adapter = named.as_str();
         let mut sources = Vec::new();
-        for (at, asked) in OwnStep::Fold.asked_of(adapter) {
+        for (at, asked) in step.asked_of(adapter) {
             let Some(source) = args.types().nth(at) else {
                 continue;
             };
             match asked {
                 OwnStep::Nth => sources.push(source),
-                OwnStep::Fold => sources.extend(self.nth_folded_sources(source)),
+                asked if asked.folds() => sources.extend(self.nth_folded_by(source, asked)),
                 _ => {}
             }
         }
