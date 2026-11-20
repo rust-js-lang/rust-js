@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
       "a clone of a B-tree of keys found by their own `cmp`, or a caller's class, shares its keys and never calls their `Clone`, as it did before #924",
     file: "src/lower/std_impls/clones.rs",
     find: "        let key = Some(key_ty).filter(|&k| self.needs_clone(k));\n",
-    replace: "        let key = Some(key_ty).filter(|&k| self.is_value_key(k) && self.needs_clone(k));\n",
+    replace: "        let key = Some(key_ty).filter(|_| false);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_clone_own_keys.rs$"],
   },
   {
