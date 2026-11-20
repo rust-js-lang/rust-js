@@ -222,11 +222,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tuple: &Operand<'tcx>,
         steps: &[Ty<'tcx>],
     ) -> Vec<Ty<'tcx>> {
-        let items = match tuple
-            .place()
-            .and_then(|place| place.as_local())
-            .and_then(|t| assigned_once(body, t))
-        {
+        let items = match tuple.place().and_then(|place| place.as_local()).and_then(|t| {
+            crate::lower::body_queries::assigned_once(body)
+                .get(&t)
+                .copied()
+                .flatten()
+        }) {
             Some(Rvalue::Aggregate(kind, items)) if matches!(**kind, mir::AggregateKind::Tuple) => Some(items),
             _ => None,
         };
@@ -248,7 +249,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn cast_from(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> Option<Ty<'tcx>> {
         let mut item = operand;
         loop {
-            match assigned_once(body, item.place()?.as_local()?)? {
+            match crate::lower::body_queries::assigned_once(body)
+                .get(&item.place()?.as_local()?)
+                .copied()
+                .flatten()?
+            {
                 Rvalue::Use(copied, _) => item = copied,
                 Rvalue::Cast(
                     mir::CastKind::PointerCoercion(ty::adjustment::PointerCoercion::ReifyFnPointer(_), _),
@@ -656,20 +661,6 @@ fn read_by<'tcx>(
 pub(super) fn value_first<'tcx>(steps: &[ty::Ty<'tcx>]) -> Option<ty::Ty<'tcx>> {
     let first = *steps.first()?;
     (steps.len() > 1 && crate::lower::fn_def(first).is_none()).then_some(first)
-}
-
-/// The value `local` is assigned, where `body` assigns it once.
-fn assigned_once<'b, 'tcx>(body: &'b mir::Body<'tcx>, local: mir::Local) -> Option<&'b Rvalue<'tcx>> {
-    let mut found = (body.basic_blocks.iter())
-        .flat_map(|block| &block.statements)
-        .filter_map(|s| match &s.kind {
-            StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
-            _ => None,
-        });
-    match (found.next(), found.next()) {
-        (Some(rvalue), None) => Some(rvalue),
-        _ => None,
-    }
 }
 
 /// Whether every JS host has `global`, one of ECMAScript's first edition's

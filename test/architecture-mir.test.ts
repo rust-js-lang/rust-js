@@ -84,3 +84,20 @@ test("rustc's elaborated body is read by `mir/elaborated.rs` alone", () => {
     .filter((file) => /\bmir_drops_elaborated_and_const_checked\b/.test(read(file)));
   expect(reading).toEqual([]);
 });
+
+// What one write of a local in a body is, the one rvalue a statement assigns
+// it or the one write, a call's too, that makes it, is asked of
+// `body_queries/values.rs` alone (#2211): four answerers of it, each
+// counting writes its own way, were three too many.
+test("only body_queries/values.rs answers a local's one write", () => {
+  const answers = files("src")
+    .filter((file) => file.endsWith(".rs"))
+    .flatMap((file) =>
+      [...read(file).matchAll(/\bfn (assigned_once|made_once|the_write|only_write|written_once|assigned_exactly_once)\b/g)].map(
+        (m) => `${file}: ${m[1]}`,
+      ),
+    );
+  expect(answers.filter((found) => !found.startsWith("src/lower/body_queries/values.rs"))).toEqual([]);
+  expect(answers).toContain("src/lower/body_queries/values.rs: assigned_once");
+  expect(answers).toContain("src/lower/body_queries/values.rs: the_write");
+});

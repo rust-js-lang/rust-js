@@ -19,4 +19,12 @@ export const mutations: Mutation[] = [
     replace: ".any(|(_, elem)| elem == PlaceElem::Deref)",
     tests: ["test/corpus.test.ts", "-t", "^box_held_in_a_field_written.rs$"],
   },
+  {
+    name: "returned-parameter-last-write",
+    breaks: "a local written on two paths is taken to be what its last write gives, so a function that returns another reference on one path is taken to return its parameter",
+    file: "src/lower/body_queries/values.rs",
+    find: "                        if !assign.0.projection.is_empty() || found.is_some() {\n",
+    replace: "                        if !assign.0.projection.is_empty() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^reference_returned_on_one_path_given_as_its_pointer_refused.rs$"],
+  },
 ];

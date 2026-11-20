@@ -746,13 +746,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Operand::Constant(c) => break c.clone(),
                 _ => operand.place()?.as_local()?,
             };
-            let mut given = (body.basic_blocks.iter().flat_map(|b| &b.statements)).filter_map(|s| match &s.kind {
-                mir::StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
-                _ => None,
-            });
-            operand = match (given.next(), given.next()) {
-                (Some(Rvalue::Use(given, _)), None) => given.clone(),
-                (Some(Rvalue::Ref(_, BorrowKind::Shared, of)), None) if of.projection[..] == [PlaceElem::Deref] => {
+            let assigned = crate::lower::body_queries::assigned_once(body)
+                .get(&local)
+                .copied()
+                .flatten();
+            operand = match assigned {
+                Some(Rvalue::Use(given, _)) => given.clone(),
+                Some(Rvalue::Ref(_, BorrowKind::Shared, of)) if of.projection[..] == [PlaceElem::Deref] => {
                     Operand::Copy(Place::from(of.local))
                 }
                 _ => return None,

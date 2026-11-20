@@ -84,9 +84,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if (1..=body.arg_count).contains(&local.as_usize()) {
                 return Some(local);
             }
-            local = match only_write(body, local)? {
-                Write::Statement(rvalue) => self.reborrow_of(body, rvalue)?,
-                Write::Call(func, args) if through_calls => {
+            local = match crate::lower::body_queries::the_write(body, local, crate::lower::body_queries::Borrowed::Any)?
+            {
+                crate::lower::body_queries::Write::Statement(rvalue) => self.reborrow_of(body, rvalue)?,
+                crate::lower::body_queries::Write::Call(func, args) if through_calls => {
                     let (callee, _) = func.const_fn_def()?;
                     let index = self.returns_its_parameter(callee)?;
                     match &args.get(index)?.node {
@@ -94,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         mir::Operand::Constant(_) | mir::Operand::RuntimeChecks(_) => return None,
                     }
                 }
-                Write::Call(..) => return None,
+                crate::lower::body_queries::Write::Call(..) => return None,
             };
         }
         None
@@ -119,58 +120,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         }
     }
-}
-
-/// What writes a local: a statement's rvalue or a call.
-enum Write<'b, 'tcx> {
-    Statement(&'b Rvalue<'tcx>),
-    Call(&'b mir::Operand<'tcx>, &'b [rustc_span::Spanned<mir::Operand<'tcx>>]),
-}
-
-/// The one write of `local` in `body`, whole: `None` where it's written
-/// more than once, in part, or by anything but an assignment or a call,
-/// or where it's borrowed itself, `&mut l` or `&raw mut l`, which may
-/// write it.
-fn only_write<'b, 'tcx>(body: &'b mir::Body<'tcx>, local: Local) -> Option<Write<'b, 'tcx>> {
-    let mut found = None;
-    for data in body.basic_blocks.iter() {
-        for statement in &data.statements {
-            match &statement.kind {
-                StatementKind::Assign(assign) => {
-                    if let Rvalue::Ref(_, _, place) | Rvalue::RawPtr(_, place) = &assign.1
-                        && place.local == local
-                        && place.projection.first() != Some(&PlaceElem::Deref)
-                    {
-                        return None;
-                    }
-                    if assign.0.local == local {
-                        if !assign.0.projection.is_empty() || found.is_some() {
-                            return None;
-                        }
-                        found = Some(Write::Statement(&assign.1));
-                    }
-                }
-                StatementKind::SetDiscriminant { place, .. } if place.local == local => return None,
-                _ => {}
-            }
-        }
-        match &data.terminator().kind {
-            mir::TerminatorKind::Call {
-                func,
-                args,
-                destination,
-                ..
-            } if destination.local == local => {
-                if !destination.projection.is_empty() || found.is_some() {
-                    return None;
-                }
-                found = Some(Write::Call(func, args));
-            }
-            mir::TerminatorKind::InlineAsm { .. } => return None,
-            _ => {}
-        }
-    }
-    found
 }
 
 /// How a function's result is made of its parameter `param`, its index
@@ -236,11 +185,11 @@ fn returned_iterator_within(tcx: TyCtxt<'_>, fn_id: DefId, walking: &mut Vec<Def
             });
             break;
         }
-        let next = match only_write(body, local) {
-            Some(Write::Statement(Rvalue::Use(operand, _))) => operand_local(operand),
+        let next = match crate::lower::body_queries::the_write(body, local, crate::lower::body_queries::Borrowed::Any) {
+            Some(crate::lower::body_queries::Write::Statement(Rvalue::Use(operand, _))) => operand_local(operand),
             // What follows an `into_iter()` is the `Vec` itself, moved.
-            Some(Write::Call(..)) if via == Via::IntoIter => None,
-            Some(Write::Call(func, args)) => (|| {
+            Some(crate::lower::body_queries::Write::Call(..)) if via == Via::IntoIter => None,
+            Some(crate::lower::body_queries::Write::Call(func, args)) => (|| {
                 let (callee, _) = func.const_fn_def()?;
                 let first = operand_local(&args.first()?.node)?;
                 let made = body.local_decls[local].ty;

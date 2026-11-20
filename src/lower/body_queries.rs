@@ -37,7 +37,9 @@ pub(in crate::lower) use in_place::{decide as decide_in_place, decide_held};
 pub(super) use present_item::present_item_of_sized;
 pub(in crate::lower) use set_reads::is_option_unwrap;
 pub(super) use total_orders::orders_totally;
-pub(in crate::lower) use values::{assigned_once, indirect, made_once, through_box, value_local};
+pub(in crate::lower) use values::{
+    Borrowed, Write, assigned_once, indirect, made_once, the_write, through_box, value_local,
+};
 use whole_casts::whole_casts;
 
 /// The parts of a `for pat in head { body }` (ADR 0025).

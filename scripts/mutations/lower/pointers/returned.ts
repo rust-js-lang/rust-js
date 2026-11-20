@@ -14,14 +14,6 @@ export const mutations: Mutation[] = [
     tests: given,
   },
   {
-    name: "returned-parameter-last-write",
-    breaks: "a local written on two paths is taken to be what its last write gives, so a function that returns another reference on one path is taken to return its parameter",
-    file: "src/lower/pointers/returned.rs",
-    find: "                        if !assign.0.projection.is_empty() || found.is_some() {\n",
-    replace: "                        if !assign.0.projection.is_empty() {\n",
-    tests: refused,
-  },
-  {
     name: "returned-adapters-not-followed",
     breaks:
       "`doubled(kept.into_iter()).collect()` of a crate's function returning `it.map(f)` loses its source, refused, where native Rust prints its source's capacity, 7 (#1934)",

@@ -358,16 +358,14 @@ fn made_whole<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, locals: &IndexSet
 }
 
 /// What each of `body`'s locals written once, `counts` says, is assigned,
-/// where a statement assigns it whole.
-fn assigned_once<'b, 'tcx>(body: &'b mir::Body<'tcx>, counts: &[usize]) -> IndexMap<Local, &'b Rvalue<'tcx>> {
-    (body.basic_blocks.iter().flat_map(|data| &data.statements))
-        .filter_map(|statement| match &statement.kind {
-            StatementKind::Assign(assign)
-                if assign.0.projection.is_empty() && counts[assign.0.local.as_usize()] == 1 =>
-            {
-                Some((assign.0.local, &assign.1))
-            }
-            _ => None,
+/// where a statement assigns it whole: the owner's answer
+/// (`body_queries::assigned_once`) of a local written nothing else (#2211).
+fn assigned_alone<'b, 'tcx>(body: &'b mir::Body<'tcx>, counts: &[usize]) -> IndexMap<Local, &'b Rvalue<'tcx>> {
+    (crate::lower::body_queries::assigned_once(body).into_iter())
+        .filter_map(|(local, rvalue)| {
+            rvalue
+                .filter(|_| counts[local.as_usize()] == 1)
+                .map(|rvalue| (local, rvalue))
         })
         .collect()
 }
@@ -420,7 +418,7 @@ pub(in crate::lower) fn whole_locals<'tcx>(
     writes: &dyn Fn(Local) -> usize,
 ) -> IndexSet<Local> {
     let borrows = field_borrows(tcx, body);
-    let assigned = assigned_once(body, &write_counts(body));
+    let assigned = assigned_alone(body, &write_counts(body));
     // What each write gives: a whole number, or another's.
     let mut written: IndexMap<Local, Vec<Option<Local>>> = IndexMap::default();
     let mut unknown: IndexSet<Local> = IndexSet::default();
@@ -547,7 +545,7 @@ fn unwhole_key_writes<'tcx>(
     if keys.is_empty() {
         return gone;
     }
-    let assigned = assigned_once(body, counts);
+    let assigned = assigned_alone(body, counts);
     let uses = uses_of(body);
     // How many times each local is a key's method's receiver, and each key
     // a constant one's.

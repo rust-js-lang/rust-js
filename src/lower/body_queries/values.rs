@@ -109,3 +109,78 @@ pub(in crate::lower) fn made_once(body: &mir::Body<'_>) -> IndexSet<Local> {
         })
         .collect()
 }
+
+/// What writes a local: a statement's rvalue or a call.
+pub(in crate::lower) enum Write<'b, 'tcx> {
+    Statement(&'b Rvalue<'tcx>),
+    Call(&'b mir::Operand<'tcx>, &'b [rustc_span::Spanned<mir::Operand<'tcx>>]),
+}
+
+/// Which borrows of a local `the_write` takes for a write it can't see.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::lower) enum Borrowed {
+    /// Any, shared too: what `pointers/returned.rs` follows takes none.
+    Any,
+    /// Only one that may write it, `&mut l` or `&raw mut l`.
+    Mutably,
+}
+
+/// The one write of `local` in `body`, whole, a statement's or a call's,
+/// what it was made of (#2211, moved from pointers/returned.rs): `None` where it's written
+/// more than once, in part, or by anything but an assignment or a call,
+/// or where it's borrowed itself as `borrowed` says.
+pub(in crate::lower) fn the_write<'b, 'tcx>(
+    body: &'b mir::Body<'tcx>,
+    local: Local,
+    borrowed: Borrowed,
+) -> Option<Write<'b, 'tcx>> {
+    let mut found = None;
+    for data in body.basic_blocks.iter() {
+        for statement in &data.statements {
+            match &statement.kind {
+                StatementKind::Assign(assign) => {
+                    let may_write = |kind: &mir::BorrowKind| borrowed == Borrowed::Any || kind.mutability().is_mut();
+                    let lent = match &assign.1 {
+                        Rvalue::Ref(_, kind, place) if may_write(kind) => Some(place),
+                        Rvalue::RawPtr(kind, place)
+                            if borrowed == Borrowed::Any || !matches!(kind, mir::RawPtrKind::Const) =>
+                        {
+                            Some(place)
+                        }
+                        _ => None,
+                    };
+                    if let Some(place) = lent
+                        && place.local == local
+                        && place.projection.first() != Some(&PlaceElem::Deref)
+                    {
+                        return None;
+                    }
+                    if assign.0.local == local {
+                        if !assign.0.projection.is_empty() || found.is_some() {
+                            return None;
+                        }
+                        found = Some(Write::Statement(&assign.1));
+                    }
+                }
+                StatementKind::SetDiscriminant { place, .. } if place.local == local => return None,
+                _ => {}
+            }
+        }
+        match &data.terminator().kind {
+            mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } if destination.local == local => {
+                if !destination.projection.is_empty() || found.is_some() {
+                    return None;
+                }
+                found = Some(Write::Call(func, args));
+            }
+            mir::TerminatorKind::InlineAsm { .. } => return None,
+            _ => {}
+        }
+    }
+    found
+}

@@ -115,26 +115,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body: &rustc_middle::mir::Body<'tcx>,
         at: rustc_middle::mir::BasicBlock,
     ) -> Option<(bool, rustc_middle::mir::Local)> {
-        use rustc_middle::mir::{Operand, Rvalue, StatementKind, TerminatorKind};
+        use rustc_middle::mir::{Operand, Rvalue, TerminatorKind};
         let local_of = |operand: &Operand<'tcx>| operand.place().filter(|p| p.projection.is_empty()).map(|p| p.local);
         let TerminatorKind::Call { args, .. } = &body.basic_blocks[at].terminator().kind else {
             return None;
         };
         let lent = local_of(&args.first()?.node)?;
-        // Each assignment of `local`: a statement's, or a call's result.
+        // The one write of `local`, a statement's or a call's (`the_write`),
+        // a shared borrow of it no write (#2211).
         let assigned = |local: rustc_middle::mir::Local| {
-            let statements = (body.basic_blocks.iter())
-                .flat_map(|data| data.statements.iter())
-                .filter_map(|s| match &s.kind {
-                    StatementKind::Assign(assign) if assign.0.local == local => Some(Err(&assign.1)),
-                    _ => None,
-                });
-            let calls = (body.basic_blocks.iter()).filter_map(|data| match &data.terminator().kind {
-                TerminatorKind::Call { func, destination, .. } if destination.local == local => Some(Ok(func)),
-                _ => None,
-            });
-            let all: Vec<_> = statements.chain(calls).collect();
-            (all.len() == 1).then(|| all[0])
+            crate::lower::body_queries::the_write(body, local, crate::lower::body_queries::Borrowed::Mutably).map(
+                |write| match write {
+                    crate::lower::body_queries::Write::Statement(rvalue) => Err(rvalue),
+                    crate::lower::body_queries::Write::Call(func, _) => Ok(func),
+                },
+            )
         };
         let Err(Rvalue::Ref(_, _, made)) = assigned(lent)? else {
             return None;
