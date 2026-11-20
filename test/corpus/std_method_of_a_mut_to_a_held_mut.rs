@@ -8,7 +8,8 @@
 // impl makes of another, or leaves its trait's default: an iterator of the
 // crate's own folded through a `&mut` is `try_fold`'s, and found through a
 // `&mut` to a `&mut`, the default `find`'s, each of its `next`, not its own
-// `fold` or `find`.
+// `fold` or `find`. Nor `cmp`, whose `other` is a `&&mut W` too: two `&mut`s
+// compared are what they point at, compared.
 use std::fmt::Write as _;
 use std::io::{BufRead, Read, Write as _};
 
@@ -99,4 +100,13 @@ fn main() {
     let mut held = &mut again;
     let finds = &mut held;
     println!("{:?}", finds.find(|&n| n == 2));
+
+    let mut low = 1;
+    let mut high = 2;
+    let (l, h) = (&mut low, &mut high);
+    println!("{:?} {:?} {:?}", l.cmp(&h), h.cmp(&l), l.cmp(&l));
+    let mut first = String::from("a");
+    let mut second = String::from("b");
+    let (f, s) = (&mut first, &mut second);
+    println!("{:?} {:?}", f.cmp(&s), s.cmp(&f));
 }

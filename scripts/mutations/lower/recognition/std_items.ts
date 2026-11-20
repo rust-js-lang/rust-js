@@ -5,7 +5,7 @@ export const mutations: Mutation[] = [
   {
     name: "passed-on-of-any-self",
     breaks:
-      "a method of `self` std's impl for a `&mut I` makes of another is taken as `I`'s, so a `&mut` to an iterator of the crate's own folds by its own `fold`, where std's impl folds by `I`'s `try_fold`, its `next` (#1309)",
+      "a method of `self`, or of `&self` whose other inputs name `Self`, that std's impl for a `&mut W` writes is taken as `W`'s: `l.cmp(&h)` of two `&mut i32` compares the handle `&h` with `l`'s number, `Equal` where Rust says `Less`, and of two `&mut String`s `Greater` (#1309; of an iterator's `fold`, `Wrapper::passes` answers first since #2180)",
     file: "src/lower/recognition/std_items.rs",
     find: "                true\n            }\n            _ => return None,\n        };\n",
     replace: "                true\n            }\n            _ => false,\n        };\n",
