@@ -82,3 +82,57 @@ call the form's step instead of re-deciding from types.
   source made knowing it, as it made `$filterEnds`.
 - Mutations: `somes-counted-as-a-filter`, `somes-of-a-back-forward-only`,
   `somes-never`, `somes-of-any-type`, `somes-not-made-knowing`.
+
+## Amended: one owner names each form, and the net runs it both ways (2026-11-20, step 3's 1b and (d))
+
+**The owner.** `src/lower/iterators/in_place_forms.rs` names each form
+lowering makes a std adapter or consumer as in place (`InPlaceForm`),
+the std types it stands for (as std_steps.txt names its rows), and
+where it's chosen (`Where`).
+- `in_place_form` is the one decision between forms: the `Some`s,
+  `$somes` or JS's filter; a `step_by`'s, `$stepBy` or a filter by
+  index (`steps_by_index`, whose conditions moved here from
+  `combinators/adapters.rs`); and `nth`'s, `$nth` or `drop(n).take(1)`.
+- `flattened_form` chooses between `$flatMap` and JS's `flatMap`.
+- adapters.rs emits what they answer, byte for byte as before.
+
+**The table.** `src/lower/iterators/in_place_forms.txt` is the owner's
+table (`BLESS=1 cargo test in_place_forms`, the contract-table
+pattern). test/iterator-steps.test.ts reads it:
+- The net's forms are the table's pairs, both ways.
+- Each form runs as it's emitted against its std type's row, over the
+  sources its `Where` allows. Where the hint runs nothing, the source's
+  `size_hint` calls are left out of both traces. Where the inner
+  iterators are plain, only sources of no own steps are used. A filter
+  by index of an array's items gives std's items.
+- Consumers run over a map of the source, held to `Map`'s row of the
+  method.
+
+**The guard.** Each `Where` is a fact of every value of the source's
+type, or MIR's, never a crate-wide fact (the lead). A test holds each
+`Where`'s APIs to owners of class 1 or 2 in docs/architecture.md, so the
+net's exclusions can't hide a form a crate-wide fact chose, #2197's
+kind. A choice may also ask what narrows it further. A `step_by`'s
+filter asks `made_knowing_its_hint`, which only narrows, and its
+`Where` is `bounded_by_items`.
+
+**New native rows.** std's catalog gains `Flatten<Option>` and
+`FlatMap<Option>` (test/std-steps.rs): std's `FlattenCompat` over
+`Option`s steps its source by `next`, where `FilterMap` steps it by
+`find_map`, a `try_fold`.
+
+**What it found.** #2205 (P0): the `Some`s' forms answer `FilterMap`'s
+row but not `Flatten<Option>`'s or `FlatMap<Option>`'s. Through a
+`skip` or a `step_by` of the crate's iterator with its own `nth`, made
+in place where #2197's type-keyed hint fact puts the chain, the crate's
+`nth` is asked otherwise. Its rows are in the net's `differs` under
+#2205 until it's fixed. Every other new pair answers its row: the
+`Some`s as JS writes them for `FilterMap`, the filter by index,
+`$flattenEnds` and JS's `flatMap` for `FlatMap`, `drop(n).take(1)`
+and `find_map`'s map and find.
+
+Mutations: the catalog's `step-by-*`, `nth-own-by-drop`, `somes-*` and
+`flat-map-*` moved with their code to
+scripts/mutations/lower/iterators/in_place_forms.ts. New ones:
+`in-place-somes-filter-of-any-source` and
+`in-place-somes-not-a-flatten`, caught by the table's unit test.

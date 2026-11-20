@@ -316,8 +316,10 @@ test("Lightning CSS stays behind the one function that lists a CSS Module's keys
 // compiler's tests', no build of it (src/library/scopes.rs, `cfg(test)`).
 test("only the publisher and the driver write files", () => {
   const writes = /\bfs::(?:write|rename|remove_\w+|create_dir\w*|copy|hard_link)\b|\bFile::(?:create|options)\b|\bOpenOptions\b/;
-  // And `rust-js fmt`, which writes the Rust it formats (ADR 1166).
-  const writers = ["src/publish.rs", "src/main.rs", "src/std_sysroot.rs", "src/library/scopes.rs", "src/source_format.rs"];
+  // And `rust-js fmt`, which writes the Rust it formats (ADR 1166); and
+  // the unit tests that bless a table made of an owner, `BLESS=1 cargo
+  // test`: the library contract's and the in-place forms' (ADR 1176).
+  const writers = ["src/publish.rs", "src/main.rs", "src/std_sysroot.rs", "src/library/scopes.rs", "src/source_format.rs", "src/lower/iterators/in_place_forms.rs"];
   // Its code alone: a lowering of std's files names them in its comments
   // and in the paths it recognizes, `"std::fs::write"` (#1156).
   const code = (file: string) => read(file).replace(/\/\/.*$/gm, "").replace(/"(?:[^"\\\n]|\\.)*"/g, '""');

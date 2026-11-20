@@ -12,15 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^zip_by_index.rs$"],
   },
   {
-    name: "step-by-past-a-skip-filtered",
-    breaks:
-      "a `step_by` whose first step is a `skip`'s `nth` of a reversed `Vec` is a `filter`, whose fold reaches `Skip::fold`, dropping back to front (#294)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    || self.recognition().steps_past_a_slice(receiver_ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_compiled_source_nth.rs$"],
-  },
-  {
     name: "inspect-skipped",
     breaks: "`inspect(f)` doesn't call `f`",
     file: "src/lower/combinators/adapters.rs",
@@ -123,25 +114,6 @@ export const mutations: Mutation[] = [
     replace:
       "        let Some(drop) = None::<Expr> else {\n            return Ok(None);\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
-  },
-  {
-    name: "flat-map-js-close-order",
-    breaks:
-      "`flatten` of inner iterators that drop, of a `map`'s source that drops too, closes the inner one first, as JS's `flatMap` does (#644)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "        match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
-    replace: "        match false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
-  },
-  {
-    name: "flat-map-of-dropped-items-js",
-    breaks:
-      "`flat_map` of the crate's iterators that give items with a destructor is JS's `flatMap`, whose `last` drops each as the next comes, not each inner one's own `last` (#645)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "        match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
-    replace: "        match own {\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
-    snapshots: true,
   },
   {
     name: "flatten-vecs-unclosed",
@@ -293,14 +265,6 @@ export const mutations: Mutation[] = [
   },
 
   {
-    name: "nth-own-by-drop",
-    breaks: "nth of what reaches the crate's own nth is its nth",
-    file: "src/lower/combinators/adapters.rs",
-    find: "            IterComb::Nth\n                if self\n                    .recognition()\n                    .reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure) =>\n",
-    replace: "            IterComb::Nth if false =>\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_nth_through_adapters.rs$"],
-  },
-  {
     name: "nth-own-unboxed",
     breaks: "nth's Some(None) is boxed",
     file: "src/lower/combinators/adapters.rs",
@@ -336,15 +300,6 @@ export const mutations: Mutation[] = [
     replace:
       "        let size = self.room_size_of(&list[1], item);\n        let drop: Option<Expr> = None;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_destructors.rs$"],
-  },
-  {
-    name: "step-by-of-slice-filtered",
-    breaks:
-      "`rev().step_by(n)` of a `Vec` is a filter dropping each it steps over from the back, not `$stepBy` asking its `nth`'s slice (#234)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    || self.recognition().nths_a_slice(receiver_ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
     name: "flatten-items-not-converted",
@@ -393,14 +348,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
 
-  {
-    name: "step-by-slice-in-order-filtered",
-    breaks: "a `step_by(n)` of a `Vec`'s items whose drop may panic is a filter by index, each it passes dropped as it's rejected, so a panic there drops the fold's accumulator before the rest of std's slice (#668)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                        && self.recognition().nths_a_slice_in_order(receiver_ty)\n",
-    replace: "                        && false\n",
-    tests: ["test/corpus.test.ts", "-t", "^nth_passed_drops_unwind.rs$"],
-  },
 
   {
     name: "flat-map-own-count-js",
@@ -427,14 +374,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
   },
   {
-    name: "step-by-in-place-of-panicking-steps",
-    breaks: "a `step_by()` of a source whose steps may panic is made in place as a filter by index, whose first step is inside its source's fold, so a panic there drops the accumulator before the consumer's closure, where std's `StepBy` drops the closure first (#773)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                    || self.steps_may_panic(receiver_ty.peel_refs())\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(skip_while_first_step_unwinds|own_fold_and_count_where_adapters_call_them).rs$"],
-  },
-  {
     name: "inspect-item-undropped-as-it-panics",
     breaks: "an `inspect(f)` whose `f` panics drops nothing of the item it was given, which Rust's `inspect` drops as it unwinds (#423, #938)",
     file: "src/lower/combinators/adapters.rs",
@@ -443,20 +382,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
 
-  {
-    name: "step-by-of-unbounded-as-filter",
-    breaks:
-      "a `step_by(n)` of what no array's items bound is a filter of every `n`th, stepped by `next` where std's `StepBy` steps it by `nth`: a source that gives more after a `None` goes on, the crate's own `nth` is never asked, a range steps each number, a zip's or a flatten's drops come in another order, and its hint, a filter's, asks no room where std panics `capacity overflow` (#161, #214, #231, #654, #668, #1046)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "                if !self.recognition().bounded_by_items(receiver_ty)\n",
-    replace: "                if false\n",
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(counted_iterators_held_ask_room|restarting_iterators|own_nth_through_adapters|range_steps_anywhere|reversed_vec_rest_through_zip_and_enumerate).rs$",
-    ],
-    snapshots: true,
-  },
   {
     name: "unzip-drops-ungiven",
     breaks: "`unzip` of items with a destructor isn't given their drops, so what it unzipped before a panic is leaked (#1150)",
@@ -506,24 +431,5 @@ export const mutations: Mutation[] = [
     find: "        let own_count = [OwnStep::Count, OwnStep::Last]\n",
     replace: "        let own_count = [OwnStep::Count]\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
-  },
-  {
-    name: "somes-never",
-    breaks:
-      "the `Some`s of a source whose `size_hint` runs the crate's code are JS's filter, whose own `count` in the runtime is `Filter::count`'s, so generic code counting a `filter_map` of the crate's iterator asks its `size_hint`, which std's `FilterMap` never asks (#2199)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "        let somes = |made: Expr| match self.recognition().hint_reaches_own_where(receiver_ty, true) {\n",
-    replace: "        let somes = |made: Expr| match false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
-  },
-  {
-    name: "somes-of-any-type",
-    breaks:
-      "the `Some`s of a variable whose type's `size_hint` runs none of the crate's code, `take.map(f)` of a slice's, are `$somes(take.map(f))`, where upstream writes JS's `filter((item) => item != null)` (#2199)",
-    file: "src/lower/combinators/adapters.rs",
-    find: "        let somes = |made: Expr| match self.recognition().hint_reaches_own_where(receiver_ty, true) {\n",
-    replace: "        let somes = |made: Expr| match true {\n",
-    tests: ["test/corpus.test.ts", "-t", "^(adapter_functions_dropped|fold_drops_moved_function_first).rs$"],
-    snapshots: true,
   },
 ];

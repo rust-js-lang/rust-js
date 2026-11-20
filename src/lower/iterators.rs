@@ -11,6 +11,7 @@ mod eager;
 mod ends;
 mod hint_asks;
 mod in_place;
+pub(in crate::lower) mod in_place_forms;
 mod knowing;
 mod source_iter;
 mod stepping;

@@ -64,6 +64,14 @@ const writers: [name: string, file: string, type: string][] = [
   ["Box<dyn I>", "alloc/src/boxed/iter.rs", "Box<I, A> \\{"],
 ];
 
+/** Runs of one of `writers`' types over other sources, named for what
+ * they're over, `Flatten<Option>`: its impls' writes are its type's, so
+ * no `writes:` line of their own, and no adapter of the iterator tables. */
+const instances: [name: string, of: string][] = [
+  ["Flatten<Option>", "Flatten"],
+  ["FlatMap<Option>", "FlatMap"],
+];
+
 /** The methods of the three traits `name`'s impls write, of `steps`, in
  * their order: each impl's `fn`s and what `impl_fold_via_try_fold!` makes. */
 function written(file: string, type: string): string[] {
@@ -114,7 +122,13 @@ function catalog(): string {
     if (own.length === 0) throw new Error(`the probe ran no \`${name}\``);
     lines.push(...own.map((line) => line.trimEnd()));
   }
-  const named = new Set(writers.map(([name]) => name));
+  for (const [name, of] of instances) {
+    if (!writers.some(([type]) => type === of)) throw new Error(`\`${name}\` runs over \`${of}\`, which writers doesn't have`);
+    const own = runs.filter((line) => line.startsWith(`${name}#`));
+    if (own.length === 0) throw new Error(`the probe ran no \`${name}\``);
+    lines.push(...own.map((line) => line.trimEnd()));
+  }
+  const named = new Set([...writers.map(([name]) => name), ...instances.map(([name]) => name)]);
   expect(runs.filter((line) => !named.has(line.slice(0, line.indexOf("#"))))).toEqual([]);
   return `${lines.join("\n")}\n`;
 }

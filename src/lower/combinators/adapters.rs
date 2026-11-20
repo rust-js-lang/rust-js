@@ -2,6 +2,7 @@
 //! closed inner iterator, and `iter_comb`, which lowers an adapter.
 
 use super::*;
+use crate::lower::iterators::in_place_forms::InPlaceForm;
 use crate::lower::recognition::{OwnStep, Reach};
 use crate::lower::temporary_names::Role;
 
@@ -298,10 +299,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what it passes before the one kept before (#645) (ADR 0510); and its
     /// `count` std's, each inner iterator's own.
     fn flat_mapped(&self, items: Expr, each: Expr, inner: Ty<'tcx>, own: bool) -> Expr {
-        let gives = self.iterable_item(inner);
-        match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {
-            true => Expr::call_helper("$flatMap", vec![items, each]),
-            false => Expr::call(Expr::member(items, "flatMap"), vec![each]),
+        match self.flattened_form(inner, own) {
+            InPlaceForm::FlatMap => Expr::call_helper("$flatMap", vec![items, each]),
+            _ => Expr::call(Expr::member(items, "flatMap"), vec![each]),
         }
     }
 
@@ -357,16 +357,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(test)).at(js::Span::NONE)],
             )
         };
-        // The `Some`s of `made`: JS's filter of what's there, but `$somes`
-        // where its source's `size_hint` may run the crate's code, whose own
-        // `count` is std's `FilterMap`'s and `Flatten`'s, not
-        // `Filter::count`'s, which asks that hint first (#2199). Its type
-        // says, of every value of it alike, whatever form a fact made it
-        // (`hint_reaches_own_where`, of a type parameter's and what a `dyn`
-        // holds too): no fact chooses the form.
-        let somes = |made: Expr| match self.recognition().hint_reaches_own_where(receiver_ty, true) {
-            true => Expr::call_helper("$somes", vec![made]),
-            false => method(made, "filter", vec![present()]),
+        // The `Some`s of `made`: JS's filter of what's there, or `$somes`,
+        // as the form's owner chooses (`in_place_form`, #2199).
+        let form = self.in_place_form(comb, receiver_ty, output);
+        let somes = |made: Expr| match form {
+            Some(InPlaceForm::Somes) => Expr::call_helper("$somes", vec![made]),
+            _ => method(made, "filter", vec![present()]),
         };
         let item_ty = || self.iterator_item(receiver_ty);
         // Of a kept value that looks like `None`, each `Some` boxed, taken
@@ -510,46 +506,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(step) if step != 0 => n,
                     _ => self.spill(Role::Step, Expr::call(Expr::helper("$step"), vec![n]), out),
                 };
-                // Of a source no array's items bound (`bounded_by_items`),
-                // by its `nth`, as std's `StepBy` steps it: one that may give
-                // more after a `None`, which a `None` stops (#161); one whose
-                // `nth` reaches the crate's own, which std asks (#214); a
-                // range's numbers, whose `nth` is of its bounds, which tidy
-                // makes `$lazyRange(a, b, n)` where it's made there (#231);
-                // a zip's, whose fold, std's `SpecFold`, stops where the
-                // shorter ends (#654); a flatten's, what its inner iterator
-                // hasn't given dropped after its source as a panic unwinds
-                // (#668); and its hint std's, its source's count `n` apart,
-                // which a collect asks its room by, where a filter's is none
-                // at least (#1046).
-                if !self.recognition().bounded_by_items(receiver_ty)
-                    // And of a `Vec`'s reversed, whose `nth` drops what it
-                    // passes over as one slice (#234), or of one whose first
-                    // step asks a `Skip`'s `nth` of one (#294).
-                    || self.recognition().nths_a_slice(receiver_ty)
-                    || self.recognition().steps_past_a_slice(receiver_ty)
-                    // And of one whose fold moves a function an adapter holds
-                    // with a destructor, which a filter's fold would drop
-                    // before what's left, where std's `StepBy` steps it by
-                    // `nth`, so it drops after (#710).
-                    || self.folds_held_function(receiver_ty.peel_refs())
-                    // And of a `Vec`'s, whose `nth` drops them as one slice
-                    // in order, of items whose drop may panic, past which
-                    // the slice's goes on (#668).
-                    || (self.iterator_item(receiver_ty.peel_refs())).is_some_and(|item| self.drop_may_panic(item))
-                        && self.recognition().nths_a_slice_in_order(receiver_ty)
-                    // And of a source whose steps may panic: std's `StepBy`
-                    // takes its first `next` while its fold's frame holds only
-                    // its parameters, so what drops with the consumer's `f`
-                    // drops before the accumulator, `$stepBy`'s
-                    // `$stepHolding`, where a filter's first step is inside
-                    // its source's fold, which drops the accumulator first
-                    // (#773).
-                    || self.steps_may_panic(receiver_ty.peel_refs())
-                    // And of one generic code asks the hint of, given it,
-                    // whose hint `$stepBy` knows as std's (#1236).
-                    || self.made_knowing_its_hint(output)
-                {
+                // By its source's `nth`, as std's `StepBy` steps it, but of
+                // an array's items alone, a filter of them by index, as the
+                // form's owner says (`steps_by_index`).
+                if form != Some(InPlaceForm::StepByFilter) {
                     let mut list = vec![items, n];
                     list.extend(self.item_drop_of(receiver_ty, span)?);
                     return Ok(crate::lower::iterators::stepped_every(list));
@@ -624,11 +584,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of one whose `nth` reaches the crate's own, its `nth`, as
             // `next()` is `$next(it)` (#182); its `Some` boxed where the item
             // looks like `None` (ADR 0051).
-            IterComb::Nth
-                if self
-                    .recognition()
-                    .reaches_its_own(receiver_ty, OwnStep::Nth, Reach::Sure) =>
-            {
+            IterComb::Nth if form == Some(InPlaceForm::Nth) => {
                 let boxed = item_ty().is_some_and(|item| self.boxed_payload(item));
                 Expr::call_helper(if boxed { "$nthSome" } else { "$nth" }, vec![items, next()])
             }

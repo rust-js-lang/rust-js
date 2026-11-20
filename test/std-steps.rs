@@ -431,6 +431,11 @@ fn probe<K: Kind>() {
         every!("Peekable", K::src().peekable());
         ends!("Flatten", K::nested().flatten());
         ends!("FlatMap", K::nested().flat_map(|x| x));
+        // The same two over `Option`s, what lowering makes a filter of the
+        // `Some`s in place (ADR 1176): std's `FlattenCompat` of their
+        // `IntoIter`s, which steps its source otherwise than `FilterMap`.
+        ends!("Flatten<Option>", K::src().map(Some).flatten());
+        ends!("FlatMap<Option>", K::src().flat_map(Some));
         every!("Inspect", K::src().inspect(|_| ()));
         every!("Copied", K::refs().copied());
         every!("Cloned", K::refs().cloned());

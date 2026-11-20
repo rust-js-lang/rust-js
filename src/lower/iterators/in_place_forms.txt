@@ -1,0 +1,53 @@
+# The forms lowering makes std's adapters and consumers as in place, and the
+# std type each stands for (src/lower/iterators/in_place_forms.rs; never by
+# hand: `BLESS=1 cargo test in_place_forms` writes it). Each line,
+# `<std type> | <form> | <where>`; each `where <name>: <APIs>`, what
+# answers it, each an owner of class 1 or 2 (#2112, #2200).
+Map | $Steps.map | Always
+Cloned | $Steps.map | Always
+Inspect | $Steps.map | Always
+Map | $mapEnds | Always
+Cloned | $mapEnds | Always
+Inspect | $mapEnds | Always
+Copied | $copied | Always
+Filter | $Steps.filter | Always
+Filter | $filterEnds | Always
+Filter | $filterDropping | Always
+FilterMap | $somes | Always
+Flatten<Option> | $somes | Always
+FlatMap<Option> | $somes | Always
+FilterMap | $somes of ends | Always
+Flatten<Option> | $somes of ends | Always
+FlatMap<Option> | $somes of ends | Always
+FilterMap | $Steps.filter of somes | HintRunsNothing
+Flatten<Option> | $Steps.filter of somes | HintRunsNothing
+FlatMap<Option> | $Steps.filter of somes | HintRunsNothing
+Enumerate | $enumerate | Always
+Skip | $skipping | Always
+Take | $taking | Always
+StepBy | $stepBy | Always
+StepBy | $stepByEnds | Always
+StepBy | $Steps.filter by index | OfArrayItems
+Chain | $lazyChain | Always
+Zip | $lazyZip | Always
+Zip | $zipEnds | Always
+Rev | $rev | Always
+Flatten | $flatMap | Always
+FlatMap | $flatMap | Always
+Flatten | $flattenEnds | Always
+FlatMap | $flattenEnds | Always
+Flatten | $Steps.flatMap | PlainInners
+FlatMap | $Steps.flatMap | PlainInners
+TakeWhile | $lazyTakeWhile | Always
+SkipWhile | $lazySkipWhile | Always
+MapWhile | $lazyMapWhile | Always
+Scan | $lazyScan | Always
+Cycle | $cycleFrom | Always
+nth | $nth | Always
+nth | $Steps.drop.take | NoOwnNth
+find_map | $Steps.map.find | Always
+where Always:
+where HintRunsNothing: hint_reaches_own_where
+where OfArrayItems: bounded_by_items
+where NoOwnNth: reaches_its_own
+where PlainInners: reaches_its_own drops

@@ -15,6 +15,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import * as std from "../std/runtime.js";
+import { ownerTable } from "../scripts/owners";
 import { stdRuns } from "./std-steps-catalog";
 
 const steps = [...std.$stepNames].filter((step) => step !== "next");
@@ -329,41 +330,65 @@ const sourcesOf = ([a, b]: [number, number], log: string[], kind: SourceKind, le
 };
 
 const same = (x: unknown) => x;
-/** Each of the runtime's forms of a std adapter, by std's name. */
+const odd = (x: number) => x % 2 === 1;
+const present = (item: unknown) => item != null;
+/** Each form lowering makes a std adapter as in place, by std's name and
+ * the form's, as src/lower/iterators/in_place_forms.txt names them, made
+ * as it's emitted: the table both ways (Change A step 3, #2112). */
 const forms: [std: string, form: string, make: (s: Sources) => any][] = [
-  ["Map", "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
-  ["Map", "$Steps.map", (s) => s.src().map(same)],
+  ...["Map", "Cloned", "Inspect"].flatMap((name): [string, string, (s: Sources) => any][] => [
+    [name, "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
+    [name, "$Steps.map", (s) => s.src().map(same)],
+  ]),
   ["Copied", "$copied", (s) => std.$copied(s.src(), same)],
-  ["Cloned", "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
-  ["Cloned", "$Steps.map", (s) => s.src().map(same)],
-  ["Filter", "$filterEnds", (s) => std.$filterEnds(s.src(), (x: number) => x % 2 === 1)],
-  ["Filter", "$Steps.filter", (s) => s.src().filter((x: number) => x % 2 === 1)],
+  ["Filter", "$filterEnds", (s) => std.$filterEnds(s.src(), odd)],
+  ["Filter", "$Steps.filter", (s) => s.src().filter(odd)],
+  ["Filter", "$filterDropping", (s) => std.$filterDropping(s.src(), odd, () => {})],
+  // The `Some`s, a `filter_map`'s, a flatten of `Option`s' and a
+  // `flat_map` to them made in place, of a map and of a map that knows its
+  // back: a filter whose own `count` is their fold, never asking its
+  // source's hint (#2199); and as JS writes them where the hint runs
+  // nothing.
+  ...["FilterMap", "Flatten<Option>", "FlatMap<Option>"].flatMap((name): [string, string, (s: Sources) => any][] => [
+    [name, "$somes", (s) => std.$somes(s.src().map(same))],
+    [name, "$somes of ends", (s) => std.$somes(std.$mapEnds(s.src(), same))],
+    [name, "$Steps.filter of somes", (s) => s.src().map(same).filter(present)],
+  ]),
   ["Enumerate", "$enumerate", (s) => std.$enumerate(s.src())],
   ["Skip", "$skipping", (s) => std.$skipping(s.src(), 1)],
   ["Take", "$taking", (s) => std.$taking(s.src(), 3)],
   ["StepBy", "$stepBy", (s) => std.$stepBy(s.src(), 2)],
   ["StepBy", "$stepByEnds", (s) => std.$stepByEnds(s.src(), 2)],
+  ["StepBy", "$Steps.filter by index", (s) => s.src().filter((_: unknown, i: number) => i % 2 === 0)],
   ["Chain", "$lazyChain", (s) => std.$lazyChain(s.src(), s.other())],
   ["Zip", "$lazyZip", (s) => std.$lazyZip(s.src(), s.other())],
   ["Zip", "$zipEnds", (s) => std.$zipEnds(s.src(), s.other())],
   ["Rev", "$rev", (s) => std.$rev(s.src())],
-  ["Flatten", "$flatMap", (s) => std.$flatMap(s.nested(), same)],
-  ["Flatten", "$flattenEnds", (s) => std.$flattenEnds(s.nested(), same)],
+  ...["Flatten", "FlatMap"].flatMap((name): [string, string, (s: Sources) => any][] => [
+    [name, "$flatMap", (s) => std.$flatMap(s.nested(), same)],
+    [name, "$flattenEnds", (s) => std.$flattenEnds(s.nested(), same)],
+    [name, "$Steps.flatMap", (s) => s.nested().flatMap(same)],
+  ]),
   ["TakeWhile", "$lazyTakeWhile", (s) => std.$lazyTakeWhile(s.src(), (x: number) => x < 4)],
   ["SkipWhile", "$lazySkipWhile", (s) => std.$lazySkipWhile(s.src(), (x: number) => x < 2)],
-  // The `Some`s, a `filter_map`'s made in place, of a map and of a map
-  // that knows its back: a filter whose own `count` is std's
-  // `FilterMap`'s, its fold, never asking its source's hint (#2199).
-  ["FilterMap", "$somes", (s) => std.$somes(s.src().map(same))],
-  ["FilterMap", "$somes of ends", (s) => std.$somes(std.$mapEnds(s.src(), same))],
-  ["Filter", "$filterDropping", (s) => std.$filterDropping(s.src(), (x: number) => x % 2 === 1, () => {})],
-  ["Inspect", "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
-  ["Inspect", "$Steps.map", (s) => s.src().map(same)],
   ["MapWhile", "$lazyMapWhile", (s) => std.$lazyMapWhile(s.src(), same, (x: unknown) => x !== undefined)],
   ["Scan", "$lazyScan", (s) => std.$lazyScan(s.src(), 0, (_: unknown, x: unknown) => x)],
   // `$cycleOf`'s, which makes it: its clones, each of what it started
   // with, never stepped, as fresh as std's of an unstepped `Loud` (#2192).
   ["Cycle", "$cycleFrom", (s) => std.$cycleOf(s.src(), () => s.src(), std.$next)],
+];
+
+/** Each form lowering makes a consumer as in place, by std's method and
+ * the form's name, as the table names them: asked of a map of the source,
+ * `src.map(f).nth(1)`, and held to std's `Map`'s row of the method. */
+const consumerForms: [std: string, form: string, ask: (it: any) => unknown][] = [
+  ["nth", "$nth", (it) => std.$nth(it, 1)],
+  ["nth", "$Steps.drop.take", (it) => Array.from(it.drop(1).take(1))[0]],
+  ["find_map", "$Steps.map.find", (it) => asked.find_map!(it)],
+];
+
+/** std's wrappers the runtime passes steps on through, by std's name. */
+const lentForms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["&mut I", "$lent", (s) => std.$lent(s.src())],
   ["&mut dyn I", "$lent unsized", (s) => std.$lent(s.src(), "lentUnsized")],
   ["Box<I>", "$lent boxed", (s) => std.$lent(s.src(), "boxed")],
@@ -371,22 +396,90 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["Box<dyn I>", "$stepsAround", (s) => std.$stepsAround(s.src())],
 ];
 
+/** The in-place forms' table, src/lower/iterators/in_place_forms.txt: of
+ * each std type and form, where it's chosen; and each `Where`'s APIs. */
+const table = readFileSync(join(import.meta.dir, "../src/lower/iterators/in_place_forms.txt"), "utf8").split("\n");
+const chosen = new Map(
+  table.filter((line) => !line.startsWith("#") && line.includes(" | ")).map((line) => {
+    const [stdName, form, at] = line.split(" | ");
+    return [`${stdName} | ${form}`, at!] as const;
+  }),
+);
+const whereAsks = new Map(
+  table.flatMap((line) => {
+    const m = /^where (\w+):(.*)$/.exec(line);
+    return m ? [[m[1]!, m[2]!.split(" ").filter(Boolean)] as const] : [];
+  }),
+);
+/** What the net runs a form over, of where it's chosen: its kinds of
+ * source, and the steps of what it holds that run nothing of the crate's
+ * there, left out of both traces. Of an array's items, none of a loud
+ * source's: what it's asked runs nothing. */
+const whereRuns: Record<string, { kinds: readonly SourceKind[]; unseen?: RegExp }> = {
+  Always: { kinds },
+  HintRunsNothing: { kinds, unseen: /^\w+\.size_hint$/ },
+  OfArrayItems: { kinds: [] },
+  NoOwnNth: { kinds: ["bare"] },
+  PlainInners: { kinds: ["bare"] },
+};
+const runsOf = (stdName: string, form: string) => {
+  const at = chosen.get(`${stdName} | ${form}`);
+  if (at === undefined || whereRuns[at] === undefined) throw new Error(`\`${stdName} | ${form}\`: no row of in_place_forms.txt, or a where the net doesn't run`);
+  return whereRuns[at]!;
+};
+const seen = (trace: string, unseen?: RegExp) => (unseen === undefined ? trace : trace.split(" ").filter((call) => !unseen.test(call)).join(" "));
+
 /** Each run: its kind of source, its number and its sources' lengths. */
 const runs = kinds.flatMap((kind) => sizes.map((size, run) => [kind, run, size] as const));
 
 /** Each form's step that asks other than std's does, a wrong answer not
  * yet fixed, under its issue: none is let differ for good (#2112). */
 const differs: Record<string, string> = {
+  // A flatten of `Option`s' or a `flat_map` to them made in place, a filter
+  // of the `Some`s, steps its source by `try_fold` where std's
+  // `FlattenCompat` steps it by `next`.
+  "Flatten<Option> | $somes next": "#2205",
+  "Flatten<Option> | $somes nth": "#2205",
+  "Flatten<Option> | $somes max_by": "#2205",
+  "Flatten<Option> | $somes min_by": "#2205",
+  "Flatten<Option> | $somes of ends next": "#2205",
+  "Flatten<Option> | $somes of ends nth": "#2205",
+  "Flatten<Option> | $somes of ends next_back": "#2205",
+  "Flatten<Option> | $somes of ends nth_back": "#2205",
+  "Flatten<Option> | $somes of ends advance_back_by": "#2205",
+  "Flatten<Option> | $somes of ends max_by": "#2205",
+  "Flatten<Option> | $somes of ends min_by": "#2205",
+  "Flatten<Option> | $Steps.filter of somes next": "#2205",
+  "Flatten<Option> | $Steps.filter of somes nth": "#2205",
+  "Flatten<Option> | $Steps.filter of somes max_by": "#2205",
+  "Flatten<Option> | $Steps.filter of somes min_by": "#2205",
+  "FlatMap<Option> | $somes next": "#2205",
+  "FlatMap<Option> | $somes nth": "#2205",
+  "FlatMap<Option> | $somes max_by": "#2205",
+  "FlatMap<Option> | $somes min_by": "#2205",
+  "FlatMap<Option> | $somes of ends next": "#2205",
+  "FlatMap<Option> | $somes of ends nth": "#2205",
+  "FlatMap<Option> | $somes of ends next_back": "#2205",
+  "FlatMap<Option> | $somes of ends nth_back": "#2205",
+  "FlatMap<Option> | $somes of ends advance_back_by": "#2205",
+  "FlatMap<Option> | $somes of ends max_by": "#2205",
+  "FlatMap<Option> | $somes of ends min_by": "#2205",
+  "FlatMap<Option> | $Steps.filter of somes next": "#2205",
+  "FlatMap<Option> | $Steps.filter of somes nth": "#2205",
+  "FlatMap<Option> | $Steps.filter of somes max_by": "#2205",
+  "FlatMap<Option> | $Steps.filter of somes min_by": "#2205",
 };
 
-for (const [stdForm, form, make] of forms) {
+for (const [stdForm, form, make] of [...forms, ...lentForms]) {
   test(`${form} asks what it holds as std's ${stdForm} does`, () => {
     const wrong: string[] = [];
     const listed = new Set<string>();
+    const { kinds: allowed, unseen } = lentForms.some(([, f]) => f === form) ? whereRuns.Always! : runsOf(stdForm, form);
     for (const step of Object.keys(asked)) {
-      for (const [kind, run, size] of runs) {
-        const want = stdRuns.get(`${stdForm}#${kind}${run} ${step}`);
-        if (want === undefined) continue;
+      for (const [kind, run, size] of runs.filter(([kind]) => allowed.includes(kind))) {
+        const ran = stdRuns.get(`${stdForm}#${kind}${run} ${step}`);
+        if (ran === undefined) continue;
+        const want = seen(ran, unseen);
         const log: string[] = [];
         const it = make(sourcesOf(size, log, kind));
         // A form for one end: none of the other's steps. Its length is
@@ -397,9 +490,9 @@ for (const [stdForm, form, make] of forms) {
         if (/back|rfold|rfind|rposition/.test(step) && typeof it.back !== "function") continue;
         log.length = 0;
         asked[step]!(it);
-        const got = log.join(" ");
+        const got = seen(log.join(" "), unseen);
         if (got === want) continue;
-        const key = `${form} ${step}${kind === "" ? "" : ` ${kind}`}`;
+        const key = `${stdForm} | ${form} ${step}${kind === "" ? "" : ` ${kind}`}`;
         if (differs[key] === undefined) wrong.push(`${step}#${kind}${run}: std ${want}; ${got}`);
         else listed.add(key);
       }
@@ -409,22 +502,83 @@ for (const [stdForm, form, make] of forms) {
       // of std's compiled `Fuse` (#2194). Not of a source that writes none,
       // whose `len` is std's default, its `size_hint`, which a trace can't
       // tell from it.
-      for (const [kind, run, size] of step === "len" ? runs : []) {
-        const want = stdRuns.get(`${stdForm}#${kind}${run} len`);
-        if (kind === "bare" || want === undefined || want.includes(".len")) continue;
+      for (const [kind, run, size] of step === "len" ? runs.filter(([kind]) => allowed.includes(kind)) : []) {
+        const ran = stdRuns.get(`${stdForm}#${kind}${run} len`);
+        if (kind === "bare" || ran === undefined || ran.includes(".len")) continue;
+        const want = seen(ran, unseen);
         const log: string[] = [];
         const it = make(sourcesOf(size, log, kind, true));
         log.length = 0;
-        const got = typeof it.len === "function" ? (it.len(), log.join(" ")) : "no len";
+        const got = typeof it.len === "function" ? (it.len(), seen(log.join(" "), unseen)) : "no len";
         if (got !== want) wrong.push(`len#${kind}${run} of sources with no len: std ${want}; ${got}`);
       }
     }
     expect(wrong).toEqual([]);
     // A listed one that asks as std's does now comes off the list.
-    const fixed = Object.keys(differs).filter((key) => key.startsWith(`${form} `) && !listed.has(key));
+    const own = (key: string) => key.startsWith(`${stdForm} | ${form} `) && key.slice(`${stdForm} | ${form} `.length).split(" ")[0]! in asked;
+    const fixed = Object.keys(differs).filter((key) => own(key) && !listed.has(key));
     expect(fixed).toEqual([]);
   });
 }
+
+// Each consumer made in place asks what it holds as std's method does, of
+// a map of the source, where its form is chosen: `nth(1)` of one whose
+// `nth` isn't the crate's, `[...it.drop(1).take(1)][0]`.
+for (const [method, form, ask] of consumerForms) {
+  test(`${form} asks what it holds as std's ${method} does`, () => {
+    const { kinds: allowed, unseen } = runsOf(method, form);
+    const wrong: string[] = [];
+    for (const [kind, run, size] of runs.filter(([kind]) => allowed.includes(kind))) {
+      const ran = stdRuns.get(`Map#${kind}${run} ${method}`);
+      if (ran === undefined) continue;
+      const log: string[] = [];
+      const it = sourcesOf(size, log, kind).src().map(same);
+      log.length = 0;
+      ask(it);
+      const [want, got] = [seen(ran, unseen), seen(log.join(" "), unseen)];
+      if (got !== want) wrong.push(`${method}#${kind}${run}: std ${want}; ${got}`);
+    }
+    expect(wrong).toEqual([]);
+  });
+}
+
+// The net runs each pair of the in-place forms' owner, and nothing else:
+// src/lower/iterators/in_place_forms.txt's rows are the forms above, both
+// ways, so a form the owner gains is run, and one the net runs is the
+// owner's (Change A step 3, #2112).
+test("the net runs each in-place form the owner names, and only those", () => {
+  const run = [...forms, ...consumerForms].map(([stdName, form]) => `${stdName} | ${form}`).sort();
+  expect(run).toEqual([...chosen.keys()].sort());
+});
+
+// A form chosen only of an array's items is run over one: what it's asked
+// of the array runs nothing of the crate's, so no trace tells it from
+// std's, but what it gives does.
+test("each form chosen of an array's items gives std's items", () => {
+  const ofItems = forms.filter(([stdName, form]) => chosen.get(`${stdName} | ${form}`) === "OfArrayItems");
+  expect(ofItems.map(([stdName, form]) => `${stdName} | ${form}`)).toEqual(["StepBy | $Steps.filter by index"]);
+  const items = (it: any) => Array.from({ [Symbol.iterator]: () => it });
+  const plain = { src: () => std.$iter([1, 2, 3, 4, 5]), other: () => std.$iter([]), nested: () => std.$iter([]) };
+  for (const [, , make] of ofItems) expect(items(make(plain))).toEqual([1, 3, 5]);
+});
+
+// Where a form is chosen, which the net runs it over, is a fact of every
+// value of its source's type, or MIR's, never a crate-wide fact: each
+// `Where`'s APIs are owners of docs/architecture.md of class 1 or 2, so
+// the net's runs can't leave out a source a crate-wide fact chose a form
+// for, #2197's kind (the lead, 2026-11-20; #2200).
+test("each Where of the in-place forms is answered by owners of class 1 or 2", () => {
+  const rows = ownerTable(readFileSync(join(import.meta.dir, "../docs/architecture.md"), "utf8"));
+  const weak: string[] = [];
+  for (const [at, apis] of whereAsks) {
+    for (const api of apis) {
+      const row = rows.find((row) => row.api.includes(api));
+      if (row === undefined || row.source > 2) weak.push(`${at}: \`${api}\` ${row === undefined ? "is no owner's API" : `is a class ${row.source} owner's`}`);
+    }
+  }
+  expect(weak).toEqual([]);
+  expect([...whereAsks.keys()].sort()).toEqual(Object.keys(whereRuns).sort());
+});
 
 // Every iterator the runtime makes, each top-level function of src/runtime
 // that makes a `$Steps`, is a form above, held to std's catalog, or is
@@ -466,7 +620,7 @@ test("every iterator the runtime makes is a form above or says why not", () => {
       if (name !== undefined && part.includes("new $Steps(")) makers.add(name);
     }
   }
-  const covered = new Set(forms.map(([, form]) => form.split(" ")[0]!));
+  const covered = new Set([...forms, ...lentForms].map(([, form]) => form.split(" ")[0]!));
   expect([...makers].filter((name) => !covered.has(name) && notForms[name] === undefined)).toEqual([]);
   // And each listed one is still one, and not a form too.
   expect(Object.keys(notForms).filter((name) => !makers.has(name) || covered.has(name))).toEqual([]);
