@@ -92,7 +92,7 @@ pub(super) fn extern_fn_refused(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 /// A binding written as an ordinary function, which can be generic, as an
 /// `extern` one can't (ADR 0039): `#[rust_js::link_name = "react#useState"]`.
 /// Its body is never compiled.
-pub(super) fn tool_link_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Symbol> {
+fn tool_link_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Symbol> {
     if !matches!(tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn) {
         return None;
     }
@@ -340,7 +340,7 @@ pub(super) fn numbered(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
 }
 
 /// A discriminated union's variant's `#[rust_js::name = true]` or `false`.
-pub(super) fn given_bool(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+fn given_bool(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
     let attr = tcx
         .get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), sym::name])
         .next()?;
@@ -531,7 +531,7 @@ pub(super) fn is_test_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
 }
 
 /// Whether `field`'s `#[rust_js::test]` is a list, `test(key)` or another.
-pub(super) fn is_test_list(tcx: TyCtxt<'_>, field: DefId) -> bool {
+fn is_test_list(tcx: TyCtxt<'_>, field: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("test")];
     tcx.get_attrs_by_path(field, &path)
         .next()

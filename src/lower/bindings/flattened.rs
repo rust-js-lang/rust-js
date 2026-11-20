@@ -80,7 +80,7 @@ impl Keyed {
 /// (`#[rust_js::tag]`) nor `#[rust_js::untagged]`, nor std's, each
 /// variant of named fields or none, one at most of none: `None` where it
 /// can't. Whether it is so is `Flattened::keyed`'s.
-pub(in crate::lower) fn keyed_shape(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<Keyed> {
+fn keyed_shape(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> Option<Keyed> {
     if !adt.is_enum()
         || declared_tag(tcx, adt.did()).is_some()
         || is_untagged(tcx, adt.did())
