@@ -13,7 +13,7 @@ import { mutations } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles } from "../scripts/shard";
-import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
+import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, compilerBuildsAsked, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -274,7 +274,22 @@ test("the compiler's builds at once are as many as the cores and the memory hold
   expect(mutations.cmd).toContain(`--jobs=${compilerBuilds(8)}`);
   expect(mutations.memory).toBe(compilerBuilds(8) * peakGB.compilerBuild);
   expect(check.find((job) => job.name === "clippy")!.memory).toBe(peakGB.compilerCheck);
-  expect(readFileSync(join(root, "scripts/mutations.ts"), "utf8")).toContain(": compilerBuilds(ownShare(machine().cores));");
+  expect(readFileSync(join(root, "scripts/mutations.ts"), "utf8")).toContain("compilerBuildsAsked(said >= 1 ? said : undefined, ownShare(machine().cores));");
+});
+
+// A run's `--jobs` lowers the builds the memory holds, never raises them:
+// `--jobs=12` on 16 GB and 12 cores, where it held one, built twelve at
+// once, some 42 GB, and the host stopped the run (2026-11-20).
+test("a run's --jobs never builds more at once than the memory holds", () => {
+  const gb = 2 ** 30;
+  const held = compilerBuilds(12, 16 * gb, 12 * gb);
+  expect(held).toBe(1);
+  expect(compilerBuildsAsked(12, 12, 16 * gb, 12 * gb)).toEqual({ builds: held, cut: true });
+  expect(compilerBuildsAsked(undefined, 12, 16 * gb, 12 * gb)).toEqual({ builds: held, cut: false });
+  // Fewer than it holds, as check:fast asks beside its other jobs: as asked.
+  expect(compilerBuildsAsked(1, 12, 64 * gb, 60 * gb)).toEqual({ builds: 1, cut: false });
+  expect(compilerBuildsAsked(4, 12, 64 * gb, 60 * gb)).toEqual({ builds: 4, cut: false });
+  expect(compilerBuildsAsked(9, 12, 64 * gb, 60 * gb)).toEqual({ builds: 4, cut: true });
 });
 
 // How many of each kind of job a run starts at once, from the machine as

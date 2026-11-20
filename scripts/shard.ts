@@ -416,6 +416,22 @@ export function compilerBuilds(cores: number, total = totalmem(), free = availab
   return Math.min(4, atOnce("compilerBuild", { cores, totalGB: total / 2 ** 30, freeGB: free / 2 ** 30 }, room));
 }
 
+/** The builds a run makes at once of `asked`, its `--jobs`: as many as it
+ * asks, never more than the memory holds (`compilerBuilds`), which an ask
+ * lowers and never raises; with whether it was cut. `--jobs=12` on a Mac of
+ * 16 GB and 12 cores, where the memory held one, built twelve at once,
+ * some 42 GB, and the host stopped the run for its memory (2026-11-20). */
+export function compilerBuildsAsked(
+  asked: number | undefined,
+  cores: number,
+  total = totalmem(),
+  free = availableMemory(),
+): { builds: number; cut: boolean } {
+  const held = compilerBuilds(cores, total, free);
+  if (asked === undefined || !(asked >= 1)) return { builds: held, cut: false };
+  return { builds: Math.min(asked, held), cut: asked > held };
+}
+
 /** The parts, `i/n`, of a file of cases that shard `index` of `count`
  * runs, `perShard` of them at once: of `count` times as many in all, each
  * part in exactly one shard. */

@@ -493,7 +493,8 @@ What keeps them there:
   took 43 s and 4 took 31 s; CI's four cores run two), and no more than the
   memory holds, 3.5 GB a build beside 0.3 GB a test on each core (two on 8
   cores and 16 GB, `compilerBuilds`, #1084), each with a crate
-  and a target of its own (`--jobs=N` says how many). Each one's build and
+  and a target of its own (`--jobs=N` asks fewer, never more:
+  `compilerBuildsAsked`, which says where it cuts one). Each one's build and
   tests are timed: CI's summary shows them, and each shard uploads
   `mutation-timings-<shard>`, each a share of its build. A runtime helper's
   mutation has its own runtime too, installed in its tests' target

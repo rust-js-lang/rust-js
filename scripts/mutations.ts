@@ -25,7 +25,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, casePartCores, compilerBuilds, drivesBrowser, machine, memoryBudget, shardArg, shareOfShard, slots, timedShard } from "./shard";
+import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, drivesBrowser, machine, memoryBudget, peakGB, shardArg, shareOfShard, slots, timedShard } from "./shard";
 import { casesReaching, ensureMap, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -1948,9 +1948,12 @@ async function main() {
   // Each build by one of `--jobs` workers, each building in a crate of its
   // own, as many as the cores and the memory hold (`compilerBuilds`): two
   // on a CI machine's four cores, the second's first build cold, a minute or
-  // two of the hours its shard takes.
+  // two of the hours its shard takes. `--jobs` lowers it, never raises it
+  // (`compilerBuildsAsked`), said where it's cut.
   const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
-  const jobs = said >= 1 ? said : compilerBuilds(ownShare(machine().cores));
+  const asked = compilerBuildsAsked(said >= 1 ? said : undefined, ownShare(machine().cores));
+  const jobs = asked.builds;
+  if (asked.cut) console.log(`--jobs=${said}: ${jobs} at once, what the memory holds beside its tests (${memoryBudget().toFixed(1)} GB, ${peakGB.compilerBuild} GB a build, shard.ts)`);
   // And of up to `--batch` mutations each, every one chosen by name as the
   // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
   // `--batch=1` builds each alone.
