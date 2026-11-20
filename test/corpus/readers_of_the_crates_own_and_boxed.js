@@ -56,10 +56,11 @@ function textBufRead_consume(text, n) {
 
 export const textSeek = $seekDefaults({ seek: (arg0, arg1) => textSeek_seek(arg0.value, arg1) });
 function textSeek_seek(text, to) {
+  const kind = to.TAG;
   let at;
-  if (to.TAG === "Start") {
+  if (kind === "Start") {
     at = BigInt.asIntN(64, to._0);
-  } else if (to.TAG === "Current") {
+  } else if (kind === "Current") {
     at = BigInt.asIntN(64, BigInt(text.pos) + to._0);
   } else {
     at = BigInt.asIntN(64, BigInt(text.data.length) + to._0);

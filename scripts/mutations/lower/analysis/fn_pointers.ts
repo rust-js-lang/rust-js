@@ -278,8 +278,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct the program makes values of, React's fiber, is taken for JS's where a cast of an owner of any shape gives one, so its fields are held, `const old = fiber.return;` before each write (rd221)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "                self.found.built.insert(adt.did());\n",
-    replace: "",
+    find: "                    && adt.is_struct() =>\n            {\n                self.found.built.insert(adt.did());\n",
+    replace: "                    && adt.is_struct() =>\n            {\n",
     tests: [
       "test/lowering-moves.test.ts",
       "-t",
@@ -563,7 +563,7 @@ export const mutations: Mutation[] = [
     breaks:
       "what an exported function is called with isn't given by JS, so its nullable field is tested `=== null` (#519)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "                    structs_held(tcx, ty, &mut found.js_given);\n",
+    find: "                    objects_held(tcx, ty, &mut found.js_given);\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
@@ -572,7 +572,7 @@ export const mutations: Mutation[] = [
     breaks:
       "what a binding calls a function it's given with isn't given by JS, so its nullable field is tested `=== null` (#519)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "                structs_held(tcx, called_with, &mut self.found.js_given);\n",
+    find: "                objects_held(tcx, called_with, &mut self.found.js_given);\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct an exported function is given holds no struct of its own, so its field's struct is tested `=== null` (#519)",
     file: "src/lower/analysis/fn_pointers.rs",
-    find: "                structs_held(tcx, field.ty(tcx, args).skip_normalization(), found);\n",
+    find: "                objects_held(tcx, field.ty(tcx, args).skip_normalization(), found);\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
@@ -644,5 +644,21 @@ export const mutations: Mutation[] = [
     find: "                self.found.built.insert(tcx.parent(ctor));\n",
     replace: "                let _ = ctor;\n",
     tests: ["test/builtins-runs-nothing.test.ts", "-t", "tuple struct its constructor"],
+  },
+  {
+    name: "js-given-enums-unheld",
+    breaks: "an enum JS gives an exported function isn't one whose reads a getter may answer, only a struct is, so its tag is read anew for each arm (#2208)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "            && (adt.is_struct() || enum_held(tcx, adt))\n",
+    replace: "            && adt.is_struct()\n",
+    tests: ["test/getter-reads.test.ts", "-t", "getter_enum_tag"],
+  },
+  {
+    name: "option-built-as-held",
+    breaks: "an `Option` a library makes, `None` or `Some(x)`, is recorded in its manifest's `built` as an enum JS holds as an object, which an `Option` never is (#2208)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "        && !tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option)\n",
+    replace: "",
+    tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
   },
 ];

@@ -143,16 +143,16 @@ impl<'tcx> FnPointers<'tcx> {
                 }
                 let component = crate::lower::bindings::is_component(tcx, owner.to_def_id());
                 for &ty in sig.inputs() {
-                    structs_held(tcx, ty, &mut found.js_given);
+                    objects_held(tcx, ty, &mut found.js_given);
                     match (component, ty.peel_refs().kind()) {
                         // A component's props, React's own object: what its
                         // fields hold, not it.
                         (true, ty::Adt(adt, args)) if adt.is_struct() => {
                             for field in adt.all_fields() {
-                                structs_held(tcx, field.ty(tcx, args).skip_normalization(), &mut found.read_anew);
+                                objects_held(tcx, field.ty(tcx, args).skip_normalization(), &mut found.read_anew);
                             }
                         }
-                        _ => structs_held(tcx, ty, &mut found.read_anew),
+                        _ => objects_held(tcx, ty, &mut found.read_anew),
                     }
                 }
             }
@@ -781,18 +781,29 @@ fn held<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> Held<'tcx> {
     found
 }
 
-/// Each struct a value of `ty` is or holds: through references, `Box`,
-/// `Option`, collections and any generic argument, and each struct's
-/// fields, into `found` (#519).
-fn structs_held<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, found: &mut IndexSet<DefId>) {
+/// Whether JS holds `adt`, an enum, as an object, one with a variant of
+/// fields but an `Option`, whose tag a getter may answer (#2208): what
+/// `objects_held` gathers of enums, and what a constructor of builds.
+fn enum_held(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
+    adt.is_enum()
+        && !tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option)
+        && adt.variants().iter().any(|v| !v.fields.is_empty())
+}
+
+/// Each struct, and each enum JS holds as an object (`enum_held`), that a
+/// value of `ty` is or holds: through
+/// references, `Box`, `Option`, collections and any generic argument, and
+/// each one's fields, into `found` (#519); an enum's tag a getter may answer
+/// as a struct's field may (#2208).
+fn objects_held<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, found: &mut IndexSet<DefId>) {
     for part in ty.walk() {
         let Some(part) = part.as_type() else { continue };
         if let ty::Adt(adt, args) = *part.kind()
-            && adt.is_struct()
+            && (adt.is_struct() || enum_held(tcx, adt))
             && found.insert(adt.did())
         {
             for field in adt.all_fields() {
-                structs_held(tcx, field.ty(tcx, args).skip_normalization(), found);
+                objects_held(tcx, field.ty(tcx, args).skip_normalization(), found);
             }
         }
     }
@@ -874,8 +885,8 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         // What JS calls a function it's given with (#519).
         for &ty in inputs {
             for called_with in callback_inputs(tcx, ty) {
-                structs_held(tcx, called_with, &mut self.found.js_given);
-                structs_held(tcx, called_with, &mut self.found.read_anew);
+                objects_held(tcx, called_with, &mut self.found.js_given);
+                objects_held(tcx, called_with, &mut self.found.read_anew);
             }
         }
         // What a binding gives back is the program's (`#[rust_js::gives_back]`),
@@ -1155,6 +1166,13 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                     self.field_written(def, Some(field.expr));
                 }
             }
+            // An enum's variant written with its fields named, its enum built.
+            hir::ExprKind::Struct(..)
+                if let ty::Adt(adt, _) = results.expr_ty(expr).kind()
+                    && enum_held(tcx, *adt) =>
+            {
+                self.found.built.insert(adt.did());
+            }
             hir::ExprKind::Assign(place, value, _) if let Some(def) = self.field_of(place) => {
                 self.field_written(def, Some(value));
             }
@@ -1173,6 +1191,15 @@ impl<'tcx> Visitor<'tcx> for Made<'_, '_, 'tcx> {
                     results.qpath_res(qpath, expr.hir_id) =>
             {
                 self.found.built.insert(tcx.parent(ctor));
+            }
+            // An enum's variant's, its enum built, as a struct's is, of
+            // one JS holds as an object (#2208).
+            hir::ExprKind::Path(ref qpath)
+                if let Res::Def(DefKind::Ctor(rustc_hir::def::CtorOf::Variant, _), ctor) =
+                    results.qpath_res(qpath, expr.hir_id)
+                    && enum_held(tcx, tcx.adt_def(tcx.parent(tcx.parent(ctor)))) =>
+            {
+                self.found.built.insert(tcx.parent(tcx.parent(ctor)));
             }
             // A library's static or constant.
             hir::ExprKind::Path(ref qpath) => {

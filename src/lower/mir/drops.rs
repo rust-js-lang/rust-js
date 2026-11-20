@@ -905,6 +905,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (false, _) => arms.pop().map(|(_, dropped)| dropped),
         };
         let js_span = self.js_span(span);
+        // Of an enum JS may have made or given, its tag read once where more
+        // than one arm tests it, as Rust's drop reads its discriminant once
+        // (`held_tag`, ADR 1022, #2208).
+        let held = match (&branch, arms.len() > 1) {
+            (None, true) => self
+                .held_tag(&subject, ty, adt)
+                .map(|tag| self.spill(Role::Kind, tag, out)),
+            _ => None,
+        };
         for (variant, dropped) in arms.into_iter().rev() {
             let test = match &branch {
                 Some((_, tried_ty)) => {
@@ -916,7 +925,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 None => {
                     let none = self.place_none(state, place);
-                    self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], (false, none))
+                    self.mir_variant_test(
+                        (subject.clone(), held.as_ref()),
+                        ty,
+                        adt,
+                        &[variant],
+                        &[],
+                        (false, none),
+                    )
                 }
             };
             chain = Some(match (dropped.is_empty(), chain) {
@@ -1046,7 +1062,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let (test, then, otherwise) = match ty.is_bool() && value == 0 {
                         true => (self.value_expr(subject, span)?, targets.otherwise(), then),
                         false => (
-                            self.switch_test(&subject, ty, value, span, None)?,
+                            self.switch_test(&subject, ty, value, span, (None, None))?,
                             then,
                             targets.otherwise(),
                         ),

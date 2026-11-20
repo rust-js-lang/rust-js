@@ -46,7 +46,8 @@ function failsWrite_write(fails, _) {
 function failsWrite_flush(fails) {}
 
 function report(what, result, TDebug) {
-  if (result.TAG === "Ok") {
+  const kind = result.TAG;
+  if (kind === "Ok") {
     const value = result._0;
     let text = "";
     try {

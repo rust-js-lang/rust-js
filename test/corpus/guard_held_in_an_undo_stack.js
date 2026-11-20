@@ -57,7 +57,8 @@ export function createUndoStack(initial, options) {
       const time = optionsForRecord.time ?? 0;
       let settings;
       if (options != null) {
-        if (options.TAG === "Options") {
+        const kind = options.TAG;
+        if (kind === "Options") {
           settings = options._0;
         } else {
           try {

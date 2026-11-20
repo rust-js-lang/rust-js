@@ -5,6 +5,10 @@
 use super::*;
 use crate::lower::temporary_names::Base;
 
+/// Where in what a pattern matches a switch's subject is, which names its
+/// constants (`body_queries::pattern_places`).
+type Tested<'a, 'tcx> = Option<&'a [(Ty<'tcx>, Vec<crate::lower::body_queries::PatternStep>)]>;
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `block`, and what it dominates (Ramsey's `doTree`): a loop of it if
     /// an edge goes back to it.
@@ -457,6 +461,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = std::mem::replace(made, Expr::taken());
                     out.push(StmtKind::Expr(value).at(self.js_span(span)));
                 }
+                // Of an enum JS may have made or given, its tag read once,
+                // where more than one case tests it, as Rust reads its
+                // discriminant once: a getter may answer each read anew
+                // (`held_tag`, ADR 1022, #2208).
+                let held = match &subject {
+                    Value::Discriminant(enum_value, enum_ty, ..) if ways.len() > 1 => match enum_ty.kind() {
+                        ty::Adt(adt, _) => self.held_tag(enum_value, *enum_ty, *adt),
+                        _ => None,
+                    },
+                    _ => None,
+                }
+                .map(|tag| self.spill(Role::Kind, tag, &mut out));
                 // Where in what a pattern matches it is, which names its
                 // constants (`body_queries::pattern_places`).
                 let tested = (discr.place())
@@ -470,7 +486,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let past = |b: BasicBlock| state.facts.held_arms().get(&b).copied().unwrap_or(b);
                 for (value, target) in targets.iter().map(|(value, target)| (value, past(target))) {
                     if reached(target) {
-                        let test = self.switch_test(&subject, ty, value, span, tested.as_deref())?;
+                        let test = self.switch_test(&subject, ty, value, span, (tested.as_deref(), held.as_ref()))?;
                         // A test that's a constant: its branch alone, or none.
                         match test.kind {
                             js::ExprKind::Bool(false) => {}
@@ -525,7 +541,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             })
                             .collect();
                         *test = self.mir_variant_test(
-                            enum_value.clone(),
+                            (enum_value.clone(), held.as_ref()),
                             *enum_ty,
                             *adt,
                             &variants,
@@ -564,7 +580,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     grouped = (others.into_iter())
                         .map(|(target, variants)| {
                             let test = self.mir_variant_test(
-                                enum_value.clone(),
+                                (enum_value.clone(), held.as_ref()),
                                 *enum_ty,
                                 *adt,
                                 &variants,
@@ -978,7 +994,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: Ty<'tcx>,
         value: u128,
         span: Span,
-        tested: Option<&[(Ty<'tcx>, Vec<crate::lower::body_queries::PatternStep>)]>,
+        (tested, tag): (Tested<'_, 'tcx>, Option<&Expr>),
     ) -> R<Expr> {
         match subject {
             // Of an `Option` whose test is known: it, of its `Some` (ADR 0642).
@@ -1016,7 +1032,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(crate::lower::refusal::error(self.tcx, span, message));
                     }
                 }
-                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &[variant], &[], (*present, *none)))
+                Ok(self.mir_variant_test(
+                    (enum_value.clone(), tag),
+                    *enum_ty,
+                    *adt,
+                    &[variant],
+                    &[],
+                    (*present, *none),
+                ))
             }
             _ => {
                 let subject = self.value_expr(subject.clone(), span)?;
@@ -1095,14 +1118,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     #[track_caller]
     pub(in crate::lower) fn mir_variant_test(
         &mut self,
-        subject: Expr,
+        (subject, tag): (Expr, Option<&Expr>),
         ty: Ty<'tcx>,
         adt: ty::AdtDef<'tcx>,
         variants: &[VariantIdx],
         written: &[js::Span],
         (present, none): (bool, Option<js::OnlyNone>),
     ) -> Expr {
-        let test = self.variants_test(subject, ty, adt, variants, written, (present, none));
+        let test = self.variants_test_by((subject, tag), ty, adt, variants, written, (present, none));
         if bindings::is_untagged(self.tcx, adt.did()) {
             test.clone().each_mut(&mut |e| {
                 if let Some(path) = e.called_path() {

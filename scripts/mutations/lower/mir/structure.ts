@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
     breaks:
       'an or-pattern of an untagged enum\'s variants tests each, `Array.isArray(v) || (typeof v === "object" && !Array.isArray(v))`, not what they are together',
     file: "src/lower/mir/structure.rs",
-    find: "                        *test = self.mir_variant_test(\n                            enum_value.clone(),\n                            *enum_ty,\n                            *adt,\n                            &variants,\n                            &spans,\n                            (*present, *none),\n                        );\n",
+    find: "                        *test = self.mir_variant_test(\n                            (enum_value.clone(), held.as_ref()),\n                            *enum_ty,\n                            *adt,\n                            &variants,\n                            &spans,\n                            (*present, *none),\n                        );\n",
     replace: "",
     tests: [
       "test/lowering-switches.test.ts",

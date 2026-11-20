@@ -578,3 +578,28 @@ which says how a field is read, not what it is
 `undefined` is no `None` the crate's `=== null` reads, a wrong answer
 caught before it landed; corpus case `nullable_field_of_a_mapped_option`
 holds `inst != null ? inst.return : null`.
+
+## Amendment: an enum JS gives has its tag read as Rust reads its discriminant (2026-11-21, #2208)
+
+The rule covered structs alone. `objects_held` (analysis/fn_pointers.rs)
+gathered the structs an exported function is given, and `built` the
+structs the crate constructs, so an enum JS gives was never a value whose
+reads a getter may answer. A `match` of one tested its tag once for each
+arm, `if (given.TAG === "One") … else if (given.TAG === "Two") …`. A
+getter answering `"Two"` and then `"Neither"` picked the `else` arm, where
+Rust, reading the discriminant once, picks `Two`.
+
+- An enum JS holds as an object, one with a variant of fields but an
+  `Option`, is held as a struct is (`objects_held`), and one the crate
+  constructs, by a variant's constructor or written with named fields, is
+  `built`. So `fields_read_once` answers of enums too, and one the crate
+  makes stays its own data (difference 60).
+- Where a value's enum may be JS's and more than one test reads its tag,
+  the tag is read once, `const kind = given.TAG`, and each test is of it:
+  a switch's arms (`held_tag`, representation.rs) and a drop's ladder
+  (mir/drops.rs). `variant_test_by` and `variants_test_by` take the held
+  tag.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change, so
+Rust's reads are kept. Held by test/getter-reads/getter_enum_tag.rs and the
+mutations `held-tag-never` and `js-given-enums-unheld`.

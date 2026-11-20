@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "held-tag-never",
+    breaks: "an enum JS gives is tested by its tag read anew for each arm, so a getter answering it anew picks another arm than Rust's one read of its discriminant (#2208)",
+    file: "src/lower/representation/variants.rs",
+    find: "        (told_by_tag && self.fields_read_once(ty))\n",
+    replace: "        (false && told_by_tag && self.fields_read_once(ty))\n",
+    tests: ["test/getter-reads.test.ts", "-t", "getter_enum_tag"],
+  },
+  {
     name: "numbered-variant-tested-as-number",
     breaks:
       "a test of a numbered enum's variant is of its number, `status === 0`, and a `switch`'s `case 0:`, where it's its `const`, `Pending`",
@@ -85,8 +93,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`==` of a discriminated union's fields reads `TAG`, which it hasn't",
     file: "src/lower/representation/variants.rs",
-    find: "                Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),\n",
-    replace: '                Expr::member(subject, "TAG"),\n',
+    find: "                tag_of(subject, &bindings::tag_key(self.tcx, adt.did())),\n",
+    replace: '                tag_of(subject, "TAG"),\n',
     tests: ["test/lowering-structs-enums.test.ts", "-t", "discriminated union"],
   },
 ];

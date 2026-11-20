@@ -916,7 +916,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let literal = |n: crate::lower::Discr| n.expr(big);
         let mut made = literal(last);
         for &(bits, number) in rest.iter().rev() {
-            let test = self.switch_test(discriminant, enum_ty, bits, span, None)?;
+            let test = self.switch_test(discriminant, enum_ty, bits, span, (None, None))?;
             made = Expr::cond(test, literal(number), made);
         }
         Ok(made)

@@ -41,9 +41,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an enum some of which has moved drops what's left of a variant when it's another",
     file: "src/lower/mir/drops.rs",
-    find: "                    self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], (false, none))\n",
+    find: "                    self.mir_variant_test(\n                        (subject.clone(), held.as_ref()),\n                        ty,\n                        adt,\n                        &[variant],\n                        &[],\n                        (false, none),\n                    )\n",
     replace:
-      "                    Expr::unary(js::UnaryOp::Not, self.mir_variant_test(subject.clone(), ty, adt, &[variant], &[], (false, none)))\n",
+      "                    Expr::unary(js::UnaryOp::Not, self.mir_variant_test(\n                        (subject.clone(), held.as_ref()),\n                        ty,\n                        adt,\n                        &[variant],\n                        &[],\n                        (false, none),\n                    ))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "                        true => (self.value_expr(subject, span)?, targets.otherwise(), then),\n",
     replace:
-      "                        true => (self.switch_test(&subject, ty, value, span, None)?, then, targets.otherwise()),\n",
+      "                        true => (self.switch_test(&subject, ty, value, span, (None, None))?, then, targets.otherwise()),\n",
     tests: ["test/crates.test.ts", "-t", "settles its cleanup's drop flags"],
   },
   {

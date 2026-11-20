@@ -30,6 +30,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         written: &[js::Span],
         (present, none): (bool, Option<js::OnlyNone>),
     ) -> Expr {
+        self.variants_test_by((subject, None), ty, adt, variants, written, (present, none))
+    }
+
+    /// `variants_test`, of the tag `tag` where it's given, read once where
+    /// JS may have made the value (`held_tag`, #2208).
+    #[track_caller]
+    pub(in crate::lower) fn variants_test_by(
+        &self,
+        (subject, tag): (Expr, Option<&Expr>),
+        ty: Ty<'tcx>,
+        adt: ty::AdtDef<'tcx>,
+        variants: &[VariantIdx],
+        written: &[js::Span],
+        (present, none): (bool, Option<js::OnlyNone>),
+    ) -> Expr {
         if bindings::is_untagged(self.tcx, adt.did()) {
             let variants: Vec<&ty::VariantDef> = variants.iter().map(|&v| adt.variant(v)).collect();
             return self.untagged_variant_test(ty, &variants, written, &subject, present);
@@ -49,7 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         (variants.iter().enumerate())
             .map(|(i, &variant)| {
-                let test = self.variant_test_of(subject.clone(), ty, adt, variant, (present, none));
+                let test = self.variant_test_by((subject.clone(), tag), ty, adt, variant, (present, none));
                 match written.get(i) {
                     Some(&span) if test.span.is_none() => Expr { span, ..test },
                     _ => test,
@@ -88,6 +103,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         variant: VariantIdx,
         (present, none): (bool, Option<js::OnlyNone>),
     ) -> Expr {
+        self.variant_test_by((subject, None), ty, adt, variant, (present, none))
+    }
+
+    /// The tag a switch over a value of the enum `ty` reads once, where JS
+    /// may have made or given the value, whose tag a getter may answer each
+    /// read anew (`fields_read_once`, ADR 1022, #2208): an object's tag, of
+    /// an enum told by one; none of one told otherwise, an `Option`'s
+    /// presence, an untagged one's kind, a keyed one's keys, an
+    /// `Ordering`'s number, a write's result.
+    pub(in crate::lower) fn held_tag(&self, subject: &Expr, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>) -> Option<Expr> {
+        let told_by_tag = !self.tcx.is_lang_item(adt.did(), LangItem::Option)
+            && !self.is_write_result(ty)
+            && !bindings::is_untagged(self.tcx, adt.did())
+            && self.krate.flattened.keyed(self.tcx, adt).is_none()
+            && (adt.variants().iter())
+                .all(|v| crate::lower::recognition::ordering_value(self.tcx, adt.did(), v.name).is_none())
+            && (adt.variants().iter())
+                .any(|v| !v.fields.is_empty() || bindings::declared_tag(self.tcx, adt.did()).is_some());
+        (told_by_tag && self.fields_read_once(ty))
+            .then(|| Expr::member(subject.clone(), bindings::tag_key(self.tcx, adt.did())))
+    }
+
+    /// `variant_test_of`, of the tag `tag` where it's given (`held_tag`).
+    #[track_caller]
+    pub(in crate::lower) fn variant_test_by(
+        &self,
+        (subject, tag): (Expr, Option<&Expr>),
+        ty: Ty<'tcx>,
+        adt: ty::AdtDef<'tcx>,
+        variant: VariantIdx,
+        (present, none): (bool, Option<js::OnlyNone>),
+    ) -> Expr {
+        let tag_of = |subject: Expr, key: &str| tag.cloned().unwrap_or_else(|| Expr::member(subject, key));
         let def = adt.variant(variant);
         if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
             let some = self.tcx.is_lang_item(def.def_id, LangItem::OptionSome);
@@ -119,7 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|other| other.def_id != def.def_id)
                 .map(|other| {
                     let name = bindings::variant_tag(self.tcx, other);
-                    Expr::bin(Op::Ne, Expr::member(subject.clone(), &key), name)
+                    Expr::bin(Op::Ne, tag_of(subject.clone(), &key), name)
                 })
                 .reduce(|a, b| Expr::bin(Op::And, a, b));
             return tests.unwrap_or_else(|| Expr::bool(true));
@@ -135,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false if matches!(subject.kind, js::ExprKind::Str(_)) => Expr::bool(false),
             false => Expr::bin(
                 Op::Eq,
-                Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),
+                tag_of(subject, &bindings::tag_key(self.tcx, adt.did())),
                 bindings::variant_tag(self.tcx, def),
             ),
         }
