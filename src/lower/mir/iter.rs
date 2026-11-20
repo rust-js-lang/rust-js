@@ -881,11 +881,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.map(f)` made in place: by what gives each as it is,
     /// `map(StaticPath::Params)`, no step, its source's value, said so for
     /// what makes it knowing its back or its length (`mapped_as_it_is`,
-    /// #1342); but where a `Map` hides the crate's own steps (#235), or its
-    /// source's `nth` of what it drops (#493).
+    /// #1342); but where a `Map` hides the crate's own steps (#235), its
+    /// source's `nth` of what it drops (#493), or a filter's `count`, which
+    /// asks a hint of the crate's where `Map::count`, its fold, asks none,
+    /// a lent one's too, whose JS is the filter's (`filter_count_asks_own_hint`,
+    /// #2210).
     fn mapped(&mut self, it: Expr, (f, own): (Expr, bool), drops_nothing: bool, iter_ty: Ty<'tcx>) -> Expr {
         let f = self.unary_callback(f, own);
-        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {
+        let recognition = self.recognition();
+        let hides =
+            recognition.reaches_own_steps(iter_ty) || recognition.filter_count_asks_own_hint(iter_ty.peel_refs());
+        match f.is_identity() && drops_nothing && !hides {
             true => crate::lower::iterators::mapped_as_it_is(it),
             false => crate::lower::iterators::lazily_made(Expr::builtin(it, "map", vec![f])),
         }
@@ -1236,8 +1242,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // And a filter's, std's `Filter::count`, which asks its source's
         // hint first, where that may reach what the program sees (#733).
         let filtered = crate::lower::recognition::filtered_source(self.tcx, iter_ty);
-        let filter_asks = crate::lower::recognition::filtered_source(self.tcx, iter_ty)
-            .is_some_and(|source| !self.compiled_struct(iter_ty, &it) && self.hint_reaches_own(source));
+        let filter_asks = !self.compiled_struct(iter_ty, &it) && self.recognition().filter_count_asks_own_hint(iter_ty);
         // And a `Vec`'s, an array's or a `VecDeque`'s `IntoIter`'s, `len()`,
         // then what it has left dropped as one slice, where its items have
         // a drop, which the default would drop each as it's folded (#862).

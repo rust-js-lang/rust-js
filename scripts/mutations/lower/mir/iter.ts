@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a map by an untagged variant constructor stays a step, `.map((value) => value)`",
     file: "src/lower/mir/iter.rs",
-    find: "        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {\n",
+    find: "        match f.is_identity() && drops_nothing && !hides {\n",
     replace: "        match false {\n",
     tests: [
       "test/lowering-iterators.test.ts",
@@ -341,8 +341,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an identity `map` over the crate's iterator is dropped, so a `skip` and `last()` past it reach its own `nth` and `last`, which std's `Map` hides (#235)",
     file: "src/lower/mir/iter.rs",
-    find: "        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {\n",
-    replace: "        match f.is_identity() && drops_nothing {\n",
+    find: "            recognition.reaches_own_steps(iter_ty) || recognition.filter_count_asks_own_hint(iter_ty.peel_refs());\n",
+    replace: "            recognition.filter_count_asks_own_hint(iter_ty.peel_refs());\n",
     tests: ["test/corpus.test.ts", "-t", "^evidence_paths.rs$"],
     snapshots: true,
   },
@@ -444,8 +444,8 @@ export const mutations: Mutation[] = [
     name: "identity-map-of-destructors-dropped",
     breaks: "an identity `map` of items with a destructor is dropped, so `rev().fuse().take(3).map(|d| d).nth(2)` reaches the reversed `Vec`'s `nth_back`, one slice front to back, where std's `Map` steps each from the back (#493)",
     file: "src/lower/mir/iter.rs",
-    find: "        match f.is_identity() && drops_nothing && !self.recognition().reaches_own_steps(iter_ty) {\n",
-    replace: "        match f.is_identity() && !self.recognition().reaches_own_steps(iter_ty) {\n",
+    find: "        match f.is_identity() && drops_nothing && !hides {\n",
+    replace: "        match f.is_identity() && !hides {\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
   },
   {
@@ -924,5 +924,14 @@ export const mutations: Mutation[] = [
     find: "            && enumerated.form == crate::lower::iterators::EnumeratedForm::Mapped\n",
     replace: "            && enumerated.form == crate::lower::iterators::EnumeratedForm::Mapped\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_count_of_an_iterator_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "identity-map-over-a-counted-filter-dropped",
+    breaks:
+      "an identity `map` over a filter whose source's hint is the crate's is dropped, so generic code's `count()` of it is `Filter::count`'s, which asks that hint, where std's `Map::count`, its fold, asks none (#2210)",
+    file: "src/lower/mir/iter.rs",
+    find: "            recognition.reaches_own_steps(iter_ty) || recognition.filter_count_asks_own_hint(iter_ty.peel_refs());\n",
+    replace: "            recognition.reaches_own_steps(iter_ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_a_filters_count.rs$"],
   },
 ];

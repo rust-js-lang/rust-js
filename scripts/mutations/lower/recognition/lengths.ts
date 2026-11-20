@@ -360,4 +360,13 @@ export const mutations: Mutation[] = [
     replace: "        let inner = || (self.flattened_inner(ty)).is_some_and(|inner| self.hint_reaches_own_where(inner, unseen_own));\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
   },
+  {
+    name: "filter-count-asks-no-own-hint",
+    breaks:
+      "std's `Filter::count` is taken to ask no hint of the crate's, so a filter's `count()` of the crate's iterator with its own `size_hint`, and generic code's of an identity `map` over one, never ask it (#733, #2210)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        filtered_source(self.tcx, self.reveal(ty)).is_some_and(|source| self.hint_reaches_own(source))\n",
+    replace: "        filtered_source(self.tcx, self.reveal(ty)).is_some_and(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_a_filters_count.rs$"],
+  },
 ];

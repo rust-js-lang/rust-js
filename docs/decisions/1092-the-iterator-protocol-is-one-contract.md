@@ -2178,3 +2178,22 @@ already did. React's port is unchanged. Mutations:
 `flatten-of-dyn-inners-js-flat-map` (in_place_forms.ts), and
 `flatten-of-iterators-bypasses-its-form` (adapters.ts). Case (ADR 0262):
 R, since which of the crate's steps std calls is observable.
+
+## Amendment: a `Map` hides a filter's `count` (2026-11-21, #2210)
+
+An identity `map(|x| x)` made in place gives its source as it is
+(`mapped`, mir/iter.rs), except where std's `Map` hides a step of the
+crate's that its source would take (`reaches_own_steps`). It also hides
+`Filter::count`, which asks its source's hint first, where `Map::count`
+is its fold. So generic code's `count()` of
+`chain(..).filter(f).map(|x| x)` asked the crate's `size_hint` where
+native asks none. #2207's case found it through a flatten in the
+metamorphic net's generic instances. Lengths.rs's
+`filter_count_asks_own_hint` is now the one answer of whether a filter's
+count asks a hint of the crate's. The count itself asks it, and `mapped`
+keeps a map over such a filter, a lent one's too. Corpus
+`identity_map_hides_a_filters_count`; mutations
+`identity-map-over-a-counted-filter-dropped` (mir/iter.ts) and
+`filter-count-asks-no-own-hint` (lengths.ts); three retargeted. A
+`skip(n)` over such a filter is another shape, of the runtime's
+own-step marks (#2212). Case (ADR 0262): R.
