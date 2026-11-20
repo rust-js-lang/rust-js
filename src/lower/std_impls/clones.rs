@@ -125,6 +125,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         needs
     }
 
+    /// Whether a clone of `ty` gives its `None` as it is, `null` or
+    /// `undefined`: an `Option`'s, which `clone_value` gives as the place
+    /// itself, where its payload's clone is, or as `place == null ? place :
+    /// some`, so a clone of what's `null` or a value already is too
+    /// (`stored_given`).
+    pub(in crate::lower) fn clone_keeps_none(&self, ty: Ty<'tcx>) -> bool {
+        self.is_lang_adt(ty, LangItem::Option)
+    }
+
     /// `Clone::clone` of the `ty` at `place`: the place itself when nothing
     /// could tell a clone from it, and otherwise a copy of the parts that
     /// could, calling each hand-written `clone` on the way.

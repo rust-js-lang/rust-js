@@ -9,6 +9,14 @@ const or689 = ["test/lowering-nullable-combinators.test.ts", "-t", "an or of nul
 
 export const mutations: Mutation[] = [
   {
+    name: "cloned-not-given",
+    breaks: "an `Option<&T>`'s `cloned()` of what's `null` or a value isn't known so, and a nullable parameter each call gives one, a `bind` of a `cloned()`, React's completeRoot's, is tested `!= null`, not `!== null` (ADR 0861, amended)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && self.clone_keeps_none(state.body.local_decls[local].ty)\n        {\n            return self.stored_in(state, &option.node, seen);\n",
+    replace: "            && self.clone_keeps_none(state.body.local_decls[local].ty)\n        {\n            return (Given::Unknown, None);\n",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "cloned\\(\\) of what"],
+  },
+  {
     name: "captures-nulled-though-written",
     breaks: "a closure that writes what it captured, `prev_task = None`, is taken to read what its maker gave, so it stores Rust's `None` as `undefined`, which the crate's `=== null` reads as a `Some` (#1933 step 4 (F))",
     file: "src/lower/mir/nulled.rs",

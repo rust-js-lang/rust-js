@@ -999,3 +999,27 @@ otherwise, so this follows ADR 0262's "preserve Rust's behavior". Pinned by
 test/corpus/nulled_return_of_a_pub_fn_given_on.rs, whose `pub fn
 event_target` a program's JS exports too. Mutation
 `returns-nulled-past-an-exit` is caught.
+
+## Amendment: a `cloned()` of what's `null` or a value is too (2026-11-21, #2112)
+
+An `Option<&T>`'s `cloned()` or `copied()` is a clone of the `Option<T>`,
+which gives its `None` as it is: `clone_value` gives the place itself
+where the payload's clone is, and otherwise `place == null ? place :
+some`. That is the clone owner's answer (`std_impls/clones.rs`,
+`clone_keeps_none`), which `stored_given` asks: a `cloned()` of a shared
+`Option<&T>` that's `null` or a value is `null` or a value (not of a
+`&mut` whose form is a cell, whose `None` `option.rs`'s lowering makes).
+So a nullable parameter each call gives one, of a `bind` of a `cloned()`,
+is tested `!== null`, not `!= null`, and stored as it is: React's
+completeRoot reads `recoverableErrors !== null` and stores
+`pendingPassiveTransitions = transitions`, upstream's lines
+(ReactFiberWorkLoop.js:3574 and :3651 at React's ab0d927), where `!=
+null` and `transitions ?? null` were.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)'s first): no
+observable difference; every call of completeRoot gives `null` or a value,
+the two `#[rust_js::nullable]` thread-locals' reads, written `null`, a
+value or a `#[rust_js::nullable]` function's result. Held by
+`test/lowering-nullable-borrows.test.ts`'s "a cloned() of what's null or
+a value is null or a value" and mutations `clone-drops-none`
+(`std_impls/clones.ts`) and `cloned-not-given` (`mir/nulled.ts`).

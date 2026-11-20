@@ -701,6 +701,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return (Given::Nulled, None);
             }
         }
+        // An `Option<&T>`'s `cloned()` or `copied()`, a clone of the
+        // `Option<T>`, which gives its `None` as it is (`clone_keeps_none`):
+        // the scheduler's `peek(q).cloned()`. Not of a `&mut` whose form is
+        // a cell, whose `None` its lowering makes.
+        if known == Some(crate::lower::Std::OptionCloned)
+            && let [option] = args
+            && let Some(payload) = self.option_of(option.node.ty(state.body, self.tcx))
+            && let ty::Ref(_, _, rustc_middle::mir::Mutability::Not) = *payload.kind()
+            && self.clone_keeps_none(state.body.local_decls[local].ty)
+        {
+            return self.stored_in(state, &option.node, seen);
+        }
         // An `Option`'s `take()` and `replace(v)`, what its place held: `null`
         // or a value where that's a field that stores `null` for `None`,
         // `root.pending.take()` (#689), which a take sets `null` (ADR 0996).

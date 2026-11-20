@@ -5,10 +5,12 @@
 // function's result, is `null` then, as its `.d.ts` says. Each test is a
 // program of its own, compiled and run.
 
-import { expect, test } from "bun:test";
+import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { compiler, fixture, installStd, run } from "./support";
+import { buildReact, compiler, fixture, installStd, run, target } from "./support";
+
+beforeAll(buildReact, 600_000);
 
 test("a nullable place written through a borrow stores null, which a nullable function returns", async () => {
   const dir = fixture("nullable-borrows");
@@ -145,4 +147,71 @@ pub fn swap_owner(fiber: &mut Fiber, n: u32) {
   // `get_mut()`, given on.
   lib.clearParts(fiber);
   expect([fiber.lanes, fiber.target]).toStrictEqual([[null], null]);
+});
+
+// An `Option<&T>`'s `cloned()` is a clone of the `Option<T>`, which gives
+// its `None` as it is (`clone_keeps_none`, the clone owner's): of what's
+// `null` or a value, `null` or a value. So a nullable parameter each call
+// gives one, a `bind` of a `cloned()` of a nullable thread-local's value,
+// is tested `!== null` alone, React's completeRoot, `recoverableErrors !==
+// null`, upstream's, where `!= null` was; and the scheduler's `currentTask
+// = peek(taskQueue)` of `with_borrow(|q| peek(q).cloned())` is set as it
+// is (ADR 0861, amended).
+test("a cloned() of what's null or a value is null or a value", async () => {
+  const dir = fixture("nullable-with-borrow-cloned");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Task {
+    pub id: u32,
+}
+
+thread_local! {
+    static TASK_QUEUE: RefCell<Vec<&'static Task>> = const { RefCell::new(Vec::new()) };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static CURRENT_TASK: RefCell<Option<&'static Task>> = const { RefCell::new(None) };
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static PENDING_TASK: RefCell<Option<&'static Task>> = const { RefCell::new(None) };
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+fn peek<'a>(heap: &'a [&'static Task]) -> Option<&'a &'static Task> {
+    heap.first()
+}
+
+pub fn push(id: u32) {
+    TASK_QUEUE.with_borrow_mut(|queue| queue.push(Box::leak(Box::new(Task { id }))));
+}
+
+pub fn advance() -> Option<u32> {
+    CURRENT_TASK.set(TASK_QUEUE.with_borrow(|queue| peek(queue).cloned()));
+    CURRENT_TASK.with_borrow(|task| task.map(|task| task.id))
+}
+
+#[cfg_attr(rust_js, rust_js::nullable(task))]
+fn complete(root: u32, task: Option<&'static Task>) -> u32 {
+    PENDING_TASK.set(task);
+    match task {
+        Some(task) => root + task.id,
+        None => root,
+    }
+}
+
+pub fn scheduled(root: u32) -> Rc<dyn Fn() -> u32> {
+    let current = CURRENT_TASK.with_borrow(Clone::clone);
+    Rc::from(js::function::bind(complete, None, (root, current.as_ref().cloned())))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  installStd(dir);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  currentTask = peek(taskQueue);\n");
+  expect(js).toContain("  pendingTask = task;\n  return task !== null ?");
+  expect(js).toContain("  return complete.bind(undefined, root, current);\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.advance()).toBe(undefined);
+  expect(lib.scheduled(1)()).toBe(1);
+  lib.push(7);
+  expect(lib.advance()).toBe(7);
+  expect(lib.scheduled(1)()).toBe(8);
 });

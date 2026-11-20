@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-drops-none",
+    breaks: "a clone of an `Option` is taken to make its `None` anew, so a `cloned()` of what's `null` or a value isn't, and a nullable parameter each call gives one, React's completeRoot's, is tested `!= null`, not `!== null`",
+    file: "src/lower/std_impls/clones.rs",
+    find: "        self.is_lang_adt(ty, LangItem::Option)\n    }\n",
+    replace: "        let _ = ty;\n        false\n    }\n",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "cloned\\(\\) of what"],
+  },
+  {
     name: "flattened-clone-nested",
     breaks: "a clone of a struct with a flattened field, changed in place, reads and makes a key of the field's name, which the object hasn't (#1847)",
     file: "src/lower/std_impls/clones.rs",
