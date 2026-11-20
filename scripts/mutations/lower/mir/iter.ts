@@ -552,11 +552,12 @@ export const mutations: Mutation[] = [
   {
     name: "flatten-of-options-counted-as-its-filter",
     breaks:
-      "a flatten of `Option`s made in place, a filter of the `Some`s, is counted by `$count`, the filter's own, std's `Filter::count`, which asks the crate's own `size_hint` where std's `Flatten::count` asks none (#2197)",
+      "a flatten of `Option`s made in place, a filter of the `Some`s, is counted by `$count`, the form's own, where it reads as the fold it is (#2197). Since `$somes`' own `count` is its fold (#2199), the answer is the same and only the JS moves, so it's held by the case's snapshot",
     file: "src/lower/mir/iter.rs",
     find: "        let inners_own = self.recognition().counts_by_its_own(iter_ty);\n",
     replace: "        let inners_own = self.recognition().reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
+    snapshots: true,
   },
   {
     name: "len-of-mut-items-left",

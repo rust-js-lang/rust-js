@@ -614,11 +614,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// steps where the form it's made as answers it by its own `count`,
     /// `$count`'s: `reaches_its_own`'s, but not of a flatten of `Option`s,
     /// which the recognizers make a filter of the `Some`s
-    /// (`flattened_options`), whose own `count` is std's `Filter::count`,
-    /// which asks its source's hint first. Std's `Flatten::count` of it is
-    /// its fold of its inner `Option`s, which have no own `count` to reach,
-    /// so it's counted by its fold, std's struct's too (#2197). The one
-    /// answer, of a count where it's made and of generic code's dictionary.
+    /// (`flattened_options`). Std's `Flatten::count` of it is its fold of
+    /// its inner `Option`s, which have no own `count` to reach, so it's
+    /// counted by its fold, as it reads (#2197); the form's own `count`,
+    /// `$somes`', is its fold too since #2199, so this decides how it reads,
+    /// not what it asks. The one answer, of a count where it's made and of
+    /// generic code's dictionary.
     pub(in crate::lower) fn counts_by_its_own(&self, ty: Ty<'tcx>) -> bool {
         self.flattened_options(ty).is_none() && self.reaches_its_own(ty, OwnStep::Count, Reach::Sure)
     }
