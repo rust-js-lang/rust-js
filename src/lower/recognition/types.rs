@@ -640,6 +640,7 @@ pub(crate) fn is_va_list(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 }
 
 /// Which of `panic::Location`'s functions `id` is, if it's one (ADR 0427).
+// helper: `std_types/location.rs`'s `location_op`, delegated; one form per answer is #2172's
 pub(crate) fn location_of(tcx: TyCtxt<'_>, id: DefId) -> Option<crate::lower::std_types::location::LocationOp> {
     crate::lower::std_types::location::location_op(tcx, id)
 }
