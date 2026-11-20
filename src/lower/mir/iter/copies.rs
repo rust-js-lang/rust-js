@@ -81,6 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // form shows what its maker makes, so nothing past it can make it
         // so (#2130).
         let back = self.knows_its_back(output) || self.may_step_from_its_back(output, iter_ty);
+        let hint = !back && self.made_knowing_its_hint(output);
         let copied = self.cloned_apart_adapter(
             (name, vec![it], &[Role::It]),
             (vec![iter_ty], output),
@@ -91,7 +92,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let source = parts.into_iter().next().expect("its source");
                 let source = cx.as_js_iterator(source, iter_ty, span)?;
                 let source = cx.closing(source, iter_ty, span)?;
-                cx.copied_items_knowing(source, item, output, back, span)
+                cx.copied_items_knowing(source, item, output, (back, hint), span)
             },
         )?;
         // Made knowing its back where it's to know it, as `copied_items`
@@ -121,10 +122,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$mapEnds`, as a map is (#387): a chain stepped from its back knows
     /// no length, and `.map` has no back to step (#850).
     /// Its source made knowing its back where it's to know its own, as a
-    /// map's is: a `step_by(n)`'s, `$stepByEnds` (#851).
+    /// map's is: a `step_by(n)`'s, `$stepByEnds` (#851); or its hint alone,
+    /// where it's made knowing that, never asked its back for it (#2209).
     pub(super) fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
         let back = self.knows_its_back(output);
-        self.copied_items_knowing(it, item, output, back, span)
+        let hint = !back && self.made_knowing_its_hint(output);
+        self.copied_items_knowing(it, item, output, (back, hint), span)
     }
 
     /// `it`, what generic code was given of type `source`, made knowing its
@@ -145,12 +148,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `copied_items`, made knowing its back where `back` says.
-    fn copied_items_knowing(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, back: bool, span: Span) -> R<Expr> {
+    /// `copied_items`, made knowing its back where `back` says, or its hint
+    /// alone where `hint` does.
+    fn copied_items_knowing(
+        &mut self,
+        it: Expr,
+        item: Ty<'tcx>,
+        output: Ty<'tcx>,
+        (back, hint): (bool, bool),
+        span: Span,
+    ) -> R<Expr> {
         // Of one that knows its length and not its back, the map that
         // copies its items would lose it; none reaches here: a copy that
         // knows its length is of what knows its back too (#1979).
-        let ends = back;
+        let ends = back || hint;
         let source = crate::lower::recognition::copied_source(self.tcx, output)
             .or_else(|| crate::lower::recognition::cloned_source(self.tcx, output));
         // Of what generic code was given, whose steps its caller's value

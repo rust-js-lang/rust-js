@@ -651,4 +651,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^enumerate_count_of_an_iterator_stepped_from_its_back.rs$"],
     snapshots: true,
   },
+  {
+    name: "hand-written-of-hinted-unkept",
+    breaks: "a chain of a type made knowing its hint wherever it's made isn't kept hand-written, so the held flip makes it std's compiled struct (#2209)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "            || hinted.contains(&ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^given_iterator_of_droppers_drops_what_it_passes.rs$"],
+    snapshots: true,
+  },
 ];

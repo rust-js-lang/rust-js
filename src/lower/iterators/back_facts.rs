@@ -16,15 +16,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// back, lent or given (ADR 0545, #851): by the value, its maker's MIR
     /// identity, not its type, which another value of it need not share. Of
     /// what's asked of a value made before, never: its mark says, carried by
-    /// its local, `has_a_back`'s.
+    /// its local, `has_a_back`'s. Never because its hint is asked, which
+    /// asks no back of what it holds: `made_knowing_its_hint`'s (#2209).
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         let answer = if self.krate.back_stepped.typed.contains(&ty) {
             "typed"
-        // What this generic function makes of its own parameters, given
-        // where a hint is asked (`hint_asked.rs`, #1240).
-        } else if (self.krate.hinted.knowing_in).contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty)) {
-            "knowing-in"
         } else if !self.asking_made.get()
             && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {
                 let local = self.krate.back_stepped.lent(self.frame.owner, local);
@@ -144,24 +141,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (text.is_str_chars(ty) || text.is_char_indices(ty)).then(|| self.chars_asked_whole(ty))
     }
 
-    /// Whether a `take(n)`, a `skip(n)` or a `step_by(n)` of type `ty` is
-    /// one generic code asks the hint of, made `$taking`, `$skipping` or
-    /// `$stepBy` where it's made, in this function, as `hint_asked.rs` says
-    /// of it (#1236, #1333).
+    /// Whether every value of type `ty` this function makes is made knowing
+    /// its hint, std's, where it's made, as `hint_asked.rs` says of its type
+    /// (#1236, #1333, #1427): a `take(n)`, a `skip(n)` or a `step_by(n)`
+    /// `$taking`, `$skipping` or `$stepBy` (`counted_in`); another adapter
+    /// in the form the in-place forms' owner gives it (`hint_knowing_form_of`),
+    /// `$mapEnds`, of its source made so, an array's items' `$iter`
+    /// (`knowing_in`, by this function, and `typed`, by every one). The one
+    /// answer, which never says it's stepped from its back
+    /// (`stepped_from_its_back`), as a form that knows its back asks one of
+    /// everything beneath it, where a hint asks none (#2209).
     pub(in crate::lower) fn made_knowing_its_hint(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         let owner = self.tcx.typeck_root_def_id(self.frame.owner);
-        self.krate.hinted.counted_in.contains(&(owner, ty))
-    }
-
-    /// Whether every value of type `ty` this function has is made knowing
-    /// its hint, `$skipping`, or its back, which knows its hint too,
-    /// `$mapEnds` of an array's `$iter`, as `hint_asked.rs` marks it: in
-    /// this function and each whose value of it may leave it (#1427).
-    pub(super) fn made_knowing_here(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
-        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
-        self.made_knowing_its_hint(ty) || self.krate.hinted.knowing_in.contains(&(owner, ty))
+        let hinted = &self.krate.hinted;
+        let answer = if hinted.counted_in.contains(&(owner, ty)) {
+            "counted-in"
+        } else if hinted.knowing_in.contains(&(owner, ty)) {
+            "knowing-in"
+        } else if hinted.typed.contains(&ty) {
+            "typed"
+        } else {
+            "no"
+        };
+        crate::decisions::record_typed("hint-made", answer, crate::lower::recognition::kind_of(self.tcx, ty));
+        answer != "no"
     }
 
     pub(in crate::lower) fn made_stepped_from_its_back(&self) -> bool {

@@ -2,7 +2,9 @@
 # std type each stands for (src/lower/iterators/in_place_forms.rs; never by
 # hand: `BLESS=1 cargo test in_place_forms` writes it). Each line,
 # `<std type> | <form> | <where>`; each `where <name>: <APIs>`, what
-# answers it, each an owner of class 1 or 2 (#2112, #2200).
+# answers it, each an owner of class 1 or 2 (#2112, #2200); each
+# `hint <std type> | <form> | <where>`, the form one made knowing its
+# hint alone is made as, chosen by a fact keyed by type (#2209).
 Map | $Steps.map | Always
 Cloned | $Steps.map | Always
 Inspect | $Steps.map | Always
@@ -52,3 +54,16 @@ where StepsRunNothing: own_nth_within hint_reaches_own_where
 where OfArrayItems: bounded_by_items
 where NoOwnNth: reaches_its_own
 where PlainInners: reaches_its_own hint_reaches_own_where drops
+hint Map | $mapEnds | Always
+hint Cloned | $mapEnds | Always
+hint Inspect | $mapEnds | Always
+hint Copied | $copied | Always
+hint Filter | $filterEnds | Always
+hint FilterMap | $somes of ends | Always
+hint Flatten<Option> | $someItems of ends | Always
+hint FlatMap<Option> | $someItems of ends | Always
+hint Enumerate | $enumerate | Always
+hint Chain | $lazyChain | Always
+hint Rev | $rev | Always
+hint Flatten | $flatMap | Always
+hint FlatMap | $flatMap | Always

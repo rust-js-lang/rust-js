@@ -2,28 +2,27 @@
 //! give (#1236, ADR 0170, amended): each instance a caller the crate sees
 //! gives, and what it gives a library's generic function, whose body it
 //! can't see, made in rust-js's form, which knows std's hint, where it's
-//! made. The fact the "made knowing" machinery reads beside a back step's
-//! (`back_stepped.rs`), and #1180's capacity questions can ask.
+//! made, and #1180's capacity questions can ask. The one owner of what's
+//! made knowing its hint, which never says what's made knowing its back:
+//! that's `back_stepped.rs`' alone, as a form that knows its back needs
+//! one at every level beneath, where a hint asks none (#2209).
 
 use crate::collections::IndexSet;
 use crate::lower::recognition::{
-    Recognition, chained_sources, cloned_source, copied_source, counted_source, enumerated_source,
-    filter_mapped_source, filtered_source, flattened_source, inspected_source, is_iter_adapter_def, mapped_source,
-    reversed_source, stepped_by_source,
+    Recognition, cloned_source, copied_source, counted_source, is_iter_adapter_def, reversed_source, stepped_by_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
 
-/// What `of_crate` finds: the adapters, and the sources, whose makers make
-/// them knowing their back, which knows their hint too, to join a back
-/// step's types (`BackStepped::typed`); and the `take(n)`s, `skip(n)`s and
-/// `step_by(n)`s made `$taking`, `$skipping` or `$stepBy` where they're
-/// made (`hinted`).
-pub(in crate::lower) struct HintAsked<'tcx> {
-    pub(in crate::lower) knowing: IndexSet<Ty<'tcx>>,
-    pub(in crate::lower) hinted: Hinted<'tcx>,
+/// What `of_crate` finds as it reads the crate: the adapters, and the
+/// sources, made knowing their hint wherever they're made, `knowing`, which
+/// becomes `Hinted::typed`; and what's made knowing it by the function that
+/// makes it (`hinted`).
+struct HintAsked<'tcx> {
+    knowing: IndexSet<Ty<'tcx>>,
+    hinted: Hinted<'tcx>,
 }
 
 /// The adapters made knowing their hint, which the crate's makers read, by
@@ -33,16 +32,26 @@ pub(in crate::lower) struct HintAsked<'tcx> {
 /// the function that makes it, as `Take<I>` is the same type of every
 /// generic function's `I` (#1240): a `take(n)`'s, a `skip(n)`'s and a
 /// `step_by(n)`'s made `$taking`, `$skipping` or `$stepBy` (`counted_in`),
-/// and a map's and the like made knowing its back (`knowing_in`).
+/// and a map's and the like made knowing its hint, `$mapEnds` (`knowing_in`);
+/// and those made so wherever they're made (`typed`). What a maker makes
+/// of each is `made_knowing_its_hint`'s (iterators/back_facts.rs), its form
+/// the in-place forms' owner's (`hint_knowing_form`), never one stepped
+/// from its back for it (#2209).
 // Flags, not a state: `dyn_asked` and `dyn_unseen` are two facts of the
 // crate, either with the other (#1476).
 #[derive(Default)]
 pub(in crate::lower) struct Hinted<'tcx> {
+    /// The adapters, and the sources that aren't adapters, made knowing
+    /// their hint wherever they're made: each in what generic code or a
+    /// library may be given where its hint is asked, of an array's items,
+    /// whose JS iterator, `values()`, and JS's own adapters know none
+    /// (#1236).
+    pub(in crate::lower) typed: IndexSet<Ty<'tcx>>,
     /// The types of no type parameter marked, as they're found, each
     /// keyed by its makers into `counted_in` once the crate is read: empty
     /// after `of_crate` (#1333).
     pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
-    /// And those made knowing their back, which knows their hint, keyed
+    /// And those made knowing their hint otherwise, `$mapEnds`, keyed
     /// into `knowing_in` the same way: empty after `of_crate` (#1427).
     pub(in crate::lower) knowing_types: IndexSet<Ty<'tcx>>,
     /// Each of those made in place over an array's items with its source,
@@ -81,7 +90,7 @@ pub(super) fn of_crate<'tcx>(
     recognition: Recognition<'_, 'tcx>,
     (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
     keeps_capacity: bool,
-) -> HintAsked<'tcx> {
+) -> Hinted<'tcx> {
     let mut asked = HintAsked {
         knowing: IndexSet::default(),
         hinted: Hinted::default(),
@@ -284,7 +293,8 @@ pub(super) fn of_crate<'tcx>(
             }
         }
     }
-    asked
+    asked.hinted.typed = asked.knowing;
+    asked.hinted
 }
 
 /// Whether a value of type `ty` made in `body` may leave it for another
@@ -660,21 +670,11 @@ fn mark_made_in<'tcx>(tcx: TyCtxt<'tcx>, maker: DefId, made: Ty<'tcx>, hinted: &
     }
 }
 
-/// Whether `ty` is an adapter whose maker makes it knowing its back and its
-/// hint where it's a type's question, `back_facts.rs`' own list: a map's,
-/// a filter's, a `filter_map`'s, an `inspect`'s, a chain's, a copy's, an
-/// enumeration's, a flatten's or a `rev()`'s. Not a zip's, a `skip(n)`'s,
-/// a `take(n)`'s nor a `step_by(n)`'s, whose JS knows its hint as made, or
-/// is made knowing it where it's stepped from its back.
+/// Whether `ty` is an adapter whose maker makes it knowing its hint where
+/// it's marked: one the in-place forms' owner gives a form that knows it
+/// (`hint_knowing_std`), a map's, a filter's, a flatten's and the like. Not
+/// a zip's, whose JS knows its hint as made, nor a `skip(n)`'s, a
+/// `take(n)`'s or a `step_by(n)`'s, marked apart (`counted_in`).
 fn made_knowing_by_its_maker<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    mapped_source(tcx, ty).is_some()
-        || filtered_source(tcx, ty).is_some()
-        || filter_mapped_source(tcx, ty).is_some()
-        || inspected_source(tcx, ty).is_some()
-        || chained_sources(tcx, ty).is_some()
-        || copied_source(tcx, ty).is_some()
-        || cloned_source(tcx, ty).is_some()
-        || enumerated_source(tcx, ty).is_some()
-        || flattened_source(tcx, ty).is_some()
-        || reversed_source(tcx, ty).is_some()
+    crate::lower::iterators::in_place_forms::hint_knowing_std(tcx, ty).is_some()
 }

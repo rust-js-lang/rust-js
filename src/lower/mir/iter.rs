@@ -408,6 +408,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let own = self.is_called_as_written(other_ty);
         let back = self.stepped_from_its_back(output);
+        // Or made knowing its hint alone, its sources made so, never asked
+        // their back for it (#2209).
+        let hint = !back && self.made_knowing_its_hint(output);
         // A map's or a filter's function with a destructor: each one made,
         // a clone too, closed to drop its own, as one not cloned apart is
         // (`holding_function`, ADR 0485, #2160).
@@ -435,8 +438,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(function) => cx.closing_function(adapter, output, (f, function), span),
                     None => Ok(adapter),
                 };
-                if matches!(parted, Parted::Map | Parted::Filter) && back {
-                    let source = cx.as_double_ended(a, receiver_ty, span)?;
+                if matches!(parted, Parted::Map | Parted::Filter) && (back || hint) {
+                    let source = match back {
+                        true => cx.as_double_ended(a, receiver_ty, span)?,
+                        false => cx.as_hint_knowing(a, receiver_ty),
+                    };
                     let callback = cx.unary_callback(b.clone(), own);
                     let ends = if parted == Parted::Map {
                         "$mapEnds"
@@ -459,10 +465,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     // Its sides made knowing theirs, as a chain not cloned apart
                     // is (#718, #739).
-                    Parted::Chain if back => {
-                        let b = cx.as_double_ended(b, other_ty, span)?;
+                    Parted::Chain if back || hint => {
+                        let b = match back {
+                            true => cx.as_double_ended(b, other_ty, span)?,
+                            false => cx.as_hint_knowing(b, other_ty),
+                        };
                         let b = cx.closing(b, other_ty, span)?;
-                        let a = cx.as_double_ended(a_value, receiver_ty, span)?;
+                        let a = match back {
+                            true => cx.as_double_ended(a_value, receiver_ty, span)?,
+                            false => cx.as_hint_knowing(a_value, receiver_ty),
+                        };
                         Expr::call_helper("$lazyChain", vec![cx.closing(a, receiver_ty, span)?, b])
                     }
                     Parted::Chain => {

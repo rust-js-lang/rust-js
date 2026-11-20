@@ -64,7 +64,7 @@ function part(v) {
   const grown = $grownVec(
     $roomForHint(
       $lazyChain(
-        $mapEnds(mapped, (item) => {
+        mapped.map((item) => {
           inspect(item);
           return item;
         }),

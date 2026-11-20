@@ -10,6 +10,7 @@ mod dictionaries;
 mod eager;
 mod ends;
 mod hint_asks;
+mod hint_knowing;
 mod in_place;
 pub(in crate::lower) mod in_place_forms;
 mod knowing;

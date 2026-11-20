@@ -184,8 +184,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         IterComb::Chain,
                         IterComb::Zip,
                     ];
+                    // One made knowing its hint alone, in the in-place forms'
+                    // owner's form for it, `$flatMap` of a flatten, never
+                    // stepped from its back for it (#2209).
                     let made = match back_made.contains(&comb) && this.stepped_from_its_back(output) {
                         true => this.as_double_ended(made, output, span)?,
+                        false if this.made_knowing_its_hint(output) && this.hint_knowing_form_of(output).is_some() => {
+                            this.as_hint_knowing(made, output)
+                        }
                         false => made,
                     };
                     match held {

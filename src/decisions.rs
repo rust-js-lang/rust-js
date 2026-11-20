@@ -150,7 +150,13 @@ pub(crate) const CATALOGUE: &[Decision] = &[
     Decision {
         name: "back-stepped",
         owner: "src/lower/iterators/back_facts.rs stepped_from_its_back",
-        answers: &["typed", "knowing-in", "made-into", "no"],
+        answers: &["typed", "made-into", "no"],
+        typed: true,
+    },
+    Decision {
+        name: "hint-made",
+        owner: "src/lower/iterators/back_facts.rs made_knowing_its_hint",
+        answers: &["counted-in", "knowing-in", "typed", "no"],
         typed: true,
     },
     Decision {

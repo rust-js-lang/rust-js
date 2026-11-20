@@ -384,7 +384,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // a reversed `Vec`'s, its source's (#277); or whose
                     // `count` is std's compiled one (#655).
                     || self.recognition().nths_a_slice(output)
-                    || self.counts_by_compiled_count(iter_ty) =>
+                    || self.counts_by_compiled_count(iter_ty)
+                    // Or one made knowing its hint alone (#2209).
+                    || self.made_knowing_its_hint(output) =>
             {
                 // Of the crate's, what it can be made to know.
                 // Of a type parameter's, what its bounds give
@@ -450,12 +452,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // a destructor, which drops each it doesn't keep as it passes it
             // (ADR 0098), as a compiled `Rev` steps it from its back (ADR
             // 0871).
-            Some(IterMethod::Filter) if self.knows_its_back(output) => {
-                let it = match self.given_stepped(receiver.clone(), held, true, false) {
+            // And one made knowing its hint alone, `(0, upper)` of its
+            // source's, its source as its maker made it, never asked its back
+            // for it (`made_knowing_its_hint`, #2209).
+            Some(IterMethod::Filter) if self.knows_its_back(output) || self.made_knowing_its_hint(output) => {
+                let back = self.knows_its_back(output);
+                let it = match self.given_stepped(receiver.clone(), held, back, false) {
                     Some(it) => it,
                     None if self.is_user_iterator(iter_ty) => {
-                        self.user_iterator_knowing(receiver.clone(), held, (true, false), span)?
+                        self.user_iterator_knowing(receiver.clone(), held, (back, false), span)?
                     }
+                    None if !back => receiver.clone(),
                     None if !self.has_a_back(iter_ty, receiver) => {
                         self.as_double_ended(receiver.clone(), iter_ty, span)?
                     }

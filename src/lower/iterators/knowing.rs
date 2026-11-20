@@ -127,8 +127,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a value of type `ty` made a `dyn Iterator` gives std's hint
     /// (#1476): known as it's made (`hint_known_as_made`), or made knowing
     /// it there, as `hint_asked.rs` marks each such value of a crate that
-    /// asks a `dyn Iterator`'s: a filter's `$filterEnds` (`stepped_from_its_back`'s
-    /// types), a `skip(n)`'s `$skipping` (`made_knowing_its_hint`).
+    /// asks a `dyn Iterator`'s, a filter's `$filterEnds`, a `skip(n)`'s
+    /// `$skipping` (`made_knowing_its_hint`), or made knowing its back,
+    /// which knows it too (`stepped_from_its_back`).
     pub(in crate::lower) fn hint_known_made_dyn(&self, ty: ty::Ty<'tcx>) -> bool {
         self.hint_known_as_made(ty)
             || self.stepped_from_its_back(ty)
@@ -175,7 +176,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of each adapter in it made in place over an array's items, `$skipping`
         // of a `filter`, `$mapEnds` of a `cycle()`, does (`hint_asked.rs`,
         // #1427, #1572).
-        if self.array_source(ty).is_some() && !self.made_knowing_here(ty) {
+        if self.array_source(ty).is_some() && !self.made_knowing_its_hint(ty) {
             return false;
         }
         let in_place = !outermost && self.made_in_place_of(ty);
@@ -371,6 +372,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.knows_its_length(source)
                 || self.made_knowing(source, self.recognition().exact_size_iterator())
                 || self.steps_an_array(source) && self.knows_its_back(ty)
+                // Or made knowing its hint alone, `$mapEnds` of their
+                // `$iter`, which knows its length as made knowing its back
+                // does (#2209).
+                || self.steps_an_array(source) && self.made_knowing_its_hint(ty)
                 // And a map of a range's whose closure has a destructor, held
                 // in a variable to drop it, a zip's `b` read by index say, or
                 // that a variable holds for an enumeration counted from its
@@ -907,73 +912,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `flat_map` to them, made so as a `filter_map` is
         // (`flattened_options`), which std's `Flatten` steps from either end
         // as its `Some`s (#1326).
-        let somes = crate::lower::recognition::filter_mapped_source(self.tcx, ty)
-            .map(|source| (source, true))
-            .or_else(|| (self.recognition().flattened_options(ty)).map(|(source, _, mapped)| (source, mapped)));
-        if let Some((source, mapped)) = somes {
-            let (kept, unboxed) = match &value.kind {
-                js::ExprKind::Call(callee, args)
-                    if let js::ExprKind::Member(kept, method) = &callee.kind
-                        && method == "map"
-                        && let [unbox] = args.as_slice()
-                        && unbox.helper_name() == Some("$someValue") =>
-                {
-                    (&**kept, Some(unbox))
-                }
-                _ => (&value, None),
-            };
-            // Its source's, each `f`'s where a function makes the `Option`s.
-            fn made(mapped: bool, source_value: &Expr) -> Option<(&Expr, Option<&Expr>)> {
-                match (mapped, &source_value.kind) {
-                    (false, _) => Some((source_value, None)),
-                    (true, js::ExprKind::Call(map_callee, map_args))
-                        if let js::ExprKind::Member(source_value, map) = &map_callee.kind
-                            && map == "map"
-                            && let [f] = map_args.as_slice() =>
-                    {
-                        Some((&**source_value, Some(f)))
-                    }
-                    _ => None,
-                }
-            }
-            // JS's filter of what's there, its predicate; or `$somes`, whose
-            // own `count` is std's (#2199), which steps from its back as
-            // `$filterEnds` where its source does, or a flatten's items of
-            // them, `$someItems`, likewise (#2205): the helper.
-            let filtered = match &kept.kind {
-                js::ExprKind::Call(callee, args)
-                    if let js::ExprKind::Member(filtered, method) = &callee.kind
-                        && method == "filter"
-                        && let [present] = args.as_slice() =>
-                {
-                    Some((&**filtered, Ok(present)))
-                }
-                js::ExprKind::Call(callee, args)
-                    if let Some(helper) =
-                        (["$somes", "$someItems"].into_iter()).find(|&h| callee.helper_name() == Some(h))
-                        && let [made] = args.as_slice() =>
-                {
-                    Some((made, Err(helper)))
-                }
-                _ => None,
-            };
-            if let Some((filtered, present)) = filtered
-                && let Some((source_value, f)) = made(mapped, filtered)
-            {
-                let source_value = self.as_double_ended(source_value.clone(), source.peel_refs(), span)?;
-                let mapped = match f {
-                    Some(f) => Expr::call_helper("$mapEnds", vec![source_value, f.clone()]),
-                    None => source_value,
-                };
-                let some = match present {
-                    Ok(present) => Expr::call_helper("$filterEnds", vec![mapped, present.clone()]),
-                    Err(helper) => Expr::call_helper(helper, vec![mapped]),
-                };
-                return Ok(match unboxed {
-                    Some(unbox) => Expr::call_helper("$mapEnds", vec![some, unbox.clone()]),
-                    None => some,
-                });
-            }
+        if let Some((source, parts)) = self.somes_parts(&value, ty) {
+            let source_value = self.as_double_ended(parts.source.clone(), source.peel_refs(), span)?;
+            return Ok(parts.remade(source_value));
         }
         // The crate's, made knowing its back.
         if self.is_user_iterator(ty) {

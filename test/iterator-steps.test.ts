@@ -413,10 +413,13 @@ const lentForms: [std: string, form: string, make: (s: Sources) => any][] = [
 ];
 
 /** The in-place forms' table, src/lower/iterators/in_place_forms.txt: of
- * each std type and form, where it's chosen; and each `Where`'s APIs. */
+ * each std type and form, where it's chosen; each `Where`'s APIs; and the
+ * form of each std type made knowing its hint alone (`hint <std> | <form>`,
+ * #2209). */
 const table = readFileSync(join(import.meta.dir, "../src/lower/iterators/in_place_forms.txt"), "utf8").split("\n");
+const hintRows = table.filter((line) => line.startsWith("hint ")).map((line) => line.slice("hint ".length).split(" | "));
 const chosen = new Map(
-  table.filter((line) => !line.startsWith("#") && line.includes(" | ")).map((line) => {
+  table.filter((line) => !line.startsWith("#") && !line.startsWith("hint ") && line.includes(" | ")).map((line) => {
     const [stdName, form, at] = line.split(" | ");
     return [`${stdName} | ${form}`, at!] as const;
   }),
@@ -573,6 +576,17 @@ for (const [method, form, ask] of consumerForms) {
 test("the net runs each in-place form the owner names, and only those", () => {
   const run = [...forms, ...consumerForms].map(([stdName, form]) => `${stdName} | ${form}`).sort();
   expect(run).toEqual([...chosen.keys()].sort());
+});
+
+// A form a std type made knowing its hint alone is made as is chosen by a
+// fact of the crate keyed by type (`hint_asked.rs`), which the net can't
+// narrow to the sources a `Where` allows: so each is a pair the net runs
+// over every source, `Always`, and none is `$flattenEnds`, which steps its
+// inner iterators from their back, which a hint asks none of (#2209).
+test("each form made knowing its hint alone is run over every source", () => {
+  expect(hintRows.length).toBeGreaterThan(0);
+  const wrong = hintRows.filter(([stdName, form, at]) => at !== "Always" || chosen.get(`${stdName} | ${form}`) !== "Always" || form === "$flattenEnds");
+  expect(wrong).toEqual([]);
 });
 
 // A form chosen only of an array's items is run over one: what it's asked

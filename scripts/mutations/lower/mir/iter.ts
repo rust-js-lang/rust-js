@@ -34,8 +34,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `filter()` cloned apart and stepped from its back is JS's `it.filter(f)`, which has no back: `TypeError: it.back is not a function` (ADR 0984)",
     file: "src/lower/mir/iter.rs",
-    find: "                if matches!(parted, Parted::Map | Parted::Filter) && back {\n",
-    replace: "                if false && matches!(parted, Parted::Map | Parted::Filter) && back {\n",
+    find: "                if matches!(parted, Parted::Map | Parted::Filter) && (back || hint) {\n",
+    replace: "                if false && matches!(parted, Parted::Map | Parted::Filter) && (back || hint) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(counted_adapters_given|clone_of_a_compiled_adapter_over_a_copied_map).rs$"],
   },
   {
@@ -682,7 +682,7 @@ export const mutations: Mutation[] = [
     name: "cloned-chain-sides-backless",
     breaks: "a chain cloned apart stepped from its back makes its sides without their backs, a range's `$lazyRange`, which `$lazyChain` can't step from its back (#1002)",
     file: "src/lower/mir/iter.rs",
-    find: "                    Parted::Chain if back => {\n",
+    find: "                    Parted::Chain if back || hint => {\n",
     replace: "                    Parted::Chain if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^cloned_chain_stepped_from_its_back.rs$"],
   },
@@ -933,5 +933,13 @@ export const mutations: Mutation[] = [
     find: "            recognition.reaches_own_steps(iter_ty) || recognition.filter_count_asks_own_hint(iter_ty.peel_refs());\n",
     replace: "            recognition.reaches_own_steps(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_a_filters_count.rs$"],
+  },
+  {
+    name: "cloned-apart-hint-unmade",
+    breaks: "a map, a filter or a chain cloned apart made knowing its hint alone is JS's own, which knows none (#2209)",
+    file: "src/lower/mir/iter.rs",
+    find: "        let hint = !back && self.made_knowing_its_hint(output);\n",
+    replace: "        let hint = false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_grown_by_a_take_of_a_cycle_of_a_map.rs$"],
   },
 ];

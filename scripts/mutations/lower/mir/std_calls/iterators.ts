@@ -241,4 +241,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^next_if_drops_its_item_as_its_test_panics.rs$"],
     snapshots: true,
   },
+  {
+    name: "hint-made-adapter-unmade",
+    breaks: "a flatten, a chain or a `filter_map` made knowing its hint alone is JS's own, which knows none, so generic code that asks it gets `(0, None)` (#2209)",
+    file: "src/lower/mir/std_calls/iterators.rs",
+    find: "                        false if this.made_knowing_its_hint(output) && this.hint_knowing_form_of(output).is_some() => {\n",
+    replace: "                        false if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_adapter_given_to_generic_code_that_asks_its_hint.rs$"],
+  },
 ];

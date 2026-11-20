@@ -9,18 +9,13 @@ import {
   $foldToArray,
   $iter,
   $jsIterator,
-  $knowing,
   $mapEnds,
   $next,
   $nextBack,
   $roomForHint,
   $stepsOf,
   $tryOf,
-  enumerateDoubleEndedIterator_advanceBackBy,
   enumerateDoubleEndedIterator_nextBack,
-  enumerateDoubleEndedIterator_nthBack,
-  enumerateDoubleEndedIterator_tryRfold,
-  enumerateExactSizeIterator_len,
   iterator_enumerate,
   iterator_map,
   iterator_rev,
@@ -50,27 +45,7 @@ function firstOf(it) {
 
 function held(it) {
   const last = revDoubleEndedIterator_nextBack(it);
-  const out = Array.from(
-    $knowing(
-      it,
-      revDoubleEndedIterator_nextBack,
-      (iterator) => revExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
-      undefined,
-      revDoubleEndedIterator_nthBack,
-      (iterator, init, f, broke, unwind, ends) =>
-        revDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $next },
-          $tryOf(broke),
-          undefined,
-          unwind,
-          ends,
-        ),
-      revDoubleEndedIterator_advanceBackBy,
-    ),
-  );
+  const out = Array.from(it);
   $extend(out, last == null ? [] : [last], true);
   return out;
 }
@@ -86,36 +61,9 @@ function numbered(it) {
 }
 
 function heldNumbered(it) {
-  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
-  const nextBack = enumerateDoubleEndedIterator_nextBack(it, iterExactSizeIterator);
+  const nextBack = enumerateDoubleEndedIterator_nextBack(it, { len: (iterator) => iterator.len() });
   const last = nextBack != null ? (((nextBack[0] * 1000) >>> 0) + nextBack[1]) >>> 0 : undefined;
-  const out = Array.from(
-    $mapEnds(
-      $knowing(
-        it,
-        (iterator) => enumerateDoubleEndedIterator_nextBack(iterator, iterExactSizeIterator),
-        (iterator) => enumerateExactSizeIterator_len(iterator, iterExactSizeIterator),
-        undefined,
-        (iterator, k) =>
-          enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, iterExactSizeIterator),
-        (iterator, init, f, broke, unwind, ends) =>
-          enumerateDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            iterExactSizeIterator,
-            { next_back: $nextBack },
-            $tryOf(broke),
-            undefined,
-            unwind,
-            ends,
-          ),
-        enumerateDoubleEndedIterator_advanceBackBy,
-      ),
-      ([i, x]) => (((i * 100) >>> 0) + x) >>> 0,
-    ),
-  );
+  const out = Array.from($mapEnds(it, ([i, x]) => (((i * 100) >>> 0) + x) >>> 0));
   $extend(out, last == null ? [] : [last], true);
   return out;
 }
@@ -141,77 +89,32 @@ function heldRev(it) {
 }
 
 function heldNumberedRev(it) {
-  const revExactSizeIterator = {
-    len: (iterator) => revExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
-  };
-  const revDoubleEndedIterator = {
-    next_back: revDoubleEndedIterator_nextBack,
-    rfold: (iterator, init, f, unwind, ends) =>
-      revDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, undefined, unwind, ends),
-    nthBack: revDoubleEndedIterator_nthBack,
-    tryRfold: (iterator, init, f, broke, unwind, ends) =>
-      revDoubleEndedIterator_tryRfold(
-        iterator,
-        init,
-        f,
-        { next: $next },
-        $tryOf(broke),
-        undefined,
-        unwind,
-        ends,
-      ),
-    advanceBackBy: revDoubleEndedIterator_advanceBackBy,
-  };
   const nextBack = enumerateDoubleEndedIterator_nextBack(
     it,
-    revExactSizeIterator,
-    revDoubleEndedIterator,
+    {
+      len: (iterator) => revExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+    },
+    {
+      next_back: revDoubleEndedIterator_nextBack,
+      rfold: (iterator, init, f, unwind, ends) =>
+        revDoubleEndedIterator_rfold(iterator, init, f, { next: $next }, undefined, unwind, ends),
+      nthBack: revDoubleEndedIterator_nthBack,
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
+        revDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
+      advanceBackBy: revDoubleEndedIterator_advanceBackBy,
+    },
   );
   const last = nextBack != null ? (((nextBack[0] * 1000) >>> 0) + nextBack[1]) >>> 0 : undefined;
-  const out = Array.from(
-    $mapEnds(
-      $knowing(
-        it,
-        (iterator) =>
-          enumerateDoubleEndedIterator_nextBack(
-            iterator,
-            revExactSizeIterator,
-            revDoubleEndedIterator,
-          ),
-        (iterator) => enumerateExactSizeIterator_len(iterator, revExactSizeIterator),
-        undefined,
-        (iterator, k) =>
-          enumerateDoubleEndedIterator_nthBack(
-            iterator,
-            k,
-            { next: $next, fold: $foldOf },
-            revExactSizeIterator,
-            revDoubleEndedIterator,
-          ),
-        (iterator, init, f, broke, unwind, ends) =>
-          enumerateDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next, fold: $foldOf },
-            revExactSizeIterator,
-            revDoubleEndedIterator,
-            $tryOf(broke),
-            undefined,
-            unwind,
-            ends,
-          ),
-        (iterator, n) =>
-          enumerateDoubleEndedIterator_advanceBackBy(
-            iterator,
-            n,
-            { next: $next, fold: $foldOf },
-            revDoubleEndedIterator,
-          ),
-      ),
-      ([i, x]) => (((i * 100) >>> 0) + x) >>> 0,
-    ),
-  );
+  const out = Array.from($mapEnds(it, ([i, x]) => (((i * 100) >>> 0) + x) >>> 0));
   $extend(out, last == null ? [] : [last], true);
   return out;
 }

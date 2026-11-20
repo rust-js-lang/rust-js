@@ -238,9 +238,9 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's filter of what knows its back is a JS helper, which doesn't",
     file: "src/lower/mir/iter/backs.rs",
-    find: "            Some(IterMethod::Filter) if self.knows_its_back(output) => {\n",
+    find: "            Some(IterMethod::Filter) if self.knows_its_back(output) || self.made_knowing_its_hint(output) => {\n",
     replace:
-      "            Some(IterMethod::Filter) if false && self.knows_its_back(output) => {\n",
+      "            Some(IterMethod::Filter) if false && (self.knows_its_back(output) || self.made_knowing_its_hint(output)) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
   },
   {
@@ -823,5 +823,29 @@ export const mutations: Mutation[] = [
     find: "                    self.lent_iterator(back, receiver_ty)\n",
     replace: "                    back\n",
     tests: ["test/corpus.test.ts", "-t", "^(generic_nth_back_reaches_what_its_given|mut_of_an_iterator_passes_on_what_std_does).rs$"],
+  },
+  {
+    name: "hint-made-enumerate-unmade",
+    breaks: "an enumeration made knowing its hint alone is JS's own `entries()`, which knows none (#2209)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    // Or one made knowing its hint alone (#2209).\n                    || self.made_knowing_its_hint(output) =>\n",
+    replace: " =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_generic_collects.rs$"],
+  },
+  {
+    name: "hint-made-filter-unmade",
+    breaks: "a filter made knowing its hint alone is JS's own `.filter(p)` of an array's `values()`, which knows none (#2209)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            Some(IterMethod::Filter) if self.knows_its_back(output) || self.made_knowing_its_hint(output) => {\n",
+    replace: "            Some(IterMethod::Filter) if self.knows_its_back(output) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^std_adapter_given_to_generic_code_that_asks_its_hint.rs$"],
+  },
+  {
+    name: "hint-made-filter-asks-its-back",
+    breaks: "a filter made knowing its hint alone has its source made knowing its back, which a hint asks none of, and refuses one that has none (#2209)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "                    None if !back => receiver.clone(),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_made_knowing_its_hint_asks_no_back.rs$"],
   },
 ];

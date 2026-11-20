@@ -472,17 +472,21 @@ impl<'tcx> BackStepped<'tcx> {
     /// value is stepped from its back, which `stepped_from_its_back` alone
     /// answers, by its MIR identity: a policy of readability, as std's
     /// compiled structs read longer than the hand-written forms that are
-    /// correct where they're kept (#2157, #2158, #2176).
+    /// correct where they're kept (#2157, #2158, #2176). And of a type made
+    /// knowing its hint wherever it's made, `hinted` (`Hinted::typed`), as
+    /// its hand-written form is made so (#1236, #2209).
     pub(in crate::lower) fn keeps_hand_written(
         &self,
         recognition: Recognition<'_, 'tcx>,
         (owner, mir): (rustc_span::def_id::DefId, &rustc_middle::mir::Body<'tcx>),
         ty: Ty<'tcx>,
+        hinted: &IndexSet<Ty<'tcx>>,
     ) -> bool {
         let tcx = recognition.tcx;
         let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
         let ty = erased(ty);
         self.typed.contains(&ty)
+            || hinted.contains(&ty)
             || (self.locals.keys())
                 .chain(
                     self.lengths

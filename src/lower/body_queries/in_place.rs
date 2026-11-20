@@ -133,7 +133,8 @@ pub(in crate::lower) const HELD_FLIPPED: [&str; 19] = [
 /// it takes out of the ground. A chain that starts on a variable holding an
 /// iterator apart, `held`'s (`Transparency::Held`), whose value is std's
 /// struct, not one of a type the body keeps hand-written
-/// (`BackStepped::keeps_hand_written`), is std's compiled structs: its
+/// (`BackStepped::keeps_hand_written`, of `hinted`, the types made knowing
+/// their hint wherever they're made, too), is std's compiled structs: its
 /// `HELD_FLIPPED` adapters are taken out, std's body the meaning where the
 /// hand-written form isn't proved to be it (#1681's step iii). Of each body,
 /// the crate's and its initializers', the harness's too, as each is
@@ -141,7 +142,11 @@ pub(in crate::lower) const HELD_FLIPPED: [&str; 19] = [
 pub(in crate::lower) fn decide_held<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     bodies: &[crate::lower::Body<'tcx>],
-    (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
+    (back_stepped, hinted, keeps_capacity): (
+        &crate::lower::analysis::BackStepped<'tcx>,
+        &crate::collections::IndexSet<rustc_middle::ty::Ty<'tcx>>,
+        bool,
+    ),
 ) {
     let tcx = recognition.tcx;
     let iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator);
@@ -158,7 +163,12 @@ pub(in crate::lower) fn decide_held<'tcx>(
     }
     for body in bodies {
         let held = match (meaning, body.mir.as_ref()) {
-            (false, Some(mir)) => held_links(recognition, body, (&mir.body, &flipped), (back_stepped, keeps_capacity)),
+            (false, Some(mir)) => held_links(
+                recognition,
+                body,
+                (&mir.body, &flipped),
+                (back_stepped, hinted, keeps_capacity),
+            ),
             _ => IndexSet::default(),
         };
         body.facts.in_place_adapters.decide_held(held);
@@ -177,12 +187,16 @@ fn held_links<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     body: &crate::lower::Body<'tcx>,
     (mir, flipped): (&rustc_middle::mir::Body<'tcx>, &[DefId]),
-    (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
+    (back_stepped, hinted, keeps_capacity): (
+        &crate::lower::analysis::BackStepped<'tcx>,
+        &crate::collections::IndexSet<rustc_middle::ty::Ty<'tcx>>,
+        bool,
+    ),
 ) -> IndexSet<ExprId> {
     let thir = &body.thir;
     let held_apart = |source: ExprId| {
         matches!(thir[strip(thir, source)].kind, ExprKind::VarRef { .. })
-            && !back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty)
+            && !back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty, hinted)
     };
     let flipped_link = |link: ExprId| match thir[link].kind {
         ExprKind::Call { fun, .. } if matches!(*thir[fun].ty.kind(), ty::FnDef(callee, _) if flipped.contains(&callee)) => {
@@ -191,7 +205,7 @@ fn held_links<'tcx>(
         _ => None,
     };
     let hand_written =
-        |source: ExprId| back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty);
+        |source: ExprId| back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty, hinted);
     // What the ground made in place, a JS iterator: a call, or a variable
     // a `let` binds one to, `let a = v.iter().map(f)`, made in place as
     // what it's given to, `a.zip(b)`, was (`let_made`). A link given one,

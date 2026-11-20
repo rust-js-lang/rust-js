@@ -269,8 +269,61 @@ impl InPlaceForm {
     }
 }
 
+/// The std type, as std_steps.txt names its row, of an adapter of type
+/// `ty` a maker makes knowing its hint alone (`hint_knowing_of`): a
+/// flatten's `Flatten` or `FlatMap` whatever its items, which
+/// `hint_knowing_form_of` tells apart. `None` of another.
+pub(in crate::lower) fn hint_knowing_std<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<&'static str> {
+    use crate::lower::recognition as r;
+    let ty = ty.peel_refs();
+    Some(match () {
+        _ if r::mapped_source(tcx, ty).is_some() => "Map",
+        _ if r::cloned_source(tcx, ty).is_some() => "Cloned",
+        _ if r::inspected_source(tcx, ty).is_some() => "Inspect",
+        _ if r::copied_source(tcx, ty).is_some() => "Copied",
+        _ if r::filtered_source(tcx, ty).is_some() => "Filter",
+        _ if r::filter_mapped_source(tcx, ty).is_some() => "FilterMap",
+        _ if r::enumerated_source(tcx, ty).is_some() => "Enumerate",
+        _ if r::chained_sources(tcx, ty).is_some() => "Chain",
+        _ if r::reversed_source(tcx, ty).is_some() => "Rev",
+        _ => match r::flattened_source(tcx, ty)? {
+            (_, None) => "Flatten",
+            (_, Some(_)) => "FlatMap",
+        },
+    })
+    .filter(|&std| hint_knowing_of(std).is_some())
+}
+
+/// The form a std adapter, by the std type it is, `std`, is made as where
+/// it's made knowing its hint alone, as `hint_asked.rs` says of its type
+/// (`made_knowing_its_hint`): one that knows std's hint of what it holds
+/// and asks no back of it, chosen wherever it's made (`Where::Always`), as
+/// a fact of the crate keyed by type chooses it, which a net over the
+/// sources a narrower `Where` allows couldn't hold (#2209). Never a form
+/// that steps what it holds from its back, which a hint asks none of: a
+/// flatten's is `$flatMap`, whose `$flatHint` asks each inner's hint, not
+/// `$flattenEnds`, which steps each inner by its back. `None` of another:
+/// a zip's, whose JS knows its hint as it's made, or a `take(n)`'s, a
+/// `skip(n)`'s or a `step_by(n)`'s, made knowing it by `counted_in`'s own
+/// makers (`$taking`, `$skipping`, `$stepBy`).
+pub(in crate::lower) fn hint_knowing_of(std: &str) -> Option<InPlaceForm> {
+    Some(match std {
+        "Map" | "Cloned" | "Inspect" => InPlaceForm::MapEnds,
+        "Copied" => InPlaceForm::Copied,
+        "Filter" => InPlaceForm::FilterEnds,
+        "FilterMap" => InPlaceForm::SomesOfEnds,
+        "Flatten<Option>" | "FlatMap<Option>" => InPlaceForm::SomeItemsOfEnds,
+        "Enumerate" => InPlaceForm::Enumerate,
+        "Chain" => InPlaceForm::LazyChain,
+        "Rev" => InPlaceForm::Rev,
+        "Flatten" | "FlatMap" => InPlaceForm::FlatMap,
+        _ => return None,
+    })
+}
+
 /// The owner's table, `in_place_forms.txt`: each form's std types, its
-/// name and where it's chosen, then each `Where`'s APIs.
+/// name and where it's chosen, then each `Where`'s APIs, then the form of
+/// each std type made knowing its hint alone (`hint_knowing_of`).
 #[cfg(test)]
 pub(in crate::lower) fn table() -> String {
     let mut out = String::from(
@@ -278,7 +331,9 @@ pub(in crate::lower) fn table() -> String {
          # std type each stands for (src/lower/iterators/in_place_forms.rs; never by\n\
          # hand: `BLESS=1 cargo test in_place_forms` writes it). Each line,\n\
          # `<std type> | <form> | <where>`; each `where <name>: <APIs>`, what\n\
-         # answers it, each an owner of class 1 or 2 (#2112, #2200).\n",
+         # answers it, each an owner of class 1 or 2 (#2112, #2200); each\n\
+         # `hint <std type> | <form> | <where>`, the form one made knowing its\n\
+         # hint alone is made as, chosen by a fact keyed by type (#2209).\n",
     );
     for form in InPlaceForm::ALL {
         for (std, at) in form.stands_for() {
@@ -288,6 +343,17 @@ pub(in crate::lower) fn table() -> String {
     for at in Where::ALL {
         let asks: String = at.asks().iter().map(|api| format!(" {api}")).collect();
         out.push_str(&format!("where {at:?}:{asks}\n"));
+    }
+    let mut seen = Vec::new();
+    for std in (InPlaceForm::ALL.iter()).flat_map(|form| form.stands_for().iter().map(|&(std, _)| std)) {
+        if let Some(form) = hint_knowing_of(std).filter(|_| !seen.contains(&std)) {
+            seen.push(std);
+            let at = (form.stands_for().iter())
+                .find(|&&(of, _)| of == std)
+                .map(|&(_, at)| at);
+            let at = at.map_or_else(|| "not chosen".to_string(), |at| format!("{at:?}"));
+            out.push_str(&format!("hint {std} | {} | {at}\n", form.name()));
+        }
     }
     out
 }
@@ -350,6 +416,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         // A form the table lists, which the net runs as it's emitted.
+        debug_assert!(form.is_none_or(|form| InPlaceForm::ALL.contains(&form)));
+        form
+    }
+
+    /// The form a std adapter of type `ty` is made as where it's made
+    /// knowing its hint alone (`hint_knowing_of`), a flatten's of `Option`s
+    /// told apart from another (`flattened_options`). `None` of another.
+    pub(in crate::lower) fn hint_knowing_form_of(&self, ty: Ty<'tcx>) -> Option<InPlaceForm> {
+        let std = match hint_knowing_std(self.tcx, ty)? {
+            "Flatten" if self.recognition().flattened_options(ty.peel_refs()).is_some() => "Flatten<Option>",
+            "FlatMap" if self.recognition().flattened_options(ty.peel_refs()).is_some() => "FlatMap<Option>",
+            std => std,
+        };
+        let form = hint_knowing_of(std);
         debug_assert!(form.is_none_or(|form| InPlaceForm::ALL.contains(&form)));
         form
     }
@@ -436,6 +516,25 @@ mod tests {
                 made,
                 "src/lower/iterators/in_place_forms.txt: BLESS=1 cargo test in_place_forms"
             );
+        }
+    }
+
+    /// Each form a std type made knowing its hint alone is made as stands
+    /// for it wherever it's chosen, `Always`, as a fact of the crate keyed
+    /// by type chooses it (#2209); and none steps what it holds from its
+    /// back, a flatten's `$flattenEnds`.
+    #[test]
+    fn hint_knowing_forms_stand_for_every_source() {
+        for form in InPlaceForm::ALL {
+            for &(std, _) in form.stands_for() {
+                let Some(hint) = hint_knowing_of(std) else { continue };
+                assert_ne!(hint, InPlaceForm::FlattenEnds, "{std}");
+                assert!(
+                    hint.stands_for().contains(&(std, Where::Always)),
+                    "{std}: {} isn't std's wherever it's made",
+                    hint.name()
+                );
+            }
         }
     }
 

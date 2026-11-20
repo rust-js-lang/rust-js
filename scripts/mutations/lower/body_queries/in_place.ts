@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
     name: "held-flip-of-a-source-made-knowing-its-back",
     breaks: "the held flip takes out the adapters of a chain whose source is made knowing its back, `$mapEnds`, a JS iterator, not std's struct, giving std's compiled structs a hand-made source (#1681's step iii)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "            && !back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty)",
+    find: "            && !back_stepped.keeps_hand_written(*recognition, (body.def_id, mir), thir[source].ty, hinted)",
     replace: "            && !false",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_map_made_knowing_its_back_given_apart.rs$"],

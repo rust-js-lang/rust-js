@@ -818,7 +818,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What it steps from its back (ADR 0545, #814, #851), and of an array's
     // items with a destructor, which its native forms don't step.
     let drop_runs = |item| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item);
-    let mut back_stepped = back_stepped::of_crate(
+    let back_stepped = back_stepped::of_crate(
         tcx,
         recognition,
         all_bodies,
@@ -826,14 +826,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (params_may_drop, (!library).then_some(&given_a_drop)),
     );
     // What generic code asks the hint of, made knowing it where it's made,
-    // by the makers of what's stepped from its back (#1236).
-    let hint_asked = hint_asked::of_crate(tcx, recognition, (all_bodies, calls.names()), keeps_capacity);
-    back_stepped.typed.extend(hint_asked.knowing);
+    // never stepped from its back for it (#1236, #2209).
+    let hinted = hint_asked::of_crate(tcx, recognition, (all_bodies, calls.names()), keeps_capacity);
     // Which adapters each body makes in place, the second stage: once what's
-    // stepped from its back is known, the one reader of the ground, and
-    // before any reader of both stages, `type_fact_params`' (`InPlace`).
+    // stepped from its back, and what's made knowing its hint, is known, the
+    // one reader of the ground, and before any reader of both stages,
+    // `type_fact_params`' (`InPlace`).
     for bodies in [every_body.0, every_body.1] {
-        crate::lower::body_queries::decide_held(&recognition, bodies, (&back_stepped, keeps_capacity));
+        crate::lower::body_queries::decide_held(&recognition, bodies, (&back_stepped, &hinted.typed, keeps_capacity));
     }
     let asks_whole = |kind| chars_asked::asks_whole(tcx, recognition, all_bodies, (library, keeps_capacity), kind);
     let chars_whole = asks_whole(crate::lower::recognition::TextIter::Chars);
@@ -1273,7 +1273,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         closure_facts,
         cloned,
         back_stepped,
-        hinted: hint_asked.hinted,
+        hinted,
         chars_whole,
         searches_whole,
         changed_vecs,

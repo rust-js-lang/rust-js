@@ -9,6 +9,7 @@ import {
   $collectDropping,
   $collectsInPlace,
   $dropEach,
+  $filterDropping,
   $filterEnds,
   $foldOf,
   $foldToArray,
@@ -77,7 +78,6 @@ function main() {
       steps = 0;
       console.log(`panic at ${panicAt$1}, case ${which}`);
       const made$1 = $catchUnwind(() => {
-        const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
         const fromIterator = {
           fromIter: (items, ITrustedLen, IInPlace) => ({
             value: $collectCounted(
@@ -177,7 +177,7 @@ function main() {
                     (iterator) =>
                       mapExactSizeIterator_len(
                         iterator,
-                        intoIterExactSizeIterator,
+                        { len: (iterator) => iterator.len() },
                         loudDrop_drop,
                         $dropEach(loudDrop_drop),
                         undefined,
@@ -234,62 +234,7 @@ function main() {
             mapped$live = false;
             const collect = {
               value: $collectDropping(
-                $filterEnds(
-                  $knowing(
-                    mapped,
-                    (iterator) =>
-                      mapDoubleEndedIterator_nextBack(
-                        iterator,
-                        { next_back: $nextBack },
-                        loudDrop_drop,
-                        $dropEach(loudDrop_drop),
-                        undefined,
-                        loudDrop_drop,
-                      ),
-                    (iterator) =>
-                      mapExactSizeIterator_len(
-                        iterator,
-                        intoIterExactSizeIterator,
-                        loudDrop_drop,
-                        $dropEach(loudDrop_drop),
-                        undefined,
-                        loudDrop_drop,
-                      ),
-                    (iterator, init, f, unwind, ends) =>
-                      mapDoubleEndedIterator_rfold(
-                        iterator,
-                        init,
-                        f,
-                        { next: $next, advanceBy: $advanceSlice },
-                        { next_back: $nextBack },
-                        loudDrop_drop,
-                        $dropEach(loudDrop_drop),
-                        undefined,
-                        unwind,
-                        ends,
-                        loudDrop_drop,
-                      ),
-                    undefined,
-                    (iterator, init, f, broke, unwind, ends) =>
-                      mapDoubleEndedIterator_tryRfold(
-                        iterator,
-                        init,
-                        f,
-                        { next: $next, advanceBy: $advanceSlice },
-                        { next_back: $nextBack },
-                        $tryOf(broke),
-                        loudDrop_drop,
-                        $dropEach(loudDrop_drop),
-                        undefined,
-                        unwind,
-                        ends,
-                        undefined,
-                        loudDrop_drop,
-                      ),
-                  ),
-                  () => true,
-                  loudDrop_drop,
-                ),
+                $filterDropping(mapped, () => true, loudDrop_drop),
                 loudDrop_drop,
               ),
               strong: 1,
@@ -396,62 +341,7 @@ function main() {
           case 7: {
             mapped$live = false;
             const value = made(
-              $filterEnds(
-                $knowing(
-                  mapped,
-                  (iterator) =>
-                    mapDoubleEndedIterator_nextBack(
-                      iterator,
-                      { next_back: $nextBack },
-                      loudDrop_drop,
-                      $dropEach(loudDrop_drop),
-                      undefined,
-                      loudDrop_drop,
-                    ),
-                  (iterator) =>
-                    mapExactSizeIterator_len(
-                      iterator,
-                      intoIterExactSizeIterator,
-                      loudDrop_drop,
-                      $dropEach(loudDrop_drop),
-                      undefined,
-                      loudDrop_drop,
-                    ),
-                  (iterator, init, f, unwind, ends) =>
-                    mapDoubleEndedIterator_rfold(
-                      iterator,
-                      init,
-                      f,
-                      { next: $next, advanceBy: $advanceSlice },
-                      { next_back: $nextBack },
-                      loudDrop_drop,
-                      $dropEach(loudDrop_drop),
-                      undefined,
-                      unwind,
-                      ends,
-                      loudDrop_drop,
-                    ),
-                  undefined,
-                  (iterator, init, f, broke, unwind, ends) =>
-                    mapDoubleEndedIterator_tryRfold(
-                      iterator,
-                      init,
-                      f,
-                      { next: $next, advanceBy: $advanceSlice },
-                      { next_back: $nextBack },
-                      $tryOf(broke),
-                      loudDrop_drop,
-                      $dropEach(loudDrop_drop),
-                      undefined,
-                      unwind,
-                      ends,
-                      undefined,
-                      loudDrop_drop,
-                    ),
-                ),
-                () => true,
-                loudDrop_drop,
-              ),
+              $filterEnds(mapped, () => true, loudDrop_drop),
               fromIterator,
               false,
               [1, 1],

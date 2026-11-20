@@ -158,4 +158,12 @@ export const mutations: Mutation[] = [
     replace: "        let hint_runs = self.recognition().hint_reaches_own_where(made, false);\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
   },
+  {
+    name: "hint-knowing-form-steps-its-back",
+    breaks: "the form of a flatten made knowing its hint alone is `$flattenEnds`, which steps what it holds from its back, which a hint asks none of (#2209)",
+    file: "src/lower/iterators/in_place_forms.rs",
+    find: "        \"Flatten\" | \"FlatMap\" => InPlaceForm::FlatMap,\n",
+    replace: "        \"Flatten\" | \"FlatMap\" => InPlaceForm::FlattenEnds,\n",
+    unitTests: "lower::iterators::in_place_forms::tests::hint_knowing_forms_stand_for_every_source",
+  },
 ];

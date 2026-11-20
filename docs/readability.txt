@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2798
-lines	378363
+files	2803
+lines	378927
 temporaries	0	0
 labeled blocks	0	0
 while (true)	234	6.2
-$iter	3268	86.4
-Iterator.from	296	7.8
-return;	399	10.5
-renamed x$1	17074	451.3
-role fallbacks	9419	248.9
+$iter	3302	87.1
+Iterator.from	298	7.9
+return;	407	10.7
+renamed x$1	17108	451.5
+role fallbacks	9438	249.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	60
@@ -417,7 +417,7 @@ test/corpus/collect_in_place_in_a_macro.js	49	0	0	0	0	0	0	2	3
 test/corpus/collect_into_a_type_parameter_is_stds.js	97	0	0	0	1	1	0	0	0
 test/corpus/collect_into_an_rc_slice.js	106	0	0	0	1	0	0	0	2
 test/corpus/collect_into_an_rc_slice_room.js	130	0	0	0	0	1	0	0	1
-test/corpus/collect_into_an_rc_slice_unwinding.js	515	0	0	0	2	1	0	21	9
+test/corpus/collect_into_an_rc_slice_unwinding.js	405	0	0	0	2	1	0	21	9
 test/corpus/collect_into_option_of_unit.js	80	0	0	0	4	0	0	4	3
 test/corpus/collect_into_results_asks_hint.js	281	0	0	0	0	0	2	19	12
 test/corpus/collect_into_unit.js	39	0	0	0	0	0	0	0	0
@@ -445,7 +445,7 @@ test/corpus/collection_methods.js	149	0	0	0	0	0	0	7	4
 test/corpus/collection_taken_drops_what_is_left.js	238	0	0	0	13	0	0	57	35
 test/corpus/combinator_subject_read_in_place.js	33	0	0	0	0	0	0	0	1
 test/corpus/combinators_owned_drops.js	243	0	0	0	0	0	0	104	36
-test/corpus/comment_above_a_let_of_a_value.js	104	0	0	0	1	0	0	3	4
+test/corpus/comment_above_a_let_of_a_value.js	118	0	0	0	2	0	0	3	4
 test/corpus/comment_before_a_bare_continue_arm.js	297	0	0	0	0	0	0	0	0
 test/corpus/comment_before_an_arms_only_continue.js	91	0	0	0	0	0	0	0	0
 test/corpus/comments_after_literals.js	38	0	0	0	0	0	0	0	0
@@ -876,6 +876,7 @@ test/corpus/flat_map_of_a_maps_iterators_grows_a_vec.js	48	0	0	0	2	0	0	0	1
 test/corpus/flat_map_of_a_where_clause_into_iterator.js	275	0	0	0	6	0	0	30	12
 test/corpus/flat_map_of_given_adapters_from_its_back.js	1410	0	0	0	4	0	0	14	6
 test/corpus/flat_map_of_maps_from_its_back.js	57	0	0	0	8	0	0	0	0
+test/corpus/flatten_asks_its_inner_iterators_hint.js	168	0	0	0	10	0	2	0	1
 test/corpus/flatten_boxed_options.js	76	0	0	0	0	0	0	0	1
 test/corpus/flatten_closed_part_way_drops_source_first.js	395	0	0	1	15	0	0	0	3
 test/corpus/flatten_collected_where_its_hint_is_seen.js	115	0	0	0	1	0	0	0	1
@@ -887,17 +888,19 @@ test/corpus/flatten_folds_reach_its_sources_own.js	829	0	0	2	5	0	0	18	6
 test/corpus/flatten_from_both_ends.js	213	0	0	0	6	0	4	28	23
 test/corpus/flatten_from_both_ends_drops_its_inners.js	447	0	0	0	5	0	0	19	9
 test/corpus/flatten_from_its_back.js	254	0	0	0	8	0	2	17	11
-test/corpus/flatten_given_where_its_hint_is_asked.js	350	0	0	0	16	1	0	30	16
+test/corpus/flatten_given_where_its_hint_is_asked.js	258	0	0	0	16	1	0	30	16
 test/corpus/flatten_grows_a_vec_as_stds.js	246	0	0	0	4	0	0	0	1
 test/corpus/flatten_last_takes_each_inner_last.js	464	0	0	1	10	0	1	101	4
+test/corpus/flatten_made_knowing_its_hint_asks_no_back.js	137	0	0	0	10	0	1	14	5
 test/corpus/flatten_nth_drops_each_inner_it_runs_out.js	88	0	0	0	3	0	0	0	0
 test/corpus/flatten_of_a_traits_items_sized_by_its_dictionary.js	278	0	0	0	1	0	0	0	0
 test/corpus/flatten_of_a_traits_one_shot_items_hinted.js	49	0	0	0	2	0	0	2	2
 test/corpus/flatten_of_iterators_from_back.js	164	0	0	0	9	0	0	4	3
 test/corpus/flatten_of_its_callers_items_where_its_hint_is_seen.js	98	0	0	0	1	1	0	0	0
-test/corpus/flatten_of_options_counted_asks_no_hint.js	154	0	0	0	0	1	1	0	0
+test/corpus/flatten_of_options_counted_asks_no_hint.js	155	0	0	0	0	1	1	0	0
 test/corpus/flatten_of_options_from_its_back.js	127	0	0	0	8	0	0	6	5
 test/corpus/flatten_of_options_given_to_generic_code.js	137	0	0	0	3	1	0	6	9
+test/corpus/flatten_of_options_steps_its_source_by_next.js	366	0	0	0	1	0	3	20	11
 test/corpus/flatten_size_hint_is_stds.js	319	0	0	0	9	0	0	12	7
 test/corpus/flatten_steps_its_inners_as_std.js	204	0	0	0	9	0	1	33	14
 test/corpus/flattened_keyed_const.js	54	0	0	0	0	0	0	0	0
@@ -1218,6 +1221,7 @@ test/corpus/hint_through_a_given_value.js	87	0	0	0	8	0	0	11	8
 test/corpus/hrtb_into_iter.js	17	0	0	0	1	0	0	0	0
 test/corpus/identity_inside_keys.js	219	0	0	0	0	0	0	11	6
 test/corpus/identity_keys.js	50	0	0	0	0	0	0	0	1
+test/corpus/identity_map_hides_a_filters_count.js	105	0	0	0	7	1	1	0	1
 test/corpus/identity_map_hides_its_sources_own_count.js	48	0	0	0	0	1	0	0	0
 test/corpus/identity_map_hides_own_nth.js	66	0	0	0	0	0	0	0	0
 test/corpus/identity_partial_eq.js	31	0	0	0	0	0	0	0	0
@@ -1249,7 +1253,7 @@ test/corpus/impl_trait_value_given_to_generic_code.js	112	0	0	0	0	0	0	0	0
 test/corpus/impl_traits_beside_another_of_a_trait_method.js	158	0	0	0	3	0	0	8	2
 test/corpus/impl_type_facts.js	36	0	0	0	0	0	0	0	0
 test/corpus/impl_type_facts_through_trait.js	115	0	0	0	2	0	0	0	0
-test/corpus/in_place_adapters_in_a_macro.js	371	0	0	0	20	2	0	0	0
+test/corpus/in_place_adapters_in_a_macro.js	274	0	0	0	20	2	0	0	0
 test/corpus/in_place_cell_moved_out.js	70	0	0	0	0	0	0	4	0
 test/corpus/in_place_cell_replaced.js	119	0	0	0	0	0	0	6	3
 test/corpus/in_place_collect_capacity_through_a_function.js	70	0	0	0	4	0	0	6	4
@@ -2242,6 +2246,7 @@ test/corpus/skip_drops_what_it_passes_first.js	97	0	0	0	2	0	0	2	7
 test/corpus/skip_first_nth_panics.js	127	0	0	0	0	0	0	6	5
 test/corpus/skip_folded_by_consumers.js	469	0	0	1	4	0	4	25	18
 test/corpus/skip_hinted_closes_its_source.js	87	0	0	0	3	0	0	2	5
+test/corpus/skip_of_a_filter_counts_by_its_count.js	57	0	0	0	4	1	1	0	0
 test/corpus/skip_of_a_peekable_from_back.js	441	0	0	0	5	0	0	6	0
 test/corpus/skip_of_own_from_its_back_asks_len_once.js	117	0	0	1	0	0	3	0	0
 test/corpus/skip_of_short_take_drops.js	220	0	0	0	7	0	0	6	12
@@ -2648,7 +2653,7 @@ test/corpus/vec_remove_insert_in_bounds.js	80	0	0	0	0	0	0	0	0
 test/corpus/vec_repeat_drops.js	76	0	0	0	0	0	0	2	0
 test/corpus/vec_set_len.js	77	0	0	0	0	0	0	0	1
 test/corpus/vec_side_of_a_chain_counts_in_its_hint.js	37	0	0	0	5	0	0	0	1
-test/corpus/vec_skipped_from_back_drops.js	319	0	0	3	16	0	0	8	20
+test/corpus/vec_skipped_from_back_drops.js	334	0	0	3	17	0	0	8	21
 test/corpus/visitor_err_a_fmt_error_driven_by_generic_code.js	134	0	0	0	0	0	0	0	0
 test/corpus/weak_cycle_set_after.js	55	0	0	0	0	0	0	2	0
 test/corpus/weak_debug.js	76	0	0	0	0	0	0	7	3

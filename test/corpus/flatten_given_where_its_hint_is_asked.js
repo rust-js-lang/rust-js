@@ -10,7 +10,6 @@ import {
   $lazyScan,
   $lazySkipWhile,
   $lazyZip,
-  $mapEnds,
   $next,
   $nextBack,
   $rangeNext,
@@ -134,118 +133,27 @@ function main() {
   );
   console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
   const value$5 = hint(
-    $mapEnds(
-      $knowing(
-        iterator_flatMap(
-          $iter(v),
-          (n) => new Array(3).fill(n),
-          { next: $next },
-          intoIterator,
-          true,
-          3,
-          false,
-        ),
-        (iterator) =>
-          flatMapDoubleEndedIterator_nextBack(
-            iterator,
-            { next: $next },
-            { next_back: $nextBack },
-            intoIterator,
-            { next_back: $nextBack },
-            true,
-            false,
-          ),
-        undefined,
-        undefined,
-        undefined,
-        (iterator, init, f, broke, unwind, ends) =>
-          flatMapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            intoIterator,
-            { next_back: $nextBack },
-            $tryOf(broke),
-            true,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            unwind,
-            ends,
-          ),
-        (iterator, n) =>
-          flatMapDoubleEndedIterator_advanceBackBy(
-            iterator,
-            n,
-            { next: $next },
-            { next_back: $nextBack },
-            intoIterator,
-            { next_back: $nextBack },
-            true,
-            false,
-          ),
-      ),
-      (x) => (x + 1) >>> 0,
-    ),
+    iterator_flatMap(
+      $iter(v),
+      (n) => new Array(3).fill(n),
+      { next: $next },
+      intoIterator,
+      true,
+      3,
+      false,
+    ).map((x) => (x + 1) >>> 0),
   );
   console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
   const value$6 = hint(
     $filterEnds(
-      $knowing(
-        iterator_flatMap(
-          $iter(v),
-          (n) => new Array(3).fill(n),
-          { next: $next },
-          intoIterator,
-          true,
-          3,
-          false,
-        ),
-        (iterator) =>
-          flatMapDoubleEndedIterator_nextBack(
-            iterator,
-            { next: $next },
-            { next_back: $nextBack },
-            intoIterator,
-            { next_back: $nextBack },
-            true,
-            false,
-          ),
-        undefined,
-        undefined,
-        undefined,
-        (iterator, init, f, broke, unwind, ends) =>
-          flatMapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            intoIterator,
-            { next_back: $nextBack },
-            $tryOf(broke),
-            true,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            unwind,
-            ends,
-          ),
-        (iterator, n) =>
-          flatMapDoubleEndedIterator_advanceBackBy(
-            iterator,
-            n,
-            { next: $next },
-            { next_back: $nextBack },
-            intoIterator,
-            { next_back: $nextBack },
-            true,
-            false,
-          ),
+      iterator_flatMap(
+        $iter(v),
+        (n) => new Array(3).fill(n),
+        { next: $next },
+        intoIterator,
+        true,
+        3,
+        false,
       ),
       (x) => x % 2 === 0,
     ),

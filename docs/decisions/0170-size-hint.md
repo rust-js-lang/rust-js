@@ -404,3 +404,53 @@ Corpus case `size_hint_of_a_lent_copy_of_items` holds:
 It matches native in each build and through every metamorphic rewrite.
 Mutation `copy-in-place-hint-unmarked` (`analysis/hint_asked.ts`) is
 caught. docs/readability.txt is blessed with the case alone.
+
+## Amendment (2026-11-21, #2209): made knowing its hint is never made knowing its back
+
+What generic code asks the hint of was made knowing it by the makers of
+what's stepped from its back. `hint_asked.rs`'s crate-wide set joined
+`back_stepped.typed`, and its per-function set, `knowing_in`, was one
+of `stepped_from_its_back`'s answers. A back form knows its hint, but it
+also needs a back at every level beneath. A flatten of the crate's
+iterators that have no `next_back` was made `$flattenEnds` beside another
+of its type whose hint was asked. `$flattenEnds` steps each inner by
+`$iter`, so the first `next` threw `an iterator stepped as an array's,
+which doesn't know its back`.
+
+The two are now apart:
+- `stepped_from_its_back` answers from the back facts and MIR alone.
+- `made_knowing_its_hint` (iterators/back_facts.rs) is the one answer of
+  what's made knowing its hint: `counted_in`, `knowing_in` and
+  `Hinted::typed`, `hint_asked.rs`' facts. It never says a value is
+  stepped from its back.
+- A maker that makes a value knowing its hint alone uses the form the
+  in-place forms' owner gives (`hint_knowing_of`, `hint_knowing_form_of`,
+  `in_place_forms.rs`). Each such form is printed as a `hint` row of
+  `in_place_forms.txt`. It's a pair the net runs over every source
+  (`Always`), so the type-keyed fact that chooses it chooses between
+  forms alike correct. None steps what it holds from its back: a
+  flatten's is `$flatMap`, whose `$flatHint` asks each inner's hint.
+- `as_hint_knowing` (iterators/knowing.rs) remakes what the std adapters'
+  maker made in that form, asking its sources no back.
+- `hint_asked.rs`' list of adapters made knowing their hint asks that
+  owner (`hint_knowing_std`). It no longer mirrors back_facts.rs's.
+- The held flip's readability policy (`keeps_hand_written`) is given
+  `Hinted::typed` beside `back_stepped`'s own types, as it read them
+  merged before.
+
+ADR 0262 case: results change (a throw against Rust's answer), so Rust's
+behavior is preserved. Hint-only values lose the back dictionaries they
+were given for nothing, `$knowing(it, nextBack, ..)` of std's compiled
+structs. Four snapshots move, all shorter. Corpus case
+`flatten_made_knowing_its_hint_asks_no_back` holds:
+- a flatten of the crate's iterators, with and without their own
+  `size_hint`, beside one whose hint is asked;
+- given to generic code that asks its hint, mapped, filtered and chained.
+
+`as_double_ended` still names its back forms itself, not by the
+in-place forms' owner.
+
+docs/readability.txt is blessed with this change. The shares that grow
+(`$iter`, `return;`, `renamed x$1`, role fallbacks) grow by the new case's
+lines, and by those of the cases added since its last bless (#2205,
+#2207, #2210, #2212, 82646ce5d). The four moved snapshots read shorter.
