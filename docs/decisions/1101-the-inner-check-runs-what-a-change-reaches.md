@@ -921,3 +921,13 @@ Change E's sweep narrows answers' visibility in many files. Before this, each na
 Of a method, `self` among its parameters, there's a fourth condition. rustc's method probe passes over an inherent method a caller can't see and takes a trait's method of that name, std's or a dependency's too: a private `len` beside a trait's `len` gives the trait's, as probed. So a method selects nothing only where no code beyond the crate names it: the sysroot's crates' metadata, std's sources and the sources of each package Cargo resolves (`namedBeyondTheCrate`, a single pass, about 1.7 s). Otherwise the hunk is that function's change, as before.
 
 If it compiles, each use resolves to the item it did before, so what the compiler does is the same. The select line says how many hunks were selected nothing this way. Held by test/test-map.test.ts's "a visibility change of a name declared once selects nothing" and four mutations (scripts/mutations/test-map.ts).
+
+## Amendment (2026-11-20): a round past a rebase spends only what the commits it brought can change
+
+A push whose rebase brought commits ran its round again. 69240fd35's second round spent fast 21 s, the mutants type-check 87 s and a sanity pass 118 s. m6-lily's S4 push went past 900 s this way.
+
+**The round now spends only what those commits can change:**
+- The mutants are type-checked again only where the incoming commits touch a Rust source, a mutation list or the toolchain, any of which a `replace` may read (`mutantsAgain`). Otherwise each `replace` type-checks as it did the round before.
+- The sanity pass checks nothing where the selector's interaction of the change and the incoming commits is none (`sanitySkipped`). No test is reached by both, so each one's outcome is the round before's or the incoming pushers'.
+
+The push's line then says "none (incoming reach nothing this change reaches)", so a later surprise can be traced to a skipped round. `main`'s CI check runs whole after the push either way. Held by test/push.test.ts's "a round past a rebase type-checks the mutants and checks the interaction only where the incoming commits can change them", and the mutations `push-mutants-every-round` and `push-sanity-never-skipped`.

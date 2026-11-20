@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { appendedBoth, beside, FAST_TESTS, lineSet, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, regenerated, remakeable } from "../scripts/push";
+import { appendedBoth, beside, FAST_TESTS, lineSet, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, regenerated, remakeable, mutantsAgain, sanitySkipped } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -182,4 +182,19 @@ test("a push's fast phase runs first, push-guard's rule and the catalog's quick 
   expect(fast).toBeLessThan(at('run("build"'));
   // The mutation catalog's test file, whole: none of its tests picked; and the owners' table's.
   expect(FAST_TESTS).toEqual(["test/mutations.test.ts", "test/architecture-owners.test.ts"]);
+});
+
+// A round past a rebase spends again only what the commits it brought can
+// change (m6-lily's health check, 2026-11-20: a push's second round 230 s).
+// The mutants type-check again where they touch a Rust source, a mutation
+// list or the toolchain; the sanity pass checks nothing where no test is
+// reached by both the change and them, and says why.
+test("a round past a rebase type-checks the mutants and checks the interaction only where the incoming commits can change them", () => {
+  expect(mutantsAgain(undefined)).toBe(true);
+  expect(mutantsAgain(["docs/guide/README.md", "test/corpus/x.rs", "src/runtime/iter.js"])).toBe(false);
+  for (const file of ["src/lower/iterators.rs", "scripts/mutations/runtime/iter.ts", "Cargo.lock", "rust-toolchain.toml"]) expect([file, mutantsAgain(["docs/x.md", file])]).toEqual([file, true]);
+  expect(sanitySkipped("none")).toBe("incoming reach nothing this change reaches");
+  expect(sanitySkipped("none, map 57283d2aa 3 behind")).toBe("incoming reach nothing this change reaches");
+  expect(sanitySkipped("some (3 files, 2 cases), map 57283d2aa 3 behind")).toBeUndefined();
+  expect(sanitySkipped("capped 56 of 334 files in 45 s")).toBeUndefined();
 });

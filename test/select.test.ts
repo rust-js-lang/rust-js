@@ -337,7 +337,7 @@ test("bun run push says its selection on its line, and runs the check and the po
   expect(push).not.toContain('"check:fast", "--all"');
   expect(push).toContain("touchesPort(changed)");
   // Past a rebase, the change's own sanity pass, as often as main moves.
-  expect(push).toContain('...(name === "sanity" ? [`--sanity=${checked}`] : [])');
+  expect(push).toContain('const asked = name === "sanity" ? [`--sanity=${checked}`] : [];');
   expect(push).not.toMatch(/attempts|main moved \$\{/);
   // What it pushes is held to the commit it checked over, not to where a
   // fetch since moved `origin/main`, whose commits aren't the branch's.

@@ -959,7 +959,7 @@ test("CI's plan selects by the full rule, the push by its own", () => {
   expect(read("scripts/ci.ts")).toContain("selection = selectChange(since);");
   expect(read("scripts/ci.ts")).not.toContain('"push")');
   expect(read("scripts/checkFast.ts")).toContain('selectChange("origin/main", sanity, "push")');
-  expect(read("scripts/push.ts")).toContain('["bun", "scripts/select.ts", "--push"]');
+  expect(read("scripts/push.ts")).toContain('["bun", "scripts/select.ts", "--push", ...asked]');
 });
 
 test("the mutation shards' arguments, as check.yml writes them, are ones the runner takes, a retry or none", () => {

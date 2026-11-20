@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "push-sanity-whole",
     breaks: "a push's sanity pass past a rebase selects by the map's diff to the new tree, not the interaction of the change and the rebase's commits: it ran all and outlasted the check",
     file: "scripts/push.ts",
-    find: '...(name === "sanity" ? [`--sanity=${checked}`] : [])',
-    replace: "...([] as string[])",
+    find: 'const asked = name === "sanity" ? [`--sanity=${checked}`] : [];',
+    replace: "const asked: string[] = [];",
     tests: ["test/select.test.ts", "-t", "bun run push says its selection"],
   },
   {
@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "push-mutants-unchecked",
     breaks: "a push lands a mutation whose `replace` no longer type-checks against its change, which CI's shards call \"doesn't build\" (main red, 2026-11-18)",
     file: "scripts/push.ts",
-    find: "        run(\"mutants\", [\"bun\", \"scripts/mutations.ts\", `--typecheck=${base}`]);\n",
-    replace: "",
+    find: "if (mutantsAgain(since)) run(\"mutants\", [\"bun\", \"scripts/mutations.ts\", `--typecheck=${base}`]);",
+    replace: "if (mutantsAgain(since)) void 0;",
     tests: ["test/mutation-changes.test.ts", "-t", "a push type-checks the mutations of each file its change touches"],
   },
   {
@@ -177,5 +177,21 @@ export const mutations: Mutation[] = [
     find: 'export const FAST_TESTS = ["test/mutations.test.ts", "test/architecture-owners.test.ts"];\n',
     replace: 'export const FAST_TESTS = ["test/mutations.test.ts", "-t", "every mutation applies to the compiler as it is, once", "test/architecture-owners.test.ts"];\n',
     tests: ["test/push.test.ts", "-t", "a push's fast phase runs first"],
+  },
+  {
+    name: "push-mutants-every-round",
+    breaks: "a push's round past a rebase type-checks the change's mutants again though the commits it brought touch no Rust source, mutation list or toolchain",
+    file: "scripts/push.ts",
+    find: "  if (incoming === undefined) return true;\n",
+    replace: "  return true;\n",
+    tests: ["test/push.test.ts", "-t", "a round past a rebase type-checks the mutants"],
+  },
+  {
+    name: "push-sanity-never-skipped",
+    breaks: "a push's sanity pass runs check:fast though no test is reached by both the change and the commits the rebase brought",
+    file: "scripts/push.ts",
+    find: "  return said === \"none\" || said.startsWith(\"none,\") ? \"incoming reach nothing this change reaches\" : undefined;\n",
+    replace: "  return undefined;\n",
+    tests: ["test/push.test.ts", "-t", "a round past a rebase type-checks the mutants"],
   },
 ];

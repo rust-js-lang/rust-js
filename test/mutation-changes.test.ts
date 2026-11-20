@@ -334,7 +334,7 @@ test("a push type-checks the mutations of each file its change touches, and of e
   expect(refusedFlags(["--typecheck"])).toEqual(["--typecheck takes a value: --typecheck=<base>"]);
   expect(phases.indexOf("mutants")).toBeGreaterThan(phases.indexOf("build"));
   expect(phases.indexOf("mutants")).toBeLessThan(phases.indexOf("check"));
-  expect(readFileSync(join(root, "scripts/push.ts"), "utf8")).toContain('run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);');
+  expect(readFileSync(join(root, "scripts/push.ts"), "utf8")).toContain('if (mutantsAgain(since)) run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);');
 });
 
 test("a change's mutants are type-checked many to a check, and one that doesn't type-check is named alone", async () => {

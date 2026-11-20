@@ -86,6 +86,26 @@ export function reactGate(changed: string[], incoming: string[] | undefined): "r
   return incoming !== undefined && !touchesPort(incoming) ? "reused" : "run";
 }
 
+/** Whether a round type-checks the change's mutants again: the first
+ * always; past a rebase, where the commits it brought, `incoming`, touch a
+ * Rust source, a mutation list or the toolchain, any of which a `replace`
+ * may read. Otherwise each `replace` type-checks as it did the round
+ * before, its 22–93 s spent again on a moving `main` (m6-lily's health
+ * check, 2026-11-20). */
+export function mutantsAgain(incoming: string[] | undefined): boolean {
+  if (incoming === undefined) return true;
+  return incoming.some((file) => /^src\/.*\.rs$/.test(file) || file.startsWith("scripts/mutations") || /^(?:Cargo\.(?:toml|lock)|rust-toolchain\.toml|build\.rs)$/.test(file));
+}
+
+/** Why a round past a rebase checks nothing, where the selector's
+ * interaction of the change and the commits the rebase brought, `said`,
+ * is none: no test both reach, so each test's outcome is the round
+ * before's or the incoming pushers' (ADR 1101, amended); `main`'s CI
+ * check runs whole after the push. */
+export function sanitySkipped(said: string): string | undefined {
+  return said === "none" || said.startsWith("none,") ? "incoming reach nothing this change reaches" : undefined;
+}
+
 /** Why the push refuses where the React port's regen exits `code`: a
  * crate that doesn't compile, which writes no JS and so no diff, or JS
  * that differs from the pin's. */
@@ -148,6 +168,9 @@ async function main() {
       throw new Refused("a tracked change isn't committed: the check would see it and the push wouldn't; commit it first");
     }
     let checked = "";
+    // The commit `checked` was rebased onto, whose incoming commits since a
+    // later round asks of.
+    let checkedBase = "";
     // The base an earlier round's React gate passed at, where one did.
     let reactBase: string | undefined;
     for (;;) {
@@ -168,7 +191,9 @@ async function main() {
         // (scripts/std-fresh.ts), which names the fix where it differs.
         run("std", ["bun", "scripts/std-fresh.ts"]);
         phase("std");
-        run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);
+        const since = checkedBase === "" ? undefined : lines(git("diff", "--name-only", checkedBase, base).out);
+        if (mutantsAgain(since)) run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);
+        else console.log("push: the mutants as the round before: the rebase's commits touch no Rust source, mutation list or toolchain");
         phase("mutants");
         // The selection of what the change can affect, by the test map's
         // diff to this tree: first, and again, of the new tree, past a
@@ -190,15 +215,21 @@ async function main() {
         // nearer than the machine's (scripts/testMap.ts's `fetchMap`).
         const fetched = sh(["bun", "scripts/testMap.ts", "fetch"], true).out.trim().split("\n").at(-1) ?? "";
         console.log(`push: ${fetched}`);
-        const selected = sh(["bun", "scripts/select.ts", "--push"], true);
+        // Past a rebase, the interaction's: the selector's and check:fast's.
+        const asked = name === "sanity" ? [`--sanity=${checked}`] : [];
+        const selected = sh(["bun", "scripts/select.ts", "--push", ...asked], true);
         if (selected.code !== 0) throw new Refused(`the selector failed:\n${selected.out}`);
         const said = selected.out.split("\n")[0]!.replace(/, by the test map of .*$/, "");
-        if (said === "none" && !code) {
+        const skipped = name === "sanity" ? sanitySkipped(said) : undefined;
+        if (skipped !== undefined) {
+          selection = `none (${skipped})`;
+          console.log(`push: the sanity pass checks nothing: ${skipped}`);
+        } else if (said === "none" && !code) {
           selection = "none";
           console.log(`push: the selection is none, and nothing changed is code: no check`);
         } else {
           rmSync(selectionFile, { force: true });
-          run(name, ["bun", "run", "check:fast", ...(name === "sanity" ? [`--sanity=${checked}`] : [])]);
+          run(name, ["bun", "run", "check:fast", ...asked]);
           selection = existsSync(selectionFile) ? JSON.parse(readFileSync(selectionFile, "utf8")).outcome : said;
         }
         // A map not fetched says why on the push's line (b355dc824's said
@@ -214,6 +245,7 @@ async function main() {
         }
         phase("react");
         checked = git("rev-parse", "HEAD").out.trim();
+        checkedBase = base;
       }
       // Of the commit it was rebased onto and checked over, `base`, not
       // `origin/main` as it is now: a fetch while it was checked, a test's or
