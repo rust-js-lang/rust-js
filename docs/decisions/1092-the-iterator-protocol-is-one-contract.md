@@ -1909,3 +1909,55 @@ Case (ADR 0262): R. Corpus case `mut_dyn_lent_steps_as_std_does` runs
 as native in both builds, and so do the table's 26 case-builds that
 were listed under #2180. Mutations: `lending-of-the-outer-ref-only`,
 `mut-ref-passes-what-its-impl-writes` and `mut-dyn-self-unlent`.
+
+## Amendment: a `Box` of std's adapter steps as std's `Box<I>` (2026-11-20, #2179)
+
+The paths table's first run found that a `Box` of std's adapter stepped
+as the adapter itself. std's `Box<I>` writes `next`, `size_hint`, `nth`,
+`last`, their back's and `len`, and leaves `fold`, `count`, `try_fold` and
+the rest to the traits' defaults over its `next`. But the box's JS value is
+`I`'s, so `Box::new(countdown.map(f)).count()` asked the `Map`'s own
+`fold`, which reached the crate's. That happened called on the box,
+bound first, given to generic code, and lent, `(&mut boxed).fold(..)`,
+where a `skip(1)`'s own `try_fold` asked the crate's `nth(0)` where std
+asks `nth(1)`.
+
+**Whether a box hides what it holds is one answer,
+`box_hides_its_steps`** (recognition/std_items.rs): it does of the
+crate's iterator, of std's compiled struct, whose own steps may reach the
+crate's, and of a type only its bounds know. Of another std iterator, a
+slice's or a `Vec`'s, the box steps as what it holds does, to every
+program, so it stays as it reads. Three places ask it:
+
+- **`passed_through_box`**, as before: it passes a box's default on to
+  `I`'s only where the box hides nothing. Through a `&mut` of a box that
+  hides, it no longer passes on what std's `&mut I` writes, whose `fold`
+  is by the box's `try_fold`, the default.
+- **A std method's receiver** (`js_iterator_of`): a sized box that hides
+  is `$lent(it, "boxed")`, as `knowing.rs` already gave its back steps.
+- **What's given for a type parameter that steps it as a JS iterator**
+  (`given_iterators`): the same, `total(Box::new(map))`.
+
+A box lent, `(&mut boxed).fold(..)`, is `$lent($lent(it, "boxed"))`. The
+outer `$lent` isn't noise: the box's own form owns and closes what it
+holds at its end, and the lend is what keeps the box's iterator its
+owner's, as the metamorphic net's `loud` rewrite of the case shows.
+
+Not yet (#2185): a box given by a dictionary, through a trait, as the `impl-owned`
+rewrite gives it (`fn total<I>(it: impl Is<I>)`), still steps as what it
+holds, since `I`'s dictionary is a plain JS iterator's. It's listed under
+its own issue.
+
+Three snapshots move, each to the box's form: a boxed `take()`'s `fold`
+and `count` (`boxed_iterator_folded_as_std_passes_it_on`), generic code's
+`Box<I>` `count` (`boxed_iterator_steps_as_std_box_does`), and a box made
+knowing its back (`map_as_it_is_boxed_beside_an_enumeration_from_its_back`).
+
+Case (ADR 0262): R. Corpus case `box_of_an_adapter_steps_as_std_box_does`
+runs as native in both builds, and so do the table's 80 case-builds that
+were listed under #2179. New mutations: `box-of-std-iterator-as-its-value`,
+`box-given-as-its-value` and `box-through-mut-passed-through`.
+Retargeted to the shared answer: `box-iterator-defaults-not-passed-through`,
+`box-user-iterator-default-passed-through`,
+`box-param-default-passed-through` and
+`box-compiled-default-passed-through`.

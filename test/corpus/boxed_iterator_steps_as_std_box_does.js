@@ -46,7 +46,7 @@ function upIterator_last(up) {
 }
 
 function boxedCount(b) {
-  return b.reduce((n) => n + 1, 0);
+  return $lent(b, "boxed").reduce((n) => n + 1, 0);
 }
 
 function boxedLast(b) {

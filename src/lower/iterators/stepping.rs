@@ -460,6 +460,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 *value = self.lent_iterator(held, given);
                 continue;
             }
+            // A `Box` of std's iterator, a sized one's, given for a type
+            // parameter bound by `Iterator` that steps it as a JS iterator,
+            // `total(Box::new(map))`: the box, `$lent(it, "boxed")`, which
+            // passes on only what std's `Box<I>` does, never `I`'s own `fold`
+            // or `count`, which may reach the crate's, where the box hides
+            // them (`box_hides_its_steps`, #2179). The crate's own reads its
+            // steps through the box already (`own_method`).
+            if crate::lower::generic_facts::type_parameter(input).is_some_and(|param| {
+                bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
+            }) && let Some(inner) = given.boxed_ty()
+                && inner.is_sized(self.tcx, self.typing_env)
+                && !self.is_user_iterator(inner)
+                && self.recognition().box_hides_its_steps(inner)
+                && self.implements_iterator(inner)
+            {
+                let held = std::mem::replace(value, Expr::taken());
+                *value = IterValue::js(held).lent(Wrapper::BoxSized).emit();
+                continue;
+            }
             let made_knowing = self.made_knowing_into_iter(callee, input, given);
             // One that asks its length, a JS iterator that knows it, its back
             // too where it steps it from there (ADR 0456).

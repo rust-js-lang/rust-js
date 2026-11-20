@@ -162,14 +162,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .skip_binder();
         let lends = matches!(*sig.inputs().first()?.kind(), ty::Ref(_, _, Mutability::Mut));
         let by_value = !sig.inputs().first()?.is_ref();
-        let (inner, unboxed) = match *generic_args.types().next()?.kind() {
+        let (inner, unboxed, through_mut) = match *generic_args.types().next()?.kind() {
             ty::Ref(region, boxed, Mutability::Mut) if by_value => {
                 let inner = boxed.boxed_ty()?;
-                (inner, Ty::new_mut_ref(tcx, region, inner))
+                (inner, Ty::new_mut_ref(tcx, region, inner), true)
             }
             _ => {
                 let inner = generic_args.types().next()?.boxed_ty()?;
-                (inner, inner)
+                (inner, inner, false)
             }
         };
         let passed_on = || tcx.mk_args_from_iter(std::iter::once(unboxed.into()).chain(generic_args.iter().skip(1)));
@@ -178,14 +178,26 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return (inner.is_sized(tcx, self.typing_env) && self.std_impl_writes(def_id, generic_args))
                 .then(passed_on);
         }
+        // Through a `&mut` of the box, what std's `&mut I` writes, its
+        // `fold` by the box's `try_fold`, is the box's default where the box
+        // hides `I`'s own steps, never `I`'s (#2179).
+        let hides = self.box_hides_its_steps(inner);
         (iterator_trait
             && inner.is_sized(tcx, self.typing_env)
-            && (!(lends
-                || self.is_user_iterator(inner)
-                || crate::lower::recognition::is_compiled_std_iterator(tcx, inner)
-                || crate::lower::generic_facts::boxed_steps_given(tcx, inner, self.typing_env))
-                || self.std_impl_writes(def_id, generic_args)))
+            && (!(lends || hides) || (!(through_mut && hides) && self.std_impl_writes(def_id, generic_args))))
         .then(passed_on)
+    }
+
+    /// Whether std's `Box<I>` of an `inner` hides steps `I` writes itself
+    /// that a program can tell from the traits' defaults over its `next`:
+    /// of the crate's iterator, of std's compiled struct, whose own steps may
+    /// reach the crate's, or of a type only its bounds know, which its caller
+    /// may give one (#1601, #2179). Of another std iterator, a slice's or a
+    /// `Vec`'s, the box steps as what it holds does, to every program.
+    pub(in crate::lower) fn box_hides_its_steps(&self, inner: ty::Ty<'tcx>) -> bool {
+        self.is_user_iterator(inner)
+            || crate::lower::recognition::is_compiled_std_iterator(self.tcx, inner)
+            || crate::lower::generic_facts::boxed_steps_given(self.tcx, inner, self.typing_env)
     }
 
     /// Whether a call of `def_id` with `generic_args` resolves to a method a

@@ -586,4 +586,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_provided_methods_given_through_bounds\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "box-given-as-its-value",
+    breaks: "a `Box` of std's adapter given for a type parameter that steps it as a JS iterator, `total(Box::new(map))`, is the adapter itself, so generic code's `fold` of it asks the adapter's own, reaching the crate's, which std's `Box<I>` never asks (#2179)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                && !self.is_user_iterator(inner)\n",
+    replace: "                && !self.is_user_iterator(inner)\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^box_of_an_adapter_steps_as_std_box_does.rs$"],
+  },
 ];

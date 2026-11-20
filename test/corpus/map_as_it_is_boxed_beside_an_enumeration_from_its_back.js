@@ -55,7 +55,7 @@ function main() {
       $filterEnds(
         $lent(
           $knowing(
-            held,
+            $lent(held, "boxed"),
             (iterator) =>
               mapDoubleEndedIterator_nextBack(iterator, {
                 next_back: $rangeNextBack,

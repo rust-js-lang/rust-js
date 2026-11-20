@@ -295,7 +295,7 @@ function boxedFoldCountLast() {
     throw error;
   }
   console.log(
-    `fold ${a.reduce((acc, x) => {
+    `fold ${$lent(a, "boxed").reduce((acc, x) => {
       const result = (((acc * 10) >>> 0) + x[0]) >>> 0;
       dDrop_drop(x);
       return result;
@@ -337,7 +337,7 @@ function boxedFoldCountLast() {
     throw error;
   }
   console.log(
-    `count ${a.reduce((n, item) => {
+    `count ${$lent(a, "boxed").reduce((n, item) => {
       dDrop_drop(item);
       return n + 1;
     }, 0)}`,
