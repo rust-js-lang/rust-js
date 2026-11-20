@@ -9,7 +9,7 @@ import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf } from "../tooling/bounded.js";
 import { floorBytes, mainCheckoutOf } from "./bounded";
-import { boundEntries, entriesOf, holdToBudget, overBudget, pinnedToolchains, unpinnedToolchains, type Store } from "../scripts/disk";
+import { boundEntries, entriesOf, holdToBudget, overBudget, pinnedToolchains, unpinnedToolchains, workingSetMs, workingSetSince, type Store } from "../scripts/disk";
 import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
@@ -523,17 +523,67 @@ test("the stores inside the checkouts are held to the budget together, the least
     { name: "outside", dir: tools, outside: true, kept: () => entriesOf(tools) },
   ];
   const free = () => floorBytes;
+  // Each entry stale here: the working set is the next test's.
+  const since = Date.now();
   // Under what they're held to: nothing goes.
-  expect(holdToBudget(stores, 5 * each, { held: 5 * each, free })).toEqual({ removed: 0, size: 5 * each });
+  expect(holdToBudget(stores, 5 * each, { held: 5 * each, free, since })).toEqual({ removed: 0, size: 5 * each });
   // Past it: the two oldest of both stores, never the build, however old.
-  expect(holdToBudget(stores, 5 * each, { held: 3 * each, free })).toEqual({ removed: 2, size: 3 * each });
+  expect(holdToBudget(stores, 5 * each, { held: 3 * each, free, since })).toEqual({ removed: 2, size: 3 * each });
   expect([readdirSync(a), readdirSync(b), readdirSync(build), readdirSync(tools)]).toEqual([["newer"], ["newest"], ["binary"], ["a tool's own"]]);
-  // Held below what the build takes: every entry goes, and the build is what's left.
-  expect(holdToBudget(stores, 3 * each, { held: each / 2, free })).toEqual({ removed: 2, size: each });
+  // Held below what the build takes: every stale entry goes, and the build is what's left.
+  expect(holdToBudget(stores, 3 * each, { held: each / 2, free, since })).toEqual({ removed: 2, size: each });
   expect(readdirSync(build)).toEqual(["binary"]);
   const said = overBudget(stores, each, (store) => ({ "the build": 6 * 2 ** 30, outside: 7 * 2 ** 30 })[store.name] ?? 0, () => "3 d");
   expect(said).toContain("the largest are the build 6.0 GiB, its oldest 3 d;");
   expect(said).not.toContain("outside");
+});
+
+// A checkout past the budget with every stale entry gone keeps its working
+// set, what was used since its last check or in the last day: idle
+// worktrees' builds took m6-lily's total to 100 of 40 GiB, so each check's
+// measure removed every corpus run and cache it was about to reuse, and
+// check:fast went from ~300 s to 630-809 s (#2163's regression). Only the
+// disk's floor takes from the working set; what's left is said, with its
+// holders.
+test("a checkout past the budget keeps its working set, and only stale entries go", () => {
+  const [kept, build, mark] = ["working-set-kept", "working-set-build", "working-set-mark"].map((name) => fixture(name));
+  const entry = (name: string, ago: number) => {
+    writeFileSync(join(kept, name), Buffer.alloc(64 * 1024));
+    const when = (Date.now() - ago) / 1000;
+    utimesSync(join(kept, name), when, when);
+  };
+  const hour = 3600 * 1000;
+  entry("used by the last check", 30 * hour);
+  entry("used an hour ago", hour);
+  entry("stale", 3 * workingSetMs);
+  entry("staler", 4 * workingSetMs);
+  writeFileSync(join(build, "idle worktree's build"), Buffer.alloc(4 * 64 * 1024));
+  const each = bytesOf(join(kept, "stale"));
+  const stores: Store[] = [
+    { name: "kept runs", dir: kept, cap: Number.POSITIVE_INFINITY, kept: () => entriesOf(kept) },
+    { name: "an idle build", dir: build },
+  ];
+  // This checkout's last check started 31 hours ago: what it used then is
+  // in the working set, past the day.
+  const last = join(mark, "last-check");
+  writeFileSync(last, "");
+  const started = (Date.now() - 31 * hour) / 1000;
+  utimesSync(last, started, started);
+  const since = workingSetSince(Date.now(), last);
+  expect(since).toBeLessThan(Date.now() - workingSetMs);
+  expect(workingSetSince(Date.now(), join(mark, "never checked"))).toBeLessThanOrEqual(Date.now() - workingSetMs);
+  // The build alone is past what it's held to: the stale go, the working set stays.
+  const total = 4 * each + bytesOf(build);
+  const held = 2 * each;
+  const result = holdToBudget(stores, total, { held, free: () => floorBytes, since });
+  expect(result).toEqual({ removed: 2, size: 2 * each + bytesOf(build) });
+  expect(readdirSync(kept).sort()).toEqual(["used an hour ago", "used by the last check"]);
+  expect(result.size).toBeGreaterThan(held);
+  // The disk at its floor takes from it, the least recently used first.
+  let free = floorBytes - 1;
+  const floored = holdToBudget(stores, result.size, { held, free: () => free++, since });
+  expect(floored.removed).toBe(1);
+  expect(readdirSync(kept)).toEqual(["used an hour ago"]);
 });
 
 // An entry gone since it was listed is no longer kept: two checkouts' runs

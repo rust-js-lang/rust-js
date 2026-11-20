@@ -278,9 +278,13 @@ total inside the checkouts against its 40 GiB budget; `bun run disk
 --prune` holds each to its cap, the tools' by `rustup toolchain uninstall`
 of an old pin, Cargo's GC and `bun pm cache rm`, and then the stores
 inside the checkouts to 90% of the budget together, the least recently
-used of all their entries first, as each store's cap alone let several
-worktrees' sum past it (#2163); a build, kept apps, kept compiles and the
-test maps keep their own bounds. `check:fast` prunes the stores inside the
+used of all their stale entries first, as each store's cap alone let
+several worktrees' sum past it (#2163); a build, kept apps, kept compiles
+and the test maps keep their own bounds. The working set, what was used
+since the checkout's last check (`target/last-check`) or in the last day,
+is never evicted to meet the budget, only to keep the disk above its
+floor: idle worktrees' builds past the budget once made every check's
+measure remove every corpus run it was about to reuse. `check:fast` prunes the stores inside the
 checkouts as it starts, and its measure made apart holds them to the
 budget so; past it with all they may lose gone, it names the largest
 holders, a stale worktree's build mostly, for someone to remove.

@@ -17,12 +17,14 @@
 //                           where pruning couldn't take it under; a new
 //                           measure made apart, `--measure`, which holds
 //                           them to that 90% together, the least recently
-//                           used of all their entries first (#2163), as
+//                           used of all their stale entries first (#2163),
+//                           never the working set, what was used since this
+//                           checkout's last check or in the last day, as
 //                           walking `target/` takes 3.5 s and removing
 //                           gigabytes a minute
 
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
@@ -94,19 +96,55 @@ export function entriesOf(dir: string): Kept[] {
  * sum past the budget, which no prune took a byte from (#2163). */
 export const heldBytes = 0.9 * budgetBytes;
 
+/** The least a working set is: what was used in the last day. */
+export const workingSetMs = 24 * 3600 * 1000;
+
+/** Where a checkout's check marks when it last started: `check:fast`'s
+ * prune, `--quiet`, touches it. */
+export const lastCheckMark = join(checkout, "target", "last-check");
+
+/** When the working set starts: this checkout's last check's start, or a
+ * day before `now`, the earlier, so what every check of it reuses, a
+ * corpus case's verified run, is in it however long ago that check was. */
+export function workingSetSince(now = Date.now(), mark = lastCheckMark): number {
+  const last = statSync(mark, { throwIfNoEntry: false })?.mtimeMs ?? now;
+  return Math.min(last, now - workingSetMs);
+}
+
+/** This checkout's check marked started now, `workingSetSince`'s mark. */
+function markCheckStarted(mark = lastCheckMark) {
+  mkdirSync(join(mark, ".."), { recursive: true });
+  closeSync(openSync(mark, "a"));
+  const now = new Date();
+  utimesSync(mark, now, now);
+}
+
 /** `stores`, inside the checkouts, which take `total` bytes together, held
- * to `held`: past it, the entries their `kept` gives, the least recently
- * used of all of them first, removed until the total is under it or none
- * is left, and nothing kept below the disk's floor. A build, and a store
- * whose entries another holds or an index counts, keep what they have, and
- * count. What it removed, and the total left. */
-export function holdToBudget(stores: Store[], total: number, { held = heldBytes, free = () => freeBytes(checkout) }: { held?: number; free?: () => number } = {}) {
+ * to `held`: past it, the entries their `kept` gives that are stale, unused
+ * since `since`, the least recently used of all of them first, removed
+ * until the total is under it or none is left, and nothing kept below the
+ * disk's floor. The working set, what was used since `since`, is never
+ * removed to meet the budget: where the rest can't fit without it, the
+ * stale go and what's left is said, with its holders (#2163's regression:
+ * idle worktrees' builds past the budget made every check's measure remove
+ * every corpus run it was about to reuse). Only the disk's floor takes from
+ * it, the least recently used first. A build, and a store whose entries
+ * another holds or an index counts, keep what they have, and count. What
+ * it removed, and the total left. */
+export function holdToBudget(
+  stores: Store[],
+  total: number,
+  { held = heldBytes, free = () => freeBytes(checkout), since = workingSetSince() }: { held?: number; free?: () => number; since?: number } = {},
+) {
   if (total <= held) return { removed: 0, size: total };
   const kept = stores.filter((store) => !store.outside).flatMap((store) => store.kept?.() ?? []);
-  const theirs = kept.reduce((n, entry) => n + entry.bytes, 0);
+  const stale = kept.filter((entry) => entry.used < since);
+  const working = kept.filter((entry) => entry.used >= since);
+  const theirs = stale.reduce((n, entry) => n + entry.bytes, 0);
   const rest = total - theirs;
-  const { removed, size } = evict(kept, { cap: Math.max(0, held - rest), free, floor: floorBytes });
-  return { removed, size: rest + size };
+  const old = evict(stale, { cap: Math.max(0, held - rest), free, floor: floorBytes });
+  const floored = evict(working, { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes });
+  return { removed: old.removed + floored.removed, size: rest + old.size - (working.reduce((n, entry) => n + entry.bytes, 0) - floored.size) };
 }
 
 /** The repo's exact Rust toolchains, `1.100.0` (ADR 0109): what its
@@ -290,13 +328,18 @@ if (import.meta.main) {
     const last = existsSync(measured) ? (JSON.parse(readFileSync(measured, "utf8")) as { total: number; over?: string }) : { total: 0 };
     if (last.over !== undefined) console.log(last.over);
     else if (last.total > heldBytes) console.log(`⚠ what development keeps inside the checkouts was ${size(last.total)}, past 90% of its ${size(budgetBytes)} budget: \`bun run disk\` says where`);
-    spawn("bun", [import.meta.path, "--measure"], { cwd: checkout, detached: true, stdio: "ignore" }).unref();
+    // The working set from this checkout's last check, read before this
+    // one marks its start, so what that check used stays.
+    const since = workingSetSince();
+    markCheckStarted();
+    spawn("bun", [import.meta.path, "--measure", `--since=${since}`], { cwd: checkout, detached: true, stdio: "ignore" }).unref();
     process.exit(0);
   }
   let total = all.filter((store) => !store.outside).reduce((n, store) => n + bytesOfStore(store), 0);
   let over: string | undefined;
   if (prune || measure) {
-    total = holdToBudget(all, total).size;
+    const given = process.argv.find((arg) => arg.startsWith("--since="));
+    total = holdToBudget(all, total, given === undefined ? {} : { since: Number(given.slice("--since=".length)) }).size;
     if (total > heldBytes) over = overBudget(all, total);
   }
   // A checkout that has kept nothing yet has no `.cache/`.
