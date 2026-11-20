@@ -3,6 +3,7 @@
 import {
   $cleanup,
   $closing,
+  $collectDropping,
   $count,
   $dropEach,
   $filterDropping,
@@ -263,6 +264,20 @@ function main() {
           value$2.return();
         }
       }
+      // A `step_by` of a take of one, its `nth` the take's, which passes it
+      // on to the `Vec`'s, so what it passes drops as one slice (#261).
+      const stepped = $collectDropping(
+        $stepBy(
+          $rev($closing($iter(louds(57, 5)), $dropEach(loudDrop_drop))).take(4),
+          3,
+          loudDrop_drop,
+        ).map((l) => {
+          const result = l[0];
+          loudDrop_drop(l);
+          return result;
+        }),
+      );
+      console.log(`[${stepped.join(", ")}]`);
       const iter = $skipping(
         $filterDropping(
           $closing($iter(louds(54, 3)), $dropEach(loudDrop_drop)),

@@ -1,7 +1,7 @@
 // A `Vec`'s `IntoIter` skipped from its back drops what it passes over as
 // one slice, front to back, as std's `advance_back_by` drops it (#234):
 // its `nth_back`, a `rev()`'s `nth`, `skip` and `step_by`, and a
-// `step_by` of one. A `VecDeque`'s does too; a `Drain`'s drops each as
+// `step_by` of one, or of a `take` of one. A `VecDeque`'s does too; a `Drain`'s drops each as
 // it's passed, from the back.
 use std::collections::VecDeque;
 
@@ -42,6 +42,10 @@ fn main() {
     let taken = louds(47, 2).into_iter().rev().take(2).chain(louds(49, 1)).nth(2);
     println!("{:?}", taken.map(|l| l.0));
     println!("{:?}", louds(50, 3).into_iter().rev().take(2).nth(4).map(|l| l.0));
+    // A `step_by` of a take of one, its `nth` the take's, which passes it
+    // on to the `Vec`'s, so what it passes drops as one slice (#261).
+    let stepped: Vec<u32> = louds(57, 5).into_iter().rev().take(4).step_by(3).map(|l| l.0).collect();
+    println!("{stepped:?}");
     for loud in louds(54, 3).into_iter().filter(|l| l.0 > 0).skip(2) {
         println!("got {}", loud.0);
     }
