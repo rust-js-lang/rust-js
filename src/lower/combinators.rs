@@ -914,7 +914,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some((kept, value)) = super::std_types::option::filtered(subject)
         {
             let then = self.call_with(values.remove(0), vec![value], Role::Then, out);
-            let (then, none) = super::calls::and_then_given(self.tcx, tys[1], then);
+            let returned = match tys[1].kind() {
+                ty::Closure(def_id, _) => self.closure_returned_callee(*def_id),
+                _ => None,
+            };
+            let (then, none) = super::calls::and_then_given(self.tcx, (tys[1], returned), then);
             return Ok(Some(Expr::cond(kept, then, none)));
         }
         // `filter` by the truth of what it holds, `|v| js::truthy(Some(*v))`:

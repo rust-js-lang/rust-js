@@ -513,14 +513,21 @@ pub(super) fn none_given_by(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: rustc_spa
 /// not a binding's, which TypeScript types `T | null`, whose `undefined`
 /// where what it's of is `None` is JS's `labels?.item(0)` (ADR 0298,
 /// amended).
-pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Expr) -> (Expr, Expr) {
+pub(super) fn and_then_given<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    (f, returned): (Ty<'tcx>, Option<rustc_span::def_id::DefId>),
+    then: Expr,
+) -> (Expr, Expr) {
+    // Not a binding's, `Node::first_child` or `|labels| labels.item(0)`,
+    // whose `?.` reads as JS's, `node?.firstChild` (ADR 0298, amended): of a
+    // closure, one it gives back the call of, MIR's (`closure_returned_callee`).
+    let bindings_null =
+        |def_id| super::bindings::is_binding(tcx, def_id) && none_given_by(tcx, def_id) == Some(Known::NoneNull);
     let none = match f.kind() {
-        // Not a binding's, `Node::first_child` or `|labels| labels.item(0)`,
-        // whose `?.` reads as JS's, `node?.firstChild` (ADR 0298, amended).
         ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) && !super::bindings::is_binding(tcx, *def_id) => {
             Expr::null()
         }
-        ty::Closure(..) if then.facts.has(Known::Defined) && !then.facts.has(Known::NoneNull) => Expr::null(),
+        ty::Closure(..) if then.facts.has(Known::Defined) && !returned.is_some_and(bindings_null) => Expr::null(),
         _ => Expr::js_undefined(),
     };
     (given_by(tcx, f, then), none)

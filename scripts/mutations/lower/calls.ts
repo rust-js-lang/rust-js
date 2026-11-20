@@ -187,7 +187,7 @@ export const mutations: Mutation[] = [
     breaks:
       "React's `nextInstance ? tryHydrateActivity(fiber, nextInstance) : undefined`, an `and_then` of a closure of a nullable function's call giving `undefined` for `None` (ADR 0841, amended)",
     file: "src/lower/calls.rs",
-    find: "        ty::Closure(..) if then.facts.has(Known::Defined) && !then.facts.has(Known::NoneNull) => Expr::null(),\n",
+    find: "        ty::Closure(..) if then.facts.has(Known::Defined) && !returned.is_some_and(bindings_null) => Expr::null(),\n",
     replace: "",
     tests: [
       "test/lowering-nullable-reads.test.ts",
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`and_then` of a closure of a nullable binding's call, `labels.item(0)`, writes `null` where what it's of is `None`, `option != null ? option.item(0) : null`, not JS's `input.labels?.item(0)` (ADR 0298, amended)",
     file: "src/lower/calls.rs",
-    find: "        ty::Closure(..) if then.facts.has(Known::Defined) && !then.facts.has(Known::NoneNull) => Expr::null(),\n",
+    find: "        ty::Closure(..) if then.facts.has(Known::Defined) && !returned.is_some_and(bindings_null) => Expr::null(),\n",
     replace:
       "        ty::Closure(..) if then.facts.has(Known::Defined) => Expr::null(),\n",
     tests: [

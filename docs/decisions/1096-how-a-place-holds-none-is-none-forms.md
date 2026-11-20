@@ -466,3 +466,30 @@ Test `none-given`'s "a held js::null given to a binding's optional
 argument is no argument" holds it; mutation `trailing-null-left-out`, new,
 caught; `trailing-some-never-undefined-tested`, `trailing-some-present-
 unasked` and `pointer-somes-unseen` follow the code, caught.
+
+## Amendment: whether a closure gives back a binding's call is MIR's (2026-11-20, #2112)
+
+`and_then`'s `None`, where what it's of is `None`, is `null` where its
+function gives `null` for `None` and isn't a binding (ADR 0841, amended),
+a binding's `T | null` read as JS's `labels?.item(0)` (ADR 0298, amended).
+Of a closure, it asked its result's facts: `Known::Defined`, never
+`undefined`, and not `Known::NoneNull`, which a binding's call was stamped.
+Whether the closure gives back a binding's call is now MIR's: the call its
+return place is written by (`closure_returned_callee`), a binding whose
+result `none_given_by` says is `null` alone. `Defined` stays, a value
+fact: a closure giving back a nullable field's `clone()` or a nullable
+thread-local's `get()` is never `undefined` either. A differential of the
+two over check:fast and React's port: none.
+
+Ahead of `Known::Defined` carrying what `Known::NoneNull` said of storage
+(the lead's decision, option (b)), each reader of it was read: it says
+`!== undefined` only, never "not nullish". `may_be_undefined` asks of
+`undefined` alone; drops' inlined reads (`drops/inlined.rs`) carry it to
+a field's later reads, which a nullable place stores as they are; the
+facts' roles list it; and this closure arm gives `null` only where its
+function's `None` is `null`. None drops a `!= null` test or folds a `??`
+on it.
+
+Mutations `and-then-of-closure-of-nullable-none-undefined` and
+`and-then-of-a-binding-nulled` follow the code, caught;
+`closure-returned-callee-unknown`, new, caught.
