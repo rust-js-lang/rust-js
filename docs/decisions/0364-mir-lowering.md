@@ -1999,3 +1999,45 @@ a box's deref is the box's", "drops of one place written alike are compared
 part by part", and the pin, now agree 197 and unmatched 4) and by mutations
 `shadow-box-deref-unresolved`, `shadow-alike-parts-uncompared`,
 `shadow-alike-variant-compared` and `shadow-alike-flag-disagrees`.
+
+## Amendment: a switch's arms that meet are one test of them, where another goes on past (2026-11-21, #2144)
+
+A `match` inside an `if`, with an or-pattern whose alternatives move a
+part out (`Single(t) | Ambiguous(t, _)`, each clearing its own drop flag),
+has two arms that meet at the body they share, its merge, and another arm,
+`None`, that goes on past it to the block after the `if`. Ramsey's
+`nodeWithin` writes the merge's code after the chain of the switch's arms,
+so the `None` arm could only leave by `break bb16`, a label MIR made, which
+no JS the Rust writes has (D1).
+
+- `split_of` (mir/structure.rs) finds such a switch: its first merge is
+  reached from some arms (joining) and not from the others (leaving), and
+  every leaving arm goes on to where the merge goes on to. `mir_within`
+  then asks the switch for one test of the joining arms, whose branch holds
+  their chain, in the merge's block, and the merge's code; and the leaving
+  arms' chain as its `else`:
+  `if (mapped.TAG === "Single" || mapped.TAG === "Ambiguous") { … } else { … }`.
+  `switch_chain` is the switch's chain of a set of its arms; `switch_split`
+  writes the split.
+- Only where the merge does something: a call, or a drop JS sees. A merge
+  of assignments alone is written in place in each arm, as tidy folds it,
+  `if (take && mapped.TAG === "Single") { … taken = t; } else if …`, which
+  needs no label (or_pattern_part_moves keeps it). That copy is tidy's
+  rule (`decisions`' `SHARED`, `copied_once`), over JS statements, which
+  structuring, before any JS, can't ask; so `split_left_to_tidy` holds the
+  two together: in every debug build, a function whose split was left to
+  tidy so must come out with no label MIR made, else it panics naming the
+  disagreement (mutation `tidy-shares-nothing-split-trusts`).
+- The split reads the switch's subject once more, so it's made only where
+  that runs no code: an enum local's tag, where no getter may answer it
+  (`fields_read_once`) or where it's held once in a `const` (`tag_held`,
+  #2208), which each test then reads. Never an integer's, whose arms are a
+  JS `switch`'s cases (ADR 0629), which skip a body they share without a
+  label: splitting one made the React port's `switch (finishedWork.tag)`
+  `if`s and a label.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, the JS's shape
+alone. Held by corpus case or_pattern_arm_skips_the_shared_body (the
+repro, and std's `Bound` given to a `pub fn`, whose tag is held) and the
+mutations `switch-split-never`, `switch-split-of-the-crates-alone` and
+`switch-split-of-assignments`.

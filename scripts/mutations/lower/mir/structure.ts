@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an untagged enum's arms that each do the same JS still test the variant, `source instanceof Document ? source.firstChild : source.firstChild`, which throws a ReferenceError in a host without the `Document` global where Rust runs on (a wrong answer, rd687)",
     file: "src/lower/mir/structure.rs",
-    find: "                out.extend(alike.or(chain).unwrap_or_default());\n",
-    replace: "                out.extend(chain.unwrap_or_default());\n",
+    find: "        out.extend(alike.or(chain).unwrap_or_default());\n",
+    replace: "        out.extend(chain.unwrap_or_default());\n",
     tests: ["test/webapi-objects.test.ts", "-t", "arms that each do the same"],
   },
   {
@@ -36,8 +36,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an enum's arms are taken for one where they differ, a variant's `p._0.x` read of every variant, `p._1.x`'s too (a wrong answer, rd687)",
     file: "src/lower/mir/structure.rs",
-    find: "                    alike = alike.filter(|first| js::stmts_same(first, &then)).map(|_| then.clone());\n",
-    replace: "                    alike = alike.map(|_| then.clone());\n",
+    find: "            alike = alike.filter(|first| js::stmts_same(first, &then)).map(|_| then.clone());\n",
+    replace: "            alike = alike.map(|_| then.clone());\n",
     tests: ["test/corpus.test.ts", "-t", "^match_arms_alike.rs$"],
   },
   {
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an untagged enum's lone class, tested by the others' tests, is no branch: a form entry that's a `File` goes to the string's arm (a wrong answer, rd506's audit)",
     file: "src/lower/mir/structure.rs",
-    find: "                    otherwise = Some(last).filter(|&b| reached(b));\n",
+    find: "            otherwise = Some(last).filter(|&b| reached(b));\n",
     replace: "",
     tests: ["test/webapi-objects.test.ts", "-t", "one class"],
   },
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value read in place before a `match` whose one arm drops is assigned in that arm alone, and the others compare `undefined`: `*e > match .. { .. }` (#274)",
     file: "src/lower/mir/structure.rs",
-    find: "                self.settle_before_branches(state, block, &mut out);\n",
+    find: "        self.settle_before_branches(state, block, &mut out);\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an or-pattern's variants are tested in the order the enum declares them, not the program's, `Uninitialized || Pending` of `Pending | Uninitialized` (ADR 0780)",
     file: "src/lower/mir/structure.rs",
-    find: "                        variants.sort_by_key(|v| written.iter().position(|(w, _)| w == v).unwrap_or(usize::MAX));\n",
+    find: "                variants.sort_by_key(|v| written.iter().position(|(w, _)| w == v).unwrap_or(usize::MAX));\n",
     replace: "",
     tests: [
       "test/lowering-or-patterns.test.ts",
@@ -148,8 +148,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`if c { a } else { b }` is `if (!c) { b } else { a }`, MIR's test of `false` first",
     file: "src/lower/mir/structure.rs",
-    find: "                    && targets.iter().all(|(value, _)| value == 0)\n",
-    replace: "                    && false\n",
+    find: "            && targets.iter().all(|(value, _)| value == 0)\n",
+    replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^as_deref.rs$"],
     snapshots: true,
   },
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an enum's `match` tests its variants in their order, not its arms', `if (o == null)` first",
     file: "src/lower/mir/structure.rs",
-    find: "                    ordered.sort_by_key(|&(at, _)| at);\n",
+    find: "            ordered.sort_by_key(|&(at, _)| at);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^as_deref.rs$"],
     snapshots: true,
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if !c { a } else { b }`, which MIR tests as `c`, is `if (c) { b }`, its second branch first",
     file: "src/lower/mir/structure.rs",
-    find: "                    && !matches!((written_past_gotos(state.body, *target), written_past_gotos(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
+    find: "            && !matches!((written_past_gotos(state.body, *target), written_past_gotos(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
     replace: "",
     // Its own case, `if !active { .. }`, reads as written again by tidy; a
     // loop's `if !descriptor.enumerable` doesn't.
@@ -221,9 +221,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an or-pattern's values that go to one block are a test each from MIR, the block copied into each, one copy's `const right` an assignment of nothing declared",
     file: "src/lower/mir/structure.rs",
-    find: "                    match grouped.iter_mut().find(|(_, t, _)| *t == target) {\n",
+    find: "            match grouped.iter_mut().find(|(_, t, _)| *t == target) {\n",
     replace:
-      "                    match None::<&mut (Expr, BasicBlock, Vec<u128>)> {\n",
+      "            match None::<&mut (Expr, BasicBlock, Vec<u128>)> {\n",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",
@@ -234,9 +234,9 @@ export const mutations: Mutation[] = [
     name: "mir-if-span-of-condition",
     breaks: "MIR's `if` maps to its condition, not `if c`",
     file: "src/lower/mir/structure.rs",
-    find: "                        span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),\n",
+    find: "                span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),\n",
     replace:
-      "                        span: self.js_span(arm.unwrap_or(span)),\n",
+      "                span: self.js_span(arm.unwrap_or(span)),\n",
     tests: ["test/emission.test.ts", "-t", "source map points from fib.js"],
   },
   {
@@ -244,8 +244,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's test of a `match` arm maps to its `match`, not the arm's pattern",
     file: "src/lower/mir/structure.rs",
-    find: "                    let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));\n",
-    replace: "                    let arm: Option<Span> = None;\n",
+    find: "            let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));\n",
+    replace: "            let arm: Option<Span> = None;\n",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",
@@ -340,7 +340,7 @@ export const mutations: Mutation[] = [
     breaks:
       'an or-pattern of an untagged enum\'s variants tests each, `Array.isArray(v) || (typeof v === "object" && !Array.isArray(v))`, not what they are together',
     file: "src/lower/mir/structure.rs",
-    find: "                        *test = self.mir_variant_test(\n                            (enum_value.clone(), held.as_ref()),\n                            *enum_ty,\n                            *adt,\n                            &variants,\n                            &spans,\n                            (*present, *none),\n                        );\n",
+    find: "                *test = self.mir_variant_test(\n                    (enum_value.clone(), held),\n                    *enum_ty,\n                    *adt,\n                    &variants,\n                    &spans,\n                    (*present, *none),\n                );\n",
     replace: "",
     tests: [
       "test/lowering-switches.test.ts",
@@ -485,8 +485,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option<bool>`'s `if let Some(true)` is `o !== false`, the negation of `Some(false)`'s test, not `o === true` (ADR 0298, the user's decision)",
     file: "src/lower/mir/structure.rs",
-    find: "                            Expr::bin(Op::Eq, *payload, Expr::bool(true))\n",
-    replace: "                            Expr::bin(Op::Ne, *payload, Expr::bool(false))\n",
+    find: "} if self.option_bool_payload(tested.as_deref()) => Expr::bin(Op::Eq, *payload, Expr::bool(true)),\n",
+    replace: "} if self.option_bool_payload(tested.as_deref()) => Expr::bin(Op::Ne, *payload, Expr::bool(false)),\n",
     tests: ["test/corpus.test.ts", "-t", "^option_bool_exact.rs$"],
     snapshots: true,
   },
@@ -613,8 +613,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` whose arms do the same JS, no test left, is refused as though it told its classes by `instanceof` (#555)",
     file: "src/lower/mir/structure.rs",
-    find: "                if alike.is_none()\n                    && let Value::Discriminant(_, enum_ty, ..) = &subject\n",
-    replace: "                if let Value::Discriminant(_, enum_ty, ..) = &subject\n",
+    find: "        if alike.is_none()\n            && let Value::Discriminant(_, enum_ty, ..) = &subject\n",
+    replace: "        if let Value::Discriminant(_, enum_ty, ..) = &subject\n",
     tests: ["test/lowering-switches.test.ts", "-t", "arms are alike in JS"],
   },
   {
@@ -622,8 +622,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` of an `Element | Blob` that tests its element, `nodeType === 1`, the blob what's left, is refused for the blob's class it never tests (#555)",
     file: "src/lower/mir/structure.rs",
-    find: "                        .filter(|(b, _)| tested_blocks.contains(b))\n",
-    replace: "                        .filter(|_| true)\n",
+    find: "                .filter(|(b, _)| tested_blocks.contains(b))\n",
+    replace: "                .filter(|_| true)\n",
     tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
   },
   {
@@ -631,8 +631,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` of `Dropped::Blob` and `Dropped::Element` is refused nowhere, its `instanceof Blob` `false` of another realm's (#555)",
     file: "src/lower/mir/structure.rs",
-    find: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants) {\n                        return Err(crate::lower::refusal::error(self.tcx, span, refused));\n",
-    replace: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants).filter(|_| false) {\n                        return Err(crate::lower::refusal::error(self.tcx, span, refused));\n",
+    find: "            if let Some(refused) = self.untold_class(*enum_ty, &variants) {\n                return Err(crate::lower::refusal::error(self.tcx, span, refused));\n",
+    replace: "            if let Some(refused) = self.untold_class(*enum_ty, &variants).filter(|_| false) {\n                return Err(crate::lower::refusal::error(self.tcx, span, refused));\n",
     tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
   },
   {
@@ -675,5 +675,37 @@ export const mutations: Mutation[] = [
     find: "                        if state.body.source.def_id() == self.item\n                            && (self.krate.given.js_given)\n",
     replace: "                        if (self.krate.given.js_given)\n",
     tests: ["test/crates-iterators.test.ts"],
+  },
+  {
+    name: "switch-split-never",
+    breaks: "a switch's arms that meet at a body they share and another that goes on past it are a chain the other `break`s out of, a label MIR made, `bb16:` (#2144)",
+    file: "src/lower/mir/structure.rs",
+    find: "        if inner.is_empty()\n            && let Some(joining) = self.split_of(state, block, merge)\n",
+    replace: "        if false\n            && let Some(joining) = self.split_of(state, block, merge)\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "arms that meet are one test"],
+  },
+  {
+    name: "switch-split-of-the-crates-alone",
+    breaks: "a switch over an enum JS may give, its tag held once, isn't split, so its arms keep the label MIR made (#2144, #2208)",
+    file: "src/lower/mir/structure.rs",
+    find: "                    && (!self.fields_read_once(ty) || self.tag_held(ty, *adt)))\n",
+    replace: "                    && !self.fields_read_once(ty))\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "arms that meet are one test"],
+  },
+  {
+    name: "switch-split-of-assignments",
+    breaks: "a switch whose arms meet at assignments alone is split too, nesting what tidy writes in each arm as one chain, `if (take && mapped.TAG === \"Single\")` (#2144)",
+    file: "src/lower/mir/structure.rs",
+    find: "        if shared.iter().all(|&b| does_nothing(b)) {\n",
+    replace: "        if false && shared.iter().all(|&b| does_nothing(b)) {\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "meet at assignments alone"],
+  },
+  {
+    name: "split-check-past-blocks-held",
+    breaks: "the debug check that tidy copies a declined switch's merge into each arm holds it where the arms break to it from inside another block, which tidy's copy never reaches: num-traits' `from_str_radix` crashed the compiler (#2144)",
+    file: "src/lower/mir/structure.rs",
+    find: "                    && !broken_past_blocks(inner, name)\n",
+    replace: "",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "past another block"],
   },
 ];

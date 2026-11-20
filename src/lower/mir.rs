@@ -439,6 +439,14 @@ struct State<'m, 'tcx> {
     /// tuple of them: the place, read as one, which a closure captures as it
     /// is, or the tuple's list of them.
     places: IndexMap<Local, Value<'tcx>>,
+    /// A switch's arms split by `mir_within` (#2144): the merge the joining
+    /// arms meet at, and those arms, the switch's to write as one test of
+    /// them, whose branch holds the merge, and the others its `else`.
+    split: Option<(BasicBlock, IndexSet<BasicBlock>)>,
+    /// The label of each switch's merge `split_of` left unsplit as tidy
+    /// writes a merge of assignments in each arm, which
+    /// `split_left_to_tidy` holds tidy to leaving none of (#2144).
+    split_declined: Vec<js::Name>,
     /// The indexes whose bounds check is where the element is read, `false`,
     /// `$index(xs, i)`, or written, `true`, `xs[$at(xs, i)]`
     /// (`deferred_check`).
@@ -998,6 +1006,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             named: Default::default(),
             parts: Default::default(),
             places: Default::default(),
+            split: None,
+            split_declined: Vec::new(),
             deferred: Default::default(),
             at: BasicBlock::from_usize(0),
             statement: 0,
@@ -1240,6 +1250,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
         );
         census::note(mir_body, &out);
+        self.split_left_to_tidy(&state, &out);
         self.body_epilogue(&mut state, &mut out);
         Ok((params.into_inner(), out))
     }

@@ -65,6 +65,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.extend(self.mir_within(state, block, merges)?);
             return Ok(out);
         }
+        // A switch whose arms that don't meet at `merge` go on past it:
+        // one test of those that do, whose branch holds it (`split_of`).
+        if inner.is_empty()
+            && let Some(joining) = self.split_of(state, block, merge)
+        {
+            state.split = Some((merge, joining));
+            let out = self.mir_terminator(state, block)?;
+            debug_assert!(state.split.is_none(), "the switch takes its split");
+            return Ok(out);
+        }
         let mut within = self.mir_within(state, block, inner)?;
         self.flush(state, &mut within)?;
         // Where the block the program labeled is, that MIR's breaks leave:
@@ -428,7 +438,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TerminatorKind::SwitchInt { discr, targets } => {
                 let mut subject = self.mir_operand(state, discr, &mut out)?;
                 self.flush(state, &mut out)?;
-                let ty = discr.ty(&state.body.local_decls, self.tcx);
                 // The cases, those that can't be reached left out.
                 let reached = |b: BasicBlock| !is_unreachable(state.body, b);
                 // What more than one case tests, and does something as it's
@@ -496,234 +505,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 }
                 .map(|tag| self.spill(Role::Kind, tag, &mut out));
-                // Where in what a pattern matches it is, which names its
-                // constants (`body_queries::pattern_places`).
-                let tested = (discr.place())
-                    .map(|place| crate::lower::body_queries::pattern_places(self.tcx, state.body, place));
-                let mut cases: Vec<(Expr, BasicBlock, u128)> = Vec::new();
-                let mut always = None;
-                // Its tests are made, and refused below where they'd tell a
-                // class by `instanceof` and its arms differ (#555).
-                let telling = self.telling_arms.replace(true);
-                // Past a guard that holds, to its arm (`held_arms`).
-                let past = |b: BasicBlock| state.facts.held_arms().get(&b).copied().unwrap_or(b);
-                for (value, target) in targets.iter().map(|(value, target)| (value, past(target))) {
-                    if reached(target) {
-                        let test = self.switch_test(&subject, ty, value, span, (tested.as_deref(), held.as_ref()))?;
-                        // A test that's a constant: its branch alone, or none.
-                        match test.kind {
-                            js::ExprKind::Bool(false) => {}
-                            js::ExprKind::Bool(true) => always = always.or(Some(target)),
-                            _ => cases.push((test, target, value)),
-                        }
-                    }
+                match state.split.take() {
+                    Some((merge, joining)) => out.extend(self.switch_split(
+                        state,
+                        (block, span),
+                        (discr, targets),
+                        (&subject, held.as_ref()),
+                        (merge, joining),
+                    )?),
+                    None => out.extend(self.switch_chain(
+                        state,
+                        (block, span),
+                        (discr, targets),
+                        (&subject, held.as_ref()),
+                        None,
+                    )?),
                 }
-                self.telling_arms.set(telling);
-                if let Some(target) = always {
-                    out.extend(self.mir_branch(state, block, target)?);
-                    return Ok(out);
-                }
-                let mut otherwise = Some(past(targets.otherwise())).filter(|&b| reached(b));
-                self.settle_before_branches(state, block, &mut out);
-                let telling = self.telling_arms.replace(true);
-                // Values that go to one block, an or-pattern's `'+' | '-'`:
-                // one test of either, the block once, as the program wrote it.
-                let mut grouped: Vec<(Expr, BasicBlock, Vec<u128>)> = Vec::new();
-                for (test, target, value) in cases {
-                    match grouped.iter_mut().find(|(_, t, _)| *t == target) {
-                        Some((either, _, values)) => {
-                            *either = Expr::bin(Op::Or, std::mem::replace(either, Expr::taken()), test);
-                            values.push(value);
-                        }
-                        None => grouped.push((test, target, vec![value])),
-                    }
-                }
-                // Of an enum's variants, the test that it's one of them, as
-                // its owner tells: an untagged one's, what they are together,
-                // `Object | Array`'s `typeof value === "object"` (ADR 0668).
-                if let Value::Discriminant(enum_value, enum_ty, present, none) = &subject
-                    && let ty::Adt(adt, _) = enum_ty.kind()
-                {
-                    for (test, target, values) in grouped.iter_mut().filter(|(.., values)| values.len() > 1) {
-                        let mut variants: Vec<VariantIdx> = (values.iter())
-                            .filter_map(|&value| adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
-                            .map(|(variant, _)| variant)
-                            .collect();
-                        // In the order its arm's pattern names them, as the
-                        // program wrote them, not as the enum declares them,
-                        // each where it's written.
-                        let written =
-                            written_at(state.body, *target).map_or(Vec::new(), |at| self.written_variants(span, at));
-                        variants.sort_by_key(|v| written.iter().position(|(w, _)| w == v).unwrap_or(usize::MAX));
-                        let spans: Vec<js::Span> = (variants.iter())
-                            .map(|v| {
-                                written
-                                    .iter()
-                                    .find(|(w, _)| w == v)
-                                    .map_or(js::Span::NONE, |&(_, at)| self.js_span(at))
-                            })
-                            .collect();
-                        *test = self.mir_variant_test(
-                            (enum_value.clone(), held.as_ref()),
-                            *enum_ty,
-                            *adt,
-                            &variants,
-                            &spans,
-                            (*present, *none),
-                        );
-                    }
-                }
-                // An untagged enum of one class and kinds JS tells by their
-                // value, a form entry's `File | string`: the class's branch
-                // last, what's left, and each other's tested, so no
-                // `instanceof` of a global the host may lack runs (rd506).
-                if let Value::Discriminant(enum_value, enum_ty, present, none) = &subject
-                    && let ty::Adt(adt, args) = enum_ty.kind()
-                    && bindings::is_untagged(self.tcx, adt.did())
-                    && let Some(class) = self.recognition().lone_class_variant(*adt, args)
-                {
-                    let target_of = |variant: VariantIdx| {
-                        let target = targets.target_for_value(adt.discriminant_for_variant(self.tcx, variant).val);
-                        state.facts.held_arms().get(&target).copied().unwrap_or(target)
-                    };
-                    let last = target_of(class);
-                    let mut others: Vec<(BasicBlock, Vec<VariantIdx>)> = Vec::new();
-                    for variant in adt.variants().indices().filter(|&v| v != class) {
-                        let target = target_of(variant);
-                        if !reached(target) || target == last {
-                            continue;
-                        }
-                        match others.iter_mut().find(|(b, _)| *b == target) {
-                            Some((_, variants)) => variants.push(variant),
-                            None => others.push((target, vec![variant])),
-                        }
-                    }
-                    // In the order the program wrote their arms.
-                    others.sort_by_key(|&(b, _)| written_at(state.body, b));
-                    grouped = (others.into_iter())
-                        .map(|(target, variants)| {
-                            let test = self.mir_variant_test(
-                                (enum_value.clone(), held.as_ref()),
-                                *enum_ty,
-                                *adt,
-                                &variants,
-                                &[],
-                                (*present, *none),
-                            );
-                            (test, target, Vec::new())
-                        })
-                        .collect();
-                    otherwise = Some(last).filter(|&b| reached(b));
-                }
-                self.telling_arms.set(telling);
-                // The values each block's test is of, which tell what it tests.
-                let told: Vec<(BasicBlock, Vec<u128>)> =
-                    (grouped.iter()).map(|(_, b, values)| (*b, values.clone())).collect();
-                let mut cases: Vec<(Expr, BasicBlock)> =
-                    grouped.into_iter().map(|(test, target, _)| (test, target)).collect();
-                // Each case tested, an enum's `match`'s: its arms in the order
-                // the program wrote them, not its variants'.
-                if otherwise.is_none()
-                    && let Some(at) = (cases.iter())
-                        .map(|&(_, b)| written_at(state.body, b))
-                        .collect::<Option<Vec<_>>>()
-                {
-                    let mut ordered: Vec<_> = at.into_iter().zip(std::mem::take(&mut cases)).collect();
-                    ordered.sort_by_key(|&(at, _)| at);
-                    cases = ordered.into_iter().map(|(_, case)| case).collect();
-                }
-                // `if c { a } else { b }`, MIR's test of `false`, `!c`, first:
-                // the program's, `c`, its branch `a` first. Not `if !c { a }
-                // else { b }`'s, which MIR tests as `c`, `a` its `false`.
-                if ty.is_bool()
-                    && targets.iter().all(|(value, _)| value == 0)
-                    && let [(test, target)] = cases.as_mut_slice()
-                    && let Some(yes) = otherwise
-                    && !matches!((written_past_gotos(state.body, *target), written_past_gotos(state.body, yes)), (Some(no), Some(yes)) if no < yes)
-                    // Not an `Option<bool>`'s `Some(false)` alone, `o === false`.
-                    && (!self.option_bool_payload(tested.as_deref())
-                        || !matches!(&test.kind, js::ExprKind::Binary(Op::Eq, ..))
-                        || (self.frame.facts.constant_patterns).tests(
-                            self.tcx,
-                            &crate::lower::body_queries::PatternValue::Bits(ty, 1),
-                            span,
-                            tested.as_deref(),
-                        ))
-                {
-                    // Of an `Option<bool>`'s `Some(false)`, `o === false`, its
-                    // `Some(true)`'s, that value exactly, `o === true`.
-                    *test = match std::mem::replace(test, Expr::taken()) {
-                        Expr {
-                            kind: js::ExprKind::Binary(Op::Eq, payload, _),
-                            ..
-                        } if self.option_bool_payload(tested.as_deref()) => {
-                            Expr::bin(Op::Eq, *payload, Expr::bool(true))
-                        }
-                        test => test.negated_test(),
-                    };
-                    otherwise = Some(std::mem::replace(target, yes));
-                }
-                let mut chain_panics = otherwise.is_some_and(|b| panics(state.body, b));
-                let mut chain: Option<Vec<Stmt>> = match otherwise {
-                    Some(b) => Some(self.mir_branch(state, block, b)?),
-                    None => None,
-                };
-                // Without an `otherwise`, the last case is what's left.
-                if chain.is_none()
-                    && let Some((_, last)) = cases.pop()
-                {
-                    chain_panics = panics(state.body, last);
-                    chain = Some(self.mir_branch(state, block, last)?);
-                }
-                // An enum's arms that each do the same JS, `match source {
-                // Document(s) => s.firstChild, Element(s) => s.firstChild }`'s:
-                // that JS once, the first arm's, and no test of the variant
-                // (rd687). Rust's read of a discriminant does nothing; JS's
-                // test of it may throw where Rust runs on, an `instanceof` of
-                // a class the host lacks, so it isn't made where nothing
-                // tells the arms apart.
-                let mut alike = match &subject {
-                    Value::Discriminant(..) if !cases.is_empty() => chain.clone(),
-                    _ => None,
-                };
-                let mut tested_blocks: Vec<BasicBlock> = Vec::new();
-                for (test, target) in cases.into_iter().rev() {
-                    tested_blocks.push(target);
-                    let then = self.mir_branch(state, block, target)?;
-                    alike = alike.filter(|first| js::stmts_same(first, &then)).map(|_| then.clone());
-                    let branches_panic = [panics(state.body, target), chain_panics];
-                    // Its test where its arm's pattern is, a `match`'s, or its
-                    // `if`, which its `if` takes once it's tidied (`tidy`): till
-                    // then, as tidying reads it, where it's tested.
-                    let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));
-                    let test = Expr {
-                        span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),
-                        ..test
-                    };
-                    chain = Some(early_exit(test, then, chain, branches_panic, self.js_span(span)));
-                    chain_panics = false;
-                }
-                // Arms that differ, told by `instanceof` of a JS object type's
-                // class, `false` of another realm's object and a
-                // ReferenceError where the host lacks the global: refused
-                // (#555).
-                if alike.is_none()
-                    && let Value::Discriminant(_, enum_ty, ..) = &subject
-                    && let ty::Adt(adt, _) = enum_ty.kind()
-                    && bindings::is_untagged(self.tcx, adt.did())
-                {
-                    let values = (told.iter())
-                        .filter(|(b, _)| tested_blocks.contains(b))
-                        .flat_map(|(_, values)| values);
-                    let variants: Vec<&ty::VariantDef> = values
-                        .filter_map(|&value| adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
-                        .map(|(variant, _)| adt.variant(variant))
-                        .collect();
-                    if let Some(refused) = self.untold_class(*enum_ty, &variants) {
-                        return Err(crate::lower::refusal::error(self.tcx, span, refused));
-                    }
-                }
-                out.extend(alike.or(chain).unwrap_or_default());
             }
             TerminatorKind::Assert { target, .. }
                 if let Some(check) = self.assert_check(state.body, state.facts.drops(), terminator) =>
@@ -1008,6 +805,441 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Folding ─────────────────────────────────────────────────────────
 
+    /// A switch's arms, a chain of their tests, each arm's branch: of `only`
+    /// those where it's given, the others left out as unreachable ones are
+    /// (`switch_split`, #2144).
+    fn switch_chain(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (block, span): (BasicBlock, Span),
+        (discr, targets): (&Operand<'tcx>, &mir::SwitchTargets),
+        (subject, held): (&Value<'tcx>, Option<&Expr>),
+        only: Option<&IndexSet<BasicBlock>>,
+    ) -> R<Vec<Stmt>> {
+        let mut out = Vec::new();
+        let body = state.body;
+        let ty = discr.ty(&body.local_decls, self.tcx);
+        let reached = |b: BasicBlock| !is_unreachable(body, b) && only.is_none_or(|o| o.contains(&b));
+        // Where in what a pattern matches it is, which names its
+        // constants (`body_queries::pattern_places`).
+        let tested =
+            (discr.place()).map(|place| crate::lower::body_queries::pattern_places(self.tcx, state.body, place));
+        let mut cases: Vec<(Expr, BasicBlock, u128)> = Vec::new();
+        let mut always = None;
+        // Its tests are made, and refused below where they'd tell a
+        // class by `instanceof` and its arms differ (#555).
+        let telling = self.telling_arms.replace(true);
+        // Past a guard that holds, to its arm (`held_arms`).
+        let past = |b: BasicBlock| state.facts.held_arms().get(&b).copied().unwrap_or(b);
+        for (value, target) in targets.iter().map(|(value, target)| (value, past(target))) {
+            if reached(target) {
+                let test = self.switch_test(subject, ty, value, span, (tested.as_deref(), held))?;
+                // A test that's a constant: its branch alone, or none.
+                match test.kind {
+                    js::ExprKind::Bool(false) => {}
+                    js::ExprKind::Bool(true) => always = always.or(Some(target)),
+                    _ => cases.push((test, target, value)),
+                }
+            }
+        }
+        self.telling_arms.set(telling);
+        if let Some(target) = always {
+            out.extend(self.mir_branch(state, block, target)?);
+            return Ok(out);
+        }
+        let mut otherwise = Some(past(targets.otherwise())).filter(|&b| reached(b));
+        self.settle_before_branches(state, block, &mut out);
+        let telling = self.telling_arms.replace(true);
+        // Values that go to one block, an or-pattern's `'+' | '-'`:
+        // one test of either, the block once, as the program wrote it.
+        let mut grouped: Vec<(Expr, BasicBlock, Vec<u128>)> = Vec::new();
+        for (test, target, value) in cases {
+            match grouped.iter_mut().find(|(_, t, _)| *t == target) {
+                Some((either, _, values)) => {
+                    *either = Expr::bin(Op::Or, std::mem::replace(either, Expr::taken()), test);
+                    values.push(value);
+                }
+                None => grouped.push((test, target, vec![value])),
+            }
+        }
+        // Of an enum's variants, the test that it's one of them, as
+        // its owner tells: an untagged one's, what they are together,
+        // `Object | Array`'s `typeof value === "object"` (ADR 0668).
+        if let Value::Discriminant(enum_value, enum_ty, present, none) = &subject
+            && let ty::Adt(adt, _) = enum_ty.kind()
+        {
+            for (test, target, values) in grouped.iter_mut().filter(|(.., values)| values.len() > 1) {
+                let mut variants: Vec<VariantIdx> = (values.iter())
+                    .filter_map(|&value| adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
+                    .map(|(variant, _)| variant)
+                    .collect();
+                // In the order its arm's pattern names them, as the
+                // program wrote them, not as the enum declares them,
+                // each where it's written.
+                let written = written_at(state.body, *target).map_or(Vec::new(), |at| self.written_variants(span, at));
+                variants.sort_by_key(|v| written.iter().position(|(w, _)| w == v).unwrap_or(usize::MAX));
+                let spans: Vec<js::Span> = (variants.iter())
+                    .map(|v| {
+                        written
+                            .iter()
+                            .find(|(w, _)| w == v)
+                            .map_or(js::Span::NONE, |&(_, at)| self.js_span(at))
+                    })
+                    .collect();
+                *test = self.mir_variant_test(
+                    (enum_value.clone(), held),
+                    *enum_ty,
+                    *adt,
+                    &variants,
+                    &spans,
+                    (*present, *none),
+                );
+            }
+        }
+        // An untagged enum of one class and kinds JS tells by their
+        // value, a form entry's `File | string`: the class's branch
+        // last, what's left, and each other's tested, so no
+        // `instanceof` of a global the host may lack runs (rd506).
+        if let Value::Discriminant(enum_value, enum_ty, present, none) = &subject
+            && let ty::Adt(adt, args) = enum_ty.kind()
+            && bindings::is_untagged(self.tcx, adt.did())
+            && let Some(class) = self.recognition().lone_class_variant(*adt, args)
+        {
+            let target_of = |variant: VariantIdx| {
+                let target = targets.target_for_value(adt.discriminant_for_variant(self.tcx, variant).val);
+                state.facts.held_arms().get(&target).copied().unwrap_or(target)
+            };
+            let last = target_of(class);
+            let mut others: Vec<(BasicBlock, Vec<VariantIdx>)> = Vec::new();
+            for variant in adt.variants().indices().filter(|&v| v != class) {
+                let target = target_of(variant);
+                if !reached(target) || target == last {
+                    continue;
+                }
+                match others.iter_mut().find(|(b, _)| *b == target) {
+                    Some((_, variants)) => variants.push(variant),
+                    None => others.push((target, vec![variant])),
+                }
+            }
+            // In the order the program wrote their arms.
+            others.sort_by_key(|&(b, _)| written_at(state.body, b));
+            grouped = (others.into_iter())
+                .map(|(target, variants)| {
+                    let test = self.mir_variant_test(
+                        (enum_value.clone(), held),
+                        *enum_ty,
+                        *adt,
+                        &variants,
+                        &[],
+                        (*present, *none),
+                    );
+                    (test, target, Vec::new())
+                })
+                .collect();
+            otherwise = Some(last).filter(|&b| reached(b));
+        }
+        self.telling_arms.set(telling);
+        // The values each block's test is of, which tell what it tests.
+        let told: Vec<(BasicBlock, Vec<u128>)> = (grouped.iter()).map(|(_, b, values)| (*b, values.clone())).collect();
+        let mut cases: Vec<(Expr, BasicBlock)> = grouped.into_iter().map(|(test, target, _)| (test, target)).collect();
+        // Each case tested, an enum's `match`'s: its arms in the order
+        // the program wrote them, not its variants'.
+        if otherwise.is_none()
+            && let Some(at) = (cases.iter())
+                .map(|&(_, b)| written_at(state.body, b))
+                .collect::<Option<Vec<_>>>()
+        {
+            let mut ordered: Vec<_> = at.into_iter().zip(std::mem::take(&mut cases)).collect();
+            ordered.sort_by_key(|&(at, _)| at);
+            cases = ordered.into_iter().map(|(_, case)| case).collect();
+        }
+        // `if c { a } else { b }`, MIR's test of `false`, `!c`, first:
+        // the program's, `c`, its branch `a` first. Not `if !c { a }
+        // else { b }`'s, which MIR tests as `c`, `a` its `false`.
+        if ty.is_bool()
+            && targets.iter().all(|(value, _)| value == 0)
+            && let [(test, target)] = cases.as_mut_slice()
+            && let Some(yes) = otherwise
+            && !matches!((written_past_gotos(state.body, *target), written_past_gotos(state.body, yes)), (Some(no), Some(yes)) if no < yes)
+            // Not an `Option<bool>`'s `Some(false)` alone, `o === false`.
+            && (!self.option_bool_payload(tested.as_deref())
+                || !matches!(&test.kind, js::ExprKind::Binary(Op::Eq, ..))
+                || (self.frame.facts.constant_patterns).tests(
+                    self.tcx,
+                    &crate::lower::body_queries::PatternValue::Bits(ty, 1),
+                    span,
+                    tested.as_deref(),
+                ))
+        {
+            // Of an `Option<bool>`'s `Some(false)`, `o === false`, its
+            // `Some(true)`'s, that value exactly, `o === true`.
+            *test = match std::mem::replace(test, Expr::taken()) {
+                Expr {
+                    kind: js::ExprKind::Binary(Op::Eq, payload, _),
+                    ..
+                } if self.option_bool_payload(tested.as_deref()) => Expr::bin(Op::Eq, *payload, Expr::bool(true)),
+                test => test.negated_test(),
+            };
+            otherwise = Some(std::mem::replace(target, yes));
+        }
+        let mut chain_panics = otherwise.is_some_and(|b| panics(state.body, b));
+        let mut chain: Option<Vec<Stmt>> = match otherwise {
+            Some(b) => Some(self.mir_branch(state, block, b)?),
+            None => None,
+        };
+        // Without an `otherwise`, the last case is what's left.
+        if chain.is_none()
+            && let Some((_, last)) = cases.pop()
+        {
+            chain_panics = panics(state.body, last);
+            chain = Some(self.mir_branch(state, block, last)?);
+        }
+        // An enum's arms that each do the same JS, `match source {
+        // Document(s) => s.firstChild, Element(s) => s.firstChild }`'s:
+        // that JS once, the first arm's, and no test of the variant
+        // (rd687). Rust's read of a discriminant does nothing; JS's
+        // test of it may throw where Rust runs on, an `instanceof` of
+        // a class the host lacks, so it isn't made where nothing
+        // tells the arms apart.
+        let mut alike = match &subject {
+            Value::Discriminant(..) if !cases.is_empty() => chain.clone(),
+            _ => None,
+        };
+        let mut tested_blocks: Vec<BasicBlock> = Vec::new();
+        for (test, target) in cases.into_iter().rev() {
+            tested_blocks.push(target);
+            let then = self.mir_branch(state, block, target)?;
+            alike = alike.filter(|first| js::stmts_same(first, &then)).map(|_| then.clone());
+            let branches_panic = [panics(state.body, target), chain_panics];
+            // Its test where its arm's pattern is, a `match`'s, or its
+            // `if`, which its `if` takes once it's tidied (`tidy`): till
+            // then, as tidying reads it, where it's tested.
+            let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));
+            let test = Expr {
+                span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),
+                ..test
+            };
+            chain = Some(early_exit(test, then, chain, branches_panic, self.js_span(span)));
+            chain_panics = false;
+        }
+        // Arms that differ, told by `instanceof` of a JS object type's
+        // class, `false` of another realm's object and a
+        // ReferenceError where the host lacks the global: refused
+        // (#555).
+        if alike.is_none()
+            && let Value::Discriminant(_, enum_ty, ..) = &subject
+            && let ty::Adt(adt, _) = enum_ty.kind()
+            && bindings::is_untagged(self.tcx, adt.did())
+        {
+            let values = (told.iter())
+                .filter(|(b, _)| tested_blocks.contains(b))
+                .flat_map(|(_, values)| values);
+            let variants: Vec<&ty::VariantDef> = values
+                .filter_map(|&value| adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
+                .map(|(variant, _)| adt.variant(variant))
+                .collect();
+            if let Some(refused) = self.untold_class(*enum_ty, &variants) {
+                return Err(crate::lower::refusal::error(self.tcx, span, refused));
+            }
+        }
+        out.extend(alike.or(chain).unwrap_or_default());
+        Ok(out)
+    }
+
+    /// A switch whose arms `mir_within` split (`split_of`, #2144): one test
+    /// that it's one of the `joining` arms', whose branch is their chain in
+    /// a block `merge` ends, then the code of `merge`, which they all go on
+    /// to; else the chain of the others, which go on past it, so none of
+    /// them is a `break` out of a block around the switch.
+    fn switch_split(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (block, span): (BasicBlock, Span),
+        (discr, targets): (&Operand<'tcx>, &mir::SwitchTargets),
+        (subject, held): (&Value<'tcx>, Option<&Expr>),
+        (merge, joining): (BasicBlock, IndexSet<BasicBlock>),
+    ) -> R<Vec<Stmt>> {
+        let ty = discr.ty(&state.body.local_decls, self.tcx);
+        let arms_held = state.facts.held_arms().clone();
+        let past = |b: BasicBlock| arms_held.get(&b).copied().unwrap_or(b);
+        let leaving: IndexSet<BasicBlock> = (targets.all_targets().iter().copied())
+            .map(past)
+            .filter(|b| !joining.contains(b))
+            .collect();
+        let values: Vec<u128> = (targets.iter())
+            .filter(|&(_, target)| joining.contains(&past(target)))
+            .map(|(value, _)| value)
+            .collect();
+        let test = match subject {
+            Value::Discriminant(enum_value, enum_ty, present, none) => {
+                let ty::Adt(adt, _) = enum_ty.kind() else {
+                    unreachable!("`split_of` splits an enum's alone")
+                };
+                let variants: Vec<VariantIdx> = (values.iter())
+                    .filter_map(|&value| adt.discriminants(self.tcx).find(|(_, d)| d.val == value))
+                    .map(|(variant, _)| variant)
+                    .collect();
+                self.mir_variant_test(
+                    (enum_value.clone(), held),
+                    *enum_ty,
+                    *adt,
+                    &variants,
+                    &[],
+                    (*present, *none),
+                )
+            }
+            _ => {
+                let mut tests = Vec::new();
+                for &value in &values {
+                    tests.push(self.switch_test(subject, ty, value, span, (None, held))?);
+                }
+                (tests.into_iter())
+                    .reduce(|either, test| Expr::bin(Op::Or, either, test))
+                    .expect("`split_of` splits where an arm joins")
+            }
+        };
+        let mut within = self.switch_chain(state, (block, span), (discr, targets), (subject, held), Some(&joining))?;
+        self.flush(state, &mut within)?;
+        let at = (state.left.get(&merge)).map_or(js::Span::NONE, |&b| state.facts.jumps().blocks[b].span);
+        let mut then = vec![StmtKind::Labeled(label(merge), within).at(at)];
+        then.extend(self.mir_tree(state, merge)?);
+        let otherwise = self.switch_chain(state, (block, span), (discr, targets), (subject, held), Some(&leaving))?;
+        Ok(vec![StmtKind::If(test, then, Some(otherwise)).at(self.js_span(span))])
+    }
+
+    /// Tidy's copy of a merge into each arm, which `split_of` counts on
+    /// where it leaves a switch unsplit (a merge of assignments alone):
+    /// that the function's JS keeps no label of that switch's merge, which
+    /// its arms would break to were it not written in each (where they go
+    /// on to may be another jump's, a `?`'s). In every debug build,
+    /// the compiler the tests run, so a change of tidy's copy rule
+    /// (`decisions`' `SHARED`, `copied_once`) that `split_of`'s doesn't
+    /// follow fails where it differs (#2144).
+    pub(super) fn split_left_to_tidy(&self, state: &State<'_, 'tcx>, body: &[Stmt]) {
+        if !cfg!(debug_assertions) || state.split_declined.is_empty() || self.krate.tidy_until.is_some() {
+            return;
+        }
+        let mut labeled = None;
+        js::each_list(body, &mut |list| {
+            for stmt in list {
+                if let StmtKind::Labeled(name, inner) = &stmt.kind
+                    && state.split_declined.contains(name)
+                    && !broken_past_blocks(inner, name)
+                {
+                    labeled = Some(name.clone());
+                }
+            }
+        });
+        if let Some(name) = labeled {
+            let function = self.tcx.def_path_str(state.body.source.def_id());
+            panic!(
+                "{function}'s {name:?}: a switch `split_of` left unsplit, its merge of assignments alone for tidy to write in each arm, kept a label MIR made: tidy's copy rule and `split_of`'s disagree (#2144)"
+            );
+        }
+    }
+
+    /// Of `block`, ending in a switch whose first merge is `merge`, alone,
+    /// the arms that go on to it, where the others go on past it to where
+    /// `merge` goes on to: so its arms are one test of those, whose branch
+    /// holds `merge`, and the others their `else`, as a person writes it,
+    /// not `merge`'s code after a chain the others `break` out of (#2144):
+    /// where `merge` runs a call or a drop, as one of assignments alone is
+    /// written in each arm, which needs no label.
+    /// Only of a switch whose subject is read where it's tested twice
+    /// without running code: an enum local's discriminant, of a type no JS
+    /// gives or makes, whose property a getter might answer
+    /// (`fields_read_once`), or whose tag is held once where it may
+    /// (`tag_held`, #2208).
+    fn split_of(
+        &self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        merge: BasicBlock,
+    ) -> Option<IndexSet<BasicBlock>> {
+        let body = state.body;
+        if state.facts.payload_tests().contains_key(&block) {
+            return None;
+        }
+        let data = &body.basic_blocks[block];
+        let TerminatorKind::SwitchInt { discr, targets } = &data.terminator().kind else {
+            return None;
+        };
+        let place = discr.place()?.as_local()?;
+        let read_alone = match (data.statements.iter()).rev().find_map(|s| match &s.kind {
+            StatementKind::Assign(assign) if assign.0.as_local() == Some(place) => Some(&assign.1),
+            _ => None,
+        }) {
+            Some(Rvalue::Discriminant(of)) => of.as_local().is_some_and(|of| {
+                let ty = body.local_decls[of].ty;
+                // Its tag read where no getter may answer it, or held once
+                // where one may (`tag_held`, #2208), so each test reads
+                // what runs no code.
+                matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
+                    && !bindings::is_untagged(self.tcx, adt.did())
+                    && (!self.fields_read_once(ty) || self.tag_held(ty, *adt)))
+            }),
+            // Not an integer's, whose arms are a JS `switch`'s cases (ADR
+            // 0629), which needs no label to skip a body they share.
+            _ => false,
+        };
+        if !read_alone {
+            return None;
+        }
+        let graph = state.facts.graph();
+        // What a block's arm reaches in `block`'s tree, and where it goes on
+        // to past it.
+        let region = |from: BasicBlock| {
+            let (mut inside, mut exits) = (IndexSet::default(), IndexSet::default());
+            let mut work = vec![from];
+            while let Some(b) = work.pop() {
+                if is_unreachable(body, b) {
+                    continue;
+                }
+                if !graph.dominates(block, b) {
+                    exits.insert(b);
+                } else if inside.insert(b) {
+                    work.extend(graph.succ[b.as_usize()].iter().copied());
+                }
+            }
+            (inside, exits)
+        };
+        let past = |b: BasicBlock| state.facts.held_arms().get(&b).copied().unwrap_or(b);
+        let arms: IndexSet<BasicBlock> = (targets.all_targets().iter().copied())
+            .map(past)
+            .filter(|&b| !is_unreachable(body, b))
+            .collect();
+        let (shared, onward) = region(merge);
+        // A merge of assignments alone, each block going on by a `goto` or a
+        // drop that drops nothing JS sees, is written in place in each arm,
+        // as tidy folds it, no label needed: only one whose code runs a
+        // call or a drop JS sees, written once after the chain, needs the
+        // split (#2144).
+        let does_nothing = |b: BasicBlock| match body.basic_blocks[b].terminator().kind {
+            TerminatorKind::Goto { .. } => true,
+            TerminatorKind::Drop { place, .. } => !state.facts.drops().is_some_and(|e| e.drops(b, place)),
+            _ => false,
+        };
+        if shared.iter().all(|&b| does_nothing(b)) {
+            state.split_declined.push(label(merge));
+            return None;
+        }
+        let (mut joining, mut leaving) = (IndexSet::default(), Vec::new());
+        for &arm in &arms {
+            let (inside, exits) = region(arm);
+            match inside.contains(&merge) {
+                true => drop(joining.insert(arm)),
+                false => leaving.push(exits),
+            }
+        }
+        let otherwise = past(targets.otherwise());
+        (!joining.is_empty()
+            && !leaving.is_empty()
+            && !onward.is_empty()
+            && leaving.iter().all(|exits| *exits == onward)
+            && (is_unreachable(body, otherwise) || !joining.contains(&otherwise)))
+        .then_some(joining)
+    }
+
     /// What a failed check says, as Rust's panic does.
     fn assert_message(
         &mut self,
@@ -1083,4 +1315,28 @@ fn outlives<'tcx>(state: &State<'_, 'tcx>, place: &Expr, is_guard: impl Fn(Ty<'t
             // A guard, `borrow_mut()`'s, is its cell's place, as a reference
             // is to what it reaches (#1021).
             && !is_guard(state.body.local_decls[local].ty)))
+}
+
+/// Whether a `break` of `label` in `stmts` is inside another block or a
+/// loop in them: one tidy's copy into an arm doesn't reach, as it copies a
+/// merge into the arms that end in its `break` (`decisions`), not past a
+/// block between, num-traits' `from_str_radix`, whose arms break to the
+/// merge from inside a block of the `match` before (#2144, #2215).
+fn broken_past_blocks(stmts: &[Stmt], label: &js::Name) -> bool {
+    let breaks = |list: &[Stmt]| {
+        list.iter()
+            .any(|s| matches!(&s.kind, StmtKind::Break(Some(l)) if l == label))
+    };
+    let mut past = false;
+    js::each_list(stmts, &mut |list| {
+        for stmt in list {
+            if matches!(
+                stmt.kind,
+                StmtKind::Labeled(..) | StmtKind::While { .. } | StmtKind::For { .. } | StmtKind::ForOf { .. }
+            ) {
+                js::each_list(std::slice::from_ref(stmt), &mut |inner| past |= breaks(inner));
+            }
+        }
+    });
+    past
 }

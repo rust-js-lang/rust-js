@@ -7,7 +7,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -282,4 +282,48 @@ pub fn grown(kind: u32) -> f64 {
   expect(js.match(/shape\.TAG === "Circle"/g)?.length).toBe(2);
   const { grown } = await import(join(dir, "lib.js"));
   expect([0, 1, 2, 3].map(grown)).toEqual([3 + 3, 4 + 1, -4 + 4, 0 + 1]);
+});
+
+// A `match` inside an `if` whose arms that meet share a body and another
+// goes on past it: one test of those that meet, whose branch holds the
+// body, the other its `else`, no label MIR made (#2144). Of std's `Bound`
+// given to a `pub fn`, whose tag a getter may answer, the tag read once
+// first, which the tests read (#2208).
+test("a switch's arms that meet are one test, where another goes on past them", () => {
+  const dir = fixture("switch-split");
+  const out = join(dir, "case.js");
+  run([compiler, join(root, "test", "corpus", "or_pattern_arm_skips_the_shared_body.rs"), "-o", out, "--", "--edition=2024"]);
+  const js = readFileSync(out, "utf8");
+  expect(js).not.toMatch(/\bbb\d+:/);
+  expect(js).toContain('if (mapped.TAG === "Single" || mapped.TAG === "Ambiguous") {');
+  expect(js).toContain("const kind = bound.TAG;\n");
+  expect(js).toContain('if (kind === "Included" || kind === "Excluded") {');
+});
+
+// A merge of assignments alone needs no split: tidy writes it in each arm,
+// `if (take && mapped.TAG === "Single") { … }`, no label (#2144).
+// Where the arms of a switch left unsplit meet at its merge from inside a
+// block of the `match` before, nested `if`s deep, tidy copies the merge
+// into none of them, and the label stays, as std's of #2215 do: no
+// disagreement of tidy's copy rule and `split_of`'s, which the debug check
+// held num-traits' `from_str_radix` to, crashing the crate corpus (#2144).
+test("a switch whose arms meet at its merge past another block compiles, its label tidy's to keep", async () => {
+  const dir = fixture("switch-split-past-a-block");
+  const out = join(dir, "case.js");
+  run([compiler, join(root, "test", "fixtures", "float_from_str_radix.rs"), "-o", out, "--", "--edition=2024", "--crate-type=lib"]);
+  const { F } = await import(out);
+  expect([F.fromStrRadix("-a.8p2", 16), F.fromStrRadix("1.5", 16), F.fromStrRadix("", 2)]).toEqual([
+    { TAG: "Ok", _0: -42 },
+    { TAG: "Ok", _0: 1.3125 },
+    { TAG: "Err", _0: { kind: "Empty" } },
+  ]);
+});
+
+test("a switch's arms that meet at assignments alone keep tidy's chain", () => {
+  const dir = fixture("switch-split-assignments");
+  const out = join(dir, "case.js");
+  run([compiler, join(root, "test", "corpus", "or_pattern_part_moves.rs"), "-o", out, "--", "--edition=2024"]);
+  const js = readFileSync(out, "utf8");
+  expect(js).not.toMatch(/\bbb\d+:/);
+  expect(js).toContain('if (take && mapped.TAG === "Single") {');
 });

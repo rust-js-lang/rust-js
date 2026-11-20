@@ -476,4 +476,12 @@ export const mutations: Mutation[] = [
     replace: "",
     unitTests: "lower::mir::tidy::decisions::tests::a_then_alike_what_follows_goes_only_of_mirs_test_that_does_nothing",
   },
+  {
+    name: "tidy-shares-nothing-split-trusts",
+    breaks: "tidy copies no statement two arms share into each, so a switch `split_of` leaves unsplit, trusting tidy with its merge of assignments, keeps a label MIR made, which `split_left_to_tidy` refuses (#2144)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    if shared.len() > SHARED\n",
+    replace: "    if shared.len() > 0\n",
+    tests: ["test/lowering-or-patterns.test.ts", "-t", "meet at assignments alone"],
+  },
 ];
