@@ -249,6 +249,33 @@ console.log(JSON.stringify([lib.hasBadMapPolyfill(), lib.options(), ["null", "ze
   );
 });
 
+// A `Map`'s `set(key, value: V)` takes `null` for `None` (ADR 0884,
+// amended), the bindings owner's answer, `takes_nullable`: so what MIR
+// says is `null` or a value already, a `Some(value)` of a reference, is
+// given as it is, as React's Fizz instruction set gives
+// `appearingViewTransitions.set(name, appearingElement)`, not `value ??
+// null`; `null_params` answered only the parameters a binding names, so
+// MIR wasn't asked of a type parameter's.
+test("a Map's value MIR says is null or a value is set as it is", () => {
+  const { dir, js } = compiled("js-map-set-given", `use js::{Dict, Map};
+
+pub fn kept(values: Vec<&'static Dict<u32>>) -> u32 {
+    let map: &Map<str, Option<&Dict<u32>>> = js::map::new(None);
+    for value in values {
+        map.set("last", Some(value));
+    }
+    map.set("none", None);
+    map.size()
+}
+`);
+  expect(js).toContain('    map.set("last", value);\n');
+  expect(js).toContain('  map.set("none", null);\n');
+  const out = ran(dir, `const lib = await import("./lib.js");
+console.log(JSON.stringify([lib.kept([{}, {}]), lib.kept([])]));
+`);
+  expect(out).toBe("[2,1]\n");
+});
+
 // #443 (rd275): a map of any value, React's `Cache.data: Map<() => mixed,
 // mixed>`, `Map<K, Option<&Unknown>>`, holds what it's given as it is: a
 // `None` of a value of any shape is `undefined` or `null`, each its own,

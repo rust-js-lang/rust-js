@@ -283,3 +283,25 @@ A nested `Option` still uses the existing rules above for values that
 can themselves be undefined. This follows ADR 0262's first case.
 The regression in `test/js-collections.test.ts` covers both constructors
 and checks a missing key, a JavaScript null, and a stored object.
+
+## Amendment: a map's `set` is asked what MIR says it's given (2026-11-21, #2112)
+
+`representation::null_params`, the parameters a call is asked of
+(`stored_given`) for what it gives a parameter that takes `null`,
+answered only those a binding's `#[rust_js::nullable(..)]` names, not a
+type parameter it names, `V` of `Map<K, V>::set(&self, key, value: V)`.
+So `set`'s argument wasn't asked, and was written `value ?? null` unless a
+fact on the value said otherwise: React's Fizz instruction set wrote
+`appearingViewTransitions.set(name, appearingElement ?? null)` of a
+`Some(appearing_element)`, a reference, never `undefined`. Of a binding,
+`null_params` is now the bindings owner's answer, `takes_nullable`'s,
+the one answer of which parameters take `null`: what MIR says is `null` or
+a value already is given as it is, `map.set(name, appearingElement)`, as
+upstream's. A value of any shape's `set` (above) still gives what it's
+given as it is: its `none_form` is asked of its payload, as before.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)'s first): no
+observable difference; `?? null` of what's never `undefined` is the value.
+Held by `test/js-collections.test.ts`'s "a Map's value MIR says is null or
+a value is set as it is" and mutation `binding-type-param-not-null-param`
+(`representation/nones.ts`).

@@ -212,16 +212,17 @@ pub(in crate::lower) fn none_form<'tcx>(tcx: TyCtxt<'tcx>, place: NonePlace<'_, 
     }
 }
 
-/// The indexes of `def_id`'s parameters its `#[rust_js::nullable(..)]`
-/// names, each `NonePlace::Param`'s `null` (ADR 0861): of a function
-/// that names none, none, asking nothing of its parameters.
+/// The indexes of `def_id`'s parameters that take `null` for `None`, each
+/// `NonePlace::Param`'s `null` (ADR 0861): those its
+/// `#[rust_js::nullable(..)]` names, and of a binding, the owner's
+/// answer, `bindings::takes_nullable`'s, a type parameter it names too,
+/// `set(key, value: V)` of a `Map<K, V>` (ADR 0884, amended): of a
+/// function that names none, none, asking nothing of its parameters.
 pub(in crate::lower) fn null_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<usize> {
-    let names = bindings::nullable_params(tcx, def_id);
-    if names.is_empty() {
+    if bindings::nullable_params(tcx, def_id).is_empty() && !bindings::is_binding(tcx, def_id) {
         return Vec::new();
     }
-    (tcx.fn_arg_idents(def_id).iter().enumerate())
-        .filter(|(_, ident)| ident.is_some_and(|ident| names.contains(&ident.name)))
-        .map(|(i, _)| i)
+    (0..tcx.fn_arg_idents(def_id).len())
+        .filter(|&i| bindings::takes_nullable(tcx, def_id, i))
         .collect()
 }

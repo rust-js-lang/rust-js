@@ -98,7 +98,7 @@ function main() {
   );
 
   const nested = new Map();
-  nested.set("some none", $some(undefined) ?? null);
+  nested.set("some none", $some(undefined));
   nested.set("none", null);
   nested.set("three", 3);
   for (const key of ["some none", "none", "three", "absent"]) {

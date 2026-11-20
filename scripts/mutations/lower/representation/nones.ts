@@ -6,6 +6,14 @@ const nones = ["test/corpus.test.ts", "-t", "null|none|nested_option|optional"];
 
 export const mutations: Mutation[] = [
   {
+    name: "binding-type-param-not-null-param",
+    breaks: "a binding's parameter of a type parameter that takes `null`, a `Map`'s `set(key, value: V)` (ADR 0884, amended), isn't one of `null_params`, so MIR isn't asked whether what it's given is `null` or a value, and `map.set(key, value)` is `value ?? null`",
+    file: "src/lower/representation/nones.rs",
+    find: "    if bindings::nullable_params(tcx, def_id).is_empty() && !bindings::is_binding(tcx, def_id) {\n",
+    replace: "    if bindings::nullable_params(tcx, def_id).is_empty() {\n",
+    tests: ["test/js-collections.test.ts", "-t", "set as it is"],
+  },
+  {
     name: "nullable-place-stores-undefined",
     breaks: "a `#[rust_js::nullable]` place stores what's written as it's given, a `None` `undefined`, which its reads' `=== null` miss (#819)",
     file: "src/lower/representation/nones.rs",
