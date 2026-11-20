@@ -370,7 +370,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Does the writer being lowered apply a placeholder's options to what
     /// it shows (ADR 0058): the crate's do, or it's of a type a library's
     /// function shows in hex (#1331)?
-    pub(super) fn format_options(&self) -> bool {
+    fn format_options(&self) -> bool {
         self.krate.format_options || self.writing.shown.hex
     }
 

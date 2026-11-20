@@ -14,7 +14,7 @@ use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// May the body being lowered run while a line is formatted?
-    pub(in crate::lower) fn runs_while_formatting(&self) -> bool {
+    fn runs_while_formatting(&self) -> bool {
         self.krate.prints.runs_while_formatting(self.item)
     }
 

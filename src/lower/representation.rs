@@ -1270,7 +1270,7 @@ pub(super) fn symbol_of_key(read: &Expr) -> Option<&Expr> {
 }
 
 /// A `char` constant (ADR 0034).
-pub(super) fn char_value(value: ty::Value<'_>) -> Option<char> {
+fn char_value(value: ty::Value<'_>) -> Option<char> {
     if !value.ty.is_char() {
         return None;
     }

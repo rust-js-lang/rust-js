@@ -79,6 +79,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `id` takes its caller's location, the crate's or a
     /// library's (`takes_location`).
+    // helper: delegates to its owner's answer (#2172)
     pub(in crate::lower) fn takes_caller_location(&self, id: rustc_span::def_id::DefId) -> bool {
         takes_location(self.krate.caller_locations, self.krate.foreign, id)
     }

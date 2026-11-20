@@ -443,6 +443,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `ty`, a reference, a `Box` or a `Pin`, has an impl of the
     /// formatting trait `kind` shows by of its own, not std's that passes it
     /// on to what it holds (#1798).
+    // helper: delegates to its owner's answer (#2172)
     pub(in crate::lower) fn formats_itself(&self, kind: Std, ty: Ty<'tcx>) -> bool {
         (self.fmt_trait_of(kind)).is_some_and(|tr| self.recognition().formats_itself(tr, ty))
     }

@@ -74,6 +74,12 @@ export const iteratorPaths = [
   "src/lower/mut_refs/given.rs",
   // A `for` over the crate's own `IntoIterator`, `user_into_iter` (the owner table's row, #2162).
   "src/lower/loops.rs",
+  // A boxed iterator's steps a caller gives generic code, `boxed_steps_given` (the owner table's row, #2162).
+  "src/lower/generic_facts.rs",
+  // How the runtime steps a range, and an inclusive range an iterator's lent (the owner table's row, #2162).
+  "src/lower/std_types/range.rs",
+  // A library's contract of what its functions step and the iterators it makes (the owner table's rows, #2162).
+  "src/lower/library.rs",
   "src/lower/recognition/adapter_types.rs",
   "src/lower/recognition/iterators.rs",
   "src/lower/recognition/lengths.rs",

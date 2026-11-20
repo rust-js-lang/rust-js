@@ -481,7 +481,7 @@ pub(in crate::lower) fn unwrapped(e: Expr) -> Expr {
 }
 
 /// The mask of `x & 1023n`, which keeps it from 0 to 1023.
-pub(in crate::lower) fn masked(e: &Expr) -> Option<i128> {
+fn masked(e: &Expr) -> Option<i128> {
     match &e.kind {
         js::ExprKind::Binary(Op::BitAnd, a, b) => b.as_bigint().or_else(|| a.as_bigint()),
         _ => None,
