@@ -1281,3 +1281,13 @@ The check of 44441824204's mutations with the times its plan read now
 takes one machine. Mutations `mutation-shards-grouped-by-the-chosen`,
 `mutation-shards-compiler-uncounted`, `slot-held-from-asking` and
 `share-of-shard-unshared` are caught.
+
+## Amendment (2026-11-20): a push's type-check applies those no build can choose between together
+
+A push type-checks its change's mutations (`--typecheck`). Those in a function's body share one check, each chosen by name as the compiler runs. Each of the others was a check of its own: a constant table's row, a signature, a `const fn`'s body, which no `__mutant_is` arm can sit in. That was 50 of a sweep push's 52 checks, 93 s for 943 mutations.
+
+**They're now applied at once, in batches whose `find`s overlap in no file (`together`).** A batch that fails is halved until each failure is alone and named, as before. The same push's set is 1,106 mutations in 8 checks, 22 s.
+
+This can mask an error. One mutant can remove the only use of what another removes, so the batch type-checks where one alone wouldn't. That's accepted because CI's shard builds each mutant alone. There, a mutant that doesn't build says plainly that it was built alone, and that a push's type-check applied it together with others, which can hide its error (`aloneProblem`).
+
+Held by test/mutation-changes.test.ts's "a change's mutants are type-checked many to a check", and the mutations `typecheck-unsited-each-alone` and `built-alone-unsaid` (scripts/mutations/runner.ts).

@@ -5,7 +5,7 @@
 import { expect, test } from "bun:test";
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { batches, buildsUnmutated, type Change, changedLines, changedMutations, enclosingFunction, mutations, ofTouched, ownMutations, refusedFlags, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, typechecked, unitTestsModule } from "../scripts/mutations";
+import { batches, buildsUnmutated, type Change, changedLines, changedMutations, enclosingFunction, mutations, ofTouched, ownMutations, refusedFlags, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, together, typechecked, unitTestsModule, aloneProblem } from "../scripts/mutations";
 import { phases } from "../scripts/push";
 import { fixture, root } from "./support";
 
@@ -358,4 +358,20 @@ test("a change's mutants are type-checked many to a check, and one that doesn't 
   // Placed by its error, checked alone, the rest again together: three
   // checks, not a halving's.
   expect(checks).toBe(5);
+  // Those outside a body that can choose, a `const fn`'s and a signature's,
+  // together where they don't overlap: one check, where each was its own;
+  // one that doesn't type-check among them halved out and named alone.
+  checks = 0;
+  const twiceThrice = inProgram("twice-thrice", "n * 2", "n * 3");
+  const unitStatic = inProgram("unit-static", "    unit: &str,\n", "    unit: &'static str,\n");
+  expect(together(sited([twiceThrice, unitStatic]), readProgram).map((batch) => batch.length)).toEqual([2]);
+  expect([...(await typechecked(sited([twiceThrice, unitStatic]), check, readProgram))]).toEqual([]);
+  expect(checks).toBe(1);
+  expect(together(sited([twiceThrice, twiceOff]), readProgram).map((batch) => batch.length)).toEqual([1, 1]);
+  const sumWide = inProgram("sum-wide", "fn sum(values: &[u32]) -> u32 {", "fn sum(values: &[u32]) -> u64 {");
+  const wide = await typechecked(sited([twiceThrice, unitStatic, sumWide]), check, readProgram);
+  expect([...wide].map(([m, why]) => [m.name, why.startsWith("doesn't type-check")])).toEqual([["sum-wide", true]]);
+  // Which another's change may hide: built alone by CI's shard, it says so.
+  expect(aloneProblem(sumWide, "doesn't build: error[E0308]")).toContain("`sum-wide` built alone");
+  expect(aloneProblem(sumWide, "INCONCLUSIVE: x")).toBe("INCONCLUSIVE: x");
 });

@@ -591,6 +591,41 @@ export function batches(sited: Sited[], size: number): Sited[][] {
   return made;
 }
 
+/** Mutations outside a body that can choose (`site`), a constant table's
+ * row say, in batches each applied at once where their `find`s overlap in
+ * no file: a type-check of them together that passes passes each alone, as
+ * a row's or an item's error is where it is, and one that fails is halved
+ * (`typechecked`). Each was a check of its own: 50 of a push's 52 (#2162's
+ * sweep, 93 s). */
+export function together(unsited: Sited[], read: (file: string) => string): Sited[][] {
+  const span = ({ mutation }: Sited) => {
+    const at = read(mutation.file).indexOf(mutation.find);
+    return { file: mutation.file, start: at, end: at + mutation.find.length };
+  };
+  const overlap = (a: Sited, b: Sited) => {
+    const [x, y] = [span(a), span(b)];
+    return x.file === y.file && x.start < y.end && y.start < x.end;
+  };
+  const made: Sited[][] = [];
+  let left = unsited;
+  while (left.length > 0) {
+    const batch: Sited[] = [];
+    const rest: Sited[] = [];
+    for (const s of left) (batch.some((other) => overlap(other, s)) ? rest : batch).push(s);
+    made.push(batch);
+    left = rest;
+  }
+  return made;
+}
+
+/** What a mutation built alone that doesn't build says: by its name, built
+ * alone, where the push's type-check, which applies several at once
+ * (`together`), may have passed it beside another that hid its error. */
+export function aloneProblem(mutation: Mutation, problem: string): string {
+  if (!problem.startsWith("doesn't build")) return problem;
+  return `${problem} (\`${mutation.name}\` built alone; a push's type-check applied it together with others, which can hide its error: fix its \`replace\`)`;
+}
+
 /** Which mutation a build of many is, as it runs: its file's name, which
  * the runner gives each mutation's copy, or `RUST_JS_MUTANT`, for a test
  * that runs a copy of its own. Written at the end of the crate's root. */
@@ -617,6 +652,21 @@ export function schema(batch: Sited[], read: (file: string) => string): Map<stri
     const mutated = mutate(read(mutation.file), mutation);
     if (typeof mutated !== "string") return mutated;
     return files.set(mutation.file, mutated);
+  }
+  // Of those no build can choose between, `together`'s: each applied, from
+  // each file's end, to be type-checked at once.
+  if (batch.every((s) => s.site === undefined)) {
+    const placed: { file: string; at: number; mutation: Mutation }[] = [];
+    for (const { mutation } of batch) {
+      const source = read(mutation.file);
+      if (typeof mutate(source, mutation) !== "string") return mutate(source, mutation) as { problem: string };
+      placed.push({ file: mutation.file, at: source.indexOf(mutation.find), mutation });
+    }
+    for (const { file, at, mutation } of placed.sort((a, b) => b.at - a.at)) {
+      const text = files.get(file) ?? read(file);
+      files.set(file, text.slice(0, at) + mutation.replace + text.slice(at + mutation.find.length));
+    }
+    return files;
   }
   const bySite = new Map<string, Sited[]>();
   for (const s of batch) {
@@ -1225,7 +1275,10 @@ export async function typechecked(
   const queue: Sited[][] = [
     ...batches(ofUnit(true), Infinity),
     ...batches(ofUnit(false), Infinity),
-    ...sited.filter((s) => s.site === undefined).map((s) => [s]),
+    ...together(
+      sited.filter((s) => s.site === undefined),
+      read,
+    ),
   ];
   for (let batch = queue.shift(); batch !== undefined; batch = queue.shift()) {
     const files = schema(batch, read);
@@ -2104,10 +2157,13 @@ async function main() {
       // A build of many that fails is two of half as many: the mutation that
       // doesn't build alone says so as its own. One that isn't of its
       // mutations says so of each (scripts/mutant-builds.ts).
+      // Built alone, one that doesn't build says so plainly: a push's
+      // type-check applies those no build can choose between together
+      // (`together`), where another's change may have hidden its error.
       if (batch.length > 1 && !("held" in compiler)) {
         console.log(`a build of ${batch.length} mutations ${compiler.problem}: as two of ${Math.ceil(batch.length / 2)}`);
         queue.push(batch.slice(0, batch.length / 2), batch.slice(batch.length / 2));
-      } else for (const { mutation } of batch) results.set(mutation, compiler.problem);
+      } else for (const { mutation } of batch) results.set(mutation, aloneProblem(mutation, compiler.problem));
       return;
     }
     // Its binary is no other build's of the run, the compiler's as it is

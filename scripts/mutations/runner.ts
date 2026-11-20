@@ -250,4 +250,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mutations.test.ts", "-t", "a caught mutant names the first test that failed with it"],
   },
+  {
+    name: "typecheck-unsited-each-alone",
+    breaks: "a push type-checks each mutation outside a body that can choose in a check of its own, 50 of 52 checks, 93 s (#2162's sweep)",
+    file: "scripts/mutations.ts",
+    find: "    ...together(\n      sited.filter((s) => s.site === undefined),\n      read,\n    ),\n",
+    replace: "    ...sited.filter((s) => s.site === undefined).map((s) => [s]),\n",
+    tests: ["test/mutation-changes.test.ts", "-t", "type-checked many to a check"],
+  },
+  {
+    name: "built-alone-unsaid",
+    breaks: "a mutation CI's shard builds alone that doesn't build doesn't say it was built alone, where a push's type-check of it together with others may have hidden its error",
+    file: "scripts/mutations.ts",
+    find: "  if (!problem.startsWith(\"doesn't build\")) return problem;\n",
+    replace: "  return problem;\n",
+    tests: ["test/mutation-changes.test.ts", "-t", "type-checked many to a check"],
+  },
 ];
