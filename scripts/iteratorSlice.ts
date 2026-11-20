@@ -72,6 +72,8 @@ export const iteratorPaths = [
   "src/lower/drops/parts.rs",
   // What a type parameter read as an iterator is given for a `&mut` to one (#992).
   "src/lower/mut_refs/given.rs",
+  // A `for` over the crate's own `IntoIterator`, `user_into_iter` (the owner table's row, #2162).
+  "src/lower/loops.rs",
   "src/lower/recognition/adapter_types.rs",
   "src/lower/recognition/iterators.rs",
   "src/lower/recognition/lengths.rs",

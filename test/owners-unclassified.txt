@@ -107,7 +107,6 @@ src/lower/library/written_into.rs makes_fmt_dyns
 src/lower/library/written_into.rs writes_dyns_given
 src/lower/library/written_into.rs writes_dyns_given_by
 src/lower/library/written_into.rs writes_piecewise
-src/lower/loops.rs user_into_iter
 src/lower/mir/jsx_props.rs thir_call
 src/lower/mir/nulled/one_none.rs callback_may_be_js
 src/lower/mir/nulled/one_none.rs made_some
