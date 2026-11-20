@@ -100,7 +100,7 @@ function $taking(iter, n, drop) {
   // asks its source's `nth(n - 1)`, then its source dropped with it (#213),
   // after what drops with `g`, `ends` (#710).
   const fold = (init, g, unwind, ends) => {
-    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true), ends);
+    const folded = $consumed(taking.iter, () => tryFoldOf(init, g, () => false, unwind, true, ends), ends);
     $closedAfter(ends, () => $closed(taking.iter));
     return folded;
   };

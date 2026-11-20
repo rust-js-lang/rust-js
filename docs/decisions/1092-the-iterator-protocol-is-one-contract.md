@@ -2101,3 +2101,14 @@ knowing.rs's `passed_on_to` asks the same catalog, but of a `&mut`
 alone (#1892, `Box<I>` isn't `TrustedLen`). Corpus
 `len_of_a_mut_box_is_what_it_holds`; the paths table's 14 case-builds
 are off the known list. Mutation: `len-through-a-box-its-own`.
+
+## Amendment: a `take`'s `fold` gives its source what drops with `f` (2026-11-20, #2196)
+
+`$taking`'s `fold`, std's `Take::fold`, is
+`self.try_fold(init, NeverShortCircuit::wrap_mut_2(f))`, which moves `f`
+into the `try_fold` chain. The runtime gave its source's `tryFold` no
+`ends`. So where a `skip` inside panicked in its `nth(n - 1)`,
+`$stepHolding` dropped the accumulator alone and `ends` came after,
+where `Skip::try_fold`'s frame drops `fold`, then `init`. It now passes
+`ends` on. Corpus `take_fold_drops_its_closure_first`; mutation
+`taking-fold-ends-kept` (`runtime/taking.ts`). Case (ADR 0262): R.
