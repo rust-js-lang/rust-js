@@ -479,8 +479,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Iterator` of the crate's iterator keeps its own `fold`, which std's `Box` doesn't give it",
     file: "src/lower/mir/rvalues.rs",
-    find: "                                Ok(crate::lower::iterators::behind_a_dyn(it))\n",
-    replace: "                                Ok(it)\n",
+    find: "                                Ok(this.lent_through(crate::lower::iterators::behind_a_dyn(it), &lends))\n",
+    replace: "                                Ok(this.lent_through(it, &lends))\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {

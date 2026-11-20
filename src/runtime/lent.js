@@ -43,6 +43,12 @@ function $lent(it, kind = "lent") {
   // a consumer that takes it by value does, so its lender's would be
   // dropped at its first `None` (#1508).
   if (typeof it.next !== "function") it = Iterator.from(it);
+  // A sized `&mut` of what a `&mut` lends already, lent as the innermost
+  // lends, as `Wrapper::lending` says, and an unsized one of an unsized
+  // one: the lend itself, which a second one over std's compiled struct
+  // would read its fields through twice, a dictionary's `lent` of a value
+  // its caller lent (#2187).
+  if ((kind === "lent" && (it.lentAs === "lent" || it.lentAs === "lentUnsized")) || (kind === "lentUnsized" && it.lentAs === kind)) return it;
   const passes = $passedOn[kind];
   const passed = (step) => (passes.includes(step) ? step : undefined);
   // A `Box<I>`'s, `boxed`, owns `it`: closing it closes `it` (#1995).
@@ -74,6 +80,11 @@ function $lent(it, kind = "lent") {
   // What it lends, whose facts are its own: `$slicing` gives it its
   // slice's steps, which it passes on (#745).
   lent.lends = it;
+  lent.lentAs = kind;
+  // A `Box`'s, which owns `it`, dropped: `it` dropped, where it carries its
+  // drop, a `Box<dyn Iterator>`'s (`$droppingIterator`), as the box's drop
+  // runs what it holds' (#2186).
+  if (owns && Object.hasOwn(it, $disposeKey)) lent[$disposeKey] = () => $disposeIterator(it);
   // Of std's struct, compiled (ADR 0871): its fields `it`'s, read and
   // written through it, so its compiled bodies step `it` where it is, as
   // std's `&mut I` steps its `I`; what stops early closes `lent`, not it.

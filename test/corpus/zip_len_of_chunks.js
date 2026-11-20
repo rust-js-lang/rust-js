@@ -33,8 +33,8 @@ function fillViaChunks(src, dest) {
   const zipped = iterator_zip(
     $lent(dest),
     $lent(src),
-    { next: $next },
-    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+    { next: $next, lent: ["lent"] },
+    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, lent: ["lent"] }) },
     false,
     false,
     true,
@@ -107,7 +107,7 @@ function main() {
   z = iterator_zip(
     $lent(c),
     iterator_skip($iter(w), 1),
-    { next: $next },
+    { next: $next, lent: ["lent"] },
     {
       intoIter: (items) => items,
       IntoIterIterator: () => ({

@@ -10,6 +10,7 @@ import {
   $eq,
   $intsOrdered,
   $iter,
+  $lent,
   $ord,
   $partialEq,
   $partialOrd,
@@ -169,8 +170,11 @@ function bTreeMapArbitrary_shrink(
     ),
     KOrd.cmp,
   );
-  return iterator_map(vecArbitrary_shrink(vec, _A__B_Arbitrary(KArbitrary, VArbitrary)), (v) =>
-    $treeFromSorted(new KTreeMap(), $iter(v), KOrd, KVStableSort, KVSize),
+  return $lent(
+    iterator_map(vecArbitrary_shrink(vec, _A__B_Arbitrary(KArbitrary, VArbitrary)), (v) =>
+      $treeFromSorted(new KTreeMap(), $iter(v), KOrd, KVStableSort, KVSize),
+    ),
+    "boxedUnsized",
   );
 }
 
@@ -267,9 +271,12 @@ function hashMapArbitrary_shrink(
       ]),
     ),
   );
-  return iterator_map(
-    vecArbitrary_shrink(vec, _A__B_Arbitrary(KArbitrary, VArbitrary)),
-    (v) => new KMap(v),
+  return $lent(
+    iterator_map(
+      vecArbitrary_shrink(vec, _A__B_Arbitrary(KArbitrary, VArbitrary)),
+      (v) => new KMap(v),
+    ),
+    "boxedUnsized",
   );
 }
 

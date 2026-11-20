@@ -479,7 +479,7 @@ function boxedMapSum() {
       dDrop_drop(x);
       return result;
     },
-    { next: $next },
+    { next: $next, lent: ["boxed"] },
     (box) => {
       box.return();
     },

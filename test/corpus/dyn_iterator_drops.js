@@ -10,6 +10,7 @@ import {
   $droppingIterator,
   $iter,
   $iterator,
+  $lent,
   $next,
   $roomForHint,
 } from "@rust-js/std";
@@ -45,7 +46,7 @@ function ds(tags) {
 }
 
 function boxed(it, dropI) {
-  const it$1 = $closing(Iterator.from(it), dropI, false);
+  const it$1 = $closing($lent(it, "boxedUnsized"), dropI, false);
   return $droppingIterator(it$1, () => {
     it$1.return();
   });

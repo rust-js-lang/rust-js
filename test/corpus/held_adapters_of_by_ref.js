@@ -50,6 +50,7 @@ function halves(it, IFused) {
       sizeHint: $jsIterator.sizeHint,
       nth: $jsIterator.nth,
       advanceBy: $jsIterator.advanceBy,
+      lent: ["lent"],
     }),
     { next: $next, fold: $foldOf },
     false,

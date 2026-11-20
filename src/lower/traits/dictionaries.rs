@@ -318,7 +318,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // the dictionary it was given (ADR 0912).
             if let ty::Ref(_, inner, ty::Mutability::Mut) = tr.self_ty().kind() {
                 let of = self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [*inner]), span)?;
-                return Ok(self.mut_ref_iterator_dictionary(of));
+                return Ok(self.mut_ref_iterator_dictionary(tr.self_ty(), of));
             }
             if let ty::Param(param) = tr.self_ty().kind()
                 && self.param_given_as_it_is(*param)

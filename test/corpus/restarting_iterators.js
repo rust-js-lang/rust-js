@@ -299,7 +299,7 @@ function main() {
             loudDrop_drop(loud);
             return result;
           },
-          { next: $next },
+          { next: $next, lent: ["lent"] },
           undefined,
           undefined,
           undefined,

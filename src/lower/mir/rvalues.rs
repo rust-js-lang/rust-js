@@ -597,13 +597,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 && self.drops(iterator) != crate::lower::drops::Drops::Nothing;
                             let back = self.knows_its_back(*to);
                             // What it is behind the `dyn`, of a double-ended one
-                            // what knows its back too.
+                            // what knows its back too. A `Box`'s, lent as the
+                            // unsized box steps it, its fold and count the
+                            // traits' defaults, where what it holds has steps
+                            // of its own (`unsized_box_lends`, #2186).
+                            let lends = match to.is_box() {
+                                true => self.unsized_box_lends(iterator),
+                                false => Vec::new(),
+                            };
                             let made = |this: &mut Self, value: Expr| -> R<Expr> {
                                 let it = match back {
                                     true => this.as_double_ended(value, iterator, span)?,
                                     false => this.as_js_iterator(value, iterator, span)?,
                                 };
-                                Ok(crate::lower::iterators::behind_a_dyn(it))
+                                Ok(this.lent_through(crate::lower::iterators::behind_a_dyn(it), &lends))
                             };
                             if !carried {
                                 return Ok(Value::Expr(made(self, value)?));

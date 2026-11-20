@@ -100,4 +100,21 @@ export const mutations: Mutation[] = [
     replace: "        if (!passes.includes(step)) return it[key];\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
   },
+  {
+    name: "boxed-lend-undisposed",
+    breaks: "a `Box`'s lend, dropped, never drops what it holds, so a `Box<dyn Iterator>` of a generic `I` that's a `Box<dyn Iterator>` with a destructor is never dropped (#2186)",
+    file: "src/runtime/lent.js",
+    find: "  if (owns && Object.hasOwn(it, $disposeKey)) lent[$disposeKey] = () => $disposeIterator(it);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
+  },
+  {
+    name: "lent-of-a-lend-lent-again",
+    breaks: "a `&mut` lend of what a `&mut` lends already lends it again, so std's compiled struct a caller lent, given with a dictionary whose `lent` lends it, reads its fields through two lends and steps `NaN` (#2187)",
+    file: "src/runtime/lent.js",
+    find: "  if ((kind === \"lent\" && (it.lentAs === \"lent\" || it.lentAs === \"lentUnsized\")) || (kind === \"lentUnsized\" && it.lentAs === kind)) return it;\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^held_adapters_by_ref with std's iterator structs$"],
+    env: { ITERATOR_FORMS: "corpus" },
+  },
 ];

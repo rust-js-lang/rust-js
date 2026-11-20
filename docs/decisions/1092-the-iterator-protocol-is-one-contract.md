@@ -1961,3 +1961,67 @@ Retargeted to the shared answer: `box-iterator-defaults-not-passed-through`,
 `box-user-iterator-default-passed-through`,
 `box-param-default-passed-through` and
 `box-compiled-default-passed-through`.
+
+## Amendment: which lends a held iterator is stepped through is one answer (2026-11-20, #2185, #2186, #2187)
+
+#2179's fix lent a hiding box where a std method steps it and where it's
+given straight for a type parameter, but not on the three other ways a
+wrapper's value reaches what steps it, each a wrong answer of the same
+kind, found by the metamorphic `impl-owned` rewrite and its neighbours:
+
+- **Given by a dictionary, through a trait** (#2185, #2187): in
+  `fn total<I>(it: impl Is<I>)`, `I = Box<Map<..>>` or `&mut Map<..>` came
+  with the `Map`'s plain dictionary, `{ next: $next }`, so `$given` found
+  every entry "own" and stepped the `Map` itself, whose `fold` reached the
+  crate's. So did a box of a box, a box of a type parameter's value and a
+  `&mut` of a box.
+- **Made a `Box<dyn Iterator>`** (#2186): the coercion kept the adapter's
+  JS iterator as it was, so a `dyn`'s `fold` and `count`, called on it or
+  by generic code, asked the adapter's own. A `dyn`'s vtable holds no
+  `fold`; the unsized box's are the traits' defaults over its `next`.
+
+Five wrapper bugs in two days is ADR 1085's signal for a structural fix,
+so **which wrappers std steps a held iterator through is one answer,
+`wrapper_lends`** (iterators/stepping.rs), asked by every path: a std
+method's receiver, what's given for a type parameter, an `Iterator`
+dictionary, and the coercion to a `Box<dyn Iterator>`
+(`unsized_box_lends`, the same walk with the unsized box last). It walks
+the wrappers from the value inward and answers, innermost first, each one
+`$lent` lends the iterator's JS as (`Wrapper::lend_kind`, the one name of
+each kind): a `&mut`'s always, a run of them as the innermost lends; a
+sized `Box`'s where `box_hides_its_steps` says it hides what it holds; an
+unsized `Box`'s never, as its coercion lends it already. It answers
+nothing where what's held isn't stepped as the JS iterator it is: the
+crate's own, a range, one given by its own dictionary.
+
+A dictionary says it as an entry, `lent`, the kinds in that order:
+`{ next: $next, lent: ["boxed"] }`, of a `&mut` of a box
+`["boxed", "lent"]`. `$given` lends the value as each before it reads its
+dictionary's entries as "own" or not, and the `lent` entry is never one of
+them. A `Box`'s lend now drops what it holds where that carries its own
+drop, a `Box<dyn Iterator>`'s, as it already closed it: generic code's
+`Box<dyn Iterator>` of a `Box<dyn Iterator>` with a destructor, lent by
+the coercion, dropped nothing otherwise (corpus `dyn_iterator_drops`).
+And a sized `&mut`'s lend of what a `&mut` lends already is that lend,
+as `Wrapper::lending` lends a `&mut` of a `&mut` as the innermost: a
+dictionary's `lent: ["lent"]` meets values its caller lent, `$lent(it)`,
+and std's compiled struct read through two lends stepped `NaN`
+(`held_adapters_by_ref` with std's iterator structs, and itertools'
+probe).
+
+Its cost: a `Box<dyn Iterator>` of std's compiled struct reads
+`$lent(it, "boxedUnsized")` where it's made, even where nothing under it
+reaches the crate's code and the lend changes no run, since
+`box_hides_its_steps` answers by the kind of struct, not by what it holds.
+Sixteen snapshots move: ten to that form, six to a dictionary's `lent`. Narrowing the
+answer to what may reach the crate's steps is its own decision.
+
+Case (ADR 0262): R. Corpus case `wrapper_given_by_a_dictionary_steps_as_std_does`
+runs as native in both builds, and so does the `impl-owned` rewrite of
+`box_of_an_adapter_steps_as_std_box_does`, off test/metamorphic-known.txt.
+New mutations: `box-dictionary-lent-unsaid`, `mut-ref-dictionary-lent-unsaid`,
+`wrapper-lends-box-unhidden`, `wrapper-lends-mut-unsaid`,
+`unsized-box-unlent`, `given-lent-unapplied`, `boxed-lend-undisposed` and
+`lent-of-a-lend-lent-again`.
+Retargeted to the shared answer: `box-given-as-its-value` and
+`box-of-std-iterator-as-its-value`.

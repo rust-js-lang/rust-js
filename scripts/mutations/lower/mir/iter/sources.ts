@@ -567,8 +567,8 @@ export const mutations: Mutation[] = [
     name: "box-of-std-iterator-as-its-value",
     breaks: "a `Box` of std's adapter is stepped as the adapter itself, so a boxed `map`'s `count()` or `fold()` asks its own `fold`, reaching the crate's, which std's `Box<I>` never asks (#2179)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "                && self.implements_iterator(inner) =>\n",
-    replace: "                && self.implements_iterator(inner)\n                && false =>\n",
+    find: "            None if ty.peel_refs().is_box()\n",
+    replace: "            None if false && ty.peel_refs().is_box()\n",
     tests: ["test/corpus.test.ts", "-t", "^box_of_an_adapter_steps_as_std_box_does.rs$"],
   },
 ];

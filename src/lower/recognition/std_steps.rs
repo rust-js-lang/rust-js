@@ -246,6 +246,17 @@ impl Wrapper {
         }
     }
 
+    /// `$lent`'s kind of it (src/runtime/lent.js's `$passedOn`): what a JS
+    /// iterator stepped through it is lent as.
+    pub(in crate::lower) fn lend_kind(self) -> &'static str {
+        match self {
+            Wrapper::MutRefSized => "lent",
+            Wrapper::MutRefUnsized => "lentUnsized",
+            Wrapper::BoxSized => "boxed",
+            Wrapper::BoxUnsized => "boxedUnsized",
+        }
+    }
+
     /// Whether it's a `Box`'s, which owns what it holds; a `&mut`'s lends it.
     pub(in crate::lower) fn owns(self) -> bool {
         matches!(self, Wrapper::BoxSized | Wrapper::BoxUnsized)
@@ -289,12 +300,13 @@ mod tests {
     #[test]
     fn lent_passes_on_what_std_does() {
         let lent = include_str!("../../runtime/lent.js");
-        for (wrapper, kind) in [
-            (Wrapper::MutRefSized, "lent"),
-            (Wrapper::MutRefUnsized, "lentUnsized"),
-            (Wrapper::BoxSized, "boxed"),
-            (Wrapper::BoxUnsized, "boxedUnsized"),
+        for wrapper in [
+            Wrapper::MutRefSized,
+            Wrapper::MutRefUnsized,
+            Wrapper::BoxSized,
+            Wrapper::BoxUnsized,
         ] {
+            let kind = wrapper.lend_kind();
             let line = (lent.lines())
                 .find(|line| line.starts_with(&format!("  {kind}: [")))
                 .unwrap_or_else(|| panic!("lent.js's $passedOn has no {kind}"));

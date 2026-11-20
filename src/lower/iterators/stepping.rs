@@ -233,6 +233,82 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .emit()
     }
 
+    /// The wrappers std steps the iterator a value of type `ty` holds
+    /// through, innermost first, each one `$lent` lends that iterator's JS
+    /// as (`Wrapper::lend_kind`), where the value is that JS iterator: the
+    /// one owner of which lends a held iterator is stepped through (#2179,
+    /// #2185, #2186, #2187), asked where a method steps it, where it's given
+    /// for a type parameter, where its dictionary is made and where it's
+    /// made a `Box<dyn Iterator>`. A `&mut`'s always, a run of them as the
+    /// innermost lends (`Wrapper::lending`); a sized `Box`'s where it hides
+    /// what it holds's own steps (`box_hides_its_steps`); an unsized one's
+    /// never, as the coercion to it lends the box already
+    /// (`unsized_box_lends`). None where what's held isn't stepped as the JS
+    /// iterator it is: the crate's iterator, a range, or one given by its
+    /// own dictionary, each stepped by its steps.
+    pub(in crate::lower) fn wrapper_lends(&self, ty: ty::Ty<'tcx>) -> Vec<Wrapper> {
+        let mut wrappers = Vec::new();
+        let mut held = ty;
+        while let Some((wrapper, inner)) = Wrapper::holding(self.tcx, self.typing_env, held) {
+            wrappers.push((wrapper, inner));
+            held = inner;
+        }
+        if !self.held_as_js_iterator(held) {
+            return Vec::new();
+        }
+        let mut lends: Vec<Wrapper> = Vec::new();
+        for (wrapper, inner) in wrappers.into_iter().rev() {
+            match wrapper {
+                // A `&mut` of a `&mut` lends as the innermost does.
+                Wrapper::MutRefSized | Wrapper::MutRefUnsized
+                    if matches!(lends.last(), Some(Wrapper::MutRefSized | Wrapper::MutRefUnsized)) => {}
+                Wrapper::MutRefSized | Wrapper::MutRefUnsized => lends.push(wrapper),
+                Wrapper::BoxSized if self.recognition().box_hides_its_steps(inner) => lends.push(wrapper),
+                Wrapper::BoxSized | Wrapper::BoxUnsized => {}
+            }
+        }
+        lends
+    }
+
+    /// `wrapper_lends`' of the coercion of a `Box` of an iterator of type
+    /// `iterator` to a `Box<dyn Iterator>`: what it holds's, and then the
+    /// unsized box's, whose vtable holds no fold of what it holds, where
+    /// that's lent already or hides steps of its own (#2186). Of one that's
+    /// a `dyn Iterator` already, a `Box`'s made another's, none: it's the
+    /// box's.
+    pub(in crate::lower) fn unsized_box_lends(&self, iterator: ty::Ty<'tcx>) -> Vec<Wrapper> {
+        let mut lends = self.wrapper_lends(iterator);
+        let hides = match Wrapper::holding(self.tcx, self.typing_env, iterator) {
+            Some(_) => !lends.is_empty(),
+            None => {
+                !matches!(iterator.kind(), ty::Dynamic(..))
+                    && self.held_as_js_iterator(iterator)
+                    && self.recognition().box_hides_its_steps(iterator)
+            }
+        };
+        if hides {
+            lends.push(Wrapper::BoxUnsized);
+        }
+        lends
+    }
+
+    /// Whether a value of type `ty`, an iterator no wrapper holds, is the
+    /// JS iterator it's stepped as: not the crate's own, nor a range, nor
+    /// one given by its own dictionary.
+    fn held_as_js_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
+        let iterator = std_item(self.tcx, StdItem::Iterator);
+        !self.is_user_iterator(ty)
+            && self.range_kind(ty).is_none()
+            && (matches!(ty.kind(), ty::Dynamic(..)) || self.iterator_evidence(ty, iterator).is_none())
+            && self.implements_iterator(ty)
+    }
+
+    /// `it`, the JS iterator a value holds, lent as each of `lends` lends
+    /// it, innermost first (`wrapper_lends`).
+    pub(in crate::lower) fn lent_through(&self, it: Expr, lends: &[Wrapper]) -> Expr {
+        (lends.iter()).fold(it, |it, &how| IterValue::js(it).lent(how).emit())
+    }
+
     /// Of a function JS calls, `function`, each of its parameters,
     /// `params`, of its type and its JS name, that's a type parameter
     /// bound by `DoubleEndedIterator` or `ExactSizeIterator`, stepped as a
@@ -460,23 +536,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 *value = self.lent_iterator(held, given);
                 continue;
             }
-            // A `Box` of std's iterator, a sized one's, given for a type
-            // parameter bound by `Iterator` that steps it as a JS iterator,
+            // A `Box` of std's iterator given for a type parameter bound by
+            // `Iterator` that steps it as a JS iterator,
             // `total(Box::new(map))`: the box, `$lent(it, "boxed")`, which
             // passes on only what std's `Box<I>` does, never `I`'s own `fold`
             // or `count`, which may reach the crate's, where the box hides
-            // them (`box_hides_its_steps`, #2179). The crate's own reads its
-            // steps through the box already (`own_method`).
+            // them (`wrapper_lends`, #2179). The crate's own reads its steps
+            // through the box already (`own_method`).
             if crate::lower::generic_facts::type_parameter(input).is_some_and(|param| {
                 bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
-            }) && let Some(inner) = given.boxed_ty()
-                && inner.is_sized(self.tcx, self.typing_env)
-                && !self.is_user_iterator(inner)
-                && self.recognition().box_hides_its_steps(inner)
-                && self.implements_iterator(inner)
+            }) && given.is_box()
+                && let lends = self.wrapper_lends(given)
+                && !lends.is_empty()
             {
                 let held = std::mem::replace(value, Expr::taken());
-                *value = IterValue::js(held).lent(Wrapper::BoxSized).emit();
+                *value = self.lent_through(held, &lends);
                 continue;
             }
             let made_knowing = self.made_knowing_into_iter(callee, input, given);

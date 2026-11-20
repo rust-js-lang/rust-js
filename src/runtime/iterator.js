@@ -148,8 +148,15 @@ function $given(value, iterator, boxed = false, back, len) {
   // as one slice, `$advanceSlice`: given those steps, `$slicing`'s, which
   // what steps it asks of it (#703, #704).
   if (iterator.advanceBy === $advanceSlice) $slicing(value);
+  // The JS iterator a wrapper holds, a `Box`'s or a `&mut`'s, its
+  // dictionary's `lent`: lent as each wrapper std steps it through,
+  // innermost first, so what it steps is the wrapper's, never the JS
+  // iterator's own `fold` (`wrapper_lends`, #2185, #2187).
+  for (const kind of iterator.lent ?? []) value = $lent(value, kind);
   const own = (dictionary) =>
-    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step, boxed) === name);
+    Object.entries(dictionary).every(
+      ([name, step]) => name === "getUnchecked" || name === "lent" || $askedStep(step, boxed) === name,
+    );
   if (own(iterator) && len === undefined && (back === undefined || own(back))) {
     return value;
   }

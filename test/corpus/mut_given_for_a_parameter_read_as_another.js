@@ -71,7 +71,7 @@ function main() {
   console.log(
     `${total(
       it,
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, lent: ["lent"] }) },
       tIsT,
     )} ${it.reduce((n) => n + 1, 0)}`,
   );

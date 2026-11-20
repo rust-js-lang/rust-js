@@ -680,66 +680,69 @@ function boxedDynRfold() {
     throw error;
   }
   const b = $droppingIterator(
-    $knowing(
-      a,
-      (iterator) =>
-        takeIDoubleEndedIterator_nextBack(
-          iterator,
-          { next: $next, advanceBy: $advanceSlice },
-          { next_back: $nextBack },
-          intoIterExactSizeIterator,
-          $dropEach(dDrop_drop),
-          dDrop_drop,
-        ),
-      (iterator) => $exactLen($sizeHint(iterator)),
-      (iterator, init, f, unwind, ends) =>
-        takeIDoubleEndedIterator_rfold(
-          iterator,
-          init,
-          f,
-          { next: $next, advanceBy: $advanceSlice },
-          { next_back: $nextBack },
-          intoIterExactSizeIterator,
-          $dropEach(dDrop_drop),
-          unwind,
-          ends,
-          dDrop_drop,
-        ),
-      (iterator, k) =>
-        takeIDoubleEndedIterator_nthBack(
-          iterator,
-          k,
-          { next: $next, advanceBy: $advanceSlice },
-          { next_back: $nextBack },
-          intoIterExactSizeIterator,
-          $dropEach(dDrop_drop),
-          dDrop_drop,
-        ),
-      (iterator, init, f, broke, unwind, ends) =>
-        takeIDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $next, advanceBy: $advanceSlice },
-          { next_back: $nextBack },
-          intoIterExactSizeIterator,
-          $tryOf(broke),
-          $dropEach(dDrop_drop),
-          unwind,
-          ends,
-          undefined,
-          dDrop_drop,
-        ),
-      (iterator, n) =>
-        takeIDoubleEndedIterator_advanceBackBy(
-          iterator,
-          n,
-          { next: $next, advanceBy: $advanceSlice },
-          { next_back: $nextBack },
-          intoIterExactSizeIterator,
-          $dropEach(dDrop_drop),
-          dDrop_drop,
-        ),
+    $lent(
+      $knowing(
+        a,
+        (iterator) =>
+          takeIDoubleEndedIterator_nextBack(
+            iterator,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
+        (iterator) => $exactLen($sizeHint(iterator)),
+        (iterator, init, f, unwind, ends) =>
+          takeIDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            unwind,
+            ends,
+            dDrop_drop,
+          ),
+        (iterator, k) =>
+          takeIDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
+        (iterator, init, f, broke, unwind, ends) =>
+          takeIDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $tryOf(broke),
+            $dropEach(dDrop_drop),
+            unwind,
+            ends,
+            undefined,
+            dDrop_drop,
+          ),
+        (iterator, n) =>
+          takeIDoubleEndedIterator_advanceBackBy(
+            iterator,
+            n,
+            { next: $next, advanceBy: $advanceSlice },
+            { next_back: $nextBack },
+            intoIterExactSizeIterator,
+            $dropEach(dDrop_drop),
+            dDrop_drop,
+          ),
+      ),
+      "boxedUnsized",
     ),
     () => {
       a.return();

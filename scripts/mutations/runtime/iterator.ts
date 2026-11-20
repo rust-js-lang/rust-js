@@ -112,8 +112,8 @@ export const mutations: Mutation[] = [
     name: "own-steps-not-the-value",
     breaks: "std's struct given with `fold: $foldOf` is wrapped, losing its own `advance_by`, so a chain's `nth` steps each item of a reversed `Vec` back to front (ADR 0912)",
     file: "src/runtime/iterator.js",
-    find: '    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step, boxed) === name);\n',
-    replace: '    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || (name === "next" && step === $next));\n',
+    find: '      ([name, step]) => name === "getUnchecked" || name === "lent" || $askedStep(step, boxed) === name,\n',
+    replace: '      ([name, step]) => name === "getUnchecked" || name === "lent" || (name === "next" && step === $next),\n',
     tests: ["test/corpus.test.ts", "-t", "^chain_sides_own_steps.rs$"],
   },
   {
@@ -201,8 +201,8 @@ export const mutations: Mutation[] = [
     name: "given-boxed-steps-not-own",
     breaks: "a value of a type parameter whose dictionary boxes its `Some`, `$nextSome`'s, is made a JS iterator whose `nth` asks the value's, which a JS array iterator has none of: generic `skip(1).last()` throws (#522)",
     file: "src/runtime/iterator.js",
-    find: '    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step, boxed) === name);\n',
-    replace: '    Object.entries(dictionary).every(([name, step]) => name === "getUnchecked" || $askedStep(step) === name);\n',
+    find: '      ([name, step]) => name === "getUnchecked" || name === "lent" || $askedStep(step, boxed) === name,\n',
+    replace: '      ([name, step]) => name === "getUnchecked" || name === "lent" || $askedStep(step) === name,\n',
     tests: ["test/iterator-forms.test.ts", "-t", "^generic_own_last with"],
   },
   {
@@ -305,5 +305,13 @@ export const mutations: Mutation[] = [
     find: "  if (it.cloneBy !== undefined) return it.cloneBy(clone);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_hides_its_sources_own_nth_back.rs$"],
+  },
+  {
+    name: "given-lent-unapplied",
+    breaks: "`$given` ignores its dictionary's `lent`, so a `Box` or a `&mut` of std's adapter given through a trait is stepped as the adapter itself, its own `fold` reaching the crate's (#2185, #2187)",
+    file: "src/runtime/iterator.js",
+    find: "  for (const kind of iterator.lent ?? []) value = $lent(value, kind);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
   },
 ];

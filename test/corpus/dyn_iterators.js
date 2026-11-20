@@ -25,7 +25,10 @@ function countdownIterator_next(countdown) {
 }
 
 function evens(v) {
-  return iterator_filter($iter(v), (n) => n % 2 === 0);
+  return $lent(
+    iterator_filter($iter(v), (n) => n % 2 === 0),
+    "boxedUnsized",
+  );
 }
 
 function numbers(desc) {
@@ -80,10 +83,13 @@ function main() {
   }
   $print("\n");
 
-  const noisy = iterator_map($iter(v), (n) => {
-    $print(`see ${n}\n`);
-    return n;
-  });
+  const noisy = $lent(
+    iterator_map($iter(v), (n) => {
+      $print(`see ${n}\n`);
+      return n;
+    }),
+    "boxedUnsized",
+  );
   $print(`[${Array.from($roomForHint(iterator_take(noisy, 2), 4, false)).join(", ")}]\n`);
 }
 //# sourceMappingURL=case.js.map

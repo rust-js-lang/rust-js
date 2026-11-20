@@ -32,7 +32,7 @@ function main() {
   const items = $iter([1, 2, 3]);
   const value = backOf(
     { value: $lent(items), impl: tGetMutT },
-    { next: $next },
+    { next: $next, lent: ["lent"] },
     { next_back: $nextBack },
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
@@ -57,7 +57,7 @@ function main() {
 
   const more = $iter([4, 5, 6]);
   const lent = $lent(more);
-  const value$3 = frontOf({ value: lent, impl: tGetMutT }, { next: $next });
+  const value$3 = frontOf({ value: lent, impl: tGetMutT }, { next: $next, lent: ["lent"] });
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const value$4 = $next(lent);
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);

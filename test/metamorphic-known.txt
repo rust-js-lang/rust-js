@@ -120,4 +120,3 @@ plain std field closure_mut_ref.rs
 plain std field held_enumerate.rs
 
 #2185 A Box of a std adapter given by a dictionary, through a trait, steps as the adapter itself
-plain std impl-owned box_of_an_adapter_steps_as_std_box_does.rs

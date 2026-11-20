@@ -57,13 +57,9 @@ pub(in crate::lower) struct IterValue {
 /// `Box<I>`, which lends nothing, owning `I`, `$lent(it, "boxed")` (#1995).
 /// The kind is a fact of the Rust type, which the JS iterator doesn't keep,
 /// so it's given, not read off the value at run time (#2000).
+/// `$lent(it)`'s default kind, a sized `&mut I`'s, isn't written.
 fn lent_kind(how: Wrapper) -> Option<&'static str> {
-    match how {
-        Wrapper::MutRefSized => None,
-        Wrapper::MutRefUnsized => Some("lentUnsized"),
-        Wrapper::BoxSized => Some("boxed"),
-        Wrapper::BoxUnsized => Some("boxedUnsized"),
-    }
+    (how != Wrapper::MutRefSized).then(|| how.lend_kind())
 }
 
 /// How `e`, an iterator lent, `$lent(it, ..)`, is lent: a `&mut` of an

@@ -18,6 +18,7 @@ import {
   $jsIterator,
   $lazyRange,
   $lazyZip,
+  $lent,
   $next,
   $panicMessage,
   $stepsOf,
@@ -354,7 +355,7 @@ function main() {
   const value$2 = holding(3);
   fused(
     "boxed",
-    $droppingIterator(value$2, () => {
+    $droppingIterator($lent(value$2, "boxedUnsized"), () => {
       value$2.return();
     }),
     false,

@@ -57,21 +57,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => Expr::call_helper("$intoIter", vec![value]),
                 false => self.js_iterator(value),
             }),
-            // A `Box` of std's iterator, a sized one's, behind a `&mut` too:
-            // what std's `Box<I>` passes on of it, its `next`, `nth`, `last`
-            // and their back's, the rest the traits' defaults over them, never
-            // `I`'s own `fold` or `count`, which may reach the crate's (#2179),
-            // `$lent(it, "boxed")`, where the box hides them
-            // (`box_hides_its_steps`). Of the crate's own, `user_iterator`'s
+            // A `Box` of std's iterator, behind a `&mut` too: what std's
+            // `Box<I>` passes on of it, its `next`, `nth`, `last` and their
+            // back's, the rest the traits' defaults over them, never `I`'s own
+            // `fold` or `count`, which may reach the crate's (#2179),
+            // `$lent(it, "boxed")`, where the box hides them, a box's of a box
+            // too (`wrapper_lends`). Of the crate's own, `user_iterator`'s
             // above, which reads its steps through the box (`own_method`).
-            None if let Some(inner) = ty.peel_refs().boxed_ty()
-                && inner.is_sized(self.tcx, self.typing_env)
-                && self.recognition().box_hides_its_steps(inner)
-                && self.implements_iterator(inner) =>
+            None if ty.peel_refs().is_box()
+                && let lends = self.wrapper_lends(ty.peel_refs())
+                && !lends.is_empty() =>
             {
-                Ok(crate::lower::iterators::IterValue::js(value)
-                    .lent(Wrapper::BoxSized)
-                    .emit())
+                Ok(self.lent_through(value, &lends))
             }
             // A std iterator's, which its call made one (`std_value_as`): one
             // already, said so, so what's made of it isn't made one again. Not

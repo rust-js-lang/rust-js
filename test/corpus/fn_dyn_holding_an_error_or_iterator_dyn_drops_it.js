@@ -10,6 +10,7 @@ import {
   $dropping,
   $droppingIterator,
   $iter,
+  $lent,
   $next,
   iterator_map,
 } from "@rust-js/std";
@@ -75,7 +76,7 @@ function main() {
     undefined,
     loudDrop_drop,
   );
-  const it = $droppingIterator(map, () => {
+  const it = $droppingIterator($lent(map, "boxedUnsized"), () => {
     map.return();
   });
   const g = $dropping(

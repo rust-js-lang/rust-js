@@ -418,6 +418,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let advance_by = crate::lower::bindings::trait_method_name(self.tcx, iterator, "advance_by");
             props.push(js::Prop::Field(advance_by, Expr::helper("$advanceSlice")));
         }
+        props.extend(self.lent_entry(ty));
         // Of a JS iterator whose every entry is the runtime's step that asks
         // what it has of its own, the one named dictionary of it,
         // `$jsIterator`, or of items that look like `None`, `$jsIteratorSome`
@@ -474,12 +475,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `advance_by`, a `Vec`'s its slice's (#703);
     /// not its `fold`, which is `I`'s `try_fold`, nor its `last`, std's of
     /// `next`, as a JS iterator lent is (`$lent`, ADR 0912).
-    pub(in crate::lower) fn mut_ref_iterator_dictionary(&self, of: Expr) -> Expr {
+    /// Of type `ty`, its `lent` too (`lent_entry`), as its value is `I`'s.
+    pub(in crate::lower) fn mut_ref_iterator_dictionary(&self, ty: ty::Ty<'tcx>, of: Expr) -> Expr {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let passed: Vec<String> = ["next", "size_hint", "nth", "advance_by"]
             .map(|name| crate::lower::bindings::trait_method_name(self.tcx, iterator, name))
             .into();
-        entries_passed_on(of, passed)
+        let mut dictionary = entries_passed_on(of, passed);
+        if let js::ExprKind::Object(props, _) = &mut dictionary.kind {
+            props.extend(self.lent_entry(ty));
+        }
+        dictionary
+    }
+
+    /// An `Iterator` dictionary's `lent` of a value of type `ty` that's the
+    /// JS iterator a wrapper holds, a `Box`'s or a `&mut`'s: `$lent`'s kinds
+    /// of each wrapper std steps it through, innermost first, which
+    /// `$given` lends it as before it steps it, `lent: ["boxed"]`, so
+    /// generic code given it as it is steps it as std's wrapper does, never
+    /// by its own `fold` (`wrapper_lends`, #2185, #2187). None where nothing
+    /// lends it.
+    fn lent_entry(&self, ty: ty::Ty<'tcx>) -> Option<js::Prop> {
+        let lends = self.wrapper_lends(ty);
+        (!lends.is_empty()).then(|| {
+            let kinds = (lends.iter()).map(|how| Expr::str(how.lend_kind())).collect();
+            js::Prop::Field("lent".into(), Expr::array(kinds))
+        })
     }
 
     /// A dictionary of `trait_id`, `Iterator` or one of its extensions, of a

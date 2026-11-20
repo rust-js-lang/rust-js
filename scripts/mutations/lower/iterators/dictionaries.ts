@@ -423,4 +423,20 @@ export const mutations: Mutation[] = [
     tests: ["test/iterator-forms.test.ts", "-t", "^enumerate_advanced_from_its_back_by_its_source with std's iterator structs$"],
     env: { ITERATOR_FORMS: "corpus" },
   },
+  {
+    name: "box-dictionary-lent-unsaid",
+    breaks: "a `Box` of std's adapter given through a trait, `impl Is<I>`, is given `I`'s plain dictionary, `{ next: $next }`, so generic code steps the adapter itself, asking its own `fold`, which reaches the crate's, where std's `Box<I>` folds by its `next` (#2185)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        props.extend(self.lent_entry(ty));\n        // Of a JS iterator",
+    replace: "        // Of a JS iterator",
+    tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
+  },
+  {
+    name: "mut-ref-dictionary-lent-unsaid",
+    breaks: "a `&mut` of std's adapter given through a trait is given the adapter's dictionary as it is, so generic code folds it by the adapter's own `fold`, reaching the crate's, where std's `&mut I` folds by `I`'s `try_fold` (#2187)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        if let js::ExprKind::Object(props, _) = &mut dictionary.kind {\n            props.extend(self.lent_entry(ty));\n",
+    replace: "        if let js::ExprKind::Object(props, _) = &mut dictionary.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
+  },
 ];
