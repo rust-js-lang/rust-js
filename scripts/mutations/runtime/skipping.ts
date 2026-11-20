@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "skipping-nth-only-own",
     breaks: "a `skip` steps a source with a `try_fold` of its own by `next`, not by its `nth`, whose `advance_by` std folds, so a `take_while` of a reversed `Vec`'s `skip` drops back to front (#294)",
     file: "src/runtime/skipping.js",
-    find: "(skipping.iter.ownNth || $ownMethod(skipping.iter, \"tryFold\") ||",
-    replace: "(skipping.iter.ownNth ||",
+    find: "(skipping.iter.ownNth || $ownMethod(skipping.iter, \"tryFold\")))",
+    replace: "(skipping.iter.ownNth))",
     tests: ["test/corpus.test.ts", "-t", "^skip_folded_by_consumers.rs$"],
   },
   {
@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "skipping-next-each",
     breaks: "`rev().skip(n)` of a `Vec` drops the `n` one at a time from the back, not as its source's `nth` drops them, one slice (#234)",
     file: "src/runtime/skipping.js",
-    find: "      if (\n        skipping.n > 0 &&\n",
-    replace: "      if (\n        false &&\n",
+    find: "      if (skipping.n > 0 && (skipping.iter.ownNth",
+    replace: "      if (false && (skipping.iter.ownNth",
     tests: ["test/corpus.test.ts", "-t", "^vec_skipped_from_back_drops.rs$"],
   },
   {
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "  $ownsAs(skipping, iter, \"count\");\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_count_where_adapters_call_them.rs$"],
+    tests: ["test/iterator-steps.test.ts", "-t", "^each form marks its own the count and last std asks otherwise than its fold$"],
   },
   {
     name: "skip-rfold-unclosed",
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "    const source = $consumed(skipping, () => skipping.skipped());\n",
     replace: "    const source = skipping.skipped();\n",
-    tests: ["test/corpus.test.ts", "-t", "^skip_first_nth_panics.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
   },
   {
     name: "skipping-last-unforwarded",
@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/skipping.js",
     find: "    last: typeof iter.last === \"function\" ? last : undefined,\n",
     replace: "    last: undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
   },
   {
     name: "skipping-try-fold-of-own-nth-only",
@@ -263,14 +263,6 @@ export const mutations: Mutation[] = [
     replace: "  $forwardBack(skipping, iter, { nthBack, tryRfold: iter.tryRfold !== undefined ? tryRfold : undefined, rfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_skip_take_and_filter_stepped_from_back.rs$"],
     snapshots: true,
-  },
-  {
-    name: "skip-of-own-advance-by-stepped",
-    breaks: "a `skip` of a source with an `advance_by` of its own, a lazy range's of its bounds, steps each it skips, so `skip(3_000_000_000)` in generic code doesn't finish (#1310)",
-    file: "src/runtime/skipping.js",
-    find: ' || $ownMethod(skipping.iter, "advanceBy"))\n',
-    replace: ")\n",
-    tests: ["test/corpus.test.ts", "-t", "^lazy_range_nth_given_to_generic_code.rs$"],
   },
   {
     name: "skip-advance-back-by-unforwarded",

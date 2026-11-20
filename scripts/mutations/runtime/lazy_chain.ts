@@ -59,7 +59,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "      const a = lastOf(first);\n",
     replace: "      const a = done;\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_last_and_nth_passed_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
   },
   {
     name: "chain-nth-by-next",
@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "  if (first.ownCount || second.ownCount) $owns(chained, \"count\");\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^own_count_through_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
   },
   {
     name: "chain-try-fold-unwind-lost",
@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "  const count = (drop) =>\n    $consumed(chained, () => {\n",
     replace: "  const count = (drop) =>\n    ((_, run) => run())(chained, () => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
   },
   {
     name: "chain-last-unconsumed",
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "  const last = () =>\n    $consumed(chained, () => {\n",
     replace: "  const last = () =>\n    ((_, run) => run())(chained, () => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_chained_or_skipped_asks_its_own_last_and_count.rs$"],
   },
   {
     name: "chain-fold-ends-lost",

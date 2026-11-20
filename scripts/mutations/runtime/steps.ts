@@ -356,7 +356,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "        $sizeHint(this);\n        return $Steps.prototype.count.call(kept, drop);\n",
     replace: "        return $Steps.prototype.count.call(kept, drop);\n",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/iterator-steps.test.ts", "-t", "^\\$Steps\\.filter asks what it holds as std's Filter does$"],
   },
   {
     name: "unwinds-drops-nothing",

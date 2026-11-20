@@ -504,7 +504,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      fold: \"fold\",\n      tryFold: \"tryFold\",\n      rfold: back ?",
     replace: "      tryFold: \"tryFold\",\n      rfold: back ?",
-    tests: ["test/corpus.test.ts", "-t", "^filter_folds_by_its_sources_fold.rs$"],
+    tests: ["test/iterator-steps.test.ts", "-t", "^\\$filterEnds asks what it holds as std's Filter does$"],
   },
   {
     name: "filter-ends-try-fold-by-next",
@@ -512,7 +512,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      fold: \"fold\",\n      tryFold: \"tryFold\",\n      rfold: back ?",
     replace: "      fold: \"fold\",\n      rfold: back ?",
-    tests: ["test/corpus.test.ts", "-t", "^(discarded_drop_leaks_the_accumulator|back_knowing_adapters_hint_and_try_fold).rs$"],
+    tests: ["test/iterator-steps.test.ts", "-t", "^\\$filterEnds asks what it holds as std's Filter does$"],
   },
   {
     name: "filter-ends-rfold-of-backs-by-back",
@@ -608,7 +608,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/back_steps.js",
     find: "      rfold: back ? (init, f, unwind, ends) => $foldBack(it, init, folding(f, unwind), unwind, ends) : undefined,\n",
     replace: "      rfold: back ? (init, f, unwind, ends) => $foldBack(it, init, folding(f, unwind), unwind) : undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^folded_functions_drop_before_the_rest.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^filter_folded_from_its_back_drops_its_functions_first.rs$"],
   },
   {
     name: "enumerate-fold-ends-lost",

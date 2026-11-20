@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "    $ownsAs(taking, iter, \"nthBack\");\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^step_by_folded_from_its_back_as_std.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_take_stepped_by_from_its_back_drops_a_slice.rs$"],
   },
   {
     name: "take-back-uncounted",
