@@ -211,13 +211,15 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // Std's `Filter::size_hint`, none to its source's upper bound.
     kept.sizeHint = () => $upperOnly(this);
     // Std's `Filter::count`: its source's hint asked first, then each kept
-    // counted (filter.rs:135).
+    // counted (filter.rs:135). Its own, which what passes a `count` on by
+    // its mark asks, a `skip`'s, as std's `Skip::count` asks it (#2212).
     $forward(kept, this, {
       count: (drop) => {
         $sizeHint(this);
         return $Steps.prototype.count.call(kept, drop);
       },
     });
+    $owns(kept, "count");
     return kept;
   }
   // Std's `FlatMap`: each item of what `f` makes of each of its source's,

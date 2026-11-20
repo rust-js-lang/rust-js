@@ -521,6 +521,30 @@ for (const [stdForm, form, make] of [...forms, ...lentForms]) {
   });
 }
 
+/** Where std's `count` or `last` of an adapter asks other than its `fold`,
+ * the trait's default of each, the form marks that step its own
+ * (`ownCount`, `ownLast`): what passes a step on by its mark, a `skip`'s
+ * `count` or a closing's `last`, asks it only so. `Filter::count`, which
+ * asks its source's hint first, was unmarked, so a `skip(n)` of a filter
+ * counted by its fold (#2212). Over the sources where the form is chosen
+ * alone. A mark where the two ask alike is unobservable, and allowed. Of
+ * `nth` and `nth_back`, whose default is no one step, not yet (#2213). */
+test("each form marks its own the count and last std asks otherwise than its fold", () => {
+  const unmarked: string[] = [];
+  for (const [stdForm, form, make] of forms) {
+    const { kinds: allowed } = runsOf(stdForm, form);
+    for (const [kind, run, size] of runs.filter(([kind]) => allowed.includes(kind))) {
+      const it = make(sourcesOf(size, [], kind));
+      for (const step of ["count", "last"]) {
+        const [asked, folded] = [stdRuns.get(`${stdForm}#${kind}${run} ${step}`), stdRuns.get(`${stdForm}#${kind}${run} fold`)];
+        if (asked === undefined || folded === undefined || asked === folded || it[std.$ownStep(step)]) continue;
+        unmarked.push(`${stdForm} | ${form} ${step}#${kind}${run}: std ${asked}, its fold ${folded}`);
+      }
+    }
+  }
+  expect(unmarked).toEqual([]);
+});
+
 // Each consumer made in place asks what it holds as std's method does, of
 // a map of the source, where its form is chosen: `nth(1)` of one whose
 // `nth` isn't the crate's, `[...it.drop(1).take(1)][0]`.

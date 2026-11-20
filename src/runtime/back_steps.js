@@ -446,6 +446,8 @@ function $filterEnds(it, p, drop) {
       return $Steps.prototype.count.call(filter, drop);
     },
   });
+  // Its own, as `$Steps`' `filter`'s is (#2212).
+  $owns(filter, "count");
   filter.from = [it];
   return filter;
 }

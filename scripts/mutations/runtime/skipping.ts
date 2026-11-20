@@ -288,4 +288,13 @@ export const mutations: Mutation[] = [
     replace: "  $forwardBack(skipping, iter, { nthBack: iter.nthBack !== undefined ? nthBack : undefined, tryRfold, rfold, advanceBackBy });\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_of_a_source_that_writes_none.rs$"],
   },
+  {
+    name: "skipping-last-unowned",
+    breaks:
+      "`$skipping` doesn't mark its `last`, std's `Skip::last`, its source's `last` after `nth(n - 1)`, its own, so what passes a `last` on by its mark takes it by its fold (#2212)",
+    file: "src/runtime/skipping.js",
+    find: "  if (typeof iter.last === \"function\") $owns(skipping, \"last\");\n",
+    replace: "",
+    tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],
+  },
 ];

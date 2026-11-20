@@ -229,4 +229,13 @@ export const mutations: Mutation[] = [
     replace: "    folded = $lent(second).tryFold(folded, f, broke, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
   },
+  {
+    name: "chain-last-unowned",
+    breaks:
+      "`$lazyChain` doesn't mark its `last`, std's `Chain::last`, each side's `last`, its own, so what passes a `last` on by its mark takes it by its fold (#2212)",
+    file: "src/runtime/lazy_chain.js",
+    find: "  $owns(chained, \"last\");\n",
+    replace: "",
+    tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],
+  },
 ];

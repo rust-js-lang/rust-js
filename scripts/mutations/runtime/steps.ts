@@ -406,4 +406,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
   },
+  {
+    name: "filter-count-unowned",
+    breaks:
+      "`$Steps`' `filter` doesn't mark its `count` its own, so a `skip(n)` of a filter counts by its fold and never asks the filter's source's hint, where std's `Skip::count` asks `Filter::count`, which asks it (#2212)",
+    file: "src/runtime/steps.js",
+    find: "    $owns(kept, \"count\");\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^skip_of_a_filter_counts_by_its_count.rs$"],
+  },
 ];

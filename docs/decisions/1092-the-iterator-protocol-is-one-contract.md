@@ -2197,3 +2197,41 @@ keeps a map over such a filter, a lent one's too. Corpus
 `filter-count-asks-no-own-hint` (lengths.ts); three retargeted. A
 `skip(n)` over such a filter is another shape, of the runtime's
 own-step marks (#2212). Case (ADR 0262): R.
+
+## Amendment: a form marks its own the steps std asks otherwise than their default (2026-11-21, #2212)
+
+A `skip(n)` of a filter, `skip(0)` too, is std's `Skip`. Its `count` asks
+its source's `nth(n - 1)` and then its source's `count`, here
+`Filter::count`, which asks its source's hint first. `$skipping` passes
+`count` on only to a source that marks it its own (`ownCount`, §4), and
+`$Steps`' `filter` installed `Filter::count` without the mark. So the
+skip counted by its fold and never asked the hint. The crate's
+`size_hint` didn't run where native runs it. `$Steps`' `filter` and
+`$filterEnds` now mark their `count` own (`$filterDropping` is `$Steps`'
+`filter`).
+
+The rule is now general, and the runtime net holds it: where std's
+trace of an adapter's `count` or `last` differs from its trace of
+`fold`, the default of each, the form marks that step its own, over the
+sources where it's chosen. Wrappers that pass a step on by its mark
+(`$skipping`, `$closing`, `$lazyChain`, `$ownsAs`) then reach it. The
+rule is one-directional: a mark where the two traces agree is
+unobservable and allowed. The survey that wrote it found three more
+unmarked steps, now marked: `$taking`'s `count` (std's `Take::count`,
+its source's `advance_by`), `$skipping`'s `last` (its source's `last`
+after `nth(n - 1)`) and `$lazyChain`'s `last` (each side's `last`).
+Probes of each through `Box`ed iterators of the crate's in place,
+`closing(skip(own).last())`, `skip(take(own)).count()` and a chain's
+`last` under a closing, matched native: today's lowering reaches none of
+them through a wrapper, so none was a wrong answer. `$Steps.flatMap`'s
+unmarked `count` and `last` are unobservable where it's chosen
+(`PlainInners`: the inners' `count` and `last` aren't the crate's), and
+the rule runs it over those sources alone. `nth` and `nth_back`, whose
+default is no one step, aren't covered yet (#2213).
+
+Corpus `skip_of_a_filter_counts_by_its_count`; the net's test "each form
+marks its own the count and last std asks otherwise than its fold".
+Mutations: `filter-count-unowned` (steps.ts), `filter-ends-count-unowned`
+(back_steps.ts), `taking-count-unowned` (taking.ts),
+`skipping-last-unowned` (skipping.ts), `chain-last-unowned`
+(lazy_chain.ts). Case (ADR 0262): R.

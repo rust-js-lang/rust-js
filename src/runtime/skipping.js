@@ -215,5 +215,8 @@ function $skipping(iter, n, drop) {
   // Its `count` its source's, the crate's own where it writes one, which
   // a `skip` of it asks in turn (#671).
   $ownsAs(skipping, iter, "count");
+  // And its `last`, std's `Skip::last`, its source's `nth(n - 1)` and then
+  // its source's `last`, not its fold, where it's given (#2212).
+  if (typeof iter.last === "function") $owns(skipping, "last");
   return skipping;
 }

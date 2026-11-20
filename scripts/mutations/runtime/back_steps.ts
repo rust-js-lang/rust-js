@@ -897,4 +897,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/iterator-steps.test.ts"],
   },
+  {
+    name: "filter-ends-count-unowned",
+    breaks:
+      "`$filterEnds` doesn't mark its `count`, `Filter::count`, its own, so what passes a `count` on by its mark counts it by its fold (#2212)",
+    file: "src/runtime/back_steps.js",
+    find: "  $owns(filter, \"count\");\n",
+    replace: "",
+    tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],
+  },
 ];

@@ -276,4 +276,13 @@ export const mutations: Mutation[] = [
     replace: "  if (iter.len !== undefined) {\n    taking.len = () => taking.sizeHint()[0];\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
   },
+  {
+    name: "taking-count-unowned",
+    breaks:
+      "`$taking` doesn't mark its `count`, std's `Take::count`, its source's `advance_by`, its own, so what passes a `count` on by its mark counts it by its fold (#2212)",
+    file: "src/runtime/taking.js",
+    find: "  $owns(taking, \"count\");\n",
+    replace: "",
+    tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],
+  },
 ];

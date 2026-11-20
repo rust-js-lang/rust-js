@@ -4251,13 +4251,15 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // Std's `Filter::size_hint`, none to its source's upper bound.
     kept.sizeHint = () => $upperOnly(this);
     // Std's `Filter::count`: its source's hint asked first, then each kept
-    // counted (filter.rs:135).
+    // counted (filter.rs:135). Its own, which what passes a `count` on by
+    // its mark asks, a `skip`'s, as std's `Skip::count` asks it (#2212).
     $forward(kept, this, {
       count: (drop) => {
         $sizeHint(this);
         return $Steps.prototype.count.call(kept, drop);
       },
     });
+    $owns(kept, "count");
     return kept;
   }
   // Std's `FlatMap`: each item of what `f` makes of each of its source's,
@@ -5748,6 +5750,9 @@ export function $skipping(iter, n, drop) {
   // Its `count` its source's, the crate's own where it writes one, which
   // a `skip` of it asks in turn (#671).
   $ownsAs(skipping, iter, "count");
+  // And its `last`, std's `Skip::last`, its source's `nth(n - 1)` and then
+  // its source's `last`, not its fold, where it's given (#2212).
+  if (typeof iter.last === "function") $owns(skipping, "last");
   return skipping;
 }
 
@@ -5863,6 +5868,9 @@ export function $taking(iter, n, drop) {
   if (iter.ownNth && iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
   const of = (name, step) => (typeof iter[name] === "function" ? step : undefined);
   $forward(taking, iter, { advanceBy, count, nth: of("nth", nth), tryFold: of("tryFold", tryFold), fold: of("tryFold", fold) });
+  // Its `count` its own, std's `Take::count`, its source's `advance_by`,
+  // not its fold, which what passes a `count` on by its mark asks (#2212).
+  $owns(taking, "count");
   // And its `nth_back`, `rfold`, `try_rfold` and `advance_back_by`, std's,
   // by its source's `nth_back` past what it won't give, wherever it steps
   // from its back (`$forwardBack`, #2136).
@@ -6593,6 +6601,8 @@ export function $filterEnds(it, p, drop) {
       return $Steps.prototype.count.call(filter, drop);
     },
   });
+  // Its own, as `$Steps`' `filter`'s is (#2212).
+  $owns(filter, "count");
   filter.from = [it];
   return filter;
 }
@@ -21334,6 +21344,9 @@ export function $lazyChain(a, b) {
   // `Vec`'s (#250).
   // Its `count`, each side's, the crate's own where one writes it (#505).
   if (first.ownCount || second.ownCount) $owns(chained, "count");
+  // Its `last`, std's `Chain::last`, each side's `last`, not its fold
+  // (#2212).
+  $owns(chained, "last");
   if (first.ownNth && second.ownNth) {
     $owns(chained, "nth");
     chained.dropItem = first.dropItem ?? second.dropItem;

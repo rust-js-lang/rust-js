@@ -110,6 +110,9 @@ function $taking(iter, n, drop) {
   if (iter.ownNth && iter.dropItem !== undefined) taking.dropItem = iter.dropItem;
   const of = (name, step) => (typeof iter[name] === "function" ? step : undefined);
   $forward(taking, iter, { advanceBy, count, nth: of("nth", nth), tryFold: of("tryFold", tryFold), fold: of("tryFold", fold) });
+  // Its `count` its own, std's `Take::count`, its source's `advance_by`,
+  // not its fold, which what passes a `count` on by its mark asks (#2212).
+  $owns(taking, "count");
   // And its `nth_back`, `rfold`, `try_rfold` and `advance_back_by`, std's,
   // by its source's `nth_back` past what it won't give, wherever it steps
   // from its back (`$forwardBack`, #2136).
