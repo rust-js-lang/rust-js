@@ -1089,6 +1089,15 @@ export function testsEnv(compiler: string, own: string, snapshots: Snapshots, en
   };
 }
 
+/** Whether any of `chosen`'s tests drives a browser (`drivesBrowser`), of
+ * each file each one's tests name, not only its first: a set naming
+ * test/none-given.test.ts third, which launches Chromium, failed two
+ * shards' controls on a runner given none (check.yml 44682796981). */
+export function drivesABrowser(chosen: Pick<Mutation, "tests">[], at = root): boolean {
+  const files = new Set(chosen.flatMap((mutation) => (mutation.tests ? testSet(mutation.tests).files : [])));
+  return [...files].some((file) => drivesBrowser(at, file));
+}
+
 /** A set of tests a mutation names, `bun test` arguments: its files, and
  * the pattern `-t` gives, if any. */
 export function testSet(tests: string[]): { files: string[]; pattern?: string } {
@@ -1795,8 +1804,7 @@ async function main() {
   // Whether what would run drives a browser, `browser` or `none`, and none
   // run: CI's mutations install one where it does (`drivesBrowser`).
   if (args.includes("--browser")) {
-    const files = new Set(chosen.flatMap((mutation) => (mutation.tests ? [mutation.tests[0]] : [])));
-    console.log([...files].some((file) => drivesBrowser(root, file)) ? "browser" : "none");
+    console.log(drivesABrowser(chosen) ? "browser" : "none");
     return;
   }
   // Which would run, each its name and file, and none run.

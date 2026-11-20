@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -756,4 +756,16 @@ test("a mutant against the whole corpus runs it in parts; --corpus runs each so"
   const swept = againstWholeCorpus({ name: "m", breaks: "x", file: "src/a.rs", find: "a", replace: "b", tests: ["test/a.test.ts", "-t", "x"], env: { ITERATOR_TABLE: "copies" } });
   expect([swept.tests, swept.snapshots, swept.env]).toEqual([["test/corpus.test.ts"], true, undefined]);
   expect(refusedFlags(["--corpus"])).toEqual([]);
+});
+
+// A mutation shard installs a browser where any file its mutations' tests
+// name drives one, not only each set's first: a set naming
+// test/none-given.test.ts third, which launches Chromium, failed two
+// shards' controls on runners given none (check.yml 44682796981).
+test("a shard whose mutations' tests launch a browser gets one", () => {
+  const written = "test/lowering-written-branches.test.ts";
+  expect(drivesABrowser([{ tests: [written, "test/lowering-bindings.test.ts", "test/none-given.test.ts"] }])).toBe(true);
+  expect(drivesABrowser([{ tests: [written, "-t", "^x$"] }, { tests: ["test/none-given.test.ts", "-t", "^y$"] }])).toBe(true);
+  expect(drivesABrowser([{ tests: [written, "-t", "test/none-given.test.ts"] }])).toBe(false);
+  expect(drivesABrowser([{ tests: [written] }, { tests: undefined }])).toBe(false);
 });
