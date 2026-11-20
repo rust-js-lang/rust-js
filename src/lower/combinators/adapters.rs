@@ -425,13 +425,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(item) if let Some(each) = self.iterable_of_each(None, item, span)? => {
                     self.flat_mapped(items, each, item, own_count)
                 }
-                _ => {
-                    let item = self.fresh(crate::lower::Base::Named("item"));
+                // Of JS iterators already, each as it is, in the form the
+                // inner iterators' type says (`flattened_form`, #2207).
+                item => {
+                    let name = self.fresh(crate::lower::Base::Named("item"));
                     let each = Expr::arrow(
-                        vec![item.clone().into()],
-                        vec![StmtKind::Return(Some(Expr::var(&item))).at(js::Span::NONE)],
+                        vec![name.clone().into()],
+                        vec![StmtKind::Return(Some(Expr::var(&name))).at(js::Span::NONE)],
                     );
-                    method(items, "flatMap", vec![each])
+                    match item {
+                        Some(item) => self.flat_mapped(items, each, item, own_count),
+                        None => method(items, "flatMap", vec![each]),
+                    }
                 }
             },
             IterComb::Zip => {

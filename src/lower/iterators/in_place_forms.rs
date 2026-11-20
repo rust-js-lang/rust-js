@@ -70,7 +70,7 @@ pub(in crate::lower) enum InPlaceForm {
     /// `$flattenEnds(src, each)`.
     FlattenEnds,
     /// `src.flatMap(each)`, JS's own, of inner iterators nothing drops
-    /// whose `count` and `last` aren't the crate's.
+    /// whose `count`, `last` and hint aren't the crate's.
     StepsFlatMap,
     /// `$lazyTakeWhile(src, p)`.
     LazyTakeWhile,
@@ -118,8 +118,9 @@ pub(in crate::lower) enum Where {
     /// `Nth` false).
     NoOwnNth,
     /// Of inner iterators whose `count` and `last` aren't the crate's
-    /// (`reaches_its_own` of `Count` and `Last` false) and whose items
-    /// have no destructor (`drops`).
+    /// (`reaches_its_own` of `Count` and `Last` false), whose hint runs
+    /// nothing of the crate's (`hint_reaches_own_where` false) and whose
+    /// items have no destructor (`drops`).
     PlainInners,
 }
 
@@ -143,7 +144,7 @@ impl Where {
             Where::StepsRunNothing => &["own_nth_within", "hint_reaches_own_where"],
             Where::OfArrayItems => &["bounded_by_items"],
             Where::NoOwnNth => &["reaches_its_own"],
-            Where::PlainInners => &["reaches_its_own", "drops"],
+            Where::PlainInners => &["reaches_its_own", "hint_reaches_own_where", "drops"],
         }
     }
 }
@@ -398,11 +399,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The form a flatten of inner iterators of type `inner`, each giving
     /// what it gives, is made as: `$flatMap` where `own` says, of inner
-    /// iterators whose `count` or `last` is the crate's (#736), or of items
-    /// with a destructor (ADR 0510); else JS's own `flatMap`.
+    /// iterators whose `count` or `last` is the crate's (#736), of items
+    /// with a destructor (ADR 0510), or of inner iterators whose hint may
+    /// run the crate's code, which std's `FlattenCompat::size_hint` asks
+    /// and `$flatMap` asks as it does, where JS's own `flatMap` of a JS
+    /// iterator has none (`hint_reaches_own_where`, of what a `dyn` holds
+    /// too, #2207); else JS's own `flatMap`.
     pub(in crate::lower) fn flattened_form(&self, inner: Ty<'tcx>, own: bool) -> InPlaceForm {
         let gives = self.iterable_item(inner);
-        let form = match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {
+        let made = crate::lower::recognition::iterator_type_of(self.tcx, self.typing_env, inner);
+        let hint_runs = self.recognition().hint_reaches_own_where(made, true);
+        let form = match own || hint_runs || self.drops(gives) != crate::lower::drops::Drops::Nothing {
             true => InPlaceForm::FlatMap,
             false => InPlaceForm::StepsFlatMap,
         };

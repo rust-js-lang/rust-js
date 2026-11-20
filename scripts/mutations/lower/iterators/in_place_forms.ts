@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`flatten` of inner iterators that drop, of a `map`'s source that drops too, closes the inner one first, as JS's `flatMap` does (#644)",
     file: "src/lower/iterators/in_place_forms.rs",
-    find: "        let form = match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
+    find: "        let form = match own || hint_runs || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
     replace: "        let form = match false {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`flat_map` of the crate's iterators that give items with a destructor is JS's `flatMap`, whose `last` drops each as the next comes, not each inner one's own `last` (#645)",
     file: "src/lower/iterators/in_place_forms.rs",
-    find: "        let form = match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
-    replace: "        let form = match own {\n",
+    find: "        let form = match own || hint_runs || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "        let form = match own || hint_runs {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_last_takes_each_inner_last.rs$"],
     snapshots: true,
   },
@@ -139,5 +139,23 @@ export const mutations: Mutation[] = [
     replace: "                let items = match true {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
     snapshots: true,
+  },
+  {
+    name: "flatten-of-hinting-inners-js-flat-map",
+    breaks:
+      "a flatten of the crate's iterators with their own `size_hint` is JS's `flatMap`, which has no hint, so a filter's `count` of it never asks theirs, where std's `FlattenCompat::size_hint` does (#2207)",
+    file: "src/lower/iterators/in_place_forms.rs",
+    find: "        let form = match own || hint_runs || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
+    replace: "        let form = match own || self.drops(gives) != crate::lower::drops::Drops::Nothing {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
+  },
+  {
+    name: "flatten-of-dyn-inners-js-flat-map",
+    breaks:
+      "a flatten of `Box<dyn Iterator>`s is JS's `flatMap`, which has no hint, so a filter's `count` of it never asks what the boxes hold, the crate's iterators with their own `size_hint` (#2207)",
+    file: "src/lower/iterators/in_place_forms.rs",
+    find: "        let hint_runs = self.recognition().hint_reaches_own_where(made, true);\n",
+    replace: "        let hint_runs = self.recognition().hint_reaches_own_where(made, false);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
   },
 ];

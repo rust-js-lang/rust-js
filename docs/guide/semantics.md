@@ -926,6 +926,9 @@ What's refused is in [the limitations](limitations.md).
   inner iterator's own `count`, the crate's where it writes one, as
   `FlattenCompat::count` does, one made in place then `$count($flatMap(src,
   f))` ([0510](../decisions/0510-flat-map-and-flatten-of-destructors.md),
+  amended), as is one of inner iterators whose `size_hint` may be the
+  crate's, boxed as `dyn` too, which asks theirs as std's does (#2207,
+  [1092](../decisions/1092-the-iterator-protocol-is-one-contract.md),
   amended); dropped, it's closed once,
   `it.return()`; one a `cycle()` or a clone holds to clone is std's struct
   too, and so is a `filter()`, a `filter_map()`, a `take_while()`, a

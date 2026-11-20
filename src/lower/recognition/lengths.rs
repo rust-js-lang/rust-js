@@ -67,10 +67,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ) {
             return unseen_own;
         }
+        // And a flatten's inner iterator, which it makes of each item and
+        // whose hint `FlattenCompat::size_hint` asks (flatten.rs:535), as
+        // `own_steps`' `INNERS` is (#2207). What a `dyn` there holds may be
+        // the crate's own: it's an item's, never the value a binding made.
+        let inner = || (self.flattened_inner(ty)).is_some_and(|inner| self.hint_reaches_own_where(inner, true));
         adapted_iterators(self.tcx, self.typing_env, ty).is_some_and(|held| {
             held.into_iter()
                 .any(|held| self.hint_reaches_own_where(held, unseen_own))
-        })
+        }) || inner()
     }
 
     /// Whether an iterator of type `ty` gives no more items than an array's

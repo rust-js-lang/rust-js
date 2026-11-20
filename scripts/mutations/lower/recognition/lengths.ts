@@ -342,4 +342,22 @@ export const mutations: Mutation[] = [
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_grows_a_vec_as_stds.rs$"],
   },
+  {
+    name: "flatten-inner-hint-unfollowed",
+    breaks:
+      "a flatten's inner iterators aren't taken to run the crate's `size_hint`, so `v.into_iter().flatten().filter(f).count()` of the crate's iterators with their own never asks theirs, where std's `Filter::count` asks it through `FlattenCompat::size_hint` (#2207)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        }) || inner()\n",
+    replace: "        })\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
+  },
+  {
+    name: "flatten-inner-dyn-unseen",
+    breaks:
+      "what a flatten's inner `Box<dyn Iterator>` holds is taken for none of the crate's, so a filter's `count` of a flatten of boxed iterators of the crate's never asks their hint (#2207)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        let inner = || (self.flattened_inner(ty)).is_some_and(|inner| self.hint_reaches_own_where(inner, true));\n",
+    replace: "        let inner = || (self.flattened_inner(ty)).is_some_and(|inner| self.hint_reaches_own_where(inner, unseen_own));\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
+  },
 ];

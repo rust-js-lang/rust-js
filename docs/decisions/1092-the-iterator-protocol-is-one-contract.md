@@ -2133,3 +2133,48 @@ hold) are listed there. A listed name that's no longer such a function,
 or is also a form, fails too. So a new runtime iterator can't be left
 out of the net silently.
 
+
+## Amendment: a flatten's hint asks the inner iterator it's in (2026-11-21, #2207)
+
+Std's `FlattenCompat::size_hint` asks the hint of the front and back
+inner iterators it's in (`flatten.rs:535`). `Filter::count` asks its
+source's hint first, and a collect or an `extend` asks it for room. So
+`v.into_iter().flatten().filter(f).count()` of the crate's iterators with
+their own `size_hint` runs theirs once one has been stepped. In JS it ran
+nothing, for two reasons:
+
+- `hint_reaches_own_where` (recognition/lengths.rs) followed what a
+  flatten holds, its source, but not the inner iterators it makes of its
+  items. It now follows `flattened_inner`, as own_steps.rs's `INNERS`
+  does, so each consumer that asks it sees the inner's hint: the filter's
+  count, the `$somes` choice and the collects in hint_asks.rs. What a
+  `dyn` there holds is taken to be possibly the crate's (`unseen_own`
+  true). It's an item's value, never the iterator a binding made.
+- A flatten made in place of a JS iterator was JS's own `flatMap`, which
+  has no hint, so the count's own `count` still asked none. `flattened_form`
+  (iterators/in_place_forms.rs), the one owner of the form, now makes
+  it `$flatMap` where the inner iterator's hint may run the crate's code.
+  `$flatMap` asks that hint through `$flatHint`, as std's does.
+  `Where::PlainInners`, where JS's `flatMap` is chosen, asks
+  `hint_reaches_own_where` too. Flatten's last arm in
+  combinators/adapters.rs, of items that are JS iterators already
+  (`Box<dyn Iterator>`s, other flattens), called `flatMap` directly. It
+  now goes through `flat_mapped` too, so that arm's `count`, `last` and
+  hint are decided by the same owner.
+
+A zip, a chain, a peekable or another flatten around the flatten
+reaches the inner through the same walk. A `Flatten<option::IntoIter<Own>>`
+is a flatten of `Own`s and is followed too. A flatten of `Option`s has
+std's `option::IntoIter` inner, whose hint runs nothing.
+
+Corpus `flatten_asks_its_inner_iterators_hint` covers a `Vec`'s, an
+`Option`'s and boxed `dyn` inners, a zip, a nested flatten, from the back,
+generic code, a collect and the hint itself. One snapshot moves:
+`comment_above_a_let_of_a_value`'s `log.extend` of a flatten of
+`Option<Box<dyn Iterator>>` now asks room as a direct `extend` of the box
+already did. React's port is unchanged. Mutations:
+`flatten-inner-hint-unfollowed` and `flatten-inner-dyn-unseen`
+(lengths.ts), `flatten-of-hinting-inners-js-flat-map` and
+`flatten-of-dyn-inners-js-flat-map` (in_place_forms.ts), and
+`flatten-of-iterators-bypasses-its-form` (adapters.ts). Case (ADR 0262):
+R, since which of the crate's steps std calls is observable.

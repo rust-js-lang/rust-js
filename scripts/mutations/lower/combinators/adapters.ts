@@ -432,4 +432,13 @@ export const mutations: Mutation[] = [
     replace: "        let own_count = [OwnStep::Count]\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
   },
+  {
+    name: "flatten-of-iterators-bypasses-its-form",
+    breaks:
+      "a flatten of what are JS iterators already, `Box<dyn Iterator>`s or flattens, is JS's `flatMap` whatever `flattened_form` says, so a filter's `count` of it never asks their hint, where std's `FlattenCompat::size_hint` does (#2207)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                        Some(item) => self.flat_mapped(items, each, item, own_count),\n",
+    replace: "                        Some(_) => method(items, \"flatMap\", vec![each]),\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
+  },
 ];
