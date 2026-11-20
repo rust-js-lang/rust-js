@@ -249,8 +249,15 @@ const escaped = (name: string) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** What a hunk names of a table's `adapters` and `consumers`: the
  * adapters, or, where it names none, the consumers; whether it names
  * generic code's (`$given`); whether it's in what every adapter shares;
- * and whether it takes away more than it puts back. */
-export function named(hunk: Hunk, adapters: Set<string>, consumers: Set<string>) {
+ * and whether it takes away more than it puts back: more lines, and code
+ * neither it nor the change's other hunks of its file (`saidInFile`, their
+ * added code's identifiers) say again. Code moved, or folded onto fewer
+ * lines, removed nothing: #2199's `.filter(present)`, gone from three arms
+ * into one closure beside them, read as a removal and ran each of 84,036
+ * rows of `filter`, `map` and `flatten`, 1,768 s of its push, where #823's
+ * removed rule (766055774) said `iterator_item` and `is_some_and`, which
+ * nothing put back. */
+export function named(hunk: Hunk, adapters: Set<string>, consumers: Set<string>, saidInFile: Set<string> = new Set()) {
   const lines = [...hunk.added, ...hunk.removed];
   const ids = [...lines, hunk.head, hunk.arm ?? ""].flatMap(identifiers);
   // A consumer's name, of what's called or named by path, and of the name
@@ -271,7 +278,9 @@ export function named(hunk: Hunk, adapters: Set<string>, consumers: Set<string>)
     generic: ids.some((id) => id.startsWith("$given")),
     shared: shared.files.includes(hunk.file) || identifiers(hunk.head).some((id) => shared.functions.includes(id)),
     decides: deciding.includes(hunk.file),
-    removes: hunk.removed.filter((line) => line.trim() !== "").length > hunk.added.filter((line) => line.trim() !== "").length,
+    removes:
+      hunk.removed.filter((line) => line.trim() !== "").length > hunk.added.filter((line) => line.trim() !== "").length &&
+      hunk.removed.flatMap(identifiers).some((id) => !saidInFile.has(id) && !hunk.added.flatMap(identifiers).includes(id)),
   };
 }
 
@@ -377,6 +386,10 @@ export function pickedOf(found: Hunk[], parts: number): Picked[] {
     const picked = { adapters: new Set<string>(), consumers: new Set<string>(), generic: false };
     const removing = new Set<string>();
     let everyAdapter = false;
+    // What the change's hunks of each file add, which a hunk's removed code
+    // said again there was moved, not removed.
+    const saidIn = new Map<string, Set<string>>();
+    for (const each of found) for (const id of each.added.flatMap(identifiers)) saidIn.set(each.file, (saidIn.get(each.file) ?? new Set()).add(id));
     for (const found_ of found) {
       const given = naming(found_, adapters, consumers);
       if (given === undefined) {
@@ -386,7 +399,7 @@ export function pickedOf(found: Hunk[], parts: number): Picked[] {
       // A list's entries alone, those its diff adds and removes.
       const entries = entriesOf(given);
       const hunk = entries ?? given;
-      const { adapters: words, consumers: c, generic, shared: sharedHunk, removes, decides } = named(hunk, adapters, consumers);
+      const { adapters: words, consumers: c, generic, shared: sharedHunk, removes, decides } = named(hunk, adapters, consumers, saidIn.get(hunk.file));
       const a = (entries !== undefined && hunk === entries ? entryAdapters(hunk, adapters) : undefined) ?? words;
       // What's taken away more than put back, or what decides each chain's
       // form, decides for each row of what it names: every one runs (#823,

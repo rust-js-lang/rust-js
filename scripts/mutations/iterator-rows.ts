@@ -1,6 +1,7 @@
 // Which rows of the iterator tables a change runs before it lands
 // (scripts/iteratorRows.ts, #818): a list's entries alone decide the rows
-// of those its diff changes, and of what reaches them (dev-loop, ioCF).
+// of those its diff changes, and of what reaches them (dev-loop, ioCF); code
+// moved within its file removes nothing (dev-loop, ioDT).
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
@@ -42,5 +43,12 @@ export const mutations: Mutation[] = [
     find: "  return whole.length > 0 ? whole : undefined;\n",
     replace: "  return undefined;\n",
     tests: ["test/iterator-rows.test.ts", "-t", "a list's string entry names its adapter whole"],
+  },  {
+    name: "rows-moved-code-read-as-removed",
+    breaks: "code a change moves within its file, or folds onto fewer lines, reads as a removal and runs each row of what it names: #2199's `.filter(present)` moved into one closure ran 84,036 matrix rows, 1,768 s of its push",
+    file: "scripts/iteratorRows.ts",
+    find: "      hunk.removed.flatMap(identifiers).some((id) => !saidInFile.has(id) && !hunk.added.flatMap(identifiers).includes(id)),\n",
+    replace: "      true,\n",
+    tests: ["test/iterator-rows.test.ts", "-t", "code a change says again in its file was moved"],
   },
 ];

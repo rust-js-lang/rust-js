@@ -37,6 +37,36 @@ test("generic code's, what every adapter shares and what's taken away are said",
   expect(named(hunk(["        return enumerated;"], ["        let item = it.item();", "        return enumerated(item);"]), adapters, consumers)).toMatchObject({ adapters: ["enumerate"], removes: true });
 });
 
+// #2199's push read code moved as a removal: three arms' `.filter(present)`
+// gone into one closure beside them, rustfmt folding each call onto one
+// line, ran each of 84,036 rows of `filter`, `map` and `flatten`, 1,768 s.
+// What the change says again in that file was moved; #823's removed rule
+// (766055774), whose `iterator_item` nothing put back, is still a removal.
+test("code a change says again in its file was moved, not removed: only what's put back nowhere runs each row", () => {
+  const file = "src/lower/combinators/adapters.rs";
+  const folded = [
+    "            IterComb::FilterMap => unboxed(",
+    '                method(method(items, "map", vec![next()]), "filter", vec![present()]),',
+    "                kept,",
+    "            ),",
+  ];
+  const arm = hunk(['            IterComb::FilterMap => unboxed(somes(method(items, "map", vec![next()])), kept),'], folded, "", file);
+  const closure = hunk(['            false => method(made, "filter", vec![present()]),'], [], "", file);
+  expect(named(arm, adapters, consumers).removes).toBe(true);
+  expect(named(arm, adapters, consumers, new Set(closure.added.flatMap((line) => line.match(/\w+/g) ?? []))).removes).toBe(false);
+  const why = (found: Hunk[]) => pickedOf(found, 8).flatMap((p) => p.why);
+  expect(why([closure, arm]).some((line) => line.includes("removes"))).toBe(false);
+  // Said again in another file is no help: removed from this one.
+  expect(why([{ ...closure, file: "src/lower/iterators.rs" }, arm]).some((line) => line.includes("removes"))).toBe(true);
+  const rule = hunk(
+    ["        return (dropping_items(recognition, source.peel_refs(), &drops) || enumerates_a_compiled_struct(tcx, adapter))"],
+    ["        let item = recognition.iterator_item(adapter);", "        return (item.is_some_and(&drops)", "            || dropping_items(recognition, source.peel_refs(), &drops)"],
+    "fn back_stepped_adapter<'tcx>(",
+    "src/lower/analysis/back_stepped.rs",
+  );
+  expect(why([rule]).some((line) => line.includes("enumerate (removes: each row)"))).toBe(true);
+});
+
 test("a name's rows are those whose chain has it, or whose consumer it begins", () => {
   const take = pattern(new Set(["take"]), new Set(), false)!;
   expect(["vec | take | fold | none", "vec | map.take | rfold | drop", "vec | map holding.take | nth | none"].every((id) => take.test(id))).toBe(true);

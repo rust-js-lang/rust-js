@@ -844,3 +844,33 @@ That's 53,360 cases in 890 programs, 447 s on the mini in 10 parts. They
 found #1985 (a `vec::IntoIter` lent as `dyn` throws), #1986 (a lent
 `take()`'s `rfold` drops in the wrong order) and #1987 (a lent `scan()`'s
 hint loses its upper bound), and #1981's `filter_map` shapes.
+
+### Amended: code moved within its file removes nothing (ioDT, 2026-11-20)
+
+A hunk "takes away more than it puts back" was decided by counting its
+lines. #2199's diff moved `.filter(present)` out of three arms of
+`combinators/adapters.rs` into one closure beside them, and rustfmt folded
+each remaining call onto one line. Two of the hunks read as removals, so
+every row of `filter`, `map` and, through what calls them, `flatten` ran:
+84,036 of the matrix's rows, 1,768 s of its push. That starved the corpus
+parts and crates.test past their budgets.
+
+A hunk now removes only when it has more lines removed than added **and**
+some removed identifier that neither the hunk's added code nor the
+change's other hunks of the same file say again. Code said again in the
+same file was moved, not removed: its rows are named and sampled as any
+other change's. The rule only narrows what ran before. Code said again in
+another file still counts as removed.
+
+Measured on #2199's diff in 12 parts:
+- Matrix: 93,165 rows before (84,036 of them the removal), 27,090 after
+  (60 of each pairing of what's named, plus the shared sample).
+- Conformance table: 18,103 rows before, 14,853 after.
+
+Replayed over the last 600 commits, the rule changes 4 selections:
+#2199's, a4ac81238 (`len` moved from `$stepByEnds` to `$stepBy`),
+a65327a9d (backs.rs's arms moved into `back_kept_source`) and 4fa12a60e.
+Each of their real removals still runs whole. So does 766055774's, which
+made #823: its removed `iterator_item` and `is_some_and` are said nowhere
+else. `test/iterator-rows.test.ts` holds both shapes; mutation
+`rows-moved-code-read-as-removed`.
