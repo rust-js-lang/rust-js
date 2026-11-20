@@ -63,9 +63,9 @@ test("a decision's amendments are its headings that say so", () => {
 });
 
 test("the semantic owners' rows are read with their lengths, the longest first", () => {
-  const short = "| Is it short? | `a.rs` | `ask` | |";
-  const long = `| Is it long, ${"its cases, ".repeat(8)}? | \`b.rs\` | \`ask\` | |`;
-  const page = ["# Architecture", "### Semantic owners", "", "| Question | Owner | API | Primitive |", "|---|---|---|---|", short, long, "", "**Calls.** The rest.", "| not | a | row |"].join("\n");
+  const short = "| Is it short? | `a.rs` | `ask` | | |";
+  const long = `| Is it long, ${"its cases, ".repeat(8)}? | \`b.rs\` | \`ask\` | | |`;
+  const page = ["# Architecture", "### Semantic owners", "", "| Question | Owner | API | Primitive | Source |", "|---|---|---|---|---|", short, long, "", "**Calls.** The rest.", "| not | a | row |"].join("\n");
   expect(ownerRows(page)).toEqual([
     [`Is it long, ${"its cases, ".repeat(8)}?`, long.length],
     ["Is it short?", short.length],

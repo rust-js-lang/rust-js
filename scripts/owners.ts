@@ -21,7 +21,7 @@ import { join } from "node:path";
 /** The page whose table it is. */
 export const OWNER_PAGE = "docs/architecture.md";
 /** The table's header row. */
-export const HEADER = "| Question | Owner | API | Primitive |";
+export const HEADER = "| Question | Owner | API | Primitive | Source |";
 /** The mark that says a candidate is a helper, not an answer others ask:
  * `// helper: <reason>`, in the comment and attribute lines directly above
  * its `fn`. */
@@ -40,6 +40,32 @@ export type OwnerRow = {
   /** Each token of its Primitive cell after "instead of": a guess the
    * primitive replaced, which only its owners may read (#2159). */
   guesses: string[];
+  /** Its Source cell's class, the weakest source any of its answers reads,
+   * 1 MIR or rustc's own results to 5 a guess from JS shape (#2200); none
+   * while it's unclassified. */
+  source: number | undefined;
+  /** What its Source cell says after the class: the weak APIs, a reason. */
+  sourceSaid: string;
+};
+
+/** A Source cell: empty, unclassified, or a class from 1, MIR or rustc's
+ * own results, 2 a type predicate, 3 a crate-wide fact keyed by type, 4 a
+ * fact riding a JS node, to 5 a guess from JS shape, the weakest source
+ * any of the row's answers reads; after it, `: ` and the weak APIs, or a
+ * reason its source is enough (#2200). */
+export const SOURCE = /^([1-5])(?:: (.+))?$/;
+
+/** The rows of each class, and those unclassified, `0`. */
+export function sourceTally(rows: readonly OwnerRow[]): number[] {
+  const tally = [0, 0, 0, 0, 0, 0];
+  for (const row of rows) tally[row.source ?? 0]!++;
+  return tally;
+}
+
+/** The tally said in a line, as check:fast prints it. */
+export const sourceLine = (rows: readonly OwnerRow[]): string => {
+  const [unclassified, ...classes] = sourceTally(rows);
+  return `owner rows by source (#2200): ${classes.map((n, i) => `${i + 1}: ${n}`).join(", ")}; ${unclassified} unclassified`;
 };
 
 /** What parts a Primitive cell: the primitives before it, the guesses they
@@ -66,12 +92,16 @@ export function ownerTable(page: string): OwnerRow[] {
   const rows: OwnerRow[] = [];
   for (let i = start + 2; i < lines.length && lines[i]!.startsWith("|"); i++) {
     const row = cells(lines[i]!);
-    if (row.length !== 4) throw new Error(`${OWNER_PAGE}:${i + 1}: a row of ${row.length} cells, not the header's 4 (escape a \`|\` in a cell as \`\\|\`)`);
-    const [question, owner, api, primitive] = row as [string, string, string, string];
+    if (row.length !== 5) throw new Error(`${OWNER_PAGE}:${i + 1}: a row of ${row.length} cells, not the header's 5 (escape a \`|\` in a cell as \`\\|\`)`);
+    const [question, owner, api, primitive, sourceCell] = row as [string, string, string, string, string];
+    const source = SOURCE.exec(sourceCell);
+    if (sourceCell !== "" && source === null) {
+      throw new Error(`${OWNER_PAGE}:${i + 1}: a Source cell \`${sourceCell}\` that isn't a class 1 to 5, then \`: \` and its weak APIs or reason (#2200)`);
+    }
     const owners = ticked(owner);
     if (owners.length === 0) throw new Error(`${OWNER_PAGE}:${i + 1}: a row that names no owner module`);
     const [held, replaced = ""] = primitive.split(INSTEAD_OF);
-    rows.push({ line: i + 1, question, owners, api: ticked(api), primitives: ticked(held!), guesses: ticked(replaced) });
+    rows.push({ line: i + 1, question, owners, api: ticked(api), primitives: ticked(held!), guesses: ticked(replaced), source: source ? Number(source[1]) : undefined, sourceSaid: source?.[2] ?? "" });
   }
   return rows;
 }
@@ -368,4 +398,5 @@ if (import.meta.main) {
   }
   for (const [dir, n] of [...byArea].sort((a, b) => b[1] - a[1]).slice(0, 25)) console.log(`${String(n).padStart(5)}  ${dir}`);
   for (const line of state.outside) console.log(`primitive read outside its owners: ${line}`);
+  console.log(sourceLine(state.rows));
 }

@@ -145,3 +145,30 @@ pass the test, so it goes: the file, its `lineSet` entry in
 scripts/push.ts, and `UNCLASSIFIED`. Completeness is strict: every
 candidate is named in a row or marked `// helper: <reason>`, and
 test/architecture-owners.test.ts fails on any that's neither, naming it.
+
+## Amendment: each row's source (2026-11-20, #2200)
+
+Campaign 2's wrong answers traced to decisions made from weak sources:
+facts riding JS nodes, crate-wide facts keyed by type that choose a form,
+guesses from JS shape, and answers by type where a MIR local exists. Each
+was found one by one, after it gave a wrong answer. Campaign 3 (#2200)
+classifies every owner by its source, so the weak ones are found first.
+
+- The table gains a fifth column, Source: one class, the weakest source
+  any of the row's answers reads. 1 is MIR or rustc's own results, 2 a
+  type predicate, 3 a crate-wide fact keyed by type, 4 a fact riding a JS
+  node, and 5 a guess from JS shape. A row mixing classes takes its
+  weakest, and after a class of 3 to 5 it names its weak APIs, `4:
+  \`held_as\``, rather than being split. Phase 3's reasons why a weak
+  source is enough go in the same cell, after the class: one cell, one
+  rule.
+- `ownerTable` refuses a row of other than five cells, and a Source cell
+  that's neither empty nor a class, then optionally `: ` and its text,
+  naming its line.
+- Empty is unclassified, allowed only while phase 1 runs. `bun
+  scripts/owners.ts` and every check:fast run print each class's count
+  and the unclassified count. Phase 1's last commit makes an empty cell a
+  failure, and phase 3 refuses a class of 3 to 5 without a reason.
+
+Held by test/architecture-owners.test.ts ("a row is five cells") and the
+mutation `owners-source-unchecked`.

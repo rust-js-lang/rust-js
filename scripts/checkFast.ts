@@ -24,6 +24,7 @@ import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import {childWarnings} from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
+import { OWNER_PAGE, ownerTable, sourceLine } from "./owners";
 import { outcome, readOnly, recordSanity, selectChange, selectionFile, suiteFiles } from "./select";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, pooledParts } from "./shard";
 import { said, strays } from "./strays";
@@ -983,6 +984,8 @@ if (import.meta.main) {
   if (keptLogs !== undefined) console.log(`\neach failing job's whole output: ${keptLogs}`);
   // From its start, its build too.
   const total = elapsed();
+  // How many owners are of each source, as #2200's classification goes.
+  console.log(sourceLine(ownerTable(readFileSync(join(root, OWNER_PAGE), "utf8"))));
   const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : "check:fast, everything";
   console.log(
     `\n${failed.length === 0 ? `all passed: ${timed(scope, total, { ran: totalKey(listed) })}` : `${failed.length} failed in ${total.toFixed(0)}s`}`,

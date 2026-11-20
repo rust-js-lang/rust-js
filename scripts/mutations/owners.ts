@@ -12,7 +12,7 @@ export const mutations: Mutation[] = [
     file,
     find: "api: ticked(api), primitives",
     replace: "api: [], primitives",
-    tests: of("a row is four cells"),
+    tests: of("a row is five cells"),
   },
   {
     name: "owners-named-under-any-owner",
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
     file,
     find: ".split(/(?<!\\\\)\\|/);",
     replace: ".split(/\\|/);",
-    tests: of("a row is four cells"),
+    tests: of("a row is five cells"),
   },
   {
     name: "owners-comments-read-as-code",
@@ -130,9 +130,9 @@ export const mutations: Mutation[] = [
     name: "owners-guesses-unread",
     breaks: "what a row's Primitive cell names after \"instead of\" is never read, so a type's shape that stood in for its mark comes back in a second file unseen (#2159)",
     file,
-    find: "guesses: ticked(replaced) });",
-    replace: "guesses: [] });",
-    tests: of("a row is four cells"),
+    find: "guesses: ticked(replaced),",
+    replace: "guesses: [],",
+    tests: of("a row is five cells"),
   },
   {
     name: "owners-guess-held-read",
@@ -141,5 +141,13 @@ export const mutations: Mutation[] = [
     find: "if (!guess && !readers.some(own))",
     replace: "if (!readers.some(own))",
     tests: of("a primitive is its owners' alone"),
+  },
+  {
+    name: "owners-source-unchecked",
+    breaks: "a row's Source cell is read whatever it says, so a class that isn't one, `6` or `four`, stands in the table uncounted (#2200)",
+    file,
+    find: 'if (sourceCell !== "" && source === null) {',
+    replace: "if (false) {",
+    tests: of("a row is five cells"),
   },
 ];
