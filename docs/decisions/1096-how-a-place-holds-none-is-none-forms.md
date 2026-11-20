@@ -522,3 +522,14 @@ to `a4b7a4d`; the corpus is unchanged.
 Mutation `null-none-not-defined`, new, caught; `item-read-never-undefined`,
 `defined-may-be-undefined`, `present-may-be-undefined` and
 `alias-none-forgotten` follow the code, caught.
+
+## Amendment: what's given a callback isn't asked its `None`'s stamp (2026-11-20, #2112)
+
+`never_null`, whether what's given a callback JS may have made is given as
+it is, never `?? undefined`, took a read stamped `Known::NoneUndefined`,
+`undefined` where it's `None`, for one. Asked of MIR instead
+(`place_none`, through the tuple a closure's call is made of), it decides
+nothing either way: `--retire` of the clause, the stamp's or MIR's, found
+every test file, the corpus with its snapshots, React's port and the crate
+corpus as they are, each such argument given as it is by another of its
+clauses. The clause goes, no stamp read in its place.

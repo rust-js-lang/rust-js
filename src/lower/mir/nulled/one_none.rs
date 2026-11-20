@@ -574,8 +574,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// Whether `value` is given as it's written: its JS is never `null`, a
 /// literal's, `undefined`'s, an object's, an array's or a function's, what's
-/// given `?? undefined` already, or one known `undefined` for `None` or
-/// never `None`; or it's `js::null()`'s `null`, JS's on purpose (ADR 0935).
+/// given `?? undefined` already, or one known never `None`; or it's
+/// `js::null()`'s `null`, JS's on purpose (ADR 0935).
 pub(super) fn never_null(value: &Expr) -> bool {
     use js::ExprKind as K;
     matches!(
@@ -596,6 +596,5 @@ pub(super) fn never_null(value: &Expr) -> bool {
             | K::New(..)
     ) || value.has_null_fallback()
         || matches!(&value.kind, K::Binary(js::Op::Coalesce, _, given) if matches!(given.kind, K::Undefined))
-        || value.facts.has(js::Known::NoneUndefined)
         || value.facts.has(js::Known::Present)
 }
