@@ -3,8 +3,3 @@
 # marks (ADR 1175, #2162): what the sweeps have left to classify. Only
 # falls: test/architecture-owners.test.ts refuses a line added, and one
 # whose answer is classified, renamed or gone until it comes off.
-src/lower/mir/nulled/one_none.rs callback_may_be_js
-src/lower/mir/nulled/one_none.rs made_some
-src/lower/mir/nulled/one_none.rs omitted_prop
-src/lower/mir/nulled/proofs.rs ended_present
-src/lower/mir/nulled/proofs.rs proved_present

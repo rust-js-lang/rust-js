@@ -50,7 +50,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// slice's `first()` or `last()` of one MIR proves not empty there
     /// (`present_proved`): `Some` wherever it's read, a read in place too,
     /// `keys.at(-1)` (#1860).
-    pub(in crate::lower::mir) fn ended_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
+    fn ended_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
         matches!(self.whole_writes(state, local).as_deref(), Some([Write::Call(block, ..)])
             if crate::lower::analysis::present_proved(self.tcx, state.body, *block))
     }
