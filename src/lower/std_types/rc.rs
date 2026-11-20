@@ -424,11 +424,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `counted_same_of`, of the function `def_id` of `generic_args`.
-    pub(in crate::lower) fn counted_same_by(
-        &self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> Option<bool> {
+    pub(super) fn counted_same_by(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<bool> {
         let (new, pointee) = self.recognition().rc_same(def_id, generic_args)?;
         self.krate.counted.counts(self.tcx, pointee).then_some(new)
     }

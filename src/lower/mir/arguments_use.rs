@@ -239,11 +239,7 @@ fn mentions(rvalue: &Rvalue<'_>, local: Local) -> bool {
 /// (`ArgumentsUse::Written`). Any other place
 /// of an `Arguments`, a parameter's, a field's, or one given on, holds a
 /// function that makes its text.
-pub(in crate::lower) fn holds_text<'tcx>(
-    recognition: &Recognition<'_, 'tcx>,
-    body: &mir::Body<'tcx>,
-    local: Local,
-) -> bool {
+pub(super) fn holds_text<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &mir::Body<'tcx>, local: Local) -> bool {
     let tcx = recognition.tcx;
     let made = body.basic_blocks.iter().any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Call { func, destination, .. }

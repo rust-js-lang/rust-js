@@ -704,7 +704,7 @@ pub(crate) fn note_debug_shown<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[crate::lower::
 /// std's struct compiled for this build where it's held: the one answer,
 /// by the type, of what each query of the catalog below asks (#1401). Not
 /// another's than an adapter's, whose answer is its catalog's alone.
-pub(crate) fn compiled_for<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
+pub(super) fn compiled_for<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     match ty.peel_refs().kind() {
         ty::Adt(adt, _) if !adt.did().is_local() => std_path_item(tcx, adt.did()).is_none_or(|item| {
             compiled_for_build(tcx, item)

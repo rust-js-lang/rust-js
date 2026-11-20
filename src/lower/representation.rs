@@ -1028,7 +1028,7 @@ pub(in crate::lower) const LARGE_BYTES: usize = 16 * 1024;
 /// where they're more than `LARGE_BYTES`: read from its memory, never made
 /// a value tree of each byte. None of fewer, or of memory that isn't bytes
 /// alone, uninitialized or a pointer's.
-pub(in crate::lower) fn large_bytes<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<Vec<u8>> {
+fn large_bytes<'tcx>(tcx: TyCtxt<'tcx>, value: ConstValue, ty: Ty<'tcx>) -> Option<Vec<u8>> {
     let ty::Ref(_, inner, _) = ty.kind() else {
         return None;
     };

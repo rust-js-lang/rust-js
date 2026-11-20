@@ -323,7 +323,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// library's, whose calls a program can see, a print or a panic (ADR
     /// 1120)? std's and a derived one's, all through, run none, nor does a
     /// type's equal only to itself, its address's (ADR 0864).
-    pub(in crate::lower) fn hash_runs_code(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+    pub(super) fn hash_runs_code(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         if seen.contains(&ty) {
             return false;
         }

@@ -125,7 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// And whose `Clone` is derived, `Bound`'s, quickcheck's (#1420): the
     /// same variant, its fields cloned, as any enum's (ADR 0033).
-    pub(in crate::lower) fn std_enum_derives_clone(&self, ty: Ty<'tcx>) -> bool {
+    fn std_enum_derives_clone(&self, ty: Ty<'tcx>) -> bool {
         self.std_enum_derives(self.tcx.lang_items().clone_trait(), ty)
     }
 

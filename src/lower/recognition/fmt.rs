@@ -140,12 +140,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// is nothing (ADR 0148). A writer of the crate's own, or a `W:
     /// fmt::Write`: what `write!` and `write_char` give its `write_str` (ADR
     /// 0166, #1652).
-    pub(in crate::lower) fn classify_fmt_write(
-        &self,
-        def_id: DefId,
-        trait_: DefId,
-        ty: Ty<'tcx>,
-    ) -> Option<Option<Std>> {
+    pub(super) fn classify_fmt_write(&self, def_id: DefId, trait_: DefId, ty: Ty<'tcx>) -> Option<Option<Std>> {
         let tcx = self.tcx;
         if self.is_lang_adt(ty.peel_refs(), LangItem::String)
             && tcx.is_diagnostic_item(Symbol::intern("FmtWrite"), trait_)
@@ -231,7 +226,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `Display::fmt(&x, f)`, `Debug::fmt` or another `fmt` trait's, called
     /// as a function, on a `Formatter` held where it isn't its writer's
     /// (ADR 0461): what it writes.
-    pub(in crate::lower) fn formatter_fmt_to(&self, def_id: DefId) -> Option<WriteCall> {
+    pub(super) fn formatter_fmt_to(&self, def_id: DefId) -> Option<WriteCall> {
         let operation = self.write_call(def_id, false);
         if !matches!(operation, WriteCall::Display | WriteCall::Debug | WriteCall::OtherFmt) {
             return None;
@@ -401,7 +396,7 @@ pub(crate) fn formatted_adt(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 /// `formatted_adt`, of `ty`, a formatting impl's self type: as it's
 /// written, or a type whose impl is its own (`Recognition::formats_itself`),
 /// `&dep::ByRef`'s, whose wrappers are none of std's that pass it on.
-pub(crate) fn formatted_adt_of(mut ty: Ty<'_>) -> Option<DefId> {
+pub(super) fn formatted_adt_of(mut ty: Ty<'_>) -> Option<DefId> {
     loop {
         let inner = match *ty.kind() {
             ty::Ref(_, inner, _) => inner,
@@ -434,7 +429,7 @@ pub(in crate::lower) fn is_fmt_argument(tcx: TyCtxt<'_>, id: DefId) -> bool {
 }
 
 /// Is `id` one of core's `OTHER_FMT_TRAITS`?
-pub(crate) fn is_other_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(super) fn is_other_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
     of_std_crate(tcx, id, StdCrate::Core)
         && tcx.def_kind(id) == DefKind::Trait
         && OTHER_FMT_TRAITS.contains(&tcx.item_name(id).as_str())
@@ -509,7 +504,7 @@ pub(crate) fn is_write_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> boo
 
 /// `Recognition::stream`, of `tcx` alone: a standard stream's `Some(true)`
 /// of standard error (ADR 0132). Its JS value is `undefined`.
-pub(in crate::lower) fn stream_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
+fn stream_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
     let ty::Adt(adt, _) = ty.kind() else { return None };
     match std_path_item(tcx, adt.did()) {
         Some(StdPath::IoStdout | StdPath::IoStdoutLock) => Some(false),
@@ -527,7 +522,7 @@ pub(in crate::lower) fn may_be_undefined_std<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tc
 }
 
 /// `io::Result<()>`, a write's result.
-pub(crate) fn is_io_unit_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+fn is_io_unit_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(result, args) if is_std_def(tcx, result.did(), StdItem::Result)
         && args.type_at(0).is_unit()
         && matches!(args.type_at(1).kind(), ty::Adt(error, _) if is_std_path(tcx, error.did(), StdPath::IoError)))

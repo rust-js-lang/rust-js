@@ -308,7 +308,7 @@ fn spelled_as_block_label(word: &str) -> bool {
 
 /// The block of a block label's word, `bb7`'s, `label`'s spelling read
 /// back: of the words the census keeps of block labels alone.
-pub(in crate::lower::mir) fn block_of_label(word: &str) -> Option<mir::BasicBlock> {
+pub(super) fn block_of_label(word: &str) -> Option<mir::BasicBlock> {
     let index = word.strip_prefix("bb").filter(|_| spelled_as_block_label(word))?;
     index.parse::<usize>().ok().map(mir::BasicBlock::from_usize)
 }

@@ -178,7 +178,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// `<pointer as Deref>::Target`, of a pointer that derefs, the crate's
     /// own smart pointer's.
-    pub(in crate::lower) fn deref_target_of(&self, pointer: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    pub(super) fn deref_target_of(&self, pointer: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let target = self.tcx.lang_items().deref_target()?;
         let projection = Ty::new_projection(self.tcx, ty::IsRigid::No, target, [pointer]);
         (self
@@ -213,7 +213,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A `Box<[T; N]>` or a `Box<[T]>`: its array, in JS (ADR 0023).
-    pub(in crate::lower) fn is_boxed_items(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_boxed_items(&self, ty: Ty<'tcx>) -> bool {
         ty.boxed_ty().is_some_and(|inner| inner.is_array() || inner.is_slice())
     }
 
@@ -251,7 +251,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A string's `bytes()`, an array of its UTF-8 bytes (ADR 0034).
-    pub(in crate::lower) fn is_str_bytes(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_str_bytes(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Bytes")
     }
@@ -317,7 +317,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A pattern that's a predicate of a `char`: a closure, a function, or a
     /// set of `char`s, an array or a slice of them (ADR 0157).
-    pub(in crate::lower) fn is_char_predicate(&self, pattern: Ty<'tcx>) -> bool {
+    pub(super) fn is_char_predicate(&self, pattern: Ty<'tcx>) -> bool {
         match pattern.peel_refs().kind() {
             ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => true,
             ty::Array(item, _) | ty::Slice(item) => item.is_char(),
@@ -428,7 +428,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A path's `Component`, std's enum as any enum is (ADR 0033).
-    pub(in crate::lower) fn is_path_component(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_path_component(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::PathComponent))
     }
 
@@ -441,7 +441,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A slice's `chunks_exact(n)` or `rchunks_exact(n)`, whose `remainder()`
     /// is what's left (ADR 0324).
-    pub(in crate::lower) fn is_exact_chunks(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_exact_chunks(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::SliceChunksExact | StdPath::SliceRChunksExact | StdPath::SliceChunksExactMut | StdPath::SliceRChunksExactMut)))
     }
 
@@ -559,7 +559,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A `dyn` std's downcasts are of: a `dyn Any`'s or a `dyn Error`'s.
-    pub(in crate::lower) fn downcasts(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn downcasts(&self, ty: Ty<'tcx>) -> bool {
         self.is_dyn_any(ty) || self.is_dyn_error(ty)
     }
 
@@ -764,7 +764,7 @@ pub(crate) fn is_from_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 
 /// Whether `ty` is `char::decode_utf16`'s iterator, `DecodeUtf16<I>`:
 /// `$decodeUtf16`'s `$Steps`, whose hint is std's of its source's (#1151).
-pub(crate) fn is_decode_utf16(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+pub(super) fn is_decode_utf16(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::CharDecodeUtf16))
 }
 
@@ -860,7 +860,7 @@ pub(crate) fn tried_as_written<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 /// Whether `id` of `args` is a `?` the lowering writes itself: `Try::branch`
 /// of what's tried as written, or `FromResidual::from_residual` of its
 /// residual, `FromResidual<R>`'s `R`, the type its call is given.
-pub(crate) fn is_question_mark_written<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+pub(super) fn is_question_mark_written<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
     let given = match () {
         _ if tcx.is_lang_item(id, LangItem::TryTraitBranch) => args.types().next(),
         _ if tcx.is_lang_item(id, LangItem::TryTraitFromResidual) => args.types().nth(1),
@@ -1182,7 +1182,7 @@ pub(in crate::lower) fn is_str_repeat(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// `Recognition::is_backtrace`, of `tcx` alone.
-pub(in crate::lower) fn is_backtrace_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+pub(super) fn is_backtrace_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(b, _) if is_std_path(tcx, b.did(), StdPath::Backtrace))
 }
 

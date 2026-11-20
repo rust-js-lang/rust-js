@@ -62,7 +62,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `abs`'s `saturating_abs`, and its others' of the same name,
     /// `count_ones`, `rotate_left`, `to_be` (#1434). A `Wrapping`'s are
     /// unstable, none.
-    pub(in crate::lower) fn newtype_inherent(&self, kind: IntNewtype, name: &str, num: Num) -> Option<NumOp> {
+    pub(super) fn newtype_inherent(&self, kind: IntNewtype, name: &str, num: Num) -> Option<NumOp> {
         if kind != IntNewtype::Saturating {
             return None;
         }
@@ -219,7 +219,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A future whose `Future` is the crate's own, or a reference, `Box` or
     /// `Pin` of one: an impl rust-js never lowers (ADR 0425), so no JS
     /// promise is a value of it, and what would await one is refused.
-    pub(in crate::lower) fn unlowered_future(&self, ty: Ty<'tcx>) -> bool {
+    fn unlowered_future(&self, ty: Ty<'tcx>) -> bool {
         self.own_impl_of(LangItem::FuturePoll, self.future_pointee(ty))
     }
 
@@ -364,7 +364,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// What std's `AsRef<to>` of a `from` is, where rust-js knows: the same
     /// JS value, a `Box`'s, an `Rc`'s, or text's as a `Path` (ADRs 0331,
     /// 0505, 0173); or a path's `Component`'s text (ADR 0716).
-    pub(in crate::lower) fn as_ref_of(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Std> {
+    pub(super) fn as_ref_of(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Std> {
         if self.as_ref_is_itself(from, to) {
             return Some(Std::Same);
         }
@@ -387,7 +387,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.views_as_itself(from, to) || (boxed.is_box() && boxed.boxed_ty() == Some(to))
     }
 
-    pub(in crate::lower) fn views_as_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
+    fn views_as_itself(&self, from: Ty<'tcx>, to: Ty<'tcx>) -> bool {
         let from = from.peel_refs();
         let sequence = from.is_array() || from.is_slice() || self.is_vec_like(from);
         (self.is_string_like(from) && to.is_str())
@@ -536,7 +536,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// value (ADR 0023), a bound function's `Box<dyn Fn(..)>` (ADR 0907,
 /// amended), of a `str` its text, a `&str`, a `String` or a `Box<str>`, of
 /// a `[T]` a `Vec<T>`'s or a `Box<[T]>`'s items, moved.
-pub(crate) fn rc_made_of<'tcx>(tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Ty<'tcx>> {
+pub(super) fn rc_made_of<'tcx>(tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<Ty<'tcx>> {
     let pointee = rc_pointee(tcx, to)?;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(ty);
     let text = |ty: Ty<'tcx>| {

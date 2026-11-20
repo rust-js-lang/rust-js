@@ -143,7 +143,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// no more than what exists already, a collection's, an `Option`'s, a
     /// string's `chars()`, nor of a char's or a narrow type's range, nor of
     /// an adapter whose lower bound is none, a `filter`, a `flat_map` (#1358).
-    pub(in crate::lower) fn lower_bound_may_pass_room(&self, ty: Ty<'tcx>) -> bool {
+    fn lower_bound_may_pass_room(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, args) = ty.kind() else { return false };
         let mut sources = args.types();

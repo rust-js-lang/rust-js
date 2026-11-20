@@ -238,7 +238,7 @@ pub(in crate::lower) fn is_dyn_expected(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 }
 
 /// Is `id` serde's `de::Visitor`?
-pub(in crate::lower) fn serde_visitor(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(super) fn serde_visitor(tcx: TyCtxt<'_>, id: DefId) -> bool {
     matches!(tcx.crate_name(id.krate).as_str(), "serde" | "serde_core")
         && tcx.def_kind(id) == DefKind::Trait
         && tcx.item_name(id).as_str() == "Visitor"
@@ -246,7 +246,7 @@ pub(in crate::lower) fn serde_visitor(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// `def_id` as a call of serde's data model a hand-written impl makes (ADR
 /// 0459), or `None`.
-pub(in crate::lower) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
+pub(super) fn serde_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<SerdeOp> {
     let trait_id = tcx.trait_of_assoc(def_id)?;
     if !matches!(tcx.crate_name(trait_id.krate).as_str(), "serde" | "serde_core") {
         return None;

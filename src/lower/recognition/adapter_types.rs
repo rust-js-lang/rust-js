@@ -339,7 +339,7 @@ pub(crate) enum Counted {
 }
 
 /// Which `Counted` adapter `ty` is, its definition, and what it steps.
-pub(crate) fn counted_adapter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Counted, DefId, Ty<'tcx>)> {
+fn counted_adapter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(Counted, DefId, Ty<'tcx>)> {
     let ty::Adt(adt, args) = ty.peel_refs().kind() else {
         return None;
     };

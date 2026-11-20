@@ -87,7 +87,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// derived, or std's, all through, so two it orders `Equal` are equal
     /// field by field, as `$key` tells them, and its order is `cmp_fn`'s
     /// (ADR 0404).
-    pub(in crate::lower) fn orders_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+    fn orders_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
         if seen.contains(&ty) {
             return true;
@@ -119,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `&[T]`, never an object like the `Cow`'s, `{ TAG, _0 }`, so `$CowMap`
     /// tells them apart (ADR 0402): a `Cow<str>`, or a `Cow<[T]>` of what
     /// compares by value.
-    pub(in crate::lower) fn is_cow_key(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_cow_key(&self, ty: Ty<'tcx>) -> bool {
         self.recognition()
             .cow_parts(ty.peel_refs())
             .is_some_and(|(borrowed, _)| match borrowed.kind() {
@@ -157,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A key a `$KeyMap` finds by its value (ADR 0121): one that isn't its
     /// own JS key, and that a derived `Eq` compares field by field, as `$eq`
     /// and `$key` do.
-    pub(in crate::lower) fn is_value_key(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_value_key(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
         !ty.is_unit() && !self.is_primitive_key(ty) && self.compares_by_value(ty, &mut Vec::new())
     }
@@ -167,13 +167,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Option` of one, whose `None` is `undefined` or `null`, each its own
     /// key to JS's `Map`, where Rust has one `None` (ADRs 0030, 0935):
     /// `$KeyMap` finds either.
-    pub(in crate::lower) fn is_js_key(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_js_key(&self, ty: Ty<'tcx>) -> bool {
         self.is_primitive_key(ty.peel_refs())
     }
 
     /// A key a JS `Map` holds as it is, a primitive `js_eq` compares, not
     /// `()`.
-    pub(in crate::lower) fn is_primitive_key(&self, ty: Ty<'tcx>) -> bool {
+    fn is_primitive_key(&self, ty: Ty<'tcx>) -> bool {
         !ty.is_unit() && self.js_eq(ty).is_some()
     }
 
@@ -181,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// itself, an object equal only to itself or an `Rc` of one (ADR 1015,
     /// amended), as its derived `Hash` and `Eq` find it, where `$key` would
     /// find it by what's in it: `std_impls`' `eq_of_objects`, its one answer.
-    pub(in crate::lower) fn holds_identity(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn holds_identity(&self, ty: Ty<'tcx>) -> bool {
         self.holds_identity_in(ty, &mut IndexSet::default())
     }
 
@@ -354,7 +354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    pub(in crate::lower) fn compares_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+    fn compares_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
         if seen.contains(&ty) {
             return true;

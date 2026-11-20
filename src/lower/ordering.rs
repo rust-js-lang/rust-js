@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// dictionaries are the shared `$ordered` and `$partiallyOrdered` (#944),
     /// and whose `==` is std's `===`, `$strictlyEqual` (#962): not one whose
     /// `PartialEq` is hand-written.
-    pub(in crate::lower) fn quietly_ordered(&self, ty: Ty<'tcx>) -> bool {
+    fn quietly_ordered(&self, ty: Ty<'tcx>) -> bool {
         let float = Num::of(ty.peel_refs()).is_some_and(Num::float);
         let own_eq = self.has_user_impl(self.partial_eq_trait(), ty.peel_refs());
         ((self.is_primitive_ord(ty) && !float) || self.is_text_ord(ty)) && !own_eq
@@ -336,7 +336,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The crate's or a library's impl of `PartialOrd` for `ty` that writes
     /// its own `<`, `<=`, `>` or `>=`, which std's comparisons call where
     /// they ask one (#937).
-    pub(in crate::lower) fn own_operators(&self, ty: Ty<'tcx>) -> Option<DefId> {
+    fn own_operators(&self, ty: Ty<'tcx>) -> Option<DefId> {
         let partial_ord = self.partial_ord_trait();
         let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, ty.peel_refs()));
         (self.recognition().user_impl(tr)).filter(|&imp| writes_own_operators(self.tcx, imp))

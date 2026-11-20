@@ -741,7 +741,7 @@ fn std_modules(tcx: TyCtxt<'_>) -> std::rc::Rc<StdModules> {
 /// The module std's path of `id` writes it in: its visible parent, as
 /// rustc prints its path, `std::fmt` of `core::fmt::Arguments`, or where
 /// it's none, the module it's in.
-pub(crate) fn std_path_parent(tcx: TyCtxt<'_>, id: DefId) -> Option<DefId> {
+pub(super) fn std_path_parent(tcx: TyCtxt<'_>, id: DefId) -> Option<DefId> {
     tcx.visible_parent_map(())
         .get(&id)
         .copied()
@@ -749,7 +749,7 @@ pub(crate) fn std_path_parent(tcx: TyCtxt<'_>, id: DefId) -> Option<DefId> {
 }
 
 /// Whether `id` is `module`, one of `STD_MODULES`, in any of std's crates.
-pub(crate) fn is_std_module(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> bool {
+pub(super) fn is_std_module(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> bool {
     // A row asked of as a module that `STD_MODULES` doesn't list is an
     // internal error, as it would be under nothing.
     let modules = std_modules(tcx);
@@ -771,7 +771,7 @@ pub(crate) fn std_path_under(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> boo
 /// `id`'s name where std's path writes it in `module`, one of
 /// `STD_MODULES`, `Map` of `core::iter::Map` in `std::iter`: a direct
 /// item's of the module's, not one of a module in it.
-pub(crate) fn std_item_in(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> Option<Symbol> {
+pub(super) fn std_item_in(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> Option<Symbol> {
     (super::is_std_crate(tcx, id) && std_path_parent(tcx, id).is_some_and(|at| is_std_module(tcx, at, module)))
         .then(|| tcx.item_name(id))
 }

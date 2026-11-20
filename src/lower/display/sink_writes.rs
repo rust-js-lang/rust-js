@@ -335,7 +335,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `pretty`'s options with the sink armed for it, `$writingInto(f,
     /// pointDisplay_fmt, p, options)`: its arguments evaluated before it's
     /// armed. `None` of one called through a value, a class's.
-    pub(in crate::lower) fn written_into_a_writer(
+    fn written_into_a_writer(
         &mut self,
         kind: Std,
         ty: Ty<'tcx>,

@@ -105,7 +105,7 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
     /// all it reads and calls. Its copy here grows each `Vec` as std does,
     /// and so does each of its library's functions it reaches, compiled
     /// here in turn.
-    pub(in crate::lower) fn keeps_more(&self, id: DefId) -> bool {
+    fn keeps_more(&self, id: DefId) -> bool {
         self.unkept_by(id) && self.copy_reaches(id)
     }
 

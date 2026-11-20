@@ -137,11 +137,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// lent, `&mut root.f`, or borrowed of its `RefCell` and dereferenced,
     /// `root.f.borrow_mut()`, held in a variable or not. What an index of
     /// it writes is `null` for `None`, as the field's elements are.
-    pub(in crate::lower::mir) fn nullable_items_field(
-        &self,
-        state: &State<'_, 'tcx>,
-        operand: &Operand<'tcx>,
-    ) -> Option<&'tcx ty::FieldDef> {
+    fn nullable_items_field(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Option<&'tcx ty::FieldDef> {
         let body = state.body;
         let mut place = operand.place()?;
         // Each step back is a reference's or a call's, of which a body has

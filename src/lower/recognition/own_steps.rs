@@ -195,7 +195,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// default of its `next` (`own_source_steps`): `repeat_n`'s `count`; and
     /// a slice's `chunk_by` by a predicate that runs code, `$lazyChunkBy`,
     /// whose `last` is its `next_back`, as std's `ChunkBy::last` is (#1501).
-    pub(in crate::lower) fn source_writes(&self, ty: Ty<'tcx>, step: OwnStep) -> bool {
+    fn source_writes(&self, ty: Ty<'tcx>, step: OwnStep) -> bool {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else {
             return false;

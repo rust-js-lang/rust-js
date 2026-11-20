@@ -112,7 +112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// 0161). What shows it is `""`, the one answer of both, which a
     /// dictionary that asks it, rand_core's `TryRngCore::Error`'s, is given
     /// (#1100).
-    pub(super) fn never_shown(&self, ty: Ty<'tcx>) -> bool {
+    fn never_shown(&self, ty: Ty<'tcx>) -> bool {
         match ty.kind() {
             ty::Never => true,
             ty::Adt(adt, _) => adt.is_enum() && adt.variants().is_empty(),
@@ -610,7 +610,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The `dyn Debug` `ty` is, behind a reference, a `Box` or an uncounted
     /// `Rc`, each its value (ADR 0023): its pair's type (#1335).
-    pub(super) fn dyn_debug_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    fn dyn_debug_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let mut ty = ty.peel_refs();
         while let ty::Adt(_, args) = ty.kind()
             && (ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none())
@@ -833,7 +833,7 @@ pub(super) fn binding_text(value: Expr) -> Expr {
 
 /// Whether `e` is a template of values alone, \`${x}\`, which is text only
 /// as a template: `shown_text`'s, or one made of such.
-pub(super) fn is_shown_text(e: &Expr) -> bool {
+fn is_shown_text(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Template(texts, ..) if texts.iter().all(String::is_empty))
 }
 

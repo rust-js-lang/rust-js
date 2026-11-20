@@ -307,7 +307,7 @@ pub(crate) fn is_noinline(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 }
 
 /// Which of std's functions that work in Node only `id` is, if it's one.
-pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<NodeOnly> {
+pub(super) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<NodeOnly> {
     let item = std_path_item(tcx, id);
     NODE_ONLY.iter().find(|&&(of, _)| Some(of) == item).map(|&(_, op)| op)
 }
@@ -997,6 +997,6 @@ pub(crate) fn pure_std(tcx: TyCtxt<'_>, id: DefId) -> Option<PureStd> {
 
 /// Whether `def_id` is `core::fmt::write`, std's own `write_fmt` of a
 /// `dyn fmt::Write` (#1697).
-pub(in crate::lower) fn is_fmt_write_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub(super) fn is_fmt_write_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     of_std_crate(tcx, def_id, StdCrate::Core) && is_std_path(tcx, def_id, StdPath::FmtWriteFn)
 }

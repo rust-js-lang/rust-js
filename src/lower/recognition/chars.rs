@@ -32,7 +32,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// Whether `ty` is a string's iterator of `kind`.
-    pub(in crate::lower) fn is_text_iter(&self, kind: TextIter, ty: Ty<'tcx>) -> bool {
+    fn is_text_iter(&self, kind: TextIter, ty: Ty<'tcx>) -> bool {
         match kind {
             TextIter::Chars => self.is_str_chars(ty) || self.is_char_indices(ty),
             TextIter::Search => self.search_runs_code(ty),

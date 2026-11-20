@@ -101,7 +101,7 @@ const DICTIONARY_METHODS: &[&str] = &[
 /// Whether `id` is a std function of io's a recognizer answers in place of
 /// its body, which reaches memory: alloc's `append_to_string` and
 /// `inlined_slow_read_byte`, which `@rust-js/std` compiles none of.
-pub(crate) fn answered_io_fn(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(super) fn answered_io_fn(tcx: TyCtxt<'_>, id: DefId) -> bool {
     answered_io_op(tcx, id).is_some()
 }
 

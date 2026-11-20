@@ -30,12 +30,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         })
     }
 
-    pub(in crate::lower) fn is_json_map(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_json_map(&self, ty: Ty<'tcx>) -> bool {
         self.json_type(ty) == Some(Json::Map)
     }
 
     /// serde_json's `map::Entry`, whose methods are a `BTreeMap` entry's.
-    pub(in crate::lower) fn is_json_entry(&self, ty: Ty<'tcx>) -> bool {
+    pub(super) fn is_json_entry(&self, ty: Ty<'tcx>) -> bool {
         self.json_type(ty) == Some(Json::Entry)
     }
 }

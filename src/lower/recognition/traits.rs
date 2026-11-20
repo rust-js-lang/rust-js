@@ -532,7 +532,7 @@ pub(in crate::lower) fn implementable(
 /// lowers: what would call one is refused where it would. `Future`, as
 /// `.await` is JS's of a promise (ADR 0029); and `io::Read`, `BufRead` and
 /// `Seek`, which JS has no stream of (ADR 0425). The one list.
-pub(crate) fn unlowered_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
+fn unlowered_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.is_lang_item(id, LangItem::Future)
 }
 
@@ -560,7 +560,7 @@ pub(crate) fn is_unlowered_impl(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// `From`'s and `TryFrom`'s from their argument into their type, `Into`'s
 /// and `TryInto`'s from their type into their argument. The one answer of
 /// which side is which.
-pub(crate) fn conversion_sides<'tcx>(
+pub(super) fn conversion_sides<'tcx>(
     tcx: TyCtxt<'tcx>,
     trait_: DefId,
     args: ty::GenericArgsRef<'tcx>,
@@ -717,7 +717,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `FromIterator::from_iter`, and `parse()` that's `FromStr::from_str`.
     /// The bound's method, its arguments, and the impl's that it resolves to
     /// (ADR 0160). Its own type parameter, the iterator, is the receiver's.
-    pub(in crate::lower) fn resolve_delegated(
+    fn resolve_delegated(
         &self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,

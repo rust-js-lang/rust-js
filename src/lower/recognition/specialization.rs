@@ -752,7 +752,7 @@ pub(crate) fn fits_in_place<'tcx>(
 /// those of an adapter asks them of what it holds, `Map<I, F>`'s of `I`
 /// (#672). Of a type parameter, or an associated type's, its caller's,
 /// which may be.
-pub(crate) fn may_collect_in_place<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, iter: Ty<'tcx>) -> bool {
+fn may_collect_in_place<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, iter: Ty<'tcx>) -> bool {
     let Some(traits) = in_place_traits(tcx) else {
         return false;
     };
@@ -801,7 +801,7 @@ fn alloc_trait(tcx: TyCtxt<'_>, name: &str) -> Option<DefId> {
 
 /// std's `OneShot`, private to `flatten`'s module: an iterator of one item
 /// at most, `option::IntoIter`'s (ADR 0899).
-pub(crate) fn one_shot_trait(tcx: TyCtxt<'_>) -> Option<DefId> {
+fn one_shot_trait(tcx: TyCtxt<'_>) -> Option<DefId> {
     let core = std_crate_num(tcx, StdCrate::Core)?;
     (tcx.traits(core).iter().copied()).find(|&id| tcx.item_name(id).as_str() == "OneShot")
 }
