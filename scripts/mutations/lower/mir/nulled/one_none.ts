@@ -80,11 +80,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "js-null-given-undefined",
-    breaks: "`js::null()`, JS's `null` on purpose (ADR 0935), is given `?? undefined` where a binding takes `undefined` for `None` (#1840)",
+    breaks: "`js::null()`, JS's `null` on purpose (ADR 0935), given a callback JS gave, is `?? undefined`, so `callback(js::null())` calls it with no argument (#1840, #2167)",
     file: "src/lower/mir/nulled/one_none.rs",
     find: "        K::Null\n            | K::Num(_)\n",
     replace: "        K::Num(_)\n",
-    tests: given1840,
+    tests: ["test/none-given.test.ts", "-t", "an explicit null fallback stays a supplied callback argument"],
   },
   {
     name: "shown-field-given-again",

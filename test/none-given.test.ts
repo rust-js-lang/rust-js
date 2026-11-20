@@ -854,13 +854,20 @@ test("an explicit null fallback stays a supplied callback argument", async () =>
 pub fn send_optional(value: Option<f64>, callback: &dyn Fn(Option<f64>)) {
     callback(value);
 }
+
+pub fn send_null(callback: &dyn Fn(Option<f64>)) {
+    callback(js::null());
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...js]);
-  const { send, sendOptional } = await import(join(dir, "lib.js"));
+  const { send, sendOptional, sendNull } = await import(join(dir, "lib.js"));
   const received: unknown[][] = [];
   const callback = (...args: unknown[]) => { received.push(args); };
   for (const value of [undefined, null, 3]) send(value, callback);
   for (const value of [undefined, null, 3]) sendOptional(value, callback);
-  expect(received).toEqual([[null], [null], [3], [], [], [3]]);
+  // `js::null()` is JS's `null` on purpose (ADR 0935): a callback JS gave
+  // is given it, never Rust's `None` (#2167).
+  sendNull(callback);
+  expect(received).toEqual([[null], [null], [3], [], [], [3], [null]]);
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("callback(value ?? null)");
 });
