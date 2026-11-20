@@ -3,11 +3,6 @@
 # marks (ADR 1175, #2162): what the sweeps have left to classify. Only
 # falls: test/architecture-owners.test.ts refuses a line added, and one
 # whose answer is classified, renamed or gone until it comes off.
-src/lower.rs as_i128
-src/lower.rs fits
-src/lower.rs fn_def
-src/lower.rs located
-src/lower.rs root
 src/lower/display.rs call_may_fail
 src/lower/display.rs displays_itself
 src/lower/display.rs exp_trait
@@ -113,37 +108,11 @@ src/lower/library/written_into.rs writes_dyns_given
 src/lower/library/written_into.rs writes_dyns_given_by
 src/lower/library/written_into.rs writes_piecewise
 src/lower/loops.rs user_into_iter
-src/lower/mir/arguments_use.rs std_formats_param
-src/lower/mir/assign.rs call_callee
-src/lower/mir/assign/boxed_args.rs gives_a_mut
-src/lower/mir/dispatch/known_calls.rs result_unread
-src/lower/mir/entries.rs forwards_clone_from
-src/lower/mir/jsx_props.rs thir_call
-src/lower/mir/noted.rs never_exhausted
 src/lower/mir/nulled/one_none.rs callback_may_be_js
 src/lower/mir/nulled/one_none.rs made_some
 src/lower/mir/nulled/one_none.rs omitted_prop
 src/lower/mir/nulled/proofs.rs ended_present
 src/lower/mir/nulled/proofs.rs proved_present
-src/lower/mir/operands.rs const_static
-src/lower/mir/prepared.rs called_once
-src/lower/mir/queries.rs is_block_label
-src/lower/mir/queries.rs referred_constant
-src/lower/mir/queries.rs referred_key
-src/lower/mir/queries/reads.rs only_read
-src/lower/mir/queries/reads.rs read_before_written
-src/lower/mir/queries/reads.rs read_from
-src/lower/mir/queries/reads.rs read_past
-src/lower/mir/queries/reads.rs through_held_reference
-src/lower/mir/queries/reads.rs writes_reach
-src/lower/mir/queries/reads.rs written_before_its_read
-src/lower/mir/queries/reads.rs written_before_read
-src/lower/mir/queries/reads.rs written_from
-src/lower/mir/result_use.rs is_try_branch
-src/lower/mir/rvalues/fields.rs field_got_mut
-src/lower/mir/rvalues/fields.rs field_item
-src/lower/mir/rvalues/fields.rs place_field
-src/lower/mir/rvalues/fields.rs whole_property_cell
 src/lower/ordering.rs call_seen
 src/lower/ordering.rs call_total
 src/lower/ordering.rs compares_by_operator
@@ -224,7 +193,6 @@ src/lower/std_types/map_keys.rs found_by_hash
 src/lower/std_types/map_keys.rs is_key
 src/lower/std_types/number/generic.rs trait_fact_may_hold
 src/lower/std_types/number/operators.rs masked
-src/lower/std_types/option.rs maps_to_itself
 src/lower/std_types/range.rs range_index
 src/lower/std_types/range.rs step
 src/lower/std_types/range.rs steps_lent_inclusive
