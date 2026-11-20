@@ -8,11 +8,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A type whose `Borrow` is the crate's that std's function would take
     /// as the value itself, for what it borrows as (ADR 0167): not the
     /// crate's own `borrow()` or `borrow_mut()`, which is the crate's.
-    pub(in crate::lower) fn borrowed_by_user(
-        &self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-    ) -> R<Option<Ty<'tcx>>> {
+    fn borrowed_by_user(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<Option<Ty<'tcx>>> {
         let crates = self
             .resolve_instance(def_id, generic_args)?
             .is_some_and(|instance| self.is_rust_fn(instance.def_id()));

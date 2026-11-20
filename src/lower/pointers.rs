@@ -473,7 +473,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether a pointer `local` is assigned once and only read through:
     /// `*p`, given to `ptr::read` or as what `ptr::copy` copies from, or
     /// copied whole to a local that is.
-    pub(super) fn only_read_through(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
+    fn only_read_through(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
         use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
         struct Uses<'b, 'tcx> {
             local: Local,

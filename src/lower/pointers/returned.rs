@@ -57,7 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// reborrow of one (`reborrowed_from`), else its iterator
     /// (`returned_iterator`). `None` of anything else, of another crate's
     /// function, whose body this crate doesn't see, and of a recursive one.
-    pub(in crate::lower) fn returned_from(&self, fn_id: DefId) -> Option<Returned> {
+    fn returned_from(&self, fn_id: DefId) -> Option<Returned> {
         let body = local_fn_body(self.tcx, fn_id)?;
         match self.reborrowed_from(body, mir::RETURN_PLACE, false) {
             Some(param) => Some(Returned {

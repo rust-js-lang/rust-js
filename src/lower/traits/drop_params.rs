@@ -236,7 +236,7 @@ pub(in crate::lower) type BuiltSlots<'tcx> = IndexMap<DefId, Vec<BuiltSlot<'tcx>
 
 /// `id`'s built slot `index`, if it's one: the crate's own function's, as
 /// `built` lists them, or a library's, as its manifest says.
-pub(in crate::lower) fn built_slot<'tcx>(
+fn built_slot<'tcx>(
     tcx: TyCtxt<'tcx>,
     (foreign, built): (&crate::lower::library::Foreign<'_, 'tcx>, &BuiltSlots<'tcx>),
     id: DefId,

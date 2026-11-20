@@ -40,11 +40,7 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
 
     /// The supertraits' accessors that lead from `from`'s dictionary to
     /// `to`'s, none if they're one.
-    pub(in crate::lower) fn super_route(
-        &self,
-        from: ty::TraitRef<'tcx>,
-        to: ty::TraitRef<'tcx>,
-    ) -> Option<Vec<String>> {
+    fn super_route(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>) -> Option<Vec<String>> {
         // As rustc says what they are here: `<I as Int>::T: NonZero` is
         // `J: NonZero` of an `I: Int<T = J>`.
         let normalized = |tr: ty::TraitRef<'tcx>| {

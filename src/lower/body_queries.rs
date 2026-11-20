@@ -1134,7 +1134,7 @@ fn tests_registered<'tcx>(tcx: TyCtxt<'tcx>, pattern: &Pat<'tcx>) -> bool {
 }
 
 /// The text a pattern of a string, `"react.memo"`, is.
-pub(super) fn pattern_text(pattern: &Pat<'_>) -> Option<String> {
+fn pattern_text(pattern: &Pat<'_>) -> Option<String> {
     match &pattern.kind {
         PatKind::Deref { subpattern, .. } => pattern_text(subpattern),
         PatKind::Constant { value } if pattern.ty.is_str() => {

@@ -790,7 +790,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An enum rust-js writes as ADR 0033 says, that's `Copy`: one of the
     /// crate's own, or a library's (ADR 0100), or `Result`.
-    pub(super) fn is_copy_enum(&self, ty: Ty<'tcx>) -> bool {
+    fn is_copy_enum(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if adt.is_enum()
             && (self.krate.foreign.compiled_by_rust_js(adt.did()) || self.is_std_type(ty, StdItem::Result)))
             && self.is_copy(ty)
@@ -850,7 +850,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn contains_mutated_uncached(&self, ty: Ty<'tcx>) -> bool {
+    fn contains_mutated_uncached(&self, ty: Ty<'tcx>) -> bool {
         // A type parameter may be anything changed in place, but a function's:
         // a copy of a JS function is the function (ADR 0246), unless one may
         // be cloned apart (ADR 0522).
@@ -901,7 +901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// consumers' changes are their own, who compile what of its copies them
     /// (ADR 0914, amended); but `@rust-js/std`'s, compiled once for all (ADR
     /// 0561), are any crate's.
-    pub(super) fn crosses_crates(&self, ty: Ty<'tcx>) -> bool {
+    fn crosses_crates(&self, ty: Ty<'tcx>) -> bool {
         let foreign = &self.krate.foreign;
         let shared = match ty.kind() {
             ty::Adt(adt, _) => {
@@ -966,7 +966,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.structural_clone_in(ty, &mut IndexSet::default())
     }
 
-    pub(super) fn structural_clone_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
+    fn structural_clone_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         if !seen.insert(ty) {
             return true;
         }
@@ -1009,12 +1009,7 @@ pub(super) fn instance_of<'tcx>(
 
 /// `instance_of`, of `tcx` and the body's `typing_env` alone, asked before
 /// the crate's libraries are read too (`cloned_apart`, #1243).
-pub(super) fn instance_of_in<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    typing_env: ty::TypingEnv<'tcx>,
-    ty: Ty<'tcx>,
-    general: Ty<'tcx>,
-) -> bool {
+fn instance_of_in<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>, general: Ty<'tcx>) -> bool {
     let unknown = |t| super::recognition::is_unknown_where(tcx, t, typing_env);
     match (ty.kind(), general.kind()) {
         _ if unknown(general) || unknown(ty) => true,
