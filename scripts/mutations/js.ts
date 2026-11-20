@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
-    name: "option-eq-one-side-none",
-    breaks: "a getter's `T | null` compared with the crate's `Option`, maybe `undefined`, by `===`, so `a.parentNode === b` is false of `null` and `None` (rd117)",
-    file: "src/js.rs",
-    find: "        self.only_none().is_some() && self.only_none() == other.only_none()\n",
-    replace: "        self.only_none().is_some()\n",
-    tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
-  },
-  {
     name: "evaluation-facts-forgotten",
     breaks: "an operator of any value made again, `+m` or `m != 1` of `!(m == 1)`, forgets that JS may throw of it, so unread it goes (#462)",
     file: "src/js.rs",

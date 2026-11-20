@@ -164,6 +164,25 @@ impl<'tcx> FnCx<'_, 'tcx> {
             .collect()
     }
 
+    /// Whether the two arguments of the call being lowered, references to
+    /// `Option`s, `a == b`'s, are each one whose `None` MIR says is the same
+    /// one alone (`place_none`), which `===` compares (rd117).
+    // helper: of the call being lowered, `trait_call_given`'s `same_none`
+    pub(in crate::lower::mir) fn same_nones(&self, state: &State<'_, 'tcx>) -> bool {
+        let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
+            return false;
+        };
+        let none = |i: usize| {
+            let place = args.get(i)?.node.place()?;
+            let of = match place.ty(state.body, self.tcx).ty.is_ref() {
+                true => place.project_deeper(&[PlaceElem::Deref], self.tcx),
+                false => place,
+            };
+            self.place_none(state, of)
+        };
+        args.len() == 2 && none(0).is_some() && none(0) == none(1)
+    }
+
     /// `arg_proofs` of the items of the tuple the call being lowered gives
     /// a closure, each its field, of `presences`, theirs
     /// (`presences_in_a_tuple`), each beside its `None`'s `null`.

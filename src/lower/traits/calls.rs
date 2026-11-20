@@ -383,6 +383,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<js::Stmt>,
     ) -> R<Option<Expr>> {
+        self.trait_call_given(id, generic_args, values, false, span, out)
+    }
+
+    /// `trait_call`, told of a `==` whether its two `Option`s' `None` MIR
+    /// says is the same one alone (`same_none`, `eq_value_given`).
+    pub(in crate::lower) fn trait_call_given(
+        &mut self,
+        id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        values: Vec<Expr>,
+        same_none: bool,
+        span: Span,
+        out: &mut Vec<js::Stmt>,
+    ) -> R<Option<Expr>> {
         let Some(trait_id) = self.tcx.trait_of_assoc(id) else {
             return Ok(None);
         };
@@ -645,8 +659,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 // An `OsStr` beside a path compares as a path (ADR 0401).
                 match self.recognition().is_path(rhs) {
-                    true => self.eq_value(a, b, rhs, span, out)?,
-                    false => self.eq_values(a, b, (lhs, rhs), span, out)?,
+                    true => self.eq_value_given(a, b, rhs, same_none, span, out)?,
+                    false => self.eq_values_given(a, b, (lhs, rhs), same_none, span, out)?,
                 }
             };
             return Ok(Some(if negate { Expr::unary(js::UnaryOp::Not, eq) } else { eq }));

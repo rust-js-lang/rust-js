@@ -101,4 +101,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
     snapshots: true,
   },
+  {
+    name: "same-nones-unasked",
+    breaks: "two `Option`s whose `None` MIR says is the same one alone, a getter's `T | null` each, are compared `==`, not `===` (rd117, #2112 C S5)",
+    file: "src/lower/mir/none_forms.rs",
+    find: "        args.len() == 2 && none(0).is_some() && none(0) == none(1)\n",
+    replace: "        args.len() == 2 && none(0).is_some() && none(0) == none(1) && false\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
+  },
+  {
+    name: "option-eq-one-side-none",
+    breaks: "a getter's `T | null` compared with the crate's `Option`, maybe `undefined`, by `===`, so `a.parentNode === b` is false of `null` and `None` (rd117)",
+    file: "src/lower/mir/none_forms.rs",
+    find: "        args.len() == 2 && none(0).is_some() && none(0) == none(1)\n",
+    replace: "        args.len() == 2 && none(0).is_some()\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
+  },
 ];

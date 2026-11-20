@@ -533,3 +533,18 @@ nothing either way: `--retire` of the clause, the stamp's or MIR's, found
 every test file, the corpus with its snapshots, React's port and the crate
 corpus as they are, each such argument given as it is by another of its
 clauses. The clause goes, no stamp read in its place.
+
+## Amendment: two `Option`s compared `===` where MIR says their `None` is one (2026-11-20, #2112)
+
+`a == b` of two `Option`s is `===` where each one's `None` is the same one
+alone, a WebIDL getter's `T | null` each (rd117): it asked whether the two
+operands' reads were stamped alike (`Facts::same_none`). Of check:fast and
+React's port, it decided 4 comparisons, each a `PartialEq::eq` MIR calls,
+none of a struct's field `==` compares inside. MIR answers it where the
+call is lowered (`NoneForms::same_nones`, of `place_none` of what each
+argument refers to), given down as an argument, `trait_call_given` →
+`eq_values_given` → `eq_value_given`, which the other callers' wrappers
+give `false`. A differential of the two: none. `Facts::same_none` goes.
+
+Mutation `same-nones-unasked`, new, caught; `option-eq-one-none-loose` and
+`os-str-beside-path-as-text` follow the code, caught.

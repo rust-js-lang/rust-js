@@ -322,6 +322,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        self.eq_values_given(a, b, (ty, rhs), false, span, out)
+    }
+
+    /// `eq_values`, told `same_none` of the call it's of (`eq_value_given`).
+    pub(super) fn eq_values_given(
+        &mut self,
+        a: Expr,
+        b: Expr,
+        (ty, rhs): (Ty<'tcx>, Ty<'tcx>),
+        same_none: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let (x, lhs) = self.through_refs(a.clone(), ty);
         let (y, other) = self.through_refs(b.clone(), rhs);
         if lhs != other {
@@ -347,7 +360,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return self.impl_call(eq, tr.args, vec![x, y], span);
             }
         }
-        self.eq_value(a, b, ty, span, out)
+        self.eq_value_given(a, b, ty, same_none, span, out)
     }
 
     /// `items.contains(&x)` of `item`s: JS's `includes` for what `===`
@@ -391,6 +404,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     pub(super) fn eq_value(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        self.eq_value_given(a, b, ty, false, span, out)
+    }
+
+    /// `eq_value`, told of the call it's of whether `a` and `b` are each
+    /// an `Option` whose `None` MIR says is the same one alone
+    /// (`same_none`, `NoneForms::same_nones`): two such compared by `===`
+    /// (rd117).
+    pub(super) fn eq_value_given(
+        &mut self,
+        a: Expr,
+        b: Expr,
+        ty: Ty<'tcx>,
+        same_none: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let (mut a, _) = self.through_refs(a, ty);
         let (mut b, mut ty) = self.through_refs(b, ty);
         // An `Rc`'s or an `Arc`'s of an `Eq` value: the same allocation
@@ -553,10 +582,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // makes `"1"` of `1` (ADR 0612, amended).
                 // Of an untagged enum's, too, whose `==` would make `"7"` of
                 // a number's `7` (ADR 0214, amended).
-                // Of two whose `None` is one, a getter's `T | null` each, `===` (rd117).
+                // Of two whose `None` MIR says is the same one alone, a getter's
+                // `T | null` each, `===` (rd117, `same_none`).
                 return Ok(match self.any_shape(inner) || self.untagged(inner).is_some() {
                     true => js::nullish_equal(a, b),
-                    false if a.facts.same_none(b.facts) => Expr::bin(Op::Eq, a, b),
+                    false if same_none => Expr::bin(Op::Eq, a, b),
                     false => Expr::bin(Op::LooseEq, a, b),
                 });
             }

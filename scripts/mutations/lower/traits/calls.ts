@@ -212,9 +212,9 @@ export const mutations: Mutation[] = [
     name: "os-str-beside-path-as-text",
     breaks: "an `OsStr` beside a path compares as text, `a//b` not `a/b`",
     file: "src/lower/traits/calls.rs",
-    find: "                    true => self.eq_value(a, b, rhs, span, out)?,\n",
+    find: "                    true => self.eq_value_given(a, b, rhs, same_none, span, out)?,\n",
     replace:
-      "                    true => self.eq_value(a, b, lhs, span, out)?,\n",
+      "                    true => self.eq_value_given(a, b, lhs, same_none, span, out)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^path_compare.rs$"],
   },
   {

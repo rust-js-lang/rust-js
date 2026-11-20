@@ -1196,7 +1196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || (generic_args.types().next()).is_some_and(|t| known_by_a_dictionary(t.peel_refs())))))
         {
             let exprs = self.boxed_args(state, (def_id, generic_args), (values.clone(), &arg_tys), span, out)?;
-            if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
+            if let Some(call) = self.trait_call_given(def_id, generic_args, exprs, self.same_nones(state), span, out)? {
                 // A generic `&mut T`'s box, the crate's `deref_mut`'s, of an
                 // object `T` here: what's in it.
                 let call = self.generic_result_values(self.callee(def_id, generic_args), call, span)?;

@@ -708,13 +708,6 @@ impl Facts {
         }
     }
 
-    /// Whether two `Option`s' `None` is one and the same, each only `null`,
-    /// a WebIDL getter's `T | null`, or each only `undefined`: where `===`
-    /// answers as `==` does, `node.firstChild === node.lastChild` (rd117).
-    pub fn same_none(self, other: Facts) -> bool {
-        self.only_none().is_some() && self.only_none() == other.only_none()
-    }
-
     /// What evaluating it may do that its kind doesn't say, a getter's or
     /// a JS operator's of any value (`Known::Getter`), which the same
     /// evaluation made again keeps: `a != b` of `!(a == b)`, `+m` of `+m`
