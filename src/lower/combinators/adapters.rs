@@ -357,6 +357,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(test)).at(js::Span::NONE)],
             )
         };
+        // The `Some`s of `made`: JS's filter of what's there, but `$somes`
+        // where its source's `size_hint` may run the crate's code, whose own
+        // `count` is std's `FilterMap`'s and `Flatten`'s, not
+        // `Filter::count`'s, which asks that hint first (#2199). Its type
+        // says, of every value of it alike, whatever form a fact made it
+        // (`hint_reaches_own_where`, of a type parameter's and what a `dyn`
+        // holds too): no fact chooses the form.
+        let somes = |made: Expr| match self.recognition().hint_reaches_own_where(receiver_ty, true) {
+            true => Expr::call_helper("$somes", vec![made]),
+            false => method(made, "filter", vec![present()]),
+        };
         let item_ty = || self.iterator_item(receiver_ty);
         // Of a kept value that looks like `None`, each `Some` boxed, taken
         // out of its box (ADR 0515).
@@ -367,20 +378,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match comb {
             // `Some`s only: `.map(f).filter((item) => item != null)`; each
             // taken out of its box where it looks like `None` (ADR 0515).
-            IterComb::FilterMap => unboxed(
-                method(method(items, "map", vec![next()]), "filter", vec![present()]),
-                kept,
-            ),
+            IterComb::FilterMap => unboxed(somes(method(items, "map", vec![next()])), kept),
             // Its `Option`, a `Some` boxed where what it holds looks like `None`.
             IterComb::FindMap => method(method(items, "map", vec![next()]), "find", vec![present()]),
             IterComb::FlatMap => {
                 // A closure that returns an `Option` is a `filter_map`.
                 let returned = generic_args.type_at(1);
                 if let Some((_, payload, true)) = self.recognition().flattened_options(output) {
-                    unboxed(
-                        method(method(items, "map", vec![next()]), "filter", vec![present()]),
-                        Some(payload),
-                    )
+                    unboxed(somes(method(items, "map", vec![next()])), Some(payload))
                 } else {
                     let f = next();
                     match self.closed_inner(Some(f.clone()), returned, span)? {
@@ -397,7 +402,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // looks like `None` (ADR 0515).
             IterComb::Flatten => match item_ty() {
                 Some(_) if let Some((_, payload, false)) = self.recognition().flattened_options(output) => {
-                    unboxed(method(items, "filter", vec![present()]), Some(payload))
+                    unboxed(somes(items), Some(payload))
                 }
                 // Of what owns items with a destructor, each closed (ADR 0510).
                 Some(item) if let Some(each) = self.closed_inner(None, item, span)? => {

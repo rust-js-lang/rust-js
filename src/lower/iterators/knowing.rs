@@ -936,10 +936,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 }
             }
-            if let js::ExprKind::Call(callee, args) = &kept.kind
-                && let js::ExprKind::Member(filtered, method) = &callee.kind
-                && method == "filter"
-                && let [present] = args.as_slice()
+            // JS's filter of what's there, or `$somes`, whose own `count`
+            // is std's (#2199), which steps from its back as `$filterEnds`
+            // where its source does.
+            let filtered = match &kept.kind {
+                js::ExprKind::Call(callee, args)
+                    if let js::ExprKind::Member(filtered, method) = &callee.kind
+                        && method == "filter"
+                        && let [present] = args.as_slice() =>
+                {
+                    Some((&**filtered, Some(present)))
+                }
+                js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$somes") && args.len() == 1 => {
+                    Some((&args[0], None))
+                }
+                _ => None,
+            };
+            if let Some((filtered, present)) = filtered
                 && let Some((source_value, f)) = made(mapped, filtered)
             {
                 let source_value = self.as_double_ended(source_value.clone(), source.peel_refs(), span)?;
@@ -947,7 +960,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(f) => Expr::call_helper("$mapEnds", vec![source_value, f.clone()]),
                     None => source_value,
                 };
-                let some = Expr::call_helper("$filterEnds", vec![mapped, present.clone()]);
+                let some = match present {
+                    Some(present) => Expr::call_helper("$filterEnds", vec![mapped, present.clone()]),
+                    None => Expr::call_helper("$somes", vec![mapped]),
+                };
                 return Ok(match unboxed {
                     Some(unbox) => Expr::call_helper("$mapEnds", vec![some, unbox.clone()]),
                     None => some,

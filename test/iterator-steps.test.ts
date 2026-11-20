@@ -351,6 +351,11 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["Flatten", "$flattenEnds", (s) => std.$flattenEnds(s.nested(), same)],
   ["TakeWhile", "$lazyTakeWhile", (s) => std.$lazyTakeWhile(s.src(), (x: number) => x < 4)],
   ["SkipWhile", "$lazySkipWhile", (s) => std.$lazySkipWhile(s.src(), (x: number) => x < 2)],
+  // The `Some`s, a `filter_map`'s made in place, of a map and of a map
+  // that knows its back: a filter whose own `count` is std's
+  // `FilterMap`'s, its fold, never asking its source's hint (#2199).
+  ["FilterMap", "$somes", (s) => std.$somes(s.src().map(same))],
+  ["FilterMap", "$somes of ends", (s) => std.$somes(std.$mapEnds(s.src(), same))],
   ["Filter", "$filterDropping", (s) => std.$filterDropping(s.src(), (x: number) => x % 2 === 1, () => {})],
   ["Inspect", "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
   ["Inspect", "$Steps.map", (s) => s.src().map(same)],

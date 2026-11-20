@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "flat-map-option-payload-unboxed",
     breaks: "`flat_map` of `Option`s keeps a `Some(None)` in its box",
     file: "src/lower/combinators/adapters.rs",
-    find: "                        Some(payload),\n",
-    replace: "                        None,\n",
+    find: '                    unboxed(somes(method(items, "map", vec![next()])), Some(payload))\n',
+    replace: '                    unboxed(somes(method(items, "map", vec![next()])), None)\n',
     tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
   },
   {
@@ -246,9 +246,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`flatten` of `Option<Option<T>>` items keeps each `Some(None)` boxed, `Some([object Object])`",
     file: "src/lower/combinators/adapters.rs",
-    find: '                    unboxed(method(items, "filter", vec![present()]), Some(payload))\n',
-    replace:
-      '                    unboxed(method(items, "filter", vec![present()]), None.filter(|_: &Ty<\'tcx>| payload == payload))\n',
+    find: "                    unboxed(somes(items), Some(payload))\n",
+    replace: "                    unboxed(somes(items), None.filter(|_: &Ty<'tcx>| payload == payload))\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_boxed_options.rs$"],
   },
   {
@@ -507,5 +506,24 @@ export const mutations: Mutation[] = [
     find: "        let own_count = [OwnStep::Count, OwnStep::Last]\n",
     replace: "        let own_count = [OwnStep::Count]\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_steps_its_inners_as_std.rs$"],
+  },
+  {
+    name: "somes-never",
+    breaks:
+      "the `Some`s of a source whose `size_hint` runs the crate's code are JS's filter, whose own `count` in the runtime is `Filter::count`'s, so generic code counting a `filter_map` of the crate's iterator asks its `size_hint`, which std's `FilterMap` never asks (#2199)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        let somes = |made: Expr| match self.recognition().hint_reaches_own_where(receiver_ty, true) {\n",
+    replace: "        let somes = |made: Expr| match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
+  },
+  {
+    name: "somes-of-any-type",
+    breaks:
+      "the `Some`s of a variable whose type's `size_hint` runs none of the crate's code, `take.map(f)` of a slice's, are `$somes(take.map(f))`, where upstream writes JS's `filter((item) => item != null)` (#2199)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "        let somes = |made: Expr| match self.recognition().hint_reaches_own_where(receiver_ty, true) {\n",
+    replace: "        let somes = |made: Expr| match true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(adapter_functions_dropped|fold_drops_moved_function_first).rs$"],
+    snapshots: true,
   },
 ];

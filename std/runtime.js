@@ -6487,6 +6487,22 @@ export function $stepByEnds(it, step, drop) {
   return stepped;
 }
 
+// The `Some`s of `it`, whose items may be `None`: std's `FilterMap`'s, a
+// flatten of `Option`s' or a `flat_map` to them, made in place over a
+// `$Steps` whose `size_hint` may run the crate's code (ADR 0515). A filter
+// of what's there, `$filterEnds`' where `it` knows its back, but its own
+// `count` neither `Filter::count`, which asks its source's hint first, nor
+// any: std's `FilterMap` writes none and `Flatten`'s folds its `Option`s,
+// each its source's `fold` (#2199). Of a JS iterator generic code was
+// given that knows no back, JS's own `filter`, which has no `count` to ask.
+export function $somes(it) {
+  const present = (item) => item != null;
+  if (it.back === undefined && !(it instanceof $Steps)) return it.filter(present);
+  const kept = it.back !== undefined ? $filterEnds(it, present) : it.filter(present);
+  $forward(kept, it, { count: (drop) => $Steps.prototype.count.call(kept, drop) });
+  return kept;
+}
+
 // A filter of a JS iterator that knows its back, `it.filter(p)`, which
 // knows it too, as Rust's `Filter` is double-ended where its source is:
 // each of its source's items `p` keeps, from either end, `p` asked of each

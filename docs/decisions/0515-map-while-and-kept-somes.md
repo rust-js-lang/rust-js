@@ -60,9 +60,8 @@ The count consumer asks recognition's `counts_by_its_own`, which asks
 `flattened_options`, the one owner of that form: the `Option`s it flattens
 have no own `count` to reach, so it's counted by its fold, `.reduce`, as a
 `filter_map`'s is. Generic code given one counts it by `$count`, the form's
-own, as it can't know the type: the form itself must answer `Flatten`'s
-and `FilterMap`'s `count`, #2199 (its metamorphic `generic-instances`
-rewrite listed there). Case R of ADR 0262 (which of
+own, as it can't know the type: the form itself answers `Flatten`'s
+and `FilterMap`'s `count`, ADR 1176's `$somes` (#2199). Case R of ADR 0262 (which of
 the crate's steps std calls is observable). Held by
 `test/corpus/flatten_of_options_counted_asks_no_hint.rs` and the mutation
 `flatten-of-options-counted-as-its-filter`; the conformance table's

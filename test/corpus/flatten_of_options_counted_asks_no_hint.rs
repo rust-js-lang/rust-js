@@ -6,7 +6,11 @@
 // is made knowing its hint, so the flatten is made in place, a filter of
 // the `Some`s; that filter's own `count` is std's `Filter::count`, which
 // asks its source's hint first, where `Flatten`'s doesn't. A
-// `filter_map`'s, std's default of its `fold`, asks none either.
+// `filter_map`'s, std's default of its `fold`, asks none either. Generic
+// code given one counts it by its own `count`, as it can't know its type:
+// made `$somes`, whose own is std's (#2199). Of a source whose hint runs
+// none of the crate's code, whatever value it is, a slice's items, it's
+// JS's filter.
 
 /// Counts up to `.1` from `.0`, with its own `size_hint` and `fold`.
 struct Own(u32, u32);
@@ -37,6 +41,10 @@ impl Iterator for Own {
 
 impl ExactSizeIterator for Own {}
 
+fn counted<I: Iterator>(it: I) -> usize {
+    it.count()
+}
+
 fn main() {
     let zipped = Own(0, 3).zip(10..20u32);
     println!("zip len {}", zipped.len());
@@ -49,4 +57,14 @@ fn main() {
     println!("filter_map count {n}");
     let n = Own(0, 5).filter(|x| x % 2 == 1).count();
     println!("filter count {n}");
+
+    let n = counted(Own(0, 5).map(Some).flatten());
+    println!("generic flatten count {n}");
+    let n = counted(Own(0, 5).flat_map(|x| (x % 2 == 0).then_some(x)));
+    println!("generic flat_map count {n}");
+    let n = counted(Own(0, 5).filter_map(|x| (x % 2 == 1).then_some(x)));
+    println!("generic filter_map count {n}");
+    let words = [Some("a"), None, Some("b")];
+    let n = counted(words.iter().flatten());
+    println!("generic count of a slice's {n}");
 }

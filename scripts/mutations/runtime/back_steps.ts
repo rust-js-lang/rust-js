@@ -852,4 +852,22 @@ export const mutations: Mutation[] = [
     replace: "  return stepped;\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
   },
+  {
+    name: "somes-counted-as-a-filter",
+    breaks:
+      "`$somes`'s own `count` is `Filter::count`'s, which asks its source's hint first, so generic code's count of a `filter_map` or a flatten of `Option`s of the crate's iterator asks its own `size_hint`, which std's never asks (#2199)",
+    file: "src/runtime/back_steps.js",
+    find: "  $forward(kept, it, { count: (drop) => $Steps.prototype.count.call(kept, drop) });\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
+  },
+  {
+    name: "somes-of-a-back-forward-only",
+    breaks:
+      "`$somes` of a source that knows its back is JS's filter of it, which knows none, so generic code's `filter_map(..).next_back()` throws (#2199)",
+    file: "src/runtime/back_steps.js",
+    find: "  const kept = it.back !== undefined ? $filterEnds(it, present) : it.filter(present);\n",
+    replace: "  const kept = it.filter(present);\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_ends.rs$"],
+  },
 ];

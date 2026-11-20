@@ -438,8 +438,8 @@ export const mutations: Mutation[] = [
     name: "filter-map-ends-unmade",
     breaks: "a `filter_map` made of a source given as it is, stepped from its back, isn't made knowing it: itertools' `self.iter.filter_map(..).rfold(..)` is refused, \"can't step from its back\" (#473)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                let some = Expr::call_helper(\"$filterEnds\", vec![mapped, present.clone()]);\n",
-    replace: "                let some = Expr::call_helper(\"$filterEnds\", vec![mapped, present.clone()]);\n                return Err(self.unsupported(span, \"a mutated filter_map\"));\n",
+    find: "                    None => Expr::call_helper(\"$somes\", vec![mapped]),\n                };\n",
+    replace: "                    None => Expr::call_helper(\"$somes\", vec![mapped]),\n                };\n                return Err(self.unsupported(span, \"a mutated filter_map\"));\n",
     tests: ["test/corpus.test.ts", "-t", "^filter_map_of_given_from_its_back.rs$"],
   },
   {
@@ -956,5 +956,14 @@ export const mutations: Mutation[] = [
     find: "        (_, [source, n]) if callee.helper_name() == Some(if skip { \"$skipping\" } else { \"$taking\" }) => {\n",
     replace: "        (_, [source, n]) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
+  },
+  {
+    name: "somes-not-made-knowing",
+    breaks:
+      "`$somes` of what generic code steps from its back isn't made of its source made knowing its back, so `filter_map(..).rev()` of what it's given steps nothing from its back (#2199)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "                js::ExprKind::Call(callee, args) if callee.helper_name() == Some(\"$somes\") && args.len() == 1 => {\n                    Some((&args[0], None))\n                }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(filter_ends|filter_map_of_given_from_its_back).rs$"],
   },
 ];

@@ -739,8 +739,8 @@ pub(in crate::lower) fn knows_its_back_by_form(e: &Expr) -> bool {
     match callee.helper_name() {
         Some("$rev" | "$zipEnds" | "$trustedZipEnds" | "$flattenEnds" | "$chars" | "$charIndices") => true,
         Some(
-            "$mapEnds" | "$copied" | "$cloned" | "$copiedGiven" | "$filterEnds" | "$enumerate" | "$lent" | "$closing"
-            | "$held" | "$taking" | "$skipping" | "$stepByEnds",
+            "$mapEnds" | "$copied" | "$cloned" | "$copiedGiven" | "$filterEnds" | "$somes" | "$enumerate" | "$lent"
+            | "$closing" | "$held" | "$taking" | "$skipping" | "$stepByEnds",
         ) => args.first().is_some_and(knows_its_back_by_form),
         Some("$lazyChain") => matches!(&args[..], [a, b, ..] if knows_its_back_by_form(a) && knows_its_back_by_form(b)),
         Some("$iterator" | "$given") => args.get(3).is_some_and(|back| *back != Expr::js_undefined()),

@@ -120,6 +120,3 @@ plain std field closure_mut_ref.rs
 plain std field held_enumerate.rs
 
 #2185 A Box of a std adapter given by a dictionary, through a trait, steps as the adapter itself
-
-#2199 P0: generic code's count of a flatten of options, or a filter_map, made in place asks the crate's own size_hint, as the form's count is Filter's
-plain generic-instances flatten_of_options_counted_asks_no_hint.rs

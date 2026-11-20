@@ -17,6 +17,7 @@ import {
   $roomForHint,
   $some,
   $someValue,
+  $somes,
   $stepsOf,
   filterDoubleEndedIterator_nextBack,
   iterator_filter,
@@ -66,13 +67,12 @@ function bothEnds(it) {
 
 function lastHalf(it) {
   return $nextBack(
-    $filterEnds(
+    $somes(
       $mapEnds(Iterator.from(it), (x) => {
         if (x % 2 === 0) {
           return (x / 2) | 0;
         }
       }),
-      (item) => item != null,
     ),
   );
 }
@@ -82,13 +82,12 @@ function nested(it) {
     $roomForHint(
       $rev(
         $mapEnds(
-          $filterEnds(
+          $somes(
             $mapEnds(Iterator.from(it), (x) => {
               if (x > 2) {
                 return $some(x % 2 === 0 ? x : undefined);
               }
             }),
-            (item) => item != null,
           ),
           $someValue,
         ),
