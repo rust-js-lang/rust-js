@@ -915,6 +915,91 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (receiver, rest.into_iter())
     }
 
+    /// `next_back(&mut it)` and `len(&it)`, std's `IterMethod::NextBack` and
+    /// `Len` (`mir_iter_method`'s): of what knows its back, a range, a `$iter`,
+    /// one held or made knowing it where it's held (ADRs 0071, 0549, #718); not a lazy one.
+    fn next_back_or_len(
+        &mut self,
+        std_method: Option<IterMethod>,
+        values: Vec<Expr>,
+        (iter_ty, receiver_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
+        name: &str,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let tcx = self.tcx;
+        // What std steps by it through the wrappers that pass it on, a
+        // `Box`'s and a `&mut`'s, whose JS is what they hold's: a
+        // `len()` of a `&mut Box<I>` is `I`'s (#2189).
+        let iter_ty =
+            crate::lower::recognition::Wrapper::passed_through(tcx, self.typing_env, iter_ty, name).peel_refs();
+        let it = values.into_iter().next().expect("the receiver");
+        // The crate's iterator's `len()`, std's: its `size_hint()`, exact.
+        // One its impl writes itself is its own, never asked here (ADR
+        // 0492). A compiled std iterator's whose `len` isn't compiled,
+        // `Peekable`'s, is its struct's hint (ADR 0561), where it's
+        // std's struct, not one made in place (ADR 0871).
+        if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it)) && std_method == Some(IterMethod::Len)
+        {
+            let mut made = Vec::new();
+            let len = self.exact_len_of(it, iter_ty, span, &mut made)?;
+            if !made.is_empty() {
+                return Err(self.unsupported(span, "this `len()`, from its MIR"));
+            }
+            return Ok(Some(len));
+        }
+        if self.is_user_iterator(iter_ty) {
+            return Ok(None);
+        }
+        // `next_back` steps it where it is, closing nothing: of one lent,
+        // `by_ref()`'s, what it lends.
+        let it = match std_method {
+            Some(IterMethod::NextBack) => crate::lower::iterators::unlent(&it).clone(),
+            _ => it,
+        };
+        let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
+        if std_method == Some(IterMethod::NextBack)
+            && self.range_kind(iter_ty).is_none()
+            && let Some(back) = self.next_back_made_here(it.clone(), iter_ty, boxed, span, made)?
+        {
+            return Ok(Some(back));
+        }
+        let back = self.has_a_back(iter_ty, &it) || std_method == Some(IterMethod::NextBack) && knows_back(&it);
+        // `len(&self)` of a `Self` that's a `&mut`.
+        let lends_self = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_mutable_ptr());
+        Ok(Some(match (std_method, self.range_kind(iter_ty)) {
+            (Some(IterMethod::NextBack), Some(kind)) if let Some(step) = kind.step(true) => {
+                Expr::call_helper(step, vec![it])
+            }
+            (Some(IterMethod::NextBack), None) if back && boxed => Expr::call_helper("$nextBackSome", vec![it]),
+            (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$nextBack", vec![it]),
+            // A generic one's, a JS iterator that knows it, which may be a
+            // range's (ADR 0456).
+            (Some(IterMethod::Len), None) if self.len_of_its_own(iter_ty) => {
+                Expr::call(Expr::member(it, "len"), Vec::new())
+            }
+            // Of a `&mut`, `by_ref()`'s, `$lent`'s, which passes on the
+            // `len` of what it's to, as std's `&mut I` does (#745).
+            (Some(IterMethod::Len), None) if lends_self => Expr::call(Expr::member(it, "len"), Vec::new()),
+            (Some(IterMethod::Len), None) if self.steps_an_array(iter_ty) => self.items_left(it, made),
+            // One made in place, by what each of its adapters counts of
+            // its source: a range of numbers' count, an array's items
+            // skipped, `Math.max(xs.length - n, 0)` (ADR 0986).
+            (Some(IterMethod::Len), _) if let Some(len) = self.len_in_place(&it, iter_ty, made) => len,
+            _ => {
+                // Its type's name, not its closures', which name where they're written.
+                let shown = match iter_ty.kind() {
+                    ty::Adt(adt, _) => self.tcx.def_path_str(adt.did()),
+                    _ => iter_ty.to_string(),
+                };
+                return Err(self.unsupported(
+                    span,
+                    &format!("`{name}()` of a lazy or generic `{shown}`, from its MIR"),
+                ));
+            }
+        }))
+    }
+
     /// `mir_iter_call`'s, once what it drops is seen to.
     fn mir_iter_method(
         &mut self,
@@ -953,72 +1038,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a range, a `$iter`,
         // one held or made knowing it where it's held (ADRs 0071, 0549, #718); not a lazy one.
         if matches!(std_method, Some(IterMethod::NextBack | IterMethod::Len)) {
-            let it = values.into_iter().next().expect("the receiver");
-            // The crate's iterator's `len()`, std's: its `size_hint()`, exact.
-            // One its impl writes itself is its own, never asked here (ADR
-            // 0492). A compiled std iterator's whose `len` isn't compiled,
-            // `Peekable`'s, is its struct's hint (ADR 0561), where it's
-            // std's struct, not one made in place (ADR 0871).
-            if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it))
-                && std_method == Some(IterMethod::Len)
-            {
-                let mut made = Vec::new();
-                let len = self.exact_len_of(it, iter_ty, span, &mut made)?;
-                if !made.is_empty() {
-                    return Err(self.unsupported(span, "this `len()`, from its MIR"));
-                }
-                return Ok(Some(len));
-            }
-            if self.is_user_iterator(iter_ty) {
-                return Ok(None);
-            }
-            // `next_back` steps it where it is, closing nothing: of one lent,
-            // `by_ref()`'s, what it lends.
-            let it = match std_method {
-                Some(IterMethod::NextBack) => crate::lower::iterators::unlent(&it).clone(),
-                _ => it,
-            };
-            let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
-            if std_method == Some(IterMethod::NextBack)
-                && self.range_kind(iter_ty).is_none()
-                && let Some(back) = self.next_back_made_here(it.clone(), iter_ty, boxed, span, made)?
-            {
-                return Ok(Some(back));
-            }
-            let back = self.has_a_back(iter_ty, &it) || std_method == Some(IterMethod::NextBack) && knows_back(&it);
-            // `len(&self)` of a `Self` that's a `&mut`.
-            let lends_self = matches!(receiver_ty.kind(), ty::Ref(_, through, _) if through.is_mutable_ptr());
-            return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
-                (Some(IterMethod::NextBack), Some(kind)) if let Some(step) = kind.step(true) => {
-                    Expr::call_helper(step, vec![it])
-                }
-                (Some(IterMethod::NextBack), None) if back && boxed => Expr::call_helper("$nextBackSome", vec![it]),
-                (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$nextBack", vec![it]),
-                // A generic one's, a JS iterator that knows it, which may be a
-                // range's (ADR 0456).
-                (Some(IterMethod::Len), None) if self.len_of_its_own(iter_ty) => {
-                    Expr::call(Expr::member(it, "len"), Vec::new())
-                }
-                // Of a `&mut`, `by_ref()`'s, `$lent`'s, which passes on the
-                // `len` of what it's to, as std's `&mut I` does (#745).
-                (Some(IterMethod::Len), None) if lends_self => Expr::call(Expr::member(it, "len"), Vec::new()),
-                (Some(IterMethod::Len), None) if self.steps_an_array(iter_ty) => self.items_left(it, made),
-                // One made in place, by what each of its adapters counts of
-                // its source: a range of numbers' count, an array's items
-                // skipped, `Math.max(xs.length - n, 0)` (ADR 0986).
-                (Some(IterMethod::Len), _) if let Some(len) = self.len_in_place(&it, iter_ty, made) => len,
-                _ => {
-                    // Its type's name, not its closures', which name where they're written.
-                    let shown = match iter_ty.kind() {
-                        ty::Adt(adt, _) => self.tcx.def_path_str(adt.did()),
-                        _ => iter_ty.to_string(),
-                    };
-                    return Err(self.unsupported(
-                        span,
-                        &format!("`{name}()` of a lazy or generic `{shown}`, from its MIR"),
-                    ));
-                }
-            }));
+            return self.next_back_or_len(std_method, values, (iter_ty, receiver_ty, output), name, span, made);
         }
         // `rev()`, `rev_called`'s.
         if std_method == Some(IterMethod::Rev) {

@@ -700,10 +700,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What a `&mut` of type `ty` holds, where std's impl for it passes each
     /// of `steps` on to it as its own, `len` and `next_back` (`Wrapper::passes`,
-    /// #2075): the iterator generic code given it steps by them. Not a
-    /// `Box`'s: std's `Box<I>` isn't `TrustedLen` where `&mut I` is, so what
-    /// a `Vec` collects of it grows by its own room, which its form made
-    /// knowing would not say, refused till it's read (#1892).
+    /// #2075): the iterator generic code given it steps by them. It asks the
+    /// one catalog `Wrapper::passed_through` asks, but of a `&mut` alone,
+    /// not a `Box`'s: std's `Box<I>` isn't `TrustedLen` where `&mut I` is,
+    /// so what a `Vec` collects of it grows by its own room, which its form
+    /// made knowing would not say, refused till it's read (#1892).
     fn passed_on_to(&self, ty: ty::Ty<'tcx>, steps: &[&str]) -> Option<ty::Ty<'tcx>> {
         use crate::lower::recognition::{Passed, Wrapper};
         let (wrapper, held) = Wrapper::holding(self.tcx, self.typing_env, ty)?;

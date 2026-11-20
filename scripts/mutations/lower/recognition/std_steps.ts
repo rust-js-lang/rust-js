@@ -64,4 +64,12 @@ export const mutations: Mutation[] = [
     replace: "            false => Wrapper::MutRefSized,\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
   },
+  {
+    name: "len-through-a-box-its-own",
+    breaks: "no wrapper passes `len` or `next_back` on to what it holds, so `len()` of a `&mut Box` of std's `map` calls the JS iterator's own `len`, which it hasn't, and of the crate's iterator boxed counts by the default hint `(0, None)`, where std's `&mut I` and `Box<I>` pass `len` on (#2189)",
+    file: "src/lower/recognition/std_steps.rs",
+    find: "            && wrapper.passes(step) == Passed::Own\n        {\n            held = inner;\n",
+    replace: "            && wrapper.passes(step) == Passed::Own && false\n        {\n            held = inner;\n",
+    tests: ["test/corpus.test.ts", "-t", "^len_of_a_mut_box_is_what_it_holds.rs$"],
+  },
 ];

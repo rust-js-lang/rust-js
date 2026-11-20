@@ -40,7 +40,3 @@ conformance:plain 37976
 conformance:std 31708,31710,36502,36504,37976,38023-38025,38027
 points:plain 11997
 points:std 9487,11507,11997,12011-12012
-
-#2189 len() of a &mut Box of a std adapter throws: r.len is not a function, where std's &mut I and Box<I> pass len on
-paths:plain 242,1049,1692,2636,2977,4116
-paths:std 242,1049,1692,2636,2977,4116,4303,4451

@@ -212,6 +212,26 @@ impl Wrapper {
         }
     }
 
+    /// What std steps by `step`, std's name, of a `ty`: through each
+    /// wrapper, from the outside in, that passes `step` on to what it holds
+    /// as that's own (`passes`), what it holds; `ty` itself where none
+    /// does. A `len()` of a `&mut Box<I>` is `I`'s, as std's `&mut I` and
+    /// `Box<I>` each pass `len` on (#2189).
+    pub(in crate::lower) fn passed_through<'tcx>(
+        tcx: TyCtxt<'tcx>,
+        typing_env: ty::TypingEnv<'tcx>,
+        ty: Ty<'tcx>,
+        step: &str,
+    ) -> Ty<'tcx> {
+        let mut held = ty;
+        while let Some((wrapper, inner)) = Self::holding(tcx, typing_env, held)
+            && wrapper.passes(step) == Passed::Own
+        {
+            held = inner;
+        }
+        held
+    }
+
     /// Its catalog name.
     fn name(self) -> &'static str {
         match self {

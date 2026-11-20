@@ -2088,3 +2088,16 @@ steps a `skip` as std's `&mut I` does, asking the crate's `nth(0)`.
 Corpus `wrapper_given_by_a_dictionary_steps_as_std_does` holds the row,
 and its 12 case-builds are off the known list. Mutation:
 `given-lent-absent-entry-own`.
+
+**#2189, fixed.** A `len()` or `next_back()` decided by its receiver's
+type stopped at the first `Box`. `&mut Box<Map<..>>` was neither the
+crate's iterator nor std's compiled struct, so it called the JS
+iterator's own `len`, and `&mut Box<Countdown>` asked the box's hint,
+the default. What a step reaches through the wrappers is now one answer
+of the steps catalog, `Wrapper::passed_through`, which walks inward
+while each wrapper passes the step on as its own (`Wrapper::passes`).
+The `next_back`/`len` arm of the std iterator calls decides by that.
+knowing.rs's `passed_on_to` asks the same catalog, but of a `&mut`
+alone (#1892, `Box<I>` isn't `TrustedLen`). Corpus
+`len_of_a_mut_box_is_what_it_holds`; the paths table's 14 case-builds
+are off the known list. Mutation: `len-through-a-box-its-own`.

@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     name: "mir-next-back-front",
     breaks: "`it.next_back()` of a `$iter` gives its first item",
     file: "src/lower/mir/iter.rs",
-    find: '                (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$nextBack", vec![it]),\n',
+    find: '            (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$nextBack", vec![it]),\n',
     replace:
       '                (Some(IterMethod::NextBack), None) if back => Expr::call_helper("$next", vec![it]),\n',
     tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
@@ -93,9 +93,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an iterator of the crate's `len()` from MIR is refused, not its `size_hint()`'s",
     file: "src/lower/mir/iter.rs",
-    find: "            if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it))\n                && std_method == Some(IterMethod::Len)\n",
-    replace:
-      "            if false\n                && std_method == Some(IterMethod::Len)\n",
+    find: "        if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it)) && std_method == Some(IterMethod::Len)\n",
+    replace: "        if false && std_method == Some(IterMethod::Len)\n",
     tests: [
       "test/lowering-iterators.test.ts",
       "-t",
@@ -134,7 +133,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's refused `len()` names its closures' types, where they're written",
     file: "src/lower/mir/iter.rs",
-    find: "                        ty::Adt(adt, _) => self.tcx.def_path_str(adt.did()),\n",
+    find: "                    ty::Adt(adt, _) => self.tcx.def_path_str(adt.did()),\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "len of a reversed fuse of a map"],
   },
@@ -174,9 +173,10 @@ export const mutations: Mutation[] = [
     breaks:
       "`len()` of a generic iterator that knows its back and its length reads it as an array's, `it.end - it.at`, which a range's has not",
     file: "src/lower/mir/iter.rs",
-    find: "                (Some(IterMethod::Len), None) if self.len_of_its_own(iter_ty) => {\n",
-    replace: "                (Some(IterMethod::Len), None) if false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
+    find: "            (Some(IterMethod::Len), None) if self.len_of_its_own(iter_ty) => {\n",
+    replace: "            (Some(IterMethod::Len), None) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(exact_size_len|counted_where_made_runs_each_part_once).rs$"],
+    snapshots: true,
   },
   {
     name: "from-iter-unlowered",
@@ -365,9 +365,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`len()` of a `map()` made in place, the recognizers' JS iterator, is std's struct's hint, `$exactLen($sizeHint(..))`, not its own `len()`",
     file: "src/lower/mir/iter.rs",
-    find: "            if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it))\n",
-    replace:
-      "            if (self.is_user_iterator(iter_ty) || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty))\n",
+    find: "        if (self.is_user_iterator(iter_ty) || self.compiled_struct(iter_ty, &it)) &&",
+    replace: "        if (self.is_user_iterator(iter_ty) || crate::lower::recognition::is_compiled_std_iterator(self.tcx, iter_ty)) &&",
     snapshots: true,
     tests: [
       "test/corpus.test.ts",
@@ -555,7 +554,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`len()` of a `by_ref()` of a `Vec`'s `IntoIter` reads `it.end - it.at` of the lent value, which has neither: `NaN` (#745)",
     file: "src/lower/mir/iter.rs",
-    find: "                (Some(IterMethod::Len), None) if lends_self => Expr::call(Expr::member(it, \"len\"), Vec::new()),\n",
+    find: "            (Some(IterMethod::Len), None) if lends_self => Expr::call(Expr::member(it, \"len\"), Vec::new()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
