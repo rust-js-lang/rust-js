@@ -75,12 +75,7 @@ impl<'tcx> Cloned<'tcx> {
     /// What `ty`, made in `owner`, of its type parameters, may be: each type
     /// its callers give them, where every one is seen; `None` of another,
     /// any type they may be.
-    pub(in crate::lower) fn instances_of(
-        &self,
-        tcx: TyCtxt<'tcx>,
-        ty: Ty<'tcx>,
-        owner: DefId,
-    ) -> Option<IndexSet<Ty<'tcx>>> {
+    fn instances_of(&self, tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, owner: DefId) -> Option<IndexSet<Ty<'tcx>>> {
         if !ty.has_non_region_param() {
             return None;
         }

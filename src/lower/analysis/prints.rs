@@ -143,7 +143,7 @@ impl Prints {
     /// `Holder { first: !Grid(1), second: !Grid(` where Rust's stdout keeps
     /// them: refused (#1530). One that may print and never stops is shown
     /// as the line has it, each print marked where it ran (#1521).
-    pub(in crate::lower) fn stops_shown<'tcx>(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
+    fn stops_shown<'tcx>(&self, ty: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
         (ty.walk().filter_map(|part| part.as_type()))
             .find(|part| part.ty_adt_def().is_some_and(|adt| self.stopping.contains(&adt.did())))
     }

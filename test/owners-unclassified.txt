@@ -12,7 +12,6 @@ src/lower/aggregates.rs derived_default_fields
 src/lower/analysis.rs analyze_crate
 src/lower/analysis/arguments.rs may_call
 src/lower/analysis/back_stepped.rs asked_of
-src/lower/analysis/back_stepped.rs field_of
 src/lower/analysis/back_stepped.rs made_knowing
 src/lower/analysis/cell_borrows.rs body_asks
 src/lower/analysis/cell_borrows.rs borrowed
@@ -31,7 +30,6 @@ src/lower/analysis/cell_borrows/runs_nothing.rs read_may_run
 src/lower/analysis/cell_flow.rs class_of
 src/lower/analysis/cell_flow.rs opened
 src/lower/analysis/clones.rs as_any_instance
-src/lower/analysis/clones.rs instances_of
 src/lower/analysis/closures.rs any
 src/lower/analysis/closures.rs called_once
 src/lower/analysis/closures.rs carries_its_drop
@@ -90,7 +88,6 @@ src/lower/analysis/prints.rs leaves_unended
 src/lower/analysis/prints.rs runs_while_formatting
 src/lower/analysis/prints.rs shown_may_print
 src/lower/analysis/prints.rs stops_composed
-src/lower/analysis/prints.rs stops_shown
 src/lower/analysis/prints.rs writes_into_writers
 src/lower/analysis/rc_counts.rs any
 src/lower/analysis/rc_counts.rs copied_apart
@@ -99,9 +96,7 @@ src/lower/analysis/rc_counts.rs own_function
 src/lower/analysis/rc_counts.rs own_function_given
 src/lower/analysis/rc_counts.rs reads_fn_identity
 src/lower/analysis/rc_counts.rs shared_before_apart
-src/lower/analysis/read_bounds.rs answered_elsewhere
 src/lower/analysis/read_bounds.rs given_none
-src/lower/analysis/scopes.rs mentions
 src/lower/analysis/scopes.rs new
 src/lower/analysis/self_handles.rs new
 src/lower/analysis/self_handles.rs unowned

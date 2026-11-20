@@ -106,7 +106,7 @@ test("a generic function takes no size fact it doesn't read", () => {
 // fails, as a second owner would answer beside the analysis.
 test("a bound's dictionary is given by one analysis, but the old owners still to migrate", () => {
   const source = read("src/lower/analysis/read_bounds.rs");
-  const body = source.slice(source.indexOf("pub(in crate::lower) fn answered_elsewhere"), source.indexOf("/// Whether this analysis answers for"));
+  const body = source.slice(source.indexOf("fn answered_elsewhere("), source.indexOf("/// Whether this analysis answers for"));
   const named = [...body.matchAll(/(?:LangItem|StdItem)::(\w+)|\b(is_iterator_extension)\(/g)].map((m) => m[1] ?? m[2]).sort();
   expect(named).toEqual(["Clone", "Copy", "Eq", "Index", "IntoIterator", "Iterator", "is_iterator_extension"].sort());
 });

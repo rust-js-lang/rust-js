@@ -1281,7 +1281,7 @@ fn held_across(
 
 /// The field `place` is, of a struct or of an enum's variant, a field
 /// projection last: `(*_1).0`, `((_2 as Some).0)`.
-pub(in crate::lower) fn field_of<'tcx>(
+fn field_of<'tcx>(
     tcx: TyCtxt<'tcx>,
     mir: &rustc_middle::mir::Body<'tcx>,
     place: rustc_middle::mir::Place<'tcx>,

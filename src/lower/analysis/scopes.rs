@@ -275,7 +275,7 @@ fn methods_of(tcx: TyCtxt<'_>, adt: DefId) -> Option<Vec<DefId>> {
 
 /// Whether `ty` holds a value of `adt`, or a reference to one: not what a
 /// closure captures, which its body holds.
-pub(crate) fn mentions(ty: Ty<'_>, adt: DefId) -> bool {
+fn mentions(ty: Ty<'_>, adt: DefId) -> bool {
     let mut walk = ty.walk();
     while let Some(arg) = walk.next() {
         let Some(ty) = arg.as_type() else { continue };

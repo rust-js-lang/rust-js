@@ -37,7 +37,7 @@ pub(in crate::lower) type Bound = (DefId, u32, DefId);
 /// takes as another trait (#1915, the old owners still to migrate); and a
 /// trait that extends one, `trait Copied: Copy`, whose dictionary carries
 /// its owner's, `TCopied.Copy()`.
-pub(in crate::lower) fn answered_elsewhere(tcx: TyCtxt<'_>, tr: DefId) -> bool {
+fn answered_elsewhere(tcx: TyCtxt<'_>, tr: DefId) -> bool {
     use crate::lower::recognition::{StdItem, is_iterator_extension, is_std_def};
     use rustc_hir::attrs::lang_items::LangItem;
     rustc_middle::ty::elaborate::supertrait_def_ids(tcx, tr).any(|tr| {
