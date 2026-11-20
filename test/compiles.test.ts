@@ -261,10 +261,20 @@ test("a kept compile is counted by its blocks on the disk, so a store pruned to 
   const { compile, own } = counting();
   const started = Date.now() - 1000;
   expect(keptCompile([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "-Awarnings"], root, own, compile, room).code).toBe(0);
+  // The store is shared with what else runs, which prunes it as it keeps
+  // its own compiles: a directory listed may be gone when it's read, as
+  // an entry may be when it's stated (#2202).
+  const names = (dir: string) => {
+    try {
+      return readdirSync(dir);
+    } catch {
+      return [];
+    }
+  };
   const entries = (store: string) =>
-    readdirSync(store)
+    names(store)
       .filter((build) => !build.startsWith("."))
-      .flatMap((build) => readdirSync(join(store, build)).flatMap((key) => readdirSync(join(store, build, key)).map((name) => join(store, build, key, name))))
+      .flatMap((build) => names(join(store, build)).flatMap((key) => names(join(store, build, key)).map((name) => join(store, build, key, name))))
       .filter((at) => !at.split("/").at(-1)!.startsWith("."));
   // Its own compile's alone, the entry that read its `lib.rs`: the store is
   // shared with what else runs, whose entries come and go as it's read
@@ -277,7 +287,7 @@ test("a kept compile is counted by its blocks on the disk, so a store pruned to 
       return false;
     }
   };
-  const kept = entries(join(compileCache, "v2")).filter((at) => statSync(at).mtimeMs >= started && ownEntry(at));
+  const kept = entries(join(compileCache, "v2")).filter((at) => ownEntry(at) && (statSync(at, { throwIfNoEntry: false })?.mtimeMs ?? 0) >= started);
   expect(kept.length).toBeGreaterThan(0);
   for (const at of kept) expect(Number(/-(\d+)$/.exec(at)?.[1])).toBe(bytesOf(at));
   // Five of it in a store of its own, pruned to the room of two and a half:
