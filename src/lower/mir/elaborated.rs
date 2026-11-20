@@ -148,12 +148,22 @@ fn theirs<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, js_drops: &dyn Fn(Ty<
             {
                 let entry = copies.entry(local).or_insert((0, None));
                 entry.0 += 1;
-                let pointer = body.local_decls[local].ty.is_ref() || body.local_decls[local].ty.is_raw_ptr();
+                let ty = body.local_decls[local].ty;
+                let pointer = ty.is_ref() || ty.is_raw_ptr() || ty.is_box();
                 if let Rvalue::Use(Operand::Copy(of), _) | Rvalue::CopyForDeref(of) = &assign.1
                     && pointer
                     && !of.projection.is_empty()
                 {
                     entry.1 = Some(*of);
+                }
+                // A box's deref as `ElaborateBoxDerefs` writes it, `_p = copy
+                // (_b.0) as *const T (BoxDerefTransmute)`: `_p` is the box
+                // `_b`'s pointer, so `(*_p)` is `(*_b)`, at this statement.
+                if let Rvalue::Cast(mir::CastKind::BoxDerefTransmute, Operand::Copy(of), _) = &assign.1
+                    && let [ProjectionElem::Field(field, _)] = of.projection.as_slice()
+                    && field.as_u32() == 0
+                {
+                    entry.1 = Some(Place::from(of.local));
                 }
             }
         }
@@ -295,6 +305,24 @@ impl When {
 /// rustc's, and whether it's the rest of a value parts of which are paths
 /// of their own, which `rest_drops` can't always take apart (#2177).
 type Differ = (String, When, When, bool);
+
+/// A part of a dropped place, as `parts_of` compares it: how it's said,
+/// whether it's the rest of a part with parts of its own, when rust-js's
+/// elaboration drops it, and when each of rustc's `Drop`s there that covers
+/// it does, one each; `split` where none covers it but some drop its parts,
+/// all alike, its one entry standing for them.
+// Flags, not a state: three facts of one part, each true or not apart.
+struct Part {
+    what: String,
+    /// Whether it's of an enum's variant, a downcast within it, which
+    /// rustc's ladder drops under a test of the discriminant and rust-js's
+    /// dataflow knows is inactive where its variant isn't the one there.
+    variant: bool,
+    rest: bool,
+    ours: When,
+    theirs: Vec<When>,
+    split: bool,
+}
 
 /// Each part that differs, as a refusal and `--drops-shadow` say it.
 fn said(differ: &[Differ]) -> String {
@@ -498,11 +526,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     block,
                     format!("alike drops as a multiset, {}", alike.len()),
                 ),
-                Ok((differ, _)) if alike.len() > 1 => (
-                    Verdict::Unmatched,
-                    block,
-                    format!("ambiguous: two drops written alike; {}", said(&differ)),
-                ),
+                Ok((differ, _)) if alike.len() > 1 => {
+                    match self.alike_parts(body, elaboration, (&alike, &key), &at_site) {
+                        Some(Ok(parts)) => (
+                            Verdict::Agree,
+                            block,
+                            format!("alike drops part by part as a multiset, {parts} parts"),
+                        ),
+                        Some(Err((verdict, unlike))) => (verdict, block, unlike.join("; ")),
+                        None => (
+                            Verdict::Unmatched,
+                            block,
+                            format!("ambiguous: two drops written alike; {}", said(&differ)),
+                        ),
+                    }
+                }
                 Ok((differ, _)) if at_site.is_empty() => (
                     Verdict::Unmatched,
                     block,
@@ -641,9 +679,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Of `path`, dropped where `block` ends, how many of its parts were
-    /// compared, and each part rust-js's
-    /// elaboration drops otherwise than rustc's `Drop`s there, `theirs`,
-    /// do: its leaves, and the rest of it where it has parts of its own.
+    /// compared, and each part rust-js's elaboration drops otherwise than
+    /// rustc's `Drop`s there, `theirs`, do: its leaves, and the rest of it
+    /// where it has parts of its own (`parts_of`), each against the most
+    /// any of rustc's there does.
     fn parts_compared(
         &self,
         body: &mir::Body<'tcx>,
@@ -652,6 +691,111 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         path: MovePathIndex,
         theirs: &[&Theirs],
     ) -> Result<(Vec<Differ>, usize), String> {
+        let parts = self.parts_of(body, elaboration, block, path, theirs)?;
+        let differ = (parts.iter())
+            .filter_map(|part| {
+                let most = part.theirs.iter().copied().max().unwrap_or(When::Never);
+                (part.ours != most).then(|| (part.what.clone(), part.ours, most, part.rest))
+            })
+            .collect();
+        Ok((differ, parts.len()))
+    }
+
+    /// Of drops of one place written alike, `alike` (each `key`), each part
+    /// compared as a multiset (`parts_of`): when rust-js's drops drop it,
+    /// but those that drop it never, which rustc's elaboration leaves out,
+    /// against when each of rustc's `Drop`s there, `theirs`, does. The
+    /// number of parts that agree, or each that doesn't, said; `None` where
+    /// they aren't all of one place, or a part's rustc drops are of its
+    /// parts (`split`), which can't be counted one each.
+    fn alike_parts(
+        &self,
+        body: &mir::Body<'tcx>,
+        elaboration: &Elaboration<'tcx>,
+        (alike, key): (&[(BasicBlock, Place<'tcx>)], &PathKey),
+        theirs: &[&Theirs],
+    ) -> Option<Result<usize, (Verdict, Vec<String>)>> {
+        if alike.iter().any(|&(_, place)| path_key(place) != *key) {
+            return None;
+        }
+        let LookupResult::Exact(path) = elaboration.move_data.rev_lookup.find(alike[0].1.as_ref()) else {
+            return None;
+        };
+        let each: Vec<Vec<Part>> = (alike.iter())
+            .map(|&(block, _)| self.parts_of(body, elaboration, block, path, theirs).ok())
+            .collect::<Option<_>>()?;
+        if each.iter().flatten().any(|part| part.split) || each.iter().any(|parts| parts.len() != each[0].len()) {
+            return None;
+        }
+        // Each part that differs, said, and what's left of each side's
+        // drops of it once those alike are paired off.
+        let mut unlike: Vec<(String, Vec<When>, Vec<When>)> = Vec::new();
+        for (index, part) in each[0].iter().enumerate() {
+            let mut ours: Vec<When> = (each.iter())
+                .map(|parts| parts[index].ours)
+                .filter(|&when| when != When::Never)
+                .collect();
+            let mut rustc = part.theirs.clone();
+            ours.sort();
+            rustc.sort();
+            if ours == rustc {
+                continue;
+            }
+            // Of a variant, a `Drop` under a test of its discriminant against
+            // a path rust-js knows another variant is on: alike as it runs,
+            // which counting can't say, so not compared (#2177).
+            if part.variant {
+                return None;
+            }
+            let said = format!(
+                "`{}`: rust-js's alike drops drop it [{}], rustc's [{}]",
+                part.what,
+                ours.iter().map(|when| when.word()).collect::<Vec<_>>().join(", "),
+                rustc.iter().map(|when| when.word()).collect::<Vec<_>>().join(", ")
+            );
+            let (mut only_ours, mut only_rustc) = (ours.clone(), rustc);
+            for when in &ours {
+                if let Some(at) = only_rustc.iter().position(|w| w == when) {
+                    only_rustc.remove(at);
+                    only_ours.remove(only_ours.iter().position(|w| w == when).unwrap());
+                }
+            }
+            unlike.push((said, only_ours, only_rustc));
+        }
+        if unlike.is_empty() {
+            return Some(Ok(each[0].len()));
+        }
+        // Only a flag one side asks where the other knows, of every part
+        // that differs, as one drop's differences are judged.
+        let flagged = |whens: &[When]| whens.iter().all(|&when| when == When::Flagged);
+        let known = |whens: &[When]| whens.iter().all(|&when| when != When::Flagged);
+        let asks =
+            |asking: &[When], knowing: &[When]| asking.len() == knowing.len() && flagged(asking) && known(knowing);
+        let ours_ask = unlike.iter().all(|(_, ours, rustc)| asks(ours, rustc));
+        let rustcs_ask = unlike.iter().all(|(_, ours, rustc)| asks(rustc, ours));
+        let verdict = match (ours_ask, rustcs_ask) {
+            (true, false) => Verdict::FlagOurs,
+            (false, true) => Verdict::FlagTheirs,
+            _ => Verdict::Disagree,
+        };
+        Some(Err((verdict, unlike.into_iter().map(|(said, ..)| said).collect())))
+    }
+
+    /// Of `path`, dropped where `block` ends, each part compared: its
+    /// leaves, but a variant none of whose fields JS drops, and the rest of
+    /// each part with parts of its own, itself too, where that rest holds
+    /// what JS drops (`rest_drops`); each with what rust-js drops of it and
+    /// what each of rustc's `Drop`s there, `theirs`, that covers it does,
+    /// one each. A leaf none of rustc's covers but some drop its parts of,
+    /// all alike, is `split`: its one entry stands for those.
+    fn parts_of(
+        &self,
+        body: &mir::Body<'tcx>,
+        elaboration: &Elaboration<'tcx>,
+        block: BasicBlock,
+        path: MovePathIndex,
+        theirs: &[&Theirs],
+    ) -> Result<Vec<Part>, String> {
         let move_data = &elaboration.move_data;
         let ours_of = |node: MovePathIndex| match elaboration.presence(block, node) {
             (false, _) => When::Never,
@@ -665,14 +809,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 leaves.push(child);
             }
         });
-        let mut differ = Vec::new();
-        let mut compared = 0;
-        let mut compare = |what: String, ours: When, theirs: When, rest: bool| {
-            compared += 1;
-            if ours != theirs {
-                differ.push((what, ours, theirs, rest));
-            }
-        };
+        let mut parts = Vec::new();
         for &leaf in &leaves {
             // A variant none of whose fields JS drops, `Text(Vec<u8>)`'s:
             // dropped or not, nothing runs.
@@ -682,25 +819,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let key = key_of(leaf);
             // A `Drop` of it or of what holds it; else those of its parts,
             // all alike.
-            let covering = (theirs.iter()).filter(|t| t.covers(&key)).map(|t| t.when).max();
-            let theirs_when = match covering {
-                Some(when) => when,
-                None => {
+            let covering: Vec<When> = (theirs.iter()).filter(|t| t.covers(&key)).map(|t| t.when).collect();
+            let (whens, split) = match covering.is_empty() {
+                false => (covering, false),
+                true => {
                     let under: IndexSet<When> = (theirs.iter())
                         .filter(|t| holds(&key, &t.place) && t.place != key)
                         .map(|t| t.when)
                         .collect();
                     match under.len() {
-                        0 => When::Never,
-                        1 => under[0],
+                        0 => (Vec::new(), false),
+                        1 => (vec![under[0]], true),
                         _ => return Err(format!("`{}`: rustc drops its parts unalike", spelled(body, &key))),
                     }
                 }
             };
-            compare(spelled(body, &key), ours_of(leaf), theirs_when, false);
+            parts.push(Part {
+                what: spelled(body, &key),
+                variant: key.1.iter().any(|step| step.starts_with('@')),
+                rest: false,
+                ours: ours_of(leaf),
+                theirs: whens,
+                split,
+            });
         }
-        // The rest of it, where parts of it are paths of their own: rustc's
-        // `Drop`s of it, or of what of it is under none of those parts.
         // The rest of each part of it that has parts of its own, itself
         // too: rustc's `Drop`s of all of it, or of what of it is under none
         // of those parts, `(_15.0)` of a `Kind` one variant of which moved,
@@ -727,10 +869,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || holds(&key, &t.place) && !below.iter().any(|part| t.covers(part) || holds(part, &t.place))
                 })
                 .map(|t| t.when)
-                .max()
-                .unwrap_or(When::Never);
-            compare(format!("{} (the rest)", spelled(body, &key)), ours_of(node), rest, true);
+                .collect();
+            parts.push(Part {
+                what: format!("{} (the rest)", spelled(body, &key)),
+                variant: key.1.iter().any(|step| step.starts_with('@')),
+                rest: true,
+                ours: ours_of(node),
+                theirs: rest,
+                split: false,
+            });
         }
-        Ok((differ, compared))
+        Ok(parts)
     }
 }

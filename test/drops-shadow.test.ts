@@ -90,6 +90,43 @@ test("two drops written alike are compared as a multiset", () => {
   expect(at.sort()).toEqual(["agree", "agree"]);
 });
 
+// A box's deref as `ElaborateBoxDerefs` writes it, `_p = copy (_b.0) as
+// *const T (BoxDerefTransmute); drop((*_p))`, is the box's: `**x = Loud(..)`
+// through a `&mut Box<Loud>` drops what it held, behind two pointers (#2177).
+test("a drop through a box's deref is the box's, as rustc's box derefs read it", () => {
+  const lines = shadowOf("retain_map_drops_held.rs").filter(([, path]) => path === "normal");
+  const put = lines.filter(([, , , at]) => at.includes(":36:9:"));
+  expect(put.map(([verdict, , , , detail]) => `${verdict} ${detail}`)).toEqual(["agree behind a pointer, whole"]);
+});
+
+// Two drops of one place written alike, an early return's and the end's,
+// of a place with parts: each part compared as a multiset, the drop that
+// drops a part never left out as rustc's elaboration leaves a dead one out
+// (#2177). A variant's part that differs, which rustc's ladder drops under
+// a test of its discriminant where rust-js knows another variant is on, is
+// left unmatched, never refused.
+test("drops of one place written alike are compared part by part", () => {
+  for (const [name, at] of [
+    ["struct_update_drops.rs", ":44:1:"],
+    ["generic_struct_with_a_destructor_dropped_on_an_early_return.rs", ":35:5:"],
+  ]) {
+    const lines = shadowOf(name).filter(([, path, , where]) => path === "normal" && where.includes(at));
+    expect([name, lines.filter(([verdict]) => verdict !== "agree")]).toEqual([name, []]);
+    expect([name, lines.some(([, , , , detail]) => detail.startsWith("alike drops part by part as a multiset"))]).toEqual([
+      name,
+      true,
+    ]);
+  }
+  // Alike drops that differ only by a flag rust-js asks where rustc knows
+  // are judged as one drop's are, flag-ours, never a disagreement.
+  const flagged = shadowOf("array_parts_moved_in_a_copied_default.rs").filter(([, , owner]) => owner === "Picks::second");
+  expect(flagged.filter(([verdict]) => verdict === "disagree")).toEqual([]);
+  expect(flagged.some(([verdict, , , , detail]) => verdict === "flag-ours" && detail.includes("alike drops drop it"))).toBe(true);
+  const variants = shadowOf("or_pattern_part_moves.rs").filter(([, path, owner]) => path === "normal" && owner === "middle");
+  expect(variants.some(([verdict]) => verdict === "disagree")).toBe(false);
+  expect(variants.filter(([verdict, , , , detail]) => verdict === "unmatched" && detail.startsWith("ambiguous")).length).toBe(2);
+});
+
 // The normal path's verdicts over these cases, each pinned: none disagrees,
 // the baseline a refusal of a disagreement (change D's (c)) starts from.
 test("each normal-path verdict of the partial moves, behind a pointer and alike, is pinned", () => {
@@ -100,10 +137,10 @@ test("each normal-path verdict of the partial moves, behind a pointer and alike,
     }
   }
   expect(Object.fromEntries(["agree", "disagree", "flag-ours", "unmatched"].map((v) => [v, tally.get(v) ?? 0]))).toEqual({
-    agree: 196,
+    agree: 197,
     disagree: 0,
     "flag-ours": 4,
-    unmatched: 5,
+    unmatched: 4,
   });
 });
 

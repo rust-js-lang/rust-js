@@ -1960,3 +1960,42 @@ array_of_arrays_bound_by_or_patterns_drops_the_rest and
 boxed_field_moved_out_drops_the_rest (each refused by 267dd2457, each run as
 native now), test/drops-shadow.test.ts's pin (agree 196, unmatched 5), and
 mutations `shadow-array-rest-whole` and `shadow-rest-difference-refused`.
+
+## Amendment: alike drops compared part by part, and a box's deref read as the box's (2026-11-20, #2177)
+
+Of the normal path's 31 unmatched drops over the corpus, 7 were alike drops
+and 1 was behind a pointer, each hiding a possible disagreement from (c).
+
+- **Alike drops of a place with parts.** Two of rust-js's drops of one place
+  at one site, an early return's and the end's, compared as a multiset only
+  where each drops all of the place. A place with parts, one of which moved
+  before one of the drops, couldn't be. `parts_of` now says each part, a
+  leaf or the rest of a part with parts of its own, with what rust-js drops
+  of it and what each covering rustc `Drop` there does, one each.
+  `parts_compared` takes the most of those, as before, so no single drop's
+  answer moves. `alike_parts` compares each part as a multiset across the
+  alike drops: rust-js's conditions, the never ones left out as rustc's
+  elaboration leaves a dead drop out, against rustc's. Equal agrees.
+  Differences only of a flag one side asks are `flag-ours`/`flag-theirs`, as
+  one drop's are. Otherwise it's a disagreement. It stays unmatched where
+  the drops aren't of one place, a part's rustc drops are of its own parts,
+  or a variant's part differs: rustc's ladder drops a variant under a test
+  of its discriminant where rust-js knows another variant is on, which
+  counting can't tell apart (or_pattern_part_moves' `middle` and `name`).
+- **A box's deref.** `ElaborateBoxDerefs` writes `(*b)` as `_p = copy (_b.0)
+  as *const T (BoxDerefTransmute); drop((*_p))`. That copy is read as the
+  box itself, at that statement, as `Derefer`'s copies are, so `**x =
+  Loud(..)` through a `&mut Box<Loud>` (retain_map_drops_held) agrees.
+
+Over the corpus the normal path has 7,590 agree, 0 disagree and 27
+unmatched: 19 have no rustc body, 4 are a variant's alike drops, 3 have no
+rustc drop where they're written, and 1 is a rest not taken apart. The
+cleanup paths' 25 disagreements are unchanged. Three of the cleanup paths'
+alike drops, newly compared, are `flag-ours`.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, no output changes;
+the comparison sees more. Held by test/drops-shadow.test.ts ("a drop through
+a box's deref is the box's", "drops of one place written alike are compared
+part by part", and the pin, now agree 197 and unmatched 4) and by mutations
+`shadow-box-deref-unresolved`, `shadow-alike-parts-uncompared`,
+`shadow-alike-variant-compared` and `shadow-alike-flag-disagrees`.
