@@ -190,13 +190,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// Whether std's `Box<I>` of an `inner` hides steps `I` writes itself
     /// that a program can tell from the traits' defaults over its `next`:
-    /// of the crate's iterator, of std's compiled struct, whose own steps may
-    /// reach the crate's, or of a type only its bounds know, which its caller
-    /// may give one (#1601, #2179). Of another std iterator, a slice's or a
-    /// `Vec`'s, the box steps as what it holds does, to every program.
+    /// of the crate's iterator, of std's compiled struct that holds anything
+    /// of the crate's (`holds_only_std`), whose own steps may reach the
+    /// crate's or drop what it holds in another order than the defaults do,
+    /// a `Map`'s `fold` its closure before its source's items, or of a type
+    /// only its bounds know, which its caller may give one (#1601, #2179).
+    /// Of another std iterator, a slice's, a `Vec`'s, or std's compiled
+    /// struct of std's types and closures over them alone, the box steps as
+    /// what it holds does, to every program, so it's no lend's (#2185).
     pub(in crate::lower) fn box_hides_its_steps(&self, inner: ty::Ty<'tcx>) -> bool {
         self.is_user_iterator(inner)
-            || crate::lower::recognition::is_compiled_std_iterator(self.tcx, inner)
+            || (crate::lower::recognition::is_compiled_std_iterator(self.tcx, inner) && !self.holds_only_std(inner))
             || crate::lower::generic_facts::boxed_steps_given(self.tcx, inner, self.typing_env)
     }
 
@@ -213,8 +217,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A type made of std's types alone, and no cell: no impl of the crate's
     /// can be for it, nor one that borrows (ADR 0328).
     pub(in crate::lower) fn std_alone(&self, ty: Ty<'tcx>) -> bool {
+        self.made_of_std(ty, false)
+    }
+
+    /// Whether a `ty` holds nothing of the crate's that a program can tell
+    /// apart by when it's stepped or dropped: `std_alone`'s, and closures
+    /// and functions where what they capture is, whose calls run in the
+    /// same order however std steps what holds them. Not one that holds the
+    /// crate's iterator, its types, which may drop, a type parameter, a
+    /// `dyn` or an alias (`box_hides_its_steps`).
+    fn holds_only_std(&self, ty: Ty<'tcx>) -> bool {
+        self.made_of_std(ty, true)
+    }
+
+    /// `std_alone`'s walk; given `calls`, a closure's, a function's and a
+    /// function pointer's types too, their captures and arguments walked.
+    fn made_of_std(&self, ty: Ty<'tcx>, calls: bool) -> bool {
         ty.walk().all(|part| {
             part.as_type().is_none_or(|t| match t.kind() {
+                ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => calls,
                 ty::Adt(adt, _) => self.is_std(adt.did()) && !self.is_borrowed_cell(t),
                 ty::Bool
                 | ty::Char

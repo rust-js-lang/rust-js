@@ -169,7 +169,7 @@ function main() {
   console.log(
     `box back ${fromBack(
       iterator_map($iter([1, 2, 3]), (x) => (x + 1) >>> 0),
-      { next: $next, lent: ["boxed"] },
+      { next: $next },
       { next_back: mapDoubleEndedIterator_nextBack },
       tIsT,
     )}`,

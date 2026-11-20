@@ -2009,12 +2009,29 @@ and std's compiled struct read through two lends stepped `NaN`
 (`held_adapters_by_ref` with std's iterator structs, and itertools'
 probe).
 
-Its cost: a `Box<dyn Iterator>` of std's compiled struct reads
-`$lent(it, "boxedUnsized")` where it's made, even where nothing under it
-reaches the crate's code and the lend changes no run, since
-`box_hides_its_steps` answers by the kind of struct, not by what it holds.
-Sixteen snapshots move: ten to that form, six to a dictionary's `lent`. Narrowing the
-answer to what may reach the crate's steps is its own decision.
+Sixteen snapshots moved at first: ten to `$lent(it, "boxedUnsized")`
+where a `Box<dyn Iterator>` is made, six to a dictionary's `lent`. Most
+of the coercion's lends changed no run: `box_hides_its_steps` answered
+yes of every compiled std struct, `$iter(v).take(4)`'s and
+`$chars(s).map(|c| ..)`'s too. **So a box hides a compiled struct's
+steps only where the struct holds anything of the crate's**
+(`holds_only_std`): its iterator, its types, a type parameter, a `dyn`
+or an alias. Closures and functions count as std's where what they
+capture is, as their calls run in the same order however std steps
+what holds them. It isn't `reaches_its_own`'s answer, whether a step
+reaches the crate's own: a struct's own `fold` also drops in another
+order than the defaults over its `next`. A boxed `map` over a `Vec`'s
+items with a destructor, its closure holding one, folded by a consumer
+that panics, drops the items left and then the closure, as std's
+`Box<I>` drops itself whole; `Map::fold` gives the closure to the items'
+own `fold`, which drops it first (corpus
+`box_of_a_map_drops_as_std_box_does`; mutation
+`box-hides-only-own-steps`, the narrower answer, caught by it alone).
+Seven snapshots move back: the five `Box<dyn Iterator>` cases of std's
+types alone as they were before this amendment, and two boxes of a std
+`map` before #2179. The `&mut` lends stay whatever is held: a `&mut`'s
+lend also keeps a consumer that stops early, a `take(2)`, from closing
+what its lender goes on stepping.
 
 Case (ADR 0262): R. Corpus case `wrapper_given_by_a_dictionary_steps_as_std_does`
 runs as native in both builds, and so does the `impl-owned` rewrite of

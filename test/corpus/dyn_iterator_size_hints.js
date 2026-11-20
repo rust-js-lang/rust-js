@@ -5,7 +5,6 @@ import {
   $iter,
   $iterator,
   $lazyRange,
-  $lent,
   $next,
   $rangeNext,
   $roomForHint,
@@ -57,67 +56,52 @@ function main() {
   const all = [
     $iterator([3], countdownIterator_next),
     $iterator([4], sized3Iterator_next, false, undefined, undefined, sized3Iterator_sizeHint),
-    $lent(
-      iterator_chain($iter(v), { start: 7, end: 9 }, { next: $next }, rangeIntoIterator),
-      "boxedUnsized",
-    ),
-    $lent(iterator_take($iter(v), 4), "boxedUnsized"),
-    $lent(iterator_rev($iter(v)), "boxedUnsized"),
-    $lent(
-      iterator_map(iterator_enumerate($iter(v)), ([i, x]) => (i + x) >>> 0, {
+    iterator_chain($iter(v), { start: 7, end: 9 }, { next: $next }, rangeIntoIterator),
+    iterator_take($iter(v), 4),
+    iterator_rev($iter(v)),
+    iterator_map(iterator_enumerate($iter(v)), ([i, x]) => (i + x) >>> 0, {
+      next: $next,
+      fold: $foldOf,
+      getUnchecked: enumerateIterator___iteratorGetUnchecked,
+    }),
+    iterator_map(
+      iterator_zip(
+        $iter(v),
+        { start: 10, end: 13 },
+        { next: $next },
+        rangeIntoIterator,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+      ),
+      ([a, b]) => (a + b) >>> 0,
+      {
         next: $next,
         fold: $foldOf,
-        getUnchecked: enumerateIterator___iteratorGetUnchecked,
-      }),
-      "boxedUnsized",
+        getUnchecked: (iterator, i) =>
+          zipIterator___iteratorGetUnchecked(iterator, i, { next: $next }, { next: $rangeNext }),
+      },
     ),
-    $lent(
-      iterator_map(
-        iterator_zip(
-          $iter(v),
-          { start: 10, end: 13 },
-          { next: $next },
-          rangeIntoIterator,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
-        ),
-        ([a, b]) => (a + b) >>> 0,
-        {
-          next: $next,
-          fold: $foldOf,
-          getUnchecked: (iterator, i) =>
-            zipIterator___iteratorGetUnchecked(iterator, i, { next: $next }, { next: $rangeNext }),
-        },
-      ),
-      "boxedUnsized",
-    ),
-    $lent(
-      iterator_flatMap(
-        $iter(v),
-        (x) => new Array(2).fill(x),
-        { next: $next },
-        { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
-        true,
-        undefined,
-        false,
-      ),
-      "boxedUnsized",
+    iterator_flatMap(
+      $iter(v),
+      (x) => new Array(2).fill(x),
+      { next: $next },
+      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      true,
+      undefined,
+      false,
     ),
     $lazyRange(0, 5),
-    $lent(
-      iterator_take(
-        iterator_cycle(
-          $iter([1, 2]),
-          { next: $next },
-          { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-        ),
-        5,
+    iterator_take(
+      iterator_cycle(
+        $iter([1, 2]),
+        { next: $next },
+        { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
       ),
-      "boxedUnsized",
+      5,
     ),
   ];
   for (const it of all) {
@@ -129,7 +113,7 @@ function main() {
       `(${before[0]}, ${before[1] == null ? "None" : `Some(${before[1]})`}) (${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`}) (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
     );
   }
-  const outer = $lent(iterator_skip($iter(v), 2), "boxedUnsized");
+  const outer = iterator_skip($iter(v), 2);
   const value = $sizeHint(outer);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
   const local = iterator_filter($iter(v), (x) => x % 2 === 1);
@@ -138,12 +122,7 @@ function main() {
 }
 
 function boxed(v, even) {
-  return even
-    ? $lent(
-        iterator_filter($iter(v), (x) => x % 2 === 0),
-        "boxedUnsized",
-      )
-    : $lent(iterator_skip($iter(v), 1), "boxedUnsized");
+  return even ? iterator_filter($iter(v), (x) => x % 2 === 0) : iterator_skip($iter(v), 1);
 }
 
 function boxedHints() {
@@ -151,10 +130,7 @@ function boxedHints() {
   const all = $iter(v);
   const sizeHint = $sizeHint(all);
   console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
-  const mapped = $lent(
-    iterator_map($iter(v), (x) => (x * 2) >>> 0),
-    "boxedUnsized",
-  );
+  const mapped = iterator_map($iter(v), (x) => (x * 2) >>> 0);
   $next(mapped);
   const value = $sizeHint(mapped);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
@@ -168,10 +144,7 @@ function boxedHints() {
       `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) [${Array.from($roomForHint(it, 4, false)).join(", ")}]`,
     );
   }
-  const ranged = $lent(
-    iterator_stepBy({ start: 0, end: 10 }, 3, { next: $rangeNext }),
-    "boxedUnsized",
-  );
+  const ranged = iterator_stepBy({ start: 0, end: 10 }, 3, { next: $rangeNext });
   const value$1 = $sizeHint(ranged);
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
 }

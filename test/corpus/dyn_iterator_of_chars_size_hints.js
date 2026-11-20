@@ -4,7 +4,6 @@ import {
   $charIndices,
   $chars,
   $foldOf,
-  $lent,
   $next,
   $print,
   $sizeHint,
@@ -26,26 +25,13 @@ function hints(it) {
 
 function main() {
   for (const s of ["héllo wörld, ünïcödé", "abcdefgh", "", "日本"]) {
+    hints(iterator_map($chars(s), (c) => c.codePointAt(0)));
+    hints(iterator_map($charIndices(s), ([i]) => i));
     hints(
-      $lent(
-        iterator_map($chars(s), (c) => c.codePointAt(0)),
-        "boxedUnsized",
-      ),
-    );
-    hints(
-      $lent(
-        iterator_map($charIndices(s), ([i]) => i),
-        "boxedUnsized",
-      ),
-    );
-    hints(
-      $lent(
-        iterator_map(iterator_rev($chars(s)), (c) => c.codePointAt(0), {
-          next: $next,
-          fold: $foldOf,
-        }),
-        "boxedUnsized",
-      ),
+      iterator_map(iterator_rev($chars(s)), (c) => c.codePointAt(0), {
+        next: $next,
+        fold: $foldOf,
+      }),
     );
   }
 }

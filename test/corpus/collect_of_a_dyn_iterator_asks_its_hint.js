@@ -78,15 +78,12 @@ function main() {
     "boxed endless noisy",
     () => {
       const value = collected(
-        $lent(
-          iterator_map(
-            { start: 0 },
-            (value) => [value],
-            { next: $rangeFromStep(0, 4294967295) },
-            undefined,
-            noisyDrop_drop,
-          ),
-          "boxedUnsized",
+        iterator_map(
+          { start: 0 },
+          (value) => [value],
+          { next: $rangeFromStep(0, 4294967295) },
+          undefined,
+          noisyDrop_drop,
         ),
         4,
         noisyDrop_drop,

@@ -218,29 +218,26 @@ function main() {
   console.log(
     `last by_ref ${value$9 == null ? "None" : `Some(${value$9})`} ${next == null ? "None" : `Some(${next})`}`,
   );
-  const boxed = $lent(
-    $knowing(
-      iterator_map($iter(v), (x) => (x + 100) | 0),
-      mapDoubleEndedIterator_nextBack,
-      (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
-      undefined,
-      undefined,
-      (iterator, init, f, broke, unwind, ends) =>
-        mapDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $next },
-          { next_back: $nextBack },
-          $tryOf(broke),
-          undefined,
-          undefined,
-          undefined,
-          unwind,
-          ends,
-        ),
-    ),
-    "boxedUnsized",
+  const boxed = $knowing(
+    iterator_map($iter(v), (x) => (x + 100) | 0),
+    mapDoubleEndedIterator_nextBack,
+    (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+    undefined,
+    undefined,
+    (iterator, init, f, broke, unwind, ends) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $next },
+        { next_back: $nextBack },
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
   );
   const value$10 = $nextBack(boxed);
   const value$11 = $nthBack(boxed, 1);
@@ -250,13 +247,10 @@ function main() {
   // A box is made knowing its back, and so its hint, a filter's of a
   // string's `chars()` as std's (#1563's, refused before).
   s = "héllo wörld";
-  const hinted = $lent(
-    iterator_map(
-      iterator_filter($chars(s), (c) => $isAlphabetic(c)),
-      (c) => c.codePointAt(0),
-      { next: $next, fold: $foldOf },
-    ),
-    "boxedUnsized",
+  const hinted = iterator_map(
+    iterator_filter($chars(s), (c) => $isAlphabetic(c)),
+    (c) => c.codePointAt(0),
+    { next: $next, fold: $foldOf },
   );
   const sizeHint = $sizeHint(hinted);
   console.log(
