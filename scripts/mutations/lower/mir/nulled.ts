@@ -116,11 +116,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/nulled.rs",
     find: "                        if fields.len() == 1\n",
     replace: "                        if fields.len() == 0\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "a nullable field is written what's never undefined as it is",
-    ],
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a let set only to values is returned as it is"],
   },
   {
     name: "mir-null-none-coalesced",
