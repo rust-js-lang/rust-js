@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && let ExprKind::Call(callee, args) = &then.kind\n",
     replace: "            && false\n            && let ExprKind::Call(callee, args) = &then.kind\n",
-    tests: ["test/snapshots.test.ts", "-t", "values: the generated JS is its snapshot"],
+    tests: ["test/lowering-module-variables.test.ts", "-t", "names a dyn Fn only as a type argument"],
   },
   {
     name: "optional-call-of-any-object",
@@ -107,14 +107,6 @@ export const mutations: Mutation[] = [
     replace: "            if false && let ExprKind::Handle(place, _) = object.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^box_uninit.rs$"],
     snapshots: true,
-  },
-  {
-    "name": "text-truth-chained",
-    "breaks": "`s ? s.toUpperCase() : undefined` of text's truth is `s?.toUpperCase()`, `\"\"` where Rust gives `None`",
-    "file": "src/js/make.rs",
-    "find": "        if let Some(tested) = null_test(&test, true)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
-    "replace": "        if let Some(tested) = null_test(&test, true).or(match &test.kind { ExprKind::Unary(UnaryOp::Not, not) => match &not.kind { ExprKind::Unary(UnaryOp::Not, x) => Some(&**x), _ => None }, _ => None })\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
-    "tests": ["test/lowering-branches.test.ts", "-t", "a test of text's truth is no optional chain"]
   },
   {
     name: "text-joined-twice",

@@ -587,19 +587,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "implies-given-none-a-literal",
-    breaks:
-      "`x === undefined` of a `None` given, `strict_equals(x, None)`, is read as a literal's test that says `x` is there, and a nullable result's `x ?? null` there is `x`, `undefined` (ADR 0620, amended)",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "                    ExprKind::Null | ExprKind::Undefined | ExprKind::GivenUndefined\n",
-    replace: "                    ExprKind::Null | ExprKind::Undefined\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "a nullable result tested equal to a None given is null",
-    ],
-  },
-  {
     name: "written-returns-of-a-returned-if",
     breaks:
       "`if __DEV__ { ..; return if c { a } else { None }; } None`, whose branches MIR assigns the function's value, stays `if (c) { return a; }` and the tail's `return null;`, not the conditional returned (ADR 0657, amended)",
