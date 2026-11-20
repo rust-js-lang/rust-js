@@ -16,7 +16,7 @@ function main() {
   const value = $unwrap(c);
   const wrapping = [$unwrap(d)[0]];
   $assign(value, [(value[0] + ((wrapping[0] << 1) >>> 0)) >>> 0]);
-  console.log(`${$unwrap(c == null ? c : [c[0]])[0]} ${$unwrap(d == null ? d : [d[0]])[0]}`);
+  console.log(`${(c == null ? c : [c[0]])[0]} ${(d == null ? d : [d[0]])[0]}`);
   const held = [7];
   const before = [held[0]];
   bump(held, [3]);

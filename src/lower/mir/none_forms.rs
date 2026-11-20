@@ -80,6 +80,16 @@ pub(in crate::lower) enum Presence {
     Defined,
 }
 
+/// Of each, whether it's never `undefined` there, `Present` or `Defined`:
+/// what a call of each count of a function's trailing `Option`s asks of
+/// each argument (`optional_ladder`, #2178).
+pub(in crate::lower::mir) fn present_or_defined(presences: &[Presence]) -> Vec<bool> {
+    presences
+        .iter()
+        .map(|presence| *presence != Presence::Unknown)
+        .collect()
+}
+
 impl<'tcx> FnCx<'_, 'tcx> {
     /// What MIR proves of `operand`, an `Option`, where it's read: of a
     /// variable a test proved (`proved_present`), what a closure's `with`
@@ -90,6 +100,38 @@ impl<'tcx> FnCx<'_, 'tcx> {
     /// (`proved_defined`): `Defined`.
     pub(in crate::lower::mir) fn presence(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Presence {
         self.presence_of(state, (operand, state.at), 0)
+    }
+
+    /// What MIR proves of each of `operands`, read where the call being
+    /// lowered is (`presence`), which a call of each count of a function's
+    /// trailing `Option`s asks (`optional_ladder`, #1876) and what gives one
+    /// JS may have given as it is (`never_null`).
+    pub(in crate::lower::mir) fn presences(
+        &self,
+        state: &State<'_, 'tcx>,
+        operands: &[&Operand<'tcx>],
+    ) -> Vec<Presence> {
+        operands.iter().map(|operand| self.presence(state, operand)).collect()
+    }
+
+    /// `presences` of the items of the tuple the call being lowered gives a
+    /// closure, each its field.
+    pub(in crate::lower::mir) fn presences_in_a_tuple(&self, state: &State<'_, 'tcx>) -> Vec<Presence> {
+        let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
+            return Vec::new();
+        };
+        let Some(tuple) = args.get(1).and_then(|tuple| tuple.node.place()) else {
+            return Vec::new();
+        };
+        let ty::Tuple(tys) = tuple.ty(state.body, self.tcx).ty.kind() else {
+            return Vec::new();
+        };
+        (tys.iter().enumerate())
+            .map(|(i, ty)| {
+                let field = tuple.project_deeper(&[PlaceElem::Field(rustc_abi::FieldIdx::from_usize(i), ty)], self.tcx);
+                self.presence(state, &Operand::Copy(field))
+            })
+            .collect()
     }
 
     /// What MIR proves of the `Option` a call of `func` on `args` gives
@@ -125,6 +167,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
         // the place they're read by.
         let whole = place.projection.is_empty();
         if (whole && self.proved_present(state, place.local))
+            || self.made_some(state, operand)
             || self.present_item_read(state, place)
             || self.capture_read_proved(state, place)
             || (whole && self.field_read_proved(state, place.local))

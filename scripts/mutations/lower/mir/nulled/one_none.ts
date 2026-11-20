@@ -127,14 +127,6 @@ export const mutations: Mutation[] = [
     tests: ["test/webapi-bindings.test.ts", "-t", "an and_then of a nullable binding is an optional chain"],
   },
   {
-    name: "made-some-unseen",
-    breaks: "a binding's trailing argument made `Some(..)` where it's given is tested, `byteOffset != null ? new Uint8Array(buffer, byteOffset) : ..`, as one that may be `None` is (#1842)",
-    file: "src/lower/mir/nulled/one_none.rs",
-    find: "                && self.made_some(state, operand)\n",
-    replace: "                && false\n",
-    tests: ["test/js-builtins.test.ts", "-t", "an ArrayBufferView is any typed array"],
-  },
-  {
     name: "made-some-of-a-none",
     breaks: "an `Option` a `None` writes too is taken for a `Some` where it's given, so a trailing `None` of it is given `undefined`, `setFullYear(2026, undefined)`, NaN (#1842)",
     file: "src/lower/mir/nulled/one_none.rs",

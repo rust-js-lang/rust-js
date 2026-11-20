@@ -44,9 +44,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let fn_ptr = func.ty(&state.body.local_decls, self.tcx);
         let pointers = self.krate.cell_borrows.pointers();
         // Of one that may be JS's, each `Option` Rust's `None` (#1840).
-        if pointers.may_be(self.tcx, fn_ptr).is_none() {
-            self.somes_given(state, &operands[1..], &mut exprs[1..]);
-        }
+        let present = match pointers.may_be(self.tcx, fn_ptr) {
+            None => super::present_or_defined(&self.presences(state, &operands[1..])),
+            Some(_) => Vec::new(),
+        };
         if !pointers.rust_only(self.tcx, fn_ptr) {
             self.ones_given_to_a_pointer(state, fn_ptr, &operands[1..], &mut exprs[1..]);
         }
@@ -99,7 +100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let call = self.called_unbound(state, (call, Called::Pointer(fn_ptr)))?;
         Ok(match (laddered, call) {
             (true, Value::Expr(call)) => {
-                Value::Expr(self.optional_ladder(call, None, &optionals, (self.js_span(span), out)))
+                Value::Expr(self.optional_ladder(call, None, (&optionals, &present), (self.js_span(span), out)))
             }
             (_, call) => call,
         })
@@ -1259,7 +1260,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A binding: the JS function, method, property or operator it names
         // (ADRs 0019, 0020), given its arguments; the registry's symbol's read too (ADR 0634).
         if let Some(binding) = self.binding_called(def_id, generic_args) {
-            return self.mir_binding_call(binding, (values, &arg_tys, nulled), span, out);
+            return self.mir_binding_call(state, binding, (values, &arg_tys, nulled), span, out);
         }
         // The crate's own function, given its dictionaries (ADR 0049).
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {

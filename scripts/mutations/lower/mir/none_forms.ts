@@ -84,4 +84,12 @@ export const mutations: Mutation[] = [
     replace: "        if whole && self.proved_defined(state, place.local) && false {\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "proved defined"],
   },
+  {
+    name: "made-some-unseen",
+    breaks: "a binding's trailing argument made `Some(..)` where it's given is tested, `byteOffset != null ? new Uint8Array(buffer, byteOffset) : ..`, as one that may be `None` is (#1842)",
+    file: "src/lower/mir/none_forms.rs",
+    find: "            || self.made_some(state, operand)\n",
+    replace: "",
+    tests: ["test/js-builtins.test.ts", "-t", "an ArrayBufferView is any typed array"],
+  },
 ];

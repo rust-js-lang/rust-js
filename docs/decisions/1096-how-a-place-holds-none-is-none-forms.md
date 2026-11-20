@@ -327,3 +327,28 @@ read through a reference, `&(*x)`, was a reference stored, no decision:
 following one moved nothing, so `presence` doesn't. Two survivors in the
 files this touches, `js-null-given-undefined` and `option-identity-map`,
 survive before it too (1b3681486), reported, not this change's.
+
+## Amendment: a `Some` its writes make is `presence`'s too (2026-11-20, #2112, #2178)
+
+Change C's sixth step (S5, its first part). "Is this `Option` a `Some`
+where it's read?" had two answers: `NoneForms::presence`, of tests that
+prove it on every path, and `made_some`, of writes that each make one
+(`made_some_or_none`), which `somes_given` stamped on a call's arguments as
+`Known::Present` for the call of each count of a function's trailing
+`Option`s (#1876) and the `?? undefined` of what's given a callback JS may
+have made (`never_null`). `presence` now asks `made_some` with the tests'
+proofs, one answer; the stamps are gone, and each call computes what MIR
+proves of its arguments once (`presences`, `presences_in_a_tuple`), given
+the ladder (`optional_ladder`'s `present`, past what a binding is called
+on, `offset`) and `ones_given_to_a_callback`.
+
+Every reader of `presence` sees a `Some` its writes make: an `unwrap()` of
+one is its value, `$unwrap` gone; an `unwrap_or(d)`'s default goes; a
+binding's trailing `Some(&q)` is given as it is, untested. Ten corpus
+snapshots and one bindings test move; React's port doesn't. ADR 0262's
+case: none observable. Rust's `unwrap` can't panic there and the default
+is never taken, so behaviour is the same, and the JS reads better. A
+`Some` its writes make is one whose payload `payload_may_be_null` doesn't
+say may be a caught `null` (ADR 0030, #1939); one whose payload may look
+like `None`, a null pointer, an `any` value, is boxed, `$some`, and its
+`unwrap` still unboxes it (`some_of_what_may_be_nullish`).

@@ -39,7 +39,7 @@ function option() {
     return result;
   }
   $assign(result._0, { balance: 3 });
-  return { TAG: "Ok", _0: $unwrap(option).balance };
+  return { TAG: "Ok", _0: option.balance };
 }
 
 function holder() {

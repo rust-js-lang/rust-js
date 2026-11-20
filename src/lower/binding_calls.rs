@@ -19,7 +19,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn binding_values(
         &mut self,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
-        mut args: Vec<Expr>,
+        (mut args, present): (Vec<Expr>, &[bool]),
         (fun_span, named): (js::Span, Span),
         span: Span,
         out: &mut Vec<js::Stmt>,
@@ -565,7 +565,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => value,
         };
         let value = match laddered {
-            true => self.optional_ladder(value, Some((def_id, offset)), &optionals, (self.js_span(span), out)),
+            true => self.optional_ladder(
+                value,
+                Some((def_id, offset)),
+                // MIR's arguments past what it's called on, as the call's.
+                (&optionals, present.get(offset..).unwrap_or_default()),
+                (self.js_span(span), out),
+            ),
             false => value,
         };
         Ok(self.catching(def_id, generic_args, value))
@@ -597,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         mut value: Expr,
         named: Option<(DefId, usize)>,
-        optionals: &[(bool, bool)],
+        (optionals, present): (&[(bool, bool)], &[bool]),
         (at, out): (js::Span, &mut Vec<js::Stmt>),
     ) -> Expr {
         // Each count's call where the call is written, so a comment before
@@ -619,18 +625,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .rposition(|arg| !arg.facts.has(js::Known::Absent))
             .map_or(0, |i| i + 1);
-        let surely_there = |arg: &Expr| {
+        // Or what MIR proves never `undefined` where it's read, a `Some` its
+        // writes make or a test proved, `present`'s (`mir::Presence`, #2178).
+        let surely_there = |(i, arg): (usize, &Expr)| {
             use js::ExprKind as K;
             matches!(arg.kind, K::Null)
                 || arg.has_null_fallback()
-                || (!arg.may_be_undefined()
+                || ((!arg.may_be_undefined() || present.get(i) == Some(&true))
                     && !arg.facts.has(js::Known::NoneNull)
                     && !matches!(arg.kind, K::Binary(Op::Coalesce | Op::Or | Op::And, ..) | K::Cond(..)))
         };
         let run = (0..given)
             .rev()
             .take_while(|&i| {
-                optionals.get(i).is_some_and(|&(optional, one)| optional && one) && !surely_there(&args[i])
+                optionals.get(i).is_some_and(|&(optional, one)| optional && one) && !surely_there((i, &args[i]))
             })
             .count();
         if run == 0 || args[given - 1].facts.has(js::Known::Absent) {

@@ -481,7 +481,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let mut made = Vec::new();
-        let body = self.binding_values((def_id, args), values, (self.js_span(span), named), span, &mut made)?;
+        let body = self.binding_values(
+            (def_id, args),
+            (values, &[]),
+            (self.js_span(span), named),
+            span,
+            &mut made,
+        )?;
         // One that's a statement, a setter's, is no value.
         if !made.is_empty() {
             let what = format!("`{}` as a value", self.tcx.def_path_str(def_id));

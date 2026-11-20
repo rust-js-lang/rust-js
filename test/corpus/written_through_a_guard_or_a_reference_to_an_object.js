@@ -54,7 +54,7 @@ function main() {
         },
   ).value = other;
   const get = maps.get(1);
-  const value = $unwrap(m).get(2);
+  const value = m.get(2);
   console.log(
     `${get == null ? "None" : `Some(${get})`} ${value == null ? "None" : `Some(${value})`} ${maps.size}`,
   );

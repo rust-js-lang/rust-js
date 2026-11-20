@@ -15,7 +15,6 @@ import {
   $some,
   $someValue,
   $unwindsOn,
-  $unwrap,
 } from "@rust-js/std";
 
 export function entry() {
@@ -142,7 +141,7 @@ function countedAfterOne(iter, dropTItem, dropTIntoIter) {
 
 function countedFromAnOption(iter, dropTItem, dropTIntoIter) {
   const held = $some($held($intoIter(iter)));
-  const iter$1 = $someValue($unwrap(held));
+  const iter$1 = $someValue(held);
   let result;
   try {
     result = $count(iter$1, dropTItem);

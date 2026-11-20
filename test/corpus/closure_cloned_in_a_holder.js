@@ -56,9 +56,9 @@ function main() {
   const copied = maybe == null ? maybe : $clone(maybe);
   const cloned = maybe == null ? maybe : $clone(maybe);
   const f$1 = maybe == null ? maybe : $clone(maybe);
-  const value$1 = $unwrap(f$1 != null ? f$1() : undefined);
+  const value$1 = f$1 != null ? f$1() : undefined;
   const f$2 = copied == null ? copied : $clone(copied);
-  const value$2 = $unwrap(f$2 != null ? f$2() : undefined);
+  const value$2 = f$2 != null ? f$2() : undefined;
   const f$3 = cloned == null ? cloned : $clone(cloned);
   console.log(`${value$1} ${value$2} ${$unwrap(f$3 != null ? f$3() : undefined)}`);
 

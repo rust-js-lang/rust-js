@@ -9,7 +9,7 @@ export function entry() {
 function add(log, f) {
   const borrowMut = $borrowMut(log, true);
   try {
-    borrowMut.push((1 != null ? f(1) : undefined) ?? 0);
+    borrowMut.push(1 != null ? f(1) : undefined);
   } finally {
     $unborrow(borrowMut);
   }

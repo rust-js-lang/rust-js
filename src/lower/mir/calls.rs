@@ -255,13 +255,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect(),
             false => Vec::new(),
         };
-        if laddered && let Some((state, _, _)) = &unbound {
-            self.somes_given_in_a_tuple(state, &mut exprs);
-        }
+        // Each a `Some` where it's given, of MIR's answer (`presence`).
+        let present = match &unbound {
+            Some((state, _, _)) if laddered || !own => self.presences_in_a_tuple(state),
+            _ => Vec::new(),
+        };
         // Of one that may be JS's, each `Option` Rust's `None` (#1840): not a
         // `Some` where it's given, there (`never_null`).
         if !own && let Some((state, output, _)) = &unbound {
-            self.ones_given_to_a_callback(state, (arg_tys[0], arg_tys[1], *output), &tys, &mut exprs);
+            self.ones_given_to_a_callback(state, (arg_tys[0], arg_tys[1], *output), (&tys, &present), &mut exprs);
         }
         // And its options, where the crate's writers take them (ADR 0137).
         if writes.is_some() {
@@ -273,9 +275,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some((state, output, out)) if !own => {
                 let call = self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))?;
                 match (laddered, call) {
-                    (true, Value::Expr(call)) => {
-                        Value::Expr(self.optional_ladder(call, None, &optionals, (self.js_span(span), out)))
-                    }
+                    (true, Value::Expr(call)) => Value::Expr(self.optional_ladder(
+                        call,
+                        None,
+                        (&optionals, &super::present_or_defined(&present)),
+                        (self.js_span(span), out),
+                    )),
                     (_, call) => call,
                 }
             }
@@ -424,6 +429,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Option` `null` or a value already (`nulled`).
     pub(super) fn mir_binding_call(
         &mut self,
+        state: &State<'_, 'tcx>,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         (values, arg_tys, nulled): (Vec<Value<'tcx>>, &[Ty<'tcx>], &[bool]),
         span: Span,
@@ -519,7 +525,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => (self.thir_call(def_id, span)).map_or(span, |(fun, _)| self.frame.thir[fun].span),
         };
         let js_span = self.js_span(span);
-        let made = self.binding_values((def_id, generic_args), exprs, (js_span, named), span, out)?;
+        // What MIR proves of each argument where it's read (`presence`),
+        // which a call of each count of its trailing `Option`s asks.
+        let present = match &state.body[state.at].terminator().kind {
+            mir::TerminatorKind::Call { args, .. } => {
+                let operands: Vec<&Operand<'tcx>> = args.iter().map(|arg| &arg.node).collect();
+                super::present_or_defined(&self.presences(state, &operands))
+            }
+            _ => Vec::new(),
+        };
+        let made = self.binding_values((def_id, generic_args), (exprs, &present), (js_span, named), span, out)?;
         // Of a `dyn Iterator`, JS's own, marked so (#1359).
         let output = self
             .tcx

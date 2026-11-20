@@ -45,43 +45,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .is_some_and(|place| self.made_some_or_none(state, place, (0, true)))
     }
 
-    /// Each of `exprs`, `operands`', that's a `Some` where it's given
-    /// (`made_some`), known there, `Known::Present`: a call of each count of
-    /// a function value's trailing `Option`s needs no test of it (#1876).
-    pub(in crate::lower::mir) fn somes_given(
-        &self,
-        state: &State<'_, 'tcx>,
-        operands: &[&Operand<'tcx>],
-        exprs: &mut [Expr],
-    ) {
-        for (e, operand) in exprs.iter_mut().zip(operands) {
-            if self.option_of(operand.ty(state.body, self.tcx)).is_some() && self.made_some(state, operand) {
-                e.facts = e.facts.with(js::Known::Present);
-            }
-        }
-    }
-
-    /// Each of `exprs`, the items of the tuple the call that ends
-    /// `state.at` gives a closure, that's a `Some` where it's given, its
-    /// field made one (`somes_given`).
-    pub(in crate::lower::mir) fn somes_given_in_a_tuple(&self, state: &State<'_, 'tcx>, exprs: &mut [Expr]) {
-        let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
-            return;
-        };
-        let Some(tuple) = args.get(1).and_then(|tuple| tuple.node.place()) else {
-            return;
-        };
-        let ty::Tuple(tys) = tuple.ty(state.body, self.tcx).ty.kind() else {
-            return;
-        };
-        for (i, (e, ty)) in exprs.iter_mut().zip(tys.iter()).enumerate() {
-            let field = tuple.project_deeper(&[PlaceElem::Field(rustc_abi::FieldIdx::from_usize(i), ty)], self.tcx);
-            if self.option_of(ty).is_some() && self.made_some_or_none(state, field, (0, true)) {
-                e.facts = e.facts.with(js::Known::Present);
-            }
-        }
-    }
-
     /// Whether `place` holds what's made `Some(..)` or `None`, or a
     /// constant: a variable each write of which makes one, or moves or
     /// copies what does; and a field of a struct or a tuple a variable is
@@ -393,7 +356,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         state: &State<'_, 'tcx>,
         (callee, args, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
-        tys: &[Ty<'tcx>],
+        (tys, present): (&[Ty<'tcx>], &[Presence]),
         exprs: &mut [Expr],
     ) {
         if !self.callback_may_be_js(state, (callee, args, output)) {
@@ -405,8 +368,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if given.get(1).is_none_or(|tuple| self.none_trusted(state, &tuple.node)) {
             return;
         }
-        for (e, &ty) in exprs.iter_mut().zip(tys) {
-            if crate::lower::analysis::nulled_params::one_none(self.tcx, ty) && !never_null(e) {
+        for (i, (e, &ty)) in exprs.iter_mut().zip(tys).enumerate() {
+            if crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
+                && !never_null(e)
+                && present.get(i) != Some(&Presence::Present)
+            {
                 let given = std::mem::replace(e, Expr::taken());
                 *e = Expr::bin(js::Op::Coalesce, given, Expr::js_undefined());
             }
@@ -569,9 +535,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of a call of `binding`, given `operands` as `values`: each it takes
     /// as `undefined` alone for `None`, a native optional argument's, not a
     /// nullable one's, given Rust's `None` (`one_none_given`), whatever
-    /// it's of, a nullable parameter's `null` too (#1843); and each that's
-    /// a `Some` where it's given (`made_some`) known there,
-    /// `Known::Present`.
+    /// it's of, a nullable parameter's `null` too (#1843). A `Some` where
+    /// it's given, `Some(view.byte_length())`'s value, is the call of each
+    /// count's to know (`presence`, #1842, #2178).
     pub(in crate::lower::mir) fn ones_given_to_a_binding(
         &mut self,
         state: &State<'_, 'tcx>,
@@ -587,19 +553,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (i, (operand, value)) in operands.iter().zip(values.iter_mut()).enumerate() {
             let ty = operand.ty(state.body, self.tcx);
             let Some(payload) = self.option_of(ty) else { continue };
-            // A `Some` where it's given is there, `Some(view.byte_length())`'s
-            // value, which a call of each count needs no test of (#1842).
-            if crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
-                && crate::lower::bindings::is_optional_param(self.tcx, binding, i)
-                && self.made_some(state, operand)
-            {
-                let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
-                *value = Value::Expr(Expr {
-                    facts: given.facts.with(js::Known::Present),
-                    ..given
-                });
-                continue;
-            }
             // A pair's, `{ value, impl }`, is given its value, `q?.value`,
             // `undefined` of either `None` already (ADR 0331).
             let pair = matches!(payload.peel_refs().kind(), ty::Dynamic(traits, ..)

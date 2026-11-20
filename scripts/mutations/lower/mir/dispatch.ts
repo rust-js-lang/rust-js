@@ -893,8 +893,8 @@ export const mutations: Mutation[] = [
     name: "pointer-somes-unseen",
     breaks: "a pointer JS gave, given `Some(b)`, tests what's there, `b != null ? f(a, b) : f(a)` (#1876)",
     file: "src/lower/mir/dispatch.rs",
-    find: "            self.somes_given(state, &operands[1..], &mut exprs[1..]);\n",
-    replace: "",
+    find: "            None => super::present_or_defined(&self.presences(state, &operands[1..])),\n",
+    replace: "            None => Vec::new(),\n",
     tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
   },
   {

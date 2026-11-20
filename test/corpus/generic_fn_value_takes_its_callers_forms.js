@@ -7,7 +7,6 @@ import {
   $heldObjectOf,
   $index,
   $mutWriter,
-  $unwrap,
   $vecWriter,
 } from "@rust-js/std";
 
@@ -106,7 +105,7 @@ function main() {
       into = value;
     },
   };
-  $unwrap(option != null ? stampedRefMutVecFn(option) : undefined).value.push(109);
+  (option != null ? stampedRefMutVecFn(option) : undefined).value.push(109);
   stampTwice(stampRefMutVecFn, {
     get value() {
       return into;
