@@ -157,3 +157,51 @@ borrowed and `Copy` items, against native Rust in both builds. Mutations
 (`lower/mir/std_calls/iterators.ts`), `clone-shows-hand-written-unseen`
 and `clone-shows-everything` (`lower/std_impls/clones.ts`), replacing
 `cycle-array-drops-allowed` and `cycle-of-dropping-items-refusal-unnamed`.
+
+## Amendment (2026-11-20, #2192): its `try_fold` and `advance_by` are std's
+
+std's `Cycle` writes `try_fold` and `advance_by` as well as `next` and
+`size_hint` (the steps catalog's `Cycle writes`). `$cycleFrom` wrote
+neither, so both were `$Steps`' defaults over its `next`. That is
+observable: `Count(0).fuse().skip(1).cycle().take(4).count()` asked the
+crate's `nth(1)` each round, through `Skip::next`, where std's
+`Cycle::try_fold` asks `Skip::try_fold` and so `nth(0)`. `cycle().nth(4)`
+asked `nth(1)` where std's `Cycle::advance_by` asks `Skip::advance_by`,
+which asks no `nth` at all. A `rev().skip(1)` inside asked `nth_back(1)`
+for `nth_back(0)`.
+
+Both now follow cycle.rs line for line:
+
+- `try_fold` folds what's left of the iterator it steps, by that
+  iterator's own `try_fold`. It then puts a fresh clone in its place and
+  folds it whole. If that round gave nothing, the cycle is empty and the
+  fold ends; otherwise it folds a fresh clone each round, without end.
+- `advance_by` passes over by the stepped iterator's own `advance_by`. If
+  that falls short, it puts in a fresh clone and passes over what's left,
+  until nothing is left or a fresh clone passes over nothing.
+
+The stepped iterator is seen as std's `I`: `$given(iter, { next }, boxed)`
+gives the JS iterator itself, with its own steps, or, for a range, the
+crate's own iterator or a value stepped by its dictionary, one its `next`
+steps. A range then passes over by its bounds (`Range::advance_by`). Each
+fold is given `&mut f`, so what drops with `f`, `ends`, stays its
+caller's. Where a clone panics inside the fold, `ends` drops first, then
+the accumulator: `Cycle::try_fold`'s frame holds both as parameters,
+`acc` declared before `f`, and drops them in reverse. The assignment
+`self.iter = self.orig.clone()` is one function, `replace`, which `next`,
+`try_fold` and `advance_by` all call.
+
+The runtime net (test/iterator-steps.test.ts) holds `$cycleOf` to the
+catalog's Cycle row from now on. That it didn't before is why this was
+missed (ADR 1092's amendment of today). Corpus
+`cycle_folds_through_what_it_steps` holds a fold, `count`, `any`,
+`position`, `nth` and a `skip` of a cycle of a `skip` of the crate's
+iterator, through a `fuse` and from its back, a fold begun mid-round, an
+empty cycle folded and passed over, a range, and a clone that panics
+inside the fold. Mutations (`runtime/cycle.ts`): `cycle-try-fold-by-next`,
+`cycle-advance-by-by-next`, `cycle-try-fold-of-empty-endless`,
+`cycle-advance-by-of-empty-endless`, `cycle-try-fold-what-is-left-unfolded`
+and `cycle-try-fold-clone-unwinding-acc-first`.
+
+Case (ADR 0262): R. Which of the crate's steps std calls, and with which
+`n`, is observable, and so is the drop order.

@@ -22035,24 +22035,36 @@ export function $cycleOf(iterator, clone, next, boxed = false, drop) {
 // one it replaces, as `self.iter = self.orig.clone()` (#2160).
 export function $cycleFrom(orig, iter, clone, next, boxed, drop) {
   iter.hold?.();
+  // `self.iter = self.orig.clone()`: the one it steps dropped, then the
+  // fresh one in its place, though that drop throws, a panic, as Rust's
+  // assignment writes it as it unwinds, so what's closed then is the fresh
+  // one, not the one dropped again (#1585).
+  const replace = () => {
+    const fresh = clone(cycled.orig);
+    fresh.hold?.();
+    $unwinds(
+      () => drop?.(cycled.iter),
+      () => {
+        cycled.iter = fresh;
+      },
+    );
+    cycled.iter = fresh;
+  };
+  // What it steps, as std's `Cycle` asks its `I`: the JS iterator it is,
+  // with its own steps, or one its `next` steps, a range's or the crate's
+  // own, `$given`'s, whose others are std's defaults over it (#2192).
+  const stepped = () => $given(cycled.iter, { next }, boxed);
+  // Its `try_fold`, of what it steps: its own, else std's default.
+  const folded = (init, f, broke, unwind) => {
+    const it = stepped();
+    return (it.tryFold ?? $Steps.prototype.tryFold).call(it, init, f, broke, unwind);
+  };
   const cycled = new $Steps(
     () => {
       if (cycled.$state === "closed") return { done: true, value: undefined };
       let item = next(cycled.iter);
       if (item === undefined) {
-        // `self.iter = self.orig.clone()`: the one it steps dropped, then
-        // the fresh one in its place, though that drop throws, a panic, as
-        // Rust's assignment writes it as it unwinds, so what's closed then
-        // is the fresh one, not the one dropped again (#1585).
-        const fresh = clone(cycled.orig);
-        fresh.hold?.();
-        $unwinds(
-          () => drop?.(cycled.iter),
-          () => {
-            cycled.iter = fresh;
-          },
-        );
-        cycled.iter = fresh;
+        replace();
         item = next(cycled.iter);
         if (item === undefined) return { done: true, value: undefined };
       }
@@ -22066,6 +22078,47 @@ export function $cycleFrom(orig, iter, clone, next, boxed, drop) {
         ),
       ),
   );
+  // Std's `Cycle::try_fold`: what it steps folded to its end by its own
+  // `try_fold`, a `Skip`'s asking `nth(n - 1)`; then a fresh clone in its
+  // place, folded whole, which, where it gave nothing, ends it, an empty
+  // cycle; else a fresh one each round, without end. Each is given `&mut f`,
+  // so what drops with `f`, `ends`, is its caller's; where a clone throws,
+  // a panic, `ends`, then the accumulator, by `unwind`, as its frame drops
+  // its parameters, `f` then `acc` (#2192).
+  const tryFold = (init, f, broke, unwind, ends) => {
+    if (cycled.$state === "closed") return init;
+    let acc = folded(init, f, broke, unwind);
+    if (broke(acc)) return acc;
+    $stepHolding(replace, acc, unwind, ends);
+    let empty = true;
+    const seen = (a, x) => {
+      empty = false;
+      return f(a, x);
+    };
+    acc = folded(acc, seen, broke, unwind);
+    if (broke(acc) || empty) return acc;
+    for (;;) {
+      $stepHolding(replace, acc, unwind, ends);
+      acc = folded(acc, f, broke, unwind);
+      if (broke(acc)) return acc;
+    }
+  };
+  // Std's `Cycle::advance_by(n)`: what it steps passed over by its own
+  // `advance_by`; where that's short, a fresh clone in its place passed
+  // over by what's left, until none is, or a fresh one passes over none,
+  // an empty cycle: how many there weren't (#2192).
+  const advanceBy = (n, dropItem) => {
+    if (cycled.$state === "closed") return n;
+    let left = $advanceByOf(stepped(), n, dropItem);
+    while (left > 0) {
+      replace();
+      const short = $advanceByOf(stepped(), left, dropItem);
+      if (short === left) return short;
+      left = short;
+    }
+    return 0;
+  };
+  $forward(cycled, iter, { tryFold, advanceBy });
   cycled.orig = orig;
   cycled.iter = iter;
   // Rust's: none of an empty one, else without end; of its source as its

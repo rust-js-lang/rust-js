@@ -2112,3 +2112,24 @@ into the `try_fold` chain. The runtime gave its source's `tryFold` no
 where `Skip::try_fold`'s frame drops `fold`, then `init`. It now passes
 `ends` on. Corpus `take_fold_drops_its_closure_first`; mutation
 `taking-fold-ends-kept` (`runtime/taking.ts`). Case (ADR 0262): R.
+
+## Amendment: every runtime iterator is a form of the net, or says why not (2026-11-20, #2192)
+
+test/iterator-steps.test.ts held each runtime form it listed to the
+steps catalog, but nothing made sure the list had every form. `$cycleOf`
+wasn't on it, so it wrote neither of std's `Cycle::try_fold` and
+`advance_by` and nothing failed (#2192). Its `forms` now also list
+`$cycleFrom` (made by `$cycleOf`), `$lazyScan`, `$lazyMapWhile`,
+`$filterDropping`, Inspect's `$mapEnds` and `$Steps.map`, and
+`$stepsAround` (`Box<dyn I>`), and each runs as std's does. A new test
+reads src/runtime itself: every top-level function that makes a `$Steps`
+is either a form or in `notForms` with a reason. The sources (a range,
+`from_fn`, `repeat`, a string's or a slice's iterators, set algebra), the
+collect helpers, `$closing` (a drop wrapper the test above holds),
+`$cycle` (an array's items, no source to trace), `$trustedZip` (std's
+`TrustedRandomAccess` zip, which the catalog's sources never take) and
+`$tryProcessing` (the private `GenericShunt`, which the consumer tables
+hold) are listed there. A listed name that's no longer such a function,
+or is also a form, fails too. So a new runtime iterator can't be left
+out of the net silently.
+

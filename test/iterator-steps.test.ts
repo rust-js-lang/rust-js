@@ -11,7 +11,7 @@
 // what `last` takes, `inners`, which `$flatMap` had (#2051).
 
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import * as std from "../std/runtime.js";
@@ -345,10 +345,19 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["Flatten", "$flattenEnds", (s) => std.$flattenEnds(s.nested(), same)],
   ["TakeWhile", "$lazyTakeWhile", (s) => std.$lazyTakeWhile(s.src(), (x: number) => x < 4)],
   ["SkipWhile", "$lazySkipWhile", (s) => std.$lazySkipWhile(s.src(), (x: number) => x < 2)],
+  ["Filter", "$filterDropping", (s) => std.$filterDropping(s.src(), (x: number) => x % 2 === 1, () => {})],
+  ["Inspect", "$mapEnds", (s) => std.$mapEnds(s.src(), same)],
+  ["Inspect", "$Steps.map", (s) => s.src().map(same)],
+  ["MapWhile", "$lazyMapWhile", (s) => std.$lazyMapWhile(s.src(), same, (x: unknown) => x !== undefined)],
+  ["Scan", "$lazyScan", (s) => std.$lazyScan(s.src(), 0, (_: unknown, x: unknown) => x)],
+  // `$cycleOf`'s, which makes it: its clones, each of what it started
+  // with, never stepped, as fresh as std's of an unstepped `Loud` (#2192).
+  ["Cycle", "$cycleFrom", (s) => std.$cycleOf(s.src(), () => s.src(), std.$next)],
   ["&mut I", "$lent", (s) => std.$lent(s.src())],
   ["&mut dyn I", "$lent unsized", (s) => std.$lent(s.src(), "lentUnsized")],
   ["Box<I>", "$lent boxed", (s) => std.$lent(s.src(), "boxed")],
   ["Box<dyn I>", "$lent boxedUnsized", (s) => std.$lent(s.src(), "boxedUnsized")],
+  ["Box<dyn I>", "$stepsAround", (s) => std.$stepsAround(s.src())],
 ];
 
 /** Each run: its kind of source, its number and its sources' lengths. */
@@ -386,6 +395,52 @@ for (const [stdForm, form, make] of forms) {
     expect(fixed).toEqual([]);
   });
 }
+
+// Every iterator the runtime makes, each top-level function of src/runtime
+// that makes a `$Steps`, is a form above, held to std's catalog, or is
+// listed here with why it isn't: the net missed `$cycleOf`, which wrote
+// neither `try_fold` nor `advance_by`, as it wasn't one (#2192).
+const notForms: Record<string, string> = {
+  $cycle: "a `cycle()` of std's iterator over an array: its items, no source whose steps it asks",
+  $trustedZip: "std's `TrustedRandomAccess` zip, by index, which the catalog's sources, not random access, never take",
+  $closing: "no std adapter: what drops what an iterator holds as it's closed, each step passed on, as the test above holds",
+  $iterator: "the crate's own iterator, a source: its steps are its impl's",
+  $lazyRange: "a range, a source",
+  $lazyRangeBack: "a range stepped from its back, a source",
+  $fromFn: "`from_fn`'s, a source",
+  $repeating: "`repeat`'s, a source",
+  $repeatingN: "`repeat_n`'s, a source",
+  $decodeUtf16: "`decode_utf16`'s, of a string's units, which the catalog doesn't probe",
+  $lazyMatchesBy: "a string's pattern iterator, a source",
+  $lazyRsplitBy: "a string's pattern iterator, a source",
+  $lazySplitBy: "a string's pattern iterator, a source",
+  $lazySplitInclusiveBy: "a string's pattern iterator, a source",
+  $lazySplitTerminatorBy: "a string's pattern iterator, a source",
+  $lazyChunkBy: "a slice's iterator, a source",
+  $lazySliceSplitBy: "a slice's iterator, a source",
+  $hashSetUnion: "a hash set's union, a source",
+  $setSteps: "a B-tree set's algebra, a source",
+  $mapExtractIf: "a map's `extract_if`, a source",
+  $grownBy: "no std iterator: what `collect` steps to grow a `Vec` as std's `from_iter` does",
+  $roomForHint: "no std iterator: what `collect` steps to ask room as std's `from_iter` does",
+  $tryProcessing: "`try_process`'s private `GenericShunt`, which no program can name for the catalog to make; the consumer tables' `option vec` and `result vec` rows hold it",
+};
+
+test("every iterator the runtime makes is a form above or says why not", () => {
+  const dir = join(import.meta.dir, "../src/runtime");
+  const makers = new Set<string>();
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".js"))) {
+    // Each top-level function, to the next top-level declaration.
+    for (const part of readFileSync(join(dir, file), "utf8").split(/^(?=function |class |const )/m)) {
+      const name = /^function (\$\w+)\(/.exec(part)?.[1];
+      if (name !== undefined && part.includes("new $Steps(")) makers.add(name);
+    }
+  }
+  const covered = new Set(forms.map(([, form]) => form.split(" ")[0]!));
+  expect([...makers].filter((name) => !covered.has(name) && notForms[name] === undefined)).toEqual([]);
+  // And each listed one is still one, and not a form too.
+  expect(Object.keys(notForms).filter((name) => !makers.has(name) || covered.has(name))).toEqual([]);
+});
 
 // Each form generic code's `eq` is given `LengthFirst` `true` of
 // (`length_first`, `counts_where_given`, #1182) is counted by its hint, as
