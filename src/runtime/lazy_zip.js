@@ -32,6 +32,10 @@ function $lazyZip(a, b, dropA) {
   // Its `size_hint()`, std's `Zip`'s of its sides', each what its JS
   // value tells, as a generic iterator's is (#400).
   zipped.sizeHint = () => $zipHint($sizeHint(left), $sizeHint(right));
+  // Its length, std's `ExactSizeIterator::len`, its size hint's, as std's
+  // `Zip` writes no `len`: of its sides' `size_hint`s, never their `len`s,
+  // which the crate's own may write (#2193).
+  zipped.len = () => zipped.sizeHint()[0];
   return zipped;
 }
 
@@ -81,7 +85,10 @@ function $getUnchecked(it, i, dictionary) {
 // then `b`'s, as std's `next_back` asks `a.len()` and `b.len()` before it
 // trims: the crate's own `size_hint` runs as often as natively (#824).
 function $zipEndsOf(zipped, left, right, dropA, dropB) {
-  zipped.len = () => Math.min(left.len(), right.len());
+  // Of one std reads by index, `$trustedZip`'s, the shorter side's, which
+  // std's keeps itself, asking neither side's code; `$lazyZip`'s is its
+  // hint's (#2193).
+  zipped.len ??= () => Math.min(left.len(), right.len());
   zipped.back = () => {
     const aLen = left.len();
     const bLen = right.len();

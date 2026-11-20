@@ -21,6 +21,11 @@ function $taking(iter, n, drop) {
   taking.n = n;
   // Std's `Take::size_hint`, of what it has left to take.
   taking.sizeHint = () => $takeHint(taking.iter, taking.n);
+  // Its length std's `ExactSizeIterator::len`, its size hint's: its
+  // source's `size_hint`, as std's `Take` writes no `len` (#2112), of any
+  // source, which generic code asks where its bound is `ExactSizeIterator`,
+  // whatever made it so (#2194).
+  taking.len = () => taking.sizeHint()[0];
   if (iter.len !== undefined) {
     // Std's `Take::next_back`: its source's `nth_back` past what it won't
     // give, the crate's own where it reaches it (#220).
@@ -30,9 +35,6 @@ function $taking(iter, n, drop) {
       taking.n--;
       return $nthBackOf(taking.iter, past, drop);
     };
-    // Its length std's `ExactSizeIterator::len`, its size hint's: its
-    // source's `size_hint`, as std's `Take` writes no `len` (#2112).
-    taking.len = () => taking.sizeHint()[0];
   }
   // Std's `Take::advance_by(m)` and `count`: its source's `advance_by`, by
   // as many as it has left, which drops what it passes itself where it

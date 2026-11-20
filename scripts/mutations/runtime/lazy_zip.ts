@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "zip-ends-len-longer",
     breaks: "a zip's length is the longer side's (#740)",
     file: "src/runtime/lazy_zip.js",
-    find: "  zipped.len = () => Math.min(left.len(), right.len());\n",
-    replace: "  zipped.len = () => Math.max(left.len(), right.len());\n",
+    find: "  zipped.len ??= () => Math.min(left.len(), right.len());\n",
+    replace: "  zipped.len ??= () => Math.max(left.len(), right.len());\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_from_its_back.rs$"],
   },
   {
@@ -139,5 +139,14 @@ export const mutations: Mutation[] = [
     find: "    for (let n = bLen - aLen; n > 0; n--) {\n",
     replace: "    for (let n = right.len() - left.len(); n > 0; n--) {\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_own_from_its_back_asks_each_len_once.rs$"],
+  },
+  {
+    name: "lazy-zip-len-of-its-sides-lens",
+    breaks:
+      "a zip's `len` asks each side's `len`, the crate's own where it writes one, where std's `Zip` writes no `len`, its hint's, of its sides' `size_hint`s (#2193)",
+    file: "src/runtime/lazy_zip.js",
+    find: "  zipped.len = () => zipped.sizeHint()[0];\n  return zipped;\n",
+    replace: "  return zipped;\n",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
   },
 ];

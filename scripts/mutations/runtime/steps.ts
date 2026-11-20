@@ -397,4 +397,13 @@ export const mutations: Mutation[] = [
     replace: "  return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
+  {
+    name: "steps-map-lenless",
+    breaks:
+      "a `$Steps`' `map` has no `len`, so generic code bound by `ExactSizeIterator` given an `inspect` of a zip made JS's own map throws `it.len is not a function`, where std's `Inspect::len` is its source's (#2193)",
+    file: "src/runtime/steps.js",
+    find: "    if (this.len !== undefined) mapped.len = () => this.len();\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
+  },
 ];

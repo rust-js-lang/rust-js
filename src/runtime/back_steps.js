@@ -280,6 +280,10 @@ function $stepBy(it, step, drop) {
   };
   $forward(stepped, it, { nth, tryFold, fold });
   stepped.from = [it];
+  // Std's `StepBy::len`, its exact hint, as std's `StepBy` writes no `len`:
+  // of any source, which generic code asks where its bound is
+  // `ExactSizeIterator`, whatever form made it (#2193, #2194).
+  stepped.len = () => stepped.sizeHint()[0];
   return stepped;
 }
 
@@ -298,8 +302,6 @@ function $stepByEnds(it, step, drop) {
     return stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem;
   };
   stepped.back = () => stepped.skip(backIndex(), "back");
-  // Std's `StepBy::len`, its exact hint, of a source that knows its length.
-  stepped.len = () => stepped.sizeHint()[0];
   // Std's `nth_back(n)`: its source's, past `n` steps and its back's index,
   // one call, the crate's own where it writes one (#245).
   // Std's `rfold` and `try_rfold` (`spec_rfold`, `spec_try_rfold`): its back

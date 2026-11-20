@@ -843,4 +843,13 @@ export const mutations: Mutation[] = [
     replace: "  $forwardBack(enumerated, iter, { advanceBackBy, tryRfold, rfold: iter.rfold === undefined ? undefined : rfold, nthBack: iter.nthBack === undefined ? undefined : nthBack });\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps_of_a_source_that_writes_none.rs$"],
   },
+  {
+    name: "step-by-len-of-its-back-alone",
+    breaks:
+      "a `step_by`'s `len` is there only where it's made knowing its back, `$stepByEnds`, so generic code bound by `ExactSizeIterator` given `$stepBy` throws, where std's `StepBy::len` is its hint's (#2193)",
+    file: "src/runtime/back_steps.js",
+    find: "  stepped.len = () => stepped.sizeHint()[0];\n  return stepped;\n}\n",
+    replace: "  return stepped;\n}\n",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
+  },
 ];

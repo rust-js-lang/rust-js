@@ -881,7 +881,9 @@ console.log(items.join(), map.size, set.size, JSON.stringify(fields));
 // knows its length: Rust steps a `Take` from its back only of an
 // `ExactSizeIterator`, so no program the compiler is given asks a back of
 // one that doesn't, and the guard is held here (#830).
-test("a take of a source that doesn't know its length has no back", () => {
+// Its length it has, std's `Take::len`, its hint's, which asks no `len`
+// of its source (#2194).
+test("a take of a source that doesn't know its length has no back, and its length is its hint's", () => {
   const module = join(fixture("runtime-take-lengthless"), "runtime.js");
   writeFileSync(module, run([compiler, "--runtime-module"]));
   const script = `
@@ -890,7 +892,7 @@ const lengthless = $taking([1, 2, 3].values(), 2);
 const known = $taking($iter([1, 2, 3]), 2);
 console.log(typeof lengthless.back, typeof lengthless.len, known.back().value, known.len());
 `;
-  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("undefined undefined 2 1\n");
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("undefined function 2 1\n");
 });
 
 // What a use site gave std's compiled struct, `$knowing`'s back and length,

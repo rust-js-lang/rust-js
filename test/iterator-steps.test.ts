@@ -178,7 +178,7 @@ for (const [name, make] of [
 // each of its runs of the sources' lengths. Each step is asked as the
 // lowering asks it, by the runtime's helper where it has one. A form made
 // for one end steps none from the other: one with no `back` isn't asked a
-// back step, nor one with no `len` its length. A difference that no program
+// back step; but each is asked its length. A difference that no program
 // can see is listed with why (ADR 0262's case N); any other is a wrong
 // answer.
 
@@ -312,14 +312,19 @@ const asked: Record<string, (it: any) => unknown> = {
 };
 
 /** Of a run, its sources: `src`, `other`, and `nested`, a flatten's, of up
- * to two `inner`s of the second length. */
+ * to two `inner`s of the second length; `lenless`, each with no `len`, a
+ * JS form that has none, std's compiled `Fuse` given no `$knowing` (#2194). */
 type Sources = { src: () => any; other: () => any; nested: () => any };
-const sourcesOf = ([a, b]: [number, number], log: string[], kind: SourceKind): Sources => {
+const sourcesOf = ([a, b]: [number, number], log: string[], kind: SourceKind, lenless = false): Sources => {
   const range = (from: number, n: number) => Array.from({ length: n }, (_, i) => from + i);
+  const made = (it: any) => {
+    if (lenless) delete it.len;
+    return it;
+  };
   return {
-    src: () => loud("src", range(1, a), log, kind),
-    other: () => loud("other", range(6, b), log, kind),
-    nested: () => loud("src", range(0, Math.min(a, 2)).map(() => loud("inner", range(1, b), log, kind)), log, kind),
+    src: () => made(loud("src", range(1, a), log, kind)),
+    other: () => made(loud("other", range(6, b), log, kind)),
+    nested: () => made(loud("src", range(0, Math.min(a, 2)).map(() => loud("inner", range(1, b), log, kind)), log, kind)),
   };
 };
 
@@ -340,6 +345,7 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
   ["StepBy", "$stepByEnds", (s) => std.$stepByEnds(s.src(), 2)],
   ["Chain", "$lazyChain", (s) => std.$lazyChain(s.src(), s.other())],
   ["Zip", "$lazyZip", (s) => std.$lazyZip(s.src(), s.other())],
+  ["Zip", "$zipEnds", (s) => std.$zipEnds(s.src(), s.other())],
   ["Rev", "$rev", (s) => std.$rev(s.src())],
   ["Flatten", "$flatMap", (s) => std.$flatMap(s.nested(), same)],
   ["Flatten", "$flattenEnds", (s) => std.$flattenEnds(s.nested(), same)],
@@ -378,8 +384,12 @@ for (const [stdForm, form, make] of forms) {
         if (want === undefined) continue;
         const log: string[] = [];
         const it = make(sourcesOf(size, log, kind));
-        // A form for one end: none of the other's steps.
-        if ((/back|rfold|rfind|rposition/.test(step) && typeof it.back !== "function") || (/^len$|rposition/.test(step) && typeof it.len !== "function")) continue;
+        // A form for one end: none of the other's steps. Its length is
+        // asked wherever std's adapter has one, as generic code asks it of
+        // whatever form an `ExactSizeIterator` bound is given: a form
+        // without one was let off, which hid `$taking`'s and `$Steps.map`'s
+        // (#2193, #2194).
+        if (/back|rfold|rfind|rposition/.test(step) && typeof it.back !== "function") continue;
         log.length = 0;
         asked[step]!(it);
         const got = log.join(" ");
@@ -387,6 +397,21 @@ for (const [stdForm, form, make] of forms) {
         const key = `${form} ${step}${kind === "" ? "" : ` ${kind}`}`;
         if (differs[key] === undefined) wrong.push(`${step}#${kind}${run}: std ${want}; ${got}`);
         else listed.add(key);
+      }
+      // And where std's length asks no `len` of what it holds that writes
+      // one, a `Take`'s of its `size_hint`, the same of sources with none: a
+      // form whose length is its source's `len` lacked it there, `$taking`
+      // of std's compiled `Fuse` (#2194). Not of a source that writes none,
+      // whose `len` is std's default, its `size_hint`, which a trace can't
+      // tell from it.
+      for (const [kind, run, size] of step === "len" ? runs : []) {
+        const want = stdRuns.get(`${stdForm}#${kind}${run} len`);
+        if (kind === "bare" || want === undefined || want.includes(".len")) continue;
+        const log: string[] = [];
+        const it = make(sourcesOf(size, log, kind, true));
+        log.length = 0;
+        const got = typeof it.len === "function" ? (it.len(), log.join(" ")) : "no len";
+        if (got !== want) wrong.push(`len#${kind}${run} of sources with no len: std ${want}; ${got}`);
       }
     }
     expect(wrong).toEqual([]);

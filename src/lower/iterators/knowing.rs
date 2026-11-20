@@ -458,6 +458,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `value`, a `take(n)` or a `skip(n)` of type `ty` made
+    /// already, `$taking` or `$skipping` of its source, lacks what `back`
+    /// asks of it: its back, which steps its source's `len` and back
+    /// (std's `Take::next_back` and `Skip::next_back`), where its source's
+    /// form knows them not, std's compiled `Fuse` given no `$knowing`. Its
+    /// front length it always knows, its hint's, as std's (#2194).
+    fn counted_lacks_its_back(&self, value: &Expr, ty: ty::Ty<'tcx>, back: bool) -> bool {
+        if !back {
+            return false;
+        }
+        let Some((source, skip)) = crate::lower::recognition::counted_source(self.tcx, ty) else {
+            return false;
+        };
+        let Some((source_value, _, _)) = counted_parts(value, skip) else {
+            return false;
+        };
+        let source = source.peel_refs();
+        !(self.knows_its_length_of(&source_value, source)
+            && (self.knows_its_back(source) || self.knows_its_back_of(&source_value, source)))
+    }
+
     /// A zip made here of `ty`, `$lazyZip(a, b, ..)` or one std reads by
     /// index, `$trustedZip(a, b)`: `$zipEnds` or `$trustedZipEnds` of its
     /// sides, each made knowing its length, and its back where `back` asks,
@@ -537,9 +558,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(crate::lower::iterators::with_source(&value, known));
         }
         // Of one whose form, or what it holds down to its type, knows its
-        // back, its back too (#851).
+        // back, its back too (#851). Not a `take(n)` or a `skip(n)` made
+        // already of a source whose form lacks what its back steps, which
+        // its type can't say (`counted_lacks_its_back`, #2194); nor one whose
+        // form shows it has no length, whatever its type says: the type's
+        // claim never stands for a form that lacks it (#2193, #2194).
+        let form_lacks = crate::lower::iterators::form_lacks_a_length(&value);
+        debug_assert!(
+            !(form_lacks && self.knows_its_length(ty)),
+            "`knows_its_length` claims a length of a `{ty}` whose form has none"
+        );
         if self.knows_its_length_of(&value, ty)
+            && !form_lacks
             && (!back || self.knows_its_back(ty) || self.knows_its_back_of(&value, ty))
+            && !self.counted_lacks_its_back(&value, ty, back)
         {
             return Ok(value);
         }
@@ -597,6 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Call(callee, args) = &value.kind
             && args.len() == 2
             && callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" })
+            && !self.counted_lacks_its_back(&value, ty, back)
         {
             return Ok(value);
         }
@@ -1166,6 +1199,12 @@ fn counted_parts(value: &Expr, skip: bool) -> Option<(Expr, Expr, Option<Expr>)>
         (js::ExprKind::Member(source, name), [n]) if name == method => Some(((**source).clone(), n.clone(), None)),
         (_, [source, n, drop]) if skip && callee.helper_name() == Some("$skipping") => {
             Some((source.clone(), n.clone(), Some(drop.clone())))
+        }
+        // One a maker made `$taking` or `$skipping` where generic code asks
+        // its hint (`made_knowing_its_hint`), of a source whose form may
+        // lack what its back steps (#2194).
+        (_, [source, n]) if callee.helper_name() == Some(if skip { "$skipping" } else { "$taking" }) => {
+            Some((source.clone(), n.clone(), None))
         }
         _ => None,
     }

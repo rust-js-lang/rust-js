@@ -4220,8 +4220,11 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     $forward(mapped, this, { fold: "fold", tryFold: "tryFold" }, (g, unwind) =>
       unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
     );
-    // Std's `Map::size_hint`, its source's.
+    // Std's `Map::size_hint`, its source's; and its `len`, its source's
+    // where it has one, as std's `Map` writes it, which generic code asks
+    // where its bound is `ExactSizeIterator`, whatever form made it (#2193).
     mapped.sizeHint = () => $sizeHint(this);
+    if (this.len !== undefined) mapped.len = () => this.len();
     return mapped;
   }
   // Of items with a destructor, each it doesn't keep dropped by `drop`,
@@ -5771,6 +5774,11 @@ export function $taking(iter, n, drop) {
   taking.n = n;
   // Std's `Take::size_hint`, of what it has left to take.
   taking.sizeHint = () => $takeHint(taking.iter, taking.n);
+  // Its length std's `ExactSizeIterator::len`, its size hint's: its
+  // source's `size_hint`, as std's `Take` writes no `len` (#2112), of any
+  // source, which generic code asks where its bound is `ExactSizeIterator`,
+  // whatever made it so (#2194).
+  taking.len = () => taking.sizeHint()[0];
   if (iter.len !== undefined) {
     // Std's `Take::next_back`: its source's `nth_back` past what it won't
     // give, the crate's own where it reaches it (#220).
@@ -5780,9 +5788,6 @@ export function $taking(iter, n, drop) {
       taking.n--;
       return $nthBackOf(taking.iter, past, drop);
     };
-    // Its length std's `ExactSizeIterator::len`, its size hint's: its
-    // source's `size_hint`, as std's `Take` writes no `len` (#2112).
-    taking.len = () => taking.sizeHint()[0];
   }
   // Std's `Take::advance_by(m)` and `count`: its source's `advance_by`, by
   // as many as it has left, which drops what it passes itself where it
@@ -6422,6 +6427,10 @@ export function $stepBy(it, step, drop) {
   };
   $forward(stepped, it, { nth, tryFold, fold });
   stepped.from = [it];
+  // Std's `StepBy::len`, its exact hint, as std's `StepBy` writes no `len`:
+  // of any source, which generic code asks where its bound is
+  // `ExactSizeIterator`, whatever form made it (#2193, #2194).
+  stepped.len = () => stepped.sizeHint()[0];
   return stepped;
 }
 
@@ -6440,8 +6449,6 @@ export function $stepByEnds(it, step, drop) {
     return stepped.first ? (rem === 0 ? step - 1 : rem - 1) : rem;
   };
   stepped.back = () => stepped.skip(backIndex(), "back");
-  // Std's `StepBy::len`, its exact hint, of a source that knows its length.
-  stepped.len = () => stepped.sizeHint()[0];
   // Std's `nth_back(n)`: its source's, past `n` steps and its back's index,
   // one call, the crate's own where it writes one (#245).
   // Std's `rfold` and `try_rfold` (`spec_rfold`, `spec_try_rfold`): its back
@@ -21327,6 +21334,10 @@ export function $lazyZip(a, b, dropA) {
   // Its `size_hint()`, std's `Zip`'s of its sides', each what its JS
   // value tells, as a generic iterator's is (#400).
   zipped.sizeHint = () => $zipHint($sizeHint(left), $sizeHint(right));
+  // Its length, std's `ExactSizeIterator::len`, its size hint's, as std's
+  // `Zip` writes no `len`: of its sides' `size_hint`s, never their `len`s,
+  // which the crate's own may write (#2193).
+  zipped.len = () => zipped.sizeHint()[0];
   return zipped;
 }
 
@@ -21376,7 +21387,10 @@ export function $getUnchecked(it, i, dictionary) {
 // then `b`'s, as std's `next_back` asks `a.len()` and `b.len()` before it
 // trims: the crate's own `size_hint` runs as often as natively (#824).
 export function $zipEndsOf(zipped, left, right, dropA, dropB) {
-  zipped.len = () => Math.min(left.len(), right.len());
+  // Of one std reads by index, `$trustedZip`'s, the shorter side's, which
+  // std's keeps itself, asking neither side's code; `$lazyZip`'s is its
+  // hint's (#2193).
+  zipped.len ??= () => Math.min(left.len(), right.len());
   zipped.back = () => {
     const aLen = left.len();
     const bLen = right.len();

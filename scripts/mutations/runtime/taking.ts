@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     name: "take-back-by-next",
     breaks: "a `take`'s `next_back` steps its source back by `next_back`, not its `nth_back` past what it won't give (#220)",
     file: "src/runtime/taking.js",
-    find: "      return $nthBackOf(taking.iter, past, drop);\n    };\n    // Its length",
-    replace: "      for (let k = 0; k < past; k++) taking.iter.back();\n      return taking.iter.back();\n    };\n    // Its length",
+    find: "      return $nthBackOf(taking.iter, past, drop);\n    };\n  }\n  // Std's `Take::advance_by(m)`",
+    replace: "      for (let k = 0; k < past; k++) taking.iter.back();\n      return taking.iter.back();\n    };\n  }\n  // Std's `Take::advance_by(m)`",
     tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
   },
   {
@@ -266,5 +266,14 @@ export const mutations: Mutation[] = [
     find: "tryFoldOf(init, g, () => false, unwind, true, ends), ends);\n",
     replace: "tryFoldOf(init, g, () => false, unwind, true), ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^take_fold_drops_its_closure_first.rs$"],
+  },
+  {
+    name: "taking-len-of-its-source-alone",
+    breaks:
+      "a `take`'s `len` is there only where its source has one, so generic code bound by `ExactSizeIterator` given `$taking` of std's compiled `Fuse` throws `it.len is not a function`, where std's `Take::len` is its hint's (#2194)",
+    file: "src/runtime/taking.js",
+    find: "  taking.len = () => taking.sizeHint()[0];\n  if (iter.len !== undefined) {\n",
+    replace: "  if (iter.len !== undefined) {\n    taking.len = () => taking.sizeHint()[0];\n",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
   },
 ];

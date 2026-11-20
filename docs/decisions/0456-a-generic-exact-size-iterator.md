@@ -202,3 +202,66 @@ each a predicate that holds at the second item, so what a consumer asks
 as it stops is seen. test/iterator-steps.test.ts holds each of the
 runtime's forms to them, each asked as the lowering asks it; every form
 asks what std's does.
+
+## Amendment (2026-11-20, #2193, #2194): each form has std's `len`, and no type claim stands for a form that lacks one
+
+Generic code bound by `ExactSizeIterator` asks `it.len()` of what it's
+given. The argument's lowering (`given_iterators`) runs `as_exact_size`,
+which returned the value as it was wherever `knows_its_length_of` said
+yes. That answer starts from a claim about the type, `knows_its_length`,
+so whether the form had a `len` depended on a crate-wide fact of its
+type made elsewhere. Two such facts led to forms without one:
+
+- **#2194.** A `capacity()` read marks `Take<Fuse<Range>>` counted
+  (hint_asked.rs's `counted_in`). Its maker then made
+  `$taking(iterator_fuse(..), 3)`, with no `$knowing` on the compiled
+  `Fuse`. `$taking` defined a `len` only where its source had one, so
+  `hint_of(..)` threw `it.len is not a function`. An `rfold` of it threw
+  too: `$taking`'s back needs its source's `len` and back.
+- **#2193.** A boxed `rev()` of `Zip<Count, Range>` made the zip
+  `$zipEnds` crate-wide, and the `inspect` over it JS's own map,
+  `$Steps.map`, which had no `len`.
+
+The fix is in the forms, which now answer `len` as std's adapters do.
+The runtime net's catalog lists `len` for each of them:
+
+- `$taking`, `$stepBy` and `$lazyZip`: always their hint's lower bound.
+  std's `Take`, `StepBy` and `Zip` write no `len`, so theirs is the
+  default, by their own `size_hint`. A zip's length no longer asks its
+  sides' `len`, which the crate's own may write; std's asks their
+  `size_hint`s. One std reads by index, `$trustedZip`'s, keeps the
+  shorter side's, which no crate code can tell apart.
+- `$Steps.map`: its source's `len`, where the source has one, as std's
+  `Map` writes it. This form serves `inspect` and `cloned` too.
+
+The net (test/iterator-steps.test.ts) no longer lets a form off its
+length because it has no `len`; that is what hid both. Where std's length
+asks no `len` of a source that writes one (Take's, Skip's, StepBy's,
+Zip's, Peekable's), it also asks the form's length over sources with no
+`len`. That is where `$taking` of a compiled `Fuse` lacked one. Against
+the old runtime it fails seven forms.
+
+In the compiler, `as_exact_size` doesn't take a form for knowing what it
+shows it lacks:
+- A `take(n)` or `skip(n)` made already, `$taking`/`$skipping` of a
+  source whose form lacks the `len` and back its back steps
+  (`counted_lacks_its_back`), is rebuilt with its source made knowing
+  them. `counted_parts` now reads that helper form too.
+- A value whose form shows no length (`form_lacks_a_length`) is never
+  returned as it is.
+- A `debug_assert!` holds `knows_its_length`'s claim to the form: where
+  the form shows no length, the type mustn't claim one. Every corpus and
+  table run checks it.
+
+Corpus `exact_size_bound_given_any_form` holds both issues' programs, a
+`peekable().take(3)`, a `step_by`, a bound of `ExactSizeIterator` alone (whose `len` is `$taking`'s own), the `rfold`s by value of a holding closure, and a
+zip's `len` of a crate iterator that writes its own `len`. Mutations:
+`taking-len-of-its-source-alone` (runtime/taking.ts), `steps-map-lenless`
+(runtime/steps.ts), `step-by-len-of-its-back-alone`
+(runtime/back_steps.ts), `lazy-zip-len-of-its-sides-lens`
+(runtime/lazy_zip.ts), `counted-back-of-its-source-unchecked` and
+`counted-helper-parts-unread` (lower/iterators/knowing.ts);
+`zip-ends-len-longer` now mutates the by-index zip's length.
+
+Case (ADR 0262): R. A throw where Rust prints, and which of the crate's
+steps `len` asks.

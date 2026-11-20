@@ -180,8 +180,11 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     $forward(mapped, this, { fold: "fold", tryFold: "tryFold" }, (g, unwind) =>
       unwind === undefined ? (a, x) => g(a, f(x, i++)) : (a, x) => g(a, $staged(f, x, i++, a, unwind)),
     );
-    // Std's `Map::size_hint`, its source's.
+    // Std's `Map::size_hint`, its source's; and its `len`, its source's
+    // where it has one, as std's `Map` writes it, which generic code asks
+    // where its bound is `ExactSizeIterator`, whatever form made it (#2193).
     mapped.sizeHint = () => $sizeHint(this);
+    if (this.len !== undefined) mapped.len = () => this.len();
     return mapped;
   }
   // Of items with a destructor, each it doesn't keep dropped by `drop`,

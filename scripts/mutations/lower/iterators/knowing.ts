@@ -939,4 +939,22 @@ export const mutations: Mutation[] = [
     replace: "        let lent = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_range_taken_through_its_borrow\\.rs$"],
   },
+  {
+    name: "counted-back-of-its-source-unchecked",
+    breaks:
+      "a `take(n)` made `$taking` where generic code asks its hint, of std's compiled `Fuse`, is given as it is where its bound steps it from its back, so its `rfold` throws, its source never made knowing its back and length (#2194)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            && !self.counted_lacks_its_back(&value, ty, back)\n        {\n            return Ok(value);\n        }\n        // Of items with a destructor (#718)",
+    replace: "        {\n            return Ok(value);\n        }\n        // Of items with a destructor (#718)",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
+  },
+  {
+    name: "counted-helper-parts-unread",
+    breaks:
+      "a `take(n)` made `$taking(source, n)` isn't read apart, so its source, std's compiled `Fuse`, is never made knowing its back, and generic code's `rfold` of it throws (#2194)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        (_, [source, n]) if callee.helper_name() == Some(if skip { \"$skipping\" } else { \"$taking\" }) => {\n",
+    replace: "        (_, [source, n]) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
+  },
 ];
