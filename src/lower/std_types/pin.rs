@@ -55,7 +55,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .require_lang_item(rustc_hir::attrs::lang_items::LangItem::Deref, span);
         let method = crate::lower::recognition::trait_method(self.tcx, deref, "deref");
         let args = self.tcx.mk_args(&[pointer.into()]);
-        match self.trait_call(method, args, vec![value], span, out)? {
+        match self.trait_call(method, args, vec![value], false, span, out)? {
             Some(read) => Ok(read),
             None => Err(self.unsupported(span, &format!("the `Deref` of a `{pointer}` a `Pin` reads through"))),
         }
@@ -176,7 +176,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .require_lang_item(rustc_hir::attrs::lang_items::LangItem::DerefMut, span);
         let method = crate::lower::recognition::trait_method(self.tcx, deref_mut, "deref_mut");
         let args = self.tcx.mk_args(&[pointer.into()]);
-        match self.trait_call(method, args, vec![value], span, out)? {
+        match self.trait_call(method, args, vec![value], false, span, out)? {
             Some(place) => Ok(place),
             None => Err(self.unsupported(span, &format!("the `DerefMut` of a `{pointer}` a `Pin` writes through"))),
         }

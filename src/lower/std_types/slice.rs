@@ -280,7 +280,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (a, b) = (Expr::var(&made_a), Expr::var(&made_b));
         let same = match by_ne && item.peel_refs() == rhs.peel_refs() && self.own_ne(item) {
             true => Expr::unary(js::UnaryOp::Not, self.ne_value(a, b, item, span, &mut body)?),
-            false => self.eq_values(a, b, (item, rhs), span, &mut body)?,
+            false => self.eq_values(a, b, (item, rhs), false, span, &mut body)?,
         };
         // `(a, b) => $eq(a, b)` is `$eq`: the helper gives it the two alone.
         if body.is_empty()

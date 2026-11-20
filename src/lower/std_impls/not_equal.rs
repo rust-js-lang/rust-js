@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.own_ne_between(lhs, other) {
             return Ok(Expr::unary(
                 js::UnaryOp::Not,
-                self.eq_values(a, b, (ty, rhs), span, out)?,
+                self.eq_values(a, b, (ty, rhs), false, span, out)?,
             ));
         }
         let tr = ty::TraitRef::new(self.tcx, self.partial_eq_trait(), [lhs, other]);
@@ -128,7 +128,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         if !self.own_ne(ty) {
-            return Ok(Expr::unary(js::UnaryOp::Not, self.eq_value(a, b, ty, span, out)?));
+            return Ok(Expr::unary(
+                js::UnaryOp::Not,
+                self.eq_value(a, b, ty, false, span, out)?,
+            ));
         }
         let (a, _) = self.through_refs(a, ty);
         let (b, ty) = self.through_refs(b, ty);

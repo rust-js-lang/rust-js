@@ -542,9 +542,19 @@ operands' reads were stamped alike (`Facts::same_none`). Of check:fast and
 React's port, it decided 4 comparisons, each a `PartialEq::eq` MIR calls,
 none of a struct's field `==` compares inside. MIR answers it where the
 call is lowered (`NoneForms::same_nones`, of `place_none` of what each
-argument refers to), given down as an argument, `trait_call_given` →
-`eq_values_given` → `eq_value_given`, which the other callers' wrappers
-give `false`. A differential of the two: none. `Facts::same_none` goes.
+argument refers to), given down as an argument of `trait_call`,
+`eq_values` and `eq_value`, which every other caller gives `false`. A differential of the two: none. `Facts::same_none` goes.
 
 Mutation `same-nones-unasked`, new, caught; `option-eq-one-none-loose` and
 `os-str-beside-path-as-text` follow the code, caught.
+
+## Amendment: a test isn't asked a `None` it carries (2026-11-20, #2112)
+
+`null_apart`, which folds `x !== undefined && x != null` to `x != null`,
+wouldn't fold where the second test carried a stamp of its `None`
+(`Facts::of_presence`). A test is made fresh of its operator since a test
+of being set is its own (`Op::NoneEq`, `Op::NoneNe`), so none carries
+one: the guard went, check:fast's whole suite and React's port as they
+were. `trait_call`, `eq_values` and `eq_value` take `same_none` each, one
+name for each, every caller giving it (the lead's: no second spelling of
+one call).

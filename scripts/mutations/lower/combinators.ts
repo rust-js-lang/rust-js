@@ -639,7 +639,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`dedup_by_key` compares its keys by `===`, so a tuple key is never equal to another",
     file: "src/lower/combinators.rs",
-    find: "                let same = self.eq_value(ka, kb, key_ty, span, &mut body)?;\n",
+    find: "                let same = self.eq_value(ka, kb, key_ty, false, span, &mut body)?;\n",
     replace: "                let same = Expr::bin(Op::Eq, ka, kb);\n",
     tests: ["test/corpus.test.ts", "-t", "^search_by_ord.rs$"],
   },

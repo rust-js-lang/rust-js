@@ -21,7 +21,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.has_user_impl(deref, ty) {
             let method = trait_method(self.tcx, deref, "deref");
             let args = self.args_of(deref, ty);
-            if let Some(call) = self.trait_call(method, args, vec![value], span, out)? {
+            if let Some(call) = self.trait_call(method, args, vec![value], false, span, out)? {
                 return Ok(call);
             }
         }

@@ -319,18 +319,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         a: Expr,
         b: Expr,
         (ty, rhs): (Ty<'tcx>, Ty<'tcx>),
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        self.eq_values_given(a, b, (ty, rhs), false, span, out)
-    }
-
-    /// `eq_values`, told `same_none` of the call it's of (`eq_value_given`).
-    pub(super) fn eq_values_given(
-        &mut self,
-        a: Expr,
-        b: Expr,
-        (ty, rhs): (Ty<'tcx>, Ty<'tcx>),
         same_none: bool,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -360,7 +348,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return self.impl_call(eq, tr.args, vec![x, y], span);
             }
         }
-        self.eq_value_given(a, b, ty, same_none, span, out)
+        self.eq_value(a, b, ty, same_none, span, out)
     }
 
     /// `items.contains(&x)` of `item`s: JS's `includes` for what `===`
@@ -385,7 +373,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut body = Vec::new();
         let param = self.fresh(Role::Each);
-        let same = self.eq_value(Expr::var(&param), x.clone(), item, span, &mut body)?;
+        let same = self.eq_value(Expr::var(&param), x.clone(), item, false, span, &mut body)?;
         let strict = matches!(&same.kind, js::ExprKind::Binary(Op::Eq, each, of)
             if matches!(&each.kind, js::ExprKind::Var(v) if *v == param) && **of == x);
         // Of what's never `NaN`, an object equal only to itself (ADR
@@ -403,15 +391,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::member(items, "some"), vec![f]))
     }
 
-    pub(super) fn eq_value(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        self.eq_value_given(a, b, ty, false, span, out)
-    }
-
-    /// `eq_value`, told of the call it's of whether `a` and `b` are each
-    /// an `Option` whose `None` MIR says is the same one alone
-    /// (`same_none`, `NoneForms::same_nones`): two such compared by `===`
-    /// (rd117).
-    pub(super) fn eq_value_given(
+    /// Told of the call it's of whether `a` and `b` are each an `Option`
+    /// whose `None` MIR says is the same one alone (`same_none`,
+    /// `NoneForms::same_nones`): two such compared by `===` (rd117); `false`
+    /// where no call of MIR's is asked.
+    pub(super) fn eq_value(
         &mut self,
         a: Expr,
         b: Expr,
@@ -450,7 +434,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ),
                 false => (a.clone(), b.clone()),
             };
-            let eq = self.eq_value(x, y, pointee, span, out)?;
+            let eq = self.eq_value(x, y, pointee, false, span, out)?;
             let same = match first {
                 Some(asked) => Expr::bin(Op::And, asked, Expr::bin(Op::Eq, a, b)),
                 None => Expr::bin(Op::Eq, a, b),
@@ -605,7 +589,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let (x, y) = (self.fresh(Role::X), self.fresh(Role::Y));
             let mut made = Vec::new();
-            let same = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(1), span, &mut made)?;
+            let same = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(1), false, span, &mut made)?;
             let is = |e: &Expr, name: &js::Name| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
             let mut list = vec![a, b];
             match &same.kind {
@@ -688,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(_, args) if let Some(pointee) = self.counted_rc(ty) => {
                 let (a, b) = (self.counted_pointee(a, pointee), self.counted_pointee(b, pointee));
-                self.eq_value(a, b, args.type_at(0), span, out)
+                self.eq_value(a, b, args.type_at(0), false, span, out)
             }
             // Two `RefCell`s', each while it's borrowed (ADR 0328), held where
             // their values' `==` may ask; of one that's the object it holds,
@@ -703,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let (x, y) = (self.fresh(Role::X), self.fresh(Role::Y));
                 let mut body = Vec::new();
-                let eq = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(0), span, &mut body)?;
+                let eq = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(0), false, span, &mut body)?;
                 body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
                 let inner = Expr::call(
                     Expr::helper("$withBorrow"),
@@ -725,7 +709,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::call(Expr::helper("$borrow"), vec![b]),
                     ),
                 };
-                self.eq_value(a, b, args.type_at(0), span, out)
+                self.eq_value(a, b, args.type_at(0), false, span, out)
             }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let (a, b) = match std(StdItem::RefCell) {
@@ -735,12 +719,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ),
                     false => (a, b),
                 };
-                self.eq_value(Expr::held(a), Expr::held(b), args.type_at(0), span, out)
+                self.eq_value(Expr::held(a), Expr::held(b), args.type_at(0), false, span, out)
             }
             ty::Adt(_, args) if std(StdItem::OnceCell) => self.eq_value(
                 Expr::held(a),
                 Expr::held(b),
                 Ty::new_option(self.tcx, args.type_at(0)),
+                false,
                 span,
                 out,
             ),
@@ -751,7 +736,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     (a.clone(), b.clone())
                 };
-                let some = self.eq_value(x, y, inner, span, out)?;
+                let some = self.eq_value(x, y, inner, false, span, out)?;
                 let none = Expr::bin(
                     Op::Or,
                     Expr::bin(Op::LooseEq, a.clone(), Expr::null()),
@@ -771,7 +756,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         continue;
                     };
                     let payload = self.field_ty(field, args);
-                    let same = self.eq_value(a.clone(), b.clone(), payload, span, out)?;
+                    let same = self.eq_value(a.clone(), b.clone(), payload, false, span, out)?;
                     let both = Expr::bin(
                         Op::And,
                         self.untagged_variant_test(ty, &[variant], &[], &b, false),
@@ -798,6 +783,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             self.held(Expr::member(a.clone(), field.clone()), Some(def), t),
                             self.held(Expr::member(b.clone(), field), Some(def), t),
                             t,
+                            false,
                             span,
                             out,
                         )?;
@@ -840,7 +826,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let mut all: Option<Expr> = None;
                 for (x, y, t) in parts {
-                    let part = self.eq_value(x, y, t, span, out)?;
+                    let part = self.eq_value(x, y, t, false, span, out)?;
                     all = Some(match all {
                         Some(all) => Expr::bin(Op::And, all, part),
                         None => part,
@@ -885,7 +871,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 js::UnaryOp::Not,
                 self.ne_values(Expr::var(&x), other, (item, other_item), span, &mut body)?,
             ),
-            false => self.eq_values(Expr::var(&x), other, (item, other_item), span, &mut body)?,
+            false => self.eq_values(Expr::var(&x), other, (item, other_item), false, span, &mut body)?,
         };
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         let every = Expr::call(
@@ -904,7 +890,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let made_b = self.unspelled("b");
         let made_a = self.unspelled("a");
         let mut body = Vec::new();
-        let same = self.eq_value(Expr::var(&made_a), Expr::var(&made_b), ty, span, &mut body)?;
+        let same = self.eq_value(Expr::var(&made_a), Expr::var(&made_b), ty, false, span, &mut body)?;
         Ok(self.compare_fn((&made_a, &made_b), same, body))
     }
 }

@@ -344,7 +344,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|t| self.tcx.associated_item_def_ids(t)[0])
             .expect("`Drop` has `drop`");
         let mut call = self
-            .trait_call(drop, self.tcx.mk_args(&[ty.into()]), vec![this], span, out)?
+            .trait_call(drop, self.tcx.mk_args(&[ty.into()]), vec![this], false, span, out)?
             .ok_or_else(|| self.unsupported(span, &format!("calling `{ty}`'s `drop`")))?;
         if self.drop_never_unwinds(d.did, args) {
             call = call.never_throws();

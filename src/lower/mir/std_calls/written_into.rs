@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect::<R<Vec<_>>>()?;
             self.flush(state, out)?;
             return Ok(Value::Expr(
-                self.trait_call(def_id, generic_args, exprs, span, out)?
+                self.trait_call(def_id, generic_args, exprs, false, span, out)?
                     .ok_or_else(|| self.unsupported(span, "this writer's `write_fmt`"))?,
             ));
         }
@@ -158,7 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let trait_id = tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
             let write_str = trait_method(tcx, trait_id, "write_str");
             self.flush(state, out)?;
-            self.trait_call(write_str, generic_args, exprs, span, out)?
+            self.trait_call(write_str, generic_args, exprs, false, span, out)?
                 .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))?
         }))
     }
@@ -271,6 +271,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 method,
                 generic_args,
                 vec![Expr::var(&writer), Expr::var(&written)],
+                false,
                 span,
                 &mut body,
             )?
@@ -460,7 +461,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // where its impls copy it (#1889).
                     Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() => {
                         given.extend(self.given_to_writer(Some(def_id)));
-                        match self.trait_call(def_id, generic_args, given, span, out)? {
+                        match self.trait_call(def_id, generic_args, given, false, span, out)? {
                             Some(Expr {
                                 kind: js::ExprKind::Call(callee, args),
                                 ..

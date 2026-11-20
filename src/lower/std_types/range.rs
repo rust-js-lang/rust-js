@@ -399,7 +399,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (b, b_exhausted) = self.range_state(b, ty, out);
         let mut parts = Vec::new();
         for (x, y) in a.into_iter().zip(b) {
-            parts.push(self.eq_value(x, y, index.expect("a bound's type"), span, out)?);
+            parts.push(self.eq_value(x, y, index.expect("a bound's type"), false, span, out)?);
         }
         parts.extend(match (a_exhausted, b_exhausted) {
             (Some(x), Some(y)) => Some(Expr::bin(Op::Eq, x, y)),
@@ -660,7 +660,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let method = trait_method(self.tcx, self.partial_ord_trait(), method);
         let args = self.tcx.mk_args(&[a_ty.into(), b_ty.into()]);
-        let ordered = self.trait_call(method, args, vec![a, b], span, out)?;
+        let ordered = self.trait_call(method, args, vec![a, b], false, span, out)?;
         ordered.ok_or_else(|| self.unsupported(span, &format!("the order of a `{a_ty}` and a `{b_ty}` in a range")))
     }
 }

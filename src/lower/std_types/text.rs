@@ -743,7 +743,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let method = trait_method(self.tcx, from_str, "from_str");
             let args = self.tcx.mk_args(&[target.into()]);
-            if let Some(call) = self.trait_call(method, args, vec![text], span, out)? {
+            if let Some(call) = self.trait_call(method, args, vec![text], false, span, out)? {
                 return Ok(call);
             }
         }

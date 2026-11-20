@@ -791,7 +791,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 };
                 let (ka, kb) = (keyed(&a, Role::AKey, &mut body), keyed(&b, Role::BKey, &mut body));
-                let same = self.eq_value(ka, kb, key_ty, span, &mut body)?;
+                let same = self.eq_value(ka, kb, key_ty, false, span, &mut body)?;
                 body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
                 let same = Expr::arrow(vec![a.into(), b.into()], body);
                 let name = self.by_cells(subject_ty, "$dedupBy", "$dedupByCells");

@@ -1102,7 +1102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let size_hint = trait_method(self.tcx, iterator, "size_hint");
         let args = self.args_of(iterator, ty);
-        let hint = match self.trait_call(size_hint, args, vec![value.clone()], span, out)? {
+        let hint = match self.trait_call(size_hint, args, vec![value.clone()], false, span, out)? {
             Some(hint) => hint,
             None => {
                 if value.has_effects() {

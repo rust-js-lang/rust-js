@@ -923,7 +923,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // A std trait's, `ToString::to_string` or `i32::max`: what
                 // its call is.
-                let Some(call) = self.trait_call(def_id, args, values, span, out)? else {
+                let Some(call) = self.trait_call(def_id, args, values, false, span, out)? else {
                     return Ok(None);
                 };
                 let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();

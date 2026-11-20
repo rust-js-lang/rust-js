@@ -797,7 +797,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::bin(Op::Eq, a.clone(), Expr::js_undefined()),
                 Expr::bin(Op::Eq, b.clone(), Expr::js_undefined()),
             );
-            let both = self.eq_value(a.clone(), b.clone(), held, span, out)?;
+            let both = self.eq_value(a.clone(), b.clone(), held, false, span, out)?;
             Expr::cond(none, Expr::bin(Op::Eq, a, b), both)
         };
         Ok(Some(match negate {
@@ -1196,7 +1196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         || (generic_args.types().next()).is_some_and(|t| known_by_a_dictionary(t.peel_refs())))))
         {
             let exprs = self.boxed_args(state, (def_id, generic_args), (values.clone(), &arg_tys), span, out)?;
-            if let Some(call) = self.trait_call_given(def_id, generic_args, exprs, self.same_nones(state), span, out)? {
+            if let Some(call) = self.trait_call(def_id, generic_args, exprs, self.same_nones(state), span, out)? {
                 // A generic `&mut T`'s box, the crate's `deref_mut`'s, of an
                 // object `T` here: what's in it.
                 let call = self.generic_result_values(self.callee(def_id, generic_args), call, span)?;
@@ -1212,7 +1212,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let exprs = (values.iter().cloned())
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
-            if let Some(call) = self.trait_call(method, generic_args, exprs, span, out)? {
+            if let Some(call) = self.trait_call(method, generic_args, exprs, false, span, out)? {
                 return Ok(Value::Expr(call));
             }
         }

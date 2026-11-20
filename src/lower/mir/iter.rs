@@ -322,7 +322,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let args = self.args_of(trait_id, iter_ty);
         let mut made = Vec::new();
         let value = values.first().expect("the receiver").clone();
-        match self.trait_call(def_id, args, vec![value], span, &mut made)? {
+        match self.trait_call(def_id, args, vec![value], false, span, &mut made)? {
             Some(call) if made.is_empty() => Ok(Some(call)),
             None if std_method == Some(IterMethod::SizeHint) => Ok(None),
             _ => Err(self.unsupported(span, &format!("`{name}` of this `&mut`, from its MIR"))),

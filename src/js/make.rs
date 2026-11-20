@@ -1243,7 +1243,7 @@ fn null_apart(op: Op, lhs: &Expr, rhs: &Expr) -> Option<Expr> {
             matches!(&lhs.kind, ExprKind::Binary(op, ..) if matches!(op, Op::NoneEq(super::OnlyNone::Undefined) | Op::NoneNe(super::OnlyNone::Undefined)))
         })?,
     };
-    if !taken_place(x) || rhs.facts.of_presence() != Facts::default() {
+    if !taken_place(x) {
         return None;
     }
     // `x !== undefined && x != null` is `x != null`, and `x === undefined ||

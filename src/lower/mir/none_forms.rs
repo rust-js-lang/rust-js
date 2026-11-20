@@ -167,7 +167,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
     /// Whether the two arguments of the call being lowered, references to
     /// `Option`s, `a == b`'s, are each one whose `None` MIR says is the same
     /// one alone (`place_none`), which `===` compares (rd117).
-    // helper: of the call being lowered, `trait_call_given`'s `same_none`
+    // helper: of the call being lowered, `trait_call`'s `same_none`
     pub(in crate::lower::mir) fn same_nones(&self, state: &State<'_, 'tcx>) -> bool {
         let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
             return false;

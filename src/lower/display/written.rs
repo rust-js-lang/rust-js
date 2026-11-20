@@ -153,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             WriteCall::Trait => {
                 values.extend(self.given_to_writer(Some(def_id)));
-                match self.trait_call(def_id, generic_args, values, span, out)? {
+                match self.trait_call(def_id, generic_args, values, false, span, out)? {
                     Some(call) => call,
                     None => return Err(self.unsupported(span, "this call")),
                 }
