@@ -172,3 +172,11 @@ classifies every owner by its source, so the weak ones are found first.
 
 Held by test/architecture-owners.test.ts ("a row is five cells") and the
 mutation `owners-source-unchecked`.
+
+Phase 1 ended with every row classified: 273 read MIR or rustc's own
+results, 30 a type predicate, 22 a crate-wide fact keyed by type, 17 a fact
+riding a JS node, and 48 a guess from JS shape. Its last commit refuses an
+empty Source cell, held by the fixture's empty row and the mutation
+`owners-source-empty-allowed`. A crate-wide fact keyed by a struct's field
+counts as one keyed by type, being true of every value of it; one keyed by
+a function's parameter, read from its callers' MIR, counts as MIR's.

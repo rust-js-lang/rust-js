@@ -146,8 +146,16 @@ export const mutations: Mutation[] = [
     name: "owners-source-unchecked",
     breaks: "a row's Source cell is read whatever it says, so a class that isn't one, `6` or `four`, stands in the table uncounted (#2200)",
     file,
-    find: 'if (sourceCell !== "" && source === null) {',
+    find: "if (source === null) {",
     replace: "if (false) {",
+    tests: of("a row is five cells"),
+  },
+  {
+    name: "owners-source-empty-allowed",
+    breaks: "a row's empty Source cell passes, unclassified, so a new owner comes in without its source said (#2200)",
+    file,
+    find: "if (source === null) {",
+    replace: 'if (source === null && sourceCell !== "") {',
     tests: of("a row is five cells"),
   },
 ];
