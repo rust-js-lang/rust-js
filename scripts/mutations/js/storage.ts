@@ -4,6 +4,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "some-where-stored-coalesced",
+    breaks: "a `SomeWhere` stored where `None` is `null` is `(t ? v : undefined) ?? null`, not `t ? v : null`",
+    file: "src/js/storage.rs",
+    find: "        ExprKind::SomeWhere(test, value) => Some(Expr {\n",
+    replace: "        ExprKind::SomeWhere(test, value) if false => Some(Expr {\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_given_to_a_nullable_parameter.rs$"],
+    snapshots: true,
+  },
+  {
     name: "nullable-null-unplaced",
     breaks: "a nullable field's `null` is where nothing is, so the source map maps `value: null`'s `null` to nothing, not the Rust's `None`",
     file: "src/js/storage.rs",
@@ -42,7 +51,7 @@ export const mutations: Mutation[] = [
     file: "src/js/storage.rs",
     find: "        ExprKind::Cond(test, yes, no) => Some(Expr {\n",
     replace: "        ExprKind::Cond(test, yes, no) if false => Some(Expr {\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
   },
   {
     name: "in-place-tag-left",

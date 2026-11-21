@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "or-fallback-some-where-coalesced",
+    breaks: "an `unwrap_or` of a `SomeWhere` is `(t ? v : undefined) ?? d`, not `t ? v : d`",
+    file: "src/lower/std_types/option.rs",
+    find: "    if let Some((test, value, _)) = option.some_where_parts()\n",
+    replace: "    if let Some((test, value, _)) = option.some_where_parts().filter(|(_, _, there)| !there)\n",
+    tests: ["test/lowering-option-truth.test.ts", "-t", "its test's choice"],
+  },
+  {
+    name: "some-value-some-where-boxed",
+    breaks: "a `flatten` of a `SomeWhere` of a box is `$someValue(t ? $some(x) : undefined)`, not `t ? x : undefined`",
+    file: "src/lower/std_types/option.rs",
+    find: "        if let Some((test, then, _)) = option.some_where_parts()\n",
+    replace: "        if let Some((test, then, _)) = option.some_where_parts().filter(|(_, _, there)| !there)\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_local_read_tested.rs$"],
+    snapshots: true,
+  },
+  {
     name: "map-by-untagged-variant-unfollowed",
     breaks: "`opt.map(Reason::Root)` of an untagged enum's variant isn't the option itself, so a nullable field stores `root ?? null`, left for tidy to guess, React's `chunk.reason = arrayRoot` (#1933 step 4 (E))",
     file: "src/lower/std_types/option.rs",
@@ -360,8 +377,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map`'s `Some` isn't known never `undefined`, so a nullable field given it is `(c ? c(..) : undefined) ?? null`",
     file: "src/lower/std_types/option.rs",
-    find: "            value.present()\n",
-    replace: "            value\n",
+    find: "        match Expr::some_where(present.clone(), value) {\n",
+    replace: "        match Expr::cond(present.clone(), value, Expr::js_undefined()) {\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -391,7 +408,7 @@ export const mutations: Mutation[] = [
     breaks:
       'React\'s `foundWillMountName != null ? `\\n  ${..}` : ""` is `(.. ? .. : undefined) ?? ""`, a map\'s literal and its fallback two steps (ADR 0348, amended)',
     file: "src/lower/std_types/option.rs",
-    find: "        return Expr::cond((**test).clone(), (**value).clone(), fallback);\n",
+    find: "        return Expr::cond(test.clone(), value.clone(), fallback);\n",
     replace: "        return Expr::bin(Op::Coalesce, option, fallback);\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "map of a literal"],
   },

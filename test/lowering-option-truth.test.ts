@@ -586,3 +586,21 @@ pub fn matched(pattern: &js::RegExp, text: &str) -> bool {
   expect([lib.hasChild({}), lib.hasChild({ child: null }), lib.hasChild({ child: 0 })]).toEqual([false, false, true]);
   expect([lib.matched(/a/, "b"), lib.matched(/a/, "a")]).toEqual([false, true]);
 });
+
+// A `Some` made where a test holds, of a value never `undefined`, unwrapped
+// or given a default, is that test's choice of the two: React's
+// `found_will_mount_name.map(|name| format!("\n  {name}")).unwrap_or_default()`,
+// upstream's `foundWillMountName !== undefined ? .. : ''` (`SomeWhere`,
+// `or_fallback`, #2112 C S3c).
+test("a map of a value unwrapped or given a default is its test's choice", async () => {
+  const dir = fixture("option-truth-map-or");
+  writeFileSync(join(dir, "lib.rs"), `pub fn named(name: Option<&str>) -> String {
+    name.map(|name| format!("\\n  {name}")).unwrap_or_default()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  return name != null ? `\\n  ${name}` : \"\";\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.named("x"), lib.named(undefined)]).toEqual(["\n  x", ""]);
+});

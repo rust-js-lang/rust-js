@@ -33,6 +33,19 @@ pub fn removed() -> String {
     format!("{first} {:?}", nodes.borrow())
 }
 
+fn only_child_of(chunks: &RefCell<Vec<u32>>, children: &RefCell<Vec<u32>>) -> Option<u32> {
+    let children = children.borrow();
+    (chunks.borrow().is_empty() && children.len() == 1).then(|| children[0])
+}
+
+pub fn only_child() -> String {
+    let (chunks, children) = (RefCell::new(Vec::new()), RefCell::new(vec![7]));
+    let held = chunks.borrow_mut();
+    let result = catch_unwind(AssertUnwindSafe(|| only_child_of(&chunks, &children)));
+    drop(held);
+    format!("{:?} {}", only_child_of(&chunks, &children), result.err().map_or(String::new(), message))
+}
+
 pub fn out_of_bounds() -> String {
     let nodes = RefCell::new(vec![1]);
     let result = catch_unwind(AssertUnwindSafe(|| consume(&nodes, 3)));
@@ -153,6 +166,16 @@ test("a momentary borrow in a loop's test or a branch is the call, as before", (
   expect(js).toContain("  return look && $borrow(cell).length !== 0;\n");
   expect(js).toContain("  return look ? $borrow(cell).length : 0;\n");
   expect(ran(dir, "loops_and_short_circuits")).toBe("6 false 0\n");
+});
+
+// A momentary borrow in the test of a `Some` made where it holds, React
+// Fizz's `(segment.chunks.borrow().is_empty() && ..).then(..)`, is checked
+// first, before the `const`, as in any test (`SomeWhere`, #2112 C S3c).
+test("a momentary borrow in a then's test is checked first", () => {
+  const dir = compiled("borrow-forms-then");
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (chunks.borrows < 0) {\n    $alreadyMutablyBorrowed();\n  }\n  return chunks.length === 0 && children.length === 1 ? $index(children, 0) : undefined;\n");
+  expect(ran(dir, "only_child")).toBe("Some(7) RefCell already mutably borrowed\n");
 });
 
 // A guard held while a `Drop` of the program's runs, which may borrow its

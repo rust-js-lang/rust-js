@@ -925,6 +925,8 @@ pub enum ExprKind {
     Unary(UnaryOp, Box<Expr>),
     Binary(Op, Box<Expr>, Box<Expr>),
     Cond(Box<Expr>, Box<Expr>, Box<Expr>),
+    /// `Some(value)` where `test` holds, else `None`: `test ? value : undefined`.
+    SomeWhere(Box<Expr>, Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),
     /// `f?.(args)`: a call of what may be `undefined`, as a drop function
     /// a caller with nothing to drop leaves out (ADR 0098).

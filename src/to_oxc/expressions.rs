@@ -250,6 +250,10 @@ impl<'a> Cx<'a> {
             ExprKind::Cond(test, then, els) => {
                 Expression::new_conditional_expression(sp, self.expr(test), self.branch(then), self.branch(els), b)
             }
+            ExprKind::SomeWhere(test, then) => {
+                let none = crate::js::Expr::js_undefined();
+                Expression::new_conditional_expression(sp, self.expr(test), self.branch(then), self.branch(&none), b)
+            }
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
                 let is_async = matches!(e.kind, ExprKind::AsyncArrow(..));
                 let params = ArenaBox::new_in(self.params(FormalParameterKind::ArrowFormalParameters, params), b);

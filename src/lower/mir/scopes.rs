@@ -505,6 +505,10 @@ impl Order<'_> {
                 self.expr(b);
                 self.expr(c);
             }
+            js::ExprKind::SomeWhere(a, b) => {
+                self.expr(a);
+                self.expr(b);
+            }
             js::ExprKind::Unary(op, a) => {
                 self.expr(a);
                 self.stopped |= op.writes();

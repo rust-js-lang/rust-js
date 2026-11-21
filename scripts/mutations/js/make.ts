@@ -3,6 +3,33 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "some-where-a-plain-test",
+    breaks: "a `Some` made where a test holds is a plain test, `t ? v : undefined`, which no pass knows is there, so `if let Some(o) = js::object_of(v)` is `const o = t ? v : undefined; if (o != null)`",
+    file: "src/js/make.rs",
+    find: "                kind: ExprKind::SomeWhere(test, value),\n",
+    replace: "                kind: ExprKind::Cond(test, value, Box::new(Expr::js_undefined())),\n",
+    tests: ["test/corpus.test.ts", "-t", "^any_mapped_to_a_nullable_parameter.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "some-where-not-there",
+    breaks: "a `SomeWhere`'s value isn't known there, so `tested_option` doesn't fold its test",
+    file: "src/js/make.rs",
+    find: "            ExprKind::SomeWhere(test, value) => Some((test, value, true)),\n",
+    replace: "            ExprKind::SomeWhere(test, value) => Some((test, value, false)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "some-where-not-conditional",
+    breaks: "a `SomeWhere` isn't taken for the conditional it prints, so a chain of arms isn't split, `x = main ? f : undefined`",
+    file: "src/js/make.rs",
+    find: "            ExprKind::SomeWhere(a, b) => Some((a, b, UNDEFINED.with(|undefined| *undefined))),\n",
+    replace: "            ExprKind::SomeWhere(_, _) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_arm_of_a_std_call.rs$"],
+    snapshots: true,
+  },
+  {
     name: "lowering-trusts-facts",
     breaks: "lowering's writes to a nullable place trust what's marked on a value, `Known::Defined` and `Known::Present`, not MIR's answer (#2112 C S5): an `Option::map`'s `Some` arm is held as it is",
     file: "src/js/make.rs",
@@ -39,8 +66,8 @@ export const mutations: Mutation[] = [
     name: "presence-of-a-made-option",
     breaks: "`kind.object().is_some()` is `!!(t ? value : undefined)`, not the test it's made by (ADR 0910)",
     file: "src/js/make.rs",
-    find: "            && value.facts.has(Known::Present)\n        {\n            let test = (**test).clone();\n",
-    replace: "            && false\n        {\n            let test = (**test).clone();\n",
+    find: "        if let ExprKind::SomeWhere(test, _) = &option.kind {\n",
+    replace: "        if let ExprKind::SomeWhere(test, _) = &option.kind\n            && false\n        {\n",
     tests: ["test/js-object-kinds.test.ts", "-t", "one weak key"],
   },
   {

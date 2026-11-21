@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "falsy-const-some-where-unanded",
+    breaks: "a `const` of a `SomeWhere` read only as a truth isn't `t && v`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                && let Some((test, then, _)) = value.some_where_parts()\n",
+    replace: "                && let Some((test, then, _)) = value.some_where_parts().filter(|(_, _, there)| !there)\n",
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-types.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-props-read.test.ts", "test/bindings.test.ts", "test/react.test.ts", "test/lowering-option-truth.test.ts", "test/snapshots.test.ts", "test/pilot.test.ts"],
+  },
+  {
     name: "comments-before-unprinted-return-dropped",
     breaks:
       "a tail `None`'s comments where its `return;` of nothing goes are taken for a `return null;`'s, and move before the code above them (ADR 0862, amended)",
@@ -33,7 +41,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary given where what's falsy is skipped stays `test ? value : undefined`, not `test && value`",
     file: "src/lower/mir/tidy.rs",
-    find: "                *value = Expr::bin(Op::And, test.tested(), (**then).clone());\n",
+    find: "                *value = Expr::bin(Op::And, test.tested(), then.clone());\n",
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },

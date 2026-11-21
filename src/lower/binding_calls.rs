@@ -132,13 +132,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the test read as one, `(error || ready) && "b"`.
         if super::bindings::skips_falsy(self.tcx, def_id) {
             for arg in &mut args {
-                if let js::ExprKind::Cond(test, value, none) = &arg.kind
-                    && matches!(none.kind, js::ExprKind::Undefined)
-                {
+                if let Some((test, value, _)) = arg.some_where_parts() {
                     if let js::ExprKind::Var(name) = &test.kind {
                         self.note_tested(name);
                     }
-                    *arg = Expr::bin(Op::And, test.tested(), (**value).clone());
+                    *arg = Expr::bin(Op::And, test.tested(), value.clone());
                 } else if let js::ExprKind::Var(name) = &arg.kind {
                     self.note_falsy(name);
                 }
@@ -489,7 +487,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     return Err(self.unsupported(span, &what));
                 };
-                Expr::cond(test, value.present(), Expr::js_undefined())
+                Expr::some_where(test, value)
             }
             // The value where it's an object or an array, as one value:
             // `typeof value === "object" && value !== null ? value :
@@ -506,7 +504,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill(Role::Kind, this, out),
                 };
                 let test = self.object_test(kind, &this);
-                Expr::cond(test, this.present(), Expr::js_undefined())
+                Expr::some_where(test, this)
             }
             (JsForm::Throw, Some(this)) if args.is_empty() => {
                 out.push(StmtKind::Throw(this).at(self.js_span(span)));

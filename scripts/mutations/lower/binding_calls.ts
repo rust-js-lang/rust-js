@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "binding-arg-some-where-unanded",
+    breaks: "a `SomeWhere` given to a binding isn't `t && v`",
+    file: "src/lower/binding_calls.rs",
+    find: "                if let Some((test, value, _)) = arg.some_where_parts() {\n",
+    replace: "                if let Some((test, value, _)) = arg.some_where_parts().filter(|(_, _, there)| !there) {\n",
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-types.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-props-read.test.ts", "test/bindings.test.ts", "test/react.test.ts", "test/lowering-option-truth.test.ts", "test/snapshots.test.ts", "test/pilot.test.ts"],
+  },
+  {
     name: "trailing-null-fallback-omitted",
     breaks: "an explicit null fallback is omitted from a JavaScript callback",
     file: "src/lower/binding_calls.rs",
@@ -89,9 +97,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`kind.object()` is the value of any kind, a string's too, which `WeakMap.prototype.set` throws of (ADR 0910)",
     file: "src/lower/binding_calls.rs",
-    find: "                Expr::cond(test, this.present(), Expr::js_undefined())\n",
-    replace:
-      "                {\n                    let _ = test;\n                    this.present()\n                }\n",
+    find: "                Expr::some_where(test, this)\n",
+    replace: "                {\n                    let _ = test;\n                    this\n                }\n",
     tests: ["test/js-object-kinds.test.ts", "-t", "one weak key"],
   },
   {
@@ -347,9 +354,8 @@ export const mutations: Mutation[] = [
     breaks:
       'what skips what\'s falsy is given a test that keeps its `!!`, `(!!error || ready) && "b"`',
     file: "src/lower/binding_calls.rs",
-    find: "                    *arg = Expr::bin(Op::And, test.tested(), (**value).clone());\n",
-    replace:
-      "                    *arg = Expr::bin(Op::And, (**test).clone(), (**value).clone());\n",
+    find: "                    *arg = Expr::bin(Op::And, test.tested(), value.clone());\n",
+    replace: "                    *arg = Expr::bin(Op::And, test.clone(), value.clone());\n",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
   {
@@ -1058,8 +1064,8 @@ export const mutations: Mutation[] = [
     name: "downcast-unchecked",
     breaks: "`js::downcast` gives the value whatever it is, a `div` as a button, as TypeScript's cast does, where Rust's is `None`",
     file: "src/lower/binding_calls.rs",
-    find: "                Expr::cond(test, value.present(), Expr::js_undefined())\n            }\n            // The value where it's an object or an array, as one value:\n",
-    replace: "                {\n                    let _ = test;\n                    value.present()\n                }\n            }\n            // The value where it's an object or an array, as one value:\n",
+    find: "                Expr::some_where(test, value)\n            }\n            // The value where it's an object or an array, as one value:\n",
+    replace: "                {\n                    let _ = test;\n                    value\n                }\n            }\n            // The value where it's an object or an array, as one value:\n",
     tests: ["test/js-downcast.test.ts", "-t", "the class's instance"],
   },
   {

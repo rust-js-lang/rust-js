@@ -171,6 +171,10 @@ macro_rules! walks {
                         b.$expr(f);
                         c.$expr(f);
                     }
+                    ExprKind::SomeWhere(a, b) => {
+                        a.$expr(f);
+                        b.$expr(f);
+                    }
                     ExprKind::Call(callee, args)
                     | ExprKind::OptionalCall(callee, args)
                     | ExprKind::New(callee, args) => {

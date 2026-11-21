@@ -227,6 +227,10 @@ fn expr(e: &Expr, visitor: &mut Words<'_>) {
             expr(b, visitor);
             expr(c, visitor);
         }
+        ExprKind::SomeWhere(a, b) => {
+            expr(a, visitor);
+            expr(b, visitor);
+        }
         ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
             expr(f, visitor);
             for a in args {

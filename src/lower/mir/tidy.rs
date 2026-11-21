@@ -256,10 +256,9 @@ fn falsy_values(body: &mut Vec<Stmt>, falsy: &IndexSet<js::Name>, tested: &Index
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
                 && falsy.contains(&*name)
-                && let ExprKind::Cond(test, then, none) = &value.kind
-                && matches!(none.kind, ExprKind::Undefined)
+                && let Some((test, then, _)) = value.some_where_parts()
             {
-                *value = Expr::bin(Op::And, test.tested(), (**then).clone());
+                *value = Expr::bin(Op::And, test.tested(), then.clone());
             }
             if let StmtKind::Const(name, value) = &mut stmt.kind
                 && tested.contains(&*name)

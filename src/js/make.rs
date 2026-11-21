@@ -113,16 +113,63 @@ impl Expr {
     /// the test says so, `option !== undefined` or
     /// `option !== null`, its own operator (`Op::NoneNe`, #2112 C S5; ADR
     /// 0298, amended by the user, 2026-10-28: by what its `None` can be).
+    /// `Some(value)` where `test` holds, else `None`, `test ? value :
+    /// undefined`, of a `value` that's there: a `SomeWhere`, where `Expr::cond`
+    /// makes a test of it, else what it makes, an optional chain.
+    pub fn some_where(test: Expr, value: Expr) -> Expr {
+        match Expr::cond(test, value, Expr::js_undefined()) {
+            Expr {
+                kind: ExprKind::Cond(test, value, _),
+                span,
+                ..
+            } => Expr {
+                facts: Facts::NONE,
+                kind: ExprKind::SomeWhere(test, value),
+                span,
+                held_as: Default::default(),
+            },
+            chain => chain,
+        }
+    }
+
+    /// Of `Some(value)` where `test` holds, else `None`, its test, its
+    /// value and whether that's there, a `SomeWhere`'s; of a test made
+    /// otherwise, `test ? value : undefined`, the same, its value not known
+    /// there. The one matcher of the form, which passes that rewrite it ask.
+    pub fn some_where_parts(&self) -> Option<(&Expr, &Expr, bool)> {
+        match &self.kind {
+            ExprKind::SomeWhere(test, value) => Some((test, value, true)),
+            ExprKind::Cond(test, value, none) if matches!(none.kind, ExprKind::Undefined) => Some((test, value, false)),
+            _ => None,
+        }
+    }
+
+    /// Whether this is a conditional, `a ? b : c`, as it's printed: a test
+    /// made of three, or a `SomeWhere`, `a ? b : undefined`.
+    pub fn is_conditional(&self) -> bool {
+        self.conditional_parts().is_some()
+    }
+
+    /// Of a conditional as it's printed, `a ? b : c`, its three parts: a
+    /// `SomeWhere`'s `c` the `undefined` it prints.
+    pub fn conditional_parts(&self) -> Option<(&Expr, &Expr, &Expr)> {
+        thread_local! {
+            static UNDEFINED: &'static Expr = Box::leak(Box::new(Expr::js_undefined()));
+        }
+        match &self.kind {
+            ExprKind::Cond(a, b, c) => Some((a, b, c)),
+            ExprKind::SomeWhere(a, b) => Some((a, b, UNDEFINED.with(|undefined| *undefined))),
+            _ => None,
+        }
+    }
+
     #[track_caller]
     pub fn presence(option: Expr, set: bool, given: Option<super::OnlyNone>) -> Expr {
-        // Of one made where it's tested, `t ? v : undefined` of a `v`
-        // that's there, the test it's made by, `t` (ADR 0910). Not of a
-        // `v` that's only never `undefined`, an `Option` that may be
-        // `null` (#539).
-        if let ExprKind::Cond(test, value, none) = &option.kind
-            && matches!(none.kind, ExprKind::Undefined)
-            && value.facts.has(Known::Present)
-        {
+        // Of one made where it's tested, `Some(v)` where `t` holds, a
+        // `SomeWhere`, the test it's made by, `t` (ADR 0910). Not of a test
+        // made otherwise, `t ? v : undefined` of a `v` that's only never
+        // `undefined`, an `Option` that may be `null` (#539).
+        if let ExprKind::SomeWhere(test, _) = &option.kind {
             let test = (**test).clone();
             return if set { test } else { test.negated_test() };
         }

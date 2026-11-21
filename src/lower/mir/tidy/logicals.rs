@@ -299,7 +299,7 @@ fn folded(test: Expr, yes: Expr, no: Expr, booleans: &IndexSet<js::Path>) -> Exp
 fn has_conditional(e: &Expr) -> bool {
     let mut found = false;
     let mut stmts = vec![StmtKind::Expr(e.clone()).at(js::Span::NONE)];
-    js::each_expr_mut(&mut stmts, &mut |e| found |= matches!(e.kind, ExprKind::Cond(..)));
+    js::each_expr_mut(&mut stmts, &mut |e| found |= e.is_conditional());
     found
 }
 
@@ -1160,7 +1160,7 @@ pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &IndexSet<js::Name>, patt
     });
     js::each_expr_mut(body, &mut |e| {
         let span = e.span;
-        if let ExprKind::Cond(test, ..) = &mut e.kind {
+        if let ExprKind::Cond(test, ..) | ExprKind::SomeWhere(test, _) = &mut e.kind {
             bit_test(test, &integer, &matched, span);
         }
     });

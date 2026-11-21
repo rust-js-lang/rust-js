@@ -15,7 +15,7 @@ function withStatement(frames) {
     noted();
     return { value: f, impl: { typeId: () => "lib::Keyframes" } };
   }
-  return JSON.stringify(((frames != null ? map(frames) : undefined) ?? { value: null }).value);
+  return JSON.stringify(((frames != null ? map(frames) : null) ?? { value: null }).value);
 }
 
 function given(value) {

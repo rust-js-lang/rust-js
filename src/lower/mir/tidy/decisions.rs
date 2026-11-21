@@ -866,6 +866,7 @@ fn pure(e: &Expr) -> bool {
         ExprKind::Unary(_, a) => pure(a),
         ExprKind::Binary(_, a, b) => pure(a) && pure(b),
         ExprKind::Cond(a, b, c) => pure(a) && pure(b) && pure(c),
+        ExprKind::SomeWhere(a, b) => pure(a) && pure(b),
         _ => false,
     }
 }

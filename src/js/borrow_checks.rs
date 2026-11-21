@@ -164,7 +164,7 @@ fn taken_first(e: &mut Expr) -> Taken {
         ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, left, _) => (vec![&mut **left], true),
         ExprKind::Binary(_, left, right) => (vec![&mut **left, &mut **right], false),
         ExprKind::Unary(_, operand) => (vec![&mut **operand], false),
-        ExprKind::Cond(test, ..) => (vec![&mut **test], true),
+        ExprKind::Cond(test, ..) | ExprKind::SomeWhere(test, _) => (vec![&mut **test], true),
         ExprKind::Array(items) => (items.iter_mut().collect(), false),
         _ => {
             return if e.has_effects() {

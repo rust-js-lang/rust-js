@@ -390,7 +390,7 @@ pub(super) fn leads(e: &Expr, name: &js::Name, guard: Option<&Expr>, passes: &dy
         ExprKind::Index(a, b) => in_order(&mut [&**a, &**b].into_iter()),
         // Of what runs where its own test holds, `t ? e : undefined`, `b` of
         // `t && b` too: `e` runs there just where it ran.
-        ExprKind::Binary(Op::And, a, b) | ExprKind::Cond(a, b, _)
+        ExprKind::Binary(Op::And, a, b) | ExprKind::Cond(a, b, _) | ExprKind::SomeWhere(a, b)
             if guard.is_some_and(|g| same_test(a, g)) && leads(a, name, guard, passes).is_none() && passes(a) =>
         {
             leads(b, name, guard, passes)
@@ -401,6 +401,7 @@ pub(super) fn leads(e: &Expr, name: &js::Name, guard: Option<&Expr>, passes: &dy
         // `/re/i` first (the vercel-ui SDK's port, G5). `a?.b` is `a`'s.
         ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _)
         | ExprKind::Cond(a, ..)
+        | ExprKind::SomeWhere(a, _)
         | ExprKind::OptionalIndex(a, _)
         | ExprKind::OptionalCall(a, _) => leads(a, name, guard, passes).or(Some(false)),
         ExprKind::Binary(_, a, b) => in_order(&mut [&**a, &**b].into_iter()),

@@ -73,6 +73,7 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<js::Name>, plain: &IndexS
             b,
         ) => past(a) && past(b),
         ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),
+        ExprKind::SomeWhere(a, b) => past(a) && past(b),
         // Text or a number made of such, `${a}-${b}`, `a + 1`, `String(n)`,
         // and a call of the runtime's that only reads, `$debugStr(s)`.
         ExprKind::Template(_, values, _) => values.iter().all(past),
@@ -126,6 +127,7 @@ fn inert_element(e: &Expr, changing: &IndexSet<js::Name>) -> bool {
         ExprKind::Object(fields, ..) => props(fields),
         // A choice of them, `open ? <IconClose /> : <IconHamburger />`.
         ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),
+        ExprKind::SomeWhere(a, b) => [a, b].iter().all(|e| inert_element(e, changing)),
         ExprKind::Jsx(jsx) => {
             let tag = match &jsx.tag {
                 js::JsxTag::Component(tag) => inert_element(tag, changing),

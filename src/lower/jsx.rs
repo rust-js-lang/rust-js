@@ -69,25 +69,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut otherwise = Vec::new();
                 self.capture_jsx_input(Base::Role(Role::Children), yes, &mut then);
                 self.capture_jsx_input(Base::Role(Role::Children), no, &mut otherwise);
-                // Keep branch computations conditional. Only their result
-                // bindings are visible to the deferred JSX expression.
-                for statement in then.iter_mut().chain(&mut otherwise) {
-                    match &mut statement.kind {
-                        StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
-                            out.push(StmtKind::Let(name.clone(), None).at(statement.span));
-                            statement.kind = StmtKind::Assign(Expr::var(&*name), value.clone());
-                        }
-                        StmtKind::Let(name, None) => {
-                            out.push(StmtKind::Let(name.clone(), None).at(statement.span));
-                        }
-                        _ => {}
-                    }
-                }
-                then.retain(|s| !matches!(s.kind, StmtKind::Let(_, None)));
-                otherwise.retain(|s| !matches!(s.kind, StmtKind::Let(_, None)));
-                if !then.is_empty() || !otherwise.is_empty() {
-                    out.push(StmtKind::If(*test.clone(), then, Some(otherwise)).at(value.span));
-                }
+                branch_captures((*test.clone(), then, otherwise), value.span, out);
+                true
+            }
+            js::ExprKind::SomeWhere(test, yes) if jsx_tree(yes) => {
+                self.capture_jsx_input(Base::Role(Role::Condition), test, out);
+                let mut then = Vec::new();
+                self.capture_jsx_input(Base::Role(Role::Children), yes, &mut then);
+                branch_captures((*test.clone(), then, Vec::new()), value.span, out);
                 true
             }
             // Item by item, but not of `...items`, which is no value alone.
@@ -721,16 +710,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 held_as: Default::default(),
             };
         }
-        let js::ExprKind::Cond(test, shown, none) = &value.kind else {
+        let Some((test, shown, _)) = value.some_where_parts() else {
             return value;
         };
-        if !matches!(none.kind, js::ExprKind::Undefined) {
-            return value;
-        }
-        let test = (**test).clone();
+        let (test, shown) = (test.clone(), shown.clone());
         Expr {
             facts: js::Facts::NONE,
-            kind: js::ExprKind::Binary(js::Op::And, Box::new(test), shown.clone()),
+            kind: js::ExprKind::Binary(js::Op::And, Box::new(test), Box::new(shown)),
             span: value.span,
             held_as: Default::default(),
         }
@@ -916,6 +902,7 @@ fn jsx_tree(value: &Expr) -> bool {
     match &value.kind {
         js::ExprKind::Jsx(_) => true,
         js::ExprKind::Cond(_, yes, no) => jsx_tree(yes) || jsx_tree(no),
+        js::ExprKind::SomeWhere(_, yes) => jsx_tree(yes),
         js::ExprKind::Array(items) => items.iter().any(jsx_tree),
         _ => false,
     }
@@ -927,5 +914,28 @@ fn path_of(e: &Expr) -> Option<js::Path> {
     match &e.kind {
         js::ExprKind::Var(name) => Some(js::Path::var(name)),
         _ => e.path(),
+    }
+}
+
+/// A conditional JSX value's captures, `then` and `otherwise` each of its
+/// branches', kept conditional: only their result bindings are visible to
+/// the deferred JSX expression.
+fn branch_captures((test, mut then, mut otherwise): (Expr, Vec<Stmt>, Vec<Stmt>), span: js::Span, out: &mut Vec<Stmt>) {
+    for statement in then.iter_mut().chain(&mut otherwise) {
+        match &mut statement.kind {
+            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
+                out.push(StmtKind::Let(name.clone(), None).at(statement.span));
+                statement.kind = StmtKind::Assign(Expr::var(&*name), value.clone());
+            }
+            StmtKind::Let(name, None) => {
+                out.push(StmtKind::Let(name.clone(), None).at(statement.span));
+            }
+            _ => {}
+        }
+    }
+    then.retain(|s| !matches!(s.kind, StmtKind::Let(_, None)));
+    otherwise.retain(|s| !matches!(s.kind, StmtKind::Let(_, None)));
+    if !then.is_empty() || !otherwise.is_empty() {
+        out.push(StmtKind::If(test, then, Some(otherwise)).at(span));
     }
 }

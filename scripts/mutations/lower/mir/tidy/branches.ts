@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "branch-some-where-untested",
+    breaks: "a `SomeWhere` under a branch of its own test isn't its value",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "        if let Some((t, yes, _)) = e.some_where_parts()\n",
+    replace: "        if let Some((t, yes, _)) = e.some_where_parts().filter(|(_, _, there)| !there)\n",
+    tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-types.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-props-read.test.ts", "test/bindings.test.ts", "test/react.test.ts", "test/lowering-option-truth.test.ts", "test/snapshots.test.ts", "test/pilot.test.ts"],
+  },
+  {
     name: "or-pattern-arm-after-the-rest",
     breaks:
       'a later or-pattern arm, `"src" | "href" => {`, is the `else` of MIR\'s test of the arms after it, `} else {\\n // Santized URLs\\n if (name !== "src" && name !== "href") { .. } else { .. }`, not an `else if` as written (#608)',
@@ -537,9 +545,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function isn't a conditional's branch, so `const pick = c ? f : (n) => ..` is a `let` each branch sets",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        _ => !matches!(e.kind, ExprKind::Cond(..)),\n",
-    replace:
-      "        _ => !matches!(e.kind, ExprKind::Cond(..) | ExprKind::Arrow(..)),\n",
+    find: "        _ => !e.is_conditional(),\n",
+    replace: "        _ => !e.is_conditional() && !matches!(e.kind, ExprKind::Arrow(..)),\n",
     tests: [
       "test/lowering-branches.test.ts",
       "-t",
@@ -669,9 +676,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary's value whose `then` is a conditional, a pair's part, is `!c ? e : ..`, its test turned, not `c ? (..) : e` as written (ADR 0969, amended)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        written_order(span, then, otherwise, elses),\n        matches!(yes.kind, ExprKind::Cond(..)),\n",
-    replace:
-      "        None::<bool>,\n        matches!(yes.kind, ExprKind::Cond(..)),\n",
+    find: "        written_order(span, then, otherwise, elses),\n        yes.is_conditional(),\n",
+    replace: "        None::<bool>,\n        yes.is_conditional(),\n",
     tests: [
       "test/lowering-moves.test.ts",
       "-t",

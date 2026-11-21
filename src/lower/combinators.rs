@@ -303,9 +303,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = if self.boxed_payload(some) {
                 self.some(value)
             } else {
-                value.present()
+                value
             };
-            return Ok(Expr::cond(test, value, Expr::js_undefined()));
+            return Ok(Expr::some_where(test, value));
         }
         // `map_err(|e| e.to_string())` of a parse error, whose message is
         // already a string: the same `Result`. Only one just made, so no

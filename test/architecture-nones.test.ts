@@ -116,3 +116,21 @@ test("no fact a JS node carries says what an Option's None is", () => {
   expect(named).toEqual([]);
 });
 
+
+// A `Some` made where a test holds is a node of its own, `SomeWhere`, so
+// what reads it, `presence`'s fold and a nullable place's write, asks its
+// kind, not a fact (#2112 C S3c). What's left marked `Known::Present` is a
+// lone value a constructor knows is a `Some`'s: `inserted`'s, and what's
+// given generic code as one, `adapt`'s and `made_for_generic_code`'s. No
+// other writer comes back before S4 deletes the mark.
+test("Known::Present is written only by the lone values a constructor knows are a Some's", () => {
+  const writers = files("src").filter((file) => file.endsWith(".rs")).flatMap((file) =>
+    read(file).split("\n").flatMap((line, i) =>
+      /\.present\(\)|\.with\((?:js::)?Known::Present\)|known_as\(Known::Present\)/.test(line) ? [`${file}:${line.trim()}`] : []));
+  expect(writers.map((w) => w.split(":")[0])).toEqual([
+    "src/js/make.rs",
+    "src/lower/mut_refs.rs",
+    "src/lower/std_types/option.rs",
+    "src/lower/traits/impls.rs",
+  ]);
+});

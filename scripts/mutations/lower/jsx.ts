@@ -225,8 +225,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`(level == 1).then(|| jsx! { <b /> })` is `level === 1 ? <b /> : undefined`, not `level === 1 && <b />`",
     file: "src/lower/jsx.rs",
-    find: "if !matches!(none.kind, js::ExprKind::Undefined) {",
-    replace: "if true {",
+    find: "        let Some((test, shown, _)) = value.some_where_parts() else {\n",
+    replace: "        let Some((test, shown, _)) = value.some_where_parts().filter(|_| false) else {\n",
     tests: [
       "test/jsx-react-dev.test.ts",
       "-t",
@@ -334,9 +334,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a child shown only if a test holds, `Option::map` to an element, is `t != null ? <p /> : undefined`, not the `t != null && <p />` a person writes",
     file: "src/lower/jsx.rs",
-    find: "        if !matches!(none.kind, js::ExprKind::Undefined) {\n            return value;\n        }",
-    replace:
-      "        if !matches!(none.kind, js::ExprKind::Undefined) || child == child {\n            return value;\n        }",
+    find: "        let Some((test, shown, _)) = value.some_where_parts() else {\n",
+    replace: "        let Some((test, shown, _)) = value.some_where_parts().filter(|(_, _, there)| !there) else {\n",
     tests: [
       "test/jsx-react-dev.test.ts",
       "-t",

@@ -4,6 +4,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "walk-some-where-value-unwalked",
+    breaks: "a walk doesn't visit a `SomeWhere`'s value",
+    file: "src/js/walk.rs",
+    find: "                    ExprKind::SomeWhere(a, b) => {\n                        a.$expr(f);\n                        b.$expr(f);\n                    }\n",
+    replace: "                    ExprKind::SomeWhere(a, _) => {\n                        a.$expr(f);\n                    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^cloned_of_a_generic_source_cloned_and_stepped_from_its_back.rs$"],
+    snapshots: true,
+  },
+  {
     name: "walks-skip-closures",
     breaks: "an expression's walk skips a closure's body, so a pass neither sees nor changes what's in one",
     file: "src/js/walk.rs",

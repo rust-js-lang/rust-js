@@ -437,7 +437,7 @@ pub(super) fn small(e: &Expr) -> bool {
         // => { throw e; })(e)`: statements, which a branch of its own
         // reads as they are, `throw e;`, and a conditional can't.
         ExprKind::Call(callee, _) if matches!(callee.kind, ExprKind::Arrow(..)) => false,
-        _ => !matches!(e.kind, ExprKind::Cond(..)),
+        _ => !e.is_conditional(),
     }
 }
 
@@ -491,8 +491,8 @@ pub(super) fn one_assignment(
     // its arms are written.
     let no_first = match (
         written_order(span, then, otherwise, elses),
-        matches!(yes.kind, ExprKind::Cond(..)),
-        matches!(no.kind, ExprKind::Cond(..)),
+        yes.is_conditional(),
+        no.is_conditional(),
     ) {
         (Some(turned), ..) => turned,
         (None, true, false) => true,
@@ -709,11 +709,10 @@ pub(super) fn implied_tests(e: &mut Expr, changing: &IndexSet<js::Name>) {
     }
     let test = (**test).clone();
     child.each_mut(&mut |e| {
-        if let ExprKind::Cond(t, yes, no) = &e.kind
-            && matches!(no.kind, ExprKind::Undefined)
+        if let Some((t, yes, _)) = e.some_where_parts()
             && same_test(t, &test)
         {
-            *e = (**yes).clone();
+            *e = yes.clone();
         }
     });
 }

@@ -38,11 +38,8 @@ pub(super) fn chained_arms(x: &js::Name, value: &Expr, at: js::Span) -> Option<V
 /// `chained_arms`' chain of `value`, each arm's value set where it's
 /// written, where `written`, else at `at`.
 fn arms_of(x: &js::Name, value: &Expr, at: js::Span, written: bool) -> Option<Vec<Stmt>> {
-    let ExprKind::Cond(t, q, r) = &value.kind else {
-        return None;
-    };
-    let (t, q, r) = (&**t, &**q, &**r);
-    let arm_value = |e: &Expr| small(e) || matches!(&e.kind, ExprKind::Cond(_, a, b) if small(a) && small(b));
+    let (t, q, r) = value.conditional_parts()?;
+    let arm_value = |e: &Expr| small(e) || e.conditional_parts().is_some_and(|(_, a, b)| small(a) && small(b));
     let arm = |value: &Expr| {
         let place = if written { value.span } else { at };
         vec![StmtKind::Assign(Expr::var(x), value.clone()).at(place)]
@@ -62,12 +59,12 @@ fn arms_of(x: &js::Name, value: &Expr, at: js::Span, written: bool) -> Option<Ve
 /// object or a conditional of its own, whose chain stays `else if`
 /// (`chained_arms`).
 pub(super) fn plain_chain(value: &Expr) -> Option<Expr> {
-    let ExprKind::Cond(t, q, r) = &value.kind else {
+    let Some((t, q, r)) = value.conditional_parts() else {
         return plain(value).then(|| value.clone());
     };
     let rest = plain_chain(r)?;
     plain(q).then(|| Expr {
-        kind: ExprKind::Cond(t.clone(), q.clone(), Box::new(rest)),
+        kind: ExprKind::Cond(Box::new(t.clone()), Box::new(q.clone()), Box::new(rest)),
         span: value.span,
         facts: value.facts,
         held_as: Default::default(),
@@ -84,7 +81,7 @@ pub(super) fn plain_chain(value: &Expr) -> Option<Expr> {
 /// no` of a chain written in its `then`, React DOM's `blockedReason`. `None`
 /// where neither arm or both are conditionals, a tree and no chain.
 pub(super) fn plain_chain_of(test: &Expr, yes: Expr, no: Expr, turned: Option<bool>) -> Option<Expr> {
-    let chain = |e: &Expr| matches!(e.kind, ExprKind::Cond(..));
+    let chain = |e: &Expr| e.is_conditional();
     match (chain(&yes), chain(&no), turned) {
         (true, false, Some(false)) if plain(&no) => Some(Expr::cond(test.clone(), plain_chain(&yes)?, no)),
         (false, true, Some(true)) if plain(&yes) => {
@@ -219,10 +216,7 @@ pub(super) fn returned_else_ifs(stmts: &mut Vec<Stmt>, links: &[js::Span], retur
     let StmtKind::Return(Some(value)) = &last.kind else {
         unreachable!("matched")
     };
-    let folded = match &value.kind {
-        ExprKind::Cond(test, yes, no) if link(last) => Some((&**test, &**yes, &**no)),
-        _ => None,
-    };
+    let folded = value.conditional_parts().filter(|_| link(last));
     let arms = tested.len() + 1 + usize::from(folded.is_some());
     if arms < 3 {
         return;

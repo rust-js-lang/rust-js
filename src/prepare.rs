@@ -1162,6 +1162,19 @@ fn expr(e: &mut Expr) {
             expr(f);
             args.iter_mut().for_each(expr);
         }
+        // `Some(b)` where `a` holds, printed as the test it is, `a ? b :
+        // undefined`, which preparation writes as any other.
+        ExprKind::SomeWhere(a, b) => {
+            let (test, value) = (
+                std::mem::replace(&mut **a, Expr::taken()),
+                std::mem::replace(&mut **b, Expr::taken()),
+            );
+            *e = Expr {
+                kind: ExprKind::Cond(Box::new(test), Box::new(value), Box::new(Expr::js_undefined())),
+                ..std::mem::replace(e, Expr::taken())
+            };
+            expr(e);
+        }
         ExprKind::Cond(a, b, c) => {
             // Its test as a test, `!!x` the `x` it tests.
             passes::rewrite(Pass::Tests, &mut **a, Expr::tested);

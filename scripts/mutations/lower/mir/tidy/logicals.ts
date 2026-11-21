@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "bit-test-some-where-unread",
+    breaks: "a `SomeWhere`'s test of a bit set isn't written as JS does",
+    file: "src/lower/mir/tidy/logicals.rs",
+    find: "        if let ExprKind::Cond(test, ..) | ExprKind::SomeWhere(test, _) = &mut e.kind {\n            bit_test(test, &integer, &matched, span);\n",
+    replace: "        if let ExprKind::Cond(test, ..) = &mut e.kind {\n            bit_test(test, &integer, &matched, span);\n",
+    tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
+    snapshots: true,
+  },
+  {
     name: "switch-arm-test-joined-to-its-if",
     breaks:
       "a `match` of strings in an `if`, whose first arm does nothing, has that arm's test joined to the `if`'s, `&& key !== \"checked\"`, the rest an `if` chain, not its `switch` (rd133, updateProperties)",
@@ -183,7 +192,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a statement's test of any `Cond`, the value `(a & b) !== 0` too, is `a & b`, a number where a `bool` is returned (ADR 0896)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        if let ExprKind::Cond(test, ..) = &mut e.kind {\n            bit_test(test, &integer, &matched, span);\n        }\n",
+    find: "        if let ExprKind::Cond(test, ..) | ExprKind::SomeWhere(test, _) = &mut e.kind {\n            bit_test(test, &integer, &matched, span);\n        }\n",
     replace: "        bit_test(e, &integer, &matched, span);\n",
     tests: [
       "test/lowering-bits.test.ts",

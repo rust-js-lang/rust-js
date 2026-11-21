@@ -3,12 +3,21 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "tested-option-some-where-unread",
+    breaks: "a `SomeWhere` tested is written `const o = t ? v : undefined; if (o != null)`, not `if (t)` reading `v`",
+    file: "src/lower/mir/tidy/options.rs",
+    find: "    let present = there ||",
+    replace: "    let present = false && there ||",
+    tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
+    snapshots: true,
+  },
+  {
     name: "tested-option-undefined-value",
     breaks:
       "`const x = t ? v : undefined; if (x)` is `if (t)` of a `v` that may be `None` itself, so `maybe(None, true)` reads `undefined.name` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);\n",
-    replace: "    let present = true;\n",
+    find: "    let present = there || value.facts.has(js::Known::Present) || tests_present_first(test, v);\n",
+    replace: "    let _ = there;\n    let present = true;\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
   {
@@ -16,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` of a variable that changes where it's read is read as the variable, so `changed(true)` says `after then after` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v) {\n",
-    replace: "    if !matches!(none.kind, ExprKind::Undefined) || !present {\n",
+    find: "    if !present || changing.contains(v) {\n",
+    replace: "    if !present {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
   {

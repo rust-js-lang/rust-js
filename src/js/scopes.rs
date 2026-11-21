@@ -804,6 +804,10 @@ impl Walk {
                 self.expr(b);
                 self.expr(c);
             }
+            ExprKind::SomeWhere(a, b) => {
+                self.expr(a);
+                self.expr(b);
+            }
             ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
                 self.expr(f);
                 args.iter().for_each(|a| self.expr(a));

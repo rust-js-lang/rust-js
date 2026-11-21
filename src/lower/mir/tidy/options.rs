@@ -85,12 +85,10 @@ fn tested_option(
     let StmtKind::Const(x, made) = &made.kind else {
         return None;
     };
-    let ExprKind::Cond(test, value, none) = &made.kind else {
-        return None;
-    };
+    let (test, value, there) = made.some_where_parts()?;
     let ExprKind::Var(v) = &value.kind else { return None };
-    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);
-    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v) {
+    let present = there || value.facts.has(js::Known::Present) || tests_present_first(test, v);
+    if !present || changing.contains(v) {
         return None;
     }
     let StmtKind::If(presence, then, otherwise) = &tested.kind else {
@@ -117,11 +115,11 @@ fn tested_option(
     let mut reads = reads.to_vec();
     js::each_expr_mut(&mut reads, &mut |e| {
         if of_x(e) {
-            *e = (**value).clone();
+            *e = value.clone();
         }
     });
     Some(match set {
-        true => (StmtKind::If((**test).clone(), reads, otherwise.clone()), None),
+        true => (StmtKind::If(test.clone(), reads, otherwise.clone()), None),
         false => (
             StmtKind::If(test.clone().negated_test(), then.clone(), None),
             Some(reads),

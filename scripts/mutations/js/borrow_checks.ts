@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "borrow-check-some-where-unhoisted",
+    breaks: "a borrow check in a `SomeWhere`'s test isn't hoisted, `$borrow(x).length === 0 && .. ? .. : undefined`",
+    file: "src/js/borrow_checks.rs",
+    find: "        ExprKind::Cond(test, ..) | ExprKind::SomeWhere(test, _) => (vec![&mut **test], true),\n",
+    replace: "        ExprKind::Cond(test, ..) => (vec![&mut **test], true),\n",
+    tests: ["test/borrow-forms.test.ts", "-t", "a then's test"],
+  },
+  {
     name: "momentary-shared-borrow-refused-beside-shared",
     breaks: "a momentary shared borrow is refused where another shared borrow is held, `RefCell already borrowed`, where Rust's lends it",
     file: "src/js/borrow_checks.rs",

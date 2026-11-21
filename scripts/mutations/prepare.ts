@@ -3,6 +3,15 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "prepare-some-where-unwritten",
+    breaks: "a `SomeWhere` isn't prepared as the conditional it prints, so `w ? w : undefined` isn't `w || undefined`",
+    file: "src/prepare.rs",
+    find: "            *e = Expr {\n                kind: ExprKind::Cond(Box::new(test), Box::new(value), Box::new(Expr::js_undefined())),\n                ..std::mem::replace(e, Expr::taken())\n            };\n            expr(e);\n",
+    replace: "            let _ = (test, value);\n",
+    tests: ["test/corpus.test.ts", "-t", "^btree_append_drops.rs$"],
+    snapshots: true,
+  },
+  {
     name: "module-function-const",
     breaks: "a thread-local's with_this function stays a `const` of a function expression, `const onUnsuspend = function () { .. }`, where upstream declares `function onUnsuspend() { .. }` (rd196)",
     file: "src/prepare.rs",

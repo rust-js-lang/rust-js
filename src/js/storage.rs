@@ -185,6 +185,12 @@ pub(super) fn null_for_none(made: &Expr, given: Undefined) -> Option<Expr> {
     match &made.kind {
         ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null().or_at(made.span)),
         _ if !made.may_be_undefined(given) => Some(made.clone()),
+        ExprKind::SomeWhere(test, value) => Some(Expr {
+            facts: made.facts,
+            kind: ExprKind::Cond(test.clone(), value.clone(), Box::new(Expr::null())),
+            span: made.span,
+            held_as: Default::default(),
+        }),
         ExprKind::Cond(test, yes, no) => Some(Expr {
             facts: made.facts,
             kind: ExprKind::Cond(

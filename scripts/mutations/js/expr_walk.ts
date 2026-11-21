@@ -43,7 +43,8 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: "                    !replaced\n                } =>\n",
     replace: "                    false && !replaced\n                } =>\n",
-    tests: ["test/compiler.test.ts", "-t", "then of a closure"],
+    tests: ["test/corpus.test.ts", "-t", "^closure_block_given_to_a_call.rs$"],
+    snapshots: true,
   },
   {
     name: "closure-reading-replaced-kept",
@@ -200,8 +201,8 @@ export const mutations: Mutation[] = [
     name: "held-branch-run",
     breaks: "a conditional's branch is taken to run, so clz32's `clz32Fallback` moves what it reads before it",
     file: "src/js/expr_walk.rs",
-    find: "                a.visit_held_names(read);\n                b.visit_held_names(read);\n            }\n            ExprKind::Binary(",
-    replace: "                a.visit_names(&mut |v| read(v, false));\n                b.visit_names(&mut |v| read(v, false));\n            }\n            ExprKind::Binary(",
+    find: "                a.visit_held_names(read);\n                b.visit_held_names(read);\n            }\n            ExprKind::SomeWhere(test, a) => {\n",
+    replace: "                a.visit_names(&mut |v| read(v, false));\n                b.visit_names(&mut |v| read(v, false));\n            }\n            ExprKind::SomeWhere(test, a) => {\n",
     tests: ["test/modules.test.ts", "-t", "a function an initializer only holds"],
   },
   {

@@ -340,6 +340,7 @@ fn read_first(e: &Expr, alias: &Name, ran: &mut bool) -> bool {
         }
         ExprKind::Binary(_, a, b) => read_first(a, alias, ran) && read_first(b, alias, ran),
         ExprKind::Unary(_, a) => read_first(a, alias, ran),
+        ExprKind::SomeWhere(test, yes) => read_first(test, alias, ran) && read_first(yes, alias, &mut ran.clone()),
         ExprKind::Cond(test, yes, no) => {
             let first = read_first(test, alias, ran);
             let mut other = *ran;

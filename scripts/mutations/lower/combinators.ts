@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`bool::then_some(v)`'s `v`, of a `Some` not boxed, isn't known there, so `if let Some(x) = wanted.then_some(item)` tests `x != null`, not `wanted` (ADR 0910)",
     file: "src/lower/combinators.rs",
-    find: "                value.present()\n            };\n            return Ok(Expr::cond(test, value, Expr::js_undefined()));\n",
-    replace: "                value\n            };\n            return Ok(Expr::cond(test, value, Expr::js_undefined()));\n",
+    find: "            return Ok(Expr::some_where(test, value));\n",
+    replace: "            return Ok(Expr::cond(test, value, Expr::js_undefined()));\n",
     tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
     snapshots: true,
   },

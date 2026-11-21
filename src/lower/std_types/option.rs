@@ -181,18 +181,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = if self.boxed_payload(mapped) {
             self.some(value)
         } else {
-            value.present()
+            value
         };
         // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`,
         // which `Expr::cond` reads (`null_test`, ADR 0298).
-        match Expr::cond(present.clone(), value, Expr::js_undefined()) {
+        match Expr::some_where(present.clone(), value) {
             Expr {
-                kind: js::ExprKind::Cond(_, value, none),
+                kind: js::ExprKind::SomeWhere(_, value),
                 span,
                 ..
             } => Expr {
                 facts: js::Facts::NONE,
-                kind: js::ExprKind::Cond(Box::new(present), value, none),
+                kind: js::ExprKind::SomeWhere(Box::new(present), value),
                 span,
                 held_as: Default::default(),
             },
@@ -704,11 +704,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return called.clone();
         }
-        if let js::ExprKind::Cond(test, then, none) = &option.kind
-            && matches!(none.kind, js::ExprKind::Undefined)
+        if let Some((test, then, _)) = option.some_where_parts()
             && let Some(x) = made(then)
         {
-            return Expr::cond((**test).clone(), x, Expr::js_undefined());
+            return Expr::cond(test.clone(), x, Expr::js_undefined());
         }
         Expr::call(Expr::helper("$someValue"), vec![option])
     }
@@ -838,7 +837,7 @@ fn optional_part(part: &Expr, m: &js::Name, option: &Expr) -> Option<Expr> {
 /// Not of a test or an operator's value, `(t ? a : b)?.f()`, which reads
 /// better held, `const s = t ? a : b; s?.f()`.
 pub(in crate::lower) fn optional_chain(option: &Expr, body: &Expr, param: &js::Name) -> Option<Expr> {
-    if matches!(option.kind, js::ExprKind::Cond(..) | js::ExprKind::Binary(..)) {
+    if option.is_conditional() || matches!(option.kind, js::ExprKind::Binary(..)) {
         return None;
     }
     match &body.kind {
@@ -913,8 +912,7 @@ pub(in crate::lower) fn filtered(option: &Expr) -> Option<(Expr, Expr)> {
 /// ? `\n  ${x}` : ""`, React's constructClassInstance's (ADR 0647,
 /// amended).
 pub(in crate::lower) fn or_fallback(option: Expr, fallback: Expr) -> Expr {
-    if let js::ExprKind::Cond(test, value, none) = &option.kind
-        && matches!(none.kind, js::ExprKind::Undefined)
+    if let Some((test, value, _)) = option.some_where_parts()
         && matches!(
             value.kind,
             js::ExprKind::Template(..)
@@ -925,7 +923,7 @@ pub(in crate::lower) fn or_fallback(option: Expr, fallback: Expr) -> Expr {
                 | js::ExprKind::Array(_)
         )
     {
-        return Expr::cond((**test).clone(), (**value).clone(), fallback);
+        return Expr::cond(test.clone(), value.clone(), fallback);
     }
     match filtered(&option) {
         Some((kept, value)) => Expr::cond(kept, value, fallback),

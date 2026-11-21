@@ -267,3 +267,49 @@ return; }`. `filtered_not_empty`'s `queue` reads so too. Corpus case
 filter_then_let_else_tests_one_value against native Rust; mutations
 `filtered-option-left-apart` and `filtered-temporary-unnamed`
 (`mir/tidy/options.ts`).
+
+## Amendment: a `Some` made where a test holds is a node of its own (2026-11-21, #2112)
+
+`Some(value)` where `test` holds, else `None`, which `map`, `then`,
+`filter`'s kept value, `js::downcast` and a binding's `TypeofObject` make,
+is `ExprKind::SomeWhere(test, value)`, made by `Expr::some_where` (an
+optional chain, `o?.m(x)`, where `Expr::cond` makes one, stays one), not a
+`Cond` whose value is marked `Known::Present` (Change C's S3c; Campaign 3,
+#2200, L408's node fact). What reads it asks its kind: `presence` folds
+its test to the test it's made by; a nullable place stores it `test ?
+value : null`; and the passes that rewrite `t ? v : undefined` or a
+conditional ask the representation owner's one view of it,
+`some_where_parts` (its test, its value and whether that's there) or
+`conditional_parts` (any conditional as it's printed): tidy's
+`tested_option`, a falsy `const`'s and a binding argument's `t && v`,
+a branch's implied test, a JSX child's `t && <el />` (`jsx.rs`), the
+chain of arms (`value_chains`), the conditional chooser (`branches`,
+`logicals`), `optional_chain`, and `or_fallback`'s and `some_value`'s
+folds; the walks that rewrite a test, `logicals`' bit tests and
+`borrow_checks`' order of evaluation, take its test as a `Cond`'s; and
+the predicates of what a value does, `reads_only_vars`, `may_throw`,
+tidy's `pure`, `past` and `inert_element`, preparation's `read_first`,
+`jsx_tree` and JSX's conditional captures, read its two parts as a
+`Cond`'s three, its `undefined` doing nothing. It's
+printed `test ? value : undefined`, lowered to that `Cond` where
+preparation starts on it (`prepare`), after every tidy pass and every
+reader of the marks, so `a ? a : undefined` is still `a || undefined`.
+A pass that doesn't know it keeps seeing what isn't a `Cond`, and can
+only fold less: no answer is wrong for it.
+
+The test of one made otherwise, `t ? v : undefined` of a `v` marked
+`Known::Present`, is no longer folded: none was made after the four
+constructors became `SomeWhere`'s. What's left marked `Known::Present` is
+a lone value a constructor knows is a `Some`'s, `inserted`'s and what's
+given generic code as one; an architecture test holds those the only
+writers until S4 deletes the mark.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)'s first): React's port
+is byte-identical; corpus `any_mapped_to_a_nullable_parameter`'s `.. :
+undefined) ?? { value: null }` is `.. : null) ?? ..` again, as before the
+`Storage::written` switch (ADR 1096, amended). Held by its mutations
+(`js/make.ts`, `js/storage.ts`, `js/walk.ts`, `js/borrow_checks.ts`,
+`prepare.ts`, `mir/tidy/options.ts`, `mir/tidy/logicals.ts`,
+`std_types/option.ts`), `test/borrow-forms.test.ts`'s "a momentary borrow
+in a then's test is checked first" and `test/lowering-option-truth.test.ts`'s
+"a map of a value unwrapped or given a default is its test's choice".

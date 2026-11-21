@@ -67,6 +67,10 @@ impl Expr {
                 b.visit_names(read);
                 c.visit_names(read);
             }
+            ExprKind::SomeWhere(a, b) => {
+                a.visit_names(read);
+                b.visit_names(read);
+            }
             ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
                 f.visit_names(read);
                 args.iter().for_each(|a| a.visit_names(read));
@@ -123,6 +127,10 @@ impl Expr {
                 test.visit_names(&mut |v| read(v, false));
                 a.visit_held_names(read);
                 b.visit_held_names(read);
+            }
+            ExprKind::SomeWhere(test, a) => {
+                test.visit_names(&mut |v| read(v, false));
+                a.visit_held_names(read);
             }
             ExprKind::Binary(Op::Or | Op::And | Op::Coalesce, a, b) => {
                 a.visit_held_names(read);
@@ -262,6 +270,7 @@ impl Expr {
             ExprKind::Unary(op, a) => ExprKind::Unary(*op, one(a)?),
             ExprKind::Binary(op, a, b) => ExprKind::Binary(*op, one(a)?, one(b)?),
             ExprKind::Cond(a, b, c) => ExprKind::Cond(one(a)?, one(b)?, one(c)?),
+            ExprKind::SomeWhere(a, b) => ExprKind::SomeWhere(one(a)?, one(b)?),
             ExprKind::Call(f, args) => ExprKind::Call(one(f)?, all(args)?),
             ExprKind::OptionalCall(f, args) => ExprKind::OptionalCall(one(f)?, all(args)?),
             ExprKind::New(f, args) => ExprKind::New(one(f)?, all(args)?),
@@ -547,6 +556,7 @@ impl Expr {
             ExprKind::Spread(a) => matches!(a.kind, ExprKind::Array(_)) && a.reads_only_vars(),
             ExprKind::Binary(_, a, b) => a.reads_only_vars() && b.reads_only_vars(),
             ExprKind::Cond(a, b, c) => a.reads_only_vars() && b.reads_only_vars() && c.reads_only_vars(),
+            ExprKind::SomeWhere(a, b) => a.reads_only_vars() && b.reads_only_vars(),
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().all(Expr::reads_only_vars),
             ExprKind::Object(items, ..) => props(items),
             ExprKind::Jsx(jsx) => {
@@ -587,6 +597,7 @@ impl Expr {
             ExprKind::Cond(a, b, c) if !self.facts.has(Known::Getter) => {
                 a.may_throw() || b.may_throw() || c.may_throw()
             }
+            ExprKind::SomeWhere(a, b) if !self.facts.has(Known::Getter) => a.may_throw() || b.may_throw(),
             _ => self.has_effects(),
         }
     }
@@ -754,6 +765,7 @@ impl Expr {
             ExprKind::Unary(op, a) => op.writes() || a.has_effects(),
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
             ExprKind::Cond(a, b, c) => a.has_effects() || b.has_effects() || c.has_effects(),
+            ExprKind::SomeWhere(a, b) => a.has_effects() || b.has_effects(),
             // A number wrapped to its width, `BigInt.asIntN(64, n)`, a
             // registered symbol's, or one computed by `Math`, `Math.max(a,
             // 0)`, but for `Math.random()`,
