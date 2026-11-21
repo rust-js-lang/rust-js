@@ -110,3 +110,18 @@ test("ADR 0262's exceptions are named by their difference's number, not an rd id
     }
   }
 });
+
+// Each of the guide's differences is an ADR 0262 decision, named by a
+// Consequences entry, `semantics.md`, N, which says its case and why
+// (#1212); or it's on its way to one, its entry saying so with its issue:
+// "being fixed, #2269", a wrong answer filed to be fixed, or "for the
+// user's decision, #1212", one the user is yet to decide. So the list and
+// the ADR can't drift apart.
+test("each of the guide's differences is named by ADR 0262's Consequences, or is being fixed or decided under its issue", () => {
+  const named_ = new Set(consequences().flatMap(named));
+  const unnamed = [...differences()]
+    .filter(([number, text]) => !named_.has(number) && !/\((?:being fixed|for the user's decision), #\d+\)/.test(text))
+    .map(([number, text]) => `${number}. ${text.slice(3, 80)}`);
+  expect(unnamed).toEqual([]);
+});
+

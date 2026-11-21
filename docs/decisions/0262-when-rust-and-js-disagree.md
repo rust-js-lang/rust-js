@@ -517,6 +517,65 @@ react.dev's TopNav passes the same closure instead.
   where an unmarked binding's JS calls an export as its module loads, or
   before a function's return. Listed in the guide's differences
   (`semantics.md`, 30) ([1006](1006-a-pub-thread-local-is-made-as-its-module-loads.md), amended).
+- **An integer's overflow wraps in every build**, the first case's: the
+  program's answer is a release build's, which Rust defines, overflow
+  wrapping where `debug_assertions` is off, and rustc checks no build
+  profile for it; a debug build's panic is a check Rust leaves to the
+  build, not the program's meaning (`semantics.md`, 1).
+- **`usize` is 32 bits, and layouts are wasm32's**, the first case's: a
+  target choice, wasm32's, which rustc checks the program for, so each
+  answer is native wasm32 Rust's, `usize::MAX` 4294967295 among them; a
+  64-bit host's differs as another target's does (`semantics.md`, 2)
+  ([0090](0090-wasm32-front-end.md)).
+- **An `i64` or a `u64` is a BigInt at the JS boundary**, the first
+  case's: its representation where JS reads it; within Rust its value
+  and arithmetic are Rust's, so no Rust program can tell (`semantics.md`,
+  3).
+- **A float library function's last bit, and a NaN's sign and payload,
+  are JS's**, the first case's: std leaves both unspecified, `sin`'s,
+  `exp`'s and `powf`'s precision varying by platform, and a NaN's bits
+  where an operation makes it (RFC 3514), so no program can rely on
+  them (`semantics.md`, 4).
+- **A `HashMap` iterates in insertion order**, the first case's: std
+  leaves its order unspecified, and `RandomState` gives each run another,
+  so no program can rely on it (`semantics.md`, 5).
+- **A lock locked again by its thread throws**, the fourth case's: Rust's
+  deadlock can't be preserved in one thread, and `Mutex::lock` says it
+  "might panic or deadlock"; it's refused where it happens, as the
+  program runs, as nothing at compile time can tell (`semantics.md`, 6).
+- **A future starts when it's made**, decided by the user (2026-11-08,
+  #965): kept where nothing can tell, refused where results change, a
+  future given to a binding the JS boundary's running promise (this
+  ADR's amendment, "a future that runs as it's made") (`semantics.md`,
+  8).
+- **A channel's `recv()` that would wait forever is refused as the
+  program runs**, the fourth case's: there's one thread, so Rust's wait
+  can't be preserved, and only the run knows it would wait forever
+  (`semantics.md`, 9).
+- **A `VecDeque`'s `as_slices()` gives all its items first**, the first
+  case's: std promises the two slices hold its items in order, and leaves
+  where they split to its ring buffer, which no program can rely on
+  (`semantics.md`, 17).
+- **A string's `repeat(n)` past `isize::MAX` bytes throws the engine's
+  `RangeError`**, the second case's, the user's decision (this ADR's
+  amendment, "a string's `repeat` past the engine's length")
+  (`semantics.md`, 24).
+- **Room std's own growth asks isn't checked**, the second case's, the
+  user's decision (2026-10-25; this ADR's amendment, "room std's growth
+  asks, and a collect of smaller items") (`semantics.md`, 26).
+- **A JS `Proxy` of an object Rust made isn't that object**, the second
+  case's, the user's decision (#1198): `===`, `Rc::ptr_eq`, `ptr::eq` and
+  an address of the proxy and the object differ; give Rust the object it
+  made where it compares (`semantics.md`, 49)
+  ([1022](1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
+  amended).
+- **A `TypeId`'s hash values aren't native's**, the first case's: std
+  leaves them unspecified, changing between compilers; equal `TypeId`s
+  hash equal (#1447) (`semantics.md`, 56).
+- **A main thread's thread-local isn't dropped as the program ends**, the
+  first case's, as on wasm32: std's `LocalKey` makes only a best effort
+  and leaves the main thread's to the platform, so no program can rely
+  on it (#1453) (`semantics.md`, 58).
 
 ## Amendment: the stack's depth
 
@@ -564,7 +623,7 @@ createContext([])`, which the user chose (2026-10-25) over making each
 lazy, `TocContext.value` read through a holder. Results change only where
 such a call does something a program sees before the thread-local's first
 use, or a std call in it panics: the second case's, listed among the
-guide's differences (`semantics.md`, 25).
+guide's differences (`semantics.md`, 30), where ADR 1006's rule holds it.
 
 ## Amendment: room std's growth asks, and a collect of smaller items
 

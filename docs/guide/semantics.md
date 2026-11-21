@@ -2213,18 +2213,19 @@ React and JSX are [their own pages](README.md#react).
 5. A `HashMap` iterates in insertion order.
 6. A lock locked again by its thread throws, where Rust deadlocks.
 7. A JS getter that calls back into Rust and borrows a held cell isn't
-   seen.
+   seen (for the user's decision, #1212).
 8. A future starts when it's made, and runs though no one awaits it.
 9. There's one thread: a channel's `recv()` that would wait forever is refused
    as the program runs.
-10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1.
+10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1
+    (being fixed, #2269).
 11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
     JS throws; a panic's message downcasts as a `&str` and a `String`, and
     every payload, a typed one's too, as the `&JsError` thrown; a
-    `drop` panicking during a panic replaces it.
+    `drop` panicking during a panic replaces it (being fixed, #2270).
 12. A value with a destructor that JS holds is never dropped, a function
     handed to a binding too, even where JS gives it back to Rust (ADR
-    0873).
+    0873) (for the user's decision, #1212).
 14. A generic iterator's `size_hint()` is its array's or its range's length
     ([0918](../decisions/0918-a-range-given-knows-how-many-it-has-left.md)), a range's
     `step_by`'s of it, a `rev()`'s of either
@@ -2235,7 +2236,7 @@ React and JSX are [their own pages](README.md#react).
     adapter its caller makes, which is made knowing its hint where generic
     code asks it, std's ([0170](../decisions/0170-size-hint.md), amended),
     or `(0, None)`: of a JS iterator JS gives it. An endless `n..`'s is
-    Rust's, `(usize::MAX, None)`.
+    Rust's, `(usize::MAX, None)` (for the user's decision, #1212).
 15. Recursion deeper than about 10,000 calls overflows the JS engine's
     stack, where Rust's 8 MB wouldn't: Rust's abort, exit 134 (#1193),
     or, inside `js::catch_stack_overflow`, a panic, the catcher's `Err`
@@ -2246,39 +2247,29 @@ React and JSX are [their own pages](README.md#react).
 16. Where the crate's iterator's impl writes its own `fold`, std's
     consumers call it (ADRs 0687, 0690); in a library, it's given no drops:
     an accumulator with a destructor that it drops, or that a panic in it
-    unwinds, isn't dropped.
+    unwinds, isn't dropped (being fixed, #2271).
 17. A `VecDeque`'s `as_slices()` gives all its items first and none second,
     where std's split is its ring buffer's.
 19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not
-    Rust's ``called `Result::unwrap()` on an `Err` value`` panic.
-20. Where the crate's iterator's impl writes its own `size_hint`,
-    `collect()` into a `Vec` doesn't ask it, where std's asks it as its
-    capacity runs out, which its growth decides; its own `nth`, `fold` and
-    `last` are asked as std asks them, through each adapter that passes
-    them on, and its `nth_back` and `rfold` as std's adapters stepped from
-    their back ask them, its `rev()`'s for its `nth` and its `fold`, a
-    `fuse()`'s too (ADR 0711).
+    Rust's ``called `Result::unwrap()` on an `Err` value`` panic (for the
+    user's decision, #1212).
 21. `Array.isArray(x)` of a revoked `Proxy`, which throws a `TypeError`,
     is taken to do nothing: a test of it that an earlier one decides is
-    left out (ADR 0743).
+    left out (ADR 0743) (for the user's decision, #1212).
 22. A binding's method of a declared JS type, webapi's `Element` say, is
     taken to be its class's: `app.append(stepper(..), ..)` looks
     `append` up before its arguments run, where Rust runs them first, so a
     method that's a getter, or one an argument replaces, is told apart
     from Rust's only there. Of a `js::Unknown`, any value, the arguments
-    run first, as Rust runs them (ADR 0750).
+    run first, as Rust runs them (ADR 0750) (for the user's decision, #1212).
 23. Room asked for items whose size no caller can give, an impl's
     associated type its dictionary doesn't carry (#934), is checked by
     their count alone, as if they had none, where std checks their bytes
-    against `isize::MAX` (ADR 0774, amended).
+    against `isize::MAX` (ADR 0774, amended) (for the user's decision, #1212).
 24. A string's `repeat(n)` past `isize::MAX` bytes, a negative signed
     count's `as usize` too, throws the engine's `RangeError` where std
     panics `capacity overflow`; in Safari and Bun, of text not all ASCII
     past a billion units, it may be made (ADR 0774).
-25. A thread-local whose initializer calls only std's and bindings'
-    functions is made as its module loads, where Rust makes each at its
-    first use: what a binding's call does, or a std call's panic, happens
-    then (ADR 0037, amended).
 26. Room std's own growth asks isn't checked: a `push`, `extend` or
     `insert` past the capacity std's doubling picks, a `collect()` whose
     length is a collection's of smaller items, `ids.iter().map(|x|
@@ -2344,7 +2335,9 @@ React and JSX are [their own pages](README.md#react).
     to call none of the crate's exported functions back, so its call in
     one is done then too, unless the binding says it may,
     `#[rust_js::calls_back]`, whose thread-local is made at its first use
-    (ADR 0262's Consequences, the user's decision, #2119).
+    (ADR 0262's Consequences, the user's decision, #2119). One whose
+    initializer calls only std's and bindings' functions is so made too
+    (ADR 0037, amended).
 31. A library's item its package's default entry re-exports is imported
     by the package's name, so a host that resolves another of its
     conditions, `react-server`, gets that condition's module, where the
