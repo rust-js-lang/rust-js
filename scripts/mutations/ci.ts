@@ -242,4 +242,20 @@ export const mutations: Mutation[] = [
     replace: "export function timingsRuns(artifacts: Artifact[], count = 1): number[] {",
     tests: ["test/shards.test.ts", "-t", "the shards balance by the newest kept timings"],
   },
+  {
+    name: "mutation-shards-uncapped",
+    breaks: "a check's mutation shards are as many as their time asks whatever jobs other checks hold, 16 beside them past the account's 20, which wait (#2257)",
+    file: "scripts/ci.ts",
+    find: "  const within = MUTATION_SHARDS.filter((count) => count <= cap);\n",
+    replace: "  const within = MUTATION_SHARDS.filter((count) => count <= Number.POSITIVE_INFINITY || cap);\n",
+    tests: ["test/shards.test.ts", "-t", "as many as the account's jobs free"],
+  },
+  {
+    name: "held-jobs-counts-its-own",
+    breaks: "a check counts its own run's jobs among those other checks hold, so it caps its shards by itself (#2257)",
+    file: "scripts/ci.ts",
+    find: "    .filter((run) => run.id !== ownRun)\n",
+    replace: "    .filter((run) => run.id !== ownRun || true)\n",
+    tests: ["test/shards.test.ts", "-t", "as many as the account's jobs free"],
+  },
 ];

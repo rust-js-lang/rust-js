@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, SHARD_BUDGET_SECONDS, testsAsItIsRuns, testsAsItIsSeconds, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, testsAsItIsRuns, testsAsItIsSeconds, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
 import { mutations } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
@@ -595,3 +595,31 @@ test("a check's test shards are dealt by what each file took", () => {
   expect(suite).toContain("const pageFiles = dealt(");
   expect(suite).toContain("testShardFiles(files, index, count, seconds)");
 });
+
+// A check's mutation shards take at most the account's jobs that other
+// checks and its own don't hold, where they'd wait past its 20, and say
+// what the cap cost (#2257): fewer, longer shards, each paying its setup
+// once, rather than more that queue.
+test("a check's mutation shards are as many as the account's jobs free, and say what that cost", () => {
+  const runs = [
+    { id: 1, jobs: [{ status: "in_progress" }, { status: "queued" }, { status: "completed" }] },
+    { id: 2, jobs: [{ status: "in_progress" }] },
+    { id: 9, jobs: [{ status: "in_progress" }, { status: "in_progress" }] },
+  ];
+  expect(heldJobs(runs, 9)).toBe(3);
+  expect(freeJobs(3, 10)).toBe(CONCURRENT_JOBS - 13);
+  expect(freeJobs(30, 10)).toBe(1);
+  const m = (name: string) => ({ name, tests: ["test/corpus.test.ts", "-t", name] });
+  const chosen = Array.from({ length: 8 }, (_, i) => m(`s${i}`));
+  const seconds = new Map(chosen.map((c) => [c.name, 300]));
+  const own = (name: string) => `src/${name}.rs`;
+  const free = mutationShardPlan(chosen, seconds, () => false, own);
+  expect([free.count, free.wanted]).toEqual([8, 8]);
+  const capped = mutationShardPlan(chosen, seconds, () => false, own, new Set(), [], 4);
+  expect([capped.count, capped.wanted]).toEqual([4, 8]);
+  expect(capped.at).toBeGreaterThan(capped.wantedAt);
+  expect(shardSummary(capped, 9, 7)).toContain("Mutation shards: 4 where their time asks 8; 4 of the account's 20 jobs free (9 held by other checks, 7 its own beside them): expected to end in");
+  expect(shardSummary(free, 0, 7)).toContain("Mutation shards: 8, as their time asks;");
+  expect(shardSummary(free, undefined, 7)).toContain("the jobs other checks hold unread");
+});
+

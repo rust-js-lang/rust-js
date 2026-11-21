@@ -310,6 +310,51 @@ export function mutationShards(
   latent: ReadonlySet<string> = new Set(),
   cases: readonly string[] = [],
 ): string {
+  return String(mutationShardPlan(chosen, seconds, browser, groupOf, latent, cases).count);
+}
+
+/** The jobs the account runs at once, the Free plan's: a check's jobs past
+ * them wait for others' to end (#2257). */
+export const CONCURRENT_JOBS = 20;
+
+/** A check's jobs that run beside its mutation shards besides its test
+ * shards: `build`, `lint`, `iterator-forms`, the nets, `wasm` and the
+ * rustc tests' map, about as many as a check of a change to the compiler
+ * runs (check.yml). */
+export const OWN_JOBS_BESIDE_SHARDS = 6;
+
+/** Of in-flight runs, each with its jobs, the jobs of runs other than
+ * `ownRun` that hold one of the account's slots or wait for one: queued or
+ * in progress (#2257). */
+export function heldJobs(runs: readonly { id: number; jobs: readonly { status: string }[] }[], ownRun: number): number {
+  return runs
+    .filter((run) => run.id !== ownRun)
+    .reduce((held, run) => held + run.jobs.filter((job) => job.status === "queued" || job.status === "in_progress").length, 0);
+}
+
+/** How many of the account's jobs a check's mutation shards may take, of
+ * `held` by other checks and `own`, its other jobs beside them: at least
+ * one (#2257). */
+export function freeJobs(held: number, own: number): number {
+  return Math.max(1, CONCURRENT_JOBS - held - own);
+}
+
+/** `mutationShards`' machines, at most `cap`, the jobs free (`freeJobs`):
+ * the fewest of `MUTATION_SHARDS` at or under it within the budget, else
+ * the fewest of them that end soonest (`fewestShards`); with how many its
+ * time alone would take, `wanted`, and when each's slowest shard is
+ * expected to end, `at` and `wantedAt`, so a check says what the cap cost
+ * it (#2257). Fewer, longer shards where others hold jobs also pay each
+ * shard's setup fewer times. */
+export function mutationShardPlan(
+  chosen: { name: string; tests?: string[]; snapshots?: boolean; env?: Record<string, string> }[],
+  seconds: ReadonlyMap<string, number>,
+  browser: (file: string) => boolean,
+  groupOf: (name: string) => string | undefined,
+  latent: ReadonlySet<string> = new Set(),
+  cases: readonly string[] = [],
+  cap = Number.POSITIVE_INFINITY,
+): { count: number; wanted: number; at: number; wantedAt: number } {
   const drives = new Map(chosen.map((m) => [m.name, m.tests !== undefined && browser(m.tests[0]!)]));
   const byName = new Map(chosen.map((m) => [m.name, m]));
   const expected = (count: number) => {
@@ -324,7 +369,41 @@ export function mutationShards(
         (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0),
     );
   };
-  return String(fewestShards(MUTATION_SHARDS, expected, SHARD_BUDGET_SECONDS));
+  const slowest = (count: number) => Math.max(0, ...expected(count));
+  const wanted = fewestShards(MUTATION_SHARDS, expected, SHARD_BUDGET_SECONDS);
+  const within = MUTATION_SHARDS.filter((count) => count <= cap);
+  const count = fewestShards(within.length > 0 ? within : [1], expected, SHARD_BUDGET_SECONDS);
+  return { count, wanted, at: slowest(count), wantedAt: slowest(wanted) };
+}
+
+/** A check's summary of its mutation shards' count: of the jobs free, and
+ * where the cap took fewer than its time wanted, what that cost, its
+ * slowest shard's expected end against the wanted count's (#2257). */
+export function shardSummary(plan: { count: number; wanted: number; at: number; wantedAt: number }, held: number | undefined, own: number): string {
+  if (held === undefined) return `Mutation shards: ${plan.count}, as their time asks (the jobs other checks hold unread).\n`;
+  const free = freeJobs(held, own);
+  const of = `${free} of the account's ${CONCURRENT_JOBS} jobs free (${held} held by other checks, ${own} its own beside them)`;
+  if (plan.count >= plan.wanted) return `Mutation shards: ${plan.count}, as their time asks; ${of}.\n`;
+  return `Mutation shards: ${plan.count} where their time asks ${plan.wanted}; ${of}: expected to end in ${Math.round(plan.at)} s where ${plan.wanted} would in ${Math.round(plan.wantedAt)} s.\n`;
+}
+
+/** The jobs other in-flight runs hold or wait for, `heldJobs`' of what
+ * GitHub lists now; `undefined` where it can't say, and no cap is made. */
+function heldByOthers(): number | undefined {
+  try {
+    const ids = new Set<number>();
+    for (const status of ["in_progress", "queued"]) {
+      const listed = JSON.parse(gh(["api", `repos/{owner}/{repo}/actions/runs?status=${status}&per_page=50`, "--jq", "[.workflow_runs[].id]"])) as number[];
+      listed.forEach((id) => ids.add(id));
+    }
+    const runs = [...ids].map((id) => ({
+      id,
+      jobs: JSON.parse(gh(["api", `repos/{owner}/{repo}/actions/runs/${id}/jobs?per_page=100`, "--jq", "[.jobs[] | {status}]"])) as { status: string }[],
+    }));
+    return heldJobs(runs, Number(process.env.GITHUB_RUN_ID ?? 0));
+  } catch {
+    return undefined;
+  }
 }
 
 /** The corpus's cases, `test/corpus/*.rs`'s names, which a mutation's
@@ -407,7 +486,6 @@ async function plan(given?: string, testShardsGiven?: string) {
   const changed = Bun.spawnSync(["git", "diff", "--name-only", since, "HEAD"], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   console.log(`since=${since}`);
   console.log(`retry=${retry.join(",")}`);
-  console.log(`shards=${mutationShards(chosen, seconds, (file) => drivesBrowser(root, file), mutationFile, latent, corpusCases())}`);
   console.log(`iterators=${touchesIterators(changed)}`);
   console.log(`formatting=${touchesFormatting(changed)}`);
   console.log(`numbers=${touchesNumbers(changed)}`);
@@ -443,6 +521,21 @@ async function plan(given?: string, testShardsGiven?: string) {
   // as its selection's expected time needs; check.yml's matrix is the list.
   const testShardCount = testShards(selection, testTimes, testShardsGiven);
   console.log(`test_shards=${testShardCount}`);
+  // The mutations' machines, at most the jobs free beside other checks' and
+  // this one's own, which wait past the account's 20 (#2257).
+  const held = heldByOthers();
+  const own = Number(testShardCount) + OWN_JOBS_BESIDE_SHARDS;
+  const shardPlan = mutationShardPlan(
+    chosen,
+    seconds,
+    (file) => drivesBrowser(root, file),
+    mutationFile,
+    latent,
+    corpusCases(),
+    held === undefined ? Number.POSITIVE_INFINITY : freeJobs(held, own),
+  );
+  console.log(`shards=${shardPlan.count}`);
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, shardSummary(shardPlan, held, own));
   console.log(`test_shard_list=${testShardList(testShardCount)}`);
   // The batch a failure is attributed in: since the newest check of
   // `main` that completed, red or green (scripts/attribute.ts).
