@@ -702,3 +702,20 @@ test("each LengthFirst form's hint is exact and its length", () => {
   }
   expect(wrong).toEqual([]);
 });
+
+// A `flat_map`'s holding gives the flatten its function to drop after its
+// source, as `FlatMap`'s drop glue drops its `Map` (#2241), but not where
+// its source ends inside `next`: std's `Fuse` of a fused source, a `Vec`'s
+// items, keeps its `Map` until the flatten drops, which the runtime can't
+// tell from one that isn't.
+test("a flat_map's holding keeps its function until it's closed, not where its source ends", () => {
+  const log: string[] = [];
+  const source = std.$closing(std.$iter([1, 2]), () => log.push("source"));
+  const flat = std.$flatMap(source, (x: number) => std.$iter([x * 10]));
+  const held = std.$held(std.$holding(flat, () => log.push("function"), "alone"));
+  const items: number[] = [];
+  for (let step = held.next(); !step.done; step = held.next()) items.push(step.value);
+  expect([items, log]).toEqual([[10, 20], ["source"]]);
+  held.return();
+  expect(log).toEqual(["source", "function"]);
+});

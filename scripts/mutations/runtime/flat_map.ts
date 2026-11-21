@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-source-kept-at-its-end",
     breaks: "`$flatMap`'s source, ended, isn't dropped until the flatten is, where std's `Fuse` drops it at its first `None`: a peeked `Peekable`'s source is dropped after what's collected",
     file: "src/runtime/flat_map.js",
-    find: "          ended = true;\n          $inTurn(\n            () => it.return?.(),\n            () => flat.functionDrop?.(),\n          );\n          return outer;\n",
+    find: "          ended = true;\n          it.return?.();\n          return outer;\n",
     replace: "          ended = true;\n          return outer;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },
@@ -108,5 +108,13 @@ export const mutations: Mutation[] = [
     find: "        () => flat.functionDrop?.(),\n        () => {\n",
     replace: "        () => {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],
+  },
+  {
+    name: "flat-map-function-dropped-where-its-source-ends",
+    breaks: "`$flatMap` drops the function a holding gives it where its source ends inside `next`, so a `flat_map` stepped to its end drops its function there, of a `Vec`'s items too, where std's `Fuse` of a fused source keeps its `Map` until the flatten drops (#2241)",
+    file: "src/runtime/flat_map.js",
+    find: "          ended = true;\n          it.return?.();\n          return outer;\n",
+    replace: "          ended = true;\n          it.return?.();\n          flat.functionDrop?.();\n          return outer;\n",
+    tests: ["test/iterator-steps.test.ts", "-t", "a flat_map's holding keeps its function until it's closed"],
   },
 ];

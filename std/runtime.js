@@ -21592,13 +21592,9 @@ export function $flatMap(it, f) {
         const outer = it.next();
         // Done, its source is dropped, as std's `Fuse` drops what it holds
         // at its first `None`.
-        // And its function, a `$holding`'s, as `Fuse` drops its `Map` (#2241).
         if (outer.done) {
           ended = true;
-          $inTurn(
-            () => it.return?.(),
-            () => flat.functionDrop?.(),
-          );
+          it.return?.();
           return outer;
         }
         inner = $stepsOf(f(outer.value));
