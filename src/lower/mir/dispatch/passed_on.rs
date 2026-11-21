@@ -81,8 +81,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it is, where that's the iterator itself. A `&mut Box<H>` of a hasher
     /// is a cell of the box, its receiver, of `values`, read through,
     /// `dest_place`'s, `b` of `&mut b`, where a `&mut H` is the hasher
-    /// itself (#1493). `None` where a `&mut I` is a cell, and of another
-    /// call.
+    /// itself (#1493); a `&mut Box<I>` of an `I` whose `&mut` is a cell,
+    /// that cell (#2266). `None` of another call.
     pub(super) fn passed_through_box(
         &mut self,
         (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
@@ -104,10 +104,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let lent = mutability == Some(ty::Mutability::Mut);
-        if lent && !self.mut_ref_form(inner).read_is_itself() {
-            return Ok(None);
-        }
+        // A `&mut Box<I>` of an `I` whose `&mut` is a cell, a fieldless
+        // enum's iterator, is that cell as it is: a `Box<I>` is `I` in JS, so
+        // the box's place is `I`'s (#2266).
         if lent
+            && self.mut_ref_form(inner).read_is_itself()
             && !self.mut_ref_form(boxed).read_is_itself()
             && let Some(receiver) = values.first_mut()
         {

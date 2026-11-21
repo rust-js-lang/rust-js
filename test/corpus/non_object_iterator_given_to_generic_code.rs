@@ -6,7 +6,8 @@
 // dictionaries read the place, a `clone()` making a new one (#2255). By
 // value to std's adapters and the crate's generic functions, as a `&mut`
 // to generic code that clones it and writes it back (#2254), lent through
-// a trait's `&mut T`, through a `dyn`, and stepped by its own `nth`.
+// a trait's `&mut T`, through a `dyn`, stepped by its own `nth`, and in a
+// sized `Box`, `bt.next()` its own `next` of the box's place (#2266).
 // And held in a field of the crate's own iterator, `a: I` of `Both<I, J>`,
 // whose `Iterator` impl holds it so: in that place wherever `Both<Tri, _>`
 // is, built by its own code or generic code, read, written, lent as a
@@ -171,6 +172,10 @@ fn main() {
     println!("{s} {l:?}");
     let mut b: Box<dyn Iterator<Item = u8>> = Box::new(Tri::B);
     println!("{:?} {:?}", b.next(), b.next());
+    let mut bt = Box::new(Tri::A);
+    println!("{:?} {:?} {bt:?}", bt.next(), bt.next());
+    let mut bu = Box::new(Ticks);
+    println!("{:?} {bu:?}", bu.next());
 
     let mut l = Tri::A;
     let stepped = back(&mut l).step();

@@ -168,3 +168,7 @@ reason, or asks `held_unboxed`.
   All 145 of #2225's listed case-builds run as native, the matrix's,
   the conformance table's and the points table's. Corpus
   `generic_box_own_last_taken_once`; mutation `own-step-box-unseen`.
+
+## Amendment: a sized box's `&mut` of an iterator JS holds as no object is its cell (2026-11-22, #2266)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change. `bt.next()` of a `Box<Tri>`, a fieldless enum's iterator whose `&mut` is a cell, was std's `$next` of the box's place handle, which throws `it.next is not a function`. Native Rust runs `Tri`'s own `next`. `passed_through_box` (`mir/dispatch/passed_on.rs`) passed on a `&mut Box<I>` only where `I`'s `&mut` is the value itself. A `Box<I>` is `I` in JS, so the box's place is `I`'s and a handle on it is `I`'s cell. Now it passes on there too, the receiver as it is: `triIterator_next(self)` with `self` as `{ value: bt }`, as an unboxed `Tri`'s `next` is called. Corpus `non_object_iterator_given_to_generic_code` covers a boxed fieldless enum and a boxed unit struct; mutation `boxed-cell-iterator-not-passed-on`.

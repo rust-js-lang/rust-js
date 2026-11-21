@@ -461,6 +461,21 @@ function main() {
   console.log(
     `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
+  let bt = "A";
+  const self$1 = { value: bt };
+  const value$3 = triIterator_next(self$1);
+  bt = self$1.value;
+  const self$2 = { value: bt };
+  const value$4 = triIterator_next(self$2);
+  bt = self$2.value;
+  console.log(
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${bt}`,
+  );
+  let bu;
+  const self$3 = { value: bu };
+  const value$5 = ticksIterator_next(self$3);
+  bu = self$3.value;
+  console.log(`${value$5 == null ? "None" : `Some(${value$5})`} ${ticksDebug_fmt(bu)}`);
 
   let l$1 = "A";
   let stepped = Back.step(
@@ -637,21 +652,21 @@ function main() {
     const arg = triIterator_next(value);
     console.log(`${arg == null ? "None" : `Some(${arg})`} ${value.value}`);
   }
-  const self$1 = { value: one };
-  const value$3 = oneOfIterator_next(
-    self$1,
+  const self$4 = { value: one };
+  const value$6 = oneOfIterator_next(
+    self$4,
     $throughPlace({ next: triIterator_next, sizeHint: triIterator_sizeHint }, { sizeHint: [1] }),
   );
-  one = self$1.value;
+  one = self$4.value;
   let oneOf = "Done";
-  const self$2 = { value: oneOf };
-  const value$4 = oneOfIterator_next(
-    self$2,
+  const self$5 = { value: oneOf };
+  const value$7 = oneOfIterator_next(
+    self$5,
     $throughPlace({ next: triIterator_next, sizeHint: triIterator_sizeHint }, { sizeHint: [1] }),
   );
-  oneOf = self$2.value;
+  oneOf = self$5.value;
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${oneOfDebug_fmt(one, $throughPlace(triDebug, { fmt: [1] }))} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${oneOfDebug_fmt(one, $throughPlace(triDebug, { fmt: [1] }))} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

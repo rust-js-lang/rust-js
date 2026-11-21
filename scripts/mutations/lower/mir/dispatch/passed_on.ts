@@ -75,4 +75,13 @@ export const mutations: Mutation[] = [
     replace: "                    || false && w.boxed_ty()\n",
     tests: ["test/corpus.test.ts", "-t", "^hasher_written_through_a_box.rs$"],
   },
+  {
+    name: "boxed-cell-iterator-not-passed-on",
+    breaks:
+      "`bt.next()` of a sized `Box` of the crate's fieldless enum's iterator, whose `&mut` is a cell, isn't passed on to its own `next`, so std's `$next` steps the box's place handle and throws `it.next is not a function` (#2266)",
+    file: "src/lower/mir/dispatch/passed_on.rs",
+    find: "        // A `&mut Box<I>` of an `I` whose `&mut` is a cell, a fieldless\n",
+    replace: "        if lent && !self.mut_ref_form(inner).read_is_itself() {\n            return Ok(None);\n        }\n        // A `&mut Box<I>` of an `I` whose `&mut` is a cell, a fieldless\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+  },
 ];
