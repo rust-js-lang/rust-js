@@ -14,6 +14,16 @@ function pointHash_hash(point, state, HHasher) {
   HHasher.writeI32(state, point[1]);
 }
 function main() {
+  const hash = {
+    hash(value, state, H) {
+      pointHash.hash(value, state, H);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        pointHash.hash(item, state, H);
+      }
+    },
+  };
   const s = new ($hashedSet(
     {
       hash(value, state, H) {
@@ -28,34 +38,10 @@ function main() {
     (a, b) => a === b,
   ))([1, 2]);
   console.log(`${s.has(1)} ${s.has(3)}`);
-  const ps = new ($hashedSet(
-    {
-      hash(value, state, H) {
-        pointHash.hash(value, state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          pointHash.hash(item, state, H);
-        }
-      },
-    },
-    $eq,
-  ))([[1, 2]]);
+  const ps = new ($hashedSet(hash, $eq))([[1, 2]]);
   const before = hashed;
   console.log(`${ps.has([1, 2])} ${ps.has([2, 1])} hashed ${(hashed - before) >>> 0}`);
-  const bs = new ($hashedMap(
-    {
-      hash(value, state, H) {
-        pointHash.hash(value, state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          pointHash.hash(item, state, H);
-        }
-      },
-    },
-    $eq,
-  ))([[[3, 4], "b"]]);
+  const bs = new ($hashedMap(hash, $eq))([[[3, 4], "b"]]);
   const get = bs.get([3, 4]);
   const value = bs.get([0, 0]);
   console.log(

@@ -157,6 +157,16 @@ function noneOf(items, THash, TPartialEq, TSet) {
 
 function main() {
   const copy = { copy: (value) => [value[0]] };
+  const hash = {
+    hash(value, state, H) {
+      H.writeStr(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeStr(state, item);
+      }
+    },
+  };
   console.log(
     `${triples(
       [1, 2, 3, 1, 2, 3, 1],
@@ -192,26 +202,7 @@ function main() {
   const found = Array.from(long.values());
   found.sort((a, b) => a - b);
   console.log(`[${found.join(", ")}]`);
-  console.log(
-    `${
-      longKeys(
-        ["a", "b", "a"],
-        {
-          hash(value, state, H) {
-            H.writeStr(state, value);
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeStr(state, item);
-            }
-          },
-        },
-        $strictlyEqual,
-        undefined,
-        Map,
-      ).size
-    }`,
-  );
+  console.log(`${longKeys(["a", "b", "a"], hash, $strictlyEqual, undefined, Map).size}`);
   console.log(
     `[${ordered([3, 1, 2, 3, 1], $intsOrdered, undefined, $BTreeSet, 8, "general8")
       .map((item) => `[${item.join(", ")}]`)
@@ -238,22 +229,6 @@ function main() {
   console.log(
     `${noneOf([[1], [2]], digitHash, digitPartialEq, $hashedSet(digitHash, digitPartialEq_eq))}`,
   );
-  console.log(
-    `${noneOf(
-      [],
-      {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      },
-      $strictlyEqual,
-      Set,
-    )}`,
-  );
+  console.log(`${noneOf([], hash, $strictlyEqual, Set)}`);
 }
 //# sourceMappingURL=case.js.map

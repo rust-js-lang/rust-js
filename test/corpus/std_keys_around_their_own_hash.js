@@ -45,37 +45,78 @@ function hashedSince(before) {
 }
 
 function main() {
-  let before = HASHED;
-  const newest = new ($hashedSet(
-    {
-      hash(value, state, H) {
-        versionHash.hash(value[0], state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          versionHash.hash(item[0], state, H);
-        }
-      },
+  const hash = {
+    hash(value, state, H) {
+      versionHash.hash(value, state, H);
     },
-    $eq,
-  ))([[[1]], [[1]], [[2]]]);
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        versionHash.hash(item, state, H);
+      }
+    },
+  };
+  const reverseHash = {
+    hash(value, state, H) {
+      versionHash.hash(value[0], state, H);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        versionHash.hash(item[0], state, H);
+      }
+    },
+  };
+  const optionHash = {
+    hash(value, state, H) {
+      if (value != null) {
+        H.writeIsize(state, 1);
+        versionHash.hash(value, state, H);
+      } else {
+        H.writeIsize(state, 0);
+      }
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        if (item != null) {
+          H.writeIsize(state, 1);
+          versionHash.hash(item, state, H);
+        } else {
+          H.writeIsize(state, 0);
+        }
+      }
+    },
+  };
+  const boundHash = {
+    hash(value, state, H) {
+      if (value.TAG === "Included") {
+        H.writeIsize(state, 0);
+        versionHash.hash(value._0, state, H);
+      } else if (value.TAG === "Excluded") {
+        H.writeIsize(state, 1);
+        versionHash.hash(value._0, state, H);
+      } else {
+        H.writeIsize(state, 2);
+      }
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        if (item.TAG === "Included") {
+          H.writeIsize(state, 0);
+          versionHash.hash(item._0, state, H);
+        } else if (item.TAG === "Excluded") {
+          H.writeIsize(state, 1);
+          versionHash.hash(item._0, state, H);
+        } else {
+          H.writeIsize(state, 2);
+        }
+      }
+    },
+  };
+  let before = HASHED;
+  const newest = new ($hashedSet(reverseHash, $eq))([[[1]], [[1]], [[2]]]);
   const found = newest.has([[2]]);
   const arg = hashedSince(before);
   console.log(`${newest.size} ${found} hashed ${arg}`);
-  console.log(
-    `${
-      hashed([[3]], {
-        hash(value, state, H) {
-          versionHash.hash(value[0], state, H);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            versionHash.hash(item[0], state, H);
-          }
-        },
-      }) === hashed([3], versionHash)
-    }`,
-  );
+  console.log(`${hashed([[3]], reverseHash) === hashed([3], versionHash)}`);
   console.log(
     `${
       hashed([7], {
@@ -108,47 +149,13 @@ function main() {
   loudHash.hash(value$1[0], { value: state }, $sipHasher);
   loudHash.hash(value$1[1], { value: state }, $sipHasher);
   before = HASHED;
-  const held = new ($hashedMap(
-    {
-      hash(value, state, H) {
-        versionHash.hash(value, state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          versionHash.hash(item, state, H);
-        }
-      },
-    },
-    $eq,
-  ))([[[4], "four"]]);
+  const held = new ($hashedMap(hash, $eq))([[[4], "four"]]);
   const four = held.get([4]);
   const arg$1 = hashedSince(before);
   console.log(`${four == null ? "None" : `Some(${$debugStr(four)})`} hashed ${arg$1}`);
 
-  const pinned = new ($hashedSet(
-    {
-      hash(value, state, H) {
-        versionHash.hash(value, state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          versionHash.hash(item, state, H);
-        }
-      },
-    },
-    $eq,
-  ))([[5], [5]]);
-  const arg$2 =
-    hashed([5], {
-      hash(value, state, H) {
-        versionHash.hash(value, state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          versionHash.hash(item, state, H);
-        }
-      },
-    }) === hashed([5], versionHash);
+  const pinned = new ($hashedSet(hash, $eq))([[5], [5]]);
+  const arg$2 = hashed([5], hash) === hashed([5], versionHash);
   console.log(`${pinned.size} ${arg$2}`);
 
   const one = [6];
@@ -198,139 +205,17 @@ function main() {
   console.log(`${cows.size} ${arg$3}`);
 
   before = HASHED;
-  const bounds = new ($hashedSet(
-    {
-      hash(value, state, H) {
-        if (value.TAG === "Included") {
-          H.writeIsize(state, 0);
-          versionHash.hash(value._0, state, H);
-        } else if (value.TAG === "Excluded") {
-          H.writeIsize(state, 1);
-          versionHash.hash(value._0, state, H);
-        } else {
-          H.writeIsize(state, 2);
-        }
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          if (item.TAG === "Included") {
-            H.writeIsize(state, 0);
-            versionHash.hash(item._0, state, H);
-          } else if (item.TAG === "Excluded") {
-            H.writeIsize(state, 1);
-            versionHash.hash(item._0, state, H);
-          } else {
-            H.writeIsize(state, 2);
-          }
-        }
-      },
-    },
-    $eq,
-  ))([{ TAG: "Included", _0: [1] }, { TAG: "Excluded", _0: [1] }, "Unbounded"]);
+  const bounds = new ($hashedSet(boundHash, $eq))([
+    { TAG: "Included", _0: [1] },
+    { TAG: "Excluded", _0: [1] },
+    "Unbounded",
+  ]);
   const excluded = bounds.has({ TAG: "Excluded", _0: [1] });
   const arg$4 = hashedSince(before);
   console.log(`${bounds.size} ${excluded} hashed ${arg$4}`);
   console.log(
-    `${
-      hashed(
-        { TAG: "Excluded", _0: [9] },
-        {
-          hash(value, state, H) {
-            if (value.TAG === "Included") {
-              H.writeIsize(state, 0);
-              versionHash.hash(value._0, state, H);
-            } else if (value.TAG === "Excluded") {
-              H.writeIsize(state, 1);
-              versionHash.hash(value._0, state, H);
-            } else {
-              H.writeIsize(state, 2);
-            }
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              if (item.TAG === "Included") {
-                H.writeIsize(state, 0);
-                versionHash.hash(item._0, state, H);
-              } else if (item.TAG === "Excluded") {
-                H.writeIsize(state, 1);
-                versionHash.hash(item._0, state, H);
-              } else {
-                H.writeIsize(state, 2);
-              }
-            }
-          },
-        },
-      ) ===
-      hashed([9], {
-        hash(value, state, H) {
-          if (value != null) {
-            H.writeIsize(state, 1);
-            versionHash.hash(value, state, H);
-          } else {
-            H.writeIsize(state, 0);
-          }
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            if (item != null) {
-              H.writeIsize(state, 1);
-              versionHash.hash(item, state, H);
-            } else {
-              H.writeIsize(state, 0);
-            }
-          }
-        },
-      })
-    } ${
-      hashed(
-        { TAG: "Included", _0: [9] },
-        {
-          hash(value, state, H) {
-            if (value.TAG === "Included") {
-              H.writeIsize(state, 0);
-              versionHash.hash(value._0, state, H);
-            } else if (value.TAG === "Excluded") {
-              H.writeIsize(state, 1);
-              versionHash.hash(value._0, state, H);
-            } else {
-              H.writeIsize(state, 2);
-            }
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              if (item.TAG === "Included") {
-                H.writeIsize(state, 0);
-                versionHash.hash(item._0, state, H);
-              } else if (item.TAG === "Excluded") {
-                H.writeIsize(state, 1);
-                versionHash.hash(item._0, state, H);
-              } else {
-                H.writeIsize(state, 2);
-              }
-            }
-          },
-        },
-      ) ===
-      hashed([9], {
-        hash(value, state, H) {
-          if (value != null) {
-            H.writeIsize(state, 1);
-            versionHash.hash(value, state, H);
-          } else {
-            H.writeIsize(state, 0);
-          }
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            if (item != null) {
-              H.writeIsize(state, 1);
-              versionHash.hash(item, state, H);
-            } else {
-              H.writeIsize(state, 0);
-            }
-          }
-        },
-      })
+    `${hashed({ TAG: "Excluded", _0: [9] }, boundHash) === hashed([9], optionHash)} ${
+      hashed({ TAG: "Included", _0: [9] }, boundHash) === hashed([9], optionHash)
     }`,
   );
 

@@ -260,6 +260,16 @@ function passed(keys, THash, TPartialEq, TSet) {
 
 function main() {
   const charDebug = { fmt: (value) => $debugStr(value, "'") };
+  const hash = {
+    hash(value, state, H) {
+      H.writeStr(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeStr(state, item);
+      }
+    },
+  };
   console.log(
     `${distinct(
       [
@@ -267,16 +277,7 @@ function main() {
         [1, "a"],
         [2, "a"],
       ],
-      {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      },
+      hash,
       $strictlyEqual,
       Set,
     )}`,
@@ -400,22 +401,7 @@ function main() {
       $strictlyEqual,
     )}`,
   );
-  console.log(
-    `${tagged(
-      [3, 3, 4],
-      {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      },
-      $strictlyEqual,
-    )}`,
-  );
+  console.log(`${tagged([3, 3, 4], hash, $strictlyEqual)}`);
   console.log(`${mixedHashed > 0}`);
   const clashes = [
     {
@@ -455,16 +441,7 @@ function main() {
         [7, "s"],
         [7, "s"],
       ],
-      {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      },
+      hash,
       $strictlyEqual,
       Set,
     )}`,

@@ -82,22 +82,23 @@ function size(map) {
 
 function main() {
   const IntoIterCounting = tCounting({ next: $next });
+  const hash = {
+    hash(value, state, H) {
+      H.writeStr(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeStr(state, item);
+      }
+    },
+  };
   const g = group(
     $iter([
       ["a", 1],
       ["b", 2],
       ["a", 3],
     ]),
-    {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    },
+    hash,
     $strictlyEqual,
     Map,
   );
@@ -129,21 +130,7 @@ function main() {
   );
   const arg = d.has([2, 2]);
   console.log(`${d.size} ${arg}`);
-  const c = IntoIterCounting.counts(
-    $iter(["x", "y", "x"]),
-    {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    },
-    $strictlyEqual,
-    Map,
-  );
+  const c = IntoIterCounting.counts($iter(["x", "y", "x"]), hash, $strictlyEqual, Map);
   const value$1 = c.get("x");
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const cp = IntoIterCounting.countsBy(

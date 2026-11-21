@@ -38,141 +38,83 @@ function hashed(value, THash) {
 }
 
 function main() {
+  const typeIdHash = {
+    hash(value, state, H) {
+      H.writeStr(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeStr(state, item);
+      }
+    },
+  };
+  const hash$1 = {
+    hash(value, state, H) {
+      $hashPath(value, state, H);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        $hashPath(item, state, H);
+      }
+    },
+  };
+  const layoutHash = {
+    hash(value, state, H) {
+      H.writeUsize(state, value.size);
+      H.writeUsize(state, value.align);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeUsize(state, item.size);
+        H.writeUsize(state, item.align);
+      }
+    },
+  };
+  const hash = {
+    hash(value, state, H) {
+      H.writeU64(state, value / 1000000000n);
+      H.writeU32(state, Number(value % 1000000000n));
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeU64(state, item / 1000000000n);
+        H.writeU32(state, Number(item % 1000000000n));
+      }
+    },
+  };
+  const systemTimeHash = {
+    hash(value, state, H) {
+      const nanos = ((value % 1000000000n) + 1000000000n) % 1000000000n;
+      H.writeI64(state, (value - nanos) / 1000000000n);
+      H.writeU32(state, Number(nanos));
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        const nanos = ((item % 1000000000n) + 1000000000n) % 1000000000n;
+        H.writeI64(state, (item - nanos) / 1000000000n);
+        H.writeU32(state, Number(nanos));
+      }
+    },
+  };
   const durations = [0n, 1500n * 1000000n, $durationNew(18446744073709551615n, 999999999), 7n];
   for (let i = 0; i < durations.length; i++) {
     const d = durations[i];
-    const arg = hashed(d, {
-      hash(value, state, H) {
-        H.writeU64(state, value / 1000000000n);
-        H.writeU32(state, Number(value % 1000000000n));
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeU64(state, item / 1000000000n);
-          H.writeU32(state, Number(item % 1000000000n));
-        }
-      },
-    });
+    const arg = hashed(d, hash);
     console.log(`${$debugDuration(d)} ${arg}`);
   }
   const both = new $SipHasher(1, 3);
   both.writeU64(1n);
   both.writeU32(500000000);
-  console.log(
-    `${
-      both.finish() ===
-      hashed(1500n * 1000000n, {
-        hash(value, state, H) {
-          H.writeU64(state, value / 1000000000n);
-          H.writeU32(state, Number(value % 1000000000n));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeU64(state, item / 1000000000n);
-            H.writeU32(state, Number(item % 1000000000n));
-          }
-        },
-      })
-    }`,
-  );
+  console.log(`${both.finish() === hashed(1500n * 1000000n, hash)}`);
   const later = 0n + $durationNew(1700000000n, 123);
   let before = 0n - 1500n * 1000000n;
   console.log(
-    `${hashed(0n, {
-      hash(value, state, H) {
-        const nanos = ((value % 1000000000n) + 1000000000n) % 1000000000n;
-        H.writeI64(state, (value - nanos) / 1000000000n);
-        H.writeU32(state, Number(nanos));
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          const nanos = ((item % 1000000000n) + 1000000000n) % 1000000000n;
-          H.writeI64(state, (item - nanos) / 1000000000n);
-          H.writeU32(state, Number(nanos));
-        }
-      },
-    })} ${hashed(later, {
-      hash(value, state, H) {
-        const nanos = ((value % 1000000000n) + 1000000000n) % 1000000000n;
-        H.writeI64(state, (value - nanos) / 1000000000n);
-        H.writeU32(state, Number(nanos));
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          const nanos = ((item % 1000000000n) + 1000000000n) % 1000000000n;
-          H.writeI64(state, (item - nanos) / 1000000000n);
-          H.writeU32(state, Number(nanos));
-        }
-      },
-    })} ${hashed(before, {
-      hash(value, state, H) {
-        const nanos = ((value % 1000000000n) + 1000000000n) % 1000000000n;
-        H.writeI64(state, (value - nanos) / 1000000000n);
-        H.writeU32(state, Number(nanos));
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          const nanos = ((item % 1000000000n) + 1000000000n) % 1000000000n;
-          H.writeI64(state, (item - nanos) / 1000000000n);
-          H.writeU32(state, Number(nanos));
-        }
-      },
-    })}`,
+    `${hashed(0n, systemTimeHash)} ${hashed(later, systemTimeHash)} ${hashed(before, systemTimeHash)}`,
   );
   const start = $instantNow();
   const same = start;
   console.log(
-    `${
-      hashed(start, {
-        hash(value, state, H) {
-          H.writeU64(state, value / 1000000000n);
-          H.writeU32(state, Number(value % 1000000000n));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeU64(state, item / 1000000000n);
-            H.writeU32(state, Number(item % 1000000000n));
-          }
-        },
-      }) ===
-      hashed(same, {
-        hash(value, state, H) {
-          H.writeU64(state, value / 1000000000n);
-          H.writeU32(state, Number(value % 1000000000n));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeU64(state, item / 1000000000n);
-            H.writeU32(state, Number(item % 1000000000n));
-          }
-        },
-      })
-    } ${
-      hashed(start, {
-        hash(value, state, H) {
-          H.writeU64(state, value / 1000000000n);
-          H.writeU32(state, Number(value % 1000000000n));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeU64(state, item / 1000000000n);
-            H.writeU32(state, Number(item % 1000000000n));
-          }
-        },
-      }) ===
-      hashed(start + 1n, {
-        hash(value, state, H) {
-          H.writeU64(state, value / 1000000000n);
-          H.writeU32(state, Number(value % 1000000000n));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeU64(state, item / 1000000000n);
-            H.writeU32(state, Number(item % 1000000000n));
-          }
-        },
-      })
-    }`,
+    `${hashed(start, hash) === hashed(same, hash)} ${hashed(start, hash) === hashed(start + 1n, hash)}`,
   );
   before = HASHED;
   let keys = new ($hashedSet(
@@ -250,107 +192,13 @@ function main() {
   ];
   for (let i = 0; i < paths.length; i++) {
     const p = paths[i];
-    const value = hashed(p, {
-      hash(value, state, H) {
-        $hashPath(value, state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          $hashPath(item, state, H);
-        }
-      },
-    });
-    const arg =
-      hashed(p, {
-        hash(value, state, H) {
-          $hashPath(value, state, H);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            $hashPath(item, state, H);
-          }
-        },
-      }) ===
-      hashed(p, {
-        hash(value, state, H) {
-          $hashPath(value, state, H);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            $hashPath(item, state, H);
-          }
-        },
-      });
+    const value = hashed(p, hash$1);
+    const arg = hashed(p, hash$1) === hashed(p, hash$1);
     console.log(`${$debugStr(p)} ${value} ${arg}`);
   }
+  console.log(`${hashed("a/b", hash$1) === hashed("a//b/", hash$1)}`);
   console.log(
-    `${
-      hashed("a/b", {
-        hash(value, state, H) {
-          $hashPath(value, state, H);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            $hashPath(item, state, H);
-          }
-        },
-      }) ===
-      hashed("a//b/", {
-        hash(value, state, H) {
-          $hashPath(value, state, H);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            $hashPath(item, state, H);
-          }
-        },
-      })
-    }`,
-  );
-  console.log(
-    `${
-      hashed("u8", {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      }) ===
-      hashed("u8", {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      })
-    } ${
-      hashed("u8", {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      }) ===
-      hashed("u16", {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      })
-    }`,
+    `${hashed("u8", typeIdHash) === hashed("u8", typeIdHash)} ${hashed("u8", typeIdHash) === hashed("u16", typeIdHash)}`,
   );
   keys = new ($hashedSet(
     {
@@ -399,34 +247,9 @@ function main() {
     })} ${hashed(undefined, { hash(value, state, H) {}, hashSlice(items, state, H) {} })}`,
   );
   console.log(
-    `${hashed(
-      { size: 8, align: 8 },
-      {
-        hash(value, state, H) {
-          H.writeUsize(state, value.size);
-          H.writeUsize(state, value.align);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeUsize(state, item.size);
-            H.writeUsize(state, item.align);
-          }
-        },
-      },
-    )} ${hashed(
+    `${hashed({ size: 8, align: 8 }, layoutHash)} ${hashed(
       $unwrapOk($layout(24, 8), undefined, (e) => "LayoutError"),
-      {
-        hash(value, state, H) {
-          H.writeUsize(state, value.size);
-          H.writeUsize(state, value.align);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeUsize(state, item.size);
-            H.writeUsize(state, item.align);
-          }
-        },
-      },
+      layoutHash,
     )}`,
   );
 }

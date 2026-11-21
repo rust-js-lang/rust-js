@@ -69,12 +69,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "a &mut.s dictionary is named apart from its value.s"],
   },
   {
-    name: "arrow-body-declarations-unbound",
-    breaks: "a dictionary whose function declares a `const` of its own reads as a local the body's top can't, so one written twice isn't declared once (#1511)",
+    name: "top-binds-arrows-alone",
+    breaks: "a made dictionary whose entry binds a name in a statement, a `Hash` of a slice's `for (const item of items)`, reads as one that reads what the top can't, and is written out at each use, where ADR 0979 declares it once (#1379)",
     file: "src/lower/traits/dictionaries/declared.rs",
-    find: "                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {\n",
-    replace: "                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind && false {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_extend\\.rs$"],
+    find: "    let bound = js::bound_names(&[StmtKind::Expr(e.clone()).at(js::Span::NONE)]);\n",
+    replace: "    let bound: Vec<js::Name> = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_maps\\.rs$"],
     snapshots: true,
   },
 ];

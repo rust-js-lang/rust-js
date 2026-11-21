@@ -102,6 +102,58 @@ function digest(value, THash) {
 }
 
 function main() {
+  const hash = {
+    hash(value, state, H) {
+      H.writeStr(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeStr(state, item);
+      }
+    },
+  };
+  const optionHash = {
+    hash(value, state, H) {
+      if (value != null) {
+        H.writeIsize(state, 1);
+        H.writeI64(state, value);
+      } else {
+        H.writeIsize(state, 0);
+      }
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        if (item != null) {
+          H.writeIsize(state, 1);
+          H.writeI64(state, item);
+        } else {
+          H.writeIsize(state, 0);
+        }
+      }
+    },
+  };
+  const resultHash = {
+    hash(value, state, H) {
+      if (value.TAG === "Ok") {
+        H.writeIsize(state, 0);
+        H.writeU32(state, value._0);
+      } else {
+        H.writeIsize(state, 1);
+        H.writeStr(state, value._0);
+      }
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        if (item.TAG === "Ok") {
+          H.writeIsize(state, 0);
+          H.writeU32(state, item._0);
+        } else {
+          H.writeIsize(state, 1);
+          H.writeStr(state, item._0);
+        }
+      }
+    },
+  };
   console.log(
     `${digest(7, {
       hash(value, state, H) {
@@ -135,27 +187,7 @@ function main() {
       },
     })}`,
   );
-  console.log(
-    `${digest("text", {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    })} ${digest("text", {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    })}`,
-  );
+  console.log(`${digest("text", hash)} ${digest("text", hash)}`);
   console.log(
     `${digest([3, "é", true, undefined], {
       hash(value, state, H) {
@@ -172,47 +204,7 @@ function main() {
       },
     })}`,
   );
-  console.log(
-    `${digest(-4n, {
-      hash(value, state, H) {
-        if (value != null) {
-          H.writeIsize(state, 1);
-          H.writeI64(state, value);
-        } else {
-          H.writeIsize(state, 0);
-        }
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          if (item != null) {
-            H.writeIsize(state, 1);
-            H.writeI64(state, item);
-          } else {
-            H.writeIsize(state, 0);
-          }
-        }
-      },
-    })} ${digest(undefined, {
-      hash(value, state, H) {
-        if (value != null) {
-          H.writeIsize(state, 1);
-          H.writeI64(state, value);
-        } else {
-          H.writeIsize(state, 0);
-        }
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          if (item != null) {
-            H.writeIsize(state, 1);
-            H.writeI64(state, item);
-          } else {
-            H.writeIsize(state, 0);
-          }
-        }
-      },
-    })}`,
-  );
+  console.log(`${digest(-4n, optionHash)} ${digest(undefined, optionHash)}`);
   console.log(
     `${digest(
       { $someNone: 1 },
@@ -336,51 +328,7 @@ function main() {
   );
   const ok = { TAG: "Ok", _0: 1 };
   const err = { TAG: "Err", _0: "e" };
-  console.log(
-    `${digest(ok, {
-      hash(value, state, H) {
-        if (value.TAG === "Ok") {
-          H.writeIsize(state, 0);
-          H.writeU32(state, value._0);
-        } else {
-          H.writeIsize(state, 1);
-          H.writeStr(state, value._0);
-        }
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          if (item.TAG === "Ok") {
-            H.writeIsize(state, 0);
-            H.writeU32(state, item._0);
-          } else {
-            H.writeIsize(state, 1);
-            H.writeStr(state, item._0);
-          }
-        }
-      },
-    })} ${digest(err, {
-      hash(value, state, H) {
-        if (value.TAG === "Ok") {
-          H.writeIsize(state, 0);
-          H.writeU32(state, value._0);
-        } else {
-          H.writeIsize(state, 1);
-          H.writeStr(state, value._0);
-        }
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          if (item.TAG === "Ok") {
-            H.writeIsize(state, 0);
-            H.writeU32(state, item._0);
-          } else {
-            H.writeIsize(state, 1);
-            H.writeStr(state, item._0);
-          }
-        }
-      },
-    })}`,
-  );
+  console.log(`${digest(ok, resultHash)} ${digest(err, resultHash)}`);
   let tmp = 6;
   console.log(
     `${digest(
@@ -478,21 +426,7 @@ function main() {
     })}`,
   );
   console.log(`${digest([p, [p, { x: 3, y: 4 }]], labeledHash(pointHash))}`);
-  console.log(
-    `${digest(
-      ["a", ["b"]],
-      labeledHash({
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      }),
-    )}`,
-  );
+  console.log(`${digest(["a", ["b"]], labeledHash(hash))}`);
   console.log(`${digest(A, smallHash)} ${digest(B, smallHash)}`);
   console.log(`${digest("Low", wideHash)} ${digest({ TAG: "High", _0: 2 }, wideHash)}`);
   console.log(`${digest(["MiXed"], nameHash) === digest(["mixed"], nameHash)}`);

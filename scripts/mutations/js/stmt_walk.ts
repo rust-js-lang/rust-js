@@ -390,4 +390,13 @@ export const mutations: Mutation[] = [
     replace: "                ExprKind::Hole(Hole::Item(_)) => \"an item's hole\",\n",
     unitTests: "js::validate::tests::a_hole_is_refused",
   },
+  {
+    name: "arrow-body-declarations-unbound",
+    breaks: "a dictionary whose function declares a `const` of its own reads as a local the body's top can't, so one written twice isn't declared once (#1511): the declarations `bound_names` gives, which `reads_only_at_top` binds (#1379)",
+    file: "src/js/stmt_walk.rs",
+    find: "            StmtKind::Const(name, _) | StmtKind::Let(name, _) => rename(name),\n",
+    replace: "            StmtKind::Const(..) | StmtKind::Let(..) => {}\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_extend\\.rs$"],
+    snapshots: true,
+  },
 ];

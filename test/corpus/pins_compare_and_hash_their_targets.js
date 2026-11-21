@@ -53,6 +53,16 @@ function pinned(key, tag) {
   };
 }
 function main() {
+  const pinHash = {
+    hash(value, state, H) {
+      keyHash.hash(taggedDeref_deref(value), state, H);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        keyHash.hash(taggedDeref_deref(item), state, H);
+      }
+    },
+  };
   const a = pinned(7, 1);
   const b = pinned(7, 2);
   const c = pinned(3, 9);
@@ -84,19 +94,11 @@ function main() {
   console.log(
     `${$eq(taggedDeref_deref($cmp(left$4[0], right$5[0]) < 0 ? c : right$4), taggedDeref_deref(pinned(3, 0)))}`,
   );
-  const set = new ($hashedSet(
-    {
-      hash(value, state, H) {
-        keyHash.hash(taggedDeref_deref(value), state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          keyHash.hash(taggedDeref_deref(item), state, H);
-        }
-      },
-    },
-    (a, b) => $eq(taggedDeref_deref(a), taggedDeref_deref(b)),
-  ))([pinned(1, 10), pinned(1, 20), pinned(2, 10)]);
+  const set = new ($hashedSet(pinHash, (a, b) => $eq(taggedDeref_deref(a), taggedDeref_deref(b))))([
+    pinned(1, 10),
+    pinned(1, 20),
+    pinned(2, 10),
+  ]);
   console.log(`${set.size} ${set.has(pinned(1, 99))} ${set.has(pinned(3, 10))} hashed ${hashed}`);
   // Held in its order, not the table's, which std's `RandomState` makes
   // differ from run to run, as its drops would be.
@@ -107,18 +109,8 @@ function main() {
     return $cmp(left[0], right$6[0]);
   });
   console.log(`${kept.length}`);
-  const map = new ($hashedMap(
-    {
-      hash(value, state, H) {
-        keyHash.hash(taggedDeref_deref(value), state, H);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          keyHash.hash(taggedDeref_deref(item), state, H);
-        }
-      },
-    },
-    (a, b) => $eq(taggedDeref_deref(a), taggedDeref_deref(b)),
+  const map = new ($hashedMap(pinHash, (a, b) =>
+    $eq(taggedDeref_deref(a), taggedDeref_deref(b)),
   ))();
   map.set(pinned(5, 1), "a");
   map.set(pinned(5, 2), "b");

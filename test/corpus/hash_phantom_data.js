@@ -53,122 +53,55 @@ function digest(value, THash) {
 
 function main() {
   const hash = { hash(value, state, H) {}, hashSlice(items, state, H) {} };
+  const vecHash = {
+    hash(value, state, H) {
+      H.writeLengthPrefix(state, value.length);
+      for (const item of value) {
+        H.writeU8(state, item[0]);
+        H.writeU8(state, item[1]);
+      }
+    },
+    hashSlice(items, state, H) {
+      for (const list of items) {
+        H.writeLengthPrefix(state, list.length);
+        for (const item of list) {
+          H.writeU8(state, item[0]);
+          H.writeU8(state, item[1]);
+        }
+      }
+    },
+  };
+  const LiteMapHash = liteMapHash(
+    {
+      hash(value, state, H) {
+        H.writeStr(state, value);
+      },
+      hashSlice(items, state, H) {
+        for (const item of items) {
+          H.writeStr(state, item);
+        }
+      },
+    },
+    {
+      hash(value, state, H) {
+        H.writeLengthPrefix(state, value.length);
+        H.write(state, value);
+      },
+      hashSlice(items, state, H) {
+        for (const item of items) {
+          H.writeLengthPrefix(state, item.length);
+          H.write(state, item);
+        }
+      },
+    },
+    vecHash,
+  );
   const store = [
     [1, 2],
     [3, 4],
   ];
   const map = LiteMap.fromStore(store);
-  console.log(
-    `${digest(
-      map,
-      liteMapHash(
-        {
-          hash(value, state, H) {
-            H.writeStr(state, value);
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeStr(state, item);
-            }
-          },
-        },
-        {
-          hash(value, state, H) {
-            H.writeLengthPrefix(state, value.length);
-            H.write(state, value);
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeLengthPrefix(state, item.length);
-              H.write(state, item);
-            }
-          },
-        },
-        {
-          hash(value, state, H) {
-            H.writeLengthPrefix(state, value.length);
-            for (const item of value) {
-              H.writeU8(state, item[0]);
-              H.writeU8(state, item[1]);
-            }
-          },
-          hashSlice(items, state, H) {
-            for (const list of items) {
-              H.writeLengthPrefix(state, list.length);
-              for (const item of list) {
-                H.writeU8(state, item[0]);
-                H.writeU8(state, item[1]);
-              }
-            }
-          },
-        },
-      ),
-    )} ${
-      digest(
-        map,
-        liteMapHash(
-          {
-            hash(value, state, H) {
-              H.writeStr(state, value);
-            },
-            hashSlice(items, state, H) {
-              for (const item of items) {
-                H.writeStr(state, item);
-              }
-            },
-          },
-          {
-            hash(value, state, H) {
-              H.writeLengthPrefix(state, value.length);
-              H.write(state, value);
-            },
-            hashSlice(items, state, H) {
-              for (const item of items) {
-                H.writeLengthPrefix(state, item.length);
-                H.write(state, item);
-              }
-            },
-          },
-          {
-            hash(value, state, H) {
-              H.writeLengthPrefix(state, value.length);
-              for (const item of value) {
-                H.writeU8(state, item[0]);
-                H.writeU8(state, item[1]);
-              }
-            },
-            hashSlice(items, state, H) {
-              for (const list of items) {
-                H.writeLengthPrefix(state, list.length);
-                for (const item of list) {
-                  H.writeU8(state, item[0]);
-                  H.writeU8(state, item[1]);
-                }
-              }
-            },
-          },
-        ),
-      ) ===
-      digest(store, {
-        hash(value, state, H) {
-          H.writeLengthPrefix(state, value.length);
-          for (const item of value) {
-            H.writeU8(state, item[0]);
-            H.writeU8(state, item[1]);
-          }
-        },
-        hashSlice(items, state, H) {
-          for (const list of items) {
-            H.writeLengthPrefix(state, list.length);
-            for (const item of list) {
-              H.writeU8(state, item[0]);
-              H.writeU8(state, item[1]);
-            }
-          }
-        },
-      })
-    }`,
-  );
+  console.log(`${digest(map, LiteMapHash)} ${digest(map, LiteMapHash) === digest(store, vecHash)}`);
   const right = LiteMap.fromStore([[1, 3]]);
   console.log(
     `${

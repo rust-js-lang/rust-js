@@ -793,6 +793,13 @@ pub fn declared_here(statement: &Stmt) -> Vec<&Name> {
 /// Each name `stmts` declare, however deep: a statement's, an arrow's
 /// parameters and statements, a function's too.
 pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {
+    (bound_names(stmts).iter()).map(|n| n.word().to_string()).collect() // word: the spellings a module takes
+}
+
+/// `declared_names`' names themselves, each by its id, not its spelling:
+/// what a read of one inside `stmts` reads, never an outer name of the
+/// same word.
+pub fn bound_names(stmts: &[Stmt]) -> Vec<Name> {
     let mut stmts = stmts.to_vec();
     let mut declared = Vec::new();
     binders(&mut stmts, &mut declared);
@@ -803,7 +810,7 @@ pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {
             }
         }
     });
-    declared.iter().map(|n| n.word().to_string()).collect() // word: the spellings a module takes
+    declared
 }
 
 /// The names `stmts` declare, in order, an arrow's in them too.

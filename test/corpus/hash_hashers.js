@@ -100,6 +100,16 @@ function throughDyn(hasher, n) {
 }
 
 function main() {
+  const strHash = {
+    hash(value, state, H) {
+      H.writeStr(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeStr(state, item);
+      }
+    },
+  };
   console.log(
     `[${written([-3n, 4n, "x"], {
       hash(value, state, H) {
@@ -149,16 +159,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${written("ab", {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    })
+    `[${written("ab", strHash)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -189,18 +190,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  console.log(
-    `${fnv("hello", {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    })} ${fnv({ key: "k" }, entryHash)}`,
-  );
+  console.log(`${fnv("hello", strHash)} ${fnv({ key: "k" }, entryHash)}`);
 
   const tally = [[]];
   writeTwice($cellOf(tally), 1, tallyHasher);

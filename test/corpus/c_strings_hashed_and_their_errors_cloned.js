@@ -44,78 +44,28 @@ function failedDebug_fmt(failed) {
 
 function main() {
   // Hashed, a byte past 0x7f as its byte, the empty one its nul.
+  const hash = {
+    hash(value, state, H) {
+      H.writeLengthPrefix(state, value.length);
+      H.write(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeLengthPrefix(state, item.length);
+        H.write(state, item);
+      }
+    },
+  };
   const h = new $SipHasher(1, 3);
   const value = [104, 105, 0];
   h.writeLengthPrefix(value.length);
   h.write(value);
   console.log(`${h.finish()}`);
-  console.log(
-    `${hashOf([0], {
-      hash(value, state, H) {
-        H.writeLengthPrefix(state, value.length);
-        H.write(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeLengthPrefix(state, item.length);
-          H.write(state, item);
-        }
-      },
-    })} ${hashOf([255, 128, 97, 0], {
-      hash(value, state, H) {
-        H.writeLengthPrefix(state, value.length);
-        H.write(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeLengthPrefix(state, item.length);
-          H.write(state, item);
-        }
-      },
-    })}`,
-  );
+  console.log(`${hashOf([0], hash)} ${hashOf([255, 128, 97, 0], hash)}`);
   const owned = $unwrapOk($cstringNew(Array.from(new TextEncoder().encode("hi"))), undefined, (e) =>
     $debugCStrError(e, "nul"),
   );
-  console.log(
-    `${hashOf(owned, {
-      hash(value, state, H) {
-        H.writeLengthPrefix(state, value.length);
-        H.write(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeLengthPrefix(state, item.length);
-          H.write(state, item);
-        }
-      },
-    })} ${
-      hashOf(owned, {
-        hash(value, state, H) {
-          H.writeLengthPrefix(state, value.length);
-          H.write(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeLengthPrefix(state, item.length);
-            H.write(state, item);
-          }
-        },
-      }) ===
-      hashOf([104, 105, 0], {
-        hash(value, state, H) {
-          H.writeLengthPrefix(state, value.length);
-          H.write(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeLengthPrefix(state, item.length);
-            H.write(state, item);
-          }
-        },
-      })
-    }`,
-  );
+  console.log(`${hashOf(owned, hash)} ${hashOf(owned, hash) === hashOf([104, 105, 0], hash)}`);
   console.log(
     `${hashOf(
       [

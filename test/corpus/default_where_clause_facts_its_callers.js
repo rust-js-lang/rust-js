@@ -77,6 +77,16 @@ function backwardsOrd_cmp(backwards, other) {
 
 function main() {
   const IntoIterTally = iTally({ next: $next });
+  const hash = {
+    hash(value, state, H) {
+      H.writeStr(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeStr(state, item);
+      }
+    },
+  };
   const ordered = IntoIterTally.ordered(
     $iter([[1], [3], [1]]),
     backwardsOrd,
@@ -89,40 +99,8 @@ function main() {
   );
 
   const words = ["a", "b", "a", "a"];
-  console.log(
-    `${IntoIterTally.distinct(
-      $iter(words),
-      {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      },
-      $strictlyEqual,
-      Map,
-    )}`,
-  );
-  const counts = Array.from(
-    IntoIterTally.counts(
-      $iter(words),
-      {
-        hash(value, state, H) {
-          H.writeStr(state, value);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeStr(state, item);
-          }
-        },
-      },
-      $strictlyEqual,
-      Map,
-    ),
-  );
+  console.log(`${IntoIterTally.distinct($iter(words), hash, $strictlyEqual, Map)}`);
+  const counts = Array.from(IntoIterTally.counts($iter(words), hash, $strictlyEqual, Map));
   counts.sort((a, b) => $cmp(a[0][0], b[0][0]) || $cmp(a[0][1], b[0][1]) || $cmp(a[1], b[1]));
   console.log(
     `[${counts.map((item) => `((${item[0][0]}, ${$debugStr(item[0][1])}), ${item[1]})`).join(", ")}]`,

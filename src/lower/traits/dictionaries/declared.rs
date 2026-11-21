@@ -127,24 +127,12 @@ pub(super) fn is_impl_call(e: &Expr) -> bool {
 }
 
 /// Whether `e` reads only what its body's top can: the runtime's helpers,
-/// the program's items, the names its own functions bind, and `given`,
-/// what the function was given (`given_names`, ADR 0979, amended).
+/// the program's items, the names its own functions bind, however deep,
+/// their parameters, a std `Extend`'s `const it` (#1511), a `Hash` of a
+/// slice's `for (const item of items)` (#1379), and `given`, what the
+/// function was given (`given_names`, ADR 0979, amended).
 pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<js::Name>) -> bool {
-    let mut bound: Vec<js::Name> = Vec::new();
-    let mut each = e.clone();
-    each.each_mut(&mut |part| {
-        if let js::ExprKind::Arrow(params, body) = &mut part.kind {
-            for param in params {
-                param.each_name_mut(&mut |name| bound.push(name.clone()));
-            }
-            // And what its body declares, a std `Extend`'s `const it` (#1511).
-            for stmt in body.iter() {
-                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                    bound.push(name.clone());
-                }
-            }
-        }
-    });
+    let bound = js::bound_names(&[StmtKind::Expr(e.clone()).at(js::Span::NONE)]);
     let mut only = true;
     let mut each = e.clone();
     each.each_mut(&mut |part| {

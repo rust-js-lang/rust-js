@@ -70,6 +70,18 @@ function same(a, b, TPartialEq, THash, TSet) {
 }
 
 function main() {
+  const tupleHash = {
+    hash(value, state, H) {
+      H.writeI32(state, value[0]);
+      H.writeU32(state, value[1].codePointAt(0));
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeI32(state, item[0]);
+        H.writeU32(state, item[1].codePointAt(0));
+      }
+    },
+  };
   const pairs = [
     [1, "a"],
     [2, "b"],
@@ -78,24 +90,7 @@ function main() {
     [2, "b"],
     [1, "a"],
   ];
-  const value = most(
-    pairs,
-    $partialEq({ eq: $eq }),
-    {
-      hash(value, state, H) {
-        H.writeI32(state, value[0]);
-        H.writeU32(state, value[1].codePointAt(0));
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeI32(state, item[0]);
-          H.writeU32(state, item[1].codePointAt(0));
-        }
-      },
-    },
-    tupleOrd,
-    $KeyMap,
-  );
+  const value = most(pairs, $partialEq({ eq: $eq }), tupleHash, tupleOrd, $KeyMap);
   console.log(
     `${value == null ? "None" : `Some(((${value[0][0]}, ${$debugStr(value[0][1], "'")}), ${value[1]}))`}`,
   );
@@ -109,41 +104,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `${has(
-      pairs,
-      [3, "c"],
-      $partialEq({ eq: $eq }),
-      {
-        hash(value, state, H) {
-          H.writeI32(state, value[0]);
-          H.writeU32(state, value[1].codePointAt(0));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, item[0]);
-            H.writeU32(state, item[1].codePointAt(0));
-          }
-        },
-      },
-      $KeySet,
-    )} ${has(
-      pairs,
-      [4, "d"],
-      $partialEq({ eq: $eq }),
-      {
-        hash(value, state, H) {
-          H.writeI32(state, value[0]);
-          H.writeU32(state, value[1].codePointAt(0));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, item[0]);
-            H.writeU32(state, item[1].codePointAt(0));
-          }
-        },
-      },
-      $KeySet,
-    )}`,
+    `${has(pairs, [3, "c"], $partialEq({ eq: $eq }), tupleHash, $KeySet)} ${has(pairs, [4, "d"], $partialEq({ eq: $eq }), tupleHash, $KeySet)}`,
   );
   console.log(
     `${same(
@@ -154,37 +115,9 @@ function main() {
         [1, "a"],
       ],
       $partialEq({ eq: $eq }),
-      {
-        hash(value, state, H) {
-          H.writeI32(state, value[0]);
-          H.writeU32(state, value[1].codePointAt(0));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, item[0]);
-            H.writeU32(state, item[1].codePointAt(0));
-          }
-        },
-      },
+      tupleHash,
       $KeySet,
-    )} ${same(
-      pairs,
-      [[1, "a"]],
-      $partialEq({ eq: $eq }),
-      {
-        hash(value, state, H) {
-          H.writeI32(state, value[0]);
-          H.writeU32(state, value[1].codePointAt(0));
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, item[0]);
-            H.writeU32(state, item[1].codePointAt(0));
-          }
-        },
-      },
-      $KeySet,
-    )}`,
+    )} ${same(pairs, [[1, "a"]], $partialEq({ eq: $eq }), tupleHash, $KeySet)}`,
   );
   const words = ["b", "a", "b"];
   const value$1 = most(

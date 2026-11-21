@@ -44,21 +44,75 @@ function lineHash_hash(line, state, HHasher) {
 
 function main() {
   const rangeFullHash = { hash(value, state, H) {}, hashSlice(items, state, H) {} };
-  const set = new ($hashedSet(
-    {
-      hash(value, state, H) {
-        H.writeI32(state, value.start);
-        H.writeI32(state, value.end);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeI32(state, item.start);
-          H.writeI32(state, item.end);
-        }
-      },
+  const rangeToHash = {
+    hash(value, state, H) {
+      H.writeI32(state, value.end);
     },
-    (a, b) => a.start === b.start && a.end === b.end,
-  ))([
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeI32(state, item.end);
+      }
+    },
+  };
+  const rangeFromHash = {
+    hash(value, state, H) {
+      H.writeI32(state, value.start);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeI32(state, item.start);
+      }
+    },
+  };
+  const rangeHash = {
+    hash(value, state, H) {
+      H.writeI32(state, value.start);
+      H.writeI32(state, value.end);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeI32(state, item.start);
+        H.writeI32(state, item.end);
+      }
+    },
+  };
+  const rangeInclusiveHash$1 = {
+    hash(value, state, H) {
+      H.writeU8(state, (value.exhausted ?? value).start & 255);
+      H.writeU8(state, (value.exhausted ?? value).end & 255);
+      H.writeU8(state, Number(value.exhausted !== undefined || value.start > 255 || value.end < 0));
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeU8(state, (item.exhausted ?? item).start & 255);
+        H.writeU8(state, (item.exhausted ?? item).end & 255);
+        H.writeU8(state, Number(item.exhausted !== undefined || item.start > 255 || item.end < 0));
+      }
+    },
+  };
+  const rangeInclusiveHash = {
+    hash(value, state, H) {
+      H.writeI32(state, (value.exhausted ?? value).start | 0);
+      H.writeI32(state, (value.exhausted ?? value).end | 0);
+      H.writeU8(
+        state,
+        Number(
+          value.exhausted !== undefined || value.start > 2147483647 || value.end < -2147483648,
+        ),
+      );
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeI32(state, (item.exhausted ?? item).start | 0);
+        H.writeI32(state, (item.exhausted ?? item).end | 0);
+        H.writeU8(
+          state,
+          Number(item.exhausted !== undefined || item.start > 2147483647 || item.end < -2147483648),
+        );
+      }
+    },
+  };
+  const set = new ($hashedSet(rangeHash, (a, b) => a.start === b.start && a.end === b.end))([
     { start: 0, end: 3 },
     { start: 1, end: 4 },
     { start: 0, end: 3 },
@@ -99,34 +153,9 @@ function main() {
         { start: 1, end: 2 },
         { start: 3, end: 4 },
       ],
-      {
-        hash(value, state, H) {
-          H.writeI32(state, value.start);
-          H.writeI32(state, value.end);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, item.start);
-            H.writeI32(state, item.end);
-          }
-        },
-      },
+      rangeHash,
       $partialEq({ eq: (a, b) => a.start === b.start && a.end === b.end }),
-      $hashedSet(
-        {
-          hash(value, state, H) {
-            H.writeI32(state, value.start);
-            H.writeI32(state, value.end);
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeI32(state, item.start);
-              H.writeI32(state, item.end);
-            }
-          },
-        },
-        (a, b) => a.start === b.start && a.end === b.end,
-      ),
+      $hashedSet(rangeHash, (a, b) => a.start === b.start && a.end === b.end),
     )}`,
   );
   console.log(
@@ -136,30 +165,7 @@ function main() {
         { start: 1, end: 2 },
         { start: 1, end: 3 },
       ],
-      {
-        hash(value, state, H) {
-          H.writeI32(state, (value.exhausted ?? value).start | 0);
-          H.writeI32(state, (value.exhausted ?? value).end | 0);
-          H.writeU8(
-            state,
-            Number(
-              value.exhausted !== undefined || value.start > 2147483647 || value.end < -2147483648,
-            ),
-          );
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, (item.exhausted ?? item).start | 0);
-            H.writeI32(state, (item.exhausted ?? item).end | 0);
-            H.writeU8(
-              state,
-              Number(
-                item.exhausted !== undefined || item.start > 2147483647 || item.end < -2147483648,
-              ),
-            );
-          }
-        },
-      },
+      rangeInclusiveHash,
       $partialEq({
         eq: (a, b) =>
           ((a.exhausted ?? a).start | 0) === ((b.exhausted ?? b).start | 0) &&
@@ -168,32 +174,7 @@ function main() {
             (b.exhausted !== undefined || b.start > 2147483647 || b.end < -2147483648),
       }),
       $hashedSet(
-        {
-          hash(value, state, H) {
-            H.writeI32(state, (value.exhausted ?? value).start | 0);
-            H.writeI32(state, (value.exhausted ?? value).end | 0);
-            H.writeU8(
-              state,
-              Number(
-                value.exhausted !== undefined ||
-                  value.start > 2147483647 ||
-                  value.end < -2147483648,
-              ),
-            );
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeI32(state, (item.exhausted ?? item).start | 0);
-              H.writeI32(state, (item.exhausted ?? item).end | 0);
-              H.writeU8(
-                state,
-                Number(
-                  item.exhausted !== undefined || item.start > 2147483647 || item.end < -2147483648,
-                ),
-              );
-            }
-          },
-        },
+        rangeInclusiveHash,
         (a, b) =>
           ((a.exhausted ?? a).start | 0) === ((b.exhausted ?? b).start | 0) &&
           ((a.exhausted ?? a).end | 0) === ((b.exhausted ?? b).end | 0) &&
@@ -205,59 +186,17 @@ function main() {
   console.log(
     `${distinct(
       [{ start: 1 }, { start: 2 }, { start: 1 }],
-      {
-        hash(value, state, H) {
-          H.writeI32(state, value.start);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, item.start);
-          }
-        },
-      },
+      rangeFromHash,
       $partialEq({ eq: (a, b) => a.start === b.start }),
-      $hashedSet(
-        {
-          hash(value, state, H) {
-            H.writeI32(state, value.start);
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeI32(state, item.start);
-            }
-          },
-        },
-        (a, b) => a.start === b.start,
-      ),
+      $hashedSet(rangeFromHash, (a, b) => a.start === b.start),
     )}`,
   );
   console.log(
     `${distinct(
       [{ end: 1 }, { end: 1 }],
-      {
-        hash(value, state, H) {
-          H.writeI32(state, value.end);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, item.end);
-          }
-        },
-      },
+      rangeToHash,
       $partialEq({ eq: (a, b) => a.end === b.end }),
-      $hashedSet(
-        {
-          hash(value, state, H) {
-            H.writeI32(state, value.end);
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeI32(state, item.end);
-            }
-          },
-        },
-        (a, b) => a.end === b.end,
-      ),
+      $hashedSet(rangeToHash, (a, b) => a.end === b.end),
     )}`,
   );
   console.log(
@@ -270,52 +209,8 @@ function main() {
   );
 
   // Each kind's hash, std's.
-  console.log(
-    `${hashed(
-      { start: 1, end: 5 },
-      {
-        hash(value, state, H) {
-          H.writeI32(state, value.start);
-          H.writeI32(state, value.end);
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, item.start);
-            H.writeI32(state, item.end);
-          }
-        },
-      },
-    )}`,
-  );
-  console.log(
-    `${hashed(
-      { start: 1, end: 5 },
-      {
-        hash(value, state, H) {
-          H.writeI32(state, (value.exhausted ?? value).start | 0);
-          H.writeI32(state, (value.exhausted ?? value).end | 0);
-          H.writeU8(
-            state,
-            Number(
-              value.exhausted !== undefined || value.start > 2147483647 || value.end < -2147483648,
-            ),
-          );
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeI32(state, (item.exhausted ?? item).start | 0);
-            H.writeI32(state, (item.exhausted ?? item).end | 0);
-            H.writeU8(
-              state,
-              Number(
-                item.exhausted !== undefined || item.start > 2147483647 || item.end < -2147483648,
-              ),
-            );
-          }
-        },
-      },
-    )}`,
-  );
+  console.log(`${hashed({ start: 1, end: 5 }, rangeHash)}`);
+  console.log(`${hashed({ start: 1, end: 5 }, rangeInclusiveHash)}`);
   console.log(
     `${hashed(
       { start: 1 },
@@ -409,96 +304,14 @@ function main() {
   }
   console.log(
     `${((stepped.exhausted ?? stepped).start & 255) === 1 && ((stepped.exhausted ?? stepped).end & 255) === 2 && !(stepped.exhausted !== undefined || stepped.start > 255 || stepped.end < 0)} ${
-      hashed(stepped, {
-        hash(value, state, H) {
-          H.writeU8(state, (value.exhausted ?? value).start & 255);
-          H.writeU8(state, (value.exhausted ?? value).end & 255);
-          H.writeU8(
-            state,
-            Number(value.exhausted !== undefined || value.start > 255 || value.end < 0),
-          );
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeU8(state, (item.exhausted ?? item).start & 255);
-            H.writeU8(state, (item.exhausted ?? item).end & 255);
-            H.writeU8(
-              state,
-              Number(item.exhausted !== undefined || item.start > 255 || item.end < 0),
-            );
-          }
-        },
-      }) ===
-      hashed(
-        { start: 1, end: 2 },
-        {
-          hash(value, state, H) {
-            H.writeU8(state, (value.exhausted ?? value).start & 255);
-            H.writeU8(state, (value.exhausted ?? value).end & 255);
-            H.writeU8(
-              state,
-              Number(value.exhausted !== undefined || value.start > 255 || value.end < 0),
-            );
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeU8(state, (item.exhausted ?? item).start & 255);
-              H.writeU8(state, (item.exhausted ?? item).end & 255);
-              H.writeU8(
-                state,
-                Number(item.exhausted !== undefined || item.start > 255 || item.end < 0),
-              );
-            }
-          },
-        },
-      )
+      hashed(stepped, rangeInclusiveHash$1) === hashed({ start: 1, end: 2 }, rangeInclusiveHash$1)
     }`,
   );
-  console.log(
-    `${hashed(stepped, {
-      hash(value, state, H) {
-        H.writeU8(state, (value.exhausted ?? value).start & 255);
-        H.writeU8(state, (value.exhausted ?? value).end & 255);
-        H.writeU8(
-          state,
-          Number(value.exhausted !== undefined || value.start > 255 || value.end < 0),
-        );
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeU8(state, (item.exhausted ?? item).start & 255);
-          H.writeU8(state, (item.exhausted ?? item).end & 255);
-          H.writeU8(
-            state,
-            Number(item.exhausted !== undefined || item.start > 255 || item.end < 0),
-          );
-        }
-      },
-    })}`,
-  );
+  console.log(`${hashed(stepped, rangeInclusiveHash$1)}`);
   console.log(
     `${distinct(
       [stepped, { start: 1, end: 2 }, { start: 1, end: 2 }],
-      {
-        hash(value, state, H) {
-          H.writeU8(state, (value.exhausted ?? value).start & 255);
-          H.writeU8(state, (value.exhausted ?? value).end & 255);
-          H.writeU8(
-            state,
-            Number(value.exhausted !== undefined || value.start > 255 || value.end < 0),
-          );
-        },
-        hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeU8(state, (item.exhausted ?? item).start & 255);
-            H.writeU8(state, (item.exhausted ?? item).end & 255);
-            H.writeU8(
-              state,
-              Number(item.exhausted !== undefined || item.start > 255 || item.end < 0),
-            );
-          }
-        },
-      },
+      rangeInclusiveHash$1,
       $partialEq({
         eq: (a, b) =>
           ((a.exhausted ?? a).start & 255) === ((b.exhausted ?? b).start & 255) &&
@@ -507,26 +320,7 @@ function main() {
             (b.exhausted !== undefined || b.start > 255 || b.end < 0),
       }),
       $hashedSet(
-        {
-          hash(value, state, H) {
-            H.writeU8(state, (value.exhausted ?? value).start & 255);
-            H.writeU8(state, (value.exhausted ?? value).end & 255);
-            H.writeU8(
-              state,
-              Number(value.exhausted !== undefined || value.start > 255 || value.end < 0),
-            );
-          },
-          hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeU8(state, (item.exhausted ?? item).start & 255);
-              H.writeU8(state, (item.exhausted ?? item).end & 255);
-              H.writeU8(
-                state,
-                Number(item.exhausted !== undefined || item.start > 255 || item.end < 0),
-              );
-            }
-          },
-        },
+        rangeInclusiveHash$1,
         (a, b) =>
           ((a.exhausted ?? a).start & 255) === ((b.exhausted ?? b).start & 255) &&
           ((a.exhausted ?? a).end & 255) === ((b.exhausted ?? b).end & 255) &&
@@ -538,28 +332,7 @@ function main() {
   const last = { start: 254, end: 255 };
   $rangeInclusiveNext(last);
   $rangeInclusiveNext(last);
-  console.log(
-    `${hashed(last, {
-      hash(value, state, H) {
-        H.writeU8(state, (value.exhausted ?? value).start & 255);
-        H.writeU8(state, (value.exhausted ?? value).end & 255);
-        H.writeU8(
-          state,
-          Number(value.exhausted !== undefined || value.start > 255 || value.end < 0),
-        );
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeU8(state, (item.exhausted ?? item).start & 255);
-          H.writeU8(state, (item.exhausted ?? item).end & 255);
-          H.writeU8(
-            state,
-            Number(item.exhausted !== undefined || item.start > 255 || item.end < 0),
-          );
-        }
-      },
-    })}`,
-  );
+  console.log(`${hashed(last, rangeInclusiveHash$1)}`);
 
   // Inside a key whose `Hash` is derived.
   const spans = new ($hashedSet(spanHash, $eq))([

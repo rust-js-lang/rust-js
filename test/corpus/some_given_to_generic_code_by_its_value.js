@@ -81,6 +81,16 @@ function wWraps_wrapped(w, t) {
 
 function main() {
   // A local `Option<Option<i32>>`, made and read where it's held, given on.
+  const strHash = {
+    hash(value, state, H) {
+      H.writeStr(state, value);
+    },
+    hashSlice(items, state, H) {
+      for (const item of items) {
+        H.writeStr(state, item);
+      }
+    },
+  };
   const n = $args().length > 5 ? 1 : $some(undefined);
   console.log(`${n != null && $someValue(n) == null}`);
   console.log(
@@ -102,51 +112,9 @@ function main() {
   console.log(
     `${got == null ? "None" : `Some(${entryDebug_fmt($someValue(got))})`} ${entry == null ? "None" : `Some(${entryDebug_fmt($someValue(entry))})`} ${$debugStr(value$1)}`,
   );
-  const value$2 = found(
-    m,
-    "a",
-    {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    },
-    $strictlyEqual,
-  );
-  const value$3 = found(
-    m,
-    "b",
-    {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    },
-    $strictlyEqual,
-  );
-  const value$4 = found(
-    m,
-    "c",
-    {
-      hash(value, state, H) {
-        H.writeStr(state, value);
-      },
-      hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeStr(state, item);
-        }
-      },
-    },
-    $strictlyEqual,
-  );
+  const value$2 = found(m, "a", strHash, $strictlyEqual);
+  const value$3 = found(m, "b", strHash, $strictlyEqual);
+  const value$4 = found(m, "c", strHash, $strictlyEqual);
   console.log(
     `${value$2 == null ? "None" : `Some(${entryDebug_fmt($someValue(value$2))})`} ${value$3 == null ? "None" : `Some(${entryDebug_fmt($someValue(value$3))})`} ${value$4 == null ? "None" : `Some(${entryDebug_fmt($someValue(value$4))})`}`,
   );
