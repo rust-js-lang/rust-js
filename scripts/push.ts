@@ -139,6 +139,35 @@ export function portRefusal(code: number, log: string): string {
     : `the React port differs at its pin (target/react-in-rust.diff; its run's output in ${log}): regenerate the port and move ports/react-in-rust.pin in this push`;
 }
 
+/** Of `changed`, the files a rebase changed since this run's script was
+ * loaded, those it can't run on as it is: a module this process has
+ * loaded already, `loaded`, whose rebased importers, loaded later, would
+ * meet its old exports (#2272's `lockHeld`, "Export named 'lockHeld' not
+ * found", #2275), and the install's manifests. One not loaded yet loads
+ * as rebased, consistent with what it imports. */
+export function staleModules(changed: string[], loaded: string[]): string[] {
+  const held = new Set(loaded);
+  return changed.filter((file) => held.has(file) || file === "package.json" || file === "bun.lock");
+}
+
+/** The environment push runs again in from the rebased tree: its own, but
+ * that this run times it, which the run again does itself, its line the
+ * one written (`ownsTimes`). */
+export function againEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const again = { ...env };
+  delete again.RUST_JS_TIMED_BY;
+  delete again.RUST_JS_TIMED_OTHERS;
+  return again;
+}
+
+/** The checkout's files this process has loaded, by their path in it. */
+export function loadedModules(): string[] {
+  const root = process.cwd();
+  return Object.keys(require.cache)
+    .filter((path) => path.startsWith(`${root}/`))
+    .map((path) => path.slice(root.length + 1));
+}
+
 export function onlyPushedFiles(changed: string[], pushed: string[]): string[] {
   const ours = new Set(pushed);
   return changed.filter((file) => !ours.has(file));
@@ -203,9 +232,22 @@ async function main() {
     let checkedBase = "";
     // The base an earlier round's React gate passed at, where one did.
     let reactBase: string | undefined;
+    // The commit this script and what it imports were loaded from.
+    const loadedAt = git("rev-parse", "HEAD").out.trim();
     for (;;) {
       const remade = rebase();
       phase("rebase");
+      // A rebase that changed what this process has loaded: push runs again
+      // from the rebased tree, with what it was given, its line its own
+      // (#2275). Its run starts at the rebased commit, so it doesn't again.
+      const stale = staleModules(lines(git("diff", "--name-only", loadedAt, "HEAD").out), loadedModules());
+      if (stale.length > 0) {
+        console.log(`push: the rebase changed what push runs, ${stale.slice(0, 3).join(", ")}${stale.length > 3 ? ` and ${stale.length - 3} more` : ""}: running again from the rebased tree`);
+        written = true;
+        regen?.stop();
+        const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env) });
+        process.exit(again.status ?? 1);
+      }
       const base = git("rev-parse", "origin/main").out.trim();
       // What git's hook refuses as it pushes, and the catalog's own tests,
       // before minutes of building and checking.

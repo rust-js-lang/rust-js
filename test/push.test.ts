@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { appendedBoth, beside, FAST_TESTS, fastAgain, lineSet, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, rebase, regenerated, remakeable, mutantsAgain, sanitySkipped, stdGenerated } from "../scripts/push";
+import { againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, rebase, regenerated, remakeable, mutantsAgain, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -337,4 +337,24 @@ test("a rebase that stops with no conflict to resolve is refused and aborted", (
   } finally {
     process.chdir(was);
   }
+});
+
+// A rebase that changes a module the push has loaded runs push again from
+// the rebased tree: its lazily imported, rebased modules met the loaded
+// one's old exports, "Export named 'lockHeld' not found" (#2275). One not
+// loaded yet loads as rebased; the install's manifests always count.
+test("a rebase that changes what push has loaded runs it again, its line its own", () => {
+  const loaded = loadedModules();
+  expect(loaded).toContain("scripts/push.ts");
+  expect(loaded).toContain("scripts/leases.ts");
+  expect(staleModules(["scripts/leases.ts", "scripts/disk.ts", "src/lib.rs"], ["scripts/push.ts", "scripts/leases.ts"])).toEqual(["scripts/leases.ts"]);
+  expect(staleModules(["scripts/disk.ts", "test/corpus/a.rs"], ["scripts/push.ts", "scripts/leases.ts"])).toEqual([]);
+  expect(staleModules(["bun.lock", "package.json"], [])).toEqual(["bun.lock", "package.json"]);
+  // The run again times itself, writing the one line.
+  expect(againEnv({ RUST_JS_TIMED_BY: "push", RUST_JS_TIMED_OTHERS: "1", RUST_JS_AGENT: "a" })).toEqual({ RUST_JS_AGENT: "a" });
+  // Asked right after each rebase, before anything it runs reads a module.
+  const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  const at = source.indexOf('      const remade = rebase();\n      phase("rebase");\n');
+  expect(at).toBeGreaterThan(0);
+  expect(source.indexOf("staleModules(", at)).toBeLessThan(source.indexOf("fastAgain(since, named)", at));
 });

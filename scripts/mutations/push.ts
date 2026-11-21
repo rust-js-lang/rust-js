@@ -234,4 +234,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/push.test.ts", "-t", "a rebase's conflict in a line set"],
   },
+  {
+    name: "push-stale-loaded-module-unseen",
+    breaks: "a rebase that changes a module push has loaded isn't seen, so push runs on, its rebased modules imported later meeting the loaded one's old exports, \"Export named 'lockHeld' not found\" (#2275)",
+    file: "scripts/push.ts",
+    find: "  return changed.filter((file) => held.has(file) || file === \"package.json\" || file === \"bun.lock\");\n",
+    replace: "  return changed.filter((file) => file === \"package.json\" || file === \"bun.lock\");\n",
+    tests: ["test/push.test.ts", "-t", "runs it again"],
+  },
+  {
+    name: "push-again-timed-twice",
+    breaks: "push run again from the rebased tree is told this run times it, so neither writes the machine's line of the push (#2275)",
+    file: "scripts/push.ts",
+    find: "  delete again.RUST_JS_TIMED_BY;\n",
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "runs it again"],
+  },
 ];
