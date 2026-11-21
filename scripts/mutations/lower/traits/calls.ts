@@ -619,4 +619,12 @@ export const mutations: Mutation[] = [
     replace: "                && false\n",
     tests: ["test/crates.test.ts", "-t", "nested past its contract is refused"],
   },
+  {
+    name: "trait-call-drops-unchecked",
+    breaks: "a call through a trait's method gives its own type parameters a destructor unchecked, where the default it runs takes none, so the iterator's drop is lost (#2276)",
+    file: "src/lower/traits/calls.rs",
+    find: "        self.check_drops_given(id, generic_args, span)?;\n        let (mut values, mut drops) = (Vec::new(), Vec::new());\n",
+    replace: "        let (mut values, mut drops) = (Vec::new(), Vec::new());\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a trait's method that takes no destructor"],
+  },
 ];

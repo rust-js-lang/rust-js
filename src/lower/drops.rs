@@ -376,12 +376,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// crate's once each is lowered (ADR 0190).
     pub(in crate::lower) fn check_drops_given(&self, callee: DefId, args: GenericArgsRef<'tcx>, span: Span) -> R<()> {
         let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        // A call of a trait's method: of the one rustc resolves it to, an
+        // impl's or the trait's default, that one's own requirement; of one it
+        // resolves to none, generic code's or a `dyn`'s, any impl's
+        // (`through_trait`, #2276).
+        let (callee, args, through_trait) = match self.tcx.trait_of_assoc(callee) {
+            Some(_) if callee.is_local() => match self.resolve_self_instance(callee, args)? {
+                Some(instance) if matches!(instance.def, ty::InstanceKind::Item(_)) => {
+                    (instance.def_id(), instance.args, false)
+                }
+                Some(_) => (callee, args, false),
+                None => (callee, args, true),
+            },
+            _ => (callee, args, false),
+        };
         let given: Vec<(u32, Option<Vec<u32>>)> = args
             .iter()
             .enumerate()
             .filter_map(|(index, arg)| {
                 let ty = arg.as_type()?;
-                let params = owned_params(self.tcx, ty);
+                // Each as the function that declares it numbers it, which its
+                // callers' checks read; of a default copied into an impl, one
+                // of the impl's own as its trait's `Self`, which holds it, as
+                // a blanket impl's `I` is its `Self` (#2273, #2276).
+                let params: Vec<u32> = (owned_params(self.tcx, ty).into_iter())
+                    .map(|index| match self.declared_param(index) {
+                        super::traits::Declared::Own(_, own) => own,
+                        super::traits::Declared::Impls => 0,
+                    })
+                    .collect();
                 let own = self.drop_query().drops_but_params(ty) != Drops::Nothing;
                 (own || !params.is_empty()).then(|| (index as u32, (!own).then_some(params)))
             })
@@ -415,6 +438,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.drops_observed.borrow_mut().checks.push(DropCheck {
                 caller: owner,
                 callee,
+                through_trait,
                 span,
                 given,
             });
@@ -663,6 +687,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(super) struct DropCheck {
     caller: DefId,
     callee: DefId,
+    /// A call of a trait's method rustc resolves to no one impl, generic
+    /// code's or a `dyn`'s: checked against every impl's requirement.
+    through_trait: bool,
     span: Span,
     given: Vec<(u32, Option<Vec<u32>>)>,
 }
@@ -680,8 +707,22 @@ pub(super) fn check_no_drops(
     let mut changed = true;
     while changed {
         changed = false;
+        // What a call through a trait's method, resolved to no one impl, is
+        // checked against: its default's requirement and each impl's of its
+        // own type parameters, as the trait's method numbers them (#2276).
+        let mut through: IndexMap<DefId, BTreeSet<u32>> = IndexMap::default();
+        for (&method, indexes) in no_drops.iter() {
+            for &index in indexes {
+                if let Some((item, at)) = super::traits::trait_method_param(tcx, method, index) {
+                    through.entry(item).or_default().insert(at);
+                }
+            }
+        }
         for check in checks {
-            let required = no_drops.get(&check.callee).cloned().unwrap_or_default();
+            let mut required = no_drops.get(&check.callee).cloned().unwrap_or_default();
+            if check.through_trait {
+                required.extend(through.get(&check.callee).into_iter().flatten());
+            }
             for (index, params) in check.given.iter().filter(|(index, _)| required.contains(index)) {
                 match params {
                     None if reported.insert(check.span) => {

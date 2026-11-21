@@ -869,6 +869,34 @@ test("generic code's Box<I> folded by a closure that holds a destructor is refus
   expect(compiled.stderr.toString()).not.toContain("panicked");
 });
 
+// The same through a trait's method (#2276): a default copied into impls of
+// no, one and two type parameters, which records its requirement as the
+// default numbers its parameters (`declared_param`), and an impl's own
+// method, each checked where a call resolves to it, and a call generic code
+// makes through the trait checked against every impl's, as any may run.
+test("a trait's method that takes no destructor is refused where it's given one, as a function's is", () => {
+  const prelude = "struct D(u32);\nimpl Drop for D {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\nstruct Own(u32);\nimpl Iterator for Own {\n    type Item = D;\n    fn next(&mut self) -> Option<D> {\n        self.0 = self.0.checked_sub(1)?;\n        Some(D(self.0))\n    }\n    fn size_hint(&self) -> (usize, Option<usize>) {\n        (self.0 as usize, Some(self.0 as usize))\n    }\n}\nimpl DoubleEndedIterator for Own {\n    fn next_back(&mut self) -> Option<D> {\n        self.next()\n    }\n}\nimpl ExactSizeIterator for Own {}\nimpl Drop for Own {\n    fn drop(&mut self) {\n        println!(\"drop Own\");\n    }\n}\nfn folded<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(it: Box<I>) -> u32 {\n    let held = D(91);\n    it.fold(0, move |n, x| {\n        let _held = &held;\n        n + x.0\n    })\n}\n";
+  const viaDefault = "trait Via {\n    fn via<U, I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(&self, _u: U, it: Box<I>) -> u32 {\n        folded(it)\n    }\n}\n";
+  const viaOwn = "trait Via {\n    fn via<U, I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(&self, _u: U, it: Box<I>) -> u32;\n}\nstruct Y;\nimpl Via for Y {\n    fn via<U, I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(&self, _u: U, it: Box<I>) -> u32 {\n        folded(it) + 1\n    }\n}\n";
+  const through = "fn through<T: Via>(t: &T) -> u32 {\n    t.via(D(7), Box::new(Own(3)))\n}\n";
+  const cases: [string, string, string][] = [
+    ["no-params", viaDefault + "struct Z;\nimpl Via for Z {}\npub fn main() {\n    println!(\"{}\", Z.via(D(7), Box::new(Own(3))));\n}\n", "`Via::via`'s `I`"],
+    ["one-param", viaDefault + "struct One<A>(A);\nimpl<A> Via for One<A> {}\npub fn main() {\n    println!(\"{}\", One(1u8).via(D(7), Box::new(Own(3))));\n}\n", "`Via::via`'s `I`"],
+    ["two-params", viaDefault + "struct Two<A, B>(A, B);\nimpl<A, B> Via for Two<A, B> {}\npub fn main() {\n    println!(\"{}\", Two(1u8, 2u8).via(D(7), Box::new(Own(3))));\n}\n", "`Via::via`'s `I`"],
+    ["generic-default", viaDefault + "struct Z;\nimpl Via for Z {}\n" + through + "pub fn main() {\n    println!(\"{}\", through(&Z));\n}\n", "`Via::via`'s `I`"],
+    ["own-method", viaOwn + "pub fn main() {\n    println!(\"{}\", Y.via(D(7), Box::new(Own(3))));\n}\n", "`<Y as Via>::via`'s `I`"],
+    ["generic-own-method", viaOwn + through + "pub fn main() {\n    println!(\"{}\", through(&Y));\n}\n", "`Via::via`'s `I`"],
+  ];
+  for (const [name, source, what] of cases) {
+    const dir = fixture(`trait-method-takes-no-drops-${name}`);
+    const input = join(dir, "lib.rs");
+    writeFileSync(input, prelude + source);
+    const compiled = Bun.spawnSync([compiler, input, "-o", join(dir, "lib.js")]);
+    expect([name, compiled.exitCode === 0]).toEqual([name, false]);
+    expect([name, compiled.stderr.toString()]).toEqual([name, expect.stringContaining(`rust-js does not support giving ${what} a type with a destructor, where it takes none yet`)]);
+  }
+});
+
 // An iterator JS holds as no object, a fieldless enum's string, given to
 // generic code that holds an iterator as the value itself (ADR 0061), is
 // given it in a place of its own, `{ value: x }` (#2255). Inside what

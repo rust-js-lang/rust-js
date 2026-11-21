@@ -111,3 +111,43 @@ printing what native does. New corpus
 `generic_collect_of_a_panicking_chain_drops_its_source`, into a `String` and
 a `Vec`; mutation `callers-iterator-not-closed-on-a-panic`, caught, and
 `collect-holding-unclosed` retargeted, caught.
+
+## Amendment: a trait's method is checked as a function is (2026-11-22, #2276)
+
+Case: D ([0262](0262-when-rust-and-js-disagree.md)): rust-js can't keep
+Rust's behaviour here, since JS wouldn't drop the value, so the call is
+refused at compile time.
+
+A trait's default that passed its `I` on to a function taking no
+destructor of it compiled, and the iterator's drop was lost:
+`Z.via(D(7), Box::new(Own(3)))` printed no `drop Own`. The free-function
+form was refused. There were three gaps:
+
+- A call through a trait's dictionary gave its method's own evidence by
+  `own_evidence`, which checked nothing. It now asks `check_drops_given`,
+  as `evidence_args_given` does.
+- A default copied into an impl recorded its requirement at the impl's
+  numbering of its parameters. It now records them as the default numbers
+  them (`declared_param`, #2273). One of the impl's own parameters is
+  recorded as its trait's `Self`, which holds it, as a blanket impl's `I`
+  is its `Self`, never against a sibling. itertools' `k_smallest` over its
+  blanket impl stays as it compiled.
+- An impl's own method's requirement was keyed by that method,
+  `<Y as Via>::via`, and a call through the trait was checked against
+  `Via::via`.
+
+**A call of a trait's method rustc resolves to one method, an impl's or
+the trait's default, is checked against that method's own requirement. A
+call it resolves to none, generic code's or a `dyn`'s, is checked against
+every impl's requirement as well.** Each impl's requirement on its own
+type parameters is lifted to the trait's method's numbering
+(`trait_method_param`). So `Y`'s override, which folds a box of its `I`,
+refuses `through(&Y)` and generic code's `t.via(..)`, but not `Z.via(..)`
+on a `Z` that counts and drops it. A requirement on an impl's own type
+parameter, outside the method's, is checked where the impl's dictionary
+is made, `<W<A> as Tot>`'s `A`, as before.
+
+test/diagnostics.test.ts covers a default in impls of no, one and two type
+parameters, a generic call, an override and a generic call of the
+override. Corpus `trait_call_checks_the_impl_it_resolves_to_for_drops`
+holds the calls that resolve to a method that drops, against native Rust.

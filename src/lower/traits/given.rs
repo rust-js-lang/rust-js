@@ -82,6 +82,20 @@ pub(in crate::lower) fn default_param<'tcx>(
         .map(|at| at as u32)
 }
 
+/// Of an impl's method, `method`, its own type parameter `index` as the
+/// trait's method it implements numbers it, after the trait's parameters
+/// where the impl's numbers it after the impl's: `I` 2 of `fn via<U, I>` in
+/// `impl Via for Y` as `Via::via`'s, 2 too, and in `impl<A> Via for W<A>`,
+/// 3 of the impl's, 2 of the trait's (#2276). `None` of one of the impl's
+/// own parameters, or of a method that implements no trait's.
+pub(in crate::lower) fn trait_method_param(tcx: TyCtxt<'_>, method: DefId, index: u32) -> Option<(DefId, u32)> {
+    let imp = tcx.trait_impl_of_assoc(method)?;
+    let item = tcx.associated_item(method).trait_item_def_id()?;
+    let first = tcx.generics_of(imp).count() as u32;
+    let parent = tcx.generics_of(item).parent_count as u32;
+    index.checked_sub(first).map(|own| (item, parent + own))
+}
+
 /// A type parameter of the body being lowered, as the function that
 /// declares it numbers it (`FnCx::declared_param`): the one key of each
 /// per-parameter fact the crate's analysis found, `(owner, index)`.

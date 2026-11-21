@@ -761,6 +761,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // parameters' facts (ADR 0466); and a drop for each of its own type
         // parameters the trait declares one for, none, left out at the end,
         // for one with nothing to drop (ADR 0163).
+        self.check_drops_given(id, generic_args, span)?;
         let (mut values, mut drops) = (Vec::new(), Vec::new());
         let mut location = location;
         for slot in self.own_slots_through(id, generic_args) {

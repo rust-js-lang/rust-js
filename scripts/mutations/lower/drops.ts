@@ -176,4 +176,28 @@ export const mutations: Mutation[] = [
     replace: "        out.extend(code);\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
+  {
+    name: "copied-default-drops-in-impls-terms",
+    breaks: "a default copied into an impl records what it takes no destructor of at the impl's numbering, a sibling's index, so `Via::via`'s `U` is required where its `I` is (#2273, #2276)",
+    file: "src/lower/drops.rs",
+    find: "                        super::traits::Declared::Own(_, own) => own,\n",
+    replace: "                        super::traits::Declared::Own(..) => index,\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a trait's method that takes no destructor"],
+  },
+  {
+    name: "resolved-trait-call-checked-through-the-trait",
+    breaks: "a call rustc resolves to one impl is checked against every impl's requirement, so `Z.via(..)` is refused for `Y`'s, which `Z` doesn't share (#2276)",
+    file: "src/lower/drops.rs",
+    find: "                    (instance.def_id(), instance.args, false)\n",
+    replace: "                    (callee, args, true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^trait_call_checks_the_impl_it_resolves_to_for_drops.rs$"],
+  },
+  {
+    name: "impl-requirement-not-through-the-trait",
+    breaks: "generic code's call through a trait's method isn't checked against an impl's own method's requirement, so `through(&Y)` loses the drop `Y`'s fold of a box can't make (#2276)",
+    file: "src/lower/drops.rs",
+    find: "                required.extend(through.get(&check.callee).into_iter().flatten());\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts", "-t", "a trait's method that takes no destructor"],
+  },
 ];

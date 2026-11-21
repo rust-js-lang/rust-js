@@ -237,4 +237,12 @@ export const mutations: Mutation[] = [
     replace: "                    Declared::Own(..) => part,\n",
     tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
   },
+  {
+    name: "trait-method-param-unshifted",
+    breaks: "an impl's method's own type parameter is lifted to its trait's method at the impl's numbering, past no `Self`, so a generic call's requirement falls on `U` where it's `I` (#2276)",
+    file: "src/lower/traits/given.rs",
+    find: "    index.checked_sub(first).map(|own| (item, parent + own))\n",
+    replace: "    index.checked_sub(first).map(|own| (item, own))\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a trait's method that takes no destructor"],
+  },
 ];
