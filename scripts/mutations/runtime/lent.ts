@@ -109,6 +109,15 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
   },
   {
+    name: "boxed-lend-hold-stops",
+    breaks:
+      "a `Box`'s lend, held, never holds what it owns, so a generic `Box<I>` folded in place drops `I` at its end inside the fold's last step, and as that drop panics the fold drops its accumulator, `drop acc 6`, which std's `fold(self)` leaks (#2232)",
+    file: "src/runtime/lent.js",
+    find: "      lent.held = true;\n      it.hold?.();\n",
+    replace: "      lent.held = true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_dropped_after_its_fold.rs$"],
+  },
+  {
     name: "lent-of-a-lend-lent-again",
     breaks: "a `&mut` lend of what a `&mut` lends already lends it again, so std's compiled struct a caller lent, given with a dictionary whose `lent` lends it, reads its fields through two lends and steps `NaN` (#2187)",
     file: "src/runtime/lent.js",

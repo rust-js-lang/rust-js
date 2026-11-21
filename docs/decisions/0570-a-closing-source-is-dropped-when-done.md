@@ -543,3 +543,46 @@ Mutations `compiled-self-armed`, `compiled-struct-not-a-holder`,
 code's `fuse()` where no caller gives `IFused`, an impl's own method's,
 still takes `false`, std's non-fused `Fuse`: #2042, as itertools'
 `ZipLongest::rfold` reaches it.
+
+## Amendment: std's default fold holds what it folds (2026-11-21, #2232)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results changed, so
+Rust's are kept.
+
+#1330 had `$foldBy`, std's default `fold(self, init, f)`, step by
+`ownNext` and close what it folds after its loop. Something it steps
+could still close at its own end inside a step. A generic `Box<I>` is
+lent as `$lent($closing(src, drop), "boxed")`, and a box doesn't pass
+`fold` on, so the box's fold is `$foldBy` over the lend. That fold steps
+the `$closing`, which closed `I` when it found it done. When `I`'s drop
+panicked there, it ran as a step's panic, and the fold dropped the
+accumulator: `drop acc 15`. Std's `fold(self)` has its result by then.
+It drops the box, and so `I`, as it returns, and a panic there leaks the
+result. The in-place form behind this, `Iterator.from($lent($closing(..),
+"boxed").map(..))`, is chosen by a crate-wide fact: the same adapter type
+stepped from its back anywhere in the crate. So the points table showed
+it only beside a `next_back` case. Generic code's `Box<I>` became a
+`DoubleEndedIterator` with #2227.
+
+A crate-wide per-type fact may choose an in-place form only if that
+form is right for every source of the type. So the form is what's fixed,
+not the fact:
+
+- **`$foldBy` holds what it folds before its first step,** as `$consume`
+  and `$steppedHeld` do. Nothing it steps closes at its end inside a
+  step. It's closed once, after the loop, after what drops with `f`,
+  which is std's order. An adapter whose `next` drops its source, std's
+  `Fuse` (a flatten's source) or a chain's first half, drops it there
+  itself, held or not.
+- **A `Box`'s lend, held, holds what it owns,** since the box's drop is
+  its value's. The lend's `hold` holds it, not its `from`, which says
+  what std's `SourceIter` reaches, and no `Box` is one. A `&mut` lend's
+  hold still stops at the lend.
+
+Neither change moves the JS the compiler writes. On the points table,
+five generic boxed rows now run as native: `inspect | fold`, `chain | fold`,
+`step_by | fold`, `flat_map array | fold` and `filter_map | fold holding`.
+`test/corpus/boxed_source_dropped_after_its_fold.rs` holds `fold`,
+`last` and `sum` against native Rust in both builds, beside a
+`next_back` of the same adapter type. Mutations `fold-by-unheld` and
+`boxed-lend-hold-stops`.

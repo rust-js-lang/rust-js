@@ -81,6 +81,17 @@ function $lent(it, kind = "lent") {
   // slice's steps, which it passes on (#745).
   lent.lends = it;
   lent.lentAs = kind;
+  // A `Box`'s, which owns `it`, held: `it` held, as the box's drop is
+  // what it holds', so a fold of the box drops `it` after its loop, not at
+  // its end inside a step (#2232). A `&mut`'s hold stops at it. Not its
+  // `from`, which says what std's `SourceIter` reaches, as no `Box` is one.
+  if (owns) {
+    lent.hold = () => {
+      if (lent.held) return;
+      lent.held = true;
+      it.hold?.();
+    };
+  }
   // A `Box`'s, which owns `it`, dropped: `it` dropped, where it carries its
   // drop, a `Box<dyn Iterator>`'s (`$droppingIterator`), as the box's drop
   // runs what it holds' (#2186).

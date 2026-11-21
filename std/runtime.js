@@ -4523,8 +4523,14 @@ export function $endsAfter(ends, run) {
 // #710). Stepped by its own steps, `ownNext`, not those that close it at
 // its end, JS's protocol's: what's left of it is dropped after its last
 // step, as std's fold drops `self` once it has what it folded, which a
-// panic there leaks, never drops (#1330).
+// panic there leaks, never drops (#1330). Held first, so nothing it
+// steps closes at its end inside a step, a `$closing` done, which a panic
+// of its drop would make a step's, the accumulator dropped: what it holds
+// is dropped with it, after its loop, as `fold(self)` drops `self` whole
+// (#2232). What drops its source in its `next`, a fuse's, a chain's, a
+// flatten's, drops it there itself, held or not.
 export function $foldBy(it, by, init, f, unwind, ends) {
+  it.hold?.();
   let folded = init;
   let stepping = false;
   const close = () => it.return?.();
@@ -22965,6 +22971,17 @@ export function $lent(it, kind = "lent") {
   // slice's steps, which it passes on (#745).
   lent.lends = it;
   lent.lentAs = kind;
+  // A `Box`'s, which owns `it`, held: `it` held, as the box's drop is
+  // what it holds', so a fold of the box drops `it` after its loop, not at
+  // its end inside a step (#2232). A `&mut`'s hold stops at it. Not its
+  // `from`, which says what std's `SourceIter` reaches, as no `Box` is one.
+  if (owns) {
+    lent.hold = () => {
+      if (lent.held) return;
+      lent.held = true;
+      it.hold?.();
+    };
+  }
   // A `Box`'s, which owns `it`, dropped: `it` dropped, where it carries its
   // drop, a `Box<dyn Iterator>`'s (`$droppingIterator`), as the box's drop
   // runs what it holds' (#2186).

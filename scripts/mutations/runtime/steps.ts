@@ -13,6 +13,15 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "sorted_keys_dropped_before_their_source"],
   },
   {
+    name: "fold-by-unheld",
+    breaks:
+      "std's default fold steps what it folds unheld, so a generic `Box<I>` the crate also steps from its back, folded in place, drops `I` at its end inside its last step, and as that drop panics the fold drops its accumulator, `drop acc 6`, which std's `fold(self)` leaks (#2232)",
+    file: "src/runtime/steps.js",
+    find: "function $foldBy(it, by, init, f, unwind, ends) {\n  it.hold?.();\n",
+    replace: "function $foldBy(it, by, init, f, unwind, ends) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_dropped_after_its_fold.rs$"],
+  },
+  {
     name: "steps-base-global",
     breaks: "`$Steps` extends the `Iterator` global itself, which a bundler can't tell is there, so it keeps the class, and every helper it calls, in a module that imports none (rd274)",
     file: "src/runtime/steps.js",
