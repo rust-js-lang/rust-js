@@ -624,13 +624,15 @@ and each was prevented, none accepted (the lead's rule):
    place, an inlined `Drop`'s at each drop, `js::rebound` (`Name::rebound`)
    as this ADR's point 4 planned.
 4. Algorithms keyed by a word dedupe and match by the word, as main does:
-   `reclaim::spelled`'s and `reclaim::locals`' declarations,
+   `reclaim::spelled`'s and `reclaim::locals`' declarations, and
    `reclaim::aliased_imports`' count of a name declared elsewhere in the
-   module, and `drops::inlined`'s copies (`copies_read_as`), a guard's
-   fields' copies (`kept_variables`) and its `const` of itself
-   (`fields_of`), which JS reads before it's made whatever its id. They are
-   step 3's, whose structures key by `Name`, to move to ids, on record here
-   so they aren't forgotten.
+   module. They are step 3's, whose structures key by `Name`, to move to
+   ids, on record here so they aren't forgotten. `drops::inlined`'s were
+   among them, its copies (`copies_read_as`), a guard's fields' copies
+   (`kept_variables`) and its `const` of itself (`fields_of`); since
+   043f65933 (step (e)) they're keyed by ids: the guard a `Name`, the
+   `Drop`'s binding a copy of the field whose reads are the variable's by
+   id, its scoping `js::scopes`' (#1992).
 5. Preparation's record of which of its rewrites fired asked `==` alone,
    which a respelled name, its id kept, leaves alike: a rewrite fired where
    the tree or its names' spellings changed (`passes::Spelled`), so
