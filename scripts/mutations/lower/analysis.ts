@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis.rs",
     find: "        closures::refuse_dropping_fn_dyn(tcx, name, made.first().filter(|_| !library_drops), &self_handles);\n",
     replace: "        closures::refuse_dropping_fn_dyn(tcx, name, made.first().filter(|_| false), &self_handles);\n",
-    tests: ["test/crates.test.ts", "-t", "callback is a public field"],
+    tests: ["test/crates-refused.test.ts", "-t", "callback is a public field"],
   },
   {
     name: "dropping-dyn-fn-library-refused",

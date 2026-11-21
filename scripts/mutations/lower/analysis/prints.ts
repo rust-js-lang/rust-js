@@ -180,7 +180,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "    if library {\n        let stopping = stopping(\n",
     replace: "    if false {\n        let stopping = stopping(\n",
-    tests: ["test/crates.test.ts", "-t", "may stop part-way, shown in a line"],
+    tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
   },
   {
     name: "consumer-shown-stopping-unrefused",
@@ -188,7 +188,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "    if catches && !foreign_stopping.is_empty() {\n",
     replace: "    if false && catches && !foreign_stopping.is_empty() {\n",
-    tests: ["test/crates.test.ts", "-t", "may stop part-way, shown in a line"],
+    tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
   },
   {
     name: "foreign-stopping-unasked",
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "                if foreign.stops_where_caught(adt) {\n",
     replace: "                if false && foreign.stops_where_caught(adt) {\n",
-    tests: ["test/crates.test.ts", "-t", "may stop part-way, shown in a line"],
+    tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
   },
   {
     name: "unknown-shown-stopping-unrefused",
@@ -204,7 +204,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "                } else if (ty.walk().filter_map(|part| part.as_type())).any(|part| unknown_part(part, true)) {\n",
     replace: "                } else if false {\n",
-    tests: ["test/crates.test.ts", "-t", "may stop part-way, shown in a line"],
+    tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
   },
   {
     name: "writer-in-a-line-shown-stopping-unrefused",
@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "        if let Some((expr, part)) = (writer.thir.exprs.iter()).find_map(|expr| Some((expr, stopping_part(expr.ty)?))) {\n",
     replace: "        if let Some((expr, part)) = (writer.thir.exprs.iter().take(0)).find_map(|expr| Some((expr, stopping_part(expr.ty)?))) {\n",
-    tests: ["test/crates.test.ts", "-t", "may stop part-way, shown in a line"],
+    tests: ["test/crates-refused.test.ts", "-t", "may stop part-way, shown in a line"],
   },
   {
     name: "dependency-stopping-writer-unseeded",
@@ -220,7 +220,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/prints.rs",
     find: "            &type_of,\n            &foreign_stopping,\n        );\n        found.stopping_where_caught",
     replace: "            &type_of,\n            &IndexSet::default(),\n        );\n        found.stopping_where_caught",
-    tests: ["test/crates.test.ts", "-t", "dependency's writer that may stop part-way"],
+    tests: ["test/crates-refused.test.ts", "-t", "dependency's writer that may stop part-way"],
   },
   {
     name: "written-into-writers-unseen",

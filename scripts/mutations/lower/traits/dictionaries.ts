@@ -651,7 +651,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dictionaries.rs",
     find: "        if let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
     replace: "        if impl_id.is_local() && let Some(here) = self.impl_nested_mut_object(impl_id, impl_args) {\n",
-    tests: ["test/crates.test.ts", "-t", "dictionary of a library's generic impl giving"],
+    tests: ["test/crates-refused.test.ts", "-t", "dictionary of a library's generic impl giving"],
   },
   {
     name: "generic-text-extend-joined-nothing",

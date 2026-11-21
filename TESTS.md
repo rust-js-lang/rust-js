@@ -227,6 +227,10 @@ That regression remains failing; no waiver or known-failure entry is added.
 The first full gate also requires the new facts total (67) and the full new
 module path in the architecture. Exact results are retained by the port.
 
+Split on 2026-11-22: `test/crates-refused.test.ts` holds the pairs of crates
+under test/crates/refused/, a consumer refused for what a library can't give
+it, moved from `test/crates.test.ts`, which neared its 1,350-line cap (#1334).
+
 Added on 2026-11-21: `test/io-readers.test.ts` holds the receiver box a known
 byte source's call is given to the runtime: each source's dictionary is called
 with a box whose setter throws, and throws exactly where the compiler gives a

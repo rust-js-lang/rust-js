@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/closures.rs",
     find: "                    held: held.unwrap_or(function),\n",
     replace: "                    held: function,\n",
-    tests: ["test/crates.test.ts", "-t", "callback is a public field"],
+    tests: ["test/crates-refused.test.ts", "-t", "callback is a public field"],
   },
   {
     name: "any-dyn-drops-unseen",

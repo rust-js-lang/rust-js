@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/type_facts/carried.rs",
     find: "    assoc.is_local() || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
     replace: "    assoc.is_local() || foreign.is_library(assoc.krate) || carried.contains(&fact) || fact == TypeFact::Room && carried.contains(&TypeFact::Size)\n",
-    tests: ["test/crates.test.ts", "-t", "associated type its dictionaries don't carry"],
+    tests: ["test/crates-refused.test.ts", "-t", "associated type its dictionaries don't carry"],
   },
   {
     name: "into-iterator-sizes-uncarried",

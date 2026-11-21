@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     file,
     find: "        unowned.extend(not_owned);\n",
     replace: "",
-    tests: ["test/crates.test.ts", "-t", "callback is a public field"],
+    tests: ["test/crates-refused.test.ts", "-t", "callback is a public field"],
   },
   {
     name: "owner-handle-called-between",

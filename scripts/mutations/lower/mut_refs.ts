@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mut_refs.rs",
     find: "        if !self.krate.foreign.compiled_by_rust_js(bound.def_id())\n",
     replace: "        if !bound.def_id().is_local()\n",
-    tests: ["test/crates.test.ts", "-t", "Vec of &mut objects through generic code"],
+    tests: ["test/crates-refused.test.ts", "-t", "Vec of &mut objects through generic code"],
   },
   {
     name: "boxed-field-still-refused",
