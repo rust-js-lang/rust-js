@@ -82,3 +82,7 @@ of them `{:?}` read as `{:#?}`. It found one fault of its own first: the
 two builds compiling into one folder ran one build's case beside the
 other's modules. `docs/finding-wrong-answers.md` lists it among the
 techniques; TESTS.md lists the test file.
+
+## Amendment: its known list is a directory, a file per issue (2026-11-21, #2260)
+
+Its known failures are `test/known/neighbours/`, one file per issue, named for its heading, `1022.txt` or `difference-39.txt`, and read as one list by `knownText` ([1180](1180-a-known-list-is-a-directory-a-file-per-issue.md)).

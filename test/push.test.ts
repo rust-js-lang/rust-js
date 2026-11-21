@@ -113,8 +113,8 @@ test("a rebase's conflict in TESTS.md's `Changed on` lines keeps both sides' new
 });
 
 // Two changes that each took a line off a known list conflict where the
-// lines are neighbours: m1-lisa's #2054 and m6-lily's #2056 off
-// test/metamorphic-known.txt stopped a push (2026-11-18). A line set's
+// lines are neighbours: m1-lisa's #2054 and m6-lily's #2056 off the
+// metamorphic net's list stopped a push (2026-11-18). A line set's
 // conflict is merged as a set, of git's own merge (`git merge-file
 // --diff3`, as the rebase's stages give it): what either side took off is
 // gone, what either added is kept; a line each side changed still stops.
@@ -144,9 +144,15 @@ test("a rebase's conflict in a line set keeps what neither side took off and wha
   expect(mergedLineSet(["<<<<<<< ours", "a", "=======", "b", ">>>>>>> theirs", ""].join("\n"))).toBeUndefined();
   // Every known list is a line set, and the rustc suite's lists.
   const known = readdirSync(join(root, "test")).filter((name) => name.endsWith("-known.txt"));
-  expect(known.length).toBeGreaterThan(5);
+  expect(known.length).toBeGreaterThan(3);
   for (const name of [...known, "rustc-known-failures.txt", "rustc-native-failures.txt", "rustc-out-of-scope.txt"]) expect([name, lineSet(`test/${name}`) && existsSync(join(root, "test", name))]).toEqual([name, true]);
-  expect(remakeable(["test/metamorphic-known.txt", "test/sig-binders.txt"])).toBe(true);
+  // And each issue's file of a known list kept as a directory (#2260).
+  for (const list of ["metamorphic", "iterator-matrix", "neighbours"]) {
+    const files = readdirSync(join(root, "test", "known", list)).filter((name) => name.endsWith(".txt"));
+    expect(files.length).toBeGreaterThan(1);
+    for (const name of files) expect([name, lineSet(`test/known/${list}/${name}`)]).toEqual([name, true]);
+  }
+  expect(remakeable(["test/known/metamorphic/1022.txt", "test/sig-binders.txt"])).toBe(true);
   expect(remakeable(["test/metamorphic.test.ts"])).toBe(false);
   expect(lineSet("docs/readability.txt")).toBe(false);
 });

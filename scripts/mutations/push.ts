@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "line-set-conflict-stops-the-push",
-    breaks: "a rebase's conflict in a known list two changes each took a line off stops the push, as m1-lisa's #2054 and m6-lily's #2056 off test/metamorphic-known.txt did (2026-11-18)",
+    breaks: "a rebase's conflict in a known list two changes each took a line off stops the push, as m1-lisa's #2054 and m6-lily's #2056 off the metamorphic net's list did (2026-11-18)",
     file: "scripts/push.ts",
     find: "  return conflicts.every((file) => file in regenerated || stdGenerated(file) || ratchets.includes(file) || decision(file) || lineSet(file) || changesLog(file));\n",
     replace: "  return conflicts.every((file) => file in regenerated || stdGenerated(file) || ratchets.includes(file) || decision(file) || changesLog(file));\n",
@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "line-set-merges-a-line-both-changed",
-    breaks: "a line each side changed, an id list of test/iterator-matrix-known.txt edited by both, is merged as two lines, both kept, where it's the change's author's to merge",
+    breaks: "a line each side changed, an id list of an iterator matrix issue's file edited by both, is merged as two lines, both kept, where it's the change's author's to merge",
     file: "scripts/push.ts",
     find: "    if (mine.adds && mine.takes && yours.adds && yours.takes) return undefined;\n",
     replace: "",
@@ -225,5 +225,13 @@ export const mutations: Mutation[] = [
     find: "  if (lines(git(\"diff\", \"--name-only\", \"--diff-filter=U\").out).length === 0) throw stopped(started.out);\n",
     replace: "",
     tests: ["test/push.test.ts", "-t", "a rebase that stops with no conflict to resolve"],
+  },
+  {
+    name: "push-issue-file-not-a-line-set",
+    breaks: "an issue's file of a known list kept as a directory isn't merged as a line set, so two fixes taking neighbour lines off it stop the push (#2260)",
+    file: "scripts/push.ts",
+    find: "  /^test\\/known\\/[\\w-]+\\/[\\w-]+\\.txt$/.test(file) ||\n",
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "a rebase's conflict in a line set"],
   },
 ];

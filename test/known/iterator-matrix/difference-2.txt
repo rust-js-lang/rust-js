@@ -1,0 +1,7 @@
+#difference 2 a `usize` is 32 bits and layouts are wasm32's, as rustc checks programs for it (ADR 0090): a collect into a `Vec` std makes in place by its items' layout on wasm32 and not natively, a `Vec<String>`'s or a `Vec<Vec<D>>`'s mapped to `u32`s or `D`s, steps, drops and keeps capacity as std does on wasm32 (the user's decision, #1651)
+plain 149581,149583-149584,149587-149588,149591-149592,149595,165062,186767,187573
+std 149581,149583-149584,149587-149588,149591-149592,149595,165062,186767,187573
+conformance:plain 48791
+conformance:std 42523,42525,47317,47319,48791,48838-48840,48842
+points:plain 14712
+points:std 12202,14222,14712,14726-14727

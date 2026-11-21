@@ -24,8 +24,60 @@ export const programFlags = (edition: string) => [`--edition=${edition}`, "-Cove
  * decided difference's, by its number in the guide's list, `#difference 39
  * <title>`, `difference 39` (ADR 0262): no wrong answer, and taken off
  * where it runs as Rust does too. `undefined` of another line. The one
- * reader of test/metamorphic-known.txt's and test/iterator-matrix-known.txt's. */
+ * reader of the known lists' headings (`knownText`). */
 export const knownHeading = (line: string): string | undefined => /^#(\d+|difference \d+) /.exec(line)?.[1];
+
+/** A known list kept as a directory, `test/known/<list>/`, so two fixes of
+ * two issues never edit one file (#2260): its `README.txt`, what it lists
+ * and how, and the iterator matrix's generator versions, and a file of each
+ * issue, named for its heading, `1022.txt` or `difference-39.txt`, which is
+ * its first line, `#1022 <title>`, its rows after. */
+export type KnownList = "metamorphic" | "iterator-matrix" | "neighbours";
+
+/** `list`'s directory. */
+export const knownDir = (list: KnownList): string => join(root, "test", "known", list);
+
+/** The file of the issue a heading names, `1022` or `difference 39`, of
+ * `list`, as a message telling what to take off names it. */
+export const knownFileOf = (list: KnownList, issue: string): string =>
+  `test/known/${list}/${issue.replace(" ", "-")}.txt`;
+
+/** `list` as one text: its README, then each issue's file, as its readers
+ * parse it. */
+export function knownText(list: KnownList, dir = knownDir(list)): string {
+  if (!existsSync(dir)) return "";
+  const issues = readdirSync(dir)
+    .filter((file) => file.endsWith(".txt") && file !== "README.txt")
+    .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  const readme = existsSync(join(dir, "README.txt")) ? [readFileSync(join(dir, "README.txt"), "utf8")] : [];
+  return [...readme, ...issues.map((file) => readFileSync(join(dir, file), "utf8"))].join("\n");
+}
+
+/** `text`, `list` as one text, written as its directory: what comes before
+ * the first heading its README, each heading's lines its issue's file, and
+ * the file of an issue it holds no row of removed, as the list only shrinks. */
+export function writeKnown(list: KnownList, text: string, dir = knownDir(list)): void {
+  mkdirSync(dir, { recursive: true });
+  const sections: { issue: string; lines: string[] }[] = [];
+  const readme: string[] = [];
+  for (const line of text.split("\n")) {
+    const issue = knownHeading(line);
+    if (issue !== undefined) sections.push({ issue, lines: [line] });
+    else (sections.at(-1)?.lines ?? readme).push(line);
+  }
+  const trimmed = (lines: string[]) => `${lines.join("\n").trimEnd()}\n`;
+  writeFileSync(join(dir, "README.txt"), trimmed(readme));
+  const kept = new Set<string>();
+  for (const { issue, lines } of sections) {
+    if (!lines.slice(1).some((line) => line !== "" && !line.startsWith("//"))) continue;
+    const file = `${issue.replace(" ", "-")}.txt`;
+    kept.add(file);
+    writeFileSync(join(dir, file), trimmed(lines));
+  }
+  for (const file of readdirSync(dir)) {
+    if (file.endsWith(".txt") && file !== "README.txt" && !kept.has(file)) rmSync(join(dir, file));
+  }
+}
 // The tests' target, a mutant's tests' own with `RUST_JS_TARGET`, and the
 // `@rust-js/std` the JS written in it imports: the checkout's, or a
 // runtime mutant's own in its target (#720).

@@ -1,0 +1,2 @@
+#1898 P2 (neighbours): LocalKey<RefCell<T>>::with_borrow_mut of a value with a destructor is refused beside a Drop impl
+plain std rc_dyn_fn_counted_by_its_signature.rs beside drop_impl_indirect.rs

@@ -310,7 +310,7 @@ jobs:
 
   # The metamorphic net (#939, ADR 1104): every corpus case rewritten each
   # way scripts/metamorph keeps its meaning, in both builds against native
-  # Rust, but the rewrites test/metamorphic-known.txt lists; each push runs
+  # Rust, but the rewrites test/known/metamorphic/ lists; each push runs
   # one case in 128. Its 39 rewrites' 4 parts on one machine took 141-149
   # minutes and were stopped at its 150 (nightly 42927113223, #1306), so
   # it's 12 parts on 3 machines, 4 a machine, one a core.
@@ -457,7 +457,7 @@ jobs:
 
   # The neighbour shuffle (#853, ADR 1103): the day's seed's groups of the
   # corpus's cases, each group one crate, in both builds against native
-  # Rust, but the pairs test/neighbours-known.txt lists; each push runs seed
+  # Rust, but the pairs test/known/neighbours/ lists; each push runs seed
   # 0's first two groups and each listed pair.
   neighbours:
     name: neighbour shuffle
@@ -629,7 +629,7 @@ jobs:
 
   # The iterator conformance matrix (ADR 1090): every case, each source,
   # chain, consumer and panic site, in both builds against native Rust, but
-  # those test/iterator-matrix-known.txt lists; a check whose change is the
+  # those test/known/iterator-matrix/ lists; a check whose change is the
   # iterators' code runs its slice (check.yml's `iterators`, #731).
   matrix:
     name: iterator matrix (${{ matrix.machine }}/6)
@@ -687,7 +687,7 @@ jobs:
 
   # The iterator conformance table (ADR 1092): each adapter alone through
   # each step of the contract, in both builds against native Rust, but the
-  # rows of test/iterator-matrix-known.txt it lists.
+  # rows of test/known/iterator-matrix/ it lists.
   conformance:
     name: iterator conformance (${{ matrix.machine }}/2)
     needs: numbers
@@ -745,7 +745,7 @@ jobs:
   # The points table (#817): each of the conformance table's cases run once
   # a panic point, each closure call, drop, clone and step of the crate's
   # iterator, in both builds against native Rust, but the `points:` rows of
-  # test/iterator-matrix-known.txt.
+  # test/known/iterator-matrix/.
   points:
     name: iterator panic points
     needs: conformance
@@ -798,7 +798,7 @@ jobs:
   # fields, closures, collections' operations that call the crate's code,
   # `Option` and `Result` combinators, comparators and `?`, of each shape of
   # value, run once a panic point, in both builds against native Rust, but
-  # the `unwind:` rows of test/iterator-matrix-known.txt.
+  # the `unwind:` rows of test/known/iterator-matrix/.
   unwind:
     name: panic points beyond iterators
     needs: format
@@ -849,7 +849,7 @@ jobs:
 
   # The formatting grid (#941): every format spec of each value its trait
   # applies to, by each sink in turn, in both builds against native Rust,
-  # but the `format:` rows of test/iterator-matrix-known.txt.
+  # but the `format:` rows of test/known/iterator-matrix/.
   format:
     name: formatting grid
     needs: rustlantis
@@ -901,7 +901,7 @@ jobs:
   # The numbers grid (#940): every integer and float operation of each
   # type's boundary values, each cast between every pair, each parse, in
   # both builds against native Rust, but the `numbers:` rows of
-  # test/iterator-matrix-known.txt.
+  # test/known/iterator-matrix/.
   numbers:
     name: numbers grid
     needs: react-compiler
@@ -952,7 +952,7 @@ jobs:
 
   # The async table (#942): each family of async bodies, values live across
   # `.await`, of each shape, at each panic point, in both builds against
-  # native Rust, but the `async:` rows of test/iterator-matrix-known.txt.
+  # native Rust, but the `async:` rows of test/known/iterator-matrix/.
   async:
     name: panic points across await
     needs: unwind
@@ -1004,7 +1004,7 @@ jobs:
   # The copy matrix (test/copy-matrix.ts, ADR 1090, amended): each
   # compiled iterator form copied each way and stepped by each ability
   # beside its original, all 23,000 or so cases, in both builds against
-  # native Rust, but the `copies:` rows of test/iterator-matrix-known.txt.
+  # native Rust, but the `copies:` rows of test/known/iterator-matrix/.
   copies:
     name: copy matrix
     needs: crates
@@ -1053,7 +1053,7 @@ jobs:
   # The consumer net (test/consumer-net.ts): each std method that takes an
   # iterator by value, of each source, as it is and with a closure's or a
   # step's panic, in both builds against native Rust, but the `consumers:`
-  # rows of test/iterator-matrix-known.txt.
+  # rows of test/known/iterator-matrix/.
   consumers:
     name: consumer net
     needs: mut-refs
@@ -1105,7 +1105,7 @@ jobs:
   # The std net (test/std-net.ts, #1171): each std method that changes a
   # collection in place or calls what it's given, as it is and with what it
   # calls panicking, in both builds against native Rust, but the `std:` rows
-  # of test/iterator-matrix-known.txt.
+  # of test/known/iterator-matrix/.
   std:
     name: std net
     needs: async

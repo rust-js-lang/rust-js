@@ -1,0 +1,4 @@
+#1060 P2 (neighbours): untagged_in_untagged.rs refused beside guard_deref_dictionary.rs + rc_from_box.rs: an Rc variant can't be told apart
+plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
+plain std untagged_told_by_members.rs beside drop_impl_indirect.rs weak_debug.rs
+plain eq_of_identities_inside.rs beside drop_impl_indirect.rs owner_handle_returns_another.rs

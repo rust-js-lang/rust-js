@@ -3,7 +3,7 @@
 // builds. A rewrite rustc rejects of every place it finds is tried of its
 // first alone; one rustc rejects even so is no variant. What runs otherwise
 // than native, or crashes rust-js, is listed under its issue in
-// test/metamorphic-known.txt; each listed one runs each night, so the list
+// test/known/metamorphic/; each listed one runs each night, so the list
 // only shrinks.
 //
 //   bun test test/metamorphic.test.ts                                      # a push's sample
@@ -20,7 +20,7 @@ import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
 import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, caseShard, firstPart, fixture, root } from "./support";
+import { buildCompiler, caseShard, firstPart, fixture, knownFileOf, root } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
@@ -299,7 +299,7 @@ for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name
         // One whose native output its seed decides, difference 5's, runs as
         // Rust does where a seed agrees: listed, it may (#1453).
         if (listedAs !== undefined && problem === undefined && listedAs.issue !== "difference 5") {
-          problems.push(`${build} ${rewrite} ${name} runs as Rust does now: take it off test/metamorphic-known.txt (#${listedAs.issue})`);
+          problems.push(`${build} ${rewrite} ${name} runs as Rust does now: take it off ${knownFileOf("metamorphic", listedAs.issue)}`);
         } else if (listedAs === undefined && problem !== undefined) {
           // With its program reduced (#1088), where it's one crate.
           if (found?.program !== undefined) failing.push({ at: problems.length, reduction: toReduce(found.program, build, edition) });

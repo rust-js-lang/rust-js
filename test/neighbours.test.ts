@@ -2,7 +2,7 @@
 // corpus cases, each group one crate, run natively and as JS in both
 // builds. A group that differs is narrowed to its victim and the fewest
 // neighbours beside which it differs, which is what's filed and listed in
-// test/neighbours-known.txt; each listed pair is compiled alone too, so the
+// test/known/neighbours/; each listed pair is compiled alone too, so the
 // list only shrinks.
 //
 //   bun test test/neighbours.test.ts                                     # the listed pairs, seed 0's first two groups
@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { crateOf, groups, listed, narrowed, neighbourly, readKnown, victim, writeCrate, type Known } from "./neighbours";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, fixture } from "./support";
+import { buildCompiler, fixture, knownFileOf } from "./support";
 import { shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
 
@@ -192,7 +192,7 @@ function stillWrong(pair: Known, build: string, flags: string[]): boolean {
 for (const pair of known) {
   test(`#${pair.issue}: ${pair.victim ?? "-"} beside ${pair.beside.join(" ")} still goes wrong`, () => {
     const fixed = builds.filter(([build]) => pair.builds.includes(build)).filter(([build, flags]) => !stillWrong(pair, build, flags));
-    expect(fixed.map(([build]) => `${build} runs as Rust does now: take it off test/neighbours-known.txt (#${pair.issue})`)).toEqual([]);
+    expect(fixed.map(([build]) => `${build} runs as Rust does now: take it off ${knownFileOf("neighbours", pair.issue)}`)).toEqual([]);
   }, 300_000);
 }
 

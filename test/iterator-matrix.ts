@@ -32,7 +32,7 @@ import { isTrait, ownClone, pathFns, type Path } from "./iterator-paths";
 import { pointsRunner } from "./panic-points";
 import { nested, ownName, owns, sites, sources, type Item, type Nested, type Own, type Shape, type Site, type Source } from "./iterator-sources";
 import { casesOf, tableOf } from "./matrix-tables";
-import { knownHeading, root, target } from "./support";
+import { knownHeading, knownText, root, target, writeKnown } from "./support";
 import { partSetting } from "./part-settings";
 
 /** The builds each case is compiled in: the recognizers' rewrites, and
@@ -68,7 +68,6 @@ export const fixedFile = join(failures, "fixed.txt");
 /** Where a run against std's own bodies (`ITERATOR_ORACLE=std`, #1205)
  * writes what each build of each batch imported of the runtime. */
 export const twinHelpers = join(target, "twin-net");
-const knownFile = join(root, "test", "iterator-matrix-known.txt");
 
 /** How the known list names a build's cases of `of`: `plain` of the
  * matrix's, `conformance:plain` of the conformance table's. */
@@ -91,7 +90,7 @@ export function parseKnown(text: string): Known {
   for (const line of text.split("\n")) {
     const version = /^\/\/ generator (?:(\w+) )?(\w+)$/.exec(line);
     if (version && version[1] !== undefined && !(tables as string[]).includes(version[1])) {
-      throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no table's generator`);
+      throw new Error(`test/known/iterator-matrix: \`${line}\` is no table's generator`);
     }
     if (version) known.versions[(version[1] as Table | undefined) ?? "matrix"] = version[2];
     if (line === "" || line.startsWith("//")) continue;
@@ -101,7 +100,7 @@ export function parseKnown(text: string): Known {
     }
     const at = known.issues.at(-1);
     const row = /^((?:(\w+):)?\w+) (\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)$/.exec(line);
-    if (!at || !row || (row[2] !== undefined && !(tables as string[]).includes(row[2]))) throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no build's cases under an \`#<issue>\` or a \`#difference <number>\``);
+    if (!at || !row || (row[2] !== undefined && !(tables as string[]).includes(row[2]))) throw new Error(`test/known/iterator-matrix: \`${line}\` is no build's cases under an \`#<issue>\` or a \`#difference <number>\``);
     const numbers = row[3].split(",").flatMap((range) => {
       const [from, to = from] = range.split("-").map(Number);
       return Array.from({ length: to - from + 1 }, (_, k) => from + k);
@@ -119,7 +118,7 @@ export function knownCases(known: Known): Map<string, string> {
     const issue = knownHeading(heading)!;
     for (const [build, numbers] of cases) {
       for (const n of numbers) {
-        if (out.has(`${build} ${n}`)) throw new Error(`test/iterator-matrix-known.txt: ${build} ${n} is listed twice`);
+        if (out.has(`${build} ${n}`)) throw new Error(`test/known/iterator-matrix: ${build} ${n} is listed twice`);
         out.set(`${build} ${n}`, issue);
       }
     }
@@ -157,7 +156,7 @@ export function printKnown(known: Known, header: string): string {
   return `${header}${versions}${issues}`;
 }
 
-export const readKnown = () => parseKnown(existsSync(knownFile) ? readFileSync(knownFile, "utf8") : "");
+export const readKnown = () => parseKnown(knownText("iterator-matrix"));
 
 /** The cases' version: of their names, in their order, so a change to what
  * the generator makes, or in what order, is another. */
@@ -449,7 +448,7 @@ const forward = ["count", "last", "nth", "vec", "fold"];
 
 /** Every case of the matrix, in one order, each id its own: the plain
  * cases first, as they were before the variants, so their numbers are
- * test/iterator-matrix-known.txt's still; then, of chains of none or one
+ * test/known/iterator-matrix/'s still; then, of chains of none or one
  * adapter, the captures, and the pairs. */
 export function allCases(): Case[] {
   const out: Case[] = [];
@@ -1206,6 +1205,9 @@ const header = `// The iterator matrix's cases (ADR 1090), the conformance table
 // fixed. Its numbers are of each table's generator version below; a change
 // to a table's cases makes its rows again, with each issue's cases found
 // again.
+// Each issue's lines are a file of its own here, named for its heading,
+// \`1022.txt\` or \`difference-39.txt\`, the heading its first line, so two
+// fixes never edit one file (#2260); \`knownText\` reads them as one list.
 `;
 
 // `bun test/iterator-matrix.ts take-off`: the known failures the last runs
@@ -1232,7 +1234,7 @@ if (import.meta.main) {
     for (const { cases } of known.issues) {
       for (const [build, numbers] of cases) cases.set(build, numbers.filter((n) => !fixed.has(`${build} ${n}`)));
     }
-    writeFileSync(knownFile, printKnown(known, header));
+    writeKnown("iterator-matrix", printKnown(known, header));
     writeFileSync(fixedFile, "");
     console.log(`took ${fixed.size} off`);
   } else if (command === "add" && args.length === 3) {
@@ -1246,7 +1248,7 @@ if (import.meta.main) {
     let at = known.issues.find(({ heading }) => heading.startsWith(`#${issue} `));
     if (!at) known.issues.push((at = { heading: `#${issue} ${title}`, cases: new Map() }));
     for (const { build, n } of found) at.cases.set(build, [...(at.cases.get(build) ?? []), n]);
-    writeFileSync(knownFile, printKnown(known, header));
+    writeKnown("iterator-matrix", printKnown(known, header));
     console.log(`added ${found.length} under #${issue}`);
   } else if (command === "program" && args.length === 1) {
     const of = tableOf(table);

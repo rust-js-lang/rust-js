@@ -1,0 +1,3 @@
+#difference 5 a HashMap or a HashSet iterates in insertion order, where Rust's order is its seed's: of a program whose own output differs across seeds in what it prints, not only in its order, which no comparison of native's runs can judge (the lead's decision, #1453)
+plain std loud stock_orders.rs
+plain std loud-call stock_orders.rs

@@ -10,7 +10,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { root } from "./support";
+import { knownText, root } from "./support";
 
 const adr = readFileSync(
   join(root, "docs/decisions/0262-when-rust-and-js-disagree.md"),
@@ -86,9 +86,9 @@ test("an rd id in ADR 0262's Consequences is only the port's gap, never an excep
 });
 
 test("the metamorphic net's decided exceptions are named by their difference's number, which the guide has", () => {
-  // `#difference 39`, never `#rd360`, under which test/metamorphic-known.txt
+  // `#difference 39`, never `#rd360`, under which test/known/metamorphic/
   // lists a rewrite whose difference the user decided.
-  const known = readFileSync(join(root, "test/metamorphic-known.txt"), "utf8");
+  const known = knownText("metamorphic");
   const headings = known.split("\n").filter((line) => line.startsWith("#"));
   expect(headings.filter((line) => /^#rd\d/.test(line))).toEqual([]);
   const listed = differences();

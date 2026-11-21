@@ -122,13 +122,18 @@ export function fixedIssues(messages: string): Set<string> {
 }
 
 /** Whether `diff`, `git diff -U0` of `file` as the remote has it, `before`,
- * only takes rows off a known list, `test/<name>-known.txt`, each under an
- * issue's heading, `#<n> ..`, of `fixes`, the issues the push names
- * (`fixedIssues`), the heading too where it goes
- * with them: one added, or under another's heading, a `#difference`'s say,
- * isn't. */
+ * only takes rows off a known list, each under an issue's heading, `#<n>
+ * ..`, of `fixes`, the issues the push names (`fixedIssues`), the heading
+ * too where it goes with them: one added, or under another's heading, a
+ * `#difference`'s say, isn't. A known list is `test/<name>-known.txt`, or an
+ * issue's file of one kept as a directory, `test/known/<list>/<n>.txt`, its
+ * heading its first line, taken off whole where it's fixed (#2260); or the
+ * small Crater's decided list, `scripts/crater-decided.txt`, whose row names
+ * its issue itself, `#2253`, as a decided line that no longer fails is that
+ * issue fixed, not a fix undone. */
 export function fixedRowsOnly(file: string, before: string, diff: string, fixes: Set<string>): boolean {
-  if (!/^test\/[^/]+-known\.txt$/.test(file)) return false;
+  const decided = file === "scripts/crater-decided.txt";
+  if (!decided && !/^test\/(?:[^/]+-known\.txt|known\/[^/]+\/\d+\.txt)$/.test(file)) return false;
   const lines = before.split("\n");
   let removed = 0;
   for (const line of diff.split("\n")) {
@@ -141,8 +146,8 @@ export function fixedRowsOnly(file: string, before: string, diff: string, fixes:
       // A blank line between sections goes with either.
       if (lines[at]!.trim() === "") continue;
       let heading = at;
-      while (heading >= 0 && !lines[heading]!.startsWith("#")) heading--;
-      const issue = heading < 0 ? undefined : lines[heading]!.match(/^#(\d+)\b/)?.[1];
+      while (!decided && heading >= 0 && !lines[heading]!.startsWith("#")) heading--;
+      const issue = decided ? lines[at]!.match(/^[^#].*?#(\d+)\b/)?.[1] : heading < 0 ? undefined : lines[heading]!.match(/^#(\d+)\b/)?.[1];
       if (issue === undefined || !fixes.has(issue)) return false;
       removed++;
     }

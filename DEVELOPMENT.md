@@ -719,7 +719,7 @@ checked:
     mutations and `test/runtime-package.test.ts`, and push. For an iterator change, "the code it works with"
     means any of `src/lower/mir/iter`, `src/lower/iterators`,
     `src/lower/analysis/back_stepped.rs`, `src/runtime`, `std/`,
-    `test/corpus` or `test/iterator-matrix-known.txt`.
+    `test/corpus` or `test/known/iterator-matrix/`.
   - Otherwise, rebuild and regenerate (`cargo build`, `bun run std`),
     then run your change's own cases, its changed mutations, and the test
     files that cover the modules it touches; for an iterator change, both
@@ -863,8 +863,9 @@ checked:
   test/sig-binders.txt and test/type-parameter-reads.txt) takes the lower count of each, which holds of the
   rebased tree as each side only removed what's counted; one in an ADR
   both sides only appended an amendment to keeps both, main's first; one
-  in a line set (`lineSet`: each `test/*-known.txt` and the rustc suite's
-  three lists) is merged as a set, a line either side took off gone and
+  in a line set (`lineSet`: each `test/*-known.txt`, each issue's file of
+  `test/known/<list>/` (ADR 1180) and the rustc suite's three lists) is
+  merged as a set, a line either side took off gone and
   one either added kept, where a line each side changed still stops it
   (test/push.test.ts); any other conflict, hand-written code's too, stops
   the push. `--bless-readability` blesses `docs/readability.txt`
@@ -893,7 +894,9 @@ checked:
   commit on purpose, or take away all a recent commit added, a slow spot's
   row once it's fixed say, name it in the message ("This reverts commit
   <sha>"). Rows taken off a `test/*-known.txt` under the heading of an
-  issue a pushed commit `Fixes` are that issue fixed, never a revert.
+  issue a pushed commit `Fixes`, an issue's file of `test/known/<list>/`
+  taken off, or a row of `scripts/crater-decided.txt` naming such an issue,
+  are that issue fixed, never a revert (ADR 1180).
   `bun run push` runs the same rule first, in its `fast` phase.
 - **A push that fails**, GitHub down say, isn't a reason to stop: keep
   committing on `main` locally, and push when it works again.

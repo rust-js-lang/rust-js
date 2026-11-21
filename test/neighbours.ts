@@ -18,6 +18,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
+import { knownText } from "./support";
 
 /** Why a case can't share a crate with others, or `undefined`: what its
  * text names that resolves at the crate's root, or that two cases would
@@ -151,10 +152,8 @@ export function writeCrate(dir: string, group: string[]): string {
  * neighbours, and whether it's slow rather than wrong. */
 export type Known = { issue: string; builds: string[]; victim: string | undefined; beside: string[]; slow: boolean };
 
-export const knownFile = join(import.meta.dir, "neighbours-known.txt");
-
-/** test/neighbours-known.txt's pairs, or why a line isn't one. */
-export function readKnown(text = readFileSync(knownFile, "utf8")): Known[] {
+/** test/known/neighbours/'s pairs (`knownText`), or why a line isn't one. */
+export function readKnown(text = knownText("neighbours")): Known[] {
   const known: Known[] = [];
   let issue: string | undefined;
   for (const line of text.split("\n")) {
@@ -170,7 +169,7 @@ export function readKnown(text = readFileSync(knownFile, "utf8")): Known[] {
     const slow = words.at(-1) === "slow";
     const beside = words.slice(at + 1, slow ? -1 : undefined);
     if (issue === undefined || at < 2 || builds.length === 0 || builds.some((b) => b !== "plain" && b !== "std") || beside.length === 0) {
-      throw new Error(`test/neighbours-known.txt: \`${line}\` isn't \`<builds> <case>|- beside <cases> [slow]\` under an \`#<issue>\``);
+      throw new Error(`test/known/neighbours: \`${line}\` isn't \`<builds> <case>|- beside <cases> [slow]\` under an \`#<issue>\``);
     }
     known.push({ issue, builds, victim: words[at - 1] === "-" ? undefined : words[at - 1], beside, slow });
   }

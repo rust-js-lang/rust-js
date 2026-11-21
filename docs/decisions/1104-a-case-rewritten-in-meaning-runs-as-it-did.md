@@ -504,3 +504,7 @@ orders, swapped, still disagree (the lead's bounds). A hash table whose
 order changes what the program prints, not only its order, `stock_orders`'
 runs of different lengths, is still compared exactly.
 
+
+## Amendment: its known list is a directory, a file per issue (2026-11-21, #2260)
+
+Its known failures are `test/known/metamorphic/`, one file per issue, named for its heading, `1022.txt` or `difference-39.txt`, and read as one list by `knownText` ([1180](1180-a-known-list-is-a-directory-a-file-per-issue.md)).

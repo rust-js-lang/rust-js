@@ -1,0 +1,2 @@
+#difference 2 a `usize` is 32 bits, as rustc checks programs for wasm32 (ADR 0090): a collect into a `Vec` std makes in place, by its items' layout, on wasm32 and not natively, drops what it collected before what's left of its source as a closure panics, where natively it drops them the other way (the user's decision, #1651)
+plain std loud-call blanket_default_beside_an_unmet_clause.rs

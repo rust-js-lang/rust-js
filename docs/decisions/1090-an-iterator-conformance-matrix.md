@@ -874,3 +874,7 @@ Each of their real removals still runs whole. So does 766055774's, which
 made #823: its removed `iterator_item` and `is_some_and` are said nowhere
 else. `test/iterator-rows.test.ts` holds both shapes; mutation
 `rows-moved-code-read-as-removed`.
+
+## Amendment: its known list is a directory, a file per issue (2026-11-21, #2260)
+
+Its known failures are `test/known/iterator-matrix/`, one file per issue, named for its heading, `1022.txt` or `difference-39.txt`, and read as one list by `knownText` ([1180](1180-a-known-list-is-a-directory-a-file-per-issue.md)).

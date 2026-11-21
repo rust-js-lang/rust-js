@@ -43,4 +43,12 @@ export const mutations: Mutation[] = [
     replace: "  return runSync([process.execPath, \"test\", ...args], cwd, timeout, env);\n",
     tests: ["test/part-settings.test.ts", "-t", "a test's own `bun test` child runs without its parent's run modes"],
   },
+  {
+    name: "known-emptied-issue-kept",
+    breaks: "the file of an issue a known list's take-off left with no rows is kept, a heading listing nothing (#2260)",
+    file: "test/support.ts",
+    find: "    if (file.endsWith(\".txt\") && file !== \"README.txt\" && !kept.has(file)) rmSync(join(dir, file));\n",
+    replace: "",
+    tests: ["test/support.test.ts", "-t", "a known list kept as a directory"],
+  },
 ];

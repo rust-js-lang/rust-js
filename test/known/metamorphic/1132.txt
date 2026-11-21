@@ -1,0 +1,2 @@
+#1132 P2 (pointers): a pointer to an Option of an object that holds None, made of a reference or a box, is refused where it runs
+plain std boxed address_of_an_option_payload.rs

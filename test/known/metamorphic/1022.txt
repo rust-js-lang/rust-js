@@ -1,0 +1,4 @@
+#1022 P2: a pointer read as another type's, in generic code, throws at run time instead of refusing at compile time
+plain std generic maybe_uninit_array_written_through_its_pointer.rs
+plain std generic pointer_relayout.rs
+plain std generic bytes_through_pointers.rs

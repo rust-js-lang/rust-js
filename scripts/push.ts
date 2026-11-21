@@ -437,13 +437,15 @@ export function lowerRatchets(text: string): string | undefined {
 }
 
 /** A list of lines a change adds to or takes from, each line standing for
- * itself, its order the list's: a known list, `test/<net>-known.txt`, and
- * the rustc suite's three (ADR 0089). Two changes that each took a line
- * off one conflict on rebase where the lines are neighbours: m1-lisa's
- * #2054 and m6-lily's #2056 off test/metamorphic-known.txt stopped a push
- * (2026-11-18). */
+ * itself, its order the list's: a known list, `test/<net>-known.txt`, an
+ * issue's file of one kept as a directory, `test/known/<list>/<issue>.txt`
+ * (#2260), and the rustc suite's three (ADR 0089). Two changes that each
+ * took a line off one conflict on rebase where the lines are neighbours:
+ * m1-lisa's #2054 and m6-lily's #2056 off the metamorphic net's list
+ * stopped a push (2026-11-18). */
 export const lineSet = (file: string) =>
   /^test\/[\w-]+-known\.txt$/.test(file) ||
+  /^test\/known\/[\w-]+\/[\w-]+\.txt$/.test(file) ||
   ["test/rustc-known-failures.txt", "test/rustc-native-failures.txt", "test/rustc-out-of-scope.txt"].includes(file);
 
 /** `text`, a line set's merged with git's diff3 conflict markers (`git
@@ -452,8 +454,8 @@ export const lineSet = (file: string) =>
  * where both did, in ours' order, theirs' after the line before it in
  * theirs. Undefined where a conflict has no base section, or where each
  * side both added and took off lines, a line each side changed, which a
- * set can't tell from two lines (an id list of test/iterator-matrix-known
- * .txt edited by both), which stays the change's author's to merge. */
+ * set can't tell from two lines (an id list of an iterator matrix issue's
+ * file edited by both), which stays the change's author's to merge. */
 export function mergedLineSet(text: string): string | undefined {
   const out: string[] = [];
   const lines = text.split("\n");

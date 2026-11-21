@@ -1,0 +1,4 @@
+#1038 P2 (neighbours): identity_inside_keys.rs refused beside owner_handle_field_cloned.rs and rc_eq_generic_by_address_first.rs
+plain std identity_inside_keys.rs beside drop_impl_indirect.rs dyn_fn_of_a_params_function_drops.rs
+plain std identity_inside_keys.rs beside impl_fn_that_panics_keeps_its_cleanup.rs
+plain std identity_inside_keys.rs beside rc_of_an_impls_param_dropped_last.rs

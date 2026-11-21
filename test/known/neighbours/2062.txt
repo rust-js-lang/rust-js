@@ -1,0 +1,5 @@
+#2062 P2 (neighbours): cases refused beside a neighbour (an ExactSizeIterator count, iterator clones, TrustedLen of a parameter)
+plain mut_ref_of_a_boxed_iterator_is_the_iterators.rs beside trait_default_flat_map_of_arrays_collects_trusted.rs
+plain enumerate_of_take_from_back.rs beside generic_map_cloned_beside_another_bound.rs
+plain zip_sides_dropped_with_it.rs beside generic_map_beside_a_cloned_one_of_other_bounds.rs
+plain in_place_collect_of_a_built_type_relayed.rs beside repeat_drops.rs

@@ -19,7 +19,7 @@ import { pruneMaps } from "../scripts/testMap";
 import { keptSerdeFlags } from "./serde-kept";
 import { runSync } from "./child";
 import { cargoApp } from "./cargo-app";
-import { cargoArtifacts, contentDirectory, fixture, nativeBinary, nativeCrates, once, portable, root, run, seeded } from "./support";
+import { cargoArtifacts, contentDirectory, fixture, knownText, nativeBinary, nativeCrates, once, portable, root, run, seeded, writeKnown } from "./support";
 
 // Found in review: a file the case includes was changed, and the kept
 // binary, of the file before, answered for it.
@@ -655,4 +655,22 @@ test("a store's sweep skips an entry gone since it was listed", () => {
   const crater = join(dir, "crater");
   gone(crater, "a-crate");
   expect(() => boundCrater({ dir: crater, cap: 1, free: () => Number.POSITIVE_INFINITY })).not.toThrow();
+});
+
+// #2260: a known list kept as a directory, a file of each issue, read as
+// one list and written back the same: an issue whose rows are all taken
+// off loses its file, and the README keeps what comes before the headings.
+test("a known list kept as a directory is read as one list and written back the same", () => {
+  const dir = fixture("known-directory");
+  const text = "// the list\n// generator 1a\n\n#7 a bug\nplain a.rs\n\n#difference 2 decided\nstd b.rs\n";
+  writeKnown("metamorphic", text, dir);
+  expect(readdirSync(dir).sort()).toEqual(["7.txt", "README.txt", "difference-2.txt"]);
+  expect(readFileSync(join(dir, "7.txt"), "utf8")).toBe("#7 a bug\nplain a.rs\n");
+  expect(readFileSync(join(dir, "README.txt"), "utf8")).toBe("// the list\n// generator 1a\n");
+  const read = knownText("metamorphic", dir);
+  expect(read).toBe("// the list\n// generator 1a\n\n#7 a bug\nplain a.rs\n\n#difference 2 decided\nstd b.rs\n");
+  writeKnown("metamorphic", read, dir);
+  expect(knownText("metamorphic", dir)).toBe(read);
+  writeKnown("metamorphic", "// the list\n\n#7 a bug\n\n#difference 2 decided\nstd b.rs\n", dir);
+  expect(readdirSync(dir).sort()).toEqual(["README.txt", "difference-2.txt"]);
 });

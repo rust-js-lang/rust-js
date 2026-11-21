@@ -120,7 +120,7 @@ export const iteratorPaths = [
   "test/iterator-matrix.ts",
   "test/iterator-matrix-prelude.ts",
   "test/iterator-matrix.test.ts",
-  "test/iterator-matrix-known.txt",
+  "test/known/iterator-matrix/**",
   "test/iterator-paths.ts",
   "test/std-steps-catalog.ts",
   "test/iterator-forms.test.ts",

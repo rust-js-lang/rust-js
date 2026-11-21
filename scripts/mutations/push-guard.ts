@@ -50,4 +50,28 @@ export const mutations: Mutation[] = [  {
     replace: "/\\bFixes\\b([^)\\n]*)/g",
     tests: ["test/push-guard.test.ts", "-t", "rows taken off a known list"],
   },
+  {
+    name: "push-guard-issue-file-undoes",
+    breaks: "an issue's file of a known list kept as a directory, taken off by a push that fixes the issue, is read as undoing the commit that listed it (#2260)",
+    file: "scripts/push-guard.ts",
+    find: "test\\/(?:[^/]+-known\\.txt|known\\/[^/]+\\/\\d+\\.txt)$",
+    replace: "test\\/(?:[^/]+-known\\.txt)$",
+    tests: ["test/push-guard.test.ts", "-t", "an issue's known file taken off"],
+  },
+  {
+    name: "push-guard-decided-row-undoes",
+    breaks: "a decided Crater row of an issue the push fixes, taken off, is read as undoing the commit that listed it, as the guard refused 1977f0c77 at first (#2260)",
+    file: "scripts/push-guard.ts",
+    find: "  const decided = file === \"scripts/crater-decided.txt\";\n",
+    replace: "  const decided = false;\n",
+    tests: ["test/push-guard.test.ts", "-t", "an issue's known file taken off"],
+  },
+  {
+    name: "push-guard-decided-row-of-no-issue-fixed",
+    breaks: "a decided Crater row that names no issue, a difference the guide lists, is taken off as a fixed issue's (#2260)",
+    file: "scripts/push-guard.ts",
+    find: "lines[at]!.match(/^[^#].*?#(\\d+)\\b/)?.[1]",
+    replace: "(lines[at]!.startsWith(\"#\") ? undefined : [...fixes][0])",
+    tests: ["test/push-guard.test.ts", "-t", "an issue's known file taken off"],
+  },
 ];

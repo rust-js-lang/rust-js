@@ -1,0 +1,10 @@
+#1295 P2 (neighbours): a borrow in generic code of an associated type's value is refused in any crate that asks an address
+plain std panic_mid_fold_drops.rs beside mut_assoc_through_dictionary.rs pointer_offset_from.rs scope_struct_of_type_parameters.rs
+plain std blanket_iterator_trait.rs beside map_extend_unwinds_what_is_left.rs text_bytes_pointer_within.rs
+plain std generic_from_iter_in_place.rs beside identity_partial_eq.rs text_bytes_pointer_within.rs
+plain std option_slot_iterators.rs beside address_of_a_nested_field_through_a_deref.rs
+plain std mut_ref_fields_of_a_type_parameter.rs beside thread_local_lazy_where_observable.rs user_fmt_traits.rs
+plain generic_count_of_an_into_iter_by_its_own.rs beside address_of_a_tuple_item_asked_first.rs
+plain heap_pop_of_a_param.rs beside pointer_addresses.rs
+plain mut_ref_fields_of_a_type_parameter.rs beside unwrap_dropping.rs user_fmt_traits.rs
+plain untagged_variant_mapped_into_a_nullable_field.rs beside raw_pointers.rs

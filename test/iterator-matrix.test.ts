@@ -25,7 +25,7 @@
 //   bun scripts/iteratorSlice.ts run                                             # both tables' slices, in parts at once (#731)
 //
 // A case that doesn't run as Rust does fails its batch, but those
-// test/iterator-matrix-known.txt lists, each under its issue, which only
+// test/known/iterator-matrix/ lists, each under its issue, which only
 // shrinks: one that runs as Rust does fails until it's taken off. Each
 // failure is written to target/iterator-matrix/, a program of that case
 // alone.
@@ -39,7 +39,7 @@ import { builds, failures, fixedFile, knownCases, listedBuild, ofTable, readKnow
 import { same, type Outcome } from "./oracle";
 import { importedHelpers } from "./twin-net";
 import { aborted, compileJs, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, fixture } from "./support";
+import { buildCompiler, fixture, knownFileOf } from "./support";
 import { machine, shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
 
@@ -118,7 +118,7 @@ if (which === "all" && process.env.RUST_JS_CASES === undefined && mine.length > 
 // The list is both tables'; this run judges its own table's rows.
 test("the known failures are of these cases, each one a case", () => {
   const mineListed = [...known.keys()].filter((name) => ofTable(name.split(" ")[0]));
-  if (mineListed.length > 0) expect(list.versions[table], `the ${table}'s cases changed: make its rows of test/iterator-matrix-known.txt again`).toBe(version(every));
+  if (mineListed.length > 0) expect(list.versions[table], `the ${table}'s cases changed: make its rows of test/known/iterator-matrix/ again`).toBe(version(every));
   const names = new Set(every.flatMap((c) => builds.map(([build]) => `${listedBuild(build)} ${c.n}`)));
   expect(mineListed.filter((name) => !names.has(name))).toEqual([]);
 });
@@ -312,7 +312,7 @@ for (const index of mine) {
           // What `bun test/iterator-matrix.ts take-off` takes off the list.
           mkdirSync(failures, { recursive: true });
           appendFileSync(fixedFile, `${listed} ${c.n}\n`);
-          problems.push(`${name} (${listed} ${c.n}) is no wrong answer now (${verdict.kind}): take it off test/iterator-matrix-known.txt (#${issue})`);
+          problems.push(`${name} (${listed} ${c.n}) is no wrong answer now (${verdict.kind}): take it off ${knownFileOf("iterator-matrix", issue)}`);
           continue;
         }
         // Each that differs, its program alone and what each printed, a

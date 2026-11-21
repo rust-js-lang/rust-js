@@ -149,3 +149,26 @@ test("rows taken off a known list under an issue the push names undo nothing", (
   expect(fixedRowsOnly(known, "#difference 5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(false);
   expect(fixedRowsOnly("src/a-known.txt", "#5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(false);
 });
+
+// #2260: a known list kept as a directory, a file of each issue, its
+// heading its first line: the file taken off whole, or a row of it, by a
+// push that fixes its issue, undoes nothing. And the small Crater's decided
+// list, each row naming its issue itself: a row of an issue the push fixes
+// taken off is that issue fixed, never f59240c54's listing undone, as the
+// guard refused 1977f0c77 at first; a decided row of no issue, or the list's
+// own comment, still undoes it.
+test("an issue's known file taken off, or a decided Crater row of a fixed issue, undoes nothing", () => {
+  const file = "test/known/metamorphic/7.txt";
+  const listed = "#7 a bug\nplain b.rs\nstd c.rs\n";
+  expect(fixedRowsOnly(file, listed, "@@ -1,3 +0,0 @@\n-#7 a bug\n-plain b.rs\n-std c.rs\n", fixedIssues("the fix (Fixes #7)"))).toBe(true);
+  expect(fixedRowsOnly(file, listed, "@@ -3 +2,0 @@\n-std c.rs\n", fixedIssues("one row (Refs #7)"))).toBe(true);
+  expect(fixedRowsOnly(file, listed, "@@ -1,3 +0,0 @@\n-#7 a bug\n-plain b.rs\n-std c.rs\n", fixedIssues("Fixes #8"))).toBe(false);
+  expect(fixedRowsOnly(file, listed, "@@ -3 +3 @@\n-std c.rs\n+std d.rs\n", fixedIssues("Fixes #7"))).toBe(false);
+  expect(fixedRowsOnly("test/known/metamorphic/difference-5.txt", "#difference 5 x\nplain a.rs\n", "@@ -2 +1,0 @@\n-plain a.rs\n", fixedIssues("Fixes #5"))).toBe(false);
+  const decided = "scripts/crater-decided.txt";
+  const rows = "# The small Crater's differences, #1087\nnum-traits a  a NaN's sign isn't kept\nitertools b  #2253: a crash\nitertools c  #2253\n";
+  expect(fixedRowsOnly(decided, rows, "@@ -3,2 +2,0 @@\n-itertools b  #2253: a crash\n-itertools c  #2253\n", fixedIssues("Fixes #2253"))).toBe(true);
+  expect(fixedRowsOnly(decided, rows, "@@ -3,2 +2,0 @@\n-itertools b  #2253: a crash\n-itertools c  #2253\n", fixedIssues("Fixes #2254"))).toBe(false);
+  expect(fixedRowsOnly(decided, rows, "@@ -2 +1,0 @@\n-num-traits a  a NaN's sign isn't kept\n", fixedIssues("Fixes #2253"))).toBe(false);
+  expect(fixedRowsOnly(decided, rows, "@@ -1 +0,0 @@\n-# The small Crater's differences, #1087\n", fixedIssues("Fixes #1087"))).toBe(false);
+});

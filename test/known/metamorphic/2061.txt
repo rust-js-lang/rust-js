@@ -1,0 +1,3 @@
+#2061 P2 (crash): a rustc ICE compiling metamorphic field rewrites of closure_mut_ref and held_enumerate
+plain std field closure_mut_ref.rs
+plain std field held_enumerate.rs

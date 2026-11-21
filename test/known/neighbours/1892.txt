@@ -1,0 +1,4 @@
+#1892 P2 (neighbours): a Vec grown by an iterator rust-js can't count is refused in a crate that reads a Vec's capacity
+plain boxed_iterator_stepped_as_what_it_boxes.rs beside vec_set_len.rs
+plain cloned_chains_and_cycles.rs beside vec_capacity.rs
+plain string_iterator_lent_by_a_macro_where_it_is_made.rs beside hint_kept_through_rev_take_and_cycle.rs

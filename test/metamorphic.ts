@@ -13,7 +13,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameS
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
-import { knownHeading, root, target } from "./support";
+import { knownHeading, knownText, root, target } from "./support";
 import { runSync } from "./child";
 import { compileJs, runJs, runNative, runtimes, type Run } from "./programs";
 import { same } from "./oracle";
@@ -225,11 +225,9 @@ export function sampled(name: string, of = 128): boolean {
  * issue: its builds, its rewrite and its case. */
 export type Known = { issue: string; builds: string[]; rewrite: string; name: string };
 
-export const knownFile = join(import.meta.dir, "metamorphic-known.txt");
-
-/** test/metamorphic-known.txt's rewrites, or why a line isn't one:
- * `<builds> <rewrite> <case>` under an `#<issue> <title>`. */
-export function readKnown(text = existsSync(knownFile) ? readFileSync(knownFile, "utf8") : ""): Known[] {
+/** test/known/metamorphic/'s rewrites (`knownText`), or why a line isn't
+ * one: `<builds> <rewrite> <case>` under an `#<issue> <title>`. */
+export function readKnown(text = knownText("metamorphic")): Known[] {
   const known: Known[] = [];
   let issue: string | undefined;
   for (const line of text.split("\n")) {
@@ -243,7 +241,7 @@ export function readKnown(text = existsSync(knownFile) ? readFileSync(knownFile,
     const [name, rewrite] = [words.at(-1)!, words.at(-2)!];
     const builds = words.slice(0, -2);
     if (issue === undefined || !(rewrites as readonly string[]).includes(rewrite) || !name.endsWith(".rs") || builds.length === 0 || builds.some((b) => b !== "plain" && b !== "std")) {
-      throw new Error(`test/metamorphic-known.txt: \`${line}\` isn't \`<builds> <rewrite> <case.rs>\` under an \`#<issue>\` or a \`#difference <number>\``);
+      throw new Error(`test/known/metamorphic: \`${line}\` isn't \`<builds> <rewrite> <case.rs>\` under an \`#<issue>\` or a \`#difference <number>\``);
     }
     known.push({ issue, builds, rewrite, name });
   }
