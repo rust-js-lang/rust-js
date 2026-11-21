@@ -182,7 +182,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Some(value)` where `present` holds, else `None`: a `Some` not boxed
     /// is its value, there, which a nullable place stores as it is
-    /// (`Known::Present`); of a payload that may look like `None`, its box
+    /// (`ExprKind::SomeWhere`); of a payload that may look like `None`, its box
     /// (ADR 0051). What `map` makes, and `copied()` of an `Option<&mut T>`.
     pub(in crate::lower) fn some_where(&mut self, present: Expr, value: Expr, mapped: Ty<'tcx>) -> Expr {
         let value = if self.boxed_payload(mapped) {
@@ -1068,12 +1068,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `value`, an `item`, as the `Some` an `insert` or a `get_or_insert`
     /// writes to its place holds it (`held_in_option`): of what's never
-    /// boxed, there, `Known::Present`, which a nullable place stores as it
-    /// is, `thenableState ??= createThenableState()` (#541).
+    /// boxed, the value itself, never `undefined`, which its write says
+    /// (`Stmt::written`), `thenableState ??= createThenableState()` (#541).
     fn inserted(&mut self, value: Expr, item: Ty<'tcx>) -> Expr {
         match self.boxed_payload(item) {
             true => self.some(value),
-            false => value.present(),
+            false => value,
         }
     }
 

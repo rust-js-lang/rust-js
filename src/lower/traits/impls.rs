@@ -301,7 +301,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Within::Some(inner) => Some(inner.as_ref()),
                 _ => None,
             });
-            let made = self.made_for_generic_code(&value.clone().present(), (declared, env, output), within, span)?;
+            let made = self.made_for_generic_code(value, (declared, env, output), within, span)?;
             let Some(made) = made else {
                 return Ok(None);
             };

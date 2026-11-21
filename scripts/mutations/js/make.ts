@@ -280,22 +280,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
   },
   {
-    name: "defined-may-be-undefined",
-    breaks: "what lowering knows is never `undefined` is asked of its form alone, `createTask(..)` a call that may be",
-    file: "src/js/make.rs",
-    find: "                && [Known::Defined, Known::Present]\n",
-    replace: "                && [Known::Present]\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
-  },
-  {
-    name: "present-may-be-undefined",
-    breaks: "a `Some`'s value that's there may be `undefined`, so a nullable field given a `map`'s is `(c ? c(..) : undefined) ?? null`",
-    file: "src/js/make.rs",
-    find: "                && [Known::Defined, Known::Present]\n",
-    replace: "                && [Known::Defined]\n",
-    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "a nullable place written through a borrow stores null, which a nullable function returns"],
-  },
-  {
     name: "falsy-constant-false-truthy",
     breaks: "`x ?? false` isn't read as `x` in a test, `while (flags[i] ?? false)`",
     file: "src/js/make.rs",

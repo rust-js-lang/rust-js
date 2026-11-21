@@ -724,3 +724,25 @@ a temporary's value (`nulled-store-unmarked`,
 `Known::Item` as `ByFacts` does, which no pass asks now. Its handle path,
 `context._currentRenderer = rendererSigil ?? null` of a thread-local's
 `None`, is held by `cell-set-answer-trusted`.
+
+## Amendment: no mark of presence, nor an answer that asks marks (2026-11-21, #2112 S4c)
+
+With every write told MIR's answer or its form (S3f, S4a, S4b), nothing
+asked `Undefined::ByFacts` nor read `Known::Present`: both are deleted,
+and `Expr::may_be_undefined` takes no answer, its form being its one
+question; what MIR says is `null` or a value is `Undefined::Never`, which
+`null_for_none` answers before it. `Known::Present`'s writers are plain
+values: `inserted`'s `Some`, never `undefined`, says so on its write
+(`Stmt::written`), and what's given generic code as a `Some`, `adapt`'s
+and `made_for_generic_code`'s, read no mark. The architecture test holds
+that neither name, nor a `present()` writer, comes back. React's port and
+every suite are byte-identical. Mutations `defined-may-be-undefined`,
+`present-may-be-undefined` and `inserted-some-unknown`, whose sites went,
+are retired with their evidence in the commit. So is `ArgProof`'s `null`,
+what MIR says of a trailing argument's `None`: since `surely_there` asks
+the form alone (S3f), a `null` argument is given by its form, and nothing
+reached the field (`trailing-null-left-out` retired; the differential of
+the amendment of 2026-11-20 already found it changed no call). Mutation
+`null-for-none-objects-coalesced` names the corpus case that holds it,
+`nullable_items_set_to_a_some_by_index`. `Known::Defined`'s readers that
+aren't writes, a closure's `then` in `calls.rs` and none else, are S4d's.

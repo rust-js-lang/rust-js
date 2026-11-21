@@ -13,7 +13,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as a `&mut` (#1902, #1933). The tests: `js::truthy(local)`, JS's `if
     /// (local)`, and `local.is_some()`, their true edge; `local.is_none()`,
     /// its false one; a `match` or `if let` of it, `Some`'s arm. A read of
-    /// it there is `Known::Present`, so a nullable result or place stores it
+    /// it there is `Presence::Present`, so a nullable result or place stores it
     /// as it is, no `?? null`, and an exit gives it as it is, no `??
     /// undefined`.
     /// And a local written once, never lent, by a move or a copy of such a

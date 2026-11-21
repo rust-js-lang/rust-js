@@ -308,14 +308,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of)
                     }) =>
             {
-                let value = match value? {
-                    Value::Expr(e) => Value::Expr(Expr {
-                        facts: e.facts.without(js::Known::Present),
-                        ..e
-                    }),
-                    value => value,
-                };
-                self.one_none_returned(state, *place, (None, None), value, span)?
+                self.one_none_returned(state, *place, (None, None), value?, span)?
             }
             Rvalue::Aggregate(..) => value?,
             // What's `null` or a value already, as it is (ADR 0949).

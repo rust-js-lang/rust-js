@@ -119,20 +119,15 @@ test("no fact a JS node carries says what an Option's None is", () => {
 
 // A `Some` made where a test holds is a node of its own, `SomeWhere`, so
 // what reads it, `presence`'s fold and a nullable place's write, asks its
-// kind, not a fact (#2112 C S3c). What's left marked `Known::Present` is a
-// lone value a constructor knows is a `Some`'s: `inserted`'s, and what's
-// given generic code as one, `adapt`'s and `made_for_generic_code`'s. No
-// other writer comes back before S4 deletes the mark.
-test("Known::Present is written only by the lone values a constructor knows are a Some's", () => {
-  const writers = files("src").filter((file) => file.endsWith(".rs")).flatMap((file) =>
-    read(file).split("\n").flatMap((line, i) =>
-      /\.present\(\)|\.with\((?:js::)?Known::Present\)|known_as\(Known::Present\)/.test(line) ? [`${file}:${line.trim()}`] : []));
-  expect(writers.map((w) => w.split(":")[0])).toEqual([
-    "src/js/make.rs",
-    "src/lower/mut_refs.rs",
-    "src/lower/std_types/option.rs",
-    "src/lower/traits/impls.rs",
-  ]);
+// kind, not a fact (#2112 C S3c); a write through a handle carries MIR's
+// answer on its statement (S4b). The mark that said a value was there,
+// `Known::Present`, and the answer that asked the marks, `Undefined::ByFacts`,
+// are gone (S4c): neither comes back, nor a writer of the one or an asker
+// of the other.
+test("no mark of presence, nor an answer that asks marks", () => {
+  const named = files("src").filter((file) => file.endsWith(".rs"))
+    .filter((file) => /\bKnown::Present\b|\bUndefined::ByFacts\b|\.present\(\)/.test(read(file)));
+  expect(named).toEqual([]);
 });
 
 // What a nullable place's write is told of whether what it's given may be
@@ -140,8 +135,7 @@ test("Known::Present is written only by the lone values a constructor knows are 
 // `Never`, or the form alone, `ByForm`; `store_again`'s re-store of every
 // item's `x ?? null`, of what tidy joins, asks the form alone too, so a
 // decision lowering made without MIR's answer shows as a move, never
-// rescued by a mark (#2112). The marks, `Known::Defined` and
-// `Known::Present`, are asked (`ByFacts`) by no pass: a write through a
+// rescued by a mark (#2112). No pass asks a mark of a write: a write through a
 // handle, whose place `tidy::values::handles` and `js::applied` learn past
 // lowering, carries MIR's answer on its statement (`StmtFacts::written`,
 // set by `Stmt::written`, #2112 S4b). A `Drop`
@@ -149,14 +143,9 @@ test("Known::Present is written only by the lone values a constructor knows are 
 // literal's layout's (`ObjectLayout::nulled`, `ArrayLayout::nulled`, #2112
 // S4a, ADR 0841's reader 8). A trailing `Option` a binding call is given asks MIR's proof and
 // its form alone too (`binding_calls.rs`' `surely_there`, #2112 S3f); and
-// no pass reads `Known::Present` itself: tidy's `tested_option` asks the
-// `SomeWhere`'s `there` (S3d).
+// tidy's `tested_option` asks the `SomeWhere`'s `there` (S3d).
 test("the marks are asked only where MIR isn't at hand", () => {
-  const askers = files("src").filter((file) => file.endsWith(".rs") && file !== "src/js/storage.rs" && file !== "src/js/make.rs")
-    .filter((file) => /Undefined::ByFacts/.test(read(file)));
-  expect(askers).toEqual([]);
   expect(read("src/lower/drops/inlined.rs")).not.toMatch(/Known::(?:Defined|Present)/);
-  expect(files("src").filter((file) => file.endsWith(".rs") && /\.has\((?:js::)?Known::Present\)/.test(read(file)))).toEqual([]);
   expect(read("src/lower/std_types/cell/variables.rs")).toContain("store_again(js::Undefined::ByForm)");
 });
 

@@ -540,7 +540,7 @@ export const mutations: Mutation[] = [
       "a nullable thread-local's read is there, so `keep.then(|| CURRENT.get()).flatten().is_some()` is `keep`, true where the cell is `None` (#539)",
     file: "src/lower/mir/structure.rs",
     find: "                                Value::Expr(e.defined())\n",
-    replace: "                                Value::Expr(e.present())\n",
+    replace: "                                Value::Expr(e)\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable place's read is returned as it is"],
   },
   {

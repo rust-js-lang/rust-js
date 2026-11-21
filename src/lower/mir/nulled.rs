@@ -601,8 +601,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// which give what it holds, `null` or a value, as each write of it
     /// stores (ADRs 0586, 0861, 0949). The one answer of it: `stored_given`
     /// reads it, and the call's value is marked so (`Known::Defined`)
-    /// wherever it goes, never `Known::Present`, as it may be `None`
-    /// (#539).
+    /// wherever it goes, which says nothing of whether it's `Some` (#539).
     pub(super) fn reads_nullable_local(&self, state: &State<'_, 'tcx>, block: BasicBlock, local: Local) -> bool {
         state.facts.quiet_cells().nullable.contains_key(&block)
             && self.option_of(state.body.local_decls[local].ty).is_some()

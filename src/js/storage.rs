@@ -8,16 +8,14 @@ use crate::collections::IndexMap;
 /// be `undefined` (`Storage::written`, `Expr::may_be_undefined`): that MIR
 /// says it's `null` or a value already, `Never`; where lowering has no
 /// such answer, what its JS form says alone, a constant or an object made
-/// here never is, `ByForm`; and after lowering, where MIR isn't at hand,
-/// its form and what lowering marked it from MIR's answers,
-/// `Known::Defined` and `Known::Present`, which a pass that moves an
-/// expression keeps, `ByFacts` (#2112 C S5, Campaign 3's L637).
+/// here never is, `ByForm`. A write whose place's storage is learned past
+/// lowering carries its answer on its statement (`StmtFacts::written`);
+/// no mark lowering wrote on a value is asked (#2112 C S4c).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Undefined {
     Never,
     #[default]
     ByForm,
-    ByFacts,
 }
 
 impl Undefined {
@@ -181,7 +179,7 @@ impl Storage {
 pub(super) fn null_for_none(made: &Expr, given: Undefined) -> Option<Expr> {
     match &made.kind {
         ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null().or_at(made.span)),
-        _ if given == Undefined::Never || !made.may_be_undefined(given) => Some(made.clone()),
+        _ if given == Undefined::Never || !made.may_be_undefined() => Some(made.clone()),
         ExprKind::SomeWhere(test, value) => Some(Expr {
             facts: made.facts,
             kind: ExprKind::Cond(test.clone(), value.clone(), Box::new(Expr::null())),

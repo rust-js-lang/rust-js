@@ -338,8 +338,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`get_or_insert(None)` of an `Option<Option<T>>` leaves it `None`, its value held unboxed",
     file: "src/lower/std_types/option.rs",
-    find: "            true => self.some(value),\n            false => value.present(),\n",
-    replace: "            true => value,\n            false => value.present(),\n",
+    find: "    fn inserted(&mut self, value: Expr, item: Ty<'tcx>) -> Expr {\n        match self.boxed_payload(item) {\n            true => self.some(value),\n",
+    replace: "    fn inserted(&mut self, value: Expr, item: Ty<'tcx>) -> Expr {\n        match self.boxed_payload(item) {\n            true => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_option_places.rs$"],
   },
   {
@@ -469,15 +469,6 @@ export const mutations: Mutation[] = [
     find: "        steps == writes.len() && dropped.iter()",
     replace: "        true && dropped.iter()",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "maps an option to itself"],
-  },
-  {
-    name: "inserted-some-unknown",
-    breaks:
-      "what a `get_or_insert_with` writes to a nullable place, a `Some`'s value, may be `undefined` to it, `MADE ??= made() ?? null` (#541)",
-    file: "src/lower/std_types/option.rs",
-    find: "            false => value.present(),\n",
-    replace: "            false => value,\n",
-    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "written through a borrow"],
   },
   {
     name: "option-items-held-apart",

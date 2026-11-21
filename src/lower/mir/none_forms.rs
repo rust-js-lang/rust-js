@@ -83,14 +83,10 @@ pub(in crate::lower) enum Presence {
 /// What MIR proves of an argument where a call reads it, which a call of
 /// each count of a function's trailing `Option`s asks of it
 /// (`optional_ladder`, #2178): that it's never `undefined` there,
-/// `Present` or `Defined` (`presence`); and that its `None` is `null`
-/// alone (`place_none`), which JS is given as it is, never left out.
+/// `Present` or `Defined` (`presence`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-// Flags, not a state: what's proved of its presence and of its `None` are
-// apart, a value or `null` both.
 pub(in crate::lower) struct ArgProof {
     pub(in crate::lower) present: bool,
-    pub(in crate::lower) null: bool,
 }
 
 impl<'tcx> FnCx<'_, 'tcx> {
@@ -158,7 +154,6 @@ impl<'tcx> FnCx<'_, 'tcx> {
         (operands.iter())
             .map(|operand| ArgProof {
                 present: self.presence(state, operand) != Presence::Unknown,
-                null: operand.place().and_then(|place| self.place_none(state, place)) == Some(js::OnlyNone::Null),
             })
             .collect()
     }
@@ -199,9 +194,8 @@ impl<'tcx> FnCx<'_, 'tcx> {
         presences: &[Presence],
     ) -> Vec<ArgProof> {
         (presences.iter().zip(self.tuple_given(state)))
-            .map(|(presence, field)| ArgProof {
+            .map(|(presence, _)| ArgProof {
                 present: *presence != Presence::Unknown,
-                null: field.place().and_then(|place| self.place_none(state, place)) == Some(js::OnlyNone::Null),
             })
             .collect()
     }

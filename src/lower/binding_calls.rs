@@ -629,8 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             use js::ExprKind as K;
             matches!(arg.kind, K::Null)
                 || arg.has_null_fallback()
-                || ((!arg.may_be_undefined(js::Undefined::ByForm) || present.get(i).is_some_and(|p| p.present))
-                    && !present.get(i).is_some_and(|p| p.null)
+                || ((!arg.may_be_undefined() || present.get(i).is_some_and(|p| p.present))
                     && !matches!(arg.kind, K::Binary(Op::Coalesce | Op::Or | Op::And, ..) | K::Cond(..)))
         };
         let run = (0..given)

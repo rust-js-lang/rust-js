@@ -133,7 +133,7 @@ impl<'tcx> Within<'tcx> {
                 Some(Expr::array(items.collect()))
             }
             Within::Some(inner) => {
-                let Some(made) = inner.adapt(&value.clone().present(), to_impl, cell)? else {
+                let Some(made) = inner.adapt(value, to_impl, cell)? else {
                     return Ok(None);
                 };
                 Some(match (inner.as_ref(), to_impl) {

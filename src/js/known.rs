@@ -94,14 +94,8 @@ knowns! {
     /// handle that MIR shows is so, `make(context)` of
     /// `set(Some(make(context)))`. A nullable place stores it as it is
     /// (`Storage::written`, ADR 0841). It says nothing of whether an
-    /// `Option` is there, which may be `None`: that's `Present`'s (#539).
+    /// `Option` is there, which may be `None` (#539).
     Defined,
-    /// There, never `undefined` nor `null`: a `Some`'s value its `Option`
-    /// doesn't box, `map`'s, `then`'s, `kind.object()`'s. An `Option` made
-    /// of it where it's tested, `t ? v : undefined`, is there exactly where
-    /// `t` holds (`Expr::presence`, ADR 0910). Never `undefined`, so a
-    /// nullable place stores it as it is too.
-    Present,
     /// The `None` a `take()` writes over a place rust-js made, a variable
     /// or a crate struct's field, a plain data property, read into a
     /// `const` just before (ADR 0996): nothing but that `const` sees the
@@ -394,7 +388,6 @@ impl Known {
             | Known::SetItems
             | Known::Chars
             | Known::Defined
-            | Known::Present
             | Known::Own
             | Known::Taken
             | Known::ArrayItems

@@ -88,13 +88,6 @@ impl Expr {
         self.known_as(Known::Defined)
     }
 
-    /// This, which lowering knows is there, a `Some`'s value its `Option`
-    /// doesn't box (`Known::Present`); one it knows otherwise of, as
-    /// `defined` keeps it.
-    pub fn present(self) -> Expr {
-        self.known_as(Known::Present)
-    }
-
     fn known_as(self, known: Known) -> Expr {
         match self.facts.without(Known::Own) == Facts::default() {
             true => Expr {
@@ -1168,25 +1161,17 @@ impl Expr {
     /// `undefined`, `null` among them, and what's made here, an object, an
     /// array, a function, a `new`, a template, a regex or JSX, never is; nor
     /// what an operator gives but `&&`, `||` and `??`, which may give an
-    /// operand that may be; nor what lowering knows is `Known::Defined`,
-    /// `Known::Present`. What MIR proves where it's read is `presence`'s
+    /// operand that may be. What MIR proves where it's read is `presence`'s
     /// (#2112 C S4), which its uses ask beside this. An item's read,
     /// `Known::Item`, may be: a `const`'s or a thread-local's `None` is
     /// `undefined`, `const sigil = undefined;` (#1957).
     /// Anything else, a variable or a call, may be. The one answer of
     /// whether a JS value may be `undefined`, which a nullable place's
-    /// storage asks (`Storage::written`), as `given` says: lowering's, by
-    /// its form alone; of what's past lowering, its facts too. What MIR says
-    /// is `null` or a value, `Undefined::Never`, `written` answers itself.
-    pub fn may_be_undefined(&self, given: super::Undefined) -> bool {
+    /// storage asks (`Storage::written`), as `given` says, by its form
+    /// alone. What MIR says is `null` or a value, `Undefined::Never`,
+    /// `written` answers itself.
+    pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
-            _ if given == super::Undefined::ByFacts
-                && [Known::Defined, Known::Present]
-                    .into_iter()
-                    .any(|known| self.facts.has(known)) =>
-            {
-                false
-            }
             ExprKind::Undefined | ExprKind::GivenUndefined => true,
             _ if self.is_constant() => false,
             ExprKind::Array(..)
@@ -1201,10 +1186,10 @@ impl Expr {
             | ExprKind::Unary(..) => false,
             // `a ?? b` and `a || b` give `b` or what's not `undefined`; `a &&
             // b`, either.
-            ExprKind::Binary(Op::Coalesce | Op::Or, _, b) => b.may_be_undefined(given),
-            ExprKind::Binary(Op::And, a, b) => a.may_be_undefined(given) || b.may_be_undefined(given),
+            ExprKind::Binary(Op::Coalesce | Op::Or, _, b) => b.may_be_undefined(),
+            ExprKind::Binary(Op::And, a, b) => a.may_be_undefined() || b.may_be_undefined(),
             ExprKind::Binary(..) => false,
-            ExprKind::Cond(_, a, b) => a.may_be_undefined(given) || b.may_be_undefined(given),
+            ExprKind::Cond(_, a, b) => a.may_be_undefined() || b.may_be_undefined(),
             _ => true,
         }
     }
