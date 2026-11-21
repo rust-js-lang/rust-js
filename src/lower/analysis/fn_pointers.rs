@@ -126,17 +126,15 @@ impl<'tcx> FnPointers<'tcx> {
                 let sig = tcx.instantiate_bound_regions_with_erased(
                     tcx.fn_sig(owner).instantiate_identity().skip_normalization(),
                 );
-                // Whether a consumer can name the type is rustc's own answer
-                // still, a program's as a library's, until one owner says what JS
-                // can name, `seen_outside`'s type half (#2024): #2015's one
-                // listed exception.
-                // A trait's method of a type no consumer can name is given the
+                // Whether code rust-js doesn't compile may hold a value of the
+                // type, JS or a consumer, is `js_holds`' (#2024, ADR 1179).
+                // A trait's method of a type no consumer can hold is given the
                 // program's own values, which hold no JS function it wasn't
                 // given elsewhere (rd579); a pointer they hold may be any, as
                 // before.
                 let private = (tcx.impl_of_assoc(owner.to_def_id())).is_some_and(|of| {
                     matches!(tcx.type_of(of).instantiate_identity().skip_normalization().kind(),
-                        ty::Adt(adt, _) if adt.did().as_local().is_some_and(|adt| !tcx.effective_visibilities(()).is_reachable(adt)))
+                        ty::Adt(adt, _) if adt.did().is_local() && !crate::lower::declarations::js_holds(tcx, adt.did()))
                 });
                 for ty in sig.inputs_and_output {
                     found.given_from(recognition, ty, !private);

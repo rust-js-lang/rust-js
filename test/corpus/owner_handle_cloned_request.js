@@ -23,7 +23,7 @@ function createRequest(name, onReady) {
 
 function complete(request) {
   const onReady = request.onReady;
-  onReady.value();
+  (0, onReady.value)();
 }
 
 function render(name) {

@@ -382,9 +382,13 @@ pub(in crate::lower) fn seen_whole(tcx: TyCtxt<'_>, owner: DefId, fact: Fact<'_,
                     // (#1233).
                     || method_family(tcx, id).is_some())
         }
-        Fact::Shared => !tcx.visibility(owner).is_public(),
+        // Of one no code rust-js doesn't compile names, JS or a consumer
+        // (`js_names`, which another crate's reach is within, #2024).
+        Fact::Shared => !crate::lower::declarations::js_names(tcx, owner),
         Fact::Counted { library } => {
-            !library || !tcx.visibility(owner).is_public() || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))
+            !library
+                || !crate::lower::declarations::js_names(tcx, owner)
+                || consumer_compiles(tcx, tcx.typeck_root_def_id(owner))
         }
         Fact::Marked | Fact::Called(_) => true,
     }
@@ -410,7 +414,7 @@ pub(in crate::lower) fn consumer_compiles(tcx: TyCtxt<'_>, id: DefId) -> bool {
 fn method_family(tcx: TyCtxt<'_>, id: DefId) -> Option<Vec<DefId>> {
     let declared = tcx.trait_item_of(id).or(tcx.trait_of_assoc(id).map(|_| id))?;
     let tr = tcx.parent(declared);
-    if !tr.is_local() || tcx.visibility(tr).is_public() {
+    if !tr.is_local() || crate::lower::declarations::js_names(tcx, tr) {
         return None;
     }
     let mut family = vec![declared];

@@ -661,4 +661,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/cross-crate-items.test.ts", "-t", "a struct a library builds is the program's own data"],
   },
+  {
+    name: "fn-pointer-holder-held-by-rustc-reach",
+    breaks: "whether JS may hold a value of a type is rustc's crate-API reach again, which leaves out a type a `pub fn` of a private module hands out, its module's JS export: a JS function given in its field is called with the field's holder as its `this` (#2024, #2025)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                        ty::Adt(adt, _) if adt.did().is_local() && !crate::lower::declarations::js_holds(tcx, adt.did()))",
+    replace: "                        ty::Adt(adt, _) if adt.did().as_local().is_some_and(|adt| !tcx.effective_visibilities(()).is_reachable(adt)))",
+    tests: ["test/corpus.test.ts", "-t", "^owner_handle_cloned_request.rs$"],
+    snapshots: true,
+  },
 ];

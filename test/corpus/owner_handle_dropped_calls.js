@@ -23,7 +23,7 @@ function createRequest(name, onReady) {
 
 function complete(request) {
   const onReady = request.onReady;
-  onReady.value();
+  (0, onReady.value)();
 }
 
 function render(name) {
@@ -51,7 +51,7 @@ function render(name) {
           $rcDrop(request, (value) => {
             try {
               console.log(`dropping ${value.name}`);
-              value.onReady.value();
+              (0, value.onReady.value)();
             } catch (error) {
               $cleanup(() => {
                 $rcDrop(value.onReady, $dispose);
@@ -93,7 +93,7 @@ function render(name) {
         $rcDrop(request, (value) => {
           try {
             console.log(`dropping ${value.name}`);
-            value.onReady.value();
+            (0, value.onReady.value)();
           } catch (error) {
             $cleanup(() => {
               $rcDrop(value.onReady, $dispose);
@@ -114,7 +114,7 @@ function render(name) {
         $rcDrop(request, (value) => {
           try {
             console.log(`dropping ${value.name}`);
-            value.onReady.value();
+            (0, value.onReady.value)();
           } catch (error) {
             $cleanup(() => {
               $rcDrop(value.onReady, $dispose);
@@ -149,7 +149,7 @@ function main() {
       $rcDrop(request, (value) => {
         try {
           console.log(`dropping ${value.name}`);
-          value.onReady.value();
+          (0, value.onReady.value)();
         } catch (error) {
           $cleanup(() => {
             $rcDrop(value.onReady, $dispose);
@@ -164,7 +164,7 @@ function main() {
   $rcDrop(request, (value) => {
     try {
       console.log(`dropping ${value.name}`);
-      value.onReady.value();
+      (0, value.onReady.value)();
     } catch (error) {
       $cleanup(() => {
         $rcDrop(value.onReady, $dispose);

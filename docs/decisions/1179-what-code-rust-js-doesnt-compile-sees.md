@@ -67,10 +67,18 @@ reached can't disagree.
   the metamorphic `library` rewrite, byte-identical: wholes' fields and keys,
   cell_flow's and cell_borrows' keys, read_alike's, lazy_locals', js_nones'
   field types, scopes' types, owned_by_return's fields.
-- Left for `js_holds`: fn_pointers' type, collected's exported constant
-  (an export rule), `instances::seen_whole(Shared)` and `Counted`, and
-  `method_family`'s trait. The first two change output and are decided
-  apart.
+- Part 2 (2026-11-21): `js_holds` is found once a session, the crate's
+  types each item JS names hands it, memoized in the session's caches.
+  Its one consumer is fn_pointers' type, where rustc's `is_reachable` stood:
+  a type a `pub fn` of a private module hands out is JS's to hold, so a JS
+  function given in its field is called without the holder as its `this`,
+  `(0, own.lower)(left)`, four corpus files' output moved, as ADR 0262's
+  "results change" case keeps Rust's behaviour. `instances::seen_whole`'s
+  `Shared` and `Counted` ask of a generic function, and `method_family` of
+  a trait: `js_names` questions, which another crate's reach is within;
+  none moved output. collected's exported constant stays an export rule,
+  its ratchet row saying so. The React port and the metamorphic `library`
+  rewrite over the corpus as before.
 
 ## Rejected
 

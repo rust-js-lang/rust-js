@@ -50,7 +50,7 @@ function ownIterator_sizeHint(own, dropT, dropF) {
     throw new Error("hint");
   }
   const left = own.end - Math.min(own.at, own.end);
-  return [own.lower(left), undefined];
+  return [(0, own.lower)(left), undefined];
 }
 
 function own(end, lower, make) {

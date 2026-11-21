@@ -26,7 +26,6 @@ const count = (file: string, pattern: RegExp) => (read(file).match(pattern) ?? [
 // impl's method: `library.rs` alone, which owns it, and those named.
 const rustcReach: Record<string, string> = {
   "src/lower/library.rs": "the owner",
-  "src/lower/analysis/fn_pointers.rs": "#2024: a type JS can name",
   "src/lower/analysis/collected.rs": "#2024: an inherent impl's constant JS can name (`exported_value_const`)",
 };
 
@@ -36,7 +35,6 @@ const rustcReach: Record<string, string> = {
 const itemPublic: Record<string, [number, string]> = {
   "src/lower/analysis/js_given.rs": [1, "js_facing's rule, `exported_function`, its owner"],
   "src/lower/analysis/naming.rs": [1, "a `pub use`, the module's export, an export rule"],
-  "src/lower/instances.rs": [3, "#2024: whether JS or another crate reaches a generic owner, `seen_whole`'s `Shared` and `Counted`, a `pub` trait's impl by its exported dictionary too, and a trait"],
 };
 
 test("rustc's own answer of what another crate reaches is asked only where #2015 names", () => {

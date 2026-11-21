@@ -35,7 +35,7 @@ mod namespaces;
 mod parts;
 mod projections;
 mod reach;
-pub(in crate::lower) use reach::js_names;
+pub(in crate::lower) use reach::{js_holds, js_names};
 mod representation;
 pub(super) mod std_types;
 mod structures;

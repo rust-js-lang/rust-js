@@ -42,7 +42,7 @@ const counted = {
 };
 
 function countedAdd(a, b) {
-  return counted.add(a, b);
+  return (0, counted.add)(a, b);
 }
 
 function count() {

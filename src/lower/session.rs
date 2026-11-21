@@ -34,6 +34,9 @@ pub(crate) struct Caches {
     pub compiled_types: OnceCell<IndexSet<DefId>>,
     /// std's bodies compiled into `@rust-js/std`, each found in std.
     pub compiled: OnceCell<Rc<Vec<DefId>>>,
+    /// The crate's types JS may hold a value of and give back
+    /// (`declarations::js_holds`, #2024), found once.
+    pub js_held: OnceCell<Rc<IndexSet<DefId>>>,
     /// The functions only calls reach, by their calls, found of the crate
     /// graph's names (ADRs 0577, 1148): the own callbacks' to ask.
     pub only_called: OnceCell<Rc<crate::collections::IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>>>,
@@ -223,6 +226,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             impl_short_names: OnceMap::default(),
             compiled_types: OnceCell::new(),
             compiled: OnceCell::new(),
+            js_held: OnceCell::new(),
             only_called: OnceCell::new(),
             std_path_ids: OnceCell::new(),
             std_module_ids: OnceCell::new(),
