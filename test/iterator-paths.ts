@@ -16,7 +16,8 @@
 // sources, adapters and consumers are the iterator tables'
 // (test/iterator-matrix.ts, ADR 1090 and 1092).
 
-import { adapters, consumers, sources, stepAdapters, stepConsumers, type Case, type Site } from "./iterator-matrix";
+import { adapters, consumers, stepAdapters, stepConsumers, type Case } from "./iterator-matrix";
+import { sources, type Site } from "./iterator-sources";
 import { stdRuns, stdWrites } from "./std-steps-catalog";
 
 /** How a case's iterator reaches its consumer. */

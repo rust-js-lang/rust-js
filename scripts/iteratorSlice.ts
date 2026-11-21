@@ -82,6 +82,7 @@ export const iteratorPaths = [
   // A library's contract of what its functions step and the iterators it makes (the owner table's rows, #2162).
   "src/lower/library.rs",
   "src/lower/recognition/adapter_types.rs",
+  "src/lower/recognition/held.rs",
   "src/lower/recognition/iterators.rs",
   "src/lower/recognition/array_iters.rs",
   "src/lower/recognition/lengths.rs",

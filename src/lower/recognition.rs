@@ -16,6 +16,7 @@ pub(crate) use io::{
     ByteSource, IoOp, fs_type, in_io_dictionary, is_buf_reader, is_file_handle, is_std_reader, is_std_reader_impl,
     makes_empty_string, of_files, of_io_reading, reads_through_own_reader, reads_to_string, std_reader_sources,
 };
+mod held;
 mod iterators;
 mod js_items;
 mod json;
@@ -50,9 +51,9 @@ mod wrappers;
 mod zip_folds;
 
 pub(super) use self::{
-    adapter_types::*, c_strs::*, calls::*, compiled_std::*, fmt::*, iterators::*, js_items::*, json::*, loop_ranges::*,
-    open_calls::*, serde::*, sorts::*, specialization::*, stable_keys::*, std_crates::*, std_items::*, std_paths::*,
-    std_steps::*, traits::*, type_facts::*, types::*, wrappers::*, zip_folds::*,
+    adapter_types::*, c_strs::*, calls::*, compiled_std::*, fmt::*, held::*, iterators::*, js_items::*, json::*,
+    loop_ranges::*, open_calls::*, serde::*, sorts::*, specialization::*, stable_keys::*, std_crates::*, std_items::*,
+    std_paths::*, std_steps::*, traits::*, type_facts::*, types::*, wrappers::*, zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};

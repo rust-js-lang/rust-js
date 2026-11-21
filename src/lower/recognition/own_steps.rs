@@ -270,7 +270,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// of the `Some`s for a flatten of `Option`s (#2205). Of the type
     /// alone, each value of it alike, as its impls say.
     pub(in crate::lower) fn own_nth_within(&self, ty: Ty<'tcx>) -> bool {
-        let ty = self.reveal(super::iterators::iterator_held(ty));
+        let ty = self.reveal(super::held::iterator_held(ty));
         if self.is_user_iterator(ty) {
             return self.own_iterator_method(ty, "nth").is_some() || self.own_back_method(ty, "nth_back").is_some();
         }

@@ -1061,24 +1061,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 }
 
-/// The iterator a `ty` steps: itself, or what a reference to it or a `Box`
-/// of it holds, each of which steps it, a `Box` by what std's impl passes
-/// on to it (`Wrapper::passes`, #1601). The one answer of which iterator's
-/// impl a type's steps reach.
-pub(in crate::lower) fn iterator_held(ty: Ty<'_>) -> Ty<'_> {
-    let mut ty = ty.peel_refs();
-    while let Some(inner) = ty.boxed_ty() {
-        ty = inner.peel_refs();
-    }
-    ty
-}
-
-/// Whether a `ty` is a `Box` of the iterator it steps, or a reference to
-/// one (`iterator_held`).
-fn behind_a_box(ty: Ty<'_>) -> bool {
-    ty.peel_refs().boxed_ty().is_some()
-}
-
 /// `dyn Iterator`, or `dyn DoubleEndedIterator` (ADR 0429), behind a
 /// reference or a `Box`, or not.
 pub(in crate::lower) fn is_dyn_iter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {

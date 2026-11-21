@@ -657,14 +657,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
   {
-    name: "box-iterator-not-held",
-    breaks: "a `Box` of the crate's iterator isn't its iterator, so its value is stepped as plain data, `count()` of `Box::new(Up(0, 3))` its fields' (#1601)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "    while let Some(inner) = ty.boxed_ty() {\n",
-    replace: "    while let Some(inner) = ty.boxed_ty().filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
-  },
-  {
     name: "infallible-an-enum",
     breaks: "`Infallible`, `!` since 1.100, is taken for the enum it was: rustc panics asking its ADT (ADR 0109, amended)",
     file: "src/lower/recognition/iterators.rs",

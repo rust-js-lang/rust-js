@@ -28,7 +28,8 @@
 // its other end, interleaved, and drains what's left of each, every item's
 // value, clone and drop printed.
 
-import { adapters, sources, stepAdapters, type Row } from "./iterator-matrix";
+import { adapters, stepAdapters, type Row } from "./iterator-matrix";
+import { sources } from "./iterator-sources";
 import { prelude } from "./iterator-matrix-prelude";
 
 type Source = (typeof sources)[number];
