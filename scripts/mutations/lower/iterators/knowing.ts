@@ -942,4 +942,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_whose_length_a_capacity_asks.rs$"],
     snapshots: true,
   },
+  {
+    name: "extension-param-box-unpeeled",
+    breaks:
+      "generic code's `&mut Box<I>` of a double-ended, exact-sized `I` is taken to know neither its back nor its length, so its `enumerate().skip(n)` skips by `next`, never asking the crate's own `nth`, and a `Box<I>`'s `enumerate().rev()` is refused (#2227)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "        let ty = crate::lower::recognition::held_unboxed(ty);\n        let js_iterator = match ty.kind() {\n",
+    replace: "        let js_iterator = match ty.kind() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_enumerated_asks_its_own_nth.rs$"],
+  },
 ];

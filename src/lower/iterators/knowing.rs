@@ -294,7 +294,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (ADR 0411).
     fn extension_param(&self, id: DefId, ty: ty::Ty<'tcx>, is: fn(ty::TyCtxt<'tcx>, DefId) -> bool) -> bool {
         // A type parameter's, or an associated type's, `I::IntoIter: DoubleEndedIterator`,
-        // a JS iterator as its caller has it (ADR 0480).
+        // a JS iterator as its caller has it (ADR 0480); of a sized box of
+        // one, what it holds, as std's `Box<I>` passes its back and its
+        // length on (ADR 1177, #2227).
+        let ty = crate::lower::recognition::held_unboxed(ty);
         let js_iterator = match ty.kind() {
             ty::Param(param) => !given_as_it_is(self.tcx, id, *param),
             ty::Alias(..) => true,

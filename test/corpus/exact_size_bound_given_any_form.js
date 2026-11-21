@@ -10,6 +10,7 @@ import {
   $knowing,
   $lent,
   $live,
+  $mapEnds,
   $next,
   $rangeLen,
   $rangeNext,
@@ -73,7 +74,14 @@ function pairsHint(it) {
 }
 
 function collected(j) {
-  const o = $collectOptions($lent(j, "boxed"), false, undefined, undefined, false, 4);
+  const o = $collectOptions(
+    $mapEnds($lent(j, "boxed"), (value) => value),
+    false,
+    undefined,
+    undefined,
+    false,
+    4,
+  );
   if (o != null) {
     const arg = $capacity(o, 4) >= o.length;
     console.log(`collected [${o.join(", ")}], room ${arg}`);

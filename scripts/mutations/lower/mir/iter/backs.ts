@@ -848,4 +848,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_made_knowing_its_hint_asks_no_back.rs$"],
   },
+  {
+    name: "back-step-box-unlent",
+    breaks:
+      "generic code's sized `Box<J>` searched from its back by `rfind` is `J` itself, so it reaches `Take`'s own `try_rfold`, which skips by one `nth_back(1)`, where std's `Box` steps by its `next_back`, `nth_back(2)` then `nth_back(0)` (#2227)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        let it = self.lent_as_its_box(it, iter_ty);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_found_from_its_back_steps_the_box.rs$"],
+  },
 ];

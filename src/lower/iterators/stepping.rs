@@ -309,6 +309,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (lends.iter()).fold(it, |it, &how| IterValue::js(it).lent(how).emit())
     }
 
+    /// `it`, the value of a sized `Box` of type `ty` that holds an iterator
+    /// generic code was given, a type parameter's or an associated type's,
+    /// the JS iterator its caller made: lent as the box, which passes on
+    /// only what std's `Box<I>` does (`wrapper_lends`), where it's stepped
+    /// as it is, from its back or held by an adapter made in place, as
+    /// `js_iterator_of` lends it for its forward steps (#2227). What the
+    /// box holds says how it's closed and asked (`held_unboxed`), never
+    /// what it passes on. Of another, `it` itself: the crate's own reads
+    /// its steps through the box (`own_method`), and a box of std's
+    /// compiled struct is lent where it's made knowing its back
+    /// (`as_double_ended`).
+    pub(in crate::lower) fn lent_as_its_box(&self, it: Expr, ty: ty::Ty<'tcx>) -> Expr {
+        let held = crate::lower::recognition::held_unboxed(ty);
+        let given = crate::lower::generic_facts::is_type_parameter(held) || matches!(held.kind(), ty::Alias(..));
+        match ty.is_box() && given && crate::lower::iterators::held_by_a_box(&it).is_none() {
+            true => self.lent_through(it, &self.wrapper_lends(ty)),
+            false => it,
+        }
+    }
+
     /// Of a function JS calls, `function`, each of its parameters,
     /// `params`, of its type and its JS name, that's a type parameter
     /// bound by `DoubleEndedIterator` or `ExactSizeIterator`, stepped as a

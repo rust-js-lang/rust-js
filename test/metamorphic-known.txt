@@ -121,8 +121,6 @@ plain std field held_enumerate.rs
 
 #2185 A Box of a std adapter given by a dictionary, through a trait, steps as the adapter itself
 
-#2223 P0: a Box<I> whose I another bound gives as it is is stepped as a JS iterator: wrong count
-plain std impl-owned boxed_source_closed_once.rs
-plain std impl-owned generic_box_of_an_iterator_is_what_it_holds.rs
-std dyn-ref generic_box_of_an_iterator_is_what_it_holds.rs
-std impl-ref generic_box_of_an_iterator_is_what_it_holds.rs
+#2238 P0 (plain): a &mut Box<I> read back through a generic trait never asks its own nth under enumerate().skip(n)
+plain dyn-ref generic_box_enumerated_asks_its_own_nth.rs
+plain impl-ref generic_box_enumerated_asks_its_own_nth.rs

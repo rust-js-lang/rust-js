@@ -577,6 +577,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.given_js_iterator(it.clone(), iter_ty, true, false).unwrap_or(it),
             false => it,
         };
+        // Of a sized `Box` of one generic code was given, the box's lend,
+        // so its `try_rfold` and `advance_back_by` are the defaults over its
+        // `next_back`, never what it holds' own (`lent_as_its_box`).
+        let it = self.lent_as_its_box(it, iter_ty);
         let it = match self.range_kind(iter_ty).is_none() && self.has_a_back(iter_ty, &it) {
             true => it,
             false => self.as_double_ended(it, iter_ty, span)?,

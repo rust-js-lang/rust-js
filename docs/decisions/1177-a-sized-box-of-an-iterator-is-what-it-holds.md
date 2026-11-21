@@ -81,11 +81,29 @@ reason, or asks `held_unboxed`.
   `box-param-not-given-a-js-iterator`, `shared-ref-iterator-unconverted`,
   `own-collect-unclosed` and `parameter-collect-unclosed` are retargeted.
   `box-iterator-not-held` moves to held.rs.
-- `consumer_closes` (closing.rs) asks it too, so a fold of generic code's
-  `Box<I>` closes as one of `I` does. No mutation of it is kept: the only
-  case it reaches, a generic `Box<I>` folded by a closure that holds a
-  destructor, is refused first by the drop check (ADR 0190). The
-  diagnostics test pins that refusal.
+- `consumer_closes` (closing.rs) asks it too. Through it, generic code's
+  `Box<I>` folded by a closure that owns a destructor is refused by the
+  drop check (ADR 0190), as a fold of `I` is. Without it, the box would be
+  closed first, before the closure. The diagnostics test pins the refusal
+  with an `I` that's double-ended and exact-sized: the first version of
+  that test, an `Iterator` of numbers, was refused either way, so its
+  mutation, `consumer-closes-box-param`, survived, and the conformance
+  table's `fold holding` rows were the only case that reached it.
+- `extension_param` (knowing.rs) asks it too (#2227). Generic code's
+  `&mut Box<I>` or `Box<I>`, where `I` is double-ended or exact-sized, is
+  given knowing its back and its length, as std's `Box<I>` passes them on.
+  Its `enumerate().skip(n)` asks the crate's own `nth`, and its
+  `enumerate().rev()`, which was refused, compiles.
+  One snapshot moved, accepted by the lead:
+  `exact_size_bound_given_any_form`'s `Box::new(j).map(Some)` collected
+  into an `Option<Vec<_>>` is `$mapEnds(j, (value) => value)`, where it
+  was `$lent(j, "boxed")`. The box now knows its back, so its identity map
+  takes `back_kept`'s map arm, which doesn't ask the identity rule the
+  lazy path asks (#2231, P3). Corpus
+  `generic_box_enumerated_asks_its_own_nth` covers both builds. Its
+  `dyn-ref` and `impl-ref` rewrites, which reach the `&mut Box<I>`
+  through a generic trait that gives `I` as it is, were wrong on main
+  too, and are listed under #2223.
 - The tables grow by the three sources: matrix 163,711 to 191,263 cases,
   conformance 41,742 to 52,557, points 13,254 to 15,969. Known rows are
   remapped by case id. The per-push slices grow by 531 matrix and 240
@@ -93,10 +111,45 @@ reason, or asks `held_unboxed`.
 - What's left, 242 case-builds, is listed under its issues:
   - #2225: a box's own `last` behind std's struct, dropped again.
   - #2227: a `&mut Box<I>`'s enumerate never asks the crate's `nth`.
-    Seeing a type parameter through the box in `extension_param` fixes
-    it, now that #2226 is fixed.
+    Fixed since, by seeing the type parameter through the box in
+    `extension_param`.
   - #2224: a box's filter holding a dropping closure, counted.
 - #2226's 71 rows, a collect of a map over a `&mut I` made an array's
   `$iter`, went with its fix. A `&mut Box<I>`'s inspect collected where a
   capacity is read is now refused, where it threw (#2230, P2).
-- Generic code's `Box<J>` stepped from its back stays refused, as it was.
+- Generic code's `Box<J>` stepped from its back was refused. Since #2227
+  it is given knowing its back where `J` is double-ended.
+- `held_unboxed` says what a box holds. It never says what the box passes
+  on: wherever the box's value is stepped, its lend, `wrapper_lends`,
+  decides that, as `js_iterator_of` (sources.rs) lends it for forward
+  steps. #2227's first form left two back-stepping paths out, and the
+  paths table's `Box J` rows found them. Both were refused on main and
+  wrong after it:
+  - `back_step`, `rfind`'s: `$findBack(j)` reached `Take`'s own
+    `try_rfold`.
+  - `closing`, which every in-place adapter the crate steps from its back
+    holds its source through: `$rev($closing(j))`, a map's, a filter's
+    and an enumeration's, reached `J`'s own `rfold` and `try_rfold`.
+
+  Both now ask `lent_as_its_box` (stepping.rs), next to `wrapper_lends`.
+  A sized box of what generic code was given (a type parameter's or an
+  associated type's) that isn't lent yet is lent as the box. Nothing else
+  changes. The crate's own iterator reads its steps through the box
+  (`own_method`). A box of std's compiled struct is lent where it's made
+  knowing its back (`as_double_ended`). A box lent already is never lent
+  twice. Two snapshots move, each a generic box given its lend:
+  - `generic_box_enumerated_asks_its_own_nth`'s `enumerate().rev()` is
+    `$enumerate($lent($closing(src, ..), "boxed"))`.
+  - `exact_size_bound_given_any_form`'s identity map is
+    `$mapEnds($lent(j, "boxed"), ..)`.
+
+  So a `take(3)` of five steps back by `nth_back(2)` then `nth_back(0)`,
+  as std's `Box` does by its `next_back`, never by one `nth_back(1)`.
+  `held_unboxed`'s other callers ask questions and step nothing:
+  `closing_source`, `hint_reaches_own_where`, `consumer_closes`,
+  `closes_to_drop`, and `extension_param`, whose answer gates the paths
+  above. The stepping.rs argument loop lends a box given for a type
+  parameter (#2179), and `iterator_evidence` gives one given as it is
+  `boxed_iterator_dictionary` (#1611). Corpus
+  `generic_box_found_from_its_back_steps_the_box`; mutations
+  `back-step-box-unlent` and `closing-box-unlent`.

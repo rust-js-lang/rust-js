@@ -177,11 +177,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // is what the box holds's value, lent as the box again, which owns
         // it and closes it as it's closed (#2219).
         if let Some(held) = crate::lower::iterators::held_by_a_box(&it) {
-            let closed = self.closing(held.clone(), ty, span)?;
+            let closed = self.closed_as_dropped(held.clone(), ty, span)?;
             return Ok(crate::lower::iterators::IterValue::js(closed)
                 .lent(crate::lower::recognition::Wrapper::BoxSized)
                 .emit());
         }
+        // One generic code was given in a sized box, not lent as the box
+        // yet, an adapter's made in place from its back: closed, then lent
+        // as the box, so what it passes on is the box's (`lent_as_its_box`).
+        let closed = self.closed_as_dropped(it, ty, span)?;
+        Ok(self.lent_as_its_box(closed, ty))
+    }
+
+    /// `it` closed to drop what a `ty` drops, `$closing(it, drop)`, where
+    /// `closing_drop` says; else itself.
+    fn closed_as_dropped(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         Ok(match self.closing_drop(ty, span)? {
             Some(drop) => self.closed_by(it, drop, ty),
             None => it,

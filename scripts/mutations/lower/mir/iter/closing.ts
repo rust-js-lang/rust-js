@@ -414,4 +414,22 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(held) = None::<&Expr>.filter(|_| crate::lower::iterators::held_by_a_box(&it).is_some()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
   },
+  {
+    name: "consumer-closes-box-param",
+    breaks:
+      "a fold of generic code's `Box<I>` with a closure that owns a destructor, where the drop check refuses it, compiles and closes the box first, so the box's value drops before the closure where std's `fold` drops its `f` first (#2219)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        let by_bounds = crate::lower::recognition::known_by_bounds(crate::lower::recognition::held_unboxed(iter_ty));\n",
+    replace: "        let by_bounds = crate::lower::recognition::known_by_bounds(iter_ty);\n",
+    tests: ["test/diagnostics.test.ts", "-t", "Box<I> folded by a closure that holds a destructor"],
+  },
+  {
+    name: "closing-box-unlent",
+    breaks:
+      "generic code's sized `Box<J>` an adapter holds from its back is closed as `J` and never lent as the box, so a `rev()`'s fold reaches `Take`'s own `rfold`, which skips by one `nth_back(1)`, where std's `Box` folds by its `next_back`, `nth_back(2)` then `nth_back(0)` (#2227)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        Ok(self.lent_as_its_box(closed, ty))\n",
+    replace: "        Ok(closed)\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_found_from_its_back_steps_the_box.rs$"],
+  },
 ];
