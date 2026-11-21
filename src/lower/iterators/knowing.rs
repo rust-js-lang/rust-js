@@ -805,7 +805,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (js::ExprKind::Member(source_value, method), [each]) if method == "flatMap" => {
                     Some((&**source_value, each))
                 }
-                (_, [source_value, each]) if callee.helper_name() == Some("$flatMap") => Some((source_value, each)),
+                (_, [source_value, each, ..]) if callee.helper_name() == Some("$flatMap") => Some((source_value, each)),
                 _ => None,
             }
             && let Some(inner) = made.or_else(|| self.iterator_item(source.peel_refs()))
@@ -862,7 +862,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             if let Some(each) = each {
                 let source_value = self.as_double_ended(source_value.clone(), source.peel_refs(), span)?;
-                return Ok(Expr::call_helper("$flattenEnds", [vec![source_value], each].concat()));
+                return Ok(Expr::call_helper(
+                    "$flattenEnds",
+                    [vec![source_value], each, self.flatten_fusing(ty)].concat(),
+                ));
             }
         }
         // A chain made here, `$lazyChain(a, b)`: each made knowing its back,

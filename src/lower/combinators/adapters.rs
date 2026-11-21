@@ -298,10 +298,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (#644); its `last` std's, each inner iterator's own, which drops
     /// what it passes before the one kept before (#645) (ADR 0510); and its
     /// `count` std's, each inner iterator's own.
-    fn flat_mapped(&self, items: Expr, each: Expr, inner: Ty<'tcx>, own: bool) -> Expr {
+    /// Of a flatten of type `flatten`, its source fused as std's `Fuse`
+    /// fuses it (`flatten_fusing`).
+    fn flat_mapped(&self, items: Expr, each: Expr, (inner, flatten): (Ty<'tcx>, Ty<'tcx>), own: bool) -> Expr {
         match self.flattened_form(inner, own) {
-            InPlaceForm::FlatMap => Expr::call_helper("$flatMap", vec![items, each]),
+            InPlaceForm::FlatMap => {
+                Expr::call_helper("$flatMap", [vec![items, each], self.flatten_fusing(flatten)].concat())
+            }
             _ => Expr::call(Expr::member(items, "flatMap"), vec![each]),
+        }
+    }
+
+    /// What a flatten of type `flatten`, `$flatMap` or `$flattenEnds`, is
+    /// given last of its source: `$unfused` where it isn't a
+    /// `FusedIterator`, whose end std's `Fuse` drops it at, its `Map`'s
+    /// function with it; nothing of one that is, which `Fuse` keeps until
+    /// it's dropped (`flatten_source_fused`, #2242). Of generic code's `I`,
+    /// which only a caller can say, `$unfused`, as it was.
+    pub(in crate::lower) fn flatten_fusing(&self, flatten: Ty<'tcx>) -> Vec<Expr> {
+        match self.recognition().flatten_source_fused(flatten) {
+            Some(true) => vec![],
+            Some(false) | None => vec![Expr::helper("$unfused")],
         }
     }
 
@@ -387,10 +404,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     let f = next();
                     match self.closed_inner(Some(f.clone()), returned, span)? {
-                        Some(each) => self.flat_mapped(items, each, returned, true),
+                        Some(each) => self.flat_mapped(items, each, (returned, output), true),
                         None => match self.iterable_of_each(Some(f.clone()), returned, span)? {
-                            Some(each) => self.flat_mapped(items, each, returned, own_count),
-                            None => self.flat_mapped(items, f, returned, own_count),
+                            Some(each) => self.flat_mapped(items, each, (returned, output), own_count),
+                            None => self.flat_mapped(items, f, (returned, output), own_count),
                         },
                     }
                 }
@@ -404,7 +421,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // Of what owns items with a destructor, each closed (ADR 0510).
                 Some(item) if let Some(each) = self.closed_inner(None, item, span)? => {
-                    self.flat_mapped(items, each, item, true)
+                    self.flat_mapped(items, each, (item, output), true)
                 }
                 // Of arrays, each stepped as an array is, `$iter(item)`: what
                 // `flat()` takes apart where the chain is made eager.
@@ -420,10 +437,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec![name.clone().into()],
                         vec![StmtKind::Return(Some(stepped)).at(js::Span::NONE)],
                     );
-                    self.flat_mapped(items, each, item, own_count)
+                    self.flat_mapped(items, each, (item, output), own_count)
                 }
                 Some(item) if let Some(each) = self.iterable_of_each(None, item, span)? => {
-                    self.flat_mapped(items, each, item, own_count)
+                    self.flat_mapped(items, each, (item, output), own_count)
                 }
                 // Of JS iterators already, each as it is, in the form the
                 // inner iterators' type says (`flattened_form`, #2207).
@@ -434,7 +451,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec![StmtKind::Return(Some(Expr::var(&name))).at(js::Span::NONE)],
                     );
                     match item {
-                        Some(item) => self.flat_mapped(items, each, item, own_count),
+                        Some(item) => self.flat_mapped(items, each, (item, output), own_count),
                         None => method(items, "flatMap", vec![each]),
                     }
                 }

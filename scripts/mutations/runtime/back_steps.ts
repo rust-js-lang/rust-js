@@ -542,8 +542,8 @@ export const mutations: Mutation[] = [
     name: "flatten-ends-close-stops-at-a-panic",
     breaks: "closing a flatten stepped from its back stops where its source's drop panics, so its inners are never dropped, where Rust's drop glue drops each field as it unwinds (#705)",
     file: "src/runtime/back_steps.js",
-    find: "    $inTurn(\n      () => it.return?.(),\n      () => flat.functionDrop?.(),\n      () => taken(\"next\"),\n      () => taken(\"back\"),\n    );\n",
-    replace: "    (() => {\n      it.return?.();\n      flat.functionDrop?.();\n      taken(\"next\");\n      taken(\"back\");\n    })();\n",
+    find: "    $inTurn(\n      dropSource,\n      () => flat.functionDrop?.(),\n      () => taken(\"next\"),\n      () => taken(\"back\"),\n    );\n",
+    replace: "    (() => {\n      dropSource();\n      flat.functionDrop?.();\n      taken(\"next\");\n      taken(\"back\");\n    })();\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_from_both_ends_drops_its_inners.rs$"],
   },
   {
@@ -929,5 +929,13 @@ export const mutations: Mutation[] = [
     find: "        folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind, alone);\n",
     replace: "        folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],
+  },
+  {
+    name: "flatten-ends-unfused-source-kept",
+    breaks: "`$flattenEnds` of a source that isn't fused, which a held one holds, doesn't drop it at its end, so it drops as the flatten does, where std's `Fuse` drops its `Map` at its first `None` (#2242)",
+    file: "src/runtime/back_steps.js",
+    find: "    if (unfused) $inTurn(dropSource, () => flat.functionDrop?.());\n",
+    replace: "    if (unfused) flat.functionDrop?.();\n",
+    tests: ["test/corpus.test.ts", "-t", "^(own_iterator_flattened_from_its_back|flatten_from_both_ends|flatten_holding_its_function_drops_it_after_its_source|holding_adapter_counted_or_last_drops_its_function)\\.rs$"],
   },
 ];

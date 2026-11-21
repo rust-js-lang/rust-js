@@ -6,6 +6,7 @@ import {
   $iterator,
   $next,
   $nextBack,
+  $unfused,
   flattenDoubleEndedIterator_nextBack,
   iterator_flatten,
 } from "@rust-js/std";
@@ -198,6 +199,7 @@ function main() {
       $flattenEnds(
         $iterator([0], flakyIterator_next, false, flakyDoubleEndedIterator_nextBack),
         (item) => $iter(item),
+        $unfused,
       ),
     )
       .map((item) => (item == null ? "None" : `Some(${item})`))

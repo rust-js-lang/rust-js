@@ -127,12 +127,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (source, _) = crate::lower::recognition::flattened_source(self.tcx, ty).expect("a flatten");
                 let flattened =
                     method_call(&value, "flatMap").or_else(|| match helper_call(&value, "$flatMap")?.as_slice() {
-                        [source_value, each] => Some((source_value.clone(), each.clone())),
+                        [source_value, each, ..] => Some((source_value.clone(), each.clone())),
                         _ => None,
                     });
                 if let Some((source_value, each)) = flattened {
                     let source_value = self.as_hint_knowing(source_value, source.peel_refs());
-                    return Expr::call_helper("$flatMap", vec![source_value, each]);
+                    return Expr::call_helper("$flatMap", [vec![source_value, each], self.flatten_fusing(ty)].concat());
                 }
             }
             _ => {}

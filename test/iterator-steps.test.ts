@@ -706,8 +706,8 @@ test("each LengthFirst form's hint is exact and its length", () => {
 // A `flat_map`'s holding gives the flatten its function to drop after its
 // source, as `FlatMap`'s drop glue drops its `Map` (#2241), but not where
 // its source ends inside `next`: std's `Fuse` of a fused source, a `Vec`'s
-// items, keeps its `Map` until the flatten drops, which the runtime can't
-// tell from one that isn't.
+// items, keeps its `Map`, the source and the function, until the flatten
+// drops (#2242).
 test("a flat_map's holding keeps its function until it's closed, not where its source ends", () => {
   const log: string[] = [];
   const source = std.$closing(std.$iter([1, 2]), () => log.push("source"));
@@ -715,7 +715,26 @@ test("a flat_map's holding keeps its function until it's closed, not where its s
   const held = std.$held(std.$holding(flat, () => log.push("function"), "alone"));
   const items: number[] = [];
   for (let step = held.next(); !step.done; step = held.next()) items.push(step.value);
-  expect([items, log]).toEqual([[10, 20], ["source"]]);
+  expect([items, log]).toEqual([[10, 20], []]);
   held.return();
   expect(log).toEqual(["source", "function"]);
+});
+
+// A flatten of a fused source, held, keeps it until it's closed, as std's
+// `Fuse` of a `FusedIterator` keeps it at its first `None`; of one that
+// isn't, `$unfused`, drops it there, as `Fuse` drops its `Map` (#2242).
+test("a held flatten keeps a fused source until it's closed, and drops one that isn't at its end", () => {
+  for (const [fusing, atEnd] of [
+    [undefined, []],
+    [std.$unfused, ["source"]],
+  ] as const) {
+    const log: string[] = [];
+    const source = std.$closing(std.$iter([1, 2, 3]), () => log.push("source")).take(2);
+    const flat = std.$held(std.$flatMap(source, (x: number) => std.$iter([x * 10]), fusing));
+    const items: number[] = [];
+    for (let step = flat.next(); !step.done; step = flat.next()) items.push(step.value);
+    expect([items, log]).toEqual([[10, 20], [...atEnd]]);
+    flat.return();
+    expect(log).toEqual(["source"]);
+  }
 });

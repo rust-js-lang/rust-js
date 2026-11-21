@@ -21,6 +21,7 @@ import {
   $mapEnds,
   $nextBack,
   $somes,
+  $unfused,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -245,6 +246,7 @@ function main() {
         },
       ),
       (item) => $closing($iter(f$1(item)), $dropEach(dDrop_drop)),
+      $unfused,
     ),
     () => {
       dDrop_drop(g2);
@@ -291,6 +293,7 @@ function main() {
         },
       ),
       (item) => $closing($iter(f$2(item)), $dropEach(dDrop_drop)),
+      $unfused,
     ),
     () => {
       dDrop_drop(g3);
@@ -459,6 +462,7 @@ function main() {
         },
       ),
       (item) => $closing($iter(value$2(item)), $dropEach(dDrop_drop)),
+      $unfused,
     ),
     () => {
       $dispose(value$2);
@@ -503,6 +507,7 @@ function main() {
           },
         ),
         (item) => $closing($iter(value$3(item)), $dropEach(dDrop_drop)),
+        $unfused,
       ),
       () => {
         $dispose(value$3);

@@ -570,13 +570,29 @@ function $enumerate(iter) {
 // drop throws, a panic, as Rust's drop glue drops each field as it unwinds
 // (#705). Of a function value given, `flat_map(pick())`, each item what
 // `knowing` makes of what `each` gives, knowing its back (#1235).
-function $flattenEnds(it, each, knowing) {
+//
+// Its source fused as `$flatMap`'s is: `$unfused`, its last argument,
+// where it isn't a `FusedIterator` (#2242).
+function $flattenEnds(it, each, ...rest) {
+  const knowing = typeof rest[0] === "function" ? rest[0] : undefined;
+  const unfused = rest.at(-1) === $unfused;
   const made = knowing === undefined ? each : (x) => knowing(each(x));
   const done = { done: true, value: undefined };
   const inner = { next: undefined, back: undefined };
   // Its source, once done from either end, stays done, as std's `Fuse` of
-  // it does.
+  // it does: dropped then, with the function a `$holding` gives it, where
+  // it isn't fused, else kept until it's dropped, `dropped` once it is.
   let ended = false;
+  let dropped = false;
+  const dropSource = () => {
+    if (dropped) return;
+    dropped = true;
+    it.return?.();
+  };
+  const sourceEnded = () => {
+    ended = true;
+    if (unfused) $inTurn(dropSource, () => flat.functionDrop?.());
+  };
   const step = (by, own, other) => () => {
     for (;;) {
       if (inner[own] !== undefined) {
@@ -586,7 +602,7 @@ function $flattenEnds(it, each, knowing) {
       }
       const outer = ended ? done : it[by]();
       if (outer.done) {
-        ended = true;
+        if (!ended) sourceEnded();
         if (inner[other] === undefined) return done;
         const at = inner[other][by]();
         if (at.done) inner[other] = undefined;
@@ -604,7 +620,7 @@ function $flattenEnds(it, each, knowing) {
   // iterators, as `FlatMap`'s drop glue drops its `Map` first (#2241).
   const close = () =>
     $inTurn(
-      () => it.return?.(),
+      dropSource,
       () => flat.functionDrop?.(),
       () => taken("next"),
       () => taken("back"),
@@ -641,6 +657,7 @@ function $flattenEnds(it, each, knowing) {
       if (first !== undefined) folded = inners(first, folded);
       if (!ended) {
         ended = true;
+        dropped = true;
         folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind, alone);
       }
       const last = inner[other];
@@ -661,6 +678,7 @@ function $flattenEnds(it, each, knowing) {
     if (first !== undefined) counted = $count(first, drop);
     if (!ended) {
       ended = true;
+      dropped = true;
       counted = front(it, counted, (n, x) => n + $count($iter(made(x)), drop), undefined, ends);
     }
     const last = inner.back;
@@ -693,7 +711,7 @@ function $flattenEnds(it, each, knowing) {
         unwind,
       );
       if (broke(folded)) return folded;
-      ended = true;
+      sourceEnded();
     }
     if (inner.back !== undefined) {
       folded = $lent(inner.back).tryFold(folded, g, broke, unwind);
@@ -727,7 +745,7 @@ function $flattenEnds(it, each, knowing) {
         unwind,
       );
       if (broke(folded)) return folded;
-      ended = true;
+      sourceEnded();
     }
     if (inner.next !== undefined) {
       folded = $tryRfoldOf(inner.next, folded, g, broke, unwind);
@@ -758,7 +776,7 @@ function $flattenEnds(it, each, knowing) {
         return rest;
       });
       if (stopped) return 0;
-      ended = true;
+      sourceEnded();
     }
     if (inner[other] !== undefined) {
       left = advance(inner[other], left, drop);
@@ -804,6 +822,7 @@ function $flattenEnds(it, each, knowing) {
     inner.back = undefined;
     const source = ended ? undefined : it;
     ended = true;
+    dropped ||= source !== undefined;
     return [front, source, made, back];
   };
   return flat;

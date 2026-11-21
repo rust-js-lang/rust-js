@@ -16,6 +16,7 @@ import {
   $live,
   $next,
   $nextBack,
+  $unfused,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -162,6 +163,7 @@ function main() {
         },
       ),
       (item) => $closing($iter(value(item)), $dropEach(dDrop_drop)),
+      $unfused,
     ),
     () => {
       $dispose(value);
@@ -203,6 +205,7 @@ function main() {
         },
       ),
       (item) => $closing($iter(value$1(item)), $dropEach(dDrop_drop)),
+      $unfused,
     ),
     () => {
       $dispose(value$1);
@@ -245,6 +248,7 @@ function main() {
         },
       ),
       (item) => $closing($iter(value$2(item)), $dropEach(dDrop_drop)),
+      $unfused,
     ),
     () => {
       $dispose(value$2);
@@ -288,6 +292,7 @@ function main() {
           },
         ),
         (item) => $closing($iter(value$3(item)), $dropEach(dDrop_drop)),
+        $unfused,
       ),
       () => {
         $dispose(value$3);
@@ -333,6 +338,7 @@ function main() {
           },
         ),
         (item) => $closing($iter(value$4(item)), $dropEach(dDrop_drop)),
+        $unfused,
       ),
       () => {
         $dispose(value$4);
@@ -382,6 +388,7 @@ function main() {
           },
         ),
         (item) => $closing($iter(f(item)), $dropEach(dDrop_drop)),
+        $unfused,
       ),
       () => {
         dDrop_drop(g);

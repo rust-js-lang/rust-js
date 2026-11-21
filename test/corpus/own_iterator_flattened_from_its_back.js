@@ -22,6 +22,7 @@ import {
   $rangeNthBack,
   $rev,
   $tryOf,
+  $unfused,
   $unwindsOn,
   iterator_rev,
   revDoubleEndedIterator_advanceBackBy,
@@ -105,6 +106,7 @@ function main() {
             (d) => [[(d[0] * 10) >>> 0], d],
           ),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $unfused,
         ),
       ),
       "",
@@ -117,6 +119,7 @@ function main() {
         $flattenEnds(
           $iterator([0, 2], foldsIterator_next, false, foldsDoubleEndedIterator_nextBack),
           (d) => $closing($iter([[(d[0] * 10) >>> 0], d]), $dropEach(dDrop_drop)),
+          $unfused,
         ),
       ),
       "",
@@ -159,6 +162,7 @@ function main() {
           (d) => [[(d[0] * 10) >>> 0], d],
         ),
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+        $unfused,
       ),
       "",
       shown,
@@ -172,6 +176,7 @@ function main() {
           (d) => [[(d[0] * 10) >>> 0], d],
         ),
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+        $unfused,
       ),
     ).reduce(shown, ""),
   );
@@ -203,6 +208,7 @@ function main() {
             },
           ),
           (item) => $iterator(item, foldsIterator_next, false, foldsDoubleEndedIterator_nextBack),
+          $unfused,
         ),
       ),
       "",
@@ -284,6 +290,7 @@ function main() {
             (d) => [[(d[0] * 10) >>> 0], d],
           ),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $unfused,
         ),
       ),
     );
@@ -314,6 +321,7 @@ function main() {
             (d) => [[(d[0] * 10) >>> 0], d],
           ),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $unfused,
         ),
       ),
     );
@@ -382,6 +390,7 @@ function main() {
             (d) => [[(d[0] * 10) >>> 0], d],
           ),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $unfused,
         ),
       ),
     );
@@ -404,6 +413,7 @@ function main() {
             (d) => [[(d[0] * 10) >>> 0], d],
           ),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $unfused,
         ),
       );
     } catch (error) {
@@ -437,6 +447,7 @@ function main() {
             (d) => [[(d[0] * 10) >>> 0], d],
           ),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $unfused,
         ),
       );
     } catch (error) {
@@ -522,6 +533,7 @@ function main() {
             (d) => [[(d[0] * 10) >>> 0], d],
           ),
           (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $unfused,
         ),
       ),
       "",
@@ -536,6 +548,7 @@ function main() {
           (d) => [[(d[0] * 10) >>> 0], d],
         ),
         (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+        $unfused,
       ),
       "",
       shown,

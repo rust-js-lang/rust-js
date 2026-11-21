@@ -6767,13 +6767,29 @@ export function $enumerate(iter) {
 // drop throws, a panic, as Rust's drop glue drops each field as it unwinds
 // (#705). Of a function value given, `flat_map(pick())`, each item what
 // `knowing` makes of what `each` gives, knowing its back (#1235).
-export function $flattenEnds(it, each, knowing) {
+//
+// Its source fused as `$flatMap`'s is: `$unfused`, its last argument,
+// where it isn't a `FusedIterator` (#2242).
+export function $flattenEnds(it, each, ...rest) {
+  const knowing = typeof rest[0] === "function" ? rest[0] : undefined;
+  const unfused = rest.at(-1) === $unfused;
   const made = knowing === undefined ? each : (x) => knowing(each(x));
   const done = { done: true, value: undefined };
   const inner = { next: undefined, back: undefined };
   // Its source, once done from either end, stays done, as std's `Fuse` of
-  // it does.
+  // it does: dropped then, with the function a `$holding` gives it, where
+  // it isn't fused, else kept until it's dropped, `dropped` once it is.
   let ended = false;
+  let dropped = false;
+  const dropSource = () => {
+    if (dropped) return;
+    dropped = true;
+    it.return?.();
+  };
+  const sourceEnded = () => {
+    ended = true;
+    if (unfused) $inTurn(dropSource, () => flat.functionDrop?.());
+  };
   const step = (by, own, other) => () => {
     for (;;) {
       if (inner[own] !== undefined) {
@@ -6783,7 +6799,7 @@ export function $flattenEnds(it, each, knowing) {
       }
       const outer = ended ? done : it[by]();
       if (outer.done) {
-        ended = true;
+        if (!ended) sourceEnded();
         if (inner[other] === undefined) return done;
         const at = inner[other][by]();
         if (at.done) inner[other] = undefined;
@@ -6801,7 +6817,7 @@ export function $flattenEnds(it, each, knowing) {
   // iterators, as `FlatMap`'s drop glue drops its `Map` first (#2241).
   const close = () =>
     $inTurn(
-      () => it.return?.(),
+      dropSource,
       () => flat.functionDrop?.(),
       () => taken("next"),
       () => taken("back"),
@@ -6838,6 +6854,7 @@ export function $flattenEnds(it, each, knowing) {
       if (first !== undefined) folded = inners(first, folded);
       if (!ended) {
         ended = true;
+        dropped = true;
         folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind, alone);
       }
       const last = inner[other];
@@ -6858,6 +6875,7 @@ export function $flattenEnds(it, each, knowing) {
     if (first !== undefined) counted = $count(first, drop);
     if (!ended) {
       ended = true;
+      dropped = true;
       counted = front(it, counted, (n, x) => n + $count($iter(made(x)), drop), undefined, ends);
     }
     const last = inner.back;
@@ -6890,7 +6908,7 @@ export function $flattenEnds(it, each, knowing) {
         unwind,
       );
       if (broke(folded)) return folded;
-      ended = true;
+      sourceEnded();
     }
     if (inner.back !== undefined) {
       folded = $lent(inner.back).tryFold(folded, g, broke, unwind);
@@ -6924,7 +6942,7 @@ export function $flattenEnds(it, each, knowing) {
         unwind,
       );
       if (broke(folded)) return folded;
-      ended = true;
+      sourceEnded();
     }
     if (inner.next !== undefined) {
       folded = $tryRfoldOf(inner.next, folded, g, broke, unwind);
@@ -6955,7 +6973,7 @@ export function $flattenEnds(it, each, knowing) {
         return rest;
       });
       if (stopped) return 0;
-      ended = true;
+      sourceEnded();
     }
     if (inner[other] !== undefined) {
       left = advance(inner[other], left, drop);
@@ -7001,6 +7019,7 @@ export function $flattenEnds(it, each, knowing) {
     inner.back = undefined;
     const source = ended ? undefined : it;
     ended = true;
+    dropped ||= source !== undefined;
     return [front, source, made, back];
   };
   return flat;
@@ -21562,6 +21581,10 @@ export function $trustedZipEnds(a, b, dropA, dropB) {
   return $zipEndsOf(zipped, zipped.from[0], zipped.from[1], dropA, dropB);
 }
 
+// What a flatten is given of a source that isn't a `FusedIterator`, whose
+// end std's `Fuse` drops it at (#2242).
+export const $unfused = "unfused";
+
 // `it.flat_map(f)`, or `flatten()`, of inner iterators that hold what has a
 // destructor, or give it: JS's `flatMap`, but closed as Rust drops a
 // `FlatMap`, its source first, then the inner iterator it's stepping, each
@@ -21577,9 +21600,26 @@ export function $flatLast(flat, drop, ends) {
   return last === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(last) };
 }
 
-export function $flatMap(it, f) {
+// Its source fused as std's `Fuse` is: one that isn't a `FusedIterator`,
+// `fusing` `$unfused`, dropped at its end with the function a `$holding`
+// gives it, as `Fuse` drops its `Map` at its first `None`; one that is,
+// kept until it's dropped, as `Fuse`'s specialization keeps it (#2242).
+export function $flatMap(it, f, fusing) {
   let inner;
+  // Its source done, `ended`; dropped, by its own fold or here, `dropped`.
   let ended = false;
+  let dropped = false;
+  const dropSource = () => {
+    if (dropped) return;
+    dropped = true;
+    it.return?.();
+  };
+  // At its end, a source that isn't fused, which it doesn't hold, drops
+  // itself; its function after it, as `Fuse` drops its `Map`.
+  const sourceEnded = () => {
+    ended = true;
+    if (fusing === $unfused) flat.functionDrop?.();
+  };
   const flat = new $Steps(
     () => {
       for (;;) {
@@ -21590,11 +21630,9 @@ export function $flatMap(it, f) {
         }
         if (ended) return { done: true, value: undefined };
         const outer = it.next();
-        // Done, its source is dropped, as std's `Fuse` drops what it holds
-        // at its first `None`.
+        // Done, its source fused as std's `Fuse` fuses it.
         if (outer.done) {
-          ended = true;
-          it.return?.();
+          sourceEnded();
           return outer;
         }
         inner = $stepsOf(f(outer.value));
@@ -21607,10 +21645,8 @@ export function $flatMap(it, f) {
     () =>
       $inTurn(
         () => {
-          if (!ended) {
-            ended = true;
-            it.return?.();
-          }
+          ended = true;
+          dropSource();
         },
         () => flat.functionDrop?.(),
         () => {
@@ -21632,6 +21668,7 @@ export function $flatMap(it, f) {
       inner = undefined;
       if (ended) return folded;
       ended = true;
+      dropped = true;
       const made = unwind === undefined ? f : (x, a) => $staged(f, x, undefined, a, unwind);
       const each = (a, x) => $foldDropping($stepsOf(made(x, a)), a, g, unwind);
       return typeof it.fold === "function" ? it.fold(folded, each, unwind, own) : $foldDropping(it, folded, each, unwind, own);
@@ -21660,10 +21697,7 @@ export function $flatMap(it, f) {
       broke,
       unwind,
     );
-    if (!broke(folded)) {
-      ended = true;
-      it.return?.();
-    }
+    if (!broke(folded)) sourceEnded();
     return folded;
   };
   // Its `count`, std's `FlattenCompat::count`: the own `count` of the one
@@ -21681,6 +21715,7 @@ export function $flatMap(it, f) {
     }
     if (ended) return counted;
     ended = true;
+    dropped = true;
     const each = (n, x) => n + $count($stepsOf(f(x)), drop);
     return typeof it.fold === "function"
       ? it.fold(counted, each, undefined, ends)
@@ -21710,12 +21745,19 @@ export function $flatMap(it, f) {
       },
       () => stopped,
     );
-    if (!stopped) {
-      ended = true;
-      it.return?.();
-    }
+    if (!stopped) sourceEnded();
     return left;
   };
+  // Held, its source held too where it's fused, so it isn't dropped at its
+  // end, a `take`'s source as it's taken, but as the flatten is, as `Fuse`
+  // keeps it (#2242).
+  if (fusing !== $unfused) {
+    const hold = flat.hold;
+    flat.hold = () => {
+      hold.call(flat);
+      it.hold?.();
+    };
+  }
   $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop, ends) => $flatLast(flat, drop, ends) });
   // Its `count` its own, which what holds it passes on, a `skip()`'s, as
   // std's `Skip::count` asks its source's; and its `last`, each inner's own.
@@ -21731,6 +21773,7 @@ export function $flatMap(it, f) {
     const source = ended ? undefined : it;
     inner = undefined;
     ended = true;
+    dropped ||= source !== undefined;
     return [front, source, f];
   };
   return flat;

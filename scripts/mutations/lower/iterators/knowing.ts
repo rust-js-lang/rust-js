@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
     name: "flat-map-helper-backless",
     breaks: "a `$flatMap(src, each)` stepped from its back isn't made `$flattenEnds`, so an `rfold` of a mapped `Vec`'s flatten of what has a destructor folds it from its front (#644)",
     file: "src/lower/iterators/knowing.rs",
-    find: "                (_, [source_value, each]) if callee.helper_name() == Some(\"$flatMap\") => Some((source_value, each)),\n",
+    find: "                (_, [source_value, each, ..]) if callee.helper_name() == Some(\"$flatMap\") => Some((source_value, each)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_closed_part_way_drops_source_first.rs$"],
   },

@@ -44,6 +44,22 @@ pub(crate) fn flattened_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<
     }
 }
 
+impl<'tcx> Recognition<'_, 'tcx> {
+    /// Whether the source of a flatten of type `ty`, `Flatten<I>`'s or
+    /// `FlatMap<I, U, F>`'s `I`, is a `FusedIterator`, which std's `Fuse`
+    /// of it keeps at its first `None`, where it drops one that isn't, its
+    /// `Map`'s function with it (#2242). `None` where only a caller can
+    /// say, of generic code's `I`.
+    pub(crate) fn flatten_source_fused(&self, ty: Ty<'tcx>) -> Option<bool> {
+        let (source, _) = flattened_source(self.tcx, ty)?;
+        let fused = self
+            .tcx
+            .lang_items()
+            .get(rustc_hir::attrs::lang_items::LangItem::FusedIterator)?;
+        self.trait_holds(source, fused)
+    }
+}
+
 /// Of std's `StepBy<I>` of type `ty`, its source.
 pub(crate) fn stepped_by_source<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
     adapter_source(tcx, ty, StdPath::IterStepBy)

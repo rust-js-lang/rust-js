@@ -24,6 +24,7 @@ import {
   $reserveHint,
   $roomForHint,
   $tryFoldOk,
+  $unfused,
   $unwindsOn,
   iterator_stepBy,
 } from "@rust-js/std";
@@ -155,7 +156,11 @@ function zipped(it, dropI) {
 
 function flattened(it) {
   const total = totalSumD_sum(
-    $flatMap($lent(it), (x) => $closing($iter([[(x + 10) >>> 0], [x]]), $dropEach(dDrop_drop))),
+    $flatMap(
+      $lent(it),
+      (x) => $closing($iter([[(x + 10) >>> 0], [x]]), $dropEach(dDrop_drop)),
+      $unfused,
+    ),
     (flatMap) => {
       flatMap.return();
     },

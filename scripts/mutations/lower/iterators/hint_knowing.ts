@@ -39,8 +39,8 @@ export const mutations: Mutation[] = [
     name: "hint-knowing-flatten-ends",
     breaks: "a flatten made knowing its hint alone is `$flattenEnds`, which steps each inner by its back, so the crate's iterators, which have none, throw (#2209)",
     file: "src/lower/iterators/hint_knowing.rs",
-    find: "                    return Expr::call_helper(\"$flatMap\", vec![source_value, each]);\n",
-    replace: "                    return Expr::call_helper(\"$flattenEnds\", vec![source_value, each]);\n",
+    find: "                    return Expr::call_helper(\"$flatMap\", [vec![source_value, each], self.flatten_fusing(ty)].concat());\n",
+    replace: "                    return Expr::call_helper(\"$flattenEnds\", [vec![source_value, each], self.flatten_fusing(ty)].concat());\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_made_knowing_its_hint_asks_no_back.rs$"],
   },
 ];
