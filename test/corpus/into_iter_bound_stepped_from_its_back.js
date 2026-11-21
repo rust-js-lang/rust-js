@@ -152,7 +152,7 @@ function reversedSum(t, TIntoIterDoubleEndedIterator, dropTIntoIter) {
 const $tIsT = new WeakMap();
 
 function tIsT(dropT) {
-  return $traitImpl($tIsT, [dropT], () => ({ is: (arg0) => tIsT_is(arg0, dropT), $drop: dropT }));
+  return $traitImpl($tIsT, [dropT], () => ({ is: (self) => tIsT_is(self, dropT), $drop: dropT }));
 }
 function tIsT_is(self, dropT) {
   return self;

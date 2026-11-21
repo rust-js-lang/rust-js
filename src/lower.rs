@@ -981,21 +981,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // IsI32)`; of a writer function, but its `Formatter`, which none
             // of its JS takes nor a call through its pointer gives (ADR 0538,
             // #1710).
-            let count = (self.tcx.fn_sig(def_id).instantiate(self.tcx, args))
-                .skip_normalization()
-                .skip_binder()
-                .inputs()
-                .len();
             let formatter = self.recognition().formatter_param(def_id);
-            let idents = self.tcx.fn_arg_idents(def_id);
-            let param_names: Vec<String> = (0..count)
-                .filter(|&i| Some(i) != formatter)
-                .map(|i| match idents.get(i).copied().flatten() {
-                    Some(ident) if !ident.name.as_str().starts_with('_') && ident.name.as_str() != "self" => {
-                        camel_case(ident.name.as_str())
-                    }
-                    _ => format!("arg{i}"),
-                })
+            let param_names: Vec<String> = (signatures::taken_parameter_names(self.tcx, def_id, formatter, false))
+                .into_iter()
+                .enumerate()
+                .map(|(i, name)| name.unwrap_or_else(|| format!("arg{i}")))
                 .collect();
             let name = match &callee.kind {
                 js::ExprKind::Var(name) => name.word().to_string(), // word: a module function's, its instance's name made of it

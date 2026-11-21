@@ -7,7 +7,7 @@ export function entry() {
 }
 
 const numbersStack = {
-  push: (arg0, arg1) => numbersStack_push(arg0.value, arg1),
+  push: (numbers, n) => numbersStack_push(numbers.value, n),
   len: numbersStack_len,
 };
 function numbersStack_push(numbers, n) {

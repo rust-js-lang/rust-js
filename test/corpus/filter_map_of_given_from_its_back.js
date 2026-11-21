@@ -21,13 +21,13 @@ export function entry() {
 
 function oksIterator_next(oks, IIterator) {
   return $lent($given(oks.iter, IIterator))
-    .map((x) => (x.TAG === "Ok" ? x._0 : undefined))
+    .map((result) => (result.TAG === "Ok" ? result._0 : undefined))
     .find((item) => item != null);
 }
 
 function oksDoubleEndedIterator_nextBack(oks, IIterator, IDoubleEndedIterator) {
   return $lent($rev($lent($given(oks.iter, IIterator, false, IDoubleEndedIterator))))
-    .map((x) => (x.TAG === "Ok" ? x._0 : undefined))
+    .map((result) => (result.TAG === "Ok" ? result._0 : undefined))
     .find((item) => item != null);
 }
 
@@ -46,13 +46,13 @@ function oksDoubleEndedIterator_rfold(oks, init, f, IIterator, IDoubleEndedItera
 
 function somesIterator_next(somes, IIterator) {
   return $lent($given(somes.iter, IIterator))
-    .map((x) => (x.TAG === "Ok" ? $some(x._0) : undefined))
+    .map((result) => (result.TAG === "Ok" ? $some(result._0) : undefined))
     .find((item) => item != null);
 }
 
 function somesDoubleEndedIterator_nextBack(somes, IIterator, IDoubleEndedIterator) {
   return $lent($rev($lent($given(somes.iter, IIterator, false, IDoubleEndedIterator))))
-    .map((x) => (x.TAG === "Ok" ? $some(x._0) : undefined))
+    .map((result) => (result.TAG === "Ok" ? $some(result._0) : undefined))
     .find((item) => item != null);
 }
 
@@ -60,8 +60,8 @@ function somesDoubleEndedIterator_rfold(somes, init, f, IIterator, IDoubleEndedI
   return $foldBack(
     $mapEnds(
       $somes(
-        $mapEnds($given(somes.iter, IIterator, false, IDoubleEndedIterator), (x) =>
-          x.TAG === "Ok" ? $some(x._0) : undefined,
+        $mapEnds($given(somes.iter, IIterator, false, IDoubleEndedIterator), (result) =>
+          result.TAG === "Ok" ? $some(result._0) : undefined,
         ),
       ),
       $someValue,

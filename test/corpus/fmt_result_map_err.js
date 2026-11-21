@@ -33,7 +33,7 @@ function fullDebug_fmt(full, TDebug) {
   return f.done();
 }
 
-const $smallWrite_writeStr = (arg0, arg1) => smallWrite_writeStr(arg0.value, arg1);
+const $smallWrite_writeStr = (small, s) => smallWrite_writeStr(small.value, s);
 
 export const smallWrite = {
   writeStr: $smallWrite_writeStr,

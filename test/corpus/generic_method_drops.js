@@ -17,11 +17,11 @@ function noisyDrop_drop(noisy) {
 }
 
 const logStore = {
-  put(arg0, arg1, TDebug, dropT) {
-    return logStore_put(arg0.value, arg1, TDebug, dropT);
+  put(log, item, TDebug, dropT) {
+    return logStore_put(log.value, item, TDebug, dropT);
   },
-  putAll(arg0, arg1, dropI, dropIIntoIter) {
-    return logStore_putAll(arg0.value, arg1, dropI, dropIIntoIter);
+  putAll(log, items, dropI, dropIIntoIter) {
+    return logStore_putAll(log.value, items, dropI, dropIIntoIter);
   },
   keep(self, item, TDebug, dropT) {
     const log = self.value;

@@ -10,9 +10,9 @@ const unitTracked = {
   fromDefault: (unit, location) => location,
   inherited: unitTracked_inherited,
   onlyImpl: (
-    arg0,
+    unit,
     location = { file: "test/corpus/track_caller_traits.rs", line: 41, column: 5 },
-  ) => unitTracked_onlyImpl(arg0, location),
+  ) => unitTracked_onlyImpl(unit, location),
   boxed: unitTracked_boxed,
   unread: unitTracked_unread,
   tagged: unitTracked_tagged,
@@ -44,7 +44,7 @@ const flagTracked = {
   onlyImpl: flagTracked_onlyImpl,
   boxed: flagTracked_boxed,
   unread: flagTracked_unread,
-  tagged: (arg0, arg1, location, TDisplay) => flagTracked_tagged(arg0, arg1, TDisplay),
+  tagged: (flag, tag, location, TDisplay) => flagTracked_tagged(flag, tag, TDisplay),
 };
 function flagTracked_fromDefault(flag, location) {
   const here = location;

@@ -623,11 +623,11 @@ export function bytes(inner, dropR) {
 
 export function chainRead(TRead, URead, dropT, dropU) {
   return $traitImpl($chainRead, [TRead, URead, dropT, dropU], () => ({
-    read(arg0, arg1) {
-      return chainRead_read(arg0.value, arg1, TRead, URead, dropT, dropU);
+    read(chain, buf) {
+      return chainRead_read(chain.value, buf, TRead, URead, dropT, dropU);
     },
-    readToEnd(arg0, arg1) {
-      return chainRead_readToEnd(arg0.value, arg1, TRead, URead, dropT, dropU);
+    readToEnd(chain, buf) {
+      return chainRead_readToEnd(chain.value, buf, TRead, URead, dropT, dropU);
     },
     $drop(chain) {
       try {
@@ -651,11 +651,11 @@ export function chainBufRead(TBufRead, UBufRead, dropT, dropU) {
         $followedReadBuf(TBufRead.Read(), UBufRead.Read()),
       );
     },
-    fillBuf(arg0) {
-      return chainBufRead_fillBuf(arg0.value, TBufRead, UBufRead, dropT, dropU);
+    fillBuf(chain) {
+      return chainBufRead_fillBuf(chain.value, TBufRead, UBufRead, dropT, dropU);
     },
-    consume(arg0, arg1) {
-      return chainBufRead_consume(arg0.value, arg1, TBufRead, UBufRead, dropT, dropU);
+    consume(chain, amt) {
+      return chainBufRead_consume(chain.value, amt, TBufRead, UBufRead, dropT, dropU);
     },
     $drop(chain) {
       try {
@@ -673,8 +673,8 @@ export function chainBufRead(TBufRead, UBufRead, dropT, dropU) {
 
 export function takeRead(TRead, dropT) {
   return $traitImpl($takeRead, [TRead, dropT], () => ({
-    read(arg0, arg1) {
-      return takeRead_read(arg0.value, arg1, TRead, dropT);
+    read(take, buf) {
+      return takeRead_read(take.value, buf, TRead, dropT);
     },
     $drop(take) {
       dropT?.(take.inner);
@@ -687,11 +687,11 @@ export function takeBufRead(TBufRead, dropT) {
     Read() {
       return $readerDefaults(takeRead(TBufRead.Read(), dropT), $takeReadBuf(TBufRead.Read()));
     },
-    fillBuf(arg0) {
-      return takeBufRead_fillBuf(arg0.value, TBufRead, dropT);
+    fillBuf(take) {
+      return takeBufRead_fillBuf(take.value, TBufRead, dropT);
     },
-    consume(arg0, arg1) {
-      return takeBufRead_consume(arg0.value, arg1, TBufRead, dropT);
+    consume(take, amt) {
+      return takeBufRead_consume(take.value, amt, TBufRead, dropT);
     },
     $drop(take) {
       dropT?.(take.inner);
@@ -701,11 +701,11 @@ export function takeBufRead(TBufRead, dropT) {
 
 export function cursorClone(TClone, dropT) {
   return $traitImpl($cursorClone, [TClone, dropT], () => ({
-    clone(arg0) {
-      return cursorClone_clone(arg0, TClone, dropT);
+    clone(cursor) {
+      return cursorClone_clone(cursor, TClone, dropT);
     },
-    cloneFrom(arg0, arg1) {
-      return cursorClone_cloneFrom(arg0.value, arg1, TClone, dropT);
+    cloneFrom(cursor, other) {
+      return cursorClone_cloneFrom(cursor.value, other, TClone, dropT);
     },
     $drop(cursor) {
       dropT?.(cursor.inner);
@@ -715,14 +715,14 @@ export function cursorClone(TClone, dropT) {
 
 export function cursorDebug(TDebug) {
   return $traitImpl($cursorDebug, [TDebug], () => ({
-    fmt: (arg0, arg1) => cursorDebug_fmt(arg0, arg1, TDebug),
+    fmt: (cursor, options) => cursorDebug_fmt(cursor, options, TDebug),
     fmtInto: (f, value, options) => $writingInto(f, cursorDebug_fmt, value, options, TDebug),
   }));
 }
 
 export function cursorPartialEq(TPartialEq) {
   return $traitImpl($cursorPartialEq, [TPartialEq], () =>
-    $partialEq({ eq: (arg0, arg1) => cursorPartialEq_eq(arg0, arg1, TPartialEq) }),
+    $partialEq({ eq: (cursor, other) => cursorPartialEq_eq(cursor, other, TPartialEq) }),
   );
 }
 

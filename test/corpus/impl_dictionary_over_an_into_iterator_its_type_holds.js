@@ -18,7 +18,7 @@ const $oneFromTA = new WeakMap();
 
 function oneFromTA(AIntoIterator) {
   return $traitImpl($oneFromTA, [AIntoIterator], () => ({
-    fromT: (arg0) => oneFromTA_fromT(arg0, AIntoIterator),
+    fromT: (t) => oneFromTA_fromT(t, AIntoIterator),
     name: oneFromTA_name,
   }));
 }

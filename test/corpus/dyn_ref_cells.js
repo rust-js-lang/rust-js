@@ -17,7 +17,7 @@ export function entry() {
 
 const circleShape = {
   area: circleShape_area,
-  grow: (arg0, arg1) => circleShape_grow(arg0.value, arg1),
+  grow: (circle, by) => circleShape_grow(circle.value, by),
   name: circleShape_name,
 };
 function circleShape_area(circle) {
@@ -37,7 +37,7 @@ function circleLabeled_label(circle) {
 
 const squareShape = {
   area: squareShape_area,
-  grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
+  grow: (square, by) => squareShape_grow(square.value, by),
   name: squareShape_name,
 };
 function squareShape_area(square) {

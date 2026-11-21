@@ -12,7 +12,7 @@ function clicksDebug_fmt(clicks) {
   return `Clicks { n: ${clicks.n} }`;
 }
 
-export const clicksPick = { pick: (arg0, arg1) => clicksPick_pick(arg0.value, arg1?.value) };
+export const clicksPick = { pick: (clicks, other) => clicksPick_pick(clicks.value, other?.value) };
 function clicksPick_pick(clicks, other) {
   if (other != null) {
     other.n = (other.n + 50) >>> 0;
@@ -36,7 +36,7 @@ const $holderWrap = new WeakMap();
 
 export function holderWrap(TPick) {
   return $traitImpl($holderWrap, [TPick], () => ({
-    wrap: (arg0) => holderWrap_wrap(arg0.value, TPick),
+    wrap: (holder) => holderWrap_wrap(holder.value, TPick),
   }));
 }
 function holderWrap_wrap(holder, TPick) {

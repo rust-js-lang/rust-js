@@ -90,11 +90,11 @@ function main() {
       .map(([j]) => j);
     console.log(`${queen.label} threatens [${threatened.join(", ")}]`);
   }
-  const diagonals = queens.map((x) => x.leftDiagonal);
+  const diagonals = queens.map((queen) => queen.leftDiagonal);
   const arg = new Queen(4, 4).rightDiagonal;
   console.log(`[${diagonals.join(", ")}] ${arg}`);
   console.log(`${announced(new Square(5))}`);
-  const reads = queens.map((x) => x.readCount());
+  const reads = queens.map((queen) => queen.readCount());
   console.log(`[${reads.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

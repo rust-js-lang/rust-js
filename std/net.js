@@ -718,7 +718,7 @@ export function socketAddrFrom_I__u16__from(pieces, IIntoIpAddr, dropI) {
 
 export function socketAddrFrom_I__u16_(IIntoIpAddr, dropI) {
   return $traitImpl($socketAddrFrom_I__u16_, [IIntoIpAddr, dropI], () => ({
-    from: (arg0) => socketAddrFrom_I__u16__from(arg0, IIntoIpAddr, dropI),
+    from: (pieces) => socketAddrFrom_I__u16__from(pieces, IIntoIpAddr, dropI),
   }));
 }
 //# sourceMappingURL=net.js.map

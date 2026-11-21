@@ -10,7 +10,7 @@ const $bufferIndexJ = new WeakMap();
 
 export function bufferIndexJ(JSliceIndexTSlice) {
   return $traitImpl($bufferIndexJ, [JSliceIndexTSlice], () => ({
-    index: (arg0, arg1) => bufferIndexJ_index(arg0, arg1, JSliceIndexTSlice),
+    index: (buffer, index) => bufferIndexJ_index(buffer, index, JSliceIndexTSlice),
   }));
 }
 

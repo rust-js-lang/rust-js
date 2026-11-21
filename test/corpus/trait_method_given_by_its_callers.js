@@ -50,7 +50,7 @@ const $wrapFront = new WeakMap();
 
 function wrapFront(TClone) {
   return $traitImpl($wrapFront, [TClone], () => ({
-    front: (arg0) => wrapFront_front(arg0, TClone),
+    front: (wrap) => wrapFront_front(wrap, TClone),
   }));
 }
 function wrapFront_front(wrap, TClone) {

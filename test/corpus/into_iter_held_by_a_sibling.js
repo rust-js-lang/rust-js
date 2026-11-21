@@ -7,8 +7,8 @@ export function entry() {
 }
 
 export const wrapMake = {
-  make: (arg0) =>
-    wrapMake_make(arg0, {
+  make: (wrap) =>
+    wrapMake_make(wrap, {
       intoIter: (items) => $intoIter(items),
       IntoIterIterator: () => $jsIteratorSome,
     }),

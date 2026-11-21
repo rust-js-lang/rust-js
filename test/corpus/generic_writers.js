@@ -66,7 +66,7 @@ function timeDisplay_fmt(time) {
 
 // A writer of the crate's own, that counts what it's given.
 
-const $counterWrite_writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
+const $counterWrite_writeStr = (counter, s) => counterWrite_writeStr(counter.value, s);
 
 export const counterWrite = {
   writeStr: $counterWrite_writeStr,

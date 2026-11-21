@@ -47,10 +47,10 @@ function hook() {
         let result;
         try {
           const borrow = $borrow(this$$1.value, true);
-          const x = borrow.value;
+          const weak = borrow.value;
           let hook;
           try {
-            hook = $unwrap(x != null ? $upgrade(x) : undefined);
+            hook = $unwrap(weak != null ? $upgrade(weak) : undefined);
           } finally {
             $unborrow(borrow);
           }

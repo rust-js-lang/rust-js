@@ -23,11 +23,11 @@ const Full = {
   },
 };
 
-const $fullWrite_write = (arg0, arg1) => fullWrite_write(arg0.value, arg1);
+const $fullWrite_write = (full, bytes) => fullWrite_write(full.value, bytes);
 
 export const fullWrite = {
   write: $fullWrite_write,
-  flush: (arg0) => fullWrite_flush(arg0.value),
+  flush: (full) => fullWrite_flush(full.value),
   writeAll: $ioWriteAll($fullWrite_write),
   writeFmt: $ioWriteFmt($fullWrite_write),
 };

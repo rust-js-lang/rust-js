@@ -652,8 +652,8 @@ export const mutations: Mutation[] = [
     name: "flattened-state-given-whole",
     breaks: "`new` of a class whose constructor takes its flattened state's keys is given the state's object, `new ReactPromise({ status })`, the keys shifted (rd380)",
     file: "src/lower/mir/calls.rs",
-    find: "Some((at, keys)) if at < args.len() => crate::lower::classes::new_of_state(*class, args, at, &keys),",
-    replace: "Some((at, _)) if at < args.len() => Expr::new_(*class, args),",
+    find: "                        crate::lower::classes::new_of_state(*class, args, (at, &keys), &own)\n",
+    replace: "                        Expr::new_(*class, args)\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
 

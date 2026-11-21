@@ -20,7 +20,7 @@ export function entry() {
   main();
 }
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -43,9 +43,14 @@ function refByRefDebug_fmt(byRef, options) {
 }
 
 export const refMutByRefDisplay = {
-  fmt: (arg0, arg1) => refMutByRefDisplay_fmt(arg0.value, arg1),
+  fmt: (byRef, options) => refMutByRefDisplay_fmt(byRef.value, options),
   fmtInto: (f, value, options) =>
-    $writingInto(f, (arg0, arg1) => refMutByRefDisplay_fmt(arg0.value, arg1), value, options),
+    $writingInto(
+      f,
+      (byRef, options) => refMutByRefDisplay_fmt(byRef.value, options),
+      value,
+      options,
+    ),
 };
 function refMutByRefDisplay_fmt(byRef, options) {
   const f = $sink();

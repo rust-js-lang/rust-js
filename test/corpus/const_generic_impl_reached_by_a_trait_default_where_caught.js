@@ -18,11 +18,11 @@ const $bufMeasured = new Map();
 
 function bufMeasured(SIZE) {
   return $traitImpl($bufMeasured, [SIZE], () => ({
-    metadata(arg0, arg1) {
-      return bufMeasured_metadata(arg0, arg1, SIZE);
+    metadata(buf, kept) {
+      return bufMeasured_metadata(buf, kept, SIZE);
     },
-    written(arg0, arg1) {
-      return bufMeasured_written(arg0, arg1, SIZE);
+    written(buf, held) {
+      return bufMeasured_written(buf, held, SIZE);
     },
     shown(buf) {
       const held = bufMeasured_metadata(buf, true, SIZE);
@@ -48,7 +48,7 @@ function bufMeasured_written(buf, held, SIZE) {
 const $bufDisplay = new Map();
 
 export function bufDisplay(SIZE) {
-  return $traitImpl($bufDisplay, [SIZE], () => ({ fmt: (arg0) => bufDisplay_fmt(arg0, SIZE) }));
+  return $traitImpl($bufDisplay, [SIZE], () => ({ fmt: (buf) => bufDisplay_fmt(buf, SIZE) }));
 }
 function bufDisplay_fmt(buf, SIZE) {
   const f = $sink();

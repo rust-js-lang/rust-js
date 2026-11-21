@@ -35,7 +35,8 @@ const $rangeInclusiveIteratorIndexI = new WeakMap();
 function rangeInclusiveIteratorIndexI(IIterator) {
   return $traitImpl($rangeInclusiveIteratorIndexI, [IIterator], () => ({
     OutputIterator: () => ({ next: $nextSome, fold: $foldOf, nth: $nthSome }),
-    index: (arg0, arg1) => rangeInclusiveIteratorIndexI_index(arg0, arg1, IIterator),
+    index: (rangeInclusive, iter) =>
+      rangeInclusiveIteratorIndexI_index(rangeInclusive, iter, IIterator),
   }));
 }
 function rangeInclusiveIteratorIndexI_index(rangeInclusive, iter, IIterator) {

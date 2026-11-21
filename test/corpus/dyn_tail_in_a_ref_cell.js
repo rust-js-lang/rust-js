@@ -21,7 +21,7 @@ export function entry() {
 }
 
 const circleShape = {
-  grow: (arg0, arg1) => circleShape_grow(arg0.value, arg1),
+  grow: (circle, by) => circleShape_grow(circle.value, by),
   area: circleShape_area,
 };
 function circleShape_grow(circle, by) {
@@ -33,7 +33,7 @@ function circleShape_area(circle) {
 }
 
 const squareShape = {
-  grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
+  grow: (square, by) => squareShape_grow(square.value, by),
   area: squareShape_area,
   $drop: squareDrop_drop,
 };

@@ -29,8 +29,8 @@ function encode(text, sink, SSink) {
 }
 
 const formatterSinkSink = {
-  writeEncoded: (arg0, arg1) =>
-    $writeResult(() => formatterSinkSink_writeEncoded(arg0.value, arg1)),
+  writeEncoded: (formatterSink, encoded) =>
+    $writeResult(() => formatterSinkSink_writeEncoded(formatterSink.value, encoded)),
 };
 function formatterSinkSink_writeEncoded(formatterSink, encoded) {
   if (encoded === "bad") {
@@ -62,7 +62,8 @@ function encodedDisplay_fmt(encoded) {
 }
 
 const stringSinkSink = {
-  writeEncoded: (arg0, arg1) => $writeResult(() => stringSinkSink_writeEncoded(arg0.value, arg1)),
+  writeEncoded: (stringSink, encoded) =>
+    $writeResult(() => stringSinkSink_writeEncoded(stringSink.value, encoded)),
 };
 function stringSinkSink_writeEncoded(stringSink, encoded) {
   stringSink.s.value += `<${encoded}>`;

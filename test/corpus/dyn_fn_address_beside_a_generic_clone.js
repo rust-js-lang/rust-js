@@ -18,8 +18,8 @@ const $optionGetterT = new WeakMap();
 
 function optionGetterT(TClone, dropT) {
   return $traitImpl($optionGetterT, [TClone, dropT], () => ({
-    get(arg0) {
-      return optionGetterT_get(arg0, TClone, dropT);
+    get(option) {
+      return optionGetterT_get(option, TClone, dropT);
     },
     $drop(option) {
       if (option != null) {

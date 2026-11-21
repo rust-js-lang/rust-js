@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const refMutBagGrow = { grow: (arg0) => refMutBagGrow_grow($heldObjectOf(arg0)) };
+const refMutBagGrow = { grow: (bag) => refMutBagGrow_grow($heldObjectOf(bag)) };
 function refMutBagGrow_grow(bag) {
   if (bag.value.n === 0) {
     bag.value = { n: 100 };

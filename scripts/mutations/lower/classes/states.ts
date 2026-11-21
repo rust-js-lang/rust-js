@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: ".filter_map(|key| field(key))",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
+  {
+    name: "state-maker-params-unnamed",
+    breaks: "the function a flattened state made by a call is given to names its parameters `arg0`, not as the constructor does, `(id, state)` (#1328)",
+    file: "src/lower/classes/states.rs",
+    find: "                    let own = own.get(i).cloned().flatten();\n",
+    replace: "                    let own = own.get(usize::MAX).cloned().flatten();\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "made by a call"],
+  },
 ];

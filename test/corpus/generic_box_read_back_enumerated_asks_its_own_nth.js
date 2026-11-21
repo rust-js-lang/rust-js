@@ -53,7 +53,7 @@ const $tGetMutT = new WeakMap();
 
 function tGetMutT(dropT) {
   return $traitImpl($tGetMutT, [dropT], () => ({
-    getMut: (arg0) => tGetMutT_getMut(arg0, dropT),
+    getMut: (self) => tGetMutT_getMut(self, dropT),
     $drop: dropT,
   }));
 }

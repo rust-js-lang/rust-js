@@ -19,8 +19,8 @@ export function entry() {
   main();
 }
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
-const $logWrite_writeChar = (arg0, arg1) => logWrite_writeChar(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
+const $logWrite_writeChar = (log, c) => logWrite_writeChar(log.value, c);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,

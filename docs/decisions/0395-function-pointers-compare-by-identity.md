@@ -94,3 +94,42 @@ that compares functions (`compares_identity` in `scripts/metamorph`), so
 `fn_addr_eq_compares_functions` and `generic_fn_value_is_one_function`
 are no variants of it. What Rust does promise across crates, two
 `Rc::new`s apart and two boxes' addresses, is #1052's.
+
+## Amendment: an arrow of a function names its parameters as the function does (#1328, 2026-11-22, the user's decision)
+
+A function's arrow names each parameter as the function's own JS does,
+through one namer, `signatures::own_parameter_names`, built on
+`js_parameter_name` (ADR 0678's names). This covers a generic function's
+value, a reified `fn` pointer, an impl's dictionary entry, a `dyn`'s
+dictionary entry, the function a flattened state made by a call is given
+to (rd380), and a library's or std's value. A receiver is named after its
+type, as its body names it (rd345): `bump: (counter) =>
+counterBump_bump(counter.value)`, `(log, s) => logWrite_writeStr(log.value,
+s)`, `name: (self) => tNamed_name(self, TDebug)` of a type parameter's.
+These used to be `arg0`, `arg1`, or `a`, `b`. `taken_parameter_names` leaves
+out a `Formatter`, which no JS takes (ADR 0054), and adds a writer's
+`options` last, so each arrow site asks one answer.
+
+The namer gives no name in three cases, and the caller names those:
+
+- a parameter that is `_` or a pattern (`arg{i}`);
+- a `self` whose type's name is another parameter's name (`String::
+  push_str`'s `string` beside its `string`), which would otherwise be
+  `string$1`;
+- std's `self` its type names none of (`u8`'s), which is no program's
+  name.
+
+A library's or std's value falls back to its type-based name, `(n) => n >=
+97 && n <= 122` and `(s, string) => s.value += string`, unless that is
+another parameter's own name (`f64::powf`'s `(a, n)`). An inlined std
+receiver is named as std's own JS names it, `(string) => string.value =
+""` of `String::clear`, and `(vec) => vec.length` of `Vec::len`.
+
+The known remainder: `dyns.rs`' `own_function_of` keeps `(arg0) =>
+f(arg0)`. It wraps an arbitrary `dyn Fn` value as a function of its own,
+where no function is known to name its parameters from. A `_` parameter
+keeps its `arg{i}` too.
+
+ADR 0262's case: none, as names change no result. Held by the corpus's
+snapshots and the mutations named after each site, `own-parameter-names-
+none` among them.

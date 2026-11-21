@@ -10,11 +10,11 @@ const $holderTouch = new WeakMap();
 
 function holderTouch(TTouch, dropT) {
   return $traitImpl($holderTouch, [TTouch, dropT], () => ({
-    touch(arg0) {
-      return holderTouch_touch(arg0.value, TTouch, dropT);
+    touch(holder) {
+      return holderTouch_touch(holder.value, TTouch, dropT);
     },
-    count(arg0) {
-      return holderTouch_count(arg0, TTouch, dropT);
+    count(holder) {
+      return holderTouch_count(holder, TTouch, dropT);
     },
     twice(self) {
       const holder = self.value;
@@ -120,8 +120,8 @@ const $slotRenew = new WeakMap();
 
 function slotRenew(TDefault, dropT) {
   return $traitImpl($slotRenew, [TDefault, dropT], () => ({
-    renew(arg0) {
-      return slotRenew_renew(arg0.value, TDefault, dropT);
+    renew(slot) {
+      return slotRenew_renew(slot.value, TDefault, dropT);
     },
     renewTwice(self) {
       const slot = self.value;

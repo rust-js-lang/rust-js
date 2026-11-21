@@ -126,12 +126,12 @@ function byValues() {
     )}`,
   );
   // As fn pointers.
-  const t = (x) => summed($iterator(x, $rangeNext));
-  const c = (x) => summed($iterator(x, countIterator_next));
+  const t = (it) => summed($iterator(it, $rangeNext));
+  const c = (it) => summed($iterator(it, countIterator_next));
   const l = listedVecU32;
-  const s = (x) => listed($sortedKeys(x, $cmp), "fold");
-  const b = (x) => back($iterator(x, $rangeNext, false, $rangeNextBack));
-  const z = (x) => sized($iterator(x, $rangeNext, false, undefined, $rangeLen));
+  const s = (c) => listed($sortedKeys(c, $cmp), "fold");
+  const b = (it) => back($iterator(it, $rangeNext, false, $rangeNextBack));
+  const z = (it) => sized($iterator(it, $rangeNext, false, undefined, $rangeLen));
   const value$4 = t({ start: 0, end: 4 });
   const value$5 = c({ n: 0 });
   const value$6 = l([5, 6]);
@@ -144,17 +144,17 @@ function byValues() {
   );
   // Given to generic code as an `F`.
   console.log(
-    `${apply((x) => summed($iterator(x, $rangeNext)), {
+    `${apply((it) => summed($iterator(it, $rangeNext)), {
       start: 0,
       end: 4,
-    })} ${apply((x) => summed($iterator(x, countIterator_next)), { n: 1 })} ${apply(
+    })} ${apply((it) => summed($iterator(it, countIterator_next)), { n: 1 })} ${apply(
       (r) => sized($iterator(r, $rangeNext, false, undefined, $rangeLen)),
       { start: 2, end: 5 },
     )}`,
   );
   console.log(`${apply((v) => listed(v, { inPlace: 4 }).length, [1, 2, 3])}`);
   // Through dyn.
-  const d = (x) => summed($iterator(x, $rangeNext));
+  const d = (it) => summed($iterator(it, $rangeNext));
   console.log(`${d({ start: 0, end: 5 })}`);
 }
 

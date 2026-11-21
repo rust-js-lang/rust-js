@@ -150,6 +150,48 @@ pub fn read(chunk: &ReactPromise) -> Option<&'static Unknown> {
   expect(thrown).toBe("no");
 });
 
+// A state computed by a call, given beside another parameter: the
+// function that makes the instance names each parameter as the
+// constructor does, `(id, state) => new Tagged(id, state.status, ..)`,
+// not `arg0` (#1328).
+test("a flattened state made by a call is given to a function of the constructor's parameters' names", async () => {
+  const { js, lib } = await compiled(
+    "flattened-state-named-maker",
+    `${state.replace(/#\[cfg_attr\(rust_js, rust_js::class\)\]\npub struct ReactPromise[\s\S]*$/, "")}
+#[cfg_attr(rust_js, rust_js::class)]
+pub struct Tagged {
+    pub id: u32,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub state: RefCell<ChunkState>,
+}
+
+unsafe impl js::Defined for Tagged {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl Tagged {
+    fn new(id: u32, state: ChunkState) -> Self {
+        Tagged {
+            id,
+            state: RefCell::new(state),
+        }
+    }
+}
+
+fn errored(reason: Option<&'static Unknown>) -> ChunkState {
+    ChunkState::Errored { reason }
+}
+
+pub fn tagged(id: u32, reason: Option<&'static Unknown>) -> Tagged {
+    Tagged::new(id + 1, errored(reason))
+}
+`,
+  );
+  expect(js).toMatch(/\(\(id, state\) =>/);
+  expect(js).not.toMatch(/\barg\d\b/);
+  const made = lib.tagged(1, "bad");
+  expect([made.id, made.status, made.reason]).toEqual([2, "rejected", "bad"]);
+});
+
 // What's moved out of the state whole, `replace` of its cell, and
 // `mem::replace`, `take`, `swap` and `Cell::from_mut(..).replace` of a
 // `&mut` its guard lends or a function it's lent to is given, is a copy of

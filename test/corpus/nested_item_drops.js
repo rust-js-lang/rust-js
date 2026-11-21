@@ -193,9 +193,9 @@ function groupsFirstOfNext(
     $groupsFirstOfNext,
     [IIterator, IItemIntoIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
     () => ({
-      firstOfNext(arg0) {
+      firstOfNext(groups) {
         return groupsFirstOfNext_firstOfNext(
-          arg0.value,
+          groups.value,
           IIterator,
           IItemIntoIterator,
           dropI,

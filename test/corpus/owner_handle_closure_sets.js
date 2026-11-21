@@ -64,8 +64,8 @@ function render(name) {
         if (set.TAG === "Err") {
           $weakDrop(set._0);
         }
-        const x = cell.value.value;
-        const request = x != null ? $upgrade(x) : undefined;
+        const weak = cell.value.value;
+        const request = weak != null ? $upgrade(weak) : undefined;
         if (request != null) {
           console.log(`${request.value.name} is ready`);
           $rcDrop(request, (value) => {

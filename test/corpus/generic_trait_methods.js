@@ -29,8 +29,8 @@ const squareShape = {
   area: squareShape_area,
   describe: squareShape_describe,
   scaled: squareShape_scaled,
-  tagged: (arg0, arg1, arg2, AClone, ADebug, BDisplay) =>
-    squareShape_tagged(arg0, arg1, arg2, ADebug, AClone, BDisplay),
+  tagged: (square, a, b, AClone, ADebug, BDisplay) =>
+    squareShape_tagged(square, a, b, ADebug, AClone, BDisplay),
 };
 function squareShape_area(square) {
   return square[0] * square[0];

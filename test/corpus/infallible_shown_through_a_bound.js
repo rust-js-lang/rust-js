@@ -12,14 +12,14 @@ function sTrySource(SSource) {
   return $traitImpl($sTrySource, [SSource], () => ({
     ErrorDebug: () => ({ fmt: (value) => "" }),
     ErrorDisplay: () => ({ fmt: (value) => "" }),
-    tryNext: (arg0) => sTrySource_tryNext(arg0, SSource),
+    tryNext: (self) => sTrySource_tryNext(self, SSource),
   }));
 }
 function sTrySource_tryNext(self, SSource) {
   return { TAG: "Ok", _0: SSource.next(self) };
 }
 
-const counterSource = { next: (arg0) => counterSource_next(arg0.value) };
+const counterSource = { next: (counter) => counterSource_next(counter.value) };
 function counterSource_next(counter) {
   counter[0] = (counter[0] + 1) >>> 0;
   return counter[0];

@@ -162,7 +162,7 @@ function main() {
     { start: 0, end: 3 },
     { start: 4, end: 8 },
   ];
-  const taken = ranges.map((x) => $take(x, { start: 0, end: 0 }));
+  const taken = ranges.map((dest) => $take(dest, { start: 0, end: 0 }));
   console.log(
     `[${taken.map((item) => `${item.start}..${item.end}`).join(", ")}] [${ranges.map((item) => `${item.start}..${item.end}`).join(", ")}]`,
   );

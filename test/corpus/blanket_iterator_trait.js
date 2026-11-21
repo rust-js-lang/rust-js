@@ -20,8 +20,8 @@ const $iPull = new WeakMap();
 
 function iPull(IIterator) {
   return $traitImpl($iPull, [IIterator], () => ({
-    pull(arg0) {
-      return iPull_pull(arg0.value, IIterator);
+    pull(self) {
+      return iPull_pull(self.value, IIterator);
     },
     pullTwo(boxed) {
       const self = boxed.value;
@@ -45,8 +45,8 @@ const $enumeratedPull = new WeakMap();
 
 function enumeratedPull(PPull) {
   return $traitImpl($enumeratedPull, [PPull], () => ({
-    pull(arg0) {
-      return enumeratedPull_pull(arg0.value, PPull);
+    pull(enumerated) {
+      return enumeratedPull_pull(enumerated.value, PPull);
     },
     pullTwo(self) {
       const enumerated = self.value;

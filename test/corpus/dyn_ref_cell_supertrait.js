@@ -11,7 +11,10 @@ function clicksNamed_name(clicks) {
   return `${clicks.label} at ${clicks.n}`;
 }
 
-const clicksCounter = { Named: () => clicksNamed, bump: (arg0) => clicksCounter_bump(arg0.value) };
+const clicksCounter = {
+  Named: () => clicksNamed,
+  bump: (clicks) => clicksCounter_bump(clicks.value),
+};
 function clicksCounter_bump(clicks) {
   clicks.n = (clicks.n + 1) >>> 0;
   return clicks.n;

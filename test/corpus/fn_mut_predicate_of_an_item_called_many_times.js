@@ -10,7 +10,7 @@ const $fPredT = new WeakMap();
 
 function fPredT(dropT, dropF) {
   return $traitImpl($fPredT, [dropT, dropF], () => ({
-    test: (arg0, arg1, arg2) => fPredT_test(arg0.value, arg1, arg2, dropT, dropF),
+    test: (self, a, b) => fPredT_test(self.value, a, b, dropT, dropF),
     $drop: dropF,
   }));
 }

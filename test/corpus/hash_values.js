@@ -49,7 +49,7 @@ function labeledHash_hash(labeled, state, THash, HHasher) {
 
 export function labeledHash(THash) {
   return $traitImpl($labeledHash, [THash], () => {
-    const hash = (arg0, arg1, HHasher) => labeledHash_hash(arg0, arg1, THash, HHasher);
+    const hash = (labeled, state, HHasher) => labeledHash_hash(labeled, state, THash, HHasher);
     return { hash, hashSlice: $hashSlice(hash) };
   });
 }

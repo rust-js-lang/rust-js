@@ -19,7 +19,7 @@ export function entry() {
   main();
 }
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -34,7 +34,7 @@ const $wrapDisplay = new WeakMap();
 
 export function wrapDisplay(TDisplay) {
   return $traitImpl($wrapDisplay, [TDisplay], () => ({
-    fmt: (arg0, arg1) => wrapDisplay_fmt(arg0, arg1, TDisplay),
+    fmt: (wrap, options) => wrapDisplay_fmt(wrap, options, TDisplay),
     fmtInto: (f, value, options) => $writingInto(f, wrapDisplay_fmt, value, options, TDisplay),
   }));
 }

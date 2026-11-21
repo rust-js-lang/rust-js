@@ -20,7 +20,7 @@ const $formatWithDisplay = new WeakMap();
 
 export function formatWithDisplay(IIterator) {
   return $traitImpl($formatWithDisplay, [IIterator], () => ({
-    fmt: (arg0, arg1) => formatWithDisplay_fmt(arg0, arg1, IIterator),
+    fmt: (formatWith, options) => formatWithDisplay_fmt(formatWith, options, IIterator),
   }));
 }
 function formatWithDisplay_fmt(formatWith, options, IIterator) {

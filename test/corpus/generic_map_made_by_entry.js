@@ -47,7 +47,7 @@ function singles(pairs, VOrd, VCopy, VTreeMap, VU32Size, VU32StableSort) {
         const pair = [VCopy ? VCopy.copy(_2[0]) : _2[0], _2[1]];
         return [[VCopy ? VCopy.copy(pair[0]) : pair[0], pair[1]]];
       })
-      .map((x) => $treeFromSorted(new VTreeMap(), x, VOrd, VU32StableSort, VU32Size)),
+      .map((value) => $treeFromSorted(new VTreeMap(), value, VOrd, VU32StableSort, VU32Size)),
   );
 }
 

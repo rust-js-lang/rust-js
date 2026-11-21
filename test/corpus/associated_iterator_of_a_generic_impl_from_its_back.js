@@ -28,9 +28,9 @@ function tensSource(TCopy) {
   return $traitImpl($tensSource, [TCopy], () => ({
     IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
     HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
-    items: (arg0) =>
+    items: (n) =>
       $knowing(
-        tensSource_items(arg0, TCopy),
+        tensSource_items(n, TCopy),
         (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {
             next_back: $rangeNextBack,
@@ -54,9 +54,9 @@ function tensSource(TCopy) {
             ends,
           ),
       ),
-    hidden: (arg0) =>
+    hidden: (n) =>
       $knowing(
-        tensSource_hidden(arg0, TCopy),
+        tensSource_hidden(n, TCopy),
         (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {
             next_back: $rangeNextBack,
@@ -95,9 +95,9 @@ function scaledSource(K) {
   return $traitImpl($scaledSource, [K], () => ({
     IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
     HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
-    items: (arg0) =>
+    items: (n) =>
       $knowing(
-        scaledSource_items(arg0, K),
+        scaledSource_items(n, K),
         (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {
             next_back: $rangeNextBack,
@@ -121,9 +121,9 @@ function scaledSource(K) {
             ends,
           ),
       ),
-    hidden: (arg0) =>
+    hidden: (n) =>
       $knowing(
-        scaledSource_hidden(arg0, K),
+        scaledSource_hidden(n, K),
         (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {
             next_back: $rangeNextBack,

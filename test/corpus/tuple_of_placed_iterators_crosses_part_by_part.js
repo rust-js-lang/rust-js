@@ -37,7 +37,7 @@ const $_A__B_Step = new WeakMap();
 
 function _A__B_Step(AIterator, BIterator) {
   return $traitImpl($_A__B_Step, [AIterator, BIterator], () => ({
-    step: (arg0) => _A__B_Step_step(arg0, AIterator, BIterator),
+    step: (self) => _A__B_Step_step(self, AIterator, BIterator),
   }));
 }
 function _A__B_Step_step(self, AIterator, BIterator) {

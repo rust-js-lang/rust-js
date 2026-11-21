@@ -48,16 +48,16 @@ function printerVisitor(WWrite) {
     start(self) {
       const printer = self.value;
     },
-    visit(arg0, arg1) {
-      return $writeResult(() => printerVisitor_visit(arg0.value, arg1, WWrite));
+    visit(printer, item) {
+      return $writeResult(() => printerVisitor_visit(printer.value, item, WWrite));
     },
     visitBetween(self) {
       return $writeResult(() => {
         const printer = self.value;
       });
     },
-    finish(arg0) {
-      return $writeResult(() => printerVisitor_finish(arg0, WWrite));
+    finish(printer) {
+      return $writeResult(() => printerVisitor_finish(printer, WWrite));
     },
   }));
 }
@@ -88,7 +88,7 @@ function printerVisitor_visit(printer, item, WWrite) {
 
 function printerVisitor_finish(printer, WWrite) {}
 
-const $limitedWrite_writeStr = (arg0, arg1) => limitedWrite_writeStr(arg0.value, arg1);
+const $limitedWrite_writeStr = (limited, s) => limitedWrite_writeStr(limited.value, s);
 
 export const limitedWrite = {
   writeStr: $limitedWrite_writeStr,

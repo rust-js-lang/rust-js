@@ -61,7 +61,7 @@ function main() {
   third();
   third();
   onCommitRoot();
-  console.log(`${$withBorrow(commitHooks, (x) => x.length, true)}`);
+  console.log(`${$withBorrow(commitHooks, (vec) => vec.length, true)}`);
 
   // Made in a loop, each its own, though the closure is `Copy`.
   const hooks = Array.from({ length: 2 }, (_, i) => () => i);

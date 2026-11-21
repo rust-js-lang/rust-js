@@ -61,7 +61,7 @@ function pageDebug_fmt(page, TDebug) {
 }
 
 export function pageDebug(TDebug) {
-  return $traitImpl($pageDebug, [TDebug], () => ({ fmt: (arg0) => pageDebug_fmt(arg0, TDebug) }));
+  return $traitImpl($pageDebug, [TDebug], () => ({ fmt: (page) => pageDebug_fmt(page, TDebug) }));
 }
 
 function pairSerialize_serialize(pair, json, writeA, writeB) {
@@ -104,7 +104,7 @@ function pairDebug_fmt(pair, ADebug, BDebug) {
 
 export function pairDebug(ADebug, BDebug) {
   return $traitImpl($pairDebug, [ADebug, BDebug], () => ({
-    fmt: (arg0) => pairDebug_fmt(arg0, ADebug, BDebug),
+    fmt: (pair) => pairDebug_fmt(pair, ADebug, BDebug),
   }));
 }
 
@@ -461,7 +461,7 @@ function responseDebug_fmt(response, TDebug) {
 
 export function responseDebug(TDebug) {
   return $traitImpl($responseDebug, [TDebug], () => ({
-    fmt: (arg0) => responseDebug_fmt(arg0, TDebug),
+    fmt: (response) => responseDebug_fmt(response, TDebug),
   }));
 }
 

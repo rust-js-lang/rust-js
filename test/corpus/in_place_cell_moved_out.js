@@ -10,7 +10,7 @@ function pDebug_fmt(p) {
   return `P { x: ${p.x} }`;
 }
 
-const holderGet = { get: (arg0) => $cellOf(holderGet_get(arg0.value)) };
+const holderGet = { get: (holder) => $cellOf(holderGet_get(holder.value)) };
 function holderGet_get(holder) {
   console.log(`get [${holder[0].join(", ")}]`);
   return holder[0];

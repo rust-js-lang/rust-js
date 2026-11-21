@@ -6,12 +6,12 @@ export function entry() {
   main();
 }
 
-const holderGet = { get: (arg0) => $cellOf(holderGet_get(arg0.value)) };
+const holderGet = { get: (holder) => $cellOf(holderGet_get(holder.value)) };
 function holderGet_get(holder) {
   return holder[0];
 }
 
-const numGet = { get: (arg0) => numGet_get(arg0.value) };
+const numGet = { get: (num) => numGet_get(num.value) };
 function numGet_get(num) {
   return {
     get value() {
@@ -23,7 +23,7 @@ function numGet_get(num) {
   };
 }
 
-const slotGet = { get: (arg0) => slotGet_get(arg0.value) };
+const slotGet = { get: (slot) => slotGet_get(slot.value) };
 function slotGet_get(slot) {
   return {
     get value() {

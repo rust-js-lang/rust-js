@@ -19,7 +19,7 @@ export function entry() {
 }
 
 const counterSink = {
-  take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
+  take: (counter, n) => counterSink_take(counter.value, n),
   total: counterSink_total,
 };
 function counterSink_take(counter, n) {

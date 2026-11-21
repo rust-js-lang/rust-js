@@ -18,7 +18,7 @@ function shown(value, TDisplay) {
   return `<${TDisplay.fmt(value)}>`;
 }
 
-const counterBump = { bump: (arg0) => counterBump_bump(arg0.value) };
+const counterBump = { bump: (counter) => counterBump_bump(counter.value) };
 const bumpedCounter = (b) => bumped(b, counterBump);
 
 function counterBump_bump(counter) {

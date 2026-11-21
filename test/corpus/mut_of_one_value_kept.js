@@ -25,7 +25,7 @@ const $refMutTTouch = new WeakMap();
 
 function refMutTTouch(TTouch) {
   return $traitImpl($refMutTTouch, [TTouch], () => ({
-    touch: (arg0) => refMutTTouch_touch(arg0, TTouch),
+    touch: (self) => refMutTTouch_touch(self, TTouch),
   }));
 }
 function refMutTTouch_touch(self, TTouch) {

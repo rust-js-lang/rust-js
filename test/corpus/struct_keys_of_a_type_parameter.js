@@ -78,7 +78,7 @@ export function rankedPartialOrd(TPartialEq) {
     $partialOrd({
       PartialEq: () =>
         $partialEq({ eq: (a, b) => a.rank === b.rank && TPartialEq.eq(a.label, b.label) }),
-      partialCmp: (arg0, arg1) => rankedPartialOrd_partialCmp(arg0, arg1, TPartialEq),
+      partialCmp: (ranked, other) => rankedPartialOrd_partialCmp(ranked, other, TPartialEq),
     }),
   );
 }
@@ -92,7 +92,7 @@ export function rankedOrd(TPartialEq) {
   return $traitImpl($rankedOrd, [TPartialEq], () =>
     $ord({
       PartialOrd: () => rankedPartialOrd(TPartialEq),
-      cmp: (arg0, arg1) => rankedOrd_cmp(arg0, arg1, TPartialEq),
+      cmp: (ranked, other) => rankedOrd_cmp(ranked, other, TPartialEq),
     }),
   );
 }

@@ -41,7 +41,7 @@ export function entry() {
 }
 
 export const countedRead = $readerDefaults({
-  read: (arg0, arg1) => countedRead_read(arg0.value, arg1),
+  read: (counted, buf) => countedRead_read(counted.value, buf),
 });
 function countedRead_read(counted, buf) {
   const n = Math.min(buf.length, counted.left, counted.most);
@@ -66,7 +66,7 @@ function counted(left, most) {
 }
 
 export const flakyRead = $readerDefaults({
-  read: (arg0, arg1) => flakyRead_read(arg0.value, arg1),
+  read: (flaky, buf) => flakyRead_read(flaky.value, buf),
 });
 function flakyRead_read(flaky, buf) {
   $keepCapacity(flaky.errors);
@@ -316,7 +316,7 @@ function main() {
           countedRead,
         ),
         (iterator) => bytesIterator_next(iterator, countedRead),
-      ).map((x) => $unwrapOk(x, undefined, $ioErrorDebug)),
+      ).map((result) => $unwrapOk(result, undefined, $ioErrorDebug)),
       1,
       false,
     ),

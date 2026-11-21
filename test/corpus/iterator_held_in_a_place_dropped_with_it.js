@@ -37,8 +37,8 @@ const $summedFromIteratorU32 = new Map();
 
 export function summedFromIteratorU32(PLACE) {
   return $traitImpl($summedFromIteratorU32, [PLACE], () => ({
-    fromIter: (arg0, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
-      summedFromIteratorU32_fromIter(arg0, PLACE, dropI, dropIIntoIter),
+    fromIter: (items, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
+      summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter),
   }));
 }
 function summedFromIteratorU32_fromIter(items, PLACE, dropI, dropIIntoIter) {

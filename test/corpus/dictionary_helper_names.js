@@ -14,7 +14,7 @@ const $durationAdd$1 = new WeakMap();
 
 export function durationAdd(TAdd) {
   return $traitImpl($durationAdd$1, [TAdd], () => ({
-    add: (arg0, arg1) => durationAdd_add(arg0, arg1, TAdd),
+    add: (duration, other) => durationAdd_add(duration, other, TAdd),
   }));
 }
 function durationAdd_add(duration, other, TAdd) {

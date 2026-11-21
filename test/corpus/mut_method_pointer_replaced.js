@@ -54,10 +54,10 @@ function tWipe(TDefault) {
 }
 
 function main() {
-  const reset = (x) => stackReset.reset($cellOf(x));
-  const swapIn = (a, b) => stackReset.swapIn($cellOf(a), b);
-  const through = (x) => stackReset.through($cellOf(x));
-  const renew = (a, b) => tRenew_renew($cellOf(a), b);
+  const reset = (self) => stackReset.reset($cellOf(self));
+  const swapIn = (self, other) => stackReset.swapIn($cellOf(self), other);
+  const through = (self) => stackReset.through($cellOf(self));
+  const renew = (self, other) => tRenew_renew($cellOf(self), other);
   const s = { items: [1, 2] };
   const alias = $ptrTo(s);
   const old = reset(s);
@@ -75,7 +75,7 @@ function main() {
   console.log(`${stackDebug_fmt(s)}`);
   tRenew_renew($cellOf(s), { items: [9] });
   console.log(`${stackDebug_fmt(s)}`);
-  const wipe = (x) => tWipe({ default: () => ({ items: [] }) }).wipe($cellOf(x));
+  const wipe = (self) => tWipe({ default: () => ({ items: [] }) }).wipe($cellOf(self));
   wipe(s);
   s.items.push(10);
   console.log(`${stackDebug_fmt(s)}`);

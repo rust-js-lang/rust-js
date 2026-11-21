@@ -425,6 +425,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tcx = self.tcx;
         let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
         let sig = tcx.instantiate_bound_regions_with_erased(sig);
+        // Each parameter named as the function's JS names it (#1328).
+        let own = crate::lower::signatures::own_parameter_names(tcx, def_id);
+        let own = |i: usize| own.get(i).cloned().flatten();
         // A generic writer function's instance, a library's: what its JS
         // takes, its `Formatter` none, nor a call through it (ADR 0538,
         // #1710), its options where it takes them, then its dictionaries.
@@ -434,7 +437,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let mut params: Vec<crate::js::Name> = (0..sig.inputs().len())
                 .filter(|&i| i != at)
-                .map(|i| self.fresh(Base::Numbered(Role::Arg, i)))
+                .map(|i| match own(i) {
+                    Some(name) => self.fresh(Base::Named(&name)),
+                    None => self.fresh(Base::Numbered(Role::Arg, i)),
+                })
                 .collect();
             if self.takes_options(def_id) {
                 params.push(self.fresh(Role::Options));
@@ -447,20 +453,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         let mut inputs: Vec<Ty<'tcx>> = sig.inputs().to_vec();
-        let params: Vec<js::Name> = match inputs.len() {
-            // Named by its type: `(s) => ..` of a string.
-            1 => vec![self.fresh(self.parameter_name(inputs[0].peel_refs()))],
-            n => (0..n)
-                .map(|i| {
-                    self.fresh(
-                        [Role::A, Role::B, Role::C, Role::D, Role::E, Role::F]
-                            .get(i)
-                            .copied()
-                            .unwrap_or(Role::Arg),
-                    )
-                })
-                .collect(),
-        };
+        // Of one that names none, by its type, `(s) => ..` of a string,
+        // beside a named one too, `(s, string)`, but a name another has,
+        // `f64::powf`'s `n`; else, of two or more that name none, `a`, `b`.
+        let named: Vec<String> = (0..inputs.len()).filter_map(own).collect();
+        let params: Vec<js::Name> = (0..inputs.len())
+            .map(|i| match own(i) {
+                Some(name) => self.fresh(Base::Named(&name)),
+                None if (inputs.len() == 1 || !named.is_empty())
+                    && !named
+                        .iter()
+                        .any(|name| name == self.parameter_name(inputs[i].peel_refs()).text()) =>
+                {
+                    self.fresh(self.parameter_name(inputs[i].peel_refs()))
+                }
+                None => self.fresh(
+                    [Role::A, Role::B, Role::C, Role::D, Role::E, Role::F]
+                        .get(i)
+                        .copied()
+                        .unwrap_or(Role::Arg),
+                ),
+            })
+            .collect();
         // Given in generic code's forms where it's asked them, as generic
         // code that calls it as an `F` gives them: a raw pointer of its type
         // parameter its handle, a `&mut` of one its box, read back as the

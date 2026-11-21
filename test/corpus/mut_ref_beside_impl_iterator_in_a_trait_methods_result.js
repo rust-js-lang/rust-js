@@ -46,16 +46,16 @@ export const heldSrc = {
   MaybeIterator() {
     return { next: $next };
   },
-  pair(arg0) {
-    const given = heldSrc_pair(arg0.value);
+  pair(held) {
+    const given = heldSrc_pair(held.value);
     return [$cellOf(given[0]), given[1]];
   },
-  ends(arg0) {
-    const given = heldSrc_ends(arg0.value);
+  ends(held) {
+    const given = heldSrc_ends(held.value);
     return [given[0], $cellOf(given[1])];
   },
-  maybe(arg0, arg1) {
-    const given = heldSrc_maybe(arg0.value, arg1);
+  maybe(held, open) {
+    const given = heldSrc_maybe(held.value, open);
     return given != null
       ? [$cellOf(given[0]), $iterator(given[1], $rangeInclusiveNext)]
       : undefined;
@@ -88,16 +88,16 @@ export const countSrc = {
   MaybeIterator() {
     return { next: $next };
   },
-  pair(arg0) {
-    const given = countSrc_pair(arg0.value);
+  pair(count) {
+    const given = countSrc_pair(count.value);
     return [given[0], $iterator(given[1], $rangeNext)];
   },
-  ends(arg0) {
-    const given = countSrc_ends(arg0.value);
+  ends(count) {
+    const given = countSrc_ends(count.value);
     return [$iterator(given[0], $rangeNext, false, $rangeNextBack), given[1]];
   },
-  maybe(arg0, arg1) {
-    const given = countSrc_maybe(arg0.value, arg1);
+  maybe(count, open) {
+    const given = countSrc_maybe(count.value, open);
     return given != null ? [given[0], $iterator(given[1], $rangeNext)] : undefined;
   },
 };
@@ -158,16 +158,16 @@ export function taggedSrc(TClone, dropT) {
     MaybeIterator() {
       return { next: $next };
     },
-    pair(arg0) {
-      const given = taggedSrc_pair(arg0.value, TClone, dropT);
+    pair(tagged) {
+      const given = taggedSrc_pair(tagged.value, TClone, dropT);
       return [given[0], $iterator(given[1], $rangeNext)];
     },
-    ends(arg0) {
-      const given = taggedSrc_ends(arg0.value, TClone, dropT);
+    ends(tagged) {
+      const given = taggedSrc_ends(tagged.value, TClone, dropT);
       return [$iterator(given[0], $rangeNext, false, $rangeNextBack), given[1]];
     },
-    maybe(arg0, arg1) {
-      const given = taggedSrc_maybe(arg0.value, arg1, TClone, dropT);
+    maybe(tagged, open) {
+      const given = taggedSrc_maybe(tagged.value, open, TClone, dropT);
       return given != null ? [given[0], $iterator(given[1], $rangeNext)] : undefined;
     },
     $drop(tagged) {

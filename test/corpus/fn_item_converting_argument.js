@@ -14,7 +14,7 @@ function total(items) {
 
 function main() {
   const s = [1, undefined, 3]
-    .map((x) => total(x == null ? [] : [x]))
+    .map((items) => total(items == null ? [] : [items]))
     .reduce((a, b) => (a + b) | 0, 0);
   console.log(`${s}`);
   const t = [[1, 2], [3]].map(total);

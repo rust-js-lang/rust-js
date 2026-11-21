@@ -27,8 +27,8 @@ const loudsPair = {
     return { next: $next };
   },
   both: loudsPair_both,
-  parts(arg0) {
-    const given = loudsPair_parts(arg0);
+  parts(louds) {
+    const given = loudsPair_parts(louds);
     return [given[0], given[1]];
   },
   one: loudsPair_one,
@@ -56,8 +56,8 @@ const quietPair = {
     return { next: $next };
   },
   both: quietPair_both,
-  parts(arg0) {
-    const given = quietPair_parts(arg0);
+  parts(quiet) {
+    const given = quietPair_parts(quiet);
     return [$iterator(given[0], $rangeNext), given[1]];
   },
   one: quietPair_one,

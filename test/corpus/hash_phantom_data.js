@@ -29,8 +29,8 @@ function liteMapHash_hash(liteMap, state, KHash, VHash, SHash, HHasher) {
 
 export function liteMapHash(KHash, VHash, SHash) {
   return $traitImpl($liteMapHash, [KHash, VHash, SHash], () => {
-    const hash = (arg0, arg1, HHasher) =>
-      liteMapHash_hash(arg0, arg1, KHash, VHash, SHash, HHasher);
+    const hash = (liteMap, state, HHasher) =>
+      liteMapHash_hash(liteMap, state, KHash, VHash, SHash, HHasher);
     return { hash, hashSlice: $hashSlice(hash) };
   });
 }

@@ -81,7 +81,7 @@ function byteFilled_filled(byte, N) {
 
 const uptoSource = {
   IterIterator: () => ({ next: $next }),
-  numbers: (arg0) => $iterator(uptoSource_numbers(arg0), $rangeNext),
+  numbers: (upto) => $iterator(uptoSource_numbers(upto), $rangeNext),
 };
 function uptoSource_numbers(upto) {
   return { start: 0, end: upto[0] };
@@ -97,7 +97,7 @@ function downIterator_next(down) {
 
 const from3Source = {
   IterIterator: () => ({ next: $next }),
-  numbers: (arg0) => $iterator(from3Source_numbers(arg0), downIterator_next),
+  numbers: (from3) => $iterator(from3Source_numbers(from3), downIterator_next),
 };
 function from3Source_numbers(from3) {
   return [3];

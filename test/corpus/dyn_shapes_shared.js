@@ -101,7 +101,7 @@ function main() {
           biggest(refs, {
             Debug: () => ({ fmt: (value) => value.impl.Debug().fmt(value.value) }),
             area: (object) => object.impl.area(object.value),
-            scale: (object, arg1) => object.impl.scale(object.value, arg1),
+            scale: (object, k) => object.impl.scale(object.value, k),
             kind: (object) => object.impl.kind(object.value),
           }),
         )}`,
@@ -235,7 +235,7 @@ function main() {
       }
       const value = [
         ["add", (a, b) => a + b],
-        ["pow", (a, b) => $powf(a, b)],
+        ["pow", (a, n) => $powf(a, n)],
       ];
       let ops;
       try {

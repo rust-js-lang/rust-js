@@ -14,12 +14,12 @@ export function entry() {
   main();
 }
 
-const $upperWrite_writeStr = (arg0, arg1) => upperWrite_writeStr(arg0.value, arg1);
+const $upperWrite_writeStr = (upper, s) => upperWrite_writeStr(upper.value, s);
 
 export const upperWrite = {
   writeStr: $upperWrite_writeStr,
   writeChar: $upperWrite_writeStr,
-  writeFmt: (arg0, arg1) => upperWrite_writeFmt(arg0.value, arg1),
+  writeFmt: (upper, args) => upperWrite_writeFmt(upper.value, args),
 };
 function upperWrite_writeStr(upper, s) {
   upper[0] += $toUppercase(s);
@@ -41,12 +41,12 @@ function relay(w, args) {
   return upperWrite_writeFmt(w, args);
 }
 
-const $textsWrite_writeStr = (arg0, arg1) => textsWrite_writeStr(arg0.value, arg1);
+const $textsWrite_writeStr = (texts, s) => textsWrite_writeStr(texts.value, s);
 
 export const textsWrite = {
   writeStr: $textsWrite_writeStr,
   writeChar: $textsWrite_writeStr,
-  writeFmt: (arg0, arg1) => textsWrite_writeFmt(arg0.value, arg1),
+  writeFmt: (texts, args) => textsWrite_writeFmt(texts.value, args),
 };
 function textsWrite_writeStr(texts, s) {
   texts[0].push(s);

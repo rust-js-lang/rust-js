@@ -21,7 +21,7 @@ export function entry() {
 
 // Records each piece it's given.
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -34,12 +34,12 @@ function logWrite_writeStr(log, s) {
 
 // Counts its `write_fmt` calls, and writes the text it's given, bracketed.
 
-const $countingWrite_writeStr = (arg0, arg1) => countingWrite_writeStr(arg0.value, arg1);
+const $countingWrite_writeStr = (counting, s) => countingWrite_writeStr(counting.value, s);
 
 export const countingWrite = {
   writeStr: $countingWrite_writeStr,
   writeChar: $countingWrite_writeStr,
-  writeFmt: (arg0, arg1) => countingWrite_writeFmt(arg0.value, arg1),
+  writeFmt: (counting, args) => countingWrite_writeFmt(counting.value, args),
 };
 function countingWrite_writeStr(counting, s) {
   counting.text += s;
@@ -59,11 +59,11 @@ const $eitherWrite = new WeakMap();
 
 export function eitherWrite(LWrite, RWrite) {
   return $traitImpl($eitherWrite, [LWrite, RWrite], () => {
-    const writeStr = (arg0, arg1) => eitherWrite_writeStr(arg0.value, arg1, LWrite, RWrite);
+    const writeStr = (either, s) => eitherWrite_writeStr(either.value, s, LWrite, RWrite);
     return {
       writeStr,
       writeChar: writeStr,
-      writeFmt: (arg0, arg1) => eitherWrite_writeFmt(arg0.value, arg1, LWrite, RWrite),
+      writeFmt: (either, args) => eitherWrite_writeFmt(either.value, args, LWrite, RWrite),
     };
   });
 }
@@ -126,12 +126,12 @@ function eitherWrite_writeFmt(either, args, LWrite, RWrite) {
 // `fmt::write`, std's own `write_fmt`, which writes each piece through its
 // `write_str`, never its `write_fmt` (#1697).
 
-const $countedWrite_writeStr = (arg0, arg1) => countedWrite_writeStr(arg0.value, arg1);
+const $countedWrite_writeStr = (counted, s) => countedWrite_writeStr(counted.value, s);
 
 export const countedWrite = {
   writeStr: $countedWrite_writeStr,
   writeChar: $countedWrite_writeStr,
-  writeFmt: (arg0, arg1) => countedWrite_writeFmt(arg0.value, arg1),
+  writeFmt: (counted, args) => countedWrite_writeFmt(counted.value, args),
 };
 function countedWrite_writeStr(counted, s) {
   counted[0].push(s);
@@ -191,8 +191,8 @@ function shownDisplay_fmt(shown, options) {
 
 // Marks each char it's given by its own `write_char`.
 
-const $charsWrite_writeStr = (arg0, arg1) => charsWrite_writeStr(arg0.value, arg1);
-const $charsWrite_writeChar = (arg0, arg1) => charsWrite_writeChar(arg0.value, arg1);
+const $charsWrite_writeStr = (chars, s) => charsWrite_writeStr(chars.value, s);
+const $charsWrite_writeChar = (chars, c) => charsWrite_writeChar(chars.value, c);
 
 export const charsWrite = {
   writeStr: $charsWrite_writeStr,

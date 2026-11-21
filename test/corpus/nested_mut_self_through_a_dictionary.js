@@ -13,21 +13,24 @@ function clicksDebug_fmt(clicks) {
 }
 
 export const clicksPick = {
-  pick(arg0, arg1) {
-    return clicksPick_pick(arg0.value, arg1?.value);
+  pick(clicks, other) {
+    return clicksPick_pick(clicks.value, other?.value);
   },
-  both(arg0, arg1) {
-    return clicksPick_both(arg0, [arg1[0].value, arg1[1]]);
+  both(clicks, others) {
+    return clicksPick_both(clicks, [others[0].value, others[1]]);
   },
-  deeper(arg0, arg1) {
-    return clicksPick_deeper(arg0.value, arg1 != null ? [arg1[0].value, arg1[1].value] : undefined);
+  deeper(clicks, others) {
+    return clicksPick_deeper(
+      clicks.value,
+      others != null ? [others[0].value, others[1].value] : undefined,
+    );
   },
-  first(arg0, arg1, arg2) {
-    const given = clicksPick_first(arg0.value, arg1.value, arg2);
+  first(clicks, other, mine) {
+    const given = clicksPick_first(clicks.value, other.value, mine);
     return given != null ? $cellOf(given) : undefined;
   },
-  pair(arg0, arg1) {
-    const given = clicksPick_pair(arg0.value, arg1.value);
+  pair(clicks, other) {
+    const given = clicksPick_pair(clicks.value, other.value);
     return [$cellOf(given[0]), given[1]];
   },
 };
@@ -121,7 +124,7 @@ function holderDebug_fmt(holder, TDebug) {
 
 export function holderDebug(TDebug) {
   return $traitImpl($holderDebug, [TDebug], () => ({
-    fmt: (arg0) => holderDebug_fmt(arg0, TDebug),
+    fmt: (holder) => holderDebug_fmt(holder, TDebug),
   }));
 }
 
@@ -129,25 +132,25 @@ const $holderPick = new WeakMap();
 
 export function holderPick(TPick) {
   return $traitImpl($holderPick, [TPick], () => ({
-    pick(arg0, arg1) {
-      return holderPick_pick(arg0.value, arg1?.value, TPick);
+    pick(holder, other) {
+      return holderPick_pick(holder.value, other?.value, TPick);
     },
-    both(arg0, arg1) {
-      return holderPick_both(arg0, [arg1[0].value, arg1[1]], TPick);
+    both(holder, others) {
+      return holderPick_both(holder, [others[0].value, others[1]], TPick);
     },
-    deeper(arg0, arg1) {
+    deeper(holder, others) {
       return holderPick_deeper(
-        arg0.value,
-        arg1 != null ? [arg1[0].value, arg1[1].value] : undefined,
+        holder.value,
+        others != null ? [others[0].value, others[1].value] : undefined,
         TPick,
       );
     },
-    first(arg0, arg1, arg2) {
-      const given = holderPick_first(arg0.value, arg1.value, arg2, TPick);
+    first(holder, other, mine) {
+      const given = holderPick_first(holder.value, other.value, mine, TPick);
       return given != null ? $cellOf(given) : undefined;
     },
-    pair(arg0, arg1) {
-      const given = holderPick_pair(arg0.value, arg1.value, TPick);
+    pair(holder, other) {
+      const given = holderPick_pair(holder.value, other.value, TPick);
       return [$cellOf(given[0]), given[1]];
     },
   }));

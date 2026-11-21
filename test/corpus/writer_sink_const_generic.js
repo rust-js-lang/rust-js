@@ -31,8 +31,8 @@ const $smallWrite = new Map();
 
 export function smallWrite(CAP) {
   return $traitImpl($smallWrite, [CAP], () => {
-    const writeStr = (arg0, arg1) => smallWrite_writeStr(arg0.value, arg1, CAP);
-    const writeChar = (arg0, arg1) => smallWrite_writeChar(arg0.value, arg1, CAP);
+    const writeStr = (small, s) => smallWrite_writeStr(small.value, s, CAP);
+    const writeChar = (small, c) => smallWrite_writeChar(small.value, c, CAP);
     return { writeStr, writeChar, writeFmt: $writerWriteFmt(writeStr, writeChar) };
   });
 }

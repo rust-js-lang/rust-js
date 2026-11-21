@@ -44,10 +44,10 @@ function steps() {
           return 0;
         }
         const borrow = $borrow(this$$1.value, true);
-        const x = borrow.value;
+        const weak = borrow.value;
         let steps;
         try {
-          steps = $unwrap(x != null ? $upgrade(x) : undefined);
+          steps = $unwrap(weak != null ? $upgrade(weak) : undefined);
         } finally {
           $unborrow(borrow);
         }

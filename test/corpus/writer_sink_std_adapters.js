@@ -30,7 +30,7 @@ export function entry() {
   main();
 }
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -71,7 +71,7 @@ const $shownDebug = new WeakMap();
 
 export function shownDebug(IClone, IDebug, IItemDebug) {
   return $traitImpl($shownDebug, [IClone, IDebug, IItemDebug], () => ({
-    fmt: (arg0, arg1) => shownDebug_fmt(arg0, arg1, IClone, IDebug, IItemDebug),
+    fmt: (shown, options) => shownDebug_fmt(shown, options, IClone, IDebug, IItemDebug),
     fmtInto: (f, value, options) =>
       $writingInto(f, shownDebug_fmt, value, options, IClone, IDebug, IItemDebug),
   }));

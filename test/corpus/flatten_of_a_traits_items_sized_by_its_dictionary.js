@@ -50,10 +50,10 @@ const pairsSource = {
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
   HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
   items: pairsSource_items,
-  iter: (arg0) => $iterator(pairsSource_iter(arg0), $rangeNext, false, $rangeNextBack),
-  hidden: (arg0) =>
+  iter: (n) => $iterator(pairsSource_iter(n), $rangeNext, false, $rangeNextBack),
+  hidden: (n) =>
     $knowing(
-      pairsSource_hidden(arg0),
+      pairsSource_hidden(n),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
           next_back: $rangeNextBack,

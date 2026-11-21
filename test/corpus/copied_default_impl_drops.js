@@ -91,8 +91,8 @@ const $holderSkip = new WeakMap();
 
 function holderSkip(IIterator, dropI, dropIItem) {
   return $traitImpl($holderSkip, [IIterator, dropI, dropIItem], () => ({
-    skip(arg0) {
-      return holderSkip_skip(arg0.value, IIterator, dropI, dropIItem);
+    skip(holder) {
+      return holderSkip_skip(holder.value, IIterator, dropI, dropIItem);
     },
     $drop(holder) {
       dropI?.(holder[0]);

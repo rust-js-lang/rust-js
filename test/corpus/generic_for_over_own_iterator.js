@@ -124,8 +124,8 @@ const $wrapperCounted = new WeakMap();
 
 function wrapperCounted(IIterator, dropI, dropIItem) {
   return $traitImpl($wrapperCounted, [IIterator, dropI, dropIItem], () => ({
-    counted(arg0) {
-      return wrapperCounted_counted(arg0, IIterator, dropI, dropIItem);
+    counted(wrapper) {
+      return wrapperCounted_counted(wrapper, IIterator, dropI, dropIItem);
     },
     $drop(wrapper) {
       console.log(`drop ${wrapper[1]}`);

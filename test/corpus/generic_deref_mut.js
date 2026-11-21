@@ -22,7 +22,7 @@ function wrapperDeref_deref(wrapper) {
 
 export const wrapperDerefMut = {
   Deref: () => wrapperDeref,
-  derefMut: (arg0) => $cellOf(wrapperDerefMut_derefMut(arg0.value)),
+  derefMut: (wrapper) => $cellOf(wrapperDerefMut_derefMut(wrapper.value)),
 };
 function wrapperDerefMut_derefMut(wrapper) {
   return wrapper[0];
@@ -130,8 +130,8 @@ const $eitherDeref = new WeakMap();
 
 export function eitherDeref(LDeref, RDeref, dropL, dropR) {
   return $traitImpl($eitherDeref, [LDeref, RDeref, dropL, dropR], () => ({
-    deref(arg0) {
-      return eitherDeref_deref(arg0, LDeref, RDeref, dropL, dropR);
+    deref(either) {
+      return eitherDeref_deref(either, LDeref, RDeref, dropL, dropR);
     },
     $drop(either) {
       if (either.TAG === "Left") {
@@ -154,8 +154,8 @@ export function eitherDerefMut(LDerefMut, RDerefMut, dropL, dropR) {
     Deref() {
       return eitherDeref(LDerefMut.Deref(), RDerefMut.Deref(), dropL, dropR);
     },
-    derefMut(arg0) {
-      return eitherDerefMut_derefMut(arg0.value, LDerefMut, RDerefMut, dropL, dropR);
+    derefMut(either) {
+      return eitherDerefMut_derefMut(either.value, LDerefMut, RDerefMut, dropL, dropR);
     },
     $drop(either) {
       if (either.TAG === "Left") {

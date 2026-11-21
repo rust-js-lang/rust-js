@@ -31,4 +31,13 @@ export const mutations: Mutation[] = [
     replace: "        }\n        Ok(Expr::object(props))\n",
     tests: ["test/corpus.test.ts", "-t", "associated_type_drops"],
   },
+  {
+    name: "dyn-shim-params-unnamed",
+    breaks: "a `dyn`'s dictionary's entry names its parameters `arg1`, not as the trait's method does, `(object, i)` of `write_i8(&mut self, i)` (#1328)",
+    file: "src/lower/traits/dictionaries/dyn_objects.rs",
+    find: "                let named = names.get(i).cloned().flatten()",
+    replace: "                let named = names.get(usize::MAX).cloned().flatten()",
+    tests: ["test/corpus.test.ts", "-t", "^hasher_written_through_a_box.rs$"],
+    snapshots: true,
+  },
 ];

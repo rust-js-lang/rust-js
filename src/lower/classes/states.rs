@@ -87,8 +87,14 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
 /// variant made there, each of its fields where its key is, a key it
 /// hasn't `undefined`; of a value read alone, each key of it; else, or
 /// where its fields would be computed out of the order they're written in,
-/// the value given once to a function that makes it, as it's computed once.
-pub(crate) fn new_of_state(class: Expr, mut args: Vec<Expr>, at: usize, keys: &[String]) -> Expr {
+/// the value given once to a function that makes it, as it's computed once,
+/// each parameter of it named as the constructor's, `own` (#1328).
+pub(crate) fn new_of_state(
+    class: Expr,
+    mut args: Vec<Expr>,
+    (at, keys): (usize, &[String]),
+    own: &[Option<String>],
+) -> Expr {
     let state = args.remove(at);
     let given: Option<Vec<Expr>> = match &state.kind {
         ExprKind::Object(props, _) => {
@@ -125,8 +131,12 @@ pub(crate) fn new_of_state(class: Expr, mut args: Vec<Expr>, at: usize, keys: &[
         None => {
             // Each argument a parameter, so each is computed in its order.
             args.insert(at, state);
+            // Never the class's own name, which is a type's, `ReactPromise`.
             let names: Vec<js::Name> = (0..args.len())
-                .map(|i| js::Name::declared(if i == at { "state".into() } else { format!("arg{i}") }))
+                .map(|i| {
+                    let own = own.get(i).cloned().flatten();
+                    js::Name::declared(own.unwrap_or_else(|| if i == at { "state".into() } else { format!("arg{i}") }))
+                })
                 .collect();
             let mut inner: Vec<Expr> = names.iter().map(|name| Expr::var(name.clone())).collect();
             let state = names[at].clone();

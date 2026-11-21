@@ -8,7 +8,7 @@ export function entry() {
 
 const squareShape = {
   area: squareShape_area,
-  scale: (arg0, arg1) => squareShape_scale(arg0.value, arg1),
+  scale: (square, k) => squareShape_scale(square.value, k),
   name: (square) => "shape",
 };
 function squareShape_area(square) {
@@ -23,7 +23,7 @@ function squareNamed_label(square) {
   return `square ${$displayF64(square[0])}`;
 }
 
-const upCounter = { nextItem: (arg0) => upCounter_nextItem(arg0.value) };
+const upCounter = { nextItem: (up) => upCounter_nextItem(up.value) };
 function upCounter_nextItem(up) {
   up[0] = (up[0] + 1) >>> 0;
   return up[0];
@@ -53,12 +53,12 @@ function two(c, CCounter) {
 function main() {
   const shape$1 = {
     area: (object) => object.impl.area(object.value),
-    scale: (object, arg1) => object.value.impl.scale(object.value, arg1),
+    scale: (object, k) => object.value.impl.scale(object.value, k),
     name: (object) => object.impl.name(object.value),
   };
   const shape$2 = {
     area: (object) => object.impl.Shape().area(object.value),
-    scale: (object, arg1) => object.value.impl.Shape().scale(object.value, arg1),
+    scale: (object, k) => object.value.impl.Shape().scale(object.value, k),
     name: (object) => object.impl.Shape().name(object.value),
   };
   const square = [3];

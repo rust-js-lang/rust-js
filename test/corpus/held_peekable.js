@@ -31,7 +31,7 @@ const $withPositionClone = new WeakMap();
 
 export function withPositionClone(IClone, IItemClone) {
   return $traitImpl($withPositionClone, [IClone, IItemClone], () => ({
-    clone: (arg0) => withPositionClone_clone(arg0, IClone, IItemClone),
+    clone: (withPosition) => withPositionClone_clone(withPosition, IClone, IItemClone),
   }));
 }
 function withPositionClone_clone(withPosition, IClone, IItemClone) {
@@ -69,7 +69,7 @@ const $withPositionDebug = new WeakMap();
 
 export function withPositionDebug(PeekableDebug) {
   return $traitImpl($withPositionDebug, [PeekableDebug], () => ({
-    fmt: (arg0, arg1) => withPositionDebug_fmt(arg0, arg1, PeekableDebug),
+    fmt: (withPosition, options) => withPositionDebug_fmt(withPosition, options, PeekableDebug),
   }));
 }
 function withPositionDebug_fmt(withPosition, options, PeekableDebug) {

@@ -69,8 +69,8 @@ export function vecArbitrary(AArbitrary, ASize) {
         );
       },
     }),
-    arbitrary: (arg0) => vecArbitrary_arbitrary(arg0, AArbitrary, ASize),
-    shrink: (arg0) => vecArbitrary_shrink(arg0, AArbitrary),
+    arbitrary: (n) => vecArbitrary_arbitrary(n, AArbitrary, ASize),
+    shrink: (vec) => vecArbitrary_shrink(vec, AArbitrary),
   }));
 }
 function vecArbitrary_arbitrary(n, AArbitrary, ASize) {
@@ -90,7 +90,7 @@ export function _A__B_Arbitrary(AArbitrary, BArbitrary) {
     Clone: () => ({
       clone: (value) => [AArbitrary.Clone().clone(value[0]), BArbitrary.Clone().clone(value[1])],
     }),
-    arbitrary: (arg0) => _A__B_Arbitrary_arbitrary(arg0, AArbitrary, BArbitrary),
+    arbitrary: (n) => _A__B_Arbitrary_arbitrary(n, AArbitrary, BArbitrary),
     shrink: (self) => $iter([]),
   }));
 }
@@ -115,9 +115,9 @@ export function bTreeMapArbitrary(KArbitrary, KOrd, VArbitrary, KTreeMap, KVSize
             value,
           ),
       }),
-      arbitrary: (arg0) =>
+      arbitrary: (n) =>
         bTreeMapArbitrary_arbitrary(
-          arg0,
+          n,
           KArbitrary,
           KOrd,
           VArbitrary,
@@ -125,9 +125,9 @@ export function bTreeMapArbitrary(KArbitrary, KOrd, VArbitrary, KTreeMap, KVSize
           KVSize,
           KVStableSort,
         ),
-      shrink: (arg0) =>
+      shrink: (bTreeMap) =>
         bTreeMapArbitrary_shrink(
-          arg0,
+          bTreeMap,
           KArbitrary,
           KOrd,
           VArbitrary,
@@ -210,9 +210,9 @@ export function hashMapArbitrary(
           ]);
         },
       }),
-      arbitrary: (arg0) =>
+      arbitrary: (n) =>
         hashMapArbitrary_arbitrary(
-          arg0,
+          n,
           KArbitrary,
           KPartialEq,
           KHash,
@@ -222,9 +222,9 @@ export function hashMapArbitrary(
           KMap,
           KVSize,
         ),
-      shrink: (arg0) =>
+      shrink: (hashMap) =>
         hashMapArbitrary_shrink(
-          arg0,
+          hashMap,
           KArbitrary,
           KPartialEq,
           KHash,

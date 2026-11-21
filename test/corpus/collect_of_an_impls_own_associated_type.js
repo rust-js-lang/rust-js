@@ -36,8 +36,8 @@ function mapOkCallResult(ResultSize, ResultAlign, dropF, dropT, dropU, dropE) {
     $mapOkCallResult,
     [ResultSize, ResultAlign, dropF, dropT, dropU, dropE],
     () => ({
-      call(arg0, arg1) {
-        return mapOkCallResult_call(arg0.value, arg1, dropF, dropT, dropU, dropE);
+      call(mapOk, t) {
+        return mapOkCallResult_call(mapOk.value, t, dropF, dropT, dropU, dropE);
       },
       $drop(mapOk) {
         dropF?.(mapOk[0]);

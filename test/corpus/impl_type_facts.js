@@ -14,7 +14,7 @@ const $wrapFootprint = new Map();
 
 function wrapFootprint(TSize) {
   return $traitImpl($wrapFootprint, [TSize], () => ({
-    footprint: (arg0) => wrapFootprint_footprint(arg0, TSize),
+    footprint: (wrap) => wrapFootprint_footprint(wrap, TSize),
   }));
 }
 function wrapFootprint_footprint(wrap, TSize) {

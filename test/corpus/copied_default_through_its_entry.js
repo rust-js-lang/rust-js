@@ -13,25 +13,25 @@ function clicksDebug_fmt(clicks) {
 }
 
 export const clicksTouch = {
-  me(arg0) {
-    return $cellOf(clicksTouch_me(arg0.value));
+  me(clicks) {
+    return $cellOf(clicksTouch_me(clicks.value));
   },
-  maybe(arg0, arg1) {
-    const given = clicksTouch_maybe(arg0.value, arg1);
+  maybe(clicks, mine) {
+    const given = clicksTouch_maybe(clicks.value, mine);
     return given != null ? $cellOf(given) : undefined;
   },
-  touch(arg0, arg1) {
-    return clicksTouch_touch(arg0.value, arg1.value);
+  touch(clicks, other) {
+    return clicksTouch_touch(clicks.value, other.value);
   },
-  touchSome(arg0, arg1) {
-    return clicksTouch_touchSome(arg0.value, arg1?.value);
+  touchSome(clicks, other) {
+    return clicksTouch_touchSome(clicks.value, other?.value);
   },
   fresh: clicksTouch_fresh,
-  lastOf(arg0) {
-    return $cellOf(clicksTouch_lastOf(arg0));
+  lastOf(items) {
+    return $cellOf(clicksTouch_lastOf(items));
   },
-  firstOf(arg0) {
-    const given = clicksTouch_firstOf(arg0);
+  firstOf(items) {
+    const given = clicksTouch_firstOf(items);
     return given != null ? $cellOf(given) : undefined;
   },
   renewEnds(items) {
@@ -171,7 +171,7 @@ function holderDebug_fmt(holder, TDebug) {
 
 export function holderDebug(TDebug) {
   return $traitImpl($holderDebug, [TDebug], () => ({
-    fmt: (arg0) => holderDebug_fmt(arg0, TDebug),
+    fmt: (holder) => holderDebug_fmt(holder, TDebug),
   }));
 }
 
@@ -179,27 +179,27 @@ const $holderTouch = new WeakMap();
 
 export function holderTouch(TTouch) {
   return $traitImpl($holderTouch, [TTouch], () => ({
-    me(arg0) {
-      return $cellOf(holderTouch_me(arg0.value, TTouch));
+    me(holder) {
+      return $cellOf(holderTouch_me(holder.value, TTouch));
     },
-    maybe(arg0, arg1) {
-      const given = holderTouch_maybe(arg0.value, arg1, TTouch);
+    maybe(holder, mine) {
+      const given = holderTouch_maybe(holder.value, mine, TTouch);
       return given != null ? $cellOf(given) : undefined;
     },
-    touch(arg0, arg1) {
-      return holderTouch_touch(arg0.value, arg1.value, TTouch);
+    touch(holder, other) {
+      return holderTouch_touch(holder.value, other.value, TTouch);
     },
-    touchSome(arg0, arg1) {
-      return holderTouch_touchSome(arg0.value, arg1?.value, TTouch);
+    touchSome(holder, other) {
+      return holderTouch_touchSome(holder.value, other?.value, TTouch);
     },
     fresh() {
       return holderTouch_fresh(TTouch);
     },
-    lastOf(arg0) {
-      return $cellOf(holderTouch_lastOf(arg0, TTouch));
+    lastOf(items) {
+      return $cellOf(holderTouch_lastOf(items, TTouch));
     },
-    firstOf(arg0) {
-      const given = holderTouch_firstOf(arg0, TTouch);
+    firstOf(items) {
+      const given = holderTouch_firstOf(items, TTouch);
       return given != null ? $cellOf(given) : undefined;
     },
     renewEnds(items) {

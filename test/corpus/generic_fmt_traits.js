@@ -10,7 +10,7 @@ const $varPointer = new WeakMap();
 
 export function varPointer(TPointer) {
   return $traitImpl($varPointer, [TPointer], () => ({
-    fmt: (arg0, arg1) => varPointer_fmt(arg0, arg1, TPointer),
+    fmt: (var$, options) => varPointer_fmt(var$, options, TPointer),
   }));
 }
 function varPointer_fmt(var$, options, TPointer) {
@@ -21,7 +21,7 @@ const $varLowerHex = new WeakMap();
 
 export function varLowerHex(TLowerHex) {
   return $traitImpl($varLowerHex, [TLowerHex], () => ({
-    fmt: (arg0, arg1) => varLowerHex_fmt(arg0, arg1, TLowerHex),
+    fmt: (var$, options) => varLowerHex_fmt(var$, options, TLowerHex),
   }));
 }
 function varLowerHex_fmt(var$, options, TLowerHex) {

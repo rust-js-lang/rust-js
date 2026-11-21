@@ -27,8 +27,8 @@ const $showDebug = new WeakMap();
 
 export function showDebug(TClone, dropT) {
   return $traitImpl($showDebug, [TClone, dropT], () => ({
-    fmt(arg0) {
-      return showDebug_fmt(arg0, TClone, dropT);
+    fmt(show) {
+      return showDebug_fmt(show, TClone, dropT);
     },
     $drop(show) {
       dropT?.(show[0]);
@@ -73,8 +73,8 @@ const $keyHash = new WeakMap();
 
 export function keyHash(TClone, dropT) {
   return $traitImpl($keyHash, [TClone, dropT], () => {
-    const hash = (arg0, arg1, HHasher, dropH) =>
-      keyHash_hash(arg0, arg1, TClone, HHasher, dropT, dropH);
+    const hash = (key, state, HHasher, dropH) =>
+      keyHash_hash(key, state, TClone, HHasher, dropT, dropH);
     return {
       hash,
       hashSlice: $hashSlice(hash),
@@ -129,8 +129,8 @@ const $keyPartialEq = new WeakMap();
 export function keyPartialEq(dropT) {
   return $traitImpl($keyPartialEq, [dropT], () =>
     $partialEq({
-      eq(arg0, arg1) {
-        return keyPartialEq_eq(arg0, arg1, dropT);
+      eq(key, other) {
+        return keyPartialEq_eq(key, other, dropT);
       },
       $drop(key) {
         dropT?.(key[1]);

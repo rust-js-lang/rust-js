@@ -25,7 +25,7 @@ const Grid = {
   },
 };
 
-const gridJoined = { join: (arg0) => gridJoined_join(arg0.value) };
+const gridJoined = { join: (grid) => gridJoined_join(grid.value) };
 function gridJoined_join(grid) {
   grid.count = (grid.count - 3) | 0;
   return grid.count;

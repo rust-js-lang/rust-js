@@ -19,8 +19,8 @@ export function entry() {
   main();
 }
 
-const $callsWrite_writeStr = (arg0, arg1) => callsWrite_writeStr(arg0.value, arg1);
-const $callsWrite_writeChar = (arg0, arg1) => callsWrite_writeChar(arg0.value, arg1);
+const $callsWrite_writeStr = (calls, s) => callsWrite_writeStr(calls.value, s);
+const $callsWrite_writeChar = (calls, c) => callsWrite_writeChar(calls.value, c);
 
 export const callsWrite = {
   writeStr: $callsWrite_writeStr,

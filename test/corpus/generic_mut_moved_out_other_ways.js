@@ -48,7 +48,7 @@ function intoVec(r, v, out) {
   out.push(old);
 }
 
-const stackReset = { reset: (arg0) => stackReset_reset(arg0.value) };
+const stackReset = { reset: (stack) => stackReset_reset(stack.value) };
 function stackReset_reset(stack) {
   return $take(stack, { items: [] });
 }

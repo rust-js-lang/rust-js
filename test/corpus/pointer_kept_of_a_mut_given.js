@@ -99,8 +99,8 @@ const $callsRuns = new WeakMap();
 
 function callsRuns(dropF) {
   return $traitImpl($callsRuns, [dropF], () => ({
-    run(arg0, arg1) {
-      return callsRuns_run(arg0, arg1, dropF);
+    run(calls, n) {
+      return callsRuns_run(calls, n, dropF);
     },
     $drop(calls) {
       dropF?.(calls[0]);

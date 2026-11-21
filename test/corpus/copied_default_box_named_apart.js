@@ -10,8 +10,8 @@ const $holderTouch = new WeakMap();
 
 function holderTouch(TCopy) {
   return $traitImpl($holderTouch, [TCopy], () => ({
-    touch(arg0, arg1) {
-      return holderTouch_touch(arg0.value, arg1, TCopy);
+    touch(holder, by) {
+      return holderTouch_touch(holder.value, by, TCopy);
     },
     touchTwice(self, by) {
       const holder = self.value;
@@ -29,8 +29,8 @@ function holderTouch_touch(holder, by, TCopy) {
 }
 
 const _u32__2_Touch = {
-  touch(arg0, arg1) {
-    return _u32__2_Touch_touch(arg0.value, arg1);
+  touch(self, by) {
+    return _u32__2_Touch_touch(self.value, by);
   },
   touchTwice(boxed$1, by) {
     const self = boxed$1.value;

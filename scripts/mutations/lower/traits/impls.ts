@@ -750,4 +750,13 @@ export const mutations: Mutation[] = [
     replace: "                Within::Some(_) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_beside_impl_iterator_in_a_trait_methods_result.rs$"],
   },
+  {
+    name: "impl-entry-params-unnamed",
+    breaks: "an impl's dictionary entry names its parameters `arg0`, not as its method does, `bump: (counter) => ..` (#1328)",
+    file: "src/lower/traits/impls.rs",
+    find: "                    .map(|(i, name)| name.unwrap_or_else(|| format!(\"arg{i}\")))\n",
+    replace: "                    .map(|(i, name)| name.filter(|_| false).unwrap_or_else(|| format!(\"arg{i}\")))\n",
+    tests: ["test/corpus.test.ts", "-t", "^associated_consts.rs$"],
+    snapshots: true,
+  },
 ];

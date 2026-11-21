@@ -133,6 +133,58 @@ pub(in crate::lower) fn js_parameter_name<'tcx>(
     crate::names::js_ident(&named)
 }
 
+/// Each of `function`'s parameters' names as its own JS writes them
+/// (`js_parameter_name`), which an arrow of it, a function value's, a
+/// dictionary's entry, takes too, `(n) => bracketed(n, IsI32)` (#1328, the
+/// user's decision): `None` of one that names none, `_` or a pattern, and
+/// of a `self` whose type's name is another parameter's, `String::
+/// push_str`'s `string` beside its `string`, or of std's that its type
+/// names none of, `u8::is_ascii_lowercase`'s, no program's `self`: each
+/// the caller names, by its type where it can, `(n) => ..`.
+pub(in crate::lower) fn own_parameter_names(tcx: TyCtxt<'_>, function: DefId) -> Vec<Option<String>> {
+    let inputs = super::traits::erased_sig(tcx, function).inputs().to_vec();
+    let idents = tcx.fn_arg_idents(function);
+    let names: Vec<Option<String>> = (inputs.iter().enumerate())
+        .map(|(i, &ty)| {
+            let ident = (idents.get(i).copied().flatten()).filter(|ident| ident.name != rustc_span::kw::Underscore)?;
+            Some(js_parameter_name(tcx, function, ident, Some(ty)))
+        })
+        .collect();
+    let std = super::recognition::is_std_crate(tcx, function);
+    let receiver =
+        |i: usize| (idents.get(i).copied().flatten()).is_some_and(|ident| ident.name == rustc_span::kw::SelfLower);
+    (names.iter().enumerate())
+        .map(|(i, name)| {
+            let taken = |name: &String| {
+                names
+                    .iter()
+                    .enumerate()
+                    .any(|(j, other)| j != i && other.as_ref() == Some(name))
+            };
+            name.clone()
+                .filter(|name| !(receiver(i) && ((std && name == "self") || taken(name))))
+        })
+        .collect()
+}
+
+/// What an arrow of `function` names each parameter its JS takes (#1328):
+/// `own_parameter_names`', but its `Formatter`'s, `formatter`, which none
+/// of its JS takes (ADR 0054), and a writer's `options` last, where it
+/// takes them (ADRs 0058, 0137).
+pub(in crate::lower) fn taken_parameter_names(
+    tcx: TyCtxt<'_>,
+    function: DefId,
+    formatter: Option<usize>,
+    options: bool,
+) -> Vec<Option<String>> {
+    let mut names: Vec<Option<String>> = (own_parameter_names(tcx, function).into_iter().enumerate())
+        .filter(|&(i, _)| Some(i) != formatter)
+        .map(|(_, name)| name)
+        .collect();
+    names.extend((options && formatter.is_some()).then(|| Some("options".to_string())));
+    names
+}
+
 impl<'tcx> JsSignature<'tcx> {
     /// The first of what `function`'s JS takes that a JS caller can't give,
     /// described: a fact of a type parameter, `` `T`'s size_of ``, first,

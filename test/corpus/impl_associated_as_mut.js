@@ -11,7 +11,7 @@ const _u8__u8__u8_Collect = {
     fmt: (value) =>
       `[${value.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`,
   }),
-  fill: (arg0) => _u8__u8__u8_Collect_fill(arg0.value),
+  fill: (buf) => _u8__u8__u8_Collect_fill(buf.value),
 };
 
 function _u8__u8__u8_Collect_fill(buf) {

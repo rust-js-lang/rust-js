@@ -31,7 +31,7 @@ const $qEquivalentK = new WeakMap();
 
 function qEquivalentK(QPartialEq, KBorrowQ) {
   return $traitImpl($qEquivalentK, [QPartialEq, KBorrowQ], () => ({
-    equivalent: (arg0, arg1) => qEquivalentK_equivalent(arg0, arg1, QPartialEq, KBorrowQ),
+    equivalent: (self, key) => qEquivalentK_equivalent(self, key, QPartialEq, KBorrowQ),
   }));
 }
 function qEquivalentK_equivalent(self, key, QPartialEq, KBorrowQ) {
@@ -62,7 +62,7 @@ const $labelledPartialEq = new WeakMap();
 
 export function labelledPartialEq(KBorrowStr) {
   return $traitImpl($labelledPartialEq, [KBorrowStr], () =>
-    $partialEq({ eq: (arg0, arg1) => labelledPartialEq_eq(arg0, arg1, KBorrowStr) }),
+    $partialEq({ eq: (labelled, other) => labelledPartialEq_eq(labelled, other, KBorrowStr) }),
   );
 }
 function labelledPartialEq_eq(labelled, other, KBorrowStr) {
@@ -75,7 +75,7 @@ export function labelledPartialOrd(KBorrowStr) {
   return $traitImpl($labelledPartialOrd, [KBorrowStr], () =>
     $partialOrd({
       PartialEq: () => labelledPartialEq(KBorrowStr),
-      partialCmp: (arg0, arg1) => labelledPartialOrd_partialCmp(arg0, arg1, KBorrowStr),
+      partialCmp: (labelled, other) => labelledPartialOrd_partialCmp(labelled, other, KBorrowStr),
     }),
   );
 }
@@ -89,7 +89,7 @@ export function labelledOrd(KBorrowStr) {
   return $traitImpl($labelledOrd, [KBorrowStr], () =>
     $ord({
       PartialOrd: () => labelledPartialOrd(KBorrowStr),
-      cmp: (arg0, arg1) => labelledOrd_cmp(arg0, arg1, KBorrowStr),
+      cmp: (labelled, other) => labelledOrd_cmp(labelled, other, KBorrowStr),
     }),
   );
 }

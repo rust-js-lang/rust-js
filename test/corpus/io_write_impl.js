@@ -19,11 +19,11 @@ const $bufWrite = new Map();
 
 export function bufWrite(CAP) {
   return $traitImpl($bufWrite, [CAP], () => {
-    const write = (arg0, arg1) => bufWrite_write(arg0.value, arg1, CAP);
+    const write = (buf, data) => bufWrite_write(buf.value, data, CAP);
     return {
       write,
-      flush(arg0) {
-        return bufWrite_flush(arg0.value, CAP);
+      flush(buf) {
+        return bufWrite_flush(buf.value, CAP);
       },
       writeAll: $ioWriteAll(write),
       writeFmt: $ioWriteFmt(write),

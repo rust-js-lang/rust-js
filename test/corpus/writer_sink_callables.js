@@ -17,8 +17,8 @@ export function entry() {
 
 // Marks each char it's given by its own `write_char`.
 
-const $charsWrite_writeStr = (arg0, arg1) => charsWrite_writeStr(arg0.value, arg1);
-const $charsWrite_writeChar = (arg0, arg1) => charsWrite_writeChar(arg0.value, arg1);
+const $charsWrite_writeStr = (chars, s) => charsWrite_writeStr(chars.value, s);
+const $charsWrite_writeChar = (chars, c) => charsWrite_writeChar(chars.value, c);
 
 export const charsWrite = {
   writeStr: $charsWrite_writeStr,

@@ -77,7 +77,7 @@ const $hexfDebug = new WeakMap();
 
 export function hexfDebug(HexfLowerHex) {
   return $traitImpl($hexfDebug, [HexfLowerHex], () => ({
-    fmt: (arg0, arg1) => hexfDebug_fmt(arg0, arg1, HexfLowerHex),
+    fmt: (hexf, options) => hexfDebug_fmt(hexf, options, HexfLowerHex),
   }));
 }
 function hexfDebug_fmt(hexf, options, HexfLowerHex) {
@@ -92,7 +92,7 @@ function hexfDebug_fmt(hexf, options, HexfLowerHex) {
 
 // A writer that fails past its room: the callee's error is the caller's.
 
-const $fullWrite_writeStr = (arg0, arg1) => fullWrite_writeStr(arg0.value, arg1);
+const $fullWrite_writeStr = (full, s) => fullWrite_writeStr(full.value, s);
 
 export const fullWrite = {
   writeStr: $fullWrite_writeStr,

@@ -22,22 +22,22 @@ function applyGeneric(f, by, xs) {
 
 function main() {
   const xs = [1, 2, 3];
-  const pointer = (x) => total(...x);
-  const boxed = (a, b) => offset(a, ...b);
-  const reducer = { reduce: (x) => total(...x) };
+  const pointer = (xs) => total(...xs);
+  const boxed = (by, xs) => offset(by, ...xs);
+  const reducer = { reduce: (xs) => total(...xs) };
   console.log(
-    `${pointer(xs)} ${total(...xs.slice(1))} ${apply((x) => total(...x), xs)} ${applyGeneric((a, b) => offset(a, ...b), 2, xs)} ${boxed(3, [])} ${reducer.reduce([4, 5])}`,
+    `${pointer(xs)} ${total(...xs.slice(1))} ${apply((xs) => total(...xs), xs)} ${applyGeneric((by, xs) => offset(by, ...xs), 2, xs)} ${boxed(3, [])} ${reducer.reduce([4, 5])}`,
   );
 
   const rows = [[], [7], [1, 1, 1]];
-  const sums = rows.map((x) => total(...x));
+  const sums = rows.map((xs) => total(...xs));
   console.log(`[${sums.join(", ")}]`);
 
   const by = 5;
   const shifted = (xs) => offset(by, ...xs);
   console.log(`${shifted(xs)} ${shifted([9])}`);
 
-  const chosen = (x) => total(...x);
+  const chosen = (xs) => total(...xs);
   const value = chosen != null ? chosen([10, 20]) : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
 }

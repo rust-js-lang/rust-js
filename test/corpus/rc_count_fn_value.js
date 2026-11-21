@@ -20,7 +20,7 @@ function main() {
   try {
     const more = names.map((item) => $rcClone(item));
     try {
-      console.log(`[${names.map((x) => x.strong).join(", ")}]`);
+      console.log(`[${names.map((this$) => this$.strong).join(", ")}]`);
     } catch (error) {
       $cleanup(() => {
         for (const item of more) {
@@ -33,7 +33,7 @@ function main() {
     let w;
     try {
       w = $collectDropping(
-        strs.values().map((x) => $downgrade(x)),
+        strs.values().map((this$) => $downgrade(this$)),
         $weakDrop,
         true,
       );
@@ -50,7 +50,7 @@ function main() {
     }
     let collect;
     try {
-      collect = strs.map((x) => x.weak);
+      collect = strs.map((this$) => this$.weak);
     } catch (error) {
       $cleanup(() => {
         for (const item of w) {
@@ -66,7 +66,7 @@ function main() {
       throw error;
     }
     try {
-      console.log(`[${collect.join(", ")}] [${w.map((x) => x.strong).join(", ")}]`);
+      console.log(`[${collect.join(", ")}] [${w.map((weak) => weak.strong).join(", ")}]`);
     } catch (error) {
       $cleanup(() => {
         for (const item of w) {
@@ -86,7 +86,7 @@ function main() {
         for (const item of more) {
           $rcDrop(item);
         }
-        console.log(`${names.map((x) => x.strong).reduce((a, b) => (a + b) >>> 0, 0)}`);
+        console.log(`${names.map((this$) => this$.strong).reduce((a, b) => (a + b) >>> 0, 0)}`);
       } catch (error) {
         throw $unwindsOn(error);
       } finally {

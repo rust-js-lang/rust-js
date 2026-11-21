@@ -10,7 +10,7 @@ const $x2AndNot = new WeakMap();
 
 function x2AndNot(WCopy, GCopy, X2Size) {
   return $traitImpl($x2AndNot, [WCopy, GCopy, X2Size], () => ({
-    andnot: (arg0, arg1) => x2AndNot_andnot(arg0, arg1, WCopy, GCopy),
+    andnot: (x2, rhs) => x2AndNot_andnot(x2, rhs, WCopy, GCopy),
     OutputSize: X2Size,
   }));
 }
@@ -56,7 +56,7 @@ const $x2Halves = new WeakMap();
 function x2Halves(WCopy, X2Size) {
   return $traitImpl($x2Halves, [WCopy, X2Size], () => ({
     HalfAndNot: () => x2AndNot(WCopy, undefined, X2Size),
-    half: (arg0) => x2Halves_half(arg0, WCopy),
+    half: (x2) => x2Halves_half(x2, WCopy),
   }));
 }
 function x2Halves_half(x2, WCopy) {

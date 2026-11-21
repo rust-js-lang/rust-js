@@ -16,7 +16,7 @@ export function entry() {
 }
 
 export const loggedRead = $readerDefaults({
-  read: (arg0, arg1) => loggedRead_read(arg0.value, arg1),
+  read: (logged, buf) => loggedRead_read(logged.value, buf),
 });
 function loggedRead_read(logged, buf) {
   const n = Math.min(buf.length, logged[0]);

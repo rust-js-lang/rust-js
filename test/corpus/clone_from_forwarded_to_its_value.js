@@ -12,7 +12,7 @@ function cDebug_fmt(c) {
 
 export const cClone = {
   clone: cClone_clone,
-  cloneFrom: (arg0, arg1) => cClone_cloneFrom(arg0.value, arg1),
+  cloneFrom: (c, source) => cClone_cloneFrom(c.value, source),
 };
 function cClone_clone(c) {
   console.log(`clone ${c[0]}`);

@@ -15,8 +15,8 @@ const $wrapperRoom = new Map();
 function wrapperRoom(OptionSize) {
   return $traitImpl($wrapperRoom, [OptionSize], () => ({
     items: wrapperRoom_items,
-    options(arg0, arg1) {
-      return wrapperRoom_options(arg0, arg1, OptionSize);
+    options(wrapper, n) {
+      return wrapperRoom_options(wrapper, n, OptionSize);
     },
     reserved(wrapper, n) {
       const v = [];

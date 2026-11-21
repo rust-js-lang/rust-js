@@ -14,8 +14,8 @@ const $wrapKeep = new WeakMap();
 
 function wrapKeep(dropT) {
   return $traitImpl($wrapKeep, [dropT], () => ({
-    keep(arg0) {
-      return wrapKeep_keep(arg0, dropT);
+    keep(wrap) {
+      return wrapKeep_keep(wrap, dropT);
     },
     $drop(wrap) {
       dropT?.(wrap[0]);

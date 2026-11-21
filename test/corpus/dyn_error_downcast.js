@@ -67,7 +67,7 @@ function wrappedDebug_fmt(wrapped, EDebug) {
 
 export function wrappedDebug(EDebug) {
   return $traitImpl($wrappedDebug, [EDebug], () => ({
-    fmt: (arg0) => wrappedDebug_fmt(arg0, EDebug),
+    fmt: (wrapped) => wrappedDebug_fmt(wrapped, EDebug),
   }));
 }
 
@@ -75,7 +75,7 @@ const $wrappedDisplay = new WeakMap();
 
 export function wrappedDisplay(EDebug) {
   return $traitImpl($wrappedDisplay, [EDebug], () => ({
-    fmt: (arg0) => wrappedDisplay_fmt(arg0, EDebug),
+    fmt: (wrapped) => wrappedDisplay_fmt(wrapped, EDebug),
   }));
 }
 function wrappedDisplay_fmt(wrapped, EDebug) {

@@ -28,7 +28,7 @@ const $bufferDescribed = new Map();
 
 function bufferDescribed(SIZE) {
   return $traitImpl($bufferDescribed, [SIZE], () => ({
-    size: (arg0) => bufferDescribed_size(arg0, SIZE),
+    size: (buffer) => bufferDescribed_size(buffer, SIZE),
     described: (buffer) => `${bufferDescribed_size(buffer, SIZE)} bytes`,
   }));
 }

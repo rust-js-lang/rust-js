@@ -45,9 +45,9 @@ const countedSource = {
   IterDoubleEndedIterator() {
     return { next_back: $nextBack };
   },
-  items(arg0) {
+  items(counted) {
     return $iterator(
-      countedSource_items(arg0),
+      countedSource_items(counted),
       countdownIterator_next,
       false,
       countdownDoubleEndedIterator_nextBack,
@@ -88,9 +88,9 @@ function keptSource(IIterator, IDoubleEndedIterator, IClone, IVecCollect, dropI)
       IterDoubleEndedIterator() {
         return { next_back: $nextBack };
       },
-      items(arg0) {
+      items(kept) {
         return $given(
-          keptSource_items(arg0, IClone, dropI),
+          keptSource_items(kept, IClone, dropI),
           IIterator,
           false,
           IDoubleEndedIterator,

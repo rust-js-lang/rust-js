@@ -26,7 +26,7 @@ export function entry() {
 }
 
 const loggerListener = {
-  notify: (arg0, arg1) => loggerListener_notify(arg0.value, arg1),
+  notify: (logger, event) => loggerListener_notify(logger.value, event),
   count: loggerListener_count,
 };
 function loggerListener_notify(logger, event) {
@@ -42,7 +42,7 @@ function loudDrop_drop(loud) {
 }
 
 const counterSink = {
-  take: (arg0, arg1) => counterSink_take(arg0.value, arg1),
+  take: (counter, n) => counterSink_take(counter.value, n),
   total: counterSink_total,
 };
 function counterSink_take(counter, n) {
@@ -54,7 +54,7 @@ function counterSink_total(counter) {
 }
 
 const loudSink = {
-  take: (arg0, arg1) => loudSink_take(arg0.value, arg1),
+  take: (loud, n) => loudSink_take(loud.value, n),
   total: loudSink_total,
   $drop: loudDrop_drop,
 };

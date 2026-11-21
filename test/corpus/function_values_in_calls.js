@@ -85,9 +85,9 @@ function main() {
   const total$1 = { value: acc };
   sumInto(
     total$1,
-    $mutItems(ys).map((n) => {
-      const old = n.value;
-      n.value = 0;
+    $mutItems(ys).map((dest) => {
+      const old = dest.value;
+      dest.value = 0;
       return old;
     }),
   );
@@ -103,9 +103,9 @@ function main() {
         k = value;
       },
     },
-  ].map((n) => {
-    const old = n.value;
-    n.value = 0;
+  ].map((dest) => {
+    const old = dest.value;
+    dest.value = 0;
     return old;
   });
   console.log(`[${taken.join(", ")}] ${k}`);

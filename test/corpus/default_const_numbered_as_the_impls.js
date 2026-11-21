@@ -10,7 +10,7 @@ const $sScaled = new Map();
 
 export function sScaled(K) {
   return $traitImpl($sScaled, [K], () => ({
-    base: (arg0) => sScaled_base(arg0, K),
+    base: (s) => sScaled_base(s, K),
     scaled: (s) => (sScaled_base(s, K) * 3) >>> 0,
     times: (s, M) => ((Math.imul(sScaled_base(s, K), M) >>> 0) + 3) >>> 0,
   }));

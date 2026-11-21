@@ -70,7 +70,7 @@ const $bitsLowerHex = new WeakMap();
 
 export function bitsLowerHex(TLowerHex) {
   return $traitImpl($bitsLowerHex, [TLowerHex], () => ({
-    fmt: (arg0, arg1) => bitsLowerHex_fmt(arg0, arg1, TLowerHex),
+    fmt: (bits, options) => bitsLowerHex_fmt(bits, options, TLowerHex),
   }));
 }
 function bitsLowerHex_fmt(bits, options, TLowerHex) {

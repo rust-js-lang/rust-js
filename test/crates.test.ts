@@ -274,7 +274,7 @@ test("a zip of what's never random access asks no caller whether it is", () => {
 test("a library's default the crate's impls copy takes no fact of its own", () => {
   const out = chain(pairs, "library_default_item_layouts", ["dep", "app"]);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
-  expect(app).toContain("  collectVec: (arg0) => tools_collectVec(arg0, countdownTools,");
+  expect(app).toContain("  collectVec: (self) => tools_collectVec(self, countdownTools,");
   expect(app).not.toContain("CountdownItemSize");
 }, 300_000);
 

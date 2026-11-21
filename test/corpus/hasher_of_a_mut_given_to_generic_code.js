@@ -7,8 +7,8 @@ export function entry() {
 }
 
 export const refMutTallyHasher = $hasher({
-  finish: (arg0) => refMutTallyHasher_finish(arg0.value),
-  write: (arg0, arg1) => refMutTallyHasher_write($heldObjectOf(arg0), arg1),
+  finish: (tally) => refMutTallyHasher_finish(tally.value),
+  write: (tally, bytes) => refMutTallyHasher_write($heldObjectOf(tally), bytes),
 });
 function refMutTallyHasher_finish(tally) {
   return BigInt.asUintN(64, tally.bytes * 1000n);

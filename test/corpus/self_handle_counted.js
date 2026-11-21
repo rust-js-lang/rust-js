@@ -42,10 +42,10 @@ function counted(step) {
     value: $dropping(
       (n) => {
         const borrow = $borrow(this$$1.value, true);
-        const x = borrow.value;
+        const weak = borrow.value;
         let countdown;
         try {
-          countdown = $unwrap(x != null ? $upgrade(x) : undefined);
+          countdown = $unwrap(weak != null ? $upgrade(weak) : undefined);
         } finally {
           $unborrow(borrow);
         }
@@ -148,10 +148,10 @@ function readApart() {
     value: $dropping(
       () => {
         const borrow = $borrow(this$$1.value, true);
-        const x = borrow.value;
+        const weak = borrow.value;
         let result;
         try {
-          const andThen = x != null ? $upgrade(x) : undefined;
+          const andThen = weak != null ? $upgrade(weak) : undefined;
           result = andThen != null;
           if (andThen != null) {
             $rcDrop(andThen, $dispose);

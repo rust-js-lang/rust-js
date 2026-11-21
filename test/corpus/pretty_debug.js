@@ -92,7 +92,7 @@ function wrapDebug_fmt(wrap, options, TDebug) {
 
 export function wrapDebug(TDebug) {
   return $traitImpl($wrapDebug, [TDebug], () => ({
-    fmt: (arg0, arg1) => wrapDebug_fmt(arg0, arg1, TDebug),
+    fmt: (wrap, options) => wrapDebug_fmt(wrap, options, TDebug),
   }));
 }
 

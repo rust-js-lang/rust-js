@@ -11,7 +11,7 @@ function moneyDebug_fmt(money) {
 }
 
 export const moneyAddAssign = {
-  addAssign: (arg0, arg1) => moneyAddAssign_addAssign(arg0.value, arg1),
+  addAssign: (money, other) => moneyAddAssign_addAssign(money.value, other),
 };
 function moneyAddAssign_addAssign(money, other) {
   console.log(`add ${other[0]}`);

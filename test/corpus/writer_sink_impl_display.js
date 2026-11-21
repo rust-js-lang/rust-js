@@ -17,7 +17,7 @@ export function entry() {
 
 // Records each piece it's given.
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -30,7 +30,7 @@ function logWrite_writeStr(log, s) {
 
 // Fails at its third call.
 
-const $failingWrite_writeStr = (arg0, arg1) => failingWrite_writeStr(arg0.value, arg1);
+const $failingWrite_writeStr = (failing, s) => failingWrite_writeStr(failing.value, s);
 
 export const failingWrite = {
   writeStr: $failingWrite_writeStr,

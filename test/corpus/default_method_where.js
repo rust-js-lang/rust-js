@@ -7,7 +7,7 @@ export function entry() {
 }
 
 const counterSource = {
-  next: (arg0) => counterSource_next(arg0.value),
+  next: (counter) => counterSource_next(counter.value),
   label: (counter) => "source",
 };
 
@@ -18,7 +18,7 @@ function counterSource_next(counter) {
 }
 
 const namesSource = {
-  next: (arg0) => namesSource_next(arg0.value),
+  next: (names) => namesSource_next(names.value),
   firstCloned: (names, SelfItemDeref, SelfItemTargetClone) => namesSource_next(names),
   label: namesSource_label,
 };

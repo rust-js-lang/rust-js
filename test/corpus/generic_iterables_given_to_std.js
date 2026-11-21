@@ -75,7 +75,7 @@ const $listedDebug = new WeakMap();
 
 export function listedDebug(IIterator, IItemDebug) {
   return $traitImpl($listedDebug, [IIterator, IItemDebug], () => ({
-    fmt: (arg0) => listedDebug_fmt(arg0, IIterator, IItemDebug),
+    fmt: (listed) => listedDebug_fmt(listed, IIterator, IItemDebug),
   }));
 }
 function listedDebug_fmt(listed, IIterator, IItemDebug) {

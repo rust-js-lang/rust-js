@@ -56,8 +56,8 @@ const $optionGetterT = new WeakMap();
 
 function optionGetterT(TClone) {
   return $traitImpl($optionGetterT, [TClone], () => ({
-    get(arg0) {
-      return optionGetterT_get(arg0, TClone);
+    get(option) {
+      return optionGetterT_get(option, TClone);
     },
     twice(option) {
       const x = optionGetterT_get(option, TClone);
@@ -74,7 +74,7 @@ const $iDigits = new WeakMap();
 function iDigits(IIterator) {
   return $traitImpl($iDigits, [IIterator], () => ({
     IterIterator: () => ({ next: $next }),
-    digitIter: (arg0) => $given(iDigits_digitIter(arg0), IIterator),
+    digitIter: (self) => $given(iDigits_digitIter(self), IIterator),
     digitSum: (self) =>
       $given(iDigits_digitIter(self), IIterator)
         .map((d) => d)
@@ -89,8 +89,8 @@ const $pointPositionedS = new WeakMap();
 
 function pointPositionedS(SClone) {
   return $traitImpl($pointPositionedS, [SClone], () => ({
-    setX: (arg0, arg1) => pointPositionedS_setX(arg0.value, arg1, SClone),
-    x: (arg0) => pointPositionedS_x(arg0, SClone),
+    setX: (point, x) => pointPositionedS_setX(point.value, x, SClone),
+    x: (point) => pointPositionedS_x(point, SClone),
   }));
 }
 function pointPositionedS_setX(point, x, SClone) {

@@ -10,7 +10,7 @@ const $smallIndexI = new WeakMap();
 
 export function smallIndexI(ISliceIndexU32Slice) {
   return $traitImpl($smallIndexI, [ISliceIndexU32Slice], () => ({
-    index: (arg0, arg1) => smallIndexI_index(arg0, arg1, ISliceIndexU32Slice),
+    index: (small, index) => smallIndexI_index(small, index, ISliceIndexU32Slice),
   }));
 }
 function smallIndexI_index(small, index, ISliceIndexU32Slice) {

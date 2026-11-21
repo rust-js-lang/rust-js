@@ -51,7 +51,7 @@ export function entry() {
   main();
 }
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -64,8 +64,8 @@ function logWrite_writeStr(log, s) {
 
 // Marks each char it's given by its own `write_char`.
 
-const $charsWrite_writeStr = (arg0, arg1) => charsWrite_writeStr(arg0.value, arg1);
-const $charsWrite_writeChar = (arg0, arg1) => charsWrite_writeChar(arg0.value, arg1);
+const $charsWrite_writeStr = (chars, s) => charsWrite_writeStr(chars.value, s);
+const $charsWrite_writeChar = (chars, c) => charsWrite_writeChar(chars.value, c);
 
 export const charsWrite = {
   writeStr: $charsWrite_writeStr,
@@ -82,7 +82,7 @@ function charsWrite_writeChar(chars, c) {
 
 // Fails at its third call.
 
-const $failingWrite_writeStr = (arg0, arg1) => failingWrite_writeStr(arg0.value, arg1);
+const $failingWrite_writeStr = (failing, s) => failingWrite_writeStr(failing.value, s);
 
 export const failingWrite = {
   writeStr: $failingWrite_writeStr,
@@ -504,7 +504,7 @@ function closedDisplay_fmt(closed, options) {
 
 // A `Formatter` held, as anyhow's `Quoted` holds it.
 
-const $quotedWrite_writeStr = (arg0, arg1) => quotedWrite_writeStr(arg0.value, arg1);
+const $quotedWrite_writeStr = (quoted, s) => quotedWrite_writeStr(quoted.value, s);
 
 export const quotedWrite = {
   writeStr: $quotedWrite_writeStr,

@@ -16,7 +16,7 @@ const $eitherRead = new WeakMap();
 
 export function eitherRead(LRead, RRead) {
   return $traitImpl($eitherRead, [LRead, RRead], () =>
-    $readerDefaults({ read: (arg0, arg1) => eitherRead_read(arg0.value, arg1, LRead, RRead) }),
+    $readerDefaults({ read: (either, buf) => eitherRead_read(either.value, buf, LRead, RRead) }),
   );
 }
 function eitherRead_read(either, buf, LRead, RRead) {
@@ -53,8 +53,8 @@ const $eitherBufRead = new WeakMap();
 export function eitherBufRead(LBufRead, RBufRead) {
   return $traitImpl($eitherBufRead, [LBufRead, RBufRead], () => ({
     Read: () => eitherRead(LBufRead.Read(), RBufRead.Read()),
-    fillBuf: (arg0) => eitherBufRead_fillBuf(arg0.value, LBufRead, RBufRead),
-    consume: (arg0, arg1) => eitherBufRead_consume(arg0.value, arg1, LBufRead, RBufRead),
+    fillBuf: (either) => eitherBufRead_fillBuf(either.value, LBufRead, RBufRead),
+    consume: (either, amt) => eitherBufRead_consume(either.value, amt, LBufRead, RBufRead),
   }));
 }
 function eitherBufRead_fillBuf(either, LBufRead, RBufRead) {
@@ -106,7 +106,7 @@ const $eitherSeek = new WeakMap();
 
 export function eitherSeek(LSeek, RSeek) {
   return $traitImpl($eitherSeek, [LSeek, RSeek], () =>
-    $seekDefaults({ seek: (arg0, arg1) => eitherSeek_seek(arg0.value, arg1, LSeek, RSeek) }),
+    $seekDefaults({ seek: (either, pos) => eitherSeek_seek(either.value, pos, LSeek, RSeek) }),
   );
 }
 function eitherSeek_seek(either, pos, LSeek, RSeek) {

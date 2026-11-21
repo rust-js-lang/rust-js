@@ -444,7 +444,7 @@ function main() {
       2,
       { next: triIterator_next, sizeHint: triIterator_sizeHint },
     ),
-    (n) => n,
+    (value) => value,
     { next: $next, fold: $foldOf },
   ).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${s} ${l}`);

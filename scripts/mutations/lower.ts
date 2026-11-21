@@ -434,14 +434,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "writer-fn-value-takes-its-formatter",
-    breaks: "a generic writer function's instance as a value takes its `Formatter`, which its JS doesn't, so a call through the pointer gives its dictionary `undefined` (#1710)",
-    file: "src/lower.rs",
-    find: "                .filter(|&i| Some(i) != formatter)\n                .map(|i| match idents.get(i).copied().flatten() {\n",
-    replace: "                .filter(|_| true)\n                .map(|i| match idents.get(i).copied().flatten() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],
-  },
-  {
     name: "import-read-made-global",
     breaks: "a binding's read of what its module imports, React's `useState`, is made a global's, though its import declares the name: refused, a global's read where a declaration of its name is in scope (#1681)",
     file: "src/lower.rs",
@@ -472,5 +464,14 @@ export const mutations: Mutation[] = [
     find: "classes::class_of(tcx, def_id).and_then(|class| classes::implicit_constructor_home(tcx, class))",
     replace: "classes::class_of(tcx, def_id).and_then(|_| None)",
     tests: ["test/es-classes.test.ts", "-t", "implicit constructor lives with its struct"],
+  },
+  {
+    name: "fn-value-params-unnamed",
+    breaks: "a generic function's instance as a value names its parameters `arg0`, not as the function does, `(w) => stamped(w, ..)` (#1328)",
+    file: "src/lower.rs",
+    find: "                .map(|(i, name)| name.unwrap_or_else(|| format!(\"arg{i}\")))\n",
+    replace: "                .map(|(i, name)| name.filter(|_| false).unwrap_or_else(|| format!(\"arg{i}\")))\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],
+    snapshots: true,
   },
 ];

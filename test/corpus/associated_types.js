@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const countSource = { nextItem: (arg0) => countSource_nextItem(arg0.value) };
+const countSource = { nextItem: (count) => countSource_nextItem(count.value) };
 function countSource_nextItem(count) {
   if (count.n !== 0) {
     count.n--;
@@ -14,7 +14,7 @@ function countSource_nextItem(count) {
   }
 }
 
-const wordsSource = { nextItem: (arg0) => wordsSource_nextItem(arg0.value) };
+const wordsSource = { nextItem: (words) => wordsSource_nextItem(words.value) };
 function wordsSource_nextItem(words) {
   return words.list.pop();
 }

@@ -47,7 +47,7 @@ export function entry() {
   main();
 }
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -60,8 +60,8 @@ function logWrite_writeStr(log, s) {
 
 // A writer with its own `write_char`, which marks each char it's given.
 
-const $charsWrite_writeStr = (arg0, arg1) => charsWrite_writeStr(arg0.value, arg1);
-const $charsWrite_writeChar = (arg0, arg1) => charsWrite_writeChar(arg0.value, arg1);
+const $charsWrite_writeStr = (chars, s) => charsWrite_writeStr(chars.value, s);
+const $charsWrite_writeChar = (chars, c) => charsWrite_writeChar(chars.value, c);
 
 export const charsWrite = {
   writeStr: $charsWrite_writeStr,
@@ -78,7 +78,7 @@ function charsWrite_writeChar(chars, c) {
 
 // Fails on the third call.
 
-const $thirdWrite_writeStr = (arg0, arg1) => thirdWrite_writeStr(arg0.value, arg1);
+const $thirdWrite_writeStr = (third, s) => thirdWrite_writeStr(third.value, s);
 
 export const thirdWrite = {
   writeStr: $thirdWrite_writeStr,
@@ -156,7 +156,7 @@ function intoDyn(w, b, s) {
 
 // The issue's: each call counted, and the piece holding an `x` fails.
 
-const $countedWrite_writeStr = (arg0, arg1) => countedWrite_writeStr(arg0.value, arg1);
+const $countedWrite_writeStr = (counted, s) => countedWrite_writeStr(counted.value, s);
 
 export const countedWrite = {
   writeStr: $countedWrite_writeStr,
@@ -173,7 +173,7 @@ function countedWrite_writeStr(counted, s) {
 
 // Fails on the nth call.
 
-const $nthWrite_writeStr = (arg0, arg1) => nthWrite_writeStr(arg0.value, arg1);
+const $nthWrite_writeStr = (nth, s) => nthWrite_writeStr(nth.value, s);
 
 export const nthWrite = {
   writeStr: $nthWrite_writeStr,
@@ -614,7 +614,7 @@ const $echoDisplay = new WeakMap();
 
 export function echoDisplay(TDisplay) {
   return $traitImpl($echoDisplay, [TDisplay], () => ({
-    fmt: (arg0, arg1) => echoDisplay_fmt(arg0, arg1, TDisplay),
+    fmt: (echo, options) => echoDisplay_fmt(echo, options, TDisplay),
   }));
 }
 function echoDisplay_fmt(echo, options, TDisplay) {

@@ -22,9 +22,9 @@ function dDrop_drop(d) {
 }
 
 export const reqFromIteratorD = {
-  fromIter(arg0, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) {
+  fromIter(iter, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) {
     return reqFromIteratorD_fromIter(
-      arg0,
+      iter,
       $vecCollectWay(
         $collectsInPlace(IIntoIterInPlace, 4, 4),
         IIntoIterTrustedLen,

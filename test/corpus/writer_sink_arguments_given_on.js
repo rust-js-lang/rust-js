@@ -30,7 +30,7 @@ export function entry() {
 
 // Records each piece it's given.
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -43,8 +43,8 @@ function logWrite_writeStr(log, s) {
 
 // Marks each char it's given by its own `write_char`.
 
-const $charsWrite_writeStr = (arg0, arg1) => charsWrite_writeStr(arg0.value, arg1);
-const $charsWrite_writeChar = (arg0, arg1) => charsWrite_writeChar(arg0.value, arg1);
+const $charsWrite_writeStr = (chars, s) => charsWrite_writeStr(chars.value, s);
+const $charsWrite_writeChar = (chars, c) => charsWrite_writeChar(chars.value, c);
 
 export const charsWrite = {
   writeStr: $charsWrite_writeStr,
@@ -61,7 +61,7 @@ function charsWrite_writeChar(chars, c) {
 
 // Fails at its third call.
 
-const $failingWrite_writeStr = (arg0, arg1) => failingWrite_writeStr(arg0.value, arg1);
+const $failingWrite_writeStr = (failing, s) => failingWrite_writeStr(failing.value, s);
 
 export const failingWrite = {
   writeStr: $failingWrite_writeStr,
@@ -79,12 +79,12 @@ function failingWrite_writeStr(failing, s) {
 // A writer that passes what it's given on to the writer it holds, bracketed,
 // by `fmt::write`.
 
-const $bracketedWrite_writeStr = (arg0, arg1) => bracketedWrite_writeStr(arg0.value, arg1);
+const $bracketedWrite_writeStr = (bracketed, s) => bracketedWrite_writeStr(bracketed.value, s);
 
 export const bracketedWrite = {
   writeStr: $bracketedWrite_writeStr,
   writeChar: $bracketedWrite_writeStr,
-  writeFmt: (arg0, arg1) => bracketedWrite_writeFmt(arg0.value, arg1),
+  writeFmt: (bracketed, args) => bracketedWrite_writeFmt(bracketed.value, args),
 };
 function bracketedWrite_writeStr(bracketed, s) {
   return logWrite_writeStr(bracketed[0], s);
@@ -198,7 +198,7 @@ function both(w, args) {
   );
 }
 
-const logSink = { put: (arg0, arg1) => logSink_put(arg0.value, arg1), text: logSink_text };
+const logSink = { put: (log, args) => logSink_put(log.value, args), text: logSink_text };
 function logSink_put(log, args) {
   const f = $writerSink(log, logWrite_writeStr, logWrite_writeStr);
   $writingInto(f, args);

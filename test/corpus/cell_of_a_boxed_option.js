@@ -10,7 +10,7 @@ const $formatClone = new WeakMap();
 
 export function formatClone(IClone) {
   return $traitImpl($formatClone, [IClone], () => ({
-    clone: (arg0) => formatClone_clone(arg0, IClone),
+    clone: (format) => formatClone_clone(format, IClone),
   }));
 }
 function formatClone_clone(format, IClone) {

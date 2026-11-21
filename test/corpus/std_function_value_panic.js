@@ -17,7 +17,7 @@ function main() {
         inspect(item);
         return item;
       })
-      .map((x) => $unwrap(x)),
+      .map((option) => $unwrap(option)),
   );
   console.log(`[${seen.join(", ")}]`);
 }

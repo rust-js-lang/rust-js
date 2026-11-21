@@ -30,8 +30,8 @@ const $_A__A_Tuple = new WeakMap();
 
 function _A__A_Tuple(dropA) {
   return $traitImpl($_A__A_Tuple, [dropA], () => ({
-    taken(arg0, dropI) {
-      return _A__A_Tuple_taken(arg0, dropA, dropI);
+    taken(it, dropI) {
+      return _A__A_Tuple_taken(it, dropA, dropI);
     },
     $drop(value) {
       try {

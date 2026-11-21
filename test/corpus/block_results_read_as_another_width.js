@@ -96,7 +96,7 @@ export const counterBlockRngCore = {
   ResultsAsRefSelfItemSlice: () => ({ asRef: (value) => value }),
   ResultsAsMutSelfItemSlice: () => ({ asMut: (cell) => cell }),
   ResultsDefault: () => ({ default: () => [0n, 0n, 0n, 0n] }),
-  generate: (arg0, arg1) => counterBlockRngCore_generate(arg0.value, arg1.value),
+  generate: (counter, results) => counterBlockRngCore_generate(counter.value, results.value),
 };
 
 function counterBlockRngCore_generate(counter, results) {

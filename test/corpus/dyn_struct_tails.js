@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const bar1ToBar = { toVal: bar1ToBar_toVal, bump: (arg0) => bar1ToBar_bump(arg0.value) };
+const bar1ToBar = { toVal: bar1ToBar_toVal, bump: (bar1) => bar1ToBar_bump(bar1.value) };
 function bar1ToBar_toVal(bar1) {
   return bar1.f;
 }

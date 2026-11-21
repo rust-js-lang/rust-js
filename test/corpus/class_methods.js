@@ -63,7 +63,7 @@ function main() {
   const ones = new Counter(0);
   while (ones.tick()) {}
   const counters = [counter, ones];
-  const counts = counters.map((x) => x.current());
+  const counts = counters.map((counter) => counter.current());
   console.log(`[${counts.join(", ")}] ${Counter.prototype.limit}`);
 }
 //# sourceMappingURL=case.js.map

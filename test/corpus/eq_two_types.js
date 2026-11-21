@@ -9,7 +9,7 @@ export function entry() {
 const $_T__N_Array = new Map();
 
 function _T__N_Array(N) {
-  return $traitImpl($_T__N_Array, [N], () => ({ items: (arg0) => _T__N_Array_items(arg0, N) }));
+  return $traitImpl($_T__N_Array, [N], () => ({ items: (self) => _T__N_Array_items(self, N) }));
 }
 function _T__N_Array_items(self, N) {
   return self;
@@ -20,7 +20,8 @@ const $smallPartialEqSmall = new WeakMap();
 export function smallPartialEqSmall(AArray, BArray, AItemPartialEqBItem) {
   return $traitImpl($smallPartialEqSmall, [AArray, BArray, AItemPartialEqBItem], () =>
     $partialEq({
-      eq: (arg0, arg1) => smallPartialEqSmall_eq(arg0, arg1, AArray, BArray, AItemPartialEqBItem),
+      eq: (small, other) =>
+        smallPartialEqSmall_eq(small, other, AArray, BArray, AItemPartialEqBItem),
     }),
   );
 }

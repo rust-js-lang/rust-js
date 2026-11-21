@@ -11,7 +11,7 @@ const $tokenParser = new WeakMap();
 function tokenParser(TIterator, TItemPartialEq) {
   return $traitImpl($tokenParser, [TIterator, TItemPartialEq], () => ({
     InputIterator: () => ({ next: $nextSome }),
-    parse: (arg0, arg1) => tokenParser_parse(arg0, arg1, TIterator, TItemPartialEq),
+    parse: (token, input) => tokenParser_parse(token, input, TIterator, TItemPartialEq),
     chain: (token, p) => [token, p],
   }));
 }
@@ -49,7 +49,7 @@ const $satisfyParser = new WeakMap();
 function satisfyParser(TIterator) {
   return $traitImpl($satisfyParser, [TIterator], () => ({
     InputIterator: () => ({ next: $nextSome }),
-    parse: (arg0, arg1) => satisfyParser_parse(arg0, arg1, TIterator),
+    parse: (satisfy, input) => satisfyParser_parse(satisfy, input, TIterator),
     chain: (satisfy, p) => [satisfy, p],
   }));
 }
@@ -70,7 +70,7 @@ const $chainParser = new WeakMap();
 function chainParser(LParser, RParser) {
   return $traitImpl($chainParser, [LParser, RParser], () => ({
     InputIterator: () => LParser.InputIterator(),
-    parse: (arg0, arg1) => chainParser_parse(arg0, arg1, LParser, RParser),
+    parse: (chain, input) => chainParser_parse(chain, input, LParser, RParser),
     chain: (chain, p) => [chain, p],
   }));
 }

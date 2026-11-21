@@ -623,19 +623,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let callee = self.fn_ref(method);
-            // Without a `Formatter`, which isn't a JS parameter (ADR 0054).
-            let count = self
-                .tcx
-                .fn_sig(method)
-                .instantiate_identity()
-                .skip_normalization()
-                .skip_binder()
-                .inputs()
-                .len()
-                - usize::from(self.formatter_param(method).is_some())
-                // A writer's options, where the crate's take them (ADRs 0058, 0137).
-                + usize::from(self.compiled_writer_takes_options(method) && self.formatter_param(method).is_some());
-            let mut params: Vec<js::Name> = (0..count).map(|i| js::Name::declared(format!("arg{i}"))).collect();
+            // Each named as the method's JS names it (#1328); without a
+            // `Formatter`, which isn't a JS parameter (ADR 0054), and with a
+            // writer's options, where the crate's take them (ADRs 0058, 0137).
+            let (formatter, options) = (self.formatter_param(method), self.compiled_writer_takes_options(method));
+            let names: Vec<String> =
+                (crate::lower::signatures::taken_parameter_names(self.tcx, method, formatter, options))
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, name)| name.unwrap_or_else(|| format!("arg{i}")))
+                    .collect();
+            let count = names.len();
+            let mut params: Vec<js::Name> = names.iter().map(|name| self.fresh(Base::Named(name))).collect();
             let mut values: Vec<Expr> = params.iter().map(Expr::var).collect();
             // Where it's called, after its arguments, of one whose entries take
             // it (ADR 0427): its caller's, generic code's or a `dyn`'s where

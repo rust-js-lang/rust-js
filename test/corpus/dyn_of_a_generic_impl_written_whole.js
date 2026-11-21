@@ -13,7 +13,7 @@ function cDebug_fmt(c) {
 const $tReset = new WeakMap();
 
 function tReset(TDefault) {
-  return $traitImpl($tReset, [TDefault], () => ({ reset: (arg0) => tReset_reset(arg0, TDefault) }));
+  return $traitImpl($tReset, [TDefault], () => ({ reset: (self) => tReset_reset(self, TDefault) }));
 }
 function tReset_reset(self, TDefault) {
   self.value = TDefault.default();

@@ -119,8 +119,8 @@ const $exactMatcher = new WeakMap();
 
 function exactMatcher(TPartialEq, dropT) {
   return $traitImpl($exactMatcher, [TPartialEq, dropT], () => ({
-    matches(arg0) {
-      return exactMatcher_matches(arg0, TPartialEq, dropT);
+    matches(exact) {
+      return exactMatcher_matches(exact, TPartialEq, dropT);
     },
     $drop(exact) {
       try {

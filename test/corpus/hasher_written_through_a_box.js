@@ -26,7 +26,7 @@ function writeEach(h, HHasher) {
 
 export const tallyHasher = $hasher({
   finish: tallyHasher_finish,
-  write: (arg0, arg1) => tallyHasher_write(arg0.value, arg1),
+  write: (tally, bytes) => tallyHasher_write(tally.value, bytes),
 });
 function tallyHasher_finish(tally) {
   return BigInt.asUintN(64, tally.sum * 1000n + tally.writes);
@@ -130,21 +130,21 @@ function main() {
   const h$3 = { value: d };
   writeEach(h$3, {
     finish: (object) => object.impl.finish(object.value),
-    write: (object, arg1) => object.value.impl.write(object.value, arg1),
-    writeU8: (object, arg1) => object.value.impl.writeU8(object.value, arg1),
-    writeU16: (object, arg1) => object.value.impl.writeU16(object.value, arg1),
-    writeU32: (object, arg1) => object.value.impl.writeU32(object.value, arg1),
-    writeU64: (object, arg1) => object.value.impl.writeU64(object.value, arg1),
-    writeU128: (object, arg1) => object.value.impl.writeU128(object.value, arg1),
-    writeUsize: (object, arg1) => object.value.impl.writeUsize(object.value, arg1),
-    writeI8: (object, arg1) => object.value.impl.writeI8(object.value, arg1),
-    writeI16: (object, arg1) => object.value.impl.writeI16(object.value, arg1),
-    writeI32: (object, arg1) => object.value.impl.writeI32(object.value, arg1),
-    writeI64: (object, arg1) => object.value.impl.writeI64(object.value, arg1),
-    writeI128: (object, arg1) => object.value.impl.writeI128(object.value, arg1),
-    writeIsize: (object, arg1) => object.value.impl.writeIsize(object.value, arg1),
-    writeLengthPrefix: (object, arg1) => object.value.impl.writeLengthPrefix(object.value, arg1),
-    writeStr: (object, arg1) => object.value.impl.writeStr(object.value, arg1),
+    write: (object, bytes) => object.value.impl.write(object.value, bytes),
+    writeU8: (object, i) => object.value.impl.writeU8(object.value, i),
+    writeU16: (object, i) => object.value.impl.writeU16(object.value, i),
+    writeU32: (object, i) => object.value.impl.writeU32(object.value, i),
+    writeU64: (object, i) => object.value.impl.writeU64(object.value, i),
+    writeU128: (object, i) => object.value.impl.writeU128(object.value, i),
+    writeUsize: (object, i) => object.value.impl.writeUsize(object.value, i),
+    writeI8: (object, i) => object.value.impl.writeI8(object.value, i),
+    writeI16: (object, i) => object.value.impl.writeI16(object.value, i),
+    writeI32: (object, i) => object.value.impl.writeI32(object.value, i),
+    writeI64: (object, i) => object.value.impl.writeI64(object.value, i),
+    writeI128: (object, i) => object.value.impl.writeI128(object.value, i),
+    writeIsize: (object, i) => object.value.impl.writeIsize(object.value, i),
+    writeLengthPrefix: (object, len) => object.value.impl.writeLengthPrefix(object.value, len),
+    writeStr: (object, s) => object.value.impl.writeStr(object.value, s),
   });
   d = h$3.value;
   console.log(`dyn ${d.impl.finish(d.value) === expected}`);

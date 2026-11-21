@@ -122,8 +122,8 @@ const $listedDebug = new WeakMap();
 
 export function listedDebug(IIterator, IItemDebug, dropF, dropI, dropIItem) {
   return $traitImpl($listedDebug, [IIterator, IItemDebug, dropF, dropI, dropIItem], () => ({
-    fmt(arg0) {
-      return listedDebug_fmt(arg0, IIterator, IItemDebug, dropF, dropI, dropIItem);
+    fmt(listed) {
+      return listedDebug_fmt(listed, IIterator, IItemDebug, dropF, dropI, dropIItem);
     },
     $drop(listed) {
       dropF?.(listed[0]);

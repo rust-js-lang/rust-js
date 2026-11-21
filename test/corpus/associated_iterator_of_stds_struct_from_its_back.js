@@ -25,9 +25,9 @@ export function entry() {
 const tensSource = {
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
   HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
-  items: (arg0) =>
+  items: (n) =>
     $knowing(
-      tensSource_items(arg0),
+      tensSource_items(n),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
           next_back: $rangeNextBack,
@@ -51,9 +51,9 @@ const tensSource = {
           ends,
         ),
     ),
-  hidden: (arg0) =>
+  hidden: (n) =>
     $knowing(
-      tensSource_hidden(arg0),
+      tensSource_hidden(n),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
           next_back: $rangeNextBack,

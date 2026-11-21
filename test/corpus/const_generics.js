@@ -64,7 +64,7 @@ function scaled(values, K) {
 const $ringShow = new Map();
 
 function ringShow(CAP) {
-  return $traitImpl($ringShow, [CAP], () => ({ show: (arg0) => ringShow_show(arg0, CAP) }));
+  return $traitImpl($ringShow, [CAP], () => ({ show: (ring) => ringShow_show(ring, CAP) }));
 }
 function ringShow_show(ring, CAP) {
   return `${ring.items.length}/${CAP}`;
@@ -73,7 +73,7 @@ function ringShow_show(ring, CAP) {
 const $ringDisplay = new Map();
 
 export function ringDisplay(CAP) {
-  return $traitImpl($ringDisplay, [CAP], () => ({ fmt: (arg0) => ringDisplay_fmt(arg0, CAP) }));
+  return $traitImpl($ringDisplay, [CAP], () => ({ fmt: (ring) => ringDisplay_fmt(ring, CAP) }));
 }
 function ringDisplay_fmt(ring, CAP) {
   return `ring of ${Ring.capacity(ring, CAP)}`;
@@ -84,7 +84,7 @@ function ringDisplay_fmt(ring, CAP) {
 const $gridShow = new Map();
 
 function gridShow(W, H) {
-  return $traitImpl($gridShow, [W, H], () => ({ show: (arg0) => gridShow_show(arg0, W, H) }));
+  return $traitImpl($gridShow, [W, H], () => ({ show: (grid) => gridShow_show(grid, W, H) }));
 }
 function gridShow_show(grid, W, H) {
   return `${W}x${H}`;

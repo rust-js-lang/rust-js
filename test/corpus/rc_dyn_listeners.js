@@ -22,7 +22,7 @@ export function entry() {
 }
 
 const loggerListener = {
-  notify: (arg0, arg1) => loggerListener_notify(arg0.value, arg1),
+  notify: (logger, event) => loggerListener_notify(logger.value, event),
   count: loggerListener_count,
 };
 function loggerListener_notify(logger, event) {

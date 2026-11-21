@@ -13033,10 +13033,10 @@ export function flattenCompatIUIterator_last(
   return FlattenCompat.iterFold(
     flattenCompat,
     undefined,
-    (a, b) =>
+    (last, iter) =>
       flattenCompatIUIterator_last_last(
-        a,
-        $given(b, UIterator, true),
+        last,
+        $given(iter, UIterator, true),
         $givenDrop(dropU),
         dropUItem,
       ),
@@ -13067,9 +13067,9 @@ export function flattenCompatIUIterator2_last(
   const value = flattenCompat.iter.iter;
   let result;
   if (value != null) {
-    const captured = (x) =>
+    const captured = (inner) =>
       intoItem(
-        $given(IItemIntoIterator.intoIter(x), IItemIntoIterator.IntoIterIterator(), true),
+        $given(IItemIntoIterator.intoIter(inner), IItemIntoIterator.IntoIterIterator(), true),
         dropIItem,
         dropUItem,
         dropU,
@@ -13163,10 +13163,10 @@ export function flattenCompatIUIterator_count(
   return FlattenCompat.iterFold(
     flattenCompat,
     0,
-    (a, b) =>
+    (acc, iter) =>
       flattenCompatIUIterator_count_count(
-        a,
-        $given(b, UIterator, true),
+        acc,
+        $given(iter, UIterator, true),
         $givenDrop(dropU),
         dropUItem,
       ),
@@ -13193,9 +13193,9 @@ export function flattenCompatIUIterator2_count(
   const value = flattenCompat.iter.iter;
   let result = 0;
   if (value != null) {
-    const captured = (x) =>
+    const captured = (inner) =>
       intoItem(
-        $given(IItemIntoIterator.intoIter(x), IItemIntoIterator.IntoIterIterator(), true),
+        $given(IItemIntoIterator.intoIter(inner), IItemIntoIterator.IntoIterIterator(), true),
         dropIItem,
         dropUItem,
         dropU,
@@ -13281,10 +13281,10 @@ export function flattenCompatIUIterator_advanceBy(
   const iterTryFold = FlattenCompat.iterTryFold(
     flattenCompat,
     n,
-    (a, b) =>
+    (n, iter) =>
       flattenCompatIUIterator_advanceBy_advance(
-        a,
-        $given(b, UIterator, true),
+        n,
+        $given(iter, UIterator, true),
         $givenDrop(dropU),
         dropUItem,
       ),
@@ -13325,10 +13325,10 @@ export function flattenCompatIUIterator2_advanceBy(
       ? fuseFuseImplIFusedIterator_tryFold(
           flattenCompat.iter,
           n,
-          (a, b) =>
+          (n, inner) =>
             advanceByOne(
-              a,
-              $given(IItemIntoIterator.intoIter(b), IntoIterIterator, true),
+              n,
+              $given(IItemIntoIterator.intoIter(inner), IntoIterIterator, true),
               dropIItem,
               dropUItem,
               dropU,
@@ -13344,10 +13344,10 @@ export function flattenCompatIUIterator2_advanceBy(
       : fuseFuseImplI_tryFold(
           flattenCompat.iter,
           n,
-          (a, b) =>
+          (n, inner) =>
             advanceByOne(
-              a,
-              $given(IItemIntoIterator.intoIter(b), IntoIterIterator, true),
+              n,
+              $given(IItemIntoIterator.intoIter(inner), IntoIterIterator, true),
               dropIItem,
               dropUItem,
               dropU,
@@ -13933,10 +13933,10 @@ export function flattenCompatIUDoubleEndedIterator_advanceBackBy(
   const iterTryRfold = FlattenCompat.iterTryRfold(
     flattenCompat,
     n,
-    (a, b) =>
+    (n, iter) =>
       flattenCompatIUDoubleEndedIterator_advanceBackBy_advance(
-        a,
-        $given(b, UIterator, true, UDoubleEndedIterator),
+        n,
+        $given(iter, UIterator, true, UDoubleEndedIterator),
         $givenDrop(dropU),
         dropUItem,
       ),
@@ -13979,10 +13979,10 @@ export function flattenCompatIUDoubleEndedIterator2_advanceBackBy(
       ? fuseFuseImplIFusedIterator_tryRfold(
           flattenCompat.iter,
           n,
-          (a, b) =>
+          (n, inner) =>
             advanceByOne(
-              a,
-              $given(IItemIntoIterator.intoIter(b), IntoIterIterator, true),
+              n,
+              $given(IItemIntoIterator.intoIter(inner), IntoIterIterator, true),
               dropIItem,
               dropUItem,
               dropU,
@@ -13999,10 +13999,10 @@ export function flattenCompatIUDoubleEndedIterator2_advanceBackBy(
       : fuseFuseImplI_tryRfold(
           flattenCompat.iter,
           n,
-          (a, b) =>
+          (n, inner) =>
             advanceByOne(
-              a,
-              $given(IItemIntoIterator.intoIter(b), IntoIterIterator, true),
+              n,
+              $given(IItemIntoIterator.intoIter(inner), IntoIterIterator, true),
               dropIItem,
               dropUItem,
               dropU,
@@ -16046,8 +16046,8 @@ export function tSpecRangeSetupT_setup(inner, step, dropT) {
 
 export function peekableClone(IClone, IIterator, IItemClone, dropI, dropIItem) {
   return $traitImpl($peekableClone, [IClone, IIterator, IItemClone, dropI, dropIItem], () => ({
-    clone(arg0) {
-      return peekableClone_clone(arg0, IClone, IIterator, IItemClone, dropI, dropIItem);
+    clone(peekable) {
+      return peekableClone_clone(peekable, IClone, IIterator, IItemClone, dropI, dropIItem);
     },
     $drop(peekable) {
       peekable.return();
@@ -16057,7 +16057,7 @@ export function peekableClone(IClone, IIterator, IItemClone, dropI, dropIItem) {
 
 export function peekableDebug(IDebug, IItemDebug) {
   return $traitImpl($peekableDebug, [IDebug, IItemDebug], () => ({
-    fmt: (arg0, arg1) => peekableDebug_fmt(arg0, arg1, IDebug, IItemDebug),
+    fmt: (peekable, options) => peekableDebug_fmt(peekable, options, IDebug, IItemDebug),
     fmtInto: (f, value, options) =>
       $writingInto(f, peekableDebug_fmt, value, options, IDebug, IItemDebug),
   }));
@@ -16065,32 +16065,32 @@ export function peekableDebug(IDebug, IItemDebug) {
 
 export function fuseClone(IClone) {
   return $traitImpl($fuseClone, [IClone], () => ({
-    clone: (arg0) => fuseClone_clone(arg0, IClone),
+    clone: (fuse) => fuseClone_clone(fuse, IClone),
   }));
 }
 
 export function fuseDebug(IDebug) {
   return $traitImpl($fuseDebug, [IDebug], () => ({
-    fmt: (arg0, arg1) => fuseDebug_fmt(arg0, arg1, IDebug),
+    fmt: (fuse, options) => fuseDebug_fmt(fuse, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, fuseDebug_fmt, value, options, IDebug),
   }));
 }
 
 export function revClone(TClone) {
-  return $traitImpl($revClone, [TClone], () => ({ clone: (arg0) => revClone_clone(arg0, TClone) }));
+  return $traitImpl($revClone, [TClone], () => ({ clone: (rev) => revClone_clone(rev, TClone) }));
 }
 
 export function revDebug(TDebug) {
   return $traitImpl($revDebug, [TDebug], () => ({
-    fmt: (arg0, arg1) => revDebug_fmt(arg0, arg1, TDebug),
+    fmt: (rev, options) => revDebug_fmt(rev, options, TDebug),
     fmtInto: (f, value, options) => $writingInto(f, revDebug_fmt, value, options, TDebug),
   }));
 }
 
 export function enumerateClone(IClone, dropI) {
   return $traitImpl($enumerateClone, [IClone, dropI], () => ({
-    clone(arg0) {
-      return enumerateClone_clone(arg0, IClone, dropI);
+    clone(enumerate) {
+      return enumerateClone_clone(enumerate, IClone, dropI);
     },
     $drop(enumerate) {
       enumerate.return();
@@ -16100,15 +16100,15 @@ export function enumerateClone(IClone, dropI) {
 
 export function enumerateDebug(IDebug) {
   return $traitImpl($enumerateDebug, [IDebug], () => ({
-    fmt: (arg0, arg1) => enumerateDebug_fmt(arg0, arg1, IDebug),
+    fmt: (enumerate, options) => enumerateDebug_fmt(enumerate, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, enumerateDebug_fmt, value, options, IDebug),
   }));
 }
 
 export function mapClone(IClone, FClone, dropI, dropF) {
   return $traitImpl($mapClone, [IClone, FClone, dropI, dropF], () => ({
-    clone(arg0) {
-      return mapClone_clone(arg0, IClone, FClone, dropI, dropF);
+    clone(map) {
+      return mapClone_clone(map, IClone, FClone, dropI, dropF);
     },
     $drop(map) {
       map.return();
@@ -16118,8 +16118,8 @@ export function mapClone(IClone, FClone, dropI, dropF) {
 
 export function mapDebug(IDebug, dropI, dropF) {
   return $traitImpl($mapDebug, [IDebug, dropI, dropF], () => ({
-    fmt(arg0, arg1) {
-      return mapDebug_fmt(arg0, arg1, IDebug, dropI, dropF);
+    fmt(map, options) {
+      return mapDebug_fmt(map, options, IDebug, dropI, dropF);
     },
     $drop(map) {
       map.return();
@@ -16132,8 +16132,8 @@ export function mapDebug(IDebug, dropI, dropF) {
 
 export function filterClone(IClone, PClone, dropI, dropP) {
   return $traitImpl($filterClone, [IClone, PClone, dropI, dropP], () => ({
-    clone(arg0) {
-      return filterClone_clone(arg0, IClone, PClone, dropI, dropP);
+    clone(filter) {
+      return filterClone_clone(filter, IClone, PClone, dropI, dropP);
     },
     $drop(filter) {
       filter.return();
@@ -16143,8 +16143,8 @@ export function filterClone(IClone, PClone, dropI, dropP) {
 
 export function filterDebug(IDebug, dropI, dropP) {
   return $traitImpl($filterDebug, [IDebug, dropI, dropP], () => ({
-    fmt(arg0, arg1) {
-      return filterDebug_fmt(arg0, arg1, IDebug, dropI, dropP);
+    fmt(filter, options) {
+      return filterDebug_fmt(filter, options, IDebug, dropI, dropP);
     },
     $drop(filter) {
       filter.return();
@@ -16157,34 +16157,34 @@ export function filterDebug(IDebug, dropI, dropP) {
 
 export function copiedClone(IClone) {
   return $traitImpl($copiedClone, [IClone], () => ({
-    clone: (arg0) => copiedClone_clone(arg0, IClone),
+    clone: (copied) => copiedClone_clone(copied, IClone),
   }));
 }
 
 export function copiedDebug(IDebug) {
   return $traitImpl($copiedDebug, [IDebug], () => ({
-    fmt: (arg0, arg1) => copiedDebug_fmt(arg0, arg1, IDebug),
+    fmt: (copied, options) => copiedDebug_fmt(copied, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, copiedDebug_fmt, value, options, IDebug),
   }));
 }
 
 export function clonedClone(IClone) {
   return $traitImpl($clonedClone, [IClone], () => ({
-    clone: (arg0) => clonedClone_clone(arg0, IClone),
+    clone: (cloned) => clonedClone_clone(cloned, IClone),
   }));
 }
 
 export function clonedDebug(IDebug) {
   return $traitImpl($clonedDebug, [IDebug], () => ({
-    fmt: (arg0, arg1) => clonedDebug_fmt(arg0, arg1, IDebug),
+    fmt: (cloned, options) => clonedDebug_fmt(cloned, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, clonedDebug_fmt, value, options, IDebug),
   }));
 }
 
 export function filterMapClone(IClone, FClone, dropI, dropF) {
   return $traitImpl($filterMapClone, [IClone, FClone, dropI, dropF], () => ({
-    clone(arg0) {
-      return filterMapClone_clone(arg0, IClone, FClone, dropI, dropF);
+    clone(filterMap) {
+      return filterMapClone_clone(filterMap, IClone, FClone, dropI, dropF);
     },
     $drop(filterMap) {
       filterMap.return();
@@ -16194,8 +16194,8 @@ export function filterMapClone(IClone, FClone, dropI, dropF) {
 
 export function filterMapDebug(IDebug, dropI, dropF) {
   return $traitImpl($filterMapDebug, [IDebug, dropI, dropF], () => ({
-    fmt(arg0, arg1) {
-      return filterMapDebug_fmt(arg0, arg1, IDebug, dropI, dropF);
+    fmt(filterMap, options) {
+      return filterMapDebug_fmt(filterMap, options, IDebug, dropI, dropF);
     },
     $drop(filterMap) {
       filterMap.return();
@@ -16208,8 +16208,8 @@ export function filterMapDebug(IDebug, dropI, dropF) {
 
 export function takeWhileClone(IClone, PClone, dropI, dropP) {
   return $traitImpl($takeWhileClone, [IClone, PClone, dropI, dropP], () => ({
-    clone(arg0) {
-      return takeWhileClone_clone(arg0, IClone, PClone, dropI, dropP);
+    clone(takeWhile) {
+      return takeWhileClone_clone(takeWhile, IClone, PClone, dropI, dropP);
     },
     $drop(takeWhile) {
       takeWhile.return();
@@ -16219,8 +16219,8 @@ export function takeWhileClone(IClone, PClone, dropI, dropP) {
 
 export function takeWhileDebug(IDebug, dropI, dropP) {
   return $traitImpl($takeWhileDebug, [IDebug, dropI, dropP], () => ({
-    fmt(arg0, arg1) {
-      return takeWhileDebug_fmt(arg0, arg1, IDebug, dropI, dropP);
+    fmt(takeWhile, options) {
+      return takeWhileDebug_fmt(takeWhile, options, IDebug, dropI, dropP);
     },
     $drop(takeWhile) {
       takeWhile.return();
@@ -16233,8 +16233,8 @@ export function takeWhileDebug(IDebug, dropI, dropP) {
 
 export function skipWhileClone(IClone, PClone, dropI, dropP) {
   return $traitImpl($skipWhileClone, [IClone, PClone, dropI, dropP], () => ({
-    clone(arg0) {
-      return skipWhileClone_clone(arg0, IClone, PClone, dropI, dropP);
+    clone(skipWhile) {
+      return skipWhileClone_clone(skipWhile, IClone, PClone, dropI, dropP);
     },
     $drop(skipWhile) {
       skipWhile.return();
@@ -16244,8 +16244,8 @@ export function skipWhileClone(IClone, PClone, dropI, dropP) {
 
 export function skipWhileDebug(IDebug, dropI, dropP) {
   return $traitImpl($skipWhileDebug, [IDebug, dropI, dropP], () => ({
-    fmt(arg0, arg1) {
-      return skipWhileDebug_fmt(arg0, arg1, IDebug, dropI, dropP);
+    fmt(skipWhile, options) {
+      return skipWhileDebug_fmt(skipWhile, options, IDebug, dropI, dropP);
     },
     $drop(skipWhile) {
       skipWhile.return();
@@ -16258,8 +16258,8 @@ export function skipWhileDebug(IDebug, dropI, dropP) {
 
 export function mapWhileClone(IClone, PClone, dropI, dropP) {
   return $traitImpl($mapWhileClone, [IClone, PClone, dropI, dropP], () => ({
-    clone(arg0) {
-      return mapWhileClone_clone(arg0, IClone, PClone, dropI, dropP);
+    clone(mapWhile) {
+      return mapWhileClone_clone(mapWhile, IClone, PClone, dropI, dropP);
     },
     $drop(mapWhile) {
       mapWhile.return();
@@ -16269,8 +16269,8 @@ export function mapWhileClone(IClone, PClone, dropI, dropP) {
 
 export function mapWhileDebug(IDebug, dropI, dropP) {
   return $traitImpl($mapWhileDebug, [IDebug, dropI, dropP], () => ({
-    fmt(arg0, arg1) {
-      return mapWhileDebug_fmt(arg0, arg1, IDebug, dropI, dropP);
+    fmt(mapWhile, options) {
+      return mapWhileDebug_fmt(mapWhile, options, IDebug, dropI, dropP);
     },
     $drop(mapWhile) {
       mapWhile.return();
@@ -16283,8 +16283,8 @@ export function mapWhileDebug(IDebug, dropI, dropP) {
 
 export function scanClone(IClone, StClone, FClone, dropI, dropSt, dropF) {
   return $traitImpl($scanClone, [IClone, StClone, FClone, dropI, dropSt, dropF], () => ({
-    clone(arg0) {
-      return scanClone_clone(arg0, IClone, StClone, FClone, dropI, dropSt, dropF);
+    clone(scan) {
+      return scanClone_clone(scan, IClone, StClone, FClone, dropI, dropSt, dropF);
     },
     $drop(scan) {
       scan.return();
@@ -16294,8 +16294,8 @@ export function scanClone(IClone, StClone, FClone, dropI, dropSt, dropF) {
 
 export function scanDebug(IDebug, StDebug, dropI, dropSt, dropF) {
   return $traitImpl($scanDebug, [IDebug, StDebug, dropI, dropSt, dropF], () => ({
-    fmt(arg0, arg1) {
-      return scanDebug_fmt(arg0, arg1, IDebug, StDebug, dropI, dropSt, dropF);
+    fmt(scan, options) {
+      return scanDebug_fmt(scan, options, IDebug, StDebug, dropI, dropSt, dropF);
     },
     $drop(scan) {
       scan.return();
@@ -16308,8 +16308,8 @@ export function scanDebug(IDebug, StDebug, dropI, dropSt, dropF) {
 
 export function inspectClone(IClone, FClone, dropI, dropF) {
   return $traitImpl($inspectClone, [IClone, FClone, dropI, dropF], () => ({
-    clone(arg0) {
-      return inspectClone_clone(arg0, IClone, FClone, dropI, dropF);
+    clone(inspect) {
+      return inspectClone_clone(inspect, IClone, FClone, dropI, dropF);
     },
     $drop(inspect) {
       inspect.return();
@@ -16319,8 +16319,8 @@ export function inspectClone(IClone, FClone, dropI, dropF) {
 
 export function inspectDebug(IDebug, dropI, dropF) {
   return $traitImpl($inspectDebug, [IDebug, dropI, dropF], () => ({
-    fmt(arg0, arg1) {
-      return inspectDebug_fmt(arg0, arg1, IDebug, dropI, dropF);
+    fmt(inspect, options) {
+      return inspectDebug_fmt(inspect, options, IDebug, dropI, dropF);
     },
     $drop(inspect) {
       inspect.return();
@@ -16333,8 +16333,8 @@ export function inspectDebug(IDebug, dropI, dropF) {
 
 export function skipClone(IClone, dropI) {
   return $traitImpl($skipClone, [IClone, dropI], () => ({
-    clone(arg0) {
-      return skipClone_clone(arg0, IClone, dropI);
+    clone(skip) {
+      return skipClone_clone(skip, IClone, dropI);
     },
     $drop(skip) {
       skip.return();
@@ -16344,15 +16344,15 @@ export function skipClone(IClone, dropI) {
 
 export function skipDebug(IDebug) {
   return $traitImpl($skipDebug, [IDebug], () => ({
-    fmt: (arg0, arg1) => skipDebug_fmt(arg0, arg1, IDebug),
+    fmt: (skip, options) => skipDebug_fmt(skip, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, skipDebug_fmt, value, options, IDebug),
   }));
 }
 
 export function takeClone(IClone, dropI) {
   return $traitImpl($takeClone, [IClone, dropI], () => ({
-    clone(arg0) {
-      return takeClone_clone(arg0, IClone, dropI);
+    clone(take) {
+      return takeClone_clone(take, IClone, dropI);
     },
     $drop(take) {
       take.return();
@@ -16362,15 +16362,15 @@ export function takeClone(IClone, dropI) {
 
 export function takeIDebug(IDebug) {
   return $traitImpl($takeIDebug, [IDebug], () => ({
-    fmt: (arg0, arg1) => takeIDebug_fmt(arg0, arg1, IDebug),
+    fmt: (take, options) => takeIDebug_fmt(take, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, takeIDebug_fmt, value, options, IDebug),
   }));
 }
 
 export function stepByClone(IClone, dropI) {
   return $traitImpl($stepByClone, [IClone, dropI], () => ({
-    clone(arg0) {
-      return stepByClone_clone(arg0, IClone, dropI);
+    clone(stepBy) {
+      return stepByClone_clone(stepBy, IClone, dropI);
     },
     $drop(stepBy) {
       stepBy.return();
@@ -16380,8 +16380,8 @@ export function stepByClone(IClone, dropI) {
 
 export function chainClone(AClone, BClone, dropA, dropB) {
   return $traitImpl($chainClone, [AClone, BClone, dropA, dropB], () => ({
-    clone(arg0) {
-      return chainClone_clone(arg0, AClone, BClone, dropA, dropB);
+    clone(chain) {
+      return chainClone_clone(chain, AClone, BClone, dropA, dropB);
     },
     $drop(chain) {
       chain.return();
@@ -16391,7 +16391,7 @@ export function chainClone(AClone, BClone, dropA, dropB) {
 
 export function chainABDebug(ADebug, BDebug) {
   return $traitImpl($chainABDebug, [ADebug, BDebug], () => ({
-    fmt: (arg0, arg1) => chainABDebug_fmt(arg0, arg1, ADebug, BDebug),
+    fmt: (chain, options) => chainABDebug_fmt(chain, options, ADebug, BDebug),
     fmtInto: (f, value, options) =>
       $writingInto(f, chainABDebug_fmt, value, options, ADebug, BDebug),
   }));
@@ -16399,8 +16399,8 @@ export function chainABDebug(ADebug, BDebug) {
 
 export function zipClone(AClone, BClone, dropA, dropB) {
   return $traitImpl($zipClone, [AClone, BClone, dropA, dropB], () => ({
-    clone(arg0) {
-      return zipClone_clone(arg0, AClone, BClone, dropA, dropB);
+    clone(zip) {
+      return zipClone_clone(zip, AClone, BClone, dropA, dropB);
     },
     $drop(zip) {
       zip.return();
@@ -16410,14 +16410,14 @@ export function zipClone(AClone, BClone, dropA, dropB) {
 
 export function repeatNClone(AClone) {
   return $traitImpl($repeatNClone, [AClone], () => ({
-    clone: (arg0) => repeatNClone_clone(arg0, AClone),
+    clone: (repeatN) => repeatNClone_clone(repeatN, AClone),
   }));
 }
 
 export function repeatNDebug(ADebug, dropA) {
   return $traitImpl($repeatNDebug, [ADebug, dropA], () => ({
-    fmt(arg0, arg1) {
-      return repeatNDebug_fmt(arg0, arg1, ADebug, dropA);
+    fmt(repeatN, options) {
+      return repeatNDebug_fmt(repeatN, options, ADebug, dropA);
     },
     $drop(repeatN) {
       repeatN.return();
@@ -16430,21 +16430,21 @@ export function repeatNDebug(ADebug, dropA) {
 
 export function repeatClone(AClone) {
   return $traitImpl($repeatClone, [AClone], () => ({
-    clone: (arg0) => repeatClone_clone(arg0, AClone),
+    clone: (repeat) => repeatClone_clone(repeat, AClone),
   }));
 }
 
 export function repeatADebug(ADebug) {
   return $traitImpl($repeatADebug, [ADebug], () => ({
-    fmt: (arg0, arg1) => repeatADebug_fmt(arg0, arg1, ADebug),
+    fmt: (repeat, options) => repeatADebug_fmt(repeat, options, ADebug),
     fmtInto: (f, value, options) => $writingInto(f, repeatADebug_fmt, value, options, ADebug),
   }));
 }
 
 export function cycleClone(IClone, dropI) {
   return $traitImpl($cycleClone, [IClone, dropI], () => ({
-    clone(arg0) {
-      return cycleClone_clone(arg0, IClone, dropI);
+    clone(cycle) {
+      return cycleClone_clone(cycle, IClone, dropI);
     },
     $drop(cycle) {
       cycle.return();
@@ -16454,7 +16454,7 @@ export function cycleClone(IClone, dropI) {
 
 export function cycleDebug(IDebug) {
   return $traitImpl($cycleDebug, [IDebug], () => ({
-    fmt: (arg0, arg1) => cycleDebug_fmt(arg0, arg1, IDebug),
+    fmt: (cycle, options) => cycleDebug_fmt(cycle, options, IDebug),
     fmtInto: (f, value, options) => $writingInto(f, cycleDebug_fmt, value, options, IDebug),
   }));
 }

@@ -12,7 +12,7 @@ export function entry() {
   main();
 }
 
-const circleShape = { grow: (arg0, arg1) => circleShape_grow(arg0.value, arg1) };
+const circleShape = { grow: (circle, by) => circleShape_grow(circle.value, by) };
 function circleShape_grow(circle, by) {
   circle.r += by;
 }

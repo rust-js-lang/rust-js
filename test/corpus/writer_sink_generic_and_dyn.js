@@ -45,7 +45,7 @@ export function entry() {
   main();
 }
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -58,8 +58,8 @@ function logWrite_writeStr(log, s) {
 
 // A writer with its own `write_char`, which marks each char it's given.
 
-const $charsWrite_writeStr = (arg0, arg1) => charsWrite_writeStr(arg0.value, arg1);
-const $charsWrite_writeChar = (arg0, arg1) => charsWrite_writeChar(arg0.value, arg1);
+const $charsWrite_writeStr = (chars, s) => charsWrite_writeStr(chars.value, s);
+const $charsWrite_writeChar = (chars, c) => charsWrite_writeChar(chars.value, c);
 
 export const charsWrite = {
   writeStr: $charsWrite_writeStr,
@@ -76,7 +76,7 @@ function charsWrite_writeChar(chars, c) {
 
 // Fails on the nth call.
 
-const $nthWrite_writeStr = (arg0, arg1) => nthWrite_writeStr(arg0.value, arg1);
+const $nthWrite_writeStr = (nth, s) => nthWrite_writeStr(nth.value, s);
 
 export const nthWrite = {
   writeStr: $nthWrite_writeStr,
@@ -162,7 +162,7 @@ function duoDebug_fmt(duo, options, TDebug) {
 
 export function duoDebug(TDebug) {
   return $traitImpl($duoDebug, [TDebug], () => ({
-    fmt: (arg0, arg1) => duoDebug_fmt(arg0, arg1, TDebug),
+    fmt: (duo, options) => duoDebug_fmt(duo, options, TDebug),
     fmtInto: (f, value, options) => $writingInto(f, duoDebug_fmt, value, options, TDebug),
   }));
 }
@@ -171,7 +171,7 @@ const $duoDisplay = new WeakMap();
 
 export function duoDisplay(TDisplay) {
   return $traitImpl($duoDisplay, [TDisplay], () => ({
-    fmt: (arg0, arg1) => duoDisplay_fmt(arg0, arg1, TDisplay),
+    fmt: (duo, options) => duoDisplay_fmt(duo, options, TDisplay),
     fmtInto: (f, value, options) => $writingInto(f, duoDisplay_fmt, value, options, TDisplay),
   }));
 }

@@ -24,8 +24,8 @@ function countIterator_next(count) {
 }
 
 export const sumFromIterator_u32__u32_ = {
-  fromIter: (arg0, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
-    sumFromIterator_u32__u32__fromIter(arg0, dropI, dropIIntoIter),
+  fromIter: (items, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
+    sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter),
 };
 function sumFromIterator_u32__u32__fromIter(items, dropI, dropIIntoIter) {
   const it = $held($intoIter(items));

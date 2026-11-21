@@ -23,7 +23,7 @@ const $refMutTTotal = new WeakMap();
 
 function refMutTTotal(TTotal) {
   return $traitImpl($refMutTTotal, [TTotal], () => ({
-    total: (arg0) => refMutTTotal_total(arg0, TTotal),
+    total: (self) => refMutTTotal_total(self, TTotal),
   }));
 }
 function refMutTTotal_total(self, TTotal) {
@@ -44,7 +44,7 @@ function first(items, DStableDeref) {
   return $index(DStableDeref.Deref().deref(items), 0);
 }
 
-const $counterWrite_writeStr = (arg0, arg1) => counterWrite_writeStr(arg0.value, arg1);
+const $counterWrite_writeStr = (counter, s) => counterWrite_writeStr(counter.value, s);
 
 export const counterWrite = {
   writeStr: $counterWrite_writeStr,

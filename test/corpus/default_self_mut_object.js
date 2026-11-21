@@ -9,8 +9,8 @@ const xCh = {
     xCh_set(x, 5);
     return x;
   },
-  set(arg0, arg1) {
-    return xCh_set(arg0.value, arg1);
+  set(x, a) {
+    return xCh_set(x.value, a);
   },
 };
 function xCh_set(x, a) {

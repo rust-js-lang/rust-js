@@ -10,8 +10,8 @@ const $holderCapacity = new Map();
 
 function holderCapacity(CAP) {
   return $traitImpl($holderCapacity, [CAP], () => ({
-    len: (arg0) => holderCapacity_len(arg0, CAP),
-    capacity: (arg0) => holderCapacity_capacity(arg0, CAP),
+    len: (holder) => holderCapacity_len(holder, CAP),
+    capacity: (holder) => holderCapacity_capacity(holder, CAP),
     remaining: (holder) =>
       (holderCapacity_capacity(holder, CAP) - holderCapacity_len(holder, CAP)) >>> 0,
     full: (holder) => holderCapacity(CAP).remaining(holder) === 0,

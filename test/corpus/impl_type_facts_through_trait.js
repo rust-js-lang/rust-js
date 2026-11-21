@@ -25,7 +25,7 @@ const $stackClone = new WeakMap();
 
 export function stackClone(TClone, TSize) {
   return $traitImpl($stackClone, [TClone, TSize], () => ({
-    clone: (arg0) => stackClone_clone(arg0, TClone, TSize),
+    clone: (stack) => stackClone_clone(stack, TClone, TSize),
   }));
 }
 function stackClone_clone(stack, TClone, TSize) {
@@ -39,7 +39,7 @@ const $stackPushT = new Map();
 
 function stackPushT(TSize) {
   return $traitImpl($stackPushT, [TSize], () => ({
-    put: (arg0, arg1) => stackPushT_put(arg0.value, arg1, TSize),
+    put: (stack, item) => stackPushT_put(stack.value, item, TSize),
   }));
 }
 function stackPushT_put(stack, item, TSize) {
@@ -68,7 +68,7 @@ const $stackFromStr = new Map();
 
 export function stackFromStr(TSize) {
   return $traitImpl($stackFromStr, [TSize], () => ({
-    fromStr: (arg0) => stackFromStr_fromStr(arg0, TSize),
+    fromStr: (text) => stackFromStr_fromStr(text, TSize),
   }));
 }
 

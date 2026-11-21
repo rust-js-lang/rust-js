@@ -6,12 +6,12 @@ export function entry() {
   main();
 }
 
-const $lengthsWrite_writeStr = (arg0, arg1) => lengthsWrite_writeStr(arg0.value, arg1);
+const $lengthsWrite_writeStr = (lengths, s) => lengthsWrite_writeStr(lengths.value, s);
 
 export const lengthsWrite = {
   writeStr: $lengthsWrite_writeStr,
   writeChar: $lengthsWrite_writeStr,
-  writeFmt: (arg0, arg1) => lengthsWrite_writeFmt(arg0.value, arg1),
+  writeFmt: (lengths, args) => lengthsWrite_writeFmt(lengths.value, args),
 };
 function lengthsWrite_writeStr(lengths, s) {
   lengths[0].push($byteLen(s));
@@ -21,12 +21,12 @@ function lengthsWrite_writeFmt(lengths, args) {
   lengths[0].push(1000 + $byteLen(args()));
 }
 
-const $piecesWrite_writeStr = (arg0, arg1) => piecesWrite_writeStr(arg0.value, arg1);
+const $piecesWrite_writeStr = (pieces, s) => piecesWrite_writeStr(pieces.value, s);
 
 export const piecesWrite = {
   writeStr: $piecesWrite_writeStr,
   writeChar: $piecesWrite_writeStr,
-  writeFmt: (arg0, arg1) => piecesWrite_writeFmt(arg0.value, arg1),
+  writeFmt: (pieces, args) => piecesWrite_writeFmt(pieces.value, args),
 };
 function piecesWrite_writeStr(pieces, s) {
   pieces[0] += s;

@@ -62,7 +62,7 @@ function readBe(input) {
       $fromBytes(value.slice(12, 16), 4, true, false),
     ],
   ];
-  return [x[0].slice().map((n) => $swapBytes(n, 32, false))];
+  return [x[0].slice().map((x) => $swapBytes(x, 32, false))];
 }
 
 function writeLe(x, out) {

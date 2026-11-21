@@ -17,7 +17,7 @@ export function entry() {
   main();
 }
 
-const $collectorWrite_writeStr = (arg0, arg1) => collectorWrite_writeStr(arg0.value, arg1);
+const $collectorWrite_writeStr = (collector, s) => collectorWrite_writeStr(collector.value, s);
 
 export const collectorWrite = {
   writeStr: $collectorWrite_writeStr,
@@ -29,8 +29,8 @@ function collectorWrite_writeStr(collector, s) {
   collector.bytes = (collector.bytes + $byteLen(s)) >>> 0;
 }
 
-const $shoutingWrite_writeStr = (arg0, arg1) => shoutingWrite_writeStr(arg0.value, arg1);
-const $shoutingWrite_writeChar = (arg0, arg1) => shoutingWrite_writeChar(arg0.value, arg1);
+const $shoutingWrite_writeStr = (shouting, s) => shoutingWrite_writeStr(shouting.value, s);
+const $shoutingWrite_writeChar = (shouting, c) => shoutingWrite_writeChar(shouting.value, c);
 
 export const shoutingWrite = {
   writeStr: $shoutingWrite_writeStr,

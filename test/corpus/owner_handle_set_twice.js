@@ -44,8 +44,8 @@ function render(name, other) {
   const onReady = {
     value: $dropping(
       () => {
-        const x = cell.value.value;
-        const request = x != null ? $upgrade(x) : undefined;
+        const weak = cell.value.value;
+        const request = weak != null ? $upgrade(weak) : undefined;
         if (request != null) {
           console.log(`${request.value.name} is ready`);
           $rcDrop(request, (value) => {

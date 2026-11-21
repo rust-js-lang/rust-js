@@ -124,7 +124,7 @@ pub fn method() -> fn(&Reconciler, u32) -> u32 {
   expect(js).toContain("  return Reconciler;\n");
   expect(js).toContain("  return { ...Reconciler };\n");
   // As a value, given the namespace it's called on.
-  expect(js).toContain("  return (a, b) => a.updateContainer(b);\n");
+  expect(js).toContain("  return (reconciler, n) => reconciler.updateContainer(n);\n");
   expect(ts).toContain('import type * as Reconciler from "./reconciler.js";\n');
   expect(ts).toContain(
     "export function through(renderer: typeof Reconciler): number;\n",

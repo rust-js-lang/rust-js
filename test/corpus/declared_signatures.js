@@ -70,7 +70,7 @@ export function firstOr(items, or) {
   return items[0] ?? or;
 }
 
-export const tallySlot = { slot: (arg0) => tallySlot_slot(arg0.value) };
+export const tallySlot = { slot: (tally) => tallySlot_slot(tally.value) };
 function tallySlot_slot(tally) {
   return {
     get value() {
@@ -87,7 +87,9 @@ function u32Slot_slot(self) {
   return self;
 }
 
-export const tallySwap = { swapWith: (arg0, arg1) => tallySwap_swapWith(arg0.value, arg1.value) };
+export const tallySwap = {
+  swapWith: (tally, other) => tallySwap_swapWith(tally.value, other.value),
+};
 function tallySwap_swapWith(tally, other) {
   $exchange(tally, other);
 }

@@ -30,9 +30,9 @@ export function entry() {
 }
 
 const tensSource = {
-  loud(arg0, arg1) {
+  loud(n, tag) {
     return $knowing(
-      tensSource_loud(arg0, arg1),
+      tensSource_loud(n, tag),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(
           iterator,
@@ -73,9 +73,9 @@ const tensSource = {
         ),
     );
   },
-  counted(arg0, M) {
+  counted(n, M) {
     return $knowing(
-      tensSource_counted(arg0, M),
+      tensSource_counted(n, M),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(
           iterator,

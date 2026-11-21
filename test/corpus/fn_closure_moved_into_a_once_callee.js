@@ -33,7 +33,7 @@ function forward(f, dropF) {
 const $tIsT = new WeakMap();
 
 function tIsT(dropT) {
-  return $traitImpl($tIsT, [dropT], () => ({ get: (arg0) => tIsT_get(arg0, dropT), $drop: dropT }));
+  return $traitImpl($tIsT, [dropT], () => ({ get: (self) => tIsT_get(self, dropT), $drop: dropT }));
 }
 function tIsT_get(self, dropT) {
   return self;

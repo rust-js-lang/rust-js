@@ -58,7 +58,7 @@ function main() {
   console.log(`${$displayF64(Scale.apply([2.5], 4))}`);
   const pointer = sum;
   console.log(`${pointer(2, 10n, 20n)}`);
-  const bump = (x, ...args) => countCounter.bump($cellOf(x), ...args);
+  const bump = (self, ...args) => countCounter.bump($cellOf(self), ...args);
   const count = [100];
   console.log(`${bump(count, 32)} ${count[0]}`);
 }

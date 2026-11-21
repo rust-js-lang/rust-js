@@ -26,8 +26,8 @@ function bagDebug_fmt(bag) {
 }
 
 export const bagFromIteratorI32 = {
-  fromIter: (arg0, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
-    bagFromIteratorI32_fromIter(arg0, dropI, dropIIntoIter),
+  fromIter: (it, IIntoIterTrustedLen, IIntoIterInPlace, dropI, dropIIntoIter) =>
+    bagFromIteratorI32_fromIter(it, dropI, dropIIntoIter),
   $drop: bagDrop_drop,
 };
 function bagFromIteratorI32_fromIter(it, dropI, dropIIntoIter) {

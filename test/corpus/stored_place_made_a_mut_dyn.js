@@ -24,7 +24,7 @@ const $tSetT = new WeakMap();
 
 function tSetT(dropT) {
   return $traitImpl($tSetT, [dropT], () => ({
-    set: (arg0, arg1) => tSetT_set(arg0, arg1, dropT),
+    set: (self, value) => tSetT_set(self, value, dropT),
     $drop: dropT,
   }));
 }

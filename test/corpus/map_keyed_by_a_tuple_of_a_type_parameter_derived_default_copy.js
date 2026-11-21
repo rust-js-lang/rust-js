@@ -110,10 +110,10 @@ function iTools(
       UsizeIItemStableSort,
     ],
     () => ({
-      counts: (arg0, IItemHash, IItemPartialEq, IItemMap) =>
-        iTools_counts(arg0, IIterator, IItemHash, IItemPartialEq, IItemMap),
+      counts: (self, IItemHash, IItemPartialEq, IItemMap) =>
+        iTools_counts(self, IIterator, IItemHash, IItemPartialEq, IItemMap),
       positionsSeen: (
-        arg0,
+        self,
         IItemHash,
         IItemPartialEq,
         IItemMap,
@@ -131,7 +131,7 @@ function iTools(
         UsizeUsizeIItemStableSort$1,
       ) =>
         iTools_positionsSeen(
-          arg0,
+          self,
           IIterator,
           IItemHash,
           IItemPartialEq,
@@ -149,9 +149,9 @@ function iTools(
           UsizeUsizeIItemSize,
           UsizeUsizeIItemStableSort,
         ),
-      ordered: (arg0, IItemOrd, IItemTreeMap, UsizeIItemSize$1, UsizeIItemStableSort$1) =>
+      ordered: (self, IItemOrd, IItemTreeMap, UsizeIItemSize$1, UsizeIItemStableSort$1) =>
         iTools_ordered(
-          arg0,
+          self,
           IIterator,
           IItemOrd,
           IItemTreeMap,

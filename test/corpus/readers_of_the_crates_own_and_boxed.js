@@ -33,7 +33,7 @@ export function entry() {
   main();
 }
 
-export const textRead = $readerDefaults({ read: (arg0, arg1) => textRead_read(arg0.value, arg1) });
+export const textRead = $readerDefaults({ read: (text, buf) => textRead_read(text.value, buf) });
 function textRead_read(text, buf) {
   const n = Math.min(buf.length, (text.data.length - text.pos) >>> 0);
   $copyFromSlice($view(buf, 0, n), $slice(text.data, text.pos, (text.pos + n) >>> 0));
@@ -43,8 +43,8 @@ function textRead_read(text, buf) {
 
 export const textBufRead = {
   Read: () => textRead,
-  fillBuf: (arg0) => textBufRead_fillBuf(arg0.value),
-  consume: (arg0, arg1) => textBufRead_consume(arg0.value, arg1),
+  fillBuf: (text) => textBufRead_fillBuf(text.value),
+  consume: (text, n) => textBufRead_consume(text.value, n),
 };
 function textBufRead_fillBuf(text) {
   return { TAG: "Ok", _0: $slice(text.data, text.pos) };
@@ -54,7 +54,7 @@ function textBufRead_consume(text, n) {
   text.pos = (text.pos + n) >>> 0;
 }
 
-export const textSeek = $seekDefaults({ seek: (arg0, arg1) => textSeek_seek(arg0.value, arg1) });
+export const textSeek = $seekDefaults({ seek: (text, to) => textSeek_seek(text.value, to) });
 function textSeek_seek(text, to) {
   const kind = to.TAG;
   let at;

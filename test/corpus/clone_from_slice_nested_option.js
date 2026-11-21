@@ -8,7 +8,7 @@ export function entry() {
 
 export const countedClone = {
   clone: countedClone_clone,
-  cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
+  cloneFrom: (counted, source) => countedClone_cloneFrom(counted.value, source),
 };
 function countedClone_clone(counted) {
   return [counted[0]];

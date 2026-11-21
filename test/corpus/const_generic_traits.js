@@ -29,7 +29,7 @@ const $anyScaled = new Map();
 
 function anyScaled(K) {
   return $traitImpl($anyScaled, [K], () => ({
-    scaled: (arg0) => anyScaled_scaled(arg0, K),
+    scaled: (any) => anyScaled_scaled(any, K),
     factor: (any) => K,
   }));
 }

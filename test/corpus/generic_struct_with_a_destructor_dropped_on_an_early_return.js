@@ -26,8 +26,8 @@ function tokenParser(TIterator, TItemPartialEq, dropT, dropTItem) {
     InputIterator() {
       return { next: $nextSome };
     },
-    parse(arg0, arg1) {
-      return tokenParser_parse(arg0, arg1, TIterator, TItemPartialEq, dropT, dropTItem);
+    parse(token, input) {
+      return tokenParser_parse(token, input, TIterator, TItemPartialEq, dropT, dropTItem);
     },
     $drop(token) {
       tokenDrop_drop(token, dropT, dropTItem);
@@ -87,8 +87,8 @@ function chainParser(LParser, RParser, dropL, dropR) {
     InputIterator() {
       return LParser.InputIterator();
     },
-    parse(arg0, arg1) {
-      return chainParser_parse(arg0, arg1, LParser, RParser, dropL, dropR);
+    parse(chain, input) {
+      return chainParser_parse(chain, input, LParser, RParser, dropL, dropR);
     },
     $drop(chain) {
       try {

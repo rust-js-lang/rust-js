@@ -23,10 +23,10 @@ function main() {
   const words = ["héllo", "ab", ""];
   const bytes = words.map((s) => $byteLen(s));
   const owned = words.slice();
-  const sizes = owned.map((s) => $byteLen(s));
+  const sizes = owned.map((string) => $byteLen(string));
   const rows = [[1, 2], []];
-  const counts = rows.map((x) => x.length);
-  const empty = rows.map((x) => x.length === 0);
+  const counts = rows.map((vec) => vec.length);
+  const empty = rows.map((vec) => vec.length === 0);
   console.log(
     `[${bytes.join(", ")}] [${owned.map((item) => $debugStr(item)).join(", ")}] [${sizes.join(", ")}] [${counts.join(", ")}] [${empty.join(", ")}]`,
   );
@@ -34,13 +34,13 @@ function main() {
   // Conversions, and what an `Option` or a `Result` gives.
   const names = ["a", "b"].slice();
   const into = ["c"].slice();
-  const present = [1, 2].map((x) => $unwrap(x));
+  const present = [1, 2].map((option) => $unwrap(option));
   const parsed = [
     { TAG: "Ok", _0: 3 },
     { TAG: "Err", _0: "no" },
   ];
   const good = parsed
-    .map((x) => (x.TAG === "Ok" ? x._0 : undefined))
+    .map((result) => (result.TAG === "Ok" ? result._0 : undefined))
     .filter((item) => item != null);
   console.log(
     `[${names.map((item) => $debugStr(item)).join(", ")}] [${into.map((item) => $debugStr(item)).join(", ")}] [${present.join(", ")}] [${good.join(", ")}]`,
@@ -81,12 +81,12 @@ function main() {
   );
 
   // Of two: a trait's method on numbers, as a fold's or a sort's.
-  const highest = [3, 9, 4].reduce((a, b) => Math.max(a, b), -2147483648);
-  const lowest = [5n, -2n, 8n].reduce((a, b) => $bigMin(a, b), 9223372036854775807n);
+  const highest = [3, 9, 4].reduce((n, other) => Math.max(n, other), -2147483648);
+  const lowest = [5n, -2n, 8n].reduce((n, other) => $bigMin(n, other), 9223372036854775807n);
   const widest = [1.5, 0.25].reduce($f64Max, 0);
   const distances = [-7n, 4n].map((n) => BigInt.asIntN(64, $bigAbs(n)));
   const sorted = [3, 1, 2];
-  sorted.sort((a, b) => $cmp(a, b));
+  sorted.sort((n, other) => $cmp(n, other));
   console.log(
     `${highest} ${lowest} ${$displayF64(widest)} [${sorted.join(", ")}] [${distances.join(", ")}]`,
   );

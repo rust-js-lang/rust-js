@@ -879,16 +879,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|&(at, _)| Some(at) != formatter)
             .map(|(_, &input)| (def_id, input, self.instantiated(input, args)))
             .collect();
-        // Each named as the function names it, `(p) => ..`.
-        let idents = self.tcx.fn_arg_idents(def_id);
-        let names: Vec<String> = (0..declared.inputs().len())
-            .filter(|&at| Some(at) != formatter)
-            .map(|at| match idents.get(at).copied().flatten() {
-                Some(ident) if !ident.name.as_str().starts_with('_') && ident.name.as_str() != "self" => {
-                    super::camel_case(ident.name.as_str())
-                }
-                _ => format!("arg{at}"),
-            })
+        // Each named as the function's JS names it, `(p) => ..` (#1328).
+        let names: Vec<String> = (super::signatures::taken_parameter_names(self.tcx, def_id, formatter, false))
+            .into_iter()
+            .enumerate()
+            .map(|(at, name)| name.unwrap_or_else(|| format!("arg{at}")))
             .collect();
         let output = (def_id, declared.output(), self.instantiated(declared.output(), args));
         let span = self.tcx.def_span(def_id);

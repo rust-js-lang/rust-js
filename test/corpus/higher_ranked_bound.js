@@ -9,7 +9,7 @@ export function entry() {
 const $tNamed = new WeakMap();
 
 function tNamed(TDebug) {
-  return $traitImpl($tNamed, [TDebug], () => ({ name: (arg0) => tNamed_name(arg0, TDebug) }));
+  return $traitImpl($tNamed, [TDebug], () => ({ name: (self) => tNamed_name(self, TDebug) }));
 }
 function tNamed_name(self, TDebug) {
   return TDebug.fmt(self);
@@ -18,7 +18,7 @@ function tNamed_name(self, TDebug) {
 const $tShout = new WeakMap();
 
 function tShout(TNamed) {
-  return $traitImpl($tShout, [TNamed], () => ({ shout: (arg0) => tShout_shout(arg0, TNamed) }));
+  return $traitImpl($tShout, [TNamed], () => ({ shout: (self) => tShout_shout(self, TNamed) }));
 }
 function tShout_shout(self, TNamed) {
   return $toUppercase(TNamed.name(self));

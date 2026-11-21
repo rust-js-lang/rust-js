@@ -32,9 +32,9 @@ const tensSource = {
   HiddenDoubleEndedIterator() {
     return { next_back: $nextBack };
   },
-  hidden(arg0) {
+  hidden(n) {
     return $knowing(
-      tensSource_hidden(arg0),
+      tensSource_hidden(n),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(
           iterator,
@@ -103,7 +103,7 @@ function tensSource_loud(name) {
 
 const quietSource = {
   HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
-  hidden: (arg0) => $iterator(quietSource_hidden(arg0), $rangeNext, false, $rangeNextBack),
+  hidden: (n) => $iterator(quietSource_hidden(n), $rangeNext, false, $rangeNextBack),
   loud: quietSource_loud,
 };
 function quietSource_hidden(n) {

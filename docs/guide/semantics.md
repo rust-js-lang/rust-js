@@ -502,7 +502,7 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   [1115](../decisions/1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md)).
   A generic function given as a value takes its callers' forms, so it can
   be given to std's code, `rows.iter_mut().map(view)`: that's its `fn`
-  pointer, `const viewVecU8Fn = (arg0) => view($cellOf(arg0))`. Generic
+  pointer, `const viewVecU8Fn = (r) => view($cellOf(r))`. Generic
   code that calls it as an `F` in its own forms is given the function
   itself ([1114](../decisions/1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md),
   amended). A function given for an `F: FnOnce()`, `FnMut()` or `Fn()`

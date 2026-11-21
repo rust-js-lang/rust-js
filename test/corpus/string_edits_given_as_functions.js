@@ -19,7 +19,7 @@ function main() {
   console.log(`after [${log}]`);
 
   let t = "xy";
-  const s = {
+  const string = {
     get value() {
       return t;
     },
@@ -27,14 +27,14 @@ function main() {
       t = value;
     },
   };
-  function map(s) {
-    s.value = "";
+  function map(string) {
+    string.value = "";
   }
-  const cleared = s != null ? $some(map(s)) : undefined;
+  const cleared = string != null ? $some(map(string)) : undefined;
   console.log(`${cleared == null ? "None" : "Some(())"} [${t}]`);
 
-  function f(s) {
-    s.value = "";
+  function f(string) {
+    string.value = "";
   }
   let u = "uv";
   f({
@@ -48,15 +48,15 @@ function main() {
   console.log(`[${u}]`);
 
   const words = ["a", "b"];
-  $mutItems(words).forEach((s) => {
-    s.value = "";
+  $mutItems(words).forEach((string) => {
+    string.value = "";
   });
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
 
   let w = "w";
   apply(
-    (a, b) => {
-      a.value += b;
+    (s, string) => {
+      s.value += string;
     },
     {
       get value() {
@@ -69,8 +69,8 @@ function main() {
     "z",
   );
   apply(
-    (a, b) => {
-      a.value += b;
+    (s, string) => {
+      s.value += string;
     },
     {
       get value() {

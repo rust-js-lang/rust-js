@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const $fullWrite_writeStr = (arg0, arg1) => fullWrite_writeStr(arg0.value, arg1);
+const $fullWrite_writeStr = (full, s) => fullWrite_writeStr(full.value, s);
 
 export const fullWrite = {
   writeStr: $fullWrite_writeStr,

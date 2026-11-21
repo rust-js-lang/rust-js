@@ -172,7 +172,9 @@ function main() {
     }
   }
   console.log(`${fails}`);
-  oks = ["m", "n"].map((w) => $writeText(v, `${w}\n`)).filter((x) => x === undefined).length;
+  oks = ["m", "n"]
+    .map((w) => $writeText(v, `${w}\n`))
+    .filter((result) => result === undefined).length;
   console.log(`${oks}`);
   const boxed = (w) => {
     let tmp;

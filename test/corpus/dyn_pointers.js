@@ -8,7 +8,7 @@ export function entry() {
 
 const squareShape = {
   area: squareShape_area,
-  grow: (arg0, arg1) => squareShape_grow(arg0.value, arg1),
+  grow: (square, by) => squareShape_grow(square.value, by),
   name: squareShape_name,
 };
 function squareShape_area(square) {
@@ -23,7 +23,7 @@ function squareShape_name(square) {
 
 const rectShape = {
   area: rectShape_area,
-  grow: (arg0, arg1) => rectShape_grow(arg0.value, arg1),
+  grow: (rect, by) => rectShape_grow(rect.value, by),
   name: (rect) => "shape",
 };
 function rectShape_area(rect) {

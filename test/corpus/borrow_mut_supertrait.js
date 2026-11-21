@@ -56,7 +56,7 @@ function tailBorrowUsizeSlice_borrow(tail) {
 
 export const tailBorrowMutUsizeSlice = {
   Borrow: () => tailBorrowUsizeSlice,
-  borrowMut: (arg0) => $cellOf(tailBorrowMutUsizeSlice_borrowMut(arg0.value)),
+  borrowMut: (tail) => $cellOf(tailBorrowMutUsizeSlice_borrowMut(tail.value)),
 };
 function tailBorrowMutUsizeSlice_borrowMut(tail) {
   return $view(tail.items, 1);

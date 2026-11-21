@@ -8,8 +8,8 @@ export function entry() {
 
 const tallyCounter = {
   get: tallyCounter_get,
-  set(arg0, arg1) {
-    return tallyCounter_set(arg0.value, arg1);
+  set(tally, n) {
+    return tallyCounter_set(tally.value, n);
   },
   bump(self, by) {
     const tally = self.value;
@@ -49,13 +49,13 @@ function i32Counter_set(self, n) {
 }
 
 function main() {
-  const bump = (a, b) => tallyCounter.bump($cellOf(a), b);
+  const bump = (self, by) => tallyCounter.bump($cellOf(self), by);
   const set = tallyCounter_set;
   const tally = [100];
   console.log(`${bump(tally, 1)}`);
   set(tally, 5);
   console.log(`${bump(tally, 2)} ${tally[0]}`);
-  const replace = (a, b) => tallyCounter.replaceWith($cellOf(a), b);
+  const replace = (self, other) => tallyCounter.replaceWith($cellOf(self), other);
   replace(tally, [9]);
   console.log(`${tally[0]}`);
   const bumpNumber = (arg0, arg1) => i32Counter.bump(arg0, arg1);

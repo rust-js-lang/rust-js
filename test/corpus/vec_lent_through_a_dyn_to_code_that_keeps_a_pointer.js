@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const vecItems = { items: (arg0) => vecItems_items(arg0.value) };
+const vecItems = { items: (vec) => vecItems_items(vec.value) };
 function vecItems_items(vec) {
   return vec;
 }

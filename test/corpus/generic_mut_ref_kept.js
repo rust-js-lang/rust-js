@@ -106,7 +106,7 @@ function totalDerefMut_derefMut(total) {
 // A trait method of the crate's giving cells, matched: its binding is a
 // cell, not a std call's item.
 
-const cSlot = { slot: (arg0) => cSlot_slot(arg0.value) };
+const cSlot = { slot: (c) => cSlot_slot(c.value) };
 function cSlot_slot(c) {
   return {
     get value() {

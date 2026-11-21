@@ -16,7 +16,7 @@ const $bagTally = new WeakMap();
 
 function bagTally(KHash, KPartialEq, KClone, KMap) {
   return $traitImpl($bagTally, [KHash, KPartialEq, KClone, KMap], () => ({
-    tally: (arg0) => bagTally_tally(arg0, KHash, KPartialEq, KClone, KMap),
+    tally: (bag) => bagTally_tally(bag, KHash, KPartialEq, KClone, KMap),
   }));
 }
 function bagTally_tally(bag, KHash, KPartialEq, KClone, KMap) {

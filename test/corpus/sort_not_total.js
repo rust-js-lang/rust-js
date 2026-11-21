@@ -66,7 +66,7 @@ function main() {
   );
 
   const floats = Array.from({ length: 40 }, (_, i) => ((((i * 37) | 0) % 23) | 0) / 4);
-  floats.sort((a, b) => $totalCmp(a, b));
+  floats.sort((n, other) => $totalCmp(n, other));
   console.log(`[${floats.map((item) => $debugF64(item)).join(", ")}]`);
 
   // Of these, std's order and JS's differ; then std's merge panics.

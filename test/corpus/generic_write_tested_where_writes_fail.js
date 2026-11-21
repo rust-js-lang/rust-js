@@ -57,11 +57,12 @@ function rendered(out, n, WWrite) {
   return result === undefined;
 }
 
-const $refusingWriteWrite_write = (arg0, arg1) => refusingWriteWrite_write(arg0.value, arg1);
+const $refusingWriteWrite_write = (refusing, bytes) =>
+  refusingWriteWrite_write(refusing.value, bytes);
 
 export const refusingWriteWrite = {
   write: $refusingWriteWrite_write,
-  flush: (arg0) => refusingWriteWrite_flush(arg0.value),
+  flush: (refusing) => refusingWriteWrite_flush(refusing.value),
   writeAll: $ioWriteAll($refusingWriteWrite_write),
   writeFmt: $ioWriteFmt($refusingWriteWrite_write),
 };
@@ -74,7 +75,8 @@ function refusingWriteWrite_write(refusing, bytes) {
 
 function refusingWriteWrite_flush(refusing) {}
 
-const $refusingFmtWrite_writeStr = (arg0, arg1) => refusingFmtWrite_writeStr(arg0.value, arg1);
+const $refusingFmtWrite_writeStr = (refusing, arg1) =>
+  refusingFmtWrite_writeStr(refusing.value, arg1);
 
 export const refusingFmtWrite = {
   writeStr: $refusingFmtWrite_writeStr,

@@ -110,7 +110,7 @@ function settings(text) {
 const $tAsDyn = new WeakMap();
 
 function tAsDyn(TError) {
-  return $traitImpl($tAsDyn, [TError], () => ({ asDyn: (arg0) => tAsDyn_asDyn(arg0, TError) }));
+  return $traitImpl($tAsDyn, [TError], () => ({ asDyn: (self) => tAsDyn_asDyn(self, TError) }));
 }
 function tAsDyn_asDyn(self, TError) {
   return { value: self, impl: TError };
@@ -129,7 +129,7 @@ const $eReport = new WeakMap();
 function eReport(EError) {
   return $traitImpl($eReport, [EError], () => ({
     Error: () => EError,
-    code: (arg0) => eReport_code(arg0, EError),
+    code: (self) => eReport_code(self, EError),
   }));
 }
 function eReport_code(self, EError) {

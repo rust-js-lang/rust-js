@@ -210,7 +210,7 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
   expect(js).toContain("  return $splitWhitespace(s)\n    .map((w) => $toUppercase(w))\n    .join(\" \");");
   expect(js).toContain("  return v.slice(2).slice(0, 3);\n");
   expect(js).toContain("  return $toUppercase(c);\n");
-  expect(js).toContain("  return groups.map((x) => x.length);\n");
+  expect(js).toContain("  return groups.map((vec) => vec.length);\n");
   expect(js).toContain("words.map((s) => $byteLen(s))");
   expect(js).toContain("  return $windows(v, 2).map(");
   expect(js).toContain("  return $zip(a, b).map(");

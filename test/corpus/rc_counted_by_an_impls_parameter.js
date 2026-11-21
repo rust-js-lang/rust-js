@@ -10,8 +10,8 @@ const $keeperPair = new WeakMap();
 
 function keeperPair(UDebug, dropU) {
   return $traitImpl($keeperPair, [UDebug, dropU], () => ({
-    both: (arg0, arg1, arg2, TDebug, dropT) =>
-      keeperPair_both(arg0, arg1, arg2, UDebug, TDebug, dropU, dropT),
+    both: (keeper, value, mine, TDebug, dropT) =>
+      keeperPair_both(keeper, value, mine, UDebug, TDebug, dropU, dropT),
     $dropItem: dropU,
   }));
 }

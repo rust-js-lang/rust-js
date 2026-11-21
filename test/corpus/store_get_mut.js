@@ -20,7 +20,7 @@ const $vecStoreMutKV = new WeakMap();
 
 export function vecStoreMutKV(dropK, dropV) {
   return $traitImpl($vecStoreMutKV, [dropK, dropV], () => ({
-    lmGetMut: (arg0, arg1) => vecStoreMutKV_lmGetMut(arg0.value, arg1, dropK, dropV),
+    lmGetMut: (vec, i) => vecStoreMutKV_lmGetMut(vec.value, i, dropK, dropV),
     $drop: $dropEach((value) => {
       try {
         dropK?.(value[0]);

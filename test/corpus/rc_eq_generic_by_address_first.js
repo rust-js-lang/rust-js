@@ -48,7 +48,7 @@ const $holderPartialEq = new WeakMap();
 
 export function holderPartialEq(TPartialEq, TEq) {
   return $traitImpl($holderPartialEq, [TPartialEq, TEq], () =>
-    $partialEq({ eq: (arg0, arg1) => holderPartialEq_eq(arg0, arg1, TPartialEq, TEq) }),
+    $partialEq({ eq: (holder, other) => holderPartialEq_eq(holder, other, TPartialEq, TEq) }),
   );
 }
 function holderPartialEq_eq(holder, other, TPartialEq, TEq) {

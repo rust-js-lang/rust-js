@@ -30,7 +30,7 @@ function trackedDebug_fmt(tracked) {
 }
 export const trackedClone = {
   clone: trackedClone_clone,
-  cloneFrom: (arg0, arg1) => trackedClone_cloneFrom(arg0.value, arg1),
+  cloneFrom: (tracked, source) => trackedClone_cloneFrom(tracked.value, source),
 };
 function trackedClone_clone(tracked) {
   console.log(`clone ${tracked[0]}`);

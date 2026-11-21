@@ -19,7 +19,7 @@ export function entry() {
   main();
 }
 
-const $bufWrite_writeStr = (arg0, arg1) => bufWrite_writeStr(arg0.value, arg1);
+const $bufWrite_writeStr = (buf, s) => bufWrite_writeStr(buf.value, s);
 
 export const bufWrite = {
   writeStr: $bufWrite_writeStr,

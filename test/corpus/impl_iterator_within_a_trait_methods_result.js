@@ -52,20 +52,20 @@ const aSource = {
   LoudsIterator() {
     return { next: $next, advanceBy: $advanceSlice };
   },
-  tup(arg0) {
-    const given = aSource_tup(arg0);
+  tup(a) {
+    const given = aSource_tup(a);
     return [$iterator(given[0], $rangeNext), given[1]];
   },
-  back(arg0) {
-    const given = aSource_back(arg0);
+  back(a) {
+    const given = aSource_back(a);
     return [given[0], $iterator(given[1], $rangeNext, false, $rangeNextBack)];
   },
-  nested(arg0) {
-    const given = aSource_nested(arg0);
+  nested(a) {
+    const given = aSource_nested(a);
     return [[$iterator(given[0][0], countIterator_next), given[0][1]], given[1]];
   },
-  maybe(arg0, arg1) {
-    const given = aSource_maybe(arg0, arg1);
+  maybe(a, some) {
+    const given = aSource_maybe(a, some);
     return given != null ? $iterator(given, $rangeNext) : undefined;
   },
   louds: aSource_louds,

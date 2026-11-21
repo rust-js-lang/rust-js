@@ -92,7 +92,7 @@ function u32Pointed_pointer(self) {
   return self;
 }
 
-const vecPointed = { pointer: (arg0) => vecPointed_pointer(arg0.value) };
+const vecPointed = { pointer: (vec) => vecPointed_pointer(vec.value) };
 function vecPointed_pointer(vec) {
   return $ptrTo(vec);
 }
@@ -101,7 +101,7 @@ function throughBound(p, PPointed) {
   return PPointed.pointer(p);
 }
 
-const counterSlot = { slot: (arg0) => counterSlot_slot(arg0.value) };
+const counterSlot = { slot: (counter) => counterSlot_slot(counter.value) };
 function counterSlot_slot(counter) {
   return $ptr(counter, "n", 12);
 }

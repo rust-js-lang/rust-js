@@ -10,7 +10,7 @@ const $holderShow = new WeakMap();
 
 function holderShow(TCopy, TDisplay) {
   return $traitImpl($holderShow, [TCopy, TDisplay], () => ({
-    show: (arg0) => holderShow_show(arg0, TCopy, TDisplay),
+    show: (holder) => holderShow_show(holder, TCopy, TDisplay),
   }));
 }
 function holderShow_show(holder, TCopy, TDisplay) {

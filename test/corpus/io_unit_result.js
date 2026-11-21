@@ -77,11 +77,11 @@ function doubled(s) {
   }
 }
 
-const $limitedWrite_write = (arg0, arg1) => limitedWrite_write(arg0.value, arg1);
+const $limitedWrite_write = (limited, bytes) => limitedWrite_write(limited.value, bytes);
 
 export const limitedWrite = {
   write: $limitedWrite_write,
-  flush: (arg0) => limitedWrite_flush(arg0.value),
+  flush: (limited) => limitedWrite_flush(limited.value),
   writeAll: $ioWriteAll($limitedWrite_write),
   writeFmt: $ioWriteFmt($limitedWrite_write),
 };

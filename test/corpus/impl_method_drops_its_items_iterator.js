@@ -36,8 +36,8 @@ const $wrapperKeeping = new WeakMap();
 
 function wrapperKeeping(IIterator, dropI, dropIItem) {
   return $traitImpl($wrapperKeeping, [IIterator, dropI, dropIItem], () => ({
-    held(arg0, WrapperItemIntoIterator) {
-      return wrapperKeeping_held(arg0, IIterator, WrapperItemIntoIterator, dropI, dropIItem);
+    held(wrapper, WrapperItemIntoIterator) {
+      return wrapperKeeping_held(wrapper, IIterator, WrapperItemIntoIterator, dropI, dropIItem);
     },
     $drop(wrapper) {
       dropI?.(wrapper[0]);

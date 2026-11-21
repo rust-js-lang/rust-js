@@ -145,7 +145,7 @@ const $refMutTTotal = new WeakMap();
 
 function refMutTTotal(TTotal) {
   return $traitImpl($refMutTTotal, [TTotal], () => ({
-    total: (arg0) => refMutTTotal_total(arg0, TTotal),
+    total: (self) => refMutTTotal_total(self, TTotal),
   }));
 }
 function refMutTTotal_total(self, TTotal) {

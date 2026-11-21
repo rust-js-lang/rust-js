@@ -21,7 +21,7 @@ function countedDebug_fmt(counted) {
 
 export const countedClone = {
   clone: countedClone_clone,
-  cloneFrom: (arg0, arg1) => countedClone_cloneFrom(arg0.value, arg1),
+  cloneFrom: (counted, source) => countedClone_cloneFrom(counted.value, source),
   $drop: countedDrop_drop,
 };
 function countedClone_clone(counted) {

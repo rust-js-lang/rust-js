@@ -51,9 +51,9 @@ function iKeeping(
     $iKeeping,
     [IIterator, IInPlace, HeldSize, HeldAlign, dropI, dropIItem, dropIItemItem, dropIItemIntoIter],
     () => ({
-      held: (arg0, IItemIntoIterator) =>
+      held: (self, IItemIntoIterator) =>
         iKeeping_held(
-          arg0,
+          self,
           IIterator,
           IItemIntoIterator,
           IInPlace,

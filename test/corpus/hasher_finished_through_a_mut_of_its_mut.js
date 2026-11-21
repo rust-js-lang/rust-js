@@ -8,7 +8,7 @@ export function entry() {
 
 export const fnvHasher = $hasher({
   finish: fnvHasher_finish,
-  write: (arg0, arg1) => fnvHasher_write(arg0.value, arg1),
+  write: (fnv, bytes) => fnvHasher_write(fnv.value, bytes),
 });
 function fnvHasher_finish(fnv) {
   return fnv[0];

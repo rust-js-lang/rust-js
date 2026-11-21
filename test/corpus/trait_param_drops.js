@@ -14,8 +14,8 @@ const $sinkTakeA = new WeakMap();
 
 function sinkTakeA(dropA) {
   return $traitImpl($sinkTakeA, [dropA], () => ({
-    take: (arg0, arg1) => sinkTakeA_take(arg0, arg1, dropA),
-    make: (arg0) => sinkTakeA_make(arg0, dropA),
+    take: (sink, a) => sinkTakeA_take(sink, a, dropA),
+    make: (a) => sinkTakeA_make(a, dropA),
   }));
 }
 function sinkTakeA_take(sink, a, dropA) {
@@ -31,11 +31,11 @@ const $relayTakeA = new WeakMap();
 
 function relayTakeA(STakeA, dropA, dropS) {
   return $traitImpl($relayTakeA, [STakeA, dropA, dropS], () => ({
-    take(arg0, arg1) {
-      return relayTakeA_take(arg0, arg1, STakeA, dropA, dropS);
+    take(relay, a) {
+      return relayTakeA_take(relay, a, STakeA, dropA, dropS);
     },
-    make(arg0) {
-      return relayTakeA_make(arg0, STakeA, dropA, dropS);
+    make(a) {
+      return relayTakeA_make(a, STakeA, dropA, dropS);
     },
     $drop(relay) {
       dropS?.(relay[0]);
@@ -59,8 +59,8 @@ function wrapTakeNoisy(TDefault, dropT) {
       noisyDrop_drop(a);
       return 0;
     },
-    make(arg0) {
-      return wrapTakeNoisy_make(arg0, TDefault, dropT);
+    make(a) {
+      return wrapTakeNoisy_make(a, TDefault, dropT);
     },
     $drop(wrap) {
       dropT?.(wrap[0]);
@@ -84,8 +84,8 @@ const $keepTakeA = new WeakMap();
 
 function keepTakeA(dropA) {
   return $traitImpl($keepTakeA, [dropA], () => ({
-    take: (arg0, arg1) => keepTakeA_take(arg0, arg1, dropA),
-    make: (arg0) => keepTakeA_make(arg0, dropA),
+    take: (keep, a) => keepTakeA_take(keep, a, dropA),
+    make: (a) => keepTakeA_make(a, dropA),
   }));
 }
 function keepTakeA_take(keep, a, dropA) {

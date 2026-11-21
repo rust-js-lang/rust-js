@@ -34,9 +34,9 @@ const countedSource = {
   IterDoubleEndedIterator() {
     return { next_back: $nextBack };
   },
-  items(arg0) {
+  items(counted) {
     return $iterator(
-      countedSource_items(arg0),
+      countedSource_items(counted),
       countdownIterator_next,
       false,
       countdownDoubleEndedIterator_nextBack,

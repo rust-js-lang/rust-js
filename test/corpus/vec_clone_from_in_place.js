@@ -40,7 +40,7 @@ function fDebug_fmt(f) {
 
 export const fClone = {
   clone: fClone_clone,
-  cloneFrom: (arg0, arg1) => fClone_cloneFrom(arg0.value, arg1),
+  cloneFrom: (f, source) => fClone_cloneFrom(f.value, source),
 };
 function fClone_clone(f) {
   console.log(`clone F ${f[0]}`);

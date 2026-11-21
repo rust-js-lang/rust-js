@@ -890,7 +890,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match (crate::lower::classes::member(self.tcx, def_id), callee.kind) {
             (Some(crate::lower::classes::Member::Constructor), js::ExprKind::Member(class, _)) => {
                 match crate::lower::classes::flattened_parameter(self.tcx, def_id) {
-                    Some((at, keys)) if at < args.len() => crate::lower::classes::new_of_state(*class, args, at, &keys),
+                    Some((at, keys)) if at < args.len() => {
+                        let own = crate::lower::signatures::own_parameter_names(self.tcx, def_id);
+                        crate::lower::classes::new_of_state(*class, args, (at, &keys), &own)
+                    }
                     _ => Expr::new_(*class, args),
                 }
             }

@@ -132,7 +132,7 @@ const $positionsDebug = new WeakMap();
 
 export function positionsDebug(IDebug) {
   return $traitImpl($positionsDebug, [IDebug], () => ({
-    fmt: (arg0, arg1) => positionsDebug_fmt(arg0, arg1, IDebug),
+    fmt: (positions, options) => positionsDebug_fmt(positions, options, IDebug),
   }));
 }
 function positionsDebug_fmt(positions, options, IDebug) {

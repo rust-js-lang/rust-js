@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-const accAccount = { deposit: (arg0, arg1) => accAccount_deposit(arg0.value, arg1) };
+const accAccount = { deposit: (acc, n) => accAccount_deposit(acc.value, n) };
 function accAccount_deposit(acc, n) {
   acc.b = (acc.b + n) >>> 0;
 }

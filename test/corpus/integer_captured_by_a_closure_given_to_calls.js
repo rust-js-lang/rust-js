@@ -85,7 +85,7 @@ function bumped(v) {
 }
 
 const keeperKeep = {
-  keep: (arg0, arg1) => keeperKeep_keep(arg0.value, arg1),
+  keep: (keeper, n) => keeperKeep_keep(keeper.value, n),
   write: keeperKeep_write,
 };
 function keeperKeep_keep(keeper, n) {

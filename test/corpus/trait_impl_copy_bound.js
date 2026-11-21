@@ -14,7 +14,7 @@ const $optionAgain = new WeakMap();
 
 function optionAgain(TCopy) {
   return $traitImpl($optionAgain, [TCopy], () => ({
-    again: (arg0) => optionAgain_again(arg0, TCopy),
+    again: (option) => optionAgain_again(option, TCopy),
   }));
 }
 function optionAgain_again(option, TCopy) {
@@ -25,7 +25,7 @@ const $_T__2_Again = new WeakMap();
 
 function _T__2_Again(TCopy) {
   return $traitImpl($_T__2_Again, [TCopy], () => ({
-    again: (arg0) => _T__2_Again_again(arg0, TCopy),
+    again: (self) => _T__2_Again_again(self, TCopy),
   }));
 }
 function _T__2_Again_again(self, TCopy) {
@@ -35,7 +35,7 @@ function _T__2_Again_again(self, TCopy) {
 const $tGet = new WeakMap();
 
 function tGet(TAgain) {
-  return $traitImpl($tGet, [TAgain], () => ({ get: (arg0) => tGet_get(arg0, TAgain) }));
+  return $traitImpl($tGet, [TAgain], () => ({ get: (self) => tGet_get(self, TAgain) }));
 }
 function tGet_get(self, TAgain) {
   return TAgain.again(self);

@@ -274,10 +274,10 @@ function main() {
     const cases = [
       [
         "fold",
-        (x) =>
+        (src) =>
           folded(
             $iterator(
-              x,
+              src,
               everyIterator_next,
               false,
               everyDoubleEndedIterator_nextBack,
@@ -294,10 +294,10 @@ function main() {
       ],
       [
         "last",
-        (x) =>
+        (src) =>
           last(
             $iterator(
-              x,
+              src,
               everyIterator_next,
               false,
               everyDoubleEndedIterator_nextBack,
@@ -314,10 +314,10 @@ function main() {
       ],
       [
         "sum",
-        (x) =>
+        (src) =>
           summed(
             $iterator(
-              x,
+              src,
               everyIterator_next,
               false,
               everyDoubleEndedIterator_nextBack,
@@ -334,10 +334,10 @@ function main() {
       ],
       [
         "from its back",
-        (x) =>
+        (src) =>
           fromItsBack(
             $iterator(
-              x,
+              src,
               everyIterator_next,
               false,
               everyDoubleEndedIterator_nextBack,

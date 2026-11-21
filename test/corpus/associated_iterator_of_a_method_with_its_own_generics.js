@@ -32,9 +32,9 @@ export function entry() {
 
 const tensSource = {
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
-  items: (arg0, arg1) =>
+  items: (n, tag) =>
     $knowing(
-      tensSource_items(arg0, arg1),
+      tensSource_items(n, tag),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
           next_back: $rangeNextBack,
@@ -58,9 +58,9 @@ const tensSource = {
           ends,
         ),
     ),
-  hidden: (arg0, M) =>
+  hidden: (n, M) =>
     $knowing(
-      tensSource_hidden(arg0, M),
+      tensSource_hidden(n, M),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
           next_back: $rangeNextBack,
@@ -84,9 +84,9 @@ const tensSource = {
           ends,
         ),
     ),
-  tagged: (arg0, arg1) =>
+  tagged: (n, tag) =>
     $knowing(
-      tensSource_tagged(arg0, arg1),
+      tensSource_tagged(n, tag),
       (iterator) =>
         mapDoubleEndedIterator_nextBack(iterator, {
           next_back: $rangeNextBack,
@@ -126,9 +126,9 @@ const $scaledSource = new Map();
 function scaledSource(K) {
   return $traitImpl($scaledSource, [K], () => ({
     IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
-    items: (arg0, arg1) =>
+    items: (n, tag) =>
       $knowing(
-        scaledSource_items(arg0, arg1, K),
+        scaledSource_items(n, tag, K),
         (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
         (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
         undefined,
@@ -146,9 +146,9 @@ function scaledSource(K) {
           ),
         (iterator, n) => revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
       ),
-    hidden: (arg0, M) =>
+    hidden: (n, M) =>
       $knowing(
-        scaledSource_hidden(arg0, K, M),
+        scaledSource_hidden(n, K, M),
         (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {
             next_back: $rangeNextBack,
@@ -172,9 +172,9 @@ function scaledSource(K) {
             ends,
           ),
       ),
-    tagged: (arg0, arg1) =>
+    tagged: (n, tag) =>
       $knowing(
-        scaledSource_tagged(arg0, arg1, K),
+        scaledSource_tagged(n, tag, K),
         (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {
             next_back: $rangeNextBack,

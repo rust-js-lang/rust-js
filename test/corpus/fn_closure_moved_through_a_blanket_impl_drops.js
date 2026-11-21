@@ -10,7 +10,7 @@ const $fThunk = new WeakMap();
 
 function fThunk(dropF) {
   return $traitImpl($fThunk, [dropF], () => ({
-    force: (arg0) => fThunk_force(arg0, dropF),
+    force: (self) => fThunk_force(self, dropF),
     $drop: dropF,
   }));
 }

@@ -29,9 +29,9 @@ export const aSource = {
   ItemsDoubleEndedIterator: () => ({ next_back: $nextBack }),
   SizedExactSizeIterator: () => ({ len: (iterator) => iterator.len() }),
   SizedDoubleEndedIterator: () => ({ next_back: $nextBack }),
-  items: (arg0) =>
+  items: (a) =>
     $knowing(
-      aSource_items(arg0),
+      aSource_items(a),
       mapDoubleEndedIterator_nextBack,
       (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
       undefined,
@@ -51,9 +51,9 @@ export const aSource = {
           ends,
         ),
     ),
-  sized: (arg0) =>
+  sized: (a) =>
     $knowing(
-      aSource_sized(arg0),
+      aSource_sized(a),
       revDoubleEndedIterator_nextBack,
       (iterator) => revExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
       undefined,

@@ -367,4 +367,13 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(placed) = self.placed_within(id, declared, self.instantiated(declared, args)).filter(|_| false) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "naming #2255"],
   },
+  {
+    name: "reified-pointer-params-unnamed",
+    breaks: "a generic function's `fn` pointer names its parameters `arg0`, not as the function does, `(n) => bumpedPoint($cellOf(n))` (#1328)",
+    file: "src/lower/generic_facts.rs",
+    find: "            .map(|(at, name)| name.unwrap_or_else(|| format!(\"arg{at}\")))\n",
+    replace: "            .map(|(at, name)| name.filter(|_| false).unwrap_or_else(|| format!(\"arg{at}\")))\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_takes_its_callers_forms.rs$"],
+    snapshots: true,
+  },
 ];

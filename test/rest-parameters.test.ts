@@ -108,8 +108,8 @@ pub fn sums(v: &[f64]) -> Vec<f64> {
   expect(out).toContain("total(),");
   expect(out).toContain("Point.moved({ x: 10 }, 1, $index(v, 0)),");
   // As a value, what's given it spread.
-  expect(out).toContain("const pointer = (x) => total(...x);");
-  expect(out).toContain("apply((x) => total(...x), v),");
+  expect(out).toContain("const pointer = (xs) => total(...xs);");
+  expect(out).toContain("apply((xs) => total(...xs), v),");
   // A variable of it is it, called as it is.
   expect(out).toContain("total($index(v, 1)),");
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");

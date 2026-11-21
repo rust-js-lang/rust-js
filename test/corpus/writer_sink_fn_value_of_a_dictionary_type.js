@@ -19,7 +19,7 @@ export function entry() {
   main();
 }
 
-const $logWrite_writeStr = (arg0, arg1) => logWrite_writeStr(arg0.value, arg1);
+const $logWrite_writeStr = (log, s) => logWrite_writeStr(log.value, s);
 
 export const logWrite = {
   writeStr: $logWrite_writeStr,
@@ -47,7 +47,7 @@ const $formatDisplay = new WeakMap();
 
 export function formatDisplay(TDisplay) {
   return $traitImpl($formatDisplay, [TDisplay], () => ({
-    fmt: (arg0) => formatDisplay_fmt(arg0, TDisplay),
+    fmt: (format) => formatDisplay_fmt(format, TDisplay),
     fmtInto: (f, value) => $writingInto(f, formatDisplay_fmt, value, TDisplay),
   }));
 }
@@ -65,7 +65,7 @@ const $formatDebug = new WeakMap();
 
 export function formatDebug(TDebug) {
   return $traitImpl($formatDebug, [TDebug], () => ({
-    fmt: (arg0) => formatDebug_fmt(arg0, TDebug),
+    fmt: (format) => formatDebug_fmt(format, TDebug),
     fmtInto: (f, value) => $writingInto(f, formatDebug_fmt, value, TDebug),
   }));
 }

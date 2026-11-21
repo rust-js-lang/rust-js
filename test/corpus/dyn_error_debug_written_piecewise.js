@@ -33,7 +33,7 @@ export function entry() {
   main();
 }
 
-const $piecesWrite_writeStr = (arg0, arg1) => piecesWrite_writeStr(arg0.value, arg1);
+const $piecesWrite_writeStr = (pieces, s) => piecesWrite_writeStr(pieces.value, s);
 
 export const piecesWrite = {
   writeStr: $piecesWrite_writeStr,

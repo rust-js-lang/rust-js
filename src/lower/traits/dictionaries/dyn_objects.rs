@@ -4,10 +4,11 @@
 //! most 1500 lines.
 
 use super::super::*;
+use crate::lower::temporary_names::Base;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn object_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
-        let object_param = js::Name::declared("object".to_string());
+        let object_param = self.fresh(Base::Named("object"));
         let object = Expr::var(object_param.clone());
         let principal = self
             .dyn_trait_ref(tr.self_ty(), tr.self_ty())
@@ -34,7 +35,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .inputs();
             // Without a `Formatter`, which isn't a JS parameter (ADR 0054), and
             // with a writer's options, where the crate's take them (ADRs 0058, 0137).
-            let writer = self.formatter_param(item.def_id).is_some();
+            let at = self.formatter_param(item.def_id);
+            let writer = at.is_some();
             // Or a type's a library's function shows with them, whose entry
             // takes them, passed on where it does (#1331).
             let options = self.writers_take_options() || self.krate.shown.reached().any();
@@ -56,8 +58,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let mut params: Vec<js::Pattern> = vec![object_param.clone().into()];
             let mut values = vec![this];
+            // Each named as the trait's method names it (#1328).
+            let names = crate::lower::signatures::taken_parameter_names(self.tcx, item.def_id, at, options);
             for i in 1..count {
-                let arg = js::Name::declared(format!("arg{i}"));
+                let named = names.get(i).cloned().flatten().unwrap_or_else(|| format!("arg{i}"));
+                let arg = self.fresh(Base::Named(&named));
                 params.push(arg.clone().into());
                 values.push(Expr::var(arg));
             }

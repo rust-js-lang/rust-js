@@ -30,12 +30,12 @@ function both(x, XConvertF64, XConvertString) {
   return [XConvertF64.convert(x), XConvertString.convert(x)];
 }
 
-const numsTakeU32 = { take: (arg0) => numsTakeU32_take(arg0.value) };
+const numsTakeU32 = { take: (nums) => numsTakeU32_take(nums.value) };
 function numsTakeU32_take(nums) {
   return nums.list.pop();
 }
 
-const stackTakeT = { take: (arg0) => stackTakeT_take(arg0.value) };
+const stackTakeT = { take: (stack) => stackTakeT_take(stack.value) };
 function stackTakeT_take(stack) {
   return $pop(stack.list);
 }

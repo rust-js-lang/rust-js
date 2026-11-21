@@ -14,7 +14,7 @@ export function entry() {
   main();
 }
 
-const $textWrite_writeStr = (arg0, arg1) => textWrite_writeStr(arg0.value, arg1);
+const $textWrite_writeStr = (text, s) => textWrite_writeStr(text.value, s);
 
 export const textWrite = {
   writeStr: $textWrite_writeStr,
@@ -27,12 +27,12 @@ function textWrite_writeStr(text, s) {
 
 // Counts its `write_fmt` calls, and passes what it's given on, bracketed.
 
-const $countingWrite_writeStr = (arg0, arg1) => countingWrite_writeStr(arg0.value, arg1);
+const $countingWrite_writeStr = (counting, s) => countingWrite_writeStr(counting.value, s);
 
 export const countingWrite = {
   writeStr: $countingWrite_writeStr,
   writeChar: $countingWrite_writeStr,
-  writeFmt: (arg0, arg1) => countingWrite_writeFmt(arg0.value, arg1),
+  writeFmt: (counting, args) => countingWrite_writeFmt(counting.value, args),
 };
 function countingWrite_writeStr(counting, s) {
   return textWrite_writeStr(counting.text, s);

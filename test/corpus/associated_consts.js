@@ -44,7 +44,7 @@ const counterZero = {
   },
 };
 
-const counterBump = { bump: (arg0) => counterBump_bump(arg0.value) };
+const counterBump = { bump: (counter) => counterBump_bump(counter.value) };
 function counterBump_bump(counter) {
   counter.n = (counter.n + 1) >>> 0;
 }

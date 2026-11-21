@@ -62,7 +62,7 @@ function refBagIntoIterator_intoIter(bag) {
 
 export const refMutBagIntoIterator = {
   IntoIterIterator: () => ({ next: $next }),
-  intoIter: (arg0) => refMutBagIntoIterator_intoIter(arg0.value),
+  intoIter: (bag) => refMutBagIntoIterator_intoIter(bag.value),
 };
 function refMutBagIntoIterator_intoIter(bag) {
   return $iter($mutItems(bag.items));

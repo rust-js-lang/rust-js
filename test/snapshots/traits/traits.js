@@ -25,7 +25,7 @@ const $vecShape = new WeakMap();
 
 export function vecShape(TShape) {
   return $traitImpl($vecShape, [TShape], () => ({
-    area: (arg0) => vecShape_area(arg0, TShape),
+    area: (vec) => vecShape_area(vec, TShape),
     name: (vec) => "shape",
   }));
 }

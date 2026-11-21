@@ -207,8 +207,8 @@ function clearedEach(width, height) {
   const item = new Array(width).fill(1);
   $roomFor(height, 12);
   const board = Array.from({ length: height }, () => item.slice());
-  board.forEach((x) => {
-    x.length = 0;
+  board.forEach((vec) => {
+    vec.length = 0;
   });
   let total = 0;
   for (let c = 0; c < width; c++) {

@@ -27,8 +27,8 @@ function i32Bump_get(self) {
 }
 
 const cBump = {
-  bump(arg0) {
-    return cBump_bump(arg0.value);
+  bump(c) {
+    return cBump_bump(c.value);
   },
   get: cBump_get,
   bumpedTwice(self) {

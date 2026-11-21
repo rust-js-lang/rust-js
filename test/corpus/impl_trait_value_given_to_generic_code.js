@@ -48,7 +48,7 @@ const $xSameX = new WeakMap();
 
 function xSameX(dropX) {
   return $traitImpl($xSameX, [dropX], () => ({
-    same: (arg0) => xSameX_same(arg0, dropX),
+    same: (self) => xSameX_same(self, dropX),
     $drop: dropX,
   }));
 }

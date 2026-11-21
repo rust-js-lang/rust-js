@@ -8,7 +8,7 @@ export function entry() {
 
 const noisyNamed = {
   name: noisyNamed_name,
-  rename: (arg0, arg1) => noisyNamed_rename(arg0.value, arg1),
+  rename: (noisy, to) => noisyNamed_rename(noisy.value, to),
   $drop: noisyDrop_drop,
 };
 function noisyNamed_name(noisy) {

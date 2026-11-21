@@ -15,7 +15,7 @@ function moneyAddAssign_addAssign(money, other) {
 }
 
 export const refMutMoneyAddAssignMoney = {
-  addAssign: (arg0, arg1) => refMutMoneyAddAssignMoney_addAssign($heldObjectOf(arg0), arg1),
+  addAssign: (money, other) => refMutMoneyAddAssignMoney_addAssign($heldObjectOf(money), other),
 };
 function refMutMoneyAddAssignMoney_addAssign(money, other) {
   moneyAddAssign_addAssign(money.value, other);

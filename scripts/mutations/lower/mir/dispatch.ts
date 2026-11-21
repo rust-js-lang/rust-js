@@ -249,15 +249,12 @@ export const mutations: Mutation[] = [
   {
     name: "mir-fn-value-param-value",
     breaks:
-      "`.map(Vec::len)` from MIR names its arrow's parameter `value`, not by its type, `x`",
+      "a std function's value whose receiver its type names none of, `.map(u8::is_ascii_lowercase)`, names its arrow's parameter `value`, not by its type, `n`",
     file: "src/lower/mir/dispatch.rs",
-    find: "self.fresh(self.parameter_name(inputs[0].peel_refs()))",
+    find: "self.fresh(self.parameter_name(inputs[i].peel_refs()))",
     replace: "self.fresh(Role::Value)",
-    tests: [
-      "test/lowering-iterators.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^byte_ascii.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-dyn-error-from-refused",
@@ -896,5 +893,23 @@ export const mutations: Mutation[] = [
     find: "                for at in self.boxes_called_once((def_id, generic_args), arg_tys) {\n",
     replace: "                for at in self.boxes_called_once((def_id, generic_args), arg_tys).into_iter().filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_fn_given_to_a_once_callee_drops.rs$"],
+  },
+  {
+    name: "library-value-fallback-mixed",
+    breaks: "a library's value whose function names some parameters names the rest `a`, `b`, `(a, string)`, not by type, `(s, string)` (#1328)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                None if (inputs.len() == 1 || !named.is_empty())\n",
+    replace: "                None if (inputs.len() == 1)\n",
+    tests: ["test/corpus.test.ts", "-t", "^string_edits_given_as_functions.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "library-value-fallback-type-name-taken",
+    breaks: "a library's value's parameter named by type takes another's own name, `f64::powf`'s `(n, n$1)` (#1328)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "                        .any(|name| name == self.parameter_name(inputs[i].peel_refs()).text()) =>\n",
+    replace: "                        .any(|name| name == self.parameter_name(inputs[i].peel_refs()).text() && false) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_shapes_shared.rs$"],
+    snapshots: true,
   },
 ];

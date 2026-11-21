@@ -15,7 +15,7 @@ const $mutexSequence = new WeakMap();
 
 function mutexSequence(CSequence) {
   return $traitImpl($mutexSequence, [CSequence], () => ({
-    nextValue: (arg0) => mutexSequence_nextValue(arg0, CSequence),
+    nextValue: (mutex) => mutexSequence_nextValue(mutex, CSequence),
   }));
 }
 function mutexSequence_nextValue(mutex, CSequence) {

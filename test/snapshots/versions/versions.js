@@ -57,7 +57,7 @@ const $tLabeled = new WeakMap();
 
 export function tLabeled(TDisplay) {
   return $traitImpl($tLabeled, [TDisplay], () => ({
-    label: (arg0) => tLabeled_label(arg0, TDisplay),
+    label: (self) => tLabeled_label(self, TDisplay),
   }));
 }
 function tLabeled_label(self, TDisplay) {

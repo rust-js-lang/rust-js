@@ -46,8 +46,8 @@ const $wrapIndexI = new WeakMap();
 
 export function wrapIndexI(ISliceIndexTSlice, dropT, dropI) {
   return $traitImpl($wrapIndexI, [ISliceIndexTSlice, dropT, dropI], () => ({
-    index(arg0, arg1) {
-      return wrapIndexI_index(arg0, arg1, ISliceIndexTSlice, dropT, dropI);
+    index(wrap, index) {
+      return wrapIndexI_index(wrap, index, ISliceIndexTSlice, dropT, dropI);
     },
     $drop(wrap) {
       $dropItems(wrap[0], (item) => {

@@ -20,7 +20,7 @@ export function entry() {
 
 // anyhow's `Quoted`, whose drop prints.
 
-const $quotedWrite_writeStr = (arg0, arg1) => quotedWrite_writeStr(arg0.value, arg1);
+const $quotedWrite_writeStr = (quoted, s) => quotedWrite_writeStr(quoted.value, s);
 
 export const quotedWrite = {
   writeStr: $quotedWrite_writeStr,
@@ -64,7 +64,8 @@ function encode(text, sink, SSink) {
 }
 
 const formatterSinkSink = {
-  writeEncoded: (arg0, arg1) => formatterSinkSink_writeEncoded(arg0.value, arg1),
+  writeEncoded: (formatterSink, encoded) =>
+    formatterSinkSink_writeEncoded(formatterSink.value, encoded),
   $drop: formatterSinkDrop_drop,
 };
 function formatterSinkSink_writeEncoded(formatterSink, encoded) {
@@ -101,7 +102,7 @@ function exclaim(w, word, WWrite) {
 
 // A `String`'s `&mut`, held beside it: a handle that reads its text.
 
-const $collectedWrite_writeStr = (arg0, arg1) => collectedWrite_writeStr(arg0.value, arg1);
+const $collectedWrite_writeStr = (collected, s) => collectedWrite_writeStr(collected.value, s);
 
 export const collectedWrite = {
   writeStr: $collectedWrite_writeStr,
