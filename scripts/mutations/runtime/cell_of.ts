@@ -67,4 +67,12 @@ export const mutations: Mutation[] = [
     replace: "given[i] === 1 ? arg :",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_given_for_a_bound.rs$"],
   },
+  {
+    name: "in-place-part-function-unapplied",
+    breaks: "`$inPlace` keeps a part whose shape is the function that adapts it as it is, so a tuple remade for generic code gives the crate's iterator in it bare (#2268)",
+    file: "src/runtime/cell_of.js",
+    find: "  if (typeof shape === \"function\") return shape(value);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^crates_iterator_in_a_tuple_given_to_generic_code.rs$"],
+  },
 ];

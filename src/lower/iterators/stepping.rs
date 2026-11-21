@@ -516,141 +516,197 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let inputs = self.tcx.fn_sig(callee).instantiate_identity().skip_binder().inputs();
         for ((value, &input), &given) in values.iter_mut().zip(inputs).zip(given) {
-            // A `&mut` of a sized iterator given for a type parameter by
-            // value bound by `Iterator` that steps it as a JS iterator,
-            // `summed(it)` of a `&mut R`, not one bound by none, `pass(it)`,
-            // which holds the `&mut` as the value it is, not one given as it is with its dictionaries, a compiled
-            // std body's, as an unsized one's is below: lent once it's made what it lends is, so it passes on
-            // what std's `&mut I` does, `Wrapper::passes`', `$lent`'s: its folds
-            // by its `try_fold`s, its `count` std's default, never the
-            // iterator's own (#2104). Of a type parameter's alone, given by
-            // its dictionaries as it is: another's form is made a `&mut`'s
-            // already where it's lent, the crate's own iterator's
-            // (`user_iterator_knowing`), std's compiled struct's, a range's.
-            let lent = (crate::lower::generic_facts::type_parameter(input).is_some_and(|param| {
-                bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
-            }) && matches!(*given.kind(), ty::Ref(_, to, ty::Mutability::Mut)
-                    if to.is_sized(self.tcx, self.typing_env) && crate::lower::generic_facts::is_type_parameter(to))
-                && self.implements_iterator(given))
-            .then_some(given);
-            // Through a reference, what it's to; through a sized `Box<I>`,
-            // its `I`, given as the box of it is, which steps it by what
-            // std's `Box` passes on (`held_unboxed`, #1601), a `&mut Box<I>`'s
-            // too (#2221).
-            let (input, given) = match *input.kind() {
-                ty::Ref(_, inner, _) => (crate::lower::recognition::held_unboxed(inner), given.peel_refs()),
-                _ => (crate::lower::recognition::held_unboxed(input), given),
+            self.given_iterator(callee, value, (input, given), span, out)?;
+        }
+        Ok(())
+    }
+
+    /// `value`, an argument of a call of the crate's `callee` its `input`
+    /// declares, of its caller's type `given`: made the JS iterator generic
+    /// code steps where it goes one (`given_iterators`). A tuple taken by
+    /// value crosses part by part, each so, as #2255's places do: an array
+    /// written here item by item, `[$iterator(a, aIterator_next), n]`,
+    /// another remade by #2255's `$inPlace(t, [(x) => .., 0])`, each part's
+    /// shape the function that adapts it, which no one tells from the tuple
+    /// moved (ADR 0262's no difference, #2268).
+    fn given_iterator(
+        &mut self,
+        callee: DefId,
+        value: &mut Expr,
+        (input, given): (ty::Ty<'tcx>, ty::Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        if let (ty::Tuple(declared), ty::Tuple(parts)) = (*input.kind(), *given.kind())
+            && declared.len() == parts.len()
+        {
+            let pairs: Vec<(ty::Ty<'tcx>, ty::Ty<'tcx>)> = declared.iter().zip(parts.iter()).collect();
+            if let crate::js::ExprKind::Array(items, ..) = &mut value.kind
+                && items.len() == pairs.len()
+                && !items
+                    .iter()
+                    .any(|item| matches!(item.kind, crate::js::ExprKind::Spread(_)))
+            {
+                for (item, &pair) in items.iter_mut().zip(&pairs) {
+                    self.given_iterator(callee, item, pair, span, out)?;
+                }
+                return Ok(());
+            }
+            let mut crossed = Vec::new();
+            for &pair in &pairs {
+                let name = self.fresh(Role::Value);
+                let mut part = Expr::var(&name);
+                let mut made = Vec::new();
+                self.given_iterator(callee, &mut part, pair, span, &mut made)?;
+                crossed.push((part != Expr::var(&name) || !made.is_empty()).then(|| {
+                    made.push(StmtKind::Return(Some(part)).at(crate::js::Span::NONE));
+                    Expr::arrow(vec![name.into()], made)
+                }));
+            }
+            if crossed.iter().any(Option::is_some) {
+                let held = std::mem::replace(value, Expr::taken());
+                let parts = crossed
+                    .into_iter()
+                    .map(|part| part.unwrap_or_else(|| Expr::int(0)))
+                    .collect();
+                *value = Expr::call_helper("$inPlace", vec![held, Expr::array(parts)]);
+            }
+            return Ok(());
+        }
+        // A `&mut` of a sized iterator given for a type parameter by
+        // value bound by `Iterator` that steps it as a JS iterator,
+        // `summed(it)` of a `&mut R`, not one bound by none, `pass(it)`,
+        // which holds the `&mut` as the value it is, not one given as it is with its dictionaries, a compiled
+        // std body's, as an unsized one's is below: lent once it's made what it lends is, so it passes on
+        // what std's `&mut I` does, `Wrapper::passes`', `$lent`'s: its folds
+        // by its `try_fold`s, its `count` std's default, never the
+        // iterator's own (#2104). Of a type parameter's alone, given by
+        // its dictionaries as it is: another's form is made a `&mut`'s
+        // already where it's lent, the crate's own iterator's
+        // (`user_iterator_knowing`), std's compiled struct's, a range's.
+        let lent = (crate::lower::generic_facts::type_parameter(input).is_some_and(|param| {
+            bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
+        }) && matches!(*given.kind(), ty::Ref(_, to, ty::Mutability::Mut)
+                if to.is_sized(self.tcx, self.typing_env) && crate::lower::generic_facts::is_type_parameter(to))
+            && self.implements_iterator(given))
+        .then_some(given);
+        // Through a reference, what it's to; through a sized `Box<I>`,
+        // its `I`, given as the box of it is, which steps it by what
+        // std's `Box` passes on (`held_unboxed`, #1601), a `&mut Box<I>`'s
+        // too (#2221).
+        let (input, given) = match *input.kind() {
+            ty::Ref(_, inner, _) => (crate::lower::recognition::held_unboxed(inner), given.peel_refs()),
+            _ => (crate::lower::recognition::held_unboxed(input), given),
+        };
+        // A `&mut dyn` iterator given as a type parameter, `rev(self)`'s
+        // `Self` of a `&mut dyn DoubleEndedIterator`, or generic code's
+        // `I`: lent as unsized, std's `&mut dyn I`, which folds by
+        // `next_back`, as a `dyn`'s vtable holds no fold, never by what
+        // it lends's own `rfold`. What it lends knows its back already,
+        // as the coercion to a `dyn` made it (`lent_iterator`, #1996).
+        if crate::lower::generic_facts::is_type_parameter(input)
+            && let ty::Ref(_, referent, ty::Mutability::Mut) = *given.kind()
+            && !referent.is_sized(self.tcx, self.typing_env)
+            && self.implements_iterator(given)
+        {
+            let held = std::mem::replace(value, Expr::taken());
+            *value = self.lent_iterator(held, given);
+            return Ok(());
+        }
+        // A `Box` of std's iterator given for a type parameter bound by
+        // `Iterator` that steps it as a JS iterator,
+        // `total(Box::new(map))`: the box, `$lent(it, "boxed")`, which
+        // passes on only what std's `Box<I>` does, never `I`'s own `fold`
+        // or `count`, which may reach the crate's, where the box hides
+        // them (`wrapper_lends`, #2179). The crate's own reads its steps
+        // through the box already (`own_method`).
+        if crate::lower::generic_facts::type_parameter(input).is_some_and(|param| {
+            bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
+        }) && given.is_box()
+            && let lends = self.wrapper_lends(given)
+            && !lends.is_empty()
+        {
+            let held = std::mem::replace(value, Expr::taken());
+            *value = self.lent_through(held, &lends);
+            return Ok(());
+        }
+        let made_knowing = self.made_knowing_into_iter(callee, input, given);
+        // One that asks its length, a JS iterator that knows it, its back
+        // too where it steps it from there (ADR 0456).
+        if self.exact_size_param(callee, input) {
+            let held = std::mem::replace(value, Expr::taken());
+            let back = self.double_ended_param(callee, input);
+            *value = self.as_exact_size(held, given, back, span)?;
+        // One that steps it from its back, a JS iterator that knows it
+        // (ADR 0429).
+        } else if self.double_ended_param(callee, input) {
+            let held = std::mem::replace(value, Expr::taken());
+            *value = self.as_double_ended(held, given, span)?;
+        } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
+            let held = std::mem::replace(value, Expr::taken());
+            *value = match made_knowing {
+                Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
+                None => self.as_js_iterator(held, given, span)?,
             };
-            // A `&mut dyn` iterator given as a type parameter, `rev(self)`'s
-            // `Self` of a `&mut dyn DoubleEndedIterator`, or generic code's
-            // `I`: lent as unsized, std's `&mut dyn I`, which folds by
-            // `next_back`, as a `dyn`'s vtable holds no fold, never by what
-            // it lends's own `rfold`. What it lends knows its back already,
-            // as the coercion to a `dyn` made it (`lent_iterator`, #1996).
-            if crate::lower::generic_facts::is_type_parameter(input)
-                && let ty::Ref(_, referent, ty::Mutability::Mut) = *given.kind()
-                && !referent.is_sized(self.tcx, self.typing_env)
-                && self.implements_iterator(given)
-            {
-                let held = std::mem::replace(value, Expr::taken());
-                *value = self.lent_iterator(held, given);
-                continue;
-            }
-            // A `Box` of std's iterator given for a type parameter bound by
-            // `Iterator` that steps it as a JS iterator,
-            // `total(Box::new(map))`: the box, `$lent(it, "boxed")`, which
-            // passes on only what std's `Box<I>` does, never `I`'s own `fold`
-            // or `count`, which may reach the crate's, where the box hides
-            // them (`wrapper_lends`, #2179). The crate's own reads its steps
-            // through the box already (`own_method`).
-            if crate::lower::generic_facts::type_parameter(input).is_some_and(|param| {
-                bound_by_iterator(self.tcx, callee, param.index) && !given_as_it_is(self.tcx, callee, param)
-            }) && given.is_box()
-                && let lends = self.wrapper_lends(given)
-                && !lends.is_empty()
-            {
-                let held = std::mem::replace(value, Expr::taken());
-                *value = self.lent_through(held, &lends);
-                continue;
-            }
-            let made_knowing = self.made_knowing_into_iter(callee, input, given);
-            // One that asks its length, a JS iterator that knows it, its back
-            // too where it steps it from there (ADR 0456).
-            if self.exact_size_param(callee, input) {
-                let held = std::mem::replace(value, Expr::taken());
-                let back = self.double_ended_param(callee, input);
-                *value = self.as_exact_size(held, given, back, span)?;
-            // One that steps it from its back, a JS iterator that knows it
-            // (ADR 0429).
-            } else if self.double_ended_param(callee, input) {
-                let held = std::mem::replace(value, Expr::taken());
-                *value = self.as_double_ended(held, given, span)?;
-            } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
-                let held = std::mem::replace(value, Expr::taken());
-                *value = match made_knowing {
-                    Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
-                    None => self.as_js_iterator(held, given, span)?,
-                };
-            // One an `IntoIterator` bound takes, given the JS iterator of
-            // its items (ADR 0061): a `&mut` collection's handles, an
-            // `Option`'s, a B-tree's in order, `iterable_items`'.
-            } else if matches!(input.kind(), ty::Param(_)) && self.given_iterable(callee, input) {
-                let held = std::mem::replace(value, Expr::taken());
-                *value = match made_knowing {
-                    Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
-                    None => self.iterable_items(held, given, span, out)?,
-                };
-            // A std body compiled into `@rust-js/std`, which holds what it's
-            // given as it is and steps it by its dictionary, given a type
-            // parameter's value stepped as JS's, given no dictionary of its
-            // own, which a JS caller may give an array (ADR 0061): a JS
-            // iterator of it, `$stepsOf(items)` (#1962), an array's `$iter`,
-            // a `$Steps` as it is. Never `Iterator.from(items)`, which arms
-            // a `$Steps` to close itself at its end, as JS's own consumers
-            // take it: std's struct holds it past its end, a `fuse()` of a
-            // `FusedIterator`, and drops it by the drop it's given where
-            // Rust's does (#2039). One given its dictionary is what that
-            // dictionary steps, as it is.
-            } else if let Some(index) = crate::lower::generic_facts::type_parameter_of(input)
-                && crate::lower::generic_facts::is_type_parameter(given)
-                && crate::lower::recognition::is_compiled_std(self.tcx, callee)
-                && bound_by_iterator(self.tcx, callee, index)
-                && !is_js_iterator(value)
-                && self.given_js_iterator(value.clone(), given, false, false).is_none()
-            {
-                let held = std::mem::replace(value, Expr::taken());
-                *value = Expr::call_helper("$stepsOf", vec![held]);
-            }
-            // A `Vec`'s, given its steps that drop what they pass as one
-            // slice, where generic code can't tell it from a `Drain`'s
-            // (`slicing`, #703, #704); one given as it is is told by its
-            // dictionary (`iterator_dictionary`).
-            if let ty::Param(param) = input.kind()
-                && !given_as_it_is(self.tcx, callee, *param)
-            {
-                let back = self.double_ended_param(callee, input);
-                let held = std::mem::replace(value, Expr::taken());
-                *value = self.slicing(held, given, back, span)?;
-            }
-            // Where the callee may collect it in place, as the `{ inPlace }`
-            // it's given of this parameter says: made so its source `Vec`
-            // can be found (`made_so_its_source_is_found`, #1941).
-            if let Some(param) = crate::lower::generic_facts::type_parameter_of(input)
-                && (self.facts_asked(callee).iter()).any(|&(index, fact)| {
-                    index == param
-                        && matches!(
-                            fact,
-                            crate::lower::TypeFact::VecCollect | crate::lower::TypeFact::InPlace
-                        )
-                })
-            {
-                let held = std::mem::replace(value, Expr::taken());
-                *value = self.made_so_its_source_is_found(held, given);
-            }
-            if let Some(by) = lent {
-                let held = std::mem::replace(value, Expr::taken());
-                *value = self.lent_iterator(held, by);
-            }
+        // One an `IntoIterator` bound takes, given the JS iterator of
+        // its items (ADR 0061): a `&mut` collection's handles, an
+        // `Option`'s, a B-tree's in order, `iterable_items`'.
+        } else if matches!(input.kind(), ty::Param(_)) && self.given_iterable(callee, input) {
+            let held = std::mem::replace(value, Expr::taken());
+            *value = match made_knowing {
+                Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
+                None => self.iterable_items(held, given, span, out)?,
+            };
+        // A std body compiled into `@rust-js/std`, which holds what it's
+        // given as it is and steps it by its dictionary, given a type
+        // parameter's value stepped as JS's, given no dictionary of its
+        // own, which a JS caller may give an array (ADR 0061): a JS
+        // iterator of it, `$stepsOf(items)` (#1962), an array's `$iter`,
+        // a `$Steps` as it is. Never `Iterator.from(items)`, which arms
+        // a `$Steps` to close itself at its end, as JS's own consumers
+        // take it: std's struct holds it past its end, a `fuse()` of a
+        // `FusedIterator`, and drops it by the drop it's given where
+        // Rust's does (#2039). One given its dictionary is what that
+        // dictionary steps, as it is.
+        } else if let Some(index) = crate::lower::generic_facts::type_parameter_of(input)
+            && crate::lower::generic_facts::is_type_parameter(given)
+            && crate::lower::recognition::is_compiled_std(self.tcx, callee)
+            && bound_by_iterator(self.tcx, callee, index)
+            && !is_js_iterator(value)
+            && self.given_js_iterator(value.clone(), given, false, false).is_none()
+        {
+            let held = std::mem::replace(value, Expr::taken());
+            *value = Expr::call_helper("$stepsOf", vec![held]);
+        }
+        // A `Vec`'s, given its steps that drop what they pass as one
+        // slice, where generic code can't tell it from a `Drain`'s
+        // (`slicing`, #703, #704); one given as it is is told by its
+        // dictionary (`iterator_dictionary`).
+        if let ty::Param(param) = input.kind()
+            && !given_as_it_is(self.tcx, callee, *param)
+        {
+            let back = self.double_ended_param(callee, input);
+            let held = std::mem::replace(value, Expr::taken());
+            *value = self.slicing(held, given, back, span)?;
+        }
+        // Where the callee may collect it in place, as the `{ inPlace }`
+        // it's given of this parameter says: made so its source `Vec`
+        // can be found (`made_so_its_source_is_found`, #1941).
+        if let Some(param) = crate::lower::generic_facts::type_parameter_of(input)
+            && (self.facts_asked(callee).iter()).any(|&(index, fact)| {
+                index == param
+                    && matches!(
+                        fact,
+                        crate::lower::TypeFact::VecCollect | crate::lower::TypeFact::InPlace
+                    )
+            })
+        {
+            let held = std::mem::replace(value, Expr::taken());
+            *value = self.made_so_its_source_is_found(held, given);
+        }
+        if let Some(by) = lent {
+            let held = std::mem::replace(value, Expr::taken());
+            *value = self.lent_iterator(held, by);
         }
         Ok(())
     }

@@ -61,9 +61,12 @@ function $throughBox(dictionary, entries) {
 // A value given generic code that holds an iterator JS holds as no object
 // in a place of its own, `{ value }`, in its form there: as `shape` says,
 // `1` in a place, a list a tuple's parts each in its own, `0` as it is
-// (#2255). `$fromPlace` gives generic code's back as its caller holds it.
+// (#2255), a function what it makes of it, the crate's iterator a JS one
+// where generic code steps that part so (#2268). `$fromPlace` gives
+// generic code's back as its caller holds it.
 function $inPlace(value, shape) {
   if (shape === 1) return { value };
+  if (typeof shape === "function") return shape(value);
   return Array.isArray(shape) ? shape.map((part, i) => $inPlace(value[i], part)) : value;
 }
 
