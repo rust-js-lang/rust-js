@@ -507,7 +507,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let mut lists = lists.into_iter().map(|list| match list {
                             Value::List(items, _) => Some(items),
                             Value::Expr(Expr {
-                                kind: js::ExprKind::Array(names),
+                                kind: js::ExprKind::Array(names, ..),
                                 ..
                             }) => Some(names.into_iter().map(Value::Expr).collect()),
                             _ => None,

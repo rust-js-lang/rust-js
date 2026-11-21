@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true
             }
             // Item by item, but not of `...items`, which is no value alone.
-            js::ExprKind::Array(items)
+            js::ExprKind::Array(items, ..)
                 if items.iter().any(jsx_tree) && !items.iter().any(|i| matches!(i.kind, js::ExprKind::Spread(_))) =>
             {
                 for item in items {
@@ -696,7 +696,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn shown_if(&self, child: ExprId, value: Expr) -> Expr {
         // Children are a tuple, of tuples too: each its own.
         if let ExprKind::Tuple { fields } = &self.frame.thir[self.strip(child)].kind
-            && let js::ExprKind::Array(items) = &value.kind
+            && let js::ExprKind::Array(items, layout) = &value.kind
             && fields.len() == items.len()
         {
             let items = (items.iter().cloned())
@@ -705,7 +705,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect();
             return Expr {
                 facts: js::Facts::NONE,
-                kind: js::ExprKind::Array(items),
+                kind: js::ExprKind::Array(items, layout.clone()),
                 span: value.span,
                 held_as: Default::default(),
             };
@@ -727,7 +727,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn spread_children(&mut self, value: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Vec<Expr> {
         let ty::Tuple(tys) = *ty.kind() else { return vec![value] };
         let parts = match value.kind {
-            js::ExprKind::Array(items) => items,
+            js::ExprKind::Array(items, ..) => items,
             _ if tys.is_empty() => Vec::new(),
             _ => {
                 let tuple = if value.has_effects() {
@@ -903,7 +903,7 @@ fn jsx_tree(value: &Expr) -> bool {
         js::ExprKind::Jsx(_) => true,
         js::ExprKind::Cond(_, yes, no) => jsx_tree(yes) || jsx_tree(no),
         js::ExprKind::SomeWhere(_, yes) => jsx_tree(yes),
-        js::ExprKind::Array(items) => items.iter().any(jsx_tree),
+        js::ExprKind::Array(items, ..) => items.iter().any(jsx_tree),
         _ => false,
     }
 }

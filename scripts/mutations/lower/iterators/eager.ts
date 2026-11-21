@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`std::iter::empty().collect()` is `[].slice()`, a copy of a new array",
     file: "src/lower/iterators/eager.rs",
-    find: "    match &items.kind {\n        js::ExprKind::Array(_) => true,\n",
+    find: "    match &items.kind {\n        js::ExprKind::Array(..) => true,\n",
     replace: "    match &items.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^(result_given_as_items|mut_kept_by_what_a_call_gives_back|generic_mut_lent_by_std).rs$"],
     snapshots: true,

@@ -677,8 +677,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Vec`'s `extend` of an array written in place is the runtime's `$extend(v, [a, b])`, not `v.push(a, b)`",
     file: "src/lower/combinators.rs",
-    find: "        if let js::ExprKind::Array(written) = &list.kind\n",
-    replace: "        if false\n            && let js::ExprKind::Array(written) = &list.kind\n",
+    find: "        if let js::ExprKind::Array(written, ..) = &list.kind\n",
+    replace: "        if false\n            && let js::ExprKind::Array(written, ..) = &list.kind\n",
     tests: [
       "test/lowering-collections.test.ts",
       "-t",

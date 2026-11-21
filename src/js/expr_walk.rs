@@ -75,7 +75,7 @@ impl Expr {
                 f.visit_names(read);
                 args.iter().for_each(|a| a.visit_names(read));
             }
-            ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
+            ExprKind::Array(items, ..) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
                 items.iter().for_each(|a| a.visit_names(read))
             }
             ExprKind::Object(fields, ..) => props(fields, read),
@@ -136,7 +136,7 @@ impl Expr {
                 a.visit_held_names(read);
                 b.visit_held_names(read);
             }
-            ExprKind::Array(items) => items.iter().for_each(|item| item.visit_held_names(read)),
+            ExprKind::Array(items, ..) => items.iter().for_each(|item| item.visit_held_names(read)),
             // A call that runs no code but its own (`Known::RunsNothing`)
             // only holds what it's given: React's `ReactFlightClient({ ..,
             // checkEvalAvailabilityOnceDev })` runs none of it as it's made
@@ -264,7 +264,7 @@ impl Expr {
             ExprKind::Stepped(..) => return None,
             ExprKind::Index(a, b) => ExprKind::Index(one(a)?, one(b)?),
             ExprKind::OptionalIndex(a, b) => ExprKind::OptionalIndex(one(a)?, one(b)?),
-            ExprKind::Array(items) => ExprKind::Array(all(items)?),
+            ExprKind::Array(items, layout) => ExprKind::Array(all(items)?, layout.clone()),
             ExprKind::Sequence(items) => ExprKind::Sequence(all(items)?),
             ExprKind::Object(fields, layout) => ExprKind::Object(props(fields)?, layout.clone()),
             ExprKind::Unary(op, a) => ExprKind::Unary(*op, one(a)?),
@@ -452,7 +452,7 @@ impl Expr {
                 p == q && x.written_alike(y) && i.written_alike(j)
             }
             (ExprKind::Call(f, x), ExprKind::Call(g, y)) => f.written_alike(g) && all(x, y),
-            (ExprKind::Array(x), ExprKind::Array(y)) => all(x, y),
+            (ExprKind::Array(x, ..), ExprKind::Array(y, ..)) => all(x, y),
             _ => false,
         }
     }
@@ -553,11 +553,11 @@ impl Expr {
             // Spreading steps what it spreads, an iterator's `next`, which
             // may run anything: only an array written out reads only its
             // items (#273).
-            ExprKind::Spread(a) => matches!(a.kind, ExprKind::Array(_)) && a.reads_only_vars(),
+            ExprKind::Spread(a) => matches!(a.kind, ExprKind::Array(..)) && a.reads_only_vars(),
             ExprKind::Binary(_, a, b) => a.reads_only_vars() && b.reads_only_vars(),
             ExprKind::Cond(a, b, c) => a.reads_only_vars() && b.reads_only_vars() && c.reads_only_vars(),
             ExprKind::SomeWhere(a, b) => a.reads_only_vars() && b.reads_only_vars(),
-            ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().all(Expr::reads_only_vars),
+            ExprKind::Array(items, ..) | ExprKind::Template(_, items, _) => items.iter().all(Expr::reads_only_vars),
             ExprKind::Object(items, ..) => props(items),
             ExprKind::Jsx(jsx) => {
                 let tag = match &jsx.tag {
@@ -590,7 +590,7 @@ impl Expr {
             // Made of parts, as `has_effects` reads them: each throws where
             // one of its parts does, `${total(x)}` where `total(x)` does (ADR
             // 0902).
-            ExprKind::Template(_, items, _) | ExprKind::Array(items) if !self.facts.has(Known::Getter) => {
+            ExprKind::Template(_, items, _) | ExprKind::Array(items, ..) if !self.facts.has(Known::Getter) => {
                 items.iter().any(Expr::may_throw)
             }
             ExprKind::Binary(_, a, b) if !self.facts.has(Known::Getter) => a.may_throw() || b.may_throw(),
@@ -740,7 +740,7 @@ impl Expr {
             // Spreading steps what it spreads, an iterator's `next`, which may
             // run anything: only an array written out does nothing more than
             // its items do (#273, #1035).
-            ExprKind::Spread(a) => !matches!(a.kind, ExprKind::Array(_)) || a.has_effects(),
+            ExprKind::Spread(a) => !matches!(a.kind, ExprKind::Array(..)) || a.has_effects(),
             ExprKind::Stringed(a) | ExprKind::DropArgument(_, _, a) | ExprKind::Unbound(a) => a.has_effects(),
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
@@ -751,7 +751,7 @@ impl Expr {
             ExprKind::Index(object, index) | ExprKind::OptionalIndex(object, index) => {
                 object.has_effects() || index.has_effects()
             }
-            ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
+            ExprKind::Array(items, ..) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
                 items.iter().any(Expr::has_effects)
             }
             ExprKind::Object(props, ..) => props.iter().any(|p| match p {

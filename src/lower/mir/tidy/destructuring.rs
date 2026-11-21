@@ -68,7 +68,7 @@ pub(super) fn destructured(
         if made
             && indexed
             && let StmtKind::Const(_, value) = &stmts[i].kind
-            && let ExprKind::Array(items) = &value.kind
+            && let ExprKind::Array(items, ..) = &value.kind
             && parts.windows(2).all(|w| w[0].0 < w[1].0)
             && parts.iter().all(|(p, ..)| matches!(p, Ok(k) if *k < items.len()))
             && (items.iter().enumerate()).all(|(k, item)| {
@@ -554,7 +554,7 @@ pub(super) fn tuple_reads(
     while i < stmts.len() {
         let found = match &stmts[i].kind {
             StmtKind::Const(t, value)
-                if let ExprKind::Array(items) = &value.kind
+                if let ExprKind::Array(items, ..) = &value.kind
                     && (is_temporary(t) || (captured.contains(t) && items.iter().all(inert))) =>
             {
                 Some((t.clone(), items.clone()))
@@ -658,7 +658,7 @@ pub(super) fn tuple_reads(
                             | ExprKind::OptionalCall(..)
                             | ExprKind::Handle(_, _)
                             | ExprKind::New(..)
-                            | ExprKind::Array(_)
+                            | ExprKind::Array(..)
                             | ExprKind::Object(..)
                             | ExprKind::Jsx(_)
                             | ExprKind::Arrow(..)
@@ -682,7 +682,7 @@ pub(super) fn tuple_reads(
                 item.clone().each_mut(&mut |e| {
                     makes |= matches!(
                         e.kind,
-                        ExprKind::Array(_)
+                        ExprKind::Array(..)
                             | ExprKind::Object(..)
                             | ExprKind::New(..)
                             | ExprKind::Call(..)
@@ -723,7 +723,7 @@ pub(super) fn projected(e: &Expr) -> Option<Expr> {
     let (ExprKind::Member(items, map), [f]) = (&callee.kind, args.as_slice()) else {
         return None;
     };
-    let (ExprKind::Array(items), "map") = (&items.kind, map.as_str()) else {
+    let (ExprKind::Array(items, ..), "map") = (&items.kind, map.as_str()) else {
         return None;
     };
     let field = field_of(f)?;
@@ -777,7 +777,7 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
         let StmtKind::Const(t, value) = &stmts[i].kind else {
             continue;
         };
-        if !is_temporary(t) || !matches!(value.kind, ExprKind::Array(_)) || js::mentions_of(&stmts[i + 1..], t) != 1 {
+        if !is_temporary(t) || !matches!(value.kind, ExprKind::Array(..)) || js::mentions_of(&stmts[i + 1..], t) != 1 {
             continue;
         }
         let t = t.clone();
@@ -943,7 +943,7 @@ fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &js::Name, names: &[js::Name]) -> Opt
     match &mut stmts.last_mut()?.kind {
         StmtKind::Assign(target, value)
             if matches!(&target.kind, ExprKind::Var(v) if v == t)
-                && let ExprKind::Array(items) = &value.kind
+                && let ExprKind::Array(items, ..) = &value.kind
                 && items.len() == names.len() =>
         {
             let items = items.clone();
@@ -993,7 +993,7 @@ fn assigned_in_branches(value: &Expr, names: &[js::Name]) -> Option<Vec<Stmt>> {
             ])
         }
         // A tuple's, or an array's a pattern of as many names takes apart.
-        ExprKind::Array(items) => Some(
+        ExprKind::Array(items, ..) => Some(
             (names.iter().zip(items))
                 .map(|(name, item)| StmtKind::Assign(Expr::var(name), item.clone()).at(item.span))
                 .collect(),

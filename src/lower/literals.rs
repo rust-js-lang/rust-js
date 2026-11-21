@@ -48,7 +48,7 @@ pub(super) fn const_placed(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at:
     };
     match value.kind {
         js::ExprKind::Num(_) => value.or_at(at(body.value.span)),
-        js::ExprKind::Array(items)
+        js::ExprKind::Array(items, layout)
             if let rustc_hir::ExprKind::Array(written) = body.value.kind
                 && written.len() == items.len() =>
         {
@@ -56,7 +56,7 @@ pub(super) fn const_placed(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr, at:
                 .map(|(item, written)| item.or_at(at(written.span)))
                 .collect();
             Expr {
-                kind: js::ExprKind::Array(items),
+                kind: js::ExprKind::Array(items, layout),
                 ..value
             }
         }

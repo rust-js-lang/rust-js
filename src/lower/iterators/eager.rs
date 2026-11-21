@@ -76,7 +76,7 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
     let StmtKind::Return(Some(pair)) = &stmt.kind else {
         return false;
     };
-    let js::ExprKind::Array(parts) = &pair.kind else {
+    let js::ExprKind::Array(parts, ..) = &pair.kind else {
         return false;
     };
     let read = |e: &Expr, name: &js::Name| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
@@ -87,7 +87,7 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
 /// adapter's, a copy's, a `split`'s, or a helper's.
 pub(super) fn fresh(items: &Expr) -> bool {
     match &items.kind {
-        js::ExprKind::Array(_) => true,
+        js::ExprKind::Array(..) => true,
         // Of two made here, either, an `Option`'s items, `o == null ? [] : [o]`.
         js::ExprKind::Cond(_, then, otherwise) => fresh(then) && fresh(otherwise),
         js::ExprKind::Call(callee, _) => match &callee.kind {
@@ -272,8 +272,8 @@ pub(in crate::lower) fn eager_chains(stmts: &mut [Stmt]) {
                     // An `Option`'s items, `o == null ? [] : [o]`: how many
                     // each branch has, `o == null ? 0 : 1` (#588).
                     js::ExprKind::Cond(test, none, some)
-                        if matches!(&none.kind, js::ExprKind::Array(items) if items.is_empty())
-                            && matches!(&some.kind, js::ExprKind::Array(items)
+                        if matches!(&none.kind, js::ExprKind::Array(items, ..) if items.is_empty())
+                            && matches!(&some.kind, js::ExprKind::Array(items, ..)
                                 if matches!(items.as_slice(), [item] if !item.has_effects())) =>
                     {
                         Expr::cond((**test).clone(), Expr::int(0), Expr::int(1))
@@ -345,7 +345,7 @@ pub(in crate::lower) fn eager_spreads(stmts: &mut [Stmt]) {
             continue;
         };
         let spread = |e: &Expr| {
-            matches!(&e.kind, js::ExprKind::Array(items)
+            matches!(&e.kind, js::ExprKind::Array(items, ..)
                 if items.iter().any(|item| matches!(&item.kind, js::ExprKind::Spread(of)
                     if matches!(&of.kind, js::ExprKind::Var(v) if v == name))))
         };

@@ -615,7 +615,7 @@ pub(in crate::lower) fn owned_items(items: Expr) -> Expr {
 /// `.filter(f)`, not an iterator's of the same names, `$iter(xs).filter(f)`.
 pub(super) fn made_array(e: &Expr) -> bool {
     match &e.kind {
-        js::ExprKind::Array(_) => true,
+        js::ExprKind::Array(..) => true,
         // A slice's items in a range in bounds, `items.slice(a, b)` (ADR 0806).
         _ if e.facts.has(js::Known::Sliced) => true,
         // An `Option`'s items, `o == null ? [] : [o]`.

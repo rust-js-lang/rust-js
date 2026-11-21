@@ -478,7 +478,7 @@ pub(super) fn is_unreachable(body: &mir::Body<'_>, block: BasicBlock) -> bool {
 /// The bytes of a constant that's an array of them: a template's.
 pub(super) fn expr_bytes(e: &Expr) -> Option<Vec<u8>> {
     match &e.kind {
-        js::ExprKind::Array(items) => items
+        js::ExprKind::Array(items, ..) => items
             .iter()
             .map(|item| match item.kind {
                 js::ExprKind::Num(n) if (0.0..256.0).contains(&n) && n.fract() == 0.0 => Some(n as u8),

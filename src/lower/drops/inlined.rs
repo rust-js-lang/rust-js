@@ -478,7 +478,7 @@ fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
                     }
                 }
             }
-            ExprKind::Array(items) => items.iter_mut().for_each(|item| arrow(item, f)),
+            ExprKind::Array(items, ..) => items.iter_mut().for_each(|item| arrow(item, f)),
             // Either value a test chooses, React's DEV dispatchers', `__DEV__
             // ? { useMemo(..) { .. } } : null`.
             ExprKind::Cond(_, then, otherwise) => {
@@ -717,7 +717,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> O
         for s in stmts.iter() {
             if let StmtKind::Const(n, value) = &s.kind
                 && n == guard
-                && let ExprKind::Array(items) = &value.kind
+                && let ExprKind::Array(items, ..) = &value.kind
                 && let [item] = items.as_slice()
             {
                 made.get_or_insert(item.clone());
@@ -777,7 +777,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> O
         js::each_block_mut(&mut made, &mut |stmts| {
             let made_here = |s: &Stmt| {
                 matches!(&s.kind, StmtKind::Const(n, value)
-                    if n == guard && matches!(&value.kind, ExprKind::Array(items) if items.len() == 1))
+                    if n == guard && matches!(&value.kind, ExprKind::Array(items, ..) if items.len() == 1))
             };
             if variable.is_some() {
                 stmts.retain(|s| !made_here(s));
@@ -785,7 +785,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> O
             for s in stmts.iter_mut() {
                 if made_here(s)
                     && let StmtKind::Const(n, value) = &mut s.kind
-                    && let ExprKind::Array(items) = &mut value.kind
+                    && let ExprKind::Array(items, ..) = &mut value.kind
                 {
                     *n = read.clone();
                     *value = items.remove(0);

@@ -184,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// in JS's destructuring is (ADR 0212).
 fn is_literal(value: &Expr) -> bool {
     match &value.kind {
-        js::ExprKind::Array(items) => items.iter().all(is_literal),
+        js::ExprKind::Array(items, ..) => items.iter().all(is_literal),
         js::ExprKind::Object(props, ..) => props
             .iter()
             .all(|p| matches!(p, js::Prop::Field(_, v) if is_literal(v))),

@@ -166,7 +166,7 @@ pub(super) fn pairs_index(f: &Expr) -> bool {
                 ..
             },
         ] = &body[..]
-        && let ExprKind::Array(items) = &pair.kind
+        && let ExprKind::Array(items, ..) = &pair.kind
         && let [first, second] = &items[..]
     {
         return x.name().is_some_and(|x| var(second) == Some(x)) && i.name().is_some_and(|i| var(first) == Some(i));
@@ -255,14 +255,14 @@ pub(super) fn checked_sets(stmts: &mut Vec<Stmt>) {
 /// spreads alone: those spreads, `{ ...a, ...b }`, which give what it gives,
 /// each read where it was; and an array's spread of an array, its items.
 pub(super) fn spread_spreads(e: &mut Expr) {
-    if let ExprKind::Array(items) = &mut e.kind {
+    if let ExprKind::Array(items, ..) = &mut e.kind {
         *items = (std::mem::take(items).into_iter())
             .flat_map(|item| match item {
                 Expr {
                     kind: ExprKind::Spread(inner),
                     ..
-                } if matches!(inner.kind, ExprKind::Array(_)) => {
-                    let ExprKind::Array(inner) = inner.kind else {
+                } if matches!(inner.kind, ExprKind::Array(..)) => {
+                    let ExprKind::Array(inner, ..) = inner.kind else {
                         unreachable!("matched")
                     };
                     inner
@@ -360,7 +360,9 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
                 ) => (name.clone(), value, true),
                 _ => continue,
             };
-            let ExprKind::Array(items) = &value.kind else { continue };
+            let ExprKind::Array(items, ..) = &value.kind else {
+                continue;
+            };
             let left: Vec<usize> = (0..items.len())
                 .filter(|&i| !matches!(items[i].kind, ExprKind::Undefined))
                 .collect();
@@ -400,7 +402,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
                     ) if *n == name => value,
                     _ => continue,
                 };
-                if let ExprKind::Array(items) = &mut value.kind {
+                if let ExprKind::Array(items, ..) = &mut value.kind {
                     *value = std::mem::replace(&mut items[at as usize], Expr::taken());
                 }
             }
@@ -953,7 +955,7 @@ fn first_applied(
         return Some(value);
     }
     let found = match &mut e.kind {
-        ExprKind::Template(_, values, _) | ExprKind::Array(values) => values
+        ExprKind::Template(_, values, _) | ExprKind::Array(values, ..) => values
             .iter_mut()
             .find_map(|value| first_applied(value, before, name, set, plain)),
         ExprKind::Call(callee, args) | ExprKind::New(callee, args) => first_applied(callee, before, name, set, plain)

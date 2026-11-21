@@ -121,7 +121,7 @@ pub(super) fn given_without_block(last: &Stmt) -> bool {
 /// first: a constant, or an empty array, `Vec::new()`'s `[]`, which runs
 /// no code and which nothing holds but its variable (#556).
 fn given_first(value: &Expr) -> bool {
-    value.is_constant() || matches!(&value.kind, ExprKind::Array(items) if items.is_empty())
+    value.is_constant() || matches!(&value.kind, ExprKind::Array(items, ..) if items.is_empty())
 }
 
 /// Whether `value`, a block's default, is one `copied_into_branches`

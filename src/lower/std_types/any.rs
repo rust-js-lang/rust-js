@@ -257,7 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         match item {
             Some(item) if self.given_as_value(item.peel_refs()) => {
-                if let js::ExprKind::Array(items) = &value.kind {
+                if let js::ExprKind::Array(items, ..) = &value.kind {
                     return Expr::array(
                         (items.iter())
                             .map(|i| self.any_given_to_js(i.clone(), item, none_null))

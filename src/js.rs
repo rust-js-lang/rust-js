@@ -812,6 +812,18 @@ impl ObjectLayout {
     }
 }
 
+/// How an array literal was made that its items don't say, as
+/// `ObjectLayout` is an object literal's. Only `nulled` is shared with an
+/// object's: the rest of `ObjectLayout` is how a struct literal is written,
+/// which no array literal is (ADR 1096, amended).
+#[derive(Clone, PartialEq, Eq, Default)]
+pub struct ArrayLayout {
+    /// The items MIR proved `null` or a value where a tuple struct's literal
+    /// is made, by index: what a `Drop` guard's inlined body reads of each
+    /// (`drops::inlined`, ADR 0841's reader 8).
+    pub nulled: Vec<usize>,
+}
+
 /// What a struct literal writes of its fields (`ObjectLayout::fields`).
 #[derive(Clone, PartialEq, Eq, Default)]
 pub struct WrittenFields {
@@ -915,8 +927,9 @@ pub enum ExprKind {
     Stringed(Box<Expr>),
     /// `a?.[i]`: `undefined` where `a` is `undefined` or `null`.
     OptionalIndex(Box<Expr>, Box<Expr>),
-    /// `[a, b]`: a tuple or tuple struct (ADR 0020).
-    Array(Vec<Expr>),
+    /// `[a, b]`: a tuple or tuple struct (ADR 0020), and how its literal
+    /// was made (`ArrayLayout`).
+    Array(Vec<Expr>, ArrayLayout),
     /// `...a`, an array's item only: `[...path, last]`, a slice's `concat`.
     Spread(Box<Expr>),
     /// `{ x: a, y: b }`: a struct (ADR 0020), and how its literal is

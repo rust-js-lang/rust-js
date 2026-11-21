@@ -25,7 +25,7 @@ pub(super) fn arm_starts(module: &Module) -> IndexMap<u32, Arm> {
                 // are; of an array as it's written, its items one after
                 // another, not one rust-js made of a call, `heap.swap(i,
                 // j)`'s, each item of the same `heap`.
-                ExprKind::Array(items) => {
+                ExprKind::Array(items, ..) => {
                     let spans: Vec<js::Span> = (items.iter())
                         .map(|item| match item.span.is_none() {
                             true => written_extent(item).map_or(js::Span::NONE, |(lo, hi)| js::Span { lo, hi }),

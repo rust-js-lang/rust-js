@@ -17,7 +17,7 @@ pub(super) fn entries_written_out(e: &Expr) -> Option<Expr> {
     let (ExprKind::Member(object, name), [entries]) = (&f.kind, args.as_slice()) else {
         return None;
     };
-    let (ExprKind::Var(object), ExprKind::Array(entries)) = (&object.kind, &entries.kind) else {
+    let (ExprKind::Var(object), ExprKind::Array(entries, ..)) = (&object.kind, &entries.kind) else {
         return None;
     };
     if !object.is("Object") || name != "fromEntries" {
@@ -25,7 +25,7 @@ pub(super) fn entries_written_out(e: &Expr) -> Option<Expr> {
     }
     let mut fields = Vec::new();
     for entry in entries {
-        let ExprKind::Array(pair) = &entry.kind else {
+        let ExprKind::Array(pair, ..) = &entry.kind else {
             return None;
         };
         let [key, value] = pair.as_slice() else {

@@ -21,8 +21,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`[...first, ...[a, b]]` keeps its spread of an array, not `[...first, a, b]`",
     file: "src/lower/mir/tidy/values.rs",
-    find: "    if let ExprKind::Array(items) = &mut e.kind {",
-    replace: "    if let ExprKind::Array(items) = &mut e.kind && false {",
+    find: "    if let ExprKind::Array(items, ..) = &mut e.kind {",
+    replace: "    if let ExprKind::Array(items, ..) = &mut e.kind && false {",
     tests: [
       "test/lowering-collections.test.ts",
       "-t",

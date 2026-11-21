@@ -91,7 +91,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<js::Name, u
         }
         if let StmtKind::Const(name, value) = &stmts[i].kind
             && !mentions.contains_key(name)
-            && let ExprKind::Array(parts) = &value.kind
+            && let ExprKind::Array(parts, ..) = &value.kind
             // A spread's effect is the stepping it does, which only an
             // array or a call's arguments write: the array whole (#256).
             && !parts.iter().any(|part| matches!(part.kind, ExprKind::Spread(_)))

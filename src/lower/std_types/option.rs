@@ -610,7 +610,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let nullish = matches!(value.kind, js::ExprKind::Undefined | js::ExprKind::Null);
         let literal = matches!(
             value.kind,
-            js::ExprKind::Array(_) | js::ExprKind::Object(..) | js::ExprKind::Template(..)
+            js::ExprKind::Array(..) | js::ExprKind::Object(..) | js::ExprKind::Template(..)
         );
         if (value.is_constant() && !nullish) || literal {
             return value;
@@ -927,7 +927,7 @@ pub(in crate::lower) fn or_fallback(option: Expr, fallback: Expr) -> Expr {
                 | js::ExprKind::Num(_)
                 | js::ExprKind::Bool(_)
                 | js::ExprKind::Object(..)
-                | js::ExprKind::Array(_)
+                | js::ExprKind::Array(..)
         )
     {
         return Expr::cond(test.clone(), value.clone(), fallback);

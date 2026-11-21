@@ -379,7 +379,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(super) fn spread_rest(args: &mut Vec<Expr>) {
     match args.pop() {
         Some(Expr {
-            kind: js::ExprKind::Array(items),
+            kind: js::ExprKind::Array(items, ..),
             ..
         }) => args.extend(items),
         Some(last) => args.push(Expr::spread(last)),

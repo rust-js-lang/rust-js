@@ -483,7 +483,9 @@ impl Order<'_> {
                 args.iter().for_each(|arg| self.expr(arg));
                 self.stopped |= e.has_effects();
             }
-            js::ExprKind::Template(_, items, _) | js::ExprKind::Array(items) => items.iter().for_each(|i| self.expr(i)),
+            js::ExprKind::Template(_, items, _) | js::ExprKind::Array(items, ..) => {
+                items.iter().for_each(|i| self.expr(i))
+            }
             // An object's fields, in order, `{ signal: controller.signal }`.
             js::ExprKind::Object(props, ..)
                 if props

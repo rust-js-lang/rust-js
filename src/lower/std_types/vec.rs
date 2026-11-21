@@ -219,7 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // cloned, `clone_items`, an array made here itself where they
             // need no clone, `$slice(v)`'s.
             Std::ToVec => match arg() {
-                items if matches!(items.kind, js::ExprKind::Array(_)) => items,
+                items if matches!(items.kind, js::ExprKind::Array(..)) => items,
                 items => self.vec_of_items(items, tys[0], span)?,
             },
             // Where its comparator's calls can be seen, std's own (#925).

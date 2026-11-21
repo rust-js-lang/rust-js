@@ -48,7 +48,7 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<js::Name>, plain: &IndexS
         }
         // Fresh literals whose inputs stay unchanged run no reads of their own.
         // Like JSX, they can precede a later native getter inside a call.
-        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => inert_element(e, set),
+        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),
         // The items of an array nothing changes, `...first`; not a plain
         // value's, an iterator's, a function's `inspect(see)`, which
         // spreading steps, running what it calls (#1015).
@@ -123,7 +123,7 @@ fn inert_element(e: &Expr, changing: &IndexSet<js::Name>) -> bool {
     match &e.kind {
         ExprKind::Var(v) => !changing.contains(v),
         ExprKind::Symbol(_) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
-        ExprKind::Array(items) => items.iter().all(|i| inert_element(i, changing)),
+        ExprKind::Array(items, ..) => items.iter().all(|i| inert_element(i, changing)),
         ExprKind::Object(fields, ..) => props(fields),
         // A choice of them, `open ? <IconClose /> : <IconHamburger />`.
         ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),

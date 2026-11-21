@@ -228,7 +228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((start, end)) = crate::lower::recognition::range_bounds(self.tcx, ty) else {
             return Ok(None);
         };
-        let literal = matches!(range.kind, js::ExprKind::Object(..) | js::ExprKind::Array(_))
+        let literal = matches!(range.kind, js::ExprKind::Object(..) | js::ExprKind::Array(..))
             && (range.reads_same() || !range.has_effects());
         let range = match literal || range.reads_same() {
             true => range,

@@ -134,7 +134,7 @@ impl<'a> Cx<'a> {
                 ArenaVec::from_iter_in(items.iter().map(|e| self.expr(e)), b),
                 b,
             ),
-            ExprKind::Array(items) => {
+            ExprKind::Array(items, ..) => {
                 let items = items.iter().map(|item| match &item.kind {
                     ExprKind::Spread(all) => {
                         ArrayExpressionElement::new_spread_element(span(item.span), self.expr(all), b)

@@ -174,7 +174,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         js_span: js::Span,
     ) -> Option<Vec<Stmt>> {
         let array = |e: &Expr| match &e.kind {
-            js::ExprKind::Array(items) => Some(items.clone()),
+            js::ExprKind::Array(items, ..) => Some(items.clone()),
             _ => None,
         };
         let (kind, type_name, fields): (_, _, Vec<(Option<Expr>, Expr)>) = match (operation, values) {

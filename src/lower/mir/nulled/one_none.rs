@@ -589,7 +589,7 @@ pub(super) fn never_null(value: &Expr) -> bool {
             | K::Written(_)
             | K::Undefined
             | K::GivenUndefined
-            | K::Array(_)
+            | K::Array(..)
             | K::Object(..)
             | K::Arrow(..)
             | K::AsyncArrow(..)

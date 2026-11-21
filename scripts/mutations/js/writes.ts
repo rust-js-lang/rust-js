@@ -51,7 +51,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a destructuring assignment's targets, a swap's `[spare[0], pair.left] = [pair.left, spare[0]]`, aren't written, so a guard's field it writes is a `const` it assigns (#1570, #1593)",
     file: "src/js/writes.rs",
-    find: "        if let ExprKind::Array(targets) = &target.kind {\n            for target in targets {\n                self.target(target, in_closure, counted);\n            }\n            return;\n        }\n",
+    find: "        if let ExprKind::Array(targets, ..) = &target.kind {\n            for target in targets {\n                self.target(target, in_closure, counted);\n            }\n            return;\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^guard_field_written_by_a_swap_or_in_an_expression.rs$"],
   },

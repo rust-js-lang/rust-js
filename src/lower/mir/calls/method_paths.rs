@@ -83,7 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut values = self.take_operands(state, &[tuple], out)?;
         match self.value_expr(values.remove(0), span)?.kind {
-            js::ExprKind::Array(items) if items.len() == 2 => {
+            js::ExprKind::Array(items, ..) if items.len() == 2 => {
                 let [value, key] = <[Expr; 2]>::try_from(items).unwrap_or_else(|_| unreachable!("two items"));
                 Ok(crate::lower::binding_calls::keyed(value, key)
                     .answered_by_a_getter()
@@ -186,7 +186,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // there.
         let mut tuple = self.take_operands(state, &[&path.node], out)?;
         let value = match self.value_expr(tuple.remove(0), span)?.kind {
-            js::ExprKind::Array(mut items) => items.swap_remove(0),
+            js::ExprKind::Array(mut items, ..) => items.swap_remove(0),
             // Held, as MIR made it, before the arguments: its value.
             js::ExprKind::Var(held) => Expr::index(Expr::var(held), Expr::int(0)),
             _ => return refused(self, "`js::optional_call` of a path whose value isn't written in it"),
@@ -196,7 +196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut values = self.take_operands(state, &[&given.node], out)?;
         let items = match self.value_expr(values.remove(0), span)?.kind {
-            js::ExprKind::Array(items) => items,
+            js::ExprKind::Array(items, ..) => items,
             js::ExprKind::Undefined if arg_tys.is_empty() => Vec::new(),
             _ => {
                 return refused(

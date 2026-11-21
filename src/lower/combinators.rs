@@ -320,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A slice's `concat` of parts written out, `[path, &[last]].concat()`:
         // an array of them, spread, `[...path, ...[last]]`.
         if comb == Comb::Concat
-            && let js::ExprKind::Array(parts) = &subject.kind
+            && let js::ExprKind::Array(parts, ..) = &subject.kind
             && !self
                 .slice_item(subject_ty)
                 .is_some_and(|item| self.is_string_like(item))
@@ -1160,7 +1160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `extend_from_slice(&[3, 4])`: JS's own `v.push(a, b)`, which pushes
         // each in order, made first, as the array's are, each copied where
         // it needs one (ADR 0734).
-        if let js::ExprKind::Array(written) = &list.kind
+        if let js::ExprKind::Array(written, ..) = &list.kind
             && !written.iter().any(|item| matches!(item.kind, js::ExprKind::Spread(_)))
         {
             let mut pushed = Vec::new();

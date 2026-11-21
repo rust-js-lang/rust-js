@@ -169,7 +169,7 @@ impl Writes {
     /// write is once. A destructuring one's, `[a, b.f] = ..`, each of its
     /// targets (#1570).
     fn target(&mut self, target: &Expr, in_closure: bool, counted: bool) {
-        if let ExprKind::Array(targets) = &target.kind {
+        if let ExprKind::Array(targets, ..) = &target.kind {
             for target in targets {
                 self.target(target, in_closure, counted);
             }

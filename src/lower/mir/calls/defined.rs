@@ -158,7 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let refused =
             |cx: &Self| cx.unsupported(span, &format!("`{function}` of a path whose value isn't written in it"));
         match self.value_expr(values.remove(0), span)?.kind {
-            js::ExprKind::Array(mut items) => Ok(items.swap_remove(0)),
+            js::ExprKind::Array(mut items, ..) => Ok(items.swap_remove(0)),
             js::ExprKind::Var(_) => {
                 let body = state.body;
                 let first = tuple.place().and_then(|place| place.as_local()).and_then(|local| {

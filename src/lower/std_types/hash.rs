@@ -587,7 +587,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // each part as it's written, never the array held to be read.
             Hashed::Tuple(parts) => {
                 let made = match &value.kind {
-                    js::ExprKind::Array(items) if items.len() == parts.len() && !value.has_effects() => {
+                    js::ExprKind::Array(items, ..) if items.len() == parts.len() && !value.has_effects() => {
                         Some(items.clone())
                     }
                     _ => None,

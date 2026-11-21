@@ -428,7 +428,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match (self.shape(ty), &base.kind) {
             // A part of `[a, b]` (a `match (a, b)` subject) is just `a`.
-            (Shape::Array(_), js::ExprKind::Array(items)) if !base.has_effects() => items[i].clone(),
+            (Shape::Array(_), js::ExprKind::Array(items, ..)) if !base.has_effects() => items[i].clone(),
             // A part of the array rust-js made of it (`Known::Part`), but of a
             // struct JS may make, a getter's.
             (Shape::Array(_), _) => {

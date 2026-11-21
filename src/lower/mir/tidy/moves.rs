@@ -405,7 +405,7 @@ pub(super) fn leads(e: &Expr, name: &js::Name, guard: Option<&Expr>, passes: &dy
         | ExprKind::OptionalIndex(a, _)
         | ExprKind::OptionalCall(a, _) => leads(a, name, guard, passes).or(Some(false)),
         ExprKind::Binary(_, a, b) => in_order(&mut [&**a, &**b].into_iter()),
-        ExprKind::Array(items) | ExprKind::Template(_, items, _) => in_order(&mut items.iter()),
+        ExprKind::Array(items, ..) | ExprKind::Template(_, items, _) => in_order(&mut items.iter()),
         // A binding's method of a JS value, `obj.send(_5, ..)`: looked up
         // before its arguments run, by a getter it may be, where Rust runs
         // them first: nothing moves past its receiver (ADR 0750).

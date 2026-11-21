@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-stable-literal-arguments-kept",
     breaks: "stable fresh object and array arguments prevent later native getter expressions from remaining at the call site",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => inert_element(e, set),",
+    find: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),",
     replace: "ExprKind::Jsx(_) => inert_element(e, set),",
     tests: ["test/lowering-native-aggregate-arguments.test.ts"],
   },
@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-literal-contents-unchecked",
     breaks: "a literal's getters, computed keys, spreads or closure-written contents are treated as stable",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => inert_element(e, set),",
-    replace: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => true,",
+    find: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),",
+    replace: "ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => true,",
     unitTests: "lower::mir::tidy::literal_movement_tests::fresh_literals_require_stable_contents",
   },
   {
@@ -32,9 +32,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => inert_element(e, set),\n",
+    find: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),\n",
     replace:
-      "        ExprKind::Object(..) if e.is_made_of_constants() => false,\n        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => inert_element(e, set),\n",
+      "        ExprKind::Object(..) if e.is_made_of_constants() => false,\n        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),\n",
     tests: [
       "test/lowering-functions.test.ts",
       "-t",
@@ -73,8 +73,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a prop MIR holds for a borrow stays a `const _16`, read past a sibling element, `<Search isOpen={show} />`",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => inert_element(e, set),\n",
-    replace: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => !matches!(&e.kind, ExprKind::Jsx(_)) && inert_element(e, set),\n",
+    find: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => inert_element(e, set),\n",
+    replace: "        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(..) => !matches!(&e.kind, ExprKind::Jsx(_)) && inert_element(e, set),\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",

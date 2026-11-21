@@ -237,7 +237,7 @@ fn expr(e: &Expr, visitor: &mut Words<'_>) {
                 expr(a, visitor);
             }
         }
-        ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
+        ExprKind::Array(items, ..) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
             for item in items {
                 expr(item, visitor);
             }

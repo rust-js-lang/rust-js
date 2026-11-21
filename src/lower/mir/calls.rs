@@ -575,7 +575,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::List(items, _) => items,
             value => match self.value_expr(value, span)? {
                 Expr {
-                    kind: js::ExprKind::Array(items),
+                    kind: js::ExprKind::Array(items, ..),
                     ..
                 } => items.into_iter().map(Value::Expr).collect(),
                 tuple => {
@@ -1020,10 +1020,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// is refused before (`bindings::reject_nullable_held`).
     fn nulled_entries(&self, entries: Expr) -> Expr {
         match entries.kind {
-            js::ExprKind::Array(items) => {
+            js::ExprKind::Array(items, layout) => {
                 let items = (items.into_iter())
                     .map(|item| match item.kind {
-                        js::ExprKind::Array(mut pair) if pair.len() == 2 => {
+                        js::ExprKind::Array(mut pair, pair_layout) if pair.len() == 2 => {
                             let value = pair.pop().expect("a pair's value");
                             pair.push(
                                 crate::lower::representation::NoneForm::Null
@@ -1031,7 +1031,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                     .written(value, js::Undefined::ByForm),
                             );
                             Expr {
-                                kind: js::ExprKind::Array(pair),
+                                kind: js::ExprKind::Array(pair, pair_layout),
                                 ..item
                             }
                         }
@@ -1039,7 +1039,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     })
                     .collect();
                 Expr {
-                    kind: js::ExprKind::Array(items),
+                    kind: js::ExprKind::Array(items, layout),
                     ..entries
                 }
             }

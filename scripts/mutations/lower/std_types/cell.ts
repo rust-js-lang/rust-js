@@ -541,9 +541,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an array taken, `queue.take()` of a `RefCell<Vec<_>>`, is `$take(queue, [])`, a copy and a helper, not `queue.splice(0)` (rd264)",
     file: "src/lower/std_types/cell.rs",
-    find: "        js::ExprKind::Array(items) if items.is_empty() => {\n",
+    find: "        js::ExprKind::Array(items, ..) if items.is_empty() => {\n",
     replace:
-      "        js::ExprKind::Array(items) if items.is_empty() && false => {\n",
+      "        js::ExprKind::Array(items, ..) if items.is_empty() && false => {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "an array taken"],
   },
   {

@@ -995,7 +995,7 @@ pub(in crate::lower) fn taken<'tcx>(
     span: rustc_span::Span,
 ) -> R<Expr> {
     Ok(match &value.kind {
-        js::ExprKind::Array(items) if items.is_empty() => {
+        js::ExprKind::Array(items, ..) if items.is_empty() => {
             Expr::call(Expr::member(target, "splice"), vec![Expr::num(0.0)])
         }
         _ => cx.in_place(InPlaceWriter::Take, written, vec![target, value], span)?,

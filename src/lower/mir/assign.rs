@@ -1124,7 +1124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         js_span: js::Span,
         out: &mut Vec<Stmt>,
     ) -> Option<Vec<Stmt>> {
-        let js::ExprKind::Array(items) = &value.kind else {
+        let js::ExprKind::Array(items, ..) = &value.kind else {
             return None;
         };
         if !matches!(target.kind, js::ExprKind::Var(_)) {

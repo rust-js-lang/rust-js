@@ -907,7 +907,7 @@ impl<'a> Cx<'a> {
                 AssignmentTarget::new_computed_member_expression(sp, self.expr(object), self.expr(index), false, b)
             }
             // Each at once, a swap's, `[a[i], a[j]] = [a[j], a[i]]`.
-            ExprKind::Array(items) => {
+            ExprKind::Array(items, ..) => {
                 let items = items
                     .iter()
                     .map(|item| Some(AssignmentTargetMaybeDefault::from(self.assignment_target(item))));
