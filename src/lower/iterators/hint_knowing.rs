@@ -25,6 +25,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if was_made_knowing_its_back(&value) || crate::lower::iterators::knows_its_back_by_form(&value) {
             return value;
         }
+        // Taken out of what steps it to match a form below; given back as
+        // it came where none is its (#2262).
+        let given = value.clone();
         let value = stepped_value(&value).unwrap_or(value);
         if self.steps_an_array(ty) {
             return self.std_iterator_as_it_is(value, ty);
@@ -44,7 +47,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         let Some(form) = self.hint_knowing_form_of(ty) else {
-            return value;
+            return given;
         };
         use crate::lower::iterators::in_place_forms::InPlaceForm;
         let source_of = |cx: &Self| crate::lower::recognition::adapted_iterators(cx.tcx, cx.typing_env, ty);
@@ -113,10 +116,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some((first, second)) = crate::lower::recognition::chained_sources(self.tcx, ty)
                     && let Some([a, b]) = helper_call(&value, "$lazyChain").as_deref()
                 {
-                    let a = stepped_value(a).unwrap_or_else(|| a.clone());
-                    let b = stepped_value(b).unwrap_or_else(|| b.clone());
-                    let a = self.as_hint_knowing(a, first.peel_refs());
-                    let b = self.as_hint_knowing(b, second.peel_refs());
+                    let a = self.as_hint_knowing(a.clone(), first.peel_refs());
+                    let b = self.as_hint_knowing(b.clone(), second.peel_refs());
                     return Expr::call_helper("$lazyChain", vec![a, b]);
                 }
             }

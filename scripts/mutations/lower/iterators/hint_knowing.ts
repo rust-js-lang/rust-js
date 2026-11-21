@@ -43,4 +43,13 @@ export const mutations: Mutation[] = [
     replace: "                    return Expr::call_helper(\"$flattenEnds\", [vec![source_value, each], self.flatten_fusing(ty)].concat());\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_made_knowing_its_hint_asks_no_back.rs$"],
   },
+  {
+    name: "hint-knowing-gives-back-the-unwrapped",
+    breaks: "a value made knowing its hint, of a type with no form that knows it, a crate's own iterator, is given back taken out of what steps it, so a chain of it a library's generic function counts steps its tuple's fields, not its own `next` (#2262)",
+    file: "src/lower/iterators/hint_knowing.rs",
+    find: "        let Some(form) = self.hint_knowing_form_of(ty) else {\n            return given;\n        };\n",
+    replace: "        let Some(form) = self.hint_knowing_form_of(ty) else {\n            return value;\n        };\n",
+    tests: ["test/metamorphic.test.ts", "-t", "^(skip_of_a_filter_counts_by_its_count|identity_map_hides_a_filters_count).rs, rewritten$"],
+    env: { METAMORPHIC: "all", METAMORPHIC_REWRITES: "library" },
+  },
 ];
