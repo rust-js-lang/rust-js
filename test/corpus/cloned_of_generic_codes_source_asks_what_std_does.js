@@ -54,7 +54,7 @@ function skipCount(i) {
   return $count($cloned(Iterator.from(i)).drop(1));
 }
 function fuseCount(i, IFused) {
-  return $count(iterator_fuse($cloned(Iterator.from(i)), { next: $next, fold: $foldOf }, false));
+  return $count(iterator_fuse($cloned(Iterator.from(i)), { next: $next, fold: $foldOf }, IFused));
 }
 function fuseLast(i, IFused) {
   return $last($cloned(Iterator.from(i)));

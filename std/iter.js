@@ -6274,7 +6274,7 @@ export function flatMapIterator_next(
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         IntoIterIterator,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6287,7 +6287,7 @@ export function flatMapIterator_next(
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         IntoIterIterator,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6412,7 +6412,7 @@ export function flatMapIterator_tryFold(
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         RTry,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6431,7 +6431,7 @@ export function flatMapIterator_tryFold(
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
         RTry,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6537,7 +6537,7 @@ export function flatMapIterator_advanceBy(
         n,
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6551,7 +6551,7 @@ export function flatMapIterator_advanceBy(
         { next: $nextSome, fold: $foldOf },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6622,7 +6622,7 @@ export function flatMapDoubleEndedIterator_nextBack(
         },
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6675,7 +6675,7 @@ export function flatMapDoubleEndedIterator_nextBack(
         },
         UIntoIterator,
         UIntoIterDoubleEndedIterator,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6890,7 +6890,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
         },
         UIntoIterator,
         RTry,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -6951,7 +6951,7 @@ export function flatMapDoubleEndedIterator_tryRfold(
         UIntoIterator.IntoIterIterator(),
         UIntoIterDoubleEndedIterator,
         RTry,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -7027,7 +7027,7 @@ export function flatMapDoubleEndedIterator_advanceBackBy(
             ),
         },
         UIntoIterator,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -7083,7 +7083,7 @@ export function flatMapDoubleEndedIterator_advanceBackBy(
         UIntoIterator,
         UIntoIterator.IntoIterIterator(),
         UIntoIterDoubleEndedIterator,
-        false,
+        IFused,
         (map) => {
           map.return();
         },
@@ -11467,7 +11467,7 @@ export function iterator_flatMap(
               return fuseIterator_next(
                 iterator,
                 { next: $nextSome, fold: $foldOf },
-                false,
+                SelfFused,
                 (map) => {
                   map.return();
                 },
@@ -11489,7 +11489,7 @@ export function iterator_flatMap(
                 iterator,
                 n,
                 { next: $nextSome, fold: $foldOf },
-                false,
+                SelfFused,
                 (map) => {
                   map.return();
                 },
@@ -11501,7 +11501,7 @@ export function iterator_flatMap(
                 iterator,
                 n,
                 { next: $nextSome, fold: $foldOf },
-                false,
+                SelfFused,
                 (map) => {
                   map.return();
                 },
@@ -11539,7 +11539,7 @@ export function iterator_flatMap(
                 f,
                 { next: $nextSome, fold: $foldOf },
                 $tryOf(broke),
-                false,
+                SelfFused,
                 (map) => {
                   map.return();
                 },

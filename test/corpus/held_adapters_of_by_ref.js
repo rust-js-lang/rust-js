@@ -53,7 +53,7 @@ function halves(it, IFused) {
       lent: ["lent"],
     }),
     { next: $next, fold: $foldOf },
-    false,
+    IFused,
   );
   const first = Array.from($lent(fused).drop(1).take(1))[0] ?? 0;
   const total = fused.reduce((a, b) => (a + b) >>> 0, 0);

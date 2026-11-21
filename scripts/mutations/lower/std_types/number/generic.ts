@@ -355,4 +355,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^zip_of_a_generic_sources_copies_moved_through_generic_code"],
   },
+  {
+    name: "fused-fact-of-a-parameter-built-type-unreduced",
+    breaks: "whether a type built of type parameters is a `FusedIterator` is answered by rustc's selection, which can't say, so std's compiled `Fuse` of a `Map<Self, F>` is told `false` though its caller says `Self` is fused, and a flatten of a `Vec`'s items with std's iterator structs drops its source and function at its first `None` (#2243)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "        // a `&mut I`, `I`'s, each's (ADR 0975).\n        if let Some(held) = self.held_instead(of, fact) {\n",
+    replace: "        // a `&mut I`, `I`'s, each's (ADR 0975).\n        if fact != TypeFact::Fused && let Some(held) = self.held_instead(of, fact) {\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

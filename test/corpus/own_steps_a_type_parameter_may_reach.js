@@ -188,7 +188,7 @@ function mappedFused(it, IFused, dropI) {
       dDrop_drop,
     ),
     { next: $next, fold: $foldOf },
-    false,
+    IFused,
     (map) => {
       map.return();
     },

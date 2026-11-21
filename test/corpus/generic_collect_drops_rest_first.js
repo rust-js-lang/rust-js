@@ -74,7 +74,7 @@ function fused(src, IFused, dropI) {
           dDrop_drop,
         ),
         { next: $next, fold: $foldOf },
-        false,
+        IFused,
         (map) => {
           map.return();
         },

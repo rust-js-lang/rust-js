@@ -186,7 +186,7 @@ function rfolded(it, IFused, dropI) {
         $dropItem: dDrop_drop,
         $dropIntoIter: $dropEach(dDrop_drop),
       },
-      false,
+      IFused,
       undefined,
       false,
       (map) => {

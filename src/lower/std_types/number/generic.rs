@@ -439,10 +439,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && self.krate.counted.counts(self.tcx, of);
             return Ok(Expr::bool(instance));
         }
-        // Whether its `Fuse` keeps it as it ends (ADR 0543).
-        if fact == TypeFact::Fused {
-            return Ok(Expr::bool(self.recognition().is_fused_iterator(of)));
-        }
         // Whether it's `Eq`, where rustc can say it here, so a callee's `==`
         // of two `Rc`s of it asks whether they're one allocation first:
         // refused where JS can't tell two apart (#930, #931).
@@ -467,6 +463,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 });
             }
             return Ok(holds.expect("one held"));
+        }
+        // Whether its `Fuse` keeps it as it ends (ADR 0543), where it isn't
+        // the facts of what it holds above, `I`'s of a `Map<I, F>`, as std's
+        // impl asks, which rustc's selection can't say of one built of type
+        // parameters (#2243).
+        if fact == TypeFact::Fused {
+            return Ok(Expr::bool(self.recognition().is_fused_iterator(of)));
         }
         // Of a type only a caller knows, its caller's, which none gave; but a
         // trait rustc can say holds of it here, as of any `T` (ADR 0975).

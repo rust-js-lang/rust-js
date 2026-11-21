@@ -133,7 +133,7 @@ function fused(src, IFused, dropI) {
     iterator_fuse(
       src,
       { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
-      false,
+      IFused,
       (box) => {
         dropI?.(box);
       },

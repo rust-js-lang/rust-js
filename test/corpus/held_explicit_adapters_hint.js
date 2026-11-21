@@ -27,7 +27,7 @@ export function entry() {
 function firstTwo(items, IFused) {
   const window = { rest: iterator_take($stepsOf(items), 2, $jsIteratorSome) };
   return $sizeHint(
-    iterator_fuse(window.rest, { next: $nextSome, fold: $foldOf, nth: $nthSome }, false),
+    iterator_fuse(window.rest, { next: $nextSome, fold: $foldOf, nth: $nthSome }, IFused),
   );
 }
 
