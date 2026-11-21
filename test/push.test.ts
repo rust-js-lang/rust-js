@@ -242,6 +242,11 @@ test("a rebase with std/'s generated files in conflict goes on, main's taken; on
     writeFileSync(join(cwd, file), text);
   };
   const was = process.cwd();
+  // `rebase()` commits as the process's environment says: CI's runner
+  // has no identity of its own, and its `rebase --continue` failed there.
+  const identity = ["GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"] as const;
+  const before = identity.map((key) => process.env[key]);
+  for (const key of identity) process.env[key] = env[key];
   const setUp = (name: string, generated: string[], [base, ours, theirs] = ["base\n", "main\n", "change\n"]) => {
     const origin = join(dir, `${name}.git`);
     const main = join(dir, `${name}-main`);
@@ -281,6 +286,48 @@ test("a rebase with std/'s generated files in conflict goes on, main's taken; on
     process.chdir(crate);
     expect(() => rebase()).toThrow("the rebase stopped on a conflict, aborted: std/lib.rs");
     expect(existsSync(join(crate, ".git", "rebase-merge"))).toBe(false);
+  } finally {
+    process.chdir(was);
+    identity.forEach((key, at) => (before[at] === undefined ? delete process.env[key] : (process.env[key] = before[at])));
+  }
+});
+
+// A rebase that stops with no conflict to resolve, a step git can't
+// commit, is refused and aborted, never returned as done: it left a rebase
+// stopped, and the push pushed `origin/main` as it was (2026-11-21).
+test("a rebase that stops with no conflict to resolve is refused and aborted", () => {
+  const dir = fixture("push-rebase-stopped");
+  const env = { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.com", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.com" };
+  const git = (cwd: string, ...args: string[]) => {
+    const p = spawnSync("git", args, { cwd, env, encoding: "utf8" });
+    if (p.status !== 0) throw new Error(`git ${args.join(" ")}: ${p.stderr}`);
+    return p.stdout;
+  };
+  const origin = join(dir, "origin.git");
+  const main = join(dir, "main");
+  const work = join(dir, "work");
+  git(dir, "init", "-q", "--bare", "-b", "main", origin);
+  git(dir, "clone", "-q", origin, main);
+  writeFileSync(join(main, "a.txt"), "a\n");
+  git(main, "add", "-A");
+  git(main, "commit", "-q", "-m", "a");
+  git(main, "push", "-q", "origin", "HEAD:main");
+  git(dir, "clone", "-q", origin, work);
+  writeFileSync(join(main, "b.txt"), "main\n");
+  git(main, "add", "-A");
+  git(main, "commit", "-q", "-m", "b");
+  git(main, "push", "-q", "origin", "HEAD:main");
+  writeFileSync(join(work, "c.txt"), "change\n");
+  git(work, "add", "-A");
+  git(work, "commit", "-q", "-m", "c");
+  // A file of the working tree in the way of the incoming one, untracked.
+  writeFileSync(join(work, "b.txt"), "in the way\n");
+  const was = process.cwd();
+  try {
+    process.chdir(work);
+    expect(() => rebase()).toThrow("the rebase stopped with no conflict to resolve, aborted");
+    expect(existsSync(join(work, ".git", "rebase-merge"))).toBe(false);
+    expect(git(work, "log", "--format=%s").trim().split("\n")).toEqual(["c", "a"]);
   } finally {
     process.chdir(was);
   }

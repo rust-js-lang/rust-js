@@ -218,4 +218,12 @@ export const mutations: Mutation[] = [
     replace: "file in regenerated ||",
     tests: ["test/push.test.ts", "-t", "std/'s generated files"],
   },
+  {
+    name: "push-rebase-stopped-returned",
+    breaks: "a rebase that stops with no conflict to resolve is returned as done, the rebase left stopped, and the push pushes `origin/main` as it was, saying it landed (2026-11-21)",
+    file: "scripts/push.ts",
+    find: "  if (lines(git(\"diff\", \"--name-only\", \"--diff-filter=U\").out).length === 0) throw stopped(started.out);\n",
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "a rebase that stops with no conflict to resolve"],
+  },
 ];

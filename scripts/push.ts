@@ -295,6 +295,9 @@ async function main() {
       );
       if (stray.length > 0) throw new Refused(`the diff against origin/main holds files no pushed commit changes:\n${stray.join("\n")}`);
       phase("files");
+      // Something of its own to push: none, its commits lost, is refused,
+      // where a push of `origin/main` as it was said it had landed.
+      if (lines(git("rev-list", `${base}..HEAD`).out).length === 0) throw new Refused("nothing to push: HEAD is origin/main, the branch's commits aren't on it");
       git("fetch", "-q", "origin");
       if (git("rev-parse", "origin/main").out.trim() !== base) {
         console.log("push: main moved while this was checked; rebasing and checking again");
@@ -589,8 +592,18 @@ export function appendedBoth(base: string, ours: string, theirs: string): string
  * code's too. The baselines it resolved so. */
 export function rebase(): string[] {
   git("fetch", "-q", "origin");
-  if (git("rebase", "origin/main").code === 0) return [];
+  const started = git("rebase", "origin/main");
+  if (started.code === 0) return [];
   const remade = new Set<string>();
+  // A step that stopped with no conflict to resolve, a commit it couldn't
+  // make, a working tree's file in the way: never returned as done, which
+  // left the rebase stopped and pushed `origin/main` as it was, the
+  // branch's commits not in it, said to have landed (2026-11-21).
+  const stopped = (said: string) => {
+    git("rebase", "--abort");
+    return new Refused(`the rebase stopped with no conflict to resolve, aborted:\n${said.trim()}`);
+  };
+  if (lines(git("diff", "--name-only", "--diff-filter=U").out).length === 0) throw stopped(started.out);
   for (;;) {
     const conflicts = lines(git("diff", "--name-only", "--diff-filter=U").out);
     if (conflicts.length === 0) break;
@@ -643,7 +656,9 @@ export function rebase(): string[] {
       git("add", file);
       remade.add(file);
     }
-    if (sh(["git", "-c", "core.editor=true", "rebase", "--continue"], true).code === 0) break;
+    const next = sh(["git", "-c", "core.editor=true", "rebase", "--continue"], true);
+    if (next.code === 0) break;
+    if (lines(git("diff", "--name-only", "--diff-filter=U").out).length === 0) throw stopped(next.out);
   }
   return [...remade];
 }
