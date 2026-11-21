@@ -153,3 +153,18 @@ reason, or asks `held_unboxed`.
   `boxed_iterator_dictionary` (#1611). Corpus
   `generic_box_found_from_its_back_steps_the_box`; mutations
   `back-step-box-unlent` and `closing-box-unlent`.
+- `reaches_its_own` (recognition/own_steps.rs), the one answer of whether
+  std's step reaches the crate's own, sees through a sized `Box<I>` as
+  std's impl for it passes each step on (`Wrapper::BoxSized.passes`):
+  `nth`, `last` and `nth_back` reach `I`'s, and `fold` and `count` don't
+  (#2225). Before this it saw through a `&mut` alone. So generic code's
+  `Box<I>` was given `{ next: $next, lent: ["boxed"] }`, with no `last`.
+  The lend passed `last` on to `I`'s own, which took `I` and dropped it,
+  and the std struct that held the box, a `Skip`, a `Fuse`, a `Peekable`
+  or a `Chain`, asked `$took(IIterator.last, iter)` of an entry that
+  wasn't there. It dropped `I` a second time. The dictionary now carries
+  `last: $last` and `nth: $nth`, which `$took` asks of the value at run
+  time. A `Box<dyn Iterator>` carries its own steps and is unchanged.
+  All 145 of #2225's listed case-builds run as native, the matrix's,
+  the conformance table's and the points table's. Corpus
+  `generic_box_own_last_taken_once`; mutation `own-step-box-unseen`.

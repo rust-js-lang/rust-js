@@ -15,6 +15,7 @@ import {
   $live,
   $max,
   $next,
+  $nth,
   $unwindsOn,
   iterator_skip,
 } from "@rust-js/std";
@@ -41,9 +42,14 @@ function ownDrop_drop(own) {
 
 function skippedCount(it, dropI) {
   $held(it);
-  const iter = iterator_skip(it, 1, { next: $next, lent: ["boxed"] }, (box) => {
-    dropI?.(box);
-  });
+  const iter = iterator_skip(
+    it,
+    1,
+    { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
+    (box) => {
+      dropI?.(box);
+    },
+  );
   let result;
   try {
     result = $count(iter);

@@ -8,11 +8,14 @@ import {
   $foldDropping,
   $held,
   $iterator,
+  $last,
   $lastDropping,
   $lent,
   $live,
   $next,
   $nextBack,
+  $nth,
+  $nthBack,
   $unwindsOn,
   inspectDoubleEndedIterator_nextBack,
   iterator_inspect,
@@ -201,7 +204,7 @@ function fromItsBack(src, dropI) {
       (x) => {
         console.log(`saw ${x[0]}`);
       },
-      { next: $next, lent: ["boxed"] },
+      { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
       (box) => {
         dropI?.(box);
       },
@@ -218,7 +221,7 @@ function fromItsBack(src, dropI) {
   try {
     nextBack = inspectDoubleEndedIterator_nextBack(
       it,
-      { next_back: $nextBack },
+      { next_back: $nextBack, nthBack: $nthBack },
       (box) => {
         dropI?.(box);
       },

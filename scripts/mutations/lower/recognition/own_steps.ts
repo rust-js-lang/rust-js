@@ -224,4 +224,13 @@ export const mutations: Mutation[] = [
     replace: "                .chain(dyn_traits.into_iter().filter(|_| false))\n",
     tests: ["test/corpus.test.ts", "-t", "^skip_last_of_a_lent_dyn.rs$"],
   },
+  {
+    name: "own-step-box-unseen",
+    breaks:
+      "a sized `Box<I>` reaches none of `I`'s own steps, so generic code's dictionary of it has no `last`, and std's `Skip` that holds the box drops `I` again after `I`'s own `last` took it, `drop src` twice (#2225)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            return step.through_a_box() && self.reaches_its_own(inner, step, reach);\n",
+    replace: "            return false && step.through_a_box() && self.reaches_its_own(inner, step, reach);\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_own_last_taken_once.rs$"],
+  },
 ];

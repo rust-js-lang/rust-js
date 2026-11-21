@@ -90,6 +90,14 @@ impl OwnStep {
             .all(|w| w.passes(self.method()) == Passed::Own)
     }
 
+    /// Whether std's impl for a sized `Box<I>` passes it on to `I`'s own,
+    /// as `Box<I>` does its `nth`, `last` and `nth_back`, not its `fold`
+    /// or `count`, the trait's defaults over its `next` (#2225).
+    fn through_a_box(self) -> bool {
+        use super::std_steps::{Passed, Wrapper};
+        Wrapper::BoxSized.passes(self.method()) == Passed::Own
+    }
+
     /// Whether the helper that takes it, `$nth`, `$last`, `$count` or
     /// `$nthBack`, asks the iterator itself, so a type parameter may be
     /// said to have it wherever it's asked (#2134).
@@ -143,7 +151,8 @@ fn own_source_steps(item: Option<StdPath>) -> Option<&'static [OwnStep]> {
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether std's `step` of a `ty`, an iterator, reaches the one the impl
     /// of a crate's iterator writes: of that iterator, and through a `&mut`
-    /// of it where std's impl for it passes the step on; of each std
+    /// of it, or a sized `Box` of it, where std's impl for it passes the
+    /// step on; of each std
     /// adapter, through each step it asks of what it holds, std's catalog's
     /// (`OwnStep::asked_of`), its `try_fold` too, but a fold's `nth`, from
     /// its `fold` or its `try_fold`: a `step_by`'s or a `skip`'s reaching the
@@ -158,6 +167,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty);
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind() {
             return step.through_a_mut_ref() && self.reaches_its_own(*inner, step, reach);
+        }
+        // A sized `Box<I>`, what it holds, where std's impl for it passes
+        // the step on (#2225). Not a `Box<dyn Iterator>`, which carries its
+        // own steps (ADR 0521).
+        if let Some(inner) = ty.boxed_ty()
+            && super::held::held_unboxed(ty) != ty
+        {
+            return step.through_a_box() && self.reaches_its_own(inner, step, reach);
         }
         if self.is_user_iterator(ty) {
             let own = match step.is_double_ended() {

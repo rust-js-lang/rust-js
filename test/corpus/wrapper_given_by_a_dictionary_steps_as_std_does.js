@@ -7,6 +7,7 @@ import {
   $iter,
   $iterator,
   $jsIterator,
+  $last,
   $lent,
   $next,
   $nth,
@@ -100,7 +101,7 @@ function lent(j) {
 }
 
 function boxed(j) {
-  return total(j, { next: $next, lent: ["boxed"] }, tIsT);
+  return total(j, { next: $next, nth: $nth, last: $last, lent: ["boxed"] }, tIsT);
 }
 
 function main() {
@@ -135,7 +136,7 @@ function main() {
       nth: countdownIterator_nth,
       count: countdownIterator_count,
     }),
-    { next: $next, lent: ["boxed"] },
+    { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
     tIsT,
   );
   console.log(`box nth ${value == null ? "None" : `Some(${value})`}`);

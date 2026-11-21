@@ -8,9 +8,11 @@ import {
   $dropEach,
   $exactLen,
   $flatMap,
+  $folded,
   $held,
   $iter,
   $iterator,
+  $last,
   $lazyChain,
   $lazyRange,
   $lazyZip,
@@ -18,6 +20,7 @@ import {
   $live,
   $mapFrom,
   $next,
+  $nth,
   $reserveHint,
   $roomForHint,
   $tryFoldOk,
@@ -104,12 +107,17 @@ function enumerated(it) {
 
 function hinted(it, dropI) {
   $held(it);
-  const iter = iterator_stepBy(it, 2, { next: $next, lent: ["boxed"] }, (box) => {
-    dropI?.(box);
-  });
+  const iter = iterator_stepBy(
+    it,
+    2,
+    { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
+    (box) => {
+      dropI?.(box);
+    },
+  );
   let result;
   try {
-    result = $mapFrom(new Set(), $reserveHint(iter, 4, 4), true);
+    result = $mapFrom(new Set(), $reserveHint($folded(iter), 4, 4), true);
   } catch (error) {
     $cleanup(() => {
       iter.return();

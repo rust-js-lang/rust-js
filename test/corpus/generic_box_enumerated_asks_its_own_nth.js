@@ -9,9 +9,11 @@ import {
   $foldOf,
   $held,
   $iterator,
+  $last,
   $lent,
   $live,
   $next,
+  $nth,
   $rev,
   $skipping,
   $unwindsOn,
@@ -72,14 +74,14 @@ function owned(src, dropI) {
   const iter = iterator_skip(
     iterator_enumerate(
       src,
-      { next: $next, lent: ["boxed"] },
+      { next: $next, nth: $nth, last: $last, lent: ["boxed"] },
       (box) => {
         dropI?.(box);
       },
       dDrop_drop,
     ),
     2,
-    { next: $next, fold: $foldOf },
+    { next: $next, fold: $foldOf, nth: $nth },
     (enumerate) => {
       enumerate.return();
     },
