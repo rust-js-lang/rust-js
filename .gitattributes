@@ -16,3 +16,12 @@ node/coverage.txt merge=binary
 react/coverage.txt merge=binary
 webapi/coverage.txt merge=binary
 
+
+# std/'s generated files, which `bun run std` writes: never merged line by
+# line, which could join two changes' halves into a std no compiler wrote,
+# but a conflict on rebase, which `bun run push` writes again from the
+# rebased tree (scripts/push.ts's `stdGenerated`, #2259).
+std/*.js -merge
+std/*.js.map -merge
+std/*.d.ts -merge
+std/manifest.json -merge

@@ -4,11 +4,15 @@
 //
 //   rebase    onto origin/main; a conflict stops it, the rebase aborted, but
 //             one each side's change merges mechanically: a blessed baseline,
-//             a ratchet, an ADR's two amendments, a line set (`remakeable`)
+//             a ratchet, an ADR's two amendments, a line set (`remakeable`),
+//             and std/'s generated files, taken as main's and written again
+//             by `bun run std` once the round has built (`remadeStd`, #2259)
 //   fast      in seconds, what would otherwise refuse it minutes later:
 //             push-guard's `undone`, which git's hook runs as it pushes, at
 //             the end; and the mutation catalog's test file whole
-//             (`FAST_TESTS`), which check:fast runs minutes in
+//             (`FAST_TESTS`), which check:fast runs minutes in; past a
+//             rebase, only where its commits touch what they read
+//             (`fastAgain`, #2258)
 //   build     the compiler
 //   std       std/ made again (`bun run std`), refused where it differs from
 //             what's committed
@@ -48,7 +52,8 @@
 // times, outside the repository (scripts/devTimes.ts, its one writer): `<ISO> |
 // <machine> | <agent> | push | <sha> | total <s> | <phase> <s>, .. | select
 // <outcome> | load <1m/5m/15m> | ok|fail | <note>`, the selection's outcome
-// `all (<why>)`, `some (N files, M cases)` or `none` and the map's commit and
+// `all (<why>)`, `some (N files, M cases)` or `none`, each round's in turn,
+// `check <outcome>; sanity <outcome>` (#2258), and the map's commit and
 // how far behind it is (scripts/select.ts); the machine and agent each
 // machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
 import { spawn, spawnSync } from "node:child_process";
@@ -91,6 +96,26 @@ export function reactGate(changed: string[], incoming: string[] | undefined): "r
  * may read. Otherwise each `replace` type-checks as it did the round
  * before, its 22–93 s spent again on a moving `main` (m6-lily's health
  * check, 2026-11-20). */
+/** Whether a round runs the `fast` phase's tests again: the first always;
+ * past a rebase, where the commits it brought, `incoming`, touch what they
+ * read: the mutation catalog, its runner and each file a mutation names
+ * (`named`), any of the compiler's sources, whose answers the table of
+ * owners holds, that table, its reader, or the tests themselves. Otherwise
+ * each passes as it did the round before, its 17–54 s spent again on a
+ * moving `main` (#2258). Push-guard's rule, in the process, runs each round. */
+export function fastAgain(incoming: string[] | undefined, named: ReadonlySet<string>): boolean {
+  if (incoming === undefined) return true;
+  return incoming.some(
+    (file) =>
+      file.startsWith("src/") ||
+      file.startsWith("scripts/mutations") ||
+      named.has(file) ||
+      FAST_TESTS.includes(file) ||
+      file === "docs/architecture.md" ||
+      file === "scripts/owners.ts",
+  );
+}
+
 export function mutantsAgain(incoming: string[] | undefined): boolean {
   if (incoming === undefined) return true;
   return incoming.some((file) => /^src\/.*\.rs$/.test(file) || file.startsWith("scripts/mutations") || /^(?:Cargo\.(?:toml|lock)|rust-toolchain\.toml|build\.rs)$/.test(file));
@@ -143,6 +168,12 @@ async function main() {
   let ok = false;
   let note = "";
   let selection = "-";
+  // Each round's selection, said on the line in turn, the check's and each
+  // sanity pass's (#2258).
+  const rounds: string[] = [];
+  // The files the mutation catalog names, which the `fast` phase's tests
+  // read (`fastAgain`), asked once.
+  let named: ReadonlySet<string> | undefined;
   // The machine's log's line, written once, however the run ends: past
   // its end, a failure's, and a signal's, which stops `spawnSync`'s child
   // and then runs here (m6-lily's push of b355dc824 wrote none).
@@ -180,17 +211,22 @@ async function main() {
       // before minutes of building and checking.
       const found = undone(process.cwd(), base, "HEAD");
       if (found.length > 0) throw new Refused(refusal(found));
-      run("fast", ["bun", "test", ...FAST_TESTS]);
+      const since = checkedBase === "" ? undefined : lines(git("diff", "--name-only", checkedBase, base).out);
+      named ??= new Set((await import("./mutations")).mutations.map((m) => m.file));
+      if (fastAgain(since, named)) run("fast", ["bun", "test", ...FAST_TESTS]);
+      else console.log("push: the fast tests as the round before: the rebase's commits touch nothing they read");
       phase("fast");
       if (checked === "" || git("rev-parse", "HEAD").out.trim() !== checked) {
-        for (const file of new Set([...remade, ...(bless ? ["docs/readability.txt"] : [])])) regenerate(file);
+        for (const file of new Set([...remade, ...(bless ? ["docs/readability.txt"] : [])])) if (file in regenerated) regenerate(file);
         run("build", ["cargo", "build", "--quiet"]);
         phase("build");
+        // std/'s generated files the rebase resolved as main's, written
+        // again by this tree's compiler (#2259).
+        if (remade.some(stdGenerated)) remadeStd();
         // std/ made again and compared, the one check of it, CI's lint's too
         // (scripts/std-fresh.ts), which names the fix where it differs.
         run("std", ["bun", "scripts/std-fresh.ts"]);
         phase("std");
-        const since = checkedBase === "" ? undefined : lines(git("diff", "--name-only", checkedBase, base).out);
         if (mutantsAgain(since)) run("mutants", ["bun", "scripts/mutations.ts", `--typecheck=${base}`]);
         else console.log("push: the mutants as the round before: the rebase's commits touch no Rust source, mutation list or toolchain");
         phase("mutants");
@@ -235,6 +271,8 @@ async function main() {
         // only that there was none).
         if (fetched.startsWith("no map fetched")) selection += ` [${fetched}]`;
         console.log(`push: selected ${selection}`);
+        rounds.push(`${name} ${selection}`);
+        selection = rounds.join("; ");
         phase(name);
         if (regen !== undefined) {
           const code = await regen.done;
@@ -516,8 +554,15 @@ export function mergedChanges(text: string): string | undefined {
  * a set (`mergedLineSet`), or TESTS.md's `Changed on` lines, both sides'
  * (`mergedChanges`); any other, hand-written code's too, stops it. */
 export function remakeable(conflicts: string[]): boolean {
-  return conflicts.every((file) => file in regenerated || ratchets.includes(file) || decision(file) || lineSet(file) || changesLog(file));
+  return conflicts.every((file) => file in regenerated || stdGenerated(file) || ratchets.includes(file) || decision(file) || lineSet(file) || changesLog(file));
 }
+
+/** One of std/'s files `bun run std` writes: its runtime, its compiled
+ * modules and their maps, its manifest and its entry and types, which a
+ * rebase's conflict resolves by writing them again from the rebased tree
+ * (`remadeStd`), never by hand (#2259); not its crate, its README or its
+ * package.json, written by hand. */
+export const stdGenerated = (file: string) => /^std\/[^/]+\.(?:js|js\.map|d\.ts|json)$/.test(file) && file !== "std/package.json";
 
 /** An ADR, docs/decisions/<n>-<name>.md, which a change amends by
  * appending to its end. */
@@ -542,7 +587,7 @@ export function appendedBoth(base: string, ours: string, theirs: string): string
  * that each blessed one stopped the second's rebase (2 of m3-max's 5
  * failed pushes of 2026-11-17). Any other conflict aborts it, hand-written
  * code's too. The baselines it resolved so. */
-function rebase(): string[] {
+export function rebase(): string[] {
   git("fetch", "-q", "origin");
   if (git("rebase", "origin/main").code === 0) return [];
   const remade = new Set<string>();
@@ -601,6 +646,20 @@ function rebase(): string[] {
     if (sh(["git", "-c", "core.editor=true", "rebase", "--continue"], true).code === 0) break;
   }
   return [...remade];
+}
+
+/** std/'s generated files written again by `bun run std` from the rebased
+ * tree, just built, after a rebase resolved them as main's (`stdGenerated`),
+ * its diff's files printed, and the top commit amended with them where they
+ * changed; refused only where the writing fails (#2259). */
+function remadeStd() {
+  const made = spawnSync("bun", ["scripts/std.ts"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  if (made.status !== 0) throw new Refused(`std/ couldn't be made again after the rebase resolved it as main's:\n${(made.stdout + made.stderr).slice(-2000)}`);
+  const changed = lines(git("diff", "--name-only", "--", "std").out);
+  if (changed.length === 0) return;
+  console.log(`push: std/ made again after the rebase: ${changed.join(", ")}`);
+  git("add", "std");
+  git("commit", "-q", "--amend", "--no-edit");
 }
 
 /** `file`, a blessed baseline, made again from this tree by its test's

@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { appendedBoth, beside, FAST_TESTS, lineSet, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, regenerated, remakeable, mutantsAgain, sanitySkipped } from "../scripts/push";
+import { appendedBoth, beside, FAST_TESTS, fastAgain, lineSet, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, rebase, regenerated, remakeable, mutantsAgain, sanitySkipped, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -201,4 +201,87 @@ test("a round past a rebase type-checks the mutants and checks the interaction o
   expect(sanitySkipped("none, map 57283d2aa 3 behind")).toBe("incoming reach nothing this change reaches");
   expect(sanitySkipped("some (3 files, 2 cases), map 57283d2aa 3 behind")).toBeUndefined();
   expect(sanitySkipped("capped 56 of 334 files in 45 s")).toBeUndefined();
+});
+
+// A round past a rebase runs the fast phase's tests again only where the
+// commits it brought touch what they read: the catalog, a file a mutation
+// names, the compiler's sources, the owners' table or the tests (#2258).
+test("a round past a rebase runs the fast tests again only where the incoming commits touch what they read", () => {
+  const named = new Set(["src/runtime/iter.js", "tooling/cli.js"]);
+  expect(fastAgain(undefined, named)).toBe(true);
+  expect(fastAgain([], named)).toBe(false);
+  expect(fastAgain(["docs/guide/README.md", "test/corpus/x.rs", "test/corpus/x.js", "TESTS.md"], named)).toBe(false);
+  for (const file of ["src/lower/iterators.rs", "src/runtime/iter.js", "tooling/cli.js", "scripts/mutations/runtime/iter.ts", "scripts/mutations.ts", "docs/architecture.md", "scripts/owners.ts", ...FAST_TESTS])
+    expect([file, fastAgain([file], named)]).toEqual([file, true]);
+});
+
+// std/'s generated files, its runtime, compiled modules, maps, manifest
+// and entry, are made again on a rebase's conflict, never merged by hand;
+// its crate, README and package.json are written by hand (#2259).
+test("a rebase's conflict in std/'s generated files is made again, one in what's written by hand stops", () => {
+  for (const file of ["std/runtime.js", "std/iter.js", "std/iter.js.map", "std/manifest.json", "std/index.d.ts", "std/index.js"]) expect([file, stdGenerated(file)]).toEqual([file, true]);
+  for (const file of ["std/lib.rs", "std/README.md", "std/package.json", "src/runtime/flat_map.js", "std/sub/x.js"]) expect([file, stdGenerated(file)]).toEqual([file, false]);
+  expect(remakeable(["std/runtime.js", "std/iter.js", "docs/readability.txt"])).toBe(true);
+  expect(remakeable(["std/runtime.js", "std/lib.rs"])).toBe(false);
+});
+
+// A constructed conflict: main and the change each write std/runtime.js
+// and std/iter.js, and the change a file of its own; the rebase takes
+// main's std/, which the round makes again after its build, and goes on,
+// the change's own file kept. One in std/lib.rs stops it, aborted (#2259).
+test("a rebase with std/'s generated files in conflict goes on, main's taken; one in std/lib.rs is aborted", () => {
+  const dir = fixture("push-std-conflict");
+  const env = { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.com", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.com" };
+  const git = (cwd: string, ...args: string[]) => {
+    const p = spawnSync("git", args, { cwd, env, encoding: "utf8" });
+    if (p.status !== 0) throw new Error(`git ${args.join(" ")}: ${p.stderr}`);
+    return p.stdout;
+  };
+  const write = (cwd: string, file: string, text: string) => {
+    spawnSync("mkdir", ["-p", join(cwd, file, "..")]);
+    writeFileSync(join(cwd, file), text);
+  };
+  const was = process.cwd();
+  const setUp = (name: string, generated: string[], [base, ours, theirs] = ["base\n", "main\n", "change\n"]) => {
+    const origin = join(dir, `${name}.git`);
+    const main = join(dir, `${name}-main`);
+    const work = join(dir, `${name}-work`);
+    git(dir, "init", "-q", "--bare", "-b", "main", origin);
+    git(dir, "clone", "-q", origin, main);
+    for (const file of generated) write(main, file, base);
+    write(main, ".gitattributes", readFileSync(join(root, ".gitattributes"), "utf8"));
+    git(main, "add", "-A");
+    git(main, "commit", "-q", "-m", "base");
+    git(main, "push", "-q", "origin", "HEAD:main");
+    git(dir, "clone", "-q", origin, work);
+    for (const file of generated) write(main, file, ours);
+    git(main, "commit", "-q", "-am", "main");
+    git(main, "push", "-q", "origin", "HEAD:main");
+    for (const file of generated) write(work, file, theirs);
+    write(work, "own.txt", "own\n");
+    git(work, "add", "-A");
+    git(work, "commit", "-q", "-m", "change");
+    return work;
+  };
+  try {
+    const work = setUp("generated", ["std/runtime.js", "std/iter.js"]);
+    process.chdir(work);
+    expect(rebase().sort()).toEqual(["std/iter.js", "std/runtime.js"]);
+    expect(existsSync(join(work, ".git", "rebase-merge"))).toBe(false);
+    expect(readFileSync(join(work, "std/runtime.js"), "utf8")).toBe("main\n");
+    expect(readFileSync(join(work, "own.txt"), "utf8")).toBe("own\n");
+    expect(git(work, "log", "--format=%s").trim().split("\n")).toEqual(["change", "main", "base"]);
+    // Each side a line of its own, which a line merge would join into a
+    // std/ no compiler wrote: .gitattributes' `-merge` makes it a conflict.
+    const apart = setUp("apart", ["std/runtime.js"], ["a\nb\nc\n", "A\nb\nc\n", "a\nb\nC\n"]);
+    process.chdir(apart);
+    expect(rebase()).toEqual(["std/runtime.js"]);
+    expect(readFileSync(join(apart, "std/runtime.js"), "utf8")).toBe("A\nb\nc\n");
+    const crate = setUp("crate", ["std/lib.rs"]);
+    process.chdir(crate);
+    expect(() => rebase()).toThrow("the rebase stopped on a conflict, aborted: std/lib.rs");
+    expect(existsSync(join(crate, ".git", "rebase-merge"))).toBe(false);
+  } finally {
+    process.chdir(was);
+  }
 });

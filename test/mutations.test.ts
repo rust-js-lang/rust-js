@@ -622,7 +622,9 @@ test("a runtime mutant's tests import its helpers, installed in their own target
   );
   expect(readFileSync(join(root, "std", "runtime.js"), "utf8")).toBe(checkout);
   const byPath = /join\(root, "std"|"std\/[\w.]+\.js"/;
-  const others = [...new Bun.Glob("test/*.ts").scanSync(root)].filter((file) => !["test/packages-of.ts", "test/mutations.test.ts"].includes(file));
+  // push.test.ts names std/'s generated files as a rebase's conflicts in a
+  // repository of its own, never reading the checkout's (#2259).
+  const others = [...new Bun.Glob("test/*.ts").scanSync(root)].filter((file) => !["test/packages-of.ts", "test/mutations.test.ts", "test/push.test.ts"].includes(file));
   expect(others.filter((file) => byPath.test(readFileSync(join(root, file), "utf8")))).toEqual([]);
 });
 
