@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method that's the function it passes its parameters on to isn't re-exported, so its module has no `batchedUpdates` (rd292b)",
     file: "src/lower/reexports.rs",
-    find: "    forwarded_methods(tcx, module, (fns, forwarded), paths, &mut found);\n",
+    find: "    forwarded_methods(tcx, module, (fns, foreign, forwarded), paths, &mut found);\n",
     replace: "",
     tests: ["test/namespaces.test.ts", "-t", "only passes its parameters on"],
   },
@@ -383,8 +383,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace's method that's its own module's function is re-exported from its own module, `export { close } from \"./client.js\"` beside `export function close`, a duplicate export (#566)",
     file: "src/lower/reexports.rs",
-    find: "                .filter(|&from| from != module);\n",
-    replace: ";\n",
+    find: "                .filter(|&from| from != module && exported(method));\n",
+    replace: "                .filter(|_| exported(method));\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a namespace's method that only passes its parameters on to its module's function"],
   },
   {
@@ -531,5 +531,13 @@ export const mutations: Mutation[] = [
     find: "    let value = !matches!(leaf.path.res.value_ns, None | Some(Res::Def(DefKind::Ctor(..), _)));\n",
     replace: "    let value = !matches!(leaf.path.res.value_ns, None);\n",
     tests: ["test/reexport-docs.test.ts", "-t", "structs with constructors"],
+  },
+  {
+    name: "private-forwarded-method-reexported",
+    breaks: "a crate-private namespace's method that's another module's function is re-exported by its name, handing JS the throwing form of a function only the crate's calls reach, where the method gives a `Result` (#2280)",
+    file: "src/lower/reexports.rs",
+    find: "    let exported = |method: DefId| super::analysis::js_facing(tcx, foreign, method);\n",
+    replace: "    let exported = |_: DefId| true;\n",
+    tests: ["test/throwing-calls.test.ts", "-t", "crate-private namespace's method"],
   },
 ];

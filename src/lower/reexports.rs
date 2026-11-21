@@ -274,7 +274,7 @@ pub(super) fn reexports(
             _ => {}
         }
     }
-    forwarded_methods(tcx, module, (fns, forwarded), paths, &mut found);
+    forwarded_methods(tcx, module, (fns, foreign, forwarded), paths, &mut found);
     for ((at, _), _, (export, alias)) in &found {
         super::bindings::then_export_refused(tcx, *at, &format!("a `pub use` of `{export}`"), alias);
     }
@@ -940,16 +940,24 @@ pub(super) fn reexports_alone(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
 /// its parameters on to (`forwarded`, rd292b, ADR 1037 amended), that
 /// function by the method's name, `export { batchedUpdates } from
 /// "./ReactFiberWorkLoop.js"`: a run of them of one impl, from one module,
-/// nothing else between, one statement, as a `pub use` of a list is.
+/// nothing else between, one statement, as a `pub use` of a list is. Of
+/// one its module exports, as a function its visibility exports
+/// (`js_facing`): a crate-private one's re-export would hand JS a function
+/// only the crate's calls reach (#2280).
 fn forwarded_methods(
     tcx: TyCtxt<'_>,
     module: LocalModId,
-    (fns, forwarded): (&IndexMap<DefId, FnInfo>, &IndexMap<DefId, DefId>),
+    (fns, foreign, forwarded): (
+        &IndexMap<DefId, FnInfo>,
+        &super::library::Foreign<'_, '_>,
+        &IndexMap<DefId, DefId>,
+    ),
     paths: &IndexMap<LocalModId, Vec<String>>,
     found: &mut Vec<Named>,
 ) {
+    let exported = |method: DefId| super::analysis::js_facing(tcx, foreign, method);
     let mut imps: Vec<DefId> = (forwarded.keys())
-        .filter(|method| fns.get(*method).is_some_and(|info| info.module == module))
+        .filter(|method| fns.get(*method).is_some_and(|info| info.module == module) && exported(**method))
         .map(|&method| tcx.parent(method))
         .collect();
     imps.sort_by_key(|&imp| tcx.def_span(imp).lo());
@@ -962,7 +970,7 @@ fn forwarded_methods(
             // Not one of its own module's function, which that exports
             // by the method's name (#566).
             let from = (forwarded.get(&method).and_then(|target| Some(fns.get(target)?.module)))
-                .filter(|&from| from != module);
+                .filter(|&from| from != module && exported(method));
             match (from, runs.last_mut()) {
                 (Some(from), Some(run)) if last == Some(from) => run.push((method, from)),
                 (Some(from), _) => runs.push(vec![(method, from)]),

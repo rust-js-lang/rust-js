@@ -316,3 +316,67 @@ pub fn through(text: &str) -> bool {
   expect(lib.parsing().read("[1]")).toEqual({ TAG: "Ok", _0: [1] });
   expect(lib.parsing().read("{").TAG).toBe("Err");
 });
+
+// #2280: a namespace's method that's another module's function is
+// re-exported by its name only where the method is exported, as a plain
+// function is: a crate-private one's isn't, whose function stays only its
+// crate's to call, so a JS importer never reaches its throwing form, where
+// the method's contract is a `Result`. A `pub` one's is, its function its
+// `Result` form.
+test("a crate-private namespace's method that's a function isn't re-exported", async () => {
+  const withJs = ["--", "--crate-type", "lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("throwing-forwarded-private");
+  writeFileSync(join(dir, "lib.rs"), `mod inner {
+    use js::{JsError, Unknown, json};
+
+    pub(crate) fn read(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+        json::parse(text)
+    }
+
+    pub(crate) fn load(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+        json::parse(text)
+    }
+}
+
+use js::{JsError, Unknown};
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub(crate) struct Parsing;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Parsing {
+    pub(crate) fn read(&self, text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+        inner::read(text)
+    }
+}
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Loading;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Loading {
+    pub fn load(&self, text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+        inner::load(text)
+    }
+}
+
+pub fn read_ok(text: &str) -> bool {
+    Parsing.read(text).is_ok()
+}
+
+pub fn load_ok(text: &str) -> bool {
+    Loading.load(text).is_ok()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("export { read }");
+  expect(js).toContain('export { load } from "./inner.js";');
+  expect(readFileSync(join(dir, "inner.js"), "utf8")).toContain("return $try(() => JSON.parse(text));");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.read).toBeUndefined();
+  expect([lib.readOk("[1]"), lib.readOk("{")]).toEqual([true, false]);
+  expect([lib.loadOk("[1]"), lib.loadOk("{")]).toEqual([true, false]);
+  expect(lib.load("[1]")).toEqual({ TAG: "Ok", _0: [1] });
+  expect(lib.load("{").TAG).toBe("Err");
+});
