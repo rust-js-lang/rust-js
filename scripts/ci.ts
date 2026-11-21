@@ -19,7 +19,7 @@ import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
-import { changedSince, type Mutation, mutationFile, mutations } from "./mutations";
+import { changedSince, type Mutation, mutationFile, mutations, testSet } from "./mutations";
 import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
 import { browsers, caseFiles, dealtByGroup, drivesBrowser, fewestShards, type ShardFacts, shardFacts, shardTimings, testFileSeconds, timingsUnder } from "./shard";
@@ -225,11 +225,58 @@ export const SHARD_SETUP_SECONDS = 60;
 /** And the compiler as it is, built before any mutant: 87 to 130 s of
  * each shard's `phases.json` (main's check 44441824204). */
 export const SHARD_COMPILER_SECONDS = 120;
-/** And each of its mutations' tests run as the compiler is, and as one
- * that compiles nothing, before any mutant (`mutations.ts`'s "each
- * mutation's tests as the compiler is"): 41 to 182 s of main's checks
- * 44830680353 and 44774641229, which the plan didn't count (#2220). */
-export const SHARD_TESTS_AS_IT_IS_SECONDS = 120;
+/** What a shard's mutations' tests as the compiler is take, run once as it
+ * is and once as one that compiles nothing, before any mutant
+ * (`mutations.ts`'s "each mutation's tests as the compiler is"): a run of
+ * each test file, of the union of its sets' `-t`s, by mode, each about
+ * `file` seconds, `whole` more where one runs it all, and of the corpus,
+ * `corpusCase` a case its `-t`s name, beside the shard's own `shard`. Fit to
+ * 40 shards of main's checks of 2026-11-19 to 21, 6 to 371 s
+ * (test/fixtures/tests-as-it-is.tsv): a constant 120 s, #2220's, was 251 s
+ * short of a check of 155 mutations a shard (#2228). */
+export const TESTS_AS_IT_IS = { shard: 7, file: 3.7, whole: 4, corpusCase: 0.35 };
+
+/** What `chosen`'s tests as the compiler is run (`TESTS_AS_IT_IS`): the
+ * test files other than the corpus, by mode, those run whole, and the
+ * corpus's cases, of `cases`, that their `-t`s name. */
+export function testsAsItIsRuns(
+  chosen: readonly { tests?: string[]; snapshots?: boolean; env?: Record<string, string> }[],
+  cases: readonly string[],
+): { files: number; whole: number; corpusCases: number } {
+  const modes = new Map<string, Map<string, { whole: boolean; patterns: Set<string> }>>();
+  for (const m of chosen) {
+    if (m.tests === undefined) continue;
+    const set = testSet(m.tests);
+    const mode = `${m.snapshots === true}\0${JSON.stringify(Object.entries(m.env ?? {}).sort())}`;
+    const files = modes.get(mode) ?? new Map<string, { whole: boolean; patterns: Set<string> }>();
+    modes.set(mode, files);
+    for (const file of set.files) {
+      const run = files.get(file) ?? { whole: false, patterns: new Set<string>() };
+      if (set.pattern === undefined) run.whole = true;
+      else run.patterns.add(set.pattern);
+      files.set(file, run);
+    }
+  }
+  const runs = { files: 0, whole: 0, corpusCases: 0 };
+  for (const files of modes.values()) {
+    for (const [file, run] of files) {
+      if (file === "test/corpus.test.ts") {
+        const named = [...run.patterns].map((pattern) => new RegExp(pattern));
+        runs.corpusCases += run.whole ? cases.length : cases.filter((name) => named.some((re) => re.test(name))).length;
+      } else {
+        runs.files++;
+        if (run.whole) runs.whole++;
+      }
+    }
+  }
+  return runs;
+}
+
+/** `TESTS_AS_IT_IS`'s seconds of `runs`. */
+export function testsAsItIsSeconds(runs: { files: number; whole: number; corpusCases: number }): number {
+  const c = TESTS_AS_IT_IS;
+  return c.shard + c.file * runs.files + c.whole * runs.whole + c.corpusCase * runs.corpusCases;
+}
 /** And where one of its mutations survived at its last check's base too,
  * latent (`latent-survivors.ts`), surviving again: the survivors run again
  * at the base, the compiler built whole there, 283 to 320 s of main's
@@ -249,33 +296,41 @@ export const SHARD_BUDGET_SECONDS = 720;
  * share of its shard, `seconds` (`dealtByGroup`, each's untimed by its
  * file's, `groupOf`, the catalog's `mutationFile` as the shards' own), is
  * expected to take `SHARD_BUDGET_SECONDS` or less: its mutations' shares,
- * its setup, the compiler as it is, its mutations' tests as it is, the
- * survivors' run at the base where it's dealt one the last checks found
+ * its setup, the compiler as it is, its mutations' tests as it is, of the
+ * corpus's `cases` (`testsAsItIsRuns`), the survivors' run at the base where it's dealt one the last checks found
  * latent, `latent`, and a browser's where one of its tests drives one,
  * `browser`. Sized by count, twenty a machine, one shard of a
  * change's slow mutations took 21 min while others took 4 (main's checks
  * of 2026-11-19); else the most. */
 export function mutationShards(
-  chosen: { name: string; tests?: string[] }[],
+  chosen: { name: string; tests?: string[]; snapshots?: boolean; env?: Record<string, string> }[],
   seconds: ReadonlyMap<string, number>,
   browser: (file: string) => boolean,
   groupOf: (name: string) => string | undefined,
   latent: ReadonlySet<string> = new Set(),
+  cases: readonly string[] = [],
 ): string {
   const drives = new Map(chosen.map((m) => [m.name, m.tests !== undefined && browser(m.tests[0]!)]));
+  const byName = new Map(chosen.map((m) => [m.name, m]));
   const expected = (count: number) => {
     const { shards, load } = dealtByGroup(chosen.map((m) => m.name), count, seconds, groupOf);
     return shards.map(
       (names, i) =>
         SHARD_SETUP_SECONDS +
         SHARD_COMPILER_SECONDS +
-        SHARD_TESTS_AS_IT_IS_SECONDS +
+        testsAsItIsSeconds(testsAsItIsRuns(names.map((name) => byName.get(name)!), cases)) +
         load[i]! +
         (names.some((name) => latent.has(name)) ? SHARD_BASE_SECONDS : 0) +
         (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0),
     );
   };
   return String(fewestShards(MUTATION_SHARDS, expected, SHARD_BUDGET_SECONDS));
+}
+
+/** The corpus's cases, `test/corpus/*.rs`'s names, which a mutation's
+ * `-t` names (`testsAsItIsRuns`). */
+function corpusCases(): string[] {
+  return readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
 }
 
 /** Start the check of `branch`, as it's pushed: the local one, if it's
@@ -296,7 +351,14 @@ async function check(branch: string, shards: string | undefined, since?: string)
   const chosen = await changedSince(base);
   const count = chosen.length;
   const timings = plannedMutationTimings();
-  const machines = mutationShards(chosen, timings === "" ? new Map() : decodedTimings(timings, mutations.map((m) => m.name)), (file) => drivesBrowser(root, file), mutationFile);
+  const machines = mutationShards(
+    chosen,
+    timings === "" ? new Map() : decodedTimings(timings, mutations.map((m) => m.name)),
+    (file) => drivesBrowser(root, file),
+    mutationFile,
+    new Set(),
+    corpusCases(),
+  );
   // The suite's machines are the workflow's own, unless `--shards=` says.
   const suite = shards === undefined ? [] : ["-f", `test_shards=${shards}`];
   gh(["workflow", "run", workflow, `--ref=${branch}`, ...suite, "-f", `since=${base}`, "-f", `mutation_shards=${machines}`], { write: true });
@@ -345,7 +407,7 @@ async function plan(given?: string, testShardsGiven?: string) {
   const changed = Bun.spawnSync(["git", "diff", "--name-only", since, "HEAD"], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   console.log(`since=${since}`);
   console.log(`retry=${retry.join(",")}`);
-  console.log(`shards=${mutationShards(chosen, seconds, (file) => drivesBrowser(root, file), mutationFile, latent)}`);
+  console.log(`shards=${mutationShards(chosen, seconds, (file) => drivesBrowser(root, file), mutationFile, latent, corpusCases())}`);
   console.log(`iterators=${touchesIterators(changed)}`);
   console.log(`formatting=${touchesFormatting(changed)}`);
   console.log(`numbers=${touchesNumbers(changed)}`);

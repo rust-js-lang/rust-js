@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, SHARD_BUDGET_SECONDS, testsAsItIsRuns, testsAsItIsSeconds, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
 import { mutations } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
@@ -389,15 +389,21 @@ test("a check's mutations are split by their expected time, each shard under its
   const own = (name: string) => `src/${name}.rs`;
   expect(mutationShards([], new Map(), none, own)).toBe("1");
   // Untimed, each a check's twentieth of five minutes, `UNTIMED_SECONDS`,
-  // beside the setup, the compiler as it is and its tests as it is: 28 of
-  // them in the 420 s those leave.
-  expect(mutationShards(Array.from({ length: 28 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("1");
-  expect(mutationShards(Array.from({ length: 29 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("2");
+  // beside the setup, the compiler as it is and its tests as it is, of no
+  // case the corpus has, `TESTS_AS_IT_IS`'s 7 s: 35 of them in the 533 s
+  // those leave.
+  expect(mutationShards(Array.from({ length: 35 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("1");
+  expect(mutationShards(Array.from({ length: 36 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("2");
+  // And of cases the corpus has, a third of a second each: 30 mutations'
+  // 600 of them named, 210 s, take one more machine (#2228).
+  const named = Array.from({ length: 30 }, (_, i) => m(`u${i}`, ["test/corpus.test.ts", "-t", `^c${i}_`]));
+  const cases = Array.from({ length: 30 }, (_, i) => Array.from({ length: 20 }, (_, j) => `c${i}_${j}.rs`)).flat();
+  expect(mutationShards(named, new Map(), none, own)).toBe("1");
+  expect(mutationShards(named, new Map(), none, own, new Set(), cases)).toBe("2");
   // Timed: two of 300 s fit one shard each, never one, whatever their count.
   const slow = [m("a"), m("b")];
   expect(mutationShards(slow, new Map([["a", 300], ["b", 300]]), none, own)).toBe("2");
-  expect(mutationShards(slow, new Map([["a", 100], ["b", 300]]), none, own)).toBe("1");
-  expect(mutationShards(slow, new Map([["a", 200], ["b", 300]]), none, own)).toBe("2");
+  expect(mutationShards(slow, new Map([["a", 200], ["b", 300]]), none, own)).toBe("1");
   // A browser's install where a test drives one: the shard it's dealt to,
   // over the budget alone, its fixed parts 720 s before its mutation, so
   // the other's own shard, and no more, where they'd end it no sooner.
@@ -409,8 +415,43 @@ test("a check's mutations are split by their expected time, each shard under its
   expect(mutationShards([m("a"), m("b")], new Map([["a", 4000], ["b", 300]]), none, own)).toBe("2");
   // One the last checks found latent: its shard runs the survivors again at
   // the base, the compiler built whole there, 5 min more (#2220).
-  expect(mutationShards(slow, new Map([["a", 100], ["b", 100]]), none, own)).toBe("1");
-  expect(mutationShards(slow, new Map([["a", 100], ["b", 100]]), none, own, new Set(["a"]))).toBe("2");
+  expect(mutationShards(slow, new Map([["a", 200], ["b", 200]]), none, own)).toBe("1");
+  expect(mutationShards(slow, new Map([["a", 200], ["b", 200]]), none, own, new Set(["a"]))).toBe("2");
+});
+
+// What a shard's mutations' tests as the compiler is take, by what they
+// run: each test file other than the corpus by mode, whole or of its
+// sets' `-t`s, and the corpus's cases they name (#2228).
+test("a shard's tests as the compiler is are its distinct test files and the corpus cases they name", () => {
+  const cases = ["a.rs", "ab.rs", "b.rs", "c.rs"];
+  const runs = testsAsItIsRuns(
+    [
+      { tests: ["test/corpus.test.ts", "-t", "^a"] },
+      { tests: ["test/corpus.test.ts", "-t", "^b"] },
+      { tests: ["test/x.test.ts", "-t", "one"] },
+      { tests: ["test/x.test.ts", "-t", "two"] },
+      { tests: ["test/y.test.ts"] },
+      // Another mode's run of the same file is its own.
+      { tests: ["test/y.test.ts"], snapshots: true },
+      {},
+    ],
+    cases,
+  );
+  expect(runs).toEqual({ files: 3, whole: 2, corpusCases: 3 });
+  expect(testsAsItIsSeconds(runs)).toBeCloseTo(7 + 3 * 3.7 + 2 * 4 + 3 * 0.35, 5);
+});
+
+// The estimate held to 40 shards of main's checks of 2026-11-19 to 21, each
+// its runs and what the phase took (test/fixtures/tests-as-it-is.tsv),
+// 6 to 371 s: within half a minute at the root mean square, where #2220's
+// constant 120 s was 97 s off, and never more than 80 s short, where it was
+// 251 s short of a check of 155 mutations a shard (#2228).
+test("a shard's tests as the compiler is are expected within their measures", () => {
+  const rows = readFileSync(join(root, "test/fixtures/tests-as-it-is.tsv"), "utf8").trim().split("\n").slice(1).map((line) => line.split("\t"));
+  expect(rows.length).toBeGreaterThanOrEqual(40);
+  const errors = rows.map(([, , files, whole, corpusCases, seconds]) => testsAsItIsSeconds({ files: +files!, whole: +whole!, corpusCases: +corpusCases! }) - +seconds!);
+  expect(Math.sqrt(errors.reduce((sum, e) => sum + e * e, 0) / errors.length)).toBeLessThan(30);
+  expect(Math.min(...errors)).toBeGreaterThan(-80);
 });
 
 // Check 44441824204's five mutations, with the merged times its plan read
