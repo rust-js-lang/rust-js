@@ -55,28 +55,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let ty = self.shown_ref_type(kind, ty);
-        let (dictionary, value) = if let ty::Dynamic(traits, ..) = ty.kind() {
-            // A `dyn Debug`'s, its pair's own dictionary, its type's `Debug`
-            // (ADR 0060, amended).
-            let debug = kind == Std::FmtDebug && traits.principal_def_id() == Some(self.debug_trait());
-            // A pair's, a `dyn Display`'s or a `dyn Error`'s, by its
-            // supertrait's dictionary: its `Display`, or a `dyn Error`'s
-            // `Debug`, which each of std's errors' dictionaries writes as
-            // std's `fmt` does, a piece at a time (#2250).
-            if !debug && self.dynamic_trait(ty).is_none() {
+        let (dictionary, value) = if let ty::Dynamic(..) = ty.kind() {
+            // A pair's, by its dictionary of the trait or of the one it
+            // extends: a `dyn Debug`'s own, its type's `Debug` (ADR 0060,
+            // amended); a `dyn Display`'s or a `dyn Error`'s supertrait's, its
+            // `Display`, or a `dyn Error`'s `Debug`, which each of std's
+            // errors' dictionaries writes as std's `fmt` does, a piece at a
+            // time (#2250).
+            if self.dynamic_trait(ty).is_none() {
                 return Ok(None);
             }
             let held = Expr::member(value.clone(), js::DICTIONARY);
-            let dictionary = match debug {
-                true => held,
-                false => {
-                    let from = self.dyn_trait_ref(ty, ty).expect("a principal");
-                    let to = ty::TraitRef::new(self.tcx, trait_id, [ty]);
-                    let Some(dictionary) = self.super_evidence(from, to, held) else {
-                        return Ok(None);
-                    };
-                    dictionary
-                }
+            let from = self.dyn_trait_ref(ty, ty).expect("a principal");
+            let to = ty::TraitRef::new(self.tcx, trait_id, [ty]);
+            let Some(dictionary) = self.super_evidence(from, to, held) else {
+                return Ok(None);
             };
             if !value.parts_read_same() {
                 return Err(self.unsupported(span, &format!("showing a `{ty}` made where it's shown")));

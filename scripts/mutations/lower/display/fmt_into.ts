@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     name: "fmt-into-dyn-unwritten",
     breaks: "a `dyn Display` written into a writer is refused, as its pair's dictionary isn't asked",
     file: "src/lower/display/fmt_into.rs",
-    find: "            if !debug && self.dynamic_trait(ty).is_none() {\n",
+    find: "            if self.dynamic_trait(ty).is_none() {\n",
     replace: "            if true {\n",
     tests: sink,
   },
@@ -26,8 +26,8 @@ export const mutations: Mutation[] = [
     name: "fmt-into-dyn-error-debug-unfollowed",
     breaks: "a `dyn Error`'s `Debug` written into a writer is refused, as std's errors' pieces weren't followed, rand_core 0.5.1's `write!(f, \"{:?}\", self.inner)` (#2250)",
     file: "src/lower/display/fmt_into.rs",
-    find: "            if !debug && self.dynamic_trait(ty).is_none() {\n",
-    replace: "            if !debug && (self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay) {\n",
+    find: "            if self.dynamic_trait(ty).is_none() {\n",
+    replace: "            if self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay && !matches!(ty.kind(), ty::Dynamic(traits, ..) if traits.principal_def_id() == Some(self.debug_trait())) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
   },
   {
@@ -69,14 +69,6 @@ export const mutations: Mutation[] = [
     find: "                let pretty = Pretty::When(given.clone()).alternate();\n",
     replace: "                let pretty = Pretty::Plain.alternate();\n",
     tests: sink,
-  },
-  {
-    name: "dyn-debug-unwritten",
-    breaks: "a `dyn Debug`'s `Debug` written into a writer is refused, where its pair's dictionary writes it",
-    file: "src/lower/display/fmt_into.rs",
-    find: "            let debug = kind == Std::FmtDebug && traits.principal_def_id() == Some(self.debug_trait());\n",
-    replace: "            let debug = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
   },
   {
     name: "published-library-type-refused",
@@ -133,6 +125,7 @@ export const mutations: Mutation[] = [
     find: "                && crate::lower::recognition::std_crate(self.tcx, adt.krate).is_none()\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
+    snapshots: true,
   },
   {
     name: "std-compiled-impl-fmt-into-left-out",
