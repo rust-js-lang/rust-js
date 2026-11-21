@@ -219,9 +219,9 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<Name>) {
                     if let Some(last) = last {
                         js::each_expr_mut(&mut stmts[i..last], &mut |e| {
                             if matches!(&e.kind, ExprKind::Var(v) if *v == alias) {
-                                // What MIR said of the read, never `undefined`
-                                // where it's stored (`nulled::stored_nulled`),
-                                // is so of the variable it's of there.
+                                // What lowering marked of the read, never
+                                // `undefined`, is so of the variable it's of
+                                // there.
                                 let defined = e.facts.has(js::Known::Defined);
                                 *e = of.clone().or_at(e.span).or_at(at);
                                 if defined {

@@ -3,6 +3,31 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "cell-set-answer-unsaid",
+    breaks: "a `Cell::set` through a handle is told nothing of what MIR said of its value, `workInProgress.ref = current.ref ?? null` (#2112 S4b)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let set_given = js::Undefined::never_if(given_nulled);\n",
+    replace: "                let set_given = js::Undefined::ByForm;\n",
+    tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
+  },
+  {
+    name: "cell-set-answer-trusted",
+    breaks: "a `Cell::set` through a handle is told its value is never `undefined` whatever MIR said, `context._currentRenderer = rendererSigil`, `undefined` outside DEV where Rust's `None` is `null` (#2112 S4b)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                let set_given = js::Undefined::never_if(given_nulled);\n",
+    replace: "                let set_given = js::Undefined::Never;\n",
+    tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
+  },
+  {
+    name: "cell-replace-answer-unsaid",
+    breaks: "a `replace` through a handle is told nothing of what MIR said of its value, `clone.src = newProps.src ?? null` (#2112 S4b)",
+    file: "src/lower/std_types/cell.rs",
+    find: "                    Std::CellReplace => js::Undefined::never_if(given_nulled),\n",
+    replace: "                    Std::CellReplace => js::Undefined::ByForm,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(refcell_let_read_in_place|thread_local_with_gives_what_it_returns).rs$"],
+    snapshots: true,
+  },
+  {
     name: "guard-of-an-iterator-the-cell",
     breaks:
       "`(*items.borrow_mut()).next()` of an `I: Iterator` steps the cell, `$next(borrowMut)`, where a `&mut I` is the iterator, which threw `it.next is not a function` (#1016)",
@@ -128,16 +153,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "optional-cell-taken-as-is",
-    breaks:
-      "what a cell's `take()` gives is taken as never `undefined`, so an optional nullable field's, `undefined` where it's left out, is returned as it is (#539)",
-    file: "src/lower/std_types/cell.rs",
-    find: "                let old = self.spill(Role::Old, moved, out);\n                out.push(StmtKind::Assign(place, next).at(js_span));\n                old\n",
-    replace:
-      "                let old = self.spill(Role::Old, moved, out);\n                out.push(StmtKind::Assign(place, next).at(js_span));\n                old.defined()\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a nullable field's value a variable holds is stored as it is"],
-  },
-  {
     name: "mir-quiet-local-borrow-not-inlined",
     breaks: "MIR's quiet thread-local's borrow stays a called arrow",
     file: "src/lower/std_types/cell.rs",
@@ -194,9 +209,9 @@ export const mutations: Mutation[] = [
     name: "cell-set-keeps-old",
     breaks: "a `Cell`'s `set` drops none of the value it replaces",
     file: "src/lower/std_types/cell.rs",
-    find: "                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));\n                        self.drop_value(old, item, span, out_set)?;\n",
+    find: "                            set_given,\n                        ));\n                        self.drop_value(old, item, span, out_set)?;\n",
     replace:
-      "                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));\n                        let _ = old;\n",
+      "                            set_given,\n                        ));\n                        let _ = old;\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_drops.rs$"],
   },
   {
@@ -264,19 +279,6 @@ export const mutations: Mutation[] = [
     find: "                    false => self.fixed_place_of(Expr::held(cell), out),\n",
     replace: "                    false => Expr::held(cell),\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_reached_through_a_call.rs$"],
-  },
-  {
-    name: "cell-variable-nulled-unmarked",
-    breaks:
-      "a `Some(..)` set through a variable holding a nullable field's handle is `?? null` where tidy writes the field, `context.Consumer = consumerOf(context) ?? null`",
-    file: "src/lower/std_types/cell.rs",
-    find: "            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => Expr {\n",
-    replace: "            _ if false => Expr {\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "what's never undefined as it is",
-    ],
   },
   {
     name: "quiet-borrow-checked",
@@ -487,11 +489,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/cell.rs",
     find: "            _ if null_for_none => none_form\n                .storage()\n                .written(value, js::Undefined::never_if(given_nulled)),\n",
     replace: "",
-    tests: [
-      "test/lowering-nullable-reads.test.ts",
-      "-t",
-      "a place a test shows present is stored as it is",
-    ],
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local nothing reads apart stores what it's given as it is"],
   },
   {
     name: "quiet-replace-through-a-reference",
@@ -545,14 +543,6 @@ export const mutations: Mutation[] = [
     replace:
       "        js::ExprKind::Array(items, ..) if items.is_empty() && false => {\n",
     tests: ["test/lowering-cell-borrows.test.ts", "-t", "an array taken"],
-  },
-  {
-    name: "nulled-cell-write-of-a-getter-coalesced",
-    breaks: "a JS-made struct's field read MIR says is `null` or a value, given a nullable cell through its handle held, is written `?? null` (rd628)",
-    file: "src/lower/std_types/cell.rs",
-    find: "                facts: value.facts.with(js::Known::Defined),\n                ..value\n            },\n",
-    replace: "                ..value.defined()\n            },\n",
-    tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
   {
     name: "ref-cell-moved-out-apart",

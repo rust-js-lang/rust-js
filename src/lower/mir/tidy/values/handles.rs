@@ -14,12 +14,13 @@ fn written_as_stored(body: &mut Vec<Stmt>, storage_of: &dyn Fn(&Expr) -> Option<
     let stored = |list: &mut Vec<Stmt>| {
         js::statement_lists(list, &mut |stmts| {
             for stmt in stmts.iter_mut() {
+                let given = stmt.facts.written();
                 if let StmtKind::Assign(target, value) = &mut stmt.kind
                     && let ExprKind::Member(of, key) = &target.kind
                     && key == js::HELD
                     && let Some(storage) = storage_of(of)
                 {
-                    *value = storage.written(std::mem::replace(value, Expr::taken()), js::Undefined::ByFacts);
+                    *value = storage.written(std::mem::replace(value, Expr::taken()), given);
                 }
             }
         })

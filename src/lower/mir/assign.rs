@@ -118,7 +118,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && only_read(state.body, place.local)
         {
             let constant = self.named_fn_ref(uv.def, None, c.span);
-            return self.mir_store(state, *place, Value::Expr(constant), span, out);
+            return self.mir_store(state, *place, Value::Expr(constant), js::Undefined::ByForm, span, out);
         }
         // A `&mut` a variable keeps to a variable that's a `&mut` itself,
         // `let outer = &mut list`: `list`, where it's used, so `*outer = ..`
@@ -163,7 +163,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let AggregateKind::Adt(_, variant, ..) = **kind
             && variant.as_u32() == 0
         {
-            return self.mir_store(state, *place, Value::Expr(Expr::null()), span, out);
+            return self.mir_store(
+                state,
+                *place,
+                Value::Expr(Expr::null()),
+                js::Undefined::ByForm,
+                span,
+                out,
+            );
         }
         // An `Option` of an `Option` held as its payload (ADR 1017): `None`
         // `undefined`, and a `Some` what it holds, its `None` `null`, as a
@@ -176,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let form = self.held_form(state.body.local_decls[place.local].ty);
             let made = self.held_made(state, operands, form, out)?;
-            return self.mir_store(state, *place, Value::Expr(made), span, out);
+            return self.mir_store(state, *place, Value::Expr(made), js::Undefined::ByForm, span, out);
         }
         // Of a nested field, held as its payload (#470): read as it's held
         // by one that holds it so, and a reference to it so too.
@@ -189,7 +196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && state.parts.get(&place.local).is_none_or(|&arg| from.local != arg)
         {
             let held = self.mir_place(state, *from, span, out)?;
-            return self.mir_store(state, *place, Value::Expr(held), span, out);
+            return self.mir_store(state, *place, Value::Expr(held), js::Undefined::ByForm, span, out);
         }
         // A field held where it's made set (#470, rd645): a nested one's
         // `None` no key's `undefined`, a `Some` what it holds, its `None`
@@ -214,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.held_of_boxed(boxed, (ty, some), out)
                 }
             };
-            return self.mir_store(state, *place, Value::Expr(made), span, out);
+            return self.mir_store(state, *place, Value::Expr(made), js::Undefined::ByForm, span, out);
         }
         // One with a flattened field, made outside JSX, an object of its
         // fields and the flattened one's (ADR 0204).
@@ -227,7 +234,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let made = self.mir_rvalue(state, rvalue, span, out)?;
                 let made = self.value_expr(made, span)?;
                 let made = Value::Expr(self.flattened_object(made, ty));
-                return self.mir_store(state, *place, made, span, out);
+                return self.mir_store(state, *place, made, js::Undefined::ByForm, span, out);
             }
         }
         // A part of a parameter its pattern binds, bound there already.
@@ -352,27 +359,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                     _ => false,
                 };
-                // What it stores, `null` or a value, says so, so a handle
-                // that stores as the place does, an index of a nullable
-                // field's `Vec`, `lanes[index] = transitions`, stores it as
-                // it is (#1933 step 4 (F)).
-                Value::Expr(super::nulled::stored_nulled(
+                Value::Expr(
                     form.storage()
                         .written(self.value_expr(value, span)?, js::Undefined::never_if(nulled)),
-                ))
-            }
-            // Written through a reference, a `RefCell`'s borrow of a
-            // nullable field, `*this.target_inst.borrow_mut() = target_inst`,
-            // whose handle stores as the field does: what's `null` or a
-            // value already, a nullable parameter, says so, as it's stored
-            // as it is (ADRs 0791, 0861, amended); and so does a read a test
-            // proved there, React's `*value = deferred` under
-            // `deferred.is_some()` (`presence`, #1933 step 4 (B), #2112 C S4).
-            false
-                if matches!(place.projection.last(), Some(PlaceElem::Deref))
-                    && matches!(rvalue, Rvalue::Use(operand, _) if self.stored_given(state, operand) == Given::Nulled) =>
-            {
-                Value::Expr(super::nulled::stored_nulled(self.value_expr(value, span)?))
+                )
             }
             // A plain `Option` field's, Rust's `None` (#1840).
             false => match rvalue {
@@ -381,7 +371,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
         };
         let value = self.returned_write_result(state, (*place, rvalue), value, span)?;
-        self.mir_store(state, *place, value, span, out)
+        // What MIR says of what's written, which a place whose storage is
+        // learned later, a handle's, stores it by (#2112 S4b).
+        let given = match rvalue {
+            Rvalue::Use(operand, _) => js::Undefined::never_if(self.stored_given(state, operand) == Given::Nulled),
+            _ => js::Undefined::ByForm,
+        };
+        self.mir_store(state, *place, value, given, span, out)
     }
 
     /// Whether `place` is a parameter of the function whose body this is
@@ -574,6 +570,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         place: Place<'tcx>,
         value: Value<'tcx>,
+        given: js::Undefined,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
@@ -607,7 +604,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if state.writer.is_some() {
                 return Ok(());
             }
-            return self.mir_store(state, place, Value::Expr(Expr::js_undefined()), span, out);
+            return self.mir_store(
+                state,
+                place,
+                Value::Expr(Expr::js_undefined()),
+                js::Undefined::ByForm,
+                span,
+                out,
+            );
         }
 
         // A union's field written: the one it holds now (ADR 0406).
@@ -1049,7 +1053,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `*p = v` of a pointer made where it's written, `*(&raw mut v) =
         // ..`: of an object JS holds as itself, the object's in place (#1352).
         let written = place.ty(&state.body.local_decls, self.tcx).ty;
-        out.push(self.written_through(target, value, written, span)?.at(js_span));
+        out.push(Stmt::written(
+            self.written_through(target, value, written, span)?,
+            js_span,
+            given,
+        ));
         Ok(())
     }
 

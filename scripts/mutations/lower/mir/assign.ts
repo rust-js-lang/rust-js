@@ -5,29 +5,28 @@ const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 
 export const mutations: Mutation[] = [
   {
+    name: "store-answer-unsaid",
+    breaks: "an assignment through a place whose storage is learned later is told nothing of what MIR said of its value, so a handle stores `?? null` (#2112 S4b)",
+    file: "src/lower/mir/assign.rs",
+    find: "            Rvalue::Use(operand, _) => js::Undefined::never_if(self.stored_given(state, operand) == Given::Nulled),\n",
+    replace: "            Rvalue::Use(_, _) => js::Undefined::ByForm,\n",
+    tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
+  },
+  {
+    name: "store-answer-dropped",
+    breaks: "an assignment's MIR answer is left off the statement written, so a handle stores `?? null` (#2112 S4b)",
+    file: "src/lower/mir/assign.rs",
+    find: "            js_span,\n            given,\n        ));\n",
+    replace: "            js_span,\n            { let _ = given; js::Undefined::ByForm },\n        ));\n",
+    tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
+  },
+  {
     name: "borrow-of-nulled-returned-coalesced",
     breaks: "a shared borrow of a nullable parameter returned, `&param`, isn't known `null` or a value, so it's returned `param ?? null`",
     file: "src/lower/mir/assign.rs",
     find: "                let nulled = self.nulled(state, &Operand::Copy(*of));\n",
     replace: "                let nulled = false && self.nulled(state, &Operand::Copy(*of));\n",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "library const's Some"],
-  },
-  {
-    name: "nulled-store-unmarked",
-    breaks: "what's `null` or a value stored in a nullable place isn't said so, so a handle that stores as the place does, an index of a nullable field's `Vec`, writes `lanes[index] = transitions ?? null` (#1933 step 4 (F))",
-    file: "src/lower/mir/assign.rs",
-    find: "                Value::Expr(super::nulled::stored_nulled(\n                    form.storage()\n                        .written(self.value_expr(value, span)?, js::Undefined::never_if(nulled)),\n                ))\n",
-    replace: "                Value::Expr(form.storage().written(self.value_expr(value, span)?, js::Undefined::never_if(nulled)))\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_items_set_to_a_some_by_index.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "store-through-a-borrow-as-it-is",
-    breaks: "what's stored through a `RefCell`'s borrow of a nullable field is taken to be never `undefined`, so a `None` written again after its test, `deferred = None`, is stored `undefined`, which the crate's `=== null` reads as a `Some` (#1933 step 4 (B))",
-    file: "src/lower/mir/assign.rs",
-    find: "                    && matches!(rvalue, Rvalue::Use(operand, _) if self.stored_given(state, operand) == Given::Nulled) =>\n",
-    replace: "                    && matches!(rvalue, Rvalue::Use(..)) =>\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "stored through a borrow"],
   },
   {
     name: "projected-binding-refused",
@@ -828,20 +827,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "borrowed-nullable-store-coalesced",
-    breaks:
-      "`*this.inst.borrow_mut() = inst` of a nullable parameter is `this.inst = inst ?? null`, where it's `null` or a value as declared (ADRs 0791, 0861, amended, rd91)",
-    file: "src/lower/mir/assign.rs",
-    find: "                if matches!(place.projection.last(), Some(PlaceElem::Deref))\n",
-    replace:
-      "                if false && matches!(place.projection.last(), Some(PlaceElem::Deref))\n",
-    tests: [
-      "test/js-constructors.test.ts",
-      "-t",
-      "stored through a borrow as given",
-    ],
-  },
-  {
     name: "valued-of-a-bindings-box",
     breaks:
       "a `let` of the `Box` a binding gives, an event's `spawn`'s, is a `const` of its arrow, `const handleCopy = async () => ..`, where react.dev writes `async function handleCopy()` (ADR 0882, amended)",
@@ -999,8 +984,8 @@ export const mutations: Mutation[] = [
     name: "pointer-deref-write-names-another",
     breaks: "`*(&raw mut v) = vec![2, 3]` gives the name `v` another value, a `const`'s, which throws, where a pointer kept to `v` reads the write in Rust (#1352)",
     file: "src/lower/mir/assign.rs",
-    find: "        out.push(self.written_through(target, value, written, span)?.at(js_span));\n",
-    replace: "        out.push(StmtKind::Assign(target, value).at(js_span));\n",
+    find: "            self.written_through(target, value, written, span)?,\n",
+    replace: "            StmtKind::Assign(target, value),\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_values_moved_through_pointers.rs$"],
   },
   {

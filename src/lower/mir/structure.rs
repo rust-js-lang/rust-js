@@ -750,7 +750,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                             value => value,
                         };
-                        self.mir_store(state, *destination, value, span, &mut called)?;
+                        self.mir_store(state, *destination, value, js::Undefined::ByForm, span, &mut called)?;
                         // Each box given, copied back once the call returns;
                         // and as it unwinds, where it may (#487): what it was
                         // written before the call panicked is the place's,

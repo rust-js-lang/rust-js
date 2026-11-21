@@ -1035,7 +1035,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (OptionPlaceOp::Insert, Some(_)) => inserted.never_throws(),
             _ => inserted,
         };
-        let assign = StmtKind::Assign(place.clone(), inserted).at(js_span);
+        // A `Some`'s held form is never `undefined`, which a handle's place,
+        // learned later, stores as it is (#2112 S4b).
+        let assign = Stmt::written(StmtKind::Assign(place.clone(), inserted), js_span, js::Undefined::Never);
         match (op, dropped) {
             // `*o = Some(value)`'s drop in place of the old one, which writes
             // `value` as that drop unwinds too, so `value` is what's dropped

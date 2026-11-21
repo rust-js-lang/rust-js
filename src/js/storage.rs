@@ -12,9 +12,10 @@ use crate::collections::IndexMap;
 /// its form and what lowering marked it from MIR's answers,
 /// `Known::Defined` and `Known::Present`, which a pass that moves an
 /// expression keeps, `ByFacts` (#2112 C S5, Campaign 3's L637).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum Undefined {
     Never,
+    #[default]
     ByForm,
     ByFacts,
 }

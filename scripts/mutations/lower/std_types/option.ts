@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "inserted-answer-unsaid",
+    breaks: "an `insert`'s or `get_or_insert`'s `Some` through a handle is stored `?? null`, `thenableState ??= createThenableState() ?? null` (#2112 S4b)",
+    file: "src/lower/std_types/option.rs",
+    find: "        let assign = Stmt::written(StmtKind::Assign(place.clone(), inserted), js_span, js::Undefined::Never);\n",
+    replace: "        let assign = Stmt::written(StmtKind::Assign(place.clone(), inserted), js_span, js::Undefined::ByForm);\n",
+    tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
+  },
+  {
     name: "untagged-variant-boxed-not-itself",
     breaks: "a map by an untagged variant of a payload that never looks like `None`, into a boxed `Option`, isn't the option itself to MIR, so it's stored `root ?? null`",
     file: "src/lower/std_types/option.rs",

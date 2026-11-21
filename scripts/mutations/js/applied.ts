@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "applied-handle-write-answer-unasked",
+    breaks: "a write through a handle a closure applied in place is given is stored by its form alone, not by what MIR said of it (#2112 S4b)",
+    file: "src/js/applied.rs",
+    find: "                let given = stmt.facts.written();\n",
+    replace: "                let given = { let _ = &stmt.facts; crate::js::Undefined::ByForm };\n",
+    tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
+  },
+  {
     name: "applied-unspelled-spelled-again",
     breaks:
       "a closure's shadow of its parameter lowering made already, `currentCallbacks#1`, is made again, so what its handle reads is held, `const currentCallbacks$1 = currentCallbacks` (ADR 1150)",
@@ -315,8 +323,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what's written through a handle applied in place is stored as it is, `current = noneOf(1)`, not as the handle stores it (#541)",
     file: "src/js/applied.rs",
-    find: "                        storage.written(std::mem::replace(value, Expr::taken()), crate::js::Undefined::ByFacts);\n",
-    replace: "                        std::mem::replace(value, Expr::taken());\n",
+    find: "                    let written = storage.written(std::mem::replace(value, Expr::taken()), given);\n",
+    replace: "                    let written = std::mem::replace(value, Expr::taken());\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
   },
   {

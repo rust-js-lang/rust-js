@@ -30,14 +30,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "item-read-never-undefined",
-    breaks: "an item's read is taken to be never `undefined`, so a plain thread-local's or `const`'s `None` is stored in a nullable field as `undefined`, which the crate's `=== null` reads as a `Some` (#1957, P0)",
-    file: "src/js/make.rs",
-    find: "                && [Known::Defined, Known::Present]\n",
-    replace: "                && [Known::Defined, Known::Present, Known::Item]\n",
-    tests: ["test/corpus.test.ts", "-t", "^item_none_stored_in_a_nullable_field.rs$"],
-  },
-  {
     name: "typeof-boolean-and-kept",
     breaks: "React's isRecoverableError is `!!(typeof kind === \"boolean\" && kind)`, not `error[REACT_RECOVERABLE_TYPE] === true` (rd444)",
     file: "src/js/make.rs",

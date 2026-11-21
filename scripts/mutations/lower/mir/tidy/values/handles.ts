@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "handle-write-answer-unasked",
+    breaks: "a write through a handle is stored by its form alone, not by what MIR said of it where it was lowered: `workInProgress._debugOwner = current._debugOwner ?? null` (#2112 S4b)",
+    file: "src/lower/mir/tidy/values/handles.rs",
+    find: "                let given = stmt.facts.written();\n",
+    replace: "                let given = { let _ = &stmt.facts; js::Undefined::ByForm };\n",
+    tests: ["test/lowering-nullable.test.ts", "test/lowering-nullable-reads.test.ts", "test/lowering-nullable-borrows.test.ts", "test/lowering-module-variables.test.ts", "test/lowering-nullable-tests.test.ts"],
+  },
+  {
     name: "whole-writes-outside-closures",
     breaks:
       "a closure's whole write through a flattened state's handle isn't seen, so the handle is its place and the write `chunk = ..` (#482)",
@@ -44,7 +52,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field's `Cell` set in a closure through a variable writes `undefined`, the handle's storage left out",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "                    *value = storage.written(std::mem::replace(value, Expr::taken()), js::Undefined::ByFacts);\n",
+    find: "                    *value = storage.written(std::mem::replace(value, Expr::taken()), given);\n",
     replace: "                    let _ = storage;\n",
     tests: [
       "test/lowering-nullable.test.ts",

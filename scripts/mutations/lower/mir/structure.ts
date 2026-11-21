@@ -541,7 +541,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/structure.rs",
     find: "                                Value::Expr(e.defined())\n",
     replace: "                                Value::Expr(e.present())\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_local_read_tested.rs$"],
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable place's read is returned as it is"],
   },
   {
     name: "constructed-get-coalesced",

@@ -260,12 +260,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if null_for_none => none_form
                 .storage()
                 .written(value, js::Undefined::never_if(given_nulled)),
-            // A JS-made struct's field read among them, a getter's that may
-            // be `undefined` elsewhere, MIR says it isn't here (rd628).
-            _ if given_nulled && !matches!(value.kind, js::ExprKind::Undefined) => Expr {
-                facts: value.facts.with(js::Known::Defined),
-                ..value
-            },
             _ => value,
         };
         Ok(Some(match known {
@@ -290,6 +284,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a value with a destructor, the old dropped once the new is
             // in its place, as std's `replace` and drop (ADR 0519).
             Std::CellSet => {
+                let set_given = js::Undefined::never_if(given_nulled);
                 let cell = arg();
                 let mut value = written(&cell, arg());
                 let item = generic_args.type_at(0);
@@ -369,10 +364,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None if drops => {
                         let cell = self.spill(Role::Cell, cell, out_set);
                         let old = self.spill(Role::Old, Expr::held(cell.clone()), out_set);
-                        out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
+                        out_set.push(Stmt::written(
+                            StmtKind::Assign(Expr::held(cell), value),
+                            js_span,
+                            set_given,
+                        ));
                         self.drop_value(old, item, span, out_set)?;
                     }
-                    None => out_set.push(StmtKind::Assign(Expr::held(cell), value).at(js_span)),
+                    // What MIR says of what's set, which a handle's place,
+                    // learned later, stores it by (#2112 S4b).
+                    None => out_set.push(Stmt::written(
+                        StmtKind::Assign(Expr::held(cell), value),
+                        js_span,
+                        set_given,
+                    )),
                 }
                 if let Some(unmade) = unmade {
                     out.push(StmtKind::If(unmade.negated_test(), set, None).at(js_span));
@@ -565,8 +570,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // alone, as `*cell.borrow_mut() = v` is: the program sees no
                 // read of it, nor a getter's of a struct JS made (rd418, ADR
                 // 1022, amended).
+                // What MIR says of what a `replace` writes, which a handle's
+                // place, learned later, stores it by (#2112 S4b); a take's
+                // default by its form.
+                let next_given = match known {
+                    Std::CellReplace => js::Undefined::never_if(given_nulled),
+                    _ => js::Undefined::ByForm,
+                };
                 if call.unread {
-                    out.push(StmtKind::Assign(place, next).at(js_span));
+                    out.push(Stmt::written(StmtKind::Assign(place, next), js_span, next_given));
                     return Ok(Some(Expr::js_undefined()));
                 }
                 // What was moved out apart from what's written, which an
@@ -582,7 +594,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.moved_out(place.clone(), item),
                 };
                 let old = self.spill(Role::Old, moved, out);
-                out.push(StmtKind::Assign(place, next).at(js_span));
+                out.push(Stmt::written(StmtKind::Assign(place, next), js_span, next_given));
                 old
             }
             // A `&mut` to what it holds: the object itself, or for a number or

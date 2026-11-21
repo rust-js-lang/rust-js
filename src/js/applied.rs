@@ -669,13 +669,13 @@ fn through_handles(body: &mut Vec<Stmt>) {
     fn stored(body: &mut Vec<Stmt>) {
         statement_lists(body, &mut |stmts| {
             for stmt in stmts.iter_mut() {
+                let given = stmt.facts.written();
                 if let StmtKind::Assign(target, value) = &mut stmt.kind
                     && let ExprKind::Member(of, key) = &target.kind
                     && key == crate::js::HELD
                     && let ExprKind::Handle(place, storage) = &of.kind
                 {
-                    let written =
-                        storage.written(std::mem::replace(value, Expr::taken()), crate::js::Undefined::ByFacts);
+                    let written = storage.written(std::mem::replace(value, Expr::taken()), given);
                     stmt.kind = StmtKind::Assign((**place).clone(), written);
                 }
             }

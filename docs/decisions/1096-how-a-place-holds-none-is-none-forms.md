@@ -679,3 +679,48 @@ ReactFiberTreeReflection.js:160 and :181 at React's ab0d927); and
 `blockingUpdateTask = __DEV__ ? (fiber._debugTask ?? null) : null`, the
 `let`'s `None` made `null` where it's written. Held by the mutations of each
 answer and by the rows they name.
+
+## Amendment: a write through a handle carries MIR's answer (2026-11-21, #2112 S4b)
+
+A write whose place's storage is learned past lowering, `h.value = v`
+through a handle (`tidy::values::handles`, `js::applied`), was stored by
+the marks lowering wrote on `v`, `ByFacts`: 159 of React's port's writes
+were decided so. The answer is about this value going into this place, so
+it rides the write: `StmtFacts::written`, a `js::Undefined` defaulting to
+`ByForm`, set only by `Stmt::written`, and kept by `Stmt::rebuilt` only
+where the write's value is (another value is told nothing). Lowering sets
+it where it has MIR's answer: an assignment of an operand (`mir_assign`,
+`stored_given`), a `Cell::set` and a `replace` (`given_nulled`, the call's
+own MIR answer), and an `insert` or a `get_or_insert`'s `Some`, never
+`undefined` by its form. A call's result written so is told nothing: none
+of the port's or the suites' reached a handle (its answer was measured and
+dropped). handles and
+applied store by it; no pass asks `ByFacts` now, which the architecture
+test holds, and S4c deletes it with `Known::Present`.
+
+The answer is a typed field of the statement, not a `Known` fact: `Known`
+is the expression facts' catalog S4c and S4d shrink. `StmtKind::Assign`
+keeps its two parts: the statement's facts already ride with it where a
+pass rebuilds it in its place (ADR 1167), which keeps its 309 matches as
+they are. `mir_store` takes the answer from each of its callers.
+
+React's port and every suite are byte-identical; without the answers 174
+lines moved (`x = y ?? null` for `x = y`). Case: none observable, no
+output moves (0262's first). Held by mutations `handle-write-answer-unasked`
+(lower/mir/tidy/values/handles.ts), `applied-handle-write-answer-unasked`
+(js/applied.ts), `store-answer-unsaid`, `store-answer-dropped`
+(lower/mir/assign.ts), `cell-set-answer-unsaid`, `cell-set-answer-trusted`
+(lower/std_types/cell.ts), `cell-replace-answer-unsaid` (the same), `inserted-answer-unsaid` (lower/std_types/option.ts)
+and `rebuilt-write-answer-kept` (js/stmt_facts.ts, a unit test).
+
+What the marks carried to those writes before goes, nothing reaching it
+once the writes carry their answers (`--retire`, each with its evidence in
+the commit): a nullable place's write marked `stored_nulled`, the arm that
+marked a `*r = v` through a borrow, and `Cell::set`'s `Known::Defined` on
+a temporary's value (`nulled-store-unmarked`,
+`borrowed-nullable-store-coalesced`, `store-through-a-borrow-as-it-is`,
+`cell-variable-nulled-unmarked`, `nulled-cell-write-of-a-getter-coalesced`,
+`optional-cell-taken-as-is`); and `item-read-never-undefined`, which read
+`Known::Item` as `ByFacts` does, which no pass asks now. Its handle path,
+`context._currentRenderer = rendererSigil ?? null` of a thread-local's
+`None`, is held by `cell-set-answer-trusted`.
