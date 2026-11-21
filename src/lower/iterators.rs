@@ -229,16 +229,31 @@ pub(in crate::lower) fn into_iter_held_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id:
             _ => false,
         })
     };
-    let held = matches!(
-        tcx.def_kind(id),
-        rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn
-    ) && tcx
-        .fn_sig(id)
-        .instantiate_identity()
-        .skip_binder()
-        .inputs_and_output
-        .iter()
-        .any(|ty| holds(ty) || hidden(ty));
+    // A function's signature; an impl's type and its trait's arguments,
+    // `One<A::IntoIter>` of `impl<A: IntoIterator> FromT<A> for
+    // One<A::IntoIter>`, whose dictionary then takes `A`'s, made for each
+    // caller's `A`, as its method that gives it back does: one module
+    // const of it gave its method a JS iterable's whatever `A` was (#2263).
+    let held = match tcx.def_kind(id) {
+        rustc_hir::def::DefKind::Fn | rustc_hir::def::DefKind::AssocFn => {
+            let sig = tcx.fn_sig(id).instantiate_identity().skip_binder();
+            sig.inputs_and_output.iter().any(|ty| holds(ty) || hidden(ty))
+        }
+        rustc_hir::def::DefKind::Impl { .. } => {
+            let own = tcx.type_of(id).instantiate_identity().skip_normalization();
+            let of_trait = (tcx.impl_opt_trait_ref(id))
+                .map(|tr| {
+                    tr.instantiate_identity()
+                        .skip_normalization()
+                        .args
+                        .types()
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            std::iter::once(own).chain(of_trait).any(|ty| holds(ty) || hidden(ty))
+        }
+        _ => false,
+    };
     read || named || held
 }
 

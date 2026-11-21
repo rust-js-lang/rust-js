@@ -258,8 +258,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `impl Iterator` a function gives, hiding std's `Chain` of what it's given, isn't read as holding a `J::IntoIter`, so `J` is given as a JS iterator, `chain($iterator(countdown, next), tmp, drop)`, with dictionaries made in the function, not given as it is with its dictionary (ADR 0920)",
     file: "src/lower/iterators.rs",
-    find: "        .any(|ty| holds(ty) || hidden(ty));\n",
-    replace: "        .any(|ty| holds(ty) || false && hidden(ty));\n",
+    find: "            sig.inputs_and_output.iter().any(|ty| holds(ty) || hidden(ty))\n",
+    replace: "            sig.inputs_and_output.iter().any(|ty| holds(ty) || false && hidden(ty))\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^generic_chain_of_into.rs$"],
   },
@@ -464,5 +464,13 @@ export const mutations: Mutation[] = [
     find: "            Expr::call_helper(\"$stepsAround\", vec![(**object).clone()])\n",
     replace: "            (**object).clone()\n",
     tests: ["test/corpus.test.ts", "-t", "^in_place_collect_in_generic_code_of_a_hidden_source.rs$"],
+  },
+  {
+    name: "impl-type-holding-into-iter-unasked",
+    breaks: "an impl whose type holds what its parameter's `into_iter()` makes takes no dictionary of it, so its dictionary is one module const whose method is given a JS iterable's whatever the caller's `A`, and a tuple struct's iterator is stepped as its fields (#2263)",
+    file: "src/lower/iterators.rs",
+    find: "        rustc_hir::def::DefKind::Impl { .. } => {\n",
+    replace: "        rustc_hir::def::DefKind::Impl { .. } if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_dictionary_over_an_into_iterator_its_type_holds.rs$"],
   },
 ];

@@ -202,3 +202,26 @@ iterator does:
 holds both, of a newtype's `&Word` and of a `&Vec`, against native Rust
 in both builds. `flat_map(|_| r)`, whose constant size of `&I` was
 refused, is ADR [0899](0899-a-flatten-held-is-stds.md)'s (#1273).
+
+## Amended: an impl whose type holds it (#2263)
+
+An impl's own type, or its trait's arguments, can hold what its
+parameter's `into_iter()` makes, `impl<A: IntoIterator> FromT<A> for
+One<A::IntoIter>`. That impl holds it as it is, as a method whose
+signature does: `into_iter_held_as_it_is` asks an impl's type and its
+trait's arguments with the same `holds`, where it asked only a
+function's signature. The impl then takes `A`'s `IntoIterator`
+dictionary, and its dictionary is a `$traitImpl` maker given each
+caller's, `oneFromTA(countIntoIterator)`. Before, the impl took none, so
+its dictionary was one module const that gave its method, which takes
+one as its `-> Self` holds it, a JS iterable's dictionary whatever `A` a
+caller picked. A tuple struct's iterator, `one(Count(3))`, was then
+stepped as the array of its fields: `Some(0) Some(1)` where Rust gives
+`Some(4) Some(5)`, a compiler bug, not a Rust/JS difference (ADR
+[0262](0262-when-rust-and-js-disagree.md) doesn't apply). A fieldless
+enum's or a unit struct's, which JS holds as no object, is refused by
+#2255's rule for a value generic code holds in a place of its own.
+`test/corpus/impl_dictionary_over_an_into_iterator_its_type_holds.rs`
+holds the impl's dictionary for the crate's iterator, a `Vec`, a direct
+call, and a method that holds nothing, against native Rust in both
+builds.
