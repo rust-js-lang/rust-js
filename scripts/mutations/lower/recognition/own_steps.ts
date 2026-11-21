@@ -141,8 +141,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `fuse()` of a `T::IntoIter` is given a dictionary with no `fold`, so std's compiled `Fuse` folds by the crate's own, which drops it, and then drops it again: `drop Up 1` twice (#1595)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "            return self.is_unknown(ty)\n                && (reach == Reach::May",
-    replace: "            return matches!(ty.kind(), ty::Param(_))\n                && (reach == Reach::May",
+    find: "            return (self.is_unknown(ty) || ty.is_trait())\n                && (reach == Reach::May",
+    replace: "            return (matches!(ty.kind(), ty::Param(_)) || ty.is_trait())\n                && (reach == Reach::May",
     tests: ["test/corpus.test.ts", "-t", "^generic_consumer_of_an_into_iter_takes_it.rs$"],
   },
   {
@@ -205,5 +205,23 @@ export const mutations: Mutation[] = [
     find: "            return self.own_iterator_method(ty, \"nth\").is_some() || self.own_back_method(ty, \"nth_back\").is_some();\n",
     replace: "            return false;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_steps_its_source_by_next.rs$"],
+  },
+  {
+    name: "dyn-steps-seen",
+    breaks:
+      "a `dyn` iterator's steps are taken for std's defaults, so a `skip(n)`'s `last` of a `&mut dyn Iterator` is an array's last item, its `drop(n)` asking the crate's `nth(n)` where std's `Skip::last` asks `nth(n - 1)` (#2218)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "            return (self.is_unknown(ty) || ty.is_trait())\n",
+    replace: "            return self.is_unknown(ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_last_of_a_lent_dyn.rs$"],
+  },
+  {
+    name: "dyn-double-ended-unseen",
+    breaks:
+      "a `dyn DoubleEndedIterator` is taken for one no step is asked from its back, so a `rev().skip(n)`'s `last` of a `&mut dyn DoubleEndedIterator` asks the crate's `nth_back(n)` where std asks `nth_back(n - 1)` (#2218)",
+    file: "src/lower/recognition/own_steps.rs",
+    find: "                .chain(dyn_traits)\n",
+    replace: "                .chain(dyn_traits.into_iter().filter(|_| false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^skip_last_of_a_lent_dyn.rs$"],
   },
 ];

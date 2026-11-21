@@ -4,6 +4,7 @@
 //! the crate's iterator writes (#162, #182, #220, #505, #521, ADR 1089).
 
 use super::*;
+use rustc_middle::ty::elaborate::supertrait_def_ids;
 
 /// A step of std's `Iterator` or `DoubleEndedIterator`, beside `next` and
 /// `next_back`, that the crate's iterator may write and std's adapters
@@ -149,8 +150,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// crate's own `nth` is `nth_folded_sources`' answer, which folds it by
     /// its own;
     /// of a type generic code doesn't know, a type parameter or an
-    /// associated type, `T::IntoIter` (`is_unknown`, #1595), as `reach`
-    /// says. The one answer, each step's (ADR 1089).
+    /// associated type, `T::IntoIter` (`is_unknown`, #1595), or whose steps
+    /// aren't seen, a `dyn`'s, whose `nth` a `&mut dyn Iterator` passes on
+    /// to the crate's (#2218), as `reach` says. The one answer, each
+    /// step's (ADR 1089).
     pub(in crate::lower) fn reaches_its_own(&self, ty: Ty<'tcx>, step: OwnStep, reach: Reach) -> bool {
         let ty = self.reveal(ty);
         if let ty::Ref(_, inner, ty::Mutability::Mut) = ty.kind() {
@@ -164,7 +167,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return own.is_some();
         }
         let ty::Adt(adt, args) = ty.kind() else {
-            return self.is_unknown(ty)
+            return (self.is_unknown(ty) || ty.is_trait())
                 && (reach == Reach::May || step.asked_at_run_time() && self.may_write(ty, step));
         };
         if self.source_writes(ty, step) {
@@ -182,13 +185,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             })
     }
 
-    /// Whether a type generic code doesn't know, `ty`, may be given an
-    /// iterator that writes `step`: a `DoubleEndedIterator`'s step only of
-    /// one its bounds say is double-ended, as no other is stepped from its
-    /// back.
+    /// Whether a type generic code doesn't know, or a `dyn`, `ty`, may be
+    /// given an iterator that writes `step`: a `DoubleEndedIterator`'s step
+    /// only of one its bounds, or its `dyn`'s trait and what that trait
+    /// asks, say is double-ended, as no other is stepped from its back.
     fn may_write(&self, ty: Ty<'tcx>, step: OwnStep) -> bool {
+        let dyn_traits: Vec<DefId> = match ty.kind() {
+            ty::Dynamic(traits, ..) => (traits.principal_def_id().into_iter())
+                .flat_map(|principal| supertrait_def_ids(self.tcx, principal))
+                .collect(),
+            _ => Vec::new(),
+        };
         !step.is_double_ended()
             || (self.declared_bounds(ty, self.typing_env.param_env).into_iter())
+                .chain(dyn_traits)
                 .any(|bound| super::is_double_ended(self.tcx, bound))
     }
 

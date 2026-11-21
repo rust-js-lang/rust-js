@@ -6,6 +6,7 @@ import {
   $flatMap,
   $iter,
   $iterator,
+  $jsIterator,
   $last,
   $lastSome,
   $lazyChain,
@@ -197,7 +198,13 @@ function boxed() {
       iterator_chain(
         $lent(lent, "lentUnsized"),
         [1],
-        { next: $next, lent: ["lentUnsized"] },
+        {
+          next: $jsIterator.next,
+          sizeHint: $jsIterator.sizeHint,
+          nth: $jsIterator.nth,
+          advanceBy: $jsIterator.advanceBy,
+          lent: ["lentUnsized"],
+        },
         {
           intoIter: (items) => items,
           IntoIterIterator: () => ({
@@ -325,7 +332,13 @@ function wrapped() {
       iterator_chain(
         $lent(lent, "lentUnsized"),
         [1],
-        { next: $next, lent: ["lentUnsized"] },
+        {
+          next: $jsIterator.next,
+          sizeHint: $jsIterator.sizeHint,
+          nth: $jsIterator.nth,
+          advanceBy: $jsIterator.advanceBy,
+          lent: ["lentUnsized"],
+        },
         ownIntoIterator,
       ),
     )}`,
