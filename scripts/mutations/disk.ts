@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
     name: "mutants-store-pruned-under-its-run",
     breaks: "a checkout's mutants store is pruned while a mutation run there holds its lock, so a retirement's each name's check:fast evicts the run's snapshot and the next name's build reads it gone (#2272)",
     file,
-    find: "  const prunable = bounded && !lockHeld(mutantsLock(tree));\n",
+    find: "  const prunable = bounded && lockState(mutantsLock(tree)) !== \"held\";\n",
     replace: "  const prunable = bounded;\n",
     tests: ["test/leases.test.ts", "-t", "mutants store isn't pruned"],
   },

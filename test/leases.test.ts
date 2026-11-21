@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJobTimes } from "../scripts/jobTimes";
-import { acquire, fairShare, holdLease, leasedIn, liveLeases, lockHeld, lockState, ownShare, withLock } from "../scripts/leases";
+import { acquire, fairShare, holdLease, leasedIn, liveLeases, lockState, ownShare, withLock } from "../scripts/leases";
 import { mutantsLock, mutantsStore } from "../scripts/disk";
 import { underLoad } from "../scripts/timing";
 import { fixture, root } from "./support";
@@ -136,24 +136,24 @@ test("a lock is held while its owner lives, and a run's mutants store isn't prun
   const tree = fixture("leases-lock-held");
   const lock = mutantsLock(tree);
   rmSync(lock, { recursive: true, force: true });
-  expect(lockHeld(lock)).toBe(false);
+  expect(lockState(lock)).toBe("absent");
   const free = mutantsStore(tree, "mutants", true);
   expect(free.bound).toBeDefined();
   expect(free.kept).toBeDefined();
   const release = acquire(lock)!;
-  expect(lockHeld(lock)).toBe(true);
+  expect(lockState(lock)).toBe("held");
   // Its run's snapshot, which a check:fast's pruning evicted from under a
   // retirement: neither bounded nor offered to `holdToBudget` now.
   const running = mutantsStore(tree, "mutants", true);
   expect(running.bound).toBeUndefined();
   expect(running.kept).toBeUndefined();
   release();
-  expect(lockHeld(lock)).toBe(false);
+  expect(lockState(lock)).toBe("absent");
   // One whose owner is gone isn't held; one made just now naming none is.
   mkdirSync(lock, { recursive: true });
-  expect(lockHeld(lock)).toBe(true);
+  expect(lockState(lock)).toBe("held");
   writeFileSync(join(lock, "owner"), "999999999");
-  expect(lockHeld(lock)).toBe(false);
+  expect(lockState(lock)).toBe("stale");
   rmSync(lock, { recursive: true, force: true });
   // Another checkout's, leased, stays unbounded as before.
   expect(mutantsStore(tree, "another checkout's mutants", false).bound).toBeUndefined();

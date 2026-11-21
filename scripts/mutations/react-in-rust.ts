@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     name: "port-bounded-under-its-regen",
     breaks: "another checkout's React port is bounded while a regen holds it, so a worktree's regen removes the port a main checkout's is using (#2279)",
     file: "scripts/react-in-rust.ts",
-    find: "    if (at === own || lockHeld(portLock(at))) continue;\n",
+    find: "    if (at === own || lockState(portLock(at)) === \"held\") continue;\n",
     replace: "    if (at === own) continue;\n",
     tests: ["test/react-port-checkout.test.ts", "-t", "isn't bounded from under it"],
   },

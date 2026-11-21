@@ -38,7 +38,7 @@ import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cacheDirOf } from "../tooling/build.js";
 import { channel } from "./toolchain";
 import { devTimes, ownsTimes } from "./devTimes";
-import { acquire, lockHeld } from "./leases";
+import { acquire, lockState } from "./leases";
 
 const root = resolve(import.meta.dir, "..");
 const repository = "https://github.com/rust-js-lang/react-in-rust.git";
@@ -76,7 +76,7 @@ export function bound({ dir = ports, own = home, cap = portsCap, free = () => fr
   for (const name of names) {
     const at = join(dir, name);
     // Not another checkout's a regen holds, its port in use (#2279).
-    if (at === own || lockHeld(portLock(at))) continue;
+    if (at === own || lockState(portLock(at)) === "held") continue;
     const link = join(at, "rust-js");
     let made: number;
     try {

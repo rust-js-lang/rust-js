@@ -146,10 +146,6 @@ export function acquire(
  * alive, or made under 5 s ago naming no owner yet. What `acquire` waits
  * on, and what a store a run works in is kept from the pruner by while it
  * runs, `target/mutants` by its run's `mutants.lock` (#2272). */
-export function lockHeld(lock: string): boolean {
-  return lockState(lock) === "held";
-}
-
 /** What `lock` is: `absent`, not made; `held`, made and its owner's
  * process alive, or made under 5 s ago naming no owner yet; else `stale`,
  * its owner gone, which `acquire` alone removes (#2283). */

@@ -30,7 +30,7 @@ import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
 import { checkLogsCap, checkLogsStore } from "./checkLogs";
-import { leasedIn, lockHeld } from "./leases";
+import { leasedIn, lockState } from "./leases";
 import { worktreeRoots } from "./strays";
 import { sanityRunsCap, sanityRunsStore } from "./select";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
@@ -283,7 +283,7 @@ export const mutantsLock = (tree: string) => join(tree, "target", "mutants.lock"
  * at the disk's floor instead (`build`'s `belowFloor`, scripts/mutations.ts). */
 export function mutantsStore(tree: string, name: string, bounded: boolean): Store {
   const dir = join(tree, "target", "mutants");
-  const prunable = bounded && !lockHeld(mutantsLock(tree));
+  const prunable = bounded && lockState(mutantsLock(tree)) !== "held";
   return { name, dir, cap: mutantsCap, bound: prunable ? (free) => void boundEntries(dir, mutantsCap, free) : undefined, kept: prunable ? () => entriesOf(dir) : undefined };
 }
 
