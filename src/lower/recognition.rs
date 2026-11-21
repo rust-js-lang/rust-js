@@ -1,6 +1,7 @@
 //! Read-only library-operation recognition. No function lowering state or JS emission.
 
 mod adapter_types;
+mod array_iters;
 mod c_strs;
 mod calls;
 mod chars;

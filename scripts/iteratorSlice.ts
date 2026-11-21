@@ -83,6 +83,7 @@ export const iteratorPaths = [
   "src/lower/library.rs",
   "src/lower/recognition/adapter_types.rs",
   "src/lower/recognition/iterators.rs",
+  "src/lower/recognition/array_iters.rs",
   "src/lower/recognition/lengths.rs",
   "src/lower/recognition/own_steps.rs",
   "src/lower/recognition/std_steps.rs",

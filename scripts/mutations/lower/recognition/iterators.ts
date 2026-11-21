@@ -70,15 +70,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
   },
   {
-    name: "text-escape-not-chars",
-    breaks:
-      "a held text escape isn't std's iterator of its `char`s' array: `e.next()` of `'\u00e9'.escape_default()` is `$next` of an array, `it.next is not a function` (#379, ADR 0971)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            || is_text_escape(self.tcx, ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^escapes_stepped.rs$"],
-  },
-  {
     name: "linked-list-into-iter-not-owning",
     breaks:
       "a `LinkedList`'s `into_iter()` isn't the array's items it owns: its drop reads std's field, `value.list`, of JS's iterator, `TypeError` (#377, ADR 0970)",
@@ -346,23 +337,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_filter_map_drops.rs$"],
   },
   {
-    name: "list-iter-not-items",
-    breaks:
-      "a `LinkedList`'s `iter()` is a JS helper of it, which can't be cloned where it is",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            Some(StdPath::OptionIter | StdPath::OptionIntoIter | StdPath::ResultIter | StdPath::LinkedListIter\n",
-    replace: "            Some(StdPath::OptionIter | StdPath::OptionIntoIter | StdPath::ResultIter\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
-  },
-  {
-    name: "option-iter-not-items",
-    breaks: "an `Option`'s `iter()` can't be cloned where it is",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            Some(StdPath::OptionIter | StdPath::OptionIntoIter | StdPath::ResultIter | StdPath::LinkedListIter\n",
-    replace: "            Some(StdPath::ResultIter | StdPath::LinkedListIter\n",
-    tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
-  },
-  {
     name: "try-rfold-not-from-back",
     breaks: "`try_rfold` isn't seen to step from the back, and is refused",
     file: "src/lower/recognition/iterators.rs",
@@ -454,15 +428,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "byte-escape-not-stepped",
-    breaks:
-      "a byte's escape isn't a `$iter` of its bytes, and stepping it from its back or cloning it is refused",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            || is_byte_escape(self.tcx, ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^byte_escape.rs$"],
-  },
-  {
     name: "successors-not-closed-on-drop",
     breaks:
       "a `Successors` holding a value with a destructor is refused, as a std type that holds one",
@@ -488,24 +453,6 @@ export const mutations: Mutation[] = [
     find: "                    None => self.closing_source(source)?,\n",
     replace: "                    None => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_lazy_drops.rs$"],
-  },
-  {
-    name: "option-into-iter-unstepped",
-    breaks:
-      "an `Option`'s `into_iter()` can't be stepped from its back, so `chain(Some(x)).rev()` is refused",
-    file: "src/lower/recognition/iterators.rs",
-    find: "StdPath::OptionIter | StdPath::OptionIntoIter | ",
-    replace: "StdPath::OptionIter | ",
-    tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
-  },
-  {
-    name: "chunks-not-made-arrays",
-    breaks:
-      "a slice's chunks and windows aren't known for the arrays they're made, so stepping one from its back is refused",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            | StdPath::SliceChunks | StdPath::SliceChunksMut | StdPath::SliceWindows\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^chunks_from_their_back.rs$"],
   },
   {
     name: "folds-what-it-consumes-not-sum",
@@ -674,14 +621,6 @@ export const mutations: Mutation[] = [
     find: "            None => Some((source, self.option_of(self.iterator_item(source)?.peel_refs())?, false)),\n",
     replace: "            None => Some((source, self.option_of(self.iterator_item(source)?)?, false)),\n",
     tests: ["test/corpus.test.ts", "-t", "iter_flatten|^flatten_of_options_from_its_back.rs$"],
-  },
-  {
-    name: "once-no-array-of-items",
-    breaks: "`iter::once(x)`, `[x]`, isn't taken for an array of items, so its `size_hint()` is refused, \"from its MIR\", where std's is `(1, Some(1))` (#1375)",
-    file: "src/lower/recognition/iterators.rs",
-    find: "            | StdPath::IterOnce\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^once_and_once_with_hint.rs$"],
   },
   {
     name: "boxed-dyn-iterator-source-unclosed",
