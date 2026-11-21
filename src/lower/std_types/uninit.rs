@@ -24,6 +24,9 @@ pub(in crate::lower) enum UninitOp {
     Slice { zeroed: bool },
     /// `Box::write(b, v)`: `v`.
     BoxWrite,
+    /// `Box::take(b)`, Rust 1.100's: what it holds, and the box with
+    /// nothing written, as `Box::new_uninit()` makes it (#1656).
+    BoxTake,
     /// A `MaybeUninit`'s `write(v)`: written, and a `&mut` to it given.
     Write,
     /// `assume_init_mut()`: a `&mut` to what it holds.
@@ -34,6 +37,29 @@ pub(in crate::lower) enum UninitOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A `MaybeUninit` of `item` not yet written, `MaybeUninit::uninit()`'s
+    /// or a `Box`'s, `boxed`, as it's written after: written whole, or an
+    /// item at a time (`UninitOp::Uninit`'s, `BoxTake`'s).
+    fn uninit_made(&mut self, item: ty::Ty<'tcx>, boxed: bool, written_whole: bool, span: rustc_span::Span) -> R<Expr> {
+        Ok(match *item.kind() {
+            ty::Array(each, len) if !(boxed || written_whole) || self.recognition().uninit_of(each).is_some() => {
+                let n = match len.try_to_target_usize(self.tcx) {
+                    Some(n) => Expr::int(i128::from(n)),
+                    None => self.const_arg(len, span)?,
+                };
+                crate::lower::plain::filled(n, None)
+            }
+            // Of a `MaybeUninit` of it, smallvec's `uninit().assume_init()`
+            // of a `MaybeUninit<A>`, too: that's its value (ADR 0332).
+            _ if std::iter::successors(Some(item), |&t| self.recognition().uninit_of(t))
+                .any(|t| self.is_array_param(t)) =>
+            {
+                Expr::array(Vec::new())
+            }
+            _ => Expr::js_undefined(),
+        })
+    }
+
     /// A `MaybeUninit`'s call, or a `Box`'s of one: `None` if `known` is another.
     pub(in crate::lower) fn uninit_call(
         &mut self,
@@ -66,23 +92,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // #1258) are written whole, `const m = [..]`; a type parameter
             // that's an array, smallvec's `A: Array`, its slots, none yet
             // (ADR 0417). Another's is written whole.
-            UninitOp::Uninit { boxed } => match *item.kind() {
-                ty::Array(each, len) if !(boxed || written_whole) || self.recognition().uninit_of(each).is_some() => {
-                    let n = match len.try_to_target_usize(self.tcx) {
-                        Some(n) => Expr::int(i128::from(n)),
-                        None => self.const_arg(len, span)?,
-                    };
-                    crate::lower::plain::filled(n, None)
-                }
-                // Of a `MaybeUninit` of it, smallvec's `uninit().assume_init()`
-                // of a `MaybeUninit<A>`, too: that's its value (ADR 0332).
-                _ if std::iter::successors(Some(item), |&t| self.recognition().uninit_of(t))
-                    .any(|t| self.is_array_param(t)) =>
-                {
-                    Expr::array(Vec::new())
-                }
-                _ => Expr::js_undefined(),
-            },
+            UninitOp::Uninit { boxed } => self.uninit_made(item, boxed, written_whole, span)?,
+            // What it held, taken out, and the box, emptied, as a new one is.
+            UninitOp::BoxTake => Expr::array(vec![arg(), self.uninit_made(item, true, false, span)?]),
             UninitOp::Zeroed => self.zero(item, span)?,
             UninitOp::Read => self.copy_if_needed(arg(), item),
             // `Array.from({ length: n })`; of a zero, `new Array(n).fill(0)`,

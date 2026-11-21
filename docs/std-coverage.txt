@@ -569,7 +569,7 @@
 - String::try_reserve	none
 - String::try_reserve_exact	none
 + String::with_capacity	memory
-# Box 13 of 25; bodies: 3 safe, 0 spec, 0 opaque, 22 memory, 0 none
+# Box 14 of 25; bodies: 3 safe, 0 spec, 0 opaque, 22 memory, 0 none
 - Box::allocator	safe
 - Box::as_mut_ptr	memory
 - Box::as_ptr	safe
@@ -593,7 +593,7 @@
 + Box::new_zeroed	memory
 + Box::new_zeroed_slice	memory
 + Box::pin	memory
-- Box::take	memory
++ Box::take	memory
 + Box::write	memory
 # Pin 15 of 16; bodies: 16 safe, 0 spec, 0 opaque, 0 memory, 0 none
 - Pin::as_deref_mut	safe

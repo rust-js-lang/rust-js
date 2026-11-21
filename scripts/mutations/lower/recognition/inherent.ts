@@ -513,4 +513,12 @@ export const mutations: Mutation[] = [
     replace: "            \"from_fn\" if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^from_fn_drops_what_it_made_where_its_closure_panics\\.rs$"],
   },
+  {
+    name: "box-take-unrecognized",
+    breaks: "`Box::take(b)`, Rust 1.100's, is refused as an open call (#1656) where it's what the box holds and the box left unwritten",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            \"take\" if owner.is_box() => return Some(Std::Uninit(UninitOp::BoxTake)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^box_take_moves_out_and_leaves_the_box_unwritten\\.rs$"],
+  },
 ];

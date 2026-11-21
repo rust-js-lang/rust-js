@@ -833,4 +833,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^option_flatten_of_a_value_with_a_destructor.rs$"],
   },
+  {
+    name: "box-take-of-a-destructor-refused",
+    breaks: "`Box::take` of a value with a destructor is refused, where it moves the value out and drops nothing, as `Option::take` does (#1656)",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::Uninit(crate::lower::std_types::uninit::UninitOp::BoxTake)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^box_take_moves_out_and_leaves_the_box_unwritten\\.rs$"],
+  },
 ];

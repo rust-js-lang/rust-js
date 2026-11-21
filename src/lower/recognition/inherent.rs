@@ -25,7 +25,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// A method Rust 1.100 stabilized that rust-js lowers (#1656):
-    /// `Vec::from_fn(n, f)`, as `array::from_fn` is; and a `str`'s or a
+    /// `Vec::from_fn(n, f)`, as `array::from_fn` is; `Box::take(b)`, what
+    /// it holds and the box emptied; and a `str`'s or a
     /// slice's `trim_prefix(p)` or `trim_suffix(p)`, by what its pattern
     /// `args` names is: text or a `char`, a `char`'s predicate or a set of
     /// them, or a slice's items. `None` of another, refused as an open call.
@@ -34,6 +35,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "from_fn" if self.is_std_type(owner, StdItem::Vec) => {
                 return Some(Std::Slice(SliceOp::FromFn { given_length: true }));
             }
+            "take" if owner.is_box() => return Some(Std::Uninit(UninitOp::BoxTake)),
             "trim_prefix" => false,
             "trim_suffix" => true,
             _ => return None,

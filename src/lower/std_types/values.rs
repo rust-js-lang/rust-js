@@ -256,6 +256,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // old value given back (ADR 0098).
                     | Std::OptionTake
                     | Std::OptionReplace
+                    // And `Box::take`, which moves what the box holds out and
+                    // drops nothing, the box left unwritten (#1656).
+                    | Std::Uninit(crate::lower::std_types::uninit::UninitOp::BoxTake)
                     | Std::OptionPlace(OptionPlaceOp::TakeIf)
                     // And `flatten()`, which moves the inner `Option` out and
                     // drops nothing (#1857).
