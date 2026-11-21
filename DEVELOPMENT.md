@@ -878,7 +878,10 @@ checked:
   React's port's regen each append their own line in the same form, by
   one writer (scripts/devTimes.ts), however they end; none where it's a
   step of another run that writes one, a push's check or a retirement's
-  regen.
+  regen. Its load says too how many other runs held a lease of the
+  machine's cores as it began and as it ended, `load 2.00/1.90/2.09, other
+  runs 1/0`: one that shared them took twice its time, a corpus overlapped
+  1,190 s where quiet it took 658 s.
 - **A push that undoes a commit already on `main` is refused** by the
   pre-push hook `bun install` sets git to run (`.githooks/pre-push`,
   `scripts/push-guard.ts`): a commit made from an older tree, as `git

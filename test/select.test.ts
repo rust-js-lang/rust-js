@@ -331,6 +331,11 @@ test("bun run push says its selection on its line, and runs the check and the po
   expect(onlyPushedFiles(["a.rs", "b.rs"], ["a.rs"])).toEqual(["b.rs"]);
   const line = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", kind: "push", sha: "abc", total: 61.4, phases: [["check", 300]], selection: "some (3 files, 12 cases)", load: [1, 2, 3], ok: true, note: "" });
   expect(line).toBe("2026-11-16T08:00:00Z | m | a | push | abc | total 61s | check 300s | select some (3 files, 12 cases) | load 1.00/2.00/3.00 | ok | ");
+  // And the other runs that held the cores as it began and ended, which
+  // an overlapped run's time says it shared (2026-11-21's corpus, 1,190 s
+  // overlapped where 658 s quiet).
+  const shared = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", kind: "corpus", sha: "abc", total: 1190, phases: [], selection: "2849 cases", load: [2, 2, 2], others: [1, 0], ok: true, note: "" });
+  expect(shared).toContain("| load 2.00/2.00/2.00, other runs 1/0 | ok |");
   expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.push).toBe("bun scripts/push.ts");
   for (const doc of ["DEVELOPMENT.md", "CONTRIBUTING.md"]) expect(readFileSync(join(root, doc), "utf8")).toContain("`bun run push`");
   const push = readFileSync(join(root, "scripts/push.ts"), "utf8");
@@ -351,9 +356,10 @@ test("bun run push says its selection on its line, and runs the check and the po
   // one that's a step of another's, whose environment says so: a push's
   // check:fast, a retirement's port regen, check:fast's corpus parts.
   const env: Record<string, string | undefined> = {};
-  expect(ownsTimes("push", env)).toBe(true);
-  expect(ownsTimes("check:fast", env)).toBe(false);
+  expect(ownsTimes("push", env, () => 2)).toBe(true);
+  expect(ownsTimes("check:fast", env, () => 5)).toBe(false);
   expect(env.RUST_JS_TIMED_BY).toBe("push");
+  expect(env.RUST_JS_TIMED_OTHERS).toBe("2");
   expect(slowest([["a", 1], ["b", 9], ["c", 5]], 2)).toEqual([["b", 9], ["c", 5]]);
   for (const file of ["scripts/push.ts", "scripts/checkFast.ts", "scripts/mutations.ts", "scripts/react-in-rust.ts", "test/corpus.test.ts"]) {
     expect(readFileSync(join(root, file), "utf8")).toContain("ownsTimes(");
