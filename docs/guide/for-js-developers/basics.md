@@ -2704,6 +2704,11 @@ export function grow(shape) {
 }
 ```
 
+The `shape` an exported function is given may be an object JS made, whose
+`TAG` a getter could answer anew at each read, so where the tests read it
+more than once, it's read once, `const kind = shape.TAG`
+([ADR 1022](../../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md)).
+
 Of fields at other keys, `Circle { r } | Ring(r)`'s `r` and `_0`, each
 alternative binds its own.
 
@@ -3689,6 +3694,7 @@ export function describe(v) {
 }
 ```
 
+`kind` is the tag read once, as JS may give the `Value` (see [`switch` and `match`](#switch-and-match)).
 `$displayF64` prints an `f64` as Rust does, which differs from JS's
 `String(n)` for very large and very small numbers. A counter, an `f64`
 written a whole number from -2^53 to 2^53, not `-0`, and one more or
