@@ -393,7 +393,11 @@ what's held before it, as a browser's console takes whole lines
   carries where a write into a writer reaches its type, or where its
   writer may print; else, formatted plainly, by its text (#1712). std's
   iterator adapters' `Debug`, `Fuse { iter: Some(..) }`, is written so by
-  `@rust-js/std`'s compiled bodies. A range's `Debug`, `1..4`, is its
+  `@rust-js/std`'s compiled bodies. A `Zip` of two random-access sides,
+  slices' iterators, is `Zip` alone, as std's `ZipFmt` writes it by their
+  types; of others, and of a `StepBy`, a `Flatten`, a `FlatMap`, a `Once`
+  or a `Successors` the normal build holds as JS iterators, `{:?}` is
+  refused, their state not kept (#2252). A range's `Debug`, `1..4`, is its
   start, its dots and its end, each a call of the writer's, the bounds by
   the same options, as std writes it; of a `RangeInclusive` of numbers or
   `char`s, then ` (exhausted)` where it's been stepped through, a write

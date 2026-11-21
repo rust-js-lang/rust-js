@@ -238,6 +238,10 @@ for (const [name, source, message, crate] of [
   // until std's search is compiled (ADR 0060, amended, #2004).
   ["a str split's Debug", "pub fn f() -> String { format!(\"{:?}\", \"a b\".split(' ')) }", "`{:?}` of a `std::str::Split<'_, char>`, which shows std's searcher's state (#2004)"],
   ["a str matches' Debug", "pub fn f() -> String { format!(\"{:?}\", \"a b\".matches(\"a\")) }", "`{:?}` of a `std::str::Matches<'_, &str>`, which shows std's searcher's state (#2004)"],
+  // A `Zip` of sides that aren't random access shows them, `Zip { a, b }`,
+  // which the JS doesn't keep: refused, as `Zip` alone is only of those
+  // that are (#2252).
+  ["a Zip of chars' Debug", "pub fn f() -> String { format!(\"{:?}\", \"ab\".chars().zip(\"cd\".chars())) }", "`{:?}` of a `std::iter::Zip<std::str::Chars<'_>, std::str::Chars<'_>>`"],
   ["an OpenOptions' Debug", "pub fn f() -> String { format!(\"{:?}\", std::fs::OpenOptions::new()) }", "`{:?}` of a `std::fs::OpenOptions`, which shows what the OS says of it (#1418)"],
   // A write's result held inside what generic code has as a `Result` of its
   // type parameters, a `Vec<Result<T, E>>`'s items, `{ TAG }` there, where

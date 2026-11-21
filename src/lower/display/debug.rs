@@ -740,6 +740,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if let Some(adt) = self.std_tuple_variants(ty) => {
                 self.tuple_variants_debug(adt, args, value, span, pretty, false)
             }
+            // A `Zip` of two `TrustedRandomAccessNoCoerce` sides, slices'
+            // iterators: std's `ZipFmt` shows it `Zip` alone, never what its
+            // sides hold, by their types, whatever was stepped (#2252).
+            ty::Adt(adt, args)
+                if crate::lower::recognition::is_std_path(
+                    self.tcx,
+                    adt.did(),
+                    crate::lower::recognition::StdPath::IterZip,
+                ) && let Some(random) = crate::lower::recognition::fact_trait(
+                    self.tcx,
+                    crate::lower::recognition::TypeFact::RandomAccessNoCoerce,
+                ) && (0..2).all(|i| self.recognition().implements_trait(args.type_at(i), random)) =>
+            {
+                Ok(Expr::str("Zip"))
+            }
             // A `str`'s search, `split` and its kin: std's shows its
             // searcher's state, which its JS, the pieces it finds, doesn't
             // keep until std's search is compiled (ADR 0060, amended, #2004).
