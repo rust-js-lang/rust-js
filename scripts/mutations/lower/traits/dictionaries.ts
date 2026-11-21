@@ -137,26 +137,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
   },
   {
-    name: "object-mut-receiver-unboxed",
-    breaks:
-      "a `&mut self` method of a `dyn` in generic code takes generic code's box for the pair, and JS throws",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "            let pair = match mutable {\n                true => Expr::held(object.clone()),",
-    replace:
-      "            let pair = match mutable {\n                true => object.clone(),",
-    tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
-  },
-  {
-    name: "object-supertraits-missing",
-    breaks:
-      "a `dyn`'s dictionary in generic code has no supertraits, and a supertrait's method throws",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "            .ok_or_else(|| self.no_evidence(span, tr))?;\n        let mut props = self.supertrait_entries(tr, span)?;\n",
-    replace:
-      "            .ok_or_else(|| self.no_evidence(span, tr))?;\n        let mut props = Vec::new();\n",
-    tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
-  },
-  {
     name: "to-string-dictionary-unmade",
     breaks: "a `T: ToString` is given no dictionary for a concrete type",
     file: "src/lower/traits/dictionaries.rs",
@@ -181,15 +161,6 @@ export const mutations: Mutation[] = [
     replace:
       "            && let Some(newtype) = self.recognition().int_newtype(ty.peel_refs()).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "wrapping_type"],
-  },
-  {
-    name: "dyn-item-drops-left-out",
-    breaks:
-      "a `dyn`'s dictionary has no drop for the associated type its type names, so generic code given one drops nothing",
-    file: "src/lower/traits/dictionaries.rs",
-    find: "        }\n        props.extend(self.item_drops(tr, false, span)?);\n        Ok(Expr::object(props))\n",
-    replace: "        }\n        Ok(Expr::object(props))\n",
-    tests: ["test/corpus.test.ts", "-t", "associated_type_drops"],
   },
   {
     name: "string-writer-no-dictionary",

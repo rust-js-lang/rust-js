@@ -83,7 +83,8 @@ src/lower/std_types/btree.rs	1
 src/lower/std_types/cell.rs	1
 src/lower/std_types/number/math.rs	1
 src/lower/traits/calls.rs	3
-src/lower/traits/dictionaries.rs	2
+src/lower/traits/dictionaries.rs	1
+src/lower/traits/dictionaries/dyn_objects.rs	1
 src/lower/traits/dictionaries/references.rs	1
 src/lower/traits/dyns.rs	1
 src/lower/traits/impls.rs	6
