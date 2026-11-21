@@ -175,7 +175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of (`Hinted::dyn_asked`, #1476): not one the crate takes from a
         // library or a binding, which it can't see made.
         if self.recognition().is_dyn_iter(iter_ty) {
-            if self.krate.hinted.dyn_unseen {
+            if self.krate.iterators.hinted.dyn_unseen {
                 return Err(self.unsupported(
                     span,
                     &format!("`size_hint()` of a `{iter_ty}` in a crate that takes a `dyn Iterator` from a library or a binding, which it can't see made knowing its hint (#1562)"),

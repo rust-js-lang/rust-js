@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `extend` of a `Vec` the analysis found lost keeps its capacity: of `chars().skip(5)` given it, 64 where std's is 60, silently (#1180's (3))",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "self.krate.hinted.lost.contains(&site)",
+    find: "self.krate.iterators.hinted.lost.contains(&site)",
     replace: "false",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `extend` the analysis asks by value isn't: of `chars().skip(5)` given a library's `pub` function, a capacity of 64 where std's is 44, silently (#1251)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "self.krate.hinted.by_value.contains(&site)",
+    find: "self.krate.iterators.hinted.by_value.contains(&site)",
     replace: "false",
     tests: ["test/vec-capacity.test.ts", "-t", "hint JS lost"],
   },

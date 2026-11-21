@@ -818,8 +818,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `chars()` map made a `dyn Iterator` in a crate that asks one's hint is let through, whose hint isn't std's as it's made, not refused naming #1563",
     file: "src/lower/mir/rvalues.rs",
-    find: "                            if self.krate.hinted.dyn_asked\n",
-    replace: "                            if false && self.krate.hinted.dyn_asked\n",
+    find: "                            if self.krate.iterators.hinted.dyn_asked\n",
+    replace: "                            if false && self.krate.iterators.hinted.dyn_asked\n",
     tests: ["test/diagnostics.test.ts", "-t", "a dyn Iterator of chars whose size_hint is asked"],
   },
   {

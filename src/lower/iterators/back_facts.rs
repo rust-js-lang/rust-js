@@ -20,11 +20,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// asks no back of what it holds: `made_knowing_its_hint`'s (#2209).
     pub(in crate::lower) fn stepped_from_its_back(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
-        let answer = if self.krate.back_stepped.typed.contains(&ty) {
+        let answer = if self.krate.iterators.back_stepped.typed.contains(&ty) {
             "typed"
         } else if !self.asking_made.get()
             && (self.made_into.iter().chain(&self.made_from)).any(|&(local, made)| {
-                let local = self.krate.back_stepped.lent(self.frame.owner, local);
+                let local = self.krate.iterators.back_stepped.lent(self.frame.owner, local);
                 made == ty && self.local_stepped_from_its_back(local).is_some()
             })
         {
@@ -41,7 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's made knowing its length (`BackStepped::counted`, #1354).
     pub(in crate::lower) fn made_counted_from_its_back(&self) -> bool {
         let counted = self.made_into.is_some_and(|(local, _)| {
-            let local = self.krate.back_stepped.lent(self.frame.owner, local);
+            let local = self.krate.iterators.back_stepped.lent(self.frame.owner, local);
             self.asked_of(local).len == Some(crate::lower::analysis::LengthAsked::Counted)
         });
         crate::decisions::record("back-counted", if counted { "counted" } else { "uncounted" });
@@ -76,7 +76,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its back and its length, the one answer of each, which its maker
     /// makes it knowing (#814, #1795).
     pub(in crate::lower) fn asked_of(&self, local: rustc_middle::mir::Local) -> crate::lower::analysis::Asked {
-        self.krate.back_stepped.asked_of(self.frame.owner, local)
+        self.krate.iterators.back_stepped.asked_of(self.frame.owner, local)
     }
 
     /// Whether `local`, of the body being lowered, holds what the crate
@@ -154,7 +154,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn made_knowing_its_hint(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.tcx.erase_and_anonymize_regions(ty.peel_refs());
         let owner = self.tcx.typeck_root_def_id(self.frame.owner);
-        let hinted = &self.krate.hinted;
+        let hinted = &self.krate.iterators.hinted;
         let answer = if hinted.counted_in.contains(&(owner, ty)) {
             "counted-in"
         } else if hinted.knowing_in.contains(&(owner, ty)) {

@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "hint-made-stepped-from-its-back",
     breaks: "what's made knowing its hint by the function that makes it is said to be stepped from its back, so a flatten of the crate's iterators, which have none, beside another of its type whose hint is asked, is `$flattenEnds`, which throws `an iterator stepped as an array's` (#2209)",
     file: "src/lower/iterators/back_facts.rs",
-    find: "        let answer = if self.krate.back_stepped.typed.contains(&ty) {\n",
-    replace: "        let answer = if self.krate.back_stepped.typed.contains(&ty) || self.krate.hinted.knowing_in.contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty)) {\n",
+    find: "        let answer = if self.krate.iterators.back_stepped.typed.contains(&ty) {\n",
+    replace: "        let answer = if self.krate.iterators.back_stepped.typed.contains(&ty) || self.krate.iterators.hinted.knowing_in.contains(&(self.tcx.typeck_root_def_id(self.frame.owner), ty)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_made_knowing_its_hint_asks_no_back.rs$"],
   },
 ];

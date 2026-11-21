@@ -29,11 +29,10 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     pub(in crate::lower) closure_facts: &'a analysis::ClosureFacts<'tcx>,
     /// The types the crate clones (ADR 0525).
     pub(in crate::lower) cloned: &'a analysis::Cloned<'tcx>,
-    /// The map and filter types the crate steps from their back (ADR 0545).
-    pub(in crate::lower) back_stepped: &'a analysis::BackStepped<'tcx>,
-    /// The `take(n)`s, `skip(n)`s and `step_by(n)`s generic code asks the
-    /// hint of, made `$taking`, `$skipping` or `$stepBy` (#1236).
-    pub(in crate::lower) hinted: &'a analysis::Hinted<'tcx>,
+    /// The crate's iterator facts: the types it steps from their back (ADR
+    /// 0545), and the `take(n)`s, `skip(n)`s and `step_by(n)`s generic code
+    /// asks the hint of, made `$taking`, `$skipping` or `$stepBy` (#1236).
+    pub(in crate::lower) iterators: &'a analysis::IteratorFacts<'tcx>,
     /// Whether the crate asks a `Chars` its rest, its `Debug` or a `dyn` of
     /// it (#1186).
     pub(in crate::lower) chars_whole: bool,
@@ -301,8 +300,7 @@ carried! {
     wholes => CrateOnly,
     closure_facts => By(&[F::LibraryMakesDroppingAnys, F::LibraryMakesDroppingErrors, F::LibraryMakesDroppingFnDyns, F::LibraryMakesDroppingIterators, F::LibraryClonedClosures]),
     cloned => CrateOnly,
-    back_stepped => CrateOnly,
-    hinted => CrateOnly,
+    iterators => CrateOnly,
     chars_whole => CrateOnly,
     searches_whole => CrateOnly,
     generic_consts => By(&[F::LibraryDictionaryConsts]),
@@ -380,6 +378,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(CARRIED.len(), 66);
+        assert_eq!(CARRIED.len(), 65);
     }
 }

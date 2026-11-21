@@ -8,6 +8,7 @@ pub(in crate::lower) mod read_bounds;
 mod ground;
 pub(super) use ground::{Ground, of as ground};
 mod hint_asked;
+mod iterator_facts;
 use crate::collections::{IndexMap, IndexSet};
 pub(in crate::lower) use back_stepped::{Asked, BackStepped, LengthAsked, SteppedLocal};
 mod callers_decide;
@@ -21,7 +22,8 @@ pub(super) use cell_borrows::{
 pub(super) use cell_flow::CellClass;
 mod clones;
 pub(in crate::lower) use clones::Cloned;
-pub(in crate::lower) use hint_asked::{Hinted, asked_of_own};
+pub(in crate::lower) use hint_asked::asked_of_own;
+pub(in crate::lower) use iterator_facts::IteratorFacts;
 mod closures;
 mod collected;
 use collected::{coded_inline_consts, lowered_derive};
@@ -231,13 +233,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub closure_facts: ClosureFacts<'tcx>,
     /// The types the crate clones, and those their clones clone (ADR 0525).
     pub cloned: clones::Cloned<'tcx>,
-    /// The map and filter types the crate steps from their back, each made
-    /// knowing its back (ADR 0545).
-    pub back_stepped: BackStepped<'tcx>,
-    /// The `take(n)`s, `skip(n)`s and `step_by(n)`s whose hint generic
-    /// code asks of what its callers give, each made `$taking`, `$skipping`
-    /// or `$stepBy` where it's made (`hint_asked.rs`, #1236).
-    pub hinted: Hinted<'tcx>,
+    /// The crate's iterator facts: what it steps from its back, and what
+    /// generic code asks the hint of (`iterator_facts.rs`).
+    pub iterators: IteratorFacts<'tcx>,
     /// Whether the crate asks a string's `Chars` its rest, its `Debug`, or
     /// makes a `dyn` of one, so each is `$chars(s)`, not JS's own string
     /// iterator (#1186).
@@ -815,25 +813,26 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // A function's scope struct, of an `Rc` counted none (ADR 1043).
     let mut scopes = Scopes::new(tcx, all_bodies);
     scopes.retain(|s| !counted.counts(tcx, tcx.type_of(s.adt).instantiate_identity().skip_normalization()));
-    // What it steps from its back (ADR 0545, #814, #851), and of an array's
-    // items with a destructor, which its native forms don't step.
+    // Its iterator facts: what it steps from its back, and of an array's
+    // items with a destructor, which its native forms don't step; and what
+    // generic code asks the hint of (`iterator_facts.rs`).
     let drop_runs = |item| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item);
-    let back_stepped = back_stepped::of_crate(
-        tcx,
-        recognition,
-        all_bodies,
+    let iterators = iterator_facts::of_crate(
+        (tcx, recognition),
+        (all_bodies, calls.names()),
         (library, drop_runs, keeps_capacity),
         (params_may_drop, (!library).then_some(&given_a_drop)),
     );
-    // What generic code asks the hint of, made knowing it where it's made,
-    // never stepped from its back for it (#1236, #2209).
-    let hinted = hint_asked::of_crate(tcx, recognition, (all_bodies, calls.names()), keeps_capacity);
     // Which adapters each body makes in place, the second stage: once what's
     // stepped from its back, and what's made knowing its hint, is known, the
     // one reader of the ground, and before any reader of both stages,
     // `type_fact_params`' (`InPlace`).
     for bodies in [every_body.0, every_body.1] {
-        crate::lower::body_queries::decide_held(&recognition, bodies, (&back_stepped, &hinted.typed, keeps_capacity));
+        crate::lower::body_queries::decide_held(
+            &recognition,
+            bodies,
+            (&iterators.back_stepped, &iterators.hinted.typed, keeps_capacity),
+        );
     }
     let asks_whole = |kind| chars_asked::asks_whole(tcx, recognition, all_bodies, (library, keeps_capacity), kind);
     let chars_whole = asks_whole(crate::lower::recognition::TextIter::Chars);
@@ -1272,8 +1271,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         wholes,
         closure_facts,
         cloned,
-        back_stepped,
-        hinted,
+        iterators,
         chars_whole,
         searches_whole,
         changed_vecs,

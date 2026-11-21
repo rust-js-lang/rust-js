@@ -898,8 +898,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.tcx.erase_and_anonymize_regions(iter_ty),
         );
         let lost = (
-            self.krate.hinted.lost.contains(&site),
-            self.krate.hinted.by_value.contains(&site),
+            self.krate.iterators.hinted.lost.contains(&site),
+            self.krate.iterators.hinted.by_value.contains(&site),
         );
         self.grown_by(collection, items, (into, item, (own, known_own), lost), span, out)
     }

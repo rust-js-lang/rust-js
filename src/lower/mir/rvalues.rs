@@ -579,7 +579,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // Of a crate that asks a `dyn Iterator`'s hint,
                             // one whose hint isn't std's as it's made, which
                             // the `dyn` would give (#1476).
-                            if self.krate.hinted.dyn_asked
+                            if self.krate.iterators.hinted.dyn_asked
                                 && !self.recognition().is_dyn_iter(iterator)
                                 && !self.hint_known_made_dyn(iterator)
                             {
