@@ -521,4 +521,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^box_take_moves_out_and_leaves_the_box_unwritten\\.rs$"],
   },
+  {
+    name: "rc-map-unrecognized",
+    breaks: "`Rc::map(this, f)`, Rust 1.100's, is refused as an open call (#1656)",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            \"map\" if rc_pointee(self.tcx, owner).is_some() => return Some(Std::Rc(RcOp::Map)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^rc_map_gives_a_new_rc_and_drops_the_old\\.rs$"],
+  },
 ];

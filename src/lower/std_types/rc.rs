@@ -5,6 +5,7 @@
 //! value it points at (ADR 0023). The one owner of how each is held, read,
 //! made and counted (`RcForm`).
 
+use crate::lower::calls::apply;
 use crate::lower::temporary_names::Role;
 use rustc_middle::ty::{self, GenericArgsRef, Ty};
 use rustc_span::Span;
@@ -49,6 +50,8 @@ pub(in crate::lower) enum RcOp {
     IntoInner,
     UnwrapOrClone,
     NewCyclic,
+    /// `Rc::map(this, f)`, Rust 1.100's (#1656).
+    Map,
     WeakNew,
     Upgrade,
     WeakStrongCount,
@@ -302,6 +305,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     RcForm::Box | RcForm::Pair => helper("$newCyclic", vec![f]),
                 }
             }
+            // `f` of what it points at, `this` dropped after it, or as it
+            // unwinds (`dropped_unwinding`), and what `f` gives in an `Rc`
+            // of its own, as std's:
+            // its reuse of the allocation where nothing else holds it is
+            // unseen.
+            RcOp::Map => {
+                let (rc, f) = (values.next().expect("an `Rc`"), values.next().expect("a function"));
+                let this = tys[0];
+                let item = rc_pointee(self.tcx, this).expect("an `Rc`");
+                let rc = if rc.reads_same() {
+                    rc
+                } else {
+                    self.spill(Role::Rc, rc, out)
+                };
+                let through = match pointee {
+                    Some(_) => self.counted_pointee(rc.clone(), item),
+                    None => rc.clone(),
+                };
+                let mapped = apply(f, vec![through]);
+                let mapped = match self.std_drop_call(this, rc, span)? {
+                    None => mapped,
+                    Some(dropped) => {
+                        let js_span = self.js_span(span);
+                        let name = self.fresh(Role::Mapped);
+                        out.push(StmtKind::Let(name.clone(), None).at(js_span));
+                        let body = vec![StmtKind::Assign(Expr::var(&name), mapped).at(js_span)];
+                        let dropped = StmtKind::Expr(dropped).at(js_span);
+                        out.extend(crate::lower::drops::dropped_unwinding(
+                            body,
+                            vec![dropped.clone()],
+                            js_span,
+                            &mut self.catch_names(),
+                        ));
+                        out.push(dropped);
+                        Expr::var(&name)
+                    }
+                };
+                match self.counted_rc(output) {
+                    Some(made) => self.new_counted_rc(mapped, made, span)?,
+                    None => mapped,
+                }
+            }
             RcOp::MakeMut => return Err(self.unsupported(span, "`Rc::make_mut`, of its value alone")),
             // The same box, a counted one's, or an uncounted one's JS object,
             // whose `===` is its identity (ADR 0582).
@@ -352,7 +397,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let given = self.through_rc(rc, item);
                         Expr::cond(only, given, Expr::js_undefined())
                     }
-                    RcOp::WeakNew | RcOp::NewCyclic | RcOp::MakeMut => unreachable!("lowered above"),
+                    RcOp::WeakNew | RcOp::NewCyclic | RcOp::Map | RcOp::MakeMut => unreachable!("lowered above"),
                 }
             }
         })

@@ -365,7 +365,7 @@
 + Result::unwrap_or_default	safe
 + Result::unwrap_or_else	safe
 + Result::unwrap_unchecked	safe
-# Rc 14 of 24; bodies: 0 safe, 0 spec, 0 opaque, 24 memory, 0 none
+# Rc 15 of 24; bodies: 0 safe, 0 spec, 0 opaque, 24 memory, 0 none
 + Rc::as_ptr	memory
 - Rc::assume_init	memory
 - Rc::decrement_strong_count	memory
@@ -377,7 +377,7 @@
 + Rc::into_inner	memory
 - Rc::into_raw	memory
 + Rc::make_mut	memory
-- Rc::map	memory
++ Rc::map	memory
 + Rc::new	memory
 + Rc::new_cyclic	memory
 - Rc::new_uninit	memory
@@ -390,7 +390,7 @@
 + Rc::try_unwrap	memory
 + Rc::unwrap_or_clone	memory
 + Rc::weak_count	memory
-# Arc 14 of 24; bodies: 0 safe, 0 spec, 0 opaque, 24 memory, 0 none
+# Arc 15 of 24; bodies: 0 safe, 0 spec, 0 opaque, 24 memory, 0 none
 + Arc::as_ptr	memory
 - Arc::assume_init	memory
 - Arc::decrement_strong_count	memory
@@ -402,7 +402,7 @@
 + Arc::into_inner	memory
 - Arc::into_raw	memory
 + Arc::make_mut	memory
-- Arc::map	memory
++ Arc::map	memory
 + Arc::new	memory
 + Arc::new_cyclic	memory
 - Arc::new_uninit	memory
