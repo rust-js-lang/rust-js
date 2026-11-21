@@ -841,10 +841,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         callee: (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         operands: &[&Operand<'tcx>],
     ) {
-        if !crate::lower::recognition::is_function_bind(self.tcx, callee.0) {
-            return;
-        }
-        let Some(f) = crate::lower::analysis::nulled_params::bound_all(self.tcx, callee.1) else {
+        let Some(f) = crate::lower::call_graph::bound_all(self.tcx, callee.0, callee.1) else {
             return;
         };
         if !self.krate.nulled_params.may_have(f) {

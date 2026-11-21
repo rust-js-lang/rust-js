@@ -16,7 +16,7 @@ src/lower/analysis/hint_asked.rs	1
 src/lower/analysis/js_given.rs	1
 src/lower/analysis/may_run.rs	1
 src/lower/analysis/mutation.rs	1
-src/lower/analysis/nulled_params.rs	2
+src/lower/analysis/nulled_params.rs	1
 src/lower/analysis/nulled_params/js_nones.rs	1
 src/lower/analysis/scopes.rs	1
 src/lower/analysis/shown_params.rs	1
@@ -35,6 +35,7 @@ src/lower/bindings/symbol_names.rs	1
 src/lower/bindings/validated.rs	2
 src/lower/bindings/whole.rs	1
 src/lower/body_queries/in_place.rs	3
+src/lower/call_graph.rs	1
 src/lower/calls.rs	1
 src/lower/classes.rs	5
 src/lower/classes/constructors.rs	1

@@ -128,7 +128,7 @@ pub(in crate::lower) fn of<'a, 'tcx>(
             impls
         });
     // What each body names, of which the instances' callers are found.
-    let names = crate::lower::call_graph::Names::of(&all_bodies);
+    let names = crate::lower::call_graph::Names::of(tcx, &all_bodies);
     let cloned = clones::cloned_types(tcx, (&all_bodies, &names), library);
     let recognition = Recognition {
         tcx,

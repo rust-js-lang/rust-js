@@ -290,6 +290,8 @@ pub(in crate::lower) fn passed_on_first(f: &Expr) -> Option<(Expr, usize)> {
 /// name, `export { batchedUpdates } from "./ReactFiberWorkLoop.js"`; of its
 /// own module's, the function its module exports by the method's name,
 /// `exported` (#566); and a call of it on the namespace is that function's.
+/// Without `exported`, what may be so, the names not yet known, its one
+/// shape asked early (`only_called`'s, #1675): never less than is.
 /// Through any other value, `NoopRenderer.batchedUpdates(..)`, it's what
 /// that value has, as any of its methods is. A prototype's, of a function
 /// of its own module: the prototype's property is that function,
@@ -300,7 +302,7 @@ pub(in crate::lower) fn forwarded_function<'tcx>(
     tcx: TyCtxt<'tcx>,
     method: DefId,
     thir: &rustc_middle::thir::Thir<'tcx>,
-    exported: &dyn Fn(DefId) -> Option<String>,
+    exported: Option<&dyn Fn(DefId) -> Option<String>>,
 ) -> Option<(DefId, ty::GenericArgsRef<'tcx>)> {
     let prototype = super::classes::member(tcx, method) == Some(super::classes::Member::Method)
         && (tcx.inherent_impl_of_assoc(method))
@@ -316,7 +318,9 @@ pub(in crate::lower) fn forwarded_function<'tcx>(
     let own_unexported = !prototype
         && module(target) == module(method)
         && (!tcx.visibility(target).is_public()
-            || exported(target).as_deref() != Some(super::classes::property(tcx, method).as_str()));
+            || exported.is_some_and(|exported| {
+                exported(target).as_deref() != Some(super::classes::property(tcx, method).as_str())
+            }));
     // A prototype's, of its own module's function, a declaration its
     // module's load reads, hoisted, where another module's may not be
     // loaded yet in a cycle (rd715).

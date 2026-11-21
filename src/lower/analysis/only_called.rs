@@ -6,6 +6,11 @@
 //! own function fills at each (`passed_on`'s `own_callbacks`, rd616).
 //! A query of each body's names, the crate graph's (`call_graph::Names`,
 //! ADR 1148), each named as a call's callee or as a value.
+//! A function a namespace's or a prototype's method may be, as its JS
+//! (`passed_on::forwarded_function`, #566, rd715), is reached as the
+//! method is: only calls reach it only where only calls reach the method,
+//! else its JS callers, its uses as a value and its export are the
+//! function's too (#1675).
 
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::call_graph::{Names, Naming};
@@ -19,21 +24,29 @@ use rustc_span::def_id::DefId;
 pub(in crate::lower) type Call = (DefId, Span);
 
 /// Each function only calls reach, by its calls (`Call`), one entry a call. The bodies are those the crate emits, each body's
-/// names once (`Names`): a call in a body never lowered never runs.
-pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>, names: &Names<'_>, library: bool) -> IndexMap<DefId, Vec<Call>> {
+/// names once (`Names`): a call in a body never lowered never runs. Of
+/// `bodies`, the methods that may be a function (`forwarded_function`).
+pub(in crate::lower) fn only_called<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (names, bodies): (&Names<'tcx>, &[&crate::lower::Body<'tcx>]),
+    library: bool,
+) -> IndexMap<DefId, Vec<Call>> {
     let mut calls: IndexMap<DefId, Vec<Call>> = IndexMap::default();
-    let mut values: IndexSet<DefId> = IndexSet::default();
+    // Named as a value: a function pointer, a callback, what anything may
+    // call with anything. And what a `function::bind` binds each parameter
+    // of, whose calls give it what's bound where the bound function is
+    // called, no call of its own here (`call_at`'s), so a value too.
+    let mut values: IndexSet<DefId> = named_as_values(names).into_keys().collect();
     // Of each body the crate emits, none a constant only rustc evaluates,
     // whose calls JS never makes, which no body of the names is.
     for (body, named) in names.iter() {
         for &(callee, _, span, naming) in named {
             match naming {
                 Naming::Called => calls.entry(callee).or_default().push((body, span)),
-                // Named as a value: a function pointer, a callback, what
-                // anything may call with anything.
-                Naming::Value => {
+                Naming::Bound => {
                     values.insert(callee);
                 }
+                Naming::Value => {}
             }
         }
     }
@@ -55,7 +68,36 @@ pub(in crate::lower) fn only_called(tcx: TyCtxt<'_>, names: &Names<'_>, library:
                     && tcx.trait_of_assoc(def_id).is_none()
                     && tcx.trait_impl_of_assoc(def_id).is_none())
     });
+    // A function a method may be, reached as that method is: of one only
+    // calls don't reach, by whatever reaches the method (#1675).
+    let forwarding: Vec<(DefId, DefId)> = (bodies.iter())
+        .filter_map(|body| {
+            let (target, _) = crate::lower::passed_on::forwarded_function(tcx, body.def_id, &body.thir, None)?;
+            Some((body.def_id, target))
+        })
+        .collect();
+    for (method, target) in forwarding {
+        if !calls.contains_key(&method) {
+            calls.swap_remove(&target);
+        }
+    }
     calls
+}
+
+/// Each function the crate's bodies name as a value (`Naming::Value`), by
+/// where: what anything may call with anything, the one catalog of it
+/// (`call_graph::Names`), which `only_called` and `nulled_params` ask
+/// (#1675).
+pub(in crate::lower) fn named_as_values(names: &Names<'_>) -> IndexMap<DefId, Vec<Span>> {
+    let mut values: IndexMap<DefId, Vec<Span>> = IndexMap::default();
+    for (_, named) in names.iter() {
+        for &(callee, _, span, naming) in named {
+            if naming == Naming::Value {
+                values.entry(callee).or_default().push(span);
+            }
+        }
+    }
+    values
 }
 
 /// The call of `body`'s HIR whose callee is at `callee`, a name's span the

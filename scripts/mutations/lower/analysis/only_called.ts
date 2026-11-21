@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function named as a value, `map(double)`, is taken as only its calls give it values, so `n * 2` doesn't wrap",
     file: "src/lower/analysis/only_called.rs",
-    find: "                Naming::Value => {\n                    values.insert(callee);\n                }\n",
-    replace: "                Naming::Value => {}\n",
+    find: "            if naming == Naming::Value {\n",
+    replace: "            if false {\n",
     tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
@@ -41,5 +41,14 @@ export const mutations: Mutation[] = [
       "-t",
       "a module's default is called with whatever JS gives it",
     ],
+  },
+  {
+    name: "forwarded-target-only-called",
+    breaks:
+      "a function a namespace's method is (#566), whose one call in the crate's MIR is the method's body's, is taken as only calls reach it, so it's a throwing function, `return JSON.parse(text)`, where the method's callers, direct, as a value and JS, read its `Result` (#1675)",
+    file: "src/lower/analysis/only_called.rs",
+    find: "        if !calls.contains_key(&method) {\n",
+    replace: "        if false {\n",
+    tests: ["test/throwing-calls.test.ts", "-t", "a function a namespace's method is"],
   },
 ];

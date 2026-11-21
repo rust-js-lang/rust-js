@@ -265,3 +265,54 @@ pub fn relays(text: &str) -> bool {
   expect(js).toContain("function read(text) {\n  return $try(() => JSON.parse(text));\n}");
   expect([lib.asValue("[1]"), lib.asValue("{")]).toEqual([true, false]);
 });
+
+// #1675: a namespace's method that's another module's function (#566), its
+// JS that function, re-exported by the method's name, reaches it as the
+// method is reached: by a call of the method, through it as a value and by
+// JS, each of which reads its `Result`. So the function is no throwing
+// function, though its one call the crate's MIR makes is the method's
+// body's: it gives its `Result`, as Rust's does.
+test("a function a namespace's method is is reached as the method is", async () => {
+  const withJs = ["--", "--crate-type", "lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("throwing-forwarded");
+  writeFileSync(join(dir, "lib.rs"), `mod inner {
+    use js::{JsError, Unknown, json};
+
+    pub(crate) fn read(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+        json::parse(text)
+    }
+}
+
+use js::{JsError, Unknown};
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+pub struct Parsing;
+
+#[cfg_attr(rust_js, rust_js::namespace)]
+impl Parsing {
+    pub fn read(&self, text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+        inner::read(text)
+    }
+}
+
+pub fn parsing() -> &'static Parsing {
+    &Parsing
+}
+
+pub fn direct(text: &str) -> bool {
+    Parsing.read(text).is_ok()
+}
+
+pub fn through(text: &str) -> bool {
+    let f: fn(&Parsing, &str) -> Result<Option<&'static Unknown>, &'static JsError> = Parsing::read;
+    f(&Parsing, text).is_ok()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('export { read } from "./inner.js";');
+  expect(readFileSync(join(dir, "inner.js"), "utf8")).toContain("return $try(() => JSON.parse(text));");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.direct("[1]"), lib.direct("{"), lib.through("[1]"), lib.through("{")]).toEqual([true, false, true, false]);
+  expect(lib.parsing().read("[1]")).toEqual({ TAG: "Ok", _0: [1] });
+  expect(lib.parsing().read("{").TAG).toBe("Err");
+});

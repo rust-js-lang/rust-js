@@ -37,15 +37,15 @@ pub(in crate::lower) struct Crate<'a, 'tcx> {
 /// with what the analysis stands on, before the bodies are told which
 /// adapters each makes in place, which changes nothing a body names, and
 /// before the instances' callers are asked; then the call graph's.
-pub(in crate::lower) struct Names<'tcx>(IndexMap<DefId, Vec<Named<'tcx>>>);
+pub(in crate::lower) struct Names<'tcx>(TyCtxt<'tcx>, IndexMap<DefId, Vec<Named<'tcx>>>);
 
 impl<'tcx> Names<'tcx> {
     /// The names of each of `all_bodies`, each once. A library's closure
     /// may be among them twice, made by an instance and by what rustc
     /// inlined into one (#1029), its one MIR each time: whose names are
     /// alike, or it's a bug of rust-js's.
-    pub(in crate::lower) fn of(all_bodies: &[&Body<'tcx>]) -> Self {
-        Names(IndexMap::default()).and(all_bodies.iter().copied())
+    pub(in crate::lower) fn of(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Self {
+        Names(tcx, IndexMap::default()).and(all_bodies.iter().copied())
     }
 
     /// And the names of each of `more`, the statics' and constants'
@@ -55,8 +55,8 @@ impl<'tcx> Names<'tcx> {
         'tcx: 'b,
     {
         for body in more {
-            let named = named_by(body);
-            match self.0.entry(body.def_id) {
+            let named = named_by(self.0, body);
+            match self.1.entry(body.def_id) {
                 indexmap::map::Entry::Occupied(had) => {
                     assert!(
                         *had.get() == named,
@@ -74,12 +74,12 @@ impl<'tcx> Names<'tcx> {
     /// Each function the body of `id`, one the analyses read, names, called
     /// or as a value, as `named_by` gives them.
     pub(in crate::lower) fn names_of(&self, id: DefId) -> &[Named<'tcx>] {
-        &self.0[&id]
+        &self.1[&id]
     }
 
     /// Each body and what it names (`only_called`'s question, ADR 1148).
     pub(in crate::lower) fn iter(&self) -> impl Iterator<Item = (DefId, &[Named<'tcx>])> + '_ {
-        self.0.iter().map(|(&id, named)| (id, named.as_slice()))
+        self.1.iter().map(|(&id, named)| (id, named.as_slice()))
     }
 }
 
@@ -88,12 +88,15 @@ impl<'tcx> Names<'tcx> {
 pub(in crate::lower) type Named<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, Span, Naming);
 
 /// How a body names a function: as what a call calls, `f(x)`, `x.f()`,
-/// whose arguments are what's given there; or as a value, `let g = f;`, a
-/// function pointer or a callback, which anything may call with anything.
+/// whose arguments are what's given there; as a value, `let g = f;`, a
+/// function pointer or a callback, which anything may call with anything;
+/// or as what a `function::bind` binds each parameter of (`bound_all`),
+/// whose every call gives it what's bound (rd632, #1675).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(in crate::lower) enum Naming {
     Called,
     Value,
+    Bound,
 }
 
 impl<'tcx> Crate<'_, 'tcx> {
@@ -145,28 +148,39 @@ pub(in crate::lower) fn crate_graph<'a, 'tcx>(
 /// arguments there, and where: as its THIR names it, or, of a body of MIR
 /// alone, a library's the crate compiles (ADR 0914), its MIR. The graph's
 /// scan, `Names::of`'s, its one caller.
-fn named_by<'tcx>(body: &Body<'tcx>) -> Vec<Named<'tcx>> {
+fn named_by<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Named<'tcx>> {
     use rustc_middle::thir::ExprKind;
     if body.root().is_some() {
         let thir = &body.thir;
-        // What each call calls, beneath its scopes.
-        let callees: IndexSet<rustc_middle::thir::ExprId> = (thir.exprs.iter())
-            .filter_map(|expr| match expr.kind {
-                ExprKind::Call { mut fun, .. } => {
-                    while let ExprKind::Scope { value, .. } = thir[fun].kind {
-                        fun = value;
-                    }
-                    Some(fun)
+        let unscoped = |mut at: rustc_middle::thir::ExprId| {
+            while let ExprKind::Scope { value, .. } = thir[at].kind {
+                at = value;
+            }
+            at
+        };
+        // What each call calls, beneath its scopes; and what a
+        // `function::bind` of each parameter binds (`bound_all`).
+        let mut callees: IndexSet<rustc_middle::thir::ExprId> = IndexSet::default();
+        let mut bound: IndexSet<rustc_middle::thir::ExprId> = IndexSet::default();
+        for expr in thir.exprs.iter() {
+            if let ExprKind::Call { fun, ref args, .. } = expr.kind {
+                let fun = unscoped(fun);
+                callees.insert(fun);
+                if let Some((bind, generic)) = crate::lower::fn_def(thir[fun].ty)
+                    && bound_all(tcx, bind, generic).is_some()
+                    && let Some(&first) = args.first()
+                {
+                    bound.insert(unscoped(first));
                 }
-                _ => None,
-            })
-            .collect();
+            }
+        }
         return (thir.exprs.iter_enumerated())
             .filter_map(|(at, expr)| match (&expr.kind, crate::lower::fn_def(expr.ty)) {
                 (ExprKind::ZstLiteral { .. }, Some((callee, args))) => {
-                    let naming = match callees.contains(&at) {
-                        true => Naming::Called,
-                        false => Naming::Value,
+                    let naming = match (callees.contains(&at), bound.contains(&at)) {
+                        (true, _) => Naming::Called,
+                        (false, true) => Naming::Bound,
+                        (false, false) => Naming::Value,
                     };
                     Some((callee, args, expr.span, naming))
                 }
@@ -174,20 +188,36 @@ fn named_by<'tcx>(body: &Body<'tcx>) -> Vec<Named<'tcx>> {
             })
             .collect();
     }
-    struct Called<'tcx>(Vec<Named<'tcx>>);
+    struct Called<'tcx>(TyCtxt<'tcx>, Vec<Named<'tcx>>);
     impl<'tcx> mir::visit::Visitor<'tcx> for Called<'tcx> {
         // What a call calls, a function's constant: called; what it's given,
         // as any operand.
         fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: mir::Location) {
             match &terminator.kind {
                 TerminatorKind::Call { func, args, .. } | TerminatorKind::TailCall { func, args, .. } => {
-                    match func.constant().and_then(|constant| {
+                    let called = func.constant().and_then(|constant| {
                         crate::lower::fn_def(constant.ty()).map(|(callee, generic)| (callee, generic, constant.span))
-                    }) {
-                        Some((callee, generic, span)) => self.0.push((callee, generic, span, Naming::Called)),
+                    });
+                    match called {
+                        Some((callee, generic, span)) => self.1.push((callee, generic, span, Naming::Called)),
                         None => self.visit_operand(func, location),
                     }
-                    for arg in args.iter() {
+                    let mut args = args.iter();
+                    // What a `function::bind` of each parameter binds.
+                    if let Some((bind, generic, _)) = called
+                        && bound_all(self.0, bind, generic).is_some()
+                        && let Some(first) = args.next()
+                    {
+                        match first
+                            .node
+                            .constant()
+                            .and_then(|constant| crate::lower::fn_def(constant.ty()))
+                        {
+                            Some((f, of)) => self.1.push((f, of, first.span, Naming::Bound)),
+                            None => self.visit_operand(&first.node, location),
+                        }
+                    }
+                    for arg in args {
                         self.visit_operand(&arg.node, location);
                     }
                 }
@@ -200,23 +230,44 @@ fn named_by<'tcx>(body: &Body<'tcx>) -> Vec<Named<'tcx>> {
         // A reference to one too, a promoted `&FnDef` (#1210).
         fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
             if let Some((callee, args)) = crate::lower::fn_def(constant.ty().peel_refs()) {
-                self.0.push((callee, args, constant.span, Naming::Value));
+                self.1.push((callee, args, constant.span, Naming::Value));
             } else if constant.ty().is_closure() {
                 for part in constant.ty().walk() {
                     if let Some(ty) = part.as_type()
                         && let Some((callee, args)) = crate::lower::fn_def(ty)
                     {
-                        self.0.push((callee, args, constant.span, Naming::Value));
+                        self.1.push((callee, args, constant.span, Naming::Value));
                     }
                 }
             }
         }
     }
-    let mut called = Called(Vec::new());
+    let mut called = Called(tcx, Vec::new());
     if let Some(mir) = &body.mir {
         mir::visit::Visitor::visit_body(&mut called, &mir.body);
     }
-    called.0
+    called.1
+}
+
+/// The function a `function::bind`, `bind`, of `generic_args` binds each
+/// parameter of, its tuple as many as it has: `bind(complete_root, None,
+/// (root, lanes))` of `complete_root(root, lanes)` (rd632).
+pub(in crate::lower) fn bound_all<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bind: DefId,
+    generic_args: ty::GenericArgsRef<'tcx>,
+) -> Option<DefId> {
+    if !crate::lower::recognition::is_function_bind(tcx, bind) {
+        return None;
+    }
+    let mut types = generic_args.types();
+    let ty::FnDef(id, _) = *types.next()?.kind() else {
+        return None;
+    };
+    let ty::Tuple(items) = types.nth(1)?.kind() else {
+        return None;
+    };
+    (items.len() == tcx.fn_sig(id).skip_binder().skip_binder().inputs().len()).then_some(id)
 }
 
 /// What a call calls: a function, as rustc resolves it, an impl's method

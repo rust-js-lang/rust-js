@@ -343,6 +343,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The fields a `js::null()` is written to, whose `.d.ts` says `| null`
     /// (ADR 0935, amended).
     pub null_fields: IndexSet<DefId>,
+    /// Each function the crate names as a value (`only_called::named_as_values`).
+    pub named_as_values: IndexMap<DefId, Vec<rustc_span::Span>>,
 }
 
 pub(super) fn analyze_crate<'a, 'tcx>(
@@ -453,7 +455,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The functions only calls reach, by their calls, of the graph's names
     // (ADRs 0577, 1148): asked by the MIR intervals, the thread-locals'
     // loading, the throwing functions and the own callbacks.
-    let only_called = std::rc::Rc::new(only_called::only_called(tcx, calls.names(), library));
+    let only_called = std::rc::Rc::new(only_called::only_called(tcx, (calls.names(), &bodies), library));
     // And kept for the own callbacks, found as the crate is lowered.
     let _ = crate::lower::session::caches(tcx).only_called.set(only_called.clone());
     let closures: IndexMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
@@ -1310,6 +1312,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         held,
         module_paths,
         null_fields,
+        named_as_values: only_called::named_as_values(calls.names()),
     })
 }
 

@@ -171,7 +171,7 @@ pub(super) fn forwarded<'tcx>(
     let (namespaces, prototypes): (IndexMap<DefId, DefId>, IndexMap<DefId, DefId>) = (bodies.iter())
         .filter_map(|body| {
             let method = body.def_id;
-            let (target, args) = super::super::passed_on::forwarded_function(tcx, method, &body.thir, &exported)?;
+            let (target, args) = super::super::passed_on::forwarded_function(tcx, method, &body.thir, Some(&exported))?;
             let theirs: Vec<_> = (bounds(target).into_iter())
                 .map(|bound| {
                     ty::EarlyBinder::bind(tcx, bound)

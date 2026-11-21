@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function with an own nullable parameter that's mapped as a value, `.map(mapped)`, is taken as given `null` or a value at each call, so its body tests `!== null` of what `map` gives it, `undefined` too (rd613)",
     file: "src/lower/analysis/nulled_params.rs",
-    find: "            self.as_values.insert(id);\n",
-    replace: "",
+    find: "        let as_values: IndexSet<DefId> = (values.keys())\n",
+    replace: "        let as_values: IndexSet<DefId> = (values.keys().take(0))\n",
     tests: tested,
   },
   {
@@ -53,8 +53,8 @@ export const mutations: Mutation[] = [
     breaks:
       "another crate's function whose nullable parameter is `null` at each call, given as a value, compiles, so a call through it may give `undefined` (rd613)",
     file: "src/lower/analysis/nulled_params.rs",
-    find: "            self.refused.push(constant.span);\n",
-    replace: "",
+    find: "            .filter(|&(&id, _)| !id.is_local() && recognition.foreign.has_nulled_params(id))\n",
+    replace: "            .filter(|_| false)\n",
     tests: ["test/cross-crate-items.test.ts", "-t", "nullable parameter its calls give null"],
   },
   {
@@ -81,22 +81,6 @@ export const mutations: Mutation[] = [
     find: "            seen.unnulled.retain(|(item, _)| !askers.contains(item));\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "returns null or a value"],
-  },
-  {
-    name: "bind-a-value-use",
-    breaks: "a `function::bind` of a function with a nullable parameter is a use of it as a value, so it's never found `null` or a value at each call (rd632)",
-    file: "src/lower/analysis/nulled_params.rs",
-    find: "            for arg in args.iter().skip(1) {\n",
-    replace: "            for arg in args.iter() {\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a bind of each parameter"],
-  },
-  {
-    name: "bind-of-some-parameters-a-call",
-    breaks: "a `function::bind` of some of a function's parameters is taken as a call of it, so `later(2)(undefined)` tests the rest `!== null` (rd632)",
-    file: "src/lower/analysis/nulled_params.rs",
-    find: "    (items.len() == tcx.fn_sig(id).skip_binder().skip_binder().inputs().len()).then_some(id)\n",
-    replace: "    Some(id).filter(|_| !items.is_empty())\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a bind of each parameter"],
   },
   {
     name: "closure-never-returns-nulled",

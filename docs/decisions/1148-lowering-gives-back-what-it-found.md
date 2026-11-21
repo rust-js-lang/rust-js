@@ -326,3 +326,45 @@ every body owner's HIR, and of their type-checking, goes: the names are of
 the bodies the crate emits, none a constant only rustc evaluates, so a
 call in a body never lowered, which never runs, isn't counted. The corpus
 and the bounds matrix are unchanged.
+
+## Amendment: one catalog of what's named as a value, and a method that's its function (#1675, 2026-11-22)
+
+`nulled_params` (ADR 0861) had a second walk of its own over the MIR to
+answer the same question, "is this function named but as a call's
+callee?", beside `only_called`'s query of the names. The two drifted.
+`nulled_params` knew a namespace's method that's its function (#566,
+`reached::forwarded`) and `only_called` didn't. So a lib crate's
+`inner::read`, `json::parse(text)` as it is, was taken as only-called:
+its one call in the crate's MIR is in the method's body. That made it a
+throwing function (ADR 0644), `return JSON.parse(text)`, while its JS was
+also `Parsing.read`, re-exported by the method's name, and was called
+directly and as a value, and by JS, each reading its `Result`. Rust's
+`Parsing.read("[1]").is_ok()` was `true`, and the JS gave `false`;
+`"{"` threw where Rust gives `false` (a wrong answer, P0). Now:
+
+- What the crate names as a value is one catalog, the graph's names
+  (`Naming::Value`), read by `only_called::named_as_values`. `only_called`
+  and `nulled_params` both ask it. `nulled_params` keeps only its walk of
+  the calls, which are MIR's blocks, as lowering asks of each. It covers
+  the statics' and constants' initializers too, which its own walk didn't.
+- A `function::bind` of each parameter (rd632) is a naming of its own,
+  `Naming::Bound`, found where the names are (`call_graph::bound_all`).
+  Each question reads it as it means. For `nulled_params` it's a call,
+  given what's bound. For `only_called` it's a value: that analysis's
+  consumers read a call's arguments where it's written (`call_at`), and
+  a bind has none.
+- A method that may be its function is one shape,
+  `passed_on::forwarded_function`. `only_called` asks it early, without
+  the exported names that aren't known yet. That gives the superset, as
+  the names only narrow which methods are their functions. A function a
+  method may be is only-called only where the method is.
+  `reached::forwarded` asks the same predicate later, with the names.
+  The names narrow only a `pub` function of the method's own module,
+  which a JS caller sees anyway (#2025). So for `only_called` the
+  superset and the narrowed answer are the same today. The superset is
+  asked because it's the one that's sound without the names.
+
+Held by test/throwing-calls.test.ts ("a function a namespace's method is
+is reached as the method is") and test/architecture-calls.test.ts ("what
+the crate names as a value is the graph's names' one catalog"). ADR 0262's
+case: results change, so Rust's behavior is preserved.

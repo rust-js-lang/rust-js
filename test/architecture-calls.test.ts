@@ -20,7 +20,7 @@ const lowering = readdirSync(join(root, "src", "lower"), { recursive: true, enco
 // each analysis, and the instances' callers, ask its table, `names_of`.
 test("an analysis that follows the crate's calls asks the one call graph", () => {
   const graph = read("src/lower/call_graph.rs");
-  expect(graph).toContain("\nfn named_by<'tcx>(body: &Body<'tcx>)");
+  expect(graph).toContain("\nfn named_by<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>)");
   expect(graph.match(/named_by\(/g)).toHaveLength(1);
   const namers = lowering.filter((file) => /Names::of\(/.test(read(file)));
   expect(namers).toEqual(["src/lower/analysis/ground.rs"]);
@@ -50,6 +50,27 @@ test("an analysis builds no map of who names whom of its own", () => {
   // The functions a function's body writes, by who names them, of the
   // graph's names (ADR 0308).
   expect(read("src/lower/analysis/naming.rs")).toContain("for &(named, _, _, _) in names.names_of(body.def_id) {");
+});
+
+// What the crate names as a value, which anything may call with anything,
+// is one catalog, the graph's names' (`only_called::named_as_values`),
+// which `only_called` and `nulled_params` ask, a `function::bind` of each
+// parameter its own naming, `Naming::Bound`, each question's to read
+// (#1675). And a method that may be its function is one shape,
+// `passed_on::forwarded_function`, asked early, its names not yet known,
+// by `only_called`, and with them by `reached::forwarded`.
+test("what the crate names as a value is the graph's names' one catalog", () => {
+  const valueReaders = lowering.filter((file) => /Naming::Value\b/.test(read(file)));
+  expect(valueReaders).toEqual(["src/lower/analysis/only_called.rs", "src/lower/call_graph.rs"]);
+  const askers = lowering.filter((file) => /named_as_values\(/.test(read(file)));
+  expect(askers).toEqual(["src/lower/analysis.rs", "src/lower/analysis/only_called.rs"]);
+  const nulled = read("src/lower/analysis/nulled_params.rs");
+  expect(nulled).not.toContain("fn visit_const_operand");
+  expect(nulled).toContain("(values.keys())");
+  const forwards = lowering.filter((file) => /forwarded_function\(/.test(read(file)));
+  expect(forwards).toEqual(["src/lower/analysis/only_called.rs", "src/lower/pipeline/reached.rs"]);
+  expect(read("src/lower/analysis/only_called.rs")).toContain("forwarded_function(tcx, body.def_id, &body.thir, None)");
+  expect(read("src/lower/pipeline/reached.rs")).toContain("forwarded_function(tcx, method, &body.thir, Some(&exported))");
 });
 
 // The graph is built once, of the crate's bodies and its constants', and

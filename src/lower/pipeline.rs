@@ -156,6 +156,7 @@ pub fn lower_crate<'tcx>(
         held,
         module_paths,
         null_fields,
+        named_as_values,
     } = match analyze_crate(
         tcx,
         ground,
@@ -254,7 +255,7 @@ pub fn lower_crate<'tcx>(
     let nulled_params = NulledParams::scan(
         &recognition,
         (&with_closures, &named_anywhere, &forwarded),
-        &cell_borrows,
+        (&named_as_values, &cell_borrows),
     );
     failed |= !super::classes::exported_by_property(tcx, &fns, &forwarded);
     // A function that only passes its parameters on to a function at one

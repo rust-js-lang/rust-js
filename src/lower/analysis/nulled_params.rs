@@ -135,10 +135,12 @@ impl NulledParams {
     pub(in crate::lower) fn scan<'tcx>(
         recognition: &Recognition<'_, 'tcx>,
         (bodies, everywhere, forwarded): (&[&Body<'tcx>], &[&Body<'tcx>], &IndexMap<DefId, DefId>),
-        cell_borrows: &crate::lower::analysis::CellBorrows<'tcx>,
+        (values, cell_borrows): (
+            &IndexMap<DefId, Vec<rustc_span::Span>>,
+            &crate::lower::analysis::CellBorrows<'tcx>,
+        ),
     ) -> NulledParams {
         let tcx = recognition.tcx;
-        let foreign = &|id| recognition.foreign.has_nulled_params(id);
         let mut candidates = IndexMap::default();
         for body in bodies {
             let id = body.def_id;
@@ -150,11 +152,8 @@ impl NulledParams {
             tcx,
             candidates: &candidates,
             forwarded,
-            foreign,
             caller: None,
             calls: IndexMap::default(),
-            as_values: IndexSet::default(),
-            refused: Vec::new(),
         };
         for body in bodies {
             let Some(mir) = &body.mir else { continue };
@@ -167,12 +166,17 @@ impl NulledParams {
                 found.visit_body(promoted);
             }
         }
-        let Found {
-            calls,
-            as_values,
-            refused,
-            ..
-        } = found;
+        let calls = found.calls;
+        // Each used but as a call's function, the crate's names' one catalog
+        // (`only_called::named_as_values`, #1675): a method that's its
+        // function, the function.
+        let as_values: IndexSet<DefId> = (values.keys())
+            .map(|id| forwarded.get(id).copied().unwrap_or(*id))
+            .filter(|id| candidates.contains_key(id))
+            .collect();
+        let refused = (values.iter())
+            .filter(|&(&id, _)| !id.is_local() && recognition.foreign.has_nulled_params(id))
+            .flat_map(|(_, spans)| spans.iter().copied());
         for span in refused {
             _ = refuse(
                 tcx,
@@ -508,65 +512,32 @@ pub(in crate::lower) fn may_return_nulled(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && option(tcx.fn_sig(id).skip_binder().skip_binder().output())
 }
 
-/// What `scan` finds walking MIR.
+/// What `scan` finds walking MIR, its calls.
 struct Found<'f, 'tcx> {
     tcx: TyCtxt<'tcx>,
     candidates: &'f IndexMap<DefId, Vec<usize>>,
     /// Each namespace's method that's its function, and that function, a
     /// call or use of the method being one of the function (#601).
     forwarded: &'f IndexMap<DefId, DefId>,
-    foreign: &'f dyn Fn(DefId) -> bool,
     caller: Option<DefId>,
     calls: IndexMap<(DefId, BasicBlock), DefId>,
-    as_values: IndexSet<DefId>,
-    refused: Vec<rustc_span::Span>,
 }
 
 impl<'tcx> Visitor<'tcx> for Found<'_, 'tcx> {
     fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: mir::Location) {
         // A `function::bind` of one with each of its parameters bound, its
         // tuple's items, is a call of it, given those (rd632): what calls
-        // the function it makes gives it nothing else.
-        if let mir::TerminatorKind::Call { func, args, .. } = &terminator.kind
-            && let Some((bind, generic_args)) = func.const_fn_def()
-            && crate::lower::recognition::is_function_bind(self.tcx, bind)
-            && let Some(id) = bound_all(self.tcx, generic_args).map(|id| self.function(id))
-            && self.candidates.contains_key(&id)
+        // the function it makes gives it nothing else. And a call's
+        // function, called. What either's given, as a value, `Names`'.
+        if let mir::TerminatorKind::Call { func, .. } = &terminator.kind
+            && let Some((callee, generic_args)) = func.const_fn_def()
             && let Some(caller) = self.caller
         {
-            self.calls.insert((caller, location.block), id);
-            for arg in args.iter().skip(1) {
-                self.visit_operand(&arg.node, location);
-            }
-            return;
-        }
-        // A call's function is called, not used: what it's given is.
-        if let mir::TerminatorKind::Call { func, args, .. } = &terminator.kind
-            && let Some((id, _)) = func.const_fn_def()
-        {
-            let id = self.function(id);
-            if self.candidates.contains_key(&id)
-                && let Some(caller) = self.caller
-            {
+            let id =
+                self.function(crate::lower::call_graph::bound_all(self.tcx, callee, generic_args).unwrap_or(callee));
+            if self.candidates.contains_key(&id) {
                 self.calls.insert((caller, location.block), id);
             }
-            for arg in args {
-                self.visit_operand(&arg.node, location);
-            }
-            return;
-        }
-        self.super_terminator(terminator, location);
-    }
-
-    fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
-        let ty::FnDef(id, _) = *constant.const_.ty().kind() else {
-            return;
-        };
-        let id = self.function(id);
-        if self.candidates.contains_key(&id) {
-            self.as_values.insert(id);
-        } else if !id.is_local() && (self.foreign)(id) {
-            self.refused.push(constant.span);
         }
     }
 }
@@ -577,18 +548,4 @@ impl Found<'_, '_> {
     fn function(&self, id: DefId) -> DefId {
         self.forwarded.get(&id).copied().unwrap_or(id)
     }
-}
-
-/// The function a `function::bind` of `generic_args` binds each parameter
-/// of, its tuple as many as it has: `bind(complete_root, None, (root,
-/// lanes))` of `complete_root(root, lanes)`.
-pub(in crate::lower) fn bound_all<'tcx>(tcx: TyCtxt<'tcx>, generic_args: ty::GenericArgsRef<'tcx>) -> Option<DefId> {
-    let mut types = generic_args.types();
-    let ty::FnDef(id, _) = *types.next()?.kind() else {
-        return None;
-    };
-    let ty::Tuple(items) = types.nth(1)?.kind() else {
-        return None;
-    };
-    (items.len() == tcx.fn_sig(id).skip_binder().skip_binder().inputs().len()).then_some(id)
 }
