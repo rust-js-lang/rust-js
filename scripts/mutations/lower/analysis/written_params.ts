@@ -298,4 +298,13 @@ export const mutations: Mutation[] = [
     replace: "    if let Some((callee, args)) = fn_def(expr.ty).filter(|&(callee, _)| tcx.trait_of_assoc(callee).is_some()) {\n",
     tests: ["test/crates.test.ts", "-t", "library_writes_a_dyn_errors_debug"],
   },
+  {
+    name: "io-error-held-dyn-unwritten",
+    breaks: "an `io::Error` written into a writer a piece at a time isn't counted as writing the `dyn Error` it holds, so a library's type a consumer makes one of has no `fmtInto`, and the write panics \"a bug of rust-js's\" where it's refused (#1420)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "            if recognition.is_io_error(ty.peel_refs()) {\n",
+    replace: "            if recognition.is_io_error(ty.peel_refs()) && false {\n",
+    tests: ["test/metamorphic.test.ts", "-t", "^io_error_written_piecewise.rs, rewritten"],
+    env: { METAMORPHIC: "all", METAMORPHIC_REWRITES: "library" },
+  },
 ];

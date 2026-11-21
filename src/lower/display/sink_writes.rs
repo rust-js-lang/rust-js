@@ -95,7 +95,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => options_given(),
             false => Expr::js_undefined(),
         };
-        if let Some(write) = self.written_by_dictionary(value.clone(), (kind, ty), given, span)? {
+        if let Some(write) = self.written_by_dictionary(value.clone(), (kind, ty), given.clone(), span)? {
+            return Ok(Some(vec![write]));
+        }
+        if let Some(write) = self.std_value_writes(value.clone(), (kind, ty), given) {
             return Ok(Some(vec![write]));
         }
         // `pad`'s fast path: no width and no precision, its one `write_str`.
@@ -214,10 +217,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let int = shown_num(ty).filter(|num| !num.float());
         let debug_hex = self.debug_hex();
-        // A std parse error's `Display`, `pad` of its message, its value
-        // (ADR 0063), as a `dyn Error` of it writes it (`$parseErrorDyn`).
-        if kind == Std::FmtDisplay && self.recognition().is_parse_error(ty.peel_refs()) {
-            return Ok(Some(vec![SinkWrite::Helper("$writePadded", vec![value, options])]));
+        if let Some(write) = self.std_value_writes(value.clone(), (kind, ty), options.clone()) {
+            return Ok(Some(vec![write]));
         }
         let given = |value: Expr| vec![value, options.clone()];
         Ok(Some(vec![match kind {
@@ -300,6 +301,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }]))
+    }
+
+    /// What std's `fmt` of one of its own values writes into a writer's
+    /// sink, given `options`, the `Formatter`'s, a placeholder's or as it
+    /// runs: the one owner of std's values its runtime writes a piece at a
+    /// time, asked by both (#1420). A parse error's `Display`, `pad` of its
+    /// message, its value (ADR 0063), as a `dyn Error` of it writes it
+    /// (`$parseErrorDyn`); an `io::Error`'s `Display` and `Debug`, as its
+    /// `dyn Error`'s dictionary writes them (`$writeIoError`,
+    /// `$writeIoErrorDebug`, #2250); an `ErrorKind`'s `Display`, its words'
+    /// one `write_str`, and its derived `Debug`, its variant's name's.
+    fn std_value_writes(&self, value: Expr, (kind, ty): (Std, Ty<'tcx>), options: Expr) -> Option<SinkWrite> {
+        let ty = ty.peel_refs();
+        let recognition = self.recognition();
+        Some(match kind {
+            Std::FmtDisplay if recognition.is_parse_error(ty) => {
+                SinkWrite::Helper("$writePadded", vec![value, options])
+            }
+            Std::FmtDisplay if recognition.is_io_error(ty) => SinkWrite::Helper("$writeIoError", vec![value, options]),
+            Std::FmtDebug if recognition.is_io_error(ty) => {
+                SinkWrite::Helper("$writeIoErrorDebug", vec![value, options])
+            }
+            Std::FmtDisplay if recognition.is_io_error_kind(ty) => {
+                SinkWrite::Str(Expr::call_helper("$ioKindText", vec![value]))
+            }
+            Std::FmtDebug if recognition.is_io_error_kind(ty) => SinkWrite::Str(value),
+            _ => return None,
+        })
     }
 
     /// Does `ty`'s `fmt` of `kind`, `Display` or `Debug`, write through a

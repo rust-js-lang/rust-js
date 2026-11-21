@@ -303,6 +303,13 @@ pub(super) fn written_params<'tcx>(
             written.extend(shown_by(recognition, graph, body));
         }
         for ty in written {
+            // An `io::Error` writes the `dyn Error` it may hold through that
+            // dictionary, as `std_value_writes` writes it (#1420).
+            if recognition.is_io_error(ty.peel_refs()) {
+                let error = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Error);
+                dyns_written.push(writes_into.map_or_else(|| tcx.def_span(body.def_id), |expr| expr.span));
+                found.dyn_traits.extend(ty::elaborate::supertrait_def_ids(tcx, error));
+            }
             if is_dyn(ty) {
                 dyns_written.push(writes_into.map_or_else(|| tcx.def_span(body.def_id), |expr| expr.span));
                 for part in ty.walk().filter_map(|part| part.as_type()) {

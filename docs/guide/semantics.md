@@ -414,7 +414,9 @@ what's held before it, as a browser's console takes whole lines
   writes a `dyn` a piece at a time (#1797). A `dyn Error`'s `Debug`, `{:?}`
   of a `Box<dyn Error + Send + Sync>`, is written by its dictionary as std
   writes it, a message's, a parse error's, serde_json's or an `io::Error`'s
-  each a piece at a time (#2250).
+  each a piece at a time (#2250), and an `io::Error` or its `ErrorKind`
+  itself, by `{}` or `{:?}` or as a derived `Debug`'s field, is written so
+  too (#1420).
 - **Generic code that writes to any writer, a `W: fmt::Write`,** is given
   a `String`, a `Formatter` or the crate's own writer in a box, with a
   dictionary of its `write_str`, `write_char` and `write_fmt`

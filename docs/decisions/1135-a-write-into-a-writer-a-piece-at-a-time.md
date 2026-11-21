@@ -946,3 +946,40 @@ time". Mutations `fmt-into-dyn-error-debug-unfollowed`,
 and `json-error-debug-written-whole`, each caught; `fmt-into-dyn-unwritten`
 and the three `makes-fmt-dyns-*` retargeted to the code they now name,
 caught.
+
+## Amendment: an `io::Error` and its `ErrorKind` written a piece at a time (2026-11-22, #1420)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): the results change,
+so Rust's are kept, each piece a call of the writer's.
+
+rand 0.7.3 was refused, and quickcheck and itertools' 285 quickcheck tests
+with it. rand's `ReadError(io::Error)` has a derived `Debug` and a
+`Display` of `write!(f, "ReadError: {}", self.0)`, and it's made a `dyn
+Error` (`made_dyns`, #2250), so its writers are framed. The `io::Error`'s
+`Display` and `Debug` had no split there, although its `dyn Error`
+dictionary writes both a piece at a time (`$writeIoError`,
+`$writeIoErrorDebug`).
+
+**One owner, `std_value_writes` in `display/sink_writes.rs`, says what
+std's `fmt` of one of its own values writes into a sink. Both a
+placeholder's `sink_writes` and a `Formatter`'s `sink_writes_given` ask
+it, so a derived `Debug`'s field does too:**
+- a parse error's `Display`, `pad` of its message, moved here from
+  `sink_writes_given` alone;
+- an `io::Error`'s `Display` and `Debug`, the runtime's writers, given
+  the options;
+- an `ErrorKind`'s `Display`, its words' one `write_str`, and its derived
+  `Debug`, its variant's name's.
+
+A written `io::Error` counts as a written `dyn Error`
+(`written_params.rs`), since its writer writes the error it holds through
+that dictionary. A value the crate makes a `dyn` of is then given
+`fmtInto`, and a library's type without it is refused where it's made one,
+never a runtime "bug of rust-js's", as the metamorphic `library` rewrite
+of the corpus case found.
+
+Corpus `io_error_written_piecewise` writes each kind of `io::Error` into a
+counting writer that fails on a piece, padded, by `{:?}` and `{:#?}` as a
+field, and through a `Display`'s `write!`. Each call count and each stop
+is native Rust's. Crate pair `library_writes_an_io_error_piecewise` is
+rand's shape across a library.
