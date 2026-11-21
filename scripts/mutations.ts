@@ -73,6 +73,15 @@ for (const path of [...new Bun.Glob("**/*.ts").scanSync(join(import.meta.dir, "m
 }
 export const mutations: Mutation[] = lists.flatMap((list) => list.mutations);
 
+/** Each name more than one of `lists`' mutations has, with the lists that
+ * give it: a run builds and judges a mutation by its name, so two of one
+ * name built one control workspace twice and crashed it, `EEXIST` (#2237). */
+export function duplicateNames(lists: readonly { path: string; mutations: readonly { name: string }[] }[]): string[] {
+  const where = new Map<string, string[]>();
+  for (const list of lists) for (const { name } of list.mutations) where.set(name, [...(where.get(name) ?? []), list.path]);
+  return [...where].filter(([, paths]) => paths.length > 1).map(([name, paths]) => `${name}: in ${paths.map((path) => `scripts/mutations/${path}`).join(" and ")}`);
+}
+
 const fileByName = new Map(mutations.map((m) => [m.name, m.file]));
 /** The file of the catalog's mutation `name`, whose build it shares: what
  * its time is estimated by where no run timed it (`dealtByGroup`), alike

@@ -274,4 +274,12 @@ export const mutations: Mutation[] = [
     replace: "  return problem;\n",
     tests: ["test/mutation-changes.test.ts", "-t", "type-checked many to a check"],
   },
+  {
+    name: "catalog-name-twice-accepted",
+    breaks: "the catalog takes a name two mutations have, and a run builds one control workspace twice and crashes, `EEXIST` (#2237)",
+    file: "scripts/mutations.ts",
+    find: "filter(([, paths]) => paths.length > 1)",
+    replace: "filter(([, paths]) => paths.length > 2)",
+    tests: ["test/mutations.test.ts", "-t", "each mutation's name is the catalog's once"],
+  },
 ];

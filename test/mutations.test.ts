@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -431,6 +431,19 @@ test("each mutation list names one existing source file", () => {
     expect(new Set(list.mutations.map(m => m.file)).size).toBe(list.mutations.length ? 1 : 0);
     for (const m of list.mutations) expect(existsSync(join(root, m.file))).toBe(true);
   }
+});
+
+// A mutation is built and judged by its name, so two of one name, in one
+// list or two, built one control workspace twice and crashed the run,
+// `EEXIST` (#2237): the catalog has each name once.
+test("each mutation's name is the catalog's once", () => {
+  expect(duplicateNames(lists)).toEqual([]);
+  const twice = [
+    { path: "a.ts", mutations: [{ name: "x" }, { name: "y" }] },
+    { path: "b.ts", mutations: [{ name: "x" }] },
+    { path: "c.ts", mutations: [{ name: "z" }, { name: "z" }] },
+  ];
+  expect(duplicateNames(twice)).toEqual(["x: in scripts/mutations/a.ts and scripts/mutations/b.ts", "z: in scripts/mutations/c.ts and scripts/mutations/c.ts"]);
 });
 
 test("a mutation whose code moved, or is there twice, says so", () => {
