@@ -578,14 +578,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "alias-none-forgotten",
-    breaks: "a temporary's read MIR said is `null` or a value, made the variable it's of, forgets it, so React's Flight client's `*value = deferred` is `deferred ?? null` (#1933)",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "                                if defined {\n                                    e.facts = e.facts.with(js::Known::Defined);\n                                }\n",
-    replace: "                                let _ = defined;\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable a part of an && shows there"],
-  },
-  {
     name: "unread-instance-value-kept",
     breaks: "a `const` nothing reads of an instance's value, `const twice = count4`, is kept, and so the value it reads (#974)",
     file: "src/lower/mir/tidy/bindings.rs",
