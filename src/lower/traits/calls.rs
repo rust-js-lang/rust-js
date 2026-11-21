@@ -870,7 +870,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = match self.given_fact_of(of, fact) {
                         Some(given) => given,
                         None if !self.gives_slot(method, index, args) => Expr::js_undefined(),
-                        None => self.type_fact_value(of, fact, span)?,
+                        None => {
+                            self.refuse_fact_untaken(method, (of, fact), args, span)?;
+                            self.type_fact_value(of, fact, span)?
+                        }
                     };
                     values.push(value);
                 }
@@ -881,6 +884,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(Expr::optional_args(values, drops))
+    }
+
+    /// Refused, of `method`, an impl's method of a library's trait in its
+    /// dictionary's entry, a fact of a type of its own type parameters its
+    /// callers through the dictionary don't give, as the library's contract
+    /// doesn't list it (`facts_through_dictionary`, #2285): the library's
+    /// generic code gives what the contract lists, and nothing else can
+    /// answer it. One of a type the impl fixes, or of its own type
+    /// parameters, the dictionary's, it answers itself.
+    fn refuse_fact_untaken(
+        &self,
+        method: DefId,
+        (of, fact): (Ty<'tcx>, TypeFact),
+        args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+    ) -> R<()> {
+        let Some(declared) = self.tcx.trait_item_of(method) else {
+            return Ok(());
+        };
+        if self.krate.foreign.trait_method_facts(declared).is_none() {
+            return Ok(());
+        }
+        let own = &args[self.tcx.generics_of(method).parent_count..];
+        if !of.walk().any(|part| own.contains(&part)) {
+            return Ok(());
+        }
+        let what = format!(
+            "`{}` of `{of}` in `{}`, which its library's contract doesn't give through a dictionary of its trait, as none of its impls asks it: its generic code gives none (#2285)",
+            fact.described(),
+            self.tcx.def_path_str(declared),
+        );
+        Err(self.unsupported(span, &what))
     }
 }
 

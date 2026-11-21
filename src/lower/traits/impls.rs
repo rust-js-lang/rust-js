@@ -715,7 +715,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // The facts its caller gives of its own type parameters, `KMap`,
             // which it passes on as the method's (ADR 0466), as the trait
-            // method's are named.
+            // method's are named: of a library's trait, what its contract
+            // lists, as every caller through a dictionary of it gives them
+            // (`facts_through_dictionary`, #2285).
             let parent = self.tcx.generics_of(item.def_id).parent_count as u32;
             // A std trait's required method's, what its declaration says
             // (`std_method_facts`, #794).
@@ -724,6 +726,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .chain(super::std_method_facts(self.tcx, self.krate.foreign, item.def_id))
                 .filter(|&(index, _)| index >= parent)
                 .collect();
+            let own_facts = self.facts_through_dictionary(item.def_id, own_facts);
             let fact_mark = self.given.type_facts.len();
             let mut fact_names = Vec::new();
             for (index, fact) in own_facts {

@@ -759,4 +759,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^associated_consts.rs$"],
     snapshots: true,
   },
+  {
+    name: "instance-dictionary-takes-the-crates-facts",
+    breaks: "a library's impl compiled here (ADR 0914) takes in its dictionary's entries the facts this crate's analysis finds of the trait's method, none, not its contract's, so rand's `choose_weighted` has no `X` size to give and quickcheck is refused (#1420, #2285)",
+    file: "src/lower/traits/impls.rs",
+    find: "            let own_facts = self.facts_through_dictionary(item.def_id, own_facts);\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
+  },
 ];

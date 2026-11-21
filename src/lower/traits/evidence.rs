@@ -64,11 +64,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `facts_through_dictionary` of the lowering's.
+    pub(in crate::lower) fn facts_through_dictionary(
+        &self,
+        id: DefId,
+        base: Vec<(u32, TypeFact)>,
+    ) -> Vec<(u32, TypeFact)> {
+        facts_through_dictionary(self.tcx, self.krate.foreign, id, base)
+    }
+
     /// `evidence_slots`' own of `id`, a trait's method, called with
     /// `generic_args` through a dictionary: of a library's impl whose
     /// dictionary its JS exports, the facts its JS of the method takes, as
     /// the library's contract lists them, never ones this crate's analysis
-    /// makes (#1612); of another's, its own.
+    /// makes (#1612); of another's, `facts_through_dictionary`'s.
     pub(in crate::lower) fn own_slots_through(
         &self,
         id: DefId,
@@ -76,10 +85,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Vec<Slot<'tcx>> {
         let slots = self.evidence_slots(id, Scope::Own);
         let tr = ty::TraitRef::from_assoc(self.tcx, self.tcx.parent(id), generic_args);
-        let Some(facts) = (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)) else {
-            return slots;
-        };
         let parent = self.tcx.generics_of(id).parent_count as u32;
+        let facts = match (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)) {
+            Some(facts) => facts.into_iter().filter(|&(index, _)| index >= parent).collect(),
+            None => {
+                let base = (slots.iter())
+                    .filter_map(|slot| match *slot {
+                        Slot::Fact(index, fact) => Some((index, fact)),
+                        _ => None,
+                    })
+                    .collect();
+                self.facts_through_dictionary(id, base)
+            }
+        };
         let at = (slots.iter())
             .position(|slot| matches!(slot, Slot::Fact(..) | Slot::Drop(_)))
             .unwrap_or(slots.len());
@@ -87,12 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .into_iter()
             .filter(|slot| !matches!(slot, Slot::Fact(..)))
             .collect();
-        own.splice(
-            at..at,
-            (facts.into_iter())
-                .filter(|&(index, _)| index >= parent)
-                .map(|(index, fact)| Slot::Fact(index, fact)),
-        );
+        own.splice(at..at, facts.into_iter().map(|(index, fact)| Slot::Fact(index, fact)));
         own
     }
 
@@ -133,4 +146,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         slots.extend(drops.into_iter().map(Slot::Drop));
         slots
     }
+}
+
+/// The facts `id`, a trait's method, takes through a dictionary of the
+/// trait that isn't a library's exported one: `base`, what this crate's
+/// analysis says, and of a library's trait each fact of the method's own
+/// type parameters its contract lists, in its place by index, as the
+/// library's generic code gives them through any dictionary of the trait, a
+/// consumer's copy of the library's impl (ADR 0914) or a consumer's own
+/// (#2285). The one answer a call through such a dictionary, the
+/// dictionary's entry and the analysis that relays a call's asks to its
+/// caller all ask.
+pub(in crate::lower) fn facts_through_dictionary(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    id: DefId,
+    base: Vec<(u32, TypeFact)>,
+) -> Vec<(u32, TypeFact)> {
+    let Some(contract) = foreign.trait_method_facts(id) else {
+        return base;
+    };
+    let generics = tcx.generics_of(id);
+    let own = generics.parent_count as u32..generics.count() as u32;
+    let mut facts = base;
+    for (index, fact) in contract.into_iter().filter(|(index, _)| own.contains(index)) {
+        if facts.contains(&(index, fact)) {
+            continue;
+        }
+        let at = (facts.iter()).position(|&(at, _)| at > index).unwrap_or(facts.len());
+        facts.insert(at, (index, fact));
+    }
+    facts
 }

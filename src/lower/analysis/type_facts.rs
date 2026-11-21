@@ -1198,9 +1198,16 @@ impl<'tcx> Asking<'tcx> {
             // carries what its declaration says (#794).
             let resolved = named.len() > 1;
             for (id, args) in named {
-                let facts = match resolved && id == callee {
-                    true => foreign.type_facts(id),
-                    false => crate::lower::traits::foreign_facts(tcx, foreign, id),
+                let through = !(resolved && id == callee);
+                let facts = match through {
+                    false => foreign.type_facts(id),
+                    true => crate::lower::traits::foreign_facts(tcx, foreign, id),
+                };
+                // Of a trait's method called through a dictionary, what any
+                // dictionary of it takes (`facts_through_dictionary`, #2285).
+                let facts = match through && tcx.trait_of_assoc(id).is_some() {
+                    true => crate::lower::traits::facts_through_dictionary(tcx, foreign, id, facts),
+                    false => facts,
                 };
                 for (index, fact) in facts {
                     let slot = crate::lower::traits::drop_slot(tcx, (foreign, &Default::default()), id, index);

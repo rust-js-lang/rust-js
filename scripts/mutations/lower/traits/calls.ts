@@ -627,4 +627,12 @@ export const mutations: Mutation[] = [
     replace: "        let (mut values, mut drops) = (Vec::new(), Vec::new());\n",
     tests: ["test/diagnostics.test.ts", "-t", "a trait's method that takes no destructor"],
   },
+  {
+    name: "untaken-fact-unnamed",
+    breaks: "a consumer's impl of a library's trait asking a fact of its method's own type parameter the contract doesn't give is refused as any type parameter's fact is, naming neither the fact's method nor the contract (#2285)",
+    file: "src/lower/traits/calls.rs",
+    find: "        if self.krate.foreign.trait_method_facts(declared).is_none() {\n",
+    replace: "        if true {\n",
+    tests: ["test/crates-refused.test.ts", "-t", "asking a fact its contract"],
+  },
 ];

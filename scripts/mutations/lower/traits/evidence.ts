@@ -20,8 +20,16 @@ export const mutations: Mutation[] = [
     name: "own-facts-through-a-library-dictionary-reanalyzed",
     breaks: "a call through a library's exported impl's dictionary gives the facts the consumer's analysis of the default's body finds, one more than the library's JS takes, so a size lands on its `OneShot` (#1612)",
     file: "src/lower/traits/evidence.rs",
-    find: "        let Some(facts) = (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)) else {\n",
-    replace: "        let Some(facts) = (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)).filter(|_| false) else {\n",
+    find: "        let facts = match (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)) {\n",
+    replace: "        let facts = match (self.exported_impl(tr)).and_then(|_| self.krate.foreign.trait_method_facts(id)).filter(|_| false) {\n",
     tests: ["test/crates.test.ts", "-t", "library_default_where_clause_through_its_dictionary"],
+  },
+  {
+    name: "facts-through-a-type-parameters-dictionary-unsaid",
+    breaks: "a call of a library trait's generic method through a type parameter's dictionary gives none of the facts the library's contract lists, so its entry's `size_of::<X>()` reads `undefined`, `0` where native Rust's is `7` (#2285)",
+    file: "src/lower/traits/evidence.rs",
+    find: "    let Some(contract) = foreign.trait_method_facts(id) else {\n",
+    replace: "    let Some(contract) = foreign.trait_method_facts(id).filter(|_| false) else {\n",
+    tests: ["test/crates.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
   },
 ];

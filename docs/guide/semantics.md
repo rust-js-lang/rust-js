@@ -96,7 +96,13 @@ table](../../ROADMAP.md) lists the larger missing pieces.
   associated type through its trait's dictionary, a library's trait's too,
   `size_of::<Self::Item>()` of rand_core's `BlockRngCore`: a library's
   trait carries them where each of its own impls can say its type's, and
-  otherwise a consumer's `size_of` of it is refused at compile time.
+  otherwise a consumer's `size_of` of it is refused at compile time. A
+  library trait's generic method, `fn sized<X>(&self, x: X)`, is given,
+  through any dictionary of the trait, the facts of its own type parameters
+  that the library's contract lists. A consumer's impl of the trait whose
+  method needs another such fact is refused at the impl, since the
+  library's generic code can't give it
+  ([0145](../decisions/0145-type-facts.md), amended, #2285).
 
 - **Methods are std's, by its steps and with its panics:** `clamp`,
   `from_str_radix`, `div_ceil`, `ilog10`, `isqrt`, `midpoint`, a float's

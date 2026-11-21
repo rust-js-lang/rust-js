@@ -99,3 +99,15 @@ test("a library's derived Debug of a PhantomData of a type parameter is refused,
   ]);
   expect(native).toBe("P { v: 1, m: PhantomData<u8> }\n");
 }, 300_000);
+
+// A consumer's impl of a library's trait whose generic method asks a fact
+// of its own type parameter the library's contract doesn't give through a
+// dictionary of the trait: the library's generic code calls it giving
+// none, so it's refused, naming the fact and the contract, never read as
+// `undefined` (#2285).
+test("a consumer's impl of a library's trait asking a fact its contract doesn't give is refused", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "own_impl_asks_a_fact_the_contract_doesnt_give", ["dep", "app"], [
+    "`size_of` of `X` in `dep::Pick::pick`, which its library's contract doesn't give through a dictionary of its trait",
+  ]);
+  expect(native).toBe("8 4\n");
+}, 300_000);

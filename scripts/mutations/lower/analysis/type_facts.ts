@@ -296,8 +296,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the analysis asks a std callee only its manifest's facts, none of std's, so `impl Extend for Either`'s `inner.extend(iter)` through `L: Extend<A>` asks its `T::IntoIter`'s in-place buffer of no caller, refused (#794)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "                    false => crate::lower::traits::foreign_facts(tcx, foreign, id),\n",
-    replace: "                    false => foreign.type_facts(id),\n",
+    find: "                    true => crate::lower::traits::foreign_facts(tcx, foreign, id),\n",
+    replace: "                    true => foreign.type_facts(id),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },
   {
@@ -554,5 +554,13 @@ export const mutations: Mutation[] = [
     find: "                        asking.asked.insert((caller, index, fact));\n                    }\n                }\n            }\n        }\n        // A maker of std's adapter made in place,",
     replace: "                        let _ = (caller, index, fact);\n                    }\n                }\n            }\n        }\n        // A maker of std's adapter made in place,",
     tests: ["test/corpus.test.ts", "-t", "^generic_flatten_of_a_source_fused_as_its_caller_says.rs$"],
+  },
+  {
+    name: "trait-method-facts-unrelayed",
+    breaks: "a generic call of a library trait's generic method through a dictionary, given the caller's own type parameter, asks the caller's callers none of the facts the contract lists of it, so its size is refused where native Rust's call runs (#2285)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    true => crate::lower::traits::facts_through_dictionary(tcx, foreign, id, facts),\n",
+    replace: "                    true => facts,\n",
+    tests: ["test/crates.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
   },
 ];

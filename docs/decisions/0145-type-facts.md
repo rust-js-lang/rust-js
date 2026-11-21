@@ -785,3 +785,72 @@ items of one byte, of 320 bytes and with a destructor, matches native in
 the plain build, with std's iterator structs, and through every
 metamorphic rewrite. Mutation `given-fact-of-a-normalized-projection-unread`
 is caught.
+
+## Amendment: through any dictionary of a library's trait, its contract's facts of a method's own type parameters (2026-11-22, #2285, #1420)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept.
+
+The 2026-11-13 amendment took a library trait's method's facts from the
+contract only through a library's exported impl's dictionary. A type
+parameter's dictionary, a consumer's copy of a library's impl and a
+consumer's own impl took the crate's analysis, which has no facts of a
+library trait's method's own type parameters. That left two wrong cases:
+- **A wrong answer.** A consumer's generic code calling the method through
+  a type parameter's dictionary, `fn through<S: SliceRandom + ?Sized>(s:
+  &S) { s.sized(7u32) }`, gave no `XSize`, and the library's entry read
+  `undefined`: `0` where native Rust gives `7` (#2285, P0).
+- **A refusal.** A library's impl the consumer compiles itself (ADR 0914),
+  rand 0.7.3's `impl<T> SliceRandom for [T]` in quickcheck's build, is the
+  consumer's own instance. Its dictionary's `choose_weighted` entry had no
+  `X` size to give, so it was refused, which refused quickcheck and
+  itertools' quickcheck tests (#1420 C).
+
+**Through a dictionary that isn't a library's exported one, a method of a
+library's trait takes what the crate's analysis says, plus each fact of the
+method's own type parameters that the contract lists, in its place by
+index.** The library's generic code gives those through any dictionary of
+the trait, and its exported dictionaries take them, so a type parameter's
+dictionary, whichever it is at run time, is given them.
+
+One function says it: `facts_through_dictionary` (traits/evidence.rs). Three
+things ask it:
+- a call through a dictionary (`own_slots_through`);
+- each dictionary's entry (`lower_dictionary`'s `own_facts`);
+- the analysis, which relays a call's asks to its caller, so one given the
+  caller's own type parameter, `s.sized(y)` of a `Y`, asks the caller's
+  callers.
+
+A call through a library's exported impl's dictionary takes the contract's
+facts whole, as before. The facts of the trait's associated types, which
+the crate's analysis already gives, are as they were.
+
+A consumer's own impl whose method needs a fact of its own type parameters
+that the contract doesn't list is refused at the impl. The message names
+the fact and the trait's method, and says the library's contract doesn't
+give it (#2285): the library's generic code can't give it, and nothing else
+can answer it. A fact the impl answers itself is computed there, never
+refused: one of a type it fixes, `size_of::<Self>()` of a concrete `Self`,
+or of its own type parameters, which its dictionary is made with. Of a
+`Self` whose layout depends on the impl's type parameters, `Wrap<T>([T;
+2])`, `size_of::<Self>()` is refused in any crate, a gap of its own (#2287).
+
+Crate pair `library_trait_method_fact_through_a_dictionary` covers each
+case against native Rust:
+- the generic call through a type parameter, of a concrete type and of the
+  caller's own type parameter;
+- a direct call, which compiles the library's impl here;
+- the library's generic code given the consumer's dictionaries;
+- a consumer's own impls, one asking of its own type parameter and one of
+  a type it fixes.
+
+A trait whose method is generic isn't object-safe, so no `dyn` reaches
+these methods. Refused pair `own_impl_asks_a_fact_the_contract_doesnt_give`
+covers the refusal. Mutations caught:
+`facts-through-a-type-parameters-dictionary-unsaid` (`traits/evidence.ts`),
+`instance-dictionary-takes-the-crates-facts` (`traits/impls.ts`),
+`untaken-fact-unnamed` (`traits/calls.ts`) and
+`trait-method-facts-unrelayed` (`analysis/type_facts.ts`).
+`own-facts-through-a-library-dictionary-reanalyzed` and
+`std-method-facts-unrelayed`, whose code moved, were re-pointed and are
+still caught.
