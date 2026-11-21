@@ -436,8 +436,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// owning iterator's items or what one closed to drop holds, a generic
     /// one itself, closed by its caller's drop, or the crate's, by its own,
     /// or a compiled std iterator's struct, a `Peekable`'s, by its fields'
-    /// (ADR 0561), `Some(None)`
-    /// of one that holds nothing, a slice's or a range's, `None` of another.
+    /// (ADR 0561), and a sized `Box` of any of them, as what it holds,
+    /// `Some(None)` of one that holds nothing, a slice's or a range's,
+    /// `None` of another.
     fn closing_source(&self, source: Ty<'tcx>) -> Option<Option<Ty<'tcx>>> {
         if let Some(held) = self.owned_items(source).or_else(|| self.closed_on_drop(source)) {
             return Some(Some(held));
@@ -465,6 +466,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || is_compiled_std_iterator(self.tcx, source)
         {
             return Some(Some(source));
+        }
+        // A sized `Box<I>`, closed as `I` is, whose drop is the box's, as
+        // the box is `I`'s value in JS (#2219).
+        if let Some(inner) = source.boxed_ty() {
+            return self.closing_source(inner);
         }
         // One that holds nothing a drop runs code for, a `chars()` or an
         // `iter_mut()`: closing it drops nothing, its zip's other side (#406).

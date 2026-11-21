@@ -693,6 +693,15 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "sized-box-source-unclosed",
+    breaks:
+      "an adapter over a sized `Box` of the crate's iterator with a `Drop` isn't closed to drop it but dropped field by field after std's compiled `count` took it, so it drops twice, and a part-way one made in place drops `undefined` (#2219)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        if let Some(inner) = source.boxed_ty() {\n            return self.closing_source(inner);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_closed_once.rs$"],
+  },
+  {
     name: "slice-search-runs-no-code",
     breaks: "a slice's search by a predicate that runs code is taken to run none, so it's the array of its pieces, the predicate asked of every item first (#1501)",
     file: "src/lower/recognition/iterators.rs",

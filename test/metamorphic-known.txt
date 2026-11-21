@@ -121,5 +121,5 @@ plain std field held_enumerate.rs
 
 #2185 A Box of a std adapter given by a dictionary, through a trait, steps as the adapter itself
 
-#2219 P0 (--std-iterators): a skip(1).count() of a Box of the crate's iterator with a Drop drops it twice
-std loud dyn_wrapper_hides_the_crates_own_steps.rs
+#2223 P0: a Box<I> whose I another bound gives as it is is stepped as a JS iterator: wrong count
+plain std impl-owned boxed_source_closed_once.rs

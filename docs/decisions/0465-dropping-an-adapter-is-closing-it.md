@@ -2674,3 +2674,51 @@ Mutations:
 `given-unit-value-read` survives, as it did before this change: no case
 gives `$given` a unit struct's `undefined` any more. It is listed with
 #2155's latent survivors.
+
+## Amendment: a sized `Box` of an iterator closes as the iterator does (2026-11-21, #2219)
+
+`closing_source` decides what closing an adapter's source drops, and so
+`closed_on_drop`, the one list of what's closed to drop. It recognized
+the crate's iterator only as a non-std struct, and a generic one only as
+a bare type parameter or projection. So it answered `None` for a sized
+`Box<Own>` or `Box<I>`, and an adapter over one, `Skip<Box<Own>>`, wasn't
+dropped by closing. Its drop after its consumer was then written field by
+field: `ownDrop_drop(iter.iter)`, not `iter.return()`.
+
+- With `--std-iterators`, std's compiled `count`, `fold` and `last` take
+  the struct (`takes`, `$takenBy`) and drop the box there. A close after
+  them drops nothing, but a field drop isn't a close, so the iterator
+  dropped twice. This hit a `skip`, `take`, `map`, `zip` or `chain` of a
+  box consumed whole, and `nth` then `last`.
+- In both builds, the same happened to generic code's `Box<I>` and to a
+  `Box<Box<Own>>`, which compile to std's struct.
+- In the plain build, a box's `skip(1)` made in place, stepped once and
+  dropped, was dropped as a struct, `s.iter[0]` of a JS iterator, and
+  printed `drop Own undefined`.
+
+Each was a result change (ADR 0262).
+
+Now a sized `Box<X>` source closes as `X` does, and what closing drops is
+`X`'s answer: the iterator itself, a generic one closed by its caller's
+drop, or an owning iterator's items. In JS the box is `X`'s own value. A
+`Box<dyn Iterator>` keeps its own row (ADR 0521). References aren't
+peeled, so a `&mut I` stays lent. The other questions of "the crate's
+iterator" in recognition/iterators.rs, `own_method`, `is_user_iterator`
+and `held_as_js_iterator`, already see through a box (`iterator_held`).
+One snapshot moves: `boxed_iterator_folded_as_std_passes_it_on`'s box of
+a `take` mapped and summed is closed whole after its `reduce`,
+`iter.return()`, where its box was closed as its field,
+`iter.iter.return()`. The drops are the same, in the same order.
+
+Held by `test/corpus/boxed_source_closed_once.rs`, against native Rust
+in both builds: each shape above, a part-way `nth` then `last`, one
+dropped unstepped, and a panic in `next` part-way through a `count`.
+
+Mutation `sized-box-source-unclosed`, new.
+
+Found beside it, each a question of how generic code is given a box of
+the crate's iterator, not of closing:
+- #2221: a generic `&mut Box<I>` is never stepped.
+- #2223: a `Box<I>` whose `I` another bound gives as it is is stepped
+  as a JS iterator. It is listed in test/metamorphic-known.txt under the
+  new case's `impl-owned` rewrite.

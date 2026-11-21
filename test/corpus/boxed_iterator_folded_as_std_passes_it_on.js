@@ -494,7 +494,7 @@ function boxedMapSum() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      iter.iter.return();
+      iter.return();
     }
   }
   const total = result;
