@@ -147,8 +147,24 @@ pub(super) fn type_fact_params<'tcx>(
             }
             continue;
         }
+        // A flatten made in place of a source only a caller knows, `it`'s of
+        // `it.flat_map(f)` or of a `map(g)` of it: whether each type
+        // parameter its `FusedIterator` is of is one, its caller's, `IFused`,
+        // which says whether it's dropped at its first `None` (#2242).
+        for expr in body.thir.exprs.iter() {
+            if let ExprKind::Call { fn_span, .. } = expr.kind
+                && body.facts.in_place_adapters.made_at(&body.thir, fn_span)
+                && let Some((source, _)) = crate::lower::recognition::flattened_source(tcx, expr.ty)
+            {
+                for (of, fact) in crate::lower::recognition::held_facts(tcx, typing_env, source, TypeFact::Fused) {
+                    if let Some(index) = slot_of(tcx, foreign, caller, of) {
+                        asking.asked.insert((caller, index, fact));
+                    }
+                }
+            }
+        }
         // A maker of std's adapter made in place, `items.flatten()` stepped
-        // where it's made: the recognizers', which ask nothing (ADR 0871).
+        // where it's made: the recognizers', which ask nothing else (ADR 0871).
         let in_place: IndexSet<ExprId> = (body.thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
                 ExprKind::Call { fun, fn_span, .. } if body.facts.in_place_adapters.made_at(&body.thir, fn_span) => {

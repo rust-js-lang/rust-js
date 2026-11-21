@@ -547,4 +547,12 @@ export const mutations: Mutation[] = [
     replace: "            for (step, step_args) in knowing_of.into_iter().take(0) {\n",
     tests: ["test/crates.test.ts", "-t", "fused_fact_of_a_librarys_impl"],
   },
+  {
+    name: "in-place-flatten-asks-no-fused",
+    breaks: "generic code's flatten made in place of a source only its caller knows asks no `IFused` of it, so it's told `$unfused` whatever its caller gives, a `Vec`'s fused items too, where std's `Fuse` keeps a fused source until it drops (#2242)",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                        asking.asked.insert((caller, index, fact));\n                    }\n                }\n            }\n        }\n        // A maker of std's adapter made in place,",
+    replace: "                        let _ = (caller, index, fact);\n                    }\n                }\n            }\n        }\n        // A maker of std's adapter made in place,",
+    tests: ["test/corpus.test.ts", "-t", "^generic_flatten_of_a_source_fused_as_its_caller_says.rs$"],
+  },
 ];

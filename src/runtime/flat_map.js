@@ -2,6 +2,12 @@
 // end std's `Fuse` drops it at (#2242).
 const $unfused = "unfused";
 
+// What a flatten is given of a source only a caller knows, whether it's
+// fused as its callers say, `IFused`: `$unfused` where it isn't (#2242).
+function $unfusedUnless(fused) {
+  return fused ? undefined : $unfused;
+}
+
 // `it.flat_map(f)`, or `flatten()`, of inner iterators that hold what has a
 // destructor, or give it: JS's `flatMap`, but closed as Rust drops a
 // `FlatMap`, its source first, then the inner iterator it's stepping, each

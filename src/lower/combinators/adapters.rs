@@ -314,11 +314,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `FusedIterator`, whose end std's `Fuse` drops it at, its `Map`'s
     /// function with it; nothing of one that is, which `Fuse` keeps until
     /// it's dropped (`flatten_source_fused`, #2242). Of generic code's `I`,
-    /// which only a caller can say, `$unfused`, as it was.
+    /// which only a caller can say, as its callers say, `$unfusedUnless(IFused)`
+    /// (`callers_fused`); where none is given, `$unfused`, as it was.
     pub(in crate::lower) fn flatten_fusing(&self, flatten: Ty<'tcx>) -> Vec<Expr> {
         match self.recognition().flatten_source_fused(flatten) {
             Some(true) => vec![],
-            Some(false) | None => vec![Expr::helper("$unfused")],
+            Some(false) => vec![Expr::helper("$unfused")],
+            None => match crate::lower::recognition::flattened_source(self.tcx, flatten)
+                .and_then(|(source, _)| self.callers_fused(source))
+            {
+                Some(fused) => vec![Expr::call_helper("$unfusedUnless", vec![fused])],
+                None => vec![Expr::helper("$unfused")],
+            },
         }
     }
 

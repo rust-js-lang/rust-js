@@ -441,4 +441,12 @@ export const mutations: Mutation[] = [
     replace: "                        Some(_) => method(items, \"flatMap\", vec![each]),\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_asks_its_inner_iterators_hint.rs$"],
   },
+  {
+    name: "flatten-fusing-ignores-callers",
+    breaks: "a flatten of a source only a caller knows is given `$unfused` whatever its caller says, not `$unfusedUnless(IFused)`, so a fused source is dropped at its first `None` (#2242)",
+    file: "src/lower/combinators/adapters.rs",
+    find: "                Some(fused) => vec![Expr::call_helper(\"$unfusedUnless\", vec![fused])],\n",
+    replace: "                Some(_) => vec![Expr::helper(\"$unfused\")],\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_flatten_of_a_source_fused_as_its_caller_says.rs$"],
+  },
 ];

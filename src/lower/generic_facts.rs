@@ -106,6 +106,28 @@ pub(in crate::lower) enum Form {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `source`, an iterator only a caller knows, is a
+    /// `FusedIterator`, as its callers say: of each type parameter what it
+    /// is fused by is of, `I`'s of a `Map<I, F>` (`held_facts`), its caller's
+    /// `IFused`, each together; `None` where one isn't given, a trait's
+    /// method's or a library's, which only its callers could say (#2242).
+    pub(in crate::lower) fn callers_fused(&self, source: Ty<'tcx>) -> Option<Expr> {
+        let held =
+            crate::lower::recognition::held_facts(self.tcx, self.typing_env, source, crate::lower::TypeFact::Fused);
+        let mut fused: Option<Expr> = None;
+        for (of, _) in held {
+            let ty::Param(param) = of.kind() else {
+                return None;
+            };
+            let given = self.fused_fact(param.index)?;
+            fused = Some(match fused {
+                Some(both) => Expr::bin(crate::js::Op::And, both, given),
+                None => given,
+            });
+        }
+        fused
+    }
+
     /// Whether a value of generic code's `declared` type, `def_id`'s, its
     /// caller's type for it `instantiated`, has another form there than the
     /// caller's, adapted where it's given and given back.
