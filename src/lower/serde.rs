@@ -631,7 +631,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if ty.is_bool() || Num::of(ty).is_some_and(|n| !n.float()) {
             return Ok(Expr::call(Expr::js_global("String"), vec![key]).built_in());
         }
-        Err(self.unsupported(span, &format!("a map key of `{ty}` in JSON")))
+        Err(self.unsupported(span, &format!("a map key of `{ty}` in JSON (#1625)")))
     }
 
     /// A struct or an enum of the crate's own, by its `#[serde]` attributes.

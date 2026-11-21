@@ -306,7 +306,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let read = self.json_reader(ty, span)?;
             return Ok(Expr::call(key("number"), vec![read]));
         }
-        Err(self.unsupported(span, &format!("a map key of `{ty}` in JSON")))
+        Err(self.unsupported(span, &format!("a map key of `{ty}` in JSON (#1625)")))
     }
 
     /// A struct or an enum of the crate's own, read from `json` as its

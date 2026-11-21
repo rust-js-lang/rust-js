@@ -490,6 +490,10 @@ for (const [name, source, message, crate] of [
   ["Map::clear", 'pub fn f(m: &mut serde_json::Map<String, serde_json::Value>) { m.clear() }', "::clear`", "serde"],
   ["collecting into a Value", 'pub fn f(v: Vec<u32>) -> serde_json::Value { v.into_iter().collect() }', "`collect` into a `serde_json::Value`", "serde"],
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
+  // A map keyed by a tuple, or read keyed by one, which serde_json writes
+  // through its key serializer or refuses as it runs: refused, naming #1625.
+  ["a map keyed by a tuple in JSON", 'pub fn f(m: &std::collections::BTreeMap<(i32, i32), u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of `(i32, i32)` in JSON (#1625)", "serde"],
+  ["a map read keyed by a tuple in JSON", 'pub fn f(s: &str) -> usize { serde_json::from_str::<std::collections::BTreeMap<(i32, i32), u32>>(s).map_or(0, |m| m.len()) }', "a map key of `(i32, i32)` in JSON (#1625)", "serde"],
   // A map's is written since #1540; a type parameter's isn't, as its type
   // can't say whether it's an `Option`, which serde refuses there (#1568).
   ["an internally tagged newtype variant of a type parameter", '#[derive(serde::Serialize)] #[serde(tag = "t")] pub enum E<T> { M(T) }\npub fn f(e: &E<u32>) -> String { serde_json::to_string(e).unwrap() }', "an internally tagged newtype variant of a type parameter (#1568)", "serde"],
