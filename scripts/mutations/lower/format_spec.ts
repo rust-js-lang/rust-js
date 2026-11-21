@@ -167,8 +167,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:p}` of a raw pointer is refused, even where an assertion that holds never shows it",
     file: "src/lower/format_spec.rs",
-    find: "            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value, ty, span)?,\n",
-    replace: "",
+    find: "            Std::FmtPointer if self.shows_an_address(kind, ty) => {\n",
+    replace: "            Std::FmtPointer if false => {\n",
     tests: [
       "test/runtime-pointers.test.ts",
       "-t",
@@ -304,5 +304,13 @@ export const mutations: Mutation[] = [
     find: "        if let Std::FmtRadix(_) = kind\n            && let Some((inner, _)) = self.recognition().int_newtype(ty)\n",
     replace: "        if let Std::FmtRadix(_) = kind\n            && let Some((inner, _)) = self.recognition().int_newtype(ty).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
+  },
+  {
+    name: "pointer-placeholder-options-unread",
+    breaks: "a `{:p}` placeholder's options aren't given to the pointer it shows, so `{:20p}` and `{:#p}` show it bare (#2282)",
+    file: "src/lower/format_spec.rs",
+    find: "                    (options || spec.alternate).then(",
+    replace: "                    false.then(",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
   },
 ];

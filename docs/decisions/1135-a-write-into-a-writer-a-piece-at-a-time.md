@@ -983,3 +983,27 @@ counting writer that fails on a piece, padded, by `{:?}` and `{:#?}` as a
 field, and through a `Display`'s `write!`. Each call count and each stop
 is native Rust's. Crate pair `library_writes_an_io_error_piecewise` is
 rand's shape across a library.
+
+## Amendment: a pointer written a piece at a time (2026-11-22, #1420, #2282)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept. A pointer, raw or `NonNull`, had no split. So a derived
+`Debug` with a pointer field was refused wherever its writer was framed.
+rand 0.7.3's `ThreadRng`, `#[derive(Debug)] struct ThreadRng { rng:
+NonNull<..> }`, is framed in rand's own build: a writer there shows a
+value known only by a dictionary, so every writer is framed. A consumer's
+copy of it is framed too, because rand's contract lists `ThreadRng`. So
+even a plain `println!("{:?}", rng)` would have been refused.
+
+Leaving its `fmtInto` out best-effort would only have moved the refusal
+to that print. Instead, **a pointer is written as std writes it**:
+`pad_integral` of its address, `$writePointer`, by the options a
+placeholder or a `Formatter` gives. `sink_writes` and `sink_writes_given`
+both ask `shows_an_address` (`pointers.rs`), the one answer of which
+values show an address. The text it writes is
+[0562](0562-a-pointer-is-a-place-and-an-address.md)'s, amended: by the
+options, `#`'s zeros to wasm32's `usize` width.
+
+Crate pair `library_derived_debug_of_a_pointer_field`; corpus
+`pointer_shown_by_options`, whose rows count each piece against native
+Rust.

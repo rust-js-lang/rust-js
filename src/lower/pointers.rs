@@ -580,6 +580,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Mut)) || raw_pointee(self.tcx, ty).is_some()
     }
 
+    /// Whether a `kind` of `ty` shows an address (ADR 0562): `{:p}` and
+    /// `{:?}` of a raw pointer that's a handle on its place, and `{:?}` of a
+    /// function pointer.
+    pub(super) fn shows_an_address(&self, kind: Std, ty: Ty<'tcx>) -> bool {
+        self.is_handle_pointer(ty) || (kind == Std::FmtDebug && matches!(ty.kind(), ty::FnPtr(..)))
+    }
+
     /// Whether a raw pointer of type `ty` is a handle on its place, as all
     /// are but a pointer to a JS object, which is the object (ADR 0285),
     /// and one to what is its own pointer, `pointee_is_itself`.
@@ -1167,13 +1174,59 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// rust-js's error where it's shown, as only an assertion that fails
     /// may show one.
     /// `{:p}` and `{:?}` of a pointer of type `ty`, a function's too: its
-    /// address, `$ptrShown(p, size)` (ADR 0562).
-    pub(super) fn pointer_shown(&mut self, pointer: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        let size = match raw_pointee(self.tcx, ty) {
-            Some((pointee, _)) => self.pointee_size(pointee, span)?,
-            None => Expr::int(0),
-        };
-        Ok(Expr::call(Expr::helper("$ptrShown"), vec![pointer, size]))
+    /// address, `$ptrShown(p, size)` (ADR 0562); given the `Formatter`'s
+    /// options, `given`, and whether `#` may be among them, by them as std's
+    /// `pointer_fmt_inner` shows it, `$ptrShown(p, size, options, padTo)`
+    /// (#2282).
+    pub(super) fn pointer_shown(
+        &mut self,
+        pointer: Expr,
+        ty: Ty<'tcx>,
+        given: Option<(Expr, bool)>,
+        span: Span,
+    ) -> R<Expr> {
+        let mut args = vec![pointer, self.shown_pointee_size(ty, span)?];
+        if let Some((options, alternate)) = given {
+            args.push(options);
+            if alternate {
+                args.push(self.pointer_pad());
+            }
+        }
+        Ok(Expr::call(Expr::helper("$ptrShown"), args))
+    }
+
+    /// `pointer_shown` into a writer's sink, by the `Formatter`'s `options`,
+    /// and whether `#` may be among them: std's `pad_integral` of the
+    /// address, each piece a call of the writer's, `$writePointer` (#2282).
+    pub(super) fn pointer_written(
+        &mut self,
+        pointer: Expr,
+        ty: Ty<'tcx>,
+        (options, alternate): (Expr, bool),
+        span: Span,
+    ) -> R<super::display::SinkWrite> {
+        let mut args = vec![pointer, self.shown_pointee_size(ty, span)?, options];
+        if alternate {
+            args.push(self.pointer_pad());
+        }
+        Ok(super::display::SinkWrite::Helper("$writePointer", args))
+    }
+
+    /// The size its address is asked with, of a pointer shown: its
+    /// pointee's, none of a function's.
+    fn shown_pointee_size(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        match raw_pointee(self.tcx, ty) {
+            Some((pointee, _)) => self.pointee_size(pointee, span),
+            None => Ok(Expr::int(0)),
+        }
+    }
+
+    /// What `{:#?}` and `{:#p}` zero-pad a pointer to where no width is
+    /// given, as std's `pointer_fmt_inner` does: `usize`'s hex digits and
+    /// `0x`, `usize::BITS / 4 + 2`, of the target rustc checks for, whose
+    /// `usize` rust-js's is (`command.rs`'s `TARGET`, wasm32's 32 bits: 10).
+    fn pointer_pad(&self) -> Expr {
+        Expr::int(i128::from(self.tcx.data_layout.pointer_size().bits() / 4 + 2))
     }
 
     /// A pointer to an item of a slice, `&s[0] as *const T`, or into what a

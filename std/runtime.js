@@ -8715,9 +8715,26 @@ export function $ptrSwap(a, b, count = 1) {
   }
 }
 
-// `{:p}` and `{:?}` of a pointer: its address (ADR 0562), `0x0` of `null`.
-export function $ptrShown(pointer, size) {
-  return `0x${$addr(pointer, size).toString(16)}`;
+// `{:p}` and `{:?}` of a pointer: its address (ADR 0562), `0x0` of `null`,
+// as std's `pointer_fmt_inner` shows it, `LowerHex` of the address with `#`
+// set, by the `Formatter`'s `options` where it's given any: its sign, its
+// width, fill and alignment, and zeros where `{:#?}` or `{:#p}` asks, to its
+// width, else to `padTo`, `usize`'s hex digits and `0x` (#2282).
+export function $ptrShown(pointer, size, options, padTo) {
+  const text = `0x${$addr(pointer, size).toString(16)}`;
+  return options === undefined ? text : $formatted(text, $ptrOptions(options, padTo), true);
+}
+// `$ptrShown` into a writer: std's `pad_integral` of the address, its sign,
+// its `0x` and its digits each a call of the writer's, and each fill char
+// (#2282).
+export function $writePointer(f, pointer, size, options = {}, padTo) {
+  const digits = $addr(pointer, size).toString(16);
+  return $writeIntegral(f, true, "0x", digits, { ...$ptrOptions(options, padTo), alternate: true });
+}
+// The options `pointer_fmt_inner` gives `LowerHex`: where `#` is set, zeros
+// to the width, `padTo` where there's none.
+export function $ptrOptions(options, padTo) {
+  return options.alternate ? { ...options, zero: true, width: options.width ?? padTo } : options;
 }
 
 // A pointer's address (ADR 0562): a 32-bit number, as wasm32's `usize` is,

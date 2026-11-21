@@ -172,4 +172,20 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(write) = None {\n",
     tests: ["test/corpus.test.ts", "-t", "^io_error_written_piecewise.rs$"],
   },
+  {
+    name: "pointer-placeholder-written-whole",
+    breaks: "a pointer a `write!` into a writer shows by its placeholder isn't written std's pieces, its `0x` and its digits, so a writer's calls are counted wrong, or it's refused (#2282)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "            // `0x` and its digits two writes (#2282).\n            Std::FmtPointer | Std::FmtDebug if self.shows_an_address(kind, ty) => {\n",
+    replace: "            // `0x` and its digits two writes (#2282).\n            Std::FmtPointer | Std::FmtDebug if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
+  },
+  {
+    name: "pointer-given-written-whole",
+    breaks: "a pointer a writer's `Formatter` shows, a derived `Debug`'s field, isn't written std's pieces, so rand's `ThreadRng` is refused where it's written into a writer (#1420, #2282)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "            // A pointer's address, by the options as it runs (#2282).\n            Std::FmtPointer | Std::FmtDebug if self.shows_an_address(kind, ty) => {\n",
+    replace: "            // A pointer's address, by the options as it runs (#2282).\n            Std::FmtPointer | Std::FmtDebug if false => {\n",
+    tests: ["test/crates.test.ts", "-t", "library_derived_debug_of_a_pointer_field"],
+  },
 ];

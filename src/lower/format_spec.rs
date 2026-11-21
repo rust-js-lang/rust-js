@@ -249,8 +249,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.with_options(options, |cx| cx.writer_call(fmt, args, value, &given, span));
         }
         let text = match kind {
-            // A raw pointer's address, which JS hasn't (ADR 0407).
-            Std::FmtPointer if self.is_handle_pointer(ty) => self.pointer_shown(value, ty, span)?,
+            // A raw pointer's address, which JS hasn't (ADR 0407), by the
+            // placeholder's options, which it applies itself (#2282).
+            Std::FmtPointer if self.shows_an_address(kind, ty) => {
+                let given =
+                    (options || spec.alternate).then(|| (options_object(spec, &width, &precision), spec.alternate));
+                return self.pointer_shown(value, ty, given, span);
+            }
             Std::FmtPointer => return Err(self.unsupported(span, &format!("`{{:p}}` of a `{ty}`"))),
             Std::FmtRadix(radix) => {
                 let Some(num) = num.filter(|&n| !n.float()) else {

@@ -658,4 +658,33 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","^address_of_what_option_as_mut_lends.rs$"],
   },
+  {
+    name: "pointer-pad-a-host-usize",
+    breaks: "`{:#?}` of a pointer zero-pads it to a 64-bit `usize`'s 18, not the 10 of the target rustc checks for, whose `usize` rust-js's is (#2282)",
+    file: "src/lower/pointers.rs",
+    find: "self.tcx.data_layout.pointer_size().bits() / 4 + 2",
+    replace: "64 / 4 + 2",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
+  },
+  {
+    name: "pointer-shown-options-dropped",
+    breaks: "a pointer shown by a `Formatter` with options is given none of them, so `{:20p}` and `{:#?}` show it bare (#2282)",
+    file: "src/lower/pointers.rs",
+    find: "        if let Some((options, alternate)) = given {\n            args.push(options);\n",
+    replace: "        if let Some((options, alternate)) = given.filter(|_| false) {\n            args.push(options);\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
+  },
+  {
+    name: "fn-pointer-debug-refused",
+    breaks:
+      "`{:?}` of a function pointer, which only a failing `assert_eq!` shows, refuses the whole program",
+    file: "src/lower/pointers.rs",
+    find: "        self.is_handle_pointer(ty) || (kind == Std::FmtDebug && matches!(ty.kind(), ty::FnPtr(..)))\n",
+    replace: "        self.is_handle_pointer(ty)\n",
+    tests: [
+      "test/runtime-pointers.test.ts",
+      "-t",
+      "a pointer's address is shown",
+    ],
+  },
 ];

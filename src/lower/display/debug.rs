@@ -55,9 +55,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         // A raw pointer shows its address, which JS hasn't (ADR 0407), and
-        // so does a function pointer.
-        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {
-            return self.pointer_shown(value, ty, span);
+        // so does a function pointer, by the `Formatter`'s options, `{:#?}`'s
+        // zeros among them (#2282).
+        if self.shows_an_address(Std::FmtDebug, ty) {
+            let given = match pretty {
+                Pretty::Plain => None,
+                Pretty::Given(options, alternate) => Some((options.clone(), *alternate)),
+                Pretty::Always | Pretty::When(_) => Some((pretty.options(), true)),
+            };
+            return self.pointer_shown(value, ty, given, span);
         }
         // A `dyn Any` shows nothing of its value, as std's `Debug` doesn't,
         // made first where making it does something (`evaluated_first`);

@@ -1620,3 +1620,56 @@ local's pair is as it is, as for a place no borrow here made (#1527), and
 as the crate gives it without the address: a pointer through it is
 refused where it runs. Corpus case `dyn_of_a_whole_local_beside_an_address`,
 mutation `dyn-of-a-whole-local-pointed`.
+
+## Amendment: a pointer is shown by the `Formatter`'s options (2026-11-22, #2282)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior is kept. `$ptrShown` gave the bare address whatever the options,
+and the formatting lowering didn't pad a pointer. `{:20p}`, `{:+p}`,
+`{:#?}`, and a pointer field of a struct shown by `{:#?}` all printed
+`0x1234` where std prints padded, signed or zero-filled text of another
+length. **A pointer is now shown as std's `pointer_fmt_inner` shows it:
+`LowerHex` of its address with `#` set, by the `Formatter`'s sign, width,
+fill and alignment.** Where `#` is set, it is zero-padded to the width, or,
+with no width, to `usize::BITS / 4 + 2`. In the JS, a pointer shown with no
+options is `$ptrShown(p, size)` as before. One shown with options is
+`$ptrShown(p, size, options, padTo)`, and `padTo` is passed only where `#`
+may be set. Written into a writer a piece at a time
+([1135](1135-a-write-into-a-writer-a-piece-at-a-time.md)), it is
+`$writePointer`: std's `pad_integral`, so its sign, its `0x`, its digits and
+each fill char are each a call of the writer's. Each fill char is one call;
+the other three are one call each.
+
+**The width rust-js models is wasm32's `usize`, 32 bits, so `padTo` is
+10.** The lowering passes `padTo`, and takes it from rustc's data layout of
+the target it checks against (`command.rs`'s `TARGET`,
+`pointer_size().bits() / 4 + 2`). The runtime holds no number for it.
+
+**How the corpus compares against native.** The address itself is
+rust-js's, as this ADR decided. So a case is compared against native Rust
+built for `wasm32-wasip1` (`//@ native: wasm32`, ADR 0090), whose `usize`
+is rust-js's. The comparison is in two parts:
+- **Compared whole:** the text of every address both sides know. That is
+  an integer made a pointer, `0x1234 as *const u8`, `null`, and
+  `NonNull::dangling()`, whose address is its type's alignment. This
+  covers each row of options and each counted piece.
+- **Normalized:** an allocation's address, which each side places where it
+  will. Only what doesn't depend on that is compared: that `{:p}` of it is
+  `{:#x}` of its `usize`, that `{:#?}` of it is ten `char`s, and that it
+  starts with `0x`.
+
+A crate pair's native run is the host's, whose `usize` is 64 bits, so a pair
+shows a pointer only without `#`.
+
+Corpus case `pointer_shown_by_options`; crate pair
+`library_derived_debug_of_a_pointer_field`, rand 0.7.3's `ThreadRng`, whose
+derived `Debug` of a `NonNull` field rand's own build refused where its
+writers are written a piece at a time (#1420). Mutations caught:
+`pointer-shown-options-unread`, `pointer-alternate-unpadded`,
+`pointer-alternate-width-unread` and `pointer-written-unprefixed`
+(`runtime/pointers.ts`); `pointer-pad-a-host-usize` and
+`pointer-shown-options-dropped` (`lower/pointers.ts`);
+`pointer-placeholder-options-unread` (`lower/format_spec.ts`);
+`pointer-pretty-unread` (`lower/display/debug.ts`); and
+`pointer-placeholder-written-whole` and `pointer-given-written-whole`
+(`lower/display/sink_writes.ts`).

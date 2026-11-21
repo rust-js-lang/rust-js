@@ -165,6 +165,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let text = self.format_value(value, (kind, ty), Spec::plain(), (None, None), span)?;
                 padded(text)
             }
+            // A pointer's address, `pad_integral` of its `LowerHex`: its
+            // `0x` and its digits two writes (#2282).
+            Std::FmtPointer | Std::FmtDebug if self.shows_an_address(kind, ty) => {
+                let given = match options {
+                    true => options_given(),
+                    false => Expr::js_undefined(),
+                };
+                self.pointer_written(value, ty, (given, spec.alternate), span)?
+            }
             // A string's and a `char`'s `Debug`: its escapes, each a write
             // of its own, its options unread.
             Std::FmtDebug if ty.is_char() => SinkWrite::Helper("$writeDebugChar", vec![value]),
@@ -282,6 +291,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::FmtDisplay if self.is_string_like(ty) => {
                 let text = self.format_value(value, (kind, ty), Spec::plain(), (None, None), span)?;
                 SinkWrite::Helper("$writePadded", given(text))
+            }
+            // A pointer's address, by the options as it runs (#2282).
+            Std::FmtPointer | Std::FmtDebug if self.shows_an_address(kind, ty) => {
+                let alternate = !matches!(options.kind, js::ExprKind::Undefined);
+                self.pointer_written(value, ty, (options, alternate), span)?
             }
             Std::FmtDebug if ty.is_char() => SinkWrite::Helper("$writeDebugChar", vec![value]),
             Std::FmtDebug if self.is_string_like(ty) => {

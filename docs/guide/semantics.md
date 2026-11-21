@@ -370,6 +370,14 @@ what's held before it, as a browser's console takes whole lines
 - **`{:x}`, `{:e}` and `{:p}` of the crate's types call its own `LowerHex`,
   `LowerExp`, `Pointer` and the like,** given the placeholder's options
   ([0165](../decisions/0165-other-fmt-traits.md)).
+- **`{:p}` and `{:?}` of a raw pointer or a `NonNull` show its address as
+  std's `Pointer` does:** `0x` and hex, by the `Formatter`'s sign, width,
+  fill and alignment. Where `#` is set, `{:#?}` or a field of a struct shown
+  by `{:#?}`, it's zero-padded to the width, or with none to wasm32's
+  `usize`'s ten `char`s, `0x00001234`. Shown with options it's
+  `$ptrShown(p, size, options, padTo)`, and written into a writer each
+  piece is a call of the writer's
+  ([0562](../decisions/0562-a-pointer-is-a-place-and-an-address.md), amended).
 - **A writer of the crate's, `impl fmt::Write`, is given each piece std
   gives it:** a `write!`'s literal pieces, each value's as its `fmt` writes
   it, an integer's sign apart, a float's parts, each fill char a

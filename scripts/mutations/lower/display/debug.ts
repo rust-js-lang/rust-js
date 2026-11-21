@@ -304,9 +304,8 @@ export const mutations: Mutation[] = [
     name: "pointer-debug-refused",
     breaks: "`{:?}` of a raw pointer is refused, even of a null one, `0x0`",
     file: "src/lower/display/debug.rs",
-    find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n            return self.pointer_shown(value, ty, span);\n",
-    replace:
-      "        if matches!(ty.kind(), ty::FnPtr(..)) {\n            return self.pointer_shown(value, ty, span);\n",
+    find: "        if self.shows_an_address(Std::FmtDebug, ty) {\n",
+    replace: "        if matches!(ty.kind(), ty::FnPtr(..)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },
   {
@@ -351,19 +350,6 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {\n",
     replace: "            ty::Adt(_, args) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_debug.rs$"],
-  },
-  {
-    name: "fn-pointer-debug-refused",
-    breaks:
-      "`{:?}` of a function pointer, which only a failing `assert_eq!` shows, refuses the whole program",
-    file: "src/lower/display/debug.rs",
-    find: "        if self.is_handle_pointer(ty) || matches!(ty.kind(), ty::FnPtr(..)) {\n",
-    replace: "        if self.is_handle_pointer(ty) {\n",
-    tests: [
-      "test/runtime-pointers.test.ts",
-      "-t",
-      "a pointer's address is shown",
-    ],
   },
   {
     name: "type-id-debug-refused",
@@ -656,5 +642,13 @@ export const mutations: Mutation[] = [
     find: "            _ if self.recognition().is_str_search(ty) => Err(self.unsupported(\n",
     replace: "            _ if false && self.recognition().is_str_search(ty) => Err(self.unsupported(\n",
     tests: ["test/diagnostics.test.ts", "-t", "a str split's Debug"],
+  },
+  {
+    name: "pointer-pretty-unread",
+    breaks: "a pointer shown in a `{:#?}` is given no options, so a struct's pointer field shows `0x8`, not std's `0x00000008` (#2282)",
+    file: "src/lower/display/debug.rs",
+    find: "                Pretty::Always | Pretty::When(_) => Some((pretty.options(), true)),\n",
+    replace: "                Pretty::Always | Pretty::When(_) => None,\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_shown_by_options\\.rs$"],
   },
 ];
