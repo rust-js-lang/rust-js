@@ -542,8 +542,8 @@ export const mutations: Mutation[] = [
     name: "flatten-ends-close-stops-at-a-panic",
     breaks: "closing a flatten stepped from its back stops where its source's drop panics, so its inners are never dropped, where Rust's drop glue drops each field as it unwinds (#705)",
     file: "src/runtime/back_steps.js",
-    find: "    $inTurn(\n      () => it.return?.(),\n      () => taken(\"next\"),\n      () => taken(\"back\"),\n    );\n",
-    replace: "    (() => {\n      it.return?.();\n      taken(\"next\");\n      taken(\"back\");\n    })();\n",
+    find: "    $inTurn(\n      () => it.return?.(),\n      () => flat.functionDrop?.(),\n      () => taken(\"next\"),\n      () => taken(\"back\"),\n    );\n",
+    replace: "    (() => {\n      it.return?.();\n      flat.functionDrop?.();\n      taken(\"next\");\n      taken(\"back\");\n    })();\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_from_both_ends_drops_its_inners.rs$"],
   },
   {
@@ -921,5 +921,13 @@ export const mutations: Mutation[] = [
     find: "      return $Steps.prototype.count.call(filter, drop, ends);\n",
     replace: "      return $Steps.prototype.count.call(filter, drop);\n",
     tests: ["test/corpus.test.ts", "-t", "^holding_adapter_counted_or_last_drops_its_function.rs$"],
+  },
+  {
+    name: "flatten-ends-fold-keeps-the-holdings-function",
+    breaks: "a double-ended flatten's fold doesn't give its source's fold the function a holding gives it, so a `flat_map` folded, the crate also stepping its type from its back, drops its function after its source, where `Map::fold` drops it first (#2241)",
+    file: "src/runtime/back_steps.js",
+    find: "        folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind, alone);\n",
+    replace: "        folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],
   },
 ];

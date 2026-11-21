@@ -388,4 +388,20 @@ export const mutations: Mutation[] = [
     replace: "    const step = unwound(() => it.last(undefined, ends), true, ends);\n",
     tests: ["test/corpus.test.ts", "-t", "^holding_adapter_counted_or_last_drops_its_function.rs$"],
   },
+  {
+    name: "holding-function-kept-from-the-flatten",
+    breaks: "a `flat_map`'s holding doesn't give the flatten its function to drop, so dropped with an inner iterator part-stepped, its function drops after the inner's items, where `FlatMap`'s drop glue drops its `Map`, the source then `f`, before its `frontiter` and `backiter` (#2241)",
+    file: "src/runtime/closing.js",
+    find: "  if (moved === \"alone\") it.functionDrop = own;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],
+  },
+  {
+    name: "holding-rfold-alone-kept",
+    breaks: "a `flat_map`'s holding folded from its back keeps its function from its source's `rfold`, so it drops after the source, where `Map::rfold` moves it into the source's (#2241)",
+    file: "src/runtime/closing.js",
+    find: "  if (rfold !== undefined) holding.rfold = movingAlone(\"rfold\", rfold);\n",
+    replace: "  if (rfold !== undefined) holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_holding_its_function_drops_it_after_its_source.rs$"],
+  },
 ];

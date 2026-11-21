@@ -177,6 +177,11 @@ function $holding(it, drop, moved) {
   // panic, as `Map`'s drop glue drops `iter`, then `f` (#762).
   const holding = $closing(it, (it) => $inTurn(() => it.return(), own));
   if (moved === undefined) return holding;
+  // A `flat_map`'s, its function given to what it steps to drop after its
+  // source, before the inner iterators it holds, as `FlatMap`'s drop glue
+  // drops its `Map`, the source, then `f`, then its `frontiter` and its
+  // `backiter` (#2241).
+  if (moved === "alone") it.functionDrop = own;
   // Its function and what drops with `f`, `ends`, in the order its fold
   // drops them, given to what it steps to drop as its fold ends; dropped
   // here as it's closed where that didn't, once.
@@ -193,16 +198,18 @@ function $holding(it, drop, moved) {
     return by($onceOf(both));
   };
   const moving = (by) => (init, f, unwind, ends) => movedWith(ends, (ends, alone) => by(init, f, unwind, ends, alone));
-  const fold = holding.fold;
-  holding.fold = moving((init, f, unwind, ends, alone) => {
-    if (alone === undefined || it.fold === undefined) return fold(init, f, unwind, ends);
-    // A `flat_map`'s: its fold drops `ends` after its source's, which it
-    // gives its function to drop.
-    const close = () => holding.return();
-    const folded = $unwinds(() => it.fold(init, f, unwind, ends, alone), ends, close);
-    $closedAfter(ends, close);
-    return folded;
-  });
+  // Its `step`, `fold` or `rfold`, `by`; of a `flat_map`'s, what it steps,
+  // whose `step` drops `ends` after its source's, which it gives its
+  // function to drop, as `Map::fold` and `Map::rfold` move it (#2241).
+  const movingAlone = (step, by) =>
+    moving((init, f, unwind, ends, alone) => {
+      if (alone === undefined || it[step] === undefined) return by(init, f, unwind, ends);
+      const close = () => holding.return();
+      const folded = $unwinds(() => it[step](init, f, unwind, ends, alone), ends, close);
+      $closedAfter(ends, close);
+      return folded;
+    });
+  holding.fold = movingAlone("fold", holding.fold);
   // Its `rfold`, its own, or of what knows its back but no `rfold` of
   // its own, an array's `map`, `$foldBack` of its back: moved as its fold
   // is, as std's `Map::rfold` moves its function into its source's (#734).
@@ -212,7 +219,7 @@ function $holding(it, drop, moved) {
       ? undefined
       : (init, f, unwind, ends) =>
           $foldBack({ back: () => holding.back(), return: () => holding.return() }, init, f, unwind, ends));
-  if (rfold !== undefined) holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));
+  if (rfold !== undefined) holding.rfold = movingAlone("rfold", rfold);
   // Its `count` and `last`, where what it steps has its own, a `filter`'s
   // `count`, std's sum of a `map` of its own, and a `flat_map`'s, std's
   // `FlattenCompat` fold of its `Map`: its function moved into the fold

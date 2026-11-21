@@ -28,16 +28,22 @@ function $flatMap(it, f) {
         const outer = it.next();
         // Done, its source is dropped, as std's `Fuse` drops what it holds
         // at its first `None`.
+        // And its function, a `$holding`'s, as `Fuse` drops its `Map` (#2241).
         if (outer.done) {
           ended = true;
-          it.return?.();
+          $inTurn(
+            () => it.return?.(),
+            () => flat.functionDrop?.(),
+          );
           return outer;
         }
         inner = $stepsOf(f(outer.value));
       }
     },
     // Its inner iterator dropped though its source's drop throws, a panic,
-    // as Rust's drop glue drops each field as it unwinds.
+    // as Rust's drop glue drops each field as it unwinds; after its source,
+    // the function a `$holding` gives it, as `FlatMap` drops its `Map`
+    // before its inner iterators (#2241).
     () =>
       $inTurn(
         () => {
@@ -46,6 +52,7 @@ function $flatMap(it, f) {
             it.return?.();
           }
         },
+        () => flat.functionDrop?.(),
         () => {
           const front = inner;
           inner = undefined;

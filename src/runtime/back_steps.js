@@ -600,9 +600,12 @@ function $flattenEnds(it, each, knowing) {
     inner[own] = undefined;
     held?.return?.();
   };
+  // Its source, then the function a `$holding` gives it, then its inner
+  // iterators, as `FlatMap`'s drop glue drops its `Map` first (#2241).
   const close = () =>
     $inTurn(
       () => it.return?.(),
+      () => flat.functionDrop?.(),
       () => taken("next"),
       () => taken("back"),
     );
@@ -626,8 +629,9 @@ function $flattenEnds(it, each, knowing) {
   // folds them by `&mut fold`, dropped as it returns (#734).
   // Where the function that makes each inner throws, a panic, the
   // accumulator it strands dropped by `unwind`, as std's stage of it does
-  // (#744).
-  const folding = (fold, own, other) => (init, f, unwind, ends) => {
+  // (#744). The function a `$holding` gives it to drop, `alone`, its
+  // source's fold drops, as `Map::fold` moves it into its source's (#2241).
+  const folding = (fold, own, other) => (init, f, unwind, ends, alone) => {
     const inners = (stepped, a) => fold(stepped, a, f, unwind);
     const staged = unwind === undefined ? (x) => made(x) : (x, a) => $staged(made, x, undefined, a, unwind);
     return $endsAfter(ends, () => {
@@ -637,7 +641,7 @@ function $flattenEnds(it, each, knowing) {
       if (first !== undefined) folded = inners(first, folded);
       if (!ended) {
         ended = true;
-        folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind);
+        folded = fold(it, folded, (a, x) => inners($iter(staged(x, a)), a), unwind, alone);
       }
       const last = inner[other];
       inner[other] = undefined;

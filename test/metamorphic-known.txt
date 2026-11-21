@@ -120,6 +120,3 @@ plain std field closure_mut_ref.rs
 plain std field held_enumerate.rs
 
 #2185 A Box of a std adapter given by a dictionary, through a trait, steps as the adapter itself
-
-#2241 P0 (plain): a boxed source's double-ended flatten holding a dropping function, folded or dropped with a back inner left, drops the function late
-plain dyn-fn holding_adapter_counted_or_last_drops_its_function.rs
