@@ -838,3 +838,19 @@ test("clamp of &muts to numbers is refused where it's called", () => {
     "rust-js does not support `clamp` of `&mut` references yet: it gives one of them back, which its helper can't",
   );
 });
+
+// A fold of generic code's `Box<I>` by a closure that holds a destructor:
+// std's default `fold` drops its `f` before the box, which the box's
+// consumer closing it first would turn around, so the box of a type
+// parameter is its type parameter's, dropped after by its own drop, and
+// that's refused where a destructor is given, as it is of the type
+// parameter itself (#2219, ADR 1177).
+test("generic code's Box<I> folded by a closure that holds a destructor is refused, not dropped out of order", () => {
+  const dir = fixture("boxed-param-fold-holding");
+  const input = join(dir, "lib.rs");
+  writeFileSync(input, "struct D(u32);\nimpl Drop for D {\n    fn drop(&mut self) {\n        println!(\"drop {}\", self.0);\n    }\n}\nstruct Own(u32);\nimpl Iterator for Own {\n    type Item = u32;\n    fn next(&mut self) -> Option<u32> {\n        self.0 = self.0.checked_sub(1)?;\n        Some(self.0)\n    }\n}\nimpl Drop for Own {\n    fn drop(&mut self) {\n        println!(\"drop Own\");\n    }\n}\nfn folded<I: Iterator<Item = u32>>(it: Box<I>) -> u32 {\n    let held = D(91);\n    it.fold(0, move |n, x| {\n        let _held = &held;\n        n + x\n    })\n}\npub fn main() {\n    println!(\"{}\", folded(Box::new(Own(3))));\n}\n");
+  const compiled = Bun.spawnSync([compiler, input, "-o", join(dir, "lib.js")]);
+  expect(compiled.exitCode).not.toBe(0);
+  expect(compiled.stderr.toString()).toContain("rust-js does not support giving `folded`'s `I` a type with a destructor, where it takes none yet");
+  expect(compiled.stderr.toString()).not.toContain("panicked");
+});

@@ -30,7 +30,7 @@ import { random } from "./generate";
 import { prelude } from "./iterator-matrix-prelude";
 import { isTrait, ownClone, pathFns, type Path } from "./iterator-paths";
 import { pointsRunner } from "./panic-points";
-import { nested, owns, sites, sources, type Item, type Nested, type Own, type Shape, type Site, type Source } from "./iterator-sources";
+import { nested, ownName, owns, sites, sources, type Item, type Nested, type Own, type Shape, type Site, type Source } from "./iterator-sources";
 import { casesOf, tableOf } from "./matrix-tables";
 import { knownHeading, root, target } from "./support";
 import { partSetting } from "./part-settings";
@@ -830,12 +830,15 @@ export const stepConsumers: Consumer[] = [
   },
 ];
 
+// The boxed sources of the crate's iterator, each passing on its
+// `size_hint`, as std's `Box<I>` and `&mut I` do.
+const boxedOwn = ["boxed own Every", "generic boxed own Every", "generic &mut boxed own Every"];
 // The crate's own `Hints` and `Exact` print as their `size_hint` runs, which
 // a collect into a `Vec` reserves by (#733).
-const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every", "boxed dyn", "js values", "strings", "strings iter", "options", "vecs", "d pairs", "helds"];
+const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every", ...boxedOwn, "boxed dyn", "js values", "strings", "strings iter", "options", "vecs", "d pairs", "helds"];
 // The sources whose `size_hint` prints as it runs, of which alone a
 // consumer that asks it shows when (#820).
-const hinting = ["own Hints", "own Exact", "own Every", "generic own Every"];
+const hinting = ["own Hints", "own Exact", "own Every", "generic own Every", ...boxedOwn];
 
 /** Every case of the conformance table, in one order: each source alone and
  * through each adapter, each step that takes it, each panic site. */
@@ -1053,12 +1056,17 @@ function caseFn(c: Case, n: number): string {
     body.splice(0, body.length, ...Array.from({ length: captured.guards }, (_, k) => `let g${k + 1} = D(${91 + k});`), captured.text);
   }
   const inner = body.map((line) => `    ${line}`).join("\n");
-  if (source.generic) {
+  if (source.generic && source.wrapper === "&mut Box") {
+    // Lent: what the consumer leaves is dropped as the box is, after it.
+    lines.push(`fn ${name}() {\n    let mut boxed = ${source.expr(site)};\n    ${name}_of(&mut boxed);\n}`);
+    lines.push(`fn ${name}_of<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(src: &mut Box<I>) {\n${inner}\n}`);
+  } else if (source.generic) {
     lines.push(`fn ${name}() {\n    ${name}_of(${source.expr(site)});\n}`);
     // `try_fold`, `any` and `all` take `&mut self`: of the parameter
     // itself, it's `mut`.
     const held = chain.length === 0 && consumer.lends ? "mut src" : "src";
-    lines.push(`fn ${name}_of<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(${held}: I) {\n${inner}\n}`);
+    const of = source.wrapper === "Box" ? "Box<I>" : "I";
+    lines.push(`fn ${name}_of<I: DoubleEndedIterator<Item = D> + ExactSizeIterator>(${held}: ${of}) {\n${inner}\n}`);
   } else {
     lines.push(`fn ${name}() {\n${inner}\n}`);
   }
@@ -1147,7 +1155,7 @@ function withTwice(text: string): string {
 
 /** A program of `cases`, which runs each in turn. */
 export function program(cases: Case[], of: Table = table): string {
-  const used = new Set(cases.map((c) => c.source.name.replace(/^generic /, "")));
+  const used = new Set(cases.map((c) => ownName(c.source.name)));
   // Of the paths table, each `Clone`, which a clone and a `cycle()` ask.
   const iterators = owns
     .filter((own) => used.has(`own ${own.name}`))

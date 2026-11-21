@@ -1,6 +1,6 @@
 // The iterator tables' sources (ADR 1090): what each case's iterator is
 // made of, the crate's own iterators by the steps each writes, and the
-// wrapper generic code holds one in; split from
+// wrappers generic and boxed code holds one in; split from
 // test/iterator-matrix.ts at its cap, by concept.
 
 /** What an iterator yields: an item that prints as it's dropped, `D`, a
@@ -38,6 +38,11 @@ export type Source = {
   own: boolean;
   /** Passed to a generic `fn` as `I`, so the case's chain is of `I`. */
   generic?: boolean;
+  /** The wrapper it's in: a sized `Box` of it, whose chain is of the box,
+   * or, given to a generic `fn`, its parameter `Box<I>` or `&mut Box<I>`,
+   * the box lent and dropped after the case's consumer (#2219, #2221,
+   * #2223). */
+  wrapper?: "Box" | "&mut Box";
 };
 
 /** The crate's own iterators, by which of `Iterator`'s steps each has of
@@ -56,13 +61,21 @@ export const owns: Own[] = [
   { name: "Every", steps: ["fold", "nth", "last", "count", "size_hint", "rfold", "nth_back"], exact: true, back: true },
 ];
 
-export const ownSource = (own: Own, generic = false): Source => ({
-  name: `${generic ? "generic " : ""}own ${own.name}`,
+export const ownSource = (own: Own, generic = false, wrapper?: Source["wrapper"]): Source => ({
+  name: `${generic ? "generic " : ""}${wrapper === "&mut Box" ? "&mut " : ""}${wrapper ? "boxed " : ""}own ${own.name}`,
   shape: { item: "D", owns: true, back: own.back, exact: own.exact },
-  expr: (site) => `${own.name}::new(${site === "next" ? 3 : 0})`,
+  expr: (site) => {
+    const made = `${own.name}::new(${site === "next" ? 3 : 0})`;
+    return wrapper ? `Box::new(${made})` : made;
+  },
   own: true,
   generic,
+  wrapper,
 });
+
+/** Of a source's name, the crate's iterator it's made of, `own Every` of
+ * `generic &mut boxed own Every`. */
+export const ownName = (source: string) => source.replace(/^(generic )?(&mut )?(boxed )?/, "");
 
 export const sources: Source[] = [
   { name: "vec", shape: { item: "D", owns: true, back: true, exact: true }, expr: () => "ds().into_iter()", own: false },
@@ -73,6 +86,11 @@ export const sources: Source[] = [
   ...owns.map((own) => ownSource(own)),
   { name: "generic vec", shape: { item: "D", owns: true, back: true, exact: true }, expr: () => "ds().into_iter()", own: false, generic: true },
   ownSource(owns.find((own) => own.name === "Every")!, true),
+  // A sized `Box` of the crate's iterator, the chain over the box, and
+  // generic code's `Box<I>` and `&mut Box<I>` of it (#2219, #2221, #2223).
+  ownSource(owns.find((own) => own.name === "Every")!, false, "Box"),
+  ownSource(owns.find((own) => own.name === "Every")!, true, "Box"),
+  ownSource(owns.find((own) => own.name === "Every")!, true, "&mut Box"),
   // A `Box<dyn Iterator>` a function gives, and one a binding gives, JS's
   // own iterator of an array, as webapi's `keys()` is (ADR 1136).
   { name: "boxed dyn", shape: { item: "D", owns: true, back: false, exact: false }, expr: () => "boxed(ds())", own: false },

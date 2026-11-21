@@ -513,13 +513,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if to.is_sized(self.tcx, self.typing_env) && crate::lower::generic_facts::is_type_parameter(to))
                 && self.implements_iterator(given))
             .then_some(given);
-            // Through a reference, what it's to; through a `Box<I>`, its `I`,
-            // given as the box of it is, which steps it by what std's `Box`
-            // passes on (`iterator_held`, #1601).
+            // Through a reference, what it's to; through a sized `Box<I>`,
+            // its `I`, given as the box of it is, which steps it by what
+            // std's `Box` passes on (`held_unboxed`, #1601), a `&mut Box<I>`'s
+            // too (#2221).
             let (input, given) = match *input.kind() {
-                ty::Ref(_, inner, _) => (inner, given.peel_refs()),
-                _ if let Some(inner) = input.boxed_ty() => (inner, given),
-                _ => (input, given),
+                ty::Ref(_, inner, _) => (crate::lower::recognition::held_unboxed(inner), given.peel_refs()),
+                _ => (crate::lower::recognition::held_unboxed(input), given),
             };
             // A `&mut dyn` iterator given as a type parameter, `rev(self)`'s
             // `Self` of a `&mut dyn DoubleEndedIterator`, or generic code's

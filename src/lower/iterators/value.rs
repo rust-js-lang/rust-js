@@ -292,6 +292,23 @@ pub(in crate::lower) fn unlent(e: &Expr) -> &Expr {
     }
 }
 
+/// What `e`, a sized box's lend of the JS iterator it holds, `$lent(it,
+/// "boxed")`, holds: the box owns it, so closing what it holds is closing
+/// the box (#2219). `None` of another.
+pub(in crate::lower) fn held_by_a_box(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        // A box owns what it holds, so its lend isn't marked lent
+        // (`Known::IterLent`, `emit`'s).
+        js::ExprKind::Call(callee, of)
+            if callee.helper_name() == Some("$lent")
+                && matches!(of.get(1).map(|k| &k.kind), Some(js::ExprKind::Str(k)) if Some(k.as_str()) == lent_kind(Wrapper::BoxSized)) =>
+        {
+            of.first()
+        }
+        _ => None,
+    }
+}
+
 /// Whether `e` is lent, a JS iterator nothing closes (`unlent`).
 pub(in crate::lower) fn is_lent(e: &Expr) -> bool {
     !std::ptr::eq(unlent(e), e)

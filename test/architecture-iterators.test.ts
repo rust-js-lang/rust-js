@@ -906,3 +906,53 @@ test("whether a copy is its source is asked of is_its_source alone", () => {
   }
   expect(found).toEqual(allowed);
 });
+
+// What a sized `Box` of an iterator is, for every question of the
+// iterator, is `held_unboxed`'s alone (#2219, #2221): each owner that
+// peeled a box by hand, or looked for a type parameter without peeling
+// one, gave its own answer, so a `Box<I>` was closed field by field and
+// dropped twice, never given its dictionary, asked no hint, never closed,
+// or made knowing its back as an array. In the iterator owners a
+// `boxed_ty()` is the owner's, or a question of the box itself: a
+// `Box<dyn Iterator>`'s own row (ADR 0521), a boxed slice, or what std's
+// `Box<I>` passes on of a compiled struct, which lends it "boxed" (#1995).
+test("what a sized box of an iterator is, is held_unboxed's alone", () => {
+  const owners = [
+    "src/lower/recognition/held.rs",
+    "src/lower/recognition/iterators.rs",
+    "src/lower/recognition/lengths.rs",
+    "src/lower/mir/iter/closing.rs",
+    "src/lower/mir/iter/backs.rs",
+    "src/lower/iterators/stepping.rs",
+    "src/lower/iterators/knowing.rs",
+  ];
+  const peels = owners.flatMap((file) =>
+    read(file)
+      .split("\n")
+      .map((line) => line.replace(/\/\/.*$/, "").trim())
+      .filter((line) => line.includes("boxed_ty()"))
+      .map((line) => `${file}: ${line}`),
+  );
+  expect(peels).toEqual([
+    // `iterator_held`: which impl a type's steps reach, through any box.
+    "src/lower/recognition/held.rs: while let Some(inner) = ty.boxed_ty() {",
+    // `held_unboxed` itself.
+    "src/lower/recognition/held.rs: .boxed_ty()",
+    // `behind_a_box`: what std's `Box<I>` passes on (`Wrapper::passes`).
+    "src/lower/recognition/held.rs: ty.peel_refs().boxed_ty().is_some()",
+    // A `Box<dyn Iterator>`, closed by the drop it carries (ADR 0521).
+    "src/lower/recognition/iterators.rs: let boxed_dyn = source.boxed_ty().is_some_and(|inner| self.is_dyn_iter(inner));",
+    // `dyn_iter_trait`: a `dyn`'s, boxed or not.
+    "src/lower/recognition/iterators.rs: let ty = ty.boxed_ty().unwrap_or(ty);",
+    // The one box `held_unboxed` keeps, a `Box<dyn Iterator>`'s hint.
+    "src/lower/recognition/lengths.rs: let held = ty.boxed_ty().unwrap_or(ty);",
+    // A boxed slice, a sequence, not an iterator.
+    "src/lower/iterators/stepping.rs: && (self.is_vec_like(collection) || collection.boxed_ty().is_some_and(|t| t.is_slice()))",
+    "src/lower/iterators/stepping.rs: let ty = ty.boxed_ty().unwrap_or(ty);",
+    // Which parameter a callee takes an `IntoIterator`'s `IntoIter` by.
+    "src/lower/iterators/stepping.rs: _ => declared.boxed_ty().unwrap_or(*declared) == input,",
+    // A box of std's compiled struct, lent "boxed" (#1995).
+    "src/lower/iterators/knowing.rs: if let Some(inner) = ty.boxed_ty()",
+  ]);
+  expect(read("src/lower/recognition/held.rs")).toContain("pub(in crate::lower) fn held_unboxed");
+});

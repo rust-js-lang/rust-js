@@ -123,3 +123,6 @@ plain std field held_enumerate.rs
 
 #2223 P0: a Box<I> whose I another bound gives as it is is stepped as a JS iterator: wrong count
 plain std impl-owned boxed_source_closed_once.rs
+plain std impl-owned generic_box_of_an_iterator_is_what_it_holds.rs
+std dyn-ref generic_box_of_an_iterator_is_what_it_holds.rs
+std impl-ref generic_box_of_an_iterator_is_what_it_holds.rs

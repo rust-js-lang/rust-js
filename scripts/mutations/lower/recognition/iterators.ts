@@ -636,7 +636,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an adapter over a sized `Box` of the crate's iterator with a `Drop` isn't closed to drop it but dropped field by field after std's compiled `count` took it, so it drops twice, and a part-way one made in place drops `undefined` (#2219)",
     file: "src/lower/recognition/iterators.rs",
-    find: "        if let Some(inner) = source.boxed_ty() {\n            return self.closing_source(inner);\n        }\n",
+    find: "        // A sized `Box<I>`, closed as `I` is (#2219).\n        let source = held_unboxed(source);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^boxed_source_closed_once.rs$"],
   },
@@ -654,7 +654,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/iterators.rs",
     find: "        if !self.is_user_iterator(ty) || (behind_a_box(ty) && Wrapper::BoxSized.passes(name) != Passed::Own) {\n",
     replace: "        if !self.is_user_iterator(ty) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(boxed_iterator_steps_as_std_box_does|dyn_wrapper_hides_the_crates_own_steps).rs$"],
+    snapshots: true,
   },
   {
     name: "infallible-an-enum",
@@ -679,5 +680,14 @@ export const mutations: Mutation[] = [
     find: "            || matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::PathBuf))\n",
     replace: "            || false\n",
     tests: ["test/corpus.test.ts", "-t", "^path_buf_extended_by_each_part.rs$"],
+  },
+  {
+    name: "mut-source-closed-as-held",
+    breaks:
+      "an adapter of generic code's `&mut I` is dropped as a struct, field by field, where it's a JS form made in place, so a flatten's or a chain's drop throws or drops nothing (#2219)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "        let holds_nothing = source.is_ref()\n            || ",
+    replace: "        let holds_nothing = ",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
   },
 ];

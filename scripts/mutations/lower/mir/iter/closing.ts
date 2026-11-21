@@ -260,8 +260,8 @@ export const mutations: Mutation[] = [
     name: "own-collect-unclosed",
     breaks: "a `collect()` of the crate's iterator with a `Drop`, whose `next` panics, drops what it collected before the iterator, where std's frame drops the iterator first (#655)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "                    self.is_user_iterator(iter_ty) || crate::lower::recognition::known_by_bounds(iter_ty)\n",
-    replace: "                    crate::lower::recognition::known_by_bounds(iter_ty)\n",
+    find: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty) || by_bounds,\n",
+    replace: "                Some(IterMethod::Collect) => by_bounds,\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_of_own_iterator_drops_it_first.rs$"],
   },
   {
@@ -269,8 +269,8 @@ export const mutations: Mutation[] = [
     breaks:
       "generic code's `src.collect()` of a type parameter's iterator whose `next` panics drops what it collected before it, `dropI` after the collect, where std's collect frame drops it first (#640)",
     file: "src/lower/mir/iter/closing.rs",
-    find: "                    self.is_user_iterator(iter_ty) || crate::lower::recognition::known_by_bounds(iter_ty)\n",
-    replace: "                    self.is_user_iterator(iter_ty)\n",
+    find: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty) || by_bounds,\n",
+    replace: "                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_closes_its_source.rs$"],
   },
   {
@@ -395,5 +395,23 @@ export const mutations: Mutation[] = [
     find: "                    unless_run_again(count).ok()\n",
     replace: "                    count.ok()\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_where_made_runs_each_part_once.rs$"],
+  },
+  {
+    name: "closes-to-drop-box-unpeeled",
+    breaks:
+      "generic code's `Box<I>` in place isn't closed to drop what it holds, so its `zip(..).nth(1)` never drops the crate's iterator (#2219)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        // What a sized box holds, closed as it is (#2219).\n        let ty = crate::lower::recognition::held_unboxed(ty);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
+  },
+  {
+    name: "box-lend-closed-outside",
+    breaks:
+      "a sized box's lend is closed by the box's drop given the lend, not what it holds, so a drop that reads what the crate's iterator holds throws (#2219)",
+    file: "src/lower/mir/iter/closing.rs",
+    find: "        if let Some(held) = crate::lower::iterators::held_by_a_box(&it) {\n",
+    replace: "        if let Some(held) = None::<&Expr>.filter(|_| crate::lower::iterators::held_by_a_box(&it).is_some()) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
   },
 ];

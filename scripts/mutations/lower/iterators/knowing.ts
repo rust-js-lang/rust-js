@@ -837,8 +837,8 @@ export const mutations: Mutation[] = [
     name: "box-param-not-held-as-it-is",
     breaks: "generic code's `Box<I>` of an `I` held as it is is stepped as a JS iterator its caller's value isn't, `count()` of its fields (#1611)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            || ty.boxed_ty().is_some_and(|inner| self.iterator_given_as_it_is(inner))\n",
-    replace: "",
+    find: "        let ty = crate::lower::recognition::held_unboxed(ty);\n        matches!(ty.kind(), ty::Param(param) if self.param_given_as_it_is(*param))\n",
+    replace: "        matches!(ty.kind(), ty::Param(param) if self.param_given_as_it_is(*param))\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
   {

@@ -46,13 +46,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// hint is its contract's (`iterators::binding_made`, the user's
     /// decision, #1359).
     pub(in crate::lower) fn hint_reaches_own_where(&self, ty: ty::Ty<'tcx>, unseen_own: bool) -> bool {
-        let ty = self.reveal(ty.peel_refs());
+        // What a sized box holds, whose hint std's `Box<I>` passes on (#2219).
+        let ty = super::held::held_unboxed(self.reveal(ty.peel_refs()));
         if self.is_user_iterator(ty) {
             return self.writes_size_hint(ty);
         }
         if self.is_unknown(ty) {
             return true;
         }
+        // A `Box<dyn Iterator>`'s, the one box `held_unboxed` keeps.
         let held = ty.boxed_ty().unwrap_or(ty);
         if matches!(
             held.kind(),

@@ -129,18 +129,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         lent: bool,
         dropping: bool,
     ) -> bool {
+        // A sized box's of a type parameter's is the type parameter's (#2219).
+        let by_bounds = crate::lower::recognition::known_by_bounds(crate::lower::recognition::held_unboxed(iter_ty));
         dropping
             && !method.is_some_and(IterMethod::holds_its_source)
             && !lent
             && match method {
-                Some(IterMethod::Collect) => {
-                    self.is_user_iterator(iter_ty) || crate::lower::recognition::known_by_bounds(iter_ty)
-                }
+                Some(IterMethod::Collect) => self.is_user_iterator(iter_ty) || by_bounds,
                 // A `partition` or an `unzip`, of a type parameter's too,
                 // whose source std's fold drops as a panic unwinds, before
                 // what it collected (#1150, #1161).
                 Some(IterMethod::Partition | IterMethod::Unzip) => true,
-                _ => !crate::lower::recognition::known_by_bounds(iter_ty),
+                _ => !by_bounds,
             }
             && self.closes_to_drop(iter_ty)
     }
@@ -172,6 +172,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn closing(&mut self, it: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         if crate::lower::iterators::closed_parts(&it).is_some() {
             return Ok(it);
+        }
+        // A sized box's lend: what it holds closed by the box's drop, which
+        // is what the box holds's value, lent as the box again, which owns
+        // it and closes it as it's closed (#2219).
+        if let Some(held) = crate::lower::iterators::held_by_a_box(&it) {
+            let closed = self.closing(held.clone(), ty, span)?;
+            return Ok(crate::lower::iterators::IterValue::js(closed)
+                .lent(crate::lower::recognition::Wrapper::BoxSized)
+                .emit());
         }
         Ok(match self.closing_drop(ty, span)? {
             Some(drop) => self.closed_by(it, drop, ty),
@@ -253,6 +262,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that owns items with a destructor, a generic one whose drop its
     /// caller gives, or the crate's own with one.
     pub(super) fn closes_to_drop(&self, ty: Ty<'tcx>) -> bool {
+        // What a sized box holds, closed as it is (#2219).
+        let ty = crate::lower::recognition::held_unboxed(ty);
         match self.recognition().owned_into_items(ty) {
             Some(item) => self.drops(item) != crate::lower::drops::Drops::Nothing,
             None => {

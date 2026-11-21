@@ -315,11 +315,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// iterator or a `$iter`, which `*it = other` writes in place, `$assign`
     /// (ADR 0481).
     pub(in crate::lower) fn iterator_given_as_it_is(&self, ty: ty::Ty<'tcx>) -> bool {
+        // A `Box<I>` of one, which is its value, stepped by what std's
+        // `Box<I>` passes on (`boxed_iterator_dictionary`, #1611).
+        let ty = crate::lower::recognition::held_unboxed(ty);
         matches!(ty.kind(), ty::Param(param) if self.param_given_as_it_is(*param))
             || into_iter_as_it_is(self.tcx, self.generics_fn(), ty)
-            // A `Box<I>` of one, which is its value, stepped by what std's
-            // `Box<I>` passes on (`boxed_iterator_dictionary`, #1611).
-            || ty.boxed_ty().is_some_and(|inner| self.iterator_given_as_it_is(inner))
     }
 
     /// Whether `param`, a type parameter of the function being lowered, is

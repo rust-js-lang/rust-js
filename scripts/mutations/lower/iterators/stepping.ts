@@ -125,9 +125,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range given by a `&`, `remaining(&(0..5))`, isn't a JS iterator that knows its length",
     file: "src/lower/iterators/stepping.rs",
-    find: "                ty::Ref(_, inner, _) => (inner, given.peel_refs()),\n",
+    find: "                ty::Ref(_, inner, _) => (crate::lower::recognition::held_unboxed(inner), given.peel_refs()),\n",
     replace:
-      "                ty::Ref(_, inner, ty::Mutability::Mut) => (inner, given.peel_refs()),\n",
+      "                ty::Ref(_, inner, ty::Mutability::Mut) => (crate::lower::recognition::held_unboxed(inner), given.peel_refs()),\n",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_len.rs$"],
   },
   {
@@ -486,8 +486,8 @@ export const mutations: Mutation[] = [
     name: "box-param-not-given-a-js-iterator",
     breaks: "generic code's `Box<I>` is given the crate's iterator's value as it is, which it steps as plain data, `count()` of `Up(0, 3)` its two fields (#1601)",
     file: "src/lower/iterators/stepping.rs",
-    find: "                _ if let Some(inner) = input.boxed_ty() => (inner, given),\n",
-    replace: "",
+    find: "                _ => (crate::lower::recognition::held_unboxed(input), given),\n",
+    replace: "                _ => (input, given),\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
   {
@@ -618,5 +618,14 @@ export const mutations: Mutation[] = [
     find: "        self.seen_through.set(outer);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_wrapper_hides_the_crates_own_steps.rs$"],
+  },
+  {
+    name: "argument-mut-box-unpeeled",
+    breaks:
+      "generic code's `&mut Box<I>` given the crate's iterator is given its value raw, never a JS iterator, so it's never stepped and `next` throws (#2221)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                ty::Ref(_, inner, _) => (crate::lower::recognition::held_unboxed(inner), given.peel_refs()),\n",
+    replace: "                ty::Ref(_, inner, _) => (inner, given.peel_refs()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
   },
 ];

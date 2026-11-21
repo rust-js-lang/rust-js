@@ -440,6 +440,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `Some(None)` of one that holds nothing, a slice's or a range's,
     /// `None` of another.
     fn closing_source(&self, source: Ty<'tcx>) -> Option<Option<Ty<'tcx>>> {
+        // A sized `Box<I>`, closed as `I` is (#2219).
+        let source = held_unboxed(source);
         if let Some(held) = self.owned_items(source).or_else(|| self.closed_on_drop(source)) {
             return Some(Some(held));
         }
@@ -467,15 +469,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Some(source));
         }
-        // A sized `Box<I>`, closed as `I` is, whose drop is the box's, as
-        // the box is `I`'s value in JS (#2219).
-        if let Some(inner) = source.boxed_ty() {
-            return self.closing_source(inner);
-        }
         // One that holds nothing a drop runs code for, a `chars()` or an
-        // `iter_mut()`: closing it drops nothing, its zip's other side (#406).
-        let holds_nothing =
-            !rustc_middle::ty::TypeVisitableExt::has_param(&source) && !source.needs_drop(self.tcx, self.typing_env);
+        // `iter_mut()`: closing it drops nothing, its zip's other side (#406);
+        // and a `&mut` of one, a type parameter's too, which lends it, so
+        // closing the adapter drops nothing of it.
+        let holds_nothing = source.is_ref()
+            || !rustc_middle::ty::TypeVisitableExt::has_param(&source) && !source.needs_drop(self.tcx, self.typing_env);
         (self.array_source(source) == Some(false) || self.range_kind(source).is_some() || holds_nothing).then_some(None)
     }
 

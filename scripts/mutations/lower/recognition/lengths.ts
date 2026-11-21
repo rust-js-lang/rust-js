@@ -379,4 +379,13 @@ export const mutations: Mutation[] = [
       "        !(self.is_array_iter(ty) || matches!(ty.kind(), ty::Adt(adt, _) if std_path_under(self.tcx, adt.did(), StdPath::IterMod)))\n            || self\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_kept_of_a_lent_adapter.rs$"],
   },
+  {
+    name: "hint-reach-box-unpeeled",
+    breaks:
+      "generic code's `Box<I>` is taken to ask no hint of the crate's, so a collect into a `HashSet` of its `step_by` reserves nothing and never asks the crate's own `size_hint` (#2219)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        let ty = super::held::held_unboxed(self.reveal(ty.peel_refs()));\n",
+    replace: "        let ty = self.reveal(ty.peel_refs());\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_of_an_iterator_is_what_it_holds.rs$"],
+  },
 ];
