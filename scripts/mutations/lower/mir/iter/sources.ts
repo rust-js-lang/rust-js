@@ -65,11 +65,12 @@ export const mutations: Mutation[] = [
   {
     name: "given-copied-backless",
     breaks:
-      "a `copied()` of an iterator generic code is given as it is, made knowing its length, is the JS iterator `$given` makes without its back, so a clone of it, or one a generic function makes, steps nothing from its back and loses its length (#1983)",
+      "a `copied()` of an iterator generic code is given as it is, made knowing its length, is the JS iterator `$given` makes without its back: as programs run it, a clone of it steps its back by another route, so only how its JS reads changes, what the corpus's snapshot of it holds (#1983, #2261)",
     file: "src/lower/mir/iter/sources.rs",
     find: "            && let Some(it) = self.given_stepped(value.clone(), ty, self.knows_its_back(output), true)\n",
     replace: "            && let Some(it) = self.given_stepped(value.clone(), ty, false, true)\n",
-    tests: ["test/corpus.test.ts", "-t", "^copied_of_generic_code_knowing_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^clone_of_a_generic_copied_stepped_from_its_back.rs$"],
+    snapshots: true,
   },
   {
     name: "len-in-place-take-unbounded",

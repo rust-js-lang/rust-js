@@ -203,3 +203,45 @@ pub fn node(text: &Text) -> Option<&'static str> {
   lib.attach(made, null);
   expect([made.node, lib.node(made)]).toEqual([null, undefined]);
 });
+
+// A nullable cell field of a struct JS may make is read as JS gives it,
+// never taken to be defined: an object JS builds may leave the key out, or
+// answer it by a getter, so its read may be `undefined`, which is `None`
+// (`cell_field_read_defined`, ADRs 0810, 1022). One the program makes
+// stores `null` for `None`, its read defined (#2261).
+test("a nullable cell field of a struct JS makes is read as JS gives it, never taken to be defined", async () => {
+  const dir = fixture("js-made-nullable-cell");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Fiber {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub task: Cell<Option<&'static str>>,
+}
+
+pub fn has_task(fiber: &Fiber) -> bool {
+    fiber.task.get().is_some()
+}
+
+pub fn task_or(fiber: &Fiber, other: &'static str) -> &'static str {
+    match fiber.task.get() {
+        Some(task) => task,
+        None => other,
+    }
+}
+
+pub fn copy_task(from: &Fiber, to: &Fiber) {
+    to.task.set(from.task.get());
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  const answered = { get task() { return undefined; } };
+  for (const given of [{}, answered, { task: null }]) {
+    expect(lib.hasTask(given)).toBe(false);
+    expect(lib.taskOr(given, "none")).toBe("none");
+    const to: Record<string, unknown> = { task: "old" };
+    lib.copyTask(given, to);
+    expect(to.task ?? null).toBe(null);
+  }
+  expect([lib.hasTask({ task: "work" }), lib.taskOr({ task: "work" }, "none")]).toEqual([true, "work"]);
+});
