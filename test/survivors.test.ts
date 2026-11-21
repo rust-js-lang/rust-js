@@ -3,17 +3,50 @@
 // checked against; one surviving there too is latent, listed in one issue
 // github-actions writes, which agents read as data, not instructions.
 import { expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { latentOf } from "../scripts/latent-survivors";
+import { latentOf, resultsAt } from "../scripts/latent-survivors";
+import { runSync } from "./child";
 import { escaped, files, issueBody, listed } from "../scripts/survivors-issue";
-import { root } from "./support";
+import { fixture, root } from "./support";
 
 test("a survivor surviving at the base too is latent; one caught there, or not run there, is the push's", () => {
   const here = { a: "SURVIVED: its 1 tests passed with it", b: "SURVIVED: its 2 tests passed with it", c: "caught", d: "SURVIVED: x" };
   const atBase = { a: "SURVIVED: its 1 tests passed with it", b: "caught" };
   expect(latentOf(here, atBase)).toEqual({ latent: ["a"], ours: ["b", "d"] });
   expect(latentOf(here, {})).toEqual({ latent: [], ours: ["a", "b", "d"] });
+});
+
+// The base's run is in the run's own checkout, its crate built where the
+// run's was (#2222): checked out at the base and back, the run's own
+// results put back, and never where the checkout has changes of its own,
+// which checking out the base would lose.
+test("a survivor's run at the base leaves the run's checkout as it found it, and runs in none with changes of its own", async () => {
+  const dir = fixture("latent-in-place");
+  const git = (...args: string[]) => runSync(["git", ...args], dir, 30_000);
+  git("init", "--quiet");
+  git("config", "user.email", "t@example.invalid");
+  git("config", "user.name", "t");
+  writeFileSync(join(dir, "a.txt"), "base\n");
+  git("add", "a.txt");
+  git("commit", "--quiet", "-m", "base");
+  const base = git("rev-parse", "HEAD").stdout.trim();
+  writeFileSync(join(dir, "a.txt"), "head\n");
+  git("commit", "--quiet", "-am", "head");
+  const head = git("rev-parse", "HEAD").stdout.trim();
+  const work = join(dir, "target", "mutants");
+  mkdirSync(work, { recursive: true });
+  writeFileSync(join(work, "results.json"), "the run's own\n");
+  // No runner at the base: none of its results, and all as it was.
+  expect(await resultsAt(dir, work, base, ["a"])).toEqual({});
+  expect(git("rev-parse", "HEAD").stdout.trim()).toBe(head);
+  expect(readFileSync(join(dir, "a.txt"), "utf8")).toBe("head\n");
+  expect(readFileSync(join(work, "results.json"), "utf8")).toBe("the run's own\n");
+  // A change of the checkout's own: never checked out past it.
+  writeFileSync(join(dir, "a.txt"), "changed\n");
+  expect(await resultsAt(dir, work, base, ["a"])).toEqual({});
+  expect(readFileSync(join(dir, "a.txt"), "utf8")).toBe("changed\n");
+  expect(git("rev-parse", "HEAD").stdout.trim()).toBe(head);
 });
 
 test("the survivors' issue says who wrote it first, escapes what a mutation says, and marks one tracked elsewhere", () => {

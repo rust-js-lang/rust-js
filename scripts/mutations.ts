@@ -2284,6 +2284,9 @@ async function main() {
   if (harnessMissed.length > 0) process.exitCode = 1;
   // Of `--base=<sha>`, a survivor there too is latent, not this run's (ADR 0093, amended).
   const base = args.find((arg) => arg.startsWith("--base="))?.slice("--base=".length);
+  // Its runner there runs in this checkout and takes its mutants' lock,
+  // this run's mutants all judged (`resultsAt`).
+  if (base) released();
   const latent = base ? await latentSurvivors(root, work, base, Object.fromEntries(rows.map(([m, r]) => [m.name, r])), (name) => mutations.find((m) => m.name === name)?.breaks ?? "") : [];
   // A phase of its own where it ran, a survivor's run at the base, which
   // phases.json didn't show, five of a CI shard's minutes (#2220).
