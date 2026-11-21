@@ -159,7 +159,11 @@ test("what runs beside a round's check, stopped, leaves nothing it started runni
   for (let i = 0; i < 250 && running().length < 3; i++) await Bun.sleep(20);
   expect(running().length).toBe(3);
   it.stop();
-  expect(await it.done).not.toBe(0);
+  // Ended by the stop: what it runs sleeps 300 s, so its end within the
+  // test's time is the stop's. Not by its status, which a shell killed as
+  // its `wait` ends may give as 0, under load (#2233): what's asked is the
+  // tree, each process the group started gone.
+  await it.done;
   for (let i = 0; i < 250 && running().length > 0; i++) await Bun.sleep(20);
   expect(running()).toEqual([]);
 });
