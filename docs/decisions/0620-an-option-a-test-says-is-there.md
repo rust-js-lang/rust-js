@@ -461,6 +461,14 @@ thread-local's with(f)" (no tidy answer counted) and the corpus case
 `thread_local_with_gives_what_it_returns` (native, both builds, as a
 library, metamorphic); mutation `local-with-unknown`.
 
+Amended (2026-11-21, #2112): the rule is `stored_in`'s one answer of a
+thread-local's `with(f)` and `with_borrow(f)` of a closure, the
+scheduler's `TASK_QUEUE.with_borrow(..)` (ADR 0841, amended), which
+answers this one first. A second, of `with` alone and of a function item
+too, followed it in `stored_in`, and nothing reached it: its mutation,
+`local-with-unknown`, survived every suite, React's port and the crate
+corpus (`--retire`), and it is removed.
+
 ## Amendment: a variable written more than once is proved where nothing writes it after its test (2026-11-16, #1933 step 4 (A); #1952)
 
 `proved_present` took a local of one whole write alone. It now takes one

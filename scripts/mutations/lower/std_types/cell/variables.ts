@@ -191,11 +191,11 @@ export const mutations: Mutation[] = [
   {
     name: "applied-stored-again-skipped",
     breaks:
-      "a closure put in its place keeps a nullable store's `?? null` of what it's now given, never `undefined` (ADR 0841, amended)",
+      "a nullable store of what tidy joined of a write's branches keeps its `?? null`, `(t ? v : undefined) ?? null`, not `t ? v : null` (ADR 0841, amended, #2112)",
     file: "src/lower/std_types/cell/variables.rs",
     find: "    js::each_item_expr_mut(items, &mut |e| e.store_again(js::Undefined::ByForm));\n",
     replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "stored as they are"],
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "a nullable place's write of an if's Some and None"],
   },
   {
     name: "taken-whole-in-place",

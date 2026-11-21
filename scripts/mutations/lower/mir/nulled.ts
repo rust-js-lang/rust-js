@@ -596,14 +596,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
   },
   {
-    name: "local-with-unknown",
-    breaks: "what a thread-local's `with(f)` gives says nothing of what `f` returns, so `context.currentRenderer = current` is tidy's answer of `current ?? null` (#1933)",
-    file: "src/lower/mir/nulled.rs",
-    find: "        if let Some(crate::lower::Std::LocalWith { tried: false }) = known\n",
-    replace: "        if let Some(crate::lower::Std::LocalWith { tried: false }) = known && false\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a thread-local's with"],
-  },
-  {
     name: "stored-given-presence-unasked",
     breaks: "an `Option` a test proved where it's stored in a nullable place may still be `undefined` to it, `return value ?? null` where `value.is_some() && flag` holds (#1933, #2112 C S4)",
     file: "src/lower/mir/nulled.rs",

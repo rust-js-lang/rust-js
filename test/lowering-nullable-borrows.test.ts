@@ -215,3 +215,35 @@ pub fn scheduled(root: u32) -> Rc<dyn Fn() -> u32> {
   expect(lib.advance()).toBe(7);
   expect(lib.scheduled(1)()).toBe(8);
 });
+
+// React's Flight `ResponseInstance`: `this._debugRootStack = rootOwner !=
+// null ? new Error(..) : null`, a nullable field's `set(if owner.is_some()
+// { Some(..) } else { None })`, whose branches tidy joins to `t ? v :
+// undefined`: stored by its form, `t ? v : null`, not `(t ? v : undefined)
+// ?? null` (`store_again`, ADR 0841, amended, #2112).
+test("a nullable place's write of an if's Some and None is stored as one conditional, its None null", async () => {
+  const dir = fixture("nullable-joined-write");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+pub struct Response {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub root_owner: Cell<Option<&'static str>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub root_stack: Cell<Option<&'static str>>,
+}
+
+pub fn start(response: &Response, owner: Option<&'static str>) {
+    response.root_owner.set(owner);
+    response.root_stack.set(if owner.is_some() { Some("react-stack-top-frame") } else { None });
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  response.rootStack = owner != null ? "react-stack-top-frame" : null;\n');
+  const lib = await import(join(dir, "lib.js"));
+  const response: { rootOwner: string | null; rootStack: string | null } = { rootOwner: null, rootStack: null };
+  lib.start(response, undefined);
+  expect(response).toEqual({ rootOwner: null, rootStack: null });
+  lib.start(response, "App");
+  expect(response).toEqual({ rootOwner: "App", rootStack: "react-stack-top-frame" });
+});
