@@ -59,7 +59,11 @@ permissions:
 # changes (the `plan` job). One started by hand waits apart from the
 # pushes', as GitHub drops a waiting run of the group for a newer one: a
 # check started by hand to measure, in the pushes' group, dropped the
-# checks of two pushes waiting behind it (44846113211). (When a run started by hand cancelled the one running, with
+# checks of two pushes waiting behind it (44846113211). A push's run
+# replaced so by a newer push's is checked in that one: its commits are
+# in that run's batch, since the last check that completed, which names
+# them in its summary and attributes a failure to the commit that broke it
+# (`plan`'s `batch_base`, scripts/attribute.ts). (When a run started by hand cancelled the one running, with
 # three agents pushing to `main`, each starting one after it pushed, no
 # check of `main` finished for hours.) rustc-tests.yml's runs are a group
 # of their own, and so is nightly.yml's call, so neither waits for nor

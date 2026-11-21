@@ -451,9 +451,31 @@ async function plan(given?: string, testShardsGiven?: string) {
     batchBase = completedBase(runs(), Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root }).stdout.toString().trim()) ?? "";
   } catch {}
   console.log(`batch_base=${batchBase}`);
+  // The commits it checks, a push's whose check a newer one replaced
+  // waiting among them (GitHub keeps a group's newest waiting run alone,
+  // check.yml): named in the run's summary, as its failures are by commit.
+  if (batchBase && process.env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, batchSummary(batchCommits(batchBase)));
+  }
   const said = `The suite's selection: ${outcome(selection)}${selection.map ? `, by the test map of ${selection.map.slice(0, 9)}` : ""}`;
   console.error(said);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${said}\n`);
+}
+
+/** The commits after `base` to HEAD, the newest first, each its short sha
+ * and subject. */
+function batchCommits(base: string): { sha: string; subject: string }[] {
+  const out = Bun.spawnSync(["git", "log", "--format=%h%x09%s", `${base}..HEAD`], { cwd: root }).stdout.toString().trim();
+  return out === "" ? [] : out.split("\n").map((line) => ({ sha: line.split("\t")[0]!, subject: line.split("\t").slice(1).join("\t") }));
+}
+
+/** A check's summary of the commits it checks, its batch: more than one
+ * where a push's own check was replaced while it waited, each still
+ * checked here, its failures attributed by commit (scripts/attribute.ts). */
+export function batchSummary(commits: { sha: string; subject: string }[]): string {
+  if (commits.length <= 1) return "";
+  const listed = commits.map(({ sha, subject }) => `- ${sha} ${subject.slice(0, 100)}`).join("\n");
+  return `### This check covers ${commits.length} commits\n\nEach a push's; a check of an older one replaced while it waited is this one, and a failure here is attributed to the commit that broke it.\n\n${listed}\n`;
 }
 
 /** The jobs of a push's check that run whatever it changes, each with its

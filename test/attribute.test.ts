@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { attribution, commitsToRun, mostCommits, mutationLines, runnerFiles, runnerOf, siteLines, sliceReruns, unattributable, unrerunnable } from "../scripts/attribute";
-import { completedBase, type Run } from "../scripts/ci";
+import { batchSummary, completedBase, type Run } from "../scripts/ci";
 import { root } from "./support";
 
 test("a batch's failing tests run at its commits, at most six, the oldest and the newest among them", () => {
@@ -40,6 +40,16 @@ test("a batch's base is the newest check of main that completed, red or green, n
   const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
   expect(check).toContain("bun scripts/attribute.ts plan junit ${{ needs.plan.outputs.batch_base || 'HEAD~1' }}");
   expect(check).toContain("bun scripts/attribute.ts report target/attribute/results");
+});
+
+// A check whose batch holds more than its own commit, a push's whose own
+// check a newer push's replaced as it waited (GitHub keeps a group's
+// newest waiting run alone, 44863403712), names each in its summary.
+test("a check names the commits it checks where a replaced push's are among them", () => {
+  expect(batchSummary([{ sha: "c2", subject: "two" }])).toBe("");
+  const said = batchSummary([{ sha: "c3", subject: "three" }, { sha: "c2", subject: "two" }]);
+  expect(said).toContain("This check covers 2 commits");
+  expect(said).toContain("- c3 three\n- c2 two\n");
 });
 
 // A failed check's mutations, by blame, no rerun: each it didn't catch, not

@@ -139,6 +139,14 @@ export const mutations: Mutation[] = [
     tests: ["test/shards.test.ts", "-t", "a check's mutations are split by their expected time"],
   },
   {
+    name: "batch-summary-of-its-own-commit",
+    breaks: "a check names a batch of its own commit alone in its summary, where only one that covers a replaced push's commits says so (#2220's follow-up)",
+    file: "scripts/ci.ts",
+    find: "  if (commits.length <= 1) return \"\";",
+    replace: "  if (commits.length < 1) return \"\";",
+    tests: ["test/attribute.test.ts", "-t", "names the commits it checks"],
+  },
+  {
     name: "tests-as-it-is-corpus-cases-uncounted",
     breaks: "a shard's tests as the compiler is are expected without the corpus cases its mutations' `-t`s name, a third of a second each: a check of 155 mutations a shard ran them 284 to 371 s (#2228)",
     file: "scripts/ci.ts",
