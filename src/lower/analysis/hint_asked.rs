@@ -10,7 +10,7 @@
 use crate::collections::IndexSet;
 use crate::lower::recognition::{
     Recognition, cloned_source, copied_source, counted_source, is_compiled_std_iterator, is_iter_adapter_def,
-    reversed_source, stepped_by_source,
+    stepped_by_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
@@ -534,8 +534,8 @@ fn mark_hint_knowing<'tcx>(
 /// type across the crate, whose other values of it, another case's
 /// `iter().cloned()` beside it, are JS's own. Nothing else, as what holds
 /// a `$Steps`, a range's, keeps std's hint through its own adapters (ADR
-/// 0542). Not of one stepped from its back, a `rev()` in it, whose
-/// `skip(1)` made knowing its hint would know no back.
+/// 0542). One stepped from its back, a `rev()` in it, too: `$skipping`
+/// steps from its back as std's `Skip` does (#2141, #1427).
 fn mark_in_place<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
@@ -545,9 +545,6 @@ fn mark_in_place<'tcx>(
 ) {
     let ty = ty.peel_refs();
     let parts = || ty.walk().filter_map(|part| part.as_type());
-    if parts().any(|part| reversed_source(tcx, part.peel_refs()).is_some()) {
-        return;
-    }
     for part in parts() {
         let part = tcx.erase_and_anonymize_regions(part.peel_refs());
         let ty::Adt(_, args) = part.kind() else { continue };

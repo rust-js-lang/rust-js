@@ -208,14 +208,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_adapter_hints_of_adapters_made_inside.rs$"],
   },
   {
-    name: "in-place-of-a-rev-marked",
-    breaks: "an adapter in place inside a `rev()`'s chain is made `$skipping`, which knows no back, so a `skip(1)` stepped from its back is refused (#1427)",
-    file: "src/lower/analysis/hint_asked.rs",
-    find: "    if parts().any(|part| reversed_source(tcx, part.peel_refs()).is_some()) {\n",
-    replace: "    if false {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a copied of a skip"],
-  },
-  {
     name: "in-place-of-any-source-marked",
     breaks: "an adapter in place over a range, a `$Steps` whose own adapters keep std's hint, is made knowing anyway, `$skipping` of `$lazyRange` (#1427)",
     file: "src/lower/analysis/hint_asked.rs",
@@ -257,6 +249,15 @@ export const mutations: Mutation[] = [
     find: " || is_compiled_std_iterator(tcx, held.peel_refs())",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "in-place-rev-unmarked",
+    breaks: "a held `rev()` of a `skip(1)` made in place over an array's items whose hint is asked isn't made knowing it, so its hint is refused where std's `Skip` gives it (#1427)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "    let parts = || ty.walk().filter_map(|part| part.as_type());\n",
+    replace: "    let parts = || ty.walk().filter_map(|part| part.as_type());\n    if parts().any(|part| crate::lower::recognition::reversed_source(tcx, part.peel_refs()).is_some()) {\n        return;\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_rev_of_an_in_place_skip_knows_its_hint\\.rs$"],
     snapshots: true,
   },
 ];

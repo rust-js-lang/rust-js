@@ -309,10 +309,6 @@ for (const [name, source, message, crate] of [
   // std's `eq` of two `TrustedLen` iterators asks their lengths first; of maps held in MIR's
   // temporaries, which rust-js can't count before stepping them, refused, as their closures
   // would run where Rust's don't (ADR 0998, #386).
-  // A held `rev()` of a `filter_map` of a `skip(1)` made in place, JS's own
-  // `drop`, which knows no hint: what's stepped from its back isn't made
-  // knowing its hint, `$skipping`, which would know no back (#1427). Not a
-  // `filter`'s, std's compiled `Filter` since its family's flip.
   // A trait method's `impl Trait` of a type parameter of its own not bound by
   // `Copy`, which may hold a destructor of every instance's own: its drop
   // isn't one function its dictionary can carry, so generic code holding
@@ -346,7 +342,10 @@ for (const [name, source, message, crate] of [
   // iterator's, which knows nothing of its length, refused, not `(0, None)` where Rust gives
   // `(0, Some(3))` (#382). Not a `filter`'s, std's compiled `Filter` since its family's flip.
   ["size_hint of a copied of a type parameter's", "pub fn f<'a, I: Iterator<Item = &'a u32>>(it: I) -> (usize, Option<usize>) { it.copied().size_hint() }", "`size_hint()` of a `std::iter::Copied<I>`"],
-  ["size_hint of a held rev of a copied of a skip", "pub fn f() -> (usize, Option<usize>) { let v = vec![1u8, 2, 3]; let it = v.iter().skip(1).copied().rev(); it.size_hint() }", "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
+  // A `skip(1)` made in place over a type parameter's items in generic code,
+  // JS's own `drop`, which keeps no hint: generic code marks none made
+  // knowing it, so its hint is refused (#2265).
+  ["size_hint of a copied of a skip of a type parameter's items", "pub fn f<T: Copy>(v: &[T]) -> (usize, Option<usize>) { let it = v.iter().skip(1).copied().rev(); it.size_hint() }", "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2265)"],
   ["the size hint of a peekable map of a string's chars made here", "pub fn f(s: &str) -> (usize, Option<usize>) { s.chars().map(|c| c).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::Map<std::str::Chars"],
   ["a pub thread-local whose initializer reads what a private module's pub fn, which JS may call after load, changes (#2025)", "mod prefixes {\n    use std::cell::RefCell;\n    use std::collections::HashMap;\n    thread_local! { static PREFIXED: RefCell<HashMap<String, String>> = RefCell::new(HashMap::new()); }\n    pub fn prefixed(name: &str) -> String {\n        if let Some(p) = PREFIXED.with_borrow(|c| c.get(name).cloned()) { return p; }\n        let p = \"webkit\".to_owned() + name;\n        PREFIXED.with_borrow_mut(|c| c.insert(name.to_owned(), p.clone()));\n        p\n    }\n}\nmod event_names {\n    use super::prefixes::prefixed;\n    thread_local! { pub static ANIMATION_END: String = prefixed(\"animationend\"); }\n}\npub fn end() -> String { event_names::ANIMATION_END.with(Clone::clone) }", "or, as JS may call `prefixes::prefixed` then, its module exporting it, make that `pub(crate)` where JS shouldn't"],
   // A builder's steps are a chain's (ADR 0136): one a loop steps is no chain.

@@ -483,7 +483,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.array_source(ty).is_some() && !self.made_knowing_its_hint(ty) {\n            return false;\n        }\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a copied of a skip"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a copied of a skip of a type parameter's items"],
   },
   {
     name: "dropping-skip-uncounted",
@@ -791,7 +791,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        let in_place = !outermost && self.made_in_place_of(ty);\n",
     replace: "        let in_place = false && !outermost && self.made_in_place_of(ty);\n",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a copied of a skip"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a copied of a skip of a type parameter's items"],
   },
   {
     name: "dropping-filter-hintless",
@@ -805,9 +805,9 @@ export const mutations: Mutation[] = [
     name: "hint-refusal-names-no-cause",
     breaks: "a refusal of `size_hint()` lost to an adapter made in place inside another doesn't say so, nor #1427",
     file: "src/lower/iterators/knowing.rs",
-    find: "            true => \", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)\",\n",
+    find: "            true => \", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2265)\",\n",
     replace: '            true => "",\n',
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a copied of a skip"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a copied of a skip of a type parameter's items"],
   },
   {
     name: "closure-search-back-unknown",

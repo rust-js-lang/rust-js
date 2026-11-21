@@ -151,13 +151,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Why `size_hint()` of a `ty` is refused, said after it: where an
     /// adapter in it is made in place inside another, JS's own, which keeps
     /// no hint, though held it would be std's struct, which knows it
-    /// (#1427); else nothing. A `dyn Iterator`'s is `size_hint_of`'s own
+    /// (#1427), now only in generic code, which marks none (#2265); else
+    /// nothing. A `dyn Iterator`'s is `size_hint_of`'s own
     /// (#1476).
     pub(in crate::lower) fn hint_refused_because(&self, ty: ty::Ty<'tcx>) -> &'static str {
         let lost = (ty.peel_refs().walk().filter_map(|part| part.as_type()))
             .any(|part| part != ty.peel_refs() && self.made_in_place_of(part) && self.held_hint_known(part));
         match lost {
-            true => ", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)",
+            true => ", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2265)",
             false => "",
         }
     }

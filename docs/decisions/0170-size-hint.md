@@ -340,9 +340,10 @@ and in each whose value of its type may leave it (`may_leave`, #1333), so
 one made in another function and asked in this is made knowing there too;
 a `map`, by each maker of its type. Not of a `$Steps`, a range's, whose own
 adapters keep std's hint (ADR 0542), nor of an exact-sized iterator, which
-a `Vec` grows by its length; and not of one with a `rev()` in it, whose
-`skip(1)` made `$skipping` would know no back, which stays refused (#1427),
-nor of a `zip`'s parts under a `cycle()` (#1572). `hint_asked.rs`'s
+a `Vec` grows by its length; nor of a `zip`'s parts under a `cycle()`
+(#1572). One with a `rev()` in it was refused here too, as `$skipping`
+then knew no back; it steps from its back since #2141, so one is marked
+as any other (#1427, below). `hint_asked.rs`'s
 `mark_in_place` marks them; `knowing.rs` takes an array's iterator so made
 as knowing its hint.
 
@@ -454,3 +455,23 @@ docs/readability.txt is blessed with this change. The shares that grow
 (`$iter`, `return;`, `renamed x$1`, role fallbacks) grow by the new case's
 lines, and by those of the cases added since its last bless (#2205,
 #2207, #2210, #2212, 82646ce5d). The four moved snapshots read shorter.
+
+## Amendment: a held `rev()` of an adapter made in place knows its hint (2026-11-21, #1427)
+
+`mark_in_place` passed over an iterator with a `rev()` in it, since a
+`skip(1)` made knowing its hint, `$skipping`, knew no back then: a held
+`v.iter().skip(1).copied().rev()` whose hint was asked was refused. Since
+#2141 `$skipping` steps from its back as std's `Skip` does, its
+`next_back`, `nth_back`, `try_rfold`, `rfold` and `advance_back_by` its
+source's less what it skips, so the exclusion is gone and such an
+iterator is marked as any other. ADR 0262 case: results change (a refusal
+where Rust gives an answer), so Rust's behavior is preserved, now
+compiled. No snapshot moves; corpus case
+`held_rev_of_an_in_place_skip_knows_its_hint` holds a held `rev()` of a
+`skip` of an array's items through `copied`, `cloned`, `filter_map`,
+`take`, `step_by`, `enumerate`, `map` and a `Vec`'s `into_iter()` of
+values with a destructor, its hint, `len`, `next`, `next_back`,
+`nth_back`, `rposition`, `rfold` and a `skip` of the `rev()`, against
+native. What stays refused under that message is generic code's, which
+marks no adapter made in place over a type parameter's items (#2265).
+
