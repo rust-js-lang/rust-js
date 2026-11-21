@@ -145,12 +145,12 @@ test("Known::Present is written only by the lone values a constructor knows are 
 // isn't at hand: `tidy::values::handles`, `js::applied`, and
 // `drops/inlined.rs`, whose `Drop` guard's field read carries MIR's
 // `nulled` answer as a mark (ADR 0841's reader 8), until S4 carries it as
-// a field; and `binding_calls.rs`' `surely_there`, a trailing `Option`'s
-// presence a binding call asks, S3f's to answer.
+// a field. A trailing `Option` a binding call is given asks MIR's proof and
+// its form alone too (`binding_calls.rs`' `surely_there`, #2112 S3f).
 test("the marks are asked only where MIR isn't at hand", () => {
   const askers = files("src").filter((file) => file.endsWith(".rs") && file !== "src/js/storage.rs" && file !== "src/js/make.rs")
     .filter((file) => /Undefined::ByFacts/.test(read(file)));
-  expect(askers).toEqual(["src/js/applied.rs", "src/lower/binding_calls.rs", "src/lower/drops/inlined.rs", "src/lower/mir/tidy/values/handles.rs"]);
+  expect(askers).toEqual(["src/js/applied.rs", "src/lower/drops/inlined.rs", "src/lower/mir/tidy/values/handles.rs"]);
   expect(read("src/lower/std_types/cell/variables.rs")).toContain("store_again(js::Undefined::ByForm)");
 });
 

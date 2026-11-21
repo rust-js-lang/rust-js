@@ -655,8 +655,11 @@ is now told MIR's answer where it's made:
 The marks are asked (`ByFacts`) only past lowering, where MIR isn't at hand:
 `tidy::values::handles`, `js::applied`, and `drops/inlined.rs`, whose `Drop`
 guard's field carries MIR's `nulled` answer as a mark (ADR 0841's reader
-8) until S4 carries it as a field. `binding_calls`' `surely_there` asks
-them too, S3f's to answer. An architecture test holds that list.
+8) until S4 carries it as a field. An architecture test holds that list.
+`binding_calls`' `surely_there` asked them too until S3f; it asks the form
+alone (`ByForm`), with MIR's `present`/`null` proof, as the list above
+says, and React's port and every suite are byte-identical without the
+marks there (#2112).
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)'s first). React's port
 moves 10 files, each line upstream's or behaving the same: `==`/`!=` of two
