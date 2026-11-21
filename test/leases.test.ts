@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJobTimes } from "../scripts/jobTimes";
-import { acquire, fairShare, holdLease, leasedIn, liveLeases, lockHeld, ownShare, withLock } from "../scripts/leases";
+import { acquire, fairShare, holdLease, leasedIn, liveLeases, lockHeld, lockState, ownShare, withLock } from "../scripts/leases";
 import { mutantsLock, mutantsStore } from "../scripts/disk";
 import { underLoad } from "../scripts/timing";
 import { fixture, root } from "./support";
@@ -157,4 +157,34 @@ test("a lock is held while its owner lives, and a run's mutants store isn't prun
   rmSync(lock, { recursive: true, force: true });
   // Another checkout's, leased, stays unbounded as before.
   expect(mutantsStore(tree, "another checkout's mutants", false).bound).toBeUndefined();
+});
+
+// A lock gone between `mkdir` refusing it and its state asked, its holder
+// done, is made again, never removed: in that instant another run may
+// make it, and removing that one let both hold it, two job-time writers
+// each writing what it read (#2283). Here the state is asked as the lock
+// is absent, and another live process makes it right then: it's left
+// as it is, and waited on.
+test("a lock found absent is made again, never removing what another run made then", () => {
+  const dir = fixture("leases-lock-absent");
+  const lock = join(dir, "lock");
+  rmSync(lock, { recursive: true, force: true });
+  mkdirSync(lock, { recursive: true });
+  let asked = 0;
+  const released = acquire(lock, { wait: 100 }, (at) => {
+    asked++;
+    if (asked === 1) {
+      // Its holder done, and another run, alive, takes it at once.
+      rmSync(at, { recursive: true, force: true });
+      const state = lockState(at);
+      mkdirSync(at);
+      writeFileSync(join(at, "owner"), String(process.ppid));
+      return state;
+    }
+    return lockState(at);
+  });
+  expect(released).toBeUndefined();
+  expect(readFileSync(join(lock, "owner"), "utf8")).toBe(String(process.ppid));
+  expect(lockState(join(dir, "never-made"))).toBe("absent");
+  rmSync(lock, { recursive: true, force: true });
 });

@@ -104,7 +104,11 @@ export function leasedIn(dir: string, store = leaseStore): boolean {
  * go: one whose owner's process is gone is taken, as is one whose maker
  * named no owner 5 s past making it, gone between. Waited for up to `wait`
  * ms, `waiting` said once if it must; past that, `undefined`. */
-export function acquire(lock: string, { wait = 30_000, waiting }: { wait?: number; waiting?: string } = {}): (() => void) | undefined {
+export function acquire(
+  lock: string,
+  { wait = 30_000, waiting }: { wait?: number; waiting?: string } = {},
+  stateOf: (lock: string) => LockState = lockState,
+): (() => void) | undefined {
   const owner = join(lock, "owner");
   const until = Date.now() + wait;
   let said = false;
@@ -118,7 +122,13 @@ export function acquire(lock: string, { wait = 30_000, waiting }: { wait?: numbe
         mkdirSync(join(lock, ".."), { recursive: true });
         continue;
       }
-      if (!lockHeld(lock)) {
+      // Gone since `mkdir` refused it, its holder done: made again. Only
+      // a stale one is removed: an absent one taken for stale removed what
+      // another run made in that instant, and both held it, two job-time
+      // writers each keeping what it read (#2283).
+      const state = stateOf(lock);
+      if (state === "absent") continue;
+      if (state === "stale") {
         rmSync(lock, { recursive: true, force: true });
         continue;
       }
@@ -137,17 +147,26 @@ export function acquire(lock: string, { wait = 30_000, waiting }: { wait?: numbe
  * on, and what a store a run works in is kept from the pruner by while it
  * runs, `target/mutants` by its run's `mutants.lock` (#2272). */
 export function lockHeld(lock: string): boolean {
+  return lockState(lock) === "held";
+}
+
+/** What `lock` is: `absent`, not made; `held`, made and its owner's
+ * process alive, or made under 5 s ago naming no owner yet; else `stale`,
+ * its owner gone, which `acquire` alone removes (#2283). */
+export type LockState = "absent" | "held" | "stale";
+export function lockState(lock: string): LockState {
   let made: number;
   try {
     made = statSync(lock).mtimeMs;
   } catch {
-    return false;
+    return "absent";
   }
   let held: number | undefined;
   try {
     held = Number(readFileSync(join(lock, "owner"), "utf8"));
   } catch {}
-  return held !== undefined && Number.isFinite(held) && held > 0 ? alive(held) : Date.now() - made <= 5_000;
+  const live = held !== undefined && Number.isFinite(held) && held > 0 ? alive(held) : Date.now() - made <= 5_000;
+  return live ? "held" : "stale";
 }
 
 /** `run` with `lock` held (`acquire`), let go as it ends; past `wait`,
