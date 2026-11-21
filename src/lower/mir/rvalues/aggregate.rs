@@ -6,6 +6,30 @@ use super::*;
 use crate::lower::aggregates::Given;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A struct's literal, its layout saying which fields MIR proved `null`
+    /// or a value where it's made, `nulled` of each: an object's by key, an
+    /// array's, a tuple struct's, by index. What a `Drop` guard's inlined
+    /// body reads of its fields, where it's dropped (`drops::inlined`, ADR
+    /// 0841's reader 8, #2112 S4a).
+    fn with_nulled(&self, ty: Ty<'tcx>, mut value: Expr, nulled: &[bool]) -> Expr {
+        if !ty.ty_adt_def().is_some_and(|adt| adt.is_struct()) {
+            return value;
+        }
+        let proved = || (nulled.iter().enumerate()).filter(|&(_, &n)| n).map(|(i, _)| i);
+        match &mut value.kind {
+            js::ExprKind::Object(_, layout) => {
+                if let Shape::Object(names) = self.shape(ty) {
+                    layout.nulled = proved()
+                        .filter_map(|i| names.get(i).and_then(|(name, _)| name.name()).map(str::to_owned))
+                        .collect();
+                }
+            }
+            js::ExprKind::Array(items, layout) if items.len() == nulled.len() => layout.nulled = proved().collect(),
+            _ => {}
+        }
+        value
+    }
+
     /// What a struct's or a variant's `field` of `ty` is given, `value`:
     /// where it's held as generic code's box, the object's in-place cell,
     /// `Slot { at: $cellOf(point) }` (`field_crossing`, #1405).
@@ -114,15 +138,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             AggregateKind::Adt(did, variant_index, args, _, _) => {
                 let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(*did), args);
+                // What MIR proved of each field, `null` or a value, its
+                // literal's layout says (`with_nulled`).
                 let nulled: Vec<bool> = operands.iter().map(|o| self.nulled(state, o)).collect();
-                // What's `nulled` is never `undefined`, which a field of a
-                // guard its `Drop` gives a nullable place, read where it's
-                // dropped as what it was made of, says (ADR 0841, amended).
-                let exprs = (values.into_iter().zip(&nulled))
-                    .map(|(v, &nulled)| match nulled {
-                        true => self.value_expr(v, span).map(Expr::defined),
-                        false => self.value_expr(v, span),
-                    })
+                let exprs = (values.into_iter())
+                    .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?;
                 let exprs: Vec<Expr> = (exprs.into_iter().enumerate())
                     .map(|(i, e)| self.given_boxed_field(ty, *variant_index, i, e, span))
@@ -159,6 +179,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(Value::Expr(Expr::call_helper("$fromFn", given)));
                 }
                 let value = self.adt_value(ty, *variant_index, exprs, &given, order.as_deref(), span)?;
+                let value = self.with_nulled(ty, value, &nulled);
                 // A compiled std iterator's struct, `Peekable { iter, peeked }`
                 // in std's own `peekable`, is the JS iterator it is where
                 // it's made, stepped by the compiled impl's `next` and sized

@@ -21,17 +21,22 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
   },
   {
-    name: "aggregate-nulled-unmarked",
+    name: "guard-object-nulled-unsaid",
     breaks:
-      "a `Drop` guard's field made of a nullable getter's result is written where it's dropped `?? null`, `internals.T = prevTransition ?? null` (ADR 0841, amended)",
+      "a struct literal's layout says no field MIR proved `null` or a value, so a `Drop` guard's field is restored `?? null`, `internals.T = prevTransition ?? null` (ADR 0841, amended, #2112 S4a)",
     file: "src/lower/mir/rvalues/aggregate.rs",
-    find: "                        true => self.value_expr(v, span).map(Expr::defined),\n",
-    replace: "                        true => self.value_expr(v, span),\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "result is written to a nullable place",
-    ],
+    find: "                if let Shape::Object(names) = self.shape(ty) {\n",
+    replace: "                if let Shape::Object(names) = self.shape(ty)\n                    && false\n                {\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
+  },
+  {
+    name: "guard-array-nulled-unsaid",
+    breaks:
+      "a tuple struct literal's layout says no item MIR proved `null` or a value, so a one-field `Drop` guard is restored `?? null`, `currentDebugInfo = prevDebugInfo ?? null` (ADR 0841, amended, #2112 S4a)",
+    file: "src/lower/mir/rvalues/aggregate.rs",
+    find: "            js::ExprKind::Array(items, layout) if items.len() == nulled.len() => layout.nulled = proved().collect(),\n",
+    replace: "",
+    tests: ["test/lowering-nullable.test.ts", "-t", "result is written to a nullable place"],
   },
   {
     name: "spread-fields-as-declared",

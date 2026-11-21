@@ -403,12 +403,8 @@ fn unread_writes(stmts: &mut Vec<Stmt>, guard: &js::Name, mut read_after: GuardR
 /// guard's field nothing writes, which reads as `v`, the variable it was
 /// made of or a `const` of its own, `const old = _restore[0];` of a
 /// `Drop`'s `self.0.take()`: `n`, by its id, read as `v`, as nothing sets
-/// either once it's made (ADR 0705, amended, #2026); never `undefined`
-/// where `defined` says the
-/// field was made of what isn't, as the field's own read is (ADR 0841,
-/// amended): `initializingChunk = prevChunk` of the drop's `old ?? null`
-/// (rd523).
-fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::Name, defined: bool) {
+/// either once it's made (ADR 0705, amended, #2026).
+fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::Name) {
     // Each copy by its id, one in each place the drop is its own: another
     // declaration of its word, a closure's `|old|` beside it, is another
     // variable, its reads its own (#2026); the `Drop`'s binding, `let Self {
@@ -433,16 +429,24 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::N
     });
     js::each_expr_mut(body, &mut |e| {
         if matches!(&e.kind, ExprKind::Var(name) if copies.contains(name)) {
-            let read = Expr::var(v.clone()).or_at(e.span);
-            *e = match defined {
-                true => read.defined(),
-                false => read,
-            };
+            *e = Expr::var(v.clone()).or_at(e.span);
         }
     });
 }
 
 /// How often `item` names `name`.
+/// What a nullable place's write of a guard's field, `x = guard.prev ??
+/// null`, is told of what it's given: `Never` where `never` says it's a
+/// read of a field MIR proved was made of `null` or a value, else its form
+/// alone. Per write, as the store is of its value whole
+/// (#2112 S4a).
+fn stored_given(write: &Expr, never: &dyn Fn(&Expr) -> bool) -> js::Undefined {
+    match &write.kind {
+        ExprKind::Binary(js::Op::Coalesce, read, _) if never(read) => js::Undefined::Never,
+        _ => js::Undefined::ByForm,
+    }
+}
+
 fn mentions_in_item(item: &Item, name: &js::Name) -> usize {
     let value = |e: &Expr| js::mentions_of(&[StmtKind::Expr(e.clone()).at(e.span)], name);
     match item {
@@ -539,12 +543,12 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> Vec<
                 .iter()
                 .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard))
             && let StmtKind::Const(_, value) = &stmts[k].kind
-            && let ExprKind::Object(props, ..) = &value.kind
+            && let ExprKind::Object(props, layout) = &value.kind
         {
-            made = Some(props.clone());
+            made = Some((props.clone(), layout.nulled.clone()));
         }
     });
-    let Some(props) = made else { return Vec::new() };
+    let Some((props, nulled)) = made else { return Vec::new() };
     let mut fields = Vec::new();
     for prop in &props {
         match prop {
@@ -605,6 +609,18 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> Vec<
             })
             .collect();
         let reads_as = |field: &(String, Expr)| read_as(field).unwrap_or_else(|| own[&field.0].clone());
+        // What a nullable place stores of a field's read, `current =
+        // guard.previous ?? null`, of one MIR proved was made of `null` or a
+        // value and nothing sets again (`ObjectLayout::nulled`): as it is,
+        // decided of this guard's reads before they're what they read as,
+        // a variable another read of may be before it's made (ADR 0841,
+        // amended).
+        let proved = |key: &String| nulled.contains(key) && !written.contains(key);
+        let never = |e: &Expr| {
+            matches!(&e.kind, ExprKind::Member(of, key)
+                if proved(key) && matches!(&of.kind, ExprKind::Var(g) if g == guard))
+        };
+        js::each_expr_mut(&mut made, &mut |e| e.store_again(stored_given(e, &never)));
         // A copy of a field nothing writes, `const old = guard.previous;`, is
         // what the field reads as.
         for field in fields.iter().filter(|(key, _)| !written.contains(key)) {
@@ -613,24 +629,17 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> Vec<
                 matches!(&e.kind, ExprKind::Member(of, k)
                     if k == key && matches!(&of.kind, ExprKind::Var(g) if g == guard))
             };
-            copies_read_as(&mut made, &read, &v, field.1.facts.has(js::Known::Defined));
+            copies_read_as(&mut made, &read, &v);
         }
-        // Each read of a field the value it was made of, never `undefined`
-        // where that's what was known of it and nothing sets it again: what a
-        // nullable place it's given stores as it is (ADR 0841, amended).
+        // Each read of a field the value it was made of.
         js::each_expr_mut(&mut made, &mut |e| {
             if let ExprKind::Member(of, key) = &e.kind
                 && matches!(&of.kind, ExprKind::Var(v) if v == guard)
                 && let Some(field) = fields.iter().find(|(k, _)| k == key)
             {
-                let read = Expr::var(reads_as(field)).or_at(e.span);
-                *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {
-                    true => read.defined(),
-                    false => read,
-                };
+                *e = Expr::var(reads_as(field)).or_at(e.span);
             }
         });
-        js::each_expr_mut(&mut made, &mut |e| e.store_again(js::Undefined::ByFacts));
         js::each_block_mut(&mut made, &mut |stmts| {
             if let Some(k) = stmts
                 .iter()
@@ -717,16 +726,15 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> O
         for s in stmts.iter() {
             if let StmtKind::Const(n, value) = &s.kind
                 && n == guard
-                && let ExprKind::Array(items, ..) = &value.kind
+                && let ExprKind::Array(items, layout) = &value.kind
                 && let [item] = items.as_slice()
             {
-                made.get_or_insert(item.clone());
+                made.get_or_insert((item.clone(), layout.nulled.contains(&0)));
                 guard_name.get_or_insert(n.clone());
             }
         }
     });
-    let (item, guard_name) = (made?, guard_name?);
-    let known = item.facts;
+    let ((item, proved), guard_name) = (made?, guard_name?);
     let field = |e: &Expr| {
         matches!(&e.kind, ExprKind::Index(of, at)
             if matches!(&of.kind, ExprKind::Var(v) if v == guard) && at.as_int() == Some(0))
@@ -760,20 +768,19 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> O
                 .spelled_later(js::Name::free_made_k(&names_of(&made, params), free)),
             _ => guard_name.clone(),
         };
+        // What a nullable place stores of its read as it is where MIR
+        // proved it was made of `null` or a value (`ArrayLayout::nulled`), as
+        // `fields_of` decides one's.
+        if proved {
+            js::each_expr_mut(&mut made, &mut |e| e.store_again(stored_given(e, &field)));
+        }
         // A copy of it, `const old = _restore[0];`, is what it reads as too.
-        copies_read_as(&mut made, &field, &read, known.has(js::Known::Defined));
-        // Never `undefined` where that's what was known of it (ADR 0841,
-        // amended), as `fields_of` reads one.
+        copies_read_as(&mut made, &field, &read);
         js::each_expr_mut(&mut made, &mut |e| {
             if field(e) {
-                let read = Expr::var(read.clone()).or_at(e.span);
-                *e = match known.has(js::Known::Defined) {
-                    true => read.defined(),
-                    false => read,
-                };
+                *e = Expr::var(read.clone()).or_at(e.span);
             }
         });
-        js::each_expr_mut(&mut made, &mut |e| e.store_again(js::Undefined::ByFacts));
         js::each_block_mut(&mut made, &mut |stmts| {
             let made_here = |s: &Stmt| {
                 matches!(&s.kind, StmtKind::Const(n, value)

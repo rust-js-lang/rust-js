@@ -30,15 +30,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "lowering-trusts-facts",
-    breaks: "lowering's writes to a nullable place trust what's marked on a value, `Known::Defined` and `Known::Present`, not MIR's answer (#2112 C S5): an `Option::map`'s `Some` arm is held as it is",
-    file: "src/js/make.rs",
-    find: "            _ if given == super::Undefined::ByFacts\n",
-    replace: "            _ if given != super::Undefined::Never\n",
-    tests: ["test/corpus.test.ts", "-t", "^any_mapped_to_a_nullable_parameter.rs$"],
-    snapshots: true,
-  },
-  {
     name: "item-read-never-undefined",
     breaks: "an item's read is taken to be never `undefined`, so a plain thread-local's or `const`'s `None` is stored in a nullable field as `undefined`, which the crate's `=== null` reads as a `Some` (#1957, P0)",
     file: "src/js/make.rs",
@@ -310,7 +301,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "                && [Known::Defined, Known::Present]\n",
     replace: "                && [Known::Defined]\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "a nullable place written through a borrow stores null, which a nullable function returns"],
   },
   {
     name: "falsy-constant-false-truthy",

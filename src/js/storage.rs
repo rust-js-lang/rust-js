@@ -144,12 +144,6 @@ impl Storage {
     pub fn written(self, made: Expr, given: Undefined) -> Expr {
         match self {
             Storage::AsGiven | Storage::InPlace(_) | Storage::Assigned => made,
-            Storage::NullForNone
-                if given == Undefined::Never
-                    && !matches!(made.kind, ExprKind::Undefined | ExprKind::GivenUndefined) =>
-            {
-                made
-            }
             Storage::NullForNone => match null_for_none(&made, given) {
                 Some(stored) => stored,
                 None => Expr::bin(Op::Coalesce, made, Expr::null()),
@@ -180,11 +174,13 @@ impl Storage {
 
 /// `made` stored with its `None` `null`, where that's what it is, or each
 /// branch of its test is: `undefined` is `null`, and what's never
-/// `undefined` is itself; `None` where it may be `undefined` otherwise.
+/// `undefined` is itself, what MIR says is `null` or a value (`Never`) or
+/// its form or facts say isn't; `None` where it may be `undefined`
+/// otherwise. `Storage::written`'s answer, and `Expr::store_again`'s.
 pub(super) fn null_for_none(made: &Expr, given: Undefined) -> Option<Expr> {
     match &made.kind {
         ExprKind::Undefined | ExprKind::GivenUndefined => Some(Expr::null().or_at(made.span)),
-        _ if !made.may_be_undefined(given) => Some(made.clone()),
+        _ if given == Undefined::Never || !made.may_be_undefined(given) => Some(made.clone()),
         ExprKind::SomeWhere(test, value) => Some(Expr {
             facts: made.facts,
             kind: ExprKind::Cond(test.clone(), value.clone(), Box::new(Expr::null())),

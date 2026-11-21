@@ -4,7 +4,8 @@ Status: Accepted. Amended (rd523): a guard's field of a nullable thread-local. A
 variable or a `Drop` guard's field, is stored as it is, and a trait's
 method's isn't taken as one; stored again where it's read in place; an
 `and_then` of one is `null` for `None` wherever it's kept; a `Cell` made
-of a `Some`, and what a closure put in its place is given. Amends [0791](0791-a-cells-storage-says-what-it-stores.md),
+of a `Some`, and what a closure put in its place is given; a guard's
+fields asked of its literal's layout, not marked (#2112 S4a). Amends [0791](0791-a-cells-storage-says-what-it-stores.md),
 whose `Storage::written` kept as it is only a constant and what MIR's
 `nulled` says; and [0781](0781-a-none-only-nullables-read-is-null-where-its-made.md),
 whose variable only nullable fields read was of `Option`s made, now of a
@@ -385,3 +386,39 @@ outside DEV; nothing else. Held by corpus case item_none_stored_in_a_nullable_fi
 (native, both builds, as a library, metamorphic) and mutations
 `item-read-never-undefined` (js/make.ts) and `item-option-defined`
 (lower/items.ts).
+
+## Amendment: a guard's fields are asked of its literal, not marked (2026-11-21, #2112 S4a)
+
+What's `nulled` where a struct is made is no longer `Known::Defined` on
+its field's value for a guard's `Drop` to read: the literal's layout says
+it, `ObjectLayout::nulled` by key (JS's keys, as `kept`'s, aren't renamed
+or spilled) and, of a tuple struct's `[item]`, `ArrayLayout::nulled` by
+index, which an array literal now carries as an object literal carries its
+layout, filled where `mir_aggregate` asks MIR's `nulled` of each operand.
+`mir_aggregate` marks no field's value: nothing read that mark but the
+guard (mutation `aggregate-nulled-unmarked` retired, its evidence in the
+commit).
+
+`fields_of` and `one_field_of` re-store what the `Drop`'s body wrote of a
+field, `x = guard.prev ?? null`, before its reads become the variable the
+field was made of: a write of a read of the guard's field the layout says
+is `nulled`, and nothing sets again, is told `Never`, as MIR's answer is
+told to `Storage::written`; any other its form alone, `ByForm`. Per write,
+as a store is of its value whole: no form a guard's `Drop` writes needs a
+per-arm answer, `t ? guard.prev : undefined`, and React's port and every
+suite are byte-identical without one; one that came would carry its
+answer on the conditional's arm. Deciding it of the guard's own reads
+keeps it from the variable's other reads, which may be before the guard's
+made. `Expr::store_again` now answers `Never` as `Storage::written` does,
+one rule, `null_for_none`'s. A copy of such a field, `const old =
+guard.prev`, was told so as well; nothing reached it, of a named field or a
+one-field guard (`guard-field-copy-unproved`, `one-field-guard-copy-unproved`
+retired), and it's gone.
+
+React's port and every suite are byte-identical. Held by mutations
+`guard-object-nulled-unsaid`, `guard-array-nulled-unsaid`
+(lower/mir/rvalues/aggregate.ts), and the re-anchored
+`guard-field-known-lost`, `guard-field-set-again-known` and
+`one-field-guard-known-lost` (lower/drops/inlined.ts), each caught by
+lowering-nullable's "a nullable function's result is written to a
+nullable place as it is".

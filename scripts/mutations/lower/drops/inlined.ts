@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's field read as the variable it was made of loses that it's never `undefined`: `internals.T = prevTransition ?? null` in its `finally` (ADR 0841, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "                *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {\n                    true => read.defined(),\n",
-    replace: "                *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {\n                    true => read,\n",
+    find: "                if proved(key) && matches!(&of.kind, ExprKind::Var(g) if g == guard))\n",
+    replace: "                if false && proved(key) && matches!(&of.kind, ExprKind::Var(g) if g == guard))\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -20,8 +20,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's field set again, to what may be `undefined`, is taken as what it was made of, `internals.T = prev`, which stores `undefined` (ADR 0841, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "            *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {\n",
-    replace: "            *e = match field.1.facts.has(js::Known::Defined) {\n",
+    find: "        let proved = |key: &String| nulled.contains(key) && !written.contains(key);\n",
+    replace: "        let proved = |key: &String| nulled.contains(key);\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field guard read as what it was made of loses that it's never `undefined`: `sharedInternals.T = reset ?? null` (ADR 0841, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "                *e = match known.has(js::Known::Defined) {\n                    true => read.defined(),\n",
-    replace: "                *e = match known.has(js::Known::Defined) {\n                    true => read,\n",
+    find: "        if proved {\n            js::each_expr_mut(&mut made, &mut |e| e.store_again(stored_given(e, &field)));\n",
+    replace: "        if false && proved {\n            js::each_expr_mut(&mut made, &mut |e| e.store_again(stored_given(e, &field)));\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop's copy of a named guard field it takes stays `const old = previousFiber;`, read in the `finally` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "            copies_read_as(&mut made, &read, &v, field.1.facts.has(js::Known::Defined));\n",
+    find: "            copies_read_as(&mut made, &read, &v);\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop's copy of a one-field guard's field stays `const old = previousFiber;`, read in the `finally` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        copies_read_as(&mut made, &field, &read, known.has(js::Known::Defined));\n",
+    find: "        copies_read_as(&mut made, &field, &read);\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "takes its field"],
   },

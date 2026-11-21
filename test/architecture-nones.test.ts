@@ -142,17 +142,18 @@ test("Known::Present is written only by the lone values a constructor knows are 
 // decision lowering made without MIR's answer shows as a move, never
 // rescued by a mark (#2112). The marks, `Known::Defined` and
 // `Known::Present`, are asked (`ByFacts`) only past lowering where MIR
-// isn't at hand: `tidy::values::handles`, `js::applied`, and
-// `drops/inlined.rs`, whose `Drop` guard's field read carries MIR's
-// `nulled` answer as a mark (ADR 0841's reader 8), until S4 carries it as
-// a field. A trailing `Option` a binding call is given asks MIR's proof and
+// isn't at hand: `tidy::values::handles` and `js::applied`. A `Drop`
+// guard's inlined body asks MIR's `nulled` answer of each field, its
+// literal's layout's (`ObjectLayout::nulled`, `ArrayLayout::nulled`, #2112
+// S4a, ADR 0841's reader 8). A trailing `Option` a binding call is given asks MIR's proof and
 // its form alone too (`binding_calls.rs`' `surely_there`, #2112 S3f); and
 // no pass reads `Known::Present` itself: tidy's `tested_option` asks the
 // `SomeWhere`'s `there` (S3d).
 test("the marks are asked only where MIR isn't at hand", () => {
   const askers = files("src").filter((file) => file.endsWith(".rs") && file !== "src/js/storage.rs" && file !== "src/js/make.rs")
     .filter((file) => /Undefined::ByFacts/.test(read(file)));
-  expect(askers).toEqual(["src/js/applied.rs", "src/lower/drops/inlined.rs", "src/lower/mir/tidy/values/handles.rs"]);
+  expect(askers).toEqual(["src/js/applied.rs", "src/lower/mir/tidy/values/handles.rs"]);
+  expect(read("src/lower/drops/inlined.rs")).not.toMatch(/Known::(?:Defined|Present)/);
   expect(files("src").filter((file) => file.endsWith(".rs") && /\.has\((?:js::)?Known::Present\)/.test(read(file)))).toEqual([]);
   expect(read("src/lower/std_types/cell/variables.rs")).toContain("store_again(js::Undefined::ByForm)");
 });

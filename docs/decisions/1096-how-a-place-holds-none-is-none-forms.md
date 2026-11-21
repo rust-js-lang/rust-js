@@ -653,9 +653,15 @@ is now told MIR's answer where it's made:
   coercing closures `maps_to_itself` doesn't see yet (#2173's fifth site).
 
 The marks are asked (`ByFacts`) only past lowering, where MIR isn't at hand:
-`tidy::values::handles`, `js::applied`, and `drops/inlined.rs`, whose `Drop`
-guard's field carries MIR's `nulled` answer as a mark (ADR 0841's reader
-8) until S4 carries it as a field. An architecture test holds that list.
+`tidy::values::handles` and `js::applied`. An architecture test holds that
+list. A `Drop` guard's inlined body read MIR's `nulled` answer of each
+field as a mark too (ADR 0841's reader 8) until S4a; it's its literal's
+layout's now, `ObjectLayout::nulled` and `ArrayLayout::nulled`, which an
+array literal carries for it, each write of one told `Never` or `ByForm`
+(ADR 0841, amended). Mutation `lowering-trusts-facts`, which took a
+lowering write's `ByForm` as `ByFacts`, is retired: since S3f no lowering
+write is told `ByFacts`, so nothing reached it, and the architecture test
+holds that rule (#2112 S4a).
 `binding_calls`' `surely_there` asked them too until S3f; it asks the form
 alone (`ByForm`), with MIR's `present`/`null` proof, as the list above
 says, and React's port and every suite are byte-identical without the

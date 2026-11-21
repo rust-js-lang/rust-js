@@ -787,6 +787,11 @@ pub struct ObjectLayout {
     /// later, `destroy: undefined`, the object's shape whole from its start
     /// (amended, the user's decision, 2026-10-27).
     pub kept: Vec<String>,
+    /// The keys whose value MIR proved `null` or a value where it's made,
+    /// what a `Drop` guard's inlined body reads of each (`drops::inlined`,
+    /// ADR 0841's reader 8): by key, as `kept` is, as JS's keys aren't
+    /// renamed nor spilled (ADR 1096, amended).
+    pub nulled: Vec<String>,
     /// What its literal writes of each field, where it does: boxed, as
     /// few objects are a literal's, so an expression is no larger.
     pub fields: Option<Box<WrittenFields>>,

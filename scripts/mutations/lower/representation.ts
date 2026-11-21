@@ -423,11 +423,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "                    true if self.cell_field_read_defined(ty, i) => {\n",
     replace: "                    true => {\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "a nullable field's value a variable holds",
-    ],
+    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional nullable cell field given another's get stores it as it is"],
   },
   {
     name: "js-made-field-plain",
