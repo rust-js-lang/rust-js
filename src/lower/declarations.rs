@@ -1137,7 +1137,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let did = adt.did();
                 // `None` is JS's `null` too, as rust-js reads it `!= null` (ADR 0030).
                 if tcx.is_lang_item(did, LangItem::Option) {
-                    return json!({ "kind": "union", "types": [self.ts(args.type_at(0)), keyword("null"), keyword("undefined")] });
+                    return self.option_ts(args.type_at(0));
                 }
                 if tcx.is_lang_item(did, LangItem::String) {
                     return keyword("string");

@@ -142,6 +142,9 @@ pub(in crate::lower) struct SignatureForms<'a, 'tcx> {
     /// What a function's JS takes and gives, as a JS caller calls it:
     /// `js_signature`'s answer, every declaration path's (ADR 1091).
     pub(in crate::lower) signature: &'a dyn Fn(DefId) -> super::super::signatures::JsSignature<'tcx>,
+    /// Whether an `Option` of the type boxes its `Some`, `$some(v)`, as it
+    /// may look like `None`: `boxed_payload`'s answer (ADR 0051, #842).
+    pub(in crate::lower) boxed: &'a dyn Fn(DefId, Ty<'tcx>) -> bool,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

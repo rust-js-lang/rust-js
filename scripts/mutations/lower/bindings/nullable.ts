@@ -3,14 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "nested-payload-unchecked",
-    breaks: "a nullable `Option<Option<()>>` field of a `pub` struct is held as its payload, `$some(undefined)` of its `Some(Some(()))`, which its `.d.ts`, `T | null`, doesn't declare (#470, #836)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    (nullish && tcx.visibility(tcx.parent(field.did)).is_public()).then_some(\n",
-    replace: "    (nullish && false).then_some(\n",
-    tests: ["test/diagnostics.test.ts", "-t", "nullable Option of an Option"],
-  },
-  {
     name: "nested-nullable-outer-null",
     breaks: "a nullable `Option<Option<T>>` field's `None` is `null`, as a nullable `Option`'s, and its `Some(None)` boxed (#470)",
     file: "src/lower/bindings/nullable.rs",
@@ -262,21 +254,5 @@ export const mutations: Mutation[] = [
     replace: "    match ty.kind() {\n        ty::Tuple(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
     snapshots: true,
-  },
-  {
-    name: "nested-refused-own-catalog",
-    breaks: "a nullable nested field's `T` that may look like `None` isn't refused, a `Weak`, `Weak::new()`'s `null`, read as `Some(None)` (a wrong answer, #832)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    let nullish = crate::lower::representation::may_look_like_none(tcx, args.type_at(0));\n",
-    replace: "    let nullish = args.type_at(0).is_unit();\n",
-    tests: ["test/diagnostics.test.ts", "-t", "nullable Option of an Option of a Weak"],
-  },
-  {
-    name: "nested-none-like-of-private-refused",
-    breaks: "a nullable nested field of a `T` that may look like `None` is refused of a struct kept to the crate too, whose `Some(Some(v))` its box keeps apart: valid Rust refused (#836)",
-    file: "src/lower/bindings/nullable.rs",
-    find: "    (nullish && tcx.visibility(tcx.parent(field.did)).is_public()).then_some(\n",
-    replace: "    nullish.then_some(\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_option_of_none_like_payloads.rs$"],
   },
 ];

@@ -119,8 +119,6 @@ for (const [name, source, message, crate] of [
   ["a pub thread-local of a dyn Fn lent mutably", "thread_local! {\n    pub static N: u32 = call(&|| 3);\n}\nfn call(f: &dyn Fn() -> u32) -> u32 {\n    let mut g = f;\n    let r = &mut g;\n    *r = &|| 4;\n    g()\n}", "does not support a `pub` thread-local whose initializer may run what rust-js can't follow yet"],
   // A `Cell` or a `RefCell` of one is (ADRs 0772, 0863); of a number isn't.
   ["a nullable field that isn't an Option", "pub struct Task {\n    #[rust_js::nullable]\n    pub callback: std::cell::RefCell<u32>,\n}", "is of a field that's an `Option`"],
-  // #470: a nullable `Option<Option<T>>` field holds `T` itself, `field?: T | null`, and is set whole.
-  ["a nullable Option of an Option of what may be None", "pub struct Init {\n    #[rust_js::nullable]\n    pub mid: Option<Option<()>>,\n}", "holds `T` itself, which can't be `undefined` or `null`"],
   // #849: a `Vec`'s `extend` by the crate's own hint asks it as the `Vec`
   // fills, which its capacity decides: kept as std grows it in a crate that
   // does so (#1180); generic code's of a crate that doesn't, refused at the
@@ -151,11 +149,7 @@ for (const [name, source, message, crate] of [
   // (#1200, #1216).
   ["a Vec collected of a chain of a skip where a capacity is read", "pub fn f(s: &str) -> usize {\n    let v: Vec<char> = s.chars().skip(1).chain(\"ab\".chars()).collect();\n    v.capacity()\n}", "whose lower bound JS's doesn't have"],
   ["a bound's extend of a Vec of a type parameter's items where a capacity is read", "fn fill<C: Extend<T>, T>(c: &mut C, x: T) {\n    c.extend(Some(x));\n}\npub fn f<T>(x: T) -> usize {\n    let mut v = Vec::new();\n    fill(&mut v, x);\n    v.capacity()\n}", "whose items' size std grows it by, a type parameter's"],
-  // #832: what may look like `None` is `may_look_like_none`'s: a `Weak`,
-  // `Weak::new()`'s `null`, a `Pin` of a `()` and a `MaybeUninit` too.
-  ["a nullable Option of an Option of a Weak", "pub struct Init {\n    #[rust_js::nullable]\n    pub mid: Option<Option<std::rc::Weak<u32>>>,\n}", "holds `T` itself, which can't be `undefined` or `null`"],
-  ["a nullable Option of an Option of a Pin of a ()", "pub struct Init {\n    #[rust_js::nullable]\n    pub mid: Option<Option<std::pin::Pin<Box<()>>>>,\n}", "holds `T` itself, which can't be `undefined` or `null`"],
-  ["a nullable Option of an Option of a MaybeUninit", "pub struct Init {\n    #[rust_js::nullable]\n    pub mid: Option<Option<std::mem::MaybeUninit<u8>>>,\n}", "holds `T` itself, which can't be `undefined` or `null`"],
+  // #470: a nullable `Option<Option<T>>` field is set whole.
   ["a &mut of a nullable Option of an Option", "pub struct Init {\n    #[rust_js::nullable]\n    pub mid: Option<Option<u32>>,\n}\npub fn f(init: &mut Init) { if let Some(mid) = &mut init.mid { *mid = None; } }", "set the field whole, `s.field = Some(None)`"],
   // An `Option` field's `None` is left out where it's made already (ADR 0810).
   ["an optional field that isn't nullable", "pub struct Context {\n    #[rust_js::optional]\n    pub renderer: Option<u32>,\n}", "`#[rust_js::optional]` is of a cell, a `Cell<Option<T>>`"],

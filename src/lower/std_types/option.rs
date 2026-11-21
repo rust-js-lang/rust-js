@@ -753,8 +753,8 @@ pub(in crate::lower) fn unwrap_tested(e: &Expr) -> Option<(Expr, &Expr, Expr)> {
 
 /// The field of the box of a `Some` that looks like `None` (ADR 0051),
 /// `{ $someNone: 0 }`, how deep a `None` it holds, as the runtime's `$some`
-/// makes it.
-const SOME_NONE: &str = "$someNone";
+/// makes it, and `@rust-js/std`'s declaration of it says (#842).
+pub(in crate::lower) const SOME_NONE: &str = "$someNone";
 
 /// `Some` of a constant, as `$some` makes it (ADR 0051): itself, or a box
 /// where it looks like `None`, `{ $someNone: 0 }`, one deeper for a box.

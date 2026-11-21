@@ -125,12 +125,4 @@ export const mutations: Mutation[] = [
     replace: "        true\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "refuses what would box it"],
   },
-  {
-    name: "pin-not-seen-through",
-    breaks: "a `Pin` isn't seen through, so a nullable nested field of a `Pin<Box<()>>`, `undefined`, is taken for a value: its `Some(None)` reads as `Some(Some(()))` (a wrong answer, #832)",
-    file: "src/lower/representation/options.rs",
-    find: "                    || tcx.is_lang_item(adt.did(), LangItem::Pin) =>\n",
-    replace: "                    || false =>\n",
-    tests: ["test/diagnostics.test.ts", "-t", "nullable Option of an Option of a Pin"],
-  },
 ];

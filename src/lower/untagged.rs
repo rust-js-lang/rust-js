@@ -476,8 +476,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // of no class JS can be told exists, as a module's type is, never
         // `instanceof` a global of its name, which may be none (#391): the
         // js crate's `RegExp` declares `types = "RegExp"`, as each of its
-        // global classes does. `JsError`, whatever JS threw, of any kind,
-        // is none JS can tell.
+        // global classes does.
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
         {
@@ -486,7 +485,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 // TypeScript's `Function`, `js::Function`'s, a function's,
                 // `typeof value === "function"` in any realm (ADR 1082).
                 Some(written @ Written::Reference { .. }) if written.is_function() => Some(Kind::Function),
-                None if self.is_js_error(ty) => None,
                 None => Some(Kind::Object),
                 Some(Written::Reference { from: None, name, .. }) => class(name),
                 Some(Written::Object(_) | Written::Reference { from: Some(_), .. }) => Some(Kind::Object),

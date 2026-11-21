@@ -333,7 +333,7 @@ console.log(await fetchCount()); // 1
 | `&[T]`, `Vec<T>`, an array | an array |
 | a tuple | an array, `[id, name]` |
 | a struct | an object of its fields, `{ x, y }` |
-| `Option<T>` | the value, or `undefined` for `None`; `null` is taken as `None` too |
+| `Option<T>` | the value, or `undefined` for `None`; `null` is taken as `None` too. Of a `T` that may look like `None`, `Option<()>`, `Option<Option<u32>>`, a `Some` of what does is a box, `{ $someNone: 0 }`, declared `SomeNone` from `@rust-js/std`: `SomeNone \| null \| undefined`, `number \| SomeNone \| null \| undefined` |
 | `Result<T, E>` | `{ TAG: "Ok", _0: v }` or `{ TAG: "Err", _0: e }` |
 | `&mut` to a struct, a `Vec` | the object, changed in place |
 | `&mut` to a number, a string, an `Option` | a box, `{ value }`, which the caller reads back |

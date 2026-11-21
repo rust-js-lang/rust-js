@@ -53,7 +53,7 @@ test("Intl locale unions and date inputs preserve native calls in Bun and Chromi
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("Intl.LocalesArgument");
   expect(declarations).toContain("readonly string[]");
-  expect(declarations).toContain("value?: (Date | number) | null | undefined): string");
+  expect(declarations).toContain("value?: Date | number | null | undefined): string");
   expect(declarations).toContain("): Intl.DateTimeFormatPart[]");
   expect(declarations).toContain("end: bigint | Date | number): string");
   expect(declarations).toContain("end: bigint | Date | number): Intl.DateTimeRangeFormatPart[]");

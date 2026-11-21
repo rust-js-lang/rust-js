@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/lengths.rs",
     find: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {\n",
     replace: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) || self.is_array_iter(ty) || self.lower_bound_is_stds(ty) {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a chain of a skip where a capacity is read"],
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a slice's chunk_by where a capacity is read"],
   },
   {
     name: "enumerate-hint-not-passed-on",

@@ -25,7 +25,7 @@ mod loop_ranges;
 mod methods;
 mod open_calls;
 pub(in crate::lower) use methods::keeps_each;
-pub(in crate::lower) use wrappers::{IntNewtype, PinTarget};
+pub(in crate::lower) use wrappers::{IntNewtype, PinTarget, pin_pointer};
 mod own_steps;
 mod std_steps;
 pub(in crate::lower) use chars::{TextIter, reaches_text_iter};

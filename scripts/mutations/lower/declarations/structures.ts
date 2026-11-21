@@ -7,6 +7,30 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "held-value-field-boxed",
+    breaks: "a nullable field of what may be `undefined`, which holds its `Some` as the value itself (rd645), is declared with ADR 0051's box, `serverModuleMap: ServerManifest | SomeNone | null`, where the JS never has one (#842)",
+    file: "src/lower/declarations/structures.rs",
+    find: "                        true => out.ts(inner),\n",
+    replace: "                        true => out.some_ts(inner),\n",
+    tests: ["test/lowering-nested-options.test.ts", "-t", "a nullable field of what may be undefined holds the value itself"],
+  },
+  {
+    name: "boxed-option-field-unboxed",
+    breaks: "a struct's `Option<()>` field is declared its payload, `unit?: undefined`, not its box, `unit?: SomeNone | undefined` (#842)",
+    file: "src/lower/declarations/structures.rs",
+    find: "                        false => out.some_ts(inner),\n",
+    replace: "                        false => out.ts(inner),\n",
+    tests: ["test/declarations-boxed-options.test.ts"],
+  },
+  {
+    name: "nullable-field-union-nested",
+    breaks: "a nullable field's union nests what it holds, `(number | SomeNone) | null`, not one union (#842)",
+    file: "src/lower/declarations/structures.rs",
+    find: "        Some(\"union\") => ty[\"types\"].as_array().cloned().unwrap_or_default(),\n        _ => vec![ty],\n    };\n    types.push(keyword(\"null\"));\n",
+    replace: "        _ => vec![ty],\n    };\n    types.push(keyword(\"null\"));\n",
+    tests: ["test/declarations-boxed-options.test.ts"],
+  },
+  {
     name: "spread-declared-any-keys",
     breaks: "a flattened `js::Spread` is declared an index of `unknown`, so its copy's keys aren't the given's (ADR 1164)",
     file: "src/lower/declarations/structures.rs",
@@ -131,7 +155,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `#[rust_js::nullable]` field is declared `?: T`, so a TypeScript caller's `{ label: null }`, which rust-js reads as `None`, doesn't typecheck",
     file: "src/lower/declarations/structures.rs",
-    find: '                        true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),\n',
+    find: "                        true => (!present, with_null(inner)),\n",
     replace: "                        true => (!present, inner),\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
@@ -238,8 +262,8 @@ export const mutations: Mutation[] = [
     name: "constructed-declared-optional",
     breaks: "a nullable field each constructor of its struct sets first is declared optional, `moduleLoading?: unknown | null | undefined`, though it's present (rd628)",
     file: "src/lower/declarations/structures.rs",
-    find: "                        true => (!present, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
-    replace: "                        true => (!present || true, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
+    find: "                        true => (!present, with_null(inner)),\n",
+    replace: "                        true => (!present || true, with_null(inner)),\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
   {

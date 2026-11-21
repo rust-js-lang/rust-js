@@ -84,30 +84,6 @@ fn nested_option<'tcx>(tcx: TyCtxt<'tcx>, field: &FieldDef) -> bool {
     option(ty).and_then(option).is_some()
 }
 
-/// Of a `holds_nested` field's `T`, what may look like `None` by its type,
-/// so its `Some(Some(v))` and `Some(None)` couldn't be told apart: the
-/// owner's answer, `may_look_like_none`, a type parameter, a `()`, an
-/// `Option`, a `MaybeUninit`, a `Weak`, a unit struct not a class, or an
-/// untagged enum of `undefined` or `null`, through references, `Box`, `Rc`
-/// and `Pin` (#832). Its `Some(Some(v))` is held as ADR 0051's box of the
-/// inner `Some`, `$some(v)`, as a plain `Option` of it is, so its three
-/// states stay apart (#836); but a `pub` struct's `.d.ts` declares the
-/// field `T | null`, which the box isn't: of one, the error that says so.
-pub(in crate::lower) fn nested_refused(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<&'static str> {
-    if !holds_nested(tcx, field) {
-        return None;
-    }
-    let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-    let ty::Adt(_, args) = ty.kind() else { return None };
-    let ty::Adt(_, args) = args.type_at(0).kind() else {
-        return None;
-    };
-    let nullish = crate::lower::representation::may_look_like_none(tcx, args.type_at(0));
-    (nullish && tcx.visibility(tcx.parent(field.did)).is_public()).then_some(
-        "rust-js: a `#[rust_js::nullable]` `Option<Option<T>>` field of a `pub` struct, `field?: T | null` in its `.d.ts`, holds `T` itself, which can't be `undefined` or `null`: this `T` may be, so its `Some(Some(v))` is held `$some(v)`, a box no `T` declares; hold a `T` that's never `None`-like, or keep the struct to the crate",
-    )
-}
-
 /// Whether a nullable field is absent until set, `#[rust_js::optional]`, `field?: T | null` (ADR 0810).
 pub(in crate::lower) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];

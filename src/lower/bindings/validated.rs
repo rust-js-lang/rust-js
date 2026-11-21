@@ -192,10 +192,6 @@ pub(in crate::lower) fn validate(tcx: TyCtxt<'_>) -> bool {
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
-                if let Some(message) = nested_refused(tcx, field) {
-                    tcx.dcx().span_err(tcx.def_span(field.did), message);
-                    valid = false;
-                }
                 if is_nullable(tcx, field)
                     && nullable_option(tcx, ty).is_none()
                     && nullable_items(tcx, ty).is_none()

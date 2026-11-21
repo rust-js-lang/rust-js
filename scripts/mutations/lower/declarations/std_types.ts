@@ -5,6 +5,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "some-none-undeclared",
+    breaks: "`@rust-js/std`'s declarations leave out `SomeNone`, which a crate's declare an `Option<()>` of, so TypeScript can't resolve it (#842)",
+    file: "src/lower/declarations/std_types.rs",
+    find: "export interface {SOME_NONE} {{",
+    replace: "export interface {SOME_NONE}Gone {{",
+    tests: ["test/std-package.test.ts"],
+  },
+  {
     name: "std-opaque-unbranded",
     breaks: "`@rust-js/std`'s `LazyCell<T>` is declared of its value, `{ value?: T }`, which TypeScript lets a caller make by hand, `counted({ value: 1 })`",
     file: "src/lower/declarations/std_types.rs",

@@ -264,16 +264,6 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "option-declared-without-null",
-    breaks:
-      "an `Option` is declared `T | undefined`, so a TypeScript caller's `null`, which rust-js reads as `None`, doesn't typecheck",
-    file: "src/lower/declarations.rs",
-    find: '                    return json!({ "kind": "union", "types": [self.ts(args.type_at(0)), keyword("null"), keyword("undefined")] });\n',
-    replace:
-      '                    return json!({ "kind": "union", "types": [self.ts(args.type_at(0)), keyword("undefined")] });\n',
-    tests: ["test/declarations.test.ts", "-t", "null for an Option"],
-  },
-  {
     name: "type-alias-undeclared",
     breaks:
       "a `pub type` isn't declared, so TypeScript importing it, react.dev's Toc its `Toc`, finds no such export",

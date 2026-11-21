@@ -185,7 +185,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
             self.fill_names(field.did, ty);
             let (optional, ty) = match option {
                 Some(inner) => {
-                    let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
+                    // Its `Some` as the field holds it: the value itself of
+                    // one that holds it so (rd645), else as an `Option`
+                    // holds it, ADR 0051's box of what looks like `None`
+                    // (#842).
+                    let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| match value {
+                        true => out.ts(inner),
+                        false => out.some_ts(inner),
+                    });
                     // Nullable, or a plain one a `js::null()` is written
                     // to, which may hold `null` (ADR 0935, amended).
                     // A nullable one is there, whoever makes its struct
@@ -195,7 +202,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         crate::lower::representation::NoneForm::Null | crate::lower::representation::NoneForm::Value
                     );
                     match nullable || nested || value || self.null_fields.contains(&field.did) {
-                        true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),
+                        true => (!present, with_null(inner)),
                         // A present slot's key is there, `T | undefined` (ADR 1161).
                         false if crate::lower::bindings::is_present(self.tcx, field) => (false, or_undefined(inner)),
                         false => (true, inner),
@@ -354,4 +361,14 @@ fn is_distributive(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: DefId) -> bool {
         rustc_span::Symbol::intern("distributive"),
     ];
     tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
+/// `ty | null`, one union, `number | SomeNone | null` of a union `ty` (#842).
+fn with_null(ty: Value) -> Value {
+    let mut types = match ty["kind"].as_str() {
+        Some("union") => ty["types"].as_array().cloned().unwrap_or_default(),
+        _ => vec![ty],
+    };
+    types.push(keyword("null"));
+    json!({ "kind": "union", "types": types })
 }

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "pin-pointer-unseen",
+    breaks: "a `Pin` isn't seen through, so a nullable `Option<Option<Pin<Box<()>>>>` field's `Some(Some(..))`, `undefined`, isn't boxed and reads as `Some(None)` (#832, #842)",
+    file: "src/lower/recognition/wrappers.rs",
+    find: "        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Pin) => args.types().next(),\n",
+    replace: "        ty::Adt(adt, args) if false && tcx.is_lang_item(adt.did(), LangItem::Pin) => args.types().next(),\n",
+    tests: ["test/declarations-boxed-options.test.ts", "-t", "a nullable Option of an Option of a Pin of a \\(\\) keeps its three states"],
+  },
+  {
     name: "borrow-mut-of-a-value-as-itself-unrecognised",
     breaks: "`m.borrow_mut()` of std's `BorrowMut<T> for T`, a `Vec`'s `&mut` to itself, is no recogniser's: refused, where it read generic code's box of it, `m.value`, and threw (#1487)",
     file: "src/lower/recognition/wrappers.rs",

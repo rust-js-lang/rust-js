@@ -204,7 +204,7 @@ fn nullish_by_its_shape<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 /// and a type parameter or an associated type of one, whatever its bounds.
 /// Never less than `can_be_nullish`, which knows which `Rc`s are counted.
 /// The one answer of it, of the type alone: generic code's, and what a
-/// nullable nested field's `T` may hold (`bindings::nested_refused`, #832).
+/// nullable nested field's `T` may hold (#832), which ADR 0051's box keeps apart (#842).
 pub(in crate::lower) fn may_look_like_none<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     let ty = payload_through(tcx, ty);
     super::super::recognition::known_by_bounds(ty)
@@ -216,15 +216,16 @@ pub(in crate::lower) fn may_look_like_none<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>
 /// `Pin`, which are the value itself as an `Option`'s payload, whatever a
 /// crate counts (`may_look_like_none`'s).
 pub(in crate::lower) fn payload_through<'tcx>(tcx: TyCtxt<'tcx>, mut ty: Ty<'tcx>) -> Ty<'tcx> {
-    use super::super::recognition::{StdItem, is_std_def};
+    use super::super::recognition::{StdItem, is_std_def, pin_pointer};
     loop {
         ty = match ty.kind() {
             ty::Ref(_, inner, _) => *inner,
+            // A `Pin`'s pointer, as lowering sees it (`pin_pointer`).
+            _ if let Some(pointer) = pin_pointer(tcx, ty) => pointer,
             ty::Adt(adt, args)
                 if ty.is_box()
                     || is_std_def(tcx, adt.did(), StdItem::Rc)
-                    || is_std_def(tcx, adt.did(), StdItem::Arc)
-                    || tcx.is_lang_item(adt.did(), LangItem::Pin) =>
+                    || is_std_def(tcx, adt.did(), StdItem::Arc) =>
             {
                 args.type_at(0)
             }

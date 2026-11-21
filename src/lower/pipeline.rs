@@ -1196,10 +1196,12 @@ pub fn lower_crate<'tcx>(
             let mut_ref = |owner: DefId, pointee: ty::Ty<'tcx>| context(owner).mut_ref_form(pointee);
             let pair_trait = |owner: DefId, ty: ty::Ty<'tcx>| context(owner).dynamic_trait(ty);
             let signature = |function: DefId| context(function).js_signature(function);
+            let boxed = |owner: DefId, payload: ty::Ty<'tcx>| context(owner).boxed_payload(payload);
             let representation = super::representation::SignatureForms {
                 mut_ref: &mut_ref,
                 pair_trait: &pair_trait,
                 signature: &signature,
+                boxed: &boxed,
             };
             lowered.declarations = super::declarations::module(
                 tcx,

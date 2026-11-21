@@ -202,12 +202,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         Some(PinTarget::Deref(pointer, self.deref_target_of(pointer)?))
     }
 
-    /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).
+    /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329): `pin_pointer`'s.
     pub(in crate::lower) fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
-        match ty.kind() {
-            ty::Adt(adt, args) if self.tcx.is_lang_item(adt.did(), LangItem::Pin) => args.types().next(),
-            _ => None,
-        }
+        pin_pointer(self.tcx, ty)
     }
 
     /// A `dyn Future`: a JS promise (ADR 0029).
@@ -1067,4 +1064,14 @@ pub(in crate::lower) enum PinTarget<'tcx> {
     Pointer(Ty<'tcx>),
     /// The crate's own pointer, of its type, and its `Deref` target.
     Deref(Ty<'tcx>, Ty<'tcx>),
+}
+
+/// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329): the one answer,
+/// which lowering's `pinned` and what a payload is through its pointers,
+/// `representation::payload_through`, each ask (#842).
+pub(in crate::lower) fn pin_pointer<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+    match ty.kind() {
+        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Pin) => args.types().next(),
+        _ => None,
+    }
 }

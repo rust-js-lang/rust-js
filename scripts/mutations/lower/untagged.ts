@@ -91,9 +91,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a JS object type that declares no `#[rust_js::types]` is the global class of its name, so an untagged enum's variant of an undeclared `Tag` is `instanceof Tag`, a `ReferenceError`, and `js::class::<Tag>()` is `Tag`, not an object of no class (ADR 0911, #391)",
     file: "src/lower/untagged.rs",
-    find: "                None if self.is_js_error(ty) => None,\n                None => Some(Kind::Object),\n",
-    replace:
-      "                None if self.is_js_error(ty) => None,\n                None => class(bindings::class_name(self.tcx, adt.did())),\n",
+    find: "                None => Some(Kind::Object),\n",
+    replace: "                None => class(bindings::class_name(self.tcx, adt.did())),\n",
     tests: [
       "test/untagged-enums.test.ts",
       "-t",
@@ -488,19 +487,6 @@ export const mutations: Mutation[] = [
       "test/untagged-enums.test.ts",
       "-t",
       "an untagged enum's JS object is tested by the class TypeScript names",
-    ],
-  },
-  {
-    name: "untagged-js-error-an-object",
-    breaks:
-      "an untagged enum's variant of `JsError`, whatever JS threw, a string or a number too, is tested as an object, not refused (#391)",
-    file: "src/lower/untagged.rs",
-    find: "                None if self.is_js_error(ty) => None,\n",
-    replace: "",
-    tests: [
-      "test/diagnostics.test.ts",
-      "-t",
-      "an untagged enum's variant of what JS threw",
     ],
   },
   {

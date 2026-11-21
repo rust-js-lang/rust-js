@@ -1440,9 +1440,9 @@ export function prepare(moduleLoading) {
   references, `Box`, `Rc` and `Pin` (a class of no fields is its
   instance, so it may be, #832), its `Some(Some(v))` is ADR 0051's box of
   the inner `Some`, `$some(v)`, as a plain `Option` of it is, so the three
-  states stay apart (#836). That's of a struct kept to the crate: a `pub`
-  one's `.d.ts` declares the field `T | null`, which the box isn't, so it
-  holds a `T` that's never `None`-like. The field is set whole, never
+  states stay apart (#836), and its `.d.ts` declares the box,
+  `@rust-js/std`'s `SomeNone`, `mid?: number | SomeNone | null | undefined`
+  of an `Option<Option<Option<u32>>>` (#842). The field is set whole, never
   through a `&mut`, and isn't `#[rust_js::optional]`, whose `None` it
   leaves out already (#959). Each is an error (#470, ADRs 0051 and 0810,
   amended, the user's decision):

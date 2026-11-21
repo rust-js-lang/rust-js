@@ -52,10 +52,10 @@ use indexed::indexed_refused;
 pub(in crate::lower) use indexed::is_indexed_list;
 pub(super) use nullable::{
     holds_nested, holds_none_as_null, holds_value, is_held, is_js_null, is_nullable, is_optional, is_present,
-    nested_refused, none_undefined_result, null_result, nullable_bindings, nullable_const_refused, nullable_items,
-    nullable_local, nullable_local_cell, nullable_local_option, nullable_option, nullable_params, nullable_result,
-    nullable_tuple_item, nullable_values, of_type_parameter, present_params, reads_a_nullable_value,
-    reject_nullable_held, takes_nullable, takes_nullable_entries, undefined_never_null, undefined_params,
+    none_undefined_result, null_result, nullable_bindings, nullable_const_refused, nullable_items, nullable_local,
+    nullable_local_cell, nullable_local_option, nullable_option, nullable_params, nullable_result, nullable_tuple_item,
+    nullable_values, of_type_parameter, present_params, reads_a_nullable_value, reject_nullable_held, takes_nullable,
+    takes_nullable_entries, undefined_never_null, undefined_params,
 };
 pub(in crate::lower) use paths::{Step, first_name, has_steps, read as read_path, steps, unbound};
 pub(super) use rest_values::{is_rest_value, reads_rest_value, rest_items};

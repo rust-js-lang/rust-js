@@ -22,3 +22,9 @@ export interface DoubleEndedIterator<T> extends IterableIterator<T> {
 export interface ExactSizeIterator<T> extends IterableIterator<T> {
   len(): number;
 }
+
+/** A `Some` of what looks like `None`, `Some(())`'s or `Some(None)`'s: its box, `$someNone` how many `Some`s deep it is, `$value` the `null` it holds, where it holds one (ADR 0051, #842). */
+export interface SomeNone {
+  readonly $someNone: number;
+  readonly $value?: null;
+}

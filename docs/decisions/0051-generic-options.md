@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes. Amended by [1017](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md): a local `Option` of an `Option` made and read only where it's held is its payload, `Some(None)` `null`. Amended: a thread-local's `with` and `with_borrow` give their closure's, boxed as it makes it. Amended: a function JS alone reads gives its type parameters nothing (#565).
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds; a `&mut` of what a `Some` holds is `$someMut(o)`; a type parameter bound by a function trait is a function; a type parameter no call gives what may look like `None` is never boxed; a function JS calls takes what JS gives as it gives it, its crate's Rust calling a copy that boxes. Amended by [1017](1017-an-option-of-an-option-held-where-its-made-is-its-payload.md): a local `Option` of an `Option` made and read only where it's held is its payload, `Some(None)` `null`. Amended: a thread-local's `with` and `with_borrow` give their closure's, boxed as it makes it. Amended: a function JS alone reads gives its type parameters nothing (#565). Amended: the box is declared, `SomeNone` (#842).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -654,3 +654,22 @@ and no lowering asked `can_be_nullish` of one apart (a sort of an
 unknown type is std's own, ADR 0057). The nightly's mutations
 `js-given-not-nullish` and `js-given-boxed` survived for it; the
 function and both are gone, and `Params` is the one answer.
+
+## Amendment: the box is declared (2026-11-22, #842)
+
+A crate's declarations said nothing of the box: `Option<()>` was
+`undefined | null | undefined`, where a `Some(())` is `{ $someNone: 0 }`,
+and a `pub` struct's nullable `Option<Option<T>>` field of a `T` that may
+look like `None` was refused for it (#836). Now the box is
+`@rust-js/std`'s `SomeNone`, `{ readonly $someNone: number; readonly
+$value?: null }`, which `--std-declarations` writes, and an `Option` whose
+`Some` lowering boxes (`boxed_payload`, asked through `SignatureForms`, one
+answer) is declared what of its payload isn't `None`-like and `SomeNone`:
+`Option<()>` `SomeNone | null | undefined`, `Option<Option<u32>>` `number |
+SomeNone | null | undefined`, the field `mid?: number | SomeNone | null |
+undefined`, whose refusal goes; an object JS makes of it, `undefined`,
+`null`, a `T` or the box, reads as `None`, `Some(None)`, `Some(Some(t))`
+and `Some(Some(None))`. Not of a type parameter's or a projection's
+payload, `Option<T>`, `Option<R::Event>`, whose box is there only where
+what it's made of looks like `None`, which a generic declaration can't
+tell: those stay `T | null | undefined`.

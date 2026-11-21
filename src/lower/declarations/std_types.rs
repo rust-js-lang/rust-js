@@ -48,6 +48,10 @@ pub(crate) const OPAQUE: &[Opaque] = &[
 /// 0429, 0456, #1999). `back()` and `len()` are public API.
 pub(crate) const DOUBLE_ENDED: &str = "DoubleEndedIterator";
 pub(crate) const EXACT_SIZE: &str = "ExactSizeIterator";
+/// ADR 0051's box of a `Some` of what looks like `None`, `$some(v)`: its
+/// field `option::SOME_NONE`, how many `Some`s deep the `None`-like value
+/// is, and the `null` it holds, `$value`, where it holds one (#842).
+pub(crate) const SOME_NONE: &str = "SomeNone";
 
 /// The opaque std type `did` is, if it's one.
 pub(in crate::lower) fn opaque(tcx: TyCtxt<'_>, did: DefId) -> Option<&'static Opaque> {
@@ -75,6 +79,10 @@ pub(crate) fn module() -> String {
     ));
     out.push_str(&format!(
         "\n/** An `ExactSizeIterator`: a JS iterator that knows its length, `len()` how many items it has left (#1999). */\nexport interface {EXACT_SIZE}<T> extends IterableIterator<T> {{\n  len(): number;\n}}\n"
+    ));
+    out.push_str(&format!(
+        "\n/** A `Some` of what looks like `None`, `Some(())`'s or `Some(None)`'s: its box, `{field}` how many `Some`s deep it is, `$value` the `null` it holds, where it holds one (ADR 0051, #842). */\nexport interface {SOME_NONE} {{\n  readonly {field}: number;\n  readonly $value?: null;\n}}\n",
+        field = super::super::std_types::option::SOME_NONE,
     ));
     out
 }
