@@ -87,14 +87,20 @@ function $closing(it, drop, slices = true) {
   // what it has left dropped as one slice, as it's dropped, where the
   // default drops each as it's folded, so a panic of one of those drops
   // the rest as it unwinds, its second aborting, not one more (#862).
+  // Given the items' `drop`, which an adapter's own drops what it passes
+  // by, a `filter`'s or a `flat_map`'s, and what drops with a `$holding`'s
+  // function, `ends`, which that one's fold drops, or it does after the
+  // crate's own, which takes neither (#2224).
   if (it.ownCount || intoIter) $owns(closing, "count");
-  const count = () => {
+  const count = (drop, ends) => {
     if (intoIter) {
       const n = it.len();
-      close();
+      $closedAfter(ends, close);
       return n;
     }
-    return $takenBy(closing, () => it.count());
+    const counted = unwound(() => it.count(drop, ends), true, ends);
+    $closedAfter(ends, close);
+    return counted;
   };
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494). Of an array's items it
@@ -102,14 +108,17 @@ function $closing(it, drop, slices = true) {
   // it has left dropped, front to back, as it's dropped; where one of
   // those drops panics, the item it took is leaked, as rustc doesn't drop
   // what a function gives back as a later drop unwinds (#648).
+  // Given `drop` and `ends` as its `count` is (#2224).
   if (it.ownLast || intoIter) $owns(closing, "last");
-  const last = () => {
+  const last = (drop, ends) => {
     if (intoIter) {
       const step = it.back();
-      close();
+      $closedAfter(ends, close);
       return step;
     }
-    return $takenBy(closing, () => it.last());
+    const step = unwound(() => it.last(drop, ends), true, ends);
+    $closedAfter(ends, close);
+    return step;
   };
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
@@ -174,13 +183,16 @@ function $holding(it, drop, moved) {
   // Held, as `$consume` holds what it folds, so what it steps closes as
   // it's closed, after its function, not as it's stepped to its end, a
   // `step_by`'s source's (#734).
-  const moving = (by) => (init, f, unwind, ends) => {
+  // `by(ends, alone)` given them: where it takes its function alone, what
+  // drops with `f` and its function apart.
+  const movedWith = (ends, by) => {
     holding.hold?.();
     const outer = $onceOf(ends);
-    if (moved === "alone") return by(init, f, unwind, outer, own);
+    if (moved === "alone") return by(outer, own);
     const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);
-    return by(init, f, unwind, $onceOf(both));
+    return by($onceOf(both));
   };
+  const moving = (by) => (init, f, unwind, ends) => movedWith(ends, (ends, alone) => by(init, f, unwind, ends, alone));
   const fold = holding.fold;
   holding.fold = moving((init, f, unwind, ends, alone) => {
     if (alone === undefined || it.fold === undefined) return fold(init, f, unwind, ends);
@@ -201,6 +213,17 @@ function $holding(it, drop, moved) {
       : (init, f, unwind, ends) =>
           $foldBack({ back: () => holding.back(), return: () => holding.return() }, init, f, unwind, ends));
   if (rfold !== undefined) holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));
+  // Its `count` and `last`, where what it steps has its own, a `filter`'s
+  // `count`, std's sum of a `map` of its own, and a `flat_map`'s, std's
+  // `FlattenCompat` fold of its `Map`: its function moved into the fold
+  // of what it steps, as its fold's is, given what drops with it, `ends`;
+  // where it takes its function `"alone"`, `ends` dropped after (#2224).
+  for (const step of ["count", "last"]) {
+    if (!$ownMethod(holding, step)) continue;
+    const take = holding[step];
+    holding[step] = (drop, ends) =>
+      movedWith(ends, (ends, alone) => (alone === undefined ? take(drop, ends) : $endsAfter(ends, () => take(drop, alone))));
+  }
   return holding;
 }
 

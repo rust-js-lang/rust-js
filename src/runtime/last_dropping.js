@@ -4,7 +4,7 @@
 // that is `$some`'s (ADR 0051), then closed, as `last(self)` drops what
 // it has left at its end (#242). Of one given the crate's own `last`,
 // `ownLast`, that one, which drops what it passes itself (#182).
-function $lastDropping(it, drop, boxed) {
+function $lastDropping(it, drop, boxed, ends) {
   const some = (item) => (boxed ? $some(item) : item);
   // Std's `Chain::last`: each side's own `last`, `a`'s then `b`'s, each
   // dropping what it passes; `b`'s where it has one, `a`'s dropped then,
@@ -45,7 +45,10 @@ function $lastDropping(it, drop, boxed) {
   // it passes, then the one kept before where it has one, as
   // `iter.last().or(last)` drops it (#645). Where one throws, a panic, or
   // `f` does, the one kept dropped, then what's left of the source, as the
-  // fold's closure drops the accumulator it holds as it unwinds.
+  // fold's closure drops the accumulator it holds as it unwinds. What
+  // drops with its function, `ends`, `$holding`'s, its source's fold
+  // drops, before what's left of it, as `FlattenCompat::last` folds its
+  // `Map` by value (#2224).
   if (it.inners !== undefined) {
     const [front, source, f, back] = it.inners();
     let kept;
@@ -73,9 +76,9 @@ function $lastDropping(it, drop, boxed) {
       );
     }
     if (source !== undefined && $ownMethod(source, "fold")) {
-      source.fold(undefined, (_, item) => take(() => $stepsOf(f(item))), drop && unwind);
+      source.fold(undefined, (_, item) => take(() => $stepsOf(f(item))), drop && unwind, ends);
     } else if (source !== undefined) {
-      $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind);
+      $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind, ends);
     }
     // The one it steps from the back, of a double-ended one, which
     // `FlattenCompat`'s fold reaches last (#2051).

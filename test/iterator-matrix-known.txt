@@ -40,6 +40,3 @@ conformance:plain 48791
 conformance:std 42523,42525,47317,47319,48791,48838-48840,48842
 points:plain 14712
 points:std 12202,14222,14712,14726-14727
-
-#2224 P0 (plain): a box's filter holding a dropping closure, counted, never drops the counted items or the closure
-plain 185420-185421,185974-185975

@@ -354,8 +354,8 @@ export const mutations: Mutation[] = [
     name: "filter-count-hint-unasked",
     breaks: "a `filter()`'s `count()` asks its source's hint not first, as std's `Filter::count` does (#733)",
     file: "src/runtime/steps.js",
-    find: "        $sizeHint(this);\n        return $Steps.prototype.count.call(kept, drop);\n",
-    replace: "        return $Steps.prototype.count.call(kept, drop);\n",
+    find: "        $sizeHint(this);\n        return $Steps.prototype.count.call(kept, drop, ends);\n",
+    replace: "        return $Steps.prototype.count.call(kept, drop, ends);\n",
     tests: ["test/iterator-steps.test.ts", "-t", "^\\$Steps\\.filter asks what it holds as std's Filter does$"],
   },
   {

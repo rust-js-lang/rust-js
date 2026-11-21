@@ -111,12 +111,20 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       (k) => k === 0,
     );
   }
-  // Std's `count`: of its `fold`, each item given to `drop` where it has one.
-  count(drop) {
-    return this.fold(0, (n, x) => {
-      drop?.(x);
-      return n + 1;
-    });
+  // Std's `count`: of its `fold`, each item given to `drop` where it has one,
+  // and what drops with its function, `ends`, its fold's to drop, as std's
+  // adapter's `count` that sums a `map` of its own, `Filter`'s, moves its
+  // function into its source's fold (#2224).
+  count(drop, ends) {
+    return this.fold(
+      0,
+      (n, x) => {
+        drop?.(x);
+        return n + 1;
+      },
+      undefined,
+      ends,
+    );
   }
   // Std's `try_fold`: `f` of each item, given what it gave, until `broke`
   // says what it gave stops it, as `?` would, which it gives back. What
@@ -214,9 +222,9 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // counted (filter.rs:135). Its own, which what passes a `count` on by
     // its mark asks, a `skip`'s, as std's `Skip::count` asks it (#2212).
     $forward(kept, this, {
-      count: (drop) => {
+      count: (drop, ends) => {
         $sizeHint(this);
-        return $Steps.prototype.count.call(kept, drop);
+        return $Steps.prototype.count.call(kept, drop, ends);
       },
     });
     $owns(kept, "count");

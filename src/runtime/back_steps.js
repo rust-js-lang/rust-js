@@ -352,7 +352,7 @@ function $somes(it) {
   const present = (item) => item != null;
   if (it.back === undefined && !(it instanceof $Steps)) return it.filter(present);
   const kept = it.back !== undefined ? $filterEnds(it, present) : it.filter(present);
-  $forward(kept, it, { count: (drop) => $Steps.prototype.count.call(kept, drop) });
+  $forward(kept, it, { count: (drop, ends) => $Steps.prototype.count.call(kept, drop, ends) });
   return kept;
 }
 
@@ -441,9 +441,9 @@ function $filterEnds(it, p, drop) {
   // `count`, its source's hint asked first (filter.rs:118, 135, #733).
   filter.sizeHint = () => $upperOnly(it);
   $forward(filter, it, {
-    count: (drop) => {
+    count: (drop, ends) => {
       $sizeHint(it);
-      return $Steps.prototype.count.call(filter, drop);
+      return $Steps.prototype.count.call(filter, drop, ends);
     },
   });
   // Its own, as `$Steps`' `filter`'s is (#2212).
@@ -620,8 +620,8 @@ function $flattenEnds(it, each, knowing) {
   // ask too (#621, #649). What a fold hasn't reached yet, its source and
   // its other inner, stays its own, closed in their order as what consumes
   // it unwinds (#705).
-  const front = (stepped, init, f, unwind) =>
-    typeof stepped.fold === "function" ? stepped.fold(init, f, unwind) : $foldDropping(stepped, init, f, unwind);
+  const front = (stepped, init, f, unwind, ends) =>
+    typeof stepped.fold === "function" ? stepped.fold(init, f, unwind, ends) : $foldDropping(stepped, init, f, unwind, ends);
   // What drops with `f`, `ends`, after its parts, as `FlattenCompat::fold`
   // folds them by `&mut fold`, dropped as it returns (#734).
   // Where the function that makes each inner throws, a panic, the
@@ -648,14 +648,16 @@ function $flattenEnds(it, each, knowing) {
   // source's fold of each item's inner's, then the back inner's, the
   // crate's where it writes one, each given the items' drop (#736). What
   // takes it closes it as one throws, a panic, what it still holds.
-  const count = (drop) => {
+  // What drops with a `$holding`'s function, `ends`, its source's fold
+  // drops, as `$flatMap`'s `count` does (#2224).
+  const count = (drop, ends) => {
     let counted = 0;
     const first = inner.next;
     inner.next = undefined;
     if (first !== undefined) counted = $count(first, drop);
     if (!ended) {
       ended = true;
-      counted = front(it, counted, (n, x) => n + $count($iter(made(x)), drop));
+      counted = front(it, counted, (n, x) => n + $count($iter(made(x)), drop), undefined, ends);
     }
     const last = inner.back;
     inner.back = undefined;
@@ -782,7 +784,7 @@ function $flattenEnds(it, each, knowing) {
     advanceBy,
     advanceBackBy,
     nthBack: (k, drop) => (advanceBackBy(k, drop) > 0 ? { done: true, value: undefined } : flat.back()),
-    last: (drop) => $flatLast(flat, drop),
+    last: (drop, ends) => $flatLast(flat, drop, ends),
   });
   // Its `count` its own, which what holds it passes on, as `$flatMap`'s is;
   // its `last`, each inner's own; its `nth_back`, which drops what it

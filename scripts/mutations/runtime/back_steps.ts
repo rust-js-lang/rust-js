@@ -857,7 +857,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`$somes`'s own `count` is `Filter::count`'s, which asks its source's hint first, so generic code's count of a `filter_map` or a flatten of `Option`s of the crate's iterator asks its own `size_hint`, which std's never asks (#2199)",
     file: "src/runtime/back_steps.js",
-    find: "  $forward(kept, it, { count: (drop) => $Steps.prototype.count.call(kept, drop) });\n",
+    find: "  $forward(kept, it, { count: (drop, ends) => $Steps.prototype.count.call(kept, drop, ends) });\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^flatten_of_options_counted_asks_no_hint.rs$"],
   },
@@ -905,5 +905,21 @@ export const mutations: Mutation[] = [
     find: "  $owns(filter, \"count\");\n",
     replace: "",
     tests: ["test/iterator-steps.test.ts", "-t", "each form marks its own the count and last"],
+  },
+  {
+    name: "flatten-ends-last-drops-the-holdings-function-late",
+    breaks: "a double-ended flatten's own `last` isn't given what drops with a holding's function, so a boxed source's `flat_map(..).last()`, of a `flat_map` the crate also steps from its back, drops the function after the source, where std's `FlattenCompat::last` folds its `Map` by value, dropping it first (#2224)",
+    file: "src/runtime/back_steps.js",
+    find: "    last: (drop, ends) => $flatLast(flat, drop, ends),\n",
+    replace: "    last: (drop) => $flatLast(flat, drop),\n",
+    tests: ["test/corpus.test.ts", "-t", "^holding_adapter_counted_or_last_drops_its_function.rs$"],
+  },
+  {
+    name: "filter-ends-count-drops-the-holdings-function-late",
+    breaks: "a double-ended filter's own `count` isn't given what drops with a holding's function, so a boxed source's `filter(..).count()`, of a `filter` the crate also steps from its back, drops the function after the source, where std's `Filter::count` moves it into its source's fold (#2224)",
+    file: "src/runtime/back_steps.js",
+    find: "      return $Steps.prototype.count.call(filter, drop, ends);\n",
+    replace: "      return $Steps.prototype.count.call(filter, drop);\n",
+    tests: ["test/corpus.test.ts", "-t", "^holding_adapter_counted_or_last_drops_its_function.rs$"],
   },
 ];

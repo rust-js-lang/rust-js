@@ -4151,12 +4151,20 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
       (k) => k === 0,
     );
   }
-  // Std's `count`: of its `fold`, each item given to `drop` where it has one.
-  count(drop) {
-    return this.fold(0, (n, x) => {
-      drop?.(x);
-      return n + 1;
-    });
+  // Std's `count`: of its `fold`, each item given to `drop` where it has one,
+  // and what drops with its function, `ends`, its fold's to drop, as std's
+  // adapter's `count` that sums a `map` of its own, `Filter`'s, moves its
+  // function into its source's fold (#2224).
+  count(drop, ends) {
+    return this.fold(
+      0,
+      (n, x) => {
+        drop?.(x);
+        return n + 1;
+      },
+      undefined,
+      ends,
+    );
   }
   // Std's `try_fold`: `f` of each item, given what it gave, until `broke`
   // says what it gave stops it, as `?` would, which it gives back. What
@@ -4254,9 +4262,9 @@ export class $Steps extends /* @__PURE__ */ (() => Iterator)() {
     // counted (filter.rs:135). Its own, which what passes a `count` on by
     // its mark asks, a `skip`'s, as std's `Skip::count` asks it (#2212).
     $forward(kept, this, {
-      count: (drop) => {
+      count: (drop, ends) => {
         $sizeHint(this);
-        return $Steps.prototype.count.call(kept, drop);
+        return $Steps.prototype.count.call(kept, drop, ends);
       },
     });
     $owns(kept, "count");
@@ -4703,7 +4711,7 @@ export function $mulAddF32(a, b, c) {
 // that is `$some`'s (ADR 0051), then closed, as `last(self)` drops what
 // it has left at its end (#242). Of one given the crate's own `last`,
 // `ownLast`, that one, which drops what it passes itself (#182).
-export function $lastDropping(it, drop, boxed) {
+export function $lastDropping(it, drop, boxed, ends) {
   const some = (item) => (boxed ? $some(item) : item);
   // Std's `Chain::last`: each side's own `last`, `a`'s then `b`'s, each
   // dropping what it passes; `b`'s where it has one, `a`'s dropped then,
@@ -4744,7 +4752,10 @@ export function $lastDropping(it, drop, boxed) {
   // it passes, then the one kept before where it has one, as
   // `iter.last().or(last)` drops it (#645). Where one throws, a panic, or
   // `f` does, the one kept dropped, then what's left of the source, as the
-  // fold's closure drops the accumulator it holds as it unwinds.
+  // fold's closure drops the accumulator it holds as it unwinds. What
+  // drops with its function, `ends`, `$holding`'s, its source's fold
+  // drops, before what's left of it, as `FlattenCompat::last` folds its
+  // `Map` by value (#2224).
   if (it.inners !== undefined) {
     const [front, source, f, back] = it.inners();
     let kept;
@@ -4772,9 +4783,9 @@ export function $lastDropping(it, drop, boxed) {
       );
     }
     if (source !== undefined && $ownMethod(source, "fold")) {
-      source.fold(undefined, (_, item) => take(() => $stepsOf(f(item))), drop && unwind);
+      source.fold(undefined, (_, item) => take(() => $stepsOf(f(item))), drop && unwind, ends);
     } else if (source !== undefined) {
-      $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind);
+      $foldBy(source, "next", undefined, (_, item) => take(() => $stepsOf(f(item))), unwind, ends);
     }
     // The one it steps from the back, of a double-ended one, which
     // `FlattenCompat`'s fold reaches last (#2051).
@@ -5290,14 +5301,20 @@ export function $closing(it, drop, slices = true) {
   // what it has left dropped as one slice, as it's dropped, where the
   // default drops each as it's folded, so a panic of one of those drops
   // the rest as it unwinds, its second aborting, not one more (#862).
+  // Given the items' `drop`, which an adapter's own drops what it passes
+  // by, a `filter`'s or a `flat_map`'s, and what drops with a `$holding`'s
+  // function, `ends`, which that one's fold drops, or it does after the
+  // crate's own, which takes neither (#2224).
   if (it.ownCount || intoIter) $owns(closing, "count");
-  const count = () => {
+  const count = (drop, ends) => {
     if (intoIter) {
       const n = it.len();
-      close();
+      $closedAfter(ends, close);
       return n;
     }
-    return $takenBy(closing, () => it.count());
+    const counted = unwound(() => it.count(drop, ends), true, ends);
+    $closedAfter(ends, close);
+    return counted;
   };
   // Its `last`, the crate's own, which takes it and drops what it has left
   // itself, as a `skip`'s `last` asks it (#494). Of an array's items it
@@ -5305,14 +5322,17 @@ export function $closing(it, drop, slices = true) {
   // it has left dropped, front to back, as it's dropped; where one of
   // those drops panics, the item it took is leaked, as rustc doesn't drop
   // what a function gives back as a later drop unwinds (#648).
+  // Given `drop` and `ends` as its `count` is (#2224).
   if (it.ownLast || intoIter) $owns(closing, "last");
-  const last = () => {
+  const last = (drop, ends) => {
     if (intoIter) {
       const step = it.back();
-      close();
+      $closedAfter(ends, close);
       return step;
     }
-    return $takenBy(closing, () => it.last());
+    const step = unwound(() => it.last(drop, ends), true, ends);
+    $closedAfter(ends, close);
+    return step;
   };
   // Its `nth_back` and `rfold`, its iterator's, the crate's own where it
   // writes them, done with after its `rfold` as after its `fold` (#220).
@@ -5377,13 +5397,16 @@ export function $holding(it, drop, moved) {
   // Held, as `$consume` holds what it folds, so what it steps closes as
   // it's closed, after its function, not as it's stepped to its end, a
   // `step_by`'s source's (#734).
-  const moving = (by) => (init, f, unwind, ends) => {
+  // `by(ends, alone)` given them: where it takes its function alone, what
+  // drops with `f` and its function apart.
+  const movedWith = (ends, by) => {
     holding.hold?.();
     const outer = $onceOf(ends);
-    if (moved === "alone") return by(init, f, unwind, outer, own);
+    if (moved === "alone") return by(outer, own);
     const both = moved === "before" ? () => $closedAfter(own, outer) : () => $closedAfter(outer, own);
-    return by(init, f, unwind, $onceOf(both));
+    return by($onceOf(both));
   };
+  const moving = (by) => (init, f, unwind, ends) => movedWith(ends, (ends, alone) => by(init, f, unwind, ends, alone));
   const fold = holding.fold;
   holding.fold = moving((init, f, unwind, ends, alone) => {
     if (alone === undefined || it.fold === undefined) return fold(init, f, unwind, ends);
@@ -5404,6 +5427,17 @@ export function $holding(it, drop, moved) {
       : (init, f, unwind, ends) =>
           $foldBack({ back: () => holding.back(), return: () => holding.return() }, init, f, unwind, ends));
   if (rfold !== undefined) holding.rfold = moving((init, f, unwind, ends) => rfold(init, f, unwind, ends));
+  // Its `count` and `last`, where what it steps has its own, a `filter`'s
+  // `count`, std's sum of a `map` of its own, and a `flat_map`'s, std's
+  // `FlattenCompat` fold of its `Map`: its function moved into the fold
+  // of what it steps, as its fold's is, given what drops with it, `ends`;
+  // where it takes its function `"alone"`, `ends` dropped after (#2224).
+  for (const step of ["count", "last"]) {
+    if (!$ownMethod(holding, step)) continue;
+    const take = holding[step];
+    holding[step] = (drop, ends) =>
+      movedWith(ends, (ends, alone) => (alone === undefined ? take(drop, ends) : $endsAfter(ends, () => take(drop, alone))));
+  }
   return holding;
 }
 
@@ -6508,7 +6542,7 @@ export function $somes(it) {
   const present = (item) => item != null;
   if (it.back === undefined && !(it instanceof $Steps)) return it.filter(present);
   const kept = it.back !== undefined ? $filterEnds(it, present) : it.filter(present);
-  $forward(kept, it, { count: (drop) => $Steps.prototype.count.call(kept, drop) });
+  $forward(kept, it, { count: (drop, ends) => $Steps.prototype.count.call(kept, drop, ends) });
   return kept;
 }
 
@@ -6597,9 +6631,9 @@ export function $filterEnds(it, p, drop) {
   // `count`, its source's hint asked first (filter.rs:118, 135, #733).
   filter.sizeHint = () => $upperOnly(it);
   $forward(filter, it, {
-    count: (drop) => {
+    count: (drop, ends) => {
       $sizeHint(it);
-      return $Steps.prototype.count.call(filter, drop);
+      return $Steps.prototype.count.call(filter, drop, ends);
     },
   });
   // Its own, as `$Steps`' `filter`'s is (#2212).
@@ -6776,8 +6810,8 @@ export function $flattenEnds(it, each, knowing) {
   // ask too (#621, #649). What a fold hasn't reached yet, its source and
   // its other inner, stays its own, closed in their order as what consumes
   // it unwinds (#705).
-  const front = (stepped, init, f, unwind) =>
-    typeof stepped.fold === "function" ? stepped.fold(init, f, unwind) : $foldDropping(stepped, init, f, unwind);
+  const front = (stepped, init, f, unwind, ends) =>
+    typeof stepped.fold === "function" ? stepped.fold(init, f, unwind, ends) : $foldDropping(stepped, init, f, unwind, ends);
   // What drops with `f`, `ends`, after its parts, as `FlattenCompat::fold`
   // folds them by `&mut fold`, dropped as it returns (#734).
   // Where the function that makes each inner throws, a panic, the
@@ -6804,14 +6838,16 @@ export function $flattenEnds(it, each, knowing) {
   // source's fold of each item's inner's, then the back inner's, the
   // crate's where it writes one, each given the items' drop (#736). What
   // takes it closes it as one throws, a panic, what it still holds.
-  const count = (drop) => {
+  // What drops with a `$holding`'s function, `ends`, its source's fold
+  // drops, as `$flatMap`'s `count` does (#2224).
+  const count = (drop, ends) => {
     let counted = 0;
     const first = inner.next;
     inner.next = undefined;
     if (first !== undefined) counted = $count(first, drop);
     if (!ended) {
       ended = true;
-      counted = front(it, counted, (n, x) => n + $count($iter(made(x)), drop));
+      counted = front(it, counted, (n, x) => n + $count($iter(made(x)), drop), undefined, ends);
     }
     const last = inner.back;
     inner.back = undefined;
@@ -6938,7 +6974,7 @@ export function $flattenEnds(it, each, knowing) {
     advanceBy,
     advanceBackBy,
     nthBack: (k, drop) => (advanceBackBy(k, drop) > 0 ? { done: true, value: undefined } : flat.back()),
-    last: (drop) => $flatLast(flat, drop),
+    last: (drop, ends) => $flatLast(flat, drop, ends),
   });
   // Its `count` its own, which what holds it passes on, as `$flatMap`'s is;
   // its `last`, each inner's own; its `nth_back`, which drops what it
@@ -21525,8 +21561,8 @@ export function $trustedZipEnds(a, b, dropA, dropB) {
 // Std's `FlattenCompat::last` of `flat`: each inner iterator's own `last`,
 // by its source's fold, `$lastDropping`'s of what it holds (`inners`,
 // #645), a step (#2123).
-export function $flatLast(flat, drop) {
-  const last = $lastDropping(flat, drop, true);
+export function $flatLast(flat, drop, ends) {
+  const last = $lastDropping(flat, drop, true, ends);
   return last === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(last) };
 }
 
@@ -21620,8 +21656,9 @@ export function $flatMap(it, f) {
   // it's in, then its source's fold of each one's own, the crate's where
   // one writes it, each given the items' drop (#736). What takes it closes
   // it as one throws, a panic, its source unless it's folded it, which
-  // closes itself.
-  const count = (drop) => {
+  // closes itself. What drops with its function, `ends`, `$holding`'s,
+  // its source's fold drops, as its `Map` is folded by value (#2224).
+  const count = (drop, ends) => {
     let counted = 0;
     if (inner !== undefined) {
       const front = inner;
@@ -21631,7 +21668,9 @@ export function $flatMap(it, f) {
     if (ended) return counted;
     ended = true;
     const each = (n, x) => n + $count($stepsOf(f(x)), drop);
-    return typeof it.fold === "function" ? it.fold(counted, each) : $foldDropping(it, counted, each);
+    return typeof it.fold === "function"
+      ? it.fold(counted, each, undefined, ends)
+      : $foldDropping(it, counted, each, undefined, ends);
   };
   // Its `advance_by`, std's `FlattenCompat::advance_by`: the one it's in's
   // own, then its source's `try_fold` of each one's own, the one it stops
@@ -21663,7 +21702,7 @@ export function $flatMap(it, f) {
     }
     return left;
   };
-  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop) => $flatLast(flat, drop) });
+  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop, ends) => $flatLast(flat, drop, ends) });
   // Its `count` its own, which what holds it passes on, a `skip()`'s, as
   // std's `Skip::count` asks its source's; and its `last`, each inner's own.
   $owns(flat, "count", "last");

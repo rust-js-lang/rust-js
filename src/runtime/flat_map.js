@@ -8,8 +8,8 @@
 // Std's `FlattenCompat::last` of `flat`: each inner iterator's own `last`,
 // by its source's fold, `$lastDropping`'s of what it holds (`inners`,
 // #645), a step (#2123).
-function $flatLast(flat, drop) {
-  const last = $lastDropping(flat, drop, true);
+function $flatLast(flat, drop, ends) {
+  const last = $lastDropping(flat, drop, true, ends);
   return last === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(last) };
 }
 
@@ -103,8 +103,9 @@ function $flatMap(it, f) {
   // it's in, then its source's fold of each one's own, the crate's where
   // one writes it, each given the items' drop (#736). What takes it closes
   // it as one throws, a panic, its source unless it's folded it, which
-  // closes itself.
-  const count = (drop) => {
+  // closes itself. What drops with its function, `ends`, `$holding`'s,
+  // its source's fold drops, as its `Map` is folded by value (#2224).
+  const count = (drop, ends) => {
     let counted = 0;
     if (inner !== undefined) {
       const front = inner;
@@ -114,7 +115,9 @@ function $flatMap(it, f) {
     if (ended) return counted;
     ended = true;
     const each = (n, x) => n + $count($stepsOf(f(x)), drop);
-    return typeof it.fold === "function" ? it.fold(counted, each) : $foldDropping(it, counted, each);
+    return typeof it.fold === "function"
+      ? it.fold(counted, each, undefined, ends)
+      : $foldDropping(it, counted, each, undefined, ends);
   };
   // Its `advance_by`, std's `FlattenCompat::advance_by`: the one it's in's
   // own, then its source's `try_fold` of each one's own, the one it stops
@@ -146,7 +149,7 @@ function $flatMap(it, f) {
     }
     return left;
   };
-  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop) => $flatLast(flat, drop) });
+  $forward(flat, it, { fold, tryFold, count, advanceBy, last: (drop, ends) => $flatLast(flat, drop, ends) });
   // Its `count` its own, which what holds it passes on, a `skip()`'s, as
   // std's `Skip::count` asks its source's; and its `last`, each inner's own.
   $owns(flat, "count", "last");
