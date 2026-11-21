@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-variant-boxed-not-itself",
+    breaks: "a map by an untagged variant of a payload that never looks like `None`, into a boxed `Option`, isn't the option itself to MIR, so it's stored `root ?? null`",
+    file: "src/lower/std_types/option.rs",
+    find: "        itself && !self.boxed_payload(from) && (unboxed || !self.boxed_payload(to))\n",
+    replace: "        let _ = unboxed;\n        itself && !self.boxed_payload(from) && !self.boxed_payload(to)\n",
+    tests: ["test/lowering-nullable-combinators.test.ts", "-t", "a map by an untagged enum's variant"],
+  },
+  {
     name: "or-fallback-some-where-coalesced",
     breaks: "an `unwrap_or` of a `SomeWhere` is `(t ? v : undefined) ?? d`, not `t ? v : d`",
     file: "src/lower/std_types/option.rs",
@@ -442,8 +450,8 @@ export const mutations: Mutation[] = [
     name: "closure-map-unrecognized",
     breaks: "a closure that gives its argument as it is, `|parent| &**parent`, isn't taken as mapping the option to itself, so `getEventTarget`'s `parentNode` isn't `null` or a value and `dispatch` tests `!= null` (rd632)",
     file: "src/lower/std_types/option.rs",
-    find: "            None => self.closure_gives_its_argument(f),\n",
-    replace: "            None => false,\n",
+    find: "            None => (self.closure_gives_its_argument(f), false),\n",
+    replace: "            None => (false, false),\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "maps an option to itself"],
   },
   {
@@ -604,8 +612,8 @@ export const mutations: Mutation[] = [
     name: "path-to-itself-unasked",
     breaks: "a function given as a path, `str::to_owned`, `String::from`, isn't asked whether its call is its argument, as a closure's steps are, so `map_or_else(g, String::from)` is a conditional, not `??` (G4)",
     file: "src/lower/std_types/option.rs",
-    find: "                    || self.call_gives_its_argument(function, args)\n",
-    replace: "",
+    find: "                    || self.call_gives_its_argument(function, args),\n",
+    replace: "                    || false,\n",
     tests: ["test/corpus.test.ts", "-t", "^option_text_given_on_as_it_is\\.rs$"],
     snapshots: true,
   },

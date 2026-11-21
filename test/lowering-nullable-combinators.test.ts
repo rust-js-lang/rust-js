@@ -297,7 +297,7 @@ pub fn pending() -> Chunk {
   // it is boxed (ADR 0051), and its box, `$some`, wraps only a value that
   // looks like `None`, which a variant's payload never is (ADR 0214): the
   // map is the option itself there too, read back as each variant.
-  expect(js).toContain("  return { maybe: handler.root };\n");
+  expect(js).toContain("  const root = handler.root;\n  return { maybe: root };\n");
   expect([lib.told(lib.slotted({ root: null, value: 1 })), lib.told(lib.slotted({ root: context, value: 1 }))]).toEqual([0, 1]);
   // A tagged enum's variant is no payload: its map makes the variant.
   expect([lib.shaped(2), lib.shaped(undefined)]).toEqual([1, 0]);

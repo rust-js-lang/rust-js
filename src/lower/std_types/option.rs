@@ -26,8 +26,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// the map's lowering and of what a nullable place stores of it as
     /// given (the port's gap rd94).
     pub(in crate::lower) fn maps_to_itself(&self, f: Ty<'tcx>, (from, to): (Ty<'tcx>, Ty<'tcx>)) -> bool {
-        let itself = match crate::lower::fn_def(f) {
-            Some((function, args)) => {
+        // An untagged enum's variant of a payload that never looks like
+        // `None`, `map(Maybe::Root)` of an `Rc`: its value, which `$some`
+        // never boxes, even where the enum's other values are (ADR 0051).
+        let constructs_unboxed = |function, args| {
+            self.constructs_payload(function, args) && !crate::lower::representation::may_look_like_none(self.tcx, from)
+        };
+        let (itself, unboxed) = match crate::lower::fn_def(f) {
+            Some((function, args)) => (
                 (super::super::bindings::is_binding(self.tcx, function)
                     && matches!(
                         super::super::bindings::js_form(self.tcx, function),
@@ -35,11 +41,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ))
                     || self.constructs_payload(function, args)
                     || self.gives_its_argument(self.callee(function, args).0)
-                    || self.call_gives_its_argument(function, args)
-            }
-            None => self.closure_gives_its_argument(f),
+                    || self.call_gives_its_argument(function, args),
+                constructs_unboxed(function, args),
+            ),
+            None => (self.closure_gives_its_argument(f), false),
         };
-        itself && !self.boxed_payload(from) && !self.boxed_payload(to)
+        itself && !self.boxed_payload(from) && (unboxed || !self.boxed_payload(to))
     }
 
     /// Whether a call of `function` given `args` is what it's given as the
