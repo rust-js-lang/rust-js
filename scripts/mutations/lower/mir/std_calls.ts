@@ -377,9 +377,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's string edit of a part a call gives, `tail(&mut s).make_ascii_uppercase()`, is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: '                            let cell = this.spill(Role::Part, (**cell).clone(), out);\n                            Expr::held(cell)\n',
-    replace:
-      '                            return Err(this.unsupported(span, "changing this string, from its MIR"));\n',
+    find: '                let cell = self.spill(Role::Part, (**cell).clone(), out);\n                Expr::held(cell)\n',
+    replace: '                return Ok(None);\n',
     tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
@@ -782,17 +781,26 @@ export const mutations: Mutation[] = [
     name: "string-edit-of-a-handle-refused",
     breaks: "a `String` method that changes the string, given as a function value, `String::clear` to `map` or as a `fn`, is refused, \"changing this string, from its MIR\", where its closure compiles (#946)",
     file: "src/lower/mir/std_calls.rs",
-    find: "                        Value::Expr(handle) => {\n",
-    replace: "                        Value::Expr(handle) if false => {\n",
+    find: "            Value::Expr(handle) => {\n                self.flush(state, out)?;\n",
+    replace: "            Value::Expr(handle) if false => {\n                self.flush(state, out)?;\n",
     tests: ["test/corpus.test.ts", "-t", "^string_edits_given_as_functions\\.rs$"],
   },
   {
     name: "string-edit-handle-held-again",
     breaks: "a `&mut String` handle that's a variable already is held again before its edit, `const part = s; part.value = \"\";`, where `s.value = \"\";` reads as the closure's does (#946)",
     file: "src/lower/mir/std_calls.rs",
-    find: "                                true => handle,\n",
-    replace: "                                true => this.spill(Role::Part, handle, out),\n",
+    find: "                    true => handle,\n",
+    replace: "                    true => self.spill(Role::Part, handle, out),\n",
     tests: ["test/corpus.test.ts", "-t", "^string_edits_given_as_functions\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "toggle-not-negated",
+    breaks: "`b.toggle()` writes `b` itself back, leaving it as it was, where native gives its negation",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                let negated = Expr::unary(js::UnaryOp::Not, place.clone());\n",
+    replace: "                let negated = place.clone();\n",
+    tests: ["test/corpus.test.ts", "-t", "^bool_toggle_writes_its_place\\.rs$"],
     snapshots: true,
   },
 ];

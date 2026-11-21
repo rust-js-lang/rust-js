@@ -196,6 +196,7 @@ pub(super) fn lowered_from_values(known: Std) -> bool {
             | Std::PushStr
             | Std::AssignOperator(_)
             | Std::StringEdit(_)
+            | Std::Toggle
             | Std::StringWithCapacity
             | Std::VecMacro
             | Std::FmtNew

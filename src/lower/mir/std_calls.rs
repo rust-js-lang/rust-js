@@ -172,6 +172,40 @@ fn lower<'c, 'a, 'tcx>(
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The place a std method that changes its receiver in place writes,
+    /// given its `&mut self` as `value` (ADR 0149): a variable or a field,
+    /// written as it is; a part another call gives, `$strGetMut(..)`'s,
+    /// held, its `value` the place; or a handle given as a value, a
+    /// function's parameter, its `value` the place, as a closure's call
+    /// writes it (#946). `None` of another.
+    fn edited_place(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        value: Value<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        Ok(Some(match value {
+            Value::Ref(place) if fixed_place(&place) => place,
+            Value::Ref(ref place)
+                if let js::ExprKind::Member(cell, field) = &place.kind
+                    && field == js::HELD =>
+            {
+                self.flush(state, out)?;
+                let cell = self.spill(Role::Part, (**cell).clone(), out);
+                Expr::held(cell)
+            }
+            Value::Expr(handle) => {
+                self.flush(state, out)?;
+                let cell = match handle.reads_same() {
+                    true => handle,
+                    false => self.spill(Role::Part, handle, out),
+                };
+                Expr::held(cell)
+            }
+            _ => return Ok(None),
+        }))
+    }
+
     /// `format_args!`'s parts, kept until `Arguments::new` shows them, an
     /// assertion's failure, and a write to a writer of the crate's (ADRs 0054,
     /// 0058).
@@ -659,6 +693,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     this.range_edit(op, range, rest, (clone, lazy))
                 }))
             }),
+            // `b.toggle()`: its place given its negation, `b = !b` (#1656).
+            Std::Toggle => lower(move |this, state, values, out| {
+                let place = match this.edited_place(state, values.next().expect("the bool"), out)? {
+                    Some(place) => place,
+                    None => return Err(this.unsupported(span, "toggling this `bool`, from its MIR")),
+                };
+                let negated = Expr::unary(js::UnaryOp::Not, place.clone());
+                out.push(StmtKind::Assign(place, negated).at(this.js_span(span)));
+                Ok(Value::Expr(Expr::js_undefined()))
+            }),
             Std::StringEdit(edit) => lower(move |this, state, values, out| {
                 Ok(Value::Expr({
                     let place = match values.next().expect("the string") {
@@ -680,29 +724,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             out.push(StmtKind::Assign(whole, edited).at(this.js_span(span)));
                             return Ok(Value::Expr(Expr::js_undefined()));
                         }
-                        // A part another call gives, `$strGetMut(..)`'s: held,
-                        // its `value` the place.
-                        Value::Ref(ref place)
-                            if let js::ExprKind::Member(cell, field) = &place.kind
-                                && field == js::HELD =>
-                        {
-                            this.flush(state, out)?;
-                            let cell = this.spill(Role::Part, (**cell).clone(), out);
-                            Expr::held(cell)
-                        }
-                        // A `&mut String` given as a value, a function's
-                        // parameter, `String::clear` given to `map` or as a
-                        // `fn`: a handle, its `value` the place, as a
-                        // closure's `s.clear()` writes it (#946).
-                        Value::Expr(handle) => {
-                            this.flush(state, out)?;
-                            let cell = match handle.reads_same() {
-                                true => handle,
-                                false => this.spill(Role::Part, handle, out),
-                            };
-                            Expr::held(cell)
-                        }
-                        _ => return Err(this.unsupported(span, "changing this string, from its MIR")),
+                        value => match this.edited_place(state, value, out)? {
+                            Some(place) => place,
+                            None => return Err(this.unsupported(span, "changing this string, from its MIR")),
+                        },
                     };
                     let mut given = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                     // A path's, given as an `AsRef<Path>` or `AsRef<OsStr>`.

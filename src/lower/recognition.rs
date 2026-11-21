@@ -447,6 +447,8 @@ pub(super) enum Std {
     Text(TextOp),
     /// A `String` changed in place (ADR 0149).
     StringEdit(StringEdit),
+    /// A `bool`'s `toggle()`, 1.100's: its place given its negation (#1656).
+    Toggle,
     /// `String::with_capacity(n)`: an empty string.
     StringWithCapacity,
     /// A range's method, or `a..=b` (ADR 0129).

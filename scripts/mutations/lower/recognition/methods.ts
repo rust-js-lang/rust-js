@@ -195,4 +195,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^is_sorted_of_items_with_a_destructor.rs$"],
   },
+  {
+    name: "bool-toggle-unrecognized",
+    breaks: "`b.toggle()`, Rust 1.100's, is refused as an open call (#1656) where it's `b = !b`",
+    file: "src/lower/recognition/methods.rs",
+    find: "        \"toggle\" => Some(Std::Toggle),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^bool_toggle_writes_its_place\\.rs$"],
+    snapshots: true,
+  },
 ];

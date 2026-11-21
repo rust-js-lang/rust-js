@@ -183,8 +183,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = methods::text(name.as_str(), owner.is_char(), owner.is_str()) {
             return Some(Std::Text(op));
         }
-        if let Some(number) = self.number_method(owner, name.as_str()) {
-            return Some(number);
+        let boolean = methods::boolean(name.as_str(), owner);
+        if let Some(known) = self.number_method(owner, name.as_str()).or(boolean) {
+            return Some(known);
         }
         if let Some(comb) = methods::combinator(
             name.as_str(),
@@ -192,9 +193,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             result,
             adt(StdItem::Vec) || deque,
             adt(StdItem::Vec) || deque || owner.is_slice(),
-        )
-        .or_else(|| methods::boolean(name.as_str(), owner.is_bool()))
-        {
+        ) {
             // A `VecDeque`'s assertion calls the count `n`.
             let comb = match comb {
                 Comb::Rotate { left, .. } if deque => Comb::Rotate { left, count: "n" },

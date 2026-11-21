@@ -1,7 +1,8 @@
 //! Pure method-name tables, called only after library/type identity checks.
 
-use super::{Comb, IterComb, Num, NumOp, SignMode, TextOp};
+use super::{Comb, IterComb, Num, NumOp, SignMode, Std, TextOp};
 use rustc_middle::mir::BinOp;
+use rustc_middle::ty::Ty;
 
 /// Which `TextOp` a method of a `char` or a `str` is.
 pub(super) fn text(name: &str, char: bool, str: bool) -> Option<TextOp> {
@@ -333,11 +334,14 @@ pub(super) fn combinator(name: &str, option: bool, result: bool, vec: bool, slic
     })
 }
 
-/// Which `Comb` a method of a `bool` is.
-pub(super) fn boolean(name: &str, boolean: bool) -> Option<Comb> {
+/// Which of std's a method of a `bool`, `owner`, is: its combinators, and
+/// its `toggle()`, Rust 1.100's (#1656).
+pub(super) fn boolean(name: &str, owner: Ty<'_>) -> Option<Std> {
     match name {
-        "then" if boolean => Some(Comb::Then),
-        "then_some" if boolean => Some(Comb::ThenSome),
+        _ if !owner.is_bool() => None,
+        "then" => Some(Std::Comb(Comb::Then)),
+        "then_some" => Some(Std::Comb(Comb::ThenSome)),
+        "toggle" => Some(Std::Toggle),
         _ => None,
     }
 }
