@@ -206,6 +206,15 @@ the shadow, or by writing the case at the edge.
     one source, `programFlags` (test/support.ts), which a `ci.test.ts`
     row holds.
 
+17. **A sweep counts what it compiled before its grep is read.** A sweep
+    of 320 adapter shapes found no shape reaching a refusal's cause, and
+    the cause was removed as dead code (#2265); every compile had failed
+    at once (`rust-js --library` without `--manifest`), so its grep read
+    nothing. Run as it should be, 296 compiled and five `enumerate()`s
+    reached it (#2281). Zero compiled is a broken sweep, not an absence:
+    print the count of outputs beside the hits, and read neither until
+    the count is what the sweep meant to run.
+
 ## Nets still to build
 
 | Net | Issue | What it would find |

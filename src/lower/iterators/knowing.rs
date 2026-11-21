@@ -148,6 +148,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         crate::lower::recognition::is_held_compiled(self.tcx, ty)
     }
 
+    /// Why `size_hint()` of a `ty` is refused, said after it: where an
+    /// adapter in it is made in place inside another, JS's own, which keeps
+    /// no hint, though held it would be std's struct, which knows it
+    /// (#1427): an `enumerate()` of a `skip_while`, `take_while`,
+    /// `filter_map`, `map_while` or `scan` of a slice's items, which
+    /// `hint_asked` makes none knowing (#2281); else nothing. A `dyn Iterator`'s is `size_hint_of`'s own
+    /// (#1476).
+    pub(in crate::lower) fn hint_refused_because(&self, ty: ty::Ty<'tcx>) -> &'static str {
+        let lost = (ty.peel_refs().walk().filter_map(|part| part.as_type()))
+            .any(|part| part != ty.peel_refs() && self.made_in_place_of(part) && self.held_hint_known(part));
+        match lost {
+            true => ", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2281)",
+            false => "",
+        }
+    }
+
     /// `adapted_hint_known`'s, of `ty`, the outermost of what's asked, or
     /// what an adapter the recognizers make holds. That is made in place
     /// too, given to a std method not compiled (ADR 0871): of a kind std's

@@ -482,10 +482,17 @@ made in place over a type parameter's items, `v.iter().skip(1).copied()`
 of a `&[T]`, as a known type's are: a generic body is lowered once, its
 `T` a parameter, so the mark `(maker, Copied<Skip<slice::Iter<T>>>)` is
 what its lowering asks, and only parts whose source is an array's or a
-slice's iterator are marked, whatever `T` is. The refusal's cause, "which
-holds an adapter made in place inside another, as JS's own, which keeps
-no hint", is gone with it: nothing reaches it (320 shapes of an inner
-and an outer adapter, generic and not, compile). Corpus case
+slice's iterator are marked, whatever `T` is. Corpus case
 `size_hint_of_adapters_made_in_place_over_a_type_parameters_items` holds
 callers of several `T`s, from each end and through a filter, against
 native in both builds, the iterator forms and every metamorphic rewrite.
+
+Corrected (#2281): the refusal's cause, "which holds an adapter made in
+place inside another, as JS's own, which keeps no hint", was removed with
+#2265 on the word that nothing reached it, from a sweep of 320 shapes
+whose every compile had failed to run (`--library` without
+`--manifest`). Run as it should be, 296 of them compile, and of the rest
+an `enumerate()` of a `skip_while`, `take_while`, `filter_map`,
+`map_while` or `scan` of a slice's items is refused with that cause,
+generic and not, as `hint_asked` makes none of those knowing. The cause
+is said again, naming #2281, and test/diagnostics.test.ts holds it.

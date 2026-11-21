@@ -340,6 +340,10 @@ for (const [name, source, message, crate] of [
   // iterator's, which knows nothing of its length, refused, not `(0, None)` where Rust gives
   // `(0, Some(3))` (#382). Not a `filter`'s, std's compiled `Filter` since its family's flip.
   ["size_hint of a copied of a type parameter's", "pub fn f<'a, I: Iterator<Item = &'a u32>>(it: I) -> (usize, Option<usize>) { it.copied().size_hint() }", "`size_hint()` of a `std::iter::Copied<I>`"],
+  // An `enumerate()` of an adapter made in place over a slice's items, JS's
+  // own, which keeps no hint, though held it would be std's struct: refused
+  // naming why (#2281).
+  ["size_hint of an enumerate of a skip_while of a slice's items", "pub fn f(v: &[u8]) -> (usize, Option<usize>) { v.iter().skip_while(|x| **x < 1).enumerate().size_hint() }", "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2281)"],
   // A `&mut` of a `&mut` of an object given to generic code (#1632), a
   // `core::net` address's text (#1644), a writer's `Formatter` made a
   // `&mut dyn` (#1684), and a `Default` std's 1.100 stabilized (#1656):
