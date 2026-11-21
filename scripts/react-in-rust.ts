@@ -38,6 +38,7 @@ import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { cacheDirOf } from "../tooling/build.js";
 import { channel } from "./toolchain";
 import { devTimes, ownsTimes } from "./devTimes";
+import { acquire, lockHeld } from "./leases";
 
 const root = resolve(import.meta.dir, "..");
 const repository = "https://github.com/rust-js-lang/react-in-rust.git";
@@ -74,7 +75,8 @@ export function bound({ dir = ports, own = home, cap = portsCap, free = () => fr
   } catch {}
   for (const name of names) {
     const at = join(dir, name);
-    if (at === own) continue;
+    // Not another checkout's a regen holds, its port in use (#2279).
+    if (at === own || lockHeld(portLock(at))) continue;
     const link = join(at, "rust-js");
     let made: number;
     try {
@@ -125,8 +127,63 @@ function report(markdown: string) {
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`);
 }
 
+/** The lock a regen holds on its checkout's port while it uses it,
+ * `fetch` on: two at once, a retirement's beside a check's or a push's
+ * React gate beside its check, interleaved a `fetch --depth=1` with a
+ * `checkout -f` and a `clean -fdx`, and left its objects unreadable
+ * (#2279). */
+const portLock = (at: string) => join(at, "port.lock");
+
+/** The port's own repository, which each git step of it names: one whose
+ * `.git` is unreadable fails, never reaching a repository above it git
+ * would find, the checkout's own where the port is inside it, as a
+ * test's is (#2279). test/react-port-checkout.test.ts holds every step to it. */
+const portRepository = (at: string) => ({ GIT_DIR: join(at, ".git"), GIT_WORK_TREE: at });
+
+/** `port` checked out at `pin` of `repository`, made where it isn't a
+ * repository yet: what failed, or `undefined`. */
+export function checkoutPin(port: string, repository: string, pin: string): string | undefined {
+  const own = portRepository(port);
+  const step = (cmd: string[], cwd = port) => {
+    const done = run(cmd, cwd, cmd[1] === "init" ? {} : own);
+    return done.ok ? undefined : `${cmd.join(" ")}: ${done.out.trim().split("\n").slice(0, 3).join("; ")}`;
+  };
+  if (!existsSync(join(port, ".git"))) {
+    mkdirSync(port, { recursive: true });
+    const made = step(["git", "init", "-q", port], dirname(port));
+    if (made) return made;
+  }
+  // Its remote, which a run stopped between the two lost: added, or set
+  // where it names another.
+  const remote = run(["git", "remote", "get-url", "origin"], port, own);
+  const named = !remote.ok ? step(["git", "remote", "add", "origin", repository]) : remote.stdout.trim() !== repository ? step(["git", "remote", "set-url", "origin", repository]) : undefined;
+  if (named) return named;
+  if (run(["git", "rev-parse", "HEAD"], port, own).stdout.trim() !== pin) {
+    const fetched = step(["git", "fetch", "-q", "--depth=1", "origin", pin]);
+    if (fetched) return fetched;
+  }
+  return step(["git", "checkout", "-q", "-f", pin]);
+}
+
+/** `checkoutPin`'s, once more from nothing where it failed, the checkout
+ * a cache: one whose objects a stopped or concurrent run left unreadable
+ * failed every push at its React gate (#2279); `say` told why. */
+export function pinCheckedOut(port: string, repository: string, pin: string, say: (line: string) => void = console.log) {
+  const failed = checkoutPin(port, repository, pin);
+  if (failed === undefined) return;
+  say(`react-in-rust: the port's checkout failed (${failed}): made again from nothing`);
+  rmSync(port, { recursive: true, force: true });
+  const again = checkoutPin(port, repository, pin);
+  if (again !== undefined) throw new Error(`the port's checkout, made again, failed: ${again}`);
+}
+
 /** The port at the pin, as committed, beside this checkout. */
 function fetch() {
+  // This checkout's port, one regen's at a time, held to the run's end.
+  mkdirSync(home, { recursive: true });
+  const released = acquire(portLock(home), { wait: 2 * 3_600_000, waiting: "react-in-rust: waiting for this checkout's other regen, which uses its port" });
+  if (!released) throw new Error("this checkout's other regen held its port for 2 hours");
+  process.on("exit", released);
   const removed = bound();
   if (removed.length) console.log(`react-in-rust: removed ${removed.length} other checkouts' directories, gone or past the cap`);
   mkdirSync(home, { recursive: true });
@@ -137,18 +194,9 @@ function fetch() {
     rmSync(link, { force: true });
     symlinkSync(root, link);
   }
-  if (!existsSync(join(port, ".git"))) must(["git", "init", "-q", port], home);
-  // Its remote, which a run stopped between the two lost: added, or set
-  // where it names another.
-  const remote = run(["git", "remote", "get-url", "origin"], port);
-  if (!remote.ok) must(["git", "remote", "add", "origin", repository], port);
-  else if (remote.stdout.trim() !== repository) must(["git", "remote", "set-url", "origin", repository], port);
-  if (run(["git", "rev-parse", "HEAD"], port).stdout.trim() !== pin) {
-    must(["git", "fetch", "-q", "--depth=1", "origin", pin], port);
-  }
-  must(["git", "checkout", "-q", "-f", pin], port);
+  pinCheckedOut(port, repository, pin);
   // What the last run wrote goes; its builds, under node_modules, stay.
-  must(["git", "clean", "-q", "-fdx", "-e", "node_modules"], port);
+  must(["git", "clean", "-q", "-fdx", "-e", "node_modules"], port, portRepository(port));
   // What rust-js reads of an install, as its `yarn install` links them:
   // each package of its workspaces by its name, which another imports it by
   // (`'shared/ReactSymbols'`, rd349) and whose `react` says React's version,
@@ -245,9 +293,9 @@ if (!import.meta.main) {
   if (freeBytes(port) < floorBytes) rmSync(cacheDirOf(port), { recursive: true, force: true });
   const failed = built.ok ? [] : [`\`\`\`\n${built.out.trim().split("\n").slice(-80).join("\n")}\n\`\`\``];
   // Every file the build changed or added, as git sees it.
-  const changed = run(["git", "status", "--porcelain=v1", "--untracked-files=all"], port).stdout.split("\n").filter(Boolean);
-  run(["git", "add", "-A", "--intent-to-add"], port);
-  const diff = run(["git", "diff", "--no-color"], port).stdout;
+  const changed = run(["git", "status", "--porcelain=v1", "--untracked-files=all"], port, portRepository(port)).stdout.split("\n").filter(Boolean);
+  run(["git", "add", "-A", "--intent-to-add"], port, portRepository(port));
+  const diff = run(["git", "diff", "--no-color"], port, portRepository(port)).stdout;
   mkdirSync(join(root, "target"), { recursive: true });
   writeFileSync(join(root, "target/react-in-rust.diff"), diff);
   if (failed.length) report(`### react-in-rust at ${pin.slice(0, 9)} doesn't compile\n\n${failed.join("\n\n")}`);
@@ -259,7 +307,7 @@ if (!import.meta.main) {
     // The compiler's commits since the rust-js the pin's JS was made on, its
     // subject's `Regenerate on rust-js <sha>`: each change above is one of
     // theirs, an intended one named by its ADR or React port gap, `rd313`.
-    const subject = run(["git", "log", "-1", "--format=%s", pin], port).stdout;
+    const subject = run(["git", "log", "-1", "--format=%s", pin], port, portRepository(port)).stdout;
     const made = subject.match(/^Regenerate on rust-js ([0-9a-f]{7,40})\b/)?.[1];
     const since = made && run(["git", "log", "--format=- %h %s", `${made}..HEAD`, "--", "src", "builtins", "webapi", "node", "react", "std", "tooling"], root);
     const commits = !made
