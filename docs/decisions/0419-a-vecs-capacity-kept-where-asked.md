@@ -1092,3 +1092,54 @@ items with a destructor, against native in the plain build, with std's
 iterator structs, and through every metamorphic rewrite. #1941's
 metamorphic-known line went. Mutations `in-place-chain-source-unlinked`
 and `linked-source-base-unwrapped` are caught.
+
+## Amendment (2026-11-21, #2226): an adapter is no array's iterator
+
+`is_array_iter`, recognition's answer to "is this std's iterator over an
+array in JS", was true of every type of `std::iter`: its adapters, `Map`,
+`Inspect` and the rest, and its sources, `successors`, `repeat_n` and the
+rest. The name didn't match the answer, and it gave one wrong result.
+`counted_where_kept` makes a std iterator that JS steps as an array, a
+heap's `iter()`, into the array's `$iter` where the crate keeps
+capacities. There, an adapter generic code made of the `&mut I` it was
+given, `src.inspect(f)`, whose JS is `$lent(src).map(..)`, became
+`$iter($lent(src).map(..))` and threw (`rust-js: an iterator stepped as
+an array's, which doesn't know its back`). This hit any such program that
+reads a capacity, in the plain build. Because `keeps_capacity` is the
+crate's, a `capacity()` anywhere else in the crate turned a neighbouring
+`last()` of the same chain into one too. This is ADR 0262's "results
+change" case: Rust's behaviour is kept.
+
+Now `is_array_iter` answers what its name says: the arrays it lists
+(a slice's, a `Vec`'s, a string's splits, a deque's, a heap's, a map's
+and a set's), and those `iterates_items` lists. It isn't true of anything
+of `std::iter`'s. Every caller was checked: the old answer was traced
+against the new one over the whole corpus in both builds.
+
+- `counted_where_kept` takes the new answer: that is the fix.
+- `lower_bound_is_stds` takes it too, and that changes one thing. A `Vec`
+  grown by `successors`, `once_with` or `repeat_n`, alone or chained
+  before what JS counts, was refused, because these were taken for arrays
+  JS counts but std doesn't. Their runtime forms hint as std's do, so it
+  now compiles and matches native at every length tried.
+- `classify_size_hint` (calls.rs) asks of any std iterator, whose
+  `size_hint()` the runtime's `$sizeHint` answers as std's:
+  `is_std_iterator`, the old answer under its own name. Asking of arrays
+  alone, `Peekable`'s, `Copied`'s and `Cloned`'s `size_hint` stop being
+  known (test/std-coverage.test.ts).
+- `unsupported_in` (support.rs) flips on every adapter but doesn't need
+  the old answer: an adapter's type is supported by its other branches,
+  the whole corpus passes with it asking of arrays alone, and it keeps
+  asking `is_array_iter`.
+- `mark_given` (analysis/hint_asked.rs) asks about an array JS counts or
+  std's compiled struct (`is_compiled_std_iterator`). A compiled `Fuse` or
+  `Peekable` answers std's `size_hint` and `len` itself, so it needs no
+  `$knowing`.
+
+Nothing printed moved: the whole corpus is byte-identical in both builds.
+Corpus `capacity_kept_of_a_lent_adapter` holds generic code's `inspect`,
+`map`, `enumerate` and `last` of a `&mut I`, and the sources' rows. It
+fails on main: the plain build throws, and both builds refuse the
+`successors` rows. New mutations: `array-iter-every-std-iterator`,
+`hint-given-of-a-compiled-struct-unmarked` and
+`lower-bound-of-std-sources-unkept`.

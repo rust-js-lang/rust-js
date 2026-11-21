@@ -724,4 +724,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "adapter-size-hint-unclassified",
+    breaks:
+      "`size_hint()` of std's adapters, which aren't arrays, isn't known as std's where the question is any std iterator's: `Peekable`'s, `Copied`'s and `Cloned`'s (#2226)",
+    file: "src/lower/recognition/calls.rs",
+    find: "            None if self.is_std_iterator(ty.peel_refs()) => Some(Std::SizeHint(true)),\n",
+    replace: "            None if self.is_array_iter(ty.peel_refs()) => Some(Std::SizeHint(true)),\n",
+    tests: ["test/std-coverage.test.ts"],
+  },
 ];

@@ -34,6 +34,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::VecDequeIter))
     }
 
+    /// Whether `ty` is any std iterator rust-js lowers, whose `size_hint()`
+    /// the runtime's `$sizeHint` answers as std's: one over an array
+    /// (`is_array_iter`), or any of `std::iter`'s own, an adapter or a
+    /// source, a JS iterator of what it steps (#2226).
+    pub(in crate::lower) fn is_std_iterator(&self, ty: Ty<'tcx>) -> bool {
+        if self.is_array_iter(ty) {
+            return true;
+        }
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, _) = ty.kind() else { return false };
+        matches!(
+            std_crate(self.tcx, adt.did().krate),
+            Some(StdCrate::Core | StdCrate::Alloc)
+        ) && std_path_under(self.tcx, adt.did(), StdPath::IterMod)
+            && !self.search_runs_code(ty)
+    }
+
+    /// Whether `ty` is std's iterator over an array in JS: a slice's, a
+    /// `Vec`'s or an array's, a string's splits, a deque's, a heap's, a map's
+    /// or a set's, or one `iterates_items` lists. Never an adapter of
+    /// `std::iter`'s, a JS iterator of what it adapts, nor one of its
+    /// sources, `successors` say, which JS steps as std does
+    /// (`is_std_iterator` is either, #2226).
     pub(in crate::lower) fn is_array_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return false };
@@ -44,10 +67,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let item = std_path_item(self.tcx, adt.did());
         let krate = std_crate(self.tcx, adt.did().krate);
-        let under_iter = std_path_under(self.tcx, adt.did(), StdPath::IterMod);
         matches!(krate, Some(StdCrate::Core | StdCrate::Alloc))
-            && (under_iter
-                || matches!(
+            && (matches!(
                     item,
                     Some(
                         StdPath::SliceIter

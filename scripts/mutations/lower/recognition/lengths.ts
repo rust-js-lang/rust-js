@@ -369,4 +369,14 @@ export const mutations: Mutation[] = [
     replace: "        filtered_source(self.tcx, self.reveal(ty)).is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^identity_map_hides_a_filters_count.rs$"],
   },
+  {
+    name: "lower-bound-of-std-sources-unkept",
+    breaks:
+      "`successors`, `once_with` and `repeat_n`, which JS steps as std does, are taken for arrays JS counts that std doesn't, so a `Vec` grown by one in a crate that reads a capacity is refused again (#2226)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        !self.is_array_iter(ty)\n            || self\n",
+    replace:
+      "        !(self.is_array_iter(ty) || matches!(ty.kind(), ty::Adt(adt, _) if std_path_under(self.tcx, adt.did(), StdPath::IterMod)))\n            || self\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_kept_of_a_lent_adapter.rs$"],
+  },
 ];

@@ -9,7 +9,8 @@
 
 use crate::collections::IndexSet;
 use crate::lower::recognition::{
-    Recognition, cloned_source, copied_source, counted_source, is_iter_adapter_def, reversed_source, stepped_by_source,
+    Recognition, cloned_source, copied_source, counted_source, is_compiled_std_iterator, is_iter_adapter_def,
+    reversed_source, stepped_by_source,
 };
 use crate::lower::{Body, fn_def};
 use rustc_middle::thir::ExprKind;
@@ -437,7 +438,8 @@ impl AsksHint {
 
 /// `instance`, an iterator given where its hint is asked, generic code's or a
 /// library's, made knowing it where it's made (`mark_hint_knowing`); and, of
-/// a crate that keeps capacities, of an array JS counts (`is_array_iter`),
+/// a crate that keeps capacities, of an array JS counts (`is_array_iter`) or
+/// std's compiled struct (`is_compiled_std_iterator`),
 /// where JS's own adapters lose its lower bound as it's given
 /// (`given_hint_is_stds`), a set's `iter().enumerate()`,
 /// `entries()`, as where it's collected knowing its type (`grown_by`,
@@ -458,8 +460,13 @@ fn mark_given<'tcx>(
     ) {
         return true;
     }
-    let of_arrays = (instance.walk().filter_map(|part| part.as_type()))
-        .any(|held| !adapter(tcx, held) && recognition.is_array_iter(held.peel_refs()));
+    // Of an array JS counts, or of std's compiled struct, which answers
+    // std's `size_hint` and `len` itself (ADR 0871), not an adapter JS
+    // makes in place of either (#2226).
+    let of_arrays = (instance.walk().filter_map(|part| part.as_type())).any(|held| {
+        !adapter(tcx, held)
+            && (recognition.is_array_iter(held.peel_refs()) || is_compiled_std_iterator(tcx, held.peel_refs()))
+    });
     if !keeps_capacity || !of_arrays || recognition.given_hint_is_stds(instance) {
         return false;
     }

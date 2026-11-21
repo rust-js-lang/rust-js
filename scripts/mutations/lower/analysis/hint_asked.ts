@@ -249,4 +249,14 @@ export const mutations: Mutation[] = [
     replace: "            || !(crate::lower::recognition::is_held_compiled(tcx, part) || false && copy_in_place)\n",
     tests: ["test/corpus.test.ts", "-t", "^size_hint_of_a_lent_copy_of_items.rs$"],
   },
+  {
+    name: "hint-given-of-a-compiled-struct-unmarked",
+    breaks:
+      "a compiled std struct, a `Fuse` of a range, given where its hint is asked in a crate that keeps capacities, is made knowing its length again, `$knowing(..)` around it, though it answers std's `len` itself (#2226)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: " || is_compiled_std_iterator(tcx, held.peel_refs())",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^exact_size_bound_given_any_form.rs$"],
+    snapshots: true,
+  },
 ];

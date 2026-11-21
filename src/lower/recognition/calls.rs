@@ -933,7 +933,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         match self.range_kind(ty.peel_refs()) {
             Some(RangeKind::Exclusive | RangeKind::Inclusive) => Some(Std::Range(RangeOp::SizeHint)),
-            None if self.is_array_iter(ty.peel_refs()) => Some(Std::SizeHint(true)),
+            None if self.is_std_iterator(ty.peel_refs()) => Some(Std::SizeHint(true)),
             _ => None,
         }
     }

@@ -63,4 +63,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^once_and_once_with_hint.rs$"],
   },
+  {
+    name: "array-iter-every-std-iterator",
+    breaks:
+      "every type of `std::iter` is taken for an array's iterator, so in a crate that reads a capacity an adapter generic code makes of its `&mut I`, `src.inspect(f)`, is made an array's `$iter` and throws (#2226)",
+    file: "src/lower/recognition/array_iters.rs",
+    find: "        matches!(krate, Some(StdCrate::Core | StdCrate::Alloc))\n            && (matches!(\n",
+    replace:
+      "        matches!(krate, Some(StdCrate::Core | StdCrate::Alloc))\n            && (std_path_under(self.tcx, adt.did(), StdPath::IterMod) || matches!(\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_kept_of_a_lent_adapter.rs$"],
+  },
 ];
