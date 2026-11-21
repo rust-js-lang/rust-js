@@ -1332,42 +1332,16 @@ export function peekableIterator_tryFold(
   let result;
   let tmp$2;
   let tmp;
-  bb12: {
-    if (peeked != null) {
-      if ($someValue(peeked) == null) {
-        tmp = false;
-        try {
-          result = RTry.fromOutput(init);
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
-      } else {
-        const v = $someValue($someValue(peeked));
-        tmp = false;
-        let tmp$1;
-        try {
-          tmp$1 = RTry.branch(f(init, v));
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
-        if (tmp$1.TAG === "Continue") {
-          tmp$2 = tmp$1._0;
-          break bb12;
-        }
-        try {
-          result = RTry.FromResidual().fromResidual(tmp$1._0);
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
+  if (peeked != null) {
+    if ($someValue(peeked) == null) {
+      tmp = false;
+      try {
+        result = RTry.fromOutput(init);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        }, error);
+        throw error;
       }
       try {
         dropF?.(f);
@@ -1381,6 +1355,41 @@ export function peekableIterator_tryFold(
       }
       return result;
     }
+    const v = $someValue($someValue(peeked));
+    tmp = false;
+    let tmp$1;
+    try {
+      tmp$1 = RTry.branch(f(init, v));
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+      }, error);
+      throw error;
+    }
+    if (tmp$1.TAG === "Continue") {
+      tmp$2 = tmp$1._0;
+    } else {
+      try {
+        result = RTry.FromResidual().fromResidual(tmp$1._0);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        }, error);
+        throw error;
+      }
+      try {
+        dropF?.(f);
+      } catch (error) {
+        $cleanup(() => {
+          if (tmp) {
+            dropB?.(init);
+          }
+        }, error);
+        throw error;
+      }
+      return result;
+    }
+  } else {
     tmp = false;
     tmp$2 = init;
   }
@@ -4982,49 +4991,47 @@ export function skipWhileIterator_tryFold(
   dropIItem,
 ) {
   let tmp = true;
-  bb11: {
-    if (!skipWhile.flag) {
-      const captured = skipWhile.predicate;
-      let find;
-      try {
-        find = $findDropping(
-          $lent($given(skipWhile.iter, IIterator, true)),
-          (x) => {
-            if (!skipWhile.flag) {
-              if (captured(x)) {
-                return false;
-              }
+  if (!skipWhile.flag) {
+    const captured = skipWhile.predicate;
+    let find;
+    try {
+      find = $findDropping(
+        $lent($given(skipWhile.iter, IIterator, true)),
+        (x) => {
+          if (!skipWhile.flag) {
+            if (captured(x)) {
+              return false;
             }
-            skipWhile.flag = true;
-            return true;
-          },
-          dropIItem,
-          true,
-        );
+          }
+          skipWhile.flag = true;
+          return true;
+        },
+        dropIItem,
+        true,
+      );
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+        dropAcc?.(init);
+      }, error);
+      throw error;
+    }
+    let result;
+    if (find != null) {
+      const v = $someValue(find);
+      tmp = false;
+      let tmp$1;
+      try {
+        tmp$1 = RTry.branch(fold(init, v));
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
-          dropAcc?.(init);
         }, error);
         throw error;
       }
-      let result;
-      if (find != null) {
-        const v = $someValue(find);
-        tmp = false;
-        let tmp$1;
-        try {
-          tmp$1 = RTry.branch(fold(init, v));
-        } catch (error) {
-          $cleanup(() => {
-            dropFold?.(fold);
-          }, error);
-          throw error;
-        }
-        if (tmp$1.TAG === "Continue") {
-          init = tmp$1._0;
-          break bb11;
-        }
+      if (tmp$1.TAG === "Continue") {
+        init = tmp$1._0;
+      } else {
         try {
           result = RTry.FromResidual().fromResidual(tmp$1._0);
         } catch (error) {
@@ -5033,16 +5040,27 @@ export function skipWhileIterator_tryFold(
           }, error);
           throw error;
         }
-      } else {
-        tmp = false;
         try {
-          result = RTry.fromOutput(init);
+          dropFold?.(fold);
         } catch (error) {
           $cleanup(() => {
-            dropFold?.(fold);
+            if (tmp) {
+              dropAcc?.(init);
+            }
           }, error);
           throw error;
         }
+        return result;
+      }
+    } else {
+      tmp = false;
+      try {
+        result = RTry.fromOutput(init);
+      } catch (error) {
+        $cleanup(() => {
+          dropFold?.(fold);
+        }, error);
+        throw error;
       }
       try {
         dropFold?.(fold);
@@ -7444,55 +7462,54 @@ export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dro
     skipAndAdvance,
     dropIItem,
   );
-  bb13: {
-    let tmp$3;
-    let tmp$2;
-    let tmp$1;
-    let tmp;
-    let advancedInner;
-    let remainder;
-    if (advanceBy.TAG === "Ok") {
-      remainder = 0;
-      tmp = remainder;
-      tmp$1 = $overflowing((skipAndAdvance - tmp) >>> 0, skipAndAdvance - tmp, 0, 4294967295);
-      if (tmp$1[1]) {
-        throw new Error("attempt to subtract with overflow");
-      }
-      advancedInner = tmp$1[0];
-      tmp$2 = Math.max(advancedInner - skipInner, 0);
-      tmp$3 = $overflowing((n - tmp$2) >>> 0, n - tmp$2, 0, 4294967295);
-      if (tmp$3[1]) {
-        throw new Error("attempt to subtract with overflow");
-      }
-      n = tmp$3[0];
-      skip.n = Math.max(skip.n - advancedInner, 0);
-    } else {
-      const n$1 = advanceBy._0;
-      remainder = n$1;
-      tmp = remainder;
-      tmp$1 = $overflowing((skipAndAdvance - tmp) >>> 0, skipAndAdvance - tmp, 0, 4294967295);
-      if (tmp$1[1]) {
-        throw new Error("attempt to subtract with overflow");
-      }
-      advancedInner = tmp$1[0];
-      tmp$2 = Math.max(advancedInner - skipInner, 0);
-      tmp$3 = $overflowing((n - tmp$2) >>> 0, n - tmp$2, 0, 4294967295);
-      if (tmp$3[1]) {
-        throw new Error("attempt to subtract with overflow");
-      }
-      n = tmp$3[0];
-      skip.n = Math.max(skip.n - advancedInner, 0);
-      if (remainder) {
-        break bb13;
-      }
+  let tmp$3;
+  let tmp$2;
+  let tmp$1;
+  let tmp;
+  let advancedInner;
+  let remainder;
+  if (advanceBy.TAG === "Ok") {
+    remainder = 0;
+    tmp = remainder;
+    tmp$1 = $overflowing((skipAndAdvance - tmp) >>> 0, skipAndAdvance - tmp, 0, 4294967295);
+    if (tmp$1[1]) {
+      throw new Error("attempt to subtract with overflow");
     }
-    if (n > 0) {
-      const value = $advanceBy($lent($given(skip.iter, IIterator, true)), n, dropIItem);
-      if (value.TAG === "Ok") {
-        n = 0;
-      } else {
-        n = value._0;
-      }
+    advancedInner = tmp$1[0];
+    tmp$2 = Math.max(advancedInner - skipInner, 0);
+    tmp$3 = $overflowing((n - tmp$2) >>> 0, n - tmp$2, 0, 4294967295);
+    if (tmp$3[1]) {
+      throw new Error("attempt to subtract with overflow");
+    }
+    n = tmp$3[0];
+    skip.n = Math.max(skip.n - advancedInner, 0);
+  } else {
+    const n$1 = advanceBy._0;
+    remainder = n$1;
+    tmp = remainder;
+    tmp$1 = $overflowing((skipAndAdvance - tmp) >>> 0, skipAndAdvance - tmp, 0, 4294967295);
+    if (tmp$1[1]) {
+      throw new Error("attempt to subtract with overflow");
+    }
+    advancedInner = tmp$1[0];
+    tmp$2 = Math.max(advancedInner - skipInner, 0);
+    tmp$3 = $overflowing((n - tmp$2) >>> 0, n - tmp$2, 0, 4294967295);
+    if (tmp$3[1]) {
+      throw new Error("attempt to subtract with overflow");
+    }
+    n = tmp$3[0];
+    skip.n = Math.max(skip.n - advancedInner, 0);
+    if (remainder) {
+      const value = n === 0 ? undefined : n;
+      return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
+    }
+  }
+  if (n > 0) {
+    const value = $advanceBy($lent($given(skip.iter, IIterator, true)), n, dropIItem);
+    if (value.TAG === "Ok") {
+      n = 0;
+    } else {
+      n = value._0;
     }
   }
   const value = n === 0 ? undefined : n;
@@ -12560,30 +12577,32 @@ export function flattenCompatIUIterator_sizeHint(
     }
     return [lower, upper];
   }
-  bb18: {
-    if (flattenCompat.iter.iter != null) {
-      const [_102, _103] = $sizeHint($someValue(flattenCompat.iter.iter), IIterator);
-      if (_102 === 0) {
-        if (_103 != null) {
-          if ((fhi == null ? 0 : 1) === 1) {
-            if ((bhi == null ? 0 : 1) === 1) {
-              if (_103 === 0) {
-                break bb18;
-              }
+  if (flattenCompat.iter.iter != null) {
+    const [_102, _103] = $sizeHint($someValue(flattenCompat.iter.iter), IIterator);
+    if (_102 === 0) {
+      if (_103 != null) {
+        if ((fhi == null ? 0 : 1) === 1) {
+          if ((bhi == null ? 0 : 1) === 1) {
+            if (_103 === 0) {
+              const a = fhi;
+              const b = bhi;
+              return [
+                lo,
+                $overflowing((a + b) >>> 0, a + b, 0, 4294967295)[1] ? undefined : (a + b) >>> 0,
+              ];
             }
           }
         }
       }
-    } else if ((fhi == null ? 0 : 1) === 1) {
-      if ((bhi == null ? 0 : 1) === 1) {
-        break bb18;
-      }
     }
-    return [lo, undefined];
+  } else if ((fhi == null ? 0 : 1) === 1) {
+    if ((bhi == null ? 0 : 1) === 1) {
+      const a = fhi;
+      const b = bhi;
+      return [lo, $overflowing((a + b) >>> 0, a + b, 0, 4294967295)[1] ? undefined : (a + b) >>> 0];
+    }
   }
-  const a = fhi;
-  const b = bhi;
-  return [lo, $overflowing((a + b) >>> 0, a + b, 0, 4294967295)[1] ? undefined : (a + b) >>> 0];
+  return [lo, undefined];
 }
 
 export function flattenCompatIUIterator2_sizeHint(
@@ -14283,54 +14302,62 @@ export function stepByStepByImplI_specTryFold(
   dropIItem,
 ) {
   let tmp = true;
-  bb12: {
-    if (stepBy.firstTake) {
-      stepBy.firstTake = false;
-      let next;
+  if (stepBy.firstTake) {
+    stepBy.firstTake = false;
+    let next;
+    try {
+      next = IIterator.next(stepBy.iter);
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+        dropAcc?.(acc);
+      }, error);
+      throw error;
+    }
+    let result;
+    if (next == null) {
+      tmp = false;
       try {
-        next = IIterator.next(stepBy.iter);
+        result = RTry.fromOutput(acc);
       } catch (error) {
         $cleanup(() => {
           dropF?.(f);
-          dropAcc?.(acc);
         }, error);
         throw error;
       }
-      let result;
-      if (next == null) {
-        tmp = false;
-        try {
-          result = RTry.fromOutput(acc);
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
-      } else {
-        const x = $someValue(next);
-        tmp = false;
-        let tmp$1;
-        try {
-          tmp$1 = RTry.branch(f(acc, x));
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
-        if (tmp$1.TAG === "Continue") {
-          acc = tmp$1._0;
-          break bb12;
-        }
-        try {
-          result = RTry.FromResidual().fromResidual(tmp$1._0);
-        } catch (error) {
-          $cleanup(() => {
-            dropF?.(f);
-          }, error);
-          throw error;
-        }
+      try {
+        dropF?.(f);
+      } catch (error) {
+        $cleanup(() => {
+          if (tmp) {
+            dropAcc?.(acc);
+          }
+        }, error);
+        throw error;
+      }
+      return result;
+    }
+    const x = $someValue(next);
+    tmp = false;
+    let tmp$1;
+    try {
+      tmp$1 = RTry.branch(f(acc, x));
+    } catch (error) {
+      $cleanup(() => {
+        dropF?.(f);
+      }, error);
+      throw error;
+    }
+    if (tmp$1.TAG === "Continue") {
+      acc = tmp$1._0;
+    } else {
+      try {
+        result = RTry.FromResidual().fromResidual(tmp$1._0);
+      } catch (error) {
+        $cleanup(() => {
+          dropF?.(f);
+        }, error);
+        throw error;
       }
       try {
         dropF?.(f);

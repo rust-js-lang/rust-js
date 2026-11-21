@@ -2,6 +2,7 @@
 //! writes a loop's or a block's exits.
 
 mod branch_ends;
+mod continuations;
 mod continues;
 mod epilogues;
 mod kept;
@@ -10,7 +11,9 @@ mod tails;
 mod tried;
 mod written;
 
-pub(super) use self::{branch_ends::*, continues::*, epilogues::*, kept::*, labels::*, tails::*, tried::*, written::*};
+pub(super) use self::{
+    branch_ends::*, continuations::*, continues::*, epilogues::*, kept::*, labels::*, tails::*, tried::*, written::*,
+};
 
 use super::*;
 use crate::js::Name;

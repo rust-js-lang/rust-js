@@ -180,13 +180,6 @@ pub(super) const STAGES: &[Stage] = &[
             // A chain of tests a loop ended, its body now ending where the
             // chain's does.
             pass("branch values", branch_values_of),
-            // A block MIR made that the passes before left, whose `break`s go on to a
-            // short tail that ends the list, drops that may throw and a `return`:
-            // each `break` that tail, an early return with its drops, as written,
-            // the block named by nothing then (#2215).
-            pass("breaks take their tail", |b, h| {
-                js::statement_lists(b, &mut |s| breaks_take_their_tail(s, h.written))
-            }),
             pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
         ],
         ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],
@@ -1057,6 +1050,26 @@ pub(super) const STAGES: &[Stage] = &[
             // A slice's iterator only stepped, the array's own, once the
             // loops that may take it for theirs are made (rd270).
             pass("stepped slices", |b, _| crate::lower::iterators::stepped_slices(b)),
+            // A block MIR made that the passes before left, whose `break`s go on to a
+            // short tail that ends the list, drops that may throw and a `return`:
+            // each `break` that tail, an early return with its drops, as written,
+            // the block named by nothing then (#2215).
+            pass("breaks take their tail", |b, h| {
+                js::statement_lists(b, &mut |s| breaks_take_their_tail(s, h.written))
+            }),
+            // And one whose `break`s jump on to what follows it, past what its
+            // other ways go on to first, a `?`'s `Continue` in a `try_fold`:
+            // each other way given that, each `break` last on its way then
+            // and gone (#2215).
+            pass("breaks lead on", |b, h| {
+                js::statement_lists(b, &mut |s| breaks_lead_on(s, h.written))
+            }),
+            // Each block named by nothing then, and what followed one whose
+            // end never goes on, which only its `break`s went on to.
+            pass("unlabeled", |b, _| {
+                js::statement_lists(b, &mut unlabeled);
+                js::statement_lists(b, &mut unreachable_after);
+            }),
             // A label MIR made still there whose jumps are each a `break`
             // the program wrote of a loop it labeled: that label, `outer:`
             // (D1, the user's decision).

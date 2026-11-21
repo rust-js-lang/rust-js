@@ -61,15 +61,11 @@ test("the generated JS reads no worse than it read: no shape's share grew", () =
 // ADR 0629, amended). No file has one (C1, #523).
 //
 // std's generated JS too, `@rust-js/std`'s, one rule everywhere (#2215):
-// each label MIR made named by the function it's in, those std has today
-// listed under #2215 till its structuring loses them, never `std/` whole.
-const stdLabels = new Set([
-  "std/iter.js: skipIterator_advanceBy",
-  "std/iter.js: flattenCompatIUIterator_sizeHint",
-  "std/iter.js: peekableIterator_tryFold",
-  "std/iter.js: skipWhileIterator_tryFold",
-  "std/iter.js: stepByStepByImplI_specTryFold",
-]);
+// each label MIR made named by the function it's in, one std has listed
+// under its issue till its structuring loses it, never `std/` whole. None
+// today: tidy's `breaks take their tail` and `breaks lead on` took the
+// last five (#2215).
+const stdLabels = new Set<string>([]);
 
 test("a label in the generated JS is one its Rust wrote", () => {
   const std = [...new Bun.Glob("std/*.js").scanSync(root)].sort().map((file) => join(root, file));

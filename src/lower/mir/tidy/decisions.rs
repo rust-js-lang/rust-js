@@ -679,14 +679,15 @@ pub(super) fn copied_once(stmt: &Stmt) -> bool {
     let StmtKind::Assign(target, value) = &stmt.kind else {
         return false;
     };
-    let mut made = false;
-    js::each_expr(std::slice::from_ref(stmt), &mut |e| {
-        made |= matches!(
-            e.kind,
-            ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(..)
-        );
-    });
-    matches!(target.kind, ExprKind::Var(_)) && pure(value) && !value.has_effects() && !made
+    matches!(target.kind, ExprKind::Var(_)) && reads_alike_twice(value)
+}
+
+/// Whether `value` reads alike written twice, each copy run once: what
+/// reads nothing a copy would read otherwise, no call, no function made
+/// (`pure` makes none) — `copied_once`'s value, and a `const`'s of a tail
+/// a `break` is given (`epilogues::copied_tail`).
+pub(super) fn reads_alike_twice(value: &Expr) -> bool {
+    pure(value) && !value.has_effects()
 }
 
 /// An arm's test of its `paths`, the tests of each: what each tests first

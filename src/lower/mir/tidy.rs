@@ -899,6 +899,9 @@ mod tests {
                 "jumps made next",
                 "named texts",
                 "stepped slices",
+                "breaks take their tail",
+                "breaks lead on",
+                "unlabeled",
                 "written loop labels",
                 "borrow checks first",
                 "guarded cleanups"
