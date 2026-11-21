@@ -1053,10 +1053,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A lazy parameter's argument (`bindings::lazy_params`): `() => 0` is
     /// `0`, its body's value, where its body does nothing and what it gives
-    /// isn't a function, which JS would call for the value in its place.
+    /// isn't a function, which JS would call for the value in its place:
+    /// `useState([])` too, as React's docs write it. Of a closure or a
+    /// function item std's lowering writes as an arrow, `String::new` as
+    /// `() => ""` (#1494).
     fn lazy_value(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
         let gives = match ty.kind() {
             ty::Closure(_, args) => args.as_closure().sig().output().skip_binder(),
+            ty::FnDef(def_id, args) => {
+                // Its late-bound lifetimes erased, as `traits::erased_sig`'s.
+                let args = args.skip_binder();
+                let sig = self
+                    .tcx
+                    .fn_sig(*def_id)
+                    .instantiate(self.tcx, args)
+                    .skip_normalization();
+                self.tcx.instantiate_bound_regions_with_erased(sig).output()
+            }
             _ => return value,
         };
         match &value.kind {

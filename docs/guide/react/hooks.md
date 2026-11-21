@@ -14,8 +14,10 @@ its DevTools and its rules see ordinary React.
 - **A hook whose argument is optional** takes an `Option`.
 - **`use_state` takes what makes the first state**, a closure or a
   function, called on the first render only: `use_state(|| 0)` is
-  `useState(0)`, and `use_state(load_notes)` is `useState(loadNotes)`. A
-  closure whose body does nothing is its value in JS
+  `useState(0)`, `use_state(String::new)` is `useState("")`, and
+  `use_state(load_notes)` is `useState(loadNotes)`. A closure or std
+  function whose body does nothing is its value in JS, `use_state(Vec::new)`
+  `useState([])`
   ([ADR 0593](../../decisions/0593-a-lazy-argument-is-its-value.md)).
 - **Call hooks at the top level** of a component or a custom hook, as
   React's rules say. rust-js doesn't check this; React does, in

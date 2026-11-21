@@ -361,6 +361,39 @@ pub fn Counter() -> JSX::Element {
   expect(jsx).toContain("useState(() => (n) => (n + 1) >>> 0);");
 });
 
+// ADR 0593, amended: a function item's first state is its value too, where
+// std's lowering writes it as an arrow whose body does nothing,
+// `String::new` as `""`, `Vec::new` as `[]`, as a closure's is (#1494); one
+// that calls stays the arrow.
+test("use_state's first state is what its function item gives", async () => {
+  const { fixture, compiler, run } = await import("./support");
+  const { writeFileSync, readFileSync } = await import("node:fs");
+  buildReact();
+  const dir = fixture("lazy-state-items");
+  writeFileSync(join(dir, "lib.rs"), `use react::{JSX, jsx, use_state};
+
+pub fn Form() -> JSX::Element {
+    let (name, _) = use_state(String::new);
+    let (count, _) = use_state(i32::default);
+    let (on, _) = use_state(bool::default);
+    let (list, _) = use_state(Vec::<String>::new);
+    let (made, _) = use_state(|| vec![String::new()]);
+    let (loaded, _) = use_state(|| String::from("a").repeat(3));
+    let (pair, _) = use_state(<(i32, i32)>::default);
+    jsx! { <p>{name.len() as i32 + *count + *on as i32 + list.len() as i32 + made.len() as i32 + loaded.len() as i32 + pair.0}</p> }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("const [name] = useState(\"\");");
+  expect(jsx).toContain("const [count] = useState(0);");
+  expect(jsx).toContain("const [on] = useState(false);");
+  expect(jsx).toContain("const [list] = useState([]);");
+  expect(jsx).toContain("const [made] = useState([\"\"]);");
+  expect(jsx).toContain("const [pair] = useState([0, 0]);");
+  expect(jsx).toMatch(/const \[loaded\] = useState\(\(\) => /);
+});
+
 // ADR 1006, amended: a binding that keeps what it's given, and never calls
 // it, runs nothing, `#[rust_js::runs_nothing]`, so a `pub` thread-local of
 // one is made as its module loads, as React's own `export const` is:

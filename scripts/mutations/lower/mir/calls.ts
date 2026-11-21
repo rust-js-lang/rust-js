@@ -217,6 +217,14 @@ export const mutations: Mutation[] = [
     tests: ["test/react.test.ts", "-t", "use_state's first state"],
   },
   {
+    name: "lazy-item-never-its-value",
+    breaks: "`use_state(String::new)` is `useState(() => \"\")`, the arrow std writes, where it's `useState(\"\")` (#1494)",
+    file: "src/lower/mir/calls.rs",
+    find: "            ty::FnDef(def_id, args) =>",
+    replace: "            ty::FnDef(def_id, args) if false =>",
+    tests: ["test/react.test.ts", "-t", "what its function item gives"],
+  },
+  {
     name: "lazy-function-its-value",
     breaks:
       "state that's a function, `use_state(|| |n| n + 1)`, is `useState((n) => ..)`, which React calls for the state",

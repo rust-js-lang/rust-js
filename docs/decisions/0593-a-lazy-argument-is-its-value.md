@@ -32,6 +32,17 @@ and gives no function is its value**: `use_state(|| 0)` is `useState(0)`,
 `use_state(|| on_tick)` of a function stays a closure, as React would call
 the function. A `lazy` that names no parameter is an error.
 
+**Amended (#1494): of a function item too.** A function item std's
+lowering writes as an arrow is its value as a closure is:
+`use_state(String::new)` is `useState("")`, `use_state(i32::default)`
+`useState(0)`, `use_state(Vec::new)` `useState([])`, as
+`use_state(|| Vec::new())` already was. An array or object literal folds
+too: `useState([])` is what React's docs write; the array JS makes each
+render, which React drops after the first, is never seen. What may run
+code, a call, `new` or JSX, stays the arrow (`has_effects`). ADR 0262's
+"none" row: React calls the function once for the first state, so a pure
+one and its value give the same state.
+
 ## Why
 
 - **One function, of any state**, as rescript-react's.
@@ -56,7 +67,8 @@ the function. A `lazy` that names no parameter is an error.
 ## What holds it
 
 - `test/react.test.ts`, "use_state's first state is what its closure
-  gives": a constant, a function, a call, and a function's state.
+  gives": a constant, a function, a call, and a function's state; and
+  "use_state's first state is what its function item gives" (#1494).
 - `test/diagnostics.test.ts`, "a lazy parameter that isn't there".
 - Mutations: the closure kept, a call unwrapped, a function unwrapped, the
   attribute unchecked.
