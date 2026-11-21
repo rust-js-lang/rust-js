@@ -909,6 +909,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `it.enumerate()` made in place, of an `iter_ty`: as the in-place forms
+    /// owner says (`enumeration_form`), `$enumerate`, which passes its
+    /// source's `nth` on, or JS's own map (#2238).
+    fn enumerated_in_place(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
+        match self.enumeration_form(iter_ty) {
+            crate::lower::iterators::in_place_forms::InPlaceForm::Enumerate => {
+                crate::lower::iterators::enumerated_passing(it)
+            }
+            _ => crate::lower::iterators::enumerated(it),
+        }
+    }
+
     /// What a std iterator method is given, `values` of `arg_tys`: its
     /// receiver, and the rest, each callback that gives back a write's result
     /// giving it as a value, an item, but `try_fold`'s and `try_for_each`'s,
@@ -1153,7 +1165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ne = method == IterMethod::Ne;
                 self.iterators_eq((it, arg()), (item, iter_ty, arg_tys[1]), ne, span)?
             }
-            Some(IterMethod::Enumerate) => crate::lower::iterators::enumerated(it),
+            Some(IterMethod::Enumerate) => self.enumerated_in_place(it, iter_ty),
             Some(m) if m.compares() => self.iterators_cmp((it, arg()), (item, arg_tys[1]), m, span)?,
             Some(IterMethod::Fold) => self.folded((it, def_id), (Some(arg()), arg()), (arg_tys, item), span)?,
             Some(IterMethod::Reduce) => self.folded((it, def_id), (None, arg()), (arg_tys, item), span)?,

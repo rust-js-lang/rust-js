@@ -166,4 +166,13 @@ export const mutations: Mutation[] = [
     replace: "        \"Flatten\" | \"FlatMap\" => InPlaceForm::FlattenEnds,\n",
     unitTests: "lower::iterators::in_place_forms::tests::hint_knowing_forms_stand_for_every_source",
   },
+  {
+    name: "enumerate-in-place-hides-own-nth",
+    breaks:
+      "an `enumerate()` made in place is JS's map whatever its source, so a `skip(n)` of one over a `&mut Box<I>` read back through a generic trait steps it by `next`, never asking the crate's own `nth`, where std's `Skip::next` asks `Enumerate::nth` (#2238)",
+    file: "src/lower/iterators/in_place_forms.rs",
+    find: "            true => InPlaceForm::Enumerate,\n",
+    replace: "            true => InPlaceForm::StepsEnumerate,\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_box_read_back_enumerated_asks_its_own_nth.rs$"],
+  },
 ];

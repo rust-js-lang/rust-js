@@ -120,7 +120,3 @@ plain std field closure_mut_ref.rs
 plain std field held_enumerate.rs
 
 #2185 A Box of a std adapter given by a dictionary, through a trait, steps as the adapter itself
-
-#2238 P0 (plain): a &mut Box<I> read back through a generic trait never asks its own nth under enumerate().skip(n)
-plain dyn-ref generic_box_enumerated_asks_its_own_nth.rs
-plain impl-ref generic_box_enumerated_asks_its_own_nth.rs

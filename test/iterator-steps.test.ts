@@ -371,6 +371,9 @@ const forms: [std: string, form: string, make: (s: Sources) => any][] = [
     [name, "$someItems of ends", (s) => std.$someItems(std.$mapEnds(s.src(), same))],
   ]),
   ["Enumerate", "$enumerate", (s) => std.$enumerate(s.src())],
+  // JS's own map, each item and its index, where nothing between may ask
+  // the source's own `nth` (#2238).
+  ["Enumerate", "$Steps.map enumerating", (s) => s.src().map((x: unknown, i: number) => [i, x])],
   ["Skip", "$skipping", (s) => std.$skipping(s.src(), 1)],
   ["Take", "$taking", (s) => std.$taking(s.src(), 3)],
   ["StepBy", "$stepBy", (s) => std.$stepBy(s.src(), 2)],
@@ -442,6 +445,9 @@ const whereRuns: Record<string, { kinds: readonly SourceKind[]; unseen?: RegExp 
   StepsRunNothing: { kinds: ["bare"], unseen: /^\w+\.size_hint$/ },
   OfArrayItems: { kinds: [] },
   NoOwnNth: { kinds: ["bare"] },
+  // Of a source that writes no `nth` or `nth_back`, `bare`'s: what JS's map
+  // steps by `next` std's `Enumerate` asks by `next` too; its hint unseen.
+  NoOwnNthWithin: { kinds: ["bare"], unseen: /^\w+\.size_hint$/ },
   PlainInners: { kinds: ["bare"] },
 };
 const runsOf = (stdName: string, form: string) => {

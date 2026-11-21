@@ -298,7 +298,7 @@ pub(super) fn for_of(
             keys: false,
         },
         "$next" | "$nextSome" => {
-            let iterable = taken_part(unarrayed(iterated(source.clone())));
+            let iterable = by_next_alone(taken_part(unarrayed(iterated(source.clone()))));
             // The keys `for…in` visits, `js::keys_in(o)`'s: `for (const key
             // in o)` (ADR 0719).
             if let Some(object) = crate::lower::iterators::keys_in_source(&iterable) {
@@ -779,6 +779,19 @@ fn counted_to_length(
 }
 
 /// Of a loop of `[n, key]` of the keys `for…in` visits, enumerated,
+/// A loop's own iterable, of an enumeration made to pass its source's `nth`
+/// on, `$enumerate(src)`, which a loop never asks: the map,
+/// `src.map((x, i) => [i, x])`, as stepped by `next` alone it's the same,
+/// as a person writes it, and what each of a loop's shapes reads (#2238).
+fn by_next_alone(iterable: Expr) -> Expr {
+    match crate::lower::iterators::enumerated_of(&iterable) {
+        Some(enumerated) if enumerated.form == crate::lower::iterators::EnumeratedForm::Passing => {
+            crate::lower::iterators::enumerated(enumerated.source.clone())
+        }
+        _ => iterable,
+    }
+}
+
 /// `$keysIn(o).map((x, i) => [i, x])`: `n`, `key` and `o`, where a counter
 /// is the same `n` each turn: no closure in the body reads it, which would
 /// see it change, where each turn's `const` is its own (ADR 0719). A name

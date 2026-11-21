@@ -44,8 +44,11 @@ pub(in crate::lower) enum InPlaceForm {
     /// `$someItems` of a map that knows its back: `$somes` of ends', its
     /// steps from its back its source's `next_back`.
     SomeItemsOfEnds,
-    /// `$enumerate(src)`.
+    /// `$enumerate(src)`, which passes its source's `nth` on.
     Enumerate,
+    /// `src.map((x, i) => [i, x])`, JS's own, which passes nothing on: of
+    /// a source whose `nth` no adapter between may ask in place of `next`.
+    StepsEnumerate,
     /// `$skipping(src, n)`.
     Skipping,
     /// `$taking(src, n)`.
@@ -117,6 +120,10 @@ pub(in crate::lower) enum Where {
     /// Of a source whose `nth` isn't the crate's (`reaches_its_own` of
     /// `Nth` false).
     NoOwnNth,
+    /// Where no crate's iterator within the source writes `nth` or
+    /// `nth_back`, nor is a type within unseen (`own_nth_within` false): an
+    /// adapter between that steps it by `next` asks what std's would.
+    NoOwnNthWithin,
     /// Of inner iterators whose `count` and `last` aren't the crate's
     /// (`reaches_its_own` of `Count` and `Last` false), whose hint runs
     /// nothing of the crate's (`hint_reaches_own_where` false) and whose
@@ -126,12 +133,13 @@ pub(in crate::lower) enum Where {
 
 #[cfg(test)]
 impl Where {
-    pub(in crate::lower) const ALL: [Where; 6] = [
+    pub(in crate::lower) const ALL: [Where; 7] = [
         Where::Always,
         Where::HintRunsNothing,
         Where::StepsRunNothing,
         Where::OfArrayItems,
         Where::NoOwnNth,
+        Where::NoOwnNthWithin,
         Where::PlainInners,
     ];
 
@@ -144,13 +152,14 @@ impl Where {
             Where::StepsRunNothing => &["own_nth_within", "hint_reaches_own_where"],
             Where::OfArrayItems => &["bounded_by_items"],
             Where::NoOwnNth => &["reaches_its_own"],
+            Where::NoOwnNthWithin => &["own_nth_within"],
             Where::PlainInners => &["reaches_its_own", "hint_reaches_own_where", "drops"],
         }
     }
 }
 
 impl InPlaceForm {
-    pub(in crate::lower) const ALL: [InPlaceForm; 32] = [
+    pub(in crate::lower) const ALL: [InPlaceForm; 33] = [
         InPlaceForm::StepsMap,
         InPlaceForm::MapEnds,
         InPlaceForm::Copied,
@@ -163,6 +172,7 @@ impl InPlaceForm {
         InPlaceForm::SomeItems,
         InPlaceForm::SomeItemsOfEnds,
         InPlaceForm::Enumerate,
+        InPlaceForm::StepsEnumerate,
         InPlaceForm::Skipping,
         InPlaceForm::Taking,
         InPlaceForm::StepBy,
@@ -209,6 +219,9 @@ impl InPlaceForm {
                 &[("Flatten<Option>", Always), ("FlatMap<Option>", Always)]
             }
             InPlaceForm::Enumerate => &[("Enumerate", Always)],
+            // Std's `Enumerate::nth` asks its source's, which JS's map
+            // can't: only where nothing between may ask it (#2238).
+            InPlaceForm::StepsEnumerate => &[("Enumerate", NoOwnNthWithin)],
             InPlaceForm::Skipping => &[("Skip", Always)],
             InPlaceForm::Taking => &[("Take", Always)],
             InPlaceForm::StepBy | InPlaceForm::StepByEnds => &[("StepBy", Always)],
@@ -245,6 +258,7 @@ impl InPlaceForm {
             InPlaceForm::SomeItems => "$someItems",
             InPlaceForm::SomeItemsOfEnds => "$someItems of ends",
             InPlaceForm::Enumerate => "$enumerate",
+            InPlaceForm::StepsEnumerate => "$Steps.map enumerating",
             InPlaceForm::Skipping => "$skipping",
             InPlaceForm::Taking => "$taking",
             InPlaceForm::StepBy => "$stepBy",
@@ -359,6 +373,21 @@ pub(in crate::lower) fn table() -> String {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The form an `enumerate()` of a `source` made in place is made as:
+    /// JS's own map, where no adapter between may ask the source's own
+    /// `nth` in place of `next` (`own_nth_within`), else `$enumerate`, as
+    /// std's `Enumerate::nth` asks its source's whatever it knows of its
+    /// back or its length (#2238). Of the source's type alone, each value
+    /// of it alike: no fact chooses it.
+    pub(in crate::lower) fn enumeration_form(&self, source: Ty<'tcx>) -> InPlaceForm {
+        let form = match self.recognition().own_nth_within(source) {
+            true => InPlaceForm::Enumerate,
+            false => InPlaceForm::StepsEnumerate,
+        };
+        debug_assert!(InPlaceForm::ALL.contains(&form));
+        form
+    }
+
     /// The form `comb`, one of the in-place adapters and consumers whose
     /// form is chosen between several, is made as, of a `receiver_ty`
     /// giving an `output`: the one decision of it. `None` of another,

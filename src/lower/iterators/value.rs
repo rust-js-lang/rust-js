@@ -352,6 +352,15 @@ fn enumerating() -> Expr {
     )
 }
 
+/// `$enumerate(it)` made in place where its source's own `nth` may be
+/// asked through it (`enumeration_form`, #2238): what it knows of its back
+/// and its length its source's, so not said to know them, as
+/// `enumerated_knowing`'s is; a maker that asks them makes its source
+/// knowing.
+pub(in crate::lower) fn enumerated_passing(it: Expr) -> Expr {
+    lazily_made(Expr::call_helper("$enumerate", vec![it]))
+}
+
 /// `$enumerate(it)`: an enumeration of `it`, made knowing its back and its
 /// length, whose index from the back is where it is (ADR 0528), marked so.
 pub(in crate::lower) fn enumerated_knowing(it: Expr) -> Expr {
@@ -361,11 +370,15 @@ pub(in crate::lower) fn enumerated_knowing(it: Expr) -> Expr {
 }
 
 /// How an enumeration made here is written (`enumerated_of`): in place,
-/// `src.map((x, i) => [i, x])` (`enumerated`), or knowing its back and its
-/// length, `$enumerate(src)` (`enumerated_knowing`).
+/// `src.map((x, i) => [i, x])` (`enumerated`); `$enumerate(src)` made in
+/// place to pass its source's `nth` on, knowing of its back and its length
+/// only what its source knows (`enumerated_passing`, #2238), told by its
+/// node alone; or knowing its back and its length, `$enumerate(src)`
+/// (`enumerated_knowing`).
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(in crate::lower) enum EnumeratedForm {
     Mapped,
+    Passing,
     Made,
 }
 
@@ -395,6 +408,12 @@ pub(in crate::lower) fn enumerated_of(e: &Expr) -> Option<Enumerated<'_>> {
             source: &args[0],
             form: EnumeratedForm::Made,
         }),
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$enumerate") && args.len() == 1 => {
+            Some(Enumerated {
+                source: &args[0],
+                form: EnumeratedForm::Passing,
+            })
+        }
         _ => None,
     }
 }
