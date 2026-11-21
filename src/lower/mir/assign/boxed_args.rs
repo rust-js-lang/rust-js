@@ -102,6 +102,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // changes it in place, as a value's boundary gives it (ADRs
                 // 0454, 1115).
                 let crossing = (id, declared, self.instantiated(declared, args));
+                if let Some(iterator) = self.iterator_held_unboxed(crossing) {
+                    return Err(self.unsupported(
+                        span,
+                        &format!(
+                            "giving generic code a `{iterator}` as an iterator: JS holds it as no object, and generic code holds an iterator as the value itself, which would step or read the bare value where its own steps take its place (#2255)"
+                        ),
+                    ));
+                }
                 if self.form_differs(Form::Box, crossing) {
                     let object = self.value_expr(value, span)?;
                     exprs.push(self.form_given(Form::Box, crossing, object, span)?);

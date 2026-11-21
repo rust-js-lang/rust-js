@@ -186,3 +186,44 @@ object's and a number's `&mut`, an
 item with a destructor written through each `&mut`, and an `Option`'s
 `None`. It matches native in each build and through every metamorphic
 rewrite. The diagnostics row and the guide's limitation are gone.
+
+## Amendment: an iterator JS holds as no object is refused where generic code is given it (2026-11-21, #2254, #2255)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior can't be
+preserved yet, so it's a compile error. Generic code holds an iterator type
+parameter, and a `&mut` of one, as the value itself, which assumes the
+iterator is a JS object. One of the crate's that is no object breaks that:
+a fieldless enum's string, or a transparent struct's number. Its own
+`&mut self` steps take its box or place.
+- Given by value, generic code steps the bare value. `Light::Green.take(3)`
+  threw "Cannot create property 'value' on string 'Green'".
+- Given as a `&mut`, generic code gets the caller's place handle and
+  takes it for the value. It clones the handle and writes it back over
+  itself, `*it = old`, so a step it meant to undo stays. That is a silent
+  wrong answer (#2254).
+
+**`generic_facts::iterator_held_unboxed` says which crossings these are.
+The call's arguments (`mir/assign/boxed_args.rs`) refuse them, naming
+#2255.** A crossing counts when the iterator is the crate's own, isn't an
+object, and has more than one value (not `one_valued`), and:
+- it's given by value to a type parameter bound by `Iterator` or
+  `IntoIterator`, or
+- it's given as a `&mut` (`&mut I`, or an `I` given `&mut x`) to one also
+  bound by a trait beyond the iterator traits, `Sized` and auto traits. That
+  bound may clone, compare, format or write it whole.
+
+These still compile:
+- a `&mut` of one bound by the iterator traits alone, `l.by_ref().take(2)`,
+  which only steps the place, as the iterator's own steps do;
+- the iterator's own `next()`, and a `for` loop over it;
+- a unit struct, which has one value, so no write or clone of it can be
+  told apart. Its one failure is #2253's crash.
+
+The fix is #2255: generic code is given such an iterator boxed, with its
+dictionaries adapted; this refusal goes when it lands. Test
+`test/diagnostics.test.ts`'s "a fieldless enum's iterator given to generic
+code as an iterator is refused" and the guide's limitation hold the
+refusal. Mutations `unboxed-iterator-given`,
+`unboxed-iterator-lent-stepped-only` and
+`unboxed-iterator-one-valued-refused` (`generic_facts.ts`) are caught. The
+corpus, the crate corpus and itertools' Crater don't move.

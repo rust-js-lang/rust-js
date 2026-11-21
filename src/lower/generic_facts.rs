@@ -160,6 +160,70 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .or_else(|| self.form_differs(Form::Valued, crossing).then_some(Form::Valued))
     }
 
+    /// The iterator of the crate's own `crossing` gives generic code that
+    /// holds it as the value itself (ADR 0061), where JS holds it as no
+    /// object, a fieldless enum's string or a number, of more than one value
+    /// (`one_valued`):
+    /// generic code would step the bare value, whose own `&mut self` steps
+    /// take its box, and read or write a `&mut` of it as the value where
+    /// it's its caller's place handle, a silent wrong answer (#2254).
+    /// Given by value to a type parameter bound by `Iterator` or
+    /// `IntoIterator`, or as a `&mut`, `&mut I` or an `I` given `&mut x`,
+    /// to one bound by more than the iterator traits, which may clone,
+    /// compare, format or write it whole. Refused until generic code is
+    /// given it boxed (#2255).
+    pub(in crate::lower) fn iterator_held_unboxed(
+        &self,
+        (def_id, declared, instantiated): Crossing<'tcx>,
+    ) -> Option<Ty<'tcx>> {
+        let (declared, instantiated) = past_shared_refs(declared, instantiated);
+        let (param, given, lent) = match (*declared.kind(), *instantiated.kind()) {
+            (ty::Param(_), ty::Ref(_, given, Mutability::Mut)) => (declared, given, true),
+            (ty::Param(_), _) => (declared, instantiated, false),
+            (ty::Ref(_, param, Mutability::Mut), ty::Ref(_, given, Mutability::Mut))
+                if matches!(param.kind(), ty::Param(_)) =>
+            {
+                (param, given, true)
+            }
+            _ => return None,
+        };
+        // Of the crate's own types, a library's too, whose values JS holds as
+        // they are: not std's, a `Box`'s its contents, nor one of a type
+        // parameter, a caller's to say.
+        let own = matches!(given.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()));
+        if !own
+            || given.has_param()
+            || self.is_object(given)
+            || super::representation::one_valued(self.tcx, given)
+            || !self.implements_iterator(given)
+        {
+            return None;
+        }
+        let tcx = self.tcx;
+        let stepping = |id: DefId| {
+            super::recognition::is_std_def(tcx, id, super::recognition::StdItem::Iterator)
+                || super::recognition::is_std_def(tcx, id, super::recognition::StdItem::IntoIterator)
+        };
+        use rustc_hir::attrs::lang_items::LangItem::{MetaSized, PointeeSized, Sized};
+        let iterator_trait = |id: DefId| {
+            stepping(id)
+                || tcx.is_lang_item(id, rustc_hir::attrs::lang_items::LangItem::FusedIterator)
+                || [Sized, MetaSized, PointeeSized]
+                    .into_iter()
+                    .any(|sized| tcx.is_lang_item(id, sized))
+                || tcx.trait_is_auto(id)
+                || tcx
+                    .get_diagnostic_name(id)
+                    .is_some_and(|name| matches!(name.as_str(), "DoubleEndedIterator" | "ExactSizeIterator"))
+        };
+        let bounds = self.declared_bounds(param, tcx.param_env(def_id));
+        let held = match lent {
+            false => bounds.iter().any(|&id| stepping(id)),
+            true => bounds.iter().any(|&id| stepping(id)) && bounds.iter().any(|&id| !iterator_trait(id)),
+        };
+        held.then_some(given)
+    }
+
     /// Whether `declared`, a type of generic code's, is a `Result` it has as
     /// `{ TAG }` where its caller's, `instantiated`, is a write's result:
     /// `Form::Tagged`'s place.

@@ -854,3 +854,69 @@ test("generic code's Box<I> folded by a closure that holds a destructor is refus
   expect(compiled.stderr.toString()).toContain("rust-js does not support giving `folded`'s `I` a type with a destructor, where it takes none yet");
   expect(compiled.stderr.toString()).not.toContain("panicked");
 });
+
+// An iterator JS holds as no object, a fieldless enum's string, of more
+// than one value, given to generic code that holds an iterator as the
+// value itself (ADR 0061): by value, std's `take` would step the bare
+// string; as a `&mut` to an `I: Clone`, generic code would clone and write
+// the caller's place handle as the value, a silent wrong answer (#2254).
+// Refused until it's given boxed (#2255). Its own `next()`, a `for` loop,
+// `by_ref()` given to an adapter, and a unit struct, one value, compile.
+test("a fieldless enum's iterator given to generic code as an iterator is refused, naming #2255", () => {
+  const dir = fixture("unboxed-iterator");
+  const light = `#[derive(Clone, Copy, Debug)]
+enum Light {
+    Red,
+    Green,
+}
+impl Iterator for Light {
+    type Item = u8;
+    fn next(&mut self) -> Option<u8> {
+        *self = match self {
+            Light::Red => Light::Green,
+            Light::Green => Light::Red,
+        };
+        Some(1)
+    }
+}
+#[derive(Clone, Copy, Debug)]
+struct Unit;
+impl Iterator for Unit {
+    type Item = u8;
+    fn next(&mut self) -> Option<u8> {
+        Some(0)
+    }
+}
+fn restored<I: Iterator + Clone>(it: &mut I) -> Option<I::Item> {
+    let old = it.clone();
+    let item = it.next();
+    *it = old;
+    item
+}
+`;
+  const refused = (name: string, body: string) => {
+    const input = join(dir, `${name}.rs`);
+    writeFileSync(input, `${light}pub fn main() {\n${body}\n}\n`);
+    const out = runSync([compiler, input, "-o", join(dir, `${name}.js`)], dir, 60_000);
+    return out.stderr.split("\n").filter((line) => line.startsWith("error: rust-js"));
+  };
+  const error =
+    "error: rust-js does not support giving generic code a `Light` as an iterator: JS holds it as no object, and generic code holds an iterator as the value itself, which would step or read the bare value where its own steps take its place (#2255) yet";
+  expect(refused("by-value", "    let v: Vec<u8> = Light::Red.take(2).collect();\n    println!(\"{v:?}\");")).toEqual([error]);
+  expect(refused("lent", "    let mut l = Light::Red;\n    println!(\"{:?} {l:?}\", restored(&mut l));")).toEqual([error]);
+  const compiles = [
+    "    let mut l = Light::Red;",
+    "    let v: Vec<u8> = l.by_ref().take(2).collect();",
+    "    let mut n = 0;",
+    "    for x in l {",
+    "        n += x;",
+    "        if n > 2 {",
+    "            break;",
+    "        }",
+    "    }",
+    "    let mut u = Unit;",
+    "    println!(\"{v:?} {n} {:?} {:?}\", l.next(), restored(&mut u));",
+  ].join("\n");
+  expect(refused("compiles", compiles)).toEqual([]);
+  expect(existsSync(join(dir, "compiles.js"))).toBe(true);
+});

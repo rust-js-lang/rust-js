@@ -3,6 +3,33 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unboxed-iterator-given",
+    breaks:
+      "a fieldless enum's iterator, a string, given to generic code that holds an iterator as the value itself compiles, so std's `take` steps the bare string and `restored(&mut l)` clones and writes the place handle as the value, a silent wrong answer (#2254, #2255)",
+    file: "src/lower/generic_facts.rs",
+    find: "        held.then_some(given)\n",
+    replace: "        held.then_some(given).filter(|_| false)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a fieldless enum's iterator given to generic code as an iterator is refused"],
+  },
+  {
+    name: "unboxed-iterator-lent-stepped-only",
+    breaks:
+      "a `&mut` of a fieldless enum's iterator given to generic code bound by the iterator traits alone is refused, so `l.by_ref().take(2)`, which only steps its place, no longer compiles (#2255)",
+    file: "src/lower/generic_facts.rs",
+    find: "            true => bounds.iter().any(|&id| stepping(id)) && bounds.iter().any(|&id| !iterator_trait(id)),\n",
+    replace: "            true => bounds.iter().any(|&id| stepping(id)),\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a fieldless enum's iterator given to generic code as an iterator is refused"],
+  },
+  {
+    name: "unboxed-iterator-one-valued-refused",
+    breaks:
+      "a unit struct's iterator, one value no write or clone tells apart, is refused where generic code is given it, so `restored(&mut u)` and itertools' laziness tests no longer compile (#2251, #2255)",
+    file: "src/lower/generic_facts.rs",
+    find: "            || super::representation::one_valued(self.tcx, given)\n            || !self.implements_iterator(given)\n",
+    replace: "            || !self.implements_iterator(given)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a fieldless enum's iterator given to generic code as an iterator is refused"],
+  },
+  {
     name: "held-box-given-back-as-it-is",
     breaks:
       "what generic code gives back of a `&mut W` whose `W` is a `&mut` to an object, its box of the object's cell, is read as the caller's box of the object: `keep(&mut by).write_all(..)` of `by: &mut Vec<u8>` throws `push is not a function` (#1303)",
