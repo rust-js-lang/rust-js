@@ -167,6 +167,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/bounds.rs": ["at", "body"],
   "src/lower/mir/assign.rs": ["binding_var", "body", "branches", "builders", "commented", "cuts", "in_place", "iter_locals", "locals", "named", "parts", "pending", "places", "refs", "writer"],
   "src/lower/mir/assign/boxed_args.rs": ["copy_backs"],
+  "src/lower/mir/assign/let_rest.rs": ["body", "locals"],
   "src/lower/mir/assign/rewritten.rs": ["body"],
   "src/lower/mir/given_arguments.rs": ["at", "body"],
   "src/lower/mir/calls.rs": ["at", "body", "flattened"],
