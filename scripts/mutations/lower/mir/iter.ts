@@ -9,6 +9,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            && let Some(len) = self.len_in_place(&receiver, iter_ty, made)\n",
     replace: "            && let Some(len) = None::<Expr>\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^size_hints_made_in_place.rs$"],
   },
   {
@@ -764,14 +765,6 @@ export const mutations: Mutation[] = [
     find: "            text.is_str_chars(ty) || text.is_char_indices(ty)\n        };\n",
     replace: "            false && (text.is_str_chars(ty) || text.is_char_indices(ty))\n        };\n",
     tests: ["test/corpus.test.ts", "-t", "^chars_size_hint.rs$"],
-  },
-  {
-    name: "in-place-adapter-hint-unasked",
-    breaks: "`take(2)` of a type parameter's iterator, made in generic code where its hint is asked, is JS's own adapter, whose hint is `(0, None)`, where std's is `(2, Some(2))` (#1236)",
-    file: "src/lower/mir/iter.rs",
-    find: "        if let Some(hint) = self.in_place_adapter_hint(&it, source_ty) {\n",
-    replace: "        if let Some(hint) = None::<Expr> {\n",
-    tests: ["test/corpus.test.ts", "-t", "^take_and_filter_of_a_type_parameter_hint_as_std\\.rs$"],
   },
   {
     name: "boxed-function-panic-unseen",

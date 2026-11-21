@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "                asked.hinted.dyn_asked = true;\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_size_hints.rs$"],
+    tests: ["test/diagnostics.test.ts","-t","a dyn Iterator of chars whose size_hint is asked"],
   },
   {
     name: "dyn-coercions-unmarked",
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "                mark_in_place(tcx, recognition, tcx.typeck_root_def_id(body.def_id), of, &mut asked);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^held_adapter_hints_of_adapters_made_inside.rs$"],
+    tests: ["test/corpus.test.ts","-t","^held_rev_of_an_in_place_skip_knows_its_hint.rs$"],
   },
   {
     name: "in-place-of-any-source-marked",
