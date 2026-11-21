@@ -328,7 +328,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     &format!("stepping `{}`, which rust-js found nothing here steps", tr.self_ty()),
                 ));
             }
-            return self.iterator_dictionary(tr.self_ty(), span);
+            return self.iterator_dictionary_of(tr.self_ty(), span);
         }
         // Std's `Try` of what its generic code is given (ADR 0913), and its
         // supertrait `FromResidual`'s, the same dictionary.
@@ -1165,10 +1165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or(of);
                 // A type parameter's given as it is, its own, as what an
                 // `I: Iterator` makes is itself (ADR 0920).
-                let dictionary = match self.iterator_evidence(of, bound.def_id) {
-                    Some(given) => given,
-                    None => self.iterator_dictionary(of, span)?,
-                };
+                let dictionary = self.iterator_dictionary_of(of, span)?;
                 steps.push(Prop::Field(
                     name,
                     Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),

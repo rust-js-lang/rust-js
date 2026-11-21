@@ -324,6 +324,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call_helper("$cycleOf", args))
     }
 
+    /// `ty`'s `Iterator` dictionary: of one given as it is, or a `Box<I>`
+    /// of one, which is its value, the dictionary this function was given
+    /// (`iterator_evidence`, #1611, #2223); else the one it is
+    /// (`iterator_dictionary`). The one order, of a bound's dictionary and of
+    /// what an `IntoIterator`'s makes. An extension's of a `Box<I>` asks it
+    /// itself (`iterator_extension_dictionary`).
+    pub(in crate::lower) fn iterator_dictionary_of(&mut self, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
+        match self.iterator_evidence(ty, std_item(self.tcx, StdItem::Iterator)) {
+            Some(given) => Ok(given),
+            None => self.iterator_dictionary(ty, span),
+        }
+    }
+
     /// `ty`'s `Iterator` dictionary, `{ next }` (ADR 0411): its `next`
     /// steps a `ty` as it is, a range's `$rangeNext`, the crate's own its
     /// impl's, a JS iterator's `$next`, each giving the `Option` generic code

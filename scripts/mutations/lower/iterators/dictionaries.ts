@@ -439,4 +439,13 @@ export const mutations: Mutation[] = [
     replace: "        if let js::ExprKind::Object(props, _) = &mut dictionary.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^wrapper_given_by_a_dictionary_steps_as_std_does.rs$"],
   },
+  {
+    name: "boxed-iterator-bound-as-a-js-iterator",
+    breaks:
+      "a `Box<I>` whose `I` another bound gives as it is, `impl Is<Box<I>>`'s, is given a JS iterator's `Iterator` dictionary, `{ next: $next }`, which steps the crate's own value as an array: its `skip(0).count()` is 1 where Rust's is 3, and it drops before it's stepped (#2223)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            Some(given) => Ok(given),\n",
+    replace: "            Some(given) if ty.boxed_ty().is_none() => Ok(given),\n            Some(_) => self.iterator_dictionary(ty, span),\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_source_given_as_it_is_by_another_bound.rs$"],
+  },
 ];
