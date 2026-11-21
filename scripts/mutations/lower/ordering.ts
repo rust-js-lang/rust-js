@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "flattened-part-cmp-nested",
     breaks: "a derived order of a struct with a flattened field reads the field as nested, `a.grid.cols`, which throws (#1838)",
     file: "src/lower/ordering.rs",
-    find: "                                true => (a.clone(), b.clone(), t),\n                                false => (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t),\n",
-    replace: "                                true | false => (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t),\n",
+    find: "                                true => (a.clone(), b.clone(), t),\n                                false => {\n                                    let def = self.struct_field_def(ty, i);\n                                    let x = self.held(Expr::member(a.clone(), name.clone()), def, t);\n",
+    replace: "                                true | false => {\n                                    let def = self.struct_field_def(ty, i);\n                                    let x = self.held(Expr::member(a.clone(), name.clone()), def, t);\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
   },
   {
@@ -648,5 +648,32 @@ export const mutations: Mutation[] = [
     replace: "    Num::of(ty).is_some()\n",
     tests: ["test/corpus.test.ts", "-t", "^compared_keeps_its_dictionary.rs$"],
     snapshots: true,
+  },
+  {
+    name: "placed-field-compared-as-its-place",
+    breaks:
+      "a derived `Ord` of the crate's iterator whose field is held in a place of its own compares the places, `$cmpIn([..], p.a, r.a)`, not what's in them (#2255)",
+    file: "src/lower/ordering.rs",
+    find: "                                    let x = self.held(Expr::member(a.clone(), name.clone()), def, t);\n                                    (x, self.held(Expr::member(b.clone(), name), def, t), t)\n",
+    replace: "                                    let _ = def;\n                                    (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
+  {
+    name: "placed-variant-compared-as-its-place",
+    breaks:
+      "a derived `PartialOrd` of an enum whose variant's field is held in a place of its own compares the places, not what's in them: `on > kept` of `Step::On(Tri)` (#2255)",
+    file: "src/lower/ordering.rs",
+    find: "                            self.held(Expr::member(a.clone(), &name), Some(def), t),\n                            self.held(Expr::member(b.clone(), &name), Some(def), t),\n",
+    replace: "                            Expr::member(a.clone(), &name),\n                            Expr::member(b.clone(), &name),\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
+  {
+    name: "placed-part-compared-as-its-place",
+    breaks:
+      "a derived `PartialOrd` of a tuple struct whose field is held in a place of its own compares the places: `w > v` (#2255)",
+    file: "src/lower/ordering.rs",
+    find: "                            let at = |x: &Expr| self.held_part(Expr::index(x.clone(), Expr::int(i as i128)), ty, i, t);\n",
+    replace: "                            let at = |x: &Expr| Expr::index(x.clone(), Expr::int(i as i128));\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
   },
 ];

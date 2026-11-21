@@ -7,6 +7,17 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `value`, of type `ty`, as what the crate's iterator's own steps take
+    /// it as: of one JS holds as no object given by value, a place of its
+    /// own, `{ value: x }`, as its `&mut self` steps take a cell (#2255); a
+    /// `&mut` to one is its cell already; any other as it is.
+    pub(in crate::lower) fn own_steps_place(&self, value: Expr, ty: ty::Ty<'tcx>) -> Expr {
+        match !ty.is_ref() && self.is_user_iterator(ty) && self.mut_ref_form(ty).is_cell() {
+            true => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
+            false => value,
+        }
+    }
+
     /// An iterator of the crate's as a JS one, stepped by its trait's
     /// `method`: `Iterator`'s `next`, or `DoubleEndedIterator`'s `next_back`.
     pub(in crate::lower) fn user_iterator(

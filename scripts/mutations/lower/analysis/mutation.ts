@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "placed-copy-itself",
+    breaks:
+      "a `Copy` fieldless enum's iterator given generic code bound by `Clone` takes no clone dictionary, so `it.clone()` is the place itself and stepping one steps the other (#2255)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "    let itself = |ty| clones_itself(tcx, counted, ty) && !placed_by_generic_code(tcx, ty);\n",
+    replace: "    let itself = |ty| clones_itself(tcx, counted, ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+  },
+  {
     name: "unit-struct-object-like",
     breaks:
       "a unit struct, `undefined` or its name's string in JS, is object-like, so generic code given a `&mut` of one puts it in the mutation set and its clone, `keep(&mut m)`'s dictionary and itertools' `take_while_ref`'s, is refused (#2251)",

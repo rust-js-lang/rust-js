@@ -231,6 +231,9 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             }) {
                 return None;
             }
+            if may_hold_placed(tcx, variant, fields, unit) {
+                return None;
+            }
             let values = fields_of(fields)?;
             let props = values
                 .into_iter()
@@ -372,6 +375,9 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             {
                 return None;
             }
+            if may_hold_placed(tcx, variant, &children()?, unit) {
+                return None;
+            }
             let values = match variant.ctor_kind() {
                 None => fields_of(&children()?)?,
                 _ => all(&children()?)?,
@@ -406,4 +412,29 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
         }
         _ => None,
     }
+}
+
+/// Whether `variant`, a type's of the crate's or a library's, given
+/// `values`, its fields' values, may hold one in a place of its own
+/// (`placed_field`, #2255): a type parameter's field given an iterator JS
+/// holds as no object, `a: I` of `Both<Tri, J>` given `Tri::A`, which its
+/// type's `Iterator` impl may hold so, which only a body can ask. Its
+/// initializer's then, or a promoted value's code, as a body lowers it,
+/// the place made where `holding` says.
+fn may_hold_placed<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    variant: &ty::VariantDef,
+    values: &[ty::Value<'tcx>],
+    unit: &Units<'_>,
+) -> bool {
+    let iterator = crate::lower::recognition::std_item(tcx, StdItem::Iterator);
+    (variant.fields.iter().zip(values)).any(|(field, &value)| {
+        let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+        crate::lower::generic_facts::is_type_parameter(declared)
+            && matches!(value.ty.kind(), ty::Adt(..))
+            && const_js_by(tcx, value, unit)
+                .is_some_and(|js| !matches!(js.kind, js::ExprKind::Object(..) | js::ExprKind::Array(..)))
+            && crate::lower::recognition::trait_holds_in(tcx, ty::TypingEnv::fully_monomorphized(), value.ty, iterator)
+                == Some(true)
+    })
 }

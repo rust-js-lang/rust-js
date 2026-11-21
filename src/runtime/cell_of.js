@@ -57,3 +57,49 @@ function $throughBox(dictionary, entries) {
   }
   return through;
 }
+
+// A value given generic code that holds an iterator JS holds as no object
+// in a place of its own, `{ value }`, in its form there: as `shape` says,
+// `1` in a place, a list a tuple's parts each in its own, `0` as it is
+// (#2255). `$fromPlace` gives generic code's back as its caller holds it.
+function $inPlace(value, shape) {
+  if (shape === 1) return { value };
+  return Array.isArray(shape) ? shape.map((part, i) => $inPlace(value[i], part)) : value;
+}
+
+function $fromPlace(value, shape) {
+  if (shape === 1) return value.value;
+  return Array.isArray(shape) ? shape.map((part, i) => $fromPlace(value[i], part)) : value;
+}
+
+// `dictionary`, each entry `given` names taking each argument through
+// `take` as its shape there says, and each `back` names giving its value
+// through `give` (`$throughPlace`'s, `$intoPlace`'s).
+function $placedEntries(dictionary, given, back, take, give) {
+  const placed = { ...dictionary };
+  for (const name of new Set([...Object.keys(given), ...Object.keys(back)])) {
+    const entry = dictionary[name];
+    if (entry === undefined) continue;
+    const shapes = given[name] ?? [];
+    const made = back[name] ?? 0;
+    placed[name] = (...args) => give(entry(...args.map((arg, i) => take(arg, shapes[i] ?? 0))), made);
+  }
+  return placed;
+}
+
+// The dictionary of an iterator JS holds as no object, given generic code
+// that holds it in a place of its own, `{ value }`: what it's of's, each
+// entry given what each place holds, `given`'s shapes (`$inPlace`'s), and
+// giving back in a place what `made` names (#2255).
+function $throughPlace(dictionary, given, made = {}) {
+  return $placedEntries(dictionary, given, made, $fromPlace, $inPlace);
+}
+
+// The dictionary of an impl whose generic code holds an iterator JS holds
+// as no object in a place of its own, given its instance's caller, which
+// holds it as it is: each entry given each value in a place, `given`'s
+// shapes, and giving back what generic code's place holds, `back`'s
+// (#2255).
+function $intoPlace(dictionary, given, back = {}) {
+  return $placedEntries(dictionary, given, back, $inPlace, $fromPlace);
+}

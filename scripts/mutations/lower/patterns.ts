@@ -185,4 +185,14 @@ export const mutations: Mutation[] = [
       "each field is its own symbol's"
     ]
   },
+  {
+    name: "placed-field-destructured-as-its-place",
+    breaks:
+      "a parameter's pattern binds a field held in a place of its own as the place, `function blanksOf({ a, b })`, not what's in it (#2255)",
+    file: "src/lower/patterns.rs",
+    find: "                    .is_some_and(|def| self.placed_field(def, field.ty)) =>\n",
+    replace: "                    .is_some_and(|def| self.placed_field(def, field.ty) && false) =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+    snapshots: true,
+  },
 ];

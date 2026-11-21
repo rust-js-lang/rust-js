@@ -175,6 +175,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             placed = false;
+            // A field held in a place of its own (`placed_field`, #2255),
+            // read as what's in it, `both.a.value` (`held`): that place, a
+            // cell, kept as one, so a `&mut` of the field is it
+            // (`held_cell`).
+            let in_its_place = match (elem, ty.ty.kind()) {
+                (PlaceElem::Field(field, field_ty), ty::Adt(adt, _)) if !adt.is_union() => self.placed_field(
+                    &adt.variant(ty.variant_index.unwrap_or(VariantIdx::ZERO)).fields[field],
+                    field_ty,
+                ),
+                _ => false,
+            };
             value = match elem {
                 // Of a closure's environment, `(*_1).0`: what it captured.
                 PlaceElem::Field(field, _)
@@ -187,6 +198,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => self.project_mir(state, value, ty, elem, span, out)?,
             };
+            if in_its_place
+                && let js::ExprKind::Member(cell, field) = &value.kind
+                && field == js::HELD
+                && fixed_place(cell)
+            {
+                self.locals.mir.cells.push((**cell).clone());
+            }
             ty = ty.projection_ty(self.tcx, elem);
         }
         Ok(value)

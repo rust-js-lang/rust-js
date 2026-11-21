@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "dyn-owned-unplaced",
+    breaks:
+      "a `Box<dyn Iterator>` of a fieldless enum's iterator steps the bare string (#2255)",
+    file: "src/lower/mir/rvalues.rs",
+    find: "                                    true => this.own_steps_place(value, iterator),\n",
+    replace: "                                    true => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+  },
+  {
     name: "parameter-given-its-pointer-boxed",
     breaks:
       "`&raw mut *r` of a parameter its callers give the pointer to its place for is refused as a box of a copy",

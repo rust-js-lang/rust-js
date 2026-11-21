@@ -900,7 +900,22 @@ What's refused is in [the limitations](limitations.md).
   `I::IntoIter` another bound names, `R: IteratorIndex<I::IntoIter>`
   ([0411](../decisions/0411-an-iterator-given-as-it-is-has-its-dictionary.md),
   [0552](../decisions/0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md),
-  #1412).
+  #1412). An iterator of the crate's that JS holds as no object, a
+  fieldless enum's string, is given generic code in a place of its own,
+  `iterator_take({ value: "Red" }, 2, ..)`, as its own `&mut self` steps
+  take a place, and a `&mut` of it as its caller's place; its
+  dictionaries read the place, `$throughPlace(lightClone, { clone: [1] },
+  { clone: 1 })`, a clone a new place (0061, amended, #2255), a unit
+  struct's too, `{ value: undefined }`. A tuple of such iterators taken or
+  given back by value crosses part by part, `firsts([{ value: "Green" },
+  { value: "Red" }])`, and given back, `$fromPlace(r, [0, [1, 1]])`. A
+  dictionary's entry takes it as its own generic code holds it,
+  `$intoPlace(dictionary, { step: [[1, 1]] })`, as a call of it does. A field of the crate's own
+  iterator whose `Iterator` impl holds its type parameter so, `a: I` of
+  `Both<I, J>`, is such a place wherever the type is, `{ a: { value:
+  "Red" }, .. }`: read as what's in it, `both.a.value`, lent as the place
+  itself, and copied, cloned or compared by what's in it, a copy a place
+  of its own.
 - **A `Peekable`, a `Fuse`, and a held `Rev`, `Enumerate`, `Map`,
   `Inspect`, `Flatten`, `FlatMap`, `Skip`, `Take`, `StepBy` or `Chain` are std's own structs,** compiled from std's bodies into `@rust-js/std`: a
   `Rev` its `next_back()` asks of, `let mut r = v.iter().rev();

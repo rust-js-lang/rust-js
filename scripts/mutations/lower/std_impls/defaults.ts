@@ -216,4 +216,13 @@ export const mutations: Mutation[] = [
     replace: "                    && !(false && recognition::struct_is_its_fields(self.tcx, adt.did())\n",
     tests: ["test/corpus.test.ts", "-t", "^saturating_ops_at_every_width.rs$"],
   },
+  {
+    name: "placed-part-default-bare",
+    breaks:
+      "a derived `Default` of a tuple struct whose field is held in a place of its own makes it bare, not a place (#2255)",
+    file: "src/lower/std_impls/defaults.rs",
+    find: "                        Ok(cx.holding_part(part, ty, i, parts[i].0))\n",
+    replace: "                        Ok(part)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
 ];

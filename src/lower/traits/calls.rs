@@ -220,7 +220,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             values.push(self.made_iterator_extension_dictionary(bound.def_id, made))
                         }
                         None if as_it_is => values.push(self.ref_into_iter_dictionary(bound, false, span)?),
-                        None => values.push(self.dictionary(bound, span)?),
+                        // Of a type generic code holds in a place of its
+                        // own, its entries read the place (#2255).
+                        None => match self.placed_dictionary(id, (declared, bound), span)? {
+                            Some(placed) => values.push(placed),
+                            None => values.push(self.dictionary(bound, span)?),
+                        },
                     }
                     defaults.resize(values.len() - 1, None);
                     defaults.push(self.default_dictionary(id, declared.def_id));

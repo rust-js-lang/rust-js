@@ -611,7 +611,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // catalog's, never its count, last or folds (#162,
                             // #2217).
                             let wrapper = crate::lower::recognition::Wrapper::of(self.tcx, self.typing_env, *to);
+                            let owned = to.is_box();
                             let made = |this: &mut Self, value: Expr| -> R<Expr> {
+                                // One the box owns, JS's no object, in a place
+                                // of its own its steps take (#2255).
+                                let value = match owned {
+                                    true => this.own_steps_place(value, iterator),
+                                    false => value,
+                                };
                                 let it = this.seen_through(wrapper, |this| match back {
                                     true => this.as_double_ended(value, iterator, span),
                                     false => this.as_js_iterator(value, iterator, span),

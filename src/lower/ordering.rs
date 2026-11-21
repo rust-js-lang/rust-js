@@ -659,14 +659,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let groups = self.variant_groups(adt, args, &made, &|_, _| false);
                 let mut compared = Vec::new();
-                for crate::lower::copies::VariantGroup { indices, fields, .. } in groups.copied {
+                for crate::lower::copies::VariantGroup { indices, fields, first } in groups.copied {
                     let mut orders = Vec::new();
                     let mut total = true;
-                    for (name, t) in fields {
+                    for ((name, t), def) in fields.into_iter().zip(&first.fields) {
                         total &= !partial || self.is_total(t);
                         orders.push(self.cmp_value(
-                            Expr::member(a.clone(), &name),
-                            Expr::member(b.clone(), &name),
+                            self.held(Expr::member(a.clone(), &name), Some(def), t),
+                            self.held(Expr::member(b.clone(), &name), Some(def), t),
                             t,
                             partial,
                             span,
@@ -712,7 +712,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map(
                             |(i, (name, t))| match super::bindings::is_flatten_field(self.tcx, ty, i) {
                                 true => (a.clone(), b.clone(), t),
-                                false => (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t),
+                                false => {
+                                    let def = self.struct_field_def(ty, i);
+                                    let x = self.held(Expr::member(a.clone(), name.clone()), def, t);
+                                    (x, self.held(Expr::member(b.clone(), name), def, t), t)
+                                }
                             },
                         )
                         .collect(),
@@ -720,7 +724,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .into_iter()
                         .enumerate()
                         .map(|(i, t)| {
-                            let at = |x: &Expr| Expr::index(x.clone(), Expr::int(i as i128));
+                            let at = |x: &Expr| self.held_part(Expr::index(x.clone(), Expr::int(i as i128)), ty, i, t);
                             (at(&a), at(&b), t)
                         })
                         .collect(),

@@ -1111,7 +1111,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(kept) = self.back_kept(std_method, &receiver, (iter_ty, output), (&mut values, arg_tys), span)? {
             return Ok(Some(kept));
         }
-        let it = self.method_source(receiver, iter_ty, (std_method, output), span)?;
+        let it = self.method_source(receiver, receiver_ty, (std_method, output), span)?;
         let it = match lent {
             true => self.lent_iterator(it, receiver_ty),
             false => it,

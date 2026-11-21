@@ -897,7 +897,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         value: Expr,
         span: Span,
     ) -> R<Expr> {
-        if !self.is_rust_fn(def_id) && self.tcx.trait_of_assoc(def_id).is_none() {
+        if !self.is_rust_fn(def_id)
+            && !self.krate.foreign.in_library(def_id)
+            && self.tcx.trait_of_assoc(def_id).is_none()
+        {
             return Ok(value);
         }
         if self.is_rust_fn(def_id)

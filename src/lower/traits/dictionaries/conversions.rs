@@ -80,6 +80,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(None)
     }
 
+    /// Whether `tr`'s dictionary is a conversion's (`conversion_dictionary`),
+    /// whose entry takes what it's given as its caller holds it and gives it
+    /// what it runs in that one's forms (`compiled_conversion`), as no impl's
+    /// dictionary's entry does (`placed_dictionary`).
+    pub(super) fn is_conversion(&self, tr: ty::TraitRef<'tcx>) -> bool {
+        crate::lower::recognition::conversion_by_trait(self.tcx, tr.def_id, tr.args).is_some()
+    }
+
     /// The function a conversion, `method` (`From::from`, `TryFrom::try_from`)
     /// of `args`, runs where its impl is one rust-js compiled, the crate's
     /// own or a library's (`is_rust_fn`): the impl's method, given its
@@ -99,16 +107,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.is_rust_fn(instance.def_id()) || self.tcx.trait_of_assoc(instance.def_id()).is_some() {
             return Ok(None);
         }
+        // Given and giving back in its generic code's forms, as a direct
+        // call of it is: a tuple of iterators held in places of their own,
+        // itertools' `multizip` (#2255).
+        let called = (instance.def_id(), instance.args);
+        self.refuse_placed_within(called, span)?;
+        let sig = (self.tcx).instantiate_bound_regions_with_erased(
+            self.tcx
+                .fn_sig(instance.def_id())
+                .instantiate_identity()
+                .skip_normalization(),
+        );
+        let crossing = |declared: Ty<'tcx>| (instance.def_id(), declared, self.instantiated(declared, instance.args));
+        let (input, output) = (crossing(sig.inputs()[0]), crossing(sig.output()));
         let callee = self.fn_ref(instance.def_id());
         let param = self.unspelled("value");
-        let mut values = vec![Expr::var(&param)];
+        let mut values = vec![match self.form_of(input) {
+            Some(form) => self.form_given(form, input, Expr::var(&param), span)?,
+            None => Expr::var(&param),
+        }];
         values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
-        Ok(Some(match values.len() {
-            1 => callee,
-            _ => Expr::arrow(
-                vec![param.clone().into()],
-                vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js::Span::NONE)],
-            ),
-        }))
+        let back = self.form_of(output);
+        if values.len() == 1 && back.is_none() && self.form_of(input).is_none() {
+            return Ok(Some(callee));
+        }
+        let called = Expr::call(callee, values);
+        let called = match back {
+            Some(form) => self.form_back(form, output, called),
+            None => called,
+        };
+        Ok(Some(Expr::arrow(
+            vec![param.clone().into()],
+            vec![StmtKind::Return(Some(called)).at(js::Span::NONE)],
+        )))
     }
 }

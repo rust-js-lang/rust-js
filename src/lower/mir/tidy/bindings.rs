@@ -222,6 +222,20 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<Name>) {
                                 *e = of.clone().or_at(e.span).or_at(at);
                             }
                         });
+                        // What gave the variable its alias back, `r = _5`
+                        // of `r = &mut *r`, is now `r = r`, which does
+                        // nothing: gone.
+                        let mut j = i;
+                        let mut end = last;
+                        while j < end {
+                            match &stmts[j].kind {
+                                StmtKind::Assign(target, value) if target.kind == of.kind && value.kind == of.kind => {
+                                    stmts.remove(j);
+                                    end -= 1;
+                                }
+                                _ => j += 1,
+                            }
+                        }
                     }
                     continue;
                 }

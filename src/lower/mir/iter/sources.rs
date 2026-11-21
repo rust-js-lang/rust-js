@@ -107,10 +107,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn method_source(
         &mut self,
         value: Expr,
-        ty: Ty<'tcx>,
+        receiver_ty: Ty<'tcx>,
         (method, output): (Option<IterMethod>, Ty<'tcx>),
         span: Span,
     ) -> R<Expr> {
+        // What a `&mut` is to, or one given by value in a place of its own
+        // where its own steps take one (#2255).
+        let (value, ty) = (self.own_steps_place(value, receiver_ty), receiver_ty.peel_refs());
         // Its back too where it knows it, so a clone of it, or one generic
         // code makes, steps it (#1983), `given_stepped`'s.
         if method == Some(IterMethod::Copied)

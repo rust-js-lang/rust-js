@@ -245,4 +245,13 @@ export const mutations: Mutation[] = [
     replace: "                        .then(|| None).flatten(),\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_constant.rs$"],
   },
+  {
+    name: "placed-const-made-bare",
+    breaks:
+      "a constant whose field is held in a place of its own, `Pin(Odd::X)` promoted or `const START: Both<Tri, Tri>`, is rustc's value, the field bare, not a place, where its own steps throw and a comparison reads `undefined` (#2255)",
+    file: "src/lower/representation/consts.rs",
+    find: "            if may_hold_placed(tcx, variant, &children()?, unit) {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
 ];

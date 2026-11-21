@@ -51,21 +51,12 @@ function main() {
   console.log(`${s.r.value === 4}`);
 
   let m = 3;
-  let r = {
+  const r = {
     get value() {
       return m;
     },
     set value(value) {
       m = value;
-    },
-  };
-  const item = r;
-  r = {
-    get value() {
-      return item.value;
-    },
-    set value(value) {
-      item.value = value;
     },
   };
   if (r.value === 3) {
@@ -108,7 +99,7 @@ function main() {
   ];
   refs.sort((a, b) => $cmp(a.value, b.value));
   let tmp = 2;
-  const item$1 = {
+  const item = {
     get value() {
       return tmp;
     },
@@ -116,13 +107,13 @@ function main() {
       tmp = value;
     },
   };
-  const contains = refs.some((each) => each.value === item$1.value);
+  const contains = refs.some((each) => each.value === item.value);
   const arg = $maxBy(refs, (a, b) => $cmp(a.value, b.value));
   console.log(
     `[${refs.map((item) => String(item.value)).join(", ")}] ${contains} ${arg == null ? "None" : `Some(${arg.value})`}`,
   );
   let z = 2;
-  const item$2 = {
+  const item$1 = {
     get value() {
       return z;
     },
@@ -130,7 +121,7 @@ function main() {
       z = value;
     },
   };
-  console.log(`${refs.some((each) => each.value === item$2.value)}`);
+  console.log(`${refs.some((each) => each.value === item$1.value)}`);
   let t = 7;
   const o = {
     get value() {

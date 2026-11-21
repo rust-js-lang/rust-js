@@ -187,7 +187,7 @@ item with a destructor written through each `&mut`, and an `Option`'s
 `None`. It matches native in each build and through every metamorphic
 rewrite. The diagnostics row and the guide's limitation are gone.
 
-## Amendment: an iterator JS holds as no object is refused where generic code is given it (2026-11-21, #2254, #2255)
+## Amendment: an iterator JS holds as no object is refused where generic code is given it (2026-11-21, #2254, #2255; superseded below)
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): Rust's behavior can't be
 preserved yet, so it's a compile error. Generic code holds an iterator type
@@ -227,3 +227,163 @@ refusal. Mutations `unboxed-iterator-given`,
 `unboxed-iterator-lent-stepped-only` and
 `unboxed-iterator-one-valued-refused` (`generic_facts.ts`) are caught. The
 corpus, the crate corpus and itertools' Crater don't move.
+
+## Amendment: an iterator JS holds as no object is given generic code in a place of its own (2026-11-21, #2255; Fixes #2253, #2254)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. This supersedes the refusal above. Generic code
+holds an iterator type parameter, and a `&mut` of one, as the value
+itself. An iterator of the crate's whose `&mut` is a cell, a fieldless
+enum's string or a struct's number, is given it in a place of its own.
+
+**`Form::Placed` (`generic_facts.rs`) is the crossing.** Its condition:
+generic code's type is a type parameter whose `&mut` is the value itself,
+or what an `IntoIterator` of its makes, `U::IntoIter` (ADR 0552). Its
+caller's is such an iterator (`placed_iterator`). Then:
+- Given by value or by `&`, it's `{ value: x }`. Given back, it's the
+  place's `value`. A `&mut` of it is its caller's cell already, so a
+  `&mut I` needs nothing.
+- The crate's own steps of it, a `nth` or a `Box<dyn Iterator>`, take a
+  place too (`own_steps_place`).
+- Its dictionaries read the place (`placed_dictionary`,
+  `traits/dictionaries/placed.rs`). Each entry is asked of `Form::Placed`
+  for each type it takes and gives, in generic code's terms and its
+  caller's. One that takes it reads `value`, `$throughBox`'s `1`. One
+  that gives it back makes a place, a `clone()` a new one:
+  `$throughPlace(triClone, { clone: [1] }, { clone: 1 })`. Its supertraits'
+  and its associated types' bounds' entries are so too, `IntoIter`'s
+  `Iterator`. A `&mut` to it where the trait declares a `&mut` its box
+  holds, `&mut T`, is read and made too, as generic code wraps and reads
+  an object's there (ADR 0454).
+- Its `Copy` and `Clone` bounds take a dictionary, as a copy of the
+  place is a new place (`analysis/mutation.rs`).
+- Std's adapter of it, `Take<I>`, holds it in a place, as its `Iterator`
+  impl does. So std's derived `Clone` of `Take<I>` holds its `I` so too
+  (`held_in_place_by_its_impl`), and `cycle()` of a `take()` clones the
+  place.
+
+A unit struct is placed too, as only the instance knows it's one inside
+generic code. Given by value, `{ value: undefined }`, so itertools' `get`,
+`kmerge` and `kmerge_by` given `Panicking` no longer reach `$given` with
+`undefined` (#2253). Its placed `Clone` gives a place, which `$assign`
+writes through, so a hand-written `Clone` of one written back through
+generic code's `&mut` runs (#2254). The runtime's helpers are unchanged.
+
+**A field of the crate's own iterator is held in a place too
+(`placed_field`).** A field whose declared type is a type parameter the
+type's own `Iterator` impl holds in a place, `a: I` of `struct Both<I,
+J>`, given such an iterator, is that place wherever the type is: `Both {
+a: { value: "A" }, .. }`. So the impl, the type's other impls
+(`held_in_place_by_its_impl` covers the crate's types and the type
+itself) and what's generic over the type, a trait default building
+`Both<Self, J::IntoIter>`, all hold it as the concrete code that builds
+and reads it. Every read is at the place level: `mir_place` projects
+the field through `.value` (representation's `held`), so a MIR read, a
+discriminant (`match k.a`), a borrow and a write (`k.a.value = x`) are
+right by construction. A `&mut` of the field is the place itself, kept
+as a cell (`held_cell`), `step_one(pair.a)`. What reads or makes the
+type by its shape asks the same answer through `held` and `holding`: a
+copy (`copy_parts`, `moved_apart`, a kept copy, through `object_fields`)
+makes a place of its own, `{ ...p, a: { value: p.a.value } }`; a derived
+`Default`, `Ord` and `PartialEq` read and make it so; a tagged enum's
+variants group only with variants whose fields are placed alike. A
+tuple struct's array asks it by each part (`held_part`,
+`holding_part`), `[{ value: "B" }, 1]`, and a parameter's pattern binds
+what's in the place, `function blanksOf({ a: { value: a } })`. A
+function that knows the type reads its fields by the same answer, so
+`placed_within` asks only of a field whose type is generic code's
+parameter whether that code holds it so. A
+clone needs no rule of its own: a placed iterator with state is changed
+in place, so its clone is made and given its place by `holding`; one
+with no state, a unit struct, can't tell a shared place from its own.
+Rejected: switching each site that reads a field (8 of them) to the
+form, as a probe found 5 more wrong answers where code reads the struct
+by its shape, and a discriminant read the place.
+
+**Refused (`placed_within`):** a placed iterator inside what crosses,
+where what holds it holds it otherwise. Examples: a `Vec<I>` or
+`Option<I>` generic code makes and its caller reads; a field of the
+crate's struct that isn't held in a place, a `Vec<I>` field or one its
+`Iterator` impl doesn't hold so, which the caller builds; a `dyn` trait
+of it, whose impl is the caller's. The call's arguments and result
+refuse it, and so does an entry of a placed dictionary. Std's
+iterators, `Take<I>`, are walked by what their `Iterator` impl holds in
+a place, since only generic code makes them; the crate's own by their
+fields, each held as `placed_field` says.
+
+**A library's struct whose fields only its own code reads is walked by
+its type arguments.** Itertools' `IntoChunks<I>` holds a
+`RefCell<GroupInner<.., I, ..>>`. Its `GroupInner` is no iterator, so
+walking its fields refused every `Itertools` entry given an iterator JS
+holds as no object, 44 refusals in itertools' `tests/laziness.rs`. Only
+the library's generic code builds and reads such a struct, and that code
+holds a type parameter the same way everywhere, as std's iterators do.
+So a struct of a crate that isn't std's or the program's, none of whose
+fields the program can name (`is_accessible_from` the crate's root), is
+walked by its type arguments, each held as generic code holds it. Each
+argument is still walked, so a `Vec<I>` among them is refused. Still
+walked by their fields:
+- std's types, which the program reads by their shape;
+- a library's enum, whose variants' fields are public;
+- a library's struct with a public field, which the program may read by
+  its shape, `open.inner` (`refused/library_public_field_holding_a_placed_iterator`).
+
+**A tuple taken or given back by value crosses part by part
+(`placed_shape`).** itertools' `multizip((a, b))` gives its
+`From<(A, B)>` impl a tuple of two iterators. That impl holds each in a
+place, `A: IntoIterator`. A tuple moved by value has no identity anyone
+can see, so a new tuple of the parts, each in its place, is ADR 0262's
+no-difference case: `[{ value: a }, { value: b }]` where the tuple is
+written there, else `$inPlace(t, [1, 1])`, and `$fromPlace(r, [0, [1,
+1]])` given back. A shape is `1` for a place, `0` for a part as it is,
+and a list for a tuple's parts. `form_given` and `form_back` are its one
+owner, so a call, a function value and a dictionary entry all take it.
+`placed_within` takes the parts of such a tuple as crossing. A tuple
+behind a `&` or a `&mut`, or inside a `Vec`, is still refused.
+
+**A dictionary's entry takes what it's given as its own generic code
+holds it.** A call adapts what it gives to the method it resolves to,
+an impl's own or the trait's provided one (`call_callee`, `boxed_args`).
+A dictionary's entry is that method, so a placed dictionary compares
+what generic code holding the dictionary holds with what the method's
+own generic code holds, per argument and result, and adapts only where
+they differ:
+- `$throughPlace` reads the places of the holder's, as before;
+- `$intoPlace` makes the method's own, `$intoPlace(_A__B_Step(..), {
+  step: [[1, 1]] }, { step: [1, 1] })`;
+- where both hold it alike, it's given as it is: a blanket `impl<T:
+  Iterator> Tools for T` given generic code bound by `Tools`, which used to
+  read the place and give the default method the bare value.
+
+A conversion's dictionary is written here of what it runs
+(`conversion_dictionary`). Its entry takes what it's given as its caller
+holds it, and gives the impl it runs that impl's forms
+(`compiled_conversion`, `is_conversion`): `from: (value) =>
+zipFrom_A__B__from($inPlace(value, [1, 1]), ..)`. Itertools' laziness
+tests run 61 of 61, where main runs 58.
+
+Corpus case `non_object_iterator_given_to_generic_code` covers a
+fieldless enum and a unit struct with a hand-written `Clone`. It runs
+them through std's adapters, `take`, `peekable`, a `cycle()` of a
+`take()`, `zip`, `chain`, `flat_map`, `enumerate`, `skip` and `step_by`,
+then a generic function bound by `Clone`, `Debug`, `PartialEq`,
+`Default` and `Ord`, the crate's own `nth`, a `Box<dyn Iterator>`, and a
+`&mut` given to a generic struct that clones and writes it back. It
+matches native in every build and metamorphic rewrite; it also covers
+the crate's `Both<I, J>` built by its own code and by generic code, its
+field read, written and lent as a `&mut`, cloned, and a variant's,
+`OneOf::It(I)`. Corpus case `iterator_field_in_its_place_copied_cloned_compared`
+covers the shape owners: a copy of a `Copy` struct and enum, a clone, a
+`vec![x; 2]`, derived `Ord`, `Hash`, `Default` and `PartialEq`, a
+destructuring, `mem::replace` and `swap` of a field, a `match` and a
+`matches!` of one, a unit struct with a `Drop`, variants of the same
+field types held otherwise, a tuple struct copied, cloned, compared and
+defaulted, and parameters' patterns. `trait_default_takes_an_iterator_as_its_callers_give_it`
+compiles again. A `&mut` a variable keeps of a cell's `value` names the
+cell (`fixed_kept`), so two snapshots read the handle a call gives back
+as it is, and tidy's aliases drop the `r = r` of `r = &mut *r`. itertools'
+`tests/laziness.rs` passes 61 of 61; its 3 lines in crater-decided.txt
+and #2254's metamorphic-known lines are gone. Test
+`test/diagnostics.test.ts`'s "a non-object iterator held otherwise
+inside what crosses into generic code is refused" and the guide's
+limitation hold the refusal.

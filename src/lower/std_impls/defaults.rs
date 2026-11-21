@@ -239,7 +239,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Shape::Array(tys) => {
                     let parts: Vec<_> = (tys.iter()).map(|&t| (t, self.default_may_panic(t))).collect();
-                    let (items, made) = self.parts_in_turn(&parts, span, |cx, i| cx.default_value(parts[i].0, span))?;
+                    let (items, made) = self.parts_in_turn(&parts, span, |cx, i| {
+                        let part = cx.default_value(parts[i].0, span)?;
+                        Ok(cx.holding_part(part, ty, i, parts[i].0))
+                    })?;
                     Self::in_turn(Expr::array(items), made)
                 }
                 Shape::Other => return Err(self.unsupported(span, &format!("`Default` of `{ty}`"))),

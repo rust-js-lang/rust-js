@@ -697,7 +697,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map(|&t| (t, self.needs_clone(t) && self.clone_may_panic(t)))
                         .collect();
                     let (items, made) = self.parts_in_turn(&parts, span, |cx, i| {
-                        cx.clone_value(Expr::index(place.clone(), Expr::int(i as i128)), tys[i], span, out)
+                        let part = cx.held_part(Expr::index(place.clone(), Expr::int(i as i128)), ty, i, tys[i]);
+                        let part = cx.clone_value(part, tys[i], span, out)?;
+                        Ok(cx.holding_part(part, ty, i, tys[i]))
                     })?;
                     Ok(Self::in_turn(Expr::array(items), made))
                 }

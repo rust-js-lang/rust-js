@@ -259,13 +259,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.shape(ty) {
             Shape::Object(fields) => {
                 let mut props = vec![Prop::Spread(place.clone())];
-                // A flattened one's own keys (#1847).
-                let fields = match self.own_object_fields(ty) {
-                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),
-                    None => Self::named_fields(fields),
-                };
-                for (name, t) in fields {
-                    if self.kept_may_change(t) {
+                let fields = self.object_fields(ty, fields);
+                for (name, t, def) in fields {
+                    // One held in a place of its own, which changes in
+                    // place: a place of its own again (#2255).
+                    if def.is_some_and(|def| self.placed_field(def, t)) {
+                        let read = self.held(Expr::member(place.clone(), name.clone()), def, t);
+                        let part = self.kept_copy(read, t, span, out)?;
+                        props.push(Prop::Field(name, self.holding(part, def, t)));
+                    } else if self.kept_may_change(t) {
                         props.push(Prop::Field(
                             name.clone(),
                             self.kept_copy(Expr::member(place.clone(), name), t, span, out)?,
@@ -277,7 +279,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Array(tys) => {
                 let mut parts = Vec::new();
                 for (i, t) in tys.into_iter().enumerate() {
-                    parts.push(self.kept_copy(Expr::index(place.clone(), Expr::int(i as i128)), t, span, out)?);
+                    let part = Expr::index(place.clone(), Expr::int(i as i128));
+                    let part = self.kept_copy(self.held_part(part, ty, i, t), t, span, out)?;
+                    parts.push(self.holding_part(part, ty, i, t));
                 }
                 Ok(Expr::array(parts))
             }
@@ -300,15 +304,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `{ TAG: "Line", _0: .. }`: each variant with a part that
                 // may change, its copy, every other value itself.
                 ty::Adt(adt, args) if adt.is_enum() && self.untagged(ty).is_none() && !self.is_union(ty) => {
-                    let copied = |_: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
-                        fields.iter().any(|&(_, t)| self.kept_may_change(t))
+                    let copied = |v: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
+                        fields.iter().any(|&(_, t)| self.kept_may_change(t)) || self.holds_placed(v, fields)
                     };
                     let groups = self.variant_groups(&adt, args, &copied, &|_, _| false);
                     let mut copies = Vec::new();
-                    for crate::lower::copies::VariantGroup { indices, fields, .. } in groups.copied {
+                    for crate::lower::copies::VariantGroup { indices, fields, first } in groups.copied {
                         let mut props = vec![Prop::Spread(place.clone())];
-                        for (name, t) in fields {
-                            if self.kept_may_change(t) {
+                        for ((name, t), def) in fields.into_iter().zip(&first.fields) {
+                            if self.placed_field(def, t) {
+                                let read = self.held(Expr::member(place.clone(), name.clone()), Some(def), t);
+                                let part = self.kept_copy(read, t, span, out)?;
+                                props.push(Prop::Field(name, self.holding(part, Some(def), t)));
+                            } else if self.kept_may_change(t) {
                                 let part = self.kept_copy(Expr::member(place.clone(), name.clone()), t, span, out)?;
                                 props.push(Prop::Field(name, part));
                             }

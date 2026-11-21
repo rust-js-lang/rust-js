@@ -1206,6 +1206,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(place);
         }
+        // The `value` of a cell a place holds, `both.a`'s (`held_cell`):
+        // its name a cell too.
+        let of_a_cell = self.held_cell(&place).is_some();
         let (object, part) = match place.kind {
             js::ExprKind::Member(object, field) => (*object, Ok(field)),
             js::ExprKind::Index(object, index) => (*object, Err(*index)),
@@ -1229,7 +1232,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A name the program didn't write, which tidy reads as what
                 // it holds where that's a variable nothing sets meanwhile,
                 // a flattened state's `chunk` (`alias_variables`, rd482).
-                self.held_in_place(name, object, out)
+                let held = self.held_in_place(name, object, out);
+                if of_a_cell {
+                    self.locals.mir.cells.push(held.clone());
+                }
+                held
             }
         };
         Ok(match part {

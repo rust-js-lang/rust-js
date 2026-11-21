@@ -616,4 +616,14 @@ export const mutations: Mutation[] = [
     replace: "                if !mentions.contains_key(name) && (false\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
   },
+  {
+    name: "alias-given-back-kept",
+    breaks:
+      "a variable given back the alias of itself, `r = &mut *r`, reads `r = r;` once the alias is inlined, a statement that does nothing (#2255)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "StmtKind::Assign(target, value) if target.kind == of.kind && value.kind == of.kind => {\n",
+    replace: "StmtKind::Assign(target, value) if false && target.kind == of.kind && value.kind == of.kind => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_compare\\.rs$"],
+    snapshots: true,
+  },
 ];

@@ -9,6 +9,7 @@ import {
   $next,
   $roomForHint,
   $sizeHint,
+  $throughPlace,
   $traitImpl,
   iterator_take,
 } from "@rust-js/std";
@@ -70,20 +71,29 @@ function zipped(i, j, IItemJItemSize) {
 function main() {
   const CountdownTools = tTools({ next: countdownIterator_next }, 1);
   const ThreeTools = tTools({ next: threeIterator_next }, 1);
-  const NeverTools = tTools({ next: neverIterator_next, sizeHint: neverIterator_sizeHint }, 1);
   const threeIntoIterator = {
     intoIter: (items) => items,
     IntoIterIterator: () => ({ next: threeIterator_next }),
   };
+  const NeverTools = tTools(
+    $throughPlace(
+      { next: neverIterator_next, sizeHint: neverIterator_sizeHint },
+      { sizeHint: [1] },
+    ),
+    1,
+  );
   console.log(
     `[${Array.from($iterator(ThreeTools.thenAll([1], [0], threeIntoIterator), (iterator) => bothIterator_next(iterator, { next: threeIterator_next }, { next: threeIterator_next }))).join(", ")}]`,
   );
   console.log(
     `[${Array.from(
-      $iterator(NeverTools.thenAll(undefined, [2], threeIntoIterator), (iterator) =>
+      $iterator(NeverTools.thenAll({}, [2], threeIntoIterator), (iterator) =>
         bothIterator_next(
           iterator,
-          { next: neverIterator_next, sizeHint: neverIterator_sizeHint },
+          $throughPlace(
+            { next: neverIterator_next, sizeHint: neverIterator_sizeHint },
+            { sizeHint: [1] },
+          ),
           { next: threeIterator_next },
         ),
       ),
@@ -92,15 +102,25 @@ function main() {
   console.log(
     `[${Array.from(
       $iterator(
-        ThreeTools.thenAll([0], undefined, {
-          intoIter: (items) => items,
-          IntoIterIterator: () => ({ next: neverIterator_next, sizeHint: neverIterator_sizeHint }),
-        }),
+        ThreeTools.thenAll(
+          [0],
+          {},
+          {
+            intoIter: (items) => items,
+            IntoIterIterator: () => ({
+              next: neverIterator_next,
+              sizeHint: neverIterator_sizeHint,
+            }),
+          },
+        ),
         (iterator) =>
           bothIterator_next(
             iterator,
             { next: threeIterator_next },
-            { next: neverIterator_next, sizeHint: neverIterator_sizeHint },
+            $throughPlace(
+              { next: neverIterator_next, sizeHint: neverIterator_sizeHint },
+              { sizeHint: [1] },
+            ),
           ),
       ),
     ).join(", ")}]`,
@@ -108,14 +128,17 @@ function main() {
   console.log(
     `[${Array.from(
       $iterator(
-        NeverTools.thenAll(undefined, [4, 5], {
+        NeverTools.thenAll({}, [4, 5], {
           intoIter: (items) => $iter(items),
           IntoIterIterator: () => ({ next: $next }),
         }),
         (iterator) =>
           bothIterator_next(
             iterator,
-            { next: neverIterator_next, sizeHint: neverIterator_sizeHint },
+            $throughPlace(
+              { next: neverIterator_next, sizeHint: neverIterator_sizeHint },
+              { sizeHint: [1] },
+            ),
             { next: $next },
           ),
       ),
@@ -123,27 +146,25 @@ function main() {
   );
   left = 3;
   console.log(
-    `[${Array.from($iterator(CountdownTools.thenAll(undefined, [1], threeIntoIterator), (iterator) => bothIterator_next(iterator, { next: countdownIterator_next }, { next: threeIterator_next }))).join(", ")}]`,
+    `[${Array.from($iterator(CountdownTools.thenAll({}, [1], threeIntoIterator), (iterator) => bothIterator_next(iterator, { next: countdownIterator_next }, { next: threeIterator_next }))).join(", ")}]`,
   );
 
   left = 4;
-  console.log(
-    `[${CountdownTools.firsts(undefined).join(", ")}] [${NeverTools.firsts(undefined).join(", ")}]`,
-  );
-  const hinted = NeverTools.hinted(undefined);
-  const value = CountdownTools.hinted(undefined);
+  console.log(`[${CountdownTools.firsts({}).join(", ")}] [${NeverTools.firsts({}).join(", ")}]`);
+  const hinted = NeverTools.hinted({});
+  const value = CountdownTools.hinted({});
   console.log(
     `(${hinted[0]}, ${hinted[1] == null ? "None" : `Some(${hinted[1]})`}) (${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`,
   );
   left = 2;
   console.log(
-    `[${zipped($iterator(undefined, countdownIterator_next), [7, 8, 9], 8)
+    `[${zipped($iterator({}, countdownIterator_next), [7, 8, 9], 8)
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
   console.log(
     `[${zipped(
-      $iterator(undefined, neverIterator_next, false, undefined, undefined, neverIterator_sizeHint),
+      $iterator({}, neverIterator_next, false, undefined, undefined, neverIterator_sizeHint),
       $iterator([0], threeIterator_next),
       2,
     )

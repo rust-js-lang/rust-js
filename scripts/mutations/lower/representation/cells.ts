@@ -95,4 +95,22 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
   },
+  {
+    name: "placed-field-read-as-its-place",
+    breaks:
+      "a field of the crate's iterator held in a place of its own, `a: I` of `Both<Tri, J>`, is read as the place, not what's in it: `match k.a` tests `{ value: \"B\" }` against `\"B\"` (#2255)",
+    file: "src/lower/representation/cells.rs",
+    find: "        if field.is_some_and(|field| self.placed_field(field, ty)) {\n            return Expr::held(read);\n",
+    replace: "        if false {\n            return Expr::held(read);\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
+  {
+    name: "placed-field-made-bare",
+    breaks:
+      "a field of the crate's iterator held in a place of its own is made as the value, not a place: a derived `Default` of `Both<Tri, Tri>` is `{ a: \"A\" }`, whose own steps throw (#2255)",
+    file: "src/lower/representation/cells.rs",
+    find: "        if field.is_some_and(|field| self.placed_field(field, ty)) {\n            return Expr::object(",
+    replace: "        if false {\n            return Expr::object(",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
 ];

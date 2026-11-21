@@ -608,4 +608,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^undo_stack_map_reentered\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "placed-part-read-as-its-place",
+    breaks:
+      "a tuple struct's field held in a place of its own, `Wrap(I, u8)`'s `0`, is read as the place, not what's in it (#2255)",
+    file: "src/lower/representation.rs",
+    find: "                self.held_part(read, ty, i, tys[i])\n",
+    replace: "                read\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
 ];

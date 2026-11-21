@@ -245,4 +245,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_whole_local_beside_an_address.rs$"],
   },
+  {
+    name: "placed-field-place-unkept",
+    breaks:
+      "a field held in a place of its own isn't kept as the cell it is, so a `&mut` of it is a copy into a new place and back, `const it = { value: pair.a.value }`, not the place, `pair.a` (#2255)",
+    file: "src/lower/mir/places.rs",
+    find: "            if in_its_place\n",
+    replace: "            if in_its_place && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+    snapshots: true,
+  },
 ];

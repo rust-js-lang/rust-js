@@ -3,6 +3,42 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "through-place-made-bare",
+    breaks:
+      "a placed dictionary's entry that gives a `Self` back, `clone()`, gives it bare, out of its place (#2255)",
+    file: "src/runtime/cell_of.js",
+    find: "  if (shape === 1) return { value };\n",
+    replace: "  if (shape === 1) return value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+  },
+  {
+    name: "from-place-left-placed",
+    breaks:
+      "what generic code gives back of a tuple of iterators in their places, `firsts`'s `(A, B)`, is given its caller still in its places, so `{:?}` of a part prints `[object Object]` (#2255)",
+    file: "src/runtime/cell_of.js",
+    find: "  if (shape === 1) return value.value;\n",
+    replace: "  if (shape === 1) return value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_of_placed_iterators_crosses_part_by_part\\.rs$"],
+  },
+  {
+    name: "place-parts-unwalked",
+    breaks:
+      "a tuple's parts given generic code by `$inPlace(t, [1, 1])` are given as their caller holds them, so a tuple's own impl's `step` stores into the bare string (#2255)",
+    file: "src/runtime/cell_of.js",
+    find: "  return Array.isArray(shape) ? shape.map((part, i) => $inPlace(value[i], part)) : value;\n",
+    replace: "  return value;\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_of_placed_iterators_crosses_part_by_part\\.rs$"],
+  },
+  {
+    name: "into-place-entries-take-bare",
+    breaks:
+      "an `$intoPlace` dictionary's entry is given what it takes as its caller holds it, so a tuple's own impl's `step` stores into the bare string (#2255)",
+    file: "src/runtime/cell_of.js",
+    find: "  return $placedEntries(dictionary, given, back, $inPlace, $fromPlace);\n",
+    replace: "  return dictionary;\n",
+    tests: ["test/corpus.test.ts", "-t", "^tuple_of_placed_iterators_crosses_part_by_part\\.rs$"],
+  },
+  {
     name: "cell-of-write-rebinds",
     breaks:
       "an object's in-place cell, given where generic code has its box, `*t = v` of `fn put<T>(t: &mut T, v: T)`, rebinds the cell's own name for the object, so the caller's object is left as it was",

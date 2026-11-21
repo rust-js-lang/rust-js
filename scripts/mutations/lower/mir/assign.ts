@@ -897,8 +897,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the object a kept `&mut` is fixed in is a name of the program's, never read as the variable it holds, so a flattened state's field binding is `const value = chunk; value.value`, where upstream reads `chunk.value` (rd482)",
     file: "src/lower/mir/assign.rs",
-    find: "                self.held_in_place(name, object, out)\n",
-    replace: "                self.spill(name, object, out)\n",
+    find: "                let held = self.held_in_place(name, object, out);\n",
+    replace: "                let held = self.spill(name, object, out);\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell.rs$"],
     snapshots: true,
   },
@@ -1067,5 +1067,15 @@ export const mutations: Mutation[] = [
     find: "                        (self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of)\n                    }) =>\n",
     replace: "                        false && (self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of)\n                    }) =>\n",
     tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
+  },
+  {
+    name: "kept-cell-name-not-a-cell",
+    breaks:
+      "a `&mut` a variable keeps of a field held in a place of its own, `let lent = &mut pair.a`, names the place, but isn't kept as the cell it is, so its steps copy into a new place and back in a `try`, not step it (#2255)",
+    file: "src/lower/mir/assign.rs",
+    find: "                if of_a_cell {\n",
+    replace: "                if of_a_cell && false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+    snapshots: true,
   },
 ];

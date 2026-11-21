@@ -73,14 +73,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         ));
                     }
                     let lent = matches!(arg_tys[0].kind(), ty::Ref(_, _, ty::Mutability::Mut));
+                    // A `&mut` to the crate's iterator JS holds as no object,
+                    // its cell, which its own steps take (#2255).
+                    let held = this.mut_ref_form(iter_ty).is_cell();
                     let exprs = values
                         .map(|v| match v {
-                            Value::Ref(place) => Ok(place),
+                            Value::Ref(place) if !held => Ok(place),
                             v => this.value_expr(v, span),
                         })
                         .collect::<R<Vec<_>>>()?;
                     let mut exprs = exprs;
-                    let receiver = exprs.remove(0);
+                    let receiver = this.own_steps_place(exprs.remove(0), arg_tys[0]);
                     let it = this.as_js_iterator(receiver, iter_ty, span)?;
                     // One that owns items with a destructor, given whole to a
                     // consumer that leaves none, `partition`'s or `max_by`'s,

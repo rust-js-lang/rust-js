@@ -16,15 +16,7 @@ function keep(kept, x, GetMutVec) {
 }
 
 function doubledAll(c, CRefMutIntoIterator) {
-  const item = c.impl.getMut(c);
-  for (const x of CRefMutIntoIterator.intoIter({
-    get value() {
-      return item.value;
-    },
-    set value(value) {
-      item.value = value;
-    },
-  })) {
+  for (const x of CRefMutIntoIterator.intoIter(c.impl.getMut(c))) {
     x.value = (x.value * 2) >>> 0;
   }
 }
@@ -47,15 +39,7 @@ function same(t) {
 }
 
 function longer(text, GetMutString) {
-  const item = GetMutString.getMut(text);
-  return {
-    get value() {
-      return item.value;
-    },
-    set value(value) {
-      item.value = value;
-    },
-  };
+  return GetMutString.getMut(text);
 }
 
 function main() {

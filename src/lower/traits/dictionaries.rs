@@ -7,6 +7,7 @@ use crate::lower::temporary_names::Role;
 mod collecting;
 mod conversions;
 mod declared;
+mod placed;
 mod references;
 use declared::{holds_a_function, is_impl_call, reads_only_at_top};
 

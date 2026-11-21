@@ -55,7 +55,7 @@ use super::{FnCx, R};
 use crate::js::Expr;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
-use rustc_span::def_id::DefId;
+use rustc_span::def_id::{CRATE_DEF_ID, DefId};
 
 /// Where a value crosses into generic code or back: the generic function,
 /// whose bounds say what its type parameters are, a type of its signature
@@ -103,6 +103,77 @@ pub(in crate::lower) enum Form {
     /// caught again, `fmt_result_value`'s, its one owner (#1410, #1634). As
     /// an argument, the same form on both sides.
     Valued,
+    /// A type parameter generic code holds as an iterator, whose `&mut` is
+    /// the value itself (ADR 0061), given its caller's iterator that JS
+    /// holds as no object, a fieldless enum's string, a unit struct's
+    /// `undefined` or a number, whose `&mut` is a cell: generic code holds
+    /// it in a place of its own, `{ value: x }`, so its `&mut` is that
+    /// place, which the type's own `&mut self` steps take (#2255). Given,
+    /// `{ value: x }`; given back, its `value`. A `&mut` of it is its
+    /// caller's cell already, generic code's place. Its dictionaries read
+    /// the place's `value` where they take it by value or `&` and make one
+    /// of what they give back of it (`placed_dictionary`). A tuple of one
+    /// taken or given back by value is a tuple of each part so (`Placed`).
+    Placed,
+}
+
+/// What of a value is in a place of its own where it crosses into generic
+/// code or back (`placed_shape`, `Form::Placed`): the value, or the parts
+/// of a tuple taken or given by value, each so or as it is.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum Placed {
+    Itself,
+    Parts(Vec<Option<Placed>>),
+}
+
+impl Placed {
+    /// Its runtime code, as `$inPlace`, `$fromPlace` and the dictionaries
+    /// that read and make places take it: `1` of the value, a list of a
+    /// tuple's parts, each `0` as it is.
+    pub(in crate::lower) fn code(&self) -> Expr {
+        match self {
+            Placed::Itself => Expr::int(1),
+            Placed::Parts(parts) => Expr::array(
+                (parts.iter())
+                    .map(|part| part.as_ref().map_or_else(|| Expr::int(0), Placed::code))
+                    .collect(),
+            ),
+        }
+    }
+
+    /// `value` given in this shape: `{ value: x }`, a tuple written here
+    /// part by part, `[{ value: a }, b]`, another `$inPlace(t, [1, 0])`.
+    fn given(&self, value: Expr) -> Expr {
+        let parts = match self {
+            Placed::Itself => return Expr::object(vec![crate::js::Prop::Field(crate::js::HELD.into(), value)]),
+            Placed::Parts(parts) => parts,
+        };
+        match value.kind {
+            crate::js::ExprKind::Array(items, ..)
+                if items.len() == parts.len()
+                    && !(items.iter()).any(|item| matches!(item.kind, crate::js::ExprKind::Spread(_))) =>
+            {
+                Expr::array(
+                    (items.into_iter().zip(parts))
+                        .map(|(item, part)| match part {
+                            Some(part) => part.given(item),
+                            None => item,
+                        })
+                        .collect(),
+                )
+            }
+            _ => Expr::call_helper("$inPlace", vec![value, self.code()]),
+        }
+    }
+
+    /// `value`, generic code's in this shape, given back as its caller
+    /// holds it: its place's `value`, a tuple's `$fromPlace(t, [1, 0])`.
+    fn back(&self, value: Expr) -> Expr {
+        match self {
+            Placed::Itself => Expr::held(value),
+            Placed::Parts(_) => Expr::call_helper("$fromPlace", vec![value, self.code()]),
+        }
+    }
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -170,7 +241,294 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.tagged_where(declared, instantiated)
             }
             Form::Valued => valued_where(self.tcx, declared, instantiated),
+            // An iterator held in a place of its own, or a tuple of one.
+            Form::Placed => self.placed_shape((def_id, declared, instantiated)).is_some(),
         }
+    }
+
+    /// Whether generic code `def_id` holds a value of its `declared` type,
+    /// its caller's `instantiated`, in a place of its own (`Form::Placed`),
+    /// the value itself, not a tuple of it: through shared references,
+    /// which are the value, a type parameter whose `&mut` is the value
+    /// itself, given an iterator whose `&mut` is a cell. What an
+    /// `IntoIterator` of generic code's makes, `U::IntoIter`, is so too, as
+    /// it's held as it is (ADR 0552); never an item, `I::Item`, which its
+    /// iterator gives as its caller holds it. A field's (`placed_field`) and
+    /// a place's, a `&mut` of it, ask it.
+    pub(in crate::lower) fn holds_in_place(&self, (def_id, declared, instantiated): Crossing<'tcx>) -> bool {
+        let (declared, instantiated) = past_shared_refs(declared, instantiated);
+        let into_iter = || {
+            crate::lower::recognition::trait_method(
+                self.tcx,
+                crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::IntoIterator),
+                "IntoIter",
+            )
+        };
+        let made_by_into_iter = matches!(*declared.kind(),
+            ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if def_id == into_iter());
+        (matches!(declared.kind(), ty::Param(_)) || made_by_into_iter)
+            && self.placed_iterator(instantiated)
+            && (self
+                .mut_ref_form_in(declared, self.tcx.param_env(def_id))
+                .is_the_value()
+                || self.held_in_place_by_its_impl(def_id, declared))
+    }
+
+    /// What of a value crossing into generic code or back is in a place of
+    /// its own (`Form::Placed`): the value (`holds_in_place`), or the parts
+    /// of a tuple given or given back by value, `(A, B)` of itertools'
+    /// `multizip`, each as it is held, which no one can tell from a tuple
+    /// made anew, as nothing keeps a tuple moved (ADR 0262's no
+    /// difference). Not a tuple behind a reference, which is its caller's.
+    pub(in crate::lower) fn placed_shape(&self, crossing: Crossing<'tcx>) -> Option<Placed> {
+        let (def_id, declared, instantiated) = crossing;
+        if let (ty::Tuple(d), ty::Tuple(i)) = (*declared.kind(), *instantiated.kind()) {
+            let parts: Vec<Option<Placed>> = (d.iter().zip(i.iter()))
+                .map(|(d, i)| self.placed_shape((def_id, d, i)))
+                .collect();
+            return parts.iter().any(Option::is_some).then_some(Placed::Parts(parts));
+        }
+        self.holds_in_place(crossing).then_some(Placed::Itself)
+    }
+
+    /// A type generic code `def_id` holds in a place of its own
+    /// (`Form::Placed`) inside what its `declared` type is, its caller's
+    /// `instantiated`, where what holds it doesn't, or the other way about:
+    /// a `Vec<I>`, an `Option<I>` or a struct of the crate's, which its
+    /// caller holds as it is; an iterator not the crate's, std's `Take<I>`,
+    /// which holds it as that iterator's own `Iterator` impl does, where
+    /// `def_id` doesn't, a derived `Clone` of `Take<I>` (#2255). Refused.
+    /// Not at the top, the form's own crossing, nor a part of a tuple there
+    /// taken or given by value, which it crosses part by part
+    /// (`placed_shape`); not a `&mut` to one, its caller's cell either way.
+    /// Nor inside a library's struct whose fields only its own generic code
+    /// reads, which holds it as generic code holds it wherever.
+    pub(in crate::lower) fn placed_within(
+        &self,
+        def_id: DefId,
+        declared: Ty<'tcx>,
+        instantiated: Ty<'tcx>,
+    ) -> Option<Ty<'tcx>> {
+        let placed = |d: Ty<'tcx>, i: Ty<'tcx>| self.holds_in_place((def_id, d, i));
+        // Each part, and whether what holds it holds it in a place, `None`
+        // as generic code holds it, whichever; a tuple's as what holds the
+        // tuple, `held`, holds it.
+        let parts = |declared: Ty<'tcx>,
+                     instantiated: Ty<'tcx>,
+                     held: Option<bool>|
+         -> Vec<(Ty<'tcx>, Ty<'tcx>, Option<bool>)> {
+            let not = Some(false);
+            match (*declared.kind(), *instantiated.kind()) {
+                (ty::Ref(_, d, Mutability::Not), ty::Ref(_, i, Mutability::Not))
+                | (ty::Array(d, _), ty::Array(i, _))
+                | (ty::Slice(d), ty::Slice(i)) => vec![(d, i, not)],
+                (ty::Tuple(d), ty::Tuple(i)) => d.iter().zip(i.iter()).map(|(d, i)| (d, i, held)).collect(),
+                // A `dyn`'s trait's types, which its caller's impl, its
+                // pair's, takes as its caller holds them, `&mut dyn Get<I>`.
+                (ty::Dynamic(d, ..), ty::Dynamic(i, ..)) => (d.iter().zip(i.iter()))
+                    .flat_map(|(d, i)| {
+                        let types = |p: ty::Binder<'tcx, ty::ExistentialPredicate<'tcx>>| -> Vec<Ty<'tcx>> {
+                            match p.skip_binder() {
+                                ty::ExistentialPredicate::Trait(tr) => tr.args.types().collect(),
+                                ty::ExistentialPredicate::Projection(p) => {
+                                    p.args.types().chain(p.term.as_type()).collect()
+                                }
+                                ty::ExistentialPredicate::AutoTrait(_) => Vec::new(),
+                            }
+                        };
+                        types(d)
+                            .into_iter()
+                            .zip(types(i))
+                            .map(|(d, i)| (d, i, not))
+                            .collect::<Vec<_>>()
+                    })
+                    .collect(),
+                // A `&mut` to what's held so is its caller's cell either way;
+                // to another, what it's to, an object, `&mut Wrap<I>`.
+                (ty::Ref(_, d, Mutability::Mut), ty::Ref(_, i, Mutability::Mut)) if !placed(d, i) => {
+                    vec![(d, i, not)]
+                }
+                // Of the crate's own, its fields, each held as its own code
+                // holds it, in a place of its own where its `Iterator` impl
+                // holds it so (`placed_field`), as a `&mut I` field holds
+                // its caller's cell either way, `Back { iter: &mut I }`'s.
+                // One `def_id` knows the type of reads it so too, by the
+                // same answer: only one of its type parameters' is held as
+                // `def_id` holds that parameter.
+                (ty::Adt(d, dargs), ty::Adt(i, iargs)) if d.did() == i.did() && built_by_the_crate(d) => (d
+                    .all_fields())
+                .map(|field| {
+                    let of = |args| field.ty(self.tcx, args).skip_normalization();
+                    let held = of(dargs).has_param() && self.placed_field(field, of(iargs));
+                    (of(dargs), of(iargs), Some(held))
+                })
+                .collect(),
+                // Of a library's struct the program can't read a field of,
+                // itertools' `IntoChunks<I>`, what its own generic code
+                // builds and reads alone, as std's iterators are, which
+                // holds a type parameter as generic code holds it wherever:
+                // its type arguments, each as it's held, walked on.
+                (ty::Adt(d, dargs), ty::Adt(i, iargs))
+                    if d.did() == i.did()
+                        && d.is_struct()
+                        && !self.recognition().in_sysroot(d.did())
+                        && self.held_in_place_by(instantiated).is_empty()
+                        && !(d.all_fields()).any(|field| field.vis.is_accessible_from(CRATE_DEF_ID, self.tcx)) =>
+                {
+                    (dargs.types().zip(iargs.types())).map(|(d, i)| (d, i, None)).collect()
+                }
+                // Of another crate's that iterates none in a place, std's,
+                // which the program reads by shape, and a library's it may,
+                // an enum's or one with a public field, its fields too, past
+                // what only names a type, `PhantomData<T>` and a raw
+                // pointer's pointee, a `Vec<T>`'s.
+                (ty::Adt(d, dargs), ty::Adt(i, iargs))
+                    if d.did() == i.did() && self.held_in_place_by(instantiated).is_empty() && !d.is_phantom_data() =>
+                {
+                    (d.all_fields())
+                        .map(|field| {
+                            let of = |args| field.ty(self.tcx, args).skip_normalization();
+                            (of(dargs), of(iargs), not)
+                        })
+                        .collect()
+                }
+                _ if let (Some((d, _)), Some((i, _))) = (
+                    super::pointers::raw_pointee(self.tcx, declared),
+                    super::pointers::raw_pointee(self.tcx, instantiated),
+                ) =>
+                {
+                    vec![(d, i, not)]
+                }
+                (ty::Adt(d, dargs), ty::Adt(i, iargs)) if d.did() == i.did() => {
+                    let held = self.held_in_place_by(instantiated);
+                    (dargs.types().zip(iargs.types()).enumerate())
+                        .map(|(at, (d, i))| (d, i, Some(held.contains(&at))))
+                        .collect()
+                }
+                _ => Vec::new(),
+            }
+        };
+        // A tuple by value crosses part by part (`placed_shape`).
+        let top = match declared.kind() {
+            ty::Tuple(_) => None,
+            _ => Some(false),
+        };
+        let (declared, instantiated) = past_shared_refs(declared, instantiated);
+        if !instantiated
+            .walk()
+            .filter_map(|part| part.as_type())
+            .any(|t| self.placed_iterator(t))
+        {
+            return None;
+        }
+        let mut todo = parts(declared, instantiated, top);
+        // Each once, as a type of the crate's may hold itself.
+        let mut seen = crate::collections::IndexSet::default();
+        while let Some((d, i, held)) = todo.pop() {
+            if !seen.insert((d, i, held)) {
+                continue;
+            }
+            if held.is_some_and(|held| placed(d, i) != (held && self.placed_iterator(i))) {
+                return Some(i);
+            }
+            todo.extend(parts(d, i, held));
+        }
+        None
+    }
+
+    /// A call of generic code `id`, its instance of `args`, refused where
+    /// an iterator generic code holds in a place of its own is inside what
+    /// it takes or gives, a `Vec<I>`'s, which its caller holds as it is
+    /// (`placed_within`, #2255): each route of a call asks it.
+    pub(in crate::lower) fn refuse_placed_within(
+        &self,
+        (id, args): (DefId, ty::GenericArgsRef<'tcx>),
+        span: Span,
+    ) -> R<()> {
+        let sig = (self.tcx)
+            .instantiate_bound_regions_with_erased(self.tcx.fn_sig(id).instantiate_identity().skip_normalization());
+        for declared in sig.inputs_and_output.iter() {
+            if let Some(placed) = self.placed_within(id, declared, self.instantiated(declared, args)) {
+                return Err(self.unsupported(
+                    span,
+                    &format!(
+                        "a `{placed}` inside a `{declared}` of generic code's, which holds it in a place of its own, `{{ value }}`, where its caller holds it as it is (#2255)"
+                    ),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    /// Whether `param`, a type parameter of `def_id`'s impl, or of `def_id`
+    /// itself, a type, is one its type, an iterator, holds in a place of its
+    /// own, as its own `Iterator` impl holds it so: `I` of std's derived
+    /// `Clone` of `Take<I>`, which clones what that holds as it's held
+    /// (`held_in_place_by`), and of the crate's own `Both<I, J>`, whose field
+    /// `a: I` holds it so wherever it's known (`field_crossing`).
+    fn held_in_place_by_its_impl(&self, def_id: DefId, param: Ty<'tcx>) -> bool {
+        use rustc_hir::def::DefKind;
+        let tcx = self.tcx;
+        let holder = match tcx.def_kind(def_id) {
+            DefKind::Impl { .. } | DefKind::Struct | DefKind::Enum => def_id,
+            _ => match tcx.impl_of_assoc(def_id) {
+                Some(imp) => imp,
+                None => return false,
+            },
+        };
+        let ty::Adt(adt, args) = *tcx.type_of(holder).instantiate_identity().skip_normalization().kind() else {
+            return false;
+        };
+        let Some(at) = args.types().position(|arg| arg == param) else {
+            return false;
+        };
+        self.iterated_in_place(adt, at)
+    }
+
+    /// The type arguments, by position, that `ty`, an iterator not the
+    /// crate's, std's `Take<I>`, holds in a place of its own: those its
+    /// `Iterator` impl holds so (`Form::Placed`), as what makes one is
+    /// generic code that holds it so. None of another type, which its caller
+    /// makes and holds as it is, nor of one whose type arguments are a
+    /// caller's.
+    fn held_in_place_by(&self, ty: Ty<'tcx>) -> Vec<usize> {
+        let ty::Adt(adt, args) = *ty.kind() else {
+            return Vec::new();
+        };
+        match built_by_the_crate(adt) {
+            true => Vec::new(),
+            false => (0..args.types().count())
+                .filter(|&at| self.iterated_in_place(adt, at))
+                .collect(),
+        }
+    }
+
+    /// Whether `adt`'s `Iterator` impl holds its type argument at `at` in a
+    /// place of its own (`Form::Placed`): a type parameter of the impl whose
+    /// `&mut` is the value itself, `I` of `impl<I: Iterator> Iterator for
+    /// Take<I>`.
+    fn iterated_in_place(&self, adt: ty::AdtDef<'tcx>, at: usize) -> bool {
+        let tcx = self.tcx;
+        let iterator = super::recognition::std_item(tcx, super::recognition::StdItem::Iterator);
+        tcx.all_impls(iterator).any(|iterating| {
+            matches!(*tcx.type_of(iterating).instantiate_identity().skip_normalization().kind(),
+            ty::Adt(of, declared) if of.did() == adt.did()
+                && declared.types().nth(at).is_some_and(|held| {
+                    matches!(held.kind(), ty::Param(_))
+                        && self.mut_ref_form_in(held, tcx.param_env(iterating)).is_the_value()
+                }))
+        })
+    }
+
+    /// Whether `ty`, a type known whole, is an iterator whose `&mut` is a
+    /// cell, as JS holds it as no object, `Form::Placed`'s: a fieldless
+    /// enum's string, a unit struct's `undefined` or a struct's number, the
+    /// crate's or a library's, or a `Box` of one, which is what it holds.
+    pub(in crate::lower) fn placed_iterator(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(..))
+            && !ty.has_param()
+            && self.mut_ref_form(ty).is_cell()
+            && self.implements_iterator(ty)
     }
 
     /// The form generic code has of what a function gives back, generic
@@ -180,70 +538,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn form_of_result(&self, crossing: Crossing<'tcx>) -> Option<Form> {
         self.form_of(crossing)
             .or_else(|| self.form_differs(Form::Valued, crossing).then_some(Form::Valued))
-    }
-
-    /// The iterator of the crate's own `crossing` gives generic code that
-    /// holds it as the value itself (ADR 0061), where JS holds it as no
-    /// object, a fieldless enum's string or a number, of more than one value
-    /// (`one_valued`):
-    /// generic code would step the bare value, whose own `&mut self` steps
-    /// take its box, and read or write a `&mut` of it as the value where
-    /// it's its caller's place handle, a silent wrong answer (#2254).
-    /// Given by value to a type parameter bound by `Iterator` or
-    /// `IntoIterator`, or as a `&mut`, `&mut I` or an `I` given `&mut x`,
-    /// to one bound by more than the iterator traits, which may clone,
-    /// compare, format or write it whole. Refused until generic code is
-    /// given it boxed (#2255).
-    pub(in crate::lower) fn iterator_held_unboxed(
-        &self,
-        (def_id, declared, instantiated): Crossing<'tcx>,
-    ) -> Option<Ty<'tcx>> {
-        let (declared, instantiated) = past_shared_refs(declared, instantiated);
-        let (param, given, lent) = match (*declared.kind(), *instantiated.kind()) {
-            (ty::Param(_), ty::Ref(_, given, Mutability::Mut)) => (declared, given, true),
-            (ty::Param(_), _) => (declared, instantiated, false),
-            (ty::Ref(_, param, Mutability::Mut), ty::Ref(_, given, Mutability::Mut))
-                if matches!(param.kind(), ty::Param(_)) =>
-            {
-                (param, given, true)
-            }
-            _ => return None,
-        };
-        // Of the crate's own types, a library's too, whose values JS holds as
-        // they are: not std's, a `Box`'s its contents, nor one of a type
-        // parameter, a caller's to say.
-        let own = matches!(given.kind(), ty::Adt(adt, _) if !self.is_std(adt.did()));
-        if !own
-            || given.has_param()
-            || self.is_object(given)
-            || super::representation::one_valued(self.tcx, given)
-            || !self.implements_iterator(given)
-        {
-            return None;
-        }
-        let tcx = self.tcx;
-        let stepping = |id: DefId| {
-            super::recognition::is_std_def(tcx, id, super::recognition::StdItem::Iterator)
-                || super::recognition::is_std_def(tcx, id, super::recognition::StdItem::IntoIterator)
-        };
-        use rustc_hir::attrs::lang_items::LangItem::{MetaSized, PointeeSized, Sized};
-        let iterator_trait = |id: DefId| {
-            stepping(id)
-                || tcx.is_lang_item(id, rustc_hir::attrs::lang_items::LangItem::FusedIterator)
-                || [Sized, MetaSized, PointeeSized]
-                    .into_iter()
-                    .any(|sized| tcx.is_lang_item(id, sized))
-                || tcx.trait_is_auto(id)
-                || tcx
-                    .get_diagnostic_name(id)
-                    .is_some_and(|name| matches!(name.as_str(), "DoubleEndedIterator" | "ExactSizeIterator"))
-        };
-        let bounds = self.declared_bounds(param, tcx.param_env(def_id));
-        let held = match lent {
-            false => bounds.iter().any(|&id| stepping(id)),
-            true => bounds.iter().any(|&id| stepping(id)) && bounds.iter().any(|&id| !iterator_trait(id)),
-        };
-        held.then_some(given)
     }
 
     /// Whether `declared`, a type of generic code's, is a `Result` it has as
@@ -398,8 +692,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// box wherever the type is, the object's in-place cell, `$cellOf(point)`,
     /// so its generic code and the code that knows `T` hold one value, as
     /// a call's `Form::Box` is; read through it, written and made at its
-    /// crossing (#1405). `None` where this code holds the field as it's
-    /// declared, a number's cell or generic code's own box.
+    /// crossing (#1405). And a field whose type parameter the type's own
+    /// `Iterator` impl holds in a place of its own (`Form::Placed`), given
+    /// an iterator JS holds as no object, `a: I` of `Both<Tri, J>`: held in
+    /// that place wherever the type is, `{ value: "A" }`, as its impls and
+    /// what's generic over the type hold it (#2255). `None` where this code
+    /// holds the field as it's declared, a number's cell or generic code's
+    /// own box.
     pub(in crate::lower) fn field_crossing(
         &self,
         ty: Ty<'tcx>,
@@ -409,23 +708,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Adt(adt, args) = *ty.kind() else {
             return None;
         };
-        if adt.is_union() || self.is_std(adt.did()) {
-            return None;
-        }
         let def = &adt.variant(variant).fields[field];
-        let declared = def.ty(self.tcx, ty::GenericArgs::identity_for_item(self.tcx, adt.did()));
         let instantiated = def.ty(self.tcx, args).skip_normalization();
         let instantiated = (self.tcx)
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(instantiated))
             .unwrap_or(instantiated);
-        let crossing = (adt.did(), declared.skip_normalization(), instantiated);
-        self.form_differs(Form::Box, crossing).then_some(crossing)
+        (self.field_crossing_of(adt, def, instantiated)).filter(|&crossing| self.form_differs(Form::Box, crossing))
+    }
+
+    /// Whether `field`, of the crate's own type, given `ty` (`Tri` for
+    /// `a: I` of a `Both<Tri, J>`), is held in a place of its own wherever
+    /// its type is, `{ value: "A" }` (`field_crossing`'s `Form::Placed`,
+    /// #2255): what reads, copies, clones, compares or makes that type by
+    /// its shape reads and makes the field so (`held`, `holding`).
+    pub(in crate::lower) fn placed_field(&self, field: &ty::FieldDef, ty: Ty<'tcx>) -> bool {
+        let tcx = self.tcx;
+        let owner = tcx.parent(field.did);
+        let owner = match tcx.def_kind(owner) {
+            rustc_hir::def::DefKind::Variant => tcx.parent(owner),
+            _ => owner,
+        };
+        matches!(
+            tcx.def_kind(owner),
+            rustc_hir::def::DefKind::Struct | rustc_hir::def::DefKind::Enum
+        ) && (self.field_crossing_of(tcx.adt_def(owner), field, ty))
+            .is_some_and(|crossing| self.holds_in_place(crossing))
+    }
+
+    /// Whether `ty`, a struct, holds a field in a place of its own
+    /// (`placed_field`).
+    pub(in crate::lower) fn struct_holds_placed(&self, ty: Ty<'tcx>) -> bool {
+        matches!(*ty.kind(), ty::Adt(adt, args) if adt.is_struct()
+            && (adt.non_enum_variant().fields.iter()).any(|field| self.placed_field(field, self.field_ty(field, args))))
+    }
+
+    /// Whether `variant`, of fields `fields` as its type has them, holds one
+    /// in a place of its own (`placed_field`): its fields' definitions
+    /// matter to what copies, clones or compares it by its shape.
+    pub(in crate::lower) fn holds_placed(&self, variant: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]) -> bool {
+        (variant.fields.iter().zip(fields)).any(|(def, &(_, t))| self.placed_field(def, t))
+    }
+
+    /// The crossing of `def`, a field of `adt`, the crate's own type, given
+    /// `instantiated`: its type's code's declared type against it.
+    fn field_crossing_of(
+        &self,
+        adt: ty::AdtDef<'tcx>,
+        def: &ty::FieldDef,
+        instantiated: Ty<'tcx>,
+    ) -> Option<Crossing<'tcx>> {
+        if adt.is_union() || self.is_std(adt.did()) {
+            return None;
+        }
+        let declared = def.ty(self.tcx, ty::GenericArgs::identity_for_item(self.tcx, adt.did()));
+        Some((adt.did(), declared.skip_normalization(), instantiated))
     }
 
     /// The form generic code has of `declared` where its caller's type is
     /// `instantiated`, if it's another than the caller's.
     pub(in crate::lower) fn form_of(&self, crossing: Crossing<'tcx>) -> Option<Form> {
-        let form = [Form::Handle, Form::Box, Form::HeldBox, Form::Tagged]
+        let form = [Form::Handle, Form::Box, Form::HeldBox, Form::Tagged, Form::Placed]
             .into_iter()
             .find(|&form| self.form_differs(form, crossing));
         let answer = match form {
@@ -434,6 +776,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(Form::Box) => "box",
             Some(Form::HeldBox) => "held-box",
             Some(Form::Tagged) => "tagged",
+            Some(Form::Placed) => "placed",
             Some(Form::Valued) => unreachable!("`form_of` never asks `Form::Valued`"),
         };
         crate::decisions::record("generic-form", answer);
@@ -574,6 +917,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Form::HeldBox => Expr::call_helper("$heldCellOf", vec![value]),
             Form::Tagged => Expr::call_helper("$writeTagged", vec![value]),
             Form::Valued => value,
+            Form::Placed => self.placed_shape(crossing).expect("a placed crossing").given(value),
         })
     }
 
@@ -587,6 +931,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match form {
             Form::Handle | Form::Box => Expr::held(value),
+            Form::Placed => self.placed_shape(crossing).expect("a placed crossing").back(value),
             Form::HeldBox => Expr::call_helper("$heldObjectOf", vec![value]),
             Form::Tagged => Expr::call_helper("$writeOf", vec![value]),
             Form::Valued => unreachable!("a call's write result, `fmt_result_value`'s (#1634)"),
@@ -614,6 +959,14 @@ pub(in crate::lower) fn held_write_result(held: Ty<'_>) -> String {
     format!(
         "a write's result, `{held}`, held inside what generic code has as a `Result` of its type parameters, `{{ TAG }}` there (#1416)"
     )
+}
+
+/// Whether `adt` is the crate's own, whose values its own code may build
+/// and read as it holds them, where generic code holds a type parameter of
+/// it otherwise (`Form::Placed`): not another crate's, std's `Take<I>`,
+/// which only that crate's generic code makes (#2255).
+fn built_by_the_crate(adt: ty::AdtDef<'_>) -> bool {
+    adt.did().is_local()
 }
 
 /// `declared` and `instantiated` past the shared references both have.

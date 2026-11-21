@@ -337,8 +337,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a call through a dictionary of a `&mut Self::Out` of an object takes the box its entry gives as the object",
     file: "src/lower/mut_refs.rs",
-    find: "        if !self.is_rust_fn(def_id) && self.tcx.trait_of_assoc(def_id).is_none() {\n",
-    replace: "        if !self.is_rust_fn(def_id) {\n",
+    find: "            && self.tcx.trait_of_assoc(def_id).is_none()\n        {\n",
+    replace: "        {\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_assoc_through_dictionary.rs$"],
   },
   {

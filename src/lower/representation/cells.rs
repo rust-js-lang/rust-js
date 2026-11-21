@@ -79,7 +79,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a cell, `.value`, reads and writes the property through it. Of a
     /// `RefCell` some borrow of which is checked, the one cell of it that
     /// counts them (`kept_cell`).
+    /// Of a field held in a place of its own (`placed_field`, #2255), what's
+    /// in that place, `both.a.value`.
     pub(in crate::lower) fn held(&self, read: Expr, field: Option<&ty::FieldDef>, ty: Ty<'tcx>) -> Expr {
+        if field.is_some_and(|field| self.placed_field(field, ty)) {
+            return Expr::held(read);
+        }
         if let Some(kept) = self.kept_cell(&read, field, ty, false) {
             return kept;
         }
@@ -157,10 +162,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (self.is_std_type(ty, StdItem::OnceCell)).then(|| Ty::new_option(self.tcx, args.type_at(0)))
     }
 
+    /// Part `i` of `ty`'s array, of type `part`, read where it's `read`,
+    /// `pair[0]`: of a tuple struct's field held in a place of its own
+    /// (`placed_field`), what's in the place, `pair[0].value` (#2255). A
+    /// cell in an array is the cell, never the property it holds (ADR
+    /// 0288's are an object's fields).
+    pub(in crate::lower) fn held_part(&self, read: Expr, ty: Ty<'tcx>, i: usize, part: Ty<'tcx>) -> Expr {
+        match self
+            .struct_field_def(ty, i)
+            .is_some_and(|field| self.placed_field(field, part))
+        {
+            true => Expr::held(read),
+            false => read,
+        }
+    }
+
+    /// What part `i` of `ty`'s array, of type `part`, holds of `value`: of
+    /// a tuple struct's field held in a place of its own, that place, `[{
+    /// value: "B" }, 1]` (#2255).
+    pub(in crate::lower) fn holding_part(&self, value: Expr, ty: Ty<'tcx>, i: usize, part: Ty<'tcx>) -> Expr {
+        match self
+            .struct_field_def(ty, i)
+            .is_some_and(|field| self.placed_field(field, part))
+        {
+            true => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
+            false => value,
+        }
+    }
+
     /// What a field `field` of type `ty` holds of `value`, a field's value
     /// made: of a cell that's the property (`property_cell`), what the
-    /// cell holds.
+    /// cell holds; of one held in a place of its own (`placed_field`,
+    /// #2255), that place, `{ value: "A" }`.
     pub(in crate::lower) fn holding(&self, value: Expr, field: Option<&ty::FieldDef>, ty: Ty<'tcx>) -> Expr {
+        if field.is_some_and(|field| self.placed_field(field, ty)) {
+            return Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]);
+        }
         match self.property_cell(field, ty) {
             Some(_) => Expr::held(value),
             None => value,

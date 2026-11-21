@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "flattened-copy-nested",
     breaks: "a copy of a struct with a flattened field, changed in place, reads and makes a key of the field's name, `range: { ...range.range }`, which the object hasn't, and an inherited getter of that name throws (#1847)",
     file: "src/lower/copies.rs",
-    find: "                // (`validate`, ADR 1051); a flattened one's own keys (#1847).\n                let fields = match self.own_object_fields(ty) {\n",
-    replace: "                // (`validate`, ADR 1051); a flattened one's own keys (#1847).\n                let fields = match None::<Vec<(String, Ty<'tcx>, &ty::FieldDef)>> {\n",
+    find: "        match self.own_object_fields(ty) {\n            Some(own) => own.into_iter().map(|(name, t, def)| (name, t, Some(def))).collect(),\n",
+    replace: "        match self.own_object_fields(ty).filter(|_| false) {\n            Some(own) => own.into_iter().map(|(name, t, def)| (name, t, Some(def))).collect(),\n",
     tests: ["test/lowering.test.ts", "-t", "reads its own keys alone"],
   },
 
@@ -497,19 +497,11 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "moved-apart-of-a-flattened-field",
-    breaks: "a struct of a flattened field moved apart from a place a raw pointer is taken to is copied of its declared fields, reading a key of the field's name its object lacks (#1847)",
-    file: "src/lower/copies.rs",
-    find: "                let fields = match self.own_object_fields(ty) {\n                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),\n                    None => Self::named_fields(fields),\n                };\n                for (name, t) in fields {\n                    if inline(t) {",
-    replace: "                let fields = match self.own_object_fields(ty).filter(|_| false) {\n                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),\n                    None => Self::named_fields(fields),\n                };\n                for (name, t) in fields {\n                    if inline(t) {",
-    tests: ["test/lowering.test.ts", "-t", "a copy of a struct with a flattened field reads its own keys alone"],
-  },
-  {
     name: "variant-groups-never-merged",
     breaks: "variants of the same fields are each copied, cloned and compared apart, each with its own test, so a nested enum's copy is written once a variant, as 4 to the power of its depth, and a `Result<T, T>`'s clone tests `Ok` and `Err` for the same `{ ...value, _0: .. }` (#1821)",
     file: "src/lower/copies.rs",
-    find: "            match (groups.copied.iter_mut()).find(|g| g.fields == fields && !own && !alone(g.first, &g.fields)) {\n",
-    replace: "            match (groups.copied.iter_mut()).find(|_| false) {\n",
+    find: "            match (groups.copied.iter_mut()).find(|g| {\n                g.fields == fields\n",
+    replace: "            match (groups.copied.iter_mut()).find(|g| {\n                false && g.fields == fields\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(enum_variants_of_the_same_fields_copied_and_compared_once|clone_from_of_a_result_given_to_generic_code).rs$"],
   },
@@ -607,5 +599,41 @@ export const mutations: Mutation[] = [
     find: "        self.walks().unchanged.borrow_mut().push(Vec::new());\n        let mutated = self.contains_mutated(ty);\n        self.walks().unchanged.borrow_mut().pop();\n",
     replace: "        let mutated = self.contains_mutated(ty);\n",
     tests: ["test/cross-crate-copies.test.ts", "-t", "a library's contract lists no copy its function only asked about"],
+  },
+  {
+    name: "placed-field-copy-shared",
+    breaks:
+      "a copy of the crate's `Copy` iterator whose field is held in a place of its own shares the place: stepping `p` steps its copy `r` (#2255)",
+    file: "src/lower/copies.rs",
+    find: "                    if def.is_some_and(|def| self.placed_field(def, t)) {\n                        let read = self.held(Expr::member(place.clone(), name.clone()), def, t);\n                        let field = self.holding(self.copy_parts(read, t, stored), def, t);\n",
+    replace: "                    if false {\n                        let read = self.held(Expr::member(place.clone(), name.clone()), def, t);\n                        let field = self.holding(self.copy_parts(read, t, stored), def, t);\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
+  {
+    name: "placed-variant-copy-shared",
+    breaks:
+      "a copy of the crate's `Copy` enum whose variant's field is held in a place of its own, `Step::On(Tri)`, shares the place: stepping `on` steps `kept` (#2255)",
+    file: "src/lower/copies.rs",
+    find: "                                if self.placed_field(def, t) {\n                                    let read = self.held(Expr::member(e.clone(), name.clone()), Some(def), t);\n",
+    replace: "                                if false {\n                                    let read = self.held(Expr::member(e.clone(), name.clone()), Some(def), t);\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
+  {
+    name: "variants-grouped-of-other-placed-fields",
+    breaks:
+      "variants of the same fields' types, one held in a place of its own and one not, `A(I)` and `B(Tri)` of `Two<Tri>`, are grouped as one, so the group's first's definitions copy the other's field as a place, `{ value: e._0.value }` of a bare string (#2255)",
+    file: "src/lower/copies.rs",
+    find: "                    && placed(g.first, &g.fields) == placed(variant, &fields)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
+  {
+    name: "placed-part-copy-shared",
+    breaks:
+      "a copy of a `Copy` tuple struct whose field is held in a place of its own shares the place: stepping `w` steps `v` (#2255)",
+    file: "src/lower/copies.rs",
+    find: "                            .is_some_and(|def| self.placed_field(def, t))\n                        {\n                            self.holding_part(self.copy_parts(",
+    replace: "                            .is_some_and(|def| self.placed_field(def, t) && false)\n                        {\n                            self.holding_part(self.copy_parts(",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
   },
 ];

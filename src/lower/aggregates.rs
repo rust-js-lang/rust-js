@@ -485,7 +485,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .collect();
                 (Shape::Object(names), items)
             }
-            Shape::Array(_) => (shape, fields),
+            Shape::Array(ref tys) => {
+                let items = (fields.into_iter().enumerate())
+                    .map(|(i, value)| self.holding_part(value, ty, i, tys[i]))
+                    .collect();
+                (shape, items)
+            }
             Shape::Other => return Err(self.unsupported(span, &format!("a `{ty}`"))),
         };
         let mut made = self.assembled(shape, tag, items);

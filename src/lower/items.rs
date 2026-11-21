@@ -748,17 +748,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The crate's own impl method a trait method call resolves to, if it
-    /// does: in a copied default, in its impl's terms (ADR 0049).
+    /// The impl method a trait method call resolves to, the crate's own or a
+    /// library's rust-js compiled, if it does: in a copied default, in its
+    /// impl's terms (ADR 0049).
     pub(super) fn impl_method(
         &self,
         id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
     ) -> R<Option<(DefId, ty::GenericArgsRef<'tcx>)>> {
+        // A library's impl's own too, whose JS function the library wrote
+        // of its own parameters, `impl<A, B> Step for (A, B)` holding each
+        // part in a place (#2255).
         Ok(self
             .resolve_self_instance(id, generic_args)?
             .filter(|instance| {
-                self.is_rust_fn(instance.def_id()) && self.tcx.trait_of_assoc(instance.def_id()).is_none()
+                (self.is_rust_fn(instance.def_id()) || self.krate.foreign.in_library(instance.def_id()))
+                    && self.tcx.trait_of_assoc(instance.def_id()).is_none()
             })
             .map(|instance| (instance.def_id(), instance.args)))
     }

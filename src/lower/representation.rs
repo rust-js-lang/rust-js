@@ -431,15 +431,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Shape::Array(_), js::ExprKind::Array(items, ..)) if !base.has_effects() => items[i].clone(),
             // A part of the array rust-js made of it (`Known::Part`), but of a
             // struct JS may make, a getter's.
-            (Shape::Array(_), _) => {
+            (Shape::Array(tys), _) => {
                 let read = Expr::index(base, Expr::int(i as i128));
-                match self.fields_answered_by_getters(ty) {
+                let read = match self.fields_answered_by_getters(ty) {
                     true => read,
                     false => Expr {
                         facts: read.facts.with(js::Known::Part),
                         ..read
                     },
-                }
+                };
+                self.held_part(read, ty, i, tys[i])
             }
             // A flattened struct's fields are its parent's: read through it,
             // `props.html.title` is `props.title` (ADR 0205).

@@ -121,7 +121,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A copy reads its source once per part: a value that isn't a place,
         // like `$unwrap(v[0])`, is taken once, `((value) => ..)(source)`.
         let many = match self.shape(ty) {
-            Shape::Object(fields) => fields.iter().any(|&(_, t)| self.copied_part(t, stored)),
+            Shape::Object(fields) => {
+                fields.iter().any(|&(_, t)| self.copied_part(t, stored)) || self.struct_holds_placed(ty)
+            }
             Shape::Array(tys) => tys.len() > 1,
             Shape::Other => false,
         };
@@ -141,12 +143,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut props = vec![Prop::Spread(place.clone())];
                 // A `Copy` struct's, which a symbol names no field of
                 // (`validate`, ADR 1051); a flattened one's own keys (#1847).
-                let fields = match self.own_object_fields(ty) {
-                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),
-                    None => Self::named_fields(fields),
-                };
-                for (name, t) in fields {
-                    if self.copied_part(t, stored) {
+                let fields = self.object_fields(ty, fields);
+                for (name, t, def) in fields {
+                    // One held in a place of its own, a place of its own
+                    // again, of a copy of what's in it (#2255).
+                    if def.is_some_and(|def| self.placed_field(def, t)) {
+                        let read = self.held(Expr::member(place.clone(), name.clone()), def, t);
+                        let field = self.holding(self.copy_parts(read, t, stored), def, t);
+                        props.push(Prop::Field(name, field));
+                    } else if self.copied_part(t, stored) {
                         let field = self.copy_parts(Expr::member(place.clone(), name.clone()), t, stored);
                         props.push(Prop::Field(name, field));
                     }
@@ -158,7 +163,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .enumerate()
                     .map(|(i, t)| {
                         let item = Expr::index(place.clone(), Expr::int(i as i128));
-                        if self.copied_part(t, stored) {
+                        // One held in a place of its own, a place of its
+                        // own again (#2255).
+                        if self
+                            .struct_field_def(ty, i)
+                            .is_some_and(|def| self.placed_field(def, t))
+                        {
+                            self.holding_part(self.copy_parts(self.held_part(item, ty, i, t), t, stored), ty, i, t)
+                        } else if self.copied_part(t, stored) {
                             self.copy_parts(item, t, stored)
                         } else {
                             item
@@ -284,15 +296,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // place itself, through a `&mut`: every variant with fields.
                 let itself = self.mutated_itself(ty);
                 once(place, &|e| {
-                    let copied = |_: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
-                        !fields.is_empty() && (itself || fields.iter().any(|&(_, t)| self.copied_part(t, stored)))
+                    let copied = |v: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
+                        !fields.is_empty()
+                            && (itself
+                                || fields.iter().any(|&(_, t)| self.copied_part(t, stored))
+                                || self.holds_placed(v, fields))
                     };
                     let groups = self.variant_groups(adt, args, &copied, &|_, _| false);
                     let copies = (groups.copied.into_iter())
-                        .map(|VariantGroup { indices, fields, .. }| {
+                        .map(|VariantGroup { indices, fields, first }| {
                             let mut props = vec![Prop::Spread(e.clone())];
-                            for (name, t) in fields {
-                                if self.copied_part(t, stored) {
+                            for ((name, t), def) in fields.into_iter().zip(&first.fields) {
+                                if self.placed_field(def, t) {
+                                    let read = self.held(Expr::member(e.clone(), name.clone()), Some(def), t);
+                                    let field = self.holding(self.copy_parts(read, t, stored), Some(def), t);
+                                    props.push(Prop::Field(name, field));
+                                } else if self.copied_part(t, stored) {
                                     props.push(Prop::Field(
                                         name.clone(),
                                         self.copy_parts(Expr::member(e.clone(), name), t, stored),
@@ -330,7 +349,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let own = alone(variant, &fields);
-            match (groups.copied.iter_mut()).find(|g| g.fields == fields && !own && !alone(g.first, &g.fields)) {
+            // Of fields held alike, each in a place of its own or not
+            // (`placed_field`, #2255), so the group's first's definitions
+            // are each one's.
+            let placed = |v: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| -> Vec<bool> {
+                (v.fields.iter().zip(fields))
+                    .map(|(def, &(_, t))| self.placed_field(def, t))
+                    .collect()
+            };
+            match (groups.copied.iter_mut()).find(|g| {
+                g.fields == fields
+                    && placed(g.first, &g.fields) == placed(variant, &fields)
+                    && !own
+                    && !alone(g.first, &g.fields)
+            }) {
                 Some(group) => group.indices.push(index),
                 None => groups.copied.push(VariantGroup {
                     indices: vec![index],
@@ -440,13 +472,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.shape(ty) {
             Shape::Object(fields) => {
                 let mut props = vec![Prop::Spread(place.clone())];
-                // A flattened one's own keys (#1847).
-                let fields = match self.own_object_fields(ty) {
-                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),
-                    None => Self::named_fields(fields),
-                };
-                for (name, t) in fields {
-                    if inline(t) {
+                let fields = self.object_fields(ty, fields);
+                for (name, t, def) in fields {
+                    // One held in a place of its own, a place of its own
+                    // again, as the value moved is apart from the place
+                    // (#2255).
+                    if def.is_some_and(|def| self.placed_field(def, t)) {
+                        let read = self.held(Expr::member(place.clone(), name.clone()), def, t);
+                        props.push(Prop::Field(name, self.holding(read, def, t)));
+                    } else if inline(t) {
                         props.push(Prop::Field(
                             name.clone(),
                             self.moved_apart(Expr::member(place.clone(), name), t)?,
@@ -459,7 +493,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut items = Vec::new();
                 for (i, t) in tys.into_iter().enumerate() {
                     let item = Expr::index(place.clone(), Expr::int(i as i128));
-                    items.push(if inline(t) { self.moved_apart(item, t)? } else { item });
+                    items.push(
+                        if self
+                            .struct_field_def(ty, i)
+                            .is_some_and(|def| self.placed_field(def, t))
+                        {
+                            self.holding_part(self.held_part(item, ty, i, t), ty, i, t)
+                        } else if inline(t) {
+                            self.moved_apart(item, t)?
+                        } else {
+                            item
+                        },
+                    );
                 }
                 Some(Expr::array(items))
             }
@@ -565,6 +610,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 field_ty,
                 field,
             ));
+        }
+    }
+
+    /// The fields of `ty`, a struct of shape `fields`, each with its key and
+    /// its definition where it has one, as a copy or a move apart of it
+    /// reads and writes them: a flattened one's own keys
+    /// (`own_object_fields`, #1847), else its shape's; the definition says
+    /// whether it's held in a form of its own (`held`, `holding`, #2255).
+    pub(in crate::lower) fn object_fields(
+        &self,
+        ty: Ty<'tcx>,
+        fields: Vec<(super::bindings::FieldKey, Ty<'tcx>)>,
+    ) -> Vec<(String, Ty<'tcx>, Option<&'tcx ty::FieldDef>)> {
+        match self.own_object_fields(ty) {
+            Some(own) => own.into_iter().map(|(name, t, def)| (name, t, Some(def))).collect(),
+            None => (Self::named_fields(fields).into_iter().enumerate())
+                .map(|(i, (name, t))| (name, t, self.struct_field_def(ty, i)))
+                .collect(),
         }
     }
 

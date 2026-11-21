@@ -767,4 +767,13 @@ export const mutations: Mutation[] = [
     replace: "                None => Expr::builtin(items, \"includes\", vec![x]),\n",
     tests: ["test/corpus.test.ts", "-t", "^contains_of_a_generic_number_finds_no_nan.rs$"],
   },
+  {
+    name: "placed-part-equal-as-its-place",
+    breaks:
+      "a derived `PartialEq` of a tuple struct whose field is held in a place of its own compares the places (#2255)",
+    file: "src/lower/std_impls.rs",
+    find: "                                self.held_part(Expr::index(a.clone(), Expr::int(i as i128)), ty, i, t),\n",
+    replace: "                                Expr::index(a.clone(), Expr::int(i as i128)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
 ];

@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "own-steps-unplaced",
+    breaks:
+      "the crate's own `nth` of a fieldless enum's iterator, and a `Box<dyn Iterator>` of one, step the bare string, \"Cannot create property 'value' on string\" (#2255)",
+    file: "src/lower/iterators/compiled_steps.rs",
+    find: "        match !ty.is_ref() && self.is_user_iterator(ty) && self.mut_ref_form(ty).is_cell() {\n",
+    replace: "        match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+  },
+  {
     name: "iterator-evidence-of-any-param",
     breaks:
       "a parameter bound by a trait `Iterator` is a supertrait of is stepped through that trait's dictionary, which has no `Iterator`",

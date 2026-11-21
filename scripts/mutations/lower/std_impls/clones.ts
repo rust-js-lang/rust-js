@@ -564,4 +564,13 @@ export const mutations: Mutation[] = [
     replace: ";\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_of_a_compiled_adapter_over_a_copied_map.rs$"],
   },
+  {
+    name: "placed-part-clone-shared",
+    breaks:
+      "a clone of a tuple struct whose field is held in a place of its own shares the place: stepping `duo` steps `twin` (#2255)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "                        Ok(cx.holding_part(part, ty, i, tys[i]))\n",
+    replace: "                        Ok(part)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
 ];

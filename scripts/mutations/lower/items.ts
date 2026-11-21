@@ -524,4 +524,13 @@ export const mutations: Mutation[] = [
     replace: "                let given = match false\n",
     tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
   },
+  {
+    name: "library-impl-method-unresolved",
+    breaks:
+      "a call of a library's impl of its trait for a tuple, whose JS function holds each part in a place, gives and takes it in the trait's terms, so `(Light::Red, Sevens).step()` gives the library's `step` the bare string (#2255)",
+    file: "src/lower/items.rs",
+    find: "(self.is_rust_fn(instance.def_id()) || self.krate.foreign.in_library(instance.def_id()))",
+    replace: "self.is_rust_fn(instance.def_id())",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
+  },
 ];

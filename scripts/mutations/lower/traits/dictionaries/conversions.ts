@@ -52,4 +52,13 @@ export const mutations: Mutation[] = [
     replace: "        if !self.krate.fns.contains_key(&instance.def_id()) || self.tcx.trait_of_assoc(instance.def_id()).is_some() {\n",
     tests: ["test/crates.test.ts", "-t", "instance_converts_and_transmutes"],
   },
+  {
+    name: "placed-conversion-unformed",
+    breaks:
+      "a conversion's dictionary gives its `From<(A, B)>` impl, which holds each part in a place, the tuple as its caller holds it, so itertools' `multizip` shape reads the bare string's `value` (#2255)",
+    file: "src/lower/traits/dictionaries/conversions.rs",
+    find: "        let mut values = vec![match self.form_of(input) {\n",
+    replace: "        let mut values = vec![match self.form_of(input).filter(|_| false) {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
+  },
 ];

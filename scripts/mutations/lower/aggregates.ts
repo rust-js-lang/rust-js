@@ -525,4 +525,13 @@ export const mutations: Mutation[] = [
     replace: "                let _ = present;\n",
     tests: ["test/present-slots.test.ts", "-t", "a present field"],
   },
+  {
+    name: "placed-part-made-bare",
+    breaks:
+      "a tuple struct's field held in a place of its own is made as the value, not a place, whose own steps throw (#2255)",
+    file: "src/lower/aggregates.rs",
+    find: "                    .map(|(i, value)| self.holding_part(value, ty, i, tys[i]))\n",
+    replace: "                    .map(|(_, value)| value)\n",
+    tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
 ];

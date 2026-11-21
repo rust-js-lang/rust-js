@@ -43,6 +43,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ if matches!(self.shape(pat.ty), Shape::Object(_)) && self.is_std_type(field.ty, StdItem::Cell) => {
                     None
                 }
+                // One held in a place of its own (#2255): what's bound of
+                // it is what's in the place, which JS's destructuring
+                // wouldn't give.
+                _ if self
+                    .struct_field_def(pat.ty, i)
+                    .is_some_and(|def| self.placed_field(def, field.ty)) =>
+                {
+                    None
+                }
                 PatKind::Wild => Some((i, None)),
                 PatKind::Binding {
                     name,

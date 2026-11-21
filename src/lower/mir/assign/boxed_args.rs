@@ -42,6 +42,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Vec<Expr>> {
         let callee = self.call_callee(def_id, generic_args)?;
         let fn_id = callee.map(|(id, _)| id);
+        // An iterator generic code holds in a place of its own inside what
+        // it takes or gives, a `Vec<I>`'s, which its caller holds as it is
+        // (#2255).
+        if let Some(called) = callee {
+            self.refuse_placed_within(called, span)?;
+        }
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {
             // A reference given as the pointer to its place, made so where
@@ -102,13 +108,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // changes it in place, as a value's boundary gives it (ADRs
                 // 0454, 1115).
                 let crossing = (id, declared, self.instantiated(declared, args));
-                if let Some(iterator) = self.iterator_held_unboxed(crossing) {
-                    return Err(self.unsupported(
-                        span,
-                        &format!(
-                            "giving generic code a `{iterator}` as an iterator: JS holds it as no object, and generic code holds an iterator as the value itself, which would step or read the bare value where its own steps take its place (#2255)"
-                        ),
-                    ));
+                // An iterator JS holds as no object given where generic code
+                // holds it as an iterator: in a place of its own, `{ value:
+                // x }`, which its own `&mut self` steps take (#2255).
+                if self.form_differs(Form::Placed, crossing) {
+                    let iterator = self.value_expr(value, span)?;
+                    exprs.push(self.form_given(Form::Placed, crossing, iterator, span)?);
+                    continue;
                 }
                 if self.form_differs(Form::Box, crossing) {
                     let object = self.value_expr(value, span)?;

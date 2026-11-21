@@ -534,8 +534,19 @@ pub(in crate::lower) fn copied_params<'tcx>(
         (fns.keys(), &|id| fns.contains_key(&id)),
         foreign,
         &bounded,
-        &|ty| copies_itself(tcx, ty),
+        &|ty| copies_itself(tcx, ty) && !placed_by_generic_code(tcx, ty),
     )
+}
+
+/// Whether generic code may hold a value of `ty`, one JS holds as itself
+/// (`copies_itself`), in a place of its own, as it does an iterator that's
+/// no object (`Form::Placed`, `placed_iterator`'s of such a type, #2255):
+/// a copy or a clone of the place is a new place, never the place itself.
+fn placed_by_generic_code<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator);
+    matches!(ty.kind(), ty::Adt(..))
+        && crate::lower::recognition::trait_holds_in(tcx, ty::TypingEnv::fully_monomorphized(), ty, iterator)
+            == Some(true)
 }
 
 /// The type parameters whose `Clone` bound takes its dictionary, `TClone`,
@@ -553,7 +564,7 @@ pub(in crate::lower) fn cloned_params<'tcx>(
     counted: &super::Counted<'tcx>,
 ) -> IndexSet<(DefId, u32)> {
     let bounded = |id| clone_bounded(tcx, id);
-    let itself = |ty| clones_itself(tcx, counted, ty);
+    let itself = |ty| clones_itself(tcx, counted, ty) && !placed_by_generic_code(tcx, ty);
     given_params(
         tcx,
         (all_bodies, names),

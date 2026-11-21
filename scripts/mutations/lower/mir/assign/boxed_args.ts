@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "placed-argument-bare",
+    breaks:
+      "a fieldless enum's iterator given as an argument to generic code that holds it in a place is given bare, so its own `&mut self` step throws (#2255)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "                if self.form_differs(Form::Placed, crossing) {\n",
+    replace: "                if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+  },
+  {
     name: "boxes-not-read-through",
     breaks:
       "a closure given boxes where it takes what's in them is called by an arrow that unboxes them again, `(x0, x1) => ((pair) => { .. })(x0.value, x1)` (#2008)",

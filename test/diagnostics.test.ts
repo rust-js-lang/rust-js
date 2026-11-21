@@ -854,15 +854,15 @@ test("generic code's Box<I> folded by a closure that holds a destructor is refus
   expect(compiled.stderr.toString()).not.toContain("panicked");
 });
 
-// An iterator JS holds as no object, a fieldless enum's string, of more
-// than one value, given to generic code that holds an iterator as the
-// value itself (ADR 0061): by value, std's `take` would step the bare
-// string; as a `&mut` to an `I: Clone`, generic code would clone and write
-// the caller's place handle as the value, a silent wrong answer (#2254).
-// Refused until it's given boxed (#2255). Its own `next()`, a `for` loop,
-// `by_ref()` given to an adapter, and a unit struct, one value, compile.
-test("a fieldless enum's iterator given to generic code as an iterator is refused, naming #2255", () => {
-  const dir = fixture("unboxed-iterator");
+// An iterator JS holds as no object, a fieldless enum's string, given to
+// generic code that holds an iterator as the value itself (ADR 0061), is
+// given it in a place of its own, `{ value: x }` (#2255). Inside what
+// crosses, where what holds it holds it otherwise, a `Vec<I>` generic code
+// makes or a struct of the crate's its caller builds, it's refused, never
+// a wrong answer. Given by value, a unit struct's too, and as a `&mut`,
+// compile.
+test("a non-object iterator held otherwise inside what crosses into generic code is refused, naming #2255", () => {
+  const dir = fixture("placed-iterator");
   const light = `#[derive(Clone, Copy, Debug)]
 enum Light {
     Red,
@@ -886,6 +886,17 @@ impl Iterator for Unit {
         Some(0)
     }
 }
+fn both<I: Iterator>(a: I, b: I) -> Vec<I> {
+    vec![a, b]
+}
+struct Wrap<I> {
+    inner: I,
+}
+impl<I: Iterator> Wrap<I> {
+    fn step(&mut self) -> Option<I::Item> {
+        self.inner.next()
+    }
+}
 fn restored<I: Iterator + Clone>(it: &mut I) -> Option<I::Item> {
     let old = it.clone();
     let item = it.next();
@@ -899,22 +910,18 @@ fn restored<I: Iterator + Clone>(it: &mut I) -> Option<I::Item> {
     const out = runSync([compiler, input, "-o", join(dir, `${name}.js`)], dir, 60_000);
     return out.stderr.split("\n").filter((line) => line.startsWith("error: rust-js"));
   };
-  const error =
-    "error: rust-js does not support giving generic code a `Light` as an iterator: JS holds it as no object, and generic code holds an iterator as the value itself, which would step or read the bare value where its own steps take its place (#2255) yet";
-  expect(refused("by-value", "    let v: Vec<u8> = Light::Red.take(2).collect();\n    println!(\"{v:?}\");")).toEqual([error]);
-  expect(refused("lent", "    let mut l = Light::Red;\n    println!(\"{:?} {l:?}\", restored(&mut l));")).toEqual([error]);
+  expect(refused("vec", "    println!(\"{:?}\", both(Light::Red, Light::Green));")).toEqual([
+    "error: rust-js does not support a `Light` inside a `std::vec::Vec<I>` of generic code's, which holds it in a place of its own, `{ value }`, where its caller holds it as it is (#2255) yet",
+  ]);
+  expect(refused("struct", "    let mut w = Wrap { inner: Light::Red };\n    println!(\"{:?}\", w.step());")).toEqual([
+    "error: rust-js does not support a `Light` inside a `&mut Wrap<I>` of generic code's, which holds it in a place of its own, `{ value }`, where its caller holds it as it is (#2255) yet",
+  ]);
   const compiles = [
     "    let mut l = Light::Red;",
-    "    let v: Vec<u8> = l.by_ref().take(2).collect();",
-    "    let mut n = 0;",
-    "    for x in l {",
-    "        n += x;",
-    "        if n > 2 {",
-    "            break;",
-    "        }",
-    "    }",
-    "    let mut u = Unit;",
-    "    println!(\"{v:?} {n} {:?} {:?}\", l.next(), restored(&mut u));",
+    "    let v: Vec<u8> = Light::Green.take(2).collect();",
+    "    println!(\"{v:?} {:?} {:?} {l:?}\", restored(&mut l), l.nth(1));",
+    "    let w: Vec<u8> = Unit.take(2).collect();",
+    "    println!(\"{w:?}\");",
   ].join("\n");
   expect(refused("compiles", compiles)).toEqual([]);
   expect(existsSync(join(dir, "compiles.js"))).toBe(true);

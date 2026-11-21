@@ -817,8 +817,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .enumerate()
                         .map(|(i, t)| {
                             (
-                                Expr::index(a.clone(), Expr::int(i as i128)),
-                                Expr::index(b.clone(), Expr::int(i as i128)),
+                                self.held_part(Expr::index(a.clone(), Expr::int(i as i128)), ty, i, t),
+                                self.held_part(Expr::index(b.clone(), Expr::int(i as i128)), ty, i, t),
                                 t,
                             )
                         })

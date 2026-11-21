@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-combinator-place-taken",
+    breaks:
+      "a `&mut` to a fieldless enum's iterator given a combinator is its bare value, not its cell, so its own steps throw (#2255)",
+    file: "src/lower/mir/std_calls/iterators.rs",
+    find: "                            Value::Ref(place) if !held => Ok(place),\n",
+    replace: "                            Value::Ref(place) => Ok(place),\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+  },
+  {
     name: "inspect-back-stepped-unmade",
     breaks:
       "an `inspect(f)` the crate steps from its back, held in a variable, isn't made knowing it where it's made: `TypeError: it.back is not a function`",

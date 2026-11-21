@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "placed-dictionary-unadapted",
+    breaks:
+      "the dictionaries of a fieldless enum's iterator generic code holds in a place are its own, so its `size_hint(&self)` is given the place, printing `[object Object]`, and its `clone()` gives the place itself (#2255)",
+    file: "src/lower/traits/calls.rs",
+    find: "                        None => match self.placed_dictionary(id, (declared, bound), span)? {\n",
+    replace: "                        None => match None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
+  },
+  {
     name: "named-into-iter-unboxed",
     breaks:
       "an `IntoIterator` of a `&mut Vec` reached through `impl Is<I>` reads the array where generic code has its box: `bump(&mut v)` writes nothing (#966)",
