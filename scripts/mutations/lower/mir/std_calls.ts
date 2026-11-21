@@ -778,4 +778,21 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
     snapshots: true,
   },
+  {
+    name: "string-edit-of-a-handle-refused",
+    breaks: "a `String` method that changes the string, given as a function value, `String::clear` to `map` or as a `fn`, is refused, \"changing this string, from its MIR\", where its closure compiles (#946)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                        Value::Expr(handle) => {\n",
+    replace: "                        Value::Expr(handle) if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^string_edits_given_as_functions\\.rs$"],
+  },
+  {
+    name: "string-edit-handle-held-again",
+    breaks: "a `&mut String` handle that's a variable already is held again before its edit, `const part = s; part.value = \"\";`, where `s.value = \"\";` reads as the closure's does (#946)",
+    file: "src/lower/mir/std_calls.rs",
+    find: "                                true => handle,\n",
+    replace: "                                true => this.spill(Role::Part, handle, out),\n",
+    tests: ["test/corpus.test.ts", "-t", "^string_edits_given_as_functions\\.rs$"],
+    snapshots: true,
+  },
 ];

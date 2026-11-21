@@ -690,6 +690,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let cell = this.spill(Role::Part, (**cell).clone(), out);
                             Expr::held(cell)
                         }
+                        // A `&mut String` given as a value, a function's
+                        // parameter, `String::clear` given to `map` or as a
+                        // `fn`: a handle, its `value` the place, as a
+                        // closure's `s.clear()` writes it (#946).
+                        Value::Expr(handle) => {
+                            this.flush(state, out)?;
+                            let cell = match handle.reads_same() {
+                                true => handle,
+                                false => this.spill(Role::Part, handle, out),
+                            };
+                            Expr::held(cell)
+                        }
                         _ => return Err(this.unsupported(span, "changing this string, from its MIR")),
                     };
                     let mut given = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
