@@ -1,5 +1,6 @@
 // A `RefCell`'s guard mapped to part of what it guards (#1275): what its
-// form can't tell apart is refused as it runs, naming #1307, never a
+// form can't tell apart is refused as it runs, naming ADR 0328, which
+// keeps it refused as the user decided (#1307, closed), never a
 // release of the wrong cell. test/corpus/ref_cell_guards_mapped.rs holds what runs.
 
 import { expect, test } from "bun:test";
@@ -44,7 +45,7 @@ pub fn f() -> u32 {
 `,
   );
   expect(error?.message).toContain("two cells' guards mapped to one object");
-  expect(error?.message).toContain("#1307");
+  expect(error?.message).toContain("(ADR 0328)");
   // Not a panic a `catch_unwind` would take for the program's.
   expect(error?.constructor).not.toBe(Error);
 });
@@ -69,5 +70,5 @@ pub fn f() -> usize {
 `,
   );
   expect(error?.message).toContain("a guard mapped to a cell");
-  expect(error?.message).toContain("#1307");
+  expect(error?.message).toContain("(ADR 0328)");
 });

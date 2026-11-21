@@ -242,8 +242,12 @@ guard's, `$unborrow`, which releases the cell it was made of:
 - A guard type a map gives is counted whatever a cell of what it guards
   is (`RefCells::maps_to`): its drop releases the cell it was made of.
 
-What the form can't tell apart throws `$unsupported`, naming #1307, where
-the guard is made, never releasing another cell:
+What the form can't tell apart throws `$unsupported`, naming this ADR,
+where the guard is made, never releasing another cell. The user decided
+(2026-11-11, #1307) to keep both refused: they're rare, they fail loudly,
+every other `Ref::map` runs as native, and supporting them would take a
+mapped guard's form of its own, keyed on something other than the
+object's identity, which isn't to be built:
 - two cells' guards mapped to one object, a `RefCell<Rc<X>>`'s two, one
   guard object whose drop can't say which cell it releases;
 - a guard mapped to a cell, `Ref::map(outer.borrow(), |o| &o.inner)` of
