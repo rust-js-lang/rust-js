@@ -484,6 +484,9 @@ fn applied_in_place(items: &mut [js::Item]) {
     }
     // What a nullable place stores, `x ?? null`, of what's now read in
     // the parameter's place, a nullable thread-local's lent value, never
-    // `undefined`: `x` (ADR 0841, amended).
-    js::each_item_expr_mut(items, &mut js::Expr::store_again);
+    // `undefined`: `x` (ADR 0841, amended); and of a test tidy joined of
+    // a write's branches, `t ? new Error(..) : undefined`, each so by its
+    // form, `t ? new Error(..) : null`. By its form alone: what MIR says of
+    // a write, lowering's `written` was told (#2112).
+    js::each_item_expr_mut(items, &mut |e| e.store_again(js::Undefined::ByForm));
 }

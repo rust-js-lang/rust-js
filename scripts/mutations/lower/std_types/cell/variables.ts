@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure put in its place keeps a nullable store's `?? null` of what it's now given, never `undefined` (ADR 0841, amended)",
     file: "src/lower/std_types/cell/variables.rs",
-    find: "    js::each_item_expr_mut(items, &mut js::Expr::store_again);\n",
+    find: "    js::each_item_expr_mut(items, &mut |e| e.store_again(js::Undefined::ByForm));\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stored as they are"],
   },

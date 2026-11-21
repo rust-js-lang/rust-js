@@ -1211,11 +1211,12 @@ impl Expr {
     /// `undefined`, the test with `null` for `undefined`, `(__DEV__ ?
     /// fiber._debugTask : undefined) ?? null` `__DEV__ ? fiber._debugTask :
     /// null`, as `Storage::written` would have stored it (ADR 0841,
-    /// amended). Anything else is as it is.
-    pub fn store_again(&mut self) {
+    /// amended). Anything else is as it is. What's never `undefined` as
+    /// `given` says (`Undefined`).
+    pub fn store_again(&mut self, given: super::Undefined) {
         if let ExprKind::Binary(Op::Coalesce, made, null) = &self.kind
             && matches!(null.kind, ExprKind::Null)
-            && let Some(stored) = null_for_none(made, super::Undefined::ByFacts)
+            && let Some(stored) = null_for_none(made, given)
         {
             let span = self.span;
             *self = stored.or_at(span);

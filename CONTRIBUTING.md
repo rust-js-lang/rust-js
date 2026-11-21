@@ -172,7 +172,10 @@ library behavior from local source.
    that its tests must catch ([ADR 0093](docs/decisions/0093-mutations.md)).
    A mutation that survives means a missing test. Code no program reaches
    is held by a unit test, which its mutation names as `unitTests`, a
-   `cargo test` filter, in place of `tests`.
+   `cargo test` filter, in place of `tests`. A survivor's evidence is the
+   whole suite and React's port, `bun scripts/mutations.ts --retire=<name>`,
+   never one suite: it names the rows that catch it, or shows its code is
+   reached by none, which is then removed.
 5. **Record the decision.** A new semantic choice or important architectural
    tradeoff gets a design decision in `docs/decisions/`, indexed in
    [docs/decisions/README.md](docs/decisions/README.md), its number

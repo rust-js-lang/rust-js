@@ -598,7 +598,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> Vec<
                 };
             }
         });
-        js::each_expr_mut(&mut made, &mut Expr::store_again);
+        js::each_expr_mut(&mut made, &mut |e| e.store_again(js::Undefined::ByFacts));
         js::each_block_mut(&mut made, &mut |stmts| {
             if let Some(k) = stmts
                 .iter()
@@ -741,7 +741,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &js::Name) -> O
                 };
             }
         });
-        js::each_expr_mut(&mut made, &mut Expr::store_again);
+        js::each_expr_mut(&mut made, &mut |e| e.store_again(js::Undefined::ByFacts));
         js::each_block_mut(&mut made, &mut |stmts| {
             let made_here = |s: &Stmt| {
                 matches!(&s.kind, StmtKind::Const(n, value)

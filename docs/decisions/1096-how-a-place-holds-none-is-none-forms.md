@@ -617,3 +617,51 @@ A ([0262](0262-when-rust-and-js-disagree.md)'s first): `??` reads `null`
 and `undefined` alike. S3c's constructor test restores `: null`. Held by
 that case's snapshot, which mutation `lowering-trusts-facts`
 (`js/make.ts`) fails, and the mutations of each write.
+
+## Amendment: `store_again` re-stores by form; lowering's writes are each told MIR's answer (2026-11-21, #2112)
+
+`Expr::store_again` takes the answer as `Storage::written` does. Its
+re-store of every item's `x ?? null` asks the form alone (`ByForm`). That
+pass's job is tidy's joins: a write's branches lowering stored apart,
+which tidy joins into one test, `(rootOwner != null ? new Error(..) :
+undefined) ?? null`, each now never `undefined` by its form, `rootOwner !=
+null ? new Error(..) : null`. It no longer rescues a decision lowering
+made without MIR's answer by the marks lowering wrote. Each such decision
+is now told MIR's answer where it's made:
+
+- `Option::and_then(f)` of a crate function that gives `null` for `None`,
+  whose `None` `and_then_given` makes `null`, or of a closure whose every
+  return is so: `null` or a value (`written_given`).
+- A thread-local's `with`/`with_borrow` of a closure whose every return is
+  so; and the closure a `#[rust_js::nullable]` thread-local's `with` lends
+  its value to, its parameter `null` or a value (`NulledSeen::lent_nulled`,
+  recorded where the `with` is lowered, handed on where the closure is
+  made).
+- A shared borrow of what's `null` or a value, a promoted `&Some(CONST)`
+  of a nullable function's body.
+- A `Some` of a `Some(..)` held as a nested field's payload (`some_of_some`).
+- An `==` of two `Option`s each `null` or a value (`same_nones`), and
+  the untagged `==` asks it (`===` where upstream writes it).
+- A nullable thread-local's `set` is a store as a nullable field's is
+  (`mir_null_nones`), but not of one nothing reads apart (#665), whose set
+  stores what it's given in its read-alike form.
+- A `cloned()` of the function's own nullable parameter reads `is_nulled`,
+  as `stored_given` does (`call_nulled`).
+- A map by an untagged variant of a payload that never looks like `None`
+  is the option itself to MIR too (`maps_to_itself`), into a boxed target
+  as well. The map's lowering keeps `is_identity` as a fallback for the
+  coercing closures `maps_to_itself` doesn't see yet (#2173's fifth site).
+
+The marks are asked (`ByFacts`) only past lowering, where MIR isn't at hand:
+`tidy::values::handles`, `js::applied`, and `drops/inlined.rs`, whose `Drop`
+guard's field carries MIR's `nulled` answer as a mark (ADR 0841's reader
+8) until S4 carries it as a field. `binding_calls`' `surely_there` asks
+them too, S3f's to answer. An architecture test holds that list.
+
+Case: A ([0262](0262-when-rust-and-js-disagree.md)'s first). React's port
+moves 10 files, each line upstream's or behaving the same: `==`/`!=` of two
+such `Option`s are `===`/`!==` (ReactFiberCompleteWork.js:219 and :786,
+ReactFiberTreeReflection.js:160 and :181 at React's ab0d927); and
+`blockingUpdateTask = __DEV__ ? (fiber._debugTask ?? null) : null`, the
+`let`'s `None` made `null` where it's written. Held by the mutations of each
+answer and by the rows they name.

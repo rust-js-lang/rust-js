@@ -134,3 +134,23 @@ test("Known::Present is written only by the lone values a constructor knows are 
     "src/lower/traits/impls.rs",
   ]);
 });
+
+// What a nullable place's write is told of whether what it's given may be
+// `undefined` (`js::Undefined`): lowering's writes ask MIR's answer,
+// `Never`, or the form alone, `ByForm`; `store_again`'s re-store of every
+// item's `x ?? null`, of what tidy joins, asks the form alone too, so a
+// decision lowering made without MIR's answer shows as a move, never
+// rescued by a mark (#2112). The marks, `Known::Defined` and
+// `Known::Present`, are asked (`ByFacts`) only past lowering where MIR
+// isn't at hand: `tidy::values::handles`, `js::applied`, and
+// `drops/inlined.rs`, whose `Drop` guard's field read carries MIR's
+// `nulled` answer as a mark (ADR 0841's reader 8), until S4 carries it as
+// a field; and `binding_calls.rs`' `surely_there`, a trailing `Option`'s
+// presence a binding call asks, S3f's to answer.
+test("the marks are asked only where MIR isn't at hand", () => {
+  const askers = files("src").filter((file) => file.endsWith(".rs") && file !== "src/js/storage.rs" && file !== "src/js/make.rs")
+    .filter((file) => /Undefined::ByFacts/.test(read(file)));
+  expect(askers).toEqual(["src/js/applied.rs", "src/lower/binding_calls.rs", "src/lower/drops/inlined.rs", "src/lower/mir/tidy/values/handles.rs"]);
+  expect(read("src/lower/std_types/cell/variables.rs")).toContain("store_again(js::Undefined::ByForm)");
+});
+
