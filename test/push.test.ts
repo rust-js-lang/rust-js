@@ -4,9 +4,9 @@
 // set; any other stops the push.
 import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, rebase, regenerated, remakeable, mutantsAgain, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
+import { againEnv, appendedBoth, beside, FAST_TESTS, fastAgain, givenRound, lineSet, loadedModules, lowerRatchets, mergedChanges, mergedLineSet, phases, ratchets, rebase, regenerated, remakeable, mutantsAgain, roundRefused, sanitySkipped, staleModules, stdGenerated } from "../scripts/push";
 import { fixture, root } from "./support";
 
 // A rebase's conflict in a blessed baseline alone is resolved by making it
@@ -357,4 +357,64 @@ test("a rebase that changes what push has loaded runs it again, its line its own
   const at = source.indexOf('      const remade = rebase();\n      phase("rebase");\n');
   expect(at).toBeGreaterThan(0);
   expect(source.indexOf("staleModules(", at)).toBeLessThan(source.indexOf("fastAgain(since, named)", at));
+});
+
+// Push run again from the rebased tree carries on from the round before it
+// (#2286): it checked everything again, 34 minutes of checks for one push.
+// Only from a round that's its own: the old base an ancestor of the new,
+// the tree clean, the branch's commits patch for patch those checked, as
+// a rebase rewrites them; a forged or stale round is a full check.
+test("push run again carries on from its round only where the round is its own", () => {
+  const dir = fixture("push-round");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  // Every call of this repository's own, never one above it (#2279).
+  const env = { ...process.env, GIT_DIR: join(dir, ".git"), GIT_WORK_TREE: dir, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.com", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.com" };
+  const git = (...args: string[]) => {
+    const p = spawnSync("git", args, { cwd: dir, env, encoding: "utf8" });
+    return { code: p.status ?? 1, out: `${p.stdout}${p.stderr}` };
+  };
+  const ok = (...args: string[]) => {
+    const done = git(...args);
+    expect(done.code, done.out).toBe(0);
+    return done.out.trim();
+  };
+  ok("init", "-q", "-b", "main");
+  writeFileSync(join(dir, "a.txt"), "a\n");
+  ok("add", "a.txt");
+  ok("commit", "-q", "-m", "base");
+  const b1 = ok("rev-parse", "HEAD");
+  ok("switch", "-q", "-c", "branch");
+  writeFileSync(join(dir, "b.txt"), "the change\n");
+  ok("add", "b.txt");
+  ok("commit", "-q", "-m", "change");
+  const h1 = ok("rev-parse", "HEAD");
+  ok("switch", "-q", "main");
+  writeFileSync(join(dir, "c.txt"), "incoming\n");
+  ok("add", "c.txt");
+  ok("commit", "-q", "-m", "incoming");
+  const b2 = ok("rev-parse", "HEAD");
+  ok("switch", "-q", "branch");
+  ok("rebase", "-q", "main");
+  expect(ok("rev-parse", "HEAD")).not.toBe(h1);
+  // Its own round: carried on from, its sanity pass of what came in.
+  expect(roundRefused({ checked: h1, base: b1 }, b2, git)).toBeUndefined();
+  // Forged: a commit it didn't check.
+  expect(roundRefused({ checked: b2, base: b1 }, b2, git)).toContain("patch for patch");
+  // Stale: a base past this one.
+  expect(roundRefused({ checked: h1, base: b2 }, b1, git)).toContain("isn't an ancestor");
+  // A change in the tree.
+  writeFileSync(join(dir, "b.txt"), "changed since\n");
+  expect(roundRefused({ checked: h1, base: b1 }, b2, git)).toBe("its tree has a change");
+  ok("checkout", "--", "b.txt");
+  // The round given through the environment, and none where none passed.
+  const round = { checked: h1, base: b1, react: b1 };
+  expect(givenRound(againEnv({ RUST_JS_TIMED_BY: "push" }, round))).toEqual(round);
+  expect(givenRound(againEnv({ RUST_JS_PUSH_ROUND: "x:y:" }))).toBeUndefined();
+  // Taken up right after the rebase, before the selection asks the rebase's
+  // commits since its base, so its round is a sanity pass.
+  const source = readFileSync(join(root, "scripts/push.ts"), "utf8");
+  const taken = source.indexOf("({ checked, base: checkedBase, react: reactBase } = given);");
+  expect(taken).toBeGreaterThan(source.indexOf('      const remade = rebase();\n      phase("rebase");\n'));
+  expect(taken).toBeLessThan(source.indexOf("const since = checkedBase"));
 });

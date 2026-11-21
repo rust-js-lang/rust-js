@@ -150,14 +150,51 @@ export function staleModules(changed: string[], loaded: string[]): string[] {
   return changed.filter((file) => held.has(file) || file === "package.json" || file === "bun.lock");
 }
 
+/** What a round passed, which push run again from the rebased tree
+ * carries on from (#2286): the commit it checked, the base it was rebased
+ * onto, and where its React gate passed. */
+export type Round = { checked: string; base: string; react?: string };
+
 /** The environment push runs again in from the rebased tree: its own, but
  * that this run times it, which the run again does itself, its line the
- * one written (`ownsTimes`). */
-export function againEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+ * one written (`ownsTimes`); and the round it passed, where it did, so
+ * the run again checks only what the rebase brought, as a round past a
+ * rebase does, not everything again (#2286). */
+export function againEnv(env: NodeJS.ProcessEnv, round?: Round): NodeJS.ProcessEnv {
   const again = { ...env };
   delete again.RUST_JS_TIMED_BY;
   delete again.RUST_JS_TIMED_OTHERS;
+  delete again.RUST_JS_PUSH_ROUND;
+  if (round) again.RUST_JS_PUSH_ROUND = [round.checked, round.base, round.react ?? ""].join(":");
   return again;
+}
+
+/** The round push run again was given (`againEnv`), or none. */
+export function givenRound(env: NodeJS.ProcessEnv): Round | undefined {
+  const [checked, base, react] = (env.RUST_JS_PUSH_ROUND ?? "").split(":");
+  return checked && base ? { checked, base, ...(react ? { react } : {}) } : undefined;
+}
+
+/** Why push run again can't carry on from `round` at `base`, a full
+ * check its answer, or `undefined` where it can: the round's base an
+ * ancestor of this one, the tree clean, and the branch's commits over
+ * this base patch for patch those it checked over its own. A rebase
+ * rewrites them, so the checked commit itself is never this one's
+ * ancestor; one that resolved a conflict changes a patch, and is checked
+ * whole (#2286). `git` runs a git command in the checkout. */
+export function roundRefused(round: Round, base: string, git: (...args: string[]) => { code: number; out: string }): string | undefined {
+  if (git("merge-base", "--is-ancestor", round.base, base).code !== 0) return `its round's base ${round.base.slice(0, 9)} isn't an ancestor of ${base.slice(0, 9)}`;
+  if (git("status", "--porcelain", "--untracked-files=no").out.trim() !== "") return "its tree has a change";
+  const patches = (range: string) => {
+    const diff = git("log", "--reverse", "-p", "--format=commit %H", range);
+    if (diff.code !== 0) return undefined;
+    const ids = spawnSync("git", ["patch-id", "--stable"], { input: diff.out, encoding: "utf8" }).stdout;
+    return ids.split("\n").filter(Boolean).map((line) => line.split(" ")[0]).join(" ");
+  };
+  const checked = patches(`${round.base}..${round.checked}`);
+  const now = patches(`${base}..HEAD`);
+  if (checked === undefined || checked === "" || checked !== now) return `its commits aren't patch for patch those its round checked`;
+  return undefined;
 }
 
 /** The checkout's files this process has loaded, by their path in it. */
@@ -234,9 +271,20 @@ async function main() {
     let reactBase: string | undefined;
     // The commit this script and what it imports were loaded from.
     const loadedAt = git("rev-parse", "HEAD").out.trim();
+    // The round push before it passed, where it ran again from the rebased
+    // tree, carried on from once it's this branch's own (#2286).
+    let given = givenRound(process.env);
     for (;;) {
       const remade = rebase();
       phase("rebase");
+      if (given !== undefined) {
+        const refused = roundRefused(given, git("rev-parse", "origin/main").out.trim(), git);
+        if (refused === undefined) {
+          console.log(`push: carrying on from the round before it ran again: ${given.checked.slice(0, 9)} checked over ${given.base.slice(0, 9)}`);
+          ({ checked, base: checkedBase, react: reactBase } = given);
+        } else console.log(`push: a full check: the round it was given can't be carried on from: ${refused}`);
+        given = undefined;
+      }
       // A rebase that changed what this process has loaded: push runs again
       // from the rebased tree, with what it was given, its line its own
       // (#2275). Its run starts at the rebased commit, so it doesn't again.
@@ -245,7 +293,8 @@ async function main() {
         console.log(`push: the rebase changed what push runs, ${stale.slice(0, 3).join(", ")}${stale.length > 3 ? ` and ${stale.length - 3} more` : ""}: running again from the rebased tree`);
         written = true;
         regen?.stop();
-        const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env) });
+        const round = checked === "" ? undefined : { checked, base: checkedBase, react: reactBase };
+        const again = spawnSync(process.execPath, [process.argv[1]!, ...process.argv.slice(2)], { stdio: "inherit", env: againEnv(process.env, round) });
         process.exit(again.status ?? 1);
       }
       const base = git("rev-parse", "origin/main").out.trim();

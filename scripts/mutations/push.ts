@@ -250,4 +250,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/push.test.ts", "-t", "runs it again"],
   },
+  {
+    name: "push-round-forged-trusted",
+    breaks: "push run again carries on from a round whose commits aren't those it checked, so a change no check saw is pushed (#2286)",
+    file: "scripts/push.ts",
+    find: "  if (checked === undefined || checked === \"\" || checked !== now) return `its commits aren't patch for patch those its round checked`;\n",
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "carries on from its round"],
+  },
+  {
+    name: "push-round-stale-base-trusted",
+    breaks: "push run again carries on from a round whose base isn't an ancestor of its own, a round of another history (#2286)",
+    file: "scripts/push.ts",
+    find: "  if (git(\"merge-base\", \"--is-ancestor\", round.base, base).code !== 0) return",
+    replace: "  if (false) return",
+    tests: ["test/push.test.ts", "-t", "carries on from its round"],
+  },
+  {
+    name: "push-round-given-dropped",
+    breaks: "push run again from the rebased tree checks everything again, the round before it not carried on from (#2286)",
+    file: "scripts/push.ts",
+    find: "          ({ checked, base: checkedBase, react: reactBase } = given);\n",
+    replace: "",
+    tests: ["test/push.test.ts", "-t", "carries on from its round"],
+  },
 ];
