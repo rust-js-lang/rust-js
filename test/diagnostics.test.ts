@@ -398,7 +398,7 @@ for (const [name, source, message, crate] of [
   ["an extern declaration of the crate's own no_mangle function", "pub mod export { #[unsafe(no_mangle)] pub extern \"C\" fn twice(t: i32) -> i32 { t * 2 } }\nunsafe extern \"C\" { fn twice(t: i32) -> i32; }\npub fn f() -> i32 { unsafe { twice(3) } }", "not in an `extern` block"],
   ["a generic constant", "#![feature(generic_const_items)]\n#![allow(incomplete_features)]\npub trait Sizes { const SIZE<T>: usize; }", "generic constants"],
   // A std item Rust 1.100 stabilized, which rust-js doesn't lower yet: its tracker (ADR 0109, amended).
-  ["a std function new in 1.100", "pub fn f() -> Vec<u32> { Vec::from_fn(3, |i| i as u32) }", "(#1656)"],
+  ["a std function new in 1.100", "pub fn f() -> u32 { let r = std::rc::Rc::new(3u32); *std::rc::Rc::map(r, |x| x + 1) }", "(#1656)"],
   [
     "an impl of a std trait new in 1.100",
     "use std::alloc::{AllocError, Allocator, Global, Layout};\nuse std::ptr::NonNull;\npub struct A;\nunsafe impl Allocator for A {\n    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {\n        Global.allocate(layout)\n    }\n    unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout) {\n        unsafe { Global.deallocate(ptr, layout) }\n    }\n}",

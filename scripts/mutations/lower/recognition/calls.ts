@@ -348,7 +348,7 @@ export const mutations: Mutation[] = [
     name: "array-from-fn-unrecognized",
     breaks: "`array::from_fn(f)` isn't known, and is refused",
     file: "src/lower/recognition/calls.rs",
-    find: "            Some(StdPath::ArrayFromFnFn) => return Some(Some(Std::Slice(SliceOp::FromFn))),\n",
+    find: "            Some(StdPath::ArrayFromFnFn) => return Some(Some(Std::Slice(SliceOp::FromFn { given_length: false }))),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
   },

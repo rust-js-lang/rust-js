@@ -24,12 +24,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .is_some_and(|hasher| self.is_std_type(hasher, StdItem::RandomState)))
     }
 
-    /// A `str`'s or a slice's `trim_prefix(p)` or `trim_suffix(p)`, Rust
-    /// 1.100's, by what its pattern `args` names is: text or a `char`, a
-    /// `char`'s predicate or a set of them, or a slice's items. `None` of
-    /// another, refused as an open call (#1656).
-    fn trim_fix(&self, owner: Ty<'tcx>, name: &str, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+    /// A method Rust 1.100 stabilized that rust-js lowers (#1656):
+    /// `Vec::from_fn(n, f)`, as `array::from_fn` is; and a `str`'s or a
+    /// slice's `trim_prefix(p)` or `trim_suffix(p)`, by what its pattern
+    /// `args` names is: text or a `char`, a `char`'s predicate or a set of
+    /// them, or a slice's items. `None` of another, refused as an open call.
+    fn new_in_1_100(&self, owner: Ty<'tcx>, name: &str, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
         let suffix = match name {
+            "from_fn" if self.is_std_type(owner, StdItem::Vec) => {
+                return Some(Std::Slice(SliceOp::FromFn { given_length: true }));
+            }
             "trim_prefix" => false,
             "trim_suffix" => true,
             _ => return None,
@@ -203,7 +207,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = methods::text(name.as_str(), owner.is_char(), owner.is_str()) {
             return Some(Std::Text(op));
         }
-        let simple = methods::boolean(name.as_str(), owner).or_else(|| self.trim_fix(owner, name.as_str(), args));
+        let simple = methods::boolean(name.as_str(), owner).or_else(|| self.new_in_1_100(owner, name.as_str(), args));
         if let Some(known) = self.number_method(owner, name.as_str()).or(simple) {
             return Some(known);
         }

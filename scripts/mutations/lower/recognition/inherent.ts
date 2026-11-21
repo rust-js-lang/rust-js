@@ -505,4 +505,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^trim_prefix_and_suffix_strip_once_or_keep\\.rs$"],
   },
+  {
+    name: "vec-from-fn-unrecognized",
+    breaks: "`Vec::from_fn(n, f)`, Rust 1.100's, is refused as an open call (#1656) where it's `array::from_fn`'s lowering with its length given",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            \"from_fn\" if self.is_std_type(owner, StdItem::Vec) => {\n",
+    replace: "            \"from_fn\" if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_fn_drops_what_it_made_where_its_closure_panics\\.rs$"],
+  },
 ];

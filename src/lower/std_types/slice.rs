@@ -175,9 +175,13 @@ pub(in crate::lower) enum SliceOp {
         circumfix: bool,
     },
     Repeat,
-    /// `array::from_fn(f)`: `Array.from({ length: N }, (_, i) => ..)`, `f`
-    /// given each index.
-    FromFn,
+    /// `array::from_fn(f)` and, `given_length`, `Vec::from_fn(n, f)`, Rust
+    /// 1.100's: `f` given each index, `Array.from({ length: N }, (_, i) =>
+    /// ..)`; of items with a destructor, collected as `(0..N).map(f)` is,
+    /// what it made dropped where `f` panics (#2278, #1656).
+    FromFn {
+        given_length: bool,
+    },
     /// `slice::from_ref(&x)` and `array::from_ref(&x)`: `[x]`, of one item
     /// it shares.
     FromRef,
@@ -782,16 +786,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 helper("$oneItemOf", vec![arg()])
             }
-            SliceOp::FromFn => {
-                // `from_fn::<T, N, F>`: its length, the second.
-                let n = generic_args.const_at(1);
-                let length = match n.try_to_target_usize(self.tcx) {
-                    Some(n) => Expr::int(i128::from(n)),
-                    None => self.const_arg(n, span)?,
+            SliceOp::FromFn { given_length } => {
+                // `Vec::from_fn(n, f)`'s, its first argument, read once, its
+                // room asked first, as its collect asks it; `from_fn::<T, N,
+                // F>`'s, its second generic argument.
+                let length = match given_length {
+                    true => {
+                        let length = arg();
+                        let length = match length.reads_same() {
+                            true => length,
+                            false => self.spill(Role::Length, length, out),
+                        };
+                        if let Some(size) = self.room_size_of(&length, item()) {
+                            self.room_for((None, length.clone()), size, span, out);
+                        }
+                        length
+                    }
+                    false => {
+                        let n = generic_args.const_at(1);
+                        match n.try_to_target_usize(self.tcx) {
+                            Some(n) => Expr::int(i128::from(n)),
+                            None => self.const_arg(n, span)?,
+                        }
+                    }
                 };
+                let f = arg();
+                // Of items with a destructor, collected as `(0..n).map(f)`
+                // is, what's made dropped where `f` panics, as std's guard
+                // drops it (#2278).
+                if self.drops(item()) != crate::lower::drops::Drops::Nothing {
+                    let drop = self.drop_function(item(), span)?;
+                    let made = Expr::call(
+                        Expr::member(
+                            crate::lower::std_types::range::lazy_range_of(Expr::int(0), length),
+                            "map",
+                        ),
+                        vec![f],
+                    );
+                    let mut list = vec![made];
+                    list.extend(drop);
+                    list.push(Expr::bool(true));
+                    return Ok(helper("$collectDropping", list));
+                }
                 // Given the index, second, as `Array.from` gives it: an arrow
                 // of one parameter takes it after `_`.
-                let made = match arg() {
+                let made = match f {
                     Expr {
                         kind: js::ExprKind::Arrow(mut params, body),
                         ..

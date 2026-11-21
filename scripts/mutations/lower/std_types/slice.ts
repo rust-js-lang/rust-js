@@ -453,4 +453,21 @@ export const mutations: Mutation[] = [
     replace: "        false\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_searches_ask_a_predicate_as_they_step.rs$"],
   },
+  {
+    name: "from-fn-made-undropped",
+    breaks: "`array::from_fn` and `Vec::from_fn` of items with a destructor drop none of what they made where `f` panics part-way, `Array.from`'s, where std's guard drops it (#2278)",
+    file: "src/lower/std_types/slice.rs",
+    find: "                if self.drops(item()) != crate::lower::drops::Drops::Nothing {\n                    let drop = self.drop_function(item(), span)?;\n",
+    replace: "                if false {\n                    let drop = self.drop_function(item(), span)?;\n",
+    tests: ["test/corpus.test.ts", "-t", "^from_fn_drops_what_it_made_where_its_closure_panics\\.rs$"],
+  },
+  {
+    name: "vec-from-fn-room-unasked",
+    breaks: "`Vec::from_fn(n, f)` asks no room for its `n` items, where std's collect panics `capacity overflow` past `isize::MAX` bytes before calling `f` (#1656)",
+    file: "src/lower/std_types/slice.rs",
+    find: "                            self.room_for((None, length.clone()), size, span, out);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^from_fn_drops_what_it_made_where_its_closure_panics\\.rs$"],
+    snapshots: true,
+  },
 ];

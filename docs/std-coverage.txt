@@ -1,4 +1,4 @@
-# Vec 42 of 56; bodies: 5 safe, 1 spec, 0 opaque, 50 memory, 0 none
+# Vec 43 of 56; bodies: 5 safe, 1 spec, 0 opaque, 50 memory, 0 none
 - Vec::allocator	safe
 + Vec::append	memory
 + Vec::as_mut_ptr	memory
@@ -14,7 +14,7 @@
 + Vec::extend_from_slice	memory
 + Vec::extend_from_within	memory
 + Vec::extract_if	safe
-- Vec::from_fn	spec
++ Vec::from_fn	spec
 - Vec::from_parts	memory
 - Vec::from_parts_in	memory
 + Vec::from_raw_parts	memory

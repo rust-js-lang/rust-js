@@ -154,6 +154,7 @@ export const templates: Template[] = [
   t("vec dedup", ["Vec::dedup"], "dups", "c.dedup();", true),
   t("vec dedup_by", ["Vec::dedup_by"], "dups", `c.dedup_by(${f("a, b", "a.0 == b.0")});`, true),
   t("vec dedup_by_key", ["Vec::dedup_by_key"], "dups", `c.dedup_by_key(${f("x", "x.0 / 2")});`, true),
+  t("vec from_fn", ["Vec::from_fn"], "vec", `let o: Vec<L> = Vec::from_fn(3, ${f("i", "L(10 + i as u32)")});\nprintln!("{o:?}");`, true),
   t("vec append", ["Vec::append"], "vec", 'let mut o = vec![L(7), L(8)];\nc.append(&mut o);\nprintln!("{o:?}");'),
   t("vec drain", ["Vec::drain"], "vec", 'let d: Vec<L> = c.drain(1..3).collect();\nprintln!("{d:?}");'),
   t("vec drain left part-way", ["Vec::drain"], "vec", 'let mut d = c.drain(1..3);\nprintln!("{:?}", d.next());'),
@@ -301,7 +302,7 @@ export const excluded: Record<string, string> = Object.fromEntries([
     "[T]::as_mut_ptr", "[T]::as_mut_ptr_range", "[T]::as_mut_array", "[T]::as_flattened_mut", "UnsafeCell::get_mut",
   ].map((id) => [id, untouched]),
   // Stable since 1.100, not yet lowered: each is the tracker's, #1656.
-  ...["Vec::from_fn", "Rc::map"].map((id) => [id, "new in Rust 1.100, which rust-js doesn't lower yet: #1656's"]),
+  ...["Rc::map"].map((id) => [id, "new in Rust 1.100, which rust-js doesn't lower yet: #1656's"]),
 ]);
 
 /** Each case rust-js refuses, by its id, in both builds: what the refusal

@@ -13,6 +13,12 @@ use rustc_span::Span;
 
 /// A range made as stepped, lazily, its runtime's generator (ADR 0472).
 pub(crate) const LAZY_RANGE: &str = "$lazyRange";
+/// `start..end` made as stepped, `$lazyRange(start, end)`, of what's made of
+/// its numbers in turn, `from_fn`'s (#2278).
+pub(in crate::lower) fn lazy_range_of(start: Expr, end: Expr) -> Expr {
+    Expr::call_helper(LAZY_RANGE, vec![start, end])
+}
+
 /// A range's numbers from its end, `$lazyRangeBack(a, b, step)`.
 pub(crate) const LAZY_RANGE_BACK: &str = "$lazyRangeBack";
 

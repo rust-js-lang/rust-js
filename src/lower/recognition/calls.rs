@@ -203,7 +203,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return Some(Some(Std::Transmute));
             }
             Some(StdPath::MemZeroedFn) => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
-            Some(StdPath::ArrayFromFnFn) => return Some(Some(Std::Slice(SliceOp::FromFn))),
+            Some(StdPath::ArrayFromFnFn) => return Some(Some(Std::Slice(SliceOp::FromFn { given_length: false }))),
             Some(StdPath::SliceFromRefFn | StdPath::ArrayFromRefFn) => return Some(Some(Std::Slice(SliceOp::FromRef))),
             Some(StdPath::SliceFromMutFn | StdPath::ArrayFromMutFn) => return Some(Some(Std::Slice(SliceOp::FromMut))),
             _ => {}
