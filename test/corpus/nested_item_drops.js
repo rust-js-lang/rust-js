@@ -318,9 +318,9 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        for (const item of groups[0]) {
-          for (const item$1 of item) {
-            loudDrop_drop(item$1);
+        for (const items of groups[0]) {
+          for (const item of items) {
+            loudDrop_drop(item);
           }
         }
       }

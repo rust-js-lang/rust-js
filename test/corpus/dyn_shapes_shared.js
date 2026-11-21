@@ -117,9 +117,9 @@ function main() {
         iter = $iter(shapes);
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
@@ -131,9 +131,9 @@ function main() {
           s = $next(iter);
         } catch (error) {
           $cleanup(() => {
-            for (const item of byKind.values()) {
-              for (const item$1 of item) {
-                $rcDrop(item$1);
+            for (const items of byKind.values()) {
+              for (const item of items) {
+                $rcDrop(item);
               }
             }
           }, error);
@@ -147,9 +147,9 @@ function main() {
           key = s.impl.kind(s.value);
         } catch (error) {
           $cleanup(() => {
-            for (const item of byKind.values()) {
-              for (const item$1 of item) {
-                $rcDrop(item$1);
+            for (const items of byKind.values()) {
+              for (const item of items) {
+                $rcDrop(item);
               }
             }
           }, error);
@@ -160,9 +160,9 @@ function main() {
           tmp = $orInsertWith(byKind, key, () => []);
         } catch (error) {
           $cleanup(() => {
-            for (const item of byKind.values()) {
-              for (const item$1 of item) {
-                $rcDrop(item$1);
+            for (const items of byKind.values()) {
+              for (const item of items) {
+                $rcDrop(item);
               }
             }
           }, error);
@@ -173,9 +173,9 @@ function main() {
           tmp$1 = $rcClone(s);
         } catch (error) {
           $cleanup(() => {
-            for (const item of byKind.values()) {
-              for (const item$1 of item) {
-                $rcDrop(item$1);
+            for (const items of byKind.values()) {
+              for (const item of items) {
+                $rcDrop(item);
               }
             }
           }, error);
@@ -185,9 +185,9 @@ function main() {
           tmp.push(tmp$1);
         } catch (error) {
           $cleanup(() => {
-            for (const item of byKind.values()) {
-              for (const item$1 of item) {
-                $rcDrop(item$1);
+            for (const items of byKind.values()) {
+              for (const item of items) {
+                $rcDrop(item);
               }
             }
           }, error);
@@ -199,9 +199,9 @@ function main() {
         keys = Array.from(byKind).map(([k, v]) => [k, v.length, $index(v, 0).strong]);
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
@@ -211,9 +211,9 @@ function main() {
         keys.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) || $cmp(a[2], b[2]));
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
@@ -225,9 +225,9 @@ function main() {
         );
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
@@ -242,9 +242,9 @@ function main() {
         ops = new Map(value);
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
@@ -255,9 +255,9 @@ function main() {
         names = Array.from(ops.keys());
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
@@ -267,9 +267,9 @@ function main() {
         names.sort($cmp);
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
@@ -284,9 +284,9 @@ function main() {
         );
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
@@ -304,18 +304,18 @@ function main() {
         tmp = show(d);
       } catch (error) {
         $cleanup(() => {
-          for (const item of byKind.values()) {
-            for (const item$1 of item) {
-              $rcDrop(item$1);
+          for (const items of byKind.values()) {
+            for (const item of items) {
+              $rcDrop(item);
             }
           }
         }, error);
         throw error;
       }
       console.log(`${$byteLen(tmp)}`);
-      for (const item of byKind.values()) {
-        for (const item$1 of item) {
-          $rcDrop(item$1);
+      for (const items of byKind.values()) {
+        for (const item of items) {
+          $rcDrop(item);
         }
       }
     } catch (error) {

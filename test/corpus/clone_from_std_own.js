@@ -352,10 +352,10 @@ function main() {
           throw $unwindsOn(error);
         } finally {
           if ($live()) {
-            for (const item of w) {
-              if (item != null) {
-                for (const item$1 of item) {
-                  dDrop_drop(item$1);
+            for (const items of w) {
+              if (items != null) {
+                for (const item of items) {
+                  dDrop_drop(item);
                 }
               }
             }
@@ -365,10 +365,10 @@ function main() {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          for (const item of v) {
-            if (item != null) {
-              for (const item$1 of item) {
-                dDrop_drop(item$1);
+          for (const items of v) {
+            if (items != null) {
+              for (const item of items) {
+                dDrop_drop(item);
               }
             }
           }

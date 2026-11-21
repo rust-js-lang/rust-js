@@ -173,10 +173,10 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        for (const item of value) {
+        for (const items of value) {
           console.log("drop held");
-          for (const item$1 of item.iter) {
-            dDrop_drop(item$1);
+          for (const item of items.iter) {
+            dDrop_drop(item);
           }
         }
       }
@@ -217,10 +217,10 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    for (const item of value) {
+    for (const items of value) {
       console.log("drop held");
-      for (const item$1 of item.iter) {
-        dDrop_drop(item$1);
+      for (const item of items.iter) {
+        dDrop_drop(item);
       }
     }
     return value.length;
@@ -247,10 +247,10 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        for (const item of value) {
+        for (const items of value) {
           console.log("drop held");
-          for (const item$1 of item.iter) {
-            dDrop_drop(item$1);
+          for (const item of items.iter) {
+            dDrop_drop(item);
           }
         }
       }
@@ -279,10 +279,10 @@ function main() {
       $dropEach(dDrop_drop),
       $dropEach(dDrop_drop),
     );
-    for (const item of value) {
+    for (const items of value) {
       console.log("drop held");
-      for (const item$1 of item.iter) {
-        dDrop_drop(item$1);
+      for (const item of items.iter) {
+        dDrop_drop(item);
       }
     }
     return value.length;
@@ -306,10 +306,10 @@ function main() {
       $dropEach(dDrop_drop),
       $dropEach(dDrop_drop),
     );
-    for (const item of value) {
+    for (const items of value) {
       console.log("drop held");
-      for (const item$1 of item.iter) {
-        dDrop_drop(item$1);
+      for (const item of items.iter) {
+        dDrop_drop(item);
       }
     }
     return value.length;

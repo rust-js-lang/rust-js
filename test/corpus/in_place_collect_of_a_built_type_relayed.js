@@ -519,10 +519,10 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    for (const item of value) {
-      heldDrop_drop(item, $dropEach(dDrop_drop));
-      for (const item$1 of item.iter) {
-        dDrop_drop(item$1);
+    for (const items of value) {
+      heldDrop_drop(items, $dropEach(dDrop_drop));
+      for (const item of items.iter) {
+        dDrop_drop(item);
       }
     }
     return value.length;
@@ -547,10 +547,10 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    for (const item of value) {
-      heldDrop_drop(item, $dropEach(dDrop_drop));
-      for (const item$1 of item.iter) {
-        dDrop_drop(item$1);
+    for (const items of value) {
+      heldDrop_drop(items, $dropEach(dDrop_drop));
+      for (const item of items.iter) {
+        dDrop_drop(item);
       }
     }
     return value.length;
@@ -656,10 +656,10 @@ function main() {
         $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
-    for (const item of heldAll) {
-      heldDrop_drop(item, $dropEach(dDrop_drop));
-      for (const item$1 of item.iter) {
-        dDrop_drop(item$1);
+    for (const items of heldAll) {
+      heldDrop_drop(items, $dropEach(dDrop_drop));
+      for (const item of items.iter) {
+        dDrop_drop(item);
       }
     }
     return heldAll.length;
@@ -698,10 +698,10 @@ function main() {
         $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
-    for (const item of heldAll) {
-      heldDrop_drop(item, $dropEach(dDrop_drop));
-      for (const item$1 of item.iter) {
-        dDrop_drop(item$1);
+    for (const items of heldAll) {
+      heldDrop_drop(items, $dropEach(dDrop_drop));
+      for (const item of items.iter) {
+        dDrop_drop(item);
       }
     }
     return heldAll.length;
@@ -737,10 +737,10 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        for (const item of held) {
-          heldDrop_drop(item, $dropEach(dDrop_drop));
-          for (const item$1 of item.iter) {
-            dDrop_drop(item$1);
+        for (const items of held) {
+          heldDrop_drop(items, $dropEach(dDrop_drop));
+          for (const item of items.iter) {
+            dDrop_drop(item);
           }
         }
       }

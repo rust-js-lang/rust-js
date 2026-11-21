@@ -36,9 +36,9 @@ function main() {
             $dropEach(dDrop_drop),
           );
           console.log(`grid ${grid.length}`);
-          for (const item of grid) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
+          for (const items of grid) {
+            for (const item of items) {
+              dDrop_drop(item);
             }
           }
         } catch (error) {

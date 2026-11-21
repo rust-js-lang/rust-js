@@ -209,9 +209,9 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      for (const item of value$2) {
-        for (const item$1 of item) {
-          dDrop_drop(item$1);
+      for (const items of value$2) {
+        for (const item of items) {
+          dDrop_drop(item);
         }
       }
     }
