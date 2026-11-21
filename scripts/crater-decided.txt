@@ -8,3 +8,6 @@
 # off (#1174).
 num-traits float::tests::copysign  a NaN's sign isn't kept (the guide's differences from native Rust, 4)
 num-traits float::tests::total_cmp  a NaN's payload isn't kept (the guide's differences from native Rust, 4)
+itertools tests/laziness.rs::get  #2253: a unit-struct iterator, `undefined`, given to the library's generic code crashes in `$given`
+itertools tests/laziness.rs::kmerge  #2253
+itertools tests/laziness.rs::kmerge_by  #2253

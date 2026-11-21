@@ -578,16 +578,16 @@ export const mutations: Mutation[] = [
     breaks:
       "a `()` field is declared required, `_0: undefined`, where the JS rust-js makes leaves its key out, so `{ TAG: \"Done\" }` isn't a `Step` under `exactOptionalPropertyTypes` (#1851)",
     file: "src/lower/representation.rs",
-    find: "        ty::Tuple(items) => items.is_empty(),\n        ty::Adt(adt, _) => {\n            adt.is_struct()",
-    replace: "        ty::Tuple(items) => items.is_empty() && false,\n        ty::Adt(adt, _) => {\n            adt.is_struct()",
+    find: "        ty::Tuple(items) => items.is_empty(),\n        ty::Adt(adt, _) => one_valued(",
+    replace: "        ty::Tuple(items) => items.is_empty() && false,\n        ty::Adt(adt, _) => one_valued(",
     tests: ["test/declarations-results.test.ts", "-t", "always undefined"],
   },
   {
     name: "unit-struct-field-always-there",
     breaks: "a unit struct's field, `undefined` in JS, is declared required, its key left out of what rust-js makes (#1851)",
     file: "src/lower/representation.rs",
-    find: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)\n                && bindings::unit_value(",
-    replace: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)\n                && bindings::unit_value(",
+    find: "        && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)\n        && !super::classes::is_class(tcx, adt.did()))",
+    replace: "        && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)\n        && !super::classes::is_class(tcx, adt.did()))",
     tests: ["test/declarations-results.test.ts", "-t", "always undefined"],
   },
   {

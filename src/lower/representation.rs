@@ -729,14 +729,22 @@ fn const_bigint(e: &Expr) -> bool {
 pub(in crate::lower) fn always_undefined(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     match ty.kind() {
         ty::Tuple(items) => items.is_empty(),
-        ty::Adt(adt, _) => {
-            adt.is_struct()
-                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)
-                && bindings::unit_value(tcx, adt.did()).is_none()
-                && !super::classes::is_class(tcx, adt.did())
-        }
+        ty::Adt(adt, _) => one_valued(tcx, ty) && bindings::unit_value(tcx, adt.did()).is_none(),
         _ => false,
     }
+}
+
+/// Whether every value of `ty` is the one JS value: a unit struct that's
+/// no class (ADR 0013), `undefined`, or its `#[rust_js::name]`'s string or
+/// boolean (ADRs 0223, 1164). Nothing written in place can change it, nor
+/// tell a clone of it from it, so no write puts it in the mutation set
+/// (`analysis::mutation`, ADR 0147, #2251). JS's answer, of no layout: of
+/// the zero-sized types `has_one_value` says, those JS holds as no object,
+/// as `{}` of `struct E {}` and `[]` of a `[T; 0]` are, written in place.
+pub(in crate::lower) fn one_valued(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()
+        && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)
+        && !super::classes::is_class(tcx, adt.did()))
 }
 
 /// Whether `adt` is a tuple struct, `struct P(u8, u8)`, laid out as an

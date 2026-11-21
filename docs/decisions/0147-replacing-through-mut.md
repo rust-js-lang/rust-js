@@ -356,3 +356,35 @@ the guard, then a refusal. `writes_through_its_box` now holds of a bare type
 parameter too. Case copy_written_whole_through_a_pin_is_its_own against
 native Rust, mutation `bare-parameter-writes-unseen`, caught; no snapshot
 moves.
+
+## Amendment (2026-11-21, #2251): a unit struct is in no mutation set
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): no observable difference,
+so JS's form, the value itself. `generic_writes` put a unit struct in the
+mutation set wherever a `&mut` of one reached generic code: itertools'
+`take_while_ref(&mut self)` given `&mut Panicking`. The clone owner then
+took the struct as changed in place, found no fields to copy and refused
+"cloning `Panicking`". The refusal covered the whole crate, so every
+`Panicking` site of itertools' `tests/laziness.rs` refused, and the Crater
+cut all 61 of its tests.
+
+JS holds a unit struct that's no class as one value: `undefined`, or its
+`#[rust_js::name]`'s string or boolean. No write in place can change it,
+and no clone of it can be told from it. **`representation::one_valued` says
+which types those are; `always_undefined` is built on it. `object_like`,
+the mutation set's filter, asks it, so no rule puts such a type in the
+set.** A `&mut` of a unit field, `keep(&mut b.tag)`, still marks the struct
+that holds it, as before, by the field rule (`!object_like`). The write sets
+the field's key on the object, `b.tag = undefined`, which a `b` shared with
+`a` would put on `a` too.
+
+Rejected: gating the copy owner's `mutated_itself` on `may_be_object`. A
+fieldless enum is no object either, but `&mut s.e` relies on `E` being in
+the set, through `contains_mutated`'s walk of `S`'s fields, to copy `S`.
+That gate would be a wrong answer. Also rejected: patching `needs_clone`
+alone, which would leave the set wrong for copies and library contracts.
+
+Case unit_struct_written_by_generic_code_clones_itself runs against native
+Rust. Before the fix it was refused (`keep(&mut m)`'s `{ clone: (value) =>
+value }`, and a `take_while_ref`-like adapter over a unit-struct iterator).
+Mutation `unit-struct-object-like` (`analysis/mutation.ts`) is caught.

@@ -305,7 +305,10 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
             // object changed in place: `a.0.push('!')`'s, `a[0] += "!"`. So
             // does a raw pointer to any part, `&raw mut p.x`, whose writes
             // are the part's place's, `$ptr(p, "x", 0)`'s, an object's too:
-            // a write of one through it replaces the field (#1386).
+            // a write of one through it replaces the field (#1386). So does
+            // a `&mut` of a unit struct's field, which writes the field's
+            // key on the object, `b.tag = undefined`, where `b` and `a`
+            // would share it (#2251).
             let place = match expr.kind {
                 ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => Some(lhs),
                 ExprKind::Borrow {
@@ -442,11 +445,15 @@ fn custom_mir_writes<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, mutated: &mut I
     }
 }
 
+/// Whether a value of `ty` may be a JS object a write changes in place:
+/// not an `Rc`'s, a `Box`'s, a `String`'s or an `Option`'s, and not a unit
+/// struct's one value, `undefined` or its name's (`one_valued`, #2251).
 fn object_like<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     match ty.kind() {
         ty::Adt(..)
             if crate::lower::recognition::rc_pointee(tcx, ty).is_some()
-                || crate::lower::recognition::weak_pointee(tcx, ty).is_some() =>
+                || crate::lower::recognition::weak_pointee(tcx, ty).is_some()
+                || crate::lower::representation::one_valued(tcx, ty) =>
         {
             false
         }

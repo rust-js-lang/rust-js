@@ -3,6 +3,16 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unit-struct-object-like",
+    breaks:
+      "a unit struct, `undefined` or its name's string in JS, is object-like, so generic code given a `&mut` of one puts it in the mutation set and its clone, `keep(&mut m)`'s dictionary and itertools' `take_while_ref`'s, is refused (#2251)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                || crate::lower::recognition::weak_pointee(tcx, ty).is_some()\n                || crate::lower::representation::one_valued(tcx, ty) =>\n",
+    replace: "                || crate::lower::recognition::weak_pointee(tcx, ty).is_some() =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^unit_struct_written_by_generic_code_clones_itself.rs$"],
+  },
+
+  {
     name: "closure-param-binding-unchanging",
     breaks:
       "a `for_each` closure's pattern binding a tuple's part `&mut`, `|(i, (a, b))|`, isn't a change of the tuple in place, so `[(1, 'a'); 3].to_vec()`'s items are one, each written thrice (#1076)",
@@ -186,8 +196,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc` written through a `&mut` is taken for one changed in place, so its clone, React's `pending.next.borrow().clone()`, is refused",
     file: "src/lower/analysis/mutation.rs",
-    find: "        ty::Adt(..)\n            if crate::lower::recognition::rc_pointee(tcx, ty).is_some()\n                || crate::lower::recognition::weak_pointee(tcx, ty).is_some() =>\n        {\n            false\n        }\n",
-    replace: "",
+    find: "            if crate::lower::recognition::rc_pointee(tcx, ty).is_some()\n                || crate::lower::recognition::weak_pointee(tcx, ty).is_some()\n                || crate::lower::representation::one_valued(tcx, ty) =>\n",
+    replace: "            if crate::lower::representation::one_valued(tcx, ty) =>\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_assigned_through_mut.rs$"],
   },
   {

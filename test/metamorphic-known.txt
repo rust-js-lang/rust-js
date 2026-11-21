@@ -120,3 +120,7 @@ plain std field closure_mut_ref.rs
 plain std field held_enumerate.rs
 
 #2185 A Box of a std adapter given by a dictionary, through a trait, steps as the adapter itself
+
+#2254 P0: a struct holding a generic &mut I, given a place for a non-object I, writes *self.iter = v with $assign on the place handle
+plain std loud unit_struct_written_by_generic_code_clones_itself.rs
+plain std loud-drop unit_struct_written_by_generic_code_clones_itself.rs
