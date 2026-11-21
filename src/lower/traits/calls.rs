@@ -134,7 +134,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Err(self.unsupported(
                 span,
-                &format!("a `{ty}`, a `&mut` of a `&mut` of an object, given to generic code"),
+                &format!("a `{ty}`, a `&mut` of a `&mut` of an object, given to generic code (#1632)"),
             ));
         }
         Ok(())

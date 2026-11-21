@@ -747,7 +747,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 if !of_alias && !given && !held && mentions_locals(&aliases, |m| m.visit_statement(statement, location))
                 {
-                    return Some((statement.source_info.span, this()));
+                    // Made a `&mut dyn` of a trait, which its writer's calls
+                    // through aren't followed (#1684).
+                    let made_dyn = matches!(&statement.kind, StatementKind::Assign(assign)
+                        if matches!(assign.1, Rvalue::Cast(mir::CastKind::PointerCoercion(rustc_middle::ty::adjustment::PointerCoercion::Unsize, _), ..)));
+                    return Some((
+                        statement.source_info.span,
+                        match made_dyn {
+                            true => "this `Formatter` made a `&mut dyn` (#1684)".to_string(),
+                            false => this(),
+                        },
+                    ));
                 }
             }
             location.statement_index = data.statements.len();

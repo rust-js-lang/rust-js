@@ -81,6 +81,7 @@ reads memory by where it is, it refuses:
 - `==` or `{:?}` of raw pointers in generic code to a type that holds a type parameter, `NonNull<Node<T>>`, whose size rust-js can't give: `struct Node<T>(T); fn same<T>(a: *const Node<T>, b: *const Node<T>) -> bool { a == b } let n = Node(1); println!("{}", same(&n, &n));`
 - In a crate that asks an address, a pointer made of a reference in generic code, `r as *const T`, where the crate gives `T` both an `Option` of a struct, which JS holds as the struct, past its tag, and a type that isn't held so: one JS can't be both. Make it where the type is known (#1114): `#[repr(C)] struct P(u8, u32); fn at<T>(r: &T) -> usize { r as *const T as usize } let p = P(1, 2); let o = Some(P(3, 4)); println!("{} {}", at(&p), at(&o));`
 - In a crate that asks an address of the type it lends, std's function that lends a value from its receiver's own storage where JS keeps it in a `$some` box, a `OnceCell` or a `Peekable` of an `Option` of an object (#1513); or in a library that asks no address. Generic code whose instances keep the lent value at different offsets is given its offset by each caller ([1131](../decisions/1131-where-std-lends-from-is-its-callers-fact.md)). An object lent, `OnceCell::get`, `Peekable::peek`, `Result::as_ref` and their `&mut` forms, is recorded as stored in the receiver (#1475), and a `&mut` to a number is a handle on its place there (#1474). Otherwise, take what it holds by value, keep it in a `RefCell`, an `Option` or a struct's field, or reach it by a pattern, `if let Ok(x) = &r`: `#[repr(C)] struct P(u8, u32); let c = std::cell::OnceCell::new(); let _ = c.set(Some(P(1, 2))); println!("{}", c.get().unwrap() as *const Option<P> as usize);`
+- A `&mut` of a `&mut` of an object, a `&mut &mut [u8]`, given to generic code (#1632): `fn fill<W: std::io::Write>(mut w: W) { let _ = w.write(&[9]); } let mut buf = [0u8; 2]; let mut s: &mut [u8] = &mut buf; fill(&mut s);`
 - A value of std's type whose own address is taken, moved, a `Vec` or a `HashMap`: JS holds it in a form of its own, a `Vec`'s header and items one object, so a copy would be another's items and the same object the same address ([1132](../decisions/1132-a-move-of-an-addressed-local-copies-it.md), #1551). Take the address of what it holds, or of a struct that holds it: `let v = vec![1u8, 2]; let at = &raw const v as usize; let k = v; println!("{}", at == &raw const k as usize);`
 - The address through a `&mut dyn` of a number, a place JS can't share, where the `&mut` it's made of is one a function was given, or one read out of a field or an item, which records no place, `d as *mut dyn T as *mut i32 as usize` of `let d: &mut dyn T = r;` of a parameter `r: &mut i32`: refused as the program runs, as what it's made of is known only then; reads and writes through it are right (#1527).
 - A raw pointer to what `Option::as_mut()` lends where JS keeps the payload in a `$some` box, an `Option` of an `Option` of an object, or where the `Option` isn't a local, which JS holds in a cell made at each call, a place on no record, so two pointers to one place would differ (#1513); of an `Option` local of an unboxed payload it's a handle on the local's place (#1502). Of a crate's own function that returns its `&mut` parameter, reborrowed through raw-pointer casts that keep its place, httparse's `deinit_slice_mut`, given a parameter given its place's pointer, it's that pointer (ADR 1114, #1513). Take the pointer of the `Option` itself, or match on it, `if let Some(x) = &mut o`: `let mut o = Some(Some((1u8, 2u32))); let at = &raw const *o.as_mut().unwrap(); println!("{}", at == &raw const *o.as_mut().unwrap());`
@@ -195,6 +196,9 @@ depends on what the program does:
 
 ## Formatting
 
+- `{}`, `{:?}` and `parse()` of `core::net`'s addresses, `Ipv4Addr` and the rest, whose std bodies aren't compiled yet (#1644): `let a = std::net::Ipv4Addr::new(1, 2, 3, 4); println!("{a}");`
+- A writer's `Formatter` made a `&mut dyn` of a trait, `bracketed(f, n)` of `fn bracketed(f: &mut dyn GetMut<fmt::Formatter<'_>>, n: i32)`, whose calls through it aren't followed (#1684).
+- A library's derived `Debug` of a generic struct with a `PhantomData<T>` field, shown by its consumer, which would show `T`'s name, `type_name::<T>()`, that its generic code compiled in the library is given no fact of (#1657).
 - A `Formatter`'s flags asked by a `Display` of the crate's: `struct X; impl std::fmt::Display for X { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{}", f.sign_minus()) } } println!("{:-}", X);`
 - A `ToString` of the crate's with no `Display`: `struct A; impl ToString for A { fn to_string(&self) -> String { "A".into() } } println!("{}", A.to_string());`
 - `{:?}` of one item of a collection of a `dyn` whose trait has `Debug` as a supertrait, `v[0]`, which is made where it's shown; the whole collection's compiles: `trait Ev: std::fmt::Debug {} #[derive(Debug)] struct C; impl Ev for C {} let v: Vec<Box<dyn Ev>> = vec![Box::new(C)]; println!("{:?}", v[0]);`
@@ -258,9 +262,11 @@ has its own writer (`serialize_with`), each #1568; `with`, `serialize_with` or
 for a `Value`;
 `Value::pointer`, `pointer_mut` and `take`, assigning to a `Value`'s key,
 and collecting into one; `Map::clear` and `map::Entry::or_insert`;
-`to_vec`; an `Error`'s `line`, `column`, `is_syntax` and `classify`;
-serde_json's own `Deserializer`, `Deserializer::from_str`; `#[serde(remote =
-..)]` (#1615);
+`to_vec`, `to_writer`, `from_slice`, `from_reader` and streams of values,
+serde_json's own `Deserializer`, `Deserializer::from_str` (#1626); an
+`Error`'s `line`, `column`, `is_syntax` and `classify` (#1627);
+`#[serde(field_identifier)]`, `#[serde(variant_identifier)]` and
+`#[serde(crate = ..)]` (#1628); `#[serde(remote = ..)]` (#1615);
 reading a value whose drop can be seen, a `Drop` of the crate's that does
 something, its own or a part's, as a read that fails part-way doesn't drop
 what it had read yet (#1552).

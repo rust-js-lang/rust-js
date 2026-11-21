@@ -706,7 +706,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let args = self.tcx.mk_args(&[self.tcx.erase_and_anonymize_regions(ty).into()]);
             return self.writer_call(fmt, args, value, pretty, span);
         }
-        Err(self.unsupported(span, &format!("`{{}}` of a `{ty}`")))
+        let issue = crate::lower::recognition::open_text(self.tcx, ty).map(crate::lower::refusal::issue_of);
+        Err(self.unsupported(span, &format!("`{{}}` of a `{ty}`{}", issue.unwrap_or_default())))
     }
 }
 

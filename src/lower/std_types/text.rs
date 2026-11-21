@@ -747,7 +747,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(call);
             }
         }
-        Err(self.unsupported(span, &format!("`parse` to a `{target}`")))
+        let issue = crate::lower::recognition::open_text(self.tcx, target).map(crate::lower::refusal::issue_of);
+        Err(self.unsupported(span, &format!("`parse` to a `{target}`{}", issue.unwrap_or_default())))
     }
 
     /// A `Vec`'s range, read as `range_read` reads it, `range`, replaced by

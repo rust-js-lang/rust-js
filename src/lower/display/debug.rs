@@ -762,7 +762,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span,
                 &format!("`{{:?}}` of a `{ty}`, which shows std's searcher's state (#2004)"),
             )),
-            _ => Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`"))),
+            _ => {
+                let issue = crate::lower::recognition::open_text(self.tcx, ty).map(crate::lower::refusal::issue_of);
+                Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`{}", issue.unwrap_or_default())))
+            }
         }
     }
 

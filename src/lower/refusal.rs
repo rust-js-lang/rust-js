@@ -136,5 +136,8 @@ pub(crate) fn issue_of(open: OpenCall) -> &'static str {
         OpenCall::Thread => " (ADR 1126)",
         OpenCall::BuildHasher => " (#1482)",
         OpenCall::NewIn1_100 => " (#1656)",
+        OpenCall::SerdeJsonBytes => " (#1626)",
+        OpenCall::SerdeJsonErrorApi => " (#1627)",
+        OpenCall::NetText => " (#1644)",
     }
 }

@@ -349,6 +349,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "flatten" => attrs.flatten = true,
                 // Lifetimes and bounds, which rustc has checked; JS has neither.
                 "borrow" | "bound" => {}
+                // serde's identifier enums and its crate's path (#1628).
+                "field_identifier" | "variant_identifier" | "crate" => {
+                    return Err(self.unsupported(item.span, &format!("`#[serde({name})]` (#1628)")));
+                }
                 _ => return Err(self.unsupported(item.span, &format!("`#[serde({name})]`"))),
             }
         }

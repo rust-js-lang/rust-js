@@ -390,9 +390,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let type_id = crate::lower::bindings::trait_method_name(self.tcx, any, "type_id");
                 return Ok(Expr::call(Expr::member(dictionary, type_id), Vec::new()));
             }
-            return self
-                .given_type_fact(param.index, fact)
-                .ok_or_else(|| self.unsupported(span, &format!("`{what}` of a type parameter")));
+            return self.given_type_fact(param.index, fact).ok_or_else(|| {
+                // A library's generic code's `type_name`, which its
+                // callers give it no fact of yet (#1657).
+                let issue = if fact == TypeFact::Name { " (#1657)" } else { "" };
+                self.unsupported(span, &format!("`{what}` of a type parameter{issue}"))
+            });
         }
         if fact == TypeFact::NeedsDrop {
             return Ok(Expr::bool(of.needs_drop(self.tcx, self.typing_env)));

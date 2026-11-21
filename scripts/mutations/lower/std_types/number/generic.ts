@@ -363,4 +363,12 @@ export const mutations: Mutation[] = [
     replace: "        // a `&mut I`, `I`'s, each's (ADR 0975).\n        if fact != TypeFact::Fused && let Some(held) = self.held_instead(of, fact) {\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
+  {
+    name: "type-name-untagged",
+    breaks: "a library's `type_name` of a type parameter is refused naming no issue, where it's #1657's",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "                let issue = if fact == TypeFact::Name { \" (#1657)\" } else { \"\" };\n",
+    replace: "                let issue = if fact == TypeFact::Id { \" (#1657)\" } else { \"\" };\n",
+    tests: ["test/crates-refused.test.ts", "-t", "PhantomData of a type parameter"],
+  },
 ];

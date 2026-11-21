@@ -208,7 +208,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && !(recognition::struct_is_its_fields(self.tcx, adt.did())
                         && self.recognition().derives(default, ty)) =>
             {
-                return Err(self.unsupported(span, &format!("`Default` of `{ty}`")));
+                // Of an impl an open issue covers, that issue: a `Once`'s,
+                // 1.100's (#1656).
+                let issue = recognition::open_impl(self.tcx, default, ty).map(crate::lower::refusal::issue_of);
+                return Err(self.unsupported(span, &format!("`Default` of `{ty}`{}", issue.unwrap_or_default())));
             }
             ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty() => Expr::js_undefined(),
             // A `#[repr(transparent)]` struct's is its field's (ADR 0584).

@@ -1,4 +1,4 @@
-//@ compile-fail: rust-js does not support a `&mut &mut Counter`, a `&mut` of a `&mut` of an object, given to generic code yet
+//@ compile-fail: rust-js does not support a `&mut &mut Counter`, a `&mut` of a `&mut` of an object, given to generic code (#1632) yet
 // Generic code's each `&mut` is a box (ADR 0454), where a caller's `&mut`
 // of an object is the object, adapted one level where it's given: a
 // `&mut` of a `&mut` of one would be a box short, so it's refused (#167).

@@ -389,4 +389,12 @@ export const mutations: Mutation[] = [
     replace: "        let body = self.item;\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_callables.rs$"],
   },
+  {
+    name: "formatter-made-dyn-untagged",
+    breaks: "a writer's `Formatter` made a `&mut dyn` is refused as \"this `Formatter`\", naming no issue, where it's #1684's",
+    file: "src/lower/mir/writer.rs",
+    find: "                        match made_dyn {\n",
+    replace: "                        match made_dyn && false {\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a writer's Formatter made a &mut dyn"],
+  },
 ];

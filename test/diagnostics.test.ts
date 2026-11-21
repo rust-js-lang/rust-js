@@ -343,6 +343,16 @@ for (const [name, source, message, crate] of [
   // A `skip(1)` made in place over a type parameter's items in generic code,
   // JS's own `drop`, which keeps no hint: generic code marks none made
   // knowing it, so its hint is refused (#2265).
+  // A `&mut` of a `&mut` of an object given to generic code (#1632), a
+  // `core::net` address's text (#1644), a writer's `Formatter` made a
+  // `&mut dyn` (#1684), and a `Default` std's 1.100 stabilized (#1656):
+  // each refused naming its issue.
+  ["a &mut &mut [u8] given to generic code", "fn fill<W: std::io::Write>(mut w: W) { let _ = w.write(&[9]); }\npub fn f() -> u8 { let mut buf = [0u8; 2]; let mut s: &mut [u8] = &mut buf; fill(&mut s); buf[0] }", "given to generic code (#1632)"],
+  ["Display of an Ipv4Addr", "pub fn f(a: std::net::Ipv4Addr) -> String { format!(\"{a}\") }", "`{}` of a `std::net::Ipv4Addr` (#1644)"],
+  ["Debug of an Ipv4Addr", "pub fn f(a: std::net::Ipv4Addr) -> String { format!(\"{a:?}\") }", "`{:?}` of a `std::net::Ipv4Addr` (#1644)"],
+  ["parse to an Ipv4Addr", "pub fn f(s: &str) -> bool { s.parse::<std::net::Ipv4Addr>().is_ok() }", "`parse` to a `std::net::Ipv4Addr` (#1644)"],
+  ["a writer's Formatter made a &mut dyn", "use std::fmt;\npub trait GetMut<T: ?Sized> { fn get_mut(&mut self) -> &mut T; }\nimpl<T: ?Sized> GetMut<T> for T { fn get_mut(&mut self) -> &mut T { self } }\nfn bracketed(f: &mut dyn GetMut<fmt::Formatter<'_>>, n: i32) -> fmt::Result { let f: &mut fmt::Formatter<'_> = GetMut::get_mut(f); write!(f, \"<{}>\", n) }\npub struct B(pub i32);\nimpl fmt::Display for B { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { bracketed(f, self.0) } }", "this `Formatter` made a `&mut dyn` (#1684)"],
+  ["Default of a Once, new in 1.100", "pub fn f() -> bool { let o: std::sync::Once = Default::default(); o.is_completed() }", "`Default` of `std::sync::Once` (#1656)"],
   ["size_hint of a copied of a skip of a type parameter's items", "pub fn f<T: Copy>(v: &[T]) -> (usize, Option<usize>) { let it = v.iter().skip(1).copied().rev(); it.size_hint() }", "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2265)"],
   ["the size hint of a peekable map of a string's chars made here", "pub fn f(s: &str) -> (usize, Option<usize>) { s.chars().map(|c| c).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::Map<std::str::Chars"],
   ["a pub thread-local whose initializer reads what a private module's pub fn, which JS may call after load, changes (#2025)", "mod prefixes {\n    use std::cell::RefCell;\n    use std::collections::HashMap;\n    thread_local! { static PREFIXED: RefCell<HashMap<String, String>> = RefCell::new(HashMap::new()); }\n    pub fn prefixed(name: &str) -> String {\n        if let Some(p) = PREFIXED.with_borrow(|c| c.get(name).cloned()) { return p; }\n        let p = \"webkit\".to_owned() + name;\n        PREFIXED.with_borrow_mut(|c| c.insert(name.to_owned(), p.clone()));\n        p\n    }\n}\nmod event_names {\n    use super::prefixes::prefixed;\n    thread_local! { pub static ANIMATION_END: String = prefixed(\"animationend\"); }\n}\npub fn end() -> String { event_names::ANIMATION_END.with(Clone::clone) }", "or, as JS may call `prefixes::prefixed` then, its module exporting it, make that `pub(crate)` where JS shouldn't"],
@@ -490,6 +500,13 @@ for (const [name, source, message, crate] of [
   ["a map keyed by an enum in JSON", '#[derive(PartialEq, Eq, PartialOrd, Ord, serde::Serialize)] pub enum K { A }\npub fn f(m: &std::collections::BTreeMap<K, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
   // A map keyed by a tuple, or read keyed by one, which serde_json writes
   // through its key serializer or refuses as it runs: refused, naming #1625.
+  // serde_json's byte and io entry points and streams (#1626), its
+  // `Error`'s position and kind (#1627), and serde's identifier enums and
+  // crate path (#1628), each refused naming its issue.
+  ["serde_json's to_vec", 'pub fn f(v: u32) -> Vec<u8> { serde_json::to_vec(&v).unwrap() }', "calling `serde_json::to_vec` (#1626)", "serde"],
+  ["serde_json's stream of values", 'pub fn f(s: &str) -> usize { serde_json::Deserializer::from_str(s).into_iter::<u32>().count() }', "(#1626)", "serde"],
+  ["serde_json's Error's line", 'pub fn f(s: &str) -> usize { serde_json::from_str::<u32>(s).err().map_or(0, |e| e.line()) }', "calling `serde_json::Error::line` (#1627)", "serde"],
+  ["serde's field_identifier", '#[derive(serde::Deserialize)] #[serde(field_identifier, rename_all = "lowercase")] pub enum F { A, B }\npub fn f(s: &str) -> bool { serde_json::from_str::<F>(s).is_ok() }', "`#[serde(field_identifier)]` (#1628)", "serde"],
   ["a map keyed by a tuple in JSON", 'pub fn f(m: &std::collections::BTreeMap<(i32, i32), u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of `(i32, i32)` in JSON (#1625)", "serde"],
   ["a map read keyed by a tuple in JSON", 'pub fn f(s: &str) -> usize { serde_json::from_str::<std::collections::BTreeMap<(i32, i32), u32>>(s).map_or(0, |m| m.len()) }', "a map key of `(i32, i32)` in JSON (#1625)", "serde"],
   // A map's is written since #1540; a type parameter's isn't, as its type

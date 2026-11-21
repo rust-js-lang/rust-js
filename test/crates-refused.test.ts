@@ -88,3 +88,14 @@ test("a library's writer showing its dependency's writer that may stop part-way 
   ]);
   expect(native).toBe("x <! caught true\n");
 }, 300_000);
+
+// #1657: a library's derived `Debug` of a generic struct with a
+// `PhantomData<T>` field shows `T`'s name, `type_name::<T>()`, which its
+// generic code compiled in the library is given no fact of: refused,
+// naming the issue, where native shows `PhantomData<u8>`.
+test("a library's derived Debug of a PhantomData of a type parameter is refused, naming #1657", () => {
+  const native = chain(join(root, "test", "crates", "refused"), "library_debug_of_phantom_data", ["dep", "app"], [
+    "rust-js does not support `type_name` of a type parameter (#1657) yet",
+  ]);
+  expect(native).toBe("P { v: 1, m: PhantomData<u8> }\n");
+}, 300_000);
