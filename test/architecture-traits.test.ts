@@ -36,6 +36,37 @@ test("a copied default is put in its impl's terms by default_args alone", () => 
   expect(sources.filter(file => /\bimpl_typing_env\b|\bself_env\b/.test(read(file)))).toEqual([]);
 });
 
+// A per-parameter fact of the body being lowered, unboxed or compared by
+// JS's operators, is keyed as the function that declares the parameter
+// numbers it, `declared_param`'s answer (#2273): a trait's default copied
+// into an impl is lowered in the impl's terms, its own parameters numbered
+// after the impl's (`default_args`), where the analysis keyed them by the
+// default's own numbering, so `(typeck_root(frame.owner), param.index)` read
+// a sibling's fact, `T`'s `Some(None)` unboxed beside a `U` never `None`.
+// The frame's owner as a key stays where it keys no parameter: a closure's
+// owner, a site's iterator type, the body's directives, its drops' caller.
+test("a per-parameter fact of the body being lowered is keyed by declared_param", () => {
+  const reads = /krate\.given\.(unboxed|compared)\b/;
+  const readers = sources.filter(file => reads.test(read(file)));
+  expect(readers).toEqual(["src/lower/items.rs", "src/lower/ordering.rs", "src/lower/representation/options.rs"]);
+  expect(readers.filter(file => !/\bdeclared_param\(/.test(read(file)))).toEqual([]);
+  const frameKey = /typeck_root_def_id\(self\.frame\.owner\)/;
+  expect(sources.filter(file => frameKey.test(read(file)))).toEqual([
+    "src/lower/bodies.rs",
+    "src/lower/drops.rs",
+    "src/lower/iterators/back_facts.rs",
+    "src/lower/iterators/hint_asks.rs",
+    "src/lower/mir/closures.rs",
+    "src/lower/representation/options.rs",
+    "src/lower/traits/given.rs",
+  ]);
+  // The one mapping of a copied default's parameter back to its own
+  // numbering, beside `default_args`.
+  expect(sources.filter(file => /\bfn (default_param|declared_param|declared_ty)\b/.test(read(file)))).toEqual([
+    "src/lower/traits/given.rs",
+  ]);
+});
+
 // A function's drop slots are numbered one way (#887): its type parameters,
 // then its associated types in `drop_items`' order (`item_slot`), then the
 // types built of them; `drop_slot` gives an index's type and `slot_index`

@@ -125,4 +125,12 @@ export const mutations: Mutation[] = [
     replace: "        true\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "refuses what would box it"],
   },
+  {
+    name: "unboxed-in-impls-terms",
+    breaks: "a copied default's `Some` of its own type parameter is unboxed by a sibling's fact, the impl's numbering, `Some(None)` read as `None` (#2273)",
+    file: "src/lower/representation/options.rs",
+    find: "                crate::lower::traits::Declared::Own(owner, index) => self.krate.given.unboxed.contains(&(owner, index)),\n",
+    replace: "                crate::lower::traits::Declared::Own(owner, _) => self.krate.given.unboxed.contains(&(owner, param.index)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
+  },
 ];

@@ -755,11 +755,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "default-self-not-its-traits",
-    breaks: "a trait default's `Self`, lowered into an impl's dictionary, is asked of the default alone, which says it's a JS iterator, so `self.take(2)` is `Iterator.from(self)` of the value its callers give as it is, which throws (itertools' laziness tests)",
+    breaks: "a trait default's `Self`, lowered into an impl's dictionary, a blanket impl's `I`, one of the impl's own parameters, is taken for a JS iterator, so `self.take(2)` is `Iterator.from(self)` of the value its callers give as it is, which throws (itertools' laziness tests; #2273)",
     file: "src/lower/iterators/knowing.rs",
-    find: "        crate::lower::iterators::given_by_its_trait(self.tcx, owner, param.index)\n            || given_as_it_is(self.tcx, owner, param)\n",
-    replace: "        given_as_it_is(self.tcx, owner, param)\n",
-    tests: ["test/corpus.test.ts", "-t", "^trait_default_takes_an_iterator_as_its_callers_give_it.rs$"],
+    find: "        let crate::lower::traits::Declared::Own(_, index) = self.declared_param(param.index) else {\n            return true;\n",
+    replace: "        let crate::lower::traits::Declared::Own(_, index) = self.declared_param(param.index) else {\n            return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^(trait_default_takes_an_iterator_as_its_callers_give_it|default_where_clause_item_drops).rs$"],
   },
   {
     name: "back-as-front-made-backless",

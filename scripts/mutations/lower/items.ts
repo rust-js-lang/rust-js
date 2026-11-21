@@ -517,4 +517,12 @@ export const mutations: Mutation[] = [
     replace: "self.is_rust_fn(instance.def_id())",
     tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
   },
+  {
+    name: "called-copy-in-impls-terms",
+    breaks: "a copied default's call of a function JS calls too reads its own parameters' unboxing at the default's numbering where its arguments are the impl's, and finds no copy (#2273)",
+    file: "src/lower/items.rs",
+    find: "                    super::traits::Declared::Own(owner, own) => self.krate.given.unboxed.contains(&(owner, own)),\n",
+    replace: "                    super::traits::Declared::Own(owner, _) => self.krate.given.unboxed.contains(&(owner, index)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
+  },
 ];

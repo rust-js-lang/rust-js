@@ -59,6 +59,42 @@ pub(in crate::lower) fn default_args<'tcx>(
     }))
 }
 
+/// `default_args`' inverse: of a type parameter of `default` copied into
+/// an impl with `args` (`default_args`' own), `index` in the impl's terms,
+/// its index in the default's own generics, `T` 1 of `fn f<T, U>` after its
+/// trait's `Self`, where the impl's terms number it after the impl's own,
+/// `T` 2 of `impl<A, B>` (#2273). `None` of one of the impl's own, which
+/// the default has none of.
+pub(in crate::lower) fn default_param<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    default: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+    index: u32,
+) -> Option<u32> {
+    let parent = tcx.generics_of(default).parent_count;
+    (parent..args.len())
+        .find(|&at| {
+            args[at]
+                .as_type()
+                .and_then(crate::lower::generic_facts::type_parameter_of)
+                == Some(index)
+        })
+        .map(|at| at as u32)
+}
+
+/// A type parameter of the body being lowered, as the function that
+/// declares it numbers it (`FnCx::declared_param`): the one key of each
+/// per-parameter fact the crate's analysis found, `(owner, index)`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum Declared {
+    /// The function's own, or its trait's `Self`, by its index there.
+    Own(DefId, u32),
+    /// In a trait's default copied into an impl, one of the impl's own
+    /// parameters, which the default has none of: the impl's type holds it,
+    /// as its trait's `Self` (ADR 0551), and no fact of the default's is of it.
+    Impls,
+}
+
 /// Where a trait's default, `default`, copied into the impl `imp` with
 /// `args` (`default_args`), is lowered, in the impl's terms, as its body is
 /// (#803), and its types there are known (ADR 0107): the impl's bounds, and
@@ -234,6 +270,70 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(in crate::lower) fn in_copied_default(&self) -> bool {
         self.given.self_args.is_some()
+    }
+
+    /// Type parameter `index` of the body being lowered, as the function
+    /// that declares it numbers it, which its facts are keyed by: the one
+    /// answer every per-parameter read asks, unboxed, compared, given as it
+    /// is (#2273). Of a trait's default copied into an impl, whose types are
+    /// in the impl's terms (`default_args`), its own by the default's
+    /// numbering (`default_param`), the impl's none of the default's.
+    pub(in crate::lower) fn declared_param(&self, index: u32) -> Declared {
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        if !self.in_copied_default() {
+            return Declared::Own(owner, index);
+        }
+        let args = self.copied_default_args().expect("a copied default's arguments");
+        match default_param(self.tcx, owner, args, index) {
+            Some(own) => Declared::Own(owner, own),
+            None => Declared::Impls,
+        }
+    }
+
+    /// `ty`, of the body being lowered, in the terms of the function that
+    /// declares its type parameters (`declared_param`), which a question of
+    /// that function's clauses asks: of a default copied into an impl, its
+    /// own parameters renumbered as the default numbers them, and the
+    /// impl's own past every one of the default's, so they name none of its
+    /// (#2273).
+    pub(in crate::lower) fn declared_ty(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+        if !self.in_copied_default() {
+            return ty;
+        }
+        let tcx = self.tcx;
+        let owner = tcx.typeck_root_def_id(self.frame.owner);
+        let generics = tcx.generics_of(owner);
+        let count = generics.count() as u32;
+        let mut folder = ty::BottomUpFolder {
+            tcx,
+            ty_op: |part: Ty<'tcx>| match crate::lower::generic_facts::type_parameter(part) {
+                Some(param) => match self.declared_param(param.index) {
+                    Declared::Own(_, index) => Ty::new_param(tcx, index, param.name),
+                    Declared::Impls => Ty::new_param(tcx, count + param.index, param.name),
+                },
+                None => part,
+            },
+            lt_op: |region| region,
+            ct_op: |konst| konst,
+        };
+        ty::TypeFoldable::fold_with(ty, &mut folder)
+    }
+
+    /// How many generic parameters the body being lowered names, by the
+    /// numbering its types have, `declared_param`'s indexes: of a default
+    /// copied into an impl, the impl's and then its own (`default_args`),
+    /// up to its last own one, as no fact is of the impl's.
+    pub(in crate::lower) fn frame_param_count(&self) -> u32 {
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        let generics = self.tcx.generics_of(owner);
+        let Some(args) = self.copied_default_args() else {
+            return generics.count() as u32;
+        };
+        (args.iter().skip(generics.parent_count))
+            .filter_map(|arg| crate::lower::generic_facts::type_parameter_of(arg.as_type()?))
+            .map(|index| index + 1)
+            .max()
+            .unwrap_or(0)
     }
 
     /// The first dictionary this function was given whose bound `which`

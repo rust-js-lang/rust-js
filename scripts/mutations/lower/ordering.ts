@@ -676,4 +676,12 @@ export const mutations: Mutation[] = [
     replace: "                            let at = |x: &Expr| Expr::index(x.clone(), Expr::int(i as i128));\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
   },
+  {
+    name: "compared-in-impls-terms",
+    breaks: "a copied default's `U` given tuples is compared by JS's `<` as its sibling `T`, given numbers, is, the impl's numbering, `[1, 9] < [1, 10]` read as text (#2273)",
+    file: "src/lower/ordering.rs",
+    find: "        let super::traits::Declared::Own(owner, index) = self.declared_param(index) else {\n",
+    replace: "        let super::traits::Declared::Own(owner, _) = self.declared_param(index) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
+  },
 ];

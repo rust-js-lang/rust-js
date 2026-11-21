@@ -221,4 +221,20 @@ export const mutations: Mutation[] = [
     replace: "            || self.facts_asked(id).iter().any(|&(index, _)| index >= impls)\n",
     tests: ["test/corpus.test.ts", "-t", "^own_last_of_its_impls_item_layout.rs$"],
   },
+  {
+    name: "declared-param-in-impls-terms",
+    breaks: "a trait's default copied into an impl reads its own type parameters' facts at the impl's numbering, so `T`'s `Some(None)` is unboxed beside a `U` never `None` (#2273)",
+    file: "src/lower/traits/given.rs",
+    find: "            Some(own) => Declared::Own(owner, own),\n",
+    replace: "            Some(_) => Declared::Own(owner, index),\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
+  },
+  {
+    name: "declared-ty-in-impls-terms",
+    breaks: "a copied default's own `I: DoubleEndedIterator` is asked of the default's clauses at the impl's numbering, which names none, and its `rev()` is refused (#2273)",
+    file: "src/lower/traits/given.rs",
+    find: "                    Declared::Own(_, index) => Ty::new_param(tcx, index, param.name),\n",
+    replace: "                    Declared::Own(..) => part,\n",
+    tests: ["test/corpus.test.ts", "-t", "^default_copied_reads_its_own_params.rs$"],
+  },
 ];

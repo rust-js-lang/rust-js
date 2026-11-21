@@ -408,3 +408,49 @@ one is refused by MIR's check, as `test/lowering.test.ts` holds.
 
 The facts now refuse only what a walk of the THIR alone sees: where a
 closure that holds a value with a destructor is made, given and assigned.
+
+## Amendment: a copied default's per-parameter facts are keyed by its own numbering (2026-11-22, #2273)
+
+Case: C ([0262](0262-when-rust-and-js-disagree.md)): the results change,
+so Rust's are kept.
+
+A copied default's body is in its impl's terms, its own type parameters
+numbered after the impl's (`default_args`): `T` 2 and `U` 3 of `fn f<T,
+U>` copied into `impl<A, B>`. The analysis keys each per-parameter fact by
+the function that declares the parameter and its own numbering: `T` 1 and
+`U` 2, after the trait's `Self`. The lowering read four of them with the
+frame's index, `(typeck_root(frame.owner), param.index)`:
+
+- whether a `Some` of it is the value itself (`defined_by_its_bounds`).
+  `s.f(None::<u8>, 7u32)` gave `None false`, where native gives
+  `Some(None) true`, as `T` read `U`'s fact. An impl of no type parameters
+  was wrong the same way, and only an impl of exactly one, whose count is
+  the trait's `Self`'s, agreed;
+- which copy of a function JS calls too a call takes (`called_copy`),
+  which found none;
+- whether it's compared by JS's operators (`param_compares_by_operator`),
+  so a `U` given tuples beside a `T` given numbers was compared as text;
+- whether an iterator is given as it is, or knows its back or its length,
+  asked of the default's clauses (`knowing.rs`), so `items.rev()` of an
+  `I: DoubleEndedIterator` was refused.
+
+**A body's type parameter is keyed by `declared_param` alone**, beside
+`default_args` in `traits/given.rs`. Outside a copied default it's the
+frame's owner and the index. In a copied default, a parameter of the
+default's own maps back through `default_param`, `default_args`' inverse,
+read from the arguments it was copied with. One of the impl's own is
+`Declared::Impls`, of which the default has no fact: it isn't unboxed or
+compared by operator, and as an iterator it's its trait's, held by the
+impl's type as `Self` is (ADR 0551). `declared_ty` puts a type in the
+default's numbering for a question of its clauses, numbering the impl's
+own past every one of the default's, so a parameter of the impl's never
+reads a sibling's clause. Before, `I` of a blanket `impl<I: Iterator> Ext
+for I` read `Self`'s, index 0, by coincidence.
+
+`test/architecture-traits.test.ts` holds it: only `items.rs`,
+`ordering.rs` and `representation/options.rs` read the unboxed and
+compared sets, each asking `declared_param`, and the frame's owner as a
+key appears only where it keys no parameter. Corpus
+`default_copied_reads_its_own_params` runs impls of no, one and two type
+parameters against native Rust. It covers a `Some(None)`, a comparison, a
+`rev()`, a `len()` and a call of a function JS calls too.

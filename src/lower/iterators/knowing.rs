@@ -275,7 +275,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(double_ended) = self.recognition().search_knows_its_back(ty) {
             return double_ended && (self.krate.searches_whole || self.stepped_from_its_back(ty));
         }
-        self.double_ended_param(self.generics_fn(), ty)
+        // As the function that declares it numbers it (#2273).
+        self.double_ended_param(self.generics_fn(), self.declared_ty(ty))
     }
 
     /// Whether `ty` is `id`'s type parameter bound by `DoubleEndedIterator`,
@@ -311,7 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether this function holds what `ty` makes as an `IntoIterator` as
     /// it is, `into_iter_held_as_it_is` of it (ADR 0552).
     pub(in crate::lower) fn holds_into_iter(&self, ty: Ty<'tcx>) -> bool {
-        into_iter_held_as_it_is(self.tcx, self.generics_fn(), ty)
+        into_iter_held_as_it_is(self.tcx, self.generics_fn(), self.declared_ty(ty))
     }
 
     /// Whether `ty` is a type parameter of the function being lowered given
@@ -323,7 +324,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Box<I>` passes on (`boxed_iterator_dictionary`, #1611).
         let ty = crate::lower::recognition::held_unboxed(ty);
         matches!(ty.kind(), ty::Param(param) if self.param_given_as_it_is(*param))
-            || into_iter_as_it_is(self.tcx, self.generics_fn(), ty)
+            || into_iter_as_it_is(self.tcx, self.generics_fn(), self.declared_ty(ty))
     }
 
     /// Whether `param`, a type parameter of the function being lowered, is
@@ -333,10 +334,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// lowered into an impl's dictionary too, `J` of `fn chain_all<J:
     /// IntoIterator>(self, other: J) -> Both<Self, J::IntoIter>`, whose
     /// callers give it as it is with its dictionary (itertools' laziness tests).
+    /// Asked as the function that declares it numbers it: of a default
+    /// copied into an impl, one of the impl's own is its trait's, as `Self`
+    /// is (`declared_param`, #2273).
     pub(in crate::lower) fn param_given_as_it_is(&self, param: ty::ParamTy) -> bool {
+        let crate::lower::traits::Declared::Own(_, index) = self.declared_param(param.index) else {
+            return true;
+        };
         let owner = self.generics_fn();
-        crate::lower::iterators::given_by_its_trait(self.tcx, owner, param.index)
-            || given_as_it_is(self.tcx, owner, param)
+        crate::lower::iterators::given_by_its_trait(self.tcx, owner, index)
+            || given_as_it_is(self.tcx, owner, ty::ParamTy::new(index, param.name))
     }
 
     /// Whether an adapter of `source`, a type parameter given as it is, is
@@ -407,7 +414,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_vec_splice(ty) {
             return true;
         }
-        self.exact_size_param(self.generics_fn(), ty)
+        self.exact_size_param(self.generics_fn(), self.declared_ty(ty))
     }
 
     /// Whether `len()` of an iterator of type `ty` is its own, `it.len()`:

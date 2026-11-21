@@ -142,12 +142,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty::Param(param) = ty.kind() else {
             return false;
         };
+        // Of a default copied into an impl, its own by the default's
+        // numbering, the impl's never (`declared_param`, #2273).
         let unboxed = match self.lowered_params() {
             Some(params) => params.unboxed.contains(&param.index),
-            None => {
-                let owner = self.tcx.typeck_root_def_id(self.frame.owner);
-                self.krate.given.unboxed.contains(&(owner, param.index))
-            }
+            None => match self.declared_param(param.index) {
+                crate::lower::traits::Declared::Own(owner, index) => self.krate.given.unboxed.contains(&(owner, index)),
+                crate::lower::traits::Declared::Impls => false,
+            },
         };
         self.read_by_its_bounds(ty) || self.is_callable(ty) || unboxed
     }

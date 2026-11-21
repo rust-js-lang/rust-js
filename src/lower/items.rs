@@ -321,16 +321,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
         span: Span,
     ) -> R<Option<usize>> {
-        let params = self.lowered_params().unwrap_or_else(|| {
-            let owner = self.tcx.typeck_root_def_id(self.frame.owner);
-            super::analysis::Params {
-                unboxed: (self.krate.given.unboxed.iter())
-                    .filter(|&&(of, _)| of == owner)
-                    .map(|&(_, index)| index)
-                    .collect(),
-                js: Default::default(),
-                returns_js: false,
-            }
+        // Its type parameters as `args` names them, in a default copied
+        // into an impl the impl's terms (`declared_param`, #2273).
+        let params = self.lowered_params().unwrap_or_else(|| super::analysis::Params {
+            unboxed: (0..self.frame_param_count())
+                .filter(|&index| match self.declared_param(index) {
+                    super::traits::Declared::Own(owner, own) => self.krate.given.unboxed.contains(&(owner, own)),
+                    super::traits::Declared::Impls => false,
+                })
+                .collect(),
+            js: Default::default(),
+            returns_js: false,
         });
         (self.krate.given.js_given.called(&self.recognition(), &params, (callee, args))).map_err(|()| {
             self.unsupported(

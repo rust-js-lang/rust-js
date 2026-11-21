@@ -38,7 +38,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(index) = super::generic_facts::type_parameter_of(ty) else {
             return false;
         };
-        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        // Of a default copied into an impl, its own by the default's
+        // numbering; the impl's, of which it has no fact, by its dictionary
+        // (`declared_param`, #2273).
+        let super::traits::Declared::Own(owner, index) = self.declared_param(index) else {
+            return false;
+        };
         super::analysis::compares_by_operator_param(
             self.tcx,
             self.krate.foreign,
