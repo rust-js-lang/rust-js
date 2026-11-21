@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { crateText, snapshotCrate } from "../scripts/mutations";
+import { crateText, snapshotCrate, unjudgedSaid } from "../scripts/mutations";
 
 test("a run's builds and sites read the crate's snapshot, not the checkout as it's edited", () => {
   const dir = mkdtempSync(join(tmpdir(), "mutation-snapshot-"));
@@ -21,4 +21,12 @@ test("a run's builds and sites read the crate's snapshot, not the checkout as it
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// A retirement that judged fewer names than it was asked says so last,
+// and fails: its trailers alone read as if it judged them all (#2272).
+test("a retirement that loses names says which, last", () => {
+  expect(unjudgedSaid(7, [])).toBeUndefined();
+  expect(unjudgedSaid(7, ["a", "b", "c", "d", "e", "f"])).toBe("✗ --retire judged 1 of 7: a, b, c, d, e, f said nothing, so this run is no evidence of them; run them again");
+  expect(unjudgedSaid(2, ["a"])).toBe("✗ --retire judged 1 of 2: a said nothing, so this run is no evidence of it; run it again");
 });

@@ -29,6 +29,7 @@ import { caseParts, casePartCores, compilerBuilds, compilerBuildsAsked, drivesBr
 import { casesReaching, ensureMap, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
+import { mutantsLock } from "./disk";
 import { acquire, holdLease, ownShare } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
 import { latentSurvivors, type Results } from "./latent-survivors";
@@ -756,6 +757,11 @@ export function syncTree(from: string, to: string, paths: string[]): string[] {
  * wrote put back: one built as it is is kept too, while the crate's sources
  * are what it was built from. `fresh`, with no incremental cache. */
 async function build(files?: Map<string, string>, slot = 0, unit = false, fresh = false): Promise<string | { problem: string; held?: true }> {
+  // Never past the disk's floor: the pruner leaves the run's store alone
+  // while it holds its lock (`mutantsStore`, #2272), so the run stops
+  // itself, a build's verdict, below it, saying nothing of any mutant.
+  const low = belowFloor(freeBytes(root));
+  if (low) throw new Error(`the mutation run stopped: ${low}`);
   // Each worker builds in a crate and a target of its own (`--jobs`).
   const crate = slot === 0 ? join(work, "crate") : join(work, `crate-${slot}`);
   const target = slot === 0 ? join(work, "target") : join(work, `target-${slot}`);
@@ -1459,12 +1465,20 @@ async function retire(chosen: Mutation[]): Promise<void> {
   // beside the next one's suite, which builds and runs nothing they share:
   // the crate corpus's phase leaves half the cores free.
   let judged: Promise<void> = Promise.resolve();
-  for (const mutation of chosen) {
+  const unjudged: string[] = [];
+  for (const [at, mutation] of chosen.entries()) {
+    // The crate as the run began, which each mutant is built from: gone,
+    // none after can be, so the run stops here, naming them (#2272).
+    if (!existsSync(crateSource)) {
+      await judged;
+      throw new Error(`the crate's snapshot the run took, ${crateSource}, is gone: ${chosen.slice(at).map((m) => m.name).join(", ")} unjudged${unjudged.length > 0 ? `, and ${unjudged.join(", ")} said nothing` : ""}; run them again`);
+    }
     let suite: RetireSuite;
     try {
       suite = await retireSuite(mutation, unitControl, asItIs);
     } catch (error) {
       saysNothing(mutation, error);
+      unjudged.push(mutation.name);
       continue;
     }
     const before = judged;
@@ -1476,12 +1490,28 @@ async function retire(chosen: Mutation[]): Promise<void> {
         else trailers.push(trailer);
       } catch (error) {
         saysNothing(mutation, error);
+        unjudged.push(mutation.name);
       }
     })();
   }
   await judged;
   console.log(`\nits steps: ${retirePhases.map(([label, seconds]) => `${label} ${seconds.toFixed(0)}s`).join(", ")}`);
   if (chosen.length > 1 && trailers.length > 0) console.log(`\nThe evidence of each that can be retired, trailers of the commit that removes them:\n\n${trailers.join("\n")}`);
+  // Last, so it's what's read: a name that said nothing is no evidence
+  // either way, and the run fails (#2272).
+  const lost = unjudgedSaid(chosen.length, unjudged);
+  if (lost) {
+    console.log(`\n${lost}`);
+    process.exitCode = 1;
+  }
+}
+
+/** What a retirement of `asked` names says last of those `unjudged`, whose
+ * build or a run said nothing: that this run is no evidence of them, to run
+ * again; none where it judged them all (#2272). */
+export function unjudgedSaid(asked: number, unjudged: string[]): string | undefined {
+  if (unjudged.length === 0) return undefined;
+  return `✗ --retire judged ${asked - unjudged.length} of ${asked}: ${unjudged.join(", ")} said nothing, so this run is no evidence of ${unjudged.length === 1 ? "it" : "them"}; run ${unjudged.length === 1 ? "it" : "them"} again`;
 }
 
 /** Of a compiler's unit tests, built as `binary`, those that failed and how
@@ -1881,7 +1911,7 @@ async function main() {
   // one run's at a time: two in one checkout built each other's mutants
   // there, and judged them.
   holdLease("mutations");
-  const released = acquire(join(root, "target", "mutants.lock"), {
+  const released = acquire(mutantsLock(root), {
     wait: 6 * 3_600_000,
     waiting: "waiting for this checkout's other mutation run, which builds in target/mutants",
   });

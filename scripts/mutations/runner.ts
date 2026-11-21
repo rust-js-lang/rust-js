@@ -282,4 +282,12 @@ export const mutations: Mutation[] = [
     replace: "filter(([, paths]) => paths.length > 2)",
     tests: ["test/mutations.test.ts", "-t", "each mutation's name is the catalog's once"],
   },
+  {
+    name: "retire-lost-names-unsaid",
+    breaks: "a retirement that judged fewer names than asked ends saying nothing of those its build or a run lost, its trailers read as if it judged them all (#2272)",
+    file: "scripts/mutations.ts",
+    find: "  if (unjudged.length === 0) return undefined;\n",
+    replace: "  return undefined;\n",
+    tests: ["test/mutation-snapshot.test.ts", "-t", "loses names"],
+  },
 ];

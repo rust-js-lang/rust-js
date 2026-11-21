@@ -6,7 +6,8 @@ import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readJobTimes } from "../scripts/jobTimes";
-import { acquire, fairShare, holdLease, leasedIn, liveLeases, ownShare, withLock } from "../scripts/leases";
+import { acquire, fairShare, holdLease, leasedIn, liveLeases, lockHeld, ownShare, withLock } from "../scripts/leases";
+import { mutantsLock, mutantsStore } from "../scripts/disk";
 import { underLoad } from "../scripts/timing";
 import { fixture, root } from "./support";
 
@@ -127,3 +128,33 @@ await run(${JSON.stringify([0, 1, 2, 3])}.map((i) => job("a core " + i, ${JSON.s
   const most = Math.max(...spans.map(([start]) => spans.filter(([s, e]) => s <= start && start < e).length));
   expect(most).toBe(2);
 }, underLoad(60_000));
+
+// A lock is held while its owner lives, or for 5 s past its making before
+// it names one; `acquire` waits on it, and the pruner leaves a mutation
+// run's store alone by it (#2272).
+test("a lock is held while its owner lives, and a run's mutants store isn't pruned while its lock is", () => {
+  const tree = fixture("leases-lock-held");
+  const lock = mutantsLock(tree);
+  rmSync(lock, { recursive: true, force: true });
+  expect(lockHeld(lock)).toBe(false);
+  const free = mutantsStore(tree, "mutants", true);
+  expect(free.bound).toBeDefined();
+  expect(free.kept).toBeDefined();
+  const release = acquire(lock)!;
+  expect(lockHeld(lock)).toBe(true);
+  // Its run's snapshot, which a check:fast's pruning evicted from under a
+  // retirement: neither bounded nor offered to `holdToBudget` now.
+  const running = mutantsStore(tree, "mutants", true);
+  expect(running.bound).toBeUndefined();
+  expect(running.kept).toBeUndefined();
+  release();
+  expect(lockHeld(lock)).toBe(false);
+  // One whose owner is gone isn't held; one made just now naming none is.
+  mkdirSync(lock, { recursive: true });
+  expect(lockHeld(lock)).toBe(true);
+  writeFileSync(join(lock, "owner"), "999999999");
+  expect(lockHeld(lock)).toBe(false);
+  rmSync(lock, { recursive: true, force: true });
+  // Another checkout's, leased, stays unbounded as before.
+  expect(mutantsStore(tree, "another checkout's mutants", false).bound).toBeUndefined();
+});

@@ -30,7 +30,7 @@ import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
 import { checkLogsCap, checkLogsStore } from "./checkLogs";
-import { leasedIn } from "./leases";
+import { leasedIn, lockHeld } from "./leases";
 import { worktreeRoots } from "./strays";
 import { sanityRunsCap, sanityRunsStore } from "./select";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
@@ -242,7 +242,7 @@ export function stores(): Store[] {
       { name: label("crater"), dir: at("crater"), cap: craterCap, bound: bounded ? (free) => void boundCrater({ dir: at("crater"), free }) : undefined, kept: bounded ? () => craterKept(at("crater")) : undefined },
       { name: label("kept-apps"), dir: at("kept-apps"), cap: keptAppsCap },
       { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
-      { name: label("mutants"), dir: at("mutants"), cap: mutantsCap, bound: bounded ? (free) => void boundEntries(at("mutants"), mutantsCap, free) : undefined, kept: bounded ? () => entriesOf(at("mutants")) : undefined },
+      mutantsStore(tree, label("mutants"), bounded),
       { name: label("native-sources"), dir: at("native-sources"), cap: 64 * 2 ** 20 },
       // The npm crates' packs, one key's, which their packer keeps alone
       // (scripts/package-npm-crates.ts): under 1 MiB.
@@ -268,6 +268,23 @@ export function stores(): Store[] {
     { name: "the React port's checkouts", dir: ports, cap: portsCap, outside: true, entries: (name) => name.startsWith("react-in-rust-"), bound: (free) => void boundPorts({ free }) },
   ];
   return [...inChecks, ...outside];
+}
+
+/** The lock a checkout's mutation run holds while it builds in
+ * `target/mutants` (scripts/mutations.ts). */
+export const mutantsLock = (tree: string) => join(tree, "target", "mutants.lock");
+
+/** A checkout's mutants' store, `target/mutants`, held to its cap where
+ * `bounded`, but never while a mutation run there holds its
+ * `mutants.lock`: that run reads the crate's snapshot it took there, and
+ * builds and tests in it, throughout. A retirement's each name's check:fast
+ * pruned it past the cap, its snapshot the least used entry, and the next
+ * name's build read a snapshot gone (ENOENT, #2272). The run stops itself
+ * at the disk's floor instead (`build`'s `belowFloor`, scripts/mutations.ts). */
+export function mutantsStore(tree: string, name: string, bounded: boolean): Store {
+  const dir = join(tree, "target", "mutants");
+  const prunable = bounded && !lockHeld(mutantsLock(tree));
+  return { name, dir, cap: mutantsCap, bound: prunable ? (free) => void boundEntries(dir, mutantsCap, free) : undefined, kept: prunable ? () => entriesOf(dir) : undefined };
 }
 
 /** A worktree's `target/` entries that are stores of their own. */

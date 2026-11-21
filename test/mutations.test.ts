@@ -354,8 +354,8 @@ test("--retire regenerates React's port with the mutant, held to its control", (
   expect(control).toBeLessThan(retire.indexOf("scripts/checkFast.ts"));
   // Run once for all the mutations retired together, before the first
   // mutant (#2043).
-  expect(control).toBeLessThan(retire.indexOf("for (const mutation of chosen)"));
-  expect(retire.indexOf("crateVerdicts(portControl, true)")).toBeLessThan(retire.indexOf("for (const mutation of chosen)"));
+  expect(control).toBeLessThan(retire.indexOf("for (const [at, mutation] of chosen.entries())"));
+  expect(retire.indexOf("crateVerdicts(portControl, true)")).toBeLessThan(retire.indexOf("for (const [at, mutation] of chosen.entries())"));
   expect(retire).toContain("port control fails: ");
   expect(retire).toContain("...portCaught, ...crateCaught]");
   expect(retire).toContain("React's port at its pin regenerated as it committed");

@@ -118,16 +118,7 @@ export function acquire(lock: string, { wait = 30_000, waiting }: { wait?: numbe
         mkdirSync(join(lock, ".."), { recursive: true });
         continue;
       }
-      let held: number | undefined;
-      try {
-        held = Number(readFileSync(owner, "utf8"));
-      } catch {}
-      let made = Date.now();
-      try {
-        made = statSync(lock).mtimeMs;
-      } catch {}
-      const gone = held !== undefined && Number.isFinite(held) && held > 0 ? !alive(held) : Date.now() - made > 5_000;
-      if (gone) {
+      if (!lockHeld(lock)) {
         rmSync(lock, { recursive: true, force: true });
         continue;
       }
@@ -139,6 +130,24 @@ export function acquire(lock: string, { wait = 30_000, waiting }: { wait?: numbe
       Bun.sleepSync(25);
     }
   }
+}
+
+/** Whether `lock` is held (`acquire`'s): made, and its owner's process
+ * alive, or made under 5 s ago naming no owner yet. What `acquire` waits
+ * on, and what a store a run works in is kept from the pruner by while it
+ * runs, `target/mutants` by its run's `mutants.lock` (#2272). */
+export function lockHeld(lock: string): boolean {
+  let made: number;
+  try {
+    made = statSync(lock).mtimeMs;
+  } catch {
+    return false;
+  }
+  let held: number | undefined;
+  try {
+    held = Number(readFileSync(join(lock, "owner"), "utf8"));
+  } catch {}
+  return held !== undefined && Number.isFinite(held) && held > 0 ? alive(held) : Date.now() - made <= 5_000;
 }
 
 /** `run` with `lock` held (`acquire`), let go as it ends; past `wait`,
