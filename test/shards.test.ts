@@ -143,6 +143,9 @@ test("a check's suite takes the machines its selection's expected time needs", (
   expect(fewestShards([1, 2, 4], () => [5], 40)).toBe(1);
   // Every shard within it, not any one.
   expect(fewestShards([1, 2, 4], (count) => (count === 1 ? [50] : count === 2 ? [10, 50] : [10, 10, 10, 10]), 40)).toBe(4);
+  // None within it: the fewest whose slowest ends soonest, where more
+  // machines end it no sooner, a shard's part no split shortens (#2220).
+  expect(fewestShards([1, 2, 4], (count) => (count === 1 ? [100] : Array.from({ length: count }, (_, i) => (i === 0 ? 60 : 5))), 40)).toBe(2);
   const paths = [1, 2, 3].map((k) => join(root, `test/fixtures/test-timings-44480685461/${k}.json`));
   const seconds = testFileSeconds(paths, true);
   const facts = shardFacts(paths)!;
@@ -375,27 +378,39 @@ test("the suite's files of cases are small parts of one pool, wider once the res
 // A check's mutations on the fewest machines of `MUTATION_SHARDS` whose
 // every shard, dealt as the shards deal by each's share of its shard, is
 // expected to end in `SHARD_BUDGET_SECONDS`: its mutations' shares, its
-// setup, the compiler as it is, and a browser's install where one of its
-// tests drives one. Sized by count, one shard of a change's slow mutations
-// took 21 min and another 4.
+// setup, the compiler as it is, its mutations' tests as it is, and a
+// browser's install where one of its tests drives one. Sized by count, one
+// shard of a change's slow mutations took 21 min and another 4; without
+// the tests as it is, main's checks' shards took 2 min more than planned
+// (#2220).
 test("a check's mutations are split by their expected time, each shard under its budget", () => {
   const m = (name: string, tests = ["test/corpus.test.ts", "-t", name]) => ({ name, tests });
   const none = () => false;
   const own = (name: string) => `src/${name}.rs`;
   expect(mutationShards([], new Map(), none, own)).toBe("1");
   // Untimed, each a check's twentieth of five minutes, `UNTIMED_SECONDS`,
-  // beside the setup and the compiler as it is.
-  expect(mutationShards(Array.from({ length: 36 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("1");
-  expect(mutationShards(Array.from({ length: 37 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("2");
+  // beside the setup, the compiler as it is and its tests as it is: 28 of
+  // them in the 420 s those leave.
+  expect(mutationShards(Array.from({ length: 28 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("1");
+  expect(mutationShards(Array.from({ length: 29 }, (_, i) => m(`u${i}`)), new Map(), none, own)).toBe("2");
   // Timed: two of 300 s fit one shard each, never one, whatever their count.
   const slow = [m("a"), m("b")];
   expect(mutationShards(slow, new Map([["a", 300], ["b", 300]]), none, own)).toBe("2");
-  expect(mutationShards(slow, new Map([["a", 200], ["b", 300]]), none, own)).toBe("1");
-  // A browser's install where a test drives one: the shard it's dealt to.
+  expect(mutationShards(slow, new Map([["a", 100], ["b", 300]]), none, own)).toBe("1");
+  expect(mutationShards(slow, new Map([["a", 200], ["b", 300]]), none, own)).toBe("2");
+  // A browser's install where a test drives one: the shard it's dealt to,
+  // over the budget alone, its fixed parts 720 s before its mutation, so
+  // the other's own shard, and no more, where they'd end it no sooner.
   const browsing = [m("a", ["test/browser.test.ts"]), m("b")];
   expect(mutationShards(browsing, new Map([["a", 100], ["b", 100]]), (file) => file === "test/browser.test.ts", own)).toBe("2");
-  // One longer than the budget alone takes the most.
-  expect(mutationShards([m("a")], new Map([["a", 4000]]), none, own)).toBe(String(MUTATION_SHARDS.at(-1)));
+  // One longer than the budget alone takes one machine, not the most,
+  // which would end it no sooner (#2220).
+  expect(mutationShards([m("a")], new Map([["a", 4000]]), none, own)).toBe("1");
+  expect(mutationShards([m("a"), m("b")], new Map([["a", 4000], ["b", 300]]), none, own)).toBe("2");
+  // One the last checks found latent: its shard runs the survivors again at
+  // the base, the compiler built whole there, 5 min more (#2220).
+  expect(mutationShards(slow, new Map([["a", 100], ["b", 100]]), none, own)).toBe("1");
+  expect(mutationShards(slow, new Map([["a", 100], ["b", 100]]), none, own, new Set(["a"]))).toBe("2");
 });
 
 // Check 44441824204's five mutations, with the merged times its plan read

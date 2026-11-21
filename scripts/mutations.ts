@@ -2269,8 +2269,6 @@ async function main() {
   for (const [mutation, time] of slowest) console.log(`slow\t${mutation.name}\tbuild ${shown(time.build)}, tests ${shown(time.tests)}`);
   writeFileSync(join(work, "timings.json"), JSON.stringify(Object.fromEntries([...took].map(([mutation, time]) => [mutation.name, time])), null, 2) + "\n");
   phaseEnded("the mutants, built and judged");
-  writeFileSync(join(work, "phases.json"), JSON.stringify(phases, null, 2) + "\n");
-  for (const { phase, seconds } of phases) console.log(`phase\t${phase}\t${shown(seconds)}`);
   writeResults(
     new Map(rows.map(([mutation, result]) => [mutation.name, result])),
     new Map(rows.flatMap(([mutation, result]) => {
@@ -2279,6 +2277,7 @@ async function main() {
     })),
   );
   const harnessRows = await harnessResults;
+  if (harnessRows.length > 0) phaseEnded("the corpus harness's mutants, past the others");
   for (const [name, result] of harnessRows) console.log(`corpus-mutant ${name}\t${result}`);
   const harnessMissed = harnessRows.filter(([, result]) => !result.startsWith("caught") && !result.startsWith("passed, as it must"));
   if (harnessRows.length > 0) console.log(`${harnessRows.length - harnessMissed.length} of ${harnessRows.length} of the corpus harness's mutants as they must be`);
@@ -2286,6 +2285,11 @@ async function main() {
   // Of `--base=<sha>`, a survivor there too is latent, not this run's (ADR 0093, amended).
   const base = args.find((arg) => arg.startsWith("--base="))?.slice("--base=".length);
   const latent = base ? await latentSurvivors(root, work, base, Object.fromEntries(rows.map(([m, r]) => [m.name, r])), (name) => mutations.find((m) => m.name === name)?.breaks ?? "") : [];
+  // A phase of its own where it ran, a survivor's run at the base, which
+  // phases.json didn't show, five of a CI shard's minutes (#2220).
+  if (rows.some(([, result]) => result.startsWith("SURVIVED")) && base) phaseEnded("the survivors, at the base");
+  writeFileSync(join(work, "phases.json"), JSON.stringify(phases, null, 2) + "\n");
+  for (const { phase, seconds } of phases) console.log(`phase\t${phase}\t${shown(seconds)}`);
   const missed = rows.filter(([mutation, result]) => result !== "caught" && !latent.includes(mutation.name));
   // Said last, where a `tail` of the run sees it: the rows above may be
   // more than it shows (#923).

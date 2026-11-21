@@ -142,8 +142,16 @@ export const mutations: Mutation[] = [
     name: "fewest-shards-any-under-budget",
     breaks: "the shard count is the fewest whose any shard is within the budget, not every one, so a selection of everything takes one machine",
     file: "scripts/shard.ts",
-    find: "expected(count).every((seconds) => seconds <= budget)",
-    replace: "expected(count).some((seconds) => seconds <= budget)",
+    find: "choices.map((count) => Math.max(0, ...expected(count)))",
+    replace: "choices.map((count) => Math.min(...expected(count)))",
+    tests: ["test/shards.test.ts", "-t", "a check's suite takes the machines its selection's expected time needs"],
+  },
+  {
+    name: "fewest-shards-the-most-when-none-fits",
+    breaks: "a check whose shards can't each fit the budget takes the most machines, 16, though no more than a few end its slowest shard any sooner: one browser-driving mutation took 16 (#2220)",
+    file: "scripts/shard.ts",
+    find: "  return choices[slowest.findIndex((seconds) => seconds <= soonest)]!;",
+    replace: "  return choices.at(-1)!;",
     tests: ["test/shards.test.ts", "-t", "a check's suite takes the machines its selection's expected time needs"],
   },
 ];

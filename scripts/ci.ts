@@ -225,6 +225,16 @@ export const SHARD_SETUP_SECONDS = 60;
 /** And the compiler as it is, built before any mutant: 87 to 130 s of
  * each shard's `phases.json` (main's check 44441824204). */
 export const SHARD_COMPILER_SECONDS = 120;
+/** And each of its mutations' tests run as the compiler is, and as one
+ * that compiles nothing, before any mutant (`mutations.ts`'s "each
+ * mutation's tests as the compiler is"): 41 to 182 s of main's checks
+ * 44830680353 and 44774641229, which the plan didn't count (#2220). */
+export const SHARD_TESTS_AS_IT_IS_SECONDS = 120;
+/** And where one of its mutations survived at its last check's base too,
+ * latent (`latent-survivors.ts`), surviving again: the survivors run again
+ * at the base, the compiler built whole there, 283 to 320 s of main's
+ * checks 44830680353 and 44774641229, after its mutants (#2220). */
+export const SHARD_BASE_SECONDS = 300;
 /** And beside them, where a test one of its mutations runs drives a
  * browser (`drivesBrowser`): Chromium installed. */
 export const SHARD_BROWSER_SECONDS = 420;
@@ -239,8 +249,10 @@ export const SHARD_BUDGET_SECONDS = 720;
  * share of its shard, `seconds` (`dealtByGroup`, each's untimed by its
  * file's, `groupOf`, the catalog's `mutationFile` as the shards' own), is
  * expected to take `SHARD_BUDGET_SECONDS` or less: its mutations' shares,
- * its setup, the compiler as it is, and a browser's where one of its tests
- * drives one, `browser`. Sized by count, twenty a machine, one shard of a
+ * its setup, the compiler as it is, its mutations' tests as it is, the
+ * survivors' run at the base where it's dealt one the last checks found
+ * latent, `latent`, and a browser's where one of its tests drives one,
+ * `browser`. Sized by count, twenty a machine, one shard of a
  * change's slow mutations took 21 min while others took 4 (main's checks
  * of 2026-11-19); else the most. */
 export function mutationShards(
@@ -248,11 +260,20 @@ export function mutationShards(
   seconds: ReadonlyMap<string, number>,
   browser: (file: string) => boolean,
   groupOf: (name: string) => string | undefined,
+  latent: ReadonlySet<string> = new Set(),
 ): string {
   const drives = new Map(chosen.map((m) => [m.name, m.tests !== undefined && browser(m.tests[0]!)]));
   const expected = (count: number) => {
     const { shards, load } = dealtByGroup(chosen.map((m) => m.name), count, seconds, groupOf);
-    return shards.map((names, i) => SHARD_SETUP_SECONDS + SHARD_COMPILER_SECONDS + load[i]! + (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0));
+    return shards.map(
+      (names, i) =>
+        SHARD_SETUP_SECONDS +
+        SHARD_COMPILER_SECONDS +
+        SHARD_TESTS_AS_IT_IS_SECONDS +
+        load[i]! +
+        (names.some((name) => latent.has(name)) ? SHARD_BASE_SECONDS : 0) +
+        (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0),
+    );
   };
   return String(fewestShards(MUTATION_SHARDS, expected, SHARD_BUDGET_SECONDS));
 }
@@ -293,10 +314,15 @@ async function check(branch: string, shards: string | undefined, since?: string)
 async function plan(given?: string, testShardsGiven?: string) {
   let since = given ?? "HEAD~1";
   let retry: string[] = [];
+  // What the last checks found latent, whose shard runs them again at its
+  // base where they survive again (`SHARD_BASE_SECONDS`).
+  let latent = new Set<string>();
   if (given === undefined) {
     try {
       // What the last check's mutations left, else the last that passed.
-      const base = resultsBase(runResults());
+      const ran = runResults();
+      latent = new Set(ran.flatMap((r) => r.latent ?? []));
+      const base = resultsBase(ran);
       since = base?.since ?? checkedSince(runs(), "main", runMutationsPassed) ?? since;
       retry = base?.retry ?? [];
     } catch {}
@@ -319,7 +345,7 @@ async function plan(given?: string, testShardsGiven?: string) {
   const changed = Bun.spawnSync(["git", "diff", "--name-only", since, "HEAD"], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   console.log(`since=${since}`);
   console.log(`retry=${retry.join(",")}`);
-  console.log(`shards=${mutationShards(chosen, seconds, (file) => drivesBrowser(root, file), mutationFile)}`);
+  console.log(`shards=${mutationShards(chosen, seconds, (file) => drivesBrowser(root, file), mutationFile, latent)}`);
   console.log(`iterators=${touchesIterators(changed)}`);
   console.log(`formatting=${touchesFormatting(changed)}`);
   console.log(`numbers=${touchesNumbers(changed)}`);

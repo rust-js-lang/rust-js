@@ -162,11 +162,19 @@ export function testShardFiles<T extends string>(files: T[], index: number, coun
 
 /** The fewest of `choices`, machines a check may split work across, whose
  * every shard is expected to take `budget` seconds or less, `expected`'s
- * seconds of each shard of that many; else the most. The one rule that
- * sizes a check's mutations' machines (`mutationShards`) and its suite's
- * (`testShards`), each by its own shards' expected seconds. */
+ * seconds of each shard of that many; else the fewest whose slowest shard
+ * is expected soonest, as more machines than those end it no sooner: a
+ * shard whose test drives a browser, its install and the compiler's tests
+ * as it is over the budget before any mutant, took the most, 16, of one
+ * mutation (#2220). The one rule that sizes a check's mutations' machines
+ * (`mutationShards`) and its suite's (`testShards`), each by its own
+ * shards' expected seconds. */
 export function fewestShards(choices: readonly number[], expected: (count: number) => number[], budget: number): number {
-  return choices.find((count) => expected(count).every((seconds) => seconds <= budget)) ?? choices.at(-1)!;
+  const slowest = choices.map((count) => Math.max(0, ...expected(count)));
+  const fits = choices.findIndex((_, i) => slowest[i]! <= budget);
+  if (fits !== -1) return choices[fits]!;
+  const soonest = Math.min(...slowest);
+  return choices[slowest.findIndex((seconds) => seconds <= soonest)]!;
 }
 
 /** What a test shard's run measured besides its files' times, which `bun
