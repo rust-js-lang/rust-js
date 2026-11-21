@@ -101,19 +101,27 @@ test("whether an iterator is written in Rust is is_user_iterator's alone", () =>
 // was collected by `next`, dropping 4 before 5 where std drops 5 before 4,
 // and the list of those whose `nth` asks one, the catalog's own row (#697).
 // A function of the lowering named for a fold or an `nth` names no adapter of
-// std's but in own_steps.rs, which asks it of `asked_sources`.
+// std's but in own_steps.rs, which asks it of `asked_sources`. Nor does one
+// named for a slice: slice_steps.rs's `nth` followed a `Rev` to a bare `Vec`
+// alone, not through a `take(n)`'s `nth_back`, and iterators.rs's
+// `steps_past_a_slice` listed the adapters whose `next` is their source's,
+// without a `take_while()`, so a `step_by` of each was a filter by index that
+// dropped back to front where std drops one slice front to back (#2239).
 test("which source an adapter's fold or nth asks is the OwnStep catalog's alone", () => {
-  const adapter = /"(?:std::iter::)?(Map|Filter|FilterMap|Take|Skip|Fuse|Peekable|Enumerate|StepBy|Chain|Rev|Inspect|Copied|Cloned|Flatten|FlatMap|SkipWhile|TakeWhile|Scan|MapWhile|Zip)"/;
+  const names = "Map|Filter|FilterMap|Take|Skip|Fuse|Peekable|Enumerate|StepBy|Chain|Rev|Inspect|Copied|Cloned|Flatten|FlatMap|SkipWhile|TakeWhile|Scan|MapWhile|Zip";
+  const adapter = new RegExp(`"(?:std::iter::)?(${names})"|StdPath::Iter(${names})\\b`);
   const listed: string[] = [];
   for (const file of ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"))) {
     if (file === "src/lower/recognition/own_steps.rs") continue;
     for (const item of read(file).split(/\n(?=\s*(?:pub(?:\([^)]*\))? )?fn \w+)/)) {
       const name = item.match(/fn (\w+)/)?.[1];
-      if (name !== undefined && /fold|nth/.test(name) && adapter.test(item)) listed.push(`${file}: fn ${name}`);
+      if (name !== undefined && /fold|nth|_a_slice/.test(name) && adapter.test(item)) listed.push(`${file}: fn ${name}`);
     }
   }
   expect(listed).toEqual([]);
-  expect(read("src/lower/recognition/slice_steps.rs")).toContain("self.asked_sources(ty, OwnStep::Nth)");
+  const slices = read("src/lower/recognition/slice_steps.rs");
+  expect(slices).toContain("self.asked_sources(ty, step)");
+  expect(slices).toContain("self.asked_by_next(ty)");
 });
 
 // Whether stepping an iterator may panic, which decides what a fold's

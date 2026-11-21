@@ -481,3 +481,48 @@ the runtime's folds already ask what std's do.
 
 Case (ADR 0262): R. Which of the crate's steps std calls, and with which
 `n`, is observable.
+
+## Amendment: a slice's `nth` follows `nth_back` too, and a first `next` is the catalog's (2026-11-21, #2239)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, results change. The JS
+must drop what std drops, in std's order.
+
+`nth_drops_a_slice` (slice_steps.rs) followed the catalog's `Nth` row, but a
+`Rev` had a hand arm: its `nth` was a slice's only where it reversed a bare
+`Vec`. So the plain build lowered `v.into_iter().take(6).rev().step_by(3)` of
+items with a destructor to a filter by index. The same happened to
+`skip(1).rev()`, `enumerate().rev()`, `fuse().rev()` and
+`skip(1).take(6).rev()`, and to the trim of a `take`. Each dropped what it
+passed over back to front. Std's `StepBy` asks `Rev::nth`, which is the
+`take`'s `nth_back`, which is the `Vec`'s, and that drops one slice front to
+back. `--std-iterators` was right.
+
+`passes_a_slice` now answers for `nth` and `nth_back` alike, and the hand arm
+is gone:
+- A `Vec`'s `nth_back` drops a slice, and its `nth` does where `in_order`
+  asks.
+- Otherwise it follows each source the catalog says the step asks an `nth` or
+  an `nth_back` of: a `Rev`'s `nth` asks its source's `nth_back`, and a
+  `take`'s, a `skip`'s, an `enumerate`'s or a `fuse`'s `nth_back` asks its
+  source's.
+
+`steps_past_a_slice`, in iterators.rs, asked whether a first `next` reaches a
+`Skip`'s `nth` of such a source. It used a hand list of the adapters whose
+`next` is their source's, and the list lacked a `take_while()`, so it had the
+same blind spot. It moved to slice_steps.rs and follows the catalog's `next`
+row (`asked_by_next`, own_steps.rs, beside `asked_sources`). The catalog's
+`src`, `other` and `inner` positions are now read by one function,
+`asked_at`.
+
+`test/architecture-iterators.test.ts` ("which source an adapter's fold or nth
+asks is the OwnStep catalog's alone") also rejects a function named for a
+slice (`_a_slice`) that names one of std's adapters, by its `StdPath` too.
+Corpus `vec_stepped_by_from_its_back_through_adapters_drops_a_slice` (both
+builds). Mutations:
+- New: `nth-back-passes-no-slice-through-adapters`, `nth-back-of-a-vec-no-slice`
+  and `steps-past-a-slice-next-unfollowed`.
+- Retargeted: `nths-a-slice-not-through-adapters` and `slice-in-order-unseen`
+  (`lower/recognition/slice_steps.ts`), and `asks-of-other-as-of-src` and
+  `asks-of-inner-as-of-src` (`lower/recognition/own_steps.ts`).
+
+No snapshot moves; no corpus case had reached the wrong form.

@@ -29,6 +29,17 @@ pub(in crate::lower) enum OwnStep {
 /// flatten's (`Recognition::flattened_inner`).
 const INNERS: usize = usize::MAX;
 
+/// Where std's catalog's `of` is among what an adapter holds: its source,
+/// a chain's or a zip's second, or each inner iterator, `INNERS`.
+fn asked_at(of: &str) -> usize {
+    match of {
+        "src" => 0,
+        "other" => 1,
+        "inner" => INNERS,
+        of => unreachable!("std_steps.txt asks no source `{of}`"),
+    }
+}
+
 /// What a type parameter's answer is, whose caller's type may write the
 /// step: `Sure`, of what drops nothing after, or gives a compiled body
 /// nothing, as the crate's own took it, which says no but of a step whose
@@ -120,15 +131,7 @@ impl OwnStep {
     /// the step, the trait's default, which asks the adapter's own steps.
     fn asked_of(self, adapter: &str) -> Vec<(usize, OwnStep)> {
         (super::std_steps::asks(adapter, self.method()).into_iter())
-            .filter_map(|asked| {
-                let at = match asked.of {
-                    "src" => 0,
-                    "other" => 1,
-                    "inner" => INNERS,
-                    of => unreachable!("std_steps.txt asks no source `{of}`"),
-                };
-                Some((at, OwnStep::of_method(asked.step)?))
-            })
+            .filter_map(|asked| Some((asked_at(asked.of), OwnStep::of_method(asked.step)?)))
             .collect()
     }
 }
@@ -270,6 +273,23 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let adapter = named.as_str();
         (step.asked_of(adapter).iter())
             .filter_map(|&(at, asked)| Some((self.asked_source(ty, args, at)?, asked)))
+            .collect()
+    }
+
+    /// What std's `next` of a `ty`, one of std's adapters, asks of what it
+    /// holds, std's catalog's (`std_steps::asks`): each source and the name
+    /// of the step it asks of it, `next`, `nth`, `try_fold` or another, as
+    /// `next` isn't a step the crate's iterator writes apart (`OwnStep`).
+    pub(in crate::lower) fn asked_by_next(&self, ty: Ty<'tcx>) -> Vec<(Ty<'tcx>, &'static str)> {
+        let ty = self.reveal(ty);
+        let ty::Adt(adt, args) = ty.kind() else {
+            return Vec::new();
+        };
+        let Some(named) = std_item_in(self.tcx, adt.did(), StdPath::IterMod) else {
+            return Vec::new();
+        };
+        (super::std_steps::asks(named.as_str(), "next").into_iter())
+            .filter_map(|asked| Some((self.asked_source(ty, args, asked_at(asked.of))?, asked.step)))
             .collect()
     }
 
