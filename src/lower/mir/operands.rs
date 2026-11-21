@@ -323,7 +323,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => unreachable!("a cell"),
                 };
                 let read = match read.kind {
-                    js::ExprKind::Handle(object, js::Storage::InPlace(_)) => {
+                    js::ExprKind::Handle(object, js::Storage::InPlace(..)) => {
                         let object = match object.reads_same() && !object.has_effects() {
                             true => *object,
                             false => self.spill(Role::Object, *object, out),

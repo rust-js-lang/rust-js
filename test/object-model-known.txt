@@ -10,13 +10,18 @@
 #1066 user_from_str.rs
 #1066 temporaries_taken_apart.rs
 
-// To decide, each a fix or no bug: a flattened enum's `undefined` writes
-// left out, an unread `$someNone` test left out, and two representation
-// choices of the least.
-#1067 flattened_state_got_mut.rs
-#1067 flattened_state_into_inner.rs
+// Decided, no bug (#1067, the lead for Tu, 2026-11-22): ADR 0262's no
+// difference, each a representation choice of the least's, no value read
+// otherwise. A flattened enum's keys a variant lacks, written `undefined`
+// on a library's object, are fixed and off this list.
+// An unread `"$someNone" in fiber()` test left out: its result goes unused,
+// and only a Proxy could count the read.
 #1067 returns_joined_past_blocks.rs
+// `OnceCell::set` of a library's cell reads its `.value` by another path,
+// the same value.
 #1067 once_cell_known_empty.rs
+// `$eq` reads the other side's `proto` only where the least's literal
+// writes `proto: undefined`, the same answer.
 #1067 field_named_proto_renamed.rs
 
 // Decided, no bug: a function a field the program never writes holds is

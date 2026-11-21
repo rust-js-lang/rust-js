@@ -9,6 +9,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
+import { chain, pairs } from "./crates";
 import { buildReact, compiler, fixture, root, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -425,3 +426,14 @@ pub fn make() -> Rc<ReactPromise> {
   lib.listen(chunk, 3);
   expect([lib.take(chunk, "again"), chunk.value]).toEqual([undefined, "again"]);
 });
+
+// A library's object's flattened state written whole by its consumer has
+// no key the variant written lacks, as Rust's value has none, which JS
+// could read on what its library made (ADR 1022, #1067): each set
+// `undefined`. The crate's own keep theirs, as upstream's do.
+test("a library's object's flattened state written whole has no key its variant lacks", () => {
+  const app = readFileSync(join(chain(pairs, "library_flattened_state", ["dep", "app"]), "app", "lib.js"), "utf8");
+  expect(app).toContain('task.status = "halted";\n  task.tries = undefined;\n  task.value = undefined;');
+  expect(app).toContain('task.status = "done";\n  task.value = "a";\n  task.tries = undefined;');
+  expect(app).toContain('task.status = "pending";\n  task.tries = 7;\n  task.value = undefined;');
+}, 300_000);

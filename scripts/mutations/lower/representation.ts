@@ -465,8 +465,8 @@ export const mutations: Mutation[] = [
     name: "flattened-state-no-handle",
     breaks: "a flattened state's cell is its parent alone, as a flattened struct is, so its borrows are boxes of the parent (rd380)",
     file: "src/lower/representation.rs",
-    find: "                        Expr::stored_handle(base, js::Storage::in_place(&keys))\n",
-    replace: "                        { let _ = keys; base }\n",
+    find: "                        Expr::stored_handle(base, js::Storage::in_place(&keys, stale))\n",
+    replace: "                        { let _ = (keys, stale); base }\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "made, read and replaced in place"],
   },
   {
@@ -597,5 +597,13 @@ export const mutations: Mutation[] = [
     find: "                self.held_part(read, ty, i, tys[i])\n",
     replace: "                read\n",
     tests: ["test/corpus.test.ts", "-t", "^iterator_field_in_its_place_copied_cloned_compared\\.rs$"],
+  },
+  {
+    name: "library-flattened-state-keys-kept",
+    breaks: "a library's object's flattened state written whole keeps the keys an earlier variant set, which Rust's value has none of, so the program reads stale keys on what its library made (#1067)",
+    file: "src/lower/representation.rs",
+    find: "                            Some(adt) if !adt.is_local() => js::StaleKeys::Cleared,\n",
+    replace: "                            Some(adt) if !adt.is_local() => js::StaleKeys::Kept,\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "variant lacks"],
   },
 ];

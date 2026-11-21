@@ -613,8 +613,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a flattened state's cell's `replace` writes the variable holding its class's object, `task = { status: \"done\", value }`, not each key on it (#659)",
     file: "src/lower/std_types/cell.rs",
-    find: "                if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)) = cell.kind {\n",
-    replace: "                if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(\"never\")) = cell.kind {\n",
+    find: "                if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(..)) = cell.kind {\n",
+    replace: "                if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(\"never\", _)) = cell.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_moved_out.rs$"],
   },
   {

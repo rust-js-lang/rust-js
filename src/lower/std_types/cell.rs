@@ -177,7 +177,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> Option<(Expr, js::Storage)> {
         let cell = values.as_slice().first()?;
-        if !matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(_))) {
+        if !matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(..))) {
             return None;
         }
         let js::ExprKind::Handle(object, storage) = values.next()?.kind else {
@@ -233,7 +233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `try_borrow`'s and `Cell::from_mut`'s, the handle, held as a
         // guard's is.
         let flattened = (values.as_slice().first())
-            .is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(_))));
+            .is_some_and(|cell| matches!(cell.kind, js::ExprKind::Handle(_, js::Storage::InPlace(..))));
         // A flattened state's replaced by what a function makes of it,
         // `replace_with`'s: its class's object.
         let in_place = match known {
@@ -455,14 +455,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let first =
                                 |e: &Expr| e.facts.has(js::Known::LocalRead) || !e.reads_same() || e.has_effects();
                             cell = match cell.kind {
-                                js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)) if first(&object) => {
+                                js::ExprKind::Handle(object, storage @ js::Storage::InPlace(..)) if first(&object) => {
                                     let object = self.spill(Role::Object, *object, out);
                                     Expr {
                                         kind: js::ExprKind::Handle(Box::new(object), storage),
                                         ..cell
                                     }
                                 }
-                                js::ExprKind::Handle(_, js::Storage::InPlace(_)) => cell,
+                                js::ExprKind::Handle(_, js::Storage::InPlace(..)) => cell,
                                 _ if first(&cell) => self.spill(Role::Cell, cell, out),
                                 _ => cell,
                             };
@@ -477,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // (ADR 1044): what it held, a copy of its variant's keys
                 // (`moved_out`), then each key of the new value set there,
                 // as a whole write through a borrow sets them (#659).
-                if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)) = cell.kind {
+                if let js::ExprKind::Handle(object, storage @ js::Storage::InPlace(..)) = cell.kind {
                     let object = match object.reads_same() && !object.has_effects() {
                         true => *object,
                         false => self.spill(Role::Object, *object, out),
@@ -640,7 +640,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for flattened in call.flattened {
                     let cell = arg();
                     sides.push(match (cell.kind, flattened) {
-                        (js::ExprKind::Handle(object, storage @ js::Storage::InPlace(_)), _) => {
+                        (js::ExprKind::Handle(object, storage @ js::Storage::InPlace(..)), _) => {
                             let object = match object.reads_same() && !object.has_effects() {
                                 true => *object,
                                 false => self.spill(Role::Object, *object, out),

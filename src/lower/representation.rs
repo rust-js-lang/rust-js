@@ -462,7 +462,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 ),
                             );
                         }
-                        Expr::stored_handle(base, js::Storage::in_place(&keys))
+                        // Of another crate's object, a library's, which its
+                        // program reads as Rust does (ADR 1022), a key the
+                        // variant written lacks is cleared, as Rust's value
+                        // has none (#1067); the crate's own keep it, as
+                        // upstream's do, a rejected chunk's `value` of
+                        // React's port (the lead's decision).
+                        let stale = match ty.ty_adt_def().map(|adt| adt.did()) {
+                            Some(adt) if !adt.is_local() => js::StaleKeys::Cleared,
+                            _ => js::StaleKeys::Kept,
+                        };
+                        Expr::stored_handle(base, js::Storage::in_place(&keys, stale))
                     }
                     None => base,
                 }

@@ -29,19 +29,33 @@ impl Undefined {
     }
 }
 
+/// Of a flattened state written whole (`Storage::written_in_place`), a
+/// key an earlier variant set that the variant written lacks: `Cleared`,
+/// set `undefined`, as Rust's value has no such field, of another crate's
+/// object, a library's, whose program reads it as Rust does (ADR 1022),
+/// `Object.keys` among it (#1067); `Kept` of the crate's own, as
+/// upstream's do, a rejected chunk's `value` of React's port.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum StaleKeys {
+    Kept,
+    Cleared,
+}
+
 impl Storage {
     /// A flattened state's storage of its `keys` (rd380, ADR 1044), each
-    /// type's kept for the compile, as a handle's storage is copied.
-    pub fn in_place(keys: &[String]) -> Storage {
+    /// type's kept for the compile, as a handle's storage is copied; with
+    /// what becomes of a key an earlier variant set (`StaleKeys`).
+    pub fn in_place(keys: &[String], stale: StaleKeys) -> Storage {
         thread_local! {
             static KEYS: std::cell::RefCell<IndexMap<String, &'static str>> = Default::default();
         }
         let joined = keys.join(",");
-        Storage::InPlace(KEYS.with_borrow_mut(|known| {
+        let keys = KEYS.with_borrow_mut(|known| {
             *known
                 .entry(joined.clone())
                 .or_insert_with(|| Box::leak(joined.into_boxed_str()))
-        }))
+        });
+        Storage::InPlace(keys, stale)
     }
 
     /// Whether a write through a handle on a variable stored so may set the
@@ -51,7 +65,7 @@ impl Storage {
     /// is chosen.
     pub fn rebinds(self) -> bool {
         match self {
-            Storage::AsGiven | Storage::NullForNone | Storage::InPlace(_) => true,
+            Storage::AsGiven | Storage::NullForNone | Storage::InPlace(..) => true,
             Storage::Assigned => false,
         }
     }
@@ -62,7 +76,7 @@ impl Storage {
     pub fn helper(self) -> Option<&'static str> {
         match self {
             Storage::Assigned => Some("$assign"),
-            Storage::AsGiven | Storage::NullForNone | Storage::InPlace(_) => None,
+            Storage::AsGiven | Storage::NullForNone | Storage::InPlace(..) => None,
         }
     }
 
@@ -70,7 +84,9 @@ impl Storage {
     /// flattened state is in (ADR 1044): of a variant made there, its tag
     /// and each of its fields set there, as written, a `None` `undefined`,
     /// so a key an earlier variant set and it hasn't stays, as upstream's
-    /// do; of any other value, each key of it, once it's computed, held
+    /// do, but of a library's object, `StaleKeys::Cleared`, set
+    /// `undefined` after them, as Rust's value has no such field (#1067);
+    /// of any other value, each key of it, once it's computed, held
     /// where that's needed, `spill`'s, given the name it's held by.
     /// Of `Assigned`, `$assign(place, value)`. `None` of any other storage.
     ///
@@ -91,7 +107,9 @@ impl Storage {
             let assigned = Expr::call(Expr::helper("$assign"), vec![place.clone(), value]);
             return Some(vec![StmtKind::Expr(assigned).at(at)]);
         }
-        let Storage::InPlace(keys) = self else { return None };
+        let Storage::InPlace(keys, stale) = self else {
+            return None;
+        };
         let keys: Vec<&str> = keys.split(',').collect();
         let set = |key: &str, value: Expr| StmtKind::Assign(Expr::member(place.clone(), key), value).at(at);
         if let ExprKind::Object(props, _) = &value.kind
@@ -120,7 +138,14 @@ impl Storage {
                     _ => unreachable!("an object of fields"),
                 })
                 .collect();
+            let cleared: Vec<&str> = match stale {
+                StaleKeys::Cleared => (keys.iter().copied())
+                    .filter(|key| !fields.iter().any(|(name, _)| name == key))
+                    .collect(),
+                StaleKeys::Kept => Vec::new(),
+            };
             out.extend(fields.into_iter().map(|(name, value)| set(name, value)));
+            out.extend(cleared.into_iter().map(|key| set(key, Expr::js_undefined())));
             return Some(out);
         }
         let mut out = Vec::new();
@@ -142,7 +167,7 @@ impl Storage {
     /// given, and a handle's setter printed.
     pub fn written(self, made: Expr, given: Undefined) -> Expr {
         match self {
-            Storage::AsGiven | Storage::InPlace(_) | Storage::Assigned => made,
+            Storage::AsGiven | Storage::InPlace(..) | Storage::Assigned => made,
             Storage::NullForNone => match null_for_none(&made, given) {
                 Some(stored) => stored,
                 None => Expr::bin(Op::Coalesce, made, Expr::null()),
@@ -156,7 +181,7 @@ impl Storage {
     /// it is, what may be `undefined` too, never `made ?? null`.
     pub fn written_alike(self, made: Expr) -> Expr {
         match (self, made.kind) {
-            (Storage::AsGiven | Storage::InPlace(_) | Storage::Assigned, kind) => Expr { kind, ..made },
+            (Storage::AsGiven | Storage::InPlace(..) | Storage::Assigned, kind) => Expr { kind, ..made },
             (Storage::NullForNone, ExprKind::Undefined | ExprKind::GivenUndefined) => Expr::null().or_at(made.span),
             (Storage::NullForNone, ExprKind::Cond(test, yes, no)) => Expr {
                 kind: ExprKind::Cond(

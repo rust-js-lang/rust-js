@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "late-field-handles-unread",
     breaks: "a handle on a field declared only once its `let` sinks to its branch, a guard's of a binding's `*tries.borrow_mut() += 1`, stays a handle, `const borrowMut = { get value() .. }` (#503)",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "                && (matches!(place.kind, ExprKind::Member(..))\n                    && !(in_place && matches!(storage, js::Storage::InPlace(_)))\n",
+    find: "                && (matches!(place.kind, ExprKind::Member(..))\n                    && !(in_place && matches!(storage, js::Storage::InPlace(..)))\n",
     replace: "                && (matches!(place.kind, ExprKind::Member(..))\n                    && !in_place\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_fields.rs$"],
     snapshots: true,

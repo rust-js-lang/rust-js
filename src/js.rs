@@ -26,7 +26,7 @@ mod stmt_facts;
 mod stmt_walk;
 pub use stmt_facts::StmtFacts;
 mod storage;
-pub use storage::Undefined;
+pub use storage::{StaleKeys, Undefined};
 mod template;
 mod through_box;
 pub mod undefined_arguments;
@@ -89,8 +89,9 @@ pub enum Storage {
     NullForNone,
     /// A flattened state's cell, the object it's flattened in (rd380, ADR
     /// 1044): what's written is each of its keys, these, comma-separated,
-    /// set on that object, never the object itself.
-    InPlace(&'static str),
+    /// set on that object, never the object itself; and what becomes of a
+    /// key an earlier variant set that the one written lacks (`StaleKeys`).
+    InPlace(&'static str, StaleKeys),
     /// An object a `&mut` is, written whole in place, `$assign(place,
     /// value)`, so each name for it sees what's written (ADRs 0147, 0454):
     /// a `&mut dyn`'s pair of one whose impl writes its `value` (#968).

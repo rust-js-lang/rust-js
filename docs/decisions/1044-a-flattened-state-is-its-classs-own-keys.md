@@ -767,3 +767,25 @@ as its flattened type parameters already were. Pair test
 `library_flattened_state`; mutation `library-flattened-state-unseen`
 (`lower/bindings/flattened.ts`). #1030's three library rewrites run as
 native.
+
+## Amended: a library's object has no key its variant lacks (#1067)
+
+A flattened state written whole sets its variant's tag and fields on the
+object it's in, and a key an earlier variant set that this one lacks
+stays, as upstream's do. That holds for the crate's own objects, React's
+port's rejected chunk's `value` among them, whose keys nothing outside
+can tell apart. A library's object is different: its program reads what
+its library made as Rust does (ADR 1022), and a stale key is one Rust's
+value doesn't have, which JS could read, `Object.keys`. So where the
+object is another crate's, `Storage::InPlace`'s `StaleKeys::Cleared`
+also sets each key the variant written lacks to `undefined`, after its
+own, as the handle's setter and the class's constructor do:
+`task.status = "pending"; task.tries = 7; task.value = undefined;`. The
+crate's own keep theirs (`StaleKeys::Kept`). Clearing a crate's object
+that JS may hold too would move 5 lines of React's port away from
+upstream, one of them `null` to `undefined`. That is a port difference
+only Tu accepts, so it's left as a possible later choice. Held by
+test/classes-flattened-state.test.ts on the pair
+`test/crates/pairs/library_flattened_state`, and by the object-model
+net's `flattened_state_into_inner` and `flattened_state_got_mut`, off its
+known list.

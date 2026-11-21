@@ -134,8 +134,8 @@ pub(in crate::lower::mir::tidy) fn read_handles(
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Handle(place, storage) = &value.kind
                 && (matches!(place.kind, ExprKind::Member(..))
-                    && !(in_place && matches!(storage, js::Storage::InPlace(_)))
-                    || matches!(storage, js::Storage::InPlace(_)) && place.reads_same()
+                    && !(in_place && matches!(storage, js::Storage::InPlace(..)))
+                    || matches!(storage, js::Storage::InPlace(..)) && place.reads_same()
                     // A `&mut`'s to a place that stores `null` for `None`, a
                     // nullable parameter or an item of a nullable field's
                     // items, `v[0]` (#541).
@@ -171,7 +171,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
     // handle, whose setter sets each key, not one on its place, whose
     // setter would assign the variable holding the class's object (#678).
     let states: IndexSet<js::Name> = (handles.iter())
-        .filter(|(.., storage)| matches!(storage, js::Storage::InPlace(_)))
+        .filter(|(.., storage)| matches!(storage, js::Storage::InPlace(..)))
         .map(|(name, ..)| name.clone())
         .collect();
     js::each_expr_mut(body, &mut |e| {
@@ -210,7 +210,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
     // which reads the same: each whole write through it sets the object's
     // keys there (`handles_in_place`), each read is the object (#478).
     let whole: Vec<(js::Name, Expr)> = (handles.iter())
-        .filter(|(name, _, _, storage)| matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name))
+        .filter(|(name, _, _, storage)| matches!(storage, js::Storage::InPlace(..)) && written_whole.contains(name))
         .map(|(name, place, _, storage)| (name.clone(), Expr::stored_handle(place.clone(), *storage)))
         .collect();
     if !whole.is_empty() {
@@ -237,7 +237,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         }
     }
     handles
-        .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name)));
+        .retain(|(name, _, _, storage)| !(matches!(storage, js::Storage::InPlace(..)) && written_whole.contains(name)));
     handles.retain_mut(|(name, place, at_once, storage)| {
         // Each use of it one of its `value`: none left once those are.
         let mut rest = body.clone();

@@ -111,4 +111,12 @@ export const mutations: Mutation[] = [
     replace: "            Storage::Assigned => true,\n",
     tests: ["test/lowering-dyn-pairs.test.ts"],
   },
+  {
+    name: "cleared-stale-keys-written-nowhere",
+    breaks: "a flattened state's keys a variant lacks are never set `undefined`, whatever its storage says, so a library's object keeps an earlier variant's keys (#1067)",
+    file: "src/js/storage.rs",
+    find: "            out.extend(cleared.into_iter().map(|key| set(key, Expr::js_undefined())));\n",
+    replace: "            let _ = cleared;\n",
+    tests: ["test/classes-flattened-state.test.ts", "-t", "variant lacks"],
+  },
 ];
