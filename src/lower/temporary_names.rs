@@ -4,6 +4,7 @@
 //! of the role it has, `value`, `arg`, `tmp`. Each place that names a
 //! temporary asks here; none spells a temporary's word itself.
 
+use crate::js;
 use crate::lower::FnCx;
 use crate::lower::recognition::StdItem;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -511,6 +512,39 @@ fn variable_name(type_name: &str) -> String {
             false => *c,
         })
         .collect()
+}
+
+/// A loop's item's name, `name`, where the loop's `body` loops over it in
+/// turn, a `Vec<Vec<T>>`'s, an `Option<Vec<T>>`'s, a map's values that are
+/// lists: `list`, `fresh`'s of that role, read so through `body`, its own
+/// loop's item `item`, as a person names them, `for (const list of items)
+/// { for (const item of list) .. }`, not `item` and `item$1` (#1347); not
+/// `items`, which what it runs over is often named already. Else `name`.
+/// The one rule of a loop's item's name, a drop's (drops/parts.rs) and a
+/// hash's (std_types/hash.rs).
+pub(in crate::lower) fn named_by_its_loop(
+    name: js::Name,
+    body: &mut [js::Stmt],
+    fresh: impl FnOnce(Role) -> js::Name,
+) -> js::Name {
+    let mut looped = false;
+    js::each_list(body, &mut |list| {
+        for stmt in list {
+            if let js::StmtKind::ForOf { iterable, .. } = &stmt.kind {
+                iterable.visit_names(&mut |v| looped |= *v == name);
+            }
+        }
+    });
+    if !looped {
+        return name;
+    }
+    let items = fresh(Role::List);
+    js::each_expr_mut(body, &mut |e| {
+        if matches!(&e.kind, js::ExprKind::Var(v) if *v == name) {
+            *e = js::Expr::var(&items);
+        }
+    });
+    items
 }
 
 #[cfg(test)]

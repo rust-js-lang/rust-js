@@ -735,6 +735,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if body.is_empty() {
             return Ok(());
         }
+        let name = crate::lower::temporary_names::named_by_its_loop(name, &mut body, |role| self.fresh(role));
         out.push(
             StmtKind::ForOf {
                 label: None,

@@ -519,9 +519,9 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    for (const items of value) {
-      heldDrop_drop(items, $dropEach(dDrop_drop));
-      for (const item of items.iter) {
+    for (const list of value) {
+      heldDrop_drop(list, $dropEach(dDrop_drop));
+      for (const item of list.iter) {
         dDrop_drop(item);
       }
     }
@@ -547,9 +547,9 @@ function main() {
       },
       $dropEach(dDrop_drop),
     );
-    for (const items of value) {
-      heldDrop_drop(items, $dropEach(dDrop_drop));
-      for (const item of items.iter) {
+    for (const list of value) {
+      heldDrop_drop(list, $dropEach(dDrop_drop));
+      for (const item of list.iter) {
         dDrop_drop(item);
       }
     }
@@ -656,9 +656,9 @@ function main() {
         $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
-    for (const items of heldAll) {
-      heldDrop_drop(items, $dropEach(dDrop_drop));
-      for (const item of items.iter) {
+    for (const list of heldAll) {
+      heldDrop_drop(list, $dropEach(dDrop_drop));
+      for (const item of list.iter) {
         dDrop_drop(item);
       }
     }
@@ -698,9 +698,9 @@ function main() {
         $dropIntoIter: $dropEach(dDrop_drop),
       },
     );
-    for (const items of heldAll) {
-      heldDrop_drop(items, $dropEach(dDrop_drop));
-      for (const item of items.iter) {
+    for (const list of heldAll) {
+      heldDrop_drop(list, $dropEach(dDrop_drop));
+      for (const item of list.iter) {
         dDrop_drop(item);
       }
     }
@@ -737,9 +737,9 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        for (const items of held) {
-          heldDrop_drop(items, $dropEach(dDrop_drop));
-          for (const item of items.iter) {
+        for (const list of held) {
+          heldDrop_drop(list, $dropEach(dDrop_drop));
+          for (const item of list.iter) {
             dDrop_drop(item);
           }
         }

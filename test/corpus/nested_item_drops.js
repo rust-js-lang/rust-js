@@ -318,8 +318,8 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        for (const items of groups[0]) {
-          for (const item of items) {
+        for (const list of groups[0]) {
+          for (const item of list) {
             loudDrop_drop(item);
           }
         }

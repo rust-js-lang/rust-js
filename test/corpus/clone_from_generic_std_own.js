@@ -481,9 +481,9 @@ function main() {
           throw $unwindsOn(error);
         } finally {
           if ($live()) {
-            for (const items of value) {
-              if (items != null) {
-                for (const item of items) {
+            for (const list of value) {
+              if (list != null) {
+                for (const item of list) {
                   dDrop_drop(item);
                 }
               }
@@ -497,9 +497,9 @@ function main() {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          for (const items of w) {
-            if (items != null) {
-              for (const item of items) {
+          for (const list of w) {
+            if (list != null) {
+              for (const item of list) {
                 dDrop_drop(item);
               }
             }

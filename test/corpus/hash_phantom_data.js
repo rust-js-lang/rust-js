@@ -93,11 +93,11 @@ function main() {
             }
           },
           hashSlice(items, state, H) {
-            for (const item of items) {
-              H.writeLengthPrefix(state, item.length);
-              for (const item$1 of item) {
-                H.writeU8(state, item$1[0]);
-                H.writeU8(state, item$1[1]);
+            for (const list of items) {
+              H.writeLengthPrefix(state, list.length);
+              for (const item of list) {
+                H.writeU8(state, item[0]);
+                H.writeU8(state, item[1]);
               }
             }
           },
@@ -138,11 +138,11 @@ function main() {
               }
             },
             hashSlice(items, state, H) {
-              for (const item of items) {
-                H.writeLengthPrefix(state, item.length);
-                for (const item$1 of item) {
-                  H.writeU8(state, item$1[0]);
-                  H.writeU8(state, item$1[1]);
+              for (const list of items) {
+                H.writeLengthPrefix(state, list.length);
+                for (const item of list) {
+                  H.writeU8(state, item[0]);
+                  H.writeU8(state, item[1]);
                 }
               }
             },
@@ -158,11 +158,11 @@ function main() {
           }
         },
         hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeLengthPrefix(state, item.length);
-            for (const item$1 of item) {
-              H.writeU8(state, item$1[0]);
-              H.writeU8(state, item$1[1]);
+          for (const list of items) {
+            H.writeLengthPrefix(state, list.length);
+            for (const item of list) {
+              H.writeU8(state, item[0]);
+              H.writeU8(state, item[1]);
             }
           }
         },

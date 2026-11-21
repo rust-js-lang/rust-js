@@ -162,11 +162,11 @@ function main() {
           }
         },
         hashSlice(items, state, H) {
-          for (const item of items) {
-            H.writeLengthPrefix(state, item.length);
-            for (const item$1 of item) {
-              H.writeLengthPrefix(state, item$1.length);
-              H.write(state, item$1);
+          for (const list of items) {
+            H.writeLengthPrefix(state, list.length);
+            for (const item of list) {
+              H.writeLengthPrefix(state, item.length);
+              H.write(state, item);
             }
           }
         },

@@ -147,7 +147,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let name = self.fresh(Role::Item);
                     let mut body = Vec::new();
                     self.drop_in((Expr::var(&name), None), item, span, made, &mut body)?;
-                    let name = self.named_by_its_loop(name, &mut body);
+                    let name =
+                        crate::lower::temporary_names::named_by_its_loop(name, &mut body, |role| self.fresh(role));
                     out.push(loop_dropped(items, js::Pattern::Name(name), body, js_span));
                 } else {
                     let entries = match self.is_sorted(ty) {
@@ -383,35 +384,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let name = self.fresh(Role::Item);
         let mut body = Vec::new();
         self.drop_in((Expr::var(&name), None), item, span, made, &mut body)?;
-        let name = self.named_by_its_loop(name, &mut body);
+        let name = crate::lower::temporary_names::named_by_its_loop(name, &mut body, |role| self.fresh(role));
         let js_span = self.js_span(span);
         out.push(items_dropped(items, js::Pattern::Name(name), body, js_span));
         Ok(())
-    }
-
-    /// An item's name, `name`, of a drop loop whose `body` loops over it in
-    /// turn, a `Vec<Vec<T>>`'s, an `Option<Vec<T>>`'s: `items`, its own
-    /// loop's item `item`, as a person names them, not `item` and
-    /// `item$1` (#1347). Else `name`.
-    fn named_by_its_loop(&mut self, name: js::Name, body: &mut [Stmt]) -> js::Name {
-        let mut looped = false;
-        js::each_list(body, &mut |list| {
-            for stmt in list {
-                if let StmtKind::ForOf { iterable, .. } = &stmt.kind {
-                    iterable.visit_names(&mut |v| looped |= *v == name);
-                }
-            }
-        });
-        if !looped {
-            return name;
-        }
-        let items = self.fresh(Role::Items);
-        js::each_expr_mut(body, &mut |e| {
-            if matches!(&e.kind, js::ExprKind::Var(v) if *v == name) {
-                *e = Expr::var(&items);
-            }
-        });
-        items
     }
 
     /// Where each of this body's momentary borrows is called, its call's

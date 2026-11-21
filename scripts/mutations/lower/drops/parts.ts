@@ -375,13 +375,4 @@ export const mutations: Mutation[] = [
     replace: "        (part(\"$unborrow\"), part(\"$unborrow\"))\n",
     tests: ["test/corpus.test.ts", "-t", "^lock_poisoning.rs$"],
   },
-  {
-    name: "looped-item-named-item",
-    breaks: "a drop loop's item that its body loops over in turn, a `Vec<Vec<T>>`'s, is named `item`, so its own loop's is `item$1`, where a person names them `items` and `item` (#1347)",
-    file: "src/lower/drops/parts.rs",
-    find: "        if !looped {\n            return name;\n        }\n",
-    replace: "        if true {\n            return name;\n        }\n",
-    tests: ["test/corpus.test.ts", "-t", "^nested_item_drops\\.rs$"],
-    snapshots: true,
-  },
 ];

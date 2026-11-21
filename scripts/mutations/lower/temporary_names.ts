@@ -69,4 +69,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(flattened_state_handed_on|taken_and_returned|std_mixed_enum_mut).rs$"],
     snapshots: true,
   },
+  {
+    name: "looped-item-named-item",
+    breaks: "a drop loop's item that its body loops over in turn, a `Vec<Vec<T>>`'s, is named `item`, so its own loop's is `item$1`, where a person names them `list` and `item` (#1347)",
+    file: "src/lower/temporary_names.rs",
+    find: "    if !looped {\n        return name;\n    }\n",
+    replace: "    if true {\n        return name;\n    }\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_item_drops\\.rs$"],
+    snapshots: true,
+  },
 ];

@@ -132,12 +132,12 @@ function main() {
         }
       },
       hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeLengthPrefix(state, item.length);
-          for (const item$1 of item) {
-            if (item$1 != null) {
+        for (const list of items) {
+          H.writeLengthPrefix(state, list.length);
+          for (const item of list) {
+            if (item != null) {
               H.writeIsize(state, 1);
-              H.writeU8(state, item$1);
+              H.writeU8(state, item);
             } else {
               H.writeIsize(state, 0);
             }

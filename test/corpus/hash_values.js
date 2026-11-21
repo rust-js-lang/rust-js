@@ -296,10 +296,10 @@ function main() {
         }
       },
       hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeLengthPrefix(state, item.length);
-          for (const item$1 of item) {
-            H.writeU32(state, item$1.codePointAt(0));
+        for (const list of items) {
+          H.writeLengthPrefix(state, list.length);
+          for (const item of list) {
+            H.writeU32(state, item.codePointAt(0));
           }
         }
       },
@@ -311,10 +311,10 @@ function main() {
         }
       },
       hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeLengthPrefix(state, item.length);
-          for (const item$1 of item) {
-            H.writeU32(state, item$1);
+        for (const list of items) {
+          H.writeLengthPrefix(state, list.length);
+          for (const item of list) {
+            H.writeU32(state, item);
           }
         }
       },
@@ -463,12 +463,12 @@ function main() {
         }
       },
       hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeLengthPrefix(state, item.length);
-          for (const item$1 of item) {
-            if (item$1 != null) {
+        for (const list of items) {
+          H.writeLengthPrefix(state, list.length);
+          for (const item of list) {
+            if (item != null) {
               H.writeIsize(state, 1);
-              pointHash.hash(item$1, state, H);
+              pointHash.hash(item, state, H);
             } else {
               H.writeIsize(state, 0);
             }
@@ -517,11 +517,11 @@ function main() {
         }
       },
       hashSlice(items, state, H) {
-        for (const item of items) {
-          H.writeLengthPrefix(state, item.length);
-          for (const item$1 of item) {
-            H.writeLengthPrefix(state, item$1.length);
-            tokenHash.hashSlice(item$1, state, H);
+        for (const list of items) {
+          H.writeLengthPrefix(state, list.length);
+          for (const item of list) {
+            H.writeLengthPrefix(state, item.length);
+            tokenHash.hashSlice(item, state, H);
           }
         }
       },
