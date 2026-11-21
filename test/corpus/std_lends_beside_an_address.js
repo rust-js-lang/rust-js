@@ -14,7 +14,6 @@ import {
   $ptrTo,
   $someValue,
   $stored,
-  $throughBox,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -51,10 +50,7 @@ function firstTwoThenRest(items) {
 function longer(slot, extra, TAsRefStr) {
   const value = { TAG: slot.TAG, _0: $ptr(slot, "_0", 4) };
   if (value.TAG === "Ok") {
-    if (
-      $byteLen($throughBox(TAsRefStr, { asRef: [1] }).asRef(value._0)) <
-      $byteLen(TAsRefStr.asRef(extra))
-    ) {
+    if ($byteLen(TAsRefStr.asRef(value._0.value)) < $byteLen(TAsRefStr.asRef(extra))) {
       const held = value._0;
       held.value = extra;
       return held.value;

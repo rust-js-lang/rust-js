@@ -7,7 +7,6 @@ import {
   $isAlphabetic,
   $matches,
   $mutItems,
-  $throughBox,
   $toUppercase,
 } from "@rust-js/std";
 
@@ -237,7 +236,7 @@ function main() {
   const lens = $mutItems(words).map((w) => $byteLen(w.value));
   console.log(`[${lens.join(", ")}]`);
   let held = $mutItems(words).slice();
-  texts = held.map((arg0) => $throughBox({ asRef: (value) => value }, { asRef: [1] }).asRef(arg0));
+  texts = held.map((arg0) => arg0.value);
   console.log(`[${texts.map((item) => $debugStr(item)).join(", ")}]`);
   const numbers = [1, 2, 3];
   let total = $mutItems(numbers)

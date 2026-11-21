@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
 files	2825
-lines	383398
+lines	383305
 temporaries	0	0
 labeled blocks	0	0
 while (true)	242	6.3
 $iter	3348	87.3
 Iterator.from	309	8.1
 return;	440	11.5
-renamed x$1	17213	449
-role fallbacks	9593	250.2
+renamed x$1	17213	449.1
+role fallbacks	9593	250.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	60
@@ -90,7 +90,7 @@ test/corpus/as_deref_rc_in_place.js	33	0	0	0	0	0	0	0	0
 test/corpus/as_is_map_stepped_from_its_back.js	139	0	0	0	0	0	0	0	1
 test/corpus/as_mut_generic.js	62	0	0	0	0	0	0	4	0
 test/corpus/as_mut_through_a_handle.js	88	0	0	0	0	0	0	0	0
-test/corpus/as_ref_and_borrow_through_a_mut.js	252	0	0	0	0	1	0	45	13
+test/corpus/as_ref_and_borrow_through_a_mut.js	251	0	0	0	0	1	0	45	13
 test/corpus/as_ref_bytes.js	27	0	0	0	0	0	0	6	4
 test/corpus/as_ref_path.js	27	0	0	0	0	0	0	0	1
 test/corpus/asked_length_overflow.js	175	0	0	0	0	0	0	3	1
@@ -1093,7 +1093,7 @@ test/corpus/generic_from_iter_in_place.js	92	0	0	0	3	2	0	0	2
 test/corpus/generic_from_str.js	95	0	0	0	0	0	0	8	8
 test/corpus/generic_guard_deref.js	45	0	0	0	0	0	0	0	2
 test/corpus/generic_guard_drop.js	97	0	0	0	0	0	0	0	4
-test/corpus/generic_hasher_given_a_std_hasher.js	189	0	0	0	0	0	0	27	5
+test/corpus/generic_hasher_given_a_std_hasher.js	155	0	0	0	0	0	0	27	5
 test/corpus/generic_impl_consts.js	55	0	0	0	0	0	0	0	0
 test/corpus/generic_impl_stepped_from_its_back.js	169	0	0	0	0	0	0	0	1
 test/corpus/generic_into.js	48	0	0	0	0	0	0	0	0
@@ -1185,7 +1185,7 @@ test/corpus/hash_values.js	481	0	0	0	0	0	0	6	8
 test/corpus/hashed_keys_looked_up_by_their_borrow.js	78	0	0	0	0	0	0	0	1
 test/corpus/hasher_finished_through_a_mut_of_its_mut.js	85	0	0	0	0	0	0	3	2
 test/corpus/hasher_finished_through_its_mut.js	96	0	0	0	0	0	0	8	3
-test/corpus/hasher_of_a_mut_given_to_generic_code.js	152	0	0	0	0	0	0	9	4
+test/corpus/hasher_of_a_mut_given_to_generic_code.js	110	0	0	0	0	0	0	9	4
 test/corpus/hasher_written_through_a_box.js	153	0	0	0	0	0	0	16	4
 test/corpus/heap_destructors.js	128	0	0	0	1	0	0	0	2
 test/corpus/heap_extend.js	62	0	0	0	0	0	0	0	0
@@ -1629,7 +1629,7 @@ test/corpus/mut_ref_of_unit_kept.js	54	0	0	0	0	0	0	0	1
 test/corpus/mut_ref_reborrow_reassigned.js	66	0	0	0	0	0	0	8	2
 test/corpus/mut_ref_std_items.js	84	0	0	0	0	0	0	0	2
 test/corpus/mut_ref_temporary.js	53	0	0	0	0	0	0	11	5
-test/corpus/mut_ref_to_its_own_type_parameter_through_std_impls.js	126	0	0	0	1	0	1	15	9
+test/corpus/mut_ref_to_its_own_type_parameter_through_std_impls.js	114	0	0	0	1	0	1	15	9
 test/corpus/mut_ref_to_mut_ref.js	149	0	0	0	0	0	0	12	2
 test/corpus/mut_ref_to_object_impl.js	56	0	0	0	0	0	0	0	0
 test/corpus/mut_ref_to_ref.js	72	0	0	0	0	0	0	9	0
@@ -2362,7 +2362,7 @@ test/corpus/std_fuse.js	251	0	0	0	1	0	1	17	11
 test/corpus/std_inspect.js	176	0	0	0	2	0	0	4	2
 test/corpus/std_iterator_clones.js	126	0	0	0	14	0	0	8	6
 test/corpus/std_keys_around_their_own_hash.js	297	0	0	0	0	0	0	15	9
-test/corpus/std_lends_beside_an_address.js	156	0	0	0	4	0	1	12	10
+test/corpus/std_lends_beside_an_address.js	152	0	0	0	4	0	1	12	10
 test/corpus/std_map.js	268	0	0	0	5	0	0	9	5
 test/corpus/std_map_const.js	40	0	0	0	0	0	0	0	1
 test/corpus/std_method_of_a_mut_to_a_held_mut.js	204	0	0	0	1	0	0	5	3

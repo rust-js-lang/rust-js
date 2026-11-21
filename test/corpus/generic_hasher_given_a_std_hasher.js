@@ -30,24 +30,7 @@ function byValue(h, HHasher) {
 
 function byRef(h, HHasher) {
   HHasher.writeU8(h, 9);
-  return $throughBox(HHasher, {
-    finish: [1],
-    write: [1, 0],
-    writeU8: [1, 0],
-    writeU16: [1, 0],
-    writeU32: [1, 0],
-    writeU64: [1, 0],
-    writeU128: [1, 0],
-    writeUsize: [1, 0],
-    writeI8: [1, 0],
-    writeI16: [1, 0],
-    writeI32: [1, 0],
-    writeI64: [1, 0],
-    writeI128: [1, 0],
-    writeIsize: [1, 0],
-    writeLengthPrefix: [1, 0],
-    writeStr: [1, 0],
-  }).finish(h);
+  return HHasher.finish(h.value);
 }
 
 function finished(h, HHasher) {
@@ -56,24 +39,7 @@ function finished(h, HHasher) {
 
 function hashed(t, h, THash, HHasher) {
   THash.hash(t, h, HHasher);
-  return $throughBox(HHasher, {
-    finish: [1],
-    write: [1, 0],
-    writeU8: [1, 0],
-    writeU16: [1, 0],
-    writeU32: [1, 0],
-    writeU64: [1, 0],
-    writeU128: [1, 0],
-    writeUsize: [1, 0],
-    writeI8: [1, 0],
-    writeI16: [1, 0],
-    writeI32: [1, 0],
-    writeI64: [1, 0],
-    writeI128: [1, 0],
-    writeIsize: [1, 0],
-    writeLengthPrefix: [1, 0],
-    writeStr: [1, 0],
-  }).finish(h);
+  return HHasher.finish(h.value);
 }
 
 function owned(HHasher, HDefault) {

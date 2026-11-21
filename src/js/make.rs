@@ -930,6 +930,12 @@ impl Expr {
     }
 
     pub fn call(callee: Expr, args: Vec<Expr>) -> Expr {
+        // A call of an entry of a `&mut`'s dictionary through its box: the
+        // entry of what it's to (`through_box::called`, #1470).
+        let mut args = args;
+        if let Some(folded) = super::through_box::called(&callee, &mut args) {
+            return folded;
+        }
         Expr::new(ExprKind::Call(Box::new(callee), args))
     }
 
