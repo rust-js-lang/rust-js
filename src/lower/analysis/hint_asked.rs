@@ -117,7 +117,6 @@ pub(super) fn of_crate<'tcx>(
             // asked, `$skipping`, as JS's own `drop(1)` keeps none (#1427).
             if callee == size_hint
                 && let Some(of) = args.types().next()
-                && !rustc_middle::ty::TypeVisitableExt::has_param(&of)
                 && !recognition.is_dyn_iter(of)
             {
                 let of = tcx.erase_and_anonymize_regions(of.peel_refs());

@@ -260,4 +260,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_rev_of_an_in_place_skip_knows_its_hint\\.rs$"],
     snapshots: true,
   },
+  {
+    name: "in-place-hint-asked-of-known-types-alone",
+    breaks: "a held iterator's hint asked in generic code, of a type of its type parameters, marks none of its adapters made in place over a type parameter's items, so `v.iter().skip(1).copied()` of a `&[T]` is JS's own `drop`, which keeps no hint, and its `size_hint()` is refused (#2265)",
+    file: "src/lower/analysis/hint_asked.rs",
+    find: "            if callee == size_hint\n                && let Some(of) = args.types().next()\n                && !recognition.is_dyn_iter(of)\n",
+    replace: "            if callee == size_hint\n                && let Some(of) = args.types().next()\n                && !rustc_middle::ty::TypeVisitableExt::has_param(&of)\n                && !recognition.is_dyn_iter(of)\n",
+    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters_made_in_place_over_a_type_parameters_items.rs$"],
+  },
 ];

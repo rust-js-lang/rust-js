@@ -483,7 +483,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.array_source(ty).is_some() && !self.made_knowing_its_hint(ty) {\n            return false;\n        }\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a copied of a skip of a type parameter's items"],
+    tests: ["test/limitations.test.ts", "-t", "size_hint\\(\\)` of an adapter"],
   },
   {
     name: "dropping-skip-uncounted",
@@ -786,28 +786,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^repeats_stepped_from_their_backs.rs$|^repeats_stepped_from_their_backs with"],
   },
   {
-    name: "in-place-source-hint-as-held",
-    breaks: "an adapter the recognizers make in place inside another, a `skip(1)` of a held `filter`, JS's own `drop`, is taken for std's struct whose hint is known, so its `size_hint()` gives `(0, None)` where Rust gives `(0, Some(2))`",
-    file: "src/lower/iterators/knowing.rs",
-    find: "        let in_place = !outermost && self.made_in_place_of(ty);\n",
-    replace: "        let in_place = false && !outermost && self.made_in_place_of(ty);\n",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a copied of a skip of a type parameter's items"],
-  },
-  {
     name: "dropping-filter-hintless",
     breaks: "`size_hint()` of a held `filter` of items with a destructor, `$filterDropping`'s, is refused (#1169)",
     file: "src/lower/iterators/knowing.rs",
     find: "        let decodes = crate::lower::recognition::asks_its_sources_hint(self.tcx, ty) || dropping_filter();\n",
     replace: "        let decodes = crate::lower::recognition::asks_its_sources_hint(self.tcx, ty) || false && dropping_filter();\n",
     tests: ["test/corpus.test.ts", "-t", "^held_lazy_adapters_hint.rs$"],
-  },
-  {
-    name: "hint-refusal-names-no-cause",
-    breaks: "a refusal of `size_hint()` lost to an adapter made in place inside another doesn't say so, nor #1427",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            true => \", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2265)\",\n",
-    replace: '            true => "",\n',
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a copied of a skip of a type parameter's items"],
   },
   {
     name: "closure-search-back-unknown",

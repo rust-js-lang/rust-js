@@ -475,3 +475,17 @@ values with a destructor, its hint, `len`, `next`, `next_back`,
 native. What stays refused under that message is generic code's, which
 marks no adapter made in place over a type parameter's items (#2265).
 
+
+Amended (#2265): generic code's too. The hint asked of a held iterator
+in generic code, of a type of its type parameters, marks its adapters
+made in place over a type parameter's items, `v.iter().skip(1).copied()`
+of a `&[T]`, as a known type's are: a generic body is lowered once, its
+`T` a parameter, so the mark `(maker, Copied<Skip<slice::Iter<T>>>)` is
+what its lowering asks, and only parts whose source is an array's or a
+slice's iterator are marked, whatever `T` is. The refusal's cause, "which
+holds an adapter made in place inside another, as JS's own, which keeps
+no hint", is gone with it: nothing reaches it (320 shapes of an inner
+and an outer adapter, generic and not, compile). Corpus case
+`size_hint_of_adapters_made_in_place_over_a_type_parameters_items` holds
+callers of several `T`s, from each end and through a filter, against
+native in both builds, the iterator forms and every metamorphic rewrite.

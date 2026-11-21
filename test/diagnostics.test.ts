@@ -340,9 +340,6 @@ for (const [name, source, message, crate] of [
   // iterator's, which knows nothing of its length, refused, not `(0, None)` where Rust gives
   // `(0, Some(3))` (#382). Not a `filter`'s, std's compiled `Filter` since its family's flip.
   ["size_hint of a copied of a type parameter's", "pub fn f<'a, I: Iterator<Item = &'a u32>>(it: I) -> (usize, Option<usize>) { it.copied().size_hint() }", "`size_hint()` of a `std::iter::Copied<I>`"],
-  // A `skip(1)` made in place over a type parameter's items in generic code,
-  // JS's own `drop`, which keeps no hint: generic code marks none made
-  // knowing it, so its hint is refused (#2265).
   // A `&mut` of a `&mut` of an object given to generic code (#1632), a
   // `core::net` address's text (#1644), a writer's `Formatter` made a
   // `&mut dyn` (#1684), and a `Default` std's 1.100 stabilized (#1656):
@@ -353,7 +350,6 @@ for (const [name, source, message, crate] of [
   ["parse to an Ipv4Addr", "pub fn f(s: &str) -> bool { s.parse::<std::net::Ipv4Addr>().is_ok() }", "`parse` to a `std::net::Ipv4Addr` (#1644)"],
   ["a writer's Formatter made a &mut dyn", "use std::fmt;\npub trait GetMut<T: ?Sized> { fn get_mut(&mut self) -> &mut T; }\nimpl<T: ?Sized> GetMut<T> for T { fn get_mut(&mut self) -> &mut T { self } }\nfn bracketed(f: &mut dyn GetMut<fmt::Formatter<'_>>, n: i32) -> fmt::Result { let f: &mut fmt::Formatter<'_> = GetMut::get_mut(f); write!(f, \"<{}>\", n) }\npub struct B(pub i32);\nimpl fmt::Display for B { fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { bracketed(f, self.0) } }", "this `Formatter` made a `&mut dyn` (#1684)"],
   ["Default of a Once, new in 1.100", "pub fn f() -> bool { let o: std::sync::Once = Default::default(); o.is_completed() }", "`Default` of `std::sync::Once` (#1656)"],
-  ["size_hint of a copied of a skip of a type parameter's items", "pub fn f<T: Copy>(v: &[T]) -> (usize, Option<usize>) { let it = v.iter().skip(1).copied().rev(); it.size_hint() }", "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#2265)"],
   ["the size hint of a peekable map of a string's chars made here", "pub fn f(s: &str) -> (usize, Option<usize>) { s.chars().map(|c| c).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::Map<std::str::Chars"],
   ["a pub thread-local whose initializer reads what a private module's pub fn, which JS may call after load, changes (#2025)", "mod prefixes {\n    use std::cell::RefCell;\n    use std::collections::HashMap;\n    thread_local! { static PREFIXED: RefCell<HashMap<String, String>> = RefCell::new(HashMap::new()); }\n    pub fn prefixed(name: &str) -> String {\n        if let Some(p) = PREFIXED.with_borrow(|c| c.get(name).cloned()) { return p; }\n        let p = \"webkit\".to_owned() + name;\n        PREFIXED.with_borrow_mut(|c| c.insert(name.to_owned(), p.clone()));\n        p\n    }\n}\nmod event_names {\n    use super::prefixes::prefixed;\n    thread_local! { pub static ANIMATION_END: String = prefixed(\"animationend\"); }\n}\npub fn end() -> String { event_names::ANIMATION_END.with(Clone::clone) }", "or, as JS may call `prefixes::prefixed` then, its module exporting it, make that `pub(crate)` where JS shouldn't"],
   // A builder's steps are a chain's (ADR 0136): one a loop steps is no chain.
