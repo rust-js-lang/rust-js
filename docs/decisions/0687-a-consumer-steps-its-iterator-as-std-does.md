@@ -168,3 +168,32 @@ Held by `test/corpus/own_last_of_its_impls_item_layout.rs`, against
 native Rust in both builds: the crate's iterator's own `last` called, a
 `map`'s that doesn't call it, and a `skip`'s that does; and by the
 mutation `own-slot-fact-of-the-impl-counted-own`.
+
+## Amendment (2026-11-22): a library's own `fold` is given its drops (#2271)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none now; the library
+clause in Consequences no longer holds.
+
+The Consequences said that in a library, the runtime calls the crate's own
+`fold` without the drops of its accumulator and closure. That stopped
+being true when the own `fold` was given its drops wherever it's called:
+as a dictionary's entry, `fold_entry`'s `unwind` and `ends` (#423, #710,
+and this ADR's 2026-11-02 amendment, "as one taking its impl's drops
+before its own was"), and called directly, `ownIterator_fold(iterator,
+init, f, dropB, dropF)`. So what the `fold` takes, what a panic in it
+unwinds past, and a closure's captures all drop as natively, in a library
+as in one crate. #2271 compared about 35 shapes against native Rust and
+found no difference. The guide's difference 16, which still said
+otherwise, is gone.
+
+An adapter holding a closure with a destructor over an iterator whose impl
+writes its own `fold` is still refused (ADR 0690).
+
+Held by `test/crates/pairs/library_own_fold_drops`, against native Rust:
+the library's consumers of its iterator, std's (`last`, `max_by_key`,
+`min_by`, `reduce`, `collect`, `partition`, `count`, `sum`, `for_each`,
+`unzip`) and folds with a dropping accumulator or closure, with and
+without a panic in the own `fold`; a generic adapter whose own `fold`
+folds its source's while holding a dropping value; and the user's folds,
+direct, generic and through `map`, and its own iterator folded by the
+library's generic code.

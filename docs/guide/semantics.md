@@ -2247,10 +2247,6 @@ React and JSX are [their own pages](README.md#react).
     drops, those drops may be skipped, or, for a drop that may panic, the
     program aborts; a frame whose calls rust-js knows can't panic skips
     its drops as an overflow passes (ADR 1140).
-16. Where the crate's iterator's impl writes its own `fold`, std's
-    consumers call it (ADRs 0687, 0690); in a library, it's given no drops:
-    an accumulator with a destructor that it drops, or that a panic in it
-    unwinds, isn't dropped (being fixed, #2271).
 17. A `VecDeque`'s `as_slices()` gives all its items first and none second,
     where std's split is its ring buffer's.
 19. `unwrap()` of a throwing JS call's `Result` throws what JS threw, not
