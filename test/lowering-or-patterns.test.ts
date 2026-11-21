@@ -305,8 +305,9 @@ test("a switch's arms that meet are one test, where another goes on past them", 
 // Where the arms of a switch left unsplit meet at its merge from inside a
 // block of the `match` before, nested `if`s deep, tidy copies the merge
 // into none of them, and the label stays, as std's of #2215 do: no
-// disagreement of tidy's copy rule and `split_of`'s, which the debug check
-// held num-traits' `from_str_radix` to, crashing the crate corpus (#2144).
+// disagreement of tidy's copy rule and `split_of`'s, which a debug check,
+// removed, held num-traits' `from_str_radix` to, crashing the crate corpus
+// (#2144).
 test("a switch whose arms meet at its merge past another block compiles, its label tidy's to keep", async () => {
   const dir = fixture("switch-split-past-a-block");
   const out = join(dir, "case.js");

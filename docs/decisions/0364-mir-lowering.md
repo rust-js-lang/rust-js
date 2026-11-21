@@ -2024,10 +2024,14 @@ no JS the Rust writes has (D1).
   `if (take && mapped.TAG === "Single") { … taken = t; } else if …`, which
   needs no label (or_pattern_part_moves keeps it). That copy is tidy's
   rule (`decisions`' `SHARED`, `copied_once`), over JS statements, which
-  structuring, before any JS, can't ask; so `split_left_to_tidy` holds the
-  two together: in every debug build, a function whose split was left to
-  tidy so must come out with no label MIR made, else it panics naming the
-  disagreement (mutation `tidy-shares-nothing-split-trusts`).
+  structuring, before any JS, can't ask. A label left where tidy doesn't
+  copy is the label rule's to catch, of the corpus, std and the crate
+  corpus alike, listed under #2215 where it can't be removed yet
+  (mutation `tidy-shares-nothing-split-trusts`). A debug build's panic of
+  any such label, first held here, met arms that break to the merge past
+  another block (num-traits' `from_str_radix`) or from an `else` whose
+  fall-through `continue`s (rustls-pki-types' `validate`), neither tidy's
+  copy rule's case, and crashed the crate corpus: removed.
 - The split reads the switch's subject once more, so it's made only where
   that runs no code: an enum local's tag, where no getter may answer it
   (`fields_read_once`) or where it's held once in a `const` (`tag_held`,

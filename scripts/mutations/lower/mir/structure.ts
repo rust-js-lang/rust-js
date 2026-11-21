@@ -700,12 +700,4 @@ export const mutations: Mutation[] = [
     replace: "        if false && shared.iter().all(|&b| does_nothing(b)) {\n",
     tests: ["test/lowering-or-patterns.test.ts", "-t", "meet at assignments alone"],
   },
-  {
-    name: "split-check-past-blocks-held",
-    breaks: "the debug check that tidy copies a declined switch's merge into each arm holds it where the arms break to it from inside another block, which tidy's copy never reaches: num-traits' `from_str_radix` crashed the compiler (#2144)",
-    file: "src/lower/mir/structure.rs",
-    find: "                    && !broken_past_blocks(inner, name)\n",
-    replace: "",
-    tests: ["test/lowering-or-patterns.test.ts", "-t", "past another block"],
-  },
 ];

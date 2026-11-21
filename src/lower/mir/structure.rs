@@ -1107,37 +1107,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(vec![StmtKind::If(test, then, Some(otherwise)).at(self.js_span(span))])
     }
 
-    /// Tidy's copy of a merge into each arm, which `split_of` counts on
-    /// where it leaves a switch unsplit (a merge of assignments alone):
-    /// that the function's JS keeps no label of that switch's merge, which
-    /// its arms would break to were it not written in each (where they go
-    /// on to may be another jump's, a `?`'s). In every debug build,
-    /// the compiler the tests run, so a change of tidy's copy rule
-    /// (`decisions`' `SHARED`, `copied_once`) that `split_of`'s doesn't
-    /// follow fails where it differs (#2144).
-    pub(super) fn split_left_to_tidy(&self, state: &State<'_, 'tcx>, body: &[Stmt]) {
-        if !cfg!(debug_assertions) || state.split_declined.is_empty() || self.krate.tidy_until.is_some() {
-            return;
-        }
-        let mut labeled = None;
-        js::each_list(body, &mut |list| {
-            for stmt in list {
-                if let StmtKind::Labeled(name, inner) = &stmt.kind
-                    && state.split_declined.contains(name)
-                    && !broken_past_blocks(inner, name)
-                {
-                    labeled = Some(name.clone());
-                }
-            }
-        });
-        if let Some(name) = labeled {
-            let function = self.tcx.def_path_str(state.body.source.def_id());
-            panic!(
-                "{function}'s {name:?}: a switch `split_of` left unsplit, its merge of assignments alone for tidy to write in each arm, kept a label MIR made: tidy's copy rule and `split_of`'s disagree (#2144)"
-            );
-        }
-    }
-
     /// Of `block`, ending in a switch whose first merge is `merge`, alone,
     /// the arms that go on to it, where the others go on past it to where
     /// `merge` goes on to: so its arms are one test of those, whose branch
@@ -1220,7 +1189,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => false,
         };
         if shared.iter().all(|&b| does_nothing(b)) {
-            state.split_declined.push(label(merge));
             return None;
         }
         let (mut joining, mut leaving) = (IndexSet::default(), Vec::new());
@@ -1315,28 +1283,4 @@ fn outlives<'tcx>(state: &State<'_, 'tcx>, place: &Expr, is_guard: impl Fn(Ty<'t
             // A guard, `borrow_mut()`'s, is its cell's place, as a reference
             // is to what it reaches (#1021).
             && !is_guard(state.body.local_decls[local].ty)))
-}
-
-/// Whether a `break` of `label` in `stmts` is inside another block or a
-/// loop in them: one tidy's copy into an arm doesn't reach, as it copies a
-/// merge into the arms that end in its `break` (`decisions`), not past a
-/// block between, num-traits' `from_str_radix`, whose arms break to the
-/// merge from inside a block of the `match` before (#2144, #2215).
-fn broken_past_blocks(stmts: &[Stmt], label: &js::Name) -> bool {
-    let breaks = |list: &[Stmt]| {
-        list.iter()
-            .any(|s| matches!(&s.kind, StmtKind::Break(Some(l)) if l == label))
-    };
-    let mut past = false;
-    js::each_list(stmts, &mut |list| {
-        for stmt in list {
-            if matches!(
-                stmt.kind,
-                StmtKind::Labeled(..) | StmtKind::While { .. } | StmtKind::For { .. } | StmtKind::ForOf { .. }
-            ) {
-                js::each_list(std::slice::from_ref(stmt), &mut |inner| past |= breaks(inner));
-            }
-        }
-    });
-    past
 }
