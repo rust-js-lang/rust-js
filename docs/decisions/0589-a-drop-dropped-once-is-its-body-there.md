@@ -121,3 +121,31 @@ survived (#230). `test/corpus/drop_kept_where_not_inlined.rs` holds it:
 without the rule, the function goes and the adapter's drop throws. The
 readability baseline's `$iter` share grows by 0.1 in 10,000 lines, the
 case's one `Vec` stepped.
+
+## Amendment: a drop of many values keeps its function (#929)
+
+The body was written at every call, however many there were. A map's
+entry's `Drop`, a `println!` and an `if` of a panic, went in at all 38
+drops of map_clear_unwinds_emptied's 38 entries, where a person keeps
+`function dDrop_drop(d) { .. }` and calls it.
+
+Now the body is written at each call only where:
+- it's called once;
+- its body is one statement with nothing in it; or
+- it drops at most `INLINED_VALUES`, 3, values in any one function.
+
+The last is a scope's guard, or two, dropped where its scope ends, where
+it unwinds and where it returns early. It's held inline at up to 9 calls in
+the corpus, and React's restores, `commitRoot`'s `_exit`, are one in each of
+their functions. A type a program makes many values of drops 4 to 38 in
+one function, and keeps its function.
+
+Counted by values, not calls nor functions: by calls, a guard dropped at
+9 exits looked like a map's entries; by body shape, React's restores call
+`setCurrentUpdatePriority` and test `enableProfiling` as noisy drops do.
+
+Seven corpus cases moved, 378 lines fewer. The React port and std are
+unchanged. docs/readability.txt's shares rose by those lines alone (the
+same counts in fewer lines) and were blessed so.
+
+Mutations: `drop-inlined-of-many-values`, `drop-values-counted-across-functions`.

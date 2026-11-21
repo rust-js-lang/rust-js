@@ -21,6 +21,12 @@ function pointDebug_fmt(point) {
   return `Point { x: ${point.x} }`;
 }
 
+function pointDrop_drop(point) {
+  if (point.x === 9) {
+    console.log("dropped");
+  }
+}
+
 function tail(v) {
   return $view(v, 1);
 }
@@ -87,9 +93,7 @@ function main() {
     $cleanup(() => {
       for (const item of items) {
         if (item != null) {
-          if (item.x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(item);
         }
       }
     }, error);
@@ -101,9 +105,7 @@ function main() {
     $cleanup(() => {
       for (const item of items) {
         if (item != null) {
-          if (item.x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(item);
         }
       }
     }, error);
@@ -115,9 +117,7 @@ function main() {
     $cleanup(() => {
       for (const item of items) {
         if (item != null) {
-          if (item.x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(item);
         }
       }
     }, error);
@@ -131,9 +131,7 @@ function main() {
     $cleanup(() => {
       for (const item of items) {
         if (item != null) {
-          if (item.x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(item);
         }
       }
     }, error);
@@ -146,9 +144,7 @@ function main() {
     $cleanup(() => {
       for (const item of items) {
         if (item != null) {
-          if (item.x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(item);
         }
       }
     }, error);
@@ -160,9 +156,7 @@ function main() {
     $cleanup(() => {
       for (const item of items) {
         if (item != null) {
-          if (item.x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(item);
         }
       }
     }, error);
@@ -172,9 +166,7 @@ function main() {
   if (0 >= length) {
     for (const item of items) {
       if (item != null) {
-        if (item.x === 9) {
-          console.log("dropped");
-        }
+        pointDrop_drop(item);
       }
     }
     throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
@@ -200,7 +192,7 @@ function main() {
     console.log(`${early.TAG === "Err"}`);
     const calls = { value: 0 };
     early = $catchUnwind(() => {
-      const x = 9;
+      const _loud = { x: 9 };
       const v = [1, 2, 3];
       try {
         const value = $view(v, 5);
@@ -211,9 +203,7 @@ function main() {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          if (x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(_loud);
         }
       }
     });
@@ -221,16 +211,14 @@ function main() {
     early = $catchUnwind(() => {
       const v = [1, 2, 3];
       const value = $view(v, 5);
-      const x = 9;
+      const point = { x: 9 };
       try {
-        bump(value, x);
+        bump(value, point.x);
       } catch (error) {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          if (x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(point);
         }
       }
       return v;
@@ -252,9 +240,7 @@ function main() {
     if ($live()) {
       for (const item of items) {
         if (item != null) {
-          if (item.x === 9) {
-            console.log("dropped");
-          }
+          pointDrop_drop(item);
         }
       }
     }

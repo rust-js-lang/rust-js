@@ -6,6 +6,13 @@ export function entry() {
   main();
 }
 
+function dDrop_drop(d) {
+  console.log(`drop ${d[0]}`);
+  if (d[0] === 90) {
+    throw new Error("drop");
+  }
+}
+
 function main() {
   let r = $catchUnwind(() => {
     const g = [90];
@@ -13,23 +20,14 @@ function main() {
     function c() {}
     c();
     try {
-      console.log(`drop ${g[0]}`);
-      if (g[0] === 90) {
-        throw new Error("drop");
-      }
+      dDrop_drop(g);
     } catch (error) {
       $cleanup(() => {
-        console.log(`drop ${h[0]}`);
-        if (h[0] === 90) {
-          throw new Error("drop");
-        }
+        dDrop_drop(h);
       }, error);
       throw error;
     }
-    console.log(`drop ${h[0]}`);
-    if (h[0] === 90) {
-      throw new Error("drop");
-    }
+    dDrop_drop(h);
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
@@ -38,23 +36,14 @@ function main() {
     function k() {}
     k();
     try {
-      console.log(`drop ${g[0]}`);
-      if (g[0] === 90) {
-        throw new Error("drop");
-      }
+      dDrop_drop(g);
     } catch (error) {
       $cleanup(() => {
-        console.log(`drop ${h[0]}`);
-        if (h[0] === 90) {
-          throw new Error("drop");
-        }
+        dDrop_drop(h);
       }, error);
       throw error;
     }
-    console.log(`drop ${h[0]}`);
-    if (h[0] === 90) {
-      throw new Error("drop");
-    }
+    dDrop_drop(h);
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
@@ -69,15 +58,9 @@ function main() {
       h$live = false;
     } catch (error) {
       $cleanup(() => {
-        console.log(`drop ${g[0]}`);
-        if (g[0] === 90) {
-          throw new Error("drop");
-        }
+        dDrop_drop(g);
         if (h$live) {
-          console.log(`drop ${h[0]}`);
-          if (h[0] === 90) {
-            throw new Error("drop");
-          }
+          dDrop_drop(h);
         }
       }, error);
       throw error;
@@ -88,10 +71,7 @@ function main() {
       iter = $holding(
         tmp.map(f),
         () => {
-          console.log(`drop ${h[0]}`);
-          if (h[0] === 90) {
-            throw new Error("drop");
-          }
+          dDrop_drop(h);
         },
         "after",
       );
@@ -99,20 +79,14 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         if (g$live) {
-          console.log(`drop ${g[0]}`);
-          if (g[0] === 90) {
-            throw new Error("drop");
-          }
+          dDrop_drop(g);
         }
       }, error);
       throw error;
     }
     const f$1 = (a, x) => (a + x) >>> 0;
     const value$1 = $consume(iter, "fold", 0, f$1, undefined, () => {
-      console.log(`drop ${g[0]}`);
-      if (g[0] === 90) {
-        throw new Error("drop");
-      }
+      dDrop_drop(g);
     });
     iter.return();
     const total = value$1;

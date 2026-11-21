@@ -20,6 +20,13 @@ export function entry() {
   main();
 }
 
+function dDrop_drop(d) {
+  console.log(`drop ${d[0]}`);
+  if (d[0] === 2) {
+    throw new Error("drop");
+  }
+}
+
 function kDrop_drop(k) {
   console.log(`drop key ${k[0]}`);
   if (k[0] === 2) {
@@ -42,28 +49,19 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     try {
       if (insert != null) {
-        console.log(`drop ${insert[0]}`);
-        if (insert[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(insert);
       }
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
@@ -74,28 +72,19 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     try {
       if (d != null) {
-        console.log(`drop ${d[0]}`);
-        if (d[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(d);
       }
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
@@ -106,28 +95,19 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     try {
       if (tmp != null) {
-        console.log(`drop ${tmp[0]}`);
-        if (tmp[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(tmp);
       }
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
@@ -135,10 +115,7 @@ function main() {
     try {
       try {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       } catch (error) {
         throw $unwindsOn(error);
@@ -150,20 +127,14 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     console.log(`${m.size}`);
     $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-      console.log(`drop ${value[0]}`);
-      if (value[0] === 2) {
-        throw new Error("drop");
-      }
+      dDrop_drop(value);
     });
   });
   run("BTreeSet", () => {
@@ -237,28 +208,19 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         for (const item of m.values()) {
-          console.log(`drop ${item[0]}`);
-          if (item[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(item);
         }
       }, error);
       throw error;
     }
     try {
       if (insert != null) {
-        console.log(`drop ${insert[0]}`);
-        if (insert[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(insert);
       }
     } catch (error) {
       $cleanup(() => {
         for (const item of m.values()) {
-          console.log(`drop ${item[0]}`);
-          if (item[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(item);
         }
       }, error);
       throw error;
@@ -266,10 +228,7 @@ function main() {
     try {
       try {
         for (const item of m.values()) {
-          console.log(`drop ${item[0]}`);
-          if (item[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(item);
         }
       } catch (error) {
         throw $unwindsOn(error);
@@ -281,20 +240,14 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         for (const item of m.values()) {
-          console.log(`drop ${item[0]}`);
-          if (item[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(item);
         }
       }, error);
       throw error;
     }
     console.log(`${m.size}`);
     for (const item of m.values()) {
-      console.log(`drop ${item[0]}`);
-      if (item[0] === 2) {
-        throw new Error("drop");
-      }
+      dDrop_drop(item);
     }
   });
   run("cleared, then used", () => {
@@ -305,28 +258,19 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     try {
       if (insert != null) {
-        console.log(`drop ${insert[0]}`);
-        if (insert[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(insert);
       }
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
@@ -337,28 +281,19 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     try {
       if (d != null) {
-        console.log(`drop ${d[0]}`);
-        if (d[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(d);
       }
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
@@ -366,10 +301,7 @@ function main() {
     const r = $catchUnwind(() => {
       try {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       } catch (error) {
         throw $unwindsOn(error);
@@ -386,38 +318,26 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     try {
       if (tmp != null) {
-        console.log(`drop ${tmp[0]}`);
-        if (tmp[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(tmp);
       }
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     console.log(`${m.size}`);
     $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-      console.log(`drop ${value[0]}`);
-      if (value[0] === 2) {
-        throw new Error("drop");
-      }
+      dDrop_drop(value);
     });
   });
   run("quiet", () => {
@@ -428,28 +348,19 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     try {
       if (insert != null) {
-        console.log(`drop ${insert[0]}`);
-        if (insert[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(insert);
       }
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
@@ -460,28 +371,19 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     try {
       if (d != null) {
-        console.log(`drop ${d[0]}`);
-        if (d[0] === 2) {
-          throw new Error("drop");
-        }
+        dDrop_drop(d);
       }
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
@@ -489,10 +391,7 @@ function main() {
     try {
       try {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       } catch (error) {
         throw $unwindsOn(error);
@@ -504,20 +403,14 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-          console.log(`drop ${value[0]}`);
-          if (value[0] === 2) {
-            throw new Error("drop");
-          }
+          dDrop_drop(value);
         });
       }, error);
       throw error;
     }
     console.log(`${m.size}`);
     $dropItems($sortedEntries(m, $cmp), ([, value]) => {
-      console.log(`drop ${value[0]}`);
-      if (value[0] === 2) {
-        throw new Error("drop");
-      }
+      dDrop_drop(value);
     });
   });
 }

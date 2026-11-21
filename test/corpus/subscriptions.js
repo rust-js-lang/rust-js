@@ -21,6 +21,21 @@ export function entry() {
   main();
 }
 
+function subscriptionDrop_drop(subscription) {
+  const bus = $upgrade(subscription.bus);
+  if (bus != null) {
+    try {
+      if (bus.value.borrows) {
+        $alreadyBorrowed();
+      }
+      bus.value.handlers.delete(subscription.id);
+      console.log(`unsubscribed ${subscription.id}`);
+    } finally {
+      $rcDrop(bus);
+    }
+  }
+}
+
 function subscribe(bus, f) {
   const b = $borrowMut(bus.value, true);
   const id = b.next;
@@ -67,18 +82,7 @@ const Component = {
     } catch (error) {
       $cleanup(() => {
         try {
-          const bus = $upgrade(first.bus);
-          if (bus != null) {
-            try {
-              if (bus.value.borrows) {
-                $alreadyBorrowed();
-              }
-              bus.value.handlers.delete(first.id);
-              console.log(`unsubscribed ${first.id}`);
-            } finally {
-              $rcDrop(bus);
-            }
-          }
+          subscriptionDrop_drop(first);
         } finally {
           $weakDrop(first.bus);
         }
@@ -110,18 +114,7 @@ function main() {
       $cleanup(() => {
         $dropItems(a.subs, (item) => {
           try {
-            const bus = $upgrade(item.bus);
-            if (bus != null) {
-              try {
-                if (bus.value.borrows) {
-                  $alreadyBorrowed();
-                }
-                bus.value.handlers.delete(item.id);
-                console.log(`unsubscribed ${item.id}`);
-              } finally {
-                $rcDrop(bus);
-              }
-            }
+            subscriptionDrop_drop(item);
           } finally {
             $weakDrop(item.bus);
           }
@@ -135,36 +128,14 @@ function main() {
       $cleanup(() => {
         $dropItems(b.subs, (item) => {
           try {
-            const bus = $upgrade(item.bus);
-            if (bus != null) {
-              try {
-                if (bus.value.borrows) {
-                  $alreadyBorrowed();
-                }
-                bus.value.handlers.delete(item.id);
-                console.log(`unsubscribed ${item.id}`);
-              } finally {
-                $rcDrop(bus);
-              }
-            }
+            subscriptionDrop_drop(item);
           } finally {
             $weakDrop(item.bus);
           }
         });
         $dropItems(a.subs, (item) => {
           try {
-            const bus = $upgrade(item.bus);
-            if (bus != null) {
-              try {
-                if (bus.value.borrows) {
-                  $alreadyBorrowed();
-                }
-                bus.value.handlers.delete(item.id);
-                console.log(`unsubscribed ${item.id}`);
-              } finally {
-                $rcDrop(bus);
-              }
-            }
+            subscriptionDrop_drop(item);
           } finally {
             $weakDrop(item.bus);
           }
@@ -176,18 +147,7 @@ function main() {
     try {
       $dropItems(b.subs, (item) => {
         try {
-          const bus = $upgrade(item.bus);
-          if (bus != null) {
-            try {
-              if (bus.value.borrows) {
-                $alreadyBorrowed();
-              }
-              bus.value.handlers.delete(item.id);
-              console.log(`unsubscribed ${item.id}`);
-            } finally {
-              $rcDrop(bus);
-            }
-          }
+          subscriptionDrop_drop(item);
         } finally {
           $weakDrop(item.bus);
         }
@@ -196,18 +156,7 @@ function main() {
       $cleanup(() => {
         $dropItems(a.subs, (item) => {
           try {
-            const bus = $upgrade(item.bus);
-            if (bus != null) {
-              try {
-                if (bus.value.borrows) {
-                  $alreadyBorrowed();
-                }
-                bus.value.handlers.delete(item.id);
-                console.log(`unsubscribed ${item.id}`);
-              } finally {
-                $rcDrop(bus);
-              }
-            }
+            subscriptionDrop_drop(item);
           } finally {
             $weakDrop(item.bus);
           }
@@ -221,18 +170,7 @@ function main() {
       $cleanup(() => {
         $dropItems(a.subs, (item) => {
           try {
-            const bus = $upgrade(item.bus);
-            if (bus != null) {
-              try {
-                if (bus.value.borrows) {
-                  $alreadyBorrowed();
-                }
-                bus.value.handlers.delete(item.id);
-                console.log(`unsubscribed ${item.id}`);
-              } finally {
-                $rcDrop(bus);
-              }
-            }
+            subscriptionDrop_drop(item);
           } finally {
             $weakDrop(item.bus);
           }
@@ -248,18 +186,7 @@ function main() {
         (component) => {
           $dropItems(component.subs, (item) => {
             try {
-              const bus = $upgrade(item.bus);
-              if (bus != null) {
-                try {
-                  if (bus.value.borrows) {
-                    $alreadyBorrowed();
-                  }
-                  bus.value.handlers.delete(item.id);
-                  console.log(`unsubscribed ${item.id}`);
-                } finally {
-                  $rcDrop(bus);
-                }
-              }
+              subscriptionDrop_drop(item);
             } finally {
               $weakDrop(item.bus);
             }
@@ -271,18 +198,7 @@ function main() {
         $dropItems(comps, (item) => {
           $dropItems(item.subs, (item) => {
             try {
-              const bus = $upgrade(item.bus);
-              if (bus != null) {
-                try {
-                  if (bus.value.borrows) {
-                    $alreadyBorrowed();
-                  }
-                  bus.value.handlers.delete(item.id);
-                  console.log(`unsubscribed ${item.id}`);
-                } finally {
-                  $rcDrop(bus);
-                }
-              }
+              subscriptionDrop_drop(item);
             } finally {
               $weakDrop(item.bus);
             }
@@ -298,18 +214,7 @@ function main() {
         $dropItems(comps, (item) => {
           $dropItems(item.subs, (item) => {
             try {
-              const bus = $upgrade(item.bus);
-              if (bus != null) {
-                try {
-                  if (bus.value.borrows) {
-                    $alreadyBorrowed();
-                  }
-                  bus.value.handlers.delete(item.id);
-                  console.log(`unsubscribed ${item.id}`);
-                } finally {
-                  $rcDrop(bus);
-                }
-              }
+              subscriptionDrop_drop(item);
             } finally {
               $weakDrop(item.bus);
             }
@@ -329,18 +234,7 @@ function main() {
         $dropItems(comps, (item) => {
           $dropItems(item.subs, (item) => {
             try {
-              const bus = $upgrade(item.bus);
-              if (bus != null) {
-                try {
-                  if (bus.value.borrows) {
-                    $alreadyBorrowed();
-                  }
-                  bus.value.handlers.delete(item.id);
-                  console.log(`unsubscribed ${item.id}`);
-                } finally {
-                  $rcDrop(bus);
-                }
-              }
+              subscriptionDrop_drop(item);
             } finally {
               $weakDrop(item.bus);
             }
@@ -353,18 +247,7 @@ function main() {
     $dropItems(comps, (item) => {
       $dropItems(item.subs, (item) => {
         try {
-          const bus = $upgrade(item.bus);
-          if (bus != null) {
-            try {
-              if (bus.value.borrows) {
-                $alreadyBorrowed();
-              }
-              bus.value.handlers.delete(item.id);
-              console.log(`unsubscribed ${item.id}`);
-            } finally {
-              $rcDrop(bus);
-            }
-          }
+          subscriptionDrop_drop(item);
         } finally {
           $weakDrop(item.bus);
         }

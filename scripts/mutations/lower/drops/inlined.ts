@@ -420,4 +420,22 @@ export const mutations: Mutation[] = [
     replace: "    if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointer_to_a_local_with_a_destructor_sees_its_writes.rs$"],
   },
+  {
+    name: "drop-inlined-of-many-values",
+    breaks: "a `Drop` impl's body is written at each of its calls however many values it drops, a map entry's `println!` and `if` of a panic at all 38 of map_clear_unwinds_emptied's, where a person keeps the function (#929)",
+    file: "src/lower/drops/inlined.rs",
+    find: "    if mentions > 1 && values > INLINED_VALUES && !one_statement(&body) {\n",
+    replace: "    if false && mentions > 1 && values > INLINED_VALUES && !one_statement(&body) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_clear_unwinds_emptied\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "drop-values-counted-across-functions",
+    breaks: "a guard's drop is counted by the values of every function it's dropped in, not the most of one, so a guard made in each of several functions, React's `commitRoot`'s `_exit`, keeps a function where React writes its restore inline (#929)",
+    file: "src/lower/drops/inlined.rs",
+    find: "            values = values.max(own_values.len());\n",
+    replace: "            values += own_values.len();\n",
+    tests: ["test/corpus.test.ts", "-t", "^guard_field_written_by_a_swap_or_in_an_expression\\.rs$"],
+    snapshots: true,
+  },
 ];

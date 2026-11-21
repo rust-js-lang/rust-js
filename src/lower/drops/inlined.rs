@@ -44,6 +44,22 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<St
     }
 }
 
+/// The most values in one function whose drop `inline_drop` writes at each
+/// call, its body of more than one statement: a scope's guard, or two, each
+/// dropped at its scope's end, its unwinding and its early returns, at up
+/// to 9 calls of the corpus's, a guard's restore React writes inline at
+/// each (ADR 0589), `commitRoot`'s `_exit` one in each of its functions; a
+/// type a program makes many values of drops 4 to 38 in one, where a
+/// person keeps the function (#929).
+const INLINED_VALUES: usize = 3;
+
+/// Whether `body` is one statement with no statement in it, an
+/// assignment's or a call's, which `inline_drop` writes at each call
+/// however many there are (#929).
+fn one_statement(body: &[Stmt]) -> bool {
+    matches!(body, [stmt] if matches!(stmt.kind, StmtKind::Expr(_) | StmtKind::Assign(..)))
+}
+
 /// `inlined_drops`' of the drop `name`.
 fn inline_drop(items: &mut Vec<Item>, name: &js::Name) {
     let Some(at) = items.iter().position(
@@ -70,6 +86,8 @@ fn inline_drop(items: &mut Vec<Item>, name: &js::Name) {
     // 0589): each function's body made so, then, where every mention is
     // one, set.
     let mut bodies = Vec::new();
+    // The most values it drops in one function, each a call's argument.
+    let mut values = 0;
     let mut inlined = 0;
     let mut each = true;
     for (i, item) in items.iter_mut().enumerate() {
@@ -82,6 +100,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &js::Name) {
             }
             let mut made = own_body.clone();
             let mut given = Vec::new();
+            let mut own_values = IndexSet::default();
             loop {
                 let whole = made.clone();
                 let mut done = false;
@@ -95,6 +114,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &js::Name) {
                     match js::applied_call(&stmts[k], &whole, &params, &body) {
                         Some(block) => {
                             given.extend(argument(&stmts[k]));
+                            own_values.insert(argument(&stmts[k]));
                             stmts.splice(k..=k, block);
                             inlined += 1;
                         }
@@ -111,6 +131,7 @@ fn inline_drop(items: &mut Vec<Item>, name: &js::Name) {
             // value, whose `d[0]` is no guard's field (#239). A guard named
             // as another closure's variable is never so since #1681 change
             // 3: each is spelled apart by its id (ADR 1150).
+            values = values.max(own_values.len());
             for guard in given {
                 if alone(own_params, &made, &guard) {
                     taken_apart(&mut made, own_params, &guard);
@@ -120,6 +141,17 @@ fn inline_drop(items: &mut Vec<Item>, name: &js::Name) {
         });
     }
     if !each || inlined == 0 || inlined != mentions {
+        return;
+    }
+    // Written at each call where it drops a few values in any one function,
+    // `INLINED_VALUES`, each a scope's guard, dropped where its scope ends,
+    // unwinds and returns early, a restore React writes inline at each (ADR 0589); or
+    // where it's called once, or its body is one statement, which reads as
+    // well at each call as the call does. One that drops many values keeps
+    // its function, as a person keeps it: a map entry's drop, a `println!`
+    // and an `if` of a panic, was written at the 38 drops of
+    // map_clear_unwinds_emptied's 38 entries (#929).
+    if mentions > 1 && values > INLINED_VALUES && !one_statement(&body) {
         return;
     }
     let mut bodies = bodies.into_iter();

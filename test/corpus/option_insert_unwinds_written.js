@@ -6,6 +6,13 @@ export function entry() {
   main();
 }
 
+function dDrop_drop(d) {
+  console.log(`drop ${d[0]}`);
+  if (d[0] === 1) {
+    throw new Error("drop");
+  }
+}
+
 function run(name, f) {
   console.log(`-- ${name}`);
   const r = $catchUnwind(f);
@@ -20,10 +27,7 @@ function main() {
     try {
       try {
         if (o != null) {
-          console.log(`drop ${o[0]}`);
-          if (o[0] === 1) {
-            throw new Error("drop");
-          }
+          dDrop_drop(o);
         }
       } catch (error) {
         throw $unwindsOn(error);
@@ -36,20 +40,14 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         if (o != null) {
-          console.log(`drop ${o[0]}`);
-          if (o[0] === 1) {
-            throw new Error("drop");
-          }
+          dDrop_drop(o);
         }
       }, error);
       throw error;
     }
     console.log(`${r[0]}`);
     if (o != null) {
-      console.log(`drop ${o[0]}`);
-      if (o[0] === 1) {
-        throw new Error("drop");
-      }
+      dDrop_drop(o);
     }
   });
   run("a field, then read", () => {
@@ -58,10 +56,7 @@ function main() {
       const value = [8];
       try {
         if (h.slot != null) {
-          console.log(`drop ${h.slot[0]}`);
-          if (h.slot[0] === 1) {
-            throw new Error("drop");
-          }
+          dDrop_drop(h.slot);
         }
       } catch (error) {
         throw $unwindsOn(error);
@@ -73,10 +68,7 @@ function main() {
     });
     console.log(`${r.TAG === "Ok"} ${h.slot?.[0] ?? 0}`);
     if (h.slot != null) {
-      console.log(`drop ${h.slot[0]}`);
-      if (h.slot[0] === 1) {
-        throw new Error("drop");
-      }
+      dDrop_drop(h.slot);
     }
   });
   run("none before", () => {
@@ -86,10 +78,7 @@ function main() {
     try {
       try {
         if (o != null) {
-          console.log(`drop ${o[0]}`);
-          if (o[0] === 1) {
-            throw new Error("drop");
-          }
+          dDrop_drop(o);
         }
       } catch (error) {
         throw $unwindsOn(error);
@@ -102,20 +91,14 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         if (o != null) {
-          console.log(`drop ${o[0]}`);
-          if (o[0] === 1) {
-            throw new Error("drop");
-          }
+          dDrop_drop(o);
         }
       }, error);
       throw error;
     }
     console.log(`${r[0]}`);
     if (o != null) {
-      console.log(`drop ${o[0]}`);
-      if (o[0] === 1) {
-        throw new Error("drop");
-      }
+      dDrop_drop(o);
     }
   });
   run("quiet", () => {
@@ -125,10 +108,7 @@ function main() {
     try {
       try {
         if (o != null) {
-          console.log(`drop ${o[0]}`);
-          if (o[0] === 1) {
-            throw new Error("drop");
-          }
+          dDrop_drop(o);
         }
       } catch (error) {
         throw $unwindsOn(error);
@@ -141,20 +121,14 @@ function main() {
     } catch (error) {
       $cleanup(() => {
         if (o != null) {
-          console.log(`drop ${o[0]}`);
-          if (o[0] === 1) {
-            throw new Error("drop");
-          }
+          dDrop_drop(o);
         }
       }, error);
       throw error;
     }
     console.log(`${r[0]}`);
     if (o != null) {
-      console.log(`drop ${o[0]}`);
-      if (o[0] === 1) {
-        throw new Error("drop");
-      }
+      dDrop_drop(o);
     }
   });
 }

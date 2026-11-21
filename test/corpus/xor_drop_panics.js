@@ -6,29 +6,27 @@ export function entry() {
   main();
 }
 
+function loudDrop_drop(loud) {
+  console.log(`drop ${loud[0]}`);
+  if (loud[1]) {
+    throw new Error(`boom ${loud[0]}`);
+  }
+}
+
 function main() {
   const option = [5, false];
   const other = [6, false];
   const calm = option != null ? (other == null ? option : undefined) : other;
   if (option != null && other != null) {
     try {
-      console.log(`drop ${option[0]}`);
-      if (option[1]) {
-        throw new Error(`boom ${option[0]}`);
-      }
+      loudDrop_drop(option);
     } catch (error) {
       $cleanup(() => {
-        console.log(`drop ${other[0]}`);
-        if (other[1]) {
-          throw new Error(`boom ${other[0]}`);
-        }
+        loudDrop_drop(other);
       }, error);
       throw error;
     }
-    console.log(`drop ${other[0]}`);
-    if (other[1]) {
-      throw new Error(`boom ${other[0]}`);
-    }
+    loudDrop_drop(other);
   }
   console.log(`calm ${calm == null}`);
   const option$1 = [1, true];
@@ -38,32 +36,20 @@ function main() {
   try {
     if (option$1 != null && other$1 != null) {
       try {
-        console.log(`drop ${option$1[0]}`);
-        if (option$1[1]) {
-          throw new Error(`boom ${option$1[0]}`);
-        }
+        loudDrop_drop(option$1);
       } catch (error) {
         $cleanup(() => {
-          console.log(`drop ${other$1[0]}`);
-          if (other$1[1]) {
-            throw new Error(`boom ${other$1[0]}`);
-          }
+          loudDrop_drop(other$1);
         }, error);
         throw error;
       }
-      console.log(`drop ${other$1[0]}`);
-      if (other$1[1]) {
-        throw new Error(`boom ${other$1[0]}`);
-      }
+      loudDrop_drop(other$1);
     }
     x = value;
   } catch (error) {
     $cleanup(() => {
       if (calm != null) {
-        console.log(`drop ${calm[0]}`);
-        if (calm[1]) {
-          throw new Error(`boom ${calm[0]}`);
-        }
+        loudDrop_drop(calm);
       }
     }, error);
     throw error;
@@ -71,27 +57,18 @@ function main() {
   console.log(`unreached ${x == null}`);
   try {
     if (x != null) {
-      console.log(`drop ${x[0]}`);
-      if (x[1]) {
-        throw new Error(`boom ${x[0]}`);
-      }
+      loudDrop_drop(x);
     }
   } catch (error) {
     $cleanup(() => {
       if (calm != null) {
-        console.log(`drop ${calm[0]}`);
-        if (calm[1]) {
-          throw new Error(`boom ${calm[0]}`);
-        }
+        loudDrop_drop(calm);
       }
     }, error);
     throw error;
   }
   if (calm != null) {
-    console.log(`drop ${calm[0]}`);
-    if (calm[1]) {
-      throw new Error(`boom ${calm[0]}`);
-    }
+    loudDrop_drop(calm);
   }
 }
 //# sourceMappingURL=case.js.map
