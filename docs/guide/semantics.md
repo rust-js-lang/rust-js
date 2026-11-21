@@ -2220,9 +2220,9 @@ React and JSX are [their own pages](README.md#react).
 10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1
     (being fixed, #2269).
 11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
-    JS throws; a panic's message downcasts as a `&str` and a `String`, and
-    every payload, a typed one's too, as the `&JsError` thrown; a
-    `drop` panicking during a panic replaces it (being fixed, #2270).
+    JS throws; a panic's message downcasts as a `&str` and a `String`
+    (being fixed, #2270), and every payload, a typed one's too, as the
+    `&JsError` thrown.
 12. A value with a destructor that JS holds is never dropped, a function
     handed to a binding too, even where JS gives it back to Rust (ADR
     0873) (for the user's decision, #1212).
