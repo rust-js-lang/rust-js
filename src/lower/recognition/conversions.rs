@@ -111,6 +111,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             {
                 return Some(Std::Same);
             }
+            // A `Pin<Box<T>>` from its `Box<T>`, std's `From`, which
+            // `Box::into_pin` is too: the box, which a pin of it is (#1452).
+            if let ty::Adt(pin, pointer) = to_ty.kind()
+                && tcx.is_lang_item(pin.did(), LangItem::Pin)
+                && from_ty.is_box()
+                && pointer.type_at(0) == from_ty
+            {
+                return Some(Std::Same);
+            }
             // A number from a `bool` or a `char`, as `as` makes it (ADR 0358).
             if (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {
                 return Some(Std::Cast { into });

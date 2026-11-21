@@ -182,4 +182,13 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^conversions_through_generic_code.rs$"],
   },
+  {
+    name: "pin-from-box-refused",
+    breaks: "`Pin::from(Box::new(7))`, std's `From<Box<T>> for Pin<Box<T>>`, is refused as an open conversion where it's the box, as `Box::into_pin` is (#1452)",
+    file: "src/lower/recognition/conversions.rs",
+    find: "                && tcx.is_lang_item(pin.did(), LangItem::Pin)\n",
+    replace: "                && tcx.is_lang_item(pin.did(), LangItem::Pin)\n                && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^pin_from_a_box_is_the_box\\.rs$"],
+    snapshots: true,
+  },
 ];

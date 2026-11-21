@@ -121,3 +121,17 @@ which `unmet_in` asks. An architecture test
 (`test/architecture-writes.test.ts`) refuses a count or a map of whole
 assignments, or a THIR scan of `v = ..` by its `VarRef`, outside them, a
 site that counts by another rule listed with why.
+
+## Amendment (2026-11-22): a `Pin<Box<T>>` from its `Box<T>` is the box (#1452)
+
+std's `impl From<Box<T>> for Pin<Box<T>>`, `Pin::from(b)` or `b.into()`,
+was refused as an open conversion, tagged #1452. It converts as
+`Box::into_pin` does, and a pin of a box is that box in JS: it is
+`Std::Same`, one arm of `classify_conversion` (`recognition/conversions.rs`),
+the catalog of std's conversions. ADR 0262 case: no observable difference;
+the value and its drop are the box's. Corpus case
+`pin_from_a_box_is_the_box` holds it against native: what it holds read
+and changed through `as_mut`, a `dyn`'s method, `Pin::into_inner`, and
+values with a destructor dropped where the pin is, in Rust's order. The
+other half of #1452, an `Into` to another crate's type through that
+crate's `From`, stays refused under it.
