@@ -31,20 +31,12 @@ const rustcReach: Record<string, string> = {
 };
 
 // What an analysis asks of an item, a type, a field, a `static` or a key,
-// through `visibility(..).is_public()`: what JS can reach of it, #2024's
-// owner once it's written, and so many each.
+// through `visibility(..).is_public()`: what JS can reach of it, which
+// `declarations::js_names` owns (#2024, ADR 1179), and so many each.
 const itemPublic: Record<string, [number, string]> = {
   "src/lower/analysis/js_given.rs": [1, "js_facing's rule, `exported_function`, its owner"],
   "src/lower/analysis/naming.rs": [1, "a `pub use`, the module's export, an export rule"],
-  "src/lower/analysis/cell_borrows.rs": [1, "#2024: keys"],
-  "src/lower/analysis/cell_flow.rs": [1, "#2024: a key"],
-  "src/lower/analysis/lazy_locals.rs": [1, "#2024: a key"],
-  "src/lower/analysis/nulled_params/js_nones.rs": [1, "#2024: a public type's field"],
-  "src/lower/analysis/nulled_params/read_alike.rs": [1, "#2024: a key"],
-  "src/lower/analysis/owned_by_return.rs": [1, "#2024: a field"],
-  "src/lower/analysis/scopes.rs": [1, "#2024: a type"],
   "src/lower/instances.rs": [3, "#2024: whether JS or another crate reaches a generic owner, `seen_whole`'s `Shared` and `Counted`, a `pub` trait's impl by its exported dictionary too, and a trait"],
-  "src/lower/analysis/wholes.rs": [3, "#2024: a public type's field (two calls), a key"],
 };
 
 test("rustc's own answer of what another crate reaches is asked only where #2015 names", () => {

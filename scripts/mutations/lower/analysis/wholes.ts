@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` struct's `pub` field, which another crate may write, is taken for whole (rd537)",
     file: "src/lower/analysis/wholes.rs",
-    find: "                let outside = tcx.visibility(id).is_public() && tcx.visibility(field.did).is_public();\n",
+    find: "                let outside = crate::lower::declarations::js_names(tcx, field.did);\n",
     replace: "                let outside = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^whole_counters.rs$"],
     snapshots: true,
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` thread-local `Cell<f64>`, which another crate may set `-0.0`, is taken for whole (rd707)",
     file: "src/lower/analysis/wholes.rs",
-    find: "                || tcx.visibility(key).is_public()\n",
+    find: "                || crate::lower::declarations::js_names(tcx, key.to_def_id())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^whole_thread_locals.rs$"],
     snapshots: true,

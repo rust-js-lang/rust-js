@@ -236,7 +236,7 @@ fn field_takes_one_none<'tcx>(tcx: TyCtxt<'tcx>, field: &ty::FieldDef, ty: Ty<'t
     let declared = tcx.type_of(field.did).instantiate_identity().skip_normalization();
     let of = tcx.parent(field.did);
     let std = crate::lower::recognition::is_std_crate(tcx, of) || crate::lower::recognition::from_sysroot(tcx, of);
-    !std && (!of.is_local() || tcx.visibility(of).is_public())
+    !std && (!of.is_local() || crate::lower::declarations::js_names(tcx, of))
         && matches!(declared.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option))
         && one_none(tcx, ty)
         && none_form(tcx, NonePlace::Field(field, Some(ty))) == NoneForm::Undefined

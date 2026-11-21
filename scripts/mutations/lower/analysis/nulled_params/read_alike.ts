@@ -10,7 +10,7 @@ export const mutations: Mutation[] = [
     name: "alike-of-a-public-key",
     breaks: "an exported nullable thread-local, which a JS module may read `=== null`, stores what may be `undefined` as it is (#665)",
     file: "src/lower/analysis/nulled_params/read_alike.rs",
-    find: "            let elsewhere = tcx.visibility(key).is_public()\n                || !at.is_local()\n",
+    find: "            let elsewhere = crate::lower::declarations::js_names(tcx, key)\n                || !at.is_local()\n",
     replace: "            let elsewhere = !at.is_local()\n",
     tests: tested,
   },

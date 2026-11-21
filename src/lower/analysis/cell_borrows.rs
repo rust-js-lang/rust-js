@@ -1251,7 +1251,7 @@ fn closed_keys<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> IndexSet<DefI
             }
         }
     }
-    keys.retain(|&key| !open.contains(&key) && !tcx.visibility(key).is_public());
+    keys.retain(|&key| !open.contains(&key) && !crate::lower::declarations::js_names(tcx, key));
     keys
 }
 

@@ -169,7 +169,7 @@ fn scope_of<'tcx>(
     adt: DefId,
 ) -> Option<Scope<'tcx>> {
     let generics = tcx.generics_of(adt);
-    if tcx.visibility(adt).is_public() || generics.own_counts().consts > 0 {
+    if crate::lower::declarations::js_names(tcx, adt) || generics.own_counts().consts > 0 {
         return None;
     }
     let def = tcx.adt_def(adt);

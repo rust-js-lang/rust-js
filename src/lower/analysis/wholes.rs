@@ -80,7 +80,7 @@ impl Wholes {
             }
             for field in tcx.adt_def(id).all_fields() {
                 let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-                let outside = tcx.visibility(id).is_public() && tcx.visibility(field.did).is_public();
+                let outside = crate::lower::declarations::js_names(tcx, field.did);
                 if !outside && (ty == tcx.types.f64 || cell_of_f64(tcx, ty)) {
                     wholes.fields.insert(Field::Struct(field.did));
                 }
@@ -113,7 +113,7 @@ impl Wholes {
             let ty::Adt(local_key, args) = ty.kind() else { continue };
             if !is_std_def(tcx, local_key.did(), StdItem::LocalKey)
                 || !cell_of_f64(tcx, args.type_at(0))
-                || tcx.visibility(key).is_public()
+                || crate::lower::declarations::js_names(tcx, key.to_def_id())
             {
                 continue;
             }

@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a public field, which another crate may clone, is taken to keep its callback alone: the library's contract says its return owns it",
     file,
-    find: "        && !tcx.visibility(field.did).is_public()\n",
+    find: "        && !crate::lower::declarations::js_names(tcx, field.did)\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "owns its callbacks alone"],
   },

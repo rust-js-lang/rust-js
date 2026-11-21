@@ -121,7 +121,7 @@ pub(super) fn lazy_locals<'tcx>(
         for (key, why) in shown {
             found.lazy.insert(key);
             found.at_load.swap_remove(&key);
-            if tcx.visibility(key).is_public() {
+            if crate::lower::declarations::js_names(tcx, key.to_def_id()) {
                 refuse_exported(tcx, key, why);
             }
         }

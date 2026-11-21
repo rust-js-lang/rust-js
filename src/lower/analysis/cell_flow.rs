@@ -583,7 +583,7 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
         let tcx = self.tcx();
         let node = self.graph.fresh();
         self.keys.insert(key, node);
-        if tcx.visibility(key).is_public() {
+        if crate::lower::declarations::js_names(tcx, key) {
             self.top(node);
         }
         let held = self.graph.child(node, Key::Arg(0));

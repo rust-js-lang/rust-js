@@ -226,7 +226,7 @@ fn kept_field(tcx: TyCtxt<'_>, adt: DefId, field: FieldIdx) -> bool {
     let typing_env = ty::TypingEnv::non_body_analysis(tcx, adt);
     let of = tcx.type_of(adt).instantiate_identity().skip_normalization();
     rc_pointee(tcx, ty).is_some()
-        && !tcx.visibility(field.did).is_public()
+        && !crate::lower::declarations::js_names(tcx, field.did)
         && clone.is_some_and(|clone| trait_holds_in(tcx, typing_env, of, clone) == Some(false))
 }
 

@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` thread-local, which another crate may borrow, is taken to be borrowed by the crate's code alone, its borrow across JS unchecked (ADR 0580, amended)",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "    keys.retain(|&key| !open.contains(&key) && !tcx.visibility(key).is_public());\n",
+    find: "    keys.retain(|&key| !open.contains(&key) && !crate::lower::declarations::js_names(tcx, key));\n",
     replace: "    keys.retain(|&key| !open.contains(&key));\n",
     tests: [
       "test/lowering-cell-borrows.test.ts",

@@ -73,7 +73,7 @@ pub(super) fn found<'tcx>(recognition: &Recognition<'_, 'tcx>, bodies: &[&Body<'
             // Exported, used by another module or by generic code another
             // crate may compile, or handed on, `is_set(&KEY)`: its reads
             // aren't all seen.
-            let elsewhere = tcx.visibility(key).is_public()
+            let elsewhere = crate::lower::declarations::js_names(tcx, key)
                 || !at.is_local()
                 || tcx.parent_module_from_def_id(at.expect_local())
                     != tcx.parent_module_from_def_id(key.expect_local())

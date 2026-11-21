@@ -163,8 +163,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` thread-local whose initializer prints is made where it's first used, so JS's importers read the function `$local` makes, not its value (#554)",
     file: "src/lower/analysis/lazy_locals.rs",
-    find: "            if tcx.visibility(key).is_public() {\n",
-    replace: "            if false && tcx.visibility(key).is_public() {\n",
+    find: "            if crate::lower::declarations::js_names(tcx, key.to_def_id()) {\n",
+    replace: "            if false && crate::lower::declarations::js_names(tcx, key.to_def_id()) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a pub thread-local whose initializer prints"],
   },
   {
