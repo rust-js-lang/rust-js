@@ -879,6 +879,25 @@ impl Hole {
     }
 }
 
+/// Which of JS's own conversions an `ExprKind::Converted` is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Conversion {
+    /// `Number(n)`.
+    Number,
+    /// `BigInt(n)`.
+    BigInt,
+}
+
+impl Conversion {
+    /// The global it calls, `Number` or `BigInt`.
+    pub fn global(self) -> &'static str {
+        match self {
+            Conversion::Number => "Number",
+            Conversion::BigInt => "BigInt",
+        }
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub enum ExprKind {
     Num(f64),
@@ -934,6 +953,11 @@ pub enum ExprKind {
     Cond(Box<Expr>, Box<Expr>, Box<Expr>),
     /// `Some(value)` where `test` holds, else `None`: `test ? value : undefined`.
     SomeWhere(Box<Expr>, Box<Expr>),
+    /// `Number(n)` or `BigInt(n)`, JS's own conversion of a Rust number or
+    /// `bool`, never of an object whose `valueOf` it would call: it runs
+    /// nothing and throws nothing, what its operand does
+    /// (`Expr::converted`, #1468).
+    Converted(Conversion, Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),
     /// `f?.(args)`: a call of what may be `undefined`, as a drop function
     /// a caller with nothing to drop leaves out (ADR 0098).

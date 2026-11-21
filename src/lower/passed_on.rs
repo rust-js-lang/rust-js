@@ -499,11 +499,27 @@ fn bound_parts(f: &Expr) -> Option<(&Expr, &[Expr])> {
 
 /// What arrow `f` passes on what it's given to (`js::passes_on`), and how
 /// many parameters it has.
-fn passed_to(f: &Expr, statement: bool) -> Option<(&Expr, usize)> {
+fn passed_to(f: &Expr, statement: bool) -> Option<(Expr, usize)> {
     let js::ExprKind::Arrow(params, body) = &f.kind else {
         return None;
     };
-    js::passes_on(params, body, statement).map(|callee| (callee, params.len()))
+    // A Rust number's conversion of its one parameter, `(n) => BigInt(n)`,
+    // passes it on to the conversion's global, `BigInt` (#1468).
+    if let (
+        [js::Pattern::Name(param)],
+        [
+            js::Stmt {
+                kind: js::StmtKind::Return(Some(given)),
+                ..
+            },
+        ],
+    ) = (params.as_slice(), body.as_slice())
+        && let js::ExprKind::Converted(conversion, operand) = &given.kind
+        && matches!(&operand.kind, js::ExprKind::Var(name) if name == param)
+    {
+        return Some((Expr::js_global(conversion.global()).built_in(), 1));
+    }
+    js::passes_on(params, body, statement).map(|callee| (callee.clone(), params.len()))
 }
 
 /// The variable a closure captured that `e` reads, through its borrows

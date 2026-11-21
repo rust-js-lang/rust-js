@@ -51,14 +51,7 @@ function counted(step) {
         }
         let result;
         if (n < step) {
-          try {
-            result = BigInt(countdown.strong);
-          } catch (error) {
-            $cleanup(() => {
-              $rcDrop(countdown, $dispose);
-            }, error);
-            throw error;
-          }
+          result = BigInt(countdown.strong);
           $rcDrop(countdown, $dispose);
           return result;
         }

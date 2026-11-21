@@ -553,6 +553,7 @@ fn expr_mut(e: &mut Expr, reads: bool, f: &mut dyn FnMut(&mut Name)) {
     match &mut e.kind {
         ExprKind::Var(name) if reads => f(name),
         ExprKind::Stringed(_) if reads => f(&mut Name::global("String")),
+        ExprKind::Converted(conversion, _) if reads => f(&mut Name::global(conversion.global())),
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             params.iter_mut().for_each(|p| pattern_mut(p, f));
             declared_mut(body, f);

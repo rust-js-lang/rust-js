@@ -932,4 +932,13 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
   },
+  {
+    name: "conversion-arrow-not-passed-on",
+    breaks: "`u64::from` given as a function is `(n) => BigInt(n)`, an arrow, where it's the conversion's global, `BigInt` (#1468)",
+    file: "src/lower/passed_on.rs",
+    find: "        && let js::ExprKind::Converted(conversion, operand) = &given.kind\n",
+    replace: "        && let js::ExprKind::Converted(conversion, operand) = &given.kind\n        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_grows_by_its_items_size\\.rs$"],
+    snapshots: true,
+  },
 ];

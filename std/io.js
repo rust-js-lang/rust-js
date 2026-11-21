@@ -400,8 +400,7 @@ export function takeBufRead_fillBuf(take, TBufRead, dropT) {
 
 export function takeBufRead_consume(take, amt, TBufRead, dropT) {
   amt = Number(BigInt.asUintN(32, $bigMin(BigInt(amt), take.limit)));
-  const value = BigInt(amt);
-  take.limit = BigInt.asUintN(64, take.limit - value);
+  take.limit = BigInt.asUintN(64, take.limit - BigInt(amt));
   TBufRead.consume(
     {
       get value() {

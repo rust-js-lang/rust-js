@@ -128,6 +128,11 @@ impl<'a> Cx<'a> {
             ExprKind::Stringed(value) => {
                 self.expr(&js::Expr::call(js::Expr::global("String"), vec![(**value).clone()]).or_at(e.span))
             }
+            // `Number(n)` or `BigInt(n)`, a Rust number's conversion, a call
+            // where it's printed (#1468).
+            ExprKind::Converted(conversion, value) => {
+                self.expr(&js::Expr::call(js::Expr::global(conversion.global()), vec![(**value).clone()]).or_at(e.span))
+            }
             // `(a, b)`, wrapped where what's around it needs it (#523).
             ExprKind::Sequence(items) => Expression::new_sequence_expression(
                 sp,

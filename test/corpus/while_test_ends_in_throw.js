@@ -26,20 +26,19 @@ function spans(round) {
   while (round < id(2) && [id(241n)].at(-1) == null) {
     console.log(`${span.from} ${span.to} ${span.width}`);
     const shared = { value: { value: id(-2n) }, strong: 1, weak: 0 };
+    const value = BigInt(shared.strong);
     let tmp;
-    let tmp$1;
     try {
-      tmp = BigInt(shared.strong);
-      tmp$1 = id(2);
+      tmp = id(2);
     } catch (error) {
       $rcDrop(shared);
       throw error;
     }
-    if (tmp$1) {
+    if (tmp) {
       const next = {
         from: 1,
         to: 1,
-        width: BigInt.asIntN(64, tmp << (BigInt($div(round, tmp$1) >>> 0) & 63n)),
+        width: BigInt.asIntN(64, value << (BigInt($div(round, tmp) >>> 0) & 63n)),
       };
       try {
         span = {

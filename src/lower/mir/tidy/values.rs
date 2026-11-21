@@ -970,7 +970,9 @@ fn first_applied(
         ExprKind::Binary(_, a, b) => {
             first_applied(a, before, name, set, plain).or_else(|| first_applied(b, before, name, set, plain))
         }
-        ExprKind::Unary(_, a) | ExprKind::Stringed(a) => first_applied(a, before, name, set, plain),
+        ExprKind::Unary(_, a) | ExprKind::Stringed(a) | ExprKind::Converted(_, a) => {
+            first_applied(a, before, name, set, plain)
+        }
         _ => None,
     };
     // What it is, evaluated whole before what's after it.

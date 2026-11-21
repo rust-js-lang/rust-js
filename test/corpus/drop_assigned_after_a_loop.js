@@ -70,16 +70,8 @@ function shared(rounds) {
       throw error;
     }
     for (let step = 0; step < end; step++) {
-      let tmp;
-      try {
-        tmp = BigInt(step);
-      } catch (error) {
-        $rcDrop(first);
-        $rcDrop(cell);
-        throw error;
-      }
       const value = cell.value;
-      value.value = BigInt.asIntN(64, value.value + tmp);
+      value.value = BigInt.asIntN(64, value.value + BigInt(step));
     }
     let value;
     try {

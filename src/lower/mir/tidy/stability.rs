@@ -77,7 +77,7 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<js::Name>, plain: &IndexS
         // Text or a number made of such, `${a}-${b}`, `a + 1`, `String(n)`,
         // and a call of the runtime's that only reads, `$debugStr(s)`.
         ExprKind::Template(_, values, _) => values.iter().all(past),
-        ExprKind::Stringed(a) | ExprKind::Unary(_, a) => past(a),
+        ExprKind::Stringed(a) | ExprKind::Converted(_, a) | ExprKind::Unary(_, a) => past(a),
         ExprKind::Binary(_, a, b) => past(a) && past(b),
         ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {
             args.iter().all(past)

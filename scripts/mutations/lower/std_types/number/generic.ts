@@ -219,7 +219,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`i64::try_from(n)` of a `u32` only tested is the number, not its BigInt, so `wide + 1n` throws (#366)",
     file: "src/lower/std_types/number/generic.rs",
-    find: "        (false, true) => Expr::call(Expr::js_global(\"BigInt\"), vec![n]).built_in(),\n",
+    find: "        (false, true) => Expr::converted(js::Conversion::BigInt, n),\n",
     replace: "        (false, true) => n,\n",
     tests: ["test/corpus.test.ts", "-t", "^try_from_int_tested.rs$"],
   },

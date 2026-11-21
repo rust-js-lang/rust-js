@@ -270,8 +270,8 @@ export const mutations: Mutation[] = [
     name: "stringed-unplaced",
     breaks: "`String(n)` has no place in the JS, and a match arm's comment before it, in a conditional, is lost (ADR 0444, amended)",
     file: "src/to_oxc/expressions.rs",
-    find: "vec![(**value).clone()]).or_at(e.span))\n",
-    replace: "vec![(**value).clone()]))\n",
+    find: "global(\"String\"), vec![(**value).clone()]).or_at(e.span))\n",
+    replace: "global(\"String\"), vec![(**value).clone()]))\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
   },
   {

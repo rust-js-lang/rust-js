@@ -26,8 +26,7 @@ function refMutTallyHasher_finish(tally) {
 }
 
 function refMutTallyHasher_write(tally, bytes) {
-  const value = BigInt(bytes.length);
-  tally.value.bytes = BigInt.asUintN(64, tally.value.bytes + value);
+  tally.value.bytes = BigInt.asUintN(64, tally.value.bytes + BigInt(bytes.length));
 }
 
 function twice(rr) {

@@ -322,6 +322,7 @@ impl Cx {
             | ExprKind::Unbound(a)
             | ExprKind::Spread(a)
             | ExprKind::Stringed(a)
+            | ExprKind::Converted(_, a)
             | ExprKind::Handle(a, _)
             | ExprKind::Stepped(_, a)
             | ExprKind::DropArgument(_, _, a) => self.expr(a),

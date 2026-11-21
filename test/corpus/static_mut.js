@@ -24,8 +24,7 @@ function record(value) {
   STATS.calls = (STATS.calls + 1) >>> 0;
   STATS.last = value;
   const value$1 = Number(BigInt.asUintN(32, value)) % 3;
-  const value$2 = Number(BigInt.asUintN(8, value));
-  SLOTS[value$1] = value$2;
+  SLOTS[value$1] = Number(BigInt.asUintN(8, value));
   WRAP = (WRAP + 3) & 255;
 }
 

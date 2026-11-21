@@ -472,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Hashed::Bool => out.push(hasher.write(
                 &self.hasher_key("write_u8"),
-                vec![Expr::call(Expr::js_global("Number"), vec![value]).built_in()],
+                vec![Expr::converted(js::Conversion::Number, value)],
             )),
             Hashed::Char => {
                 let code = Expr::builtin(value, "codePointAt", vec![Expr::int(0)]);
@@ -527,7 +527,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let seconds_write = if before_epoch { "write_i64" } else { "write_u64" };
                 out.push(hasher.write(&self.hasher_key(seconds_write), vec![seconds]));
-                let nanos = Expr::call(Expr::js_global("Number"), vec![nanos]).built_in();
+                let nanos = Expr::converted(js::Conversion::Number, nanos);
                 out.push(hasher.write(&self.hasher_key("write_u32"), vec![nanos]));
             }
             // A raw pointer's address, as `usize` (ADR 0562).
@@ -640,7 +640,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let exhausted = exhausted.unwrap_or_else(|| Expr::bool(false));
                     out.push(hasher.write(
                         &self.hasher_key("write_u8"),
-                        vec![Expr::call(Expr::js_global("Number"), vec![exhausted]).built_in()],
+                        vec![Expr::converted(js::Conversion::Number, exhausted)],
                     ));
                 }
             }

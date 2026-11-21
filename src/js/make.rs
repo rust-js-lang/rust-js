@@ -60,6 +60,13 @@ impl Expr {
         Expr::var(Name::module(name))
     }
 
+    /// `Number(n)` or `BigInt(n)` of `n`, a Rust number or `bool`, never
+    /// an object whose `valueOf` it would call: it runs nothing and throws
+    /// nothing (`ExprKind::Converted`, #1468).
+    pub fn converted(conversion: Conversion, n: Expr) -> Expr {
+        Expr::new(ExprKind::Converted(conversion, Box::new(n)))
+    }
+
     /// This, a call of one of JS's own functions or methods
     /// (`Known::BuiltIn`), `String(n)`, beside what else is known of it.
     pub fn built_in(mut self) -> Expr {

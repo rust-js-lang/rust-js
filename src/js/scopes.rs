@@ -766,6 +766,11 @@ impl Walk {
                 self.read("String", Whose::Global);
                 self.expr(a);
             }
+            // And a Rust number's conversion, `Number(n)` or `BigInt(n)`.
+            ExprKind::Converted(conversion, a) => {
+                self.read(conversion.global(), Whose::Global);
+                self.expr(a);
+            }
             ExprKind::Undefined | ExprKind::GivenUndefined => self.read("undefined", Whose::Global),
             ExprKind::Num(n) if n.is_nan() => self.read("NaN", Whose::Global),
             ExprKind::Num(n) if n.is_infinite() => self.read("Infinity", Whose::Global),

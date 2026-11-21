@@ -215,6 +215,7 @@ fn expr(e: &Expr, visitor: &mut Words<'_>) {
         | ExprKind::Unbound(a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
+        | ExprKind::Converted(_, a)
         | ExprKind::Handle(a, _)
         | ExprKind::Stepped(_, a)
         | ExprKind::DropArgument(_, _, a) => expr(a, visitor),

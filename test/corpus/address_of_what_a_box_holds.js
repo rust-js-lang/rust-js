@@ -41,7 +41,8 @@ function main() {
   const at = $addr($ptrTo(pair), 16);
   const lent = $addr($ptrTo(pair[1]), 8);
   console.log(`tuple rc ${lent < at || lent >= (at + 16) >>> 0}`);
-  const arg = (pair[1][1] + Number(BigInt.asUintN(32, pair[2]))) >>> 0;
-  console.log(`${sDebug_fmt(s)} ${pair[0]} ${pair[1][0]} ${arg}`);
+  console.log(
+    `${sDebug_fmt(s)} ${pair[0]} ${pair[1][0]} ${(pair[1][1] + Number(BigInt.asUintN(32, pair[2]))) >>> 0}`,
+  );
 }
 //# sourceMappingURL=case.js.map

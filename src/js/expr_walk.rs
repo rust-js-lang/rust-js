@@ -52,6 +52,7 @@ impl Expr {
             | ExprKind::Unbound(a)
             | ExprKind::Spread(a)
             | ExprKind::Stringed(a)
+            | ExprKind::Converted(_, a)
             | ExprKind::Handle(a, _)
             | ExprKind::Stepped(_, a)
             | ExprKind::DropArgument(_, _, a) => a.visit_names(read),
@@ -278,6 +279,7 @@ impl Expr {
             ExprKind::Unbound(a) => ExprKind::Unbound(one(a)?),
             ExprKind::Spread(a) => ExprKind::Spread(one(a)?),
             ExprKind::Stringed(a) => ExprKind::Stringed(one(a)?),
+            ExprKind::Converted(c, a) => ExprKind::Converted(*c, one(a)?),
             ExprKind::Template(texts, values, layout) => {
                 ExprKind::Template(texts.clone(), all(values)?, layout.clone())
             }
@@ -742,6 +744,9 @@ impl Expr {
             // its items do (#273, #1035).
             ExprKind::Spread(a) => !matches!(a.kind, ExprKind::Array(..)) || a.has_effects(),
             ExprKind::Stringed(a) | ExprKind::DropArgument(_, _, a) | ExprKind::Unbound(a) => a.has_effects(),
+            // A Rust number's conversion runs nothing and throws nothing:
+            // what its operand does (#1468).
+            ExprKind::Converted(_, a) => a.has_effects(),
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.has_effects(),
             // Making one reads nothing: its getter does, later.
             ExprKind::Handle(_, _) => false,

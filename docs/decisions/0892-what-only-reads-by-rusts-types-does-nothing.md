@@ -37,3 +37,29 @@ stayed an IIFE where it could be a `const`.
   argument spilled only because of it.
 - The mutation `reads-by-name-alone` moves to `expr_walk.rs`, and
   `read-call-effectful` holds the new arm.
+
+## Amendment (2026-11-22): a Rust number's conversion runs nothing (#1468)
+
+`Number(n)` and `BigInt(n)` of a Rust integer, BigInt or `bool`, an `as`
+cast's, `From`'s, a hash's or a shift count's, are JS's own conversions
+of a number, which call no `valueOf` and throw nothing; `Number(obj)` of
+an object would call its `valueOf`, so a call of `Number` alone says
+nothing. Each is a node of its own, `ExprKind::Converted`, made only by
+`Expr::converted` and printed as the call, as `Stringed` is `String(x)`:
+`has_effects` reads it by its kind as what its operand does, and the
+walks see through it as they see through `Stringed`. A node, not a fact
+on a call: facts riding JS nodes are being retired (the lead's decision).
+An arrow that converts its one parameter, `(n) => BigInt(n)` of
+`u64::from` given as a function, passes it on to the global, `BigInt`, as
+it did as a call (`passed_on::passed_to`).
+
+So a value made of one is read where it's used, not held first, and no
+`try` guards it: `tally.bytes + BigInt(bytes.length)` in place. ADR 0262
+case: none, as nothing runs or throws either way. Nine corpus snapshots
+and std's `io.js` move, each read once in the order it was. Mutations
+`converted-has-effects` and `conversion-arrow-not-passed-on`.
+
+The issue's own example, `range_defaults`' chain collected through
+`$roomForHint`, no longer takes that path for the conversion: its chain
+is std's compiled `Chain` since the iterator family's flip, whose collect
+asks its hint as std's `SpecFromIter` does, so it stays.

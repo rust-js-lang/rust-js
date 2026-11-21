@@ -342,4 +342,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^lazy_cell_reentrant.rs$"],
     snapshots: true,
   },
+  {
+    name: "converted-has-effects",
+    breaks: "a Rust number's conversion, `Number(BigInt.asUintN(8, value))`, is taken to run code, so what's made of it is held first, `const value$2 = ..; SLOTS[i] = value$2;` (#1468)",
+    file: "src/js/expr_walk.rs",
+    find: "            ExprKind::Converted(_, a) => a.has_effects(),\n",
+    replace: "            ExprKind::Converted(_, _) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^static_mut\\.rs$"],
+    snapshots: true,
+  },
 ];

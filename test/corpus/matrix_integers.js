@@ -79,14 +79,12 @@ function main() {
     console.log(
       `i8 ${a}: fmt ${(a & 255).toString(16)} ${(a & 255).toString(2)} ${(a & 255).toString(8)} 0x${(a & 255).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = BigInt(a);
-    const value$15 = BigInt(a);
-    const value$16 = BigInt.asUintN(64, BigInt(a));
-    const value$17 = BigInt.asUintN(128, BigInt(a));
-    const value$18 = f32Bits(a);
+    const value$14 = BigInt.asUintN(64, BigInt(a));
+    const value$15 = BigInt.asUintN(128, BigInt(a));
+    const value$16 = f32Bits(a);
     const arg$2 = f64Bits(a);
     console.log(
-      `i8 ${a}: as ${a} ${a} ${a} ${value$14} ${value$15} ${a & 255} ${a & 65535} ${a >>> 0} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
+      `i8 ${a}: as ${a} ${a} ${a} ${BigInt(a)} ${BigInt(a)} ${a & 255} ${a & 65535} ${a >>> 0} ${value$14} ${value$15} f32 ${value$16} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 8 ? ((a << (s & 7)) << 24) >> 24 : undefined;
@@ -95,11 +93,11 @@ function main() {
         `i8 ${a} shift ${s}: ${((a << (s & 7)) << 24) >> 24} ${a >> (s & 7)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
-    const value$19 = Math.sign(a);
-    const value$20 = (Math.abs(a) << 24) >> 24;
-    const value$21 = $checked(Math.abs(a), -128, 127);
+    const value$17 = Math.sign(a);
+    const value$18 = (Math.abs(a) << 24) >> 24;
+    const value$19 = $checked(Math.abs(a), -128, 127);
     console.log(
-      `i8 ${a}: signed ${value$19} ${value$20} ${value$21 == null ? "None" : `Some(${value$21})`} ${Math.abs(a)}`,
+      `i8 ${a}: signed ${value$17} ${value$18} ${value$19 == null ? "None" : `Some(${value$19})`} ${Math.abs(a)}`,
     );
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
@@ -153,14 +151,12 @@ function main() {
     console.log(
       `i16 ${a}: fmt ${(a & 65535).toString(16)} ${(a & 65535).toString(2)} ${(a & 65535).toString(8)} 0x${(a & 65535).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = BigInt(a);
-    const value$15 = BigInt(a);
-    const value$16 = BigInt.asUintN(64, BigInt(a));
-    const value$17 = BigInt.asUintN(128, BigInt(a));
-    const value$18 = f32Bits(a);
+    const value$14 = BigInt.asUintN(64, BigInt(a));
+    const value$15 = BigInt.asUintN(128, BigInt(a));
+    const value$16 = f32Bits(a);
     const arg$2 = f64Bits(a);
     console.log(
-      `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$14} ${value$15} ${a & 255} ${a & 65535} ${a >>> 0} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
+      `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${BigInt(a)} ${BigInt(a)} ${a & 255} ${a & 65535} ${a >>> 0} ${value$14} ${value$15} f32 ${value$16} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 16 ? ((a << (s & 15)) << 16) >> 16 : undefined;
@@ -169,11 +165,11 @@ function main() {
         `i16 ${a} shift ${s}: ${((a << (s & 15)) << 16) >> 16} ${a >> (s & 15)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
-    const value$19 = Math.sign(a);
-    const value$20 = (Math.abs(a) << 16) >> 16;
-    const value$21 = $checked(Math.abs(a), -32768, 32767);
+    const value$17 = Math.sign(a);
+    const value$18 = (Math.abs(a) << 16) >> 16;
+    const value$19 = $checked(Math.abs(a), -32768, 32767);
     console.log(
-      `i16 ${a}: signed ${value$19} ${value$20} ${value$21 == null ? "None" : `Some(${value$21})`} ${Math.abs(a)}`,
+      `i16 ${a}: signed ${value$17} ${value$18} ${value$19 == null ? "None" : `Some(${value$19})`} ${Math.abs(a)}`,
     );
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
@@ -225,14 +221,12 @@ function main() {
     console.log(
       `i32 ${a}: fmt ${(a >>> 0).toString(16)} ${(a >>> 0).toString(2)} ${(a >>> 0).toString(8)} 0x${(a >>> 0).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$11.TAG === "Ok" ? `Ok(${value$11._0})` : `Err(${$debugParseError(value$11._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$12 = BigInt(a);
-    const value$13 = BigInt(a);
-    const value$14 = BigInt.asUintN(64, BigInt(a));
-    const value$15 = BigInt.asUintN(128, BigInt(a));
-    const value$16 = f32Bits(Math.fround(a));
+    const value$12 = BigInt.asUintN(64, BigInt(a));
+    const value$13 = BigInt.asUintN(128, BigInt(a));
+    const value$14 = f32Bits(Math.fround(a));
     const arg$2 = f64Bits(a);
     console.log(
-      `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$12} ${value$13} ${a & 255} ${a & 65535} ${a >>> 0} ${value$14} ${value$15} f32 ${value$16} f64 ${arg$2}`,
+      `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${BigInt(a)} ${BigInt(a)} ${a & 255} ${a & 65535} ${a >>> 0} ${value$12} ${value$13} f32 ${value$14} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 32 ? a << s : undefined;
@@ -241,11 +235,11 @@ function main() {
         `i32 ${a} shift ${s}: ${a << s} ${a >> s} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
-    const value$17 = Math.sign(a);
-    const value$18 = Math.abs(a) | 0;
-    const value$19 = $checked(Math.abs(a), -2147483648, 2147483647);
+    const value$15 = Math.sign(a);
+    const value$16 = Math.abs(a) | 0;
+    const value$17 = $checked(Math.abs(a), -2147483648, 2147483647);
     console.log(
-      `i32 ${a}: signed ${value$17} ${value$18} ${value$19 == null ? "None" : `Some(${value$19})`} ${Math.abs(a)}`,
+      `i32 ${a}: signed ${value$15} ${value$16} ${value$17 == null ? "None" : `Some(${value$17})`} ${Math.abs(a)}`,
     );
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
@@ -331,12 +325,10 @@ function main() {
       `i64 ${a}: as ${value$16} ${value$17} ${value$18} ${a} ${a} ${value$19} ${value$20} ${value$21} ${value$22} ${value$23} f32 ${value$24} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
-      const value = BigInt.asIntN(64, a << (BigInt(s) & 63n));
-      const value$1 = a >> (BigInt(s) & 63n);
-      const value$2 = s < 64 ? BigInt.asIntN(64, a << (BigInt(s) & 63n)) : undefined;
-      const arg = s < 64 ? a >> (BigInt(s) & 63n) : undefined;
+      const value = s < 64 ? BigInt.asIntN(64, a << (BigInt(s) & 63n)) : undefined;
+      const value$1 = s < 64 ? a >> (BigInt(s) & 63n) : undefined;
       console.log(
-        `i64 ${a} shift ${s}: ${value} ${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${arg == null ? "None" : `Some(${arg})`}`,
+        `i64 ${a} shift ${s}: ${BigInt.asIntN(64, a << (BigInt(s) & 63n))} ${a >> (BigInt(s) & 63n)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     const value$25 = $bigSignum(a);
@@ -468,12 +460,10 @@ function main() {
       `i128 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${a} ${value$20} ${value$21} ${value$22} ${value$23} ${value$24} f32 ${value$25} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
-      const value = BigInt.asIntN(128, a << (BigInt(s) & 127n));
-      const value$1 = a >> (BigInt(s) & 127n);
-      const value$2 = s < 128 ? BigInt.asIntN(128, a << (BigInt(s) & 127n)) : undefined;
-      const arg = s < 128 ? a >> (BigInt(s) & 127n) : undefined;
+      const value = s < 128 ? BigInt.asIntN(128, a << (BigInt(s) & 127n)) : undefined;
+      const value$1 = s < 128 ? a >> (BigInt(s) & 127n) : undefined;
       console.log(
-        `i128 ${a} shift ${s}: ${value} ${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${arg == null ? "None" : `Some(${arg})`}`,
+        `i128 ${a} shift ${s}: ${BigInt.asIntN(128, a << (BigInt(s) & 127n))} ${a >> (BigInt(s) & 127n)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     const value$26 = $bigSignum(a);
@@ -587,14 +577,10 @@ function main() {
     console.log(
       `u8 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = BigInt(a);
-    const value$15 = BigInt(a);
-    const value$16 = BigInt(a);
-    const value$17 = BigInt(a);
-    const value$18 = f32Bits(a);
+    const value$14 = f32Bits(a);
     const arg$2 = f64Bits(a);
     console.log(
-      `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$14} ${value$15} ${a} ${a} ${a} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
+      `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${BigInt(a)} ${BigInt(a)} ${a} ${a} ${a} ${BigInt(a)} ${BigInt(a)} f32 ${value$14} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 8 ? (a << (s & 7)) & 255 : undefined;
@@ -654,14 +640,10 @@ function main() {
     console.log(
       `u16 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = BigInt(a);
-    const value$15 = BigInt(a);
-    const value$16 = BigInt(a);
-    const value$17 = BigInt(a);
-    const value$18 = f32Bits(a);
+    const value$14 = f32Bits(a);
     const arg$2 = f64Bits(a);
     console.log(
-      `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$14} ${value$15} ${a & 255} ${a} ${a} ${value$16} ${value$17} f32 ${value$18} f64 ${arg$2}`,
+      `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${BigInt(a)} ${BigInt(a)} ${a & 255} ${a} ${a} ${BigInt(a)} ${BigInt(a)} f32 ${value$14} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 16 ? (a << (s & 15)) & 65535 : undefined;
@@ -719,14 +701,10 @@ function main() {
     console.log(
       `u32 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$11.TAG === "Ok" ? `Ok(${value$11._0})` : `Err(${$debugParseError(value$11._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$12 = BigInt(a);
-    const value$13 = BigInt(a);
-    const value$14 = BigInt(a);
-    const value$15 = BigInt(a);
-    const value$16 = f32Bits(Math.fround(a));
+    const value$12 = f32Bits(Math.fround(a));
     const arg$2 = f64Bits(a);
     console.log(
-      `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${value$12} ${value$13} ${a & 255} ${a & 65535} ${a} ${value$14} ${value$15} f32 ${value$16} f64 ${arg$2}`,
+      `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${BigInt(a)} ${BigInt(a)} ${a & 255} ${a & 65535} ${a} ${BigInt(a)} ${BigInt(a)} f32 ${value$12} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
       const value = s < 32 ? (a << s) >>> 0 : undefined;
@@ -812,12 +790,10 @@ function main() {
       `u64 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${a} ${value$20} ${value$21} ${value$22} ${a} ${a} f32 ${value$23} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
-      const value = BigInt.asUintN(64, a << (BigInt(s) & 63n));
-      const value$1 = a >> (BigInt(s) & 63n);
-      const value$2 = s < 64 ? BigInt.asUintN(64, a << (BigInt(s) & 63n)) : undefined;
-      const arg = s < 64 ? a >> (BigInt(s) & 63n) : undefined;
+      const value = s < 64 ? BigInt.asUintN(64, a << (BigInt(s) & 63n)) : undefined;
+      const value$1 = s < 64 ? a >> (BigInt(s) & 63n) : undefined;
       console.log(
-        `u64 ${a} shift ${s}: ${value} ${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${arg == null ? "None" : `Some(${arg})`}`,
+        `u64 ${a} shift ${s}: ${BigInt.asUintN(64, a << (BigInt(s) & 63n))} ${a >> (BigInt(s) & 63n)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     console.log(`u64 ${a}: unsigned ${a !== 0n && (a & (a - 1n)) === 0n}`);
@@ -918,12 +894,10 @@ function main() {
       `u128 ${a}: as ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} ${value$23} ${value$24} ${a} f32 ${value$25} f64 ${arg$2}`,
     );
     for (const s of [0, 1, bits - 1, bits, bits + 1]) {
-      const value = BigInt.asUintN(128, a << (BigInt(s) & 127n));
-      const value$1 = a >> (BigInt(s) & 127n);
-      const value$2 = s < 128 ? BigInt.asUintN(128, a << (BigInt(s) & 127n)) : undefined;
-      const arg = s < 128 ? a >> (BigInt(s) & 127n) : undefined;
+      const value = s < 128 ? BigInt.asUintN(128, a << (BigInt(s) & 127n)) : undefined;
+      const value$1 = s < 128 ? a >> (BigInt(s) & 127n) : undefined;
       console.log(
-        `u128 ${a} shift ${s}: ${value} ${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${arg == null ? "None" : `Some(${arg})`}`,
+        `u128 ${a} shift ${s}: ${BigInt.asUintN(128, a << (BigInt(s) & 127n))} ${a >> (BigInt(s) & 127n)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     console.log(`u128 ${a}: unsigned ${a !== 0n && (a & (a - 1n)) === 0n}`);

@@ -105,7 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::cond(fits, result::ok(value), result::err(refused))
             }
-            Std::ToBig => Expr::call(Expr::js_global("BigInt"), vec![arg()]).built_in(),
+            Std::ToBig => Expr::converted(js::Conversion::BigInt, arg()),
             Std::Cast { into } => {
                 let (from, to) = match into {
                     true => (generic_args.type_at(0), generic_args.type_at(1)),
@@ -662,8 +662,8 @@ pub(in crate::lower) fn int_out_of(n: &Expr, from: Num, to: Num) -> Expr {
 /// tested, its `Ok`'s (#366, `mir::std_calls`).
 pub(in crate::lower) fn int_as(n: Expr, from: Num, to: Num) -> Expr {
     match (from.big(), to.big()) {
-        (false, true) => Expr::call(Expr::js_global("BigInt"), vec![n]).built_in(),
-        (true, false) => Expr::call(Expr::js_global("Number"), vec![n]).built_in(),
+        (false, true) => Expr::converted(js::Conversion::BigInt, n),
+        (true, false) => Expr::converted(js::Conversion::Number, n),
         _ => n,
     }
 }
@@ -714,5 +714,5 @@ pub(in crate::lower) fn duration_subsec(duration: Expr, unit: i64) -> Expr {
         1 => part,
         _ => Expr::bin(Op::Div, part, Expr::bigint(i128::from(unit))),
     };
-    Expr::call(Expr::js_global("Number"), vec![part]).built_in()
+    Expr::converted(js::Conversion::Number, part)
 }

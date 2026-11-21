@@ -9,8 +9,7 @@ function i32AddAssignCents_addAssign(self, c) {
 }
 
 function i64SubAssignCents_subAssign(self, c) {
-  const value = BigInt.asIntN(64, BigInt(c[0]) * 100n);
-  self.value = BigInt.asIntN(64, self.value - value);
+  self.value = BigInt.asIntN(64, self.value - BigInt.asIntN(64, BigInt(c[0]) * 100n));
 }
 
 function u32ShlAssignCents_shlAssign(self, c) {

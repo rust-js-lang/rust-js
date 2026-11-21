@@ -18,8 +18,7 @@ function refMutTallyHasher_write(tally, bytes) {
   if (bytes[0] === 116) {
     tally.value = { bytes: 100n };
   }
-  const value = BigInt(bytes.length);
-  tally.value.bytes = BigInt.asUintN(64, tally.value.bytes + value);
+  tally.value.bytes = BigInt.asUintN(64, tally.value.bytes + BigInt(bytes.length));
 }
 
 function feed(h, HHasher) {

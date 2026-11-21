@@ -369,7 +369,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ))
             }
             // An `i64` or `u64` is its nearest `f64`, as `as` rounds it.
-            (source, Num::F64) if source.big() => Ok(Expr::call(Expr::js_global("Number"), vec![v]).built_in()),
+            (source, Num::F64) if source.big() => Ok(Expr::converted(js::Conversion::Number, v)),
             // Every other integer fits exactly in an f64.
             (_, Num::F64) => Ok(v),
             // Its nearest `f32`, rounded once: through an `f64` it would be
@@ -393,7 +393,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // mask keeps in range: `x & 1023n`.
                     (true, false) if v.as_bigint().is_some() => target.wrap(v),
                     (true, false) if masked(&v).is_some_and(|mask| mask >= 0 && mask as u128 <= thi) => {
-                        Expr::call(Expr::js_global("Number"), vec![v]).built_in()
+                        Expr::converted(js::Conversion::Number, v)
                     }
                     // Into range as a BigInt, then a number.
                     (true, false) => {
@@ -402,7 +402,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             Expr::member(Expr::js_global("BigInt"), method),
                             vec![Expr::int(target.bits().into()), v],
                         );
-                        Expr::call(Expr::js_global("Number"), vec![wrapped]).built_in()
+                        Expr::converted(js::Conversion::Number, wrapped)
                     }
                     _ if fits => v,
                     _ => target.wrap(v),
@@ -438,11 +438,7 @@ pub(in crate::lower) fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>,
     }
     match r.as_bigint() {
         Some(n) => Expr::int(n & 63),
-        None => Expr::call(
-            Expr::js_global("Number"),
-            vec![Expr::bin(Op::BitAnd, r, Expr::bigint(63))],
-        )
-        .built_in(),
+        None => Expr::converted(js::Conversion::Number, Expr::bin(Op::BitAnd, r, Expr::bigint(63))),
     }
 }
 
@@ -450,7 +446,7 @@ pub(in crate::lower) fn shift_amount_of<'tcx>(op: BinOp, r: Expr, lhs: Ty<'tcx>,
 pub(in crate::lower) fn to_bigint(e: Expr) -> Expr {
     match e.as_int() {
         Some(n) => Expr::bigint(n),
-        None => Expr::call(Expr::js_global("BigInt"), vec![e]).built_in(),
+        None => Expr::converted(js::Conversion::BigInt, e),
     }
 }
 

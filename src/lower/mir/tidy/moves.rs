@@ -386,6 +386,7 @@ pub(super) fn leads(e: &Expr, name: &js::Name, guard: Option<&Expr>, passes: &dy
         | ExprKind::Unary(_, a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
+        | ExprKind::Converted(_, a)
         | ExprKind::Await(a) => leads(a, name, guard, passes),
         ExprKind::Index(a, b) => in_order(&mut [&**a, &**b].into_iter()),
         // Of what runs where its own test holds, `t ? e : undefined`, `b` of
