@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`const x = t ? v : undefined; if (x)` is `if (t)` of a `v` that may be `None` itself, so `maybe(None, true)` reads `undefined.name` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    let present = there || value.facts.has(js::Known::Present) || tests_present_first(test, v);\n",
+    find: "    let present = there || tests_present_first(test, v);\n",
     replace: "    let _ = there;\n    let present = true;\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },

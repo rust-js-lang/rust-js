@@ -659,7 +659,12 @@ guard's field carries MIR's `nulled` answer as a mark (ADR 0841's reader
 `binding_calls`' `surely_there` asked them too until S3f; it asks the form
 alone (`ByForm`), with MIR's `present`/`null` proof, as the list above
 says, and React's port and every suite are byte-identical without the
-marks there (#2112).
+marks there (#2112). Nor does tidy's `tested_option` read `Known::Present`
+since S3d: a `t ? v : undefined` it makes `if (t)` is a `SomeWhere`, its
+`there` the node's, or tests `v != null` first; one made otherwise of a
+marked `v` is made by no lowering since S3c, and the port and every suite
+are byte-identical without the read. The architecture test holds that no
+pass asks the mark itself.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)'s first). React's port
 moves 10 files, each line upstream's or behaving the same: `==`/`!=` of two
