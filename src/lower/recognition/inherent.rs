@@ -24,6 +24,26 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .is_some_and(|hasher| self.is_std_type(hasher, StdItem::RandomState)))
     }
 
+    /// A `str`'s or a slice's `trim_prefix(p)` or `trim_suffix(p)`, Rust
+    /// 1.100's, by what its pattern `args` names is: text or a `char`, a
+    /// `char`'s predicate or a set of them, or a slice's items. `None` of
+    /// another, refused as an open call (#1656).
+    fn trim_fix(&self, owner: Ty<'tcx>, name: &str, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
+        let suffix = match name {
+            "trim_prefix" => false,
+            "trim_suffix" => true,
+            _ => return None,
+        };
+        let pattern = args.types().last()?;
+        let by = match () {
+            _ if owner.is_slice() => TrimFixBy::Items,
+            _ if owner.is_str() && self.is_string_like(pattern) => TrimFixBy::Text,
+            _ if owner.is_str() && self.is_char_predicate(pattern) => TrimFixBy::Predicate,
+            _ => return None,
+        };
+        Some(Std::TrimFix { suffix, by })
+    }
+
     /// A method of a std type's own, by its type and its name.
     pub(super) fn classify_inherent(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Std> {
         let tcx = self.tcx;
@@ -183,8 +203,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(op) = methods::text(name.as_str(), owner.is_char(), owner.is_str()) {
             return Some(Std::Text(op));
         }
-        let boolean = methods::boolean(name.as_str(), owner);
-        if let Some(known) = self.number_method(owner, name.as_str()).or(boolean) {
+        let simple = methods::boolean(name.as_str(), owner).or_else(|| self.trim_fix(owner, name.as_str(), args));
+        if let Some(known) = self.number_method(owner, name.as_str()).or(simple) {
             return Some(known);
         }
         if let Some(comb) = methods::combinator(

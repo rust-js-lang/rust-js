@@ -562,4 +562,13 @@ export const mutations: Mutation[] = [
     replace: "                    && rest.first().is_some_and(|f| false && f.is_identity())\n",
     tests: ["test/lowering-collections.test.ts", "-t", "an array's map by the identity"],
   },
+  {
+    name: "trim-fix-not-kept",
+    breaks: "`\"body\".trim_prefix(\"x\")` is `None`, its strip's, where it's the text itself (#1656)",
+    file: "src/lower/std_types/text.rs",
+    find: "                Expr::bin(Op::Coalesce, stripped, receiver)\n",
+    replace: "                stripped\n",
+    tests: ["test/corpus.test.ts", "-t", "^trim_prefix_and_suffix_strip_once_or_keep\\.rs$"],
+    snapshots: true,
+  },
 ];

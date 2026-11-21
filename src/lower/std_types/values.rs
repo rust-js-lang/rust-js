@@ -592,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.iter_source_call(known, call, &mut values, out)? {
             return Ok(js);
         }
-        if let Some(js) = self.string_call(known, call, &mut values)? {
+        if let Some(js) = self.string_call(known, call, &mut values, out)? {
             return Ok(js);
         }
         if let Some(js) = self.print_call(known, call, &mut values, out)? {
@@ -822,6 +822,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::StripPrefix
             | Std::StripSuffix
             | Std::StripCircumfix
+            | Std::TrimFix { .. }
             | Std::SplitOnce
             | Std::RsplitOnce
             | Std::Chars

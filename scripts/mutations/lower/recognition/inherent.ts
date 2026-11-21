@@ -489,4 +489,20 @@ export const mutations: Mutation[] = [
     replace: "            \"range\" if deque => Std::Text(TextOp::Slice),\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_range_checked_end_first.rs$"],
   },
+  {
+    name: "trim-fix-slice-unrecognized",
+    breaks: "a slice's `trim_prefix(&[..])` is refused as an open call (#1656) where it's its strip, else itself",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            _ if owner.is_slice() => TrimFixBy::Items,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^trim_prefix_and_suffix_strip_once_or_keep\\.rs$"],
+  },
+  {
+    name: "trim-fix-predicate-unrecognized",
+    breaks: "`trim_prefix` by a `char`'s predicate or a set of them is refused (#1656) where it's its strip, else itself",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            _ if owner.is_str() && self.is_char_predicate(pattern) => TrimFixBy::Predicate,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^trim_prefix_and_suffix_strip_once_or_keep\\.rs$"],
+  },
 ];

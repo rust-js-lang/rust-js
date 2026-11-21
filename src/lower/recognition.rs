@@ -136,6 +136,16 @@ pub(super) enum ChannelError {
     Send,
 }
 
+/// What a `trim_prefix` or `trim_suffix` strips by (`Std::TrimFix`): text
+/// or a `char`, `$stripPrefix`'s; a `char`'s predicate or a set of them,
+/// `$stripBy`'s; or a slice's items, `$sliceStrip`'s.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(super) enum TrimFixBy {
+    Text,
+    Predicate,
+    Items,
+}
+
 /// The std functions whose JS meaning rust-js knows (ADRs 0023, 0025).
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum Std {
@@ -449,6 +459,12 @@ pub(super) enum Std {
     StringEdit(StringEdit),
     /// A `bool`'s `toggle()`, 1.100's: its place given its negation (#1656).
     Toggle,
+    /// A `str`'s or a slice's `trim_prefix(p)` or `trim_suffix(p)`, 1.100's:
+    /// its strip by `p`, else itself, by what `p` is (#1656).
+    TrimFix {
+        suffix: bool,
+        by: TrimFixBy,
+    },
     /// `String::with_capacity(n)`: an empty string.
     StringWithCapacity,
     /// A range's method, or `a..=b` (ADR 0129).

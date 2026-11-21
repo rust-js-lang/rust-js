@@ -11,7 +11,7 @@ use crate::js;
 use crate::js::result;
 use crate::js::{Expr, ExprKind, Op, Stmt, StmtKind};
 use crate::lower::calls::Call;
-use crate::lower::recognition::{Std, trait_method};
+use crate::lower::recognition::{Std, TrimFixBy, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
@@ -953,6 +953,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         known: Std,
         call: Call<'_, 'tcx>,
         values: &mut std::vec::IntoIter<Expr>,
+        out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let Call {
             def_id,
@@ -1059,6 +1060,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper(name), vec![arg(), arg()])
             }
             Std::StripCircumfix => Expr::call(Expr::helper("$stripCircumfix"), vec![arg(), arg(), arg()]),
+            // `s.trim_prefix(p)`, Rust 1.100's: its strip by `p`, else `s`
+            // itself, read once, `$stripPrefix(s, p) ?? s` (#1656).
+            Std::TrimFix { suffix, by } => {
+                let receiver = arg();
+                let receiver = match receiver.reads_same() {
+                    true => receiver,
+                    false => self.spill(Role::Text, receiver, out),
+                };
+                let pattern = arg();
+                let stripped = match by {
+                    TrimFixBy::Text => Expr::call(
+                        Expr::helper(if suffix { "$stripSuffix" } else { "$stripPrefix" }),
+                        vec![receiver.clone(), pattern],
+                    ),
+                    // As `strip_prefix` of it is, a set of `char`s its predicate.
+                    TrimFixBy::Predicate => self.text_values(
+                        TextOp::StripBy(suffix),
+                        vec![receiver.clone(), pattern],
+                        tys,
+                        generic_args,
+                        span,
+                        out,
+                    )?,
+                    TrimFixBy::Items => {
+                        let item = match tys[0].peel_refs().kind() {
+                            ty::Slice(item) => *item,
+                            _ => return Err(self.unsupported(span, "trimming this slice")),
+                        };
+                        let mut list = vec![receiver.clone(), pattern, Expr::bool(suffix)];
+                        list.extend(self.item_eq((item, item), true, span)?);
+                        Expr::call(Expr::helper("$sliceStrip"), list)
+                    }
+                };
+                Expr::bin(Op::Coalesce, stripped, receiver)
+            }
             Std::StringNew => Expr::str(""),
             Std::Trim { start, end } => self.trimmed(arg(), start, end),
             Std::AsciiCase { upper } => {

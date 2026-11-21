@@ -612,7 +612,7 @@
 + Pin::set	safe
 + Pin::static_mut	safe
 + Pin::static_ref	safe
-# str 80 of 85; bodies: 3 safe, 14 spec, 0 opaque, 63 memory, 5 none
+# str 82 of 85; bodies: 3 safe, 14 spec, 0 opaque, 63 memory, 5 none
 + str::as_bytes	memory
 - str::as_bytes_mut	memory
 - str::as_mut_ptr	memory
@@ -692,13 +692,13 @@
 + str::trim_left	memory
 + str::trim_left_matches	memory
 + str::trim_matches	memory
-- str::trim_prefix	spec
++ str::trim_prefix	spec
 + str::trim_right	memory
 + str::trim_right_matches	memory
 + str::trim_start	memory
 + str::trim_start_matches	memory
-- str::trim_suffix	spec
-# slice 129 of 135; bodies: 35 safe, 8 spec, 0 opaque, 92 memory, 0 none
++ str::trim_suffix	spec
+# slice 131 of 135; bodies: 35 safe, 8 spec, 0 opaque, 92 memory, 0 none
 - slice::align_to	memory
 - slice::align_to_mut	memory
 + slice::array_windows	memory
@@ -828,8 +828,8 @@
 + slice::trim_ascii	safe
 + slice::trim_ascii_end	safe
 + slice::trim_ascii_start	safe
-- slice::trim_prefix	memory
-- slice::trim_suffix	memory
++ slice::trim_prefix	memory
++ slice::trim_suffix	memory
 + slice::utf8_chunks	safe
 + slice::windows	memory
 + slice::write_clone_of_slice	memory
