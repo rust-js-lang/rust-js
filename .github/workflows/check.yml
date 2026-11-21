@@ -52,17 +52,20 @@ on:
 permissions:
   contents: read
 
-# One run at a time of each branch, and no branch's touches another's. A
-# run waits for the one running, then runs, and never cancels it, a push's
-# and one started by hand alike: of several waiting, only the newest runs,
-# and the next finished run's mutations are of all their changes (the
-# `plan` job). (When a run started by hand cancelled the one running, with
+# One run at a time of each branch and how it was started, a push's or one
+# by hand, and no branch's touches another's. A run waits for the one
+# running, then runs, and never cancels it: of several waiting, only the
+# newest runs, and the next finished run's mutations are of all their
+# changes (the `plan` job). One started by hand waits apart from the
+# pushes', as GitHub drops a waiting run of the group for a newer one: a
+# check started by hand to measure, in the pushes' group, dropped the
+# checks of two pushes waiting behind it (44846113211). (When a run started by hand cancelled the one running, with
 # three agents pushing to `main`, each starting one after it pushed, no
 # check of `main` finished for hours.) rustc-tests.yml's runs are a group
 # of their own, and so is nightly.yml's call, so neither waits for nor
 # cancels this.
 concurrency:
-  group: ${{ github.workflow == 'Check' && format('ci-{0}', github.ref) || format('ci-{0}', github.workflow) }}
+  group: ${{ github.workflow == 'Check' && format('ci-{0}-{1}', github.ref, github.event_name) || format('ci-{0}', github.workflow) }}
   cancel-in-progress: false
 
 jobs:

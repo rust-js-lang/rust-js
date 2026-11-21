@@ -364,13 +364,17 @@ test("rustc-tests.yml ablates the intervals' rules in shards and merges them", (
 // A check runs to its end: one started after it, by a push or by hand,
 // waits, and no other workflow shares its group to cancel it. When a run
 // started by hand cancelled the one running, three agents pushing to
-// `main` left no check of it finished for hours.
+// `main` left no check of it finished for hours. And one started by hand
+// waits apart from the pushes': GitHub keeps only the newest of a group's
+// waiting runs, and a measuring check in the pushes' group dropped two
+// pushes' checks waiting behind it (44846113211).
 test("a check is never cancelled by another run", () => {
   const dir = join(root, ".github/workflows");
   type Workflow = { concurrency?: { group?: string; "cancel-in-progress"?: unknown } };
   const concurrency = (file: string) => (Bun.YAML.parse(readFileSync(join(dir, file), "utf8")) as Workflow).concurrency ?? {};
   const check = concurrency("check.yml");
   expect(check["cancel-in-progress"]).toBe(false);
+  expect(check.group).toContain("format('ci-{0}-{1}', github.ref, github.event_name)");
   // Started by hand, rustc-tests.yml's group is its own, never the check's `ci-<ref>`.
   expect(concurrency("rustc-tests.yml").group).toContain("format('rustc-{0}', github.ref)");
   // Called by a check, its group, which cancels, is of the caller's branch:
@@ -379,7 +383,7 @@ test("a check is never cancelled by another run", () => {
   expect(called.slice(called.indexOf("||"))).toContain("github.ref");
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".yml") && f !== "check.yml")) {
     const group = concurrency(file).group ?? "";
-    expect(group, file).not.toContain("== 'Check' && format('ci-{0}', github.ref)");
+    expect(group, file).not.toContain("== 'Check' && format('ci-{0}-{1}', github.ref, github.event_name)");
     expect(group.replace(/'ci-\{0\}-/g, ""), file).not.toMatch(/format\('ci-\{0\}', github\.ref\)/);
   }
 });
