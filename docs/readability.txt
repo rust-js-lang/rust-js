@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2825
-lines	383305
+files	2827
+lines	384008
 temporaries	0	0
 labeled blocks	0	0
-while (true)	242	6.3
-$iter	3348	87.3
-Iterator.from	309	8.1
-return;	440	11.5
-renamed x$1	17213	449.1
-role fallbacks	9593	250.3
+while (true)	245	6.4
+$iter	3369	87.7
+Iterator.from	309	8
+return;	441	11.5
+renamed x$1	17261	449.5
+role fallbacks	9630	250.8
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	60
@@ -1022,7 +1022,7 @@ test/corpus/frozen_borrow_named.js	95	0	0	0	0	0	1	4	3
 test/corpus/fs_canonicalize_and_current_dir.js	105	0	0	0	0	0	1	12	8
 test/corpus/fs_dirs_and_metadata.js	365	0	0	1	0	0	0	78	31
 test/corpus/fs_file.js	372	0	0	1	0	0	0	57	31
-test/corpus/fs_file_shared.js	372	0	0	0	0	0	1	44	28
+test/corpus/fs_file_shared.js	273	0	0	0	0	0	1	35	23
 test/corpus/fs_write_only_fails.js	34	0	0	0	0	0	0	0	0
 test/corpus/function_given_for_a_mut_param.js	35	0	0	0	0	0	0	0	0
 test/corpus/function_value_drops_by_need.js	80	0	0	0	3	0	0	0	2
@@ -1080,6 +1080,7 @@ test/corpus/generic_drops_nothing.js	150	0	0	0	0	0	1	0	2
 test/corpus/generic_eq_of_an_endless_trusted_len.js	144	0	0	0	1	0	0	0	1
 test/corpus/generic_extend.js	114	0	0	0	0	0	0	0	0
 test/corpus/generic_extend_of_own_hints.js	134	0	0	0	0	0	2	3	0
+test/corpus/generic_flatten_of_a_source_fused_as_its_caller_says.js	254	0	0	3	8	0	1	2	5
 test/corpus/generic_flatten_of_vecs.js	89	0	0	0	6	0	0	2	2
 test/corpus/generic_fmt_traits.js	57	0	0	0	0	0	0	0	0
 test/corpus/generic_fn_item_takes_generic_forms.js	89	0	0	0	0	0	0	0	0
@@ -1225,6 +1226,7 @@ test/corpus/held_keys.js	100	0	0	0	0	0	0	13	8
 test/corpus/held_lazy_adapters_hint.js	302	0	0	0	9	0	0	22	18
 test/corpus/held_map_made_knowing_its_back_given_apart.js	134	0	0	0	0	0	0	0	1
 test/corpus/held_peekable.js	209	0	0	0	3	0	1	4	4
+test/corpus/held_rev_of_an_in_place_skip_knows_its_hint.js	679	0	0	0	13	0	0	55	37
 test/corpus/held_revs_of_lazy_sources.js	174	0	0	0	1	0	0	8	6
 test/corpus/held_skip_stepped_from_its_back_knows_its_length.js	54	0	0	0	1	0	0	0	0
 test/corpus/held_skip_take.js	120	0	0	0	0	0	0	0	1
@@ -1334,7 +1336,7 @@ test/corpus/io_error_other_drops_what_it_holds.js	49	0	0	0	0	0	0	0	0
 test/corpus/io_error_values.js	78	0	0	0	0	0	0	0	3
 test/corpus/io_read_chain_take_bytes.js	369	0	0	0	0	0	0	65	19
 test/corpus/io_read_deque.js	88	0	0	0	0	0	0	2	2
-test/corpus/io_read_empty_and_repeat.js	291	0	0	0	0	0	0	11	9
+test/corpus/io_read_empty_and_repeat.js	160	0	0	0	0	0	0	11	9
 test/corpus/io_read_generic.js	217	0	0	0	0	0	0	45	17
 test/corpus/io_read_slice.js	256	0	0	0	0	0	0	2	2
 test/corpus/io_read_to_end_capacity.js	133	0	0	0	0	0	0	13	7

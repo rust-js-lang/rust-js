@@ -113,40 +113,11 @@ function run() {
   const result = $fileCreate(path);
   if (result.TAG !== "Err") {
     const file = result._0;
-    let tmp = file;
-    $fileWriter.writeAll(
-      {
-        get value() {
-          return tmp;
-        },
-        set value(value) {
-          tmp = value;
-        },
-      },
-      [111, 110, 101, 10, 116, 119, 111, 10],
-    );
-    let writer = file;
-    $fileWriter.writeFmt(
-      {
-        get value() {
-          return writer;
-        },
-        set value(value) {
-          writer = value;
-        },
-      },
-      "three\n",
-    );
+    $fileWriter.writeAll({ value: file }, [111, 110, 101, 10, 116, 119, 111, 10]);
+    const writer = file;
+    $fileWriter.writeFmt({ value: writer }, "three\n");
     logTo(file, ["four", "five"], $fileWriter);
-    let tmp$1 = file;
-    const result$1 = $fileReader.streamPosition({
-      get value() {
-        return tmp$1;
-      },
-      set value(value) {
-        tmp$1 = value;
-      },
-    });
+    const result$1 = $fileReader.streamPosition({ value: file });
     if (result$1.TAG === "Err") {
       return $ioThrow(result$1._0);
     }
@@ -159,52 +130,15 @@ function run() {
       const result = $fileOpen(path);
       if (result.TAG !== "Err") {
         const file = result._0;
-        let a = file;
-        let b = file;
+        const a = file;
+        const b = file;
         const four = [0, 0, 0, 0];
-        $fileReader.readExact(
-          {
-            get value() {
-              return a;
-            },
-            set value(value) {
-              a = value;
-            },
-          },
-          four,
-        );
-        $fileReader.readExact(
-          {
-            get value() {
-              return b;
-            },
-            set value(value) {
-              b = value;
-            },
-          },
-          four,
-        );
-        const result$1 = $fileReader.streamPosition({
-          get value() {
-            return a;
-          },
-          set value(value) {
-            a = value;
-          },
-        });
+        $fileReader.readExact({ value: a }, four);
+        $fileReader.readExact({ value: b }, four);
+        const result$1 = $fileReader.streamPosition({ value: a });
         if (result$1.TAG !== "Err") {
           console.log(`[${four.join(", ")}] ${result$1._0}`);
-          const result = $fileReader.seek(
-            {
-              get value() {
-                return a;
-              },
-              set value(value) {
-                a = value;
-              },
-            },
-            { TAG: "Start", _0: 0n },
-          );
+          const result = $fileReader.seek({ value: a }, { TAG: "Start", _0: 0n });
           if (result.TAG === "Err") {
             return $ioThrow(result._0);
           }
@@ -248,45 +182,12 @@ function run() {
                   const result$1 = $openOptions().read(true).write(true).open(path);
                   if (result$1.TAG !== "Err") {
                     const both = result$1._0;
-                    let tmp = both;
-                    const result = $fileReader.seek(
-                      {
-                        get value() {
-                          return tmp;
-                        },
-                        set value(value) {
-                          tmp = value;
-                        },
-                      },
-                      { TAG: "End", _0: -5n },
-                    );
+                    const result = $fileReader.seek({ value: both }, { TAG: "End", _0: -5n });
                     if (result.TAG === "Err") {
                       return $ioThrow(result._0);
                     }
-                    let tmp$1 = both;
-                    $fileWriter.writeAll(
-                      {
-                        get value() {
-                          return tmp$1;
-                        },
-                        set value(value) {
-                          tmp$1 = value;
-                        },
-                      },
-                      [70, 73, 86, 69],
-                    );
-                    let tmp$2 = both;
-                    const result$2 = $fileReader.seek(
-                      {
-                        get value() {
-                          return tmp$2;
-                        },
-                        set value(value) {
-                          tmp$2 = value;
-                        },
-                      },
-                      { TAG: "Current", _0: -4n },
-                    );
+                    $fileWriter.writeAll({ value: both }, [70, 73, 86, 69]);
+                    const result$2 = $fileReader.seek({ value: both }, { TAG: "Current", _0: -4n });
                     if (result$2.TAG === "Err") {
                       return $ioThrow(result$2._0);
                     }

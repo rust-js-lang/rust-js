@@ -71,6 +71,19 @@ pub(crate) enum ByteSource<'tcx> {
 }
 
 impl ByteSource<'_> {
+    /// Whether its runtime dictionaries' methods write the box they're given
+    /// it in, `r.value = ..`, its reader's and a file's writer's,
+    /// `$fileWriter`, whose `Write` calls are made as its reads are:
+    /// `$sliceReader`'s, which re-points the slice past what's read. The
+    /// others' read it, or change the object it holds in place, so a known
+    /// one's place is given as a plain box,
+    /// `{ value: e }`, not a handle on it, which reads the same where nothing
+    /// is written through it (#1329). test/io-readers.test.ts holds each
+    /// dictionary to it, a box whose `value` setter throws.
+    pub(crate) fn writes_its_box(self) -> bool {
+        matches!(self, ByteSource::Slice)
+    }
+
     /// Whether its impls in std write `name`, a method of `Read`,
     /// `BufRead` or `Seek`, so its dictionary holds it: each source's
     /// `DICTIONARY_METHODS`, and `Empty`'s `read_until`, `skip_until` and

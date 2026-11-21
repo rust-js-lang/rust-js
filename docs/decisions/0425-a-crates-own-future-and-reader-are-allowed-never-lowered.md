@@ -708,3 +708,35 @@ dictionary is `operational`'s alone. No output changes: every corpus case
 against its snapshot, the crate pairs and the crate corpus as before;
 `unlowered_helpers.rs`'s and `unlowered_impls.rs`'s `Future` are still
 never lowered.
+
+## Amendment (2026-11-21): a known source whose dictionary never writes its box is given a plain one (#1329)
+
+A known byte source's call gives its place in the box generic code gives
+it (ADR 0454). Of a place JS can't change in place, an `io::empty()`
+local, `undefined`, or a `&File` copied for the call, that box was a
+handle, `{ get value() { return e; }, set value(value) { e = value; } }`,
+which nothing wrote through: `$emptyReader` never touches it, and
+`$fileReader` and `$fileWriter` read its `value` alone.
+
+**Decided by the user (2026-11-21):** where the source's runtime
+dictionaries never write the box, a known one's place is given as a plain
+box, `{ value: e }`. The dictionary is the same one generic and `dyn`
+callers are given, with their own boxes. Which ones write it is
+`ByteSource::writes_its_box` (`recognition/io.rs`): `$sliceReader`, which
+re-points the slice past what's read, alone. `std_types/io.rs` asks it.
+
+ADR 0262 case: no observable difference, since nothing is written through
+the box, so the plain box reads as the handle did.
+
+The fact is about the runtime, so `test/io-readers.test.ts` holds the two
+together. Each source's dictionary is called with a box whose `value`
+setter throws, and it must throw exactly where the compiler gives a known
+one's place a handle. A file's reader and writer are read for what they
+assign instead, as no test opens the OS file their box holds. Mutations
+`unwritten-box-a-handle` and `slice-box-unwritten` cover it.
+
+Two snapshots move, 255 lines to 25. In `io_read_empty_and_repeat`, the
+11 calls on `e` lose their handles. In `fs_file_shared`, the `&File`
+calls lose their handles, and with them the `let` copies those handles
+needed (`let tmp = file;`). docs/readability.txt is blessed: `$iter`'s
+share grows from 87.3 to 87.4 only by the lines removed.

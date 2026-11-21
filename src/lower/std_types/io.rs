@@ -62,7 +62,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A `VecDeque<u8>`'s own, but its `read` and `fill_buf`,
                 // which read its front slice alone, which a JS array has
                 // none of (#1302).
-                let deque = self.recognition().byte_source(tr.self_ty()) == Some(ByteSource::Deque);
+                let source = self.recognition().byte_source(tr.self_ty());
+                let deque = source == Some(ByteSource::Deque);
                 let name = tcx.item_name(call.def_id);
                 if deque && matches!(name.as_str(), "read" | "fill_buf") {
                     return Err(self.unsupported(
@@ -95,6 +96,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::handle(held.clone())
                     }
                     _ => receiver,
+                };
+                // A handle on a place that a source's dictionary never writes
+                // through, an `io::empty()` local's: a plain box of the place,
+                // which reads the same (#1329).
+                let receiver = match (receiver.kind, source) {
+                    (crate::js::ExprKind::Handle(place, _), Some(source)) if !source.writes_its_box() => {
+                        crate::lower::mut_refs::boxed(*place)
+                    }
+                    (kind, _) => Expr { kind, ..receiver },
                 };
                 let mut given = vec![receiver];
                 given.extend(values.by_ref());

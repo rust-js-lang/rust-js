@@ -46,71 +46,22 @@ function countLines(b, BBufRead) {
 }
 
 function main() {
-  let e;
+  const e = undefined;
   const buf = [7, 7, 7];
   console.log(
-    `${$unwrapOk(
-      $emptyReader.read(
-        {
-          get value() {
-            return e;
-          },
-          set value(value) {
-            e = value;
-          },
-        },
-        buf,
-      ),
-      undefined,
-      $ioErrorDebug,
-    )} [${buf.join(", ")}]`,
+    `${$unwrapOk($emptyReader.read({ value: e }, buf), undefined, $ioErrorDebug)} [${buf.join(", ")}]`,
   );
   let failed = $writeExpectErr(
-    $writeTry(() =>
-      $emptyReader.readExact(
-        {
-          get value() {
-            return e;
-          },
-          set value(value) {
-            e = value;
-          },
-        },
-        buf,
-      ),
-    ),
+    $writeTry(() => $emptyReader.readExact({ value: e }, buf)),
     "called `Result::unwrap_err()` on an `Ok` value",
   );
   console.log(`${failed.kind} ${$ioErrorDisplay(failed)}`);
-  console.log(
-    `${$ioResultDebug(
-      $writeTry(() =>
-        $emptyReader.readExact(
-          {
-            get value() {
-              return e;
-            },
-            set value(value) {
-              e = value;
-            },
-          },
-          [],
-        ),
-      ),
-    )}`,
-  );
+  console.log(`${$ioResultDebug($writeTry(() => $emptyReader.readExact({ value: e }, [])))}`);
   let s = "<";
   console.log(
     `${$unwrapOk(
       $emptyReader.readToString(
-        {
-          get value() {
-            return e;
-          },
-          set value(value) {
-            e = value;
-          },
-        },
+        { value: e },
         {
           get value() {
             return s;
@@ -126,60 +77,14 @@ function main() {
   );
   const v = [1];
   console.log(
-    `${$unwrapOk(
-      $emptyReader.readToEnd(
-        {
-          get value() {
-            return e;
-          },
-          set value(value) {
-            e = value;
-          },
-        },
-        v,
-      ),
-      undefined,
-      $ioErrorDebug,
-    )} [${v.join(", ")}]`,
+    `${$unwrapOk($emptyReader.readToEnd({ value: e }, v), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
-  console.log(
-    `${
-      $unwrapOk(
-        $emptyReader.fillBuf({
-          get value() {
-            return e;
-          },
-          set value(value) {
-            e = value;
-          },
-        }),
-        undefined,
-        $ioErrorDebug,
-      ).length
-    }`,
-  );
-  $emptyReader.consume(
-    {
-      get value() {
-        return e;
-      },
-      set value(value) {
-        e = value;
-      },
-    },
-    3,
-  );
+  console.log(`${$unwrapOk($emptyReader.fillBuf({ value: e }), undefined, $ioErrorDebug).length}`);
+  $emptyReader.consume({ value: e }, 3);
   console.log(
     `${$unwrapOk(
       $emptyReader.readLine(
-        {
-          get value() {
-            return e;
-          },
-          set value(value) {
-            e = value;
-          },
-        },
+        { value: e },
         {
           get value() {
             return s;
@@ -194,50 +99,14 @@ function main() {
     )} ${$debugStr(s)}`,
   );
   console.log(
-    `${$unwrapOk(
-      $emptyReader.readUntil(
-        {
-          get value() {
-            return e;
-          },
-          set value(value) {
-            e = value;
-          },
-        },
-        10,
-        v,
-      ),
-      undefined,
-      $ioErrorDebug,
-    )} [${v.join(", ")}]`,
+    `${$unwrapOk($emptyReader.readUntil({ value: e }, 10, v), undefined, $ioErrorDebug)} [${v.join(", ")}]`,
   );
   const end = $unwrapOk(
-    $emptyReader.seek(
-      {
-        get value() {
-          return e;
-        },
-        set value(value) {
-          e = value;
-        },
-      },
-      { TAG: "End", _0: -4n },
-    ),
+    $emptyReader.seek({ value: e }, { TAG: "End", _0: -4n }),
     undefined,
     $ioErrorDebug,
   );
-  const arg = $unwrapOk(
-    $emptyReader.streamPosition({
-      get value() {
-        return e;
-      },
-      set value(value) {
-        e = value;
-      },
-    }),
-    undefined,
-    $ioErrorDebug,
-  );
+  const arg = $unwrapOk($emptyReader.streamPosition({ value: e }), undefined, $ioErrorDebug);
   console.log(`${end} ${arg}`);
   console.log(`${countLines(undefined, $emptyReader)}`);
   const result = first(undefined, $emptyReader);

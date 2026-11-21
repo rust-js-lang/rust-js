@@ -139,4 +139,12 @@ export const mutations: Mutation[] = [
       "String with text"
     ]
   },
+  {
+    name: "unwritten-box-a-handle",
+    breaks: "a known `io::empty()`'s place is given `$emptyReader` in a handle, `{ get value() { return e; }, set value(value) { e = value; } }`, where nothing writes it and `{ value: e }` reads the same (#1329)",
+    file: "src/lower/std_types/io.rs",
+    find: "(crate::js::ExprKind::Handle(place, _), Some(source)) if !source.writes_its_box() => {",
+    replace: "(crate::js::ExprKind::Handle(place, _), Some(source)) if false && !source.writes_its_box() => {",
+    tests: ["test/io-readers.test.ts"],
+  },
 ];

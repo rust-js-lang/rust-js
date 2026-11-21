@@ -275,4 +275,12 @@ export const mutations: Mutation[] = [
       "^readers_of_the_crates_own_and_boxed.rs$"
     ]
   },
+  {
+    name: "slice-box-unwritten",
+    breaks: "a known `&[u8]`'s place is given `$sliceReader` in a plain box, `{ value: s }`, whose re-pointing past what's read is lost, the slice read again from its start (#1329)",
+    file: "src/lower/recognition/io.rs",
+    find: "        matches!(self, ByteSource::Slice)\n",
+    replace: "        matches!(self, ByteSource::Deque)\n",
+    tests: ["test/io-readers.test.ts"],
+  },
 ];
