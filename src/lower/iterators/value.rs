@@ -6,6 +6,7 @@
 //! helper's name looks like.
 
 use crate::js::{self, Expr, Known};
+use crate::lower::iterators::in_place_forms::InPlaceForm;
 use crate::lower::recognition::Wrapper;
 use crate::lower::std_types::range::RangeKind;
 
@@ -350,6 +351,16 @@ fn enumerating() -> Expr {
         vec![x.into(), i.into()],
         vec![js::StmtKind::Return(Some(pair)).at(js::Span::NONE)],
     )
+}
+
+/// An enumeration of `it` made in place in `form`, as the in-place forms
+/// owner chooses it (`enumeration_form`, `stepped_by_next_alone`):
+/// `$enumerate`, which passes its source's `nth` on, or JS's own map.
+pub(in crate::lower) fn enumerated_in(form: InPlaceForm, it: Expr) -> Expr {
+    match form {
+        InPlaceForm::Enumerate => enumerated_passing(it),
+        _ => enumerated(it),
+    }
 }
 
 /// `$enumerate(it)` made in place where its source's own `nth` may be

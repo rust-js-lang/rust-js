@@ -65,14 +65,12 @@ function byDyn(src, IIterator) {
   src = src.impl.getMut(src).value;
   for (const [i, x] of $skipping(
     $enumerate(
-      $lent(
-        $given(src, {
-          next: IIterator.next,
-          sizeHint: IIterator.sizeHint,
-          nth: IIterator.nth,
-          last: IIterator.last,
-        }),
-      ),
+      $given(src, {
+        next: IIterator.next,
+        sizeHint: IIterator.sizeHint,
+        nth: IIterator.nth,
+        last: IIterator.last,
+      }),
     ),
     1,
     (value) => {},
@@ -85,14 +83,12 @@ function byImpl(src, IIterator, GetMutBox) {
   src = GetMutBox.getMut(src).value;
   for (const [i, x] of $skipping(
     $enumerate(
-      $lent(
-        $given(src, {
-          next: IIterator.next,
-          sizeHint: IIterator.sizeHint,
-          nth: IIterator.nth,
-          last: IIterator.last,
-        }),
-      ),
+      $given(src, {
+        next: IIterator.next,
+        sizeHint: IIterator.sizeHint,
+        nth: IIterator.nth,
+        last: IIterator.last,
+      }),
     ),
     1,
     (value) => {},

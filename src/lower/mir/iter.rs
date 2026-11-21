@@ -913,12 +913,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// owner says (`enumeration_form`), `$enumerate`, which passes its
     /// source's `nth` on, or JS's own map (#2238).
     fn enumerated_in_place(&self, it: Expr, iter_ty: Ty<'tcx>) -> Expr {
-        match self.enumeration_form(iter_ty) {
-            crate::lower::iterators::in_place_forms::InPlaceForm::Enumerate => {
-                crate::lower::iterators::enumerated_passing(it)
-            }
-            _ => crate::lower::iterators::enumerated(it),
-        }
+        crate::lower::iterators::enumerated_in(self.enumeration_form(iter_ty), it)
     }
 
     /// What a std iterator method is given, `values` of `arg_tys`: its

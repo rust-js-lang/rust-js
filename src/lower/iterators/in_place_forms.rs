@@ -372,6 +372,17 @@ pub(in crate::lower) fn table() -> String {
     out
 }
 
+/// The form an adapter made in place, of `form`, is stepped as where only
+/// its `next` is asked, a loop's: of an enumeration, JS's own map, which
+/// stands for `Enumerate` wherever nothing asks its `nth` (#2238); of
+/// another, itself.
+pub(in crate::lower) fn stepped_by_next_alone(form: InPlaceForm) -> InPlaceForm {
+    match form {
+        InPlaceForm::Enumerate => InPlaceForm::StepsEnumerate,
+        form => form,
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The form an `enumerate()` of a `source` made in place is made as:
     /// JS's own map, where no adapter between may ask the source's own
