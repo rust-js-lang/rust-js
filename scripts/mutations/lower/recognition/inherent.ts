@@ -529,4 +529,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_map_gives_a_new_rc_and_drops_the_old\\.rs$"],
   },
+  {
+    name: "box-map-unrecognized",
+    breaks: "`Box::map(b, f)`, Rust 1.100's, is refused as an open call (#1656)",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            \"map\" if owner.is_box() => return Some(Std::BoxMap),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^box_map_gives_its_value_to_f_and_drops_none\\.rs$"],
+  },
 ];

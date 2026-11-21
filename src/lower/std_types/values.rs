@@ -259,6 +259,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // And `Box::take`, which moves what the box holds out and
                     // drops nothing, the box left unwritten (#1656).
                     | Std::Uninit(crate::lower::std_types::uninit::UninitOp::BoxTake)
+                    // And `Box::map`, which moves it into `f`, whose it is.
+                    | Std::BoxMap
                     | Std::OptionPlace(OptionPlaceOp::TakeIf)
                     // And `flatten()`, which moves the inner `Option` out and
                     // drops nothing (#1857).
@@ -659,6 +661,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.discriminant_value(arg(), of, big, out)
             }
             Std::Leak => self.leaked(arg(), output),
+            Std::BoxMap => {
+                let boxed = arg();
+                crate::lower::calls::apply(arg(), vec![boxed])
+            }
             Std::Pointee => self.through_refs(arg(), tys[0]).0,
             Std::Last
             | Std::Cloned

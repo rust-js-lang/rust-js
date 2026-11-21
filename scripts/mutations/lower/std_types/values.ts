@@ -841,4 +841,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^box_take_moves_out_and_leaves_the_box_unwritten\\.rs$"],
   },
+  {
+    name: "box-map-of-a-destructor-refused",
+    breaks: "`Box::map` of a value with a destructor is refused, where it moves the value into `f`, whose it is, and drops none of it (#1656)",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::BoxMap\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^box_map_gives_its_value_to_f_and_drops_none\\.rs$"],
+  },
+  {
+    name: "box-map-unmapped",
+    breaks: "`Box::map(b, f)` is the box's value, `f` never called (#1656)",
+    file: "src/lower/std_types/values.rs",
+    find: "                crate::lower::calls::apply(arg(), vec![boxed])\n",
+    replace: "                boxed\n",
+    tests: ["test/corpus.test.ts", "-t", "^box_map_gives_its_value_to_f_and_drops_none\\.rs$"],
+  },
 ];

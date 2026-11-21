@@ -163,6 +163,10 @@ pub(super) enum Std {
     /// freeing nothing itself, is the value, its `&mut` a box of it where
     /// it's one JS can't change in place, `{ value: s }` (ADR 0334).
     Leak,
+    /// `Box::map(b, f)`, Rust 1.100's: `f` of what the box holds, which a
+    /// `Box` is in JS, `f(b)`; `f` owns the value, so `map` drops none of
+    /// it, and only frees its allocation, which JS doesn't (#1656).
+    BoxMap,
     /// `o.as_ref()` and `o.as_mut()` of an `Option`: the `Option` its
     /// reference points at, whose items' references are the items (ADR 0023),
     /// and whose `&mut`s to what isn't an object a std call's items (ADR 0099).

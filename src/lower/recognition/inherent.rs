@@ -26,7 +26,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A method Rust 1.100 stabilized that rust-js lowers (#1656):
     /// `Vec::from_fn(n, f)`, as `array::from_fn` is; `Box::take(b)`, what
-    /// it holds and the box emptied; `Rc::map(r, f)` and `Arc::map`, `f`'s
+    /// it holds and the box emptied; `Box::map(b, f)`, `f`'s result;
+    /// `Rc::map(r, f)` and `Arc::map`, `f`'s
     /// result in an `Rc` of its own; and a `str`'s or a
     /// slice's `trim_prefix(p)` or `trim_suffix(p)`, by what its pattern
     /// `args` names is: text or a `char`, a `char`'s predicate or a set of
@@ -37,6 +38,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 return Some(Std::Slice(SliceOp::FromFn { given_length: true }));
             }
             "take" if owner.is_box() => return Some(Std::Uninit(UninitOp::BoxTake)),
+            "map" if owner.is_box() => return Some(Std::BoxMap),
             "map" if rc_pointee(self.tcx, owner).is_some() => return Some(Std::Rc(RcOp::Map)),
             "trim_prefix" => false,
             "trim_suffix" => true,

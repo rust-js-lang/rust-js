@@ -569,7 +569,7 @@
 - String::try_reserve	none
 - String::try_reserve_exact	none
 + String::with_capacity	memory
-# Box 14 of 25; bodies: 3 safe, 0 spec, 0 opaque, 22 memory, 0 none
+# Box 15 of 25; bodies: 3 safe, 0 spec, 0 opaque, 22 memory, 0 none
 - Box::allocator	safe
 - Box::as_mut_ptr	memory
 - Box::as_ptr	safe
@@ -585,7 +585,7 @@
 + Box::into_raw	memory
 - Box::into_raw_with_allocator	memory
 + Box::leak	memory
-- Box::map	memory
++ Box::map	memory
 + Box::new	memory
 - Box::new_in	memory
 + Box::new_uninit	memory
