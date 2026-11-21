@@ -35,7 +35,7 @@ plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a
 plain std io_buf_reader.rs beside addresses_of_short_lived_allocations.rs
 std std_lends_beside_an_address.rs beside vec_set_len.rs
 
-#1343 P2 (neighbours): `ptr::addr_eq` of two `dyn Fn` `Arc`s is refused ("`size_of` of a value without one size") beside a case that counts an `Rc` of a `dyn Fn`
+#1343 P2 (neighbours): `ptr::addr_eq` of two `dyn Fn` `Rc`s' values is refused ("comparing the addresses of two `dyn ..`s in a crate that counts an `Rc` of one") beside a case that counts an `Rc` of a `dyn Fn`
 plain std dyn_fn_addresses_of_rcs.rs beside rc_fn_ptr_eq_of_param.rs
 
 #1892 P2 (neighbours): a Vec grown by an iterator rust-js can't count is refused in a crate that reads a Vec's capacity

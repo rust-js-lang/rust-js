@@ -1,4 +1,4 @@
-//@ library-refused: `size_of` of a value without one size
+//@ library-refused: comparing the addresses of two `dyn std::ops::Fn(u32) -> u32`s in a crate that counts an `Rc` of one (#1343)
 // Two `Rc::new`s are two allocations, apart to Rust, so two `Rc<dyn Fn>`s
 // made of one function another may hold too are apart where the crate
 // reads a `dyn Fn`'s address, `ptr::addr_eq` here: a function

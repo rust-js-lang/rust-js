@@ -749,6 +749,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_pair_dyn_pointee(pointee) {
             return Ok(Expr::call(Expr::helper("$dynPtrEq"), vec![a, b]));
         }
+        // A `dyn` that isn't its own pointer, in a crate that counts an
+        // `Rc` of one, has no size to compare its address by, and its
+        // object, an `Rc`'s value, isn't its pair (#1343).
+        if matches!(pointee.kind(), ty::Dynamic(..)) {
+            return Err(self.unsupported(
+                span,
+                &format!("comparing the addresses of two `{pointee}`s in a crate that counts an `Rc` of one (#1343)"),
+            ));
+        }
         let size = self.pointee_size(pointee, span)?;
         Ok(Expr::call(Expr::helper("$ptrEq"), vec![a, b, size]))
     }
