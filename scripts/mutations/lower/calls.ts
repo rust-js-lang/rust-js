@@ -144,32 +144,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "and-then-of-nullable-coalesced",
-    breaks:
-      "`o.and_then(nullable_fn)` stored in a nullable place is `(o != null ? f(o) : undefined) ?? null`, where it's `o != null ? f(o) : null` (ADR 0841, amended)",
-    file: "src/lower/calls.rs",
-    find: "    if gives_null_for_none(tcx, def_id) {\n",
-    replace: "    if false && gives_null_for_none(tcx, def_id) {\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "an and_then of a nullable function is stored as it is",
-    ],
-  },
-  {
-    name: "and-then-of-any-function-defined",
-    breaks:
-      "`o.and_then(f)` of a function that may give `undefined` is stored as it is in a nullable place, its `None` `undefined` there",
-    file: "src/lower/calls.rs",
-    find: "    if gives_null_for_none(tcx, def_id) {\n",
-    replace: "    if true {\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "an and_then of a nullable function is stored as it is",
-    ],
-  },
-  {
     name: "and-then-of-nullable-none-undefined",
     breaks:
       "an `and_then` of a nullable function kept in a variable gives `undefined` for `None`, `owner ? nameOfOwner(owner) : undefined`, where upstream and the function write `null` (ADR 0841, amended)",
@@ -187,7 +161,7 @@ export const mutations: Mutation[] = [
     breaks:
       "React's `nextInstance ? tryHydrateActivity(fiber, nextInstance) : undefined`, an `and_then` of a closure of a nullable function's call giving `undefined` for `None` (ADR 0841, amended)",
     file: "src/lower/calls.rs",
-    find: "        ty::Closure(..) if then.facts.has(Known::Defined) && !returned.is_some_and(bindings_null) => Expr::null(),\n",
+    find: "        ty::Closure(..) if returns_nulled && !returned.is_some_and(bindings_null) => Expr::null(),\n",
     replace: "",
     tests: [
       "test/lowering-nullable-reads.test.ts",
@@ -196,26 +170,13 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "nullable-call-of-any-function",
-    breaks:
-      "a nullable result of any function's call is the call, so `plain(n)`'s `None`, `undefined`, is a JS caller's value",
-    file: "src/lower/calls.rs",
-    find: "    if gives_null_for_none(tcx, def_id) {\n",
-    replace: "    if true {\n",
-    tests: [
-      "test/lowering-options.test.ts",
-      "-t",
-      "nullable function's call is the call",
-    ],
-  },
-  {
     name: "and-then-of-a-binding-nulled",
     breaks:
       "`and_then` of a closure of a nullable binding's call, `labels.item(0)`, writes `null` where what it's of is `None`, `option != null ? option.item(0) : null`, not JS's `input.labels?.item(0)` (ADR 0298, amended)",
     file: "src/lower/calls.rs",
-    find: "        ty::Closure(..) if then.facts.has(Known::Defined) && !returned.is_some_and(bindings_null) => Expr::null(),\n",
+    find: "        ty::Closure(..) if returns_nulled && !returned.is_some_and(bindings_null) => Expr::null(),\n",
     replace:
-      "        ty::Closure(..) if then.facts.has(Known::Defined) => Expr::null(),\n",
+      "        ty::Closure(..) if returns_nulled => Expr::null(),\n",
     tests: [
       "test/snapshots.test.ts",
       "-t",

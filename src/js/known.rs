@@ -86,16 +86,6 @@ knowns! {
     /// mapping's or a text escape's (ADRs 0070, 0971), which joined is the
     /// text itself.
     Chars,
-    /// Never `undefined`, though maybe `null`: a whole `Option` that's
-    /// `null` or a value already, a nullable thread-local's whole read
-    /// (`nulled::reads_nullable_local`, ADR 0949), a nullable function's
-    /// call (`calls::given_by`), a nullable field's read where it's made
-    /// (ADR 0620), or what's set through a variable holding a cell's
-    /// handle that MIR shows is so, `make(context)` of
-    /// `set(Some(make(context)))`. A nullable place stores it as it is
-    /// (`Storage::written`, ADR 0841). It says nothing of whether an
-    /// `Option` is there, which may be `None` (#539).
-    Defined,
     /// The `None` a `take()` writes over a place rust-js made, a variable
     /// or a crate struct's field, a plain data property, read into a
     /// `const` just before (ADR 0996): nothing but that `const` sees the
@@ -387,7 +377,6 @@ impl Known {
             | Known::Sliced
             | Known::SetItems
             | Known::Chars
-            | Known::Defined
             | Known::Own
             | Known::Taken
             | Known::ArrayItems

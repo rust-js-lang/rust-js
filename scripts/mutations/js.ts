@@ -58,12 +58,4 @@ export const mutations: Mutation[] = [
     replace: "            Op::LooseEq | Op::NoneEq(_) | Op::Eq => Some(false),\n            Op::Ne => Some(true),\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "strict_equals ternary never folds"],
   },
-  {
-    name: "null-none-not-defined",
-    breaks: "a read whose `None` is `null` alone isn't said never `undefined`, so a nullable place stores it `?? null` where it's `null` or a value already (#2112 C S5)",
-    file: "src/js.rs",
-    find: "            OnlyNone::Null => self.with(Known::Defined),\n",
-    replace: "            OnlyNone::Null => self,\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "an Option a test proved there, stored through a borrow, is stored as it is"],
-  },
 ];

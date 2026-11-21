@@ -51,7 +51,7 @@ function main() {
     console.log(`drop ${a$2[0]}`);
     return result;
   }
-  const value$2 = none != null ? f$2(none) : undefined;
+  const value$2 = none != null ? f$2(none) : null;
   if (none == null) {
     console.log(`drop ${a$2[0]}`);
   }

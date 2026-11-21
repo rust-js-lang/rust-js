@@ -166,11 +166,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok((self.call_with(f, vec![value], Role::Then, out), Expr::num(-1)));
         }
         let then = self.call_with(f, vec![value], Role::Then, out);
-        let returned = match f_ty.kind() {
-            ty::Closure(def_id, _) => self.closure_returned_callee(*def_id),
-            _ => None,
+        let (returned, returns_nulled) = match f_ty.kind() {
+            ty::Closure(def_id, _) => (
+                self.closure_returned_callee(*def_id),
+                self.returns_null_or_value(*def_id),
+            ),
+            _ => (None, false),
         };
-        Ok(super::super::calls::and_then_given(self.tcx, (f_ty, returned), then))
+        Ok(super::super::calls::and_then_given(
+            self.tcx,
+            (f_ty, returned, returns_nulled),
+            then,
+        ))
     }
 
     /// `f(given)`, `inspect`'s call of its closure, `f_ty`, and what it was

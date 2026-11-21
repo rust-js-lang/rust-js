@@ -79,25 +79,6 @@ impl Expr {
         matches!(&self.kind, ExprKind::Binary(Op::Coalesce, _, fallback) if matches!(fallback.kind, ExprKind::Null))
     }
 
-    /// This, which lowering knows is never `undefined`, though maybe
-    /// `null` (`Known::Defined`); one it knows otherwise of, a getter's
-    /// read say, as it is. That it's a field no getter answers
-    /// (`Known::Own`) is no other knowledge: it says how it's read, not
-    /// what.
-    pub fn defined(self) -> Expr {
-        self.known_as(Known::Defined)
-    }
-
-    fn known_as(self, known: Known) -> Expr {
-        match self.facts.without(Known::Own) == Facts::default() {
-            true => Expr {
-                facts: self.facts.with(known),
-                ..self
-            },
-            false => self,
-        }
-    }
-
     /// Whether `option`, an `Option`, is `set`: `option != null`, or `==
     /// null` where it's not, whatever it holds (ADR 0298, amended by the
     /// user, 2026-10-28: one form, never its truth). The one test of an
@@ -1120,16 +1101,6 @@ impl Expr {
     pub fn item(self) -> Expr {
         Expr {
             facts: Facts::of(Known::Item),
-            ..self
-        }
-    }
-
-    /// This, an item's read (`item`), whose value is never `undefined`, a
-    /// function's or a `const`'s of what's never nullish (`Known::Defined`,
-    /// `items.rs::item_value`, #1957).
-    pub fn defined_item(self) -> Expr {
-        Expr {
-            facts: self.facts.with(Known::Defined),
             ..self
         }
     }

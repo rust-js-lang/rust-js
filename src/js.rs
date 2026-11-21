@@ -680,18 +680,6 @@ impl Facts {
         Facts(part)
     }
 
-    /// These of a read whose `None` MIR says is `none` alone: of `null`,
-    /// that it's never `undefined` (`Known::Defined`), which a nullable
-    /// place stores as it is (`Storage::written`, ADR 0841), a value fact
-    /// true of it wherever it goes; of `undefined`, nothing. What its test
-    /// is asks MIR (`place_none`, #2112 C S5).
-    pub fn with_none(self, none: OnlyNone) -> Facts {
-        match none {
-            OnlyNone::Null => self.with(Known::Defined),
-            OnlyNone::Undefined => self,
-        }
-    }
-
     /// What evaluating it may do that its kind doesn't say, a getter's or
     /// a JS operator's of any value (`Known::Getter`), which the same
     /// evaluation made again keeps: `a != b` of `!(a == b)`, `+m` of `+m`

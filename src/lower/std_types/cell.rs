@@ -443,7 +443,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 //
                 // What it held is `old`, read as its place is: of a nullable
                 // field there where it's made, `null` or a value already
-                // (`Known::Defined`, ADR 0620, amended); of an optional one,
+                // (ADR 0620, amended); of an optional one,
                 // maybe `undefined`. A nullable thread-local's is what MIR
                 // says its call gives (`nulled::reads_nullable_local`, ADR
                 // 0586, amended).

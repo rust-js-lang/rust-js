@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = self.value_expr(read, span)?;
             return Ok(Value::Expr(self.projection(held, ty)));
         }
-        match none_read(state, operand, read) {
+        match read {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);
                 // Of what a library stores, where it leaves the read, a copy
@@ -912,23 +912,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.reified_const((def_id, args), ty, move |_| Ok(arrow))
             }
         }
-    }
-}
-
-/// What `operand` reads, `read`, and of an `Option` whose `None` is only
-/// one of `undefined` and `null`, or a reference to one, that it is
-/// (`OptionWrites::nones`): its test says which (ADR 0298, amended).
-pub(super) fn none_read<'tcx>(state: &State<'_, 'tcx>, operand: &Operand<'tcx>, read: Value<'tcx>) -> Value<'tcx> {
-    let none = (operand.place())
-        .filter(|place| matches!(place.projection.as_slice(), [] | [PlaceElem::Deref]))
-        .and_then(|place| state.facts.options().none_forms.read(place.local));
-    let said = |e: Expr, none| Expr {
-        facts: e.facts.with_none(none),
-        ..e
-    };
-    match (read, none) {
-        (Value::Expr(e), Some(none)) => Value::Expr(said(e, none)),
-        (Value::Place(e), Some(none)) => Value::Place(said(e, none)),
-        (read, _) => read,
     }
 }

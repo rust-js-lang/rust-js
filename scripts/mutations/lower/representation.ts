@@ -407,25 +407,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "nullable-field-read-may-be-undefined",
-    breaks:
-      "what's read of a nullable field may be `undefined`, so a variable holding it is stored `returnFiber ?? null`",
-    file: "src/lower/representation.rs",
-    find: "                    true if self.cell_field_read_defined(ty, i) => {\n                        self.nullable_cell_handle(field.defined(), def, fields[i].1)\n",
-    replace: "                    true if self.cell_field_read_defined(ty, i) => {\n                        self.nullable_cell_handle(field, def, fields[i].1)\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_a_mapped_option.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "optional-nullable-read-defined",
-    breaks:
-      "an optional nullable field, absent until it's set, is read as never `undefined`, so `undefined` is stored where `null` is",
-    file: "src/lower/representation.rs",
-    find: "                    true if self.cell_field_read_defined(ty, i) => {\n",
-    replace: "                    true => {\n",
-    tests: ["test/lowering-optional-fields.test.ts", "-t", "an optional nullable cell field given another's get stores it as it is"],
-  },
-  {
     name: "js-made-field-plain",
     breaks:
       "a field of a struct JS made is read as plain data, `styleProp.margin` read again where the `let` of it is used, a getter run twice (rd204)",

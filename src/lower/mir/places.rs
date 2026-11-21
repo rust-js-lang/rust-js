@@ -33,15 +33,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             e.facts = e.facts.with(js::Known::Lasting);
         }
-        // An `Option` whose `None` is only one of `undefined` and `null`,
-        // its own or through a reference to it: its read says which (ADR
-        // 0298, amended).
-        if matches!(place.projection.as_slice(), [] | [PlaceElem::Deref])
-            && let Some(none) = state.facts.options().none_forms.read(place.local)
-        {
-            e.facts = e.facts.with_none(none);
-        }
-
         // A field's path, `element.editable`: whether it's a `bool`, which
         // tidy writes an `||` of as one.
         if let Some(path) = e.path() {
@@ -394,18 +385,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (ty::Adt(adt, _), _) if adt.is_box() => {
                 Err(self.unsupported(span, "a box's pointer, from its optimized MIR"))
             }
-            // A nullable field that's `null` or a value wherever it's read
-            // says so, so it's tested `=== null` (rd647).
-            (ty::Tuple(_) | ty::Adt(..), _) => {
-                let read = self.project(base, ty.ty, i);
-                Ok(match self.field_none_trust(ty.ty, i) {
-                    Some(none) => Expr {
-                        facts: read.facts.with_none(none),
-                        ..read
-                    },
-                    None => read,
-                })
-            }
+            (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }
     }

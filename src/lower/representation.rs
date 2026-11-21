@@ -483,13 +483,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let def = self.struct_field_def(ty, i);
                 match self.nullable_cell_field(ty, (i, fields[i].1)) {
-                    // One there where it's made, which stores `null` for
-                    // `None`, so what's read of it is never `undefined`; not
-                    // an optional one, absent until it's set (ADRs 0620,
-                    // amended, 0810).
-                    true if self.cell_field_read_defined(ty, i) => {
-                        self.nullable_cell_handle(field.defined(), def, fields[i].1)
-                    }
                     true => self.nullable_cell_handle(field, def, fields[i].1),
                     false => self.held(field, def, fields[i].1),
                 }

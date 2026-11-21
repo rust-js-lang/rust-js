@@ -746,3 +746,34 @@ the amendment of 2026-11-20 already found it changed no call). Mutation
 `null-for-none-objects-coalesced` names the corpus case that holds it,
 `nullable_items_set_to_a_some_by_index`. `Known::Defined`'s readers that
 aren't writes, a closure's `then` in `calls.rs` and none else, are S4d's.
+
+## Amendment: no mark that a value is never `undefined` (2026-11-21, #2112 S4d)
+
+`Known::Defined`'s last reader, an `and_then` of a closure giving `null`
+for `None` where the closure's call was marked, asks MIR now: whether the
+closure returns `null` or a value at each return,
+`returns_null_or_value`, which `with(f)` and `or_else(f)` ask too, and
+which has its row in the owner table. MIR's answer is wider than the
+marks were: it knows a plain nullable field's `clone()`, which no mark
+writer covered. React's port moves one line, ReactFlightClient's
+`debugChannelCallback = borrow.value != null ? borrow.value.callback :
+null`, where the mark left `borrow.value?.callback`; upstream writes
+`response._debugChannel && response._debugChannel.callback`, neither
+form, and the user accepted the line (2026-11-21). Corpus
+`unrun_function_drops` moves alike, `: undefined` to `: null` of an
+`and_then` of a closure giving `Some(..)`, a local read only by its test.
+A typed rule giving `o && f(o)` was measured and dropped: upstream writes
+both shapes of the same Rust, so it moved as many lines away from
+upstream as toward it.
+
+With no reader, `Known::Defined` and its writers go: `Facts::with_none`,
+`Expr::defined` and `defined_item`, `calls::given_by`'s mark of a nullable
+function's call, a nullable thread-local's read's (`structure.rs`), a
+nullable cell field's read's (`representation.rs`), `items.rs`'s
+`item_value`, and `operands::none_read`. Seven of their mutations are
+retired with `--retire` evidence in the commit; the others went with
+their code. One of those, `nullable-call-of-any-function`, was caught by
+corpus `boxed_str`, not by a mark's reader: a mark on one arm of a match
+kept two equal arms from folding, as `Expr`'s equality reads its facts,
+which no mark now splits. Change C, a `None`'s form decided once in MIR,
+is done: no decision of it rides a mark on a JS value.

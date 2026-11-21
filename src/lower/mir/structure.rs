@@ -722,15 +722,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // first, `null` or a value already (rd628), or what
                         // else gives so, a function's that returns so (rd632).
                         let nulled = self.call_nulled(state, destination.local, (func, &args[..]));
-                        // A nullable thread-local's read, `null` or a value
-                        // wherever it goes (ADR 0949): never `undefined`,
-                        // though maybe `null`, so not there (#539).
-                        let value = match value {
-                            Value::Expr(e) if self.reads_nullable_local(state, block, destination.local) => {
-                                Value::Expr(e.defined())
-                            }
-                            value => value,
-                        };
                         let value = self.nullable_written(state, *destination, value, nulled, span)?;
                         let callee = func.const_fn_def().map(|(callee, _)| callee);
                         let value = self.one_none_returned(state, *destination, (None, callee), value, span)?;

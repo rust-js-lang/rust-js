@@ -121,12 +121,13 @@ test("no fact a JS node carries says what an Option's None is", () => {
 // what reads it, `presence`'s fold and a nullable place's write, asks its
 // kind, not a fact (#2112 C S3c); a write through a handle carries MIR's
 // answer on its statement (S4b). The mark that said a value was there,
-// `Known::Present`, and the answer that asked the marks, `Undefined::ByFacts`,
-// are gone (S4c): neither comes back, nor a writer of the one or an asker
-// of the other.
+// `Known::Present`, the one that said it was never `undefined`,
+// `Known::Defined` (S4d), and the answer that asked the marks,
+// `Undefined::ByFacts`, are gone (S4c): none comes back, nor a writer of a
+// mark or an asker of the answer.
 test("no mark of presence, nor an answer that asks marks", () => {
   const named = files("src").filter((file) => file.endsWith(".rs"))
-    .filter((file) => /\bKnown::Present\b|\bUndefined::ByFacts\b|\.present\(\)/.test(read(file)));
+    .filter((file) => /\bKnown::(?:Present|Defined)\b|\bUndefined::ByFacts\b|\.present\(\)|\.defined\(\)|\bwith_none\(/.test(read(file)));
   expect(named).toEqual([]);
 });
 

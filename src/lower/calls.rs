@@ -511,14 +511,16 @@ pub(super) fn none_given_by(
 /// `None` is, so the whole `Option` is `f`'s, React's `owner ?
 /// getComponentNameFromOwner(owner) : null` (ADR 0841, amended); else
 /// `undefined`, as a `None` is.
-/// Of a closure, where what it gives is such a call, never `undefined`,
-/// `|i| try_hydrate_activity(fiber, i)`'s, the same (ADR 0841, amended);
+/// Of a closure that MIR says returns `null` or a value at each return,
+/// `returns_nulled` (`returns_null_or_value`), `|i|
+/// try_hydrate_activity(fiber, i)`'s, the same (ADR 0841, amended, #2112
+/// S4d);
 /// not a binding's, which TypeScript types `T | null`, whose `undefined`
 /// where what it's of is `None` is JS's `labels?.item(0)` (ADR 0298,
 /// amended).
 pub(super) fn and_then_given<'tcx>(
     tcx: ty::TyCtxt<'tcx>,
-    (f, returned): (Ty<'tcx>, Option<rustc_span::def_id::DefId>),
+    (f, returned, returns_nulled): (Ty<'tcx>, Option<rustc_span::def_id::DefId>, bool),
     then: Expr,
 ) -> (Expr, Expr) {
     // Not a binding's, `Node::first_child` or `|labels| labels.item(0)`,
@@ -530,7 +532,7 @@ pub(super) fn and_then_given<'tcx>(
         ty::FnDef(def_id, _) if gives_null_for_none(tcx, *def_id) && !super::bindings::is_binding(tcx, *def_id) => {
             Expr::null()
         }
-        ty::Closure(..) if then.facts.has(Known::Defined) && !returned.is_some_and(bindings_null) => Expr::null(),
+        ty::Closure(..) if returns_nulled && !returned.is_some_and(bindings_null) => Expr::null(),
         _ => Expr::js_undefined(),
     };
     (given_by(tcx, f, then), none)
@@ -551,15 +553,7 @@ pub(super) fn given_by<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, value: Expr) ->
         return value;
     };
     let mut facts = value.facts;
-    if gives_null_for_none(tcx, def_id) {
-        facts = facts.with(Known::Defined);
-    }
     let output = tcx.fn_sig(def_id).skip_binder().skip_binder().output();
-    if let Some(none) = none_given_by(tcx, def_id)
-        && matches!(output.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), rustc_hir::attrs::lang_items::LangItem::Option))
-    {
-        facts = facts.with_none(none);
-    }
     // Of a `bool` it gives, that it's one, as a `bool` constant's and a
     // global's read are (ADRs 0031, 0953): `canUseDOM &&
     // isEventSupported("input") && ..`, no `!!` of it (rd145).

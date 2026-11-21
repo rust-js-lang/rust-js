@@ -156,10 +156,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let value = (self.take_operands(state, operands, out)?.into_iter().next()).expect("one operand");
         let value = self.value_expr(value, span)?;
-        let value = Expr {
-            facts: value.facts.with_none(none),
-            ..value
-        };
         Ok(Some(Expr::presence(value, some, Some(none))))
     }
 
@@ -553,8 +549,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether what a call of `def_id` gives is `null` or a value: a
     /// `#[rust_js::nullable]` function's, a binding's too, its `None` `null`
     /// (ADRs 0578, 0638), or one of the crate's, or a closure, that returns
-    /// so at each return (rd632, rd16).
-    fn returns_null_or_value(&self, def_id: rustc_span::def_id::DefId) -> bool {
+    /// so at each return (rd632, rd16): what an `and_then` of a closure
+    /// gives where what it's of is `None`, `null` (`calls::and_then_given`,
+    /// #2112 S4d).
+    pub(in crate::lower) fn returns_null_or_value(&self, def_id: rustc_span::def_id::DefId) -> bool {
         crate::lower::calls::gives_null_for_none(self.tcx, def_id)
             || (crate::lower::analysis::nulled_params::may_return_nulled(self.tcx, def_id)
                 && (self.settled.nulled).returns_nulled(&mut self.nulled_seen.borrow_mut(), self.item, def_id))
@@ -599,9 +597,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Option`, reads a `#[rust_js::nullable]` thread-local whole: its
     /// `get()`, `take()`, `replace(v)` or `with_borrow(Clone::clone)`,
     /// which give what it holds, `null` or a value, as each write of it
-    /// stores (ADRs 0586, 0861, 0949). The one answer of it: `stored_given`
-    /// reads it, and the call's value is marked so (`Known::Defined`)
-    /// wherever it goes, which says nothing of whether it's `Some` (#539).
+    /// stores (ADRs 0586, 0861, 0949). The one answer of it, which
+    /// `stored_given` reads; it says nothing of whether it's `Some` (#539).
     pub(super) fn reads_nullable_local(&self, state: &State<'_, 'tcx>, block: BasicBlock, local: Local) -> bool {
         state.facts.quiet_cells().nullable.contains_key(&block)
             && self.option_of(state.body.local_decls[local].ty).is_some()

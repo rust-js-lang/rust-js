@@ -500,15 +500,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
   },
   {
-    name: "defined-drops-own",
-    breaks: "a field no getter answers, `Known::Own`, isn't made `defined()`, so React DOM's `getParent` step, `inst.and_then(|inst| inst.r#return.borrow().clone())`, prints `inst?.return`, `undefined` where its `None` is `null` (#1908's scope)",
-    file: "src/js/make.rs",
-    find: "        match self.facts.without(Known::Own) == Facts::default() {\n",
-    replace: "        match self.facts == Facts::default() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_a_mapped_option\\.rs$"],
-    snapshots: true,
-  },
-  {
     name: "strict-presence-of-the-other-none",
     breaks: "a test of being set of an `Option` whose `None` is only `undefined`, `window.event`, is made of `null`'s, `x !== null`, true of its `None`, so an event that's none is taken for one and its `type` read of `undefined` throws (a wrong answer, ADR 0298, amended; #2112 C S5)",
     file: "src/js/make.rs",
