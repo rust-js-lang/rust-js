@@ -604,8 +604,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (func, args): (&Operand<'tcx>, &[rustc_span::Spanned<Operand<'tcx>>]),
     ) -> bool {
         let write = Write::Call(state.at, func, args);
-        self.written_given(state, local, &write, &mut Vec::new()) == (Given::Nulled, None)
-            || self.call_presence(state, local, (func, args)) != super::Presence::Unknown
+        // Of the function's own nullable parameter, as each call gives it
+        // (`is_nulled`), as `stored_given` reads it: `transitions.cloned()`.
+        let given = match self.written_given(state, local, &write, &mut Vec::new()) {
+            (Given::Nulled, Some(param)) => self.settled.nulled.is_nulled(state.body.source.def_id(), param),
+            (given, None) => given == Given::Nulled,
+            _ => false,
+        };
+        given || self.call_presence(state, local, (func, args)) != super::Presence::Unknown
     }
 
     /// Whether `def_id` is a binding that's its argument in JS, `js::cast`'s
@@ -701,6 +707,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return (Given::Nulled, None);
             }
         }
+        // An `and_then(f)` of a function of the crate's that gives `null`
+        // for `None`, whose `None` is `null` where what it's of is `None`
+        // too (`and_then_given`): `null` or a value, React's
+        // `currentParent != null ? findCurrentHostFiberImpl(currentParent) :
+        // null`; of a closure whose every return is so, the same.
+        if let Some(crate::lower::Std::Comb(crate::lower::combinators::Comb::AndThen)) = known
+            && let [_, f] = args
+            && match *f.node.ty(state.body, self.tcx).kind() {
+                ty::FnDef(f, _) => {
+                    crate::lower::calls::gives_null_for_none(self.tcx, f)
+                        && !crate::lower::bindings::is_binding(self.tcx, f)
+                }
+                ty::Closure(f, _) => self.returns_null_or_value(f),
+                _ => false,
+            }
+        {
+            return (Given::Nulled, None);
+        }
         // An `Option<&T>`'s `cloned()` or `copied()`, a clone of the
         // `Option<T>`, which gives its `None` as it is (`clone_keeps_none`):
         // the scheduler's `peek(q).cloned()`. Not of a `&mut` whose form is
@@ -712,6 +736,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.clone_keeps_none(state.body.local_decls[local].ty)
         {
             return self.stored_in(state, &option.node, seen);
+        }
+        // A thread-local's `with(f)` and `with_borrow(f)`, what `f` returns:
+        // `null` or a value where each of its returns is, the scheduler's
+        // `TASK_QUEUE.with_borrow(|q| peek(q).cloned())` (ADR 0841, amended).
+        if let Some(crate::lower::Std::LocalWith { .. } | crate::lower::Std::LocalBorrow { .. }) = known
+            && let Some(f) = args.get(1)
+            && let ty::Closure(f, _) = *f.node.ty(state.body, self.tcx).kind()
+            && self.returns_null_or_value(f)
+        {
+            return (Given::Nulled, None);
         }
         // An `Option`'s `take()` and `replace(v)`, what its place held: `null`
         // or a value where that's a field that stores `null` for `None`,
@@ -787,16 +821,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.stored_in(state, &arg.node, seen);
         }
-        // A clone of such, `m.rule_id.clone()`, of an item a clone gives as
-        // it is, a string's, a number's or a reference's: its JS value.
-        let itself = self.option_of(state.body.local_decls[local].ty).is_some_and(|item| {
-            item.is_ref()
-                || item.is_primitive()
-                || self.is_string_like(item)
-                || self.is_std_type(item, StdItem::Rc)
-                || self.is_std_type(item, StdItem::Arc)
-        });
-        if itself
+        // A clone of such, `m.rule_id.clone()`: a clone of an `Option`
+        // gives its `None` as it is (`clone_keeps_none`).
+        if self.clone_keeps_none(state.body.local_decls[local].ty)
             && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
             && let [arg] = args
             && let Some(borrowed) = self.borrowed(state, &arg.node)

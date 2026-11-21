@@ -9,6 +9,31 @@ const or689 = ["test/lowering-nullable-combinators.test.ts", "-t", "an or of nul
 
 export const mutations: Mutation[] = [
   {
+    name: "with-closure-return-unseen",
+    breaks: "a thread-local's `with_borrow(f)` of a closure whose every return is `null` or a value isn't known so, and is stored `value ?? null`",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && self.returns_null_or_value(f)\n        {\n            return (Given::Nulled, None);\n        }\n        // An `Option`'s `take()`",
+    replace: "            && false\n        {\n            return (Given::Nulled, None);\n        }\n        // An `Option`'s `take()`",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "cloned\\(\\) of what"],
+  },
+  {
+    name: "and-then-null-giving-unseen",
+    breaks: "an `and_then` of a crate function that gives `null` for `None` isn't known `null` or a value, so it's stored `(c != null ? f(c) : null) ?? null`",
+    file: "src/lower/mir/nulled.rs",
+    find: "                    crate::lower::calls::gives_null_for_none(self.tcx, f)\n",
+    replace: "                    false && crate::lower::calls::gives_null_for_none(self.tcx, f)\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "an and_then of a nullable function is stored as it is"],
+  },
+  {
+    name: "and-then-closure-unseen",
+    breaks: "an `and_then` of a closure whose every return is `null` or a value isn't known so, and is stored `value ?? null`",
+    file: "src/lower/mir/nulled.rs",
+    find: "                ty::Closure(f, _) => self.returns_null_or_value(f),\n                _ => false,\n            }\n",
+    replace: "                ty::Closure(_, _) => false,\n                _ => false,\n            }\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_a_mapped_option.rs$"],
+    snapshots: true,
+  },
+  {
     name: "cloned-not-given",
     breaks: "an `Option<&T>`'s `cloned()` of what's `null` or a value isn't known so, and a nullable parameter each call gives one, a `bind` of a `cloned()`, React's completeRoot's, is tested `!= null`, not `!== null` (ADR 0861, amended)",
     file: "src/lower/mir/nulled.rs",
@@ -144,8 +169,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a nullable field given to one from MIR is `m.rule_id ?? null`",
     file: "src/lower/mir/nulled.rs",
-    find: "        if itself\n",
-    replace: "        if false\n",
+    find: "        if self.clone_keeps_none(state.body.local_decls[local].ty)\n",
+    replace: "        if false && self.clone_keeps_none(state.body.local_decls[local].ty)\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable field's clone"],
   },
   {
@@ -544,14 +569,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/nulled.rs",
     find: "            && (self.is_std_type(receiver, StdItem::RefCellRef) || self.is_std_type(receiver, StdItem::RefCellRefMut))\n",
     replace: "            && false\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "RefCell field"],
-  },
-  {
-    name: "rc-clone-not-itself",
-    breaks: "an `Option<Rc<T>>`'s clone isn't the value it cloned, so a nullable field's clone stored in another is `?? null` (#1933)",
-    file: "src/lower/mir/nulled.rs",
-    find: "                || self.is_std_type(item, StdItem::Rc)\n",
-    replace: "",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "RefCell field"],
   },
   {
