@@ -557,7 +557,7 @@ export type Clock = { began: number; samples: { at: number; busy: number }[] };
  * seconds from the pool's start, and the CPU seconds it and the children
  * it waited on used, which `--profile` divides by its time for the cores
  * it kept busy. */
-type Ran = { job: Job; code: number; log: string; start: number; end: number; cpu: number };
+type Ran = { job: Job; code: number; log: string; start: number; end: number; cpu: number; cut?: true };
 
 /** The share of the machine's cores busy since the last call, from
  * `os.cpus()`'s counters, which agree with `top`'s on macOS and Linux. */
@@ -589,7 +589,10 @@ function busySince(): () => number {
  * `RUST_JS_LOAD_SCALE`, twice the cores' load at least, as a pool's job
  * shares them. Each is said as it ends, against its usual; a `group`'s
  * jobs, each test file, once the last of them ends, as one, from the first's
- * start, `clock.samples` the machine's busy share every two seconds. */
+ * start, `clock.samples` the machine's busy share every two seconds.
+ * Given `failFast`, `--retire`'s of a mutant (#2256): at the first job that
+ * fails, none more is started and those running are stopped, each said
+ * `cut`, which says nothing of the compiler. */
 export function run(
   list: Job[],
   compiler: string,
@@ -598,6 +601,7 @@ export function run(
   logs: CheckLogRun = checkLogRun(),
   times = jobTimesStore,
   leases = leaseStore,
+  failFast = false,
 ): Promise<Ran[]> {
   const busy = busySince();
   const sampling = setInterval(() => samples.push({ at: (Date.now() - began) / 1000, busy: busy() }), 2000);
@@ -655,8 +659,13 @@ export function run(
   // those after it that can, as it did (#1762); and of none that fits where
   // none runs, the first, alone, as one heavier than the machine runs.
   const pending = [...queue];
-  const next = async (): Promise<Job> => {
+  // Of a fail-fast run, those running, stopped at the first that fails
+  // (`failFast`), and whether it has.
+  const live = new Set<ReturnType<typeof Bun.spawn>>();
+  let cutting = false;
+  const next = async (): Promise<Job | undefined> => {
     for (;;) {
+      if (pending.length === 0) return undefined;
       const at = pending.findIndex((job) => running === 0 || (held + weight(job) <= share(cores) && heldMemory + job.memory <= share(budget)));
       if (at >= 0) return pending.splice(at, 1)[0];
       await new Promise<void>((wake) => waiting.push(wake));
@@ -686,6 +695,7 @@ export function run(
   const started = (async () => {
     while (pending.length > 0) {
       const job = await next();
+      if (job === undefined) break;
       const { name, cmd, env, timeout: given, group } = job;
       const holds = weight(job);
       running++;
@@ -701,6 +711,7 @@ export function run(
             stdout: "pipe",
             stderr: "pipe",
           });
+          live.add(p);
           // Its seconds, as the load scales them, and twice its own usual at
           // least: under the pool the load stays near the cores, and the
           // rows a change names, 50 min on 8 cores beside the rest, were
@@ -713,8 +724,11 @@ export function run(
           }, 1000);
           const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
           const code = await p.exited;
+          live.delete(p);
           clearInterval(stop);
           freed(holds, job.memory);
+          // One a fail-fast run stopped: nothing of the compiler.
+          if (cutting && code !== 0) return { job, code, log: out + err, start: (start - began) / 1000, end: (Date.now() - began) / 1000, cpu: 0, cut: true } as Ran;
           const seconds = (Date.now() - start) / 1000;
           const stopped = code !== 0 && seconds >= timeout ? `, stopped at its ${timeout} s (×${scale.toFixed(1)} for the load)` : "";
           const cpu = Number(p.resourceUsage()?.cpuTime.total ?? 0) / 1e6;
@@ -723,6 +737,13 @@ export function run(
           // Its whole output kept as it fails: a check an outer limit
           // stops keeps it (#1706).
           if (code !== 0) console.log(`FAIL ${name} (${seconds.toFixed(0)}s${stopped}), its whole output: ${logs.keep(name, result.log)}`);
+          if (code !== 0 && failFast && !cutting) {
+            cutting = true;
+            console.log(`stopped at its first failure: ${pending.length} jobs not started, ${live.size} stopped`);
+            pending.length = 0;
+            for (const other of live) other.kill();
+            for (const wake of waiting.splice(0)) wake();
+          }
           else if (group === undefined) console.log(`ok   ${timed(`check:fast ${name}`, seconds, { cores: kept(cpu, start, Date.now()), ran: job.ran })}`);
           if (group !== undefined) {
             const done = groups.get(group)!;
@@ -967,8 +988,8 @@ if (import.meta.main) {
   const clock: Clock = { began: Date.now(), samples: [] };
   const logs = checkLogRun();
   const listed = given === undefined ? check.jobs : check.jobs.filter((job) => job.cmd[0] === "bun" && job.cmd[1] === "test");
-  const results = await run(listed, compiler, cores, clock, logs, given === undefined ? jobTimesStore : join(own, "job-times"));
-  const failed = results.filter((r) => r.code !== 0);
+  const results = await run(listed, compiler, cores, clock, logs, given === undefined ? jobTimesStore : join(own, "job-times"), leaseStore, args.includes("--fail-fast"));
+  const failed = results.filter((r) => r.code !== 0 && !r.cut);
   profiled(results, clock.samples, args.includes("--profile"));
   // Still left running as it ends: its numbers aren't a measurement.
   const leftAtEnd = said(strays(root));

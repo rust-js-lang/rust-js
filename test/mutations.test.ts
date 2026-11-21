@@ -348,14 +348,14 @@ test("--retire regenerates React's port with the mutant, held to its control", (
   expect(regenDiffers("something else")).toEqual([]);
   const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
   const retire = source.match(/\nasync function retire\([\s\S]*?\n}\n/)![0] + source.match(/\nasync function retireSuite\([\s\S]*?\n}\n/)![0]
-    + source.match(/\nasync function retireVerdict\([\s\S]*?\n}\n/)![0];
-  const control = retire.indexOf("await portDiffers(portControl)");
+    + source.match(/\nasync function suiteWith\([\s\S]*?\n}\n/)![0] + source.match(/\nasync function retireVerdict\([\s\S]*?\n}\n/)![0];
+  const control = retire.indexOf("portDiffers(portControl)");
   expect(control).toBeGreaterThan(0);
   expect(control).toBeLessThan(retire.indexOf("scripts/checkFast.ts"));
   // Run once for all the mutations retired together, before the first
   // mutant (#2043).
   expect(control).toBeLessThan(retire.indexOf("for (const mutation of chosen)"));
-  expect(retire.indexOf("await crateVerdicts(portControl, true)")).toBeLessThan(retire.indexOf("for (const mutation of chosen)"));
+  expect(retire.indexOf("crateVerdicts(portControl, true)")).toBeLessThan(retire.indexOf("for (const mutation of chosen)"));
   expect(retire).toContain("port control fails: ");
   expect(retire).toContain("...portCaught, ...crateCaught]");
   expect(retire).toContain("React's port at its pin regenerated as it committed");
@@ -375,13 +375,13 @@ test("--retire judges nothing below the disk's floor, and reruns each failure's 
   const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
   const of = (name: string) => source.match(new RegExp(`\\nasync function ${name}\\([\\s\\S]*?\\n}\\n`))![0];
   // Before the controls and before each suite, and after it.
-  expect(of("retire").indexOf("belowFloor(freeBytes(root))")).toBeLessThan(of("retire").indexOf("await build("));
-  const suite = of("retireSuite");
+  expect(of("retire").indexOf("belowFloor(freeBytes(root))")).toBeLessThan(of("retire").indexOf("build(undefined, 0, true)"));
+  const suite = of("suiteWith");
   const checkFast = suite.indexOf("scripts/checkFast.ts");
   expect(suite.indexOf("belowFloor(freeBytes(root))")).toBeLessThan(checkFast);
   expect(suite.lastIndexOf("belowFloor(freeBytes(root))")).toBeGreaterThan(checkFast);
   // The reruns follow the suite, in it, and the verdict runs none.
-  expect(suite.indexOf("await pairedReruns(failed, mutant, unmutated)")).toBeGreaterThan(checkFast);
+  expect(suite.indexOf("pairedReruns(failed, mutant, unmutated)")).toBeGreaterThan(checkFast);
   expect(of("retireVerdict")).not.toContain("failingWith(");
   // Of each file, the mutant's rerun, then at once the control's, each
   // pair above the floor.
@@ -389,6 +389,25 @@ test("--retire judges nothing below the disk's floor, and reruns each failure's 
   const loop = paired.slice(paired.indexOf("for (const file of"));
   expect(loop.indexOf("belowFloor(freeBytes(root))")).toBeLessThan(loop.indexOf("failingWith(ofFile, mutant, failures)"));
   expect(loop.indexOf("failingWith(ofFile, mutant, failures)")).toBeLessThan(loop.indexOf("failingWith(ofFile, unmutatedCopy, failedTests)"));
+});
+
+// A retirement's suite runs fail-fast first, stopped at its first failure,
+// whose paired reruns, a catch, end it, its port and crate corpus unrun;
+// where nothing it ran caught it, or a unit test did, its whole suite, or
+// none: a retirement's evidence is still the whole suite (#2256).
+test("--retire stops a caught mutant at its first catch and runs the whole suite of one nothing catches", () => {
+  const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
+  const of = (name: string) => source.match(new RegExp(`\\nasync function ${name}\\([\\s\\S]*?\\n}\\n`))![0];
+  const suite = of("retireSuite");
+  expect(suite.indexOf("if (unitCaught.length > 0)")).toBeLessThan(suite.indexOf("suiteWith(mutation, mutant, unmutated, true)"));
+  expect(suite).toContain("fast.cut && byControl(fast.failed, fast.again, fast.control).caught.length === 0 ? await suiteWith(mutation, mutant, unmutated, false) : fast");
+  expect(of("suiteWith")).toContain(`failFast ? ["--fail-fast"] : []`);
+  const verdict = of("retireVerdict");
+  expect(verdict.indexOf("const caughtAlready")).toBeLessThan(verdict.indexOf("portDiffers(mutant)"));
+  expect(verdict).toContain("caughtAlready ? [] :");
+  const checkFast = readFileSync(join(root, "scripts/checkFast.ts"), "utf8");
+  expect(checkFast).toContain(`args.includes("--fail-fast")`);
+  expect(checkFast).toContain("const failed = results.filter((r) => r.code !== 0 && !r.cut);");
 });
 
 // Several retired at once share their controls (#2043): each flag's names,
@@ -414,14 +433,14 @@ test("--retire measures the crate corpus with the mutant, held to its control", 
     "crate corpus: semver unmeasured with it, compiles as the compiler is",
   ]);
   const source = readFileSync(join(root, "scripts/mutations.ts"), "utf8");
-  const retire = ["retire", "retireSuite", "retireVerdict"]
+  const retire = ["retire", "retireSuite", "suiteWith", "retireVerdict"]
     .map((name) => source.match(new RegExp(`\\nasync function ${name}\\([\\s\\S]*?\\n}\\n`))![0])
     .join("");
-  const control$ = retire.indexOf("await crateVerdicts(portControl, true)");
+  const control$ = retire.indexOf("crateVerdicts(portControl, true)");
   expect(control$).toBeGreaterThan(0);
   expect(control$).toBeLessThan(retire.indexOf("scripts/checkFast.ts"));
   expect(retire).toContain("crate corpus control fails: ");
-  expect(retire).toContain("await crateVerdicts(mutant, false)");
+  expect(retire).toContain("crateVerdicts(mutant, false)");
 });
 
 test("each mutation list names one existing source file", () => {
