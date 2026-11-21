@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -86,6 +86,14 @@ test("a unit-tested mutant is caught where its tests fail, and only then", () =>
   expect(judgeUnit(exit(0, ok.replace("1 passed", "0 passed")))).toBe("inconclusive");
   expect(judgeUnit(exit(null, failed, { timedOut: true, signal: "SIGTERM" }))).toBe("inconclusive");
   expect(judgeUnit(exit(101, "thread 'main' panicked at src/main.rs:1:1\n"))).toBe("inconclusive");
+});
+
+// An inconclusive mutant's report says how its tests ended, so a run
+// killed under load is told from one that exited 2 (#2112).
+test("an inconclusive mutant's report says how its tests ended", () => {
+  const exit = (code: number | null, signal: string | null): Exit => ({ code, signal, timedOut: false, overflowed: false, stdout: "", stderr: "", bytes: { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) } });
+  expect(inconclusiveEnd("m", exit(null, "SIGKILL"), "said 2")).toBe("--- m, inconclusive, its tests killed by SIGKILL: its log's end\nsaid 2\n---");
+  expect(inconclusiveEnd("m", exit(2, null), "said 2")).toContain("its tests exited 2:");
 });
 
 // A mutant's build is held to being of it (scripts/mutant-builds.ts): its

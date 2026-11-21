@@ -3,6 +3,14 @@
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
+    name: "inconclusive-end-unsaid",
+    breaks: "an inconclusive mutant's report gives its log's end alone, not whether its tests exited 2 or were killed under the run's load (#2112)",
+    file: "scripts/mutations.ts",
+    find: "  return `--- ${log}, inconclusive, its tests ${endedAs(exit)}: its log's end",
+    replace: "  return `--- ${log}, inconclusive: its log's end",
+    tests: ["test/mutations.test.ts", "-t", "an inconclusive mutant's report says how its tests ended"],
+  },
+  {
     name: "mutation-run-reads-the-live-checkout",
     breaks: "a run's builds and sites read the checkout as it's edited, not its snapshot",
     file: "scripts/mutations.ts",

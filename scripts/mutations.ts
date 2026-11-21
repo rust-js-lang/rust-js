@@ -432,6 +432,14 @@ function endedAs(exit: Exit): string {
   return stopped(exit, testTimeout) ?? `exited ${exit.code}`;
 }
 
+/** An inconclusive mutant's report: how its tests ended, an exit code or
+ * the signal that killed them, and its log's end. Ten of a combined run
+ * said only their log's end, whose exit, neither 0 nor 1, would have said
+ * whether they were killed under the run's load (#2112). */
+export function inconclusiveEnd(log: string, exit: Exit, output: string): string {
+  return `--- ${log}, inconclusive, its tests ${endedAs(exit)}: its log's end\n${output.split("\n").slice(-60).join("\n")}\n---`;
+}
+
 /** The source as it is, with `mutation` in it, or why it can't be. */
 export function mutate(source: string, mutation: Mutation): string | { problem: string } {
   const at = source.indexOf(mutation.find);
@@ -2083,7 +2091,7 @@ async function main() {
       const p = await holding(held)(() => unitTest(compiler, mutation.unitTests!, mutation.name));
       writeFileSync(logged, p.stdout + p.stderr);
       const verdict = judgeUnit(p);
-      if (verdict === "inconclusive") console.log(`--- ${log}, inconclusive: its log's end\n${(p.stdout + p.stderr).split("\n").slice(-60).join("\n")}\n---`);
+      if (verdict === "inconclusive") console.log(inconclusiveEnd(log, p, p.stdout + p.stderr));
       const result = verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: \`cargo test ${mutation.unitTests}\` passed with it` : `INCONCLUSIVE: see ${logged}`;
       const unit = (p.stdout + p.stderr).match(/^test (\S+) \.\.\. FAILED$/m)?.[1];
       return { result, tests: held.seconds, by: verdict === "caught" ? `cargo test ${unit ?? mutation.unitTests}` : undefined };
@@ -2124,7 +2132,7 @@ async function main() {
     // inconclusive mutations, each caught here, said nothing of what
     // stopped them.
     writeFileSync(logged, output);
-    if (verdict === "inconclusive") console.log(`--- ${log}, inconclusive: its log's end\n${output.split("\n").slice(-60).join("\n")}\n---`);
+    if (verdict === "inconclusive") console.log(inconclusiveEnd(log, exit, output));
     const result = verdict === "caught" ? "caught" : verdict === "survived"
       ? `SURVIVED: its ${ran} tests passed with it${mutation.snapshots ? "" : ", snapshots not compared"}`
       : twice.flake ? `INCONCLUSIVE: ${twice.flake}; see ${logged}` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${logged}`;
