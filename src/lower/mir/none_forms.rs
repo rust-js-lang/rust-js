@@ -165,7 +165,9 @@ impl<'tcx> FnCx<'_, 'tcx> {
 
     /// Whether the two arguments of the call being lowered, references to
     /// `Option`s, `a == b`'s, are each one whose `None` MIR says is the same
-    /// one alone (`place_none`), which `===` compares (rd117).
+    /// one alone (`place_none`), which `===` compares (rd117); of one that's
+    /// `null` or a value (`stored_given`), a nullable cell field's read the
+    /// representation makes never `undefined`, `null`.
     // helper: of the call being lowered, `trait_call`'s `same_none`
     pub(in crate::lower::mir) fn same_nones(&self, state: &State<'_, 'tcx>) -> bool {
         let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
@@ -177,7 +179,13 @@ impl<'tcx> FnCx<'_, 'tcx> {
                 true => place.project_deeper(&[PlaceElem::Deref], self.tcx),
                 false => place,
             };
-            self.place_none(state, of)
+            self.place_none(state, of).or_else(|| {
+                (self.stored_given(state, &Operand::Copy(of)) == crate::lower::aggregates::Given::Nulled)
+                    .then(|| {
+                        crate::lower::representation::NoneForm::Null.trust(crate::lower::representation::Writers::Exact)
+                    })
+                    .flatten()
+            })
         };
         args.len() == 2 && none(0).is_some() && none(0) == none(1)
     }

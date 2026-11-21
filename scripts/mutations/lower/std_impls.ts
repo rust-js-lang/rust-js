@@ -76,8 +76,8 @@ export const mutations: Mutation[] = [
     name: "unknown-option-eq-loose",
     breaks: '`Option<&Unknown>`\'s `==` is `==`, which makes `"1"` of `1`',
     file: "src/lower/std_impls.rs",
-    find: "                    true => js::nullish_equal(a, b),\n",
-    replace: "                    true => Expr::bin(Op::LooseEq, a, b),\n",
+    find: "                    (true, _) => js::nullish_equal(a, b),\n",
+    replace: "                    (true, _) => Expr::bin(Op::LooseEq, a, b),\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's == is ==="],
   },
   {
@@ -347,8 +347,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`==` of two `Option<&Unknown>`s is `a === b`, so a `null` `None` isn't an `undefined` one, as std's `Option` says it is",
     file: "src/lower/std_impls.rs",
-    find: "                    true => js::nullish_equal(a, b),\n",
-    replace: "                    true => Expr::bin(Op::Eq, a, b),\n",
+    find: "                    (true, _) => js::nullish_equal(a, b),\n",
+    replace: "                    (true, _) => Expr::bin(Op::Eq, a, b),\n",
     tests: ["test/corpus.test.ts", "-t", "^unknown_option_equality.rs$"],
   },
   {
@@ -544,8 +544,8 @@ export const mutations: Mutation[] = [
     breaks:
       'an `Option` of an untagged enum of a string and a number is compared by `==`, which makes `"7"` of `7`',
     file: "src/lower/std_impls.rs",
-    find: "self.any_shape(inner) || self.untagged(inner).is_some()",
-    replace: "self.any_shape(inner)",
+    find: "                    (false, true) => js::nullish_equal(a, b),\n",
+    replace: "                    (false, true) => Expr::bin(Op::LooseEq, a, b),\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_eq_by_value.rs$"],
   },
   {
@@ -648,7 +648,7 @@ export const mutations: Mutation[] = [
     name: "option-eq-one-none-loose",
     breaks: "two `Option`s a getter gives, each `T | null`, compare by `==`, `node.firstChild == node.lastChild`, where upstream writes `===` (rd117)",
     file: "src/lower/std_impls.rs",
-    find: "                    false if same_none => Expr::bin(Op::Eq, a, b),\n",
+    find: "                    (false, _) if same_none => Expr::bin(Op::Eq, a, b),\n",
     replace: "",
     tests: ["test/webapi-bindings.test.ts", "-t", "equal only to itself"],
   },

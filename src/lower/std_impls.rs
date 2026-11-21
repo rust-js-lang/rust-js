@@ -568,10 +568,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // a number's `7` (ADR 0214, amended).
                 // Of two whose `None` MIR says is the same one alone, a getter's
                 // `T | null` each, `===` (rd117, `same_none`).
-                return Ok(match self.any_shape(inner) || self.untagged(inner).is_some() {
-                    true => js::nullish_equal(a, b),
-                    false if same_none => Expr::bin(Op::Eq, a, b),
-                    false => Expr::bin(Op::LooseEq, a, b),
+                return Ok(match (self.any_shape(inner), self.untagged(inner).is_some()) {
+                    (true, _) => js::nullish_equal(a, b),
+                    (false, _) if same_none => Expr::bin(Op::Eq, a, b),
+                    (false, true) => js::nullish_equal(a, b),
+                    (false, false) => Expr::bin(Op::LooseEq, a, b),
                 });
             }
         }

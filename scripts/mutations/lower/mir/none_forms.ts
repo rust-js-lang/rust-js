@@ -4,6 +4,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "same-nones-stored-unasked",
+    breaks: "an `==` of two `Option`s each `null` or a value, crate-made fibers' fields, isn't known to have `null` alone for `None`, so it's `==` or `(a ?? null) === (b ?? null)`, not `===`",
+    file: "src/lower/mir/none_forms.rs",
+    find: "                (self.stored_given(state, &Operand::Copy(of)) == crate::lower::aggregates::Given::Nulled)\n",
+    replace: "                (false)\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "an untagged enum's symbol is told by typeof"],
+  },
+  {
     name: "made-null-read-as-undefined",
     breaks: "a local the body makes `null` keeps `mir_nones`' `NoneUndefined`, the two analyses disagreeing again, its read's test `x !== undefined` true of its stored `null` (#2112)",
     file: "src/lower/mir/none_forms.rs",
