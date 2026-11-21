@@ -210,12 +210,7 @@ export const listedLabels = new Set<string>([
   "itertools@0.14.0/tuple_impl.js: _A__A__A_TupleCollect_collectFromIter",
   "itertools@0.14.0/tuple_impl.js: _A__A_TupleCollect_collectFromIter",
   "miniz_oxide@0.9.1/inflate/core.js: initTree",
-  "num-traits@0.2.19/lib.js: f32Num_fromStrRadix",
-  "num-traits@0.2.19/lib.js: f64Num_fromStrRadix",
-  "rust_decimal@1.43.0/ops/div.js: divRemainder32",
-  "rust_decimal@1.43.0/ops/div.js: divRemainder64",
   "rustls-pki-types@1.15.1/server_name.js: validate",
-  "strsim@0.11.1/lib.js: $roomFor",
   "uuid@1.29.0/error.js: intoErr",
 ]);
 

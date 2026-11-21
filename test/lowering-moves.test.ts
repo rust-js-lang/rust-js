@@ -251,7 +251,7 @@ pub fn counted(values: &[&Unknown], out: &mut Vec<String>) -> usize {
     other
 }
 `);
-  expect(js).toContain("      if (tag(value) === ELEMENT) {\n");
+  expect(js).toContain("    if (tag(value) === ELEMENT) {\n");
   expect(js).not.toMatch(/const (value\$\d+|_\d+) = |const value = (?!values\[i\];)/);
   const element = Symbol.for("react.element");
   const out: string[] = [];

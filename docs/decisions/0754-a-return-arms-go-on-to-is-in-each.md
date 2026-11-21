@@ -103,7 +103,7 @@ if (typeof value !== "string") {
   upstream tests an object first.
 - Held by `test/lowering-labels.test.ts`'s "a match's return some arms go
   on to is in each" and "a match's return of a call some arms go on to is
-  written once", and the mutations `return-into-branches-never`,
+  in each" (amended below), and the mutations `return-into-branches-never`,
   `return-into-branches-break-kept`, `return-into-branches-test-unturned`
   and `return-into-branches-of-any-value`.
 
@@ -122,3 +122,26 @@ a `then` of only the jump.
 Held by corpus `guarded_arm_of_an_if_let` and
 `switch_default_comment_after_return`, and the mutation
 `jump-made-next-kept`.
+
+## Amendment: a call's `return` is in each path too (#2215)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Each path still
+evaluates the call once, as before. Only where it's written changes.
+
+The alternative this ADR turned down, writing a `return` of any value in
+each path, kept a labeled block MIR made around a call's `return` so it
+was named once: `bb10: { .. break bb10; .. return complex(array.length);
+}`. A label the Rust doesn't have is never accepted output (D1, ADR 0629,
+amended), so that alternative falls. Tidy's last passes, `breaks take
+their tail` and `breaks lead on` (ADR 1178), give each path that goes on
+a lone jump, `return complex(array.length);`, as upstream writes `return
+COMPLEX_ARRAY` in each arm, and the label goes.
+
+`returns into branches` still writes only a `return` of one value, or a
+call of values, at its place in `chains`. Writing any value there, before
+the passes after it write those blocks better, made four corpus snapshots
+read worse (mutation `return-into-branches-of-any-value`, now caught by
+`calculator.rs`'s snapshot). What is left of such a block gets its
+`return` last, in tidy's `finish`. `test/lowering-labels.test.ts`'s "a
+match's return of a call some arms go on to is in each" holds no label,
+two copies and the same results.

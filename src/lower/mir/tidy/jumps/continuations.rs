@@ -258,7 +258,7 @@ mod tests {
     }
 
     // The block keeps its `break`s where they'd not all go: a tail that
-    // isn't one a `break` may be given, a `return` alone; a `break` inside
+    // isn't one a `break` may be given, an assignment and a `return`; a `break` inside
     // a `try`; a `then` that goes on, whose `else` would take what follows
     // it from the way that goes on; a branch that declares a name what's
     // moved into it reads; a guard; a name read before what declares it;
@@ -267,7 +267,7 @@ mod tests {
     fn breaks_keep_their_jump_where_a_move_would_differ() {
         let l = Name::block_label("bb12".into());
         let kept = |stmts: Vec<Stmt>| js::names_jump(&after(stmts), &l);
-        assert!(kept(block(&l, vec![returned()])));
+        assert!(kept(block(&l, vec![assign("x", "y"), returned()])));
         let tried = vec![stmt(StmtKind::TryCatch(
             vec![stmt(StmtKind::Break(Some(l.clone())))],
             Some("error".into()),

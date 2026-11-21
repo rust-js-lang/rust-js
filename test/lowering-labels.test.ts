@@ -130,9 +130,10 @@ pub fn get_array_kind(array: &[Option<&Unknown>]) -> ArrayKind {
   ]);
 });
 
-// ADR 0754: a `return` of more than one value, a call's, isn't written in
-// each path that goes on to it, but once, where the block MIR made ends.
-test("a match's return of a call some arms go on to is written once", async () => {
+// ADR 0754, amended: a `return` of a call some paths go on to is written
+// in each, as upstream writes `return COMPLEX_ARRAY` in each arm, not once
+// at the end of a block MIR made, whose label no Rust wrote (D1, #2215).
+test("a match's return of a call some arms go on to is in each", async () => {
   const dir = fixture("labeled-block-call-exits");
   writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown};
 
@@ -159,7 +160,8 @@ pub fn get_kind(array: &[Option<&Unknown>]) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs()]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js.split("return complex(array.length);").length).toBe(2);
+  expect(js.split("return complex(array.length);").length).toBe(3);
+  expect(js).not.toMatch(/\bbb\d+: /);
   const lib = await import(join(dir, "lib.js"));
   const kinds = [[], ["ab"], [["a", 1]], [{}], [1, [1, 2]], ["abcd"]];
   expect(kinds.map((array) => lib.getKind(array))).toEqual([0, 5, 3, 1, 2, 4]);

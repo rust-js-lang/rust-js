@@ -2,7 +2,8 @@
 
 Status: Accepted (2026-11-21, the lead's go on m1-lisa's design note for
 #2215, steps 1 and 2). Amends [0629](0629-a-match-of-constants-is-a-switch.md)'s
-label rule, D1.
+label rule, D1, and [0754](0754-a-return-arms-go-on-to-is-in-each.md)
+(step 3: a call's `return` is in each path).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none. The JS does what
 it did. Only its control flow is written as a person writes it, without a
@@ -42,8 +43,9 @@ that may throw and a `return`. The 5 left came in two shapes.
     twice.
 
   What reads alike is decisions.rs's `reads_alike_twice`, the purity
-  question `copied_once` asks. A `return` alone, or assignments alone, is
-  never such a tail. That was the 349-snapshot lesson.
+  question `copied_once` asks. Assignments with no drop are never such a
+  tail. A lone jump is one since step 3 (below). At an earlier placement,
+  copying a lone `return` made 349 snapshots worse.
 - **`breaks lead on`** (tidy/jumps/continuations.rs) works on each
   MIR-made block, never one the program labeled. It goes through each list
   on a `break`'s way, the innermost first. Where an `if` holding a `break`
@@ -78,13 +80,31 @@ that may throw and a `return`. The 5 left came in two shapes.
   `size_hint` write their tail where they `break`.
 - No corpus snapshot moves. One generated match program, seed 11's `m13`,
   loses its label (`test/match-trees-labeled.txt`).
-- The crate corpus's 21 labels stay. In each one examined, what follows
-  the `break` is a lone jump, `continue`, `break;` or `return x;`, which
-  is not a tail a `break` may be given: strsim's `$roomFor`, rust_decimal's
-  `divRemainder32`/`64` and rustls-pki-types' `validate`. Writing a lone
-  jump at a late placement is the next step, measured on its own, under
-  #2215.
+- Step 3: a lone jump, `continue;`, `break;` or `return x;`, is a tail a
+  `break` may be given too. That is safe at the finish placement, which
+  sees only the blocks every other pass left; the corpus has none, and no
+  snapshot moves. `breaks take their tail` never writes a `break;` or a
+  `continue;` of no label where a loop or a `switch` in the block holds
+  the `break`, since it would leave that one instead (`looped`). This
+  takes away 5 of the crate corpus's 21 labels: num-traits' f32 and f64
+  `from_str_radix`, rust_decimal's `div_remainder32` and `div_remainder64`
+  (whose loop's `break;` is now written at each way that goes on, its
+  `// Do some scaling` back where the Rust writes it), and strsim's
+  `generic_jaro`. The 16 left are listed in `listedLabels`, each with its
+  reason in #2215. Each takes a shape these rules don't:
+  - a block's `break` from inside a loop, `while (..) { if (!c) { break
+    bb109; } .. }`, a loop exit that goes on past code (httparse's
+    `parse_headers_iter_uninit`), or `continue bb65;` from an inner
+    `while` (miniz_oxide's `init_tree`);
+  - a tail longer than `SHARED`, its drops tested by liveness flags the
+    `break`'s way has just set false (itertools' 11 `collect_from_iter`);
+  - a tail of an assignment and a `continue`, which is no lone jump
+    (rustls-pki-types' `validate`);
+  - a match's merge broken to from deep inside an or-pattern's tree
+    (uuid's `into_err`);
+  - and itertools' probe `step_buffering`, a continuation `breaks lead
+    on` refuses.
 - Unit tests hold each guard. Mutations: `continuation-*` in
   `scripts/mutations/lower/mir/tidy/jumps/continuations.ts`, and
-  `epilogue-consts-not-copied`, `epilogue-const-of-a-call-copied` and
-  `epilogue-return-alone-copied`.
+  `epilogue-consts-not-copied`, `epilogue-const-of-a-call-copied`,
+  `epilogue-lone-jump-not-copied` and `epilogue-lone-jump-copied-into-a-loop`.

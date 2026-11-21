@@ -43,7 +43,14 @@ pub(in crate::lower::mir::tidy) fn breaks_take_their_tail(
         }
         declared.extend(bindings::declared_names(list).cloned());
     });
-    if tried || declared.iter().any(|name| js::mentions_of(&tail, name) > 0) {
+    // A `break;` or `continue;` of no label leaves what's around it: not
+    // one a loop or a `switch` in the block holds a `break` of it in,
+    // which it would leave instead.
+    let unnamed = tail
+        .iter()
+        .any(|s| matches!(s.kind, StmtKind::Break(None) | StmtKind::Continue(None)));
+    let shadowed = declared.iter().any(|name| js::mentions_of(&tail, name) > 0);
+    if tried || shadowed || (unnamed && looped(body, &label)) {
         return;
     }
     js::statement_lists(body, &mut |list| {
@@ -56,6 +63,23 @@ pub(in crate::lower::mir::tidy) fn breaks_take_their_tail(
     });
 }
 
+/// Whether a loop or a `switch` in `stmts` holds a jump of `label`.
+fn looped(stmts: &[Stmt], label: &js::Name) -> bool {
+    stmts.iter().any(|s| match &s.kind {
+        StmtKind::While { body, .. }
+        | StmtKind::DoWhile { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. } => js::names_jump(body, label),
+        StmtKind::Switch { cases, default, .. } => {
+            js::case_lists(cases, default).any(|body| js::names_jump(body, label))
+        }
+        StmtKind::If(_, a, b) => looped(a, label) || b.as_deref().is_some_and(|b| looped(b, label)),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => looped(a, label) || looped(b, label),
+        StmtKind::Labeled(_, body) => looped(body, label),
+        _ => false,
+    })
+}
+
 /// Whether `tail`, what a way out of a block goes on to, may be written in
 /// each way out instead, an early return as a person writes it: a `return`
 /// after at most `SHARED` statements in all, each one tidy copies
@@ -64,10 +88,18 @@ pub(in crate::lower::mir::tidy) fn breaks_take_their_tail(
 /// scope's one `try { .. } finally { .. }` around the block, its `return`s
 /// where they're written, a guard's); or `const`s of what reads alike
 /// written twice (`reads_alike_twice`) and a `return`, `const a = fhi;
-/// return [lo, a];`, each copy in its own block. Not a `return` alone, nor
-/// assignments with no drop: other passes', `returns_past_blocks`' and
-/// `returned`'s, which copy one only where it reads better.
+/// return [lo, a];`, each copy in its own block; or a lone jump, `continue;`,
+/// `break;` or `return x;`, as both passes run last, on the blocks every
+/// other pass left (ADR 1178). Not assignments with no drop.
 pub(super) fn copied_tail(tail: &[Stmt]) -> bool {
+    if let [only] = tail
+        && matches!(
+            only.kind,
+            StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_)
+        )
+    {
+        return true;
+    }
     let Some((last, before)) = tail.split_last() else {
         return false;
     };
@@ -82,7 +114,7 @@ pub(super) fn copied_tail(tail: &[Stmt]) -> bool {
     let declared =
         |s: &Stmt| matches!(&s.kind, StmtKind::Const(_, value) if super::decisions::reads_alike_twice(value));
     if drops.is_empty() {
-        !before.is_empty() && before.iter().all(declared)
+        before.iter().all(declared)
     } else {
         !crate::lower::drops::finally_holds(&drops) && before.iter().all(super::decisions::copied_once)
     }
@@ -160,7 +192,7 @@ mod tests {
 
     // A tail of `const`s of what reads alike written twice and a `return`,
     // `const a = fhi; return [lo, a];`, each `break` takes too; not one of
-    // a `const` of a call, nor a `return` alone (#2215).
+    // a `const` of a call (#2215).
     #[test]
     fn a_break_takes_a_tail_of_consts() {
         let l = Name::block_label("bb18".into());
@@ -172,10 +204,27 @@ mod tests {
         assert_eq!(breaks(&after(block(&l, vec![jump()], vec![called, returned()])), &l), 1);
     }
 
+    // A lone jump, `continue;`, `break;` or `return x;`, each `break`
+    // takes too, but a `break;` or `continue;` of no label never where a
+    // loop in the block holds the `break`, which it would leave instead.
+    #[test]
+    fn a_break_takes_a_lone_jump() {
+        let l = Name::block_label("bb37".into());
+        let jump = || stmt(StmtKind::Break(Some(l.clone())));
+        let on = || stmt(StmtKind::Continue(None));
+        assert_eq!(breaks(&after(block(&l, vec![jump()], vec![on()])), &l), 0);
+        let looped = vec![stmt(StmtKind::While {
+            label: None,
+            cond: Expr::var("more"),
+            body: vec![jump()],
+        })];
+        assert_eq!(breaks(&after(block(&l, looped, vec![on()])), &l), 1);
+    }
+
     // Not past a `try` between the `break` and the block, whose handler
     // would run after the copy's drops, or around them; not where the block
     // declares a name the tail reads; not of drops a `finally` holds, the
-    // drop scope's; not of a tail with no drop, other passes'.
+    // drop scope's; not of assignments with no drop.
     #[test]
     fn a_break_keeps_its_jump_where_a_copy_would_differ() {
         let l = Name::block_label("bb27".into());
@@ -187,7 +236,11 @@ mod tests {
         assert_eq!(breaks(&after(block(&l, shadowed, vec![drop(), returned()])), &l), 1);
         let held = stmt(StmtKind::Assign(Expr::var("x"), Expr::var("y"))).knowing(Known::Drop);
         assert_eq!(breaks(&after(block(&l, vec![jump()], vec![held, returned()])), &l), 1);
-        assert_eq!(breaks(&after(block(&l, vec![jump()], vec![returned()])), &l), 1);
+        let assigned = stmt(StmtKind::Assign(Expr::var("x"), Expr::var("y")));
+        assert_eq!(
+            breaks(&after(block(&l, vec![jump()], vec![assigned, returned()])), &l),
+            1
+        );
         let program = Name::label("found");
         assert_eq!(
             breaks(

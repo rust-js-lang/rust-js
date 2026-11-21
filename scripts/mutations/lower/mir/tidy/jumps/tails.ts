@@ -210,12 +210,13 @@ export const mutations: Mutation[] = [
   {
     name: "return-into-branches-of-any-value",
     breaks:
-      "a `return` of a call some arms go on to is written in each path, `return complex(array.length);` twice",
+      "`returns into branches` writes a `return` of any value in each path, before the passes after it write those blocks better, and four snapshots read worse; a block MIR made that's left gets its `return` last in tidy (ADR 0754, amended; ADR 1178)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "StmtKind::Return(value) if value.as_ref().is_none_or(|e| one_value(e) || call_of_values(e)))\n",
     replace:
       "StmtKind::Return(value) if value.as_ref().is_none_or(|_| true))\n",
-    tests: ["test/lowering-labels.test.ts", "-t", "a match's return of a call"],
+    tests: ["test/corpus.test.ts", "-t", "^(calculator|condition_block_sequence).rs$"],
+    snapshots: true,
   },
   {
     name: "returns-into-branches-at-ends-not",
