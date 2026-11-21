@@ -11,28 +11,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^std_adapter_given_to_generic_code_that_asks_its_hint\\.rs$"],
   },
   {
-    name: "library-callee-hint-unmarked",
-    breaks: "a `filter` given a library's generic function that asks its hint is JS's own, `(0, None)`, as the crate can't see the library's body (#1236)",
-    file: "src/lower/analysis/hint_asked.rs",
-    find: "                    _ = mark_given(tcx, recognition, given.peel_refs(), keeps_capacity, &mut asked);\n",
-    replace: "",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_hint_asked_of_what_its_given$"],
-  },
-  {
     name: "made-in-generic-code-unmarked",
     breaks: "a `map` or a `take` generic code makes of its own type parameter's iterator and gives code that asks its hint is JS's own, `(0, None)`, where std's is `(5, Some(5))` (#1240)",
     file: "src/lower/analysis/hint_asked.rs",
     find: "                    mark_made_in(tcx, maker, made, &mut asked.hinted);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint\\.rs$"],
-  },
-  {
-    name: "unseen-callers-made-unmarked",
-    breaks: "a library's generic function's `map` of what a consumer gives it, given on where its hint is asked, is JS's own, `(0, None)`, as the library sees none of its callers (#1240)",
-    file: "src/lower/analysis/hint_asked.rs",
-    find: "            let mut of_items = crate::lower::instances::instances_of(\n                tcx,\n                (&callers, crate::lower::instances::Fact::Shared),\n                of,\n                owner,\n            )\n            .is_none();\n",
-    replace: "            let mut of_items = false;\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_adapter_made_in_generic_code_asked_its_hint$"],
   },
   {
     name: "generic-growth-lost-unseen",

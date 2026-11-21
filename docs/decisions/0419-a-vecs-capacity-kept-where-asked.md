@@ -1143,3 +1143,15 @@ fails on main: the plain build throws, and both builds refuse the
 `successors` rows. New mutations: `array-iter-every-std-iterator`,
 `hint-given-of-a-compiled-struct-unmarked` and
 `lower-bound-of-std-sources-unkept`.
+
+Amended (#2277): the owner of a hint asked where callers can't be seen is
+#1251's runtime ask, `$hintAsked` of each value given (`by_value`). Two
+compile-time markings beside it, each argument given a library's generic
+function made knowing its hint (`mark_given` of its call's type
+arguments), and what a generic function whose callers aren't all seen
+makes of its parameters, changed no JS: not of the two pairs that held
+them (`library_hint_asked_of_what_its_given`,
+`library_adapter_made_in_generic_code_asked_its_hint`), nor of three more
+giving a library in-place adapters, growing a `Vec` by them with its
+capacity asked, and taking some before asking the hint of the rest, each
+against native. They are removed; `$hintAsked` answers them.

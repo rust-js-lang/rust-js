@@ -176,13 +176,9 @@ pub(super) fn of_crate<'tcx>(
             if let Some(of) = asks.of_params(callee, args) {
                 of_params.push((tcx.typeck_root_def_id(body.def_id), tcx.erase_and_anonymize_regions(of)));
             }
-            // A library's function's iterators, whose hint its body, which
-            // the crate can't see, may ask.
-            if recognition.foreign.is_library(callee.krate) {
-                for given in args.types() {
-                    _ = mark_given(tcx, recognition, given.peel_refs(), keeps_capacity, &mut asked);
-                }
-            }
+            // Not what's given a library's function, whose hint its body asks
+            // of each value its consumers give it as it grows, `$hintAsked`
+            // (`by_value`, #1251): marking it here changed no JS (#2277).
         }
     }
     // Of a crate that asks a `dyn Iterator`'s hint, each value it makes
@@ -244,16 +240,11 @@ pub(super) fn of_crate<'tcx>(
     if let Some(callers) = callers.filter(|_| !of_params.is_empty()) {
         for (owner, of) in of_params {
             let (instances, made) = crate::lower::instances::seen_instances_of(tcx, &callers, of, owner);
-            // Of every caller where the crate sees them all, or any it may
-            // be given, a library's `pub` function's, whose callers are its
-            // consumers'.
-            let mut of_items = crate::lower::instances::instances_of(
-                tcx,
-                (&callers, crate::lower::instances::Fact::Shared),
-                of,
-                owner,
-            )
-            .is_none();
+            // Of every caller where the crate sees them all; one it can't
+            // see, a library's `pub` function's, asks each value it's
+            // given as it grows, `$hintAsked` (`by_value`, #1251), so what
+            // it makes of them is marked by none (#2277).
+            let mut of_items = false;
             for instance in instances {
                 of_items |= mark_given(tcx, recognition, instance, keeps_capacity, &mut asked);
             }
