@@ -271,45 +271,13 @@ pub(super) fn written_params<'tcx>(
         })
     };
     let derived = |body: &Body<'tcx>| of_a_derived_impl(tcx, body);
-    // What makes a pair `dyn`, and of what: a coercion of what isn't one,
-    // `Box::new(e)` as a `Box<dyn Error>`, of `e`; or std's conversion into
-    // one, `?`'s `from_residual` or a `From<E> for Box<dyn Error>`, of `E`;
-    // not one passed on, either's `inner.source()`, which what made it made
-    // (#1712). With the `dyn`'s type.
-    let makes = |body: &Body<'tcx>, expr: &rustc_middle::thir::Expr<'tcx>| match expr.kind {
-        ExprKind::PointerCoercion {
-            cast: PointerCoercion::Unsize,
-            source,
-            ..
-        } if fmt_dyn(expr.ty) && !fmt_dyn(body.thir[source].ty) => {
-            Some((pointer_target(tcx, body.thir[source].ty), expr.ty))
-        }
-        ExprKind::Call { fun, .. } => fn_def(body.thir[fun].ty).and_then(|(callee, args)| {
-            // A conversion, `From::from` or `Into::into`, to a pair `dyn`
-            // from what isn't one, by the trait's direction
-            // (`recognition::conversion`, #2166).
-            if let Some((to, from)) = crate::lower::recognition::conversion(tcx, callee, args) {
-                return (fmt_dyn(to) && !fmt_dyn(from)).then_some((from, to));
-            }
-            // `?`'s residual, a `Result<Infallible, E>`, made a pair `dyn`:
-            // its `E`.
-            if !tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual) {
-                return None;
-            }
-            let made_into = args.types().find(|&ty| fmt_dyn(ty))?;
-            let given = args.types().find(|&ty| !fmt_dyn(ty))?;
-            let made_of = match given.kind() {
-                ty::Adt(_, parts) => parts.types().last().unwrap_or(given),
-                _ => given,
-            };
-            Some((made_of, made_into))
-        }),
-        _ => None,
-    };
+    // What makes a pair `dyn`, and of what (`made_dyns`), with the `dyn`'s
+    // type.
+    let makes = |body: &Body<'tcx>, expr: &rustc_middle::thir::Expr<'tcx>| made_dyns(tcx, body, expr, &fmt_dyn);
     // Each value the crate makes a pair `dyn` of, but a derived impl's,
     // whose `dyn`s of its fields only std's builder is given (#1778).
     let made_fmt_dyns: Vec<Ty<'tcx>> = (all_bodies.iter().filter(|body| !derived(body)))
-        .flat_map(|body| (body.thir.exprs.iter()).filter_map(|expr| makes(body, expr)))
+        .flat_map(|body| (body.thir.exprs.iter()).flat_map(|expr| makes(body, expr)))
         .map(|(made_of, _)| made_of)
         .collect();
     // Of each body, what it writes into a writer: a `write!` into one's
@@ -633,21 +601,77 @@ fn of_a_derived_impl(tcx: TyCtxt<'_>, body: &Body<'_>) -> bool {
 /// its dictionary carries `fmtInto` (`written_params`) and it's shown, its
 /// writers framed (`prints`), one rule (#1772, #1774).
 pub(super) fn dyns_made<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<(DefId, Ty<'tcx>, Span)> {
+    let is_dyn = |ty: Ty<'tcx>| matches!(pointer_target(tcx, ty).kind(), ty::Dynamic(..));
     let mut made = Vec::new();
     for body in all_bodies.iter().filter(|body| !of_a_derived_impl(tcx, body)) {
         let owner = tcx.typeck_root_def_id(body.def_id);
         for expr in body.thir.exprs.iter() {
-            if let ExprKind::PointerCoercion {
-                cast: PointerCoercion::Unsize,
-                source,
-                ..
-            } = expr.kind
-                && matches!(pointer_target(tcx, expr.ty).kind(), ty::Dynamic(..))
+            for (made_of, _) in made_dyns(tcx, body, expr, &is_dyn) {
+                made.push((owner, made_of, expr.span));
+            }
+        }
+    }
+    made
+}
+
+/// What `expr` makes a `dyn` of, each with the `dyn`'s type, of the `dyn`s
+/// `is_dyn` asks of: a coercion of what isn't one, `Box::new(e)` as a
+/// `Box<dyn Error>`, of `e`; std's conversion into one, `?`'s
+/// `from_residual` or a `From<E> for Box<dyn Error>`, of `E`, called or
+/// given as evidence to a function it names, a library's `fn new<E:
+/// Into<Box<dyn Error>>>(err: E)`'s, whose body, unseen, converts it
+/// (#2250). Not one passed on, either's
+/// `inner.source()`, which what made it made (#1712). The one answer of
+/// what makes a `dyn`, of a crate's writes and a library's (#1772, #1797).
+fn made_dyns<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+    expr: &rustc_middle::thir::Expr<'tcx>,
+    is_dyn: &dyn Fn(Ty<'tcx>) -> bool,
+) -> Vec<(Ty<'tcx>, Ty<'tcx>)> {
+    let mut made = Vec::new();
+    match expr.kind {
+        ExprKind::PointerCoercion {
+            cast: PointerCoercion::Unsize,
+            source,
+            ..
+        } if is_dyn(expr.ty) && !is_dyn(body.thir[source].ty) => {
+            made.push((pointer_target(tcx, body.thir[source].ty), expr.ty));
+        }
+        // `?`'s residual, a `Result<Infallible, E>`, made a `dyn`: its `E`.
+        ExprKind::Call { fun, .. }
+            if let Some((callee, args)) = fn_def(body.thir[fun].ty)
+                && tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitFromResidual)
+                && let Some(made_into) = args.types().find(|&ty| is_dyn(ty))
+                && let Some(given) = args.types().find(|&ty| !is_dyn(ty)) =>
+        {
+            let made_of = match given.kind() {
+                ty::Adt(_, parts) => parts.types().last().unwrap_or(given),
+                _ => given,
+            };
+            made.push((made_of, made_into));
+        }
+        _ => {}
+    }
+    // A conversion into a `dyn` from what isn't one, by its trait's
+    // direction (`recognition::conversion_by_trait`, #2166), that the
+    // function it names takes: `From::from`'s or `Into::into`'s own, called,
+    // or a bound of a function's, given as evidence.
+    if let Some((callee, args)) = fn_def(expr.ty) {
+        for bound in tcx
+            .param_env(callee)
+            .caller_bounds()
+            .filter_map(|clause| clause.as_trait_clause())
+        {
+            let bound = ty::EarlyBinder::bind(tcx, bound.skip_binder().trait_ref)
+                .instantiate(tcx, args)
+                .skip_normalization();
+            if let Some((to, from, false)) =
+                crate::lower::recognition::conversion_by_trait(tcx, bound.def_id, bound.args)
+                && is_dyn(to)
+                && !is_dyn(from)
             {
-                let made_of = pointer_target(tcx, body.thir[source].ty);
-                if !matches!(made_of.kind(), ty::Dynamic(..)) {
-                    made.push((owner, made_of, expr.span));
-                }
+                made.push((from, to));
             }
         }
     }

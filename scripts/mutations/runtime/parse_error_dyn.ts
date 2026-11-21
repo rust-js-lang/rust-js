@@ -18,4 +18,20 @@ export const mutations: Mutation[] = [
     replace: "fmtInto: (f, value) => f.write(value) }),",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
   },
+  {
+    name: "parse-error-dyn-debug-written-whole",
+    breaks: "a parse error in a `Box<dyn Error>` written by its `Debug` into a writer is one `write_str`, where std's builders write its name, braces, field and kind apart (#2250)",
+    file: "src/runtime/parse_error_dyn.js",
+    find: "      fmtInto: (f, value, options) => $writeDebugParseError(f, value, name, options?.alternate),\n",
+    replace: "      fmtInto: (f, value, options) => f.write($debugParseError(value, name, options)),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
+  },
+  {
+    name: "parse-error-dyn-debug-unpretty",
+    breaks: "`{:#?}` of a parse error in a `Box<dyn Error>` is on one line, as its dictionary's `fmt` drops the `Formatter`'s options (#2250)",
+    file: "src/runtime/parse_error_dyn.js",
+    find: "      fmt: (value, options) => $debugParseError(value, name, options),\n",
+    replace: "      fmt: (value) => $debugParseError(value, name),\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
+  },
 ];

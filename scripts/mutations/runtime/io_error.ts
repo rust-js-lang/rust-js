@@ -122,4 +122,20 @@ export const mutations: Mutation[] = [
     replace: "  if (e.message) return f.write(e.message);\n",
     tests: ["test/writer-sink.test.ts", "-t", "serde_json's error and an OS error"],
   },
+  {
+    name: "io-error-debug-custom-error-whole",
+    breaks: "an `io::Error` holding an error, in a `Box<dyn Error>` written by its `Debug` into a writer, writes that error's `Debug` as one `write_str`, where its own dictionary writes it a piece at a time (#2250)",
+    file: "src/runtime/io_error.js",
+    find: "  const error = (g, error) => $writeBy(g, error.impl.Debug(), error.value, options);\n",
+    replace: "  const error = (g, error) => g.write(error.impl.Debug().fmt(error.value, options));\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
+  },
+  {
+    name: "io-error-debug-os-message-unquoted",
+    breaks: "an OS error in a `Box<dyn Error>` written by its `Debug` into a writer leaves out its message's quotes, which std's `write!(fmt, \"\\\"{}\\\"\", ..)` writes (#2250)",
+    file: "src/runtime/io_error.js",
+    find: "      g.write('\"');\n      g.write(message);\n      g.write('\"');\n",
+    replace: "      g.write(message);\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
+  },
 ];

@@ -3,7 +3,7 @@
 // line: 1, column: 1)`; its `type_id` `type` (ADR 0331).
 function $jsonErrorDyn(type) {
   return {
-    Debug: () => ({ fmt: $debugJsonError }),
+    Debug: () => ({ fmt: $debugJsonError, fmtInto: $writeDebugJsonError }),
     Display: () => ({ fmt: $displayJsonError, fmtInto: $writeJsonError }),
     source: () => undefined,
     typeId: () => type,

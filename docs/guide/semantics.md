@@ -407,7 +407,10 @@ what's held before it, as a browser's console takes whole lines
   whose impl is written by hand, is written so by its dictionary too; one of
   a value whose writes the library can't follow so, a private type's, a
   derived `Debug`'s or a type parameter's, is refused where a consumer
-  writes a `dyn` a piece at a time (#1797).
+  writes a `dyn` a piece at a time (#1797). A `dyn Error`'s `Debug`, `{:?}`
+  of a `Box<dyn Error + Send + Sync>`, is written by its dictionary as std
+  writes it, a message's, a parse error's, serde_json's or an `io::Error`'s
+  each a piece at a time (#2250).
 - **Generic code that writes to any writer, a `W: fmt::Write`,** is given
   a `String`, a `Formatter` or the crate's own writer in a box, with a
   dictionary of its `write_str`, `write_char` and `write_fmt`

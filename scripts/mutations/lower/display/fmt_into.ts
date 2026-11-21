@@ -18,9 +18,17 @@ export const mutations: Mutation[] = [
     name: "fmt-into-dyn-unwritten",
     breaks: "a `dyn Display` written into a writer is refused, as its pair's dictionary isn't asked",
     file: "src/lower/display/fmt_into.rs",
-    find: "            if !debug && (self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay) {\n",
+    find: "            if !debug && self.dynamic_trait(ty).is_none() {\n",
     replace: "            if true {\n",
     tests: sink,
+  },
+  {
+    name: "fmt-into-dyn-error-debug-unfollowed",
+    breaks: "a `dyn Error`'s `Debug` written into a writer is refused, as std's errors' pieces weren't followed, rand_core 0.5.1's `write!(f, \"{:?}\", self.inner)` (#2250)",
+    file: "src/lower/display/fmt_into.rs",
+    find: "            if !debug && self.dynamic_trait(ty).is_none() {\n",
+    replace: "            if !debug && (self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
   },
   {
     name: "fmt-into-generic-unwritten",

@@ -1,3 +1,4 @@
+//@ library-differs
 // An `io::Error` made of an error owns it, and drops it where Rust drops
 // the `io::Error`: of a local, a `Result` given back through `?`, a `Vec` of
 // them, one made by `other`, one held by another, one boxed as a `dyn

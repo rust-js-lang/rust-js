@@ -59,10 +59,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `dyn Debug`'s, its pair's own dictionary, its type's `Debug`
             // (ADR 0060, amended).
             let debug = kind == Std::FmtDebug && traits.principal_def_id() == Some(self.debug_trait());
-            // A pair's `Display`, a `dyn Display`'s or a `dyn Error`'s; the
-            // `Debug` of another isn't followed yet (#1652), as std's
-            // errors' aren't.
-            if !debug && (self.dynamic_trait(ty).is_none() || kind != Std::FmtDisplay) {
+            // A pair's, a `dyn Display`'s or a `dyn Error`'s, by its
+            // supertrait's dictionary: its `Display`, or a `dyn Error`'s
+            // `Debug`, which each of std's errors' dictionaries writes as
+            // std's `fmt` does, a piece at a time (#2250).
+            if !debug && self.dynamic_trait(ty).is_none() {
                 return Ok(None);
             }
             let held = Expr::member(value.clone(), js::DICTIONARY);

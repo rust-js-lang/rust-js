@@ -13,6 +13,18 @@ function $writeJsonError(f, e) {
   f.write(" column ");
   $writeInteger(f, e.column);
 }
+// Its `Debug` into a writer, as serde_json's `write!(f, "Error({:?}, line:
+// {}, column: {})", ..)` writes it: each literal piece one `write_str`, its
+// message a `String`'s `Debug`, each number its digits (#2250).
+function $writeDebugJsonError(f, e) {
+  f.write("Error(");
+  $writeDebugStr(f, e.message);
+  f.write(", line: ");
+  $writeInteger(f, e.line);
+  f.write(", column: ");
+  $writeInteger(f, e.column);
+  f.write(")");
+}
 function $debugJsonError(e) {
   return `Error(${$debugStr(e.message)}, line: ${e.line}, column: ${e.column})`;
 }

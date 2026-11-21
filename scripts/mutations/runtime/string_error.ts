@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "string-error-debug-unquoted",
     breaks: "`{:?}` of a `Box<dyn Error>` made from a message shows it without quotes",
     file: "src/runtime/string_error.js",
-    find: "    Debug: () => ({ fmt: (message) => $debugStr(message) }),",
-    replace: "    Debug: () => ({ fmt: (message) => message }),",
+    find: "    Debug: () => ({ fmt: (message) => $debugStr(message), fmtInto: (f, message) => $writeDebugStr(f, message) }),",
+    replace: "    Debug: () => ({ fmt: (message) => message, fmtInto: (f, message) => $writeDebugStr(f, message) }),",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
@@ -25,5 +25,13 @@ export const mutations: Mutation[] = [
     find: "fmtInto: $writePadded }),",
     replace: "fmtInto: (f, message) => f.write(message) }),",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"],
+  },
+  {
+    name: "string-error-debug-written-whole",
+    breaks: "a `Box<dyn Error>` of a message written by its `Debug` into a writer is one `write_str`, where std's `str` `Debug` writes each escape apart (#2250)",
+    file: "src/runtime/string_error.js",
+    find: "fmtInto: (f, message) => $writeDebugStr(f, message) }),",
+    replace: "fmtInto: (f, message) => f.write($debugStr(message)) }),",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_error_debug_written_piecewise.rs$"],
   },
 ];

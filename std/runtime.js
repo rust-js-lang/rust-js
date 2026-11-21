@@ -7687,12 +7687,16 @@ export function $append(items, other) {
 // 0141): its value is its message (ADR 0063), shown by `{:?}` as Rust shows
 // it, `ParseIntError { kind: InvalidDigit }`, its type's name, and by `{}`
 // as its text, given the placeholder's options as std's `fmt` of it applies
-// them, `pad`, whose writes it writes into a writer (#1652); its `type_id`
-// `type`, which a downcast compares (ADR 0331).
+// them, `pad`, whose writes it writes into a writer (#1652), as it does
+// its derived `Debug`'s, by std's builders (#2250); its `type_id` `type`,
+// which a downcast compares (ADR 0331).
 export function $parseErrorDyn(type) {
   const name = type.slice(type.lastIndexOf("::") + 2);
   return {
-    Debug: () => ({ fmt: (value) => $debugParseError(value, name) }),
+    Debug: () => ({
+      fmt: (value, options) => $debugParseError(value, name, options),
+      fmtInto: (f, value, options) => $writeDebugParseError(f, value, name, options?.alternate),
+    }),
     Display: () => ({ fmt: (value, options) => $formatted(value, options), fmtInto: $writePadded }),
     source: () => undefined,
     typeId: () => type,
@@ -7884,7 +7888,7 @@ export function $trimMatches(s, p, start = true, end = true) {
 // line: 1, column: 1)`; its `type_id` `type` (ADR 0331).
 export function $jsonErrorDyn(type) {
   return {
-    Debug: () => ({ fmt: $debugJsonError }),
+    Debug: () => ({ fmt: $debugJsonError, fmtInto: $writeDebugJsonError }),
     Display: () => ({ fmt: $displayJsonError, fmtInto: $writeJsonError }),
     source: () => undefined,
     typeId: () => type,
@@ -18359,6 +18363,18 @@ export function $writeJsonError(f, e) {
   f.write(" column ");
   $writeInteger(f, e.column);
 }
+// Its `Debug` into a writer, as serde_json's `write!(f, "Error({:?}, line:
+// {}, column: {})", ..)` writes it: each literal piece one `write_str`, its
+// message a `String`'s `Debug`, each number its digits (#2250).
+export function $writeDebugJsonError(f, e) {
+  f.write("Error(");
+  $writeDebugStr(f, e.message);
+  f.write(", line: ");
+  $writeInteger(f, e.line);
+  f.write(", column: ");
+  $writeInteger(f, e.column);
+  f.write(")");
+}
 export function $debugJsonError(e) {
   return `Error(${$debugStr(e.message)}, line: ${e.line}, column: ${e.column})`;
 }
@@ -18433,10 +18449,12 @@ export function $jsonLocked(cell, write, exclusive) {
 // Its `type_id` is std's private `StringError`'s, which no program can
 // name, so no downcast finds it: a key no type's name is (ADR 0331). Its
 // `Display` is its message's, `pad`, given the `Formatter`'s options (#1689);
-// written into a writer, `pad`'s writes (#1652).
+// written into a writer, `pad`'s writes (#1652). Its `Debug` is its
+// message's, a `str`'s, whose escapes written into a writer are each a
+// write of their own (#2250).
 export function $stringError() {
   return {
-    Debug: () => ({ fmt: (message) => $debugStr(message) }),
+    Debug: () => ({ fmt: (message) => $debugStr(message), fmtInto: (f, message) => $writeDebugStr(f, message) }),
     Display: () => ({ fmt: (message, options) => $formatted(message, options), fmtInto: $writePadded }),
     source: () => undefined,
     typeId: () => "<std's StringError>",
@@ -20357,6 +20375,29 @@ export function $ioErrorDebug(e, options) {
     ? $pretty("Custom {", [`kind: ${e.kind}`, `error: ${error}`], "}")
     : `Custom { kind: ${e.kind}, error: ${error} }`;
 }
+// `{:?}` of one into a writer, as std's writes it, by its builders (#2250):
+// an OS error's `Os { code, kind, message }`, its message between two
+// quotes, each a `write_str`, as std's `write!(fmt, "\"{}\"", ..)` writes
+// it; a message's `Error { kind, message }`, its message a `str`'s
+// `Debug`; one holding an error, `Custom { kind, error }`, the error by
+// its own dictionary's `Debug`; a kind's `Kind(..)`. A kind is its
+// variant's name, one `write_str`.
+export function $writeIoErrorDebug(f, e, options) {
+  const pretty = options?.alternate;
+  const kind = ["kind", e.kind, (g, kind) => g.write(kind)];
+  if (e.code !== undefined) {
+    const message = (g, message) => {
+      g.write('"');
+      g.write(message);
+      g.write('"');
+    };
+    return $writeDebugStruct(f, "Os", [["code", e.code, (g, code) => $writeInteger(g, code)], kind, ["message", e.message, message]], pretty);
+  }
+  if (e.message) return $writeDebugStruct(f, "Error", [kind, ["message", e.message, $writeDebugStr]], pretty);
+  if (e.error === undefined) return $writeDebugTuple(f, "Kind", [[e.kind, (g, kind) => g.write(kind)]], pretty);
+  const error = (g, error) => $writeBy(g, error.impl.Debug(), error.value, options);
+  $writeDebugStruct(f, "Custom", [kind, ["error", e.error, error]], pretty);
+}
 // `{:?}` of an `io::Result<()>`, `undefined` or its error.
 export function $ioResultDebug(result, options) {
   if (result === undefined) return "Ok(())";
@@ -20367,7 +20408,7 @@ export function $ioResultDebug(result, options) {
 // 0141); its `type_id` `type` (ADR 0331), and its drop, what it holds.
 export function $ioErrorDyn(type) {
   return {
-    Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
+    Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options), fmtInto: $writeIoErrorDebug }),
     Display: () => ({ fmt: (e, options) => $ioErrorDisplay(e, options), fmtInto: $writeIoError }),
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),

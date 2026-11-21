@@ -108,6 +108,29 @@ function $ioErrorDebug(e, options) {
     ? $pretty("Custom {", [`kind: ${e.kind}`, `error: ${error}`], "}")
     : `Custom { kind: ${e.kind}, error: ${error} }`;
 }
+// `{:?}` of one into a writer, as std's writes it, by its builders (#2250):
+// an OS error's `Os { code, kind, message }`, its message between two
+// quotes, each a `write_str`, as std's `write!(fmt, "\"{}\"", ..)` writes
+// it; a message's `Error { kind, message }`, its message a `str`'s
+// `Debug`; one holding an error, `Custom { kind, error }`, the error by
+// its own dictionary's `Debug`; a kind's `Kind(..)`. A kind is its
+// variant's name, one `write_str`.
+function $writeIoErrorDebug(f, e, options) {
+  const pretty = options?.alternate;
+  const kind = ["kind", e.kind, (g, kind) => g.write(kind)];
+  if (e.code !== undefined) {
+    const message = (g, message) => {
+      g.write('"');
+      g.write(message);
+      g.write('"');
+    };
+    return $writeDebugStruct(f, "Os", [["code", e.code, (g, code) => $writeInteger(g, code)], kind, ["message", e.message, message]], pretty);
+  }
+  if (e.message) return $writeDebugStruct(f, "Error", [kind, ["message", e.message, $writeDebugStr]], pretty);
+  if (e.error === undefined) return $writeDebugTuple(f, "Kind", [[e.kind, (g, kind) => g.write(kind)]], pretty);
+  const error = (g, error) => $writeBy(g, error.impl.Debug(), error.value, options);
+  $writeDebugStruct(f, "Custom", [kind, ["error", e.error, error]], pretty);
+}
 // `{:?}` of an `io::Result<()>`, `undefined` or its error.
 function $ioResultDebug(result, options) {
   if (result === undefined) return "Ok(())";
@@ -118,7 +141,7 @@ function $ioResultDebug(result, options) {
 // 0141); its `type_id` `type` (ADR 0331), and its drop, what it holds.
 function $ioErrorDyn(type) {
   return {
-    Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options) }),
+    Debug: () => ({ fmt: (e, options) => $ioErrorDebug(e, options), fmtInto: $writeIoErrorDebug }),
     Display: () => ({ fmt: (e, options) => $ioErrorDisplay(e, options), fmtInto: $writeIoError }),
     // Its error's own `source`, as std's is.
     source: (e) => e.error?.impl.source(e.error.value),

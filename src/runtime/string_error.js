@@ -3,10 +3,12 @@
 // Its `type_id` is std's private `StringError`'s, which no program can
 // name, so no downcast finds it: a key no type's name is (ADR 0331). Its
 // `Display` is its message's, `pad`, given the `Formatter`'s options (#1689);
-// written into a writer, `pad`'s writes (#1652).
+// written into a writer, `pad`'s writes (#1652). Its `Debug` is its
+// message's, a `str`'s, whose escapes written into a writer are each a
+// write of their own (#2250).
 function $stringError() {
   return {
-    Debug: () => ({ fmt: (message) => $debugStr(message) }),
+    Debug: () => ({ fmt: (message) => $debugStr(message), fmtInto: (f, message) => $writeDebugStr(f, message) }),
     Display: () => ({ fmt: (message, options) => $formatted(message, options), fmtInto: $writePadded }),
     source: () => undefined,
     typeId: () => "<std's StringError>",

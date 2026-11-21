@@ -51,6 +51,27 @@ pub fn show(text: &str) -> String {
     value: '(show("{\\"n\\": 3}"), show("{"), show("[1,]"), show("tru"))',
   },
   {
+    // Its `Debug` and `Display` written into a writer of the crate's own,
+    // each piece a call of the writer's, as serde_json's `write!` of it
+    // writes them (#2250).
+    name: "a serde_json error in a Box<dyn Error> written into a writer a piece at a time",
+    definitions: `struct Pieces(Vec<String>);
+impl std::fmt::Write for Pieces {
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        self.0.push(s.to_string());
+        Ok(())
+    }
+}
+pub fn pieces(text: &str) -> Vec<String> {
+    use std::fmt::Write;
+    let e: Box<dyn std::error::Error> = serde_json::from_str::<serde_json::Value>(text).unwrap_err().into();
+    let mut w = Pieces(Vec::new());
+    write!(w, "{e:?} / {e}").unwrap();
+    w.0
+}`,
+    value: '(pieces("{"), pieces("[1,]"), pieces("\\"tab\\t"))',
+  },
+  {
     // Where the crate's `dyn Error`s may drop, serde_json's error, rust-js's
     // own value, drops nothing: its struct's `ErrorCode::Io` isn't read
     // (#1403, ADR 0462).

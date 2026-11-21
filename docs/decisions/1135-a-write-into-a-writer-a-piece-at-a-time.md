@@ -889,3 +889,60 @@ recording each call; and one failing at the third call and at the eighth,
 `sink-write-if-always`, `range-exhausted-write-dropped`,
 `range-exhausted-written-first` and `range-inclusive-written-refused`,
 caught. Its line in the guide's limitations is gone.
+
+## Amendment: a `dyn Error`'s `Debug`, a piece at a time (2026-11-22, #2250)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none decided; a refusal
+of valid Rust lifted, and a wrong answer fixed on the way.
+
+A `dyn` written into a writer by its dictionary was followed for a `dyn
+Debug`'s `Debug` and a pair's `Display`, but not a `dyn Error`'s `Debug`,
+as std's errors' dictionaries wrote no pieces. rand_core 0.5.1's `Error`
+writes `write!(f, "Error {{ inner: {:?} }}", self.inner)` of its `Box<dyn
+Error + Send + Sync>`. In a library, any `Formatter` may be armed with a
+consumer's writer, so the impl was refused, and with it rand, rand_chacha
+and quickcheck, which cut itertools' quickcheck tests (#1420).
+
+- **A pair `dyn`'s `Debug` is its supertrait's dictionary's**, as its
+  `Display` is (`written_by_dictionary`): `$writeBy(f,
+  e.impl.Debug(), e.value)`.
+- **Each of std's error dictionaries writes its `Debug` as std's `fmt`
+  does**, in its `fmtInto`:
+  - a message's `StringError`, a `str`'s `Debug`;
+  - a parse error, its derived `Debug` by std's builders;
+  - serde_json's, its `write!` of `Error({:?}, line: {}, column: {})`;
+  - an `io::Error`'s, `Os { code, kind, message }` (its message between
+    two quotes, std's `write!(fmt, "\"{}\"", ..)`), `Error { kind, message
+    }`, `Custom { kind, error }` (the error by its own dictionary), or
+    `Kind(..)`.
+  A parse error's `fmt` now takes the `Formatter`'s options too, so
+  `{:#?}` of one in a `Box<dyn Error>` is pretty, as std's is; it was on
+  one line.
+- **A value is made a `dyn` by a conversion a function it names takes as
+  evidence** (`made_dyns`, the one answer of what makes a `dyn`, which
+  `dyns_made` and a library's best-effort list both ask): `From::from` and
+  `Into::into` called, and a bound such as std's `io::Error::other<E:
+  Into<Box<dyn Error + Send + Sync>>>(e)`, whose body no contract
+  describes. Where a library writes the `dyn`s it's given, such a value's
+  dictionary carries `fmtInto`; before, it carried none and the write threw
+  "a bug of rust-js's", of a `Display` as of a `Debug`. So a library that
+  passes a value to such a function gives it `fmtInto` best-effort, as one
+  that boxes it does: `io_error_drops_what_it_holds.rs`'s library build
+  differs from its program's now (`//@ library-differs`).
+
+Corpus case `dyn_error_debug_written_piecewise`, against native in both
+builds and its metamorphic rewrites: rand_core's shape written plainly and
+`{:#?}` into a writer recording each call, of a message, a `String`, the
+parse errors, `TryFromIntError`, a crate error, `io::Error`s of a kind, a
+message, a crate error by `io::Error::other` alone, and an OS error. Crate
+pair `library_writes_a_dyn_errors_debug`, against native: rand_core's
+`Error` in a library, written by a consumer, holding the library's errors,
+the consumer's, and one std's `io::Error::other` alone converts. serde test
+"a serde_json error in a Box<dyn Error> written into a writer a piece at a
+time". Mutations `fmt-into-dyn-error-debug-unfollowed`,
+`conversion-evidence-dyns-unmade`, `string-error-debug-written-whole`,
+`parse-error-dyn-debug-written-whole`, `parse-error-dyn-debug-unpretty`,
+`io-error-debug-custom-error-whole`, `io-error-debug-os-message-unquoted`
+and `json-error-debug-written-whole`, each caught; `fmt-into-dyn-unwritten`
+and the three `makes-fmt-dyns-*` retargeted to the code they now name,
+caught.
