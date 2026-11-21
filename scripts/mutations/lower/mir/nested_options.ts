@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "some-of-some-unseen",
+    breaks: "a `Some(Some(..))` held in a nullable nested field isn't known a `Some` of a `Some`, so its payload is held `payload ?? null`",
+    file: "src/lower/mir/nested_options.rs",
+    find: "        some_of(operand).and_then(some_of).is_some()\n",
+    replace: "        let _ = some_of;\n        false\n",
+    tests: ["test/corpus.test.ts", "-t", "^nested_option_of_none_like_payloads.rs$"],
+    snapshots: true,
+  },
+  {
     name: "held-some-null-for-none",
     breaks:
       "a `Some` of a value `null` but never `undefined`, held as its value, is written as an inner `Option`'s, `fallback ?? null` (rd547, ADR 1017 amended)",
@@ -58,7 +67,7 @@ export const mutations: Mutation[] = [
     name: "nested-field-given-boxed",
     breaks: "what a struct literal gives a nested field is ADR 0051's box, `{ $someNone: 0 }`, where JS reads `null` (#470)",
     file: "src/lower/mir/nested_options.rs",
-    find: "            true => self.held_of_boxed(value, operand.ty(state.body, self.tcx), out),\n            false => value,\n",
+    find: "            true => {\n                let some = self.some_of_some(state, operand);\n                self.held_of_boxed(value, (operand.ty(state.body, self.tcx), some), out)\n            }\n            false => value,\n",
     replace: "            true => value,\n            false => value,\n",
     tests: ["test/lowering-nested-options.test.ts", "-t", "a dictionary's nullable Option of an Option"],
   },
@@ -289,8 +298,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure's capture of a nested field its maker reads as the box is given it boxed, which its body reads as it's held: `once`'s `Some(None)` name is `$some(null)`, shown `[object Object]` (rd631)",
     file: "src/lower/mir/nested_options.rs",
-    find: "                let boxed = self.value_expr(value, Span::default())?;\n                Ok(Value::Expr(self.held_of_boxed(boxed, ty.expect(\"a capture\"), out)))\n",
-    replace: "                Ok(value)\n",
+    find: "                let boxed = self.value_expr(value, Span::default())?;\n                Ok(Value::Expr(self.held_of_boxed(boxed, (ty, some), out)))\n",
+    replace: "                let _ = (ty, some);\n                Ok(value)\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_field_captured.rs$"],
   },
   {

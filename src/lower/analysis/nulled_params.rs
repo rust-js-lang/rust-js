@@ -91,6 +91,9 @@ pub(in crate::lower) struct NulledSeen {
     /// Of each closure lowered where it's made, the one `None` each capture
     /// its maker gives can be, by index, MIR's (`place_none`, #2112 C S5).
     captured_nones: IndexMap<DefId, Vec<Option<crate::js::OnlyNone>>>,
+    /// Each closure a `#[rust_js::nullable]` thread-local's `with` lends
+    /// what it holds, `null` or a value, its parameter so (`stored_in`).
+    lent: IndexSet<DefId>,
 }
 
 /// What lowering saw of the calls of the crate's functions with nullable
@@ -368,13 +371,15 @@ impl NulledFound {
     /// What a body saw, `seen`, settled: its calls, each function it found
     /// returns `null` or a value, and each it asked of before.
     pub(in crate::lower) fn settle(&mut self, seen: NulledSeen) {
-        // What a closure's maker gave its captures is of that lowering
-        // alone, which made the closure where its body was lowered.
+        // What a closure's maker gave its captures, and what a `with`
+        // lends it, is of that lowering alone, which made the closure where
+        // its body was lowered.
         let NulledSeen {
             calls,
             returns,
             captured: _,
             captured_nones: _,
+            lent: _,
         } = seen;
         self.seen.seen.extend(calls.seen);
         self.seen.unnulled.extend(calls.unnulled);
@@ -424,6 +429,19 @@ impl NulledSeen {
     /// its maker gave it (`captures_nulled`).
     pub(in crate::lower) fn captured_nulled(&self, closure: DefId, i: usize) -> bool {
         self.captured.get(&closure).is_some_and(|nulled| nulled.contains(&i))
+    }
+
+    /// That a `#[rust_js::nullable]` thread-local's `with` lends the
+    /// closure `closure` what it holds, `null` or a value.
+    pub(in crate::lower) fn lends_nulled(&mut self, closure: DefId) {
+        self.lent.insert(closure);
+    }
+
+    /// Whether the closure `closure` is lent `null` or a value
+    /// (`lends_nulled`): its parameter, `ON_UPDATE_IN_DEV.with(|dispatcher|
+    /// ..)`'s `dispatcher`.
+    pub(in crate::lower) fn lent_nulled(&self, closure: DefId) -> bool {
+        self.lent.contains(&closure)
     }
 
     /// That the closure `closure`'s maker gives each capture, by index, the

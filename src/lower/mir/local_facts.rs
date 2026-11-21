@@ -149,6 +149,9 @@ pub(super) struct QuietCells {
     /// write it: what's written through the lend stores `null` for `None`
     /// too (#541).
     pub(super) nullable_lent: IndexMap<BasicBlock, crate::lower::representation::NoneForm>,
+    /// Each closure a `#[rust_js::nullable]` thread-local's `with` lends
+    /// what it holds, `null` or a value (`NulledSeen::lends_nulled`).
+    pub(super) lent_nulled: IndexSet<rustc_span::def_id::DefId>,
     /// Each `swap` of a `RefCell` that's a class's flattened state, its
     /// object's keys (ADR 1044): which of its two cells is one (#687).
     pub(super) flattened: IndexMap<BasicBlock, [bool; 2]>,
@@ -852,6 +855,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .is_some_and(|t| tcx.is_lang_item(t, LangItem::Clone))
             {
                 quiet.nullable.insert(block, form);
+            }
+            // A nullable one's value lent, `KEY.with(|d| ..)`: what the
+            // closure is given, `null` or a value (`lends_nulled`).
+            if let Some(Std::LocalWith { .. }) = self.recognition().classify(def_id, generic_args)
+                && let Some(key) = local_key(&first.node)
+                && nulled(crate::lower::representation::NonePlace::Local(key)).is_some()
+                && let Some(f) = args.get(1)
+                && let ty::Closure(closure, _) = *f.node.ty(body, tcx).kind()
+            {
+                quiet.lent_nulled.insert(closure);
             }
             // A nullable one lent, `KEY.with(f)` or `KEY.with_borrow_mut(f)`
             // (#541).

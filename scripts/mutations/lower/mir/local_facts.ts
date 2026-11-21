@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "lent-not-recorded",
+    breaks: "a nullable thread-local's `with` of a closure isn't recorded as lending it `null` or a value",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                quiet.lent_nulled.insert(closure);\n",
+    replace: "                let _ = closure;\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local's lent value"],
+  },
+  {
     name: "environment-any-closure-local",
     breaks: "a closure's body's local of a closure's type, `&loud` it holds of a closure it captured, is taken for its own environment, read only through its fields: `handler === undefined` where native Rust compares `true` (#1077)",
     file: "src/lower/mir/local_facts.rs",

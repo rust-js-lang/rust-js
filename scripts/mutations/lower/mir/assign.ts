@@ -5,6 +5,14 @@ const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 
 export const mutations: Mutation[] = [
   {
+    name: "borrow-of-nulled-returned-coalesced",
+    breaks: "a shared borrow of a nullable parameter returned, `&param`, isn't known `null` or a value, so it's returned `param ?? null`",
+    file: "src/lower/mir/assign.rs",
+    find: "                let nulled = self.nulled(state, &Operand::Copy(*of));\n",
+    replace: "                let nulled = false && self.nulled(state, &Operand::Copy(*of));\n",
+    tests: ["test/lowering-structs-enums.test.ts", "-t", "library const's Some"],
+  },
+  {
     name: "nulled-store-unmarked",
     breaks: "what's `null` or a value stored in a nullable place isn't said so, so a handle that stores as the place does, an index of a nullable field's `Vec`, writes `lanes[index] = transitions ?? null` (#1933 step 4 (F))",
     file: "src/lower/mir/assign.rs",
@@ -42,8 +50,8 @@ export const mutations: Mutation[] = [
     name: "nested-field-set-boxed",
     breaks: "a nested field set, `changed.sdp_mid = Some(None)`, holds the box (#470)",
     file: "src/lower/mir/assign.rs",
-    find: "                    let boxed = self.value_expr(boxed, span)?;\n                    self.held_of_boxed(boxed, ty, out)\n",
-    replace: "                    self.value_expr(boxed, span)?\n",
+    find: "                    let boxed = self.value_expr(boxed, span)?;\n                    self.held_of_boxed(boxed, (ty, some), out)\n",
+    replace: "                    let _ = some;\n                    self.value_expr(boxed, span)?\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
   },
   {
@@ -625,8 +633,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable result is a variable each branch sets, so `pop` returns `result ?? null` and its `return`s aren't where they're written",
     file: "src/lower/mir/assign.rs",
-    find: "                let value = self.nullable_written(state, *place, value?, nulled, span)?;\n",
-    replace: "                let value = value?;\n",
+    find: "                let nulled = self.nulled(state, operand);\n                let value = self.nullable_written(state, *place, value?, nulled, span)?;\n",
+    replace: "                let nulled = self.nulled(state, operand);\n                let _ = nulled;\n                let value = value?;\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",

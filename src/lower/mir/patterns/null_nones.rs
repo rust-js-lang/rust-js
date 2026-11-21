@@ -143,10 +143,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && let [key, value] = &args[..]
                 && let Some(read) = value.node.place()
                 && read.projection.is_empty()
-                && queries::referred_key(promoted, |local| assigned.get(&local).copied().flatten(), &key.node)
-                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null())
+                && let Some(key) =
+                    queries::referred_key(promoted, |local| assigned.get(&local).copied().flatten(), &key.node)
+                && none_form(self.tcx, NonePlace::Local(key)).stores_null()
             {
                 *given.entry(read.local).or_default() += 1;
+                // Of one something reads apart, `null` from `undefined`, what
+                // it stores as a nullable field does; of one nothing does,
+                // what it's given as it is (`reads_alike`, #665).
+                if !self.krate.nulled_params.reads_alike(key) {
+                    stored.insert(read.local);
+                }
             }
             let nullable = crate::lower::representation::null_params(self.tcx, def_id);
             // What a `#[rust_js::nullable]` thread-local is made of, its

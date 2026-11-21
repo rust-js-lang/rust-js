@@ -6,6 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { compiled } from "./crates";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -1230,3 +1231,38 @@ pub fn run() -> String {
   expect(lib.run()).toBe("1:1:None 1@3:Some(7.0) 1@4:Some(8.0) 1:0:None 1:0:Some(9.0)");
 });
 
+
+// A library's `SymbolFor` const compared with what a field reads, React's
+// `r#typeof == Some(REACT_FORWARD_REF_TYPE)` in ReactFiberBeginWork's
+// nullable `mount_lazy_component`: the `Some` of the const, a promoted
+// `&Some(..)`, whose body stores as the function's result does, is a
+// borrow of a `Some`, `null` or a value already, so it's compared as it
+// is, `typeof$ === REACT_FORWARD_REF_TYPE`, upstream's (#2112).
+test("a library const's Some compared is the const", async () => {
+  const dir = fixture("cross-crate-symbol-some");
+  const { app } = compiled(dir, `use js::SymbolFor;
+
+pub const FORWARD: SymbolFor = SymbolFor("react.forward_ref");
+
+pub const MEMO: SymbolFor = SymbolFor("react.memo");
+`, `use dep::{FORWARD, MEMO};
+use js::SymbolFor;
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn kind(component: Option<&'static js::Unknown>) -> Option<u32> {
+    component?;
+    let tag = SymbolFor::from_value(js::get(component, "$$typeof"));
+    if tag == Some(FORWARD) {
+        Some(1)
+    } else if tag == Some(MEMO) {
+        Some(2)
+    } else {
+        None
+    }
+}
+`);
+  expect(app).toContain("  if (tag === FORWARD) {\n");
+  expect(app).toContain("  } else if (tag === MEMO) {\n");
+  const { kind } = await import(join(dir, "app", "lib.js"));
+  expect([kind({ $$typeof: Symbol.for("react.forward_ref") }), kind({ $$typeof: Symbol.for("react.memo") }), kind({}), kind(null)]).toEqual([1, 2, null, null]);
+});

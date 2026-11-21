@@ -3,6 +3,22 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "thread-local-set-not-stored",
+    breaks: "a nullable thread-local's `set` isn't taken for a store, so a `let` a call writes, read by it, isn't `null` where it's made: `(__DEV__ ? fiber._debugTask : undefined) ?? null`",
+    file: "src/lower/mir/patterns/null_nones.rs",
+    find: "                if !self.krate.nulled_params.reads_alike(key) {\n                    stored.insert(read.local);\n                }\n",
+    replace: "",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "a nullable thread-local of an Option is null where it's made"],
+  },
+  {
+    name: "thread-local-set-alike-stored",
+    breaks: "a nullable thread-local nothing reads apart is taken for a store too, so what it's given is `x ?? null` where its read-alike form is `.. ? x : null` (#665)",
+    file: "src/lower/mir/patterns/null_nones.rs",
+    find: "                if !self.krate.nulled_params.reads_alike(key) {\n                    stored.insert(read.local);\n                }\n",
+    replace: "                stored.insert(read.local);\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "nothing reads apart"],
+  },
+  {
     name: "null-nones-parameter-taken",
     breaks:
       "a parameter the body sets again by a call, `reason = some(\"a\")`, given on to a nullable parameter, is taken as `null` for `None` at each write, its caller's `undefined` forgotten, so `commit` tests it `!== null` and reads `undefined`'s `length` (#1248)",
@@ -277,8 +293,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` a nullable thread-local's `set` alone reads keeps its `None` `undefined` where it's made: React's ReactFlightServer printed `importStringRequest = __DEV__ && debug ? undefined : request;`, where upstream writes `null` (#683, ADR 0861, amended)",
     file: "src/lower/mir/patterns/null_nones.rs",
-    find: "                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null())\n            {\n                *given.entry(read.local).or_default() += 1;\n",
-    replace: "                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null())\n            {\n",
+    find: "                && none_form(self.tcx, NonePlace::Local(key)).stores_null()\n            {\n                *given.entry(read.local).or_default() += 1;\n",
+    replace: "                && none_form(self.tcx, NonePlace::Local(key)).stores_null()\n            {\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stores a test tidy makes of its value"],
   },
   {
@@ -286,8 +302,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` any thread-local's `set` alone reads is `null` for `None` where it's made, though one not `#[rust_js::nullable]` holds `undefined` for `None` (#683, ADR 0861, amended)",
     file: "src/lower/mir/patterns/null_nones.rs",
-    find: "                    .is_some_and(|key| none_form(self.tcx, NonePlace::Local(key)).stores_null())\n            {\n",
-    replace: "                    .is_some()\n            {\n",
+    find: "                && none_form(self.tcx, NonePlace::Local(key)).stores_null()\n            {\n                *given.entry(read.local).or_default() += 1;\n",
+    replace: "                && true\n            {\n                *given.entry(read.local).or_default() += 1;\n",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "stores a test tidy makes of its value"],
   },
   {

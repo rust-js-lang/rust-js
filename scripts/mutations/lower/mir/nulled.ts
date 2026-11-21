@@ -34,6 +34,22 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "lent-nulled-param-unseen",
+    breaks: "a closure's parameter a nullable thread-local's `with` lends isn't known `null` or a value, so it's given `d ?? null`",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && self.nulled_seen.borrow().lent_nulled(state.body.source.def_id())\n",
+    replace: "            && false\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local's lent value"],
+  },
+  {
+    name: "lent-not-handed",
+    breaks: "what a nullable thread-local's `with` lends a closure isn't handed to its lowering",
+    file: "src/lower/mir/nulled.rs",
+    find: "        if state.facts.quiet_cells().lent_nulled.contains(&closure) {\n",
+    replace: "        if false {\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "a nullable thread-local's lent value"],
+  },
+  {
     name: "cloned-not-given",
     breaks: "an `Option<&T>`'s `cloned()` of what's `null` or a value isn't known so, and a nullable parameter each call gives one, a `bind` of a `cloned()`, React's completeRoot's, is tested `!= null`, not `!== null` (ADR 0861, amended)",
     file: "src/lower/mir/nulled.rs",

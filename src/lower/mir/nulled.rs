@@ -310,6 +310,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(place) = operand.place() else {
             return (Given::Unknown, None);
         };
+        // A closure's parameter a nullable thread-local's `with` lends it,
+        // or what it refers to (`lent_nulled`).
+        if place.local == Local::from_u32(2)
+            && matches!(place.projection.as_slice(), [] | [PlaceElem::Deref])
+            && self.tcx.is_closure_like(state.body.source.def_id())
+            && self.nulled_seen.borrow().lent_nulled(state.body.source.def_id())
+        {
+            return (Given::Nulled, None);
+        }
         // A `#[rust_js::nullable(..)]` parameter of the function's own, `T |
         // null` as declared: what each caller gives it and the body sets it
         // to, `null` for `None` (ADR 0861, amended), the user's decision
@@ -432,6 +441,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut seen = self.nulled_seen.borrow_mut();
         seen.captures_nulled(closure, nulled);
         seen.captures_nones(closure, nones);
+        // And what a nullable thread-local's `with` lends it (`lent_nulled`).
+        if state.facts.quiet_cells().lent_nulled.contains(&closure) {
+            seen.lends_nulled(closure);
+        }
     }
 
     /// The capture `place` reads in the closure whose body this is, by

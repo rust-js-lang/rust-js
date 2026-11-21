@@ -207,9 +207,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.mir_place(state, place, span, out)?
                 }
                 _ => {
+                    let some = matches!(rvalue, Rvalue::Use(operand, _) if self.some_of_some(state, operand));
                     let boxed = self.mir_rvalue(state, rvalue, span, out)?;
                     let boxed = self.value_expr(boxed, span)?;
-                    self.held_of_boxed(boxed, ty, out)
+                    self.held_of_boxed(boxed, (ty, some), out)
                 }
             };
             return self.mir_store(state, *place, Value::Expr(made), span, out);
@@ -314,6 +315,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let nulled = self.nulled(state, operand);
                 let value = self.nullable_written(state, *place, value?, nulled, span)?;
                 self.one_none_returned(state, *place, (Some(operand), None), value, span)?
+            }
+            // A shared borrow given on, `&param`: what it refers to, as it is
+            // where that's `null` or a value already (`stored_given`).
+            Rvalue::Ref(_, BorrowKind::Shared, of) => {
+                let nulled = self.nulled(state, &Operand::Copy(*of));
+                let value = self.nullable_written(state, *place, value?, nulled, span)?;
+                self.one_none_returned(state, *place, (None, None), value, span)?
             }
             _ => {
                 let value = self.nullable_written(state, *place, value?, false, span)?;

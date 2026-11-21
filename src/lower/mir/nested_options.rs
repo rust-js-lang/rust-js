@@ -123,9 +123,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         value => value,
                     });
                 }
-                let ty = operands.get(i).map(|operand| operand.ty(state.body, self.tcx));
+                let operand = operands.get(i).expect("a capture");
+                let ty = operand.ty(state.body, self.tcx);
+                let some = self.some_of_some(state, operand);
                 let boxed = self.value_expr(value, Span::default())?;
-                Ok(Value::Expr(self.held_of_boxed(boxed, ty.expect("a capture"), out)))
+                Ok(Value::Expr(self.held_of_boxed(boxed, (ty, some), out)))
             })
             .collect()
     }
@@ -222,8 +224,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => self.mir_place(state, place, span, out)?,
             }));
         }
+        let some = self.some_of_some(state, given);
         let boxed = self.mir_expr(state, given, out)?;
-        Ok(Some(self.held_of_boxed(boxed, ty, out)))
+        Ok(Some(self.held_of_boxed(boxed, (ty, some), out)))
     }
 
     /// Whether `operand` reads an `Option` of an `Option` held as its
@@ -247,7 +250,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         let local = operand.place().filter(|place| place.projection.is_empty());
         match bindings::is_held(self.tcx, field) && !local.is_some_and(|place| self.held_nested(state, place, 0)) {
-            true => self.held_of_boxed(value, operand.ty(state.body, self.tcx), out),
+            true => {
+                let some = self.some_of_some(state, operand);
+                self.held_of_boxed(value, (operand.ty(state.body, self.tcx), some), out)
+            }
             false => value,
         }
     }
@@ -272,8 +278,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// what its `Some` holds, its `None` `null`, `boxed == null ?
     /// undefined : $someValue(boxed) ?? null`; of one of a value never
     /// `null`, `boxed == null ? null : $someValue(boxed)` (rd645). Of
-    /// what `boxed_of_held` made, what it was made of.
-    pub(super) fn held_of_boxed(&mut self, boxed: Expr, ty: Ty<'tcx>, out: &mut Vec<Stmt>) -> Expr {
+    /// what `boxed_of_held` made, what it was made of. Of a `Some` of a
+    /// `Some(..)`, MIR's answer (`some_of_some`), its payload is never
+    /// `undefined`, so held as it is (ADR 0051).
+    pub(super) fn held_of_boxed(
+        &mut self,
+        boxed: Expr,
+        (ty, some_of_some): (Ty<'tcx>, bool),
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
         let none = self.held_none(ty);
         let value_form = self.held_form(ty) == Held::Value;
         if let js::ExprKind::Cond(test, undefined, some) = &boxed.kind
@@ -298,7 +311,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return NoneForm::Nested
                 .of_some()
                 .storage()
-                .written(inner.clone(), js::Undefined::ByForm);
+                .written(inner.clone(), js::Undefined::never_if(some_of_some));
         }
         if boxed.is_constant() && !matches!(boxed.kind, js::ExprKind::Null) {
             return boxed;
@@ -321,6 +334,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // null` tells it, where `=== undefined` took a nullable result's
         // `None` for `Some(None)` (#957).
         Expr::cond(Expr::bin(Op::LooseEq, boxed, Expr::null()), none, held)
+    }
+
+    /// Whether `operand`, an `Option` of an `Option`, is a `Some` of a
+    /// `Some(..)`, each its local's one write (`assigned_once`): `h.weak =
+    /// Some(Some(Rc::downgrade(n)))`'s. Its payload, a `Some`, is never
+    /// `undefined` (ADR 0051).
+    pub(super) fn some_of_some(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+        let assigned = crate::lower::body_queries::assigned_once(state.body);
+        let some_of = |operand: &Operand<'tcx>| {
+            let local = operand.place()?.as_local()?;
+            match (assigned.get(&local).copied().flatten())? {
+                Rvalue::Aggregate(kind, fields)
+                    if matches!(**kind, AggregateKind::Adt(did, variant, ..)
+                        if variant.as_u32() == 1 && self.tcx.is_lang_item(did, LangItem::Option)) =>
+                {
+                    fields.iter().next()
+                }
+                _ => None,
+            }
+        };
+        some_of(operand).and_then(some_of).is_some()
     }
 
     /// The locals `OptionWrites::nested` says (ADR 1017): each an `Option`
