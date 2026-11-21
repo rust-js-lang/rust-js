@@ -46,7 +46,7 @@ const LEAVES: usize = 64;
 /// that end them, `return w;`, as a person writes each arm's, and one
 /// statement before them that gives what the arm's alternatives bind, `tmp
 /// = x * 2 + 2;` of `(0, x) | (x, 3) => x * 2 + 2` (`copied_once`).
-const SHARED: usize = 3;
+pub(super) const SHARED: usize = 3;
 
 /// What `decisions` is told of the body: each guard the program wrote
 /// (`Written::guards`), those of a `match` that's a `switch` (ADR 0629),
@@ -670,8 +670,12 @@ fn chain(
 /// runs it once, as the tree does, so only where it reads alike written
 /// twice, a variable or a property given what reads nothing that a copy
 /// would read otherwise, no call, no function made, no declaration (whose
-/// scope would be the arm's).
-fn copied_once(stmt: &Stmt) -> bool {
+/// scope would be the arm's); or a drop, as the drops module made it, which
+/// a person writes in each way out that drops it (#2215).
+pub(super) fn copied_once(stmt: &Stmt) -> bool {
+    if stmt.facts.has(js::Known::Drop) {
+        return true;
+    }
     let StmtKind::Assign(target, value) = &stmt.kind else {
         return false;
     };

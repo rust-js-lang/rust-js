@@ -180,6 +180,13 @@ pub(super) const STAGES: &[Stage] = &[
             // A chain of tests a loop ended, its body now ending where the
             // chain's does.
             pass("branch values", branch_values_of),
+            // A block MIR made that the passes before left, whose `break`s go on to a
+            // short tail that ends the list, drops that may throw and a `return`:
+            // each `break` that tail, an early return with its drops, as written,
+            // the block named by nothing then (#2215).
+            pass("breaks take their tail", |b, h| {
+                js::statement_lists(b, &mut |s| breaks_take_their_tail(s, h.written))
+            }),
             pass("unlabeled", |b, _| js::statement_lists(b, &mut unlabeled)),
         ],
         ensures: &[contracts::LABELS_NAMED, contracts::NO_EMPTY_IF],

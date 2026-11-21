@@ -184,6 +184,13 @@ knowns! {
     /// right above it is said of that `if`, which a `try` may fold, its
     /// `catch` an `Err` test's (`prepare/catches.rs`, #489).
     Written,
+    /// A statement that drops what a scope held, as the drops module made
+    /// it where Rust drops it: a drop glue's call, `dropF?.(f)`, or the
+    /// `try` that runs one and drops what's left as a panic of it unwinds,
+    /// `try { dropF?.(f); } catch (error) { $cleanup(..); throw error; }`.
+    /// What tidy may write in each way out a block's `break`s take, as a
+    /// person writes each early return's drops (`copied_once`, #2215).
+    Drop,
     /// Of an `f64`, that it's a whole number below 10^21 in size, never
     /// `-0`: what a `#[rust_js::whole]` binding gives, a WebIDL integer,
     /// `response.status`. Its `{}` is JS's text of it, `${response.status}`,
@@ -411,7 +418,8 @@ impl Known {
             | Known::Literal
             | Known::RunsInItsCall
             | Known::BindingIterator
-            | Known::EachCount => Role::Permits,
+            | Known::EachCount
+            | Known::Drop => Role::Permits,
             Known::Else | Known::Guard | Known::Written | Known::Valued | Known::Indexed => Role::AsWritten,
             Known::Getter | Known::Setter | Known::LocalRead | Known::Live | Known::Evidence => Role::Warns,
             // `Iterator` among them: what isn't known to be one is taken
@@ -441,9 +449,9 @@ impl Known {
 
     /// Whether it's a statement's fact, kept on the statement (`Stmt::facts`,
     /// M4), never an expression's: an `if` whose `else` the program wrote,
-    /// a `let … else`'s guard, an `if` the program wrote.
+    /// a `let … else`'s guard, an `if` the program wrote, a drop.
     pub fn of_statement(self) -> bool {
-        matches!(self, Known::Else | Known::Guard | Known::Written)
+        matches!(self, Known::Else | Known::Guard | Known::Written | Known::Drop)
     }
 
     /// Its name, as `--knowns` lists it and `--without-known` names it.

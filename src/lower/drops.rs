@@ -518,7 +518,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut code = Vec::new();
         self.drop_in((value, none), ty, span, &mut made, &mut code)?;
         out.extend(made.defs);
-        out.extend(code);
+        // Each a drop, as it's made one (#2215).
+        out.extend(code.into_iter().map(|stmt| stmt.knowing(js::Known::Drop)));
         Ok(())
     }
 

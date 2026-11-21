@@ -32,6 +32,7 @@ import { channel } from "./toolchain";
 import { floorBytes } from "../test/bounded";
 import { run as runChild, stopped, type Exit } from "../test/child";
 import { atOnce } from "./shard";
+import { mirLabels } from "./labels";
 
 /** Where each crate's Cargo project and targets are kept between runs,
  * `<crate>/`, so a run builds only what changed. */
@@ -183,7 +184,60 @@ export type Result = {
   // Its probe's report, the JS's beside native Rust's: `same`, or where
   // they differ, or why the probe didn't compile or run.
   runs?: string;
+  // Each label MIR made in the JS of what it compiled, `<crate>/<file>:
+  // <function>` (scripts/labels.ts), which `--check` holds to
+  // `listedLabels` (#2215).
+  labels: string[];
 };
+
+/** The labels MIR made that the crate corpus's JS has today, each
+ * `<crate>@<version>/<file>: <function>` (`Result`'s `labels`), listed
+ * under #2215 till their structuring loses them, as std's are
+ * (test/readability.test.ts): `--check` fails of one not listed, and of
+ * one listed that's gone, which comes off the list. */
+export const listedLabels = new Set<string>([
+  "httparse@1.10.1/lib.js: parseHeadersIterUninit",
+  "itertools's probe/lib.js: stepBuffering",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A__A__A__A__A__A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A__A__A__A__A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A__A__A__A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A__A__A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A__A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A__A_TupleCollect_collectFromIter",
+  "itertools@0.14.0/tuple_impl.js: _A__A_TupleCollect_collectFromIter",
+  "miniz_oxide@0.9.1/inflate/core.js: initTree",
+  "num-traits@0.2.19/lib.js: f32Num_fromStrRadix",
+  "num-traits@0.2.19/lib.js: f64Num_fromStrRadix",
+  "rust_decimal@1.43.0/ops/div.js: divRemainder32",
+  "rust_decimal@1.43.0/ops/div.js: divRemainder64",
+  "rustls-pki-types@1.15.1/server_name.js: validate",
+  "strsim@0.11.1/lib.js: $roomFor",
+  "uuid@1.29.0/error.js: intoErr",
+]);
+
+/** What's wrong of the crate corpus's labels MIR made, `labeled`, against
+ * `listed`: each not listed, and each listed that's gone, of a crate
+ * `measured` this run, as one not chosen says nothing (#2215). */
+export function labelProblems(labeled: ReadonlySet<string>, listed: ReadonlySet<string>, measured: (crate: string) => boolean): string[] {
+  const problems: string[] = [];
+  for (const label of labeled) {
+    if (!listed.has(label)) problems.push(`${label}: a label MIR made, \`bb..:\`, which no Rust wrote: structure it away, or list it in scripts/crate-corpus.ts's \`listedLabels\` under #2215`);
+  }
+  for (const label of listed) {
+    if (measured(label.split(/@|'s probe/)[0]!) && !labeled.has(label)) problems.push(`${label}: listed in \`listedLabels\`, and gone: take it off the list`);
+  }
+  return problems;
+}
+
+/** Each label MIR made in the JS under `dir`, a crate's, `id`'s, by file. */
+function labelsUnder(id: string, dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return [...new Bun.Glob("**/*.js").scanSync(dir)].sort().flatMap((file) => mirLabels(readFileSync(join(dir, file), "utf8"), `${id}/${file}`));
+}
 
 /** What a crate measured does, its row's verdict: `runs` where it compiles
  * and its probe's JS reports what native Rust does, else whether it
@@ -327,6 +381,7 @@ async function main() {
     );
     const compiled: string[] = [];
     const refused = new Map<string, string>();
+    const labels = new Set<string>();
     // The probe's JS: its manifest is the first line of the `.rust-js` beside
     // its metadata, and its crate root's JS beside that.
     let probeJs: string | undefined;
@@ -337,6 +392,10 @@ async function main() {
       if (message.reason === "compiler-artifact" && message.target?.kind?.some((k: string) => k === "lib" || k === "rlib")) {
         compiled.push(id);
         const marker = message.filenames?.find((f: string) => f.endsWith(".rmeta"))?.replace(/\.rmeta$/, ".rust-js");
+        // Its JS, beside its manifest, the marker's first line.
+        // A probe, each crate's own, by the crate it probes.
+        const owner = id.startsWith("probe@") ? `${crate.name}'s probe` : id;
+        if (marker && existsSync(marker)) for (const label of labelsUnder(owner, dirname(readFileSync(marker, "utf8").split("\n")[0]!))) labels.add(label);
         if (id.startsWith("probe@") && marker && existsSync(marker)) {
           probeJs = join(dirname(readFileSync(marker, "utf8").split("\n")[0]), "lib.js");
         }
@@ -361,6 +420,7 @@ async function main() {
           return { crate: pkg ? `${name}@${pkg.version}` : name, error: `rust-js crashed: ${how}` };
         }),
       own: compiled.some(own) ? "compiles" : refused.size && [...refused.keys()].some(own) ? "refused" : "blocked",
+      labels: [...labels].sort(),
     };
     if (result.own !== "compiles" && !result.refused.length && !result.crashed.length) {
       result.unexplained = run.stderr.trim().split("\n").slice(-12).join("\n");
@@ -425,6 +485,10 @@ async function main() {
       else if (row.open && rank[got] > rank[row.open.now]) failed.push(`${r.name}: ${got}, better than ${row.open.issue} says: write \`${got}\` in its row`);
       else if (rank[got] < rank[row.open?.now ?? row.bar]) failed.push(`${r.name}: ${got}, where docs/crate-corpus.md says ${row.open?.now ?? row.bar}`);
     }
+    // The labels MIR made, of every crate's JS, one set: a crate several
+    // graphs compile, num-traits, counted once.
+    const measured = (crate: string) => results.some((r) => r.name === crate || r.compiled.some((id) => id.startsWith(`${crate}@`)));
+    failed.push(...labelProblems(new Set(results.flatMap((r) => r.labels)), listedLabels, measured));
     for (const line of failed) console.error(line);
     if (failed.length) process.exit(1);
   }

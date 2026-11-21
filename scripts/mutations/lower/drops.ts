@@ -168,4 +168,12 @@ export const mutations: Mutation[] = [
     replace: "            tys.map(|t| cx.drop_size(t, stack)).sum::<usize>()\n",
     tests: ["test/type-depth.test.ts", "-t", "plain$"],
   },
+  {
+    name: "epilogue-drop-unmarked",
+    breaks: "a drop the drops module makes isn't marked one, so no `break` takes the drops it goes on to, and std's early returns keep their MIR labels (#2215)",
+    file: "src/lower/drops.rs",
+    find: "        out.extend(code.into_iter().map(|stmt| stmt.knowing(js::Known::Drop)));\n",
+    replace: "        out.extend(code);\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

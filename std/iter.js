@@ -250,9 +250,158 @@ export const FlattenCompat = {
     const FromResidual = RTry.FromResidual();
     let tmp = true;
     let result;
-    bb27: {
+    if (flattenCompat.frontiter != null) {
+      const iter = $someValue(flattenCompat.frontiter);
+      tmp = false;
+      let tmp$1;
+      try {
+        tmp$1 = RTry.branch(fold(acc, iter));
+      } catch (error) {
+        $cleanup(() => {
+          dropFold?.(fold);
+        }, error);
+        throw error;
+      }
+      if (tmp$1.TAG === "Continue") {
+        const value = tmp$1._0;
+        tmp = true;
+        acc = value;
+      } else {
+        try {
+          result = FromResidual.fromResidual(tmp$1._0);
+        } catch (error) {
+          $cleanup(() => {
+            dropFold?.(fold);
+          }, error);
+          throw error;
+        }
+        try {
+          dropFold?.(fold);
+        } catch (error) {
+          $cleanup(() => {
+            if (tmp) {
+              dropAcc?.(acc);
+            }
+          }, error);
+          throw error;
+        }
+        return result;
+      }
+    }
+    try {
       if (flattenCompat.frontiter != null) {
-        const iter = $someValue(flattenCompat.frontiter);
+        dropU?.($someValue(flattenCompat.frontiter));
+      }
+    } catch (error) {
+      $cleanup(() => {
+        flattenCompat.frontiter = undefined;
+        dropFold?.(fold);
+        if (tmp) {
+          dropAcc?.(acc);
+        }
+      }, error);
+      throw error;
+    }
+    flattenCompat.frontiter = undefined;
+    tmp = false;
+    let tmp$1;
+    try {
+      tmp$1 = RTry.branch(
+        IFused
+          ? fuseFuseImplIFusedIterator_tryFold(
+              flattenCompat.iter,
+              acc,
+              (acc, iter) => {
+                let value;
+                try {
+                  value = IItemIntoIterator.intoIter(iter);
+                  try {
+                    if (flattenCompat.frontiter != null) {
+                      IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
+                    }
+                  } catch (error) {
+                    throw $unwindsOn(error);
+                  } finally {
+                    if ($live()) {
+                      flattenCompat.frontiter = $some(value);
+                    }
+                  }
+                } catch (error) {
+                  $cleanup(() => {
+                    dropAcc?.(acc);
+                  }, error);
+                  throw error;
+                }
+                return fold(acc, $someValue(flattenCompat.frontiter));
+              },
+              IIterator,
+              RTry,
+              dropI,
+              dropAcc,
+              undefined,
+              dropR,
+              dropIItem,
+            )
+          : fuseFuseImplI_tryFold(
+              flattenCompat.iter,
+              acc,
+              (acc, iter) => {
+                let value;
+                try {
+                  value = IItemIntoIterator.intoIter(iter);
+                  try {
+                    if (flattenCompat.frontiter != null) {
+                      IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
+                    }
+                  } catch (error) {
+                    throw $unwindsOn(error);
+                  } finally {
+                    if ($live()) {
+                      flattenCompat.frontiter = $some(value);
+                    }
+                  }
+                } catch (error) {
+                  $cleanup(() => {
+                    dropAcc?.(acc);
+                  }, error);
+                  throw error;
+                }
+                return fold(acc, $someValue(flattenCompat.frontiter));
+              },
+              IIterator,
+              RTry,
+              dropI,
+              dropAcc,
+              undefined,
+              dropR,
+              dropIItem,
+            ),
+      );
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+      }, error);
+      throw error;
+    }
+    if (tmp$1.TAG === "Continue") {
+      const value = tmp$1._0;
+      tmp = true;
+      acc = value;
+      try {
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
+        }
+      } catch (error) {
+        $cleanup(() => {
+          flattenCompat.frontiter = undefined;
+          dropFold?.(fold);
+          dropAcc?.(acc);
+        }, error);
+        throw error;
+      }
+      flattenCompat.frontiter = undefined;
+      if (flattenCompat.backiter != null) {
+        const iter = $someValue(flattenCompat.backiter);
         tmp = false;
         let tmp$1;
         try {
@@ -276,16 +425,26 @@ export const FlattenCompat = {
             }, error);
             throw error;
           }
-          break bb27;
+          try {
+            dropFold?.(fold);
+          } catch (error) {
+            $cleanup(() => {
+              if (tmp) {
+                dropAcc?.(acc);
+              }
+            }, error);
+            throw error;
+          }
+          return result;
         }
       }
       try {
-        if (flattenCompat.frontiter != null) {
-          dropU?.($someValue(flattenCompat.frontiter));
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
         }
       } catch (error) {
         $cleanup(() => {
-          flattenCompat.frontiter = undefined;
+          flattenCompat.backiter = undefined;
           dropFold?.(fold);
           if (tmp) {
             dropAcc?.(acc);
@@ -293,167 +452,26 @@ export const FlattenCompat = {
         }, error);
         throw error;
       }
-      flattenCompat.frontiter = undefined;
+      flattenCompat.backiter = undefined;
       tmp = false;
-      let tmp$1;
       try {
-        tmp$1 = RTry.branch(
-          IFused
-            ? fuseFuseImplIFusedIterator_tryFold(
-                flattenCompat.iter,
-                acc,
-                (acc, iter) => {
-                  let value;
-                  try {
-                    value = IItemIntoIterator.intoIter(iter);
-                    try {
-                      if (flattenCompat.frontiter != null) {
-                        IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
-                      }
-                    } catch (error) {
-                      throw $unwindsOn(error);
-                    } finally {
-                      if ($live()) {
-                        flattenCompat.frontiter = $some(value);
-                      }
-                    }
-                  } catch (error) {
-                    $cleanup(() => {
-                      dropAcc?.(acc);
-                    }, error);
-                    throw error;
-                  }
-                  return fold(acc, $someValue(flattenCompat.frontiter));
-                },
-                IIterator,
-                RTry,
-                dropI,
-                dropAcc,
-                undefined,
-                dropR,
-                dropIItem,
-              )
-            : fuseFuseImplI_tryFold(
-                flattenCompat.iter,
-                acc,
-                (acc, iter) => {
-                  let value;
-                  try {
-                    value = IItemIntoIterator.intoIter(iter);
-                    try {
-                      if (flattenCompat.frontiter != null) {
-                        IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.frontiter));
-                      }
-                    } catch (error) {
-                      throw $unwindsOn(error);
-                    } finally {
-                      if ($live()) {
-                        flattenCompat.frontiter = $some(value);
-                      }
-                    }
-                  } catch (error) {
-                    $cleanup(() => {
-                      dropAcc?.(acc);
-                    }, error);
-                    throw error;
-                  }
-                  return fold(acc, $someValue(flattenCompat.frontiter));
-                },
-                IIterator,
-                RTry,
-                dropI,
-                dropAcc,
-                undefined,
-                dropR,
-                dropIItem,
-              ),
-        );
+        result = RTry.fromOutput(acc);
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
         }, error);
         throw error;
       }
-      if (tmp$1.TAG === "Continue") {
-        const value = tmp$1._0;
-        tmp = true;
-        acc = value;
-        try {
-          if (flattenCompat.frontiter != null) {
-            dropU?.($someValue(flattenCompat.frontiter));
-          }
-        } catch (error) {
-          $cleanup(() => {
-            flattenCompat.frontiter = undefined;
-            dropFold?.(fold);
-            dropAcc?.(acc);
-          }, error);
-          throw error;
-        }
-        flattenCompat.frontiter = undefined;
-        if (flattenCompat.backiter != null) {
-          const iter = $someValue(flattenCompat.backiter);
-          tmp = false;
-          let tmp$1;
-          try {
-            tmp$1 = RTry.branch(fold(acc, iter));
-          } catch (error) {
-            $cleanup(() => {
-              dropFold?.(fold);
-            }, error);
-            throw error;
-          }
-          if (tmp$1.TAG === "Continue") {
-            const value = tmp$1._0;
-            tmp = true;
-            acc = value;
-          } else {
-            try {
-              result = FromResidual.fromResidual(tmp$1._0);
-            } catch (error) {
-              $cleanup(() => {
-                dropFold?.(fold);
-              }, error);
-              throw error;
-            }
-            break bb27;
-          }
-        }
-        try {
-          if (flattenCompat.backiter != null) {
-            dropU?.($someValue(flattenCompat.backiter));
-          }
-        } catch (error) {
-          $cleanup(() => {
-            flattenCompat.backiter = undefined;
-            dropFold?.(fold);
-            if (tmp) {
-              dropAcc?.(acc);
-            }
-          }, error);
-          throw error;
-        }
-        flattenCompat.backiter = undefined;
-        tmp = false;
-        try {
-          result = RTry.fromOutput(acc);
-        } catch (error) {
-          $cleanup(() => {
-            dropFold?.(fold);
-          }, error);
-          throw error;
-        }
+      dropFold?.(fold);
+      return result;
+    }
+    try {
+      result = FromResidual.fromResidual(tmp$1._0);
+    } catch (error) {
+      $cleanup(() => {
         dropFold?.(fold);
-        return result;
-      }
-      try {
-        result = FromResidual.fromResidual(tmp$1._0);
-      } catch (error) {
-        $cleanup(() => {
-          dropFold?.(fold);
-        }, error);
-        throw error;
-      }
+      }, error);
+      throw error;
     }
     try {
       dropFold?.(fold);
@@ -596,9 +614,160 @@ export const FlattenCompat = {
     const FromResidual = RTry.FromResidual();
     let tmp = true;
     let result;
-    bb27: {
+    if (flattenCompat.backiter != null) {
+      const iter = $someValue(flattenCompat.backiter);
+      tmp = false;
+      let tmp$1;
+      try {
+        tmp$1 = RTry.branch(fold(acc, iter));
+      } catch (error) {
+        $cleanup(() => {
+          dropFold?.(fold);
+        }, error);
+        throw error;
+      }
+      if (tmp$1.TAG === "Continue") {
+        const value = tmp$1._0;
+        tmp = true;
+        acc = value;
+      } else {
+        try {
+          result = FromResidual.fromResidual(tmp$1._0);
+        } catch (error) {
+          $cleanup(() => {
+            dropFold?.(fold);
+          }, error);
+          throw error;
+        }
+        try {
+          dropFold?.(fold);
+        } catch (error) {
+          $cleanup(() => {
+            if (tmp) {
+              dropAcc?.(acc);
+            }
+          }, error);
+          throw error;
+        }
+        return result;
+      }
+    }
+    try {
       if (flattenCompat.backiter != null) {
-        const iter = $someValue(flattenCompat.backiter);
+        dropU?.($someValue(flattenCompat.backiter));
+      }
+    } catch (error) {
+      $cleanup(() => {
+        flattenCompat.backiter = undefined;
+        dropFold?.(fold);
+        if (tmp) {
+          dropAcc?.(acc);
+        }
+      }, error);
+      throw error;
+    }
+    flattenCompat.backiter = undefined;
+    tmp = false;
+    let tmp$1;
+    try {
+      tmp$1 = RTry.branch(
+        IFused
+          ? fuseFuseImplIFusedIterator_tryRfold(
+              flattenCompat.iter,
+              acc,
+              (acc, iter) => {
+                let value;
+                try {
+                  value = IItemIntoIterator.intoIter(iter);
+                  try {
+                    if (flattenCompat.backiter != null) {
+                      IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
+                    }
+                  } catch (error) {
+                    throw $unwindsOn(error);
+                  } finally {
+                    if ($live()) {
+                      flattenCompat.backiter = $some(value);
+                    }
+                  }
+                } catch (error) {
+                  $cleanup(() => {
+                    dropAcc?.(acc);
+                  }, error);
+                  throw error;
+                }
+                return fold(acc, $someValue(flattenCompat.backiter));
+              },
+              IIterator,
+              RTry,
+              IDoubleEndedIterator,
+              dropI,
+              dropAcc,
+              undefined,
+              dropR,
+              dropIItem,
+            )
+          : fuseFuseImplI_tryRfold(
+              flattenCompat.iter,
+              acc,
+              (acc, iter) => {
+                let value;
+                try {
+                  value = IItemIntoIterator.intoIter(iter);
+                  try {
+                    if (flattenCompat.backiter != null) {
+                      IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
+                    }
+                  } catch (error) {
+                    throw $unwindsOn(error);
+                  } finally {
+                    if ($live()) {
+                      flattenCompat.backiter = $some(value);
+                    }
+                  }
+                } catch (error) {
+                  $cleanup(() => {
+                    dropAcc?.(acc);
+                  }, error);
+                  throw error;
+                }
+                return fold(acc, $someValue(flattenCompat.backiter));
+              },
+              IIterator,
+              RTry,
+              IDoubleEndedIterator,
+              dropI,
+              dropAcc,
+              undefined,
+              dropR,
+              dropIItem,
+            ),
+      );
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+      }, error);
+      throw error;
+    }
+    if (tmp$1.TAG === "Continue") {
+      const value = tmp$1._0;
+      tmp = true;
+      acc = value;
+      try {
+        if (flattenCompat.backiter != null) {
+          dropU?.($someValue(flattenCompat.backiter));
+        }
+      } catch (error) {
+        $cleanup(() => {
+          flattenCompat.backiter = undefined;
+          dropFold?.(fold);
+          dropAcc?.(acc);
+        }, error);
+        throw error;
+      }
+      flattenCompat.backiter = undefined;
+      if (flattenCompat.frontiter != null) {
+        const iter = $someValue(flattenCompat.frontiter);
         tmp = false;
         let tmp$1;
         try {
@@ -622,16 +791,26 @@ export const FlattenCompat = {
             }, error);
             throw error;
           }
-          break bb27;
+          try {
+            dropFold?.(fold);
+          } catch (error) {
+            $cleanup(() => {
+              if (tmp) {
+                dropAcc?.(acc);
+              }
+            }, error);
+            throw error;
+          }
+          return result;
         }
       }
       try {
-        if (flattenCompat.backiter != null) {
-          dropU?.($someValue(flattenCompat.backiter));
+        if (flattenCompat.frontiter != null) {
+          dropU?.($someValue(flattenCompat.frontiter));
         }
       } catch (error) {
         $cleanup(() => {
-          flattenCompat.backiter = undefined;
+          flattenCompat.frontiter = undefined;
           dropFold?.(fold);
           if (tmp) {
             dropAcc?.(acc);
@@ -639,169 +818,26 @@ export const FlattenCompat = {
         }, error);
         throw error;
       }
-      flattenCompat.backiter = undefined;
+      flattenCompat.frontiter = undefined;
       tmp = false;
-      let tmp$1;
       try {
-        tmp$1 = RTry.branch(
-          IFused
-            ? fuseFuseImplIFusedIterator_tryRfold(
-                flattenCompat.iter,
-                acc,
-                (acc, iter) => {
-                  let value;
-                  try {
-                    value = IItemIntoIterator.intoIter(iter);
-                    try {
-                      if (flattenCompat.backiter != null) {
-                        IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
-                      }
-                    } catch (error) {
-                      throw $unwindsOn(error);
-                    } finally {
-                      if ($live()) {
-                        flattenCompat.backiter = $some(value);
-                      }
-                    }
-                  } catch (error) {
-                    $cleanup(() => {
-                      dropAcc?.(acc);
-                    }, error);
-                    throw error;
-                  }
-                  return fold(acc, $someValue(flattenCompat.backiter));
-                },
-                IIterator,
-                RTry,
-                IDoubleEndedIterator,
-                dropI,
-                dropAcc,
-                undefined,
-                dropR,
-                dropIItem,
-              )
-            : fuseFuseImplI_tryRfold(
-                flattenCompat.iter,
-                acc,
-                (acc, iter) => {
-                  let value;
-                  try {
-                    value = IItemIntoIterator.intoIter(iter);
-                    try {
-                      if (flattenCompat.backiter != null) {
-                        IItemIntoIterator.$dropIntoIter?.($someValue(flattenCompat.backiter));
-                      }
-                    } catch (error) {
-                      throw $unwindsOn(error);
-                    } finally {
-                      if ($live()) {
-                        flattenCompat.backiter = $some(value);
-                      }
-                    }
-                  } catch (error) {
-                    $cleanup(() => {
-                      dropAcc?.(acc);
-                    }, error);
-                    throw error;
-                  }
-                  return fold(acc, $someValue(flattenCompat.backiter));
-                },
-                IIterator,
-                RTry,
-                IDoubleEndedIterator,
-                dropI,
-                dropAcc,
-                undefined,
-                dropR,
-                dropIItem,
-              ),
-        );
+        result = RTry.fromOutput(acc);
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
         }, error);
         throw error;
       }
-      if (tmp$1.TAG === "Continue") {
-        const value = tmp$1._0;
-        tmp = true;
-        acc = value;
-        try {
-          if (flattenCompat.backiter != null) {
-            dropU?.($someValue(flattenCompat.backiter));
-          }
-        } catch (error) {
-          $cleanup(() => {
-            flattenCompat.backiter = undefined;
-            dropFold?.(fold);
-            dropAcc?.(acc);
-          }, error);
-          throw error;
-        }
-        flattenCompat.backiter = undefined;
-        if (flattenCompat.frontiter != null) {
-          const iter = $someValue(flattenCompat.frontiter);
-          tmp = false;
-          let tmp$1;
-          try {
-            tmp$1 = RTry.branch(fold(acc, iter));
-          } catch (error) {
-            $cleanup(() => {
-              dropFold?.(fold);
-            }, error);
-            throw error;
-          }
-          if (tmp$1.TAG === "Continue") {
-            const value = tmp$1._0;
-            tmp = true;
-            acc = value;
-          } else {
-            try {
-              result = FromResidual.fromResidual(tmp$1._0);
-            } catch (error) {
-              $cleanup(() => {
-                dropFold?.(fold);
-              }, error);
-              throw error;
-            }
-            break bb27;
-          }
-        }
-        try {
-          if (flattenCompat.frontiter != null) {
-            dropU?.($someValue(flattenCompat.frontiter));
-          }
-        } catch (error) {
-          $cleanup(() => {
-            flattenCompat.frontiter = undefined;
-            dropFold?.(fold);
-            if (tmp) {
-              dropAcc?.(acc);
-            }
-          }, error);
-          throw error;
-        }
-        flattenCompat.frontiter = undefined;
-        tmp = false;
-        try {
-          result = RTry.fromOutput(acc);
-        } catch (error) {
-          $cleanup(() => {
-            dropFold?.(fold);
-          }, error);
-          throw error;
-        }
+      dropFold?.(fold);
+      return result;
+    }
+    try {
+      result = FromResidual.fromResidual(tmp$1._0);
+    } catch (error) {
+      $cleanup(() => {
         dropFold?.(fold);
-        return result;
-      }
-      try {
-        result = FromResidual.fromResidual(tmp$1._0);
-      } catch (error) {
-        $cleanup(() => {
-          dropFold?.(fold);
-        }, error);
-        throw error;
-      }
+      }, error);
+      throw error;
     }
     try {
       dropFold?.(fold);
@@ -8010,11 +8046,26 @@ export function takeIDoubleEndedIterator_tryRfold(
 ) {
   let tmp = true;
   let result;
-  bb21: {
-    if (take.n !== 0) {
-      let len;
+  if (take.n !== 0) {
+    let len;
+    try {
+      len = IExactSizeIterator.len(take.iter);
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+        dropAcc?.(init);
+      }, error);
+      throw error;
+    }
+    if (len > take.n) {
+      let nthBack;
       try {
-        len = IExactSizeIterator.len(take.iter);
+        nthBack = $nthBack(
+          $given(take.iter, IIterator, true, IDoubleEndedIterator),
+          len - take.n - 1,
+          $some,
+          dropIItem,
+        );
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
@@ -8022,45 +8073,7 @@ export function takeIDoubleEndedIterator_tryRfold(
         }, error);
         throw error;
       }
-      if (len > take.n) {
-        let nthBack;
-        try {
-          nthBack = $nthBack(
-            $given(take.iter, IIterator, true, IDoubleEndedIterator),
-            len - take.n - 1,
-            $some,
-            dropIItem,
-          );
-        } catch (error) {
-          $cleanup(() => {
-            dropFold?.(fold);
-            dropAcc?.(init);
-          }, error);
-          throw error;
-        }
-        if (nthBack == null) {
-          try {
-            if (nthBack != null) {
-              dropIItem?.($someValue(nthBack));
-            }
-          } catch (error) {
-            $cleanup(() => {
-              dropFold?.(fold);
-              dropAcc?.(init);
-            }, error);
-            throw error;
-          }
-          tmp = false;
-          try {
-            result = RTry.fromOutput(init);
-          } catch (error) {
-            $cleanup(() => {
-              dropFold?.(fold);
-            }, error);
-            throw error;
-          }
-          break bb21;
-        }
+      if (nthBack == null) {
         try {
           if (nthBack != null) {
             dropIItem?.($someValue(nthBack));
@@ -8072,29 +8085,60 @@ export function takeIDoubleEndedIterator_tryRfold(
           }, error);
           throw error;
         }
-      }
-      tmp = false;
-      const value = $tryFoldInto(
-        $rev($given(take.iter, IIterator, true, IDoubleEndedIterator)),
-        init,
-        (a, b) => fold(a, b),
-        RTry,
-        dropAcc,
-        () => {
+        tmp = false;
+        try {
+          result = RTry.fromOutput(init);
+        } catch (error) {
+          $cleanup(() => {
+            dropFold?.(fold);
+          }, error);
+          throw error;
+        }
+        try {
           dropFold?.(fold);
-        },
-      );
-      return value;
+        } catch (error) {
+          $cleanup(() => {
+            if (tmp) {
+              dropAcc?.(init);
+            }
+          }, error);
+          throw error;
+        }
+        return result;
+      }
+      try {
+        if (nthBack != null) {
+          dropIItem?.($someValue(nthBack));
+        }
+      } catch (error) {
+        $cleanup(() => {
+          dropFold?.(fold);
+          dropAcc?.(init);
+        }, error);
+        throw error;
+      }
     }
     tmp = false;
-    try {
-      result = RTry.fromOutput(init);
-    } catch (error) {
-      $cleanup(() => {
+    const value = $tryFoldInto(
+      $rev($given(take.iter, IIterator, true, IDoubleEndedIterator)),
+      init,
+      (a, b) => fold(a, b),
+      RTry,
+      dropAcc,
+      () => {
         dropFold?.(fold);
-      }, error);
-      throw error;
-    }
+      },
+    );
+    return value;
+  }
+  tmp = false;
+  try {
+    result = RTry.fromOutput(init);
+  } catch (error) {
+    $cleanup(() => {
+      dropFold?.(fold);
+    }, error);
+    throw error;
   }
   try {
     dropFold?.(fold);
@@ -8148,11 +8192,27 @@ export function takeIDoubleEndedIterator_rfold(
   let tmp$1 = true;
   let tmp = true;
   let result;
-  bb21: {
-    if (take.n !== 0) {
-      let len;
+  if (take.n !== 0) {
+    let len;
+    try {
+      len = IExactSizeIterator.len(take.iter);
+    } catch (error) {
+      $cleanup(() => {
+        dropFold?.(fold);
+        dropAcc?.(init);
+        dropI?.(take.iter);
+      }, error);
+      throw error;
+    }
+    if (len > take.n) {
+      let nthBack;
       try {
-        len = IExactSizeIterator.len(take.iter);
+        nthBack = $nthBack(
+          $given(take.iter, IIterator, true, IDoubleEndedIterator),
+          (((len - take.n) >>> 0) - 1) >>> 0,
+          $some,
+          dropIItem,
+        );
       } catch (error) {
         $cleanup(() => {
           dropFold?.(fold);
@@ -8161,40 +8221,7 @@ export function takeIDoubleEndedIterator_rfold(
         }, error);
         throw error;
       }
-      if (len > take.n) {
-        let nthBack;
-        try {
-          nthBack = $nthBack(
-            $given(take.iter, IIterator, true, IDoubleEndedIterator),
-            (((len - take.n) >>> 0) - 1) >>> 0,
-            $some,
-            dropIItem,
-          );
-        } catch (error) {
-          $cleanup(() => {
-            dropFold?.(fold);
-            dropAcc?.(init);
-            dropI?.(take.iter);
-          }, error);
-          throw error;
-        }
-        if (nthBack == null) {
-          try {
-            if (nthBack != null) {
-              dropIItem?.($someValue(nthBack));
-            }
-          } catch (error) {
-            $cleanup(() => {
-              dropFold?.(fold);
-              dropAcc?.(init);
-              dropI?.(take.iter);
-            }, error);
-            throw error;
-          }
-          tmp = false;
-          result = init;
-          break bb21;
-        }
+      if (nthBack == null) {
         try {
           if (nthBack != null) {
             dropIItem?.($someValue(nthBack));
@@ -8207,39 +8234,70 @@ export function takeIDoubleEndedIterator_rfold(
           }, error);
           throw error;
         }
+        tmp = false;
+        result = init;
+        try {
+          dropFold?.(fold);
+        } catch (error) {
+          $cleanup(() => {
+            if (tmp) {
+              dropAcc?.(init);
+              if (tmp$1) {
+                dropI?.(take.iter);
+              }
+            } else if (tmp$1) {
+              dropI?.(take.iter);
+            }
+          }, error);
+          throw error;
+        }
+        dropI?.(take.iter);
+        return result;
       }
-      tmp$1 = false;
-      const iter = take.iter;
-      tmp = false;
-      let result$1;
       try {
-        result$1 = $consume(
-          $given(iter, IIterator, true, IDoubleEndedIterator),
-          "rfold",
-          init,
-          fold,
-          dropAcc,
-          () => {
-            dropFold?.(fold);
-          },
-        );
+        if (nthBack != null) {
+          dropIItem?.($someValue(nthBack));
+        }
       } catch (error) {
         $cleanup(() => {
-          if (!$took(IDoubleEndedIterator.rfold, iter)) {
-            dropI?.(iter);
-          }
+          dropFold?.(fold);
+          dropAcc?.(init);
+          dropI?.(take.iter);
         }, error);
         throw error;
       }
-      if (!$took(IDoubleEndedIterator.rfold, iter)) {
-        dropI?.(iter);
-      }
-      const value = result$1;
-      return value;
     }
+    tmp$1 = false;
+    const iter = take.iter;
     tmp = false;
-    result = init;
+    let result$1;
+    try {
+      result$1 = $consume(
+        $given(iter, IIterator, true, IDoubleEndedIterator),
+        "rfold",
+        init,
+        fold,
+        dropAcc,
+        () => {
+          dropFold?.(fold);
+        },
+      );
+    } catch (error) {
+      $cleanup(() => {
+        if (!$took(IDoubleEndedIterator.rfold, iter)) {
+          dropI?.(iter);
+        }
+      }, error);
+      throw error;
+    }
+    if (!$took(IDoubleEndedIterator.rfold, iter)) {
+      dropI?.(iter);
+    }
+    const value = result$1;
+    return value;
   }
+  tmp = false;
+  result = init;
   try {
     dropFold?.(fold);
   } catch (error) {

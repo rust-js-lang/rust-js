@@ -19,6 +19,12 @@ A verdict of `runs (refused: #467)` is a crate an open issue says does worse
 now: it holds while the crate does just that, and fails once it does better,
 when the fix writes the verdict again.
 
+It fails too where the JS of a crate it compiled has a label MIR made,
+`bb12:`, which no Rust wrote, as the corpus's and std's JS may not
+(test/readability.test.ts): those that can't be structured away yet are
+listed by crate, file and function in `scripts/crate-corpus.ts`'s
+`listedLabels` under #2215, and one listed that's gone comes off the list.
+
 Measured 2026-10-19, after ADR 0462, Rust 1.99.0. This table is the
 corpus: each row's crate, at exactly the release its first cell names,
 built with the features in its parentheses alone, its default ones off,

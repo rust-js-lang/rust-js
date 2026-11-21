@@ -1151,7 +1151,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let error = self.fresh(Role::Error);
         let mut handler = cleanup;
         handler.push(StmtKind::Throw(Expr::var(&error)).at(span));
-        out.push(StmtKind::TryCatch(inner, Some(error), handler).at(span));
+        // Of drops alone, a drop too, what's left dropped as one panics
+        // (#2215).
+        let dropping = inner.iter().all(|stmt| stmt.facts.has(js::Known::Drop));
+        let tried = StmtKind::TryCatch(inner, Some(error), handler).at(span);
+        out.push(if dropping {
+            tried.knowing(js::Known::Drop)
+        } else {
+            tried
+        });
     }
 }
 

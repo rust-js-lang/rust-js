@@ -10,7 +10,7 @@ import { dirname, join, relative } from "node:path";
 import { checkedSince, jsonLines, latestRuns, MUTATION_SHARDS, mutationJobsPassed, NET_JOBS, nets, netsSummary, alwaysRun, resultsBase } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { downloaded } from "../scripts/artifacts";
-import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
+import { corpusRows, crashes, dependency, labelProblems, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import { mutations, refusedFlags } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability, variantFamilies } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
@@ -480,6 +480,19 @@ test("a crate of the corpus's graph rust-js crashed on is said to have crashed, 
     "error: could not compile `aho-corasick` (lib) due to 1 previous error",
   ].join("\n");
   expect(crashes(stderr)).toEqual([{ name: "regex-syntax", how: "signal: 6, SIGABRT: process abort signal" }]);
+});
+
+// The crate corpus's JS is under the label rule as the corpus's and std's
+// are: a label MIR made that isn't listed fails, and a listed one that's
+// gone of a crate this run measured, not of one it didn't choose (#2215).
+test("the crate corpus's labels MIR made are listed, each listed one still there", () => {
+  const listed = new Set(["num-traits@0.2.19/lib.js: f", "itertools's probe/lib.js: g", "uuid@1.29.0/error.js: h"]);
+  const measured = (crate: string) => crate !== "uuid";
+  expect(labelProblems(new Set(["num-traits@0.2.19/lib.js: f", "itertools's probe/lib.js: g"]), listed, measured)).toEqual([]);
+  const problems = labelProblems(new Set(["num-traits@0.2.19/lib.js: new"]), listed, measured);
+  expect(problems).toHaveLength(3);
+  expect(problems[0]).toStartWith("num-traits@0.2.19/lib.js: new: a label MIR made");
+  expect(problems.slice(1).every((p) => p.endsWith("and gone: take it off the list"))).toBe(true);
 });
 
 // A change that adds or edits a corpus case runs each metamorphic rewrite of

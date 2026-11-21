@@ -484,4 +484,12 @@ export const mutations: Mutation[] = [
     replace: "    if shared.len() > 0\n",
     tests: ["test/lowering-or-patterns.test.ts", "-t", "meet at assignments alone"],
   },
+  {
+    name: "epilogue-not-copied",
+    breaks: "tidy's copy rule takes no drop as one it copies, so no `break` takes the drops it goes on to (#2215)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    if stmt.facts.has(js::Known::Drop) {\n        return true;\n    }\n",
+    replace: "",
+    unitTests: "lower::mir::tidy::jumps::epilogues::tests::a_break_takes_its_tail_of_drops",
+  },
 ];

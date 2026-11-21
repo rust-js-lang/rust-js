@@ -16,6 +16,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { mirLabels } from "../scripts/labels";
 
 import { SHAPES, compared, measure, measuredOf, report, type Measured } from "../scripts/readability";
 import { root } from "./support";
@@ -63,39 +64,16 @@ test("the generated JS reads no worse than it read: no shape's share grew", () =
 // each label MIR made named by the function it's in, those std has today
 // listed under #2215 till its structuring loses them, never `std/` whole.
 const stdLabels = new Set([
-  "std/iter.js: iterTryFold",
-  "std/iter.js: iterTryRfold",
+  "std/iter.js: skipIterator_advanceBy",
+  "std/iter.js: flattenCompatIUIterator_sizeHint",
   "std/iter.js: peekableIterator_tryFold",
   "std/iter.js: skipWhileIterator_tryFold",
-  "std/iter.js: skipIterator_advanceBy",
-  "std/iter.js: takeIDoubleEndedIterator_tryRfold",
-  "std/iter.js: takeIDoubleEndedIterator_rfold",
-  "std/iter.js: flattenCompatIUIterator_sizeHint",
   "std/iter.js: stepByStepByImplI_specTryFold",
 ]);
 
-/** Each label MIR made in `file`, `bb5:`, by the function it's in. */
-function mirLabels(file: string): string[] {
-  const lines = readFileSync(file, "utf8").split("\n");
-  const found: string[] = [];
-  lines.forEach((line, at) => {
-    if (!/^\s*bb\d+: /.test(line)) return;
-    let name = "?";
-    for (let up = at; up >= 0; up--) {
-      const m = lines[up]!.match(/^(?:export )?(?:async )?function\*? ([\w$]+)\(|^ {2}(?:async )?\*?([\w$]+)\(/);
-      if (m) {
-        name = m[1] ?? m[2]!;
-        break;
-      }
-    }
-    found.push(`${file.slice(root.length + 1)}: ${name}`);
-  });
-  return found;
-}
-
 test("a label in the generated JS is one its Rust wrote", () => {
   const std = [...new Bun.Glob("std/*.js").scanSync(root)].sort().map((file) => join(root, file));
-  const labeled = [...committed(), ...std].flatMap(mirLabels);
+  const labeled = [...committed(), ...std].flatMap((file) => mirLabels(readFileSync(file, "utf8"), file.slice(root.length + 1)));
   expect(labeled.filter((label) => !stdLabels.has(label))).toEqual([]);
   // A listed one that's gone is taken off the list.
   expect([...stdLabels].filter((label) => !labeled.includes(label))).toEqual([]);
