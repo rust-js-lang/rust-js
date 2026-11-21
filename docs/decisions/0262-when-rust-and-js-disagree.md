@@ -543,6 +543,14 @@ react.dev's TopNav passes the same closure instead.
   deadlock can't be preserved in one thread, and `Mutex::lock` says it
   "might panic or deadlock"; it's refused where it happens, as the
   program runs, as nothing at compile time can tell (`semantics.md`, 6).
+- **An uncaught panic's exit status is the calling host's**, the first
+  case's, as no disagreement rust-js makes: rust-js compiles every crate
+  as a library and nothing it emits calls `main`, so the process, and
+  the status it ends with, belong to the JS host that calls a Rust
+  function, which Node and Bun end with 1 of an `Error` it doesn't
+  catch. Whether rust-js should run a binary's `main` as Rust's runtime
+  does, exiting with 101, is a product question for the user (#2269)
+  (`semantics.md`, 10).
 - **A future starts when it's made**, decided by the user (2026-11-08,
   #965): kept where nothing can tell, refused where results change, a
   future given to a binding the JS boundary's running promise (this

@@ -2217,8 +2217,11 @@ React and JSX are [their own pages](README.md#react).
 8. A future starts when it's made, and runs though no one awaits it.
 9. There's one thread: a channel's `recv()` that would wait forever is refused
    as the program runs.
-10. Nothing calls `main`; an uncaught panic is the host's error, exit code 1
-    (being fixed, #2269).
+10. rust-js has no binaries: it compiles every crate as a library, and
+    nothing calls `main`. A JS host that calls a Rust function owns the
+    process and its exit status: a panic it doesn't catch is its `Error`,
+    which Node and Bun end with exit code 1, where a native binary's
+    uncaught panic exits with 101.
 11. A panic is an `Error`, which JS catches, and `catch_unwind` catches what
     JS throws; a panic's message downcasts as a `&str` and a `String`
     (being fixed, #2270), and every payload, a typed one's too, as the
