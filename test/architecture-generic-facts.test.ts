@@ -110,3 +110,33 @@ test("a bound's dictionary is given by one analysis, but the old owners still to
   const named = [...body.matchAll(/(?:LangItem|StdItem)::(\w+)|\b(is_iterator_extension)\(/g)].map((m) => m[1] ?? m[2]).sort();
   expect(named).toEqual(["Clone", "Copy", "Eq", "Index", "IntoIterator", "Iterator", "is_iterator_extension"].sort());
 });
+
+// A value crossing into generic code is adapted by one owner,
+// `crossing_into`: each route that calls the crate's generic code asks it,
+// and none adapts an iterator itself, as a conversion's dictionary gave
+// the crate's iterator bare where its generic `From` stepped a JS iterator
+// (#2264).
+test("each route into generic code adapts what it gives by `crossing_into` alone", () => {
+  const callers = files("src/lower")
+    .filter((file) => file.endsWith(".rs") && file !== "src/lower/generic_facts.rs" && file !== "src/lower/iterators/stepping.rs")
+    .filter((file) => /\bgiven_iterators\(/.test(read(file)));
+  expect(callers).toEqual([]);
+  const routes: [string, string][] = [
+    ["src/lower/mir/calls.rs", "fn mir_crate_call"],
+    ["src/lower/traits/calls.rs", "fn through_dictionary"],
+    ["src/lower/traits/calls.rs", "fn own_into_iter_of"],
+    ["src/lower/traits/dictionaries/conversions.rs", "fn compiled_conversion"],
+    ["src/lower/traits/impls.rs", "fn impl_call"],
+    ["src/lower/mir/iter/collect.rs", "fn made_by_own_from_iter"],
+    ["src/lower/display.rs", "fn writer_given"],
+  ];
+  const body = (file: string, fn: string) => {
+    const text = read(file);
+    const at = text.indexOf(fn);
+    return at < 0 ? "" : text.slice(at, text.indexOf("\n    }\n", at));
+  };
+  expect(routes.filter(([file, fn]) => !body(file, fn).includes("crossing_into(")).map(([file, fn]) => `${file} ${fn}`)).toEqual([]);
+  // And the trait method's routes through its impl's instance and a std
+  // body compiled into `@rust-js/std`, two in one function.
+  expect(read("src/lower/traits/calls.rs").match(/crossing_into\(/g)?.length).toBe(4);
+});

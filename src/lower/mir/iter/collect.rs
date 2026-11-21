@@ -1244,8 +1244,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let mut values = vec![items];
+        let mut made = Vec::new();
+        self.crossing_into(
+            (instance.def_id(), instance.args),
+            &mut values,
+            crate::lower::generic_facts::Arguments::Raw,
+            span,
+            &mut made,
+        )?;
         values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
-        Ok(Some(Expr::call(self.fn_ref(instance.def_id()), values)))
+        let called = Expr::call(self.fn_ref(instance.def_id()), values);
+        Ok(Some(crate::lower::generic_facts::made_before(made, called)))
     }
 }
 

@@ -670,7 +670,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        self.given_iterators(def_id, &mut exprs, arg_tys, span, out)?;
+        self.crossing_into(
+            (def_id, generic_args),
+            &mut exprs,
+            crate::lower::generic_facts::Arguments::FormedOf { given: arg_tys },
+            span,
+            out,
+        )?;
         // Its rest arguments, the slice spread (ADR 0664), which nothing
         // comes after.
         self.rest_given(def_id, &mut exprs);

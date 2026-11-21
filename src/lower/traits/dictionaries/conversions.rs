@@ -3,6 +3,7 @@
 //! dictionaries.rs by concept, as a file is at most 1500 lines.
 
 use super::super::*;
+use crate::lower::generic_facts::Arguments;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `x.into()` of a `T: Into<U>` (ADR 0108), and `W::from(u)` of a `W:
@@ -118,17 +119,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .instantiate_identity()
                 .skip_normalization(),
         );
-        let crossing = |declared: Ty<'tcx>| (instance.def_id(), declared, self.instantiated(declared, instance.args));
-        let (input, output) = (crossing(sig.inputs()[0]), crossing(sig.output()));
+        let output = (
+            instance.def_id(),
+            sig.output(),
+            self.instantiated(sig.output(), instance.args),
+        );
         let callee = self.fn_ref(instance.def_id());
         let param = self.unspelled("value");
-        let mut values = vec![match self.form_of(input) {
-            Some(form) => self.form_given(form, input, Expr::var(&param), span)?,
-            None => Expr::var(&param),
-        }];
+        // What it's given crosses into its generic code as a direct call's
+        // does, made a JS iterator where it steps one (#2264).
+        let mut values = vec![Expr::var(&param)];
+        let mut made = Vec::new();
+        self.crossing_into(
+            (instance.def_id(), instance.args),
+            &mut values,
+            Arguments::Raw,
+            span,
+            &mut made,
+        )?;
+        let given_as_it_is = made.is_empty() && values[0] == Expr::var(&param);
         values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
         let back = self.form_of(output);
-        if values.len() == 1 && back.is_none() && self.form_of(input).is_none() {
+        if values.len() == 1 && back.is_none() && given_as_it_is {
             return Ok(Some(callee));
         }
         let called = Expr::call(callee, values);
@@ -136,9 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(form) => self.form_back(form, output, called),
             None => called,
         };
-        Ok(Some(Expr::arrow(
-            vec![param.clone().into()],
-            vec![StmtKind::Return(Some(called)).at(js::Span::NONE)],
-        )))
+        made.push(StmtKind::Return(Some(called)).at(js::Span::NONE));
+        Ok(Some(Expr::arrow(vec![param.clone().into()], made)))
     }
 }

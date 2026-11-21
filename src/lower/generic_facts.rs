@@ -176,7 +176,75 @@ impl Placed {
     }
 }
 
+/// How a route's arguments come to `crossing_into`: as their caller has
+/// them, `Raw`, each given generic code's form there where its view differs
+/// (`form_given`), a dictionary entry's parameter or what a recogniser
+/// made; or so already, `Formed`, a call MIR lowered, whose `boxed_args`
+/// read each from its place, a trait method's by its impl or dictionary;
+/// `FormedOf` the direct call's, of the caller's types `given` (#2264).
+#[derive(Clone, Copy)]
+pub(in crate::lower) enum Arguments<'g, 'tcx> {
+    Raw,
+    Formed,
+    FormedOf { given: &'g [Ty<'tcx>] },
+}
+
+/// `value`, a call made after `made`, the statements its arguments'
+/// crossing made (`crossing_into`): itself where there are none, else an
+/// arrow that runs them, then gives it, of a route that writes no
+/// statements of its own.
+pub(in crate::lower) fn made_before(made: Vec<crate::js::Stmt>, value: Expr) -> Expr {
+    if made.is_empty() {
+        return value;
+    }
+    let mut body = made;
+    body.push(crate::js::StmtKind::Return(Some(value)).at(crate::js::Span::NONE));
+    Expr::call(Expr::arrow(Vec::new(), body), Vec::new())
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `values`, the arguments of a call of the crate's `callee` with
+    /// `args`, crossing into its generic code by whatever route: each in
+    /// generic code's form where its view differs from its caller's
+    /// (`form_given`, of `Arguments::Raw` ones), then each iterator of the
+    /// crate's, or range, given where generic code steps a JS iterator, made
+    /// one (`given_iterators`, ADR 0061). The one owner each route asks: a
+    /// direct call, a trait method's through its impl or a dictionary, a
+    /// conversion's dictionary, `collect()`'s `from_iter`, an
+    /// `IntoIterator`'s `into_iter` and a writer's `fmt`, so none gives the
+    /// crate's iterator bare where generic code steps a JS iterator, as a
+    /// conversion's dictionary did (#2264).
+    pub(in crate::lower) fn crossing_into(
+        &mut self,
+        (callee, args): (DefId, ty::GenericArgsRef<'tcx>),
+        values: &mut [Expr],
+        arguments: Arguments<'_, 'tcx>,
+        span: Span,
+        out: &mut Vec<crate::js::Stmt>,
+    ) -> R<()> {
+        let sig = (self.tcx)
+            .instantiate_bound_regions_with_erased(self.tcx.fn_sig(callee).instantiate_identity().skip_normalization());
+        let instantiated: Vec<Ty<'tcx>> = sig
+            .inputs()
+            .iter()
+            .map(|&declared| self.instantiated(declared, args))
+            .collect();
+        let given = match arguments {
+            Arguments::Raw => {
+                for ((value, &declared), &caller) in values.iter_mut().zip(sig.inputs()).zip(&instantiated) {
+                    let crossing = (callee, declared, caller);
+                    if let Some(form) = self.form_of(crossing) {
+                        *value = self.form_given(form, crossing, value.clone(), span)?;
+                    }
+                }
+                &instantiated[..]
+            }
+            Arguments::Formed => &instantiated[..],
+            Arguments::FormedOf { given } => given,
+        };
+        self.given_iterators(callee, values, given, span, out)
+    }
+
     /// Whether `source`, an iterator only a caller knows, is a
     /// `FusedIterator`, as its callers say: of each type parameter what it
     /// is fused by is of, `I`'s of a `Map<I, F>` (`held_facts`), its caller's

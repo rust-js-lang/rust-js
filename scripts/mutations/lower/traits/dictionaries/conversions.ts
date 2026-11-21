@@ -57,8 +57,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a conversion's dictionary gives its `From<(A, B)>` impl, which holds each part in a place, the tuple as its caller holds it, so itertools' `multizip` shape reads the bare string's `value` (#2255)",
     file: "src/lower/traits/dictionaries/conversions.rs",
-    find: "        let mut values = vec![match self.form_of(input) {\n",
-    replace: "        let mut values = vec![match self.form_of(input).filter(|_| false) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code"],
+    find: "            &mut values,\n            Arguments::Raw,\n            span,\n            &mut made,\n",
+    replace: "            &mut values,\n            Arguments::Formed,\n            span,\n            &mut made,\n",
+    tests: ["test/crates.test.ts", "test/corpus.test.ts", "-t", "two crates: library_holder_of_a_placed_iterator_built_by_its_generic_code|^conversion_dictionary_given_the_crates_iterator.rs$"],
   },
 ];

@@ -2,6 +2,7 @@
 //! and a generic impl's constant.
 
 use super::*;
+use crate::lower::generic_facts::{Arguments, made_before};
 use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -78,8 +79,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let instance = (self.resolve_instance(into_iter, args)?)
             .ok_or_else(|| self.unsupported(span, &format!("the `IntoIterator` of a `{ty}`")))?;
         let mut values = vec![value];
+        let mut crossed = Vec::new();
+        self.crossing_into(
+            (instance.def_id(), instance.args),
+            &mut values,
+            Arguments::Raw,
+            span,
+            &mut crossed,
+        )?;
         values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
-        let made = self.crate_called(instance.def_id(), values);
+        let made = made_before(crossed, self.crate_called(instance.def_id(), values));
         let made = self.as_js_iterator(made, into_ty, span)?;
         let make = vec![crate::js::StmtKind::Return(Some(made)).at(self.js_span(span))];
         Ok(Some(Expr::call_helper(
@@ -516,15 +525,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // ADR 0561).
         if compiled_provided && (of_dyn || self.resolve_self_instance(id, generic_args)?.is_none()) {
             let mut values = values;
-            let given = self
-                .tcx
-                .fn_sig(id)
-                .instantiate(self.tcx, generic_args)
-                .skip_normalization()
-                .skip_binder()
-                .inputs()
-                .to_vec();
-            self.given_iterators(id, &mut values, &given, span, out)?;
+            self.crossing_into((id, generic_args), &mut values, Arguments::Formed, span, out)?;
             values.extend(self.evidence_args(id, generic_args, span)?);
             let called = Expr::call(self.fn_ref(id), values);
             return Ok(Some(self.fmt_result_value(id, generic_args, called)));
@@ -589,15 +590,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || self.krate.foreign.compiles(instance.def_id()))
         {
             let mut values = values;
-            let given = self
-                .tcx
-                .fn_sig(instance.def_id())
-                .instantiate(self.tcx, instance.args)
-                .skip_normalization()
-                .skip_binder()
-                .inputs()
-                .to_vec();
-            self.given_iterators(instance.def_id(), &mut values, &given, span, out)?;
+            self.crossing_into(
+                (instance.def_id(), instance.args),
+                &mut values,
+                Arguments::Formed,
+                span,
+                out,
+            )?;
             // Its arguments in the impl's terms, a copied default's, asked of
             // the impl's drops (ADR 0495).
             values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
@@ -736,12 +735,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<js::Stmt>,
     ) -> R<Vec<Expr>> {
-        let given = (self.tcx.fn_sig(id).instantiate(self.tcx, generic_args))
-            .skip_normalization()
-            .skip_binder()
-            .inputs()
-            .to_vec();
-        self.given_iterators(id, &mut values, &given, span, out)?;
+        self.crossing_into((id, generic_args), &mut values, Arguments::Formed, span, out)?;
         let location = self.caller_location(span);
         values.extend(self.own_evidence(id, generic_args, Some(location), None, span)?);
         Ok(values)

@@ -1275,8 +1275,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .resolve_instance(method, args)?
             .filter(|i| self.is_rust_fn(i.def_id()))
             .ok_or_else(|| self.unsupported(span, "this implementation"))?;
+        let mut made = Vec::new();
+        self.crossing_into(
+            (instance.def_id(), instance.args),
+            &mut values,
+            crate::lower::generic_facts::Arguments::Raw,
+            span,
+            &mut made,
+        )?;
         values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
         let called = Expr::call(self.fn_ref(instance.def_id()), values);
+        let called = crate::lower::generic_facts::made_before(made, called);
         Ok(self.fmt_result_value(instance.def_id(), instance.args, called))
     }
 }

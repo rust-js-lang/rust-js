@@ -250,8 +250,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait impl's method given the crate's iterator where a generic iterator goes gets its struct, which JS can't step",
     file: "src/lower/traits/calls.rs",
-    find: "            self.given_iterators(instance.def_id(), &mut values, &given, span, out)?;\n",
-    replace: "            let _ = given;\n",
+    find: "            self.crossing_into(\n                (instance.def_id(), instance.args),\n                &mut values,\n                Arguments::Formed,\n                span,\n                out,\n            )?;\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_projection_drops.rs$"],
   },
   {
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range given a trait's method through its dictionary, `c.extend(0..n)` of a `C: Extend`, or a `&mut Self` given as it is, isn't a JS iterator",
     file: "src/lower/traits/calls.rs",
-    find: "        self.given_iterators(id, &mut values, &given, span, out)?;\n        let location",
+    find: "        self.crossing_into((id, generic_args), &mut values, Arguments::Formed, span, out)?;\n        let location",
     replace: "        let location",
     tests: [
       "test/corpus.test.ts",

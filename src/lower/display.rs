@@ -706,8 +706,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .resolve_instance(method, args)?
             .filter(|i| self.is_rust_fn(i.def_id()))
             .ok_or_else(|| self.unsupported(span, "this implementation"))?;
-        let evidence = self.evidence_args(instance.def_id(), instance.args, span)?;
         let mut values = vec![value];
+        // Its receiver crosses as any route's argument does, a reference to
+        // the value it shows, which writes no statement (#2264).
+        let mut made = Vec::new();
+        self.crossing_into(
+            (instance.def_id(), instance.args),
+            &mut values,
+            crate::lower::generic_facts::Arguments::Raw,
+            span,
+            &mut made,
+        )?;
+        debug_assert!(made.is_empty(), "a writer's receiver crossed by statements");
+        let evidence = self.evidence_args(instance.def_id(), instance.args, span)?;
         // A class's `toString` given no options is called with none,
         // `p.toString()` (#358).
         let plain_to_string = matches!(pretty, Pretty::Plain)
