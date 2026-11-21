@@ -116,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     return refused(format!(
                         "generic code has one JS for each of `{ty}`'s instances, and a `{held}` is the object it \
-                         holds, which isn't at its start, where a `{by}` isn't (#1114); make it where the type is \
+                         holds, which isn't at its start, where a `{by}` isn't (#1299); make it where the type is \
                          known, in a function of `{held}`'s own, or of what it holds, its payload or its value"
                     ));
                 }
