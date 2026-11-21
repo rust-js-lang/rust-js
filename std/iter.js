@@ -7868,8 +7868,9 @@ export function takeIterator_advanceBy(take, n, IIterator = { next: $next }, dro
   }
   const advanced = (min - rem) >>> 0;
   take.n = (take.n - advanced) >>> 0;
-  const value = (n - advanced) >>> 0 === 0 ? undefined : (n - advanced) >>> 0;
-  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
+  const value = (n - advanced) >>> 0;
+  const value$1 = value === 0 ? undefined : value;
+  return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
 }
 
 export function takeIterator_count(take, IIterator = { next: $next }, dropI, dropIItem) {
@@ -8367,8 +8368,9 @@ export function takeIDoubleEndedIterator_advanceBackBy(
   const advancedByInner = (advanceBy - remainder) >>> 0;
   const advancedBy = (advancedByInner - trimInner) >>> 0;
   take.n = (take.n - advancedBy) >>> 0;
-  const value = (n - advancedBy) >>> 0 === 0 ? undefined : (n - advancedBy) >>> 0;
-  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
+  const value = (n - advancedBy) >>> 0;
+  const value$1 = value === 0 ? undefined : value;
+  return value$1 != null ? { TAG: "Err", _0: value$1 } : { TAG: "Ok" };
 }
 
 export function takeRepeatTDoubleEndedIterator_advanceBackBy(take, n, TClone, dropT) {

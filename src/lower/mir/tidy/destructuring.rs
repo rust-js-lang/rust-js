@@ -533,7 +533,12 @@ pub(super) fn nested_pattern(parts: &[(&[Step], &js::Name, Option<&Expr>)]) -> O
 /// nothing and read what nothing changes, which read the same anywhere.
 /// One that does, `match (v.pop(), n > 3)`'s `v.pop()`, is held first, in
 /// order, as a person holds it: `const value = v.pop();`, and what's read
-/// before it with it (ADR 0369).
+/// before it with it (ADR 0369). And one read more than once that isn't a
+/// variable, a part of one or a constant, a conditional `{:?}` reads twice,
+/// is held where the tuple was made, named once, not written at each read
+/// (#869); not one that makes an object, an array, a function or a handle,
+/// or calls what may, `$some(v)`'s box, each read of which is a copy of its
+/// own, `[[5], [6]]` given twice, which one held would share.
 pub(super) fn tuple_reads(
     stmts: &mut Vec<Stmt>,
     changing: &IndexSet<js::Name>,
@@ -664,9 +669,36 @@ pub(super) fn tuple_reads(
             });
             fixed
         };
+        let mut reads = vec![0usize; len];
+        js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+            if let Some(k) = item(e) {
+                reads[k] += 1;
+            }
+        });
         let mut held = Vec::new();
         for (k, item) in items.iter_mut().enumerate() {
-            if last.is_some_and(|last| k < last && !fixed(item) || k == last) {
+            let makes = {
+                let mut makes = false;
+                item.clone().each_mut(&mut |e| {
+                    makes |= matches!(
+                        e.kind,
+                        ExprKind::Array(_)
+                            | ExprKind::Object(..)
+                            | ExprKind::New(..)
+                            | ExprKind::Call(..)
+                            | ExprKind::OptionalCall(..)
+                            | ExprKind::Handle(..)
+                            | ExprKind::Pair(..)
+                            | ExprKind::Arrow(..)
+                            | ExprKind::AsyncArrow(..)
+                            | ExprKind::Function(_)
+                            | ExprKind::Jsx(_)
+                    )
+                });
+                makes
+            };
+            let twice = reads[k] > 1 && !item.reads_same() && !makes;
+            if twice || last.is_some_and(|last| k < last && !fixed(item) || k == last) {
                 let name = t.given_apart(k);
                 held.push(StmtKind::Const(name.clone(), std::mem::replace(item, Expr::var(&name))).at(span));
             }

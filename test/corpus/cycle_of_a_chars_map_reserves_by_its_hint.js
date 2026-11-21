@@ -31,11 +31,8 @@ function check(name, f) {
     const copied = e.impl.typeId() === "&str" ? e.value : undefined;
     const fallback =
       e.impl.typeId() === "alloc::string::String" || e.impl === $panicMessage ? e.value : undefined;
-    console.log(
-      `${name}: panicked ${
-        (copied ?? fallback) == null ? "None" : `Some(${$debugStr(copied ?? fallback)})`
-      }`,
-    );
+    const value = copied ?? fallback;
+    console.log(`${name}: panicked ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   }
 }
 

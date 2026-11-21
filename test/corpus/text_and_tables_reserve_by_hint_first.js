@@ -30,11 +30,8 @@ function check(name, f) {
     const map =
       e.impl.typeId() === "alloc::string::String" || e.impl === $panicMessage ? e.value : undefined;
     const fallback = e.impl.typeId() === "&str" ? e.value : undefined;
-    console.log(
-      `${name}: panicked ${
-        (map ?? fallback) == null ? "None" : `Some(${$debugStr(map ?? fallback)})`
-      }`,
-    );
+    const value = map ?? fallback;
+    console.log(`${name}: panicked ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   }
 }
 

@@ -143,7 +143,8 @@ function ds() {
 }
 
 function show(what, last) {
-  console.log(`${what} ${last?.[0] == null ? "None" : `Some(${last?.[0]})`}`);
+  const value = last?.[0];
+  console.log(`${what} ${value == null ? "None" : `Some(${value})`}`);
   if (last != null) {
     dDrop_drop(last);
   }

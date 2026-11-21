@@ -91,9 +91,8 @@ function backwards(it) {
 function run(name, f) {
   console.log(`-- ${name}`);
   const r = $catchUnwind(f);
-  console.log(
-    `${name} ${(r.TAG === "Ok" ? r._0 : undefined) == null ? "None" : `Some(${$debugStr(r.TAG === "Ok" ? r._0 : undefined)})`}`,
-  );
+  const value = r.TAG === "Ok" ? r._0 : undefined;
+  console.log(`${name} ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
 }
 
 function main() {

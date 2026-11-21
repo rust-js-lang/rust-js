@@ -225,17 +225,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple matched whose part calls, `(v.pop(), n > 3)`, calls it where each part is read, more than once",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "            if last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
+    find: "            if twice || last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
     replace:
-      "            if false && last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
+      "            if twice || false && last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
   },
   {
     name: "tuple-earlier-reads-unheld",
     breaks: "`v.len()` of `(v.len(), v.pop())` is read after the pop",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "            if last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
-    replace: "            if last.is_some_and(|last| k == last) {\n",
+    find: "            if twice || last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
+    replace: "            if twice || last.is_some_and(|last| k == last) {\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
   },
   {
@@ -353,6 +353,24 @@ export const mutations: Mutation[] = [
     find: "        let other = items && (made || !indexed || count < 2);\n",
     replace: "        let other = items;\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_match_item_destructured.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "tuple-item-read-twice-written-twice",
+    breaks: "a tuple item read more than once, a conditional `{:?}` of `r.ok()` reads twice, is written at each read, `(r.TAG === \"Ok\" ? r._0 : undefined) == null ? .. : `Some(${r.TAG === \"Ok\" ? r._0 : undefined})``, not named once (#869)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "            let twice = reads[k] > 1 && !item.reads_same() && !makes;\n",
+    replace: "            let twice = false && !makes;\n",
+    tests: ["test/corpus.test.ts", "-t", "^ranges_end_at_a_diverging_call\\.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "tuple-item-copy-shared",
+    breaks: "a tuple item that makes an array, read twice, each read a copy of its own, is held once and shared by both, `const value = [[5], [6]]` given to a deque and looped over, where a change of one copy would show in the other (#869)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "            let twice = reads[k] > 1 && !item.reads_same() && !makes;\n",
+    replace: "            let twice = reads[k] > 1 && !item.reads_same() && (makes || !makes);\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_from_forwarded_to_its_value\\.rs$"],
     snapshots: true,
   },
 ];

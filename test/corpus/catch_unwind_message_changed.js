@@ -65,8 +65,9 @@ function main() {
   }
   message = payload$1 != null ? then$1(payload$1) : undefined;
   const result = $catchUnwind(() => fails(1));
+  const value = result.TAG === "Ok" ? result._0 : undefined;
   console.log(
-    `${message == null ? "None" : `Some(${$debugStr(message)})`} ${(result.TAG === "Ok" ? result._0 : undefined) == null ? "None" : `Some(${result.TAG === "Ok" ? result._0 : undefined})`}`,
+    `${message == null ? "None" : `Some(${$debugStr(message)})`} ${value == null ? "None" : `Some(${value})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -62,29 +62,23 @@ function neverEnds(start) {
 function main() {
   for (const n of [100, 101, 4294967295]) {
     const result = $catchUnwind(() => guarded(n));
-    console.log(
-      `guarded ${n} ${(result.TAG === "Ok" ? result._0 : undefined) == null ? "None" : `Some(${result.TAG === "Ok" ? result._0 : undefined})`}`,
-    );
+    const value = result.TAG === "Ok" ? result._0 : undefined;
+    console.log(`guarded ${n} ${value == null ? "None" : `Some(${value})`}`);
     const result$1 = $catchUnwind(() => throughACall(n));
-    console.log(
-      `through a call ${n} ${(result$1.TAG === "Ok" ? result$1._0 : undefined) == null ? "None" : `Some(${result$1.TAG === "Ok" ? result$1._0 : undefined})`}`,
-    );
+    const value$1 = result$1.TAG === "Ok" ? result$1._0 : undefined;
+    console.log(`through a call ${n} ${value$1 == null ? "None" : `Some(${value$1})`}`);
     const result$2 = $catchUnwind(() => pastUnreachable(n));
-    console.log(
-      `past unreachable ${n} ${(result$2.TAG === "Ok" ? result$2._0 : undefined) == null ? "None" : `Some(${result$2.TAG === "Ok" ? result$2._0 : undefined})`}`,
-    );
+    const value$2 = result$2.TAG === "Ok" ? result$2._0 : undefined;
+    console.log(`past unreachable ${n} ${value$2 == null ? "None" : `Some(${value$2})`}`);
     const result$3 = $catchUnwind(() => countTo(n, 0));
-    console.log(
-      `count to ${n} ${(result$3.TAG === "Ok" ? result$3._0 : undefined) == null ? "None" : `Some(${result$3.TAG === "Ok" ? result$3._0 : undefined})`}`,
-    );
+    const value$3 = result$3.TAG === "Ok" ? result$3._0 : undefined;
+    console.log(`count to ${n} ${value$3 == null ? "None" : `Some(${value$3})`}`);
     const result$4 = $catchUnwind(() => countTo(n, 101));
-    console.log(
-      `count to ${n} ${(result$4.TAG === "Ok" ? result$4._0 : undefined) == null ? "None" : `Some(${result$4.TAG === "Ok" ? result$4._0 : undefined})`}`,
-    );
+    const value$4 = result$4.TAG === "Ok" ? result$4._0 : undefined;
+    console.log(`count to ${n} ${value$4 == null ? "None" : `Some(${value$4})`}`);
     const result$5 = $catchUnwind(() => neverEnds(n));
-    console.log(
-      `never ends ${n} ${(result$5.TAG === "Ok" ? result$5._0 : undefined) == null ? "None" : `Some(${result$5.TAG === "Ok" ? result$5._0 : undefined})`}`,
-    );
+    const value$5 = result$5.TAG === "Ok" ? result$5._0 : undefined;
+    console.log(`never ends ${n} ${value$5 == null ? "None" : `Some(${value$5})`}`);
     const caught = $catchUnwind(() => {
       if (n > 100) {
         throw new Error(`too big in a closure: ${n}`);
@@ -92,9 +86,8 @@ function main() {
       return n + 1;
     });
     const past = (n + 1) >>> 0;
-    console.log(
-      `closure ${n} ${(caught.TAG === "Ok" ? caught._0 : undefined) == null ? "None" : `Some(${caught.TAG === "Ok" ? caught._0 : undefined})`}, past it ${past}`,
-    );
+    const value$6 = caught.TAG === "Ok" ? caught._0 : undefined;
+    console.log(`closure ${n} ${value$6 == null ? "None" : `Some(${value$6})`}, past it ${past}`);
   }
 }
 //# sourceMappingURL=case.js.map

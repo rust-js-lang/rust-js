@@ -87,3 +87,23 @@ rewrite of `field_rewrite_singles`, its last row of #1035, taken off; the
 corpus case `tuple_part_set_through_a_dyn` holds it in both builds, and
 the mutations `tuple-part-set-through-an-alias-unseen` and
 `tuple-part-alias-of-a-part-unseen`.
+
+## Amendment: an item read more than once is named once (#869)
+
+An item read more than once was written at each read. `{:?}` of `r.ok()`
+reads its `Option` twice, once for its test and once for its `Some`, so
+it came out as `(r.TAG === "Ok" ? r._0 : undefined) == null ? "None" :
+`Some(${r.TAG === "Ok" ? r._0 : undefined})``. Now such an item is held
+where the tuple was made, `const value = r.TAG === "Ok" ? r._0 :
+undefined;`, as a person names it once. This applies unless it reads the
+same anywhere (a variable, a part of one, a constant), or makes an object,
+an array, a function or a handle, or calls what may. Each read of those is
+a copy of its own: `[[5], [6]]` given to a deque and looped over would
+share one array if held. In 18 corpus cases and std's `advance_by`, the
+held name is the role's, `value`. docs/readability.txt counts that as a
+role fallback, 249.1 to 249.8 a 10,000 lines (and its `$1`s 451.5 to
+451.7), where the doubled conditional it replaces counted as nothing. It
+was blessed so: the name is a better read than the conditional written
+twice, and naming it by what made it, `ok`, is #890's. The mutations
+`tuple-item-read-twice-written-twice` and `tuple-item-copy-shared` hold
+it.
