@@ -352,7 +352,8 @@ export async function compileJsAsync(
 
 /** How `file` is compiled into `dir`, and where its JS goes: its wrapper
  * written, where it isn't already, so a compile that's reading it isn't
- * given it emptied by another's write. */
+ * given it emptied by another's write. The profile of the corpus's compiles
+ * runs it too, past the kept compiles (scripts/profile-lowering.ts). */
 export function compileCommand(file: string, dir: string, edition: string, library: boolean, flags: string[], rustc: string[] = []): { cmd: string[]; js: string } {
   const wrapper = join(dir, "lib.rs");
   const text = `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`;

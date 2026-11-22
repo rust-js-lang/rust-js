@@ -587,6 +587,12 @@ The ledger of every speed-up tried, with its numbers, its status (active, droppe
   `bun scripts/phase-times.ts <file>` sums them into tables. The last
   measurement, and what it decided, is in
   [docs/dev-loop.md](docs/dev-loop.md#where-a-checks-time-goes-2296-2026-11-22).
+- **Which functions a compile's time goes to:** `bun scripts/profile-lowering.ts
+  corpus` (or `port`, the React port's compiles) builds the release compiler
+  with line tables, profiles the compiles with samply (`cargo install
+  samply`), and reports the phases and lowering's functions by self and
+  inclusive CPU time; `report <profile>` reads one again, and `samply load`
+  opens it in the Firefox Profiler. What it found is in #2302.
 - **Read a `⚠ slower than usual` line before going on**: find what made
   it slower, fix it or write it in the list below.
 - **When a step is slower than it needs to be**, fix it if it's yours to
