@@ -491,7 +491,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut todo = parts(declared, instantiated, top);
         // Each once, as a type of the crate's may hold itself.
-        let mut seen = crate::collections::IndexSet::default();
+        let mut seen = rust_js_program::collections::IndexSet::default();
         while let Some((d, i, held)) = todo.pop() {
             if !seen.insert((d, i, held)) {
                 continue;
@@ -847,7 +847,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(Form::Placed) => "placed",
             Some(Form::Valued) => unreachable!("`form_of` never asks `Form::Valued`"),
         };
-        crate::decisions::record("generic-form", answer);
+        rust_js_program::decisions::record("generic-form", answer);
         form
     }
 

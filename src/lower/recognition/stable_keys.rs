@@ -9,7 +9,7 @@
 //! parameter's, a `dyn`'s, a function's or a raw pointer's.
 
 use super::*;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_middle::ty::fast_reject::SimplifiedType;
 
 /// Whether a lookup of `ty`, a map's key or what it's asked by, reads the

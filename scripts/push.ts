@@ -58,6 +58,7 @@
 // machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
 import { spawn, spawnSync } from "node:child_process";
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { isCompilerSource } from "./compiler-crates";
 import { selectionFile } from "./select";
 import { devTimes, ownsTimes } from "./devTimes";
 import { PORT_DOES_NOT_COMPILE, touchesPort } from "./iteratorSlice";
@@ -107,7 +108,7 @@ export function fastAgain(incoming: string[] | undefined, named: ReadonlySet<str
   if (incoming === undefined) return true;
   return incoming.some(
     (file) =>
-      file.startsWith("src/") ||
+      isCompilerSource(file) ||
       file.startsWith("scripts/mutations") ||
       named.has(file) ||
       FAST_TESTS.includes(file) ||

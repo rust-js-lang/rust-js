@@ -6,9 +6,9 @@
 //! but never `null`, its `None` `null` (rd645).
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::representation::NoneForm;
 use crate::lower::temporary_names::Role;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_span::def_id::DefId;
 
 /// What an `Option` held where it's made holds (ADR 1017): of an `Option`

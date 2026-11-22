@@ -6,7 +6,7 @@
 //! constants (`pipeline::load_cycles`, ADR 0031, amended) and a dictionary
 //! it makes (ADR 0592).
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_span::def_id::LocalModId;
 
 use crate::program::{JsModules, ModuleAt};

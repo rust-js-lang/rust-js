@@ -305,7 +305,7 @@ pub(in crate::lower) fn given_by_its_trait(tcx: ty::TyCtxt<'_>, callee: DefId, i
 /// callee's evidence and its caller's argument alike.
 pub(in crate::lower) fn given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::ParamTy) -> bool {
     let as_it_is = given_as_it_is_of(tcx, id, param);
-    crate::decisions::record("iterator-given", if as_it_is { "as-it-is" } else { "js-iterator" });
+    rust_js_program::decisions::record("iterator-given", if as_it_is { "as-it-is" } else { "js-iterator" });
     as_it_is
 }
 

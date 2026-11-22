@@ -11,6 +11,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't; each by its
@@ -60,7 +61,7 @@ const audited: Record<string, number> = Object.fromEntries(
 
 test("a state is an enum, and loose flags only shrink", () => {
   const counts: [string, number][] = [
-    ...files(join(root, "src")).filter((file) => file.endsWith(".rs")).map((file) => [file, rustFlags(read(file))] as [string, number]),
+    ...compilerRustFiles().map((file) => [file, rustFlags(read(file))] as [string, number]),
     ...files(join(root, "src", "runtime")).filter((file) => file.endsWith(".js")).map((file) => [file, runtimeFlags(read(file))] as [string, number]),
   ];
   const changed = counts

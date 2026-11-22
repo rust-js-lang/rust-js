@@ -46,6 +46,7 @@
 // `rustcPaths`, those.
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { compilerSourceGlobs } from "./compiler-crates";
 import { noteRate, pick, type Picked } from "./iteratorRows";
 import { lines } from "./parts";
 import { caseParts } from "./shard";
@@ -318,7 +319,7 @@ export function touchesConsumers(files: string[]): boolean {
  * step) and in plain
  * `check:fast`: 9353847cd refused itertools, which only the nightly saw
  * (#1188). */
-export const cratePaths = ["src/**", "std/**", "vendor/**", "Cargo.lock", "docs/crate-corpus.md", "scripts/crate-corpus.ts", "scripts/crate-corpus/**"];
+export const cratePaths = [...compilerSourceGlobs(), "std/**", "vendor/**", "Cargo.lock", "docs/crate-corpus.md", "scripts/crate-corpus.ts", "scripts/crate-corpus/**"];
 
 const crateGlobs = cratePaths.map((path) => new Bun.Glob(path));
 
@@ -333,7 +334,7 @@ export function touchesCrates(files: string[]): boolean {
  * port at its pin in each push's check (check.yml's `nets` job's `port` step),
  * failing on any file that differs: ba69090b3's port diff went unseen
  * until the nightly (#1188, #1189). */
-export const portPaths = ["src/**", "std/**", "vendor/**", "tooling/**", "builtins/**", "react/**", "webapi/**", "Cargo.lock", "ports/react-in-rust.pin", "scripts/react-in-rust.ts"];
+export const portPaths = [...compilerSourceGlobs(), "std/**", "vendor/**", "tooling/**", "builtins/**", "react/**", "webapi/**", "Cargo.lock", "ports/react-in-rust.pin", "scripts/react-in-rust.ts"];
 
 const portGlobs = portPaths.map((path) => new Bun.Glob(path));
 
@@ -416,7 +417,7 @@ export function touchesWasm(files: string[]): boolean {
  * leaves their answer as it was. */
 export const rustcPaths = [
   ...importsOf(["scripts/rustc-suite.ts"]),
-  "src/**",
+  ...compilerSourceGlobs(),
   "std/**",
   "vendor/**",
   "builtins/**",

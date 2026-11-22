@@ -2,7 +2,7 @@
 //! its own, so a comment before it is the statement's: whole statements,
 //! and a block's opening, an `unsafe`'s, a macro's or a `match`'s.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 /// The whole statements `code` starts with, each trimmed, each ending in a
 /// `;` outside its brackets, and what's after them: the next's start, or

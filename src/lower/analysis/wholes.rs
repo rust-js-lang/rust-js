@@ -15,7 +15,7 @@
 //! constant such, a `#[rust_js::whole]` binding's, or such a number and
 //! one, which past 2^53 is the same number. JS's text of each is Rust's.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_hir::def::DefKind;
 use rustc_index::IndexVec;

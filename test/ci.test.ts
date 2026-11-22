@@ -26,14 +26,14 @@ import { programFlags, root } from "./support";
 import { miriCommand } from "./miri";
 
 // A compiler CI keeps is of what it's made of, build.rs's inputs, the one
-// list: a key short of one, std/manifest.json, which src/library.rs
+// list, the compiler's crates' too (ADR 1181): a key short of one, std/manifest.json, which src/library.rs
 // includes, restored a binary of other sources. The suite's shards restore
 // the debug one so, as the release one is (check 43700659375: 136 s of
 // each shard's longest leg built it again of unchanged sources).
 test("a compiler CI keeps is keyed by build.rs's inputs, and the suite's shards run the one kept", () => {
   const script = readFileSync(join(root, "build.rs"), "utf8");
-  const inputs = [...script.slice(script.indexOf("let inputs = ["), script.indexOf("];", script.indexOf("let inputs = ["))).matchAll(/join\("([^"]+)"\)/g)].map((m) => (m[1] === "src" ? "src/**" : m[1]!));
-  expect(inputs).toEqual(["src/**", "std/manifest.json", "rust-toolchain.toml", "build.rs", "Cargo.toml", "Cargo.lock"]);
+  const inputs = [...script.slice(script.indexOf("let inputs = ["), script.indexOf("];", script.indexOf("let inputs = ["))).matchAll(/join\("([^"]+)"\)/g)].map((m) => (statSync(join(root, m[1]!)).isDirectory() ? `${m[1]}/**` : m[1]!));
+  expect(inputs).toEqual(["src/**", "crates/**", "std/manifest.json", "rust-toolchain.toml", "build.rs", "Cargo.toml", "Cargo.lock"]);
   const action = readFileSync(join(root, ".github/actions/build-rust-js/action.yml"), "utf8");
   expect(action).toContain(`key: rust-js-\${{ inputs.profile }}-\${{ runner.os }}-\${{ hashFiles(${inputs.map((input) => `'${input}'`).join(", ")}) }}`);
   const check = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { steps: { uses?: string; with?: Record<string, string>; id?: string; env?: Record<string, string> }[] }> };

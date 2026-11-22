@@ -7,7 +7,7 @@
 //! library's private functions that one calls. One that reads the library's
 //! private state, which no other crate can reach, is refused.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeFoldable, TypeVisitableExt};

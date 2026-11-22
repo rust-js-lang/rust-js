@@ -5,8 +5,8 @@
 //! nothing.
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::body_queries::{self, PatternValue};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 mod calls;
 mod clones;

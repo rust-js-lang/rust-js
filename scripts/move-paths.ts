@@ -6,14 +6,36 @@
 // fields with the rest. Re-runnable: a pair already applied rewrites
 // nothing. The files themselves are moved by `git mv`, before or after.
 //
+// And a module moved to another of the compiler's crates (ADR 1181): once
+// its file is there and the crates' roots declare it, `mod x;`, each Rust
+// path to it through its old crate's root is its new crate's, in code and
+// in comments. Which crate a top-level module is of is the layout's answer
+// (scripts/compiler-crates.ts), so no map is given:
+//
+//   crate::collections::IndexMap        rust_js_program::collections::IndexMap
+//   super::super::js::Expr              rust_js_program::js::Expr (where the
+//                                       `super`s reach the crate's root)
+//   use crate::{collections::IndexSet,  use crate::lower::Body;
+//       lower::Body};                   use rust_js_program::collections::IndexSet;
+//
+// With no pairs it rewrites those alone: run it on a branch after a move
+// lands, so the branch's own code follows. rustfmt lays out what it writes
+// (`bun scripts/format.ts`). A path from a crate to the binary's module
+// can't be written, as no crate depends on the binary: it's said, and left.
+//
 //   bun scripts/move-paths.ts src/lower/iterators/mir_steps/ src/lower/iterators/mir_steps/
+//   bun scripts/move-paths.ts crates/rust-js-program/src/collections.rs crates/rust-js-program/crates/rust-js-program/src/collections.rs
+//   bun scripts/move-paths.ts                    # the Rust paths alone
+//   bun scripts/move-paths.ts --widen ..         # and make pub what another crate
+//                                                # names, as rustc says (`widened`)
 //   bun scripts/move-paths.ts --check src/lower/iterators/mir_steps/   # what still names it
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import { compilerCrates, compilerRustFiles, crateOf, modulePath, topModules, type CompilerCrate } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
-const searched = ["scripts", "test", "docs", "src", ".github", "DEVELOPMENT.md", "CONTRIBUTING.md", "TESTS.md", "AGENTS.md"];
+const searched = ["scripts", "test", "docs", "src", "crates", ".github", "DEVELOPMENT.md", "CONTRIBUTING.md", "TESTS.md", "AGENTS.md"];
 const skipped = new Set(["node_modules", "corpus", "known", "fixtures", "target"]);
 
 /** Each text file under `searched`, by its path from the checkout. */
@@ -43,25 +65,343 @@ export function rewritten(text: string, pairs: [string, string][]): string {
   return out;
 }
 
-/** The mutation list of a source file, scripts/mutations/<path below src/>.ts. */
-const listOf = (path: string) => join("scripts", "mutations", path.replace(/^src\//, "").replace(/\.rs$/, ".ts"));
+/** A source's path below its crate's `src/`, `crates/rust-js-program/src/
+ * decisions.rs`'s `decisions.rs`, as the crates' layout says
+ * (scripts/compiler-crates.ts). */
+const belowSrc = (path: string) => {
+  const crate = crateOf(path);
+  return crate ? path.slice(crate.src.length + 1) : path;
+};
+
+/** The mutation list of a source file, scripts/mutations/<path below its crate's src/>.ts. */
+const listOf = (path: string) => join("scripts", "mutations", belowSrc(path).replace(/\.rs$/, ".ts"));
+
+/** `text` with comments, strings and chars blanked, each byte kept where
+ * it is, newlines too, so an offset of one is the other's; its comments
+ * kept where `comments` says. */
+export function codeOf(text: string, comments = false): string {
+  let out = "";
+  let i = 0;
+  const blank = (s: string) => s.replace(/[^\n]/g, " ");
+  while (i < text.length) {
+    const rest = text.slice(i, i + 3);
+    if (rest.startsWith("//")) {
+      const end = text.indexOf("\n", i);
+      const stop = end < 0 ? text.length : end;
+      out += comments ? text.slice(i, stop) : blank(text.slice(i, stop));
+      i = stop;
+    } else if (rest.startsWith("/*")) {
+      let depth = 0;
+      let j = i;
+      while (j < text.length) {
+        if (text.startsWith("/*", j)) {
+          depth++;
+          j += 2;
+        } else if (text.startsWith("*/", j)) {
+          depth--;
+          j += 2;
+          if (depth === 0) break;
+        } else j++;
+      }
+      out += comments ? text.slice(i, j) : blank(text.slice(i, j));
+      i = j;
+    } else if (/^b?r#*"/.test(rest) && /[^\w]/.test(text[i - 1] ?? " ")) {
+      const m = /^b?r(#*)"/.exec(text.slice(i))!;
+      const close = `"${m[1]}`;
+      const end = text.indexOf(close, i + m[0].length);
+      const stop = end < 0 ? text.length : end + close.length;
+      out += blank(text.slice(i, stop));
+      i = stop;
+    } else if (text[i] === '"' || (text[i] === "b" && text[i + 1] === '"' && /[^\w]/.test(text[i - 1] ?? " "))) {
+      let j = text.indexOf('"', i) + 1;
+      while (j < text.length && text[j] !== '"') j += text[j] === "\\" ? 2 : 1;
+      out += blank(text.slice(i, j + 1));
+      i = j + 1;
+    } else if (text[i] === "'") {
+      // A char, `'x'` or `'\n'`, not a lifetime, `'a`.
+      const m = /^'(?:\\(?:x[0-9a-fA-F]{2}|u\{[0-9a-fA-F]{1,6}\}|.)|[^\\'\n])'/u.exec(text.slice(i));
+      if (m) {
+        out += blank(m[0]);
+        i += m[0].length;
+      } else {
+        out += text[i];
+        i++;
+      }
+    } else {
+      out += text[i];
+      i++;
+    }
+  }
+  return out;
+}
+
+/** Where each inline module's body opens and closes in `code`, `mod tests
+ * { .. }`'s: a `super` there climbs out of it first. */
+function inlineModules(code: string): [number, number][] {
+  const found: [number, number][] = [];
+  const open: { at: number; module: boolean }[] = [];
+  for (const m of code.matchAll(/\bmod\s+\w+\s*\{|\{|\}/g)) {
+    if (m[0] === "}") {
+      const top = open.pop();
+      if (top?.module) found.push([top.at, m.index!]);
+    } else open.push({ at: m.index! + m[0].length - 1, module: m[0] !== "{" });
+  }
+  return found;
+}
+
+type Rewrite = { from: number; to: number; text: string };
+
+/** A use tree's parts: `a::b::{c, d::e}` is `["a", "b"]` and its group. */
+type Tree = { path: string[]; group?: Tree[]; tail?: string };
+
+/** The use tree `text` is, parsed, or nothing where it's of a shape this
+ * doesn't read (it's left as it is then, and said). */
+function parseTree(text: string): Tree | undefined {
+  let at = 0;
+  const space = () => {
+    while (/\s/.test(text[at] ?? "")) at++;
+  };
+  const tree = (): Tree | undefined => {
+    const path: string[] = [];
+    for (;;) {
+      space();
+      if (text[at] === "{") {
+        at++;
+        const group: Tree[] = [];
+        for (;;) {
+          space();
+          if (text[at] === "}") break;
+          const item = tree();
+          if (!item) return undefined;
+          group.push(item);
+          space();
+          if (text[at] === ",") at++;
+          else if (text[at] !== "}") return undefined;
+        }
+        at++;
+        return { path, group };
+      }
+      if (text[at] === "*") {
+        at++;
+        return { path, tail: "*" };
+      }
+      const m = /^(?:r#)?[A-Za-z_]\w*/.exec(text.slice(at));
+      if (!m) return undefined;
+      path.push(m[0]);
+      at += m[0].length;
+      space();
+      if (text.startsWith("::", at)) {
+        at += 2;
+        continue;
+      }
+      const alias = /^as\s+((?:r#)?[A-Za-z_]\w*)/.exec(text.slice(at));
+      if (alias) {
+        at += alias[0].length;
+        return { path, tail: `as ${alias[1]}` };
+      }
+      return { path };
+    }
+  };
+  const parsed = tree();
+  space();
+  return parsed && at === text.length ? parsed : undefined;
+}
+
+function printTree(tree: Tree): string {
+  const path = tree.path.join("::");
+  const joined = (rest: string) => (path ? `${path}::${rest}` : rest);
+  if (tree.group) {
+    if (tree.group.length === 1 && tree.group[0]!.path[0] !== "self") {
+      return joined(printTree(tree.group[0]!));
+    }
+    return joined(`{${tree.group.map(printTree).join(", ")}}`);
+  }
+  if (tree.tail === "*") return joined("*");
+  return tree.tail ? `${path} ${tree.tail}` : path;
+}
+
+/** What `file`'s text becomes, its paths into other crates' modules made
+ * theirs, and what it can't rewrite. */
+export function rustPathsRewritten(file: string, text: string, modulesOf: Map<string, CompilerCrate>, at = root): { text: string; problems: string[] } {
+  const own = crateOf(file, at)!;
+  const ownModule = modulePath(file, at);
+  const code = codeOf(text);
+  const inline = inlineModules(code);
+  const problems: string[] = [];
+  const rewrites: Rewrite[] = [];
+  const line = (at: number) => code.slice(0, at).split("\n").length;
+  // The crate a top-level module of `own`'s root path is of, where it's
+  // another's.
+  const elsewhere = (module: string): CompilerCrate | undefined => {
+    const crate = modulesOf.get(module);
+    return crate && crate !== own ? crate : undefined;
+  };
+  const reachable = (crate: CompilerCrate, at: number, module: string) => {
+    if (crate.dir !== "") return true;
+    problems.push(`${file}:${line(at)} names the binary's \`${module}\` from ${own.package}, which no crate can: none depends on the binary`);
+    return false;
+  };
+  // How many `super`s at `at` reach the crate's root.
+  const toRoot = (at: number) => ownModule.length + inline.filter(([open, close]) => open < at && at < close).length;
+
+  // `use` items whose tree is grouped at the root: split.
+  const handled: [number, number][] = [];
+  for (const m of code.matchAll(/(^|[^\w$])use\s+((?:crate|(?:super\s*::\s*)*super)\s*::\s*\{)/g)) {
+    const treeStart = m.index! + m[1]!.length + m[0].slice(m[1]!.length).indexOf(m[2]!);
+    const end = code.indexOf(";", treeStart);
+    const treeText = code.slice(treeStart, end);
+    const tree = parseTree(treeText);
+    if (!tree) {
+      problems.push(`${file}:${line(treeStart)}: a use tree this can't read, left as it is`);
+      continue;
+    }
+    const supers = tree.path.filter((p) => p === "super").length;
+    if (tree.path[0] !== "crate" && supers !== toRoot(treeStart)) continue;
+    const moved = new Map<CompilerCrate, Tree[]>();
+    const kept: Tree[] = [];
+    for (const item of tree.group!) {
+      const crate = item.path[0] && item.path[0] !== "self" ? elsewhere(item.path[0]) : undefined;
+      if (crate && reachable(crate, treeStart, item.path[0]!)) moved.set(crate, [...(moved.get(crate) ?? []), item]);
+      else kept.push(item);
+    }
+    if (moved.size === 0) continue;
+    if (text.slice(treeStart, end) !== treeText) {
+      problems.push(`${file}:${line(treeStart)}: a comment in a use tree that splits, left as it is`);
+      continue;
+    }
+    // The item: its attributes, visibility and `use`, as written.
+    const useAt = m.index! + m[1]!.length;
+    let itemStart = useAt;
+    const before = code.slice(0, useAt);
+    const vis = /pub(?:\s*\([^)]*\))?\s*$/.exec(before);
+    if (vis) itemStart = vis.index;
+    let attrs = "";
+    for (;;) {
+      const prefix = code.slice(0, itemStart);
+      const attr = /#\[[^\]]*\]\s*$/.exec(prefix);
+      if (!attr) break;
+      attrs = text.slice(attr.index, itemStart) + attrs;
+      itemStart = attr.index;
+    }
+    const head = text.slice(vis ? vis.index : useAt, treeStart);
+    const statements: string[] = [];
+    if (kept.length > 0) statements.push(`${head}${printTree({ path: tree.path, group: kept })};`);
+    for (const [crate, items] of moved) statements.push(`${attrs}${head}${printTree({ path: [crate.name], group: items })};`);
+    const from = vis ? vis.index : useAt;
+    rewrites.push({ from, to: end + 1, text: statements.join("\n") });
+    handled.push([from, end + 1]);
+  }
+  const inHandled = (at: number) => handled.some(([from, to]) => from <= at && at < to);
+
+  // A path through the root, in code: `crate::x` or the `super`s that reach it.
+  for (const m of code.matchAll(/(^|[^\w$])((?:crate|super(?:\s*::\s*super)*)\s*::\s*)([a-z_]\w*)\b/g)) {
+    const at = m.index! + m[1]!.length;
+    if (inHandled(at)) continue;
+    const prefix = m[2]!;
+    if (!prefix.startsWith("crate")) {
+      const supers = prefix.split("super").length - 1;
+      if (supers !== toRoot(at)) continue;
+    }
+    const crate = elsewhere(m[3]!);
+    if (!crate || !reachable(crate, at, m[3]!)) continue;
+    rewrites.push({ from: at, to: at + prefix.length, text: `${crate.name}::` });
+  }
+  // A crate's root names its own modules bare, `decisions::path()`: there,
+  // out of any inline module, and not a later part of a path or of a use
+  // tree's group, `std::{collections::HashMap}`'s.
+  if (ownModule.length === 0) {
+    const uses = [...code.matchAll(/(^|[^\w$])use\s+[^;]*;/g)].map((m) => [m.index! + m[1]!.length, m.index! + m[0].length] as const);
+    for (const m of code.matchAll(/(^|[^\w$:.])([a-z_]\w*)(\s*::)/g)) {
+      const at = m.index! + m[1]!.length;
+      if (inHandled(at) || toRoot(at) !== 0) continue;
+      const inUse = uses.find(([from, to]) => from <= at && at < to);
+      if (inUse && !/^use\s+$/.test(code.slice(inUse[0], at))) continue;
+      const crate = elsewhere(m[2]!);
+      if (!crate || !reachable(crate, at, m[2]!)) continue;
+      rewrites.push({ from: at, to: at, text: `${crate.name}::` });
+    }
+  }
+  if (/\$crate\s*::/.test(code)) {
+    for (const m of code.matchAll(/\$crate\s*::\s*([a-z_]\w*)/g)) {
+      if (elsewhere(m[1]!)) problems.push(`${file}:${line(m.index!)}: \`$crate::${m[1]}\` names a module of another crate: write its crate's path`);
+    }
+  }
+  // In comments: `crate::x`, written as a path is.
+  const commented = codeOf(text, true);
+  for (const m of commented.matchAll(/(^|[^\w$])(crate::)([a-z_]\w*)\b/g)) {
+    const at = m.index! + m[1]!.length;
+    if (code.slice(at, at + 5) === "crate") continue;
+    const crate = elsewhere(m[3]!);
+    if (crate && crate.dir !== "") rewrites.push({ from: at, to: at + m[2]!.length, text: `${crate.name}::` });
+  }
+  rewrites.sort((a, b) => b.from - a.from);
+  let out = text;
+  for (const r of rewrites) out = out.slice(0, r.from) + r.text + out.slice(r.to);
+  return { text: out, problems };
+}
+
+
+/** Each item another crate names that its own crate keeps private, made
+ * `pub`, as rustc says them, until it says none: what the front end uses
+ * of a crate is what the crate makes public, and nothing more (ADR 1181).
+ * rustc's privacy errors, a private item (E0603), method (E0624) or field
+ * (E0616), each point at where the item is defined. */
+export function widened(at = root): string[] {
+  const made: string[] = [];
+  for (let round = 0; round < 20; round++) {
+    const built = Bun.spawnSync(["cargo", "build", "--quiet", "--message-format=json"], { cwd: at, stdout: "pipe", stderr: "pipe" });
+    const sites = new Set<string>();
+    const walk = (message: { code?: { code: string } | null; spans: { file_name: string; line_start: number; label?: string | null }[]; children: { message: string; spans: { file_name: string; line_start: number }[] }[] }) => {
+      if (!["E0603", "E0624", "E0616"].includes(message.code?.code ?? "")) return;
+      for (const span of message.spans) if (span.label && /defined here|private/.test(span.label) && crateOf(span.file_name, at)?.dir) sites.add(`${span.file_name}:${span.line_start}`);
+      for (const child of message.children) {
+        if (!/defined here/.test(child.message)) continue;
+        for (const span of child.spans) if (crateOf(span.file_name, at)?.dir) sites.add(`${span.file_name}:${span.line_start}`);
+      }
+    };
+    for (const line of built.stdout.toString().split("\n")) {
+      if (!line.startsWith("{")) continue;
+      const parsed = JSON.parse(line);
+      if (parsed.reason === "compiler-message") walk(parsed.message);
+    }
+    if (sites.size === 0) return made;
+    let changed = 0;
+    for (const site of sites) {
+      const [file, number] = [site.slice(0, site.lastIndexOf(":")), Number(site.slice(site.lastIndexOf(":") + 1))];
+      const lines = readFileSync(join(at, file), "utf8").split("\n");
+      const line = lines[number - 1]!;
+      const item = /^(\s*)(?:pub(?:\s*\([^)]*\))?\s+)?((?:(?:const|unsafe|async|extern\s+"[^"]*")\s+)*(?:fn|struct|enum|union|const|static|type|trait|mod|use)\b|[a-z_]\w*\s*:)/.exec(line);
+      if (!item) throw new Error(`${site}: rustc says an item here is private, but this line declares none: \`${line.trim()}\``);
+      const next = `${item[1]}pub ${line.slice(item[0].length - item[2]!.length)}`;
+      if (next === line) continue;
+      lines[number - 1] = next;
+      writeFileSync(join(at, file), lines.join("\n"));
+      made.push(site);
+      changed++;
+    }
+    if (changed === 0) throw new Error(`rustc still says items are private: ${[...sites].join(", ")}`);
+  }
+  throw new Error("still widening after 20 rounds");
+}
 
 if (import.meta.main) {
-  const args = process.argv.slice(2);
+  const widen = process.argv.includes("--widen");
+  const args = process.argv.slice(2).filter((arg) => arg !== "--widen");
   if (args[0] === "--check") {
     const named = textFiles().filter((file) => readFileSync(join(root, file), "utf8").includes(args[1]!));
     console.log(named.length === 0 ? `nothing names ${args[1]}` : named.join("\n"));
     process.exit(named.length === 0 ? 0 : 1);
   }
-  if (args.length === 0 || args.length % 2 !== 0) throw new Error("usage: bun scripts/move-paths.ts <from> <to> [<from> <to> ..]");
+  if (args.length % 2 !== 0) throw new Error("usage: bun scripts/move-paths.ts [<from> <to> ..]");
   const pairs: [string, string][] = [];
   for (let i = 0; i < args.length; i += 2) pairs.push([args[i]!, args[i + 1]!]);
   // A moved file's mutation list, moved beside it, as each list is its
   // file's (test/mutations.test.ts); the lists' paths rewritten with the rest.
   for (const [from, to] of [...pairs]) {
-    const lists = from.endsWith("/") ? [join("scripts", "mutations", from.replace(/^src\//, ""))] : [listOf(from)];
+    const lists = from.endsWith("/") ? [join("scripts", "mutations", belowSrc(from))] : [listOf(from)];
     for (const list of lists) {
-      const target = from.endsWith("/") ? join("scripts", "mutations", to.replace(/^src\//, "")) : listOf(to);
+      const target = from.endsWith("/") ? join("scripts", "mutations", belowSrc(to)) : listOf(to);
+      if (target === list) continue;
       if (!existsSync(join(root, list))) continue;
       mkdirSync(dirname(join(root, target)), { recursive: true });
       renameSync(join(root, list), join(root, target));
@@ -77,7 +417,7 @@ if (import.meta.main) {
     }
     // Its directory's lists named by it, `../../mutations` imports among
     // them, rewritten below with the rest.
-    pairs.push([from.endsWith("/") ? join("scripts", "mutations", from.replace(/^src\//, "")) + "/" : listOf(from), from.endsWith("/") ? join("scripts", "mutations", to.replace(/^src\//, "")) + "/" : listOf(to)]);
+    pairs.push([from.endsWith("/") ? join("scripts", "mutations", belowSrc(from)) + "/" : listOf(from), from.endsWith("/") ? join("scripts", "mutations", belowSrc(to)) + "/" : listOf(to)]);
   }
   let changed = 0;
   for (const file of textFiles()) {
@@ -89,4 +429,22 @@ if (import.meta.main) {
     }
   }
   console.log(`rewrote ${changed} files`);
+  // And the Rust paths into a module another crate now has.
+  const modulesOf = new Map<string, CompilerCrate>();
+  for (const crate of compilerCrates()) for (const module of topModules(crate)) modulesOf.set(module, crate);
+  const problems: string[] = [];
+  let paths = 0;
+  for (const file of compilerRustFiles()) {
+    const text = readFileSync(join(root, file), "utf8");
+    const next = rustPathsRewritten(file, text, modulesOf);
+    problems.push(...next.problems);
+    if (next.text !== text) {
+      writeFileSync(join(root, file), next.text);
+      paths++;
+    }
+  }
+  console.log(`rewrote the Rust paths of ${paths} files`);
+  for (const problem of problems) console.error(problem);
+  if (problems.length > 0) process.exit(1);
+  if (widen) console.log(`made pub: ${widened().join(", ") || "nothing"}`);
 }

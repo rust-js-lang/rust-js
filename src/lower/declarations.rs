@@ -6,7 +6,7 @@
 //! to less than Rust holds it to. They're the model of @rust-js/typescript
 //! (ADR 0206), which TypeScript prints (ADR 0207).
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::program::Reexport;

@@ -5,8 +5,8 @@
 //! (#990). Split from type_facts.rs by concept, as a file is at most 1500
 //! lines.
 
-use crate::collections::IndexMap;
 use crate::lower::recognition::TypeFact;
+use rust_js_program::collections::IndexMap;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 

@@ -1,9 +1,9 @@
 //! What dropping takes, crate-wide: the generic parameters given a drop,
 //! and the derives that drop nothing (ADR 0098).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::recognition::{StdItem, is_std_def, known_derive, serde_impl};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty;

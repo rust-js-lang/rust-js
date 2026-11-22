@@ -59,6 +59,7 @@ import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
 import { downloaded } from "./artifacts";
+import { compilerSourceDirs } from "./compiler-crates";
 import { readJobTimes } from "./jobTimes";
 import { type ItemLayer, implBodyAt, inUnitTests, itemLayer, scipIndex, touchedByItem, touchedByNewFile } from "./testMapItems";
 import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
@@ -478,6 +479,9 @@ export function readsOf(file: string, followed = true, seen = new Set<string>())
       there(part === undefined ? folder : join(folder, part));
     }
   }
+  // The compiler's sources, each crate's, where it lists their files
+  // (scripts/compiler-crates.ts), as the architecture's tests do.
+  if (/(?<!function )\bcompilerRustFiles\(/.test(text)) for (const dir of compilerSourceDirs()) reads.add(dir);
   // What each module of the checkout's it imports reads.
   if (followed) for (const [, spec] of text.matchAll(/\b(?:from|import)\s*\(?\s*["'](\.{1,2}\/[^"']+)["']/g)) {
     const base = resolve(dirname(path), spec);
@@ -493,7 +497,8 @@ export function readsOf(file: string, followed = true, seen = new Set<string>())
  * architecture's tests do: such a test can fail on a change it runs no
  * compiled code of, so it runs on every change. */
 export function readsSources(file: string): boolean {
-  return [...readsOf(file)].some((read) => read === "src" || read.startsWith("src/"));
+  const dirs = compilerSourceDirs();
+  return [...readsOf(file)].some((read) => dirs.some((dir) => read === dir || read.startsWith(`${dir}/`) || dir.startsWith(`${read}/`)));
 }
 
 /** What a change of `changes` to the compiler's code runs, by `map`, the

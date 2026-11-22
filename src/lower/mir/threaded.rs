@@ -26,7 +26,7 @@
 //! same drops, and each field read is of the value its variant's last write
 //! gave, as no read of a variant's field is of a value of another variant.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_middle::mir::visit::{MutVisitor, PlaceContext, Visitor};
 use rustc_middle::mir::{

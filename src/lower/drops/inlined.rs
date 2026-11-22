@@ -1,7 +1,7 @@
 //! A `Drop` impl's body where it's dropped (ADRs 0589, 0608).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Item, Pattern, Prop, Stmt, StmtKind};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// Of `items`, a module's, each function `drops` names, a `Drop` impl's
 /// `drop`, which isn't exported and that no other module calls: where each

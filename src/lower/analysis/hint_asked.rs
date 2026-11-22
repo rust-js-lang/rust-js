@@ -7,12 +7,12 @@
 //! that's `back_stepped.rs`' alone, as a form that knows its back needs
 //! one at every level beneath, where a hint asks none (#2209).
 
-use crate::collections::IndexSet;
 use crate::lower::recognition::{
     Recognition, cloned_source, copied_source, counted_source, is_compiled_std_iterator, is_iter_adapter_def,
     stepped_by_source,
 };
 use crate::lower::{Body, fn_def};
+use rust_js_program::collections::IndexSet;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;

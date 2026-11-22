@@ -9,9 +9,9 @@
 //! mutably, disqualifies it: the rule fails closed.
 
 use super::slots::Write;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{Recognition, Std, StdItem, is_rc_clone, is_rc_deref};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_span::def_id::DefId;
 

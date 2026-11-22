@@ -10,9 +10,9 @@
 //! call, captured, lent on or dropped where dropping it may run code; and
 //! where it's set, as it's set then.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{is_pointer_new, is_rc_clone, is_rc_deref, is_std_crate, once_method};
 use crate::lower::std_types::once::OnceOp;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_index::IndexVec;
 use rustc_middle::mir::{
     self, AggregateKind, BasicBlock, Body, Local, Operand, Place, PlaceElem, Rvalue, StatementKind, TerminatorKind,

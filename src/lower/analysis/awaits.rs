@@ -11,7 +11,7 @@
 //! In JS that's one `await x`: the call gives `_y` and goes on to the
 //! `Ready` block. The loop is left as it is: nothing reaches it then.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{

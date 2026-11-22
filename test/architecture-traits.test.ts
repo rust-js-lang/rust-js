@@ -5,13 +5,14 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root, stdDir } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
 const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true })
   .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
-const sources = files("src").filter(path => path.endsWith(".rs"));
+const sources = compilerRustFiles();
 
 // A copied default is put in its impl's terms one way (#804): its own
 // parameters numbered after the impl's (`default_args`), where they're known

@@ -4,10 +4,10 @@
 //! after it needs no `finally`, and an iterator whose closure stage it is
 //! steps without a panic (`steps_may_panic`, #701).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::bindings::is_binding;
 use crate::lower::recognition::{MethodOf, Recognition, StdItem, StdPath, is_std_crate, std_inherent_method};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};

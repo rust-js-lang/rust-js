@@ -6,7 +6,7 @@
 //! 0561): whether rust-js could lower it from the MIR the
 //! toolchain ships, or it reaches what JS hasn't, addressable memory.
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use std::fmt::Write as _;
 
 use rustc_middle::mir::{self, Operand, RuntimeChecks, Rvalue, StatementKind, TerminatorKind};

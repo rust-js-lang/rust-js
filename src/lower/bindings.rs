@@ -1,8 +1,8 @@
 //! Decode the binding language independently of call lowering.
 
 use super::declarations::{Written, written_types};
-use crate::collections::{IndexMap, IndexSet};
 use crate::js;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_ast::LitKind;
 use rustc_hir::ExprKind;
 use rustc_hir::attrs::lang_items::LangItem;

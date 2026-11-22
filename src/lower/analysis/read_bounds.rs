@@ -20,8 +20,8 @@
 //! of `P`'s bounds, as an impl of it may ask any. A body with no MIR reads
 //! every bound of its function.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::{Body, FnInfo};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, Operand, Rvalue, visit::Visitor};
 use rustc_middle::ty::{self, TyCtxt};

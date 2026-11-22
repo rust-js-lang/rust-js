@@ -5,12 +5,12 @@
 
 mod called;
 
-use crate::collections::IndexSet;
 use crate::lower::generic_facts::GivenADrop;
 use crate::lower::passed_on::Taker;
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{PureStd, any_trait, given_back, is_fn_dyn, pure_std, rc_pointee};
 use crate::lower::{Body, bindings};
+use rust_js_program::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def_id::DefId;
 use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind, Thir};
@@ -882,7 +882,7 @@ fn called_once_by_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
 /// besides, through itself, a reference or a clone, it isn't, as a drop at
 /// its body's end would drop it at its first call (#995, #2031).
 fn moved_once(thir: &Thir<'_>) -> Vec<DefId> {
-    use crate::collections::IndexMap;
+    use rust_js_program::collections::IndexMap;
     use rustc_middle::thir::{LocalVarId, PatKind, StmtKind};
     let through = |mut e: ExprId| {
         while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {

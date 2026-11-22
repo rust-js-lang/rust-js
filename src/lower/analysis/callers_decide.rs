@@ -18,11 +18,11 @@
 //! Each where stepping runs code: a closure or a function, or items with a
 //! destructor.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{
     Recognition, StdItem, TypeFact, fact_trait, std_item, trait_method, zip_folds_to_the_shorter, zipped_sources,
 };
 use crate::lower::{Body, fn_def};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 

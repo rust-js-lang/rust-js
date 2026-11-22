@@ -3,9 +3,9 @@
 //! too, as a person writes them, and oxfmt lays them out where they are (ADR 0218). The printer
 //! only lays out the result.
 
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 pub use passes::{Fired, PASSES, Pass, Passes};
+use rust_js_program::collections::IndexSet;
 
 mod assigned_breaks;
 mod catches;

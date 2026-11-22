@@ -9,10 +9,10 @@
 //! here alone.
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::iterator_type_of;
 use crate::lower::recognition::{Recognition, TypeFact, is_trusted_len};
 use crate::lower::temporary_names::Role;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{Operand, TerminatorKind};
 use rustc_middle::ty::TypeVisitableExt;
 
@@ -50,7 +50,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             (true, false) => "collect-unseen",
             (false, false) => "extend-unseen",
         };
-        crate::decisions::record("hint-seen", answer);
+        rust_js_program::decisions::record("hint-seen", answer);
         seen
     }
 
@@ -1093,7 +1093,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .recognition()
             .extend_room(into, iterable)
             .is_some_and(|(iter_ty, _)| self.recognition().hint_room_seen(iter_ty));
-        crate::decisions::record("extend-reserves", if reserves { "reserves" } else { "none" });
+        rust_js_program::decisions::record("extend-reserves", if reserves { "reserves" } else { "none" });
         reserves
     }
 

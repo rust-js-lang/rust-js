@@ -1,6 +1,6 @@
 //! Stability of expression reads across calls, consumed by tidy movement.
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
+use rust_js_program::collections::IndexSet;
 
 /// Whether `e` is a read of plain Rust data, which nothing changes: a field
 /// however deep of a variable of plain data, or one of a plain variable's

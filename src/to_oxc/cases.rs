@@ -3,7 +3,7 @@
 //! before the `match` arm it's of, before its labels (ADR 0905, amended).
 
 use super::*;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 /// What a case that falls through to the next says, before it, as React
 /// writes it, and ESLint's `no-fallthrough` asks (ADR 0905).

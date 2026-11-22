@@ -165,7 +165,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MutRefForm::GivenAsItIs => "given-as-it-is",
             MutRefForm::Itself => "itself",
         };
-        crate::decisions::record_typed("mut-ref-form", answer, crate::lower::recognition::kind_of(self.tcx, ty));
+        rust_js_program::decisions::record_typed(
+            "mut-ref-form",
+            answer,
+            crate::lower::recognition::kind_of(self.tcx, ty),
+        );
         form
     }
 

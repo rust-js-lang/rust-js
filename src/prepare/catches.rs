@@ -2,7 +2,7 @@
 //! JS call's (ADRs 0035, 0637) or `catch_unwind`'s (ADR 0660), and what
 //! the `catch` reads of what was thrown.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use crate::js::{self, Expr, ExprKind, Name, Pattern, Stmt, StmtKind};
 

@@ -13,8 +13,8 @@
 //! table of tidy's own (#1681 change 3).
 
 use super::reclaim::names_mut;
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Name, scopes};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// `module`'s temporaries spelled, each item's in the order the program
 /// first reads them, as tidy named them: one made in a `try` before a

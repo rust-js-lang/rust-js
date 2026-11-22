@@ -1,8 +1,8 @@
 //! Function setup, captures and nested-body entry/exit. Context changes live here.
 
 use super::{Body, Enclosing, EnclosingKind, FnCx, ItemScope, Nested, R};
-use crate::collections::IndexSet;
 use crate::js::{Stmt, StmtKind};
+use rust_js_program::collections::IndexSet;
 
 use rustc_middle::thir::{ExprId, ExprKind, Pat, PatKind};
 use rustc_middle::ty;

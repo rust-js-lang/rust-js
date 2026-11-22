@@ -3,8 +3,8 @@
 //! function: the variable by the function's name, or the value taken apart
 //! where it's made (ADR 0610, amended).
 
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
+use rust_js_program::collections::IndexSet;
 
 /// `function getTime(n) { return GET_TIME(n); }`, a function that only
 /// calls a module variable's function with its parameters, a thread-local's

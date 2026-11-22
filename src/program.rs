@@ -1,8 +1,8 @@
 //! Owned compiler output. No rustc or printer types cross this boundary.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::runtime::Helper;
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 use std::path::{Path, PathBuf};
 
@@ -203,7 +203,7 @@ pub struct Sources {
     pub text: String,
     pub files: Vec<Source>,
     /// Where each line of `text` starts, found once (`line_of`).
-    pub lines: std::sync::OnceLock<crate::lines::LineStarts>,
+    pub lines: std::sync::OnceLock<rust_js_program::lines::LineStarts>,
 }
 
 impl Sources {
@@ -214,8 +214,9 @@ impl Sources {
     }
 
     /// Where each line of `text` starts, found once.
-    pub fn line_starts(&self) -> &crate::lines::LineStarts {
-        self.lines.get_or_init(|| crate::lines::LineStarts::of(&self.text))
+    pub fn line_starts(&self) -> &rust_js_program::lines::LineStarts {
+        self.lines
+            .get_or_init(|| rust_js_program::lines::LineStarts::of(&self.text))
     }
 
     /// Which of `files` the arena's `line` is in: the last that starts at or

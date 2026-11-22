@@ -29,8 +29,8 @@ mod std_forms;
 mod value;
 
 pub(super) use super::recognition::Json;
-use crate::collections::IndexMap;
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::collections::IndexMap;
 
 use super::recognition::{SkipPredicate, StdItem, std_item};
 use super::representation::{Num, variant_field};

@@ -2,8 +2,8 @@
 //! leaves in one order (#936).
 
 use super::{strip, tail};
-use crate::collections::IndexMap;
 use crate::lower::fn_def;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind, Thir};
 use rustc_middle::ty::{self, TyCtxt};

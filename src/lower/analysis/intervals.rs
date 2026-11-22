@@ -13,13 +13,13 @@
 //! next constant the body compares an integer with, or past them all to its
 //! type's.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{is_rest_value, reads_string_length};
 use crate::lower::recognition::{
     RangeStep, SliceLength, call_indexes, counts_utf16_units, integer_from_bool, integer_min_max, local_key_with,
     option_copied, range_index, range_index_bounds, range_of_integers, range_step, rc_deref, ref_deref, refcell_borrow,
     slice_get, slice_length, text_length,
 };
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
 use rustc_middle::mir::{

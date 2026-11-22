@@ -190,7 +190,7 @@ pub(crate) const CATALOGUE: &[Decision] = &[
 /// type parameter or a projection; a reference or a pointer; anything else.
 /// The type's owner, `lower`, says which a type is (`lower::kind_of`).
 #[derive(Clone, Copy)]
-pub(crate) enum Kind {
+pub enum Kind {
     Number,
     Array,
     Tuple,
@@ -225,13 +225,13 @@ thread_local! {
 }
 
 /// The file the counts go to, where asked.
-pub(crate) fn path() -> Option<&'static std::ffi::OsStr> {
+pub fn path() -> Option<&'static std::ffi::OsStr> {
     PATH.as_deref()
 }
 
 /// `decision` gave `answer`, counted where decisions are asked.
 #[inline]
-pub(crate) fn record(decision: &'static str, answer: &'static str) {
+pub fn record(decision: &'static str, answer: &'static str) {
     if PATH.is_some() {
         count(decision, answer, "-");
     }
@@ -239,14 +239,14 @@ pub(crate) fn record(decision: &'static str, answer: &'static str) {
 
 /// `decision` gave `answer` of a type of `kind`, counted by it.
 #[inline]
-pub(crate) fn record_typed(decision: &'static str, answer: &'static str, kind: Kind) {
+pub fn record_typed(decision: &'static str, answer: &'static str, kind: Kind) {
     if PATH.is_some() {
         count(decision, answer, KINDS[kind as usize]);
     }
 }
 
 /// `run`, its decisions of a body, the crate's own or another crate's.
-pub(crate) fn in_body<T>(own: bool, run: impl FnOnce() -> T) -> T {
+pub fn in_body<T>(own: bool, run: impl FnOnce() -> T) -> T {
     let outer = BODY.with(|body| body.replace(if own { "own" } else { "other" }));
     let done = run();
     BODY.with(|body| body.set(outer));
@@ -260,7 +260,7 @@ fn count(decision: &'static str, answer: &'static str, kind: &'static str) {
         .any(|d| d.name == decision && d.answers.contains(&answer) && (kind == "-") != d.typed);
     assert!(
         known,
-        "rust-js: decision `{decision}`'s answer `{answer}` of kind `{kind}` isn't in src/decisions.rs' catalogue"
+        "rust-js: decision `{decision}`'s answer `{answer}` of kind `{kind}` isn't in crates/rust-js-program/src/decisions.rs' catalogue"
     );
     let body = BODY.with(|body| body.get());
     let mut given = GIVEN.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -276,7 +276,7 @@ fn count(decision: &'static str, answer: &'static str, kind: &'static str) {
 /// build is `std` of `--std-iterators` or `plain`, its shape `library` of
 /// `--library` or `program`, by its arguments. The driver appends them
 /// (`main.rs`), as only it writes files.
-pub(crate) fn counts(whole: bool) -> Option<(&'static std::ffi::OsStr, String)> {
+pub fn counts(whole: bool) -> Option<(&'static std::ffi::OsStr, String)> {
     let path = PATH.as_deref()?;
     let given = GIVEN.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let args: Vec<String> = std::env::args().collect();

@@ -5,13 +5,13 @@
 use super::std_types::cow::CowOp;
 use super::std_types::map::{MapOp, Part};
 use super::{FnCx, R, Std};
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::lower::MutRefForm;
 use crate::lower::copies::InPlaceWriter;
 use crate::lower::generic_facts::{Crossing, Form};
 use crate::lower::recognition::{StdPath, is_std_crate, is_std_path};
 use crate::lower::temporary_names::Role;
+use rust_js_program::collections::IndexSet;
 
 /// The forms generic code gives a function it calls as an `F`, of each
 /// parameter where they differ from its callers', and gives back

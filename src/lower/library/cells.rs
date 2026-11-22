@@ -3,8 +3,8 @@
 //! consumer may lend (#1032), and each library's cells.
 
 use super::{Foreign, key};
-use crate::collections::IndexMap;
 use crate::library::{FieldFact, RefCellFacts};
+use rust_js_program::collections::IndexMap;
 use rustc_span::def_id::DefId;
 
 impl Foreign<'_, '_> {

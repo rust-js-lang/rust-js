@@ -24,7 +24,7 @@ program of any net gives is untested, however many programs run.
 
 **Each decision's owner counts its answers where it gives them, and
 `bun run decision-coverage` runs the nets and reports which answers no
-program reaches** (`src/decisions.rs`, `scripts/decision-coverage.ts`).
+program reaches** (`crates/rust-js-program/src/decisions.rs`, `scripts/decision-coverage.ts`).
 
 - **One catalogue.** `decisions.rs`' `CATALOGUE` lists each decision, its
   owner and every answer it gives. A record of a name or answer it doesn't

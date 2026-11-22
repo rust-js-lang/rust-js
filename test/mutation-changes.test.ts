@@ -251,6 +251,21 @@ test("a build of many runs as each mutation's own build where it's chosen, and a
   expect(alone instanceof Map && alone.get("src/main.rs")).toBe(program.replace("total += value;", "total += value + 1;"));
 });
 
+// A site's `crate::__mutant_is` is its own crate's: the chooser is written
+// at the end of the root of each of the compiler's crates a site is in
+// (ADR 1181), so a crate's site doesn't name the binary's.
+test("a build of many chooses in each crate a site is in", () => {
+  const lib = "crates/rust-js-program/src/lib.rs";
+  const moved = (mutation: Sited["mutation"]) => ({ ...mutation, file: "crates/rust-js-program/src/sum.rs" });
+  const read = (file: string) => (file === lib ? "pub mod sum;\n" : program);
+  const sited: Sited[] = [moved(sumOff), moved(sumFirst)].map((mutation) => ({ mutation, site: site(mutation, read) }));
+  const files = schema(sited, read);
+  if (!(files instanceof Map)) throw new Error(files.problem);
+  expect([...files.keys()].sort()).toEqual([lib, "crates/rust-js-program/src/sum.rs"]);
+  expect(files.get(lib)).toStartWith("pub mod sum;\n");
+  expect(files.get(lib)).toContain("pub(crate) fn __mutant_is(name: &str) -> bool {");
+});
+
 // The controls (ADR 1031): each set a mutation names answered from one run
 // of each of its files, every test's result by name in its JUnit report.
 test("a mutation's set of tests is its files and its pattern", () => {

@@ -10,7 +10,7 @@
 //! associated type, what its projection is: one attribute, of what it's
 //! on. An associated type without one is `any`, as before.
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::DefId;

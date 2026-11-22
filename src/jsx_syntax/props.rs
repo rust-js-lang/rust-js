@@ -10,7 +10,7 @@ use rustc_span::Span;
 
 use super::parser::{companion_item, props_path};
 use super::template;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 /// A props struct's companion (ADR 0213): a macro of its name beside it,
 /// which builds it from what JSX gives, `S!(@given [r#href: "/a",] [])`,
@@ -336,7 +336,7 @@ fn as_visible(sess: &Session, field: &ast::Visibility, of: &ast::Visibility) -> 
 pub(super) struct Scope {
     pub(super) local: IndexSet<String>,
     modules: IndexSet<String>,
-    imports: crate::collections::IndexMap<String, String>,
+    imports: rust_js_program::collections::IndexMap<String, String>,
     externs: IndexSet<String>,
 }
 
@@ -348,7 +348,7 @@ impl Scope {
                 .filter_map(|item| item.kind.ident().map(|ident| ident.to_string()))
                 .collect()
         };
-        let mut imports = crate::collections::IndexMap::default();
+        let mut imports = rust_js_program::collections::IndexMap::default();
         for item in items {
             if let ItemKind::Use(tree) = &item.kind {
                 used(tree, &[], &mut imports);
@@ -398,7 +398,7 @@ impl Scope {
 /// Each name a `use` tree gives, its last name or its `as`, and the path it
 /// names: `use std::ops::Range;` gives `Range`, `std::ops::Range`. A glob
 /// gives none.
-fn used(tree: &ast::UseTree, prefix: &[String], into: &mut crate::collections::IndexMap<String, String>) {
+fn used(tree: &ast::UseTree, prefix: &[String], into: &mut rust_js_program::collections::IndexMap<String, String>) {
     let mut path: Vec<String> = prefix.to_vec();
     path.extend(tree.prefix.segments.iter().map(|segment| segment.ident.to_string()));
     match &tree.kind {

@@ -3,7 +3,7 @@
 //! `classes.rs`'s namespaces.
 
 use super::{Member, is_namespace, member};
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 

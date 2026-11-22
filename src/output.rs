@@ -1,6 +1,6 @@
 //! Resolve and validate all artifacts before touching output files.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 

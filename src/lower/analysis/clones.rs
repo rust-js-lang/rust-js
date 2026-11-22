@@ -5,8 +5,8 @@
 //! `Clone` impl's bounds, as rustc proves them: `Map<I, F>: Clone` clones
 //! its `I` and its `F`.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def_id::DefId;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::traits::ImplSource;

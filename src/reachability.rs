@@ -1,7 +1,7 @@
 //! Dependency traversal over opaque item identities. Callers choose roots and
 //! retention policy; traversal knows nothing about Rust types or emitted code.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use std::hash::Hash;
 
 /// Include each root and everything it transitively depends on. Duplicate edges,
@@ -29,7 +29,7 @@ pub(crate) fn reachable<T: Copy + Eq + Hash>(
 #[cfg(test)]
 mod tests {
     use super::reachable;
-    use crate::collections::IndexSet;
+    use rust_js_program::collections::IndexSet;
 
     #[test]
     fn cycles_duplicates_and_disconnected_components() {

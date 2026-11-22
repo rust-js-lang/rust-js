@@ -1,8 +1,8 @@
 //! What one lowering pass of the crate gathers of each function it keeps,
 //! grouped for output.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::js;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_span::def_id::{DefId, LocalModId};
 
 /// Retained functions and their dependencies, grouped for output.

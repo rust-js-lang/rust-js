@@ -28,8 +28,8 @@
 //! where it holds, which count nothing (`cut`).
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::combinators::Comb;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_span::def_id::DefId;
 
 /// A string, by where its value was made: a parameter's, an assignment's

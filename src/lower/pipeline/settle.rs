@@ -6,7 +6,7 @@
 //! round that asks for nothing more ends them. Their number is bounded:
 //! a protocol that never settles is rust-js's own bug, refused naming it.
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 
 /// What may ask for another round once the bodies queued are lowered.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]

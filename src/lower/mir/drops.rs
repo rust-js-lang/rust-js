@@ -3,8 +3,8 @@
 //! before each, whether what it drops is there, isn't, or may be, which a
 //! flag of its own then says as the body runs, set where rustc sets it.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::temporary_names::Role;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_index::IndexVec;
 use rustc_middle::mir::{

@@ -7,9 +7,9 @@
 //! runs it (`called_once`).
 
 use super::{awaits, revealed};
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings;
 use crate::lower::recognition::{PureStd, is_unreachable_hint, pure_std};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_index::IndexVec;
 use rustc_middle::mir::visit::{MutatingUseContext, PlaceContext, Visitor};

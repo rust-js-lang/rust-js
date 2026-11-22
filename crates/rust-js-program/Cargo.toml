@@ -1,0 +1,12 @@
+# The compiler's owned output (ADR 1181): the program rust-js writes, its
+# names, links and runtime, held in data of its own, with no rustc in it.
+# The front end builds it; nothing here knows the front end or the printer.
+[package]
+name = "rust-js-program"
+version = "0.0.4"
+edition = "2024"
+publish = false
+
+[dependencies]
+indexmap.workspace = true
+rustc-hash.workspace = true

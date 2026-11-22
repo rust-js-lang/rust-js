@@ -2,7 +2,7 @@
 //! update's base, and THIR's call where MIR's is.
 
 use super::*;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals each struct JSX gives a component as its props is made in,

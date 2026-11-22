@@ -6,7 +6,7 @@
 //! the same bytes, as Rust's does; compared with any other, or kept past
 //! what the function sees, it would show the copy's place: refused.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{self, Local, Operand, PlaceElem, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::ty;

@@ -7,7 +7,7 @@
 //! that drops `x` first, `drop(x); return v;`, a way out of the `try`,
 //! whose `finally` drops it (ADR 0693).
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 

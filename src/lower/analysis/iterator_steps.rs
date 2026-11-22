@@ -3,12 +3,12 @@
 //! `ExactSizeIterator`'s (ADR 0487), each function steps by each: it's given
 //! a dictionary only then, as a parameter nothing steps by it needs none.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::iterators::{given_as_it_is, given_by_its_trait};
 use crate::lower::recognition::{
     StdItem, is_extension_entry, is_iterator_extension, is_std_crate, is_std_def, std_item, trait_method,
 };
 use crate::lower::{Body, FnInfo, fn_def};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};

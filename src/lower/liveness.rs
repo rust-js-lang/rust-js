@@ -15,7 +15,7 @@
 
 use std::sync::OnceLock;
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_hir as hir;
 use rustc_hir::def::Res;

@@ -1,4 +1,4 @@
-// Decision coverage's catalogue (src/decisions.rs) is the one list of the
+// Decision coverage's catalogue (crates/rust-js-program/src/decisions.rs) is the one list of the
 // decisions counted and their answers: each is recorded by the owner it
 // names, and each record names a decision and answers of it, so no count
 // is of a name the report doesn't know, and no catalogued answer is one no
@@ -11,7 +11,7 @@ import { underLoad } from "../scripts/timing";
 import { compiler, fixture, root, run } from "./support";
 
 const catalogue = () => {
-  const text = readFileSync(join(root, "src/decisions.rs"), "utf8");
+  const text = readFileSync(join(root, "crates/rust-js-program/src/decisions.rs"), "utf8");
   const entries = [...text.matchAll(/name: "([^"]+)",\s*owner: "([^" ]+) [^"]*",\s*answers: &\[([^\]]*)\],\s*typed: (true|false)/g)];
   return entries.map(([, name, file, answers, typed]) => ({
     name,

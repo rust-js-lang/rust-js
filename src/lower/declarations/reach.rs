@@ -3,7 +3,7 @@
 //! hold a value of and give back (`js_holds`). Beside what the
 //! declarations declare, whose `.d.ts` is what a JS caller can name.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;

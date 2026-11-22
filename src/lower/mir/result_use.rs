@@ -95,7 +95,7 @@ pub(super) fn thrown_where_written<'tcx>(
     at: mir::BasicBlock,
     drop_may_panic: &dyn Fn(ty::Ty<'tcx>) -> bool,
 ) -> bool {
-    let mut seen = crate::collections::IndexSet::default();
+    let mut seen = rust_js_program::collections::IndexSet::default();
     let mut blocks = vec![at];
     while let Some(block) = blocks.pop() {
         if !seen.insert(block) {

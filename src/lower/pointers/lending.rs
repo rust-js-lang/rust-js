@@ -3,8 +3,8 @@
 //! raw pointer may leave the call with (ADR 1114).
 
 use super::Pointed;
-use crate::collections::IndexMap;
 use crate::lower::FnCx;
+use rust_js_program::collections::IndexMap;
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty;
 

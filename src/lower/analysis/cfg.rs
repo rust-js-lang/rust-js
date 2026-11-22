@@ -3,7 +3,7 @@
 //! unwinds as a JS exception does, so cleanup blocks and unwind edges are
 //! left out, and so are the edges rustc adds for borrowck alone.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{BasicBlock, Body, TerminatorKind};
 
 pub(in crate::lower) struct Graph {

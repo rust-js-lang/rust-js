@@ -6,9 +6,9 @@
 //! use`s a module's file has is `analysis::is_reexport`'s.
 
 use super::FnInfo;
-use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::program::Reexport;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_middle::ty::TyCtxt;

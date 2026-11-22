@@ -7,13 +7,14 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
 const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true })
   .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
-const sources = files("src").filter(path => path.endsWith(".rs"));
+const sources = compilerRustFiles();
 
 // The compiler's maps and sets are `collections`' (ADR 1098, #866): each
 // walked in the order its entries were put in, never a hasher's. A std
@@ -31,7 +32,7 @@ test("the compiler's maps and sets are walked in an order the program decides", 
       .join("\n");
   const std = /\b(?:collections::(?:\{[^}]*\b)?Hash(?:Map|Set)\b|hash_(?:map|set)::|hash::RandomState\b|(?<![:\w])RandomState\b(?!\s*[,}]))|(?<!::)\bHash(?:Map|Set)\s*(?:<|::)/;
   expect(sources.filter((file) => std.test(code(file)))).toEqual([]);
-  expect(read("src/collections.rs")).toContain("pub type IndexMap<K, V> = indexmap::IndexMap<K, V, rustc_hash::FxBuildHasher>;");
+  expect(read("crates/rust-js-program/src/collections.rs")).toContain("pub type IndexMap<K, V> = indexmap::IndexMap<K, V, rustc_hash::FxBuildHasher>;");
 });
 
 // A B-tree's `ofSorted(entries)` keeps its entries in the order given,

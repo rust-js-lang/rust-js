@@ -5,7 +5,7 @@
 //! whether each read resolves (ADR 1143), and `alpha_eq` whether two trees
 //! are the same but for what their declarations are named.
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 
 use crate::js::{self, Expr, ExprKind, Function, JsxTag, Name, Pattern, Prop, Stmt, StmtKind};
 
@@ -352,7 +352,7 @@ pub(crate) fn locals_apart_from_module_reads(top: &[String], items: &mut [js::It
     if taking.is_empty() {
         return;
     }
-    let mut taken: crate::collections::IndexSet<String> = tree.names().map(str::to_owned).collect();
+    let mut taken: rust_js_program::collections::IndexSet<String> = tree.names().map(str::to_owned).collect();
     for local in taking {
         let to = crate::names::fresh_in(&mut taken, local.word());
         js::respelled(items, &local, &to);
@@ -371,14 +371,14 @@ pub(crate) fn packaged(packages: &[js::Package]) -> impl Iterator<Item = &String
 /// Each word `stmts` declare or read, their closures' and functions'
 /// too: the spelling question JS asks where a name is spelled into them, a
 /// word none of these may be, as JS would read it as one of them.
-pub(crate) fn spelled(stmts: &[Stmt]) -> crate::collections::IndexSet<String> {
+pub(crate) fn spelled(stmts: &[Stmt]) -> rust_js_program::collections::IndexSet<String> {
     Tree::of_body(stmts).names().map(str::to_owned).collect()
 }
 
 /// Each word `stmts` declare, their closures' and functions' too: the
 /// spelling question JS asks of a name spelled as one of them, which a
 /// reader, and JS inside that scope, takes for the declared one.
-pub(crate) fn declared_spelled(stmts: &[Stmt]) -> crate::collections::IndexSet<String> {
+pub(crate) fn declared_spelled(stmts: &[Stmt]) -> rust_js_program::collections::IndexSet<String> {
     Tree::of_body(stmts).declaring.keys().cloned().collect()
 }
 

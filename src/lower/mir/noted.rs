@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`in_place_sources`, #1259).
     pub(in crate::lower) fn note_in_place_sources(
         &mut self,
-        names: crate::collections::IndexMap<rustc_span::Span, js::Name>,
+        names: rust_js_program::collections::IndexMap<rustc_span::Span, js::Name>,
     ) {
         self.locals.mir.in_place_sources.extend(names);
     }

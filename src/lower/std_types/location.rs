@@ -4,12 +4,12 @@
 //! `location`, before its evidence; `Location::caller()` is that, in its own
 //! body, or where it's written anywhere else, a closure in it too.
 
-use crate::collections::IndexSet;
 use crate::js::{Expr, ExprKind, Prop};
 use crate::lower::calls::Call;
 use crate::lower::display::join;
 use crate::lower::recognition::{MethodOf, Std, StdPath, std_inherent_method};
 use crate::lower::{FnCx, R};
+use rust_js_program::collections::IndexSet;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 use rustc_span::{RemapPathScopeComponents, Span};

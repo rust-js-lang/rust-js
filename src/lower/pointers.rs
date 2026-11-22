@@ -8,8 +8,8 @@
 //! A pointer to a JS object, `ptr::eq`'s, is the object (ADR 0285).
 //! A `NonNull<T>` is its pointer, never `null`.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::temporary_names::Role;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;

@@ -4,7 +4,6 @@
 //! picks (ADR 0471), which a caller's type answers.
 
 use super::iterator_steps::{body_aggregates, body_fn_defs};
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{
     StdItem, TypeFact, bound_by_any, cached_key_pairs, debug_named, fact_specialization, is_unknown_where,
     map_of_param, phantom_named, pointer_target, points_at_dyn_any, points_at_dyn_debug, stable_sort_items, std_item,
@@ -12,6 +11,7 @@ use crate::lower::recognition::{
 };
 use crate::lower::traits::{BuiltSlot, BuiltSlots, Given, bounds, drop_items, evidence_impl, slot_index as slot_of};
 use crate::lower::{Body, FnInfo, fn_def};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;

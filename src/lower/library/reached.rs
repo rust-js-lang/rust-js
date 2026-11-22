@@ -4,7 +4,7 @@
 //! counts them (ADRs 0844, 0852).
 
 use super::{Foreign, Reached, library_key};
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> Foreign<'a, 'tcx> {

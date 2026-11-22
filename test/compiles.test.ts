@@ -14,6 +14,7 @@ import { floorBytes } from "./bounded";
 import { capBytes, compileCache, currentBuild, keptCompile, parseRecord, prune, unread } from "./compiles";
 import { target } from "./packages-of";
 import { buildCompiler, compiler, fixture, root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -374,11 +375,9 @@ test("a compile being built counts in the store's size till a prune an hour on r
 });
 
 test("what the key leaves out of the environment, the compiler never reads", () => {
-  const sources = (dir: string): string[] =>
-    readdirSync(dir, { recursive: true, withFileTypes: true })
-      .filter((entry) => entry.isFile() && entry.name.endsWith(".rs"))
-      .map((entry) => readFileSync(join(entry.parentPath, entry.name), "utf8"));
-  const text = sources(join(root, "src")).join("\n");
+  const text = compilerRustFiles()
+    .map((file) => readFileSync(join(root, file), "utf8"))
+    .join("\n");
   // `_`, the shell's last command, is no name a source would spell.
   expect(unread.filter((name) => name !== "_" && text.includes(`"${name}"`))).toEqual([]);
 });

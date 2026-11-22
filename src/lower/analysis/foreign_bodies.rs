@@ -3,7 +3,7 @@
 //! consumer compiles itself (ADR 0914), its impls' constants too (ADR
 //! 0176, amended).
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;

@@ -5,7 +5,7 @@
 //! keeps no `Vec`'s capacity, which the crate reads (#1180's (5)).
 
 use super::{Foreign, key};
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_hir::def::DefKind;
 use rustc_span::def_id::DefId;
 

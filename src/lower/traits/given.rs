@@ -427,7 +427,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Iterator<Item = T>`, the impl's `T` (#2012).
     pub(in crate::lower) fn given_type_fact(&self, index: u32, fact: TypeFact) -> Option<Expr> {
         let given = self.param_type(index).and_then(|param| self.given_fact_of(param, fact));
-        crate::decisions::record("type-fact-given", if given.is_some() { "given" } else { "none" });
+        rust_js_program::decisions::record("type-fact-given", if given.is_some() { "given" } else { "none" });
         given
     }
 

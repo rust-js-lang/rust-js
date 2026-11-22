@@ -5,6 +5,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
@@ -72,7 +73,7 @@ test("what may look like None is may_look_like_none's alone", () => {
 // `Known::Proved`/`ProvedDefined`, which copies carried past the test and
 // tidy had to forget as it began (#1942); no such fact is made again.
 test("what a test proved of a read is presence's, asked where it's used, never carried on its JS", () => {
-  const sources = files("src").filter((file) => file.endsWith(".rs"));
+  const sources = compilerRustFiles();
   const lines = (pattern: RegExp) => sources.flatMap((file) =>
     read(file).split("\n").filter((line) => !/^\s*\/\//.test(line) && pattern.test(line)).map(() => file));
   expect(lines(/Known::Proved|\.proved\(\)|\.proved_defined\(\)|forget_proved/)).toEqual([]);
@@ -98,7 +99,7 @@ test("tidy decides no Option is there from a test of it", () => {
       .filter((line) => !/^\s*\/\//.test(line) && /\bfn (?:present_in|nulled_as_they_are|shown_present|shown_defined|unnulled)\b|implies\(&known, &Expr::bin\(Op::LooseNe/.test(line))
       .map((line) => `${file}: ${line.trim()}`));
   expect(found).toEqual([]);
-  expect(read("src/decisions.rs")).not.toMatch(/name: "tidy-(?:present-in|nulled-as-they-are)"/);
+  expect(read("crates/rust-js-program/src/decisions.rs")).not.toMatch(/name: "tidy-(?:present-in|nulled-as-they-are)"/);
 });
 
 // What an `Option`'s `None` can be is MIR's answer (`NoneForms::place_none`,
@@ -112,7 +113,7 @@ test("no fact a JS node carries says what an Option's None is", () => {
   expect(known).not.toMatch(/^\s*None(?:Null|Undefined),/m);
   const facts = read("src/js.rs");
   expect(facts).not.toMatch(/\bfn (?:of_presence|only_none|same_none)\(/);
-  const named = files("src").filter((file) => file.endsWith(".rs") && /\bKnown::None(?:Null|Undefined)\b/.test(read(file)));
+  const named = compilerRustFiles().filter((file) => file.endsWith(".rs") && /\bKnown::None(?:Null|Undefined)\b/.test(read(file)));
   expect(named).toEqual([]);
 });
 
@@ -126,7 +127,7 @@ test("no fact a JS node carries says what an Option's None is", () => {
 // `Undefined::ByFacts`, are gone (S4c): none comes back, nor a writer of a
 // mark or an asker of the answer.
 test("no mark of presence, nor an answer that asks marks", () => {
-  const named = files("src").filter((file) => file.endsWith(".rs"))
+  const named = compilerRustFiles()
     .filter((file) => /\bKnown::(?:Present|Defined)\b|\bUndefined::ByFacts\b|\.present\(\)|\.defined\(\)|\bwith_none\(/.test(read(file)));
   expect(named).toEqual([]);
 });

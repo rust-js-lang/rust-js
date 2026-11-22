@@ -2,7 +2,7 @@
 //! regex and a template's raw text.
 
 use super::*;
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 
 /// The value an arrow's body only returns, `() => x`'s `x`: printed as
 /// its body, `=>` its value.

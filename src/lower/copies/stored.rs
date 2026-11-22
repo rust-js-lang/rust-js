@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A copy of what a library stores, each part that may be an object too.
     pub(in crate::lower) fn copy_stored(&self, place: js::Expr, ty: Ty<'tcx>) -> js::Expr {
-        crate::decisions::record_typed(
+        rust_js_program::decisions::record_typed(
             "copy-if-needed",
             "stored",
             crate::lower::recognition::kind_of(self.tcx, ty),

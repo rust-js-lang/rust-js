@@ -17,27 +17,19 @@ import { installPackages } from "./packages-of";
 import { node } from "./programs";
 import { limitations } from "./limitations-of";
 import { fixture, root, run } from "./support";
+import { compilerRustFiles, isCompilerSource } from "../scripts/compiler-crates";
 
 // What the crate includes from beyond `src/`, `include_str!("../../../test/
 // vec-collect-ways.txt")`, is in the crate the mutations build, or its unit
 // tests don't build there and no mutation held by one runs (#1355).
 test("the crate the mutations build has each file the compiler includes", () => {
-  const { readdirSync } = require("node:fs") as typeof import("node:fs");
   const { dirname, join: joined, normalize, relative } = require("node:path") as typeof import("node:path");
-  const files: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(joined(root, dir), { withFileTypes: true })) {
-      const path = joined(dir, entry.name);
-      if (entry.isDirectory()) walk(path);
-      else if (path.endsWith(".rs")) files.push(path);
-    }
-  };
-  walk("src");
+  const files = compilerRustFiles();
   const outside = new Set<string>();
   for (const file of files) {
     for (const [, included] of readFileSync(joined(root, file), "utf8").matchAll(/include_(?:str|bytes)!\("([^"]+)"\)/g)) {
       const path = relative(root, normalize(joined(root, dirname(file), included)));
-      if (!path.startsWith("src/")) outside.add(path);
+      if (!isCompilerSource(path)) outside.add(path);
     }
     // And what a unit test reads where the crate is (`CARGO_MANIFEST_DIR`).
     for (const [, read] of readFileSync(joined(root, file), "utf8").matchAll(/env!\("CARGO_MANIFEST_DIR"\)\)\s*\.join\("([^"]+)"\)/g)) outside.add(read);
@@ -63,7 +55,9 @@ test("every mutation applies to the compiler as it is, once", () => {
 // A mutation's unit tests are there: its filter names a `#[test]` of a
 // source file of its module, by its name, or the module of some.
 test("every mutation's unit tests are there", () => {
-  const sources = [...new Bun.Glob("src/**/*.rs").scanSync(root)].map((file) => ({
+  // The binary's: a mutation's unit tests are the binary's (`--bin
+  // rust-js`), and another crate's aren't run by one yet.
+  const sources = compilerRustFiles().filter((file) => unitTestsModule(file) !== undefined).map((file) => ({
     module: unitTestsModule(file)!,
     tests: [...readFileSync(join(root, file), "utf8").matchAll(/#\[test\]\s*(?:#\[[^\]]*\]\s*)*fn (\w+)/g)].map((m) => m[1]),
   }));
@@ -143,7 +137,7 @@ test("a mutant's build is its mutation's, compiled again", () => {
 // nightly shards' builds down to one each, and said nothing of which (#479).
 test("every mutation's build lexes, alone and in a build of many", () => {
   const read = (file: string) => readFileSync(join(root, file), "utf8");
-  const sources = [...new Bun.Glob("src/**/*.rs").scanSync(root)];
+  const sources = compilerRustFiles();
   expect(sources.filter((file) => unmatched(read(file)) !== undefined)).toEqual([]);
   const files = new Map<string, string>();
   const cached = (file: string) => files.get(file) ?? files.set(file, read(file)).get(file)!;
@@ -212,7 +206,7 @@ const unmutated: Record<string, string> = {
 
 test("every source file of more than 80 lines has mutations, or says why it needs none", () => {
   const mutated = new Set(mutations.map((m) => m.file));
-  const bare = [...new Bun.Glob("src/**/*.rs").scanSync(root)]
+  const bare = compilerRustFiles()
     .filter((file) => readFileSync(join(root, file), "utf8").split("\n").length > 80)
     .filter((file) => !mutated.has(file) && !(file in unmutated));
   expect(bare.sort()).toEqual([]);

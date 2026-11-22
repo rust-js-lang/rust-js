@@ -25,6 +25,8 @@ name = "rust-js"
 path = "../src/main.rs"
 
 [dependencies]
+# The compiler's crates with no rustc in them (ADR 1181), as ../Cargo.toml's.
+rust-js-program = { path = "../crates/rust-js-program" }
 # The compiler's maps and sets, walked in the order their entries were put
 # in (ADR 1098), with rustc's hasher.
 indexmap = "2"

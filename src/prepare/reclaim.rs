@@ -5,9 +5,9 @@
 //! where every read in its item is of what it was before, as JS's scopes
 //! resolve them (ADR 0357): `const n` in a block beside another `n`.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::scopes;
 use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 pub(super) fn module(module: &mut js::Module) {
     // Each item's locals first, then the imports of what's left: an import

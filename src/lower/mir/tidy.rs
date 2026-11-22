@@ -3,8 +3,8 @@
 //! where each path ends, and what the structure needed to reach it, a
 //! labeled block or a `break`, goes. A closure's body is tidied as its own.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp, breaks, ends, names_break};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
@@ -513,7 +513,7 @@ fn commented_jumps(body: &mut Vec<Stmt>, jumps: &[(js::Span, js::Span)]) {
 
 #[cfg(test)]
 mod tests {
-    use crate::collections::IndexSet;
+    use rust_js_program::collections::IndexSet;
 
     use super::{
         MoveFacts, decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails,
@@ -530,7 +530,7 @@ mod tests {
     /// body's are (ADR 1150).
     fn lowered(word: &str) -> js::Name {
         thread_local! {
-            static MADE: std::cell::RefCell<crate::collections::IndexMap<String, js::Name>> = Default::default();
+            static MADE: std::cell::RefCell<rust_js_program::collections::IndexMap<String, js::Name>> = Default::default();
         }
         MADE.with_borrow_mut(|made| {
             (made.entry(word.to_string()))

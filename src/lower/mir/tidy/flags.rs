@@ -7,8 +7,8 @@
 //! flag nothing reads goes with its writes. A temporary's flag is named for
 //! the variable its drop is of (ADR 0372).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// What's known of each flag where a statement runs: `true` or `false`.
 type Known = IndexMap<js::Name, bool>;

@@ -3,8 +3,8 @@
 //! #2112's change D): a consumer that changes one compiles its own.
 
 use super::{Foreign, key};
-use crate::collections::{IndexMap, IndexSet};
 use crate::library::RcShape;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 use std::collections::BTreeSet;
@@ -61,7 +61,7 @@ pub(in crate::lower) fn elided_through_calls(
     // each default of its trait it uses, through their calls.
     let impls: Vec<DefId> = (all.keys().chain(callees.keys()).copied())
         .filter_map(|id| tcx.trait_impl_of_assoc(id))
-        .collect::<crate::collections::IndexSet<_>>()
+        .collect::<rust_js_program::collections::IndexSet<_>>()
         .into_iter()
         .collect();
     for imp in impls {

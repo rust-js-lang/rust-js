@@ -26,10 +26,10 @@
 //! A crate any of whose bodies has no MIR here has no classes: every cell
 //! is by its type, as before.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::analysis::CellBorrows;
 use crate::lower::recognition::{Recognition, Std, StdItem};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{
     self, AggregateKind, BasicBlock, CastKind, Const, Local, NonDivergingIntrinsic, Operand, Place, PlaceElem, Rvalue,
     StatementKind, TerminatorKind,

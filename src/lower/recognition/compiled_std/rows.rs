@@ -11,7 +11,7 @@ use super::{
     HELD_COMPILED, PROVED_LINKS, std_iter_trait,
 };
 use super::{StdCrate, StdPath, registry, std_path_id};
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
@@ -34,7 +34,7 @@ pub(crate) struct Rows {
     /// `MEANING_ONLY` one.
     pub(crate) fns: Vec<(DefId, Option<StdPath>)>,
     /// `PROVED_LINKS`' methods, each an iterator trait's.
-    pub(crate) proved: crate::collections::IndexSet<DefId>,
+    pub(crate) proved: rust_js_program::collections::IndexSet<DefId>,
 }
 
 impl Rows {

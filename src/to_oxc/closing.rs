@@ -8,7 +8,7 @@
 //! (amended, 2026-11-03).
 
 use super::*;
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 
 /// Each object literal's `}`, by where it is, and the comments before it
 /// on lines of their own, as written.

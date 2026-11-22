@@ -6,7 +6,7 @@
 //! passes its call on to is MIR's fact, read once where it's made
 //! (`forwarded_to`), which each taker reads.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};

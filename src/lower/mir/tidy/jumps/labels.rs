@@ -2,9 +2,9 @@
 //! and those never taken.
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::Name;
 use crate::lower::mir::tidy::bindings::{declared, declared_names};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// Of `exits_after`, the loop at `i` of `stmts`: what it does after it, its
 /// way out made a `break`, and the `let`s it's put after, of what the loop

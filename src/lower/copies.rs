@@ -9,9 +9,9 @@ pub(in crate::lower) use in_place::InPlaceWriter;
 
 use super::recognition::StdItem;
 use super::{FnCx, Shape};
-use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::js::{Expr, Op, Prop};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -705,7 +705,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => false,
         };
         if fresh && items_plain {
-            crate::decisions::record_typed(
+            rust_js_program::decisions::record_typed(
                 "copy-if-needed",
                 "fresh",
                 crate::lower::recognition::kind_of(self.tcx, ty),
@@ -713,14 +713,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return place;
         }
         if self.contains_mutated(ty) && self.is_copy(ty) {
-            crate::decisions::record_typed(
+            rust_js_program::decisions::record_typed(
                 "copy-if-needed",
                 "copied",
                 crate::lower::recognition::kind_of(self.tcx, ty),
             );
             self.copy(place, ty)
         } else {
-            crate::decisions::record_typed(
+            rust_js_program::decisions::record_typed(
                 "copy-if-needed",
                 "shared",
                 crate::lower::recognition::kind_of(self.tcx, ty),

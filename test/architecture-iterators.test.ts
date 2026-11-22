@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { iteratorPaths, touchesIterators } from "../scripts/iteratorSlice";
 import { ownerPath, sources } from "../scripts/owners";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
@@ -658,7 +659,7 @@ test("when a collect asks its hint is hint_asks's alone", () => {
 // value was stepped and dropped as another's.
 test("a body's impl Trait is revealed where its MIR is taken, alone", () => {
   expect(read("src/lower/analysis/prepared.rs")).toContain("(body, promoted) = revealed::revealed(tcx, (body, promoted));");
-  const expanding = files("src").filter((file) => file.endsWith(".rs") && read(file).includes("try_expand_impl_trait_type"));
+  const expanding = compilerRustFiles().filter((file) => file.endsWith(".rs") && read(file).includes("try_expand_impl_trait_type"));
   expect(expanding).toEqual(["src/lower/analysis/revealed.rs"]);
   const revealing = ["src/lower/mir", "src/lower/iterators", "src/lower/combinators"]
     .flatMap(files)
@@ -672,7 +673,7 @@ test("a body's impl Trait is revealed where its MIR is taken, alone", () => {
 // in place or holds to clone: `body_queries.rs` had its own, of the same
 // `Cloned` facts, twice (#1119, #1243).
 test("whether an adapter is cloned apart is one function", () => {
-  const defining = files("src").filter((file) => file.endsWith(".rs") && /\bfn cloned_apart\b/.test(read(file)));
+  const defining = compilerRustFiles().filter((file) => file.endsWith(".rs") && /\bfn cloned_apart\b/.test(read(file)));
   expect(defining).toEqual(["src/lower/iterators/stepping.rs"]);
 });
 
@@ -824,7 +825,7 @@ test("JS's own iterator forms are known by own_form alone", () => {
 // recognition/specialization.rs, no list of them elsewhere (#1934; ADR
 // 0419, amended).
 test("a function's return provenance is returned.rs's, and the in-place adapters specialization.rs's", () => {
-  const rust = files("src").filter((file) => file.endsWith(".rs"));
+  const rust = compilerRustFiles();
   const defining = (pattern: RegExp) => rust.filter((file) => pattern.test(read(file)));
   expect(defining(/\bfn (returned_from|returned_iterator|returns_its_parameter)\b/)).toEqual(["src/lower/pointers/returned.rs"]);
   expect(defining(/\bfn (adapts_in_place|impl_asks_of|in_place_traits)\b/)).toEqual(["src/lower/recognition/specialization.rs"]);

@@ -5,6 +5,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
@@ -74,7 +75,7 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
     "src/lower/mir/tidy/bindings.rs: .find(|&j| js::mentions_of(&stmts[j..=j], name) > 0)",
   ];
   const searching = /(\.any\(|\.filter\(|\.position\(|\.find\(|\.take_while\(|\|=)[^;]{0,160}?StmtKind::Assign\([^;]{0,200}?ExprKind::Var\(\w+\)\s*if\s+(?:\*?\w+\s*==|\w+\.is\()/g;
-  const found = files("src")
+  const found = compilerRustFiles()
     .filter((file) => file.endsWith(".rs") && file !== "src/js/writes.rs")
     .flatMap((file) => {
       const text = read(file);
@@ -98,7 +99,7 @@ test("which places a tree writes is js::Writes' alone", () => {
     "src/lower/mir/tidy/decided.rs: matches!(&s.kind, StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) if !matches!(target.kind, ExprKind::Var(_)))",
   ];
   const matching = /StmtKind::Assign\((\w+), _\) \| StmtKind::Compound\(_, \1, _\)/g;
-  const found = files("src")
+  const found = compilerRustFiles()
     .filter((file) => file.endsWith(".rs") && file !== "src/js/writes.rs")
     .flatMap((file) => {
       const text = read(file);

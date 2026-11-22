@@ -1,8 +1,8 @@
 //! The `const`s MIR's lowering made of a body, which tidy reads as its
 //! temporaries.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::Expr;
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// The `const`s MIR's lowering made of a body, tidy's temporaries, read where used where nothing between tells.
 #[derive(Default)]

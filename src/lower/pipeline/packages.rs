@@ -6,9 +6,9 @@
 use super::super::analysis::UsesWritten;
 use super::super::bindings::Export;
 use super::super::library::Foreign;
-use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::program::LoweredModule;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};
 use std::collections::BTreeMap;

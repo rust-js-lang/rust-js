@@ -7,7 +7,7 @@
 //! below(*n)`, is a test too, and the chain of a tree with one does what
 //! `calls::Model` says the tree does, each way (#221).
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use std::cmp::Ordering;
 
 use crate::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind, UnaryOp};

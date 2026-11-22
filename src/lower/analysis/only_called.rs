@@ -12,8 +12,8 @@
 //! else its JS callers, its uses as a value and its export are the
 //! function's too (#1675).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::call_graph::{Names, Naming};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Span;

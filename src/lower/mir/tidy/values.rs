@@ -1,7 +1,7 @@
 //! Tidy's values: arrays, handles, callbacks and cells, as JS writes them.
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 mod handles;
 pub(super) use handles::{handles_in_place, read_handles};

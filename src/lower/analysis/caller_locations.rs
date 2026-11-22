@@ -8,11 +8,11 @@
 //! one of its impls, or its default, takes one, its declaration does, and
 //! each entry of it is given one, which it passes on where its impl takes it.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{location_of, tracks_caller};
 use crate::lower::std_types::location::LocationOp;
 use crate::lower::{Body, fn_def};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;

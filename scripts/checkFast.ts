@@ -21,6 +21,7 @@ import { createHash } from "node:crypto";
 import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { cpus, loadavg } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { compilerCrates, isCompilerSource } from "./compiler-crates";
 import { currentBuild, prune } from "../test/compiles";
 import {childWarnings} from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
@@ -223,7 +224,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   // The compiler's unit tests, of a change to its Rust or its build; the
   // Vite example's build, of a change to any but what only tests and docs
   // read (scripts/select.ts's `readOnly`).
-  const rust = all || touched.some((file) => (file.startsWith("src/") && file.endsWith(".rs")) || /^(Cargo\.(toml|lock)|build\.rs|rust-toolchain\.toml|vendor\/)/.test(file));
+  const rust = all || touched.some((file) => (isCompilerSource(file) && file.endsWith(".rs")) || /^(Cargo\.(toml|lock)|build\.rs|rust-toolchain\.toml|vendor\/)/.test(file) || compilerCrates().some((crate) => file === `${crate.dir}/Cargo.toml`));
   const vite = all || touched.some((file) => (file.includes("/") ? !readOnly.includes(file.split("/")[0]!) : !file.endsWith(".md")));
   // A change to tidy or preparation, or to the oracles, is checked after
   // each of tidy's stages and without each of preparation's rewrites, and by
@@ -371,6 +372,14 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
       ...(rust
         ? [
             job("cargo test", ["cargo", "test", "--locked", "--quiet"], { timeout: 600, weight: 2, memory: peakGB.compilerCheck, ci: "cargo test --locked" }),
+            // The crates with no rustc in them, built for WASI, as the
+            // playground's compiler links them (ADR 1181): the full WASI
+            // build is CI's `wasm` job's, minutes of rustc's front end;
+            // this is seconds.
+            job("the crates for WASI", ["cargo", "check", "--locked", "--quiet", "--target", "wasm32-wasip1", "--workspace", "--exclude", "rust-js"], {
+              memory: peakGB.compilerCheck,
+              ci: "cargo check --locked --target wasm32-wasip1 --workspace --exclude rust-js",
+            }),
           ]
         : []),
       ...(vite ? [job("the Vite example's build", ["bun", "run", "--cwd", "examples/vite-react", "build"], { ci: "bun run --cwd examples/vite-react build" })] : []),

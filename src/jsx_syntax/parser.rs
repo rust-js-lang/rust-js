@@ -1,7 +1,7 @@
 //! Parse only JSX tokens. Rust inside braces stays a Rust token stream,
 //! with its original spans, for rustc to parse and type-check.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_ast::token::{Delimiter, LitKind, TokenKind};
 use rustc_ast::tokenstream::{DelimSpacing, DelimSpan, Spacing, TokenStream, TokenTree};
 use rustc_ast::{self as ast, FnRetTy, ItemKind, TyKind};

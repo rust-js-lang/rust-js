@@ -2,7 +2,7 @@
 //! lowered (ADR 0051, amended): one its lowering made alike another, its
 //! own JS or an earlier copy, is that one, and what calls it calls that.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_span::def_id::{DefId, LocalModId};
 
 use super::super::analysis::JsGiven;

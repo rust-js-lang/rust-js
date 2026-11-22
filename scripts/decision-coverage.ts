@@ -1,7 +1,7 @@
 // Decision coverage (docs/finding-wrong-answers.md): which answers of the
 // compiler's decisions the nets' programs reach, and which none does. Each
 // net runs with `RUST_JS_DECISIONS` naming a file of its own, which each
-// compile appends its counts to (`src/decisions.rs`), every decision's
+// compile appends its counts to (`crates/rust-js-program/src/decisions.rs`), every decision's
 // every answer, `0` of one it never gave, tagged by its build and its
 // shape; this merges them: the pairs reached, those never reached, those
 // reached in one build or one shape alone, and those only one net reaches.
@@ -109,7 +109,7 @@ async function pool(all: Job[], width: number) {
 
 /** A line of a counts file: decision, answer, kind (`-` of a decision
  * not typed), body (`own`, `other` or `crate`), count, build, shape and
- * owner (`src/decisions.rs`' `counts`). */
+ * owner (`crates/rust-js-program/src/decisions.rs`' `counts`). */
 const fields = (line: string) => {
   const [decision, answer, kind, body, n, build, shape, owner] = line.split("\t");
   return owner ? { decision, answer, kind, body, count: Number(n), build, shape, owner } : undefined;

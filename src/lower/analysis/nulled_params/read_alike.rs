@@ -18,12 +18,12 @@
 //! only used so. Anything else, a call of the crate's function among them,
 //! leaves it as it was: when unsure, `?? null`.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::body_queries::strip;
 use crate::lower::combinators::Comb;
 use crate::lower::fn_def;
 use crate::lower::recognition::{Recognition, Std, local_key_access};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::visit::{PlaceContext, Visitor};
 use rustc_middle::mir::{self, Local, Location, Operand, PlaceElem, Rvalue, StatementKind, TerminatorKind};

@@ -1,9 +1,9 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::copies::InPlaceWriter;
 use crate::lower::representation::NoneForm;
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 use crate::js::result;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
@@ -752,7 +752,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a `RefCell` no borrow of which can meet another, the cell
             // itself, unchecked and uncounted (ADR 0863).
             Std::Borrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {
-                crate::decisions::record("refcell-borrow", "unchecked");
+                rust_js_program::decisions::record("refcell-borrow", "unchecked");
                 let cell = arg();
                 self.uncounted(cell)
             }
@@ -763,11 +763,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (rd218), its check written first in its statement where it's
             // evaluated first there (`js::borrow_checks`, ADR 1141).
             Std::Borrow { mutable, lock: false } if call.momentary => {
-                crate::decisions::record("refcell-borrow", "momentary");
+                rust_js_program::decisions::record("refcell-borrow", "momentary");
                 Expr::momentary_borrow(arg(), mutable)
             }
             Std::Borrow { mutable, lock: false } => {
-                crate::decisions::record("refcell-borrow", "counted");
+                rust_js_program::decisions::record("refcell-borrow", "counted");
                 let given = vec![arg(), Expr::bool(true)];
                 Expr::call(Expr::helper(if mutable { "$borrowMut" } else { "$borrow" }), given)
             }
@@ -777,18 +777,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // a guard's is, so a whole write through it sets each key
             // (`read_handles`).
             Std::TryBorrow { lock: false, .. } if flattened => {
-                crate::decisions::record("refcell-try-borrow", "flattened");
+                rust_js_program::decisions::record("refcell-try-borrow", "flattened");
                 let handle = arg();
                 result::ok(self.spill(Role::State, handle, out))
             }
             Std::TryBorrow { lock: false, .. } if unchecked || self.quiet_ref_cell(tys[0].peel_refs(), false) => {
-                crate::decisions::record("refcell-try-borrow", "unchecked");
+                rust_js_program::decisions::record("refcell-try-borrow", "unchecked");
                 let cell = arg();
                 result::ok(self.uncounted(cell))
             }
             Std::TryBorrow { mutable, lock } => {
                 if !lock {
-                    crate::decisions::record("refcell-try-borrow", "checked");
+                    rust_js_program::decisions::record("refcell-try-borrow", "checked");
                 }
                 let mut given = vec![arg()];
                 if mutable {

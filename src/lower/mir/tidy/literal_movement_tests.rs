@@ -1,7 +1,7 @@
 //! Stability of fresh literals before another expression in a call.
 use super::read_past_calls;
-use crate::collections::IndexSet;
 use crate::js::{Expr, Prop};
+use rust_js_program::collections::IndexSet;
 
 #[test]
 fn fresh_literals_require_stable_contents() {

@@ -5,8 +5,8 @@ mod let_names;
 mod null_nones;
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::representation::{NoneForm, Writers};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals that patterns bind in an enum's variant, by THIR's

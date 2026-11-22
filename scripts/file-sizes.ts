@@ -3,7 +3,7 @@
 // big to hold in your head. Files are git's, tracked or new, so nothing
 // built or ignored.
 //
-//   bun run file-sizes             the compiler: src/ and build.rs
+//   bun run file-sizes             the compiler: its crates' sources and build.rs
 //   bun run file-sizes 'test/*.ts' the tests' own code
 //   bun run file-sizes src/lower   any files or folders instead
 //
@@ -11,6 +11,7 @@
 // left main, which is to be split by concept first (#1334).
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { compilerSourceDirs } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
 const SOURCE = /\.(rs|ts|tsx|js|mjs)$/;
@@ -23,9 +24,10 @@ export const LARGE = 1500;
 // or its comments cut. test/architecture.test.ts holds it against where
 // the change left main.
 export const NEAR = 1350;
-// What the cap is held over, the compiler, and the tests' own code: what's
-// written by hand to read and change, not a snapshot the compiler wrote.
-export const COMPILER = ["src", "build.rs"];
+// What the cap is held over, the compiler, each of its crates
+// (scripts/compiler-crates.ts), and the tests' own code: what's written by
+// hand to read and change, not a snapshot the compiler wrote.
+export const COMPILER = [...compilerSourceDirs(), "build.rs"];
 export const TESTS = ["test/*.ts"];
 
 // The lines in a file, as `wc -l` counts them plus an unterminated last one.

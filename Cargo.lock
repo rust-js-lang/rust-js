@@ -1177,10 +1177,19 @@ dependencies = [
  "oxc_sourcemap",
  "oxc_span",
  "oxc_syntax",
+ "rust-js-program",
  "rustc-hash",
  "serde",
  "serde_json",
  "toml",
+]
+
+[[package]]
+name = "rust-js-program"
+version = "0.0.4"
+dependencies = [
+ "indexmap",
+ "rustc-hash",
 ]
 
 [[package]]

@@ -4,7 +4,7 @@
 //! literal's field starts, which a comment before it is before (ADR 0708).
 
 use super::*;
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 
 /// Where each call and `new` of arguments that says starts and ends.
 pub(super) fn argument_ends(module: &Module) -> Vec<(u32, u32)> {

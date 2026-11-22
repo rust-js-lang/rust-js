@@ -4,6 +4,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
@@ -90,7 +91,7 @@ test("rustc's elaborated body is read by `mir/elaborated.rs` alone", () => {
 // `body_queries/values.rs` alone (#2211): four answerers of it, each
 // counting writes its own way, were three too many.
 test("only body_queries/values.rs answers a local's one write", () => {
-  const answers = files("src")
+  const answers = compilerRustFiles()
     .filter((file) => file.endsWith(".rs"))
     .flatMap((file) =>
       [...read(file).matchAll(/\bfn (assigned_once|made_once|the_write|only_write|written_once|assigned_exactly_once)\b/g)].map(

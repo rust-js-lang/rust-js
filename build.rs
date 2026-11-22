@@ -16,15 +16,17 @@ fn main() {
         let sysroot = String::from_utf8(out.stdout).expect("utf-8 sysroot");
         println!("cargo:rustc-link-arg=-Wl,-rpath,{}/lib", sysroot.trim());
     }
-    // What the compiler is made of: its sources, which include its runtime
-    // helpers, the std manifest and the toolchain's file it builds in, this
-    // script, and its package's dependencies. Only those: without saying so,
+    // What the compiler is made of: its sources and its crates' (ADR 1181),
+    // which include its runtime helpers, the std manifest and the
+    // toolchain's file it builds in, this script, and its package's
+    // dependencies. Only those: without saying so,
     // Cargo runs it again, and builds rust-js again, when any file in the
     // package changes, a test or a doc too.
     let package = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("Cargo's package directory"));
     let root = package.join(file!()).parent().expect("the checkout").to_path_buf();
     let inputs = [
         root.join("src"),
+        root.join("crates"),
         root.join("std/manifest.json"),
         root.join("rust-toolchain.toml"),
         root.join("build.rs"),

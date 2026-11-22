@@ -12,7 +12,7 @@
 //! `undefined` alone, by construction (ADR 1096, amended).
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// Each `Option` local's `None`: the ones the body makes `null`, and what
 /// reads may trust of the rest, and of those, `null` alone.
@@ -277,8 +277,8 @@ impl<'tcx> FnCx<'_, 'tcx> {
 #[cfg(test)]
 mod tests {
     use super::NoneForms;
-    use crate::collections::{IndexMap, IndexSet};
     use crate::js;
+    use rust_js_program::collections::{IndexMap, IndexSet};
     use rustc_middle::mir::Local;
 
     // A local made `null`, which `mir_nones` says holds only `undefined`, as

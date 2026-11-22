@@ -15,11 +15,11 @@
 //! is made takes. One program has one thread (`thread::spawn` is refused),
 //! so the value tested is the value read.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::analysis::Mir;
 use crate::lower::fn_def;
 use crate::lower::recognition::{Recognition, is_local_with, option_presence_test};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::visit::Visitor;
 use rustc_middle::mir::{self, BasicBlock, Location, Operand, Rvalue, TerminatorKind};
 use rustc_middle::ty;

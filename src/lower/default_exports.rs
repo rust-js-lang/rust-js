@@ -5,7 +5,7 @@
 //! (`exported_as`): a module of its crate, another crate through its
 //! library's manifest, a `pub use` re-exporting it, a `js::import!` of it.
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::TyCtxt;

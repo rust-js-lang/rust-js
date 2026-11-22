@@ -441,8 +441,8 @@ impl NamingFacts {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of `name`, a variable, each path to what it holds whose fields a
     /// getter may answer (`given_paths`).
-    pub(in crate::lower) fn given_of(&self, name: &js::Name) -> crate::collections::IndexSet<js::Path> {
-        let mut found: crate::collections::IndexSet<js::Path> = (self.locals.mir.given.iter())
+    pub(in crate::lower) fn given_of(&self, name: &js::Name) -> rust_js_program::collections::IndexSet<js::Path> {
+        let mut found: rust_js_program::collections::IndexSet<js::Path> = (self.locals.mir.given.iter())
             .filter(|path| matches!(&path.root, js::PathRoot::Var(root) if root == name))
             .cloned()
             .collect();

@@ -4,7 +4,7 @@
 //! is the getter's read, `console.createTask(name)` and
 //! `console.createTask.bind(console, ..)`, as upstream writes them.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, TyCtxt};

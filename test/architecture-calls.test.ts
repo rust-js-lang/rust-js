@@ -6,6 +6,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // The lowering's sources, in name order, as macOS lists them and Linux,
@@ -105,7 +106,7 @@ test("a signature's binder is skipped only as the ratchet allows", () => {
     read("test/sig-binders.txt").split("\n").filter((line) => line && !line.startsWith("#"))
       .map((line) => line.split("\t")).map(([file, n]) => [file, Number(n)]),
   );
-  const sources = [...new Bun.Glob("src/**/*.rs").scanSync(root)].filter((file) => file !== "src/lower/traits.rs").sort();
+  const sources = compilerRustFiles().filter((file) => file !== "src/lower/traits.rs").sort();
   const counted = sources
     .map((file) => [file, (read(file).match(/fn_sig\([^;]*?\.skip_binder\(\)/gs) ?? []).length] as const)
     .filter(([, n]) => n > 0);

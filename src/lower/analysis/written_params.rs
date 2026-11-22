@@ -18,10 +18,10 @@
 //! its contract always does, stops as a bug of rust-js's (#1688).
 
 use super::prints::{Prints, shown_by, shown_into_writers};
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{Recognition, pointer_target};
 use crate::lower::{Body, Std, fn_def};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::adjustment::PointerCoercion;

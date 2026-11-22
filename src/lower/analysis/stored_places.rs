@@ -6,9 +6,9 @@
 //! made, so `$addr` follows it to the outermost allocation whichever
 //! pointer asks first. A crate that makes no raw pointer records nothing.
 
-use crate::collections::IndexSet;
 use crate::lower::Body;
 use crate::lower::instances::{Callers, callers_of, instances_of};
+use rust_js_program::collections::IndexSet;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;
@@ -79,7 +79,7 @@ impl<'tcx> StoredPlaces<'tcx> {
             && (matches!(ty.kind(), ty::Tuple(parts) if !parts.is_empty())
                 || matches!(ty.kind(), ty::Array(..))
                 || holds(ty, &mut |id| self.recorded.contains(&id), true));
-        crate::decisions::record("stored-place", if records { "recorded" } else { "unrecorded" });
+        rust_js_program::decisions::record("stored-place", if records { "recorded" } else { "unrecorded" });
         records
     }
 }

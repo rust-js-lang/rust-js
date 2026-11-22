@@ -4,10 +4,10 @@
 
 use super::super::bindings::{self, field_key};
 use super::{Num, char_value, marks_js_object, num_literal, ordering_value, symbol_for, variant_field};
-use crate::collections::IndexSet;
 use crate::js;
 use crate::js::{Expr, Prop};
 use crate::lower::recognition::{StdItem, cell_value_field, is_std_def};
+use rust_js_program::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::CtorKind;
 use rustc_middle::ty;

@@ -5,13 +5,14 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
 const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true })
   .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
-const sources = files("src").filter(path => path.endsWith(".rs"));
+const sources = compilerRustFiles();
 
 // The type a formatting impl is of is `recognition::formatted_adt`'s
 // alone: its self type through the references, `Box`es and `Pin`s a crate

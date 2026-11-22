@@ -8,13 +8,11 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // The compiler's sources, in name order.
-const sources = readdirSync(join(root, "src"), { recursive: true, encoding: "utf8" })
-  .filter((file) => file.endsWith(".rs"))
-  .map((file) => `src/${file}`)
-  .sort();
+const sources = compilerRustFiles().sort();
 
 test("only pointers/ answers whether a call may keep a pointer", () => {
   // Each function whose name says it answers it, by where it's defined.

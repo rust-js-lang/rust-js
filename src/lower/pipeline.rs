@@ -24,9 +24,9 @@ use super::analysis::{AnalyzedCrate, analyze_crate, nulled_params::NulledParams}
 use super::bindings::Export;
 use super::representation::{NonePlace, none_form};
 use super::{Body, CrateFacts, located, module_file};
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{LoweredModule, Unlinked, UnlinkedModule};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};

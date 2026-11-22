@@ -6,7 +6,7 @@
 //! leaves from a `switch`, the `if` chain they are, its tests in the order
 //! Rust tries them (#389b).
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use crate::js::{self, Expr, Name, Op, Stmt, StmtKind};
 

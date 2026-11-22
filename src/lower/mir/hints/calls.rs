@@ -3,7 +3,7 @@
 //! place knows where it's spilled (#769).
 
 use super::*;
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 
 impl<'tcx> FnCx<'_, 'tcx> {
     /// Each temporary a call the source writes by its name makes, `_5` of

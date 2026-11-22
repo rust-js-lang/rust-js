@@ -4,6 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
 import { underLoad } from "../scripts/timing";
+import { type CompilerCrate, compilerCrates, compilerRustFiles, crateOf, modulePath } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't: a test that
@@ -26,12 +27,12 @@ const layers = {
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
   owned: ["src/library.rs", "src/library/", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
-    "src/paths.rs", "src/packages.rs", "src/collections.rs", "src/lines.rs", "src/decisions.rs", "src/css_modules.rs"],
+    "src/paths.rs", "src/packages.rs", "src/css_modules.rs", "crates/rust-js-program/src/"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/format/", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
 };
 const layerOf = (file: string) =>
   Object.entries(layers).find(([, paths]) => paths.some(p => p.endsWith("/") ? file.startsWith(p) : file === p))?.[0];
-const sources = files("src").filter(path => path.endsWith(".rs"));
+const sources = compilerRustFiles();
 
 test("every source module is in a layer", () => {
   expect(sources.filter(file => !layerOf(file))).toEqual([]);
@@ -57,13 +58,10 @@ const orchestration: Record<string, string[]> = {
   "src/output/local_js.rs": ["src/to_oxc.rs"],
   "src/hooks.rs": ["src/format.rs"],
 };
-// A file's module path, `src/lower/drops/types.rs`'s `lower::drops::types`;
-// `main.rs` is the crate's root.
-const modulePath = (file: string): string[] => {
-  const parts = file.replace(/^src\//, "").replace(/\.rs$/, "").split("/");
-  if (parts.at(-1) === "mod") parts.pop();
-  return parts.length === 1 && parts[0] === "main" ? [] : parts;
-};
+// A top-level module of `crate`'s, as the file it is: `src/js.rs`, or a
+// folder's, `src/lower/`.
+const moduleFile = (crate: CompilerCrate, name: string) =>
+  sources.includes(`${crate.src}/${name}.rs`) ? `${crate.src}/${name}.rs` : `${crate.src}/${name}/`;
 // The first names after a path's base: `x` of `x::y`, or each of a
 // group's, `{js::{self, Expr}, program}`'s `js` and `program`.
 const firstNames = (rest: string): string[] => {
@@ -90,13 +88,15 @@ const WHOLE = "the crate's root, whole";
 // The crate's top-level modules a file names, as the files they are: by
 // `crate::`, or by `super::` up to the crate's root, `super::lower` in a
 // top-level file, each `super` first leaving an inline `mod tests { .. }`;
-// or `WHOLE`. Not in a comment, a string or a `char`.
+// or `WHOLE`; and another crate's of the compiler's, by its name,
+// `rust_js_program::js` (ADR 1181). Not in a comment, a string or a `char`.
 const usedModules = (file: string, text: string): string[] => {
   const code = text
     .replace(/"(?:[^"\\]|\\.)*"/g, '""')
     .replace(/'(?:[^'\\]|\\.)'/g, "' '")
     .replace(/\/\/.*$/gm, "");
   const own = modulePath(file);
+  const crate = crateOf(file)!;
   const names = new Set<string>();
   const inline: number[] = [];
   let depth = 0;
@@ -120,9 +120,13 @@ const usedModules = (file: string, text: string): string[] => {
   }
   // Its own module's items are no other module's.
   names.delete(own[0]);
-  return [...names]
-    .map(name => (name === WHOLE ? name : sources.includes(`src/${name}.rs`) ? `src/${name}.rs` : `src/${name}/`))
-    .sort();
+  const used = [...names].map(name => (name === WHOLE ? name : moduleFile(crate, name)));
+  for (const other of compilerCrates().filter(other => other !== crate)) {
+    for (const m of code.matchAll(new RegExp(`(?<![\\w:])${other.name}::`, "g"))) {
+      used.push(...firstNames(code.slice(m.index! + m[0].length)).map(name => moduleFile(other, name)));
+    }
+  }
+  return [...new Set(used)].sort();
 };
 // The checker finds a module however a file names it (found in review:
 // `super::lower` in a top-level file was missed).
@@ -142,6 +146,8 @@ test("the layer check finds a module however a file names it", () => {
     ["src/manifest.rs", "use crate::{self as root, js};", ["src/js.rs", WHOLE]],
     ["src/format.rs", "mod tests {\n    use super::*;\n}", []],
     ["src/lower/drops/types.rs", "use super::*;", []],
+    ["src/lower/drops/types.rs", "use rust_js_program::{collections::IndexMap, lines};", ["crates/rust-js-program/src/collections.rs", "crates/rust-js-program/src/lines.rs"]],
+    ["crates/rust-js-program/src/decisions.rs", "use crate::collections::IndexMap;", ["crates/rust-js-program/src/collections.rs"]],
   ];
   for (const [file, text, expected] of cases) expect(usedModules(file, text), text).toEqual(expected);
 });
@@ -173,8 +179,7 @@ test("each module uses only the layers its layer may", () => {
 test("modules don't use each other in a cycle", () => {
   const key = (file: string) => {
     const [name] = modulePath(file);
-    if (!name) return file;
-    return sources.includes(`src/${name}.rs`) ? `src/${name}.rs` : `src/${name}/`;
+    return name ? moduleFile(crateOf(file)!, name) : file;
   };
   const edges = new Map<string, Set<string>>();
   for (const file of sources) {
@@ -206,7 +211,7 @@ test("modules don't use each other in a cycle", () => {
 // reachability graph, never a later phase (the second review: tidy called
 // preparation's `constants`, and MIR's lowering its `unsuffixed_params`).
 test("the front end uses no phase after it", () => {
-  const later = /crate::(prepare|link|output|publish|manifest|settings|hooks|paths)\b/;
+  const later = /\b(?:crate|rust_js_\w+)::(prepare|link|output|publish|manifest|settings|hooks|paths)\b/;
   const strays = ["src/lower.rs", ...files("src/lower"), "src/jsx_syntax.rs", ...files("src/jsx_syntax")]
     .filter(file => later.test(read(file)));
   expect(strays).toEqual([]);
@@ -393,7 +398,7 @@ test("tidying asks neither rustc nor the function being lowered", () => {
 // analyses copied a tree to walk it with the walk that changes one.
 test("what reads a tree walks it without copying it", () => {
   const copying = /(?:statement_lists|each_expr_mut)\(&mut (?:vec!\[)?[\w.\[\]]+\.(?:clone|to_vec)\(\)/;
-  const offenders = files("src").filter((file) => file.endsWith(".rs") && copying.test(read(file)));
+  const offenders = compilerRustFiles().filter((file) => file.endsWith(".rs") && copying.test(read(file)));
   expect(offenders).toEqual([]);
 });
 
@@ -1116,7 +1121,7 @@ test("what a module exports an item as is exported_as's alone", () => {
 // closure passes its call on to is one MIR fact, `forwarded_to`'s, made
 // where the closure is.
 test("an arrow that passes on what it's given is passed_on's alone", () => {
-  const sources = files("src").filter((file) => file.endsWith(".rs"));
+  const sources = compilerRustFiles();
   // A call's arguments matched to parameters by name, one by one.
   const byName = /\.zip\([^;]{0,200}?\.(?:all|map)\(\|\(\w+, \w+\)\|[^;]{0,120}?(?:ExprKind::Var\(\w+\)\)? if \w+(?: == \w+|\.is\(\w+\))|is_var\(|passed\()/;
   expect(sources.filter((file) => byName.test(read(file)))).toEqual(["src/js/stmt_walk.rs"]);

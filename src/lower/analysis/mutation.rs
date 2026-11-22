@@ -1,9 +1,9 @@
 //! The types something changes in place, which a copy is made of where
 //! it's read (ADR 0052).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{assign_operator, flattens_mut};
 use crate::lower::{Body, FnInfo, fn_def, strip};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;

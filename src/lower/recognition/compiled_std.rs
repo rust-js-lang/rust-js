@@ -686,8 +686,8 @@ pub(crate) fn note_debug_shown<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[crate::lower::
         return;
     };
     let (mut types, mut items) = (
-        crate::collections::IndexSet::default(),
-        crate::collections::IndexSet::default(),
+        rust_js_program::collections::IndexSet::default(),
+        rust_js_program::collections::IndexSet::default(),
     );
     for body in bodies {
         for expr in body.thir.exprs.iter() {
@@ -1094,8 +1094,8 @@ pub(crate) fn compiled_behind_an_impl<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     ty: ty::Ty<'tcx>,
-) -> crate::collections::IndexSet<ty::Ty<'tcx>> {
-    let mut compiled = crate::collections::IndexSet::default();
+) -> rust_js_program::collections::IndexSet<ty::Ty<'tcx>> {
+    let mut compiled = rust_js_program::collections::IndexSet::default();
     for part in ty.walk().filter_map(|part| part.as_type()) {
         let ty::Alias(
             _,

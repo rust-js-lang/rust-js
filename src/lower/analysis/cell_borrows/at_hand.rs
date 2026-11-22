@@ -2,10 +2,10 @@
 //! made, whose property reads meet no getter of the program's (#2106, ADR
 //! 1173). Split from runs_nothing.rs by concept.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{JsForm, creates, is_binding, js_form};
 use crate::lower::recognition::{Recognition, Std, StdItem};
 use crate::lower::std_types::option::OptionPlaceOp;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;

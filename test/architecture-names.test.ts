@@ -5,13 +5,14 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
 const files = (directory: string): string[] => readdirSync(join(root, directory), { withFileTypes: true })
   .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   .flatMap(entry => entry.isDirectory() ? files(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]);
-const sources = files("src").filter(path => path.endsWith(".rs"));
+const sources = compilerRustFiles();
 
 // A temporary's name is one rule (ADR 0569, #890): what made it suggests
 // it, rust-analyzer's way, else its role's word, which preparation spells
@@ -48,7 +49,7 @@ test("whether a label is MIR's is asked of is_block_label", () => {
 // program sees in its JSON, and is its own.
 test("a snake_case name is made camelCase by camel_case alone", () => {
   const splits = /\.split\('_'\)|\bch == '_'/;
-  const others = files("src").filter((file) => file.endsWith(".rs") && file !== "src/lower/casing.rs" && file !== "src/lower/serde.rs");
+  const others = compilerRustFiles().filter((file) => file.endsWith(".rs") && file !== "src/lower/casing.rs" && file !== "src/lower/serde.rs");
   expect(others.filter((file) => splits.test(read(file)))).toEqual([]);
   expect(read("src/lower/casing.rs")).toMatch(/fn camel_case\(name: &str\) -> String \{[^]*?\.split\('_'\)/);
 });
@@ -86,7 +87,7 @@ test("a block label is matched at a word's start", () => {
 // `mir/temporaries.rs`, and read by the spill of a subject alone,
 // `spill_subject`, there too. Every other expression is made with none.
 test("a temporary's name a value carries is set and read in one place each", () => {
-  const files = [...new Bun.Glob("src/**/*.rs").scanSync(root)].filter((file) => file !== "src/js.rs");
+  const files = compilerRustFiles().filter((file) => file !== "src/js.rs");
   const with_ = (pattern: RegExp) => files.filter((file) => pattern.test(read(file))).sort();
   expect(with_(/HeldAs\(Some/)).toEqual(["src/lower/mir/temporaries.rs"]);
   expect(with_(/\.held_as\.0/)).toEqual(["src/lower/mir/temporaries.rs"]);

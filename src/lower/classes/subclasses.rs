@@ -2,7 +2,7 @@
 //! binding's trait is, `react#Component<P, S>`, what a class extends, an ES
 //! class, and what's refused of its impl of that class.
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;

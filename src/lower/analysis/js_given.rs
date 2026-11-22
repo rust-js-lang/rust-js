@@ -13,7 +13,7 @@
 //! parameter to is copied so in turn, where what it's given needs its
 //! `Some` otherwise than the function's own JS has it.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use std::collections::BTreeSet;
 
 use rustc_hir::def::DefKind;

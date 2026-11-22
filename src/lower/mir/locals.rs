@@ -1,8 +1,8 @@
 //! Each local's name and how it's used, and the locals `pin!` and `?` bind.
 
 use super::*;
-use crate::collections::IndexSet;
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::collections::IndexSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each local `pin!` pins, and the local its `Pin` is.
@@ -391,7 +391,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         body: &mir::Body<'tcx>,
         names: &IndexVec<Local, js::Name>,
-    ) -> crate::collections::IndexMap<rustc_span::Span, js::Name> {
+    ) -> rust_js_program::collections::IndexMap<rustc_span::Span, js::Name> {
         let thir = self.frame.thir;
         let bound = |var: thir::LocalVarId| {
             let lets = (thir.stmts.iter()).filter_map(|stmt| match &stmt.kind {

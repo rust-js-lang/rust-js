@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { ratchet, runTest, type Shard } from "../scripts/rustc-suite";
 import { buildCompiler, bunTest, compiler, compilerBuild, fixture, root, target, unlessUnchanged } from "./support";
 import { underLoad } from "../scripts/timing";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 beforeAll(buildCompiler);
 
@@ -244,9 +245,7 @@ test("the tests build rust-js as a shell does", () => {
   const tests = Object.fromEntries(Object.entries({ ...process.env, ...compilerBuild.env }).filter(([, value]) => value !== undefined));
   const read = (file: string, of: RegExp) => [...readFileSync(join(root, file), "utf8").matchAll(of)].map((m) => m[1]!);
   const rerun = read("build.rs", /rerun-if-env-changed=(\w+)/g);
-  const compiled = readdirSync(join(root, "src"), { recursive: true, encoding: "utf8" })
-    .filter((file) => file.endsWith(".rs"))
-    .flatMap((file) => read(join("src", file), /\b(?:option_)?env!\("(\w+)"\)/g));
+  const compiled = compilerRustFiles().flatMap((file) => read(file, /\b(?:option_)?env!\("(\w+)"\)/g));
   const tracked = (name: string) => /^(RUSTC\w*|RUSTFLAGS|RUSTDOCFLAGS|CARGO_\w+)$/.test(name) || rerun.includes(name) || compiled.includes(name);
   expect(given).toContain("RUSTC_BOOTSTRAP");
   expect(rerun).toContain("RUSTC");

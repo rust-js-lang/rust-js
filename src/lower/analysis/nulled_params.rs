@@ -32,10 +32,10 @@ mod read_alike;
 
 pub(in crate::lower) use js_nones::{AnyValue, JsNones, any_value, one_none, returns_one_none};
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::recognition::Recognition;
 use crate::lower::refusal::{Refused, refuse};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, BasicBlock, visit::Visitor};
 use rustc_middle::ty::{self, TyCtxt};

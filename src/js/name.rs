@@ -367,13 +367,13 @@ impl Name {
 
     /// Its word taken in `taken`, a naming table's words: whether it wasn't
     /// yet (`FnCx::unspelled_as`, tidy's flags).
-    pub fn reserve_in(&self, taken: &mut crate::collections::IndexSet<String>) -> bool {
+    pub fn reserve_in(&self, taken: &mut rust_js_program::collections::IndexSet<String>) -> bool {
         taken.insert(self.0.clone())
     }
 
     /// Its word given back to `taken`, a naming table's words: one made and
     /// taken away again (`reserve_in`).
-    pub fn release_in(&self, taken: &mut crate::collections::IndexSet<String>) {
+    pub fn release_in(&self, taken: &mut rust_js_program::collections::IndexSet<String>) {
         taken.swap_remove(&self.0);
     }
 
@@ -382,7 +382,7 @@ impl Name {
     /// from those of its base already made, as preparation takes each made
     /// word for one variable in its item (`prepare::reclaim::spelled`).
     pub fn free_made_k<'n>(names: impl IntoIterator<Item = &'n Name>, base: &str) -> usize {
-        let taken: crate::collections::IndexSet<usize> = (names.into_iter())
+        let taken: rust_js_program::collections::IndexSet<usize> = (names.into_iter())
             .filter(|name| crate::names::made_base(&name.0) == Some(base))
             .filter_map(|name| name.0.rsplit_once('#')?.1.parse().ok())
             .collect();

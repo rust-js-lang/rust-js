@@ -5,8 +5,8 @@
 //! 0562, amended).
 
 use super::pointed_locals_of;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::FnCx;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_data_structures::either::Either;
 use rustc_middle::mir::visit::Visitor;
 use rustc_middle::mir::{self, Local, PlaceElem, Rvalue, StatementKind};

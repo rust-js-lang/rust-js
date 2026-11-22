@@ -3,12 +3,12 @@
 //! one is called instead. Whether a clone could be told apart from the
 //! value, `needs_clone`, and the clone itself, `clone_value`.
 
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::recognition::StdItem;
 use crate::lower::recursive_fns::Kind;
 use crate::lower::temporary_names::{Base, Role};
 use crate::lower::{FnCx, R, Shape, lower_first};
+use rust_js_program::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;

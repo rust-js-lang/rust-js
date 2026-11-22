@@ -10,9 +10,9 @@
 //! a `const` of its module, as the crate's own impls' are (#944).
 
 use super::{Dependencies, FnCx, R};
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::lower::temporary_names::Base;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::{Ty, TypeVisitableExt};
 use rustc_span::def_id::{DefId, LocalModId};
 

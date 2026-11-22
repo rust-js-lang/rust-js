@@ -2,7 +2,7 @@
 //! create(self.surface.get().unwrap(), ..)`, whose `unwrap` can't fail, as
 //! no code runs between the set and the read that could take it out.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{self, AdtExprBase, ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, TyCtxt};

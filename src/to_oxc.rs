@@ -37,7 +37,7 @@ mod trailing;
 use self::trailing::{
     Inside, MapCol, Trailing, own_line_after_value, own_line_before_block, own_line_before_value, with_inside_comments,
 };
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 use self::apart::apart;
 use self::arms::{Arm, arm_starts, else_if_starts};

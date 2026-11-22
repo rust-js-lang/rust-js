@@ -7,7 +7,7 @@
 //! and its library's contract lists it, so a consumer's `{}` of it is in
 //! place too (rd730).
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};

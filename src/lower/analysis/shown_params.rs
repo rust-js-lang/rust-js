@@ -6,10 +6,10 @@
 //! (#1331). A writer of a type nothing gives one takes none.
 
 use super::debug::format_calls;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::format_args::Piece;
 use crate::lower::recognition::{StdItem, is_debug_argument, pointer_target, points_at_dyn_debug, std_item};
 use crate::lower::{Body, fn_def, strip};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::adjustment::PointerCoercion;

@@ -3,7 +3,7 @@
 //! walked once. Asked through `DropQuery`, of types and the function's
 //! facts alone: it sees no JS, nor emission's state.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use std::cell::RefCell;
 
 use crate::lower::analysis::{ClosureFacts, Counted};
@@ -232,7 +232,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             Drops::Runs => "runs",
             Drops::Unsupported(..) => "unsupported",
         };
-        crate::decisions::record_typed(
+        rust_js_program::decisions::record_typed(
             "type-drops",
             answer,
             crate::lower::recognition::kind_of(self.recognition.tcx, ty),

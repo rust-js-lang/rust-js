@@ -4,7 +4,7 @@
 //! 0328). A walk of the THIR that asks what types drop of a `DropQuery`,
 //! and sees nothing else of the function.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::visit::{self, Visitor};

@@ -19,7 +19,7 @@
 //! server internals that nothing writes after the load, where functions set
 //! its dispatchers'.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_middle::mir::TerminatorKind;
 use rustc_middle::thir::{ExprId, ExprKind, PatKind, Thir};

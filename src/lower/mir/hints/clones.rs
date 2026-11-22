@@ -3,7 +3,7 @@
 //! 0879, amended).
 
 use super::*;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 impl<'tcx> FnCx<'_, 'tcx> {
     /// The names of the locals a `clone()` makes, `let resolved =

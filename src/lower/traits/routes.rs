@@ -222,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(route) if route.supers.is_empty() => "given",
             Some(_) => "given-supertrait",
         };
-        crate::decisions::record("evidence-route", answer);
+        rust_js_program::decisions::record("evidence-route", answer);
         Some(self.route_expr(&route?))
     }
 

@@ -6,10 +6,10 @@
 //! `Rc`; one it counts is the instance too, its counts hidden beside it
 //! (#1228), so a method JS calls on it may take `self: &Rc<Self>`.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{is_cell_set, is_class_of, is_with_this, js_root_fn, rc_pointee};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::visit::{Visitor, walk_expr};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};

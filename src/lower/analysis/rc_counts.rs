@@ -4,7 +4,6 @@
 //! Each decided by what it points at, a type and every type that may be it
 //! (ADR 0852).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::instances::{Fact, callers_of, instances_of};
 use crate::lower::pointers::raw_pointee;
 use crate::lower::recognition::{
@@ -12,6 +11,7 @@ use crate::lower::recognition::{
     reads_rc_count, weak_pointee,
 };
 use crate::lower::{Body, fn_def};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
@@ -158,7 +158,7 @@ impl<'tcx> Counted<'tcx> {
                 && (self.types.iter())
                     .filter(|t| !self.resolved.contains(*t))
                     .any(|&t| may_be(tcx, t, pointee));
-        crate::decisions::record("rc-counted", if counts { "counted" } else { "uncounted" });
+        rust_js_program::decisions::record("rc-counted", if counts { "counted" } else { "uncounted" });
         counts
     }
 

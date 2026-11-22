@@ -4,7 +4,7 @@
 //! (`ImportFrom`).
 
 use super::Span;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 #[derive(Clone, PartialEq)]
 pub struct Import {

@@ -3,7 +3,7 @@
 //! ReactFiberReconciler`, the module imported whole; and a type's object
 //! of constants and methods (ADR 0047, #507).
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};

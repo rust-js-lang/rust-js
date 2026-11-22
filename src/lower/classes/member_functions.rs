@@ -4,8 +4,8 @@
 //! concept, as a file is at most 1500 lines.
 
 use super::{Member, Receiver, body_receiver, class_of, member, object_of, spread_state, superclass};
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Pattern, Prop, Stmt, StmtKind};
+use rust_js_program::collections::IndexSet;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 

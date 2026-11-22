@@ -11,10 +11,10 @@
 //! drop otherwise than Rust does. `--drops-shadow` writes each verdict.
 
 use super::drops::{Elaboration, Style};
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::FnCx;
 use crate::lower::analysis::Mir;
 use crate::lower::drops::Drops;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{
     self, BasicBlock, Local, Operand, Place, ProjectionElem, Rvalue, StatementKind, TerminatorKind,

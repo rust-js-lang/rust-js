@@ -18,9 +18,9 @@
 //! JS calls a function it's given with, whose properties a getter may
 //! answer, each read as often as Rust reads it (ADR 1022).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::is_binding;
 use crate::lower::recognition::{CellMethod, Recognition, cell_own_method};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::intravisit::{self, Visitor};

@@ -12,10 +12,10 @@
 //! it calls, of anything. What each closure given there is, through every
 //! caller, is the callers' instances' carrier's (`instances_of`, ADR 1115).
 
-use crate::collections::IndexSet;
 use crate::lower::instances::{Callers, Held, OnTheWay, callers_of, held_of, on_the_way};
 use crate::lower::recognition::{function_kind, is_std_crate};
 use crate::lower::{Body, bindings};
+use rust_js_program::collections::IndexSet;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, ClosureKind, Ty, TyCtxt};
 

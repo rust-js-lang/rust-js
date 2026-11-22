@@ -32,7 +32,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             "no"
         };
-        crate::decisions::record_typed("back-stepped", answer, crate::lower::recognition::kind_of(self.tcx, ty));
+        rust_js_program::decisions::record_typed(
+            "back-stepped",
+            answer,
+            crate::lower::recognition::kind_of(self.tcx, ty),
+        );
         answer != "no"
     }
 
@@ -44,7 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let local = self.krate.iterators.back_stepped.lent(self.frame.owner, local);
             self.asked_of(local).len == Some(crate::lower::analysis::LengthAsked::Counted)
         });
-        crate::decisions::record("back-counted", if counted { "counted" } else { "uncounted" });
+        rust_js_program::decisions::record("back-counted", if counted { "counted" } else { "uncounted" });
         counted
     }
 
@@ -94,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(crate::lower::analysis::SteppedLocal::Given) => "given",
             None => "none",
         };
-        crate::decisions::record("stepped-local", answer);
+        rust_js_program::decisions::record("stepped-local", answer);
         stepped
     }
 
@@ -164,7 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             "no"
         };
-        crate::decisions::record_typed("hint-made", answer, crate::lower::recognition::kind_of(self.tcx, ty));
+        rust_js_program::decisions::record_typed("hint-made", answer, crate::lower::recognition::kind_of(self.tcx, ty));
         answer != "no"
     }
 

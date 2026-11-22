@@ -8,12 +8,12 @@
 
 use super::cell_flow::CellClass;
 use super::resolvers;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::bindings::is_binding;
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
 use crate::lower::recognition::{Recognition, Std, StdItem};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{ExprId, ExprKind, Thir};

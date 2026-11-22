@@ -5,6 +5,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { root, stdDir } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const read = (path: string) => readFileSync(join(root, path), "utf8");
 // In name order, as macOS lists them and Linux, CI's, doesn't.
@@ -80,7 +81,7 @@ test("a catch that runs a drop guards it where it's made, or is a body's that ti
 // for calls it.
 test("no unwinding judge asks std_call_never_unwinds", () => {
   const uncommented = (path: string) => read(path).replace(/^\s*\/\/.*$/gm, "");
-  const callers = files("src")
+  const callers = compilerRustFiles()
     .filter((file) => file.endsWith(".rs"))
     .filter((file) => /(?<!fn )\bstd_call_never_unwinds\s*\(/.test(uncommented(file)));
   expect(callers).toEqual(["src/lower/analysis/prepared.rs"]);

@@ -3,7 +3,7 @@
 //! and what it gives; and the names of a function type's parameters, as
 //! the Rust names them (#543).
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 
 use rustc_hir as hir;
 use rustc_middle::ty::{self, Ty, TyCtxt};

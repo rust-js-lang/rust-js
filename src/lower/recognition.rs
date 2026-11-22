@@ -738,8 +738,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// tuple; a struct; an enum; a type parameter or a projection; a reference
 /// or a raw pointer; another. `decisions.rs`, which no rustc type reaches,
 /// lists the kinds.
-pub(crate) fn kind_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> crate::decisions::Kind {
-    use crate::decisions::Kind;
+pub(crate) fn kind_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> rust_js_program::decisions::Kind {
+    use rust_js_program::decisions::Kind;
     match ty.kind() {
         _ if ty.is_ref() || crate::lower::pointers::raw_pointee(tcx, ty).is_some() => Kind::Ref,
         ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) => Kind::Number,

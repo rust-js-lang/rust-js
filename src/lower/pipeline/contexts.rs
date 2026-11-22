@@ -3,7 +3,7 @@
 //! what its `RefCell`s are, the one its contract's facts are found in.
 
 use super::super::{Body, BodyFrame, CrateFacts, FnCx, Locals, Settled, body_queries::BodyFacts};
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::Thir;
 use rustc_middle::ty;
 use rustc_span::def_id::{DefId, LocalModId};

@@ -39,6 +39,28 @@ The native compiler and the WASI build share `src/main.rs` and its modules.
 `wasm/Cargo.toml` builds the same sources against a patched rustc frontend
 compiled for WASI; it is a separate build package, not a second compiler.
 
+The compiler is a Cargo workspace ([ADR 1181](decisions/1181-the-compilers-crates.md)):
+the binary at the checkout's root, `src/`, with rustc's front end, and the
+crates of `crates/`, with no rustc in them, which it depends on. The root
+`Cargo.toml`'s `[workspace] members` is their one list; a plain `cargo
+build`, `test` or `clippy` takes them all, and `scripts/compiler-crates.ts`
+answers, of that list and each crate's root, which crate a file or a
+top-level module is of, for the tests and the scripts alike.
+
+| Crate | Holds | Depends on |
+| --- | --- | --- |
+| `rust-js` (`src/`) | the driver and the front end, and, until #2297 moves them, the rest of owned output and printing | every crate below |
+| `rust-js-program` (`crates/rust-js-program/`) | owned output: so far `collections.rs`, `lines.rs`, `decisions.rs` | none of the compiler's |
+
+A module moves to a crate with `bun scripts/move-paths.ts <from> <to> ..`,
+which rewrites each path to it, a file's in the scripts, tests and docs and
+a Rust path through its old crate's root, `crate::collections::IndexMap`
+as `rust_js_program::collections::IndexMap`; `--widen` makes `pub` what
+another crate names, as rustc says it, so a crate's public items are what
+its dependents use and no more. Run it with no pairs on a branch after a
+move lands. A crate builds for WASI on its own (check:fast's "the crates
+for WASI").
+
 | Responsibility | Code |
 | --- | --- |
 | Compiler entry, command parsing, Cargo wrapper, panic reporting, the `core` and `alloc` std's bodies are lowered of, built to unwind | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/std_sysroot.rs` |
@@ -47,7 +69,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
 | Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
 | Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |
-| The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098); a session's answers that never change, each kept as first found, `OnceMap` (ADR 1100) | `src/collections.rs` |
+| The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098); a session's answers that never change, each kept as first found, `OnceMap` (ADR 1100) | `crates/rust-js-program/src/collections.rs` |
 | Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/format/jsx_shape.rs` (each JSX element's children as React is given them, which a layout keeps, #1807), `vendor/oxc_formatter` (oxc's formatter, with JSX text's edge space beside a child never where a line breaks, #1807), `src/typescript.rs`, `src/prettier.rs`, `src/node_session.rs` (the Node session each of the last two runs, its JSON read whole as UTF-8, ADR 1079); `typescript/` owns the TypeScript declaration model, reading/printing and engine-classified standard-library selection (#1903) |
 | Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/library/dependencies.rs` (the libraries a crate is compiled against, read and checked before it, and `@rust-js/std`'s), `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
 | Artifact planning, manifest and publication; the program's own files lowering reads, `LocalJs` | `src/output.rs`, `src/output/`, `src/manifest.rs`, `src/publish.rs` |
@@ -187,13 +209,17 @@ Project check hooks run after publication and may still fail the command.
 
 ### Dependency layers
 
-These are dependency rules, not execution order. Paths are relative to `src/`.
+These are dependency rules, not execution order. Paths are relative to `src/`,
+or to a crate's `src/` where the crate is named. Where a crate holds a
+layer, Cargo's crate graph holds its rule: `test/architecture-crates.test.ts`
+checks each crate's dependencies on the others, and that none but the
+binary uses rustc.
 
 | Layer | Modules | May depend on |
 | --- | --- | --- |
 | Driver | `main.rs`, `command.rs`, `cargo.rs`, `clippy.rs`, `std_sysroot.rs` | Every layer |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | Front end and earlier-use owned data/utilities; no linking, preparation or publication |
-| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `output/`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs`, `collections.rs`, `decisions.rs`, `css_modules.rs` | Owned output; no rustc |
+| Owned output | `js.rs`, `js/`, `program.rs`, `comments.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `output/`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs`, `packages.rs`, `css_modules.rs`; the crate `rust-js-program` | Owned output; no rustc |
 | Printing | `to_oxc.rs`, `to_oxc/`, `format.rs`, `format/`, `typescript.rs`, `prettier.rs`, `node_session.rs` | Printing and owned output; no rustc |
 
 The named orchestration exceptions are `output.rs`, which invokes the printing

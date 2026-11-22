@@ -23,9 +23,9 @@
 //! `function::call` and `function::apply`, which give it the `this` they're
 //! given, too.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::refusal::{Refused, refuse};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};

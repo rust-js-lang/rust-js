@@ -29,12 +29,12 @@
 //! no answer here leans on a lowering having written it, which a function
 //! re-exported as what it calls, or a struct JSX makes, may not.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::analysis::fn_pointers::FnPointers;
 use crate::lower::bindings;
 use crate::lower::recognition::{Recognition, StdItem, is_std_def};
 use crate::lower::representation::{NoneForm, NonePlace, none_form};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;

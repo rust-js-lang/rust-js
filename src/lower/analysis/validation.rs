@@ -1,12 +1,12 @@
 //! What a crate does that rust-js refuses, found before any of it is lowered.
 
-use crate::collections::IndexSet;
 use crate::lower::bindings;
 use crate::lower::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def, known_derive};
 use crate::lower::refusal::{Refused, refuse};
 use crate::lower::representation::marks_js_object;
 use crate::lower::traits;
 use crate::lower::{Body, strip};
+use rust_js_program::collections::IndexSet;
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::mir::BorrowKind;

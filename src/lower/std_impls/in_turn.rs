@@ -3,11 +3,11 @@
 //! parts made before it are dropped as it unwinds, `$madeInTurn` and
 //! `$madeEach` (ADR 1102, #897, #902).
 
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, StmtKind};
 use crate::lower::drops::Drops;
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
+use rust_js_program::collections::IndexSet;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 

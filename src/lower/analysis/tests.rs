@@ -11,7 +11,7 @@
 //! of its own; of a module with several, each is its own file, which its
 //! parent's test file registers the tests of.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_ast::attr::data_structures::CfgEntry;
 use rustc_hir::find_attr;
 use rustc_middle::ty::{self, TyCtxt};

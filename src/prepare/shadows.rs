@@ -3,7 +3,7 @@
 //! from_unknown(Type)`, `content` for `let content = content.clone()`,
 //! where `n` holds that value wherever `n$1` is read.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use crate::js::{self, Expr, ExprKind, Function, Name, Pattern, Stmt, StmtKind};
 

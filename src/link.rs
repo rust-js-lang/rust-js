@@ -4,9 +4,9 @@
 //! import apart from the module's names, and a local apart from a runtime
 //! helper's read (`prepare::import_names`, ADR 1150, #1975).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::{ExprKind, Name};
 use crate::program::{ImportRequest, Lowered, LoweredImport, LoweredModule, Unlinked};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use std::collections::BTreeMap;
 
 /// Proof that import resolution and runtime dependency closure completed.

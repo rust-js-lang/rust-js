@@ -4,11 +4,11 @@
 //! hand read back. Anything else done with what it holds disqualifies it:
 //! the rule fails closed.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{JsForm, creates, is_binding, js_form};
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{Recognition, Std, local_key_access};
 use crate::lower::std_types::option::OptionPlaceOp;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, Thir};

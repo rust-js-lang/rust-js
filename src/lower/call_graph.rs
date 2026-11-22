@@ -13,8 +13,8 @@
 //! owner: who calls whom at run time, resolved, and who names whom as
 //! written, of what types.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, BasicBlock, TerminatorKind};
 use rustc_middle::ty::{self, TyCtxt};

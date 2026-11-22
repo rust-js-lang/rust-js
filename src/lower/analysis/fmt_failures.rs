@@ -11,7 +11,6 @@
 //! through another type parameter is its consumer's to compile, where what
 //! it gives may fail (`call_may_fail`, ADR 0914).
 
-use crate::collections::IndexSet;
 use crate::lower::Body;
 use crate::lower::call_graph::Crate;
 use crate::lower::library::Foreign;
@@ -19,6 +18,7 @@ use crate::lower::recognition::{
     StdItem, fmt_trait_called, formatted_parts, is_err_variant, is_generic_fmt_result, is_std_def,
     is_write_result_type, of_files, of_io_reading, std_item,
 };
+use rust_js_program::collections::IndexSet;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::DefId;

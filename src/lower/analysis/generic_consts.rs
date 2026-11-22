@@ -2,7 +2,7 @@
 //! dictionaries carry (ADR 0106), and a program's contract lists for its
 //! tests (ADR 1076, amended, #597).
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;

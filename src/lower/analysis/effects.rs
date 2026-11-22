@@ -33,12 +33,12 @@
 //! the body starts. A dead local isn't written: it's read again only once
 //! it's assigned.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::pointers::{Libraries, argument_may_keep, raw_pointee};
 use crate::lower::recognition::{
     SliceLength, deref_mut_call, is_std_crate, known_by_bounds, range_step, rc_deref, rc_pointee, ref_deref,
     refcell_borrow, slice_length,
 };
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
 use rustc_index::bit_set::DenseBitSet;
@@ -1035,11 +1035,11 @@ fn call_runs_code<'tcx>(
 fn borrowed_at_writes<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
-) -> crate::collections::IndexMap<Location, DenseBitSet<Local>> {
+) -> rust_js_program::collections::IndexMap<Location, DenseBitSet<Local>> {
     let mut cursor = MaybeBorrowedLocals
         .iterate_to_fixpoint(tcx, body, None)
         .into_results_cursor(body);
-    let mut at = crate::collections::IndexMap::default();
+    let mut at = rust_js_program::collections::IndexMap::default();
     for (block, data) in body.basic_blocks.iter_enumerated() {
         for (statement_index, statement) in data.statements.iter().enumerate() {
             let indirect = match &statement.kind {

@@ -8,8 +8,8 @@
 //! scope of gives way to it (#1975). A JS module's or a helper's import
 //! keeps its word.
 
-use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Function, Item, JsxTag, Name, Pattern, Prop, Stmt, StmtKind};
+use rust_js_program::collections::IndexSet;
 
 /// `module`'s imports spelled, then its locals given way to helpers.
 pub(super) fn spelled(module: &mut js::Module) {

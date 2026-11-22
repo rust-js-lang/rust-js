@@ -3,8 +3,8 @@
 //! `if`'s test (ADRs 0658, 0708, 0444).
 
 use super::expressions;
-use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, ExprKind, Module, StmtKind};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// Where each conditional's branch is, `c ? a : b`'s `a` and `b`, of those
 /// that say, by where it starts: what a comment before one is before (ADR

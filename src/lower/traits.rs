@@ -12,7 +12,7 @@ mod routes;
 mod words;
 
 pub(super) use self::{calls::GivenEvidence, drop_params::*, evidence::*, given::*, routes::*, words::*};
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 use super::bindings;
 use super::display::Pretty;

@@ -4,7 +4,7 @@
 //! 0761) and a function kept out of line says so (ADR 0649).
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// The span of each of `list`'s statements that has one: a temporary
 /// rust-js made has the next's start when it's printed (`push_stmts`).

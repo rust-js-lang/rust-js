@@ -14,10 +14,10 @@
 //! nothing catches it, the program ends on the panic, and the line it had
 //! begun is lost: ADR 0262's decided exception, the guide's difference 57.
 
-use crate::collections::IndexSet;
 use crate::lower::Body;
 use crate::lower::call_graph::Crate;
 use crate::lower::recognition::Recognition;
+use rust_js_program::collections::IndexSet;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::visit::{Visitor, walk_expr};
 use rustc_middle::thir::{self, ExprKind, Thir};
@@ -1029,7 +1029,7 @@ fn prints_to<'tcx>(
 fn leaves_unended<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, error: bool) -> bool {
     let tcx = recognition.tcx;
     let thir = &body.thir;
-    let made: crate::collections::IndexMap<thir::ExprId, Vec<crate::lower::format_args::Piece>> =
+    let made: rust_js_program::collections::IndexMap<thir::ExprId, Vec<crate::lower::format_args::Piece>> =
         (super::debug::format_calls(tcx, thir).into_iter())
             .map(|(call, pieces, _)| (call, pieces))
             .collect();

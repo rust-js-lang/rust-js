@@ -10,9 +10,9 @@
 //! a running promise by design; given back to its caller, its caller's.
 
 use super::{awaits_quietly, destined_locally, quiet_but_their_parameters, quiet_call, writes_a_local};
-use crate::collections::IndexSet;
 use crate::lower::Body;
 use crate::lower::recognition::Recognition;
+use rust_js_program::collections::IndexSet;
 use rustc_hir::CoroutineKind;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{self, BasicBlock, Operand, Place, Rvalue, StatementKind, TerminatorKind};

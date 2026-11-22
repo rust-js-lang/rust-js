@@ -10,8 +10,8 @@
 //! module loads (`lazy_locals`); a function whose return alone owns a
 //! callback, what it runs before it returns (`owned_by_return`).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::generic_facts::type_parameter_of;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, CastKind, Local, Operand, PlaceElem, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::thir::ExprKind;

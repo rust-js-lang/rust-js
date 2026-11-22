@@ -17,6 +17,7 @@
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { compilerSourceDirs } from "./compiler-crates";
 
 /** The page whose table it is. */
 export const OWNER_PAGE = "docs/architecture.md";
@@ -360,14 +361,17 @@ export function exclusivity(rows: OwnerRow[], code: ReadonlyMap<string, string>)
   return { outside, unread };
 }
 
-/** The repository's sources, in name order: each `.rs` of `src/` and each
- * `.js` of `src/runtime/`. */
+/** The repository's sources, in name order: each `.rs` of the compiler's
+ * crates' (scripts/compiler-crates.ts), `src/`'s first, and each `.js` of
+ * `src/runtime/`. */
 export function sources(root: string): string[] {
   const walk = (directory: string): string[] =>
     readdirSync(join(root, directory), { withFileTypes: true })
       .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
       .flatMap((entry) => (entry.isDirectory() ? walk(`${directory}/${entry.name}`) : [`${directory}/${entry.name}`]));
-  return walk("src").filter((file) => file.endsWith(".rs") || (file.startsWith("src/runtime/") && file.endsWith(".js")));
+  return compilerSourceDirs(root)
+    .flatMap(walk)
+    .filter((file) => file.endsWith(".rs") || (file.startsWith("src/runtime/") && file.endsWith(".js")));
 }
 
 /** The front end's files, whose candidates completeness asks of. */

@@ -88,6 +88,13 @@ When contributing code:
   dependencies in [the architecture](docs/architecture.md). Put coordination
   in the piece responsible for orchestration, and name it there as an
   exception. Avoid cycles between responsibilities.
+- **Code goes in its layer's crate.** The compiler is a workspace
+  ([ADR 1181](docs/decisions/1181-the-compilers-crates.md)): rustc's front
+  end in the binary, `src/`, and owned output and printing in `crates/`,
+  with no rustc. Name another crate's item by its crate's path,
+  `rust_js_program::collections::IndexMap`; make `pub` only what another
+  crate uses. Move a module between crates with `bun scripts/move-paths.ts`,
+  and run it with no arguments on a branch after a move lands.
 - **Carry decisions forward as explicit data.** A later phase consumes an
   earlier phase's answer rather than reconstructing it from names, generated
   text, or implementation details.

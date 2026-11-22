@@ -1,8 +1,8 @@
 //! What the crate's bodies do with a `Vec`: change one in place, or ask its
 //! capacity.
 
-use crate::collections::IndexSet;
 use crate::lower::Body;
+use rust_js_program::collections::IndexSet;
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};

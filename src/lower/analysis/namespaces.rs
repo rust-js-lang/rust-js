@@ -8,8 +8,8 @@
 //! plugin::extract_events;`, and a path through `crate`, `self` or `super`
 //! alone, name the function, its named import.
 
-use crate::collections::IndexMap;
 use crate::lower::recognition::StdItem;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, intravisit};
 use rustc_middle::ty::{self, TyCtxt};

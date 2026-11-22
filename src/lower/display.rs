@@ -335,7 +335,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.compiled_writer_takes_options(writer),
             false => {
                 let takes = self.krate.foreign.writers_take_options(writer.krate);
-                crate::decisions::record("library-writer-options", if takes { "takes" } else { "plain" });
+                rust_js_program::decisions::record("library-writer-options", if takes { "takes" } else { "plain" });
                 takes
             }
         }
@@ -367,7 +367,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if self.krate.shown.of_writer(self.tcx, writer).any() => "shown",
             _ => "none",
         };
-        crate::decisions::record("writer-options", answer);
+        rust_js_program::decisions::record("writer-options", answer);
         answer != "none"
     }
 

@@ -2,7 +2,7 @@
 //! body alone.
 
 use super::*;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 mod reads;
 pub(in crate::lower::mir) use reads::*;

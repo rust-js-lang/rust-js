@@ -4,7 +4,7 @@
 //! define of a declared field can't do other than the constructor's
 //! assignment that follows it.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalModId};

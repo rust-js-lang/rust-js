@@ -19,10 +19,10 @@ pub(super) use internal::{internal_exports, internal_state};
 
 use super::bindings::HeldBinding;
 use super::{FnInfo, module_path};
-use crate::collections::{IndexMap, IndexSet};
 use crate::library::{
     Dependencies, Held, HeldImport, Imported, Item, ItemFact, Library, NamedModule, RcShape, Reexported, VERSION,
 };
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LOCAL_CRATE, LocalModId};
 use std::collections::BTreeSet;

@@ -3,7 +3,7 @@
 //! FunctionComponent: .. }` (ADR 0629). Which `match` is one is
 //! `hints::written_switches`'; how its arms' tests read, its chain's.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use crate::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, Switch, SwitchArm, Written};

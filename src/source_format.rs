@@ -469,7 +469,7 @@ fn workspace_sources() -> Result<Vec<Source>, String> {
     let members: Vec<&str> = (metadata["workspace_members"].as_array().into_iter().flatten())
         .filter_map(|m| m.as_str())
         .collect();
-    let mut seen = crate::collections::IndexSet::default();
+    let mut seen = rust_js_program::collections::IndexSet::default();
     let mut sources = Vec::new();
     for package in metadata["packages"].as_array().into_iter().flatten() {
         if !package["id"].as_str().is_some_and(|id| members.contains(&id)) {

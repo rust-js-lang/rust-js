@@ -3,8 +3,8 @@
 //! nullable fields and parameters, so a `None` is `null` where it's made.
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::representation::{NonePlace, none_form};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The locals `OptionWrites::null_nones` says: each write a `Some(..)`, a

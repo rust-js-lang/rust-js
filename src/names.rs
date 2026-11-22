@@ -1,6 +1,6 @@
 //! JavaScript identifier policy shared by lowering and linking.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 /// Pick an unused name: `x`, then `x$1`, `x$2`, ... Rust identifiers can't
 /// contain `$`, so these never clash with a user's name.

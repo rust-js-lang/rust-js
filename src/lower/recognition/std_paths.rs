@@ -9,7 +9,7 @@
 //! text of a path.
 
 use super::{StdCrate, registry};
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::fast_reject::SimplifiedType;
 use rustc_middle::ty::{self, FloatTy, IntTy, Mutability, TyCtxt, UintTy};

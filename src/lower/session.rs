@@ -16,7 +16,7 @@ use std::rc::Rc;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 
-use crate::collections::{IndexSet, OnceMap};
+use rust_js_program::collections::{IndexSet, OnceMap};
 
 /// What a lowering session finds once, and the flags of its run.
 pub(crate) struct Caches {
@@ -39,7 +39,8 @@ pub(crate) struct Caches {
     pub js_held: OnceCell<Rc<IndexSet<DefId>>>,
     /// The functions only calls reach, by their calls, found of the crate
     /// graph's names (ADRs 0577, 1148): the own callbacks' to ask.
-    pub only_called: OnceCell<Rc<crate::collections::IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>>>,
+    pub only_called:
+        OnceCell<Rc<rust_js_program::collections::IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>>>,
     /// std's items a recognizer knows by their path, each resolved (#1681).
     pub std_path_ids: OnceCell<Rc<crate::lower::recognition::StdPaths>>,
     /// Each of std's modules a recognizer asks what's under, of each of std's
@@ -90,7 +91,8 @@ pub(crate) struct Caches {
     /// in its crate changes in place is copied by nowhere (ADR 0914). Its
     /// contract says them, so a consumer that changes one compiles the
     /// function itself (#2112's change D).
-    pub elided: RefCell<crate::collections::IndexMap<DefId, std::collections::BTreeSet<crate::library::RcShape>>>,
+    pub elided:
+        RefCell<rust_js_program::collections::IndexMap<DefId, std::collections::BTreeSet<crate::library::RcShape>>>,
 }
 
 thread_local! {

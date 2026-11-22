@@ -7,8 +7,8 @@
 //! validation and declarations read.
 
 use super::{declared_tag, field_key, is_flatten, is_otherwise, is_test_field, is_untagged};
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::{CtorKind, DefKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::def_id::DefId;

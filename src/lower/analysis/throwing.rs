@@ -4,11 +4,11 @@
 //! whether a call is a throwing call, of a binding or of such a function,
 //! the one answer every path asks.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::is_binding;
 use crate::lower::call_graph::Crate;
 use crate::lower::fn_def;
 use crate::lower::recognition::{Catching, Recognition, StdItem};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, RETURN_PLACE, StatementKind, TerminatorKind};
 use rustc_middle::ty::{self, TyCtxt};

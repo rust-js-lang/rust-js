@@ -10,8 +10,8 @@
 //! What this can't do yet is an error, found before any JS is written: a
 //! value with a destructor that nothing drops would be a wrong answer.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use std::cell::RefCell;
 use std::collections::BTreeSet;
 use std::rc::Rc;

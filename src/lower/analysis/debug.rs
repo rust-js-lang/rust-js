@@ -1,12 +1,12 @@
 //! What `Debug` takes, crate-wide: whether anything shows a value pretty,
 //! `{:#?}`, and which derives are shown (ADRs 0060, 0137).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::format_args::{Piece, decode_template};
 use crate::lower::recognition::{
     FormatterQuery, formatter_query, is_arguments_new, is_debug_argument, is_formatter_pad,
 };
 use crate::lower::{Body, fn_def, strip};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;

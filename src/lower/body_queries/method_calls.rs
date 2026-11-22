@@ -3,7 +3,7 @@
 //! (event,))`, JS's `listener.handleEvent(event)`, of a value of any shape
 //! and a key, or of a value and a binding's method.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
 use rustc_middle::ty::{self, TyCtxt};
 

@@ -3,7 +3,7 @@
 //! what it decided as a program (ADR 1076, amended, #597): each is refused,
 //! as native Rust's answer would differ from the JS's.
 
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{Ty, TyCtxt};

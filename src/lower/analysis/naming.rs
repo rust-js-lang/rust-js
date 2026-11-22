@@ -1,12 +1,12 @@
 //! The names a crate's items have in JS, and what each module imports and
 //! exports (ADRs 0021, 0100).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings;
 use crate::lower::bindings::{Export, is_binding, js_import, js_path, module_binding};
 use crate::lower::traits;
 use crate::lower::{Body, FnInfo, camel_case, fresh_in};
 use indexmap::map::Entry;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, ItemKind};
 use rustc_middle::thir::{ExprId, ExprKind, Pat, PatKind, StmtKind};

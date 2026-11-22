@@ -3,7 +3,7 @@
 //! variable its value is, its `self`, which no call gives it.
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of the function being lowered, the lowering of each of its scope

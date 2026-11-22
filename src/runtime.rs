@@ -2,7 +2,7 @@
 //! `@rust-js/std`'s `runtime.js`, the module of every one (ADR 0103, #1095).
 
 /// Declares the helpers, and `Helper::ALL`, every one, for the package.
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 macro_rules! helpers {
     ($($name:ident,)*) => {
         /// Runtime helpers, each imported by the modules that use it.

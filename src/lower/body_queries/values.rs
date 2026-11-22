@@ -8,7 +8,7 @@
 //! wrapper's field; a body's THIR asks `changes`, which reaches a variable
 //! through any deref.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::mir::{self, Local, Place, PlaceElem, Rvalue, StatementKind};
 use rustc_middle::ty::{Ty, TyCtxt};
 

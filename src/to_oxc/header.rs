@@ -10,7 +10,7 @@
 //! nothing the module does (ADR 0262's case "None"); their order among
 //! themselves is their load order (ADR 1063).
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 
 use oxc_allocator::ArenaVec;
 use oxc_ast::ast::{

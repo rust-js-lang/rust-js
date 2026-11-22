@@ -61,9 +61,9 @@
 //! So whatever holds it, wherever it's read, is the one value the call of
 //! the function that made it holds, and JS's closures read that call's.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::recognition::{HandleStep, handle_step};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir as hir;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, AggregateKind, Local, Operand, Place, Rvalue, StatementKind, TerminatorKind};

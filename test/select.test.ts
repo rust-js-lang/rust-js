@@ -15,6 +15,7 @@ import { failedIn, misses } from "../scripts/selector-audit";
 import { baselines, budgeted, capOf, type Costs, hunksAtMap, interaction, mapLine, movedUnits, osBranches, outcome, pushSelection, reachOf, type Reach, sanityRecord, select, type Selection, suiteFiles } from "../scripts/select";
 import { pathFunctions, readsOf, readsSources, type TestMap } from "../scripts/testMap";
 import { fixture, root } from "./support";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 
 const bits = (...functions: number[]) => {
   const bytes = new Uint8Array(1);
@@ -413,9 +414,7 @@ test("bun run push says its selection on its line, and runs the check and the po
 // sources branch on no OS but WASI, which no test's compiler is; the
 // harness's branches are each listed with why they change no compile.
 test("a test runs the same compiler code on Linux and macOS, so one OS's map serves the other", () => {
-  const walk = (dir: string): string[] =>
-    readdirSync(join(root, dir), { withFileTypes: true }).flatMap((entry) => (entry.isDirectory() ? walk(`${dir}/${entry.name}`) : entry.name.endsWith(".rs") ? [`${dir}/${entry.name}`] : []));
-  const branches = walk("src").flatMap((file) =>
+  const branches = compilerRustFiles().flatMap((file) =>
     readFileSync(join(root, file), "utf8")
       .split("\n")
       .flatMap((line, i) => (/\bcfg!?\s*\(.*\b(target_os|target_family|target_vendor|target_env|unix|windows)\b|consts::OS\b/.test(line) && !/target_os = "wasi"/.test(line) && !/^\s*\/\//.test(line) ? [`${file}:${i + 1}: ${line.trim()}`] : [])),

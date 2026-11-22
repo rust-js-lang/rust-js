@@ -6,8 +6,8 @@
 
 use super::super::Body;
 use super::super::library::Foreign;
-use crate::collections::{IndexMap, IndexSet};
 use crate::program::Reexport;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::{DefId, LocalModId};
 

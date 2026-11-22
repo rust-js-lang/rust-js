@@ -2,7 +2,7 @@
 //! change each module's text, the map moved to it, and checks, which read
 //! what a build wrote, what they say of the JS said of the Rust.
 
-use crate::collections::IndexMap;
+use rust_js_program::collections::IndexMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};

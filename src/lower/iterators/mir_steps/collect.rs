@@ -2,8 +2,8 @@
 //! position found, a fold.
 
 use super::*;
-use crate::collections::IndexSet;
 use crate::lower::temporary_names::Role;
+use rust_js_program::collections::IndexSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `it.collect()` into `output`: a heap of its items in heap order,

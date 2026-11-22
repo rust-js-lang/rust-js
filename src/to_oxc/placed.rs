@@ -16,13 +16,13 @@
 //! own, not the outer one's, which oxc would print them before (rd630):
 //! at a place of its own, mapped to nothing, as the outer one maps its start.
 
-use crate::collections::{IndexMap, IndexSet};
 use oxc_ast::AstKind;
 use oxc_ast::ast::{BlockStatement, Function, FunctionBody, Statement, SwitchCase};
 use oxc_ast_visit::{Visit, VisitMut};
 use oxc_ast_visit::{walk, walk_mut};
 use oxc_span::{GetSpan, GetSpanMut, Span};
 use oxc_syntax::scope::ScopeFlags;
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// Of `body`, a module's statements, each statement of a function placed
 /// in it, as they're printed, past the function's end, and each block

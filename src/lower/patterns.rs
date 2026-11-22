@@ -2,8 +2,8 @@
 
 use super::recognition::StdItem;
 use super::{FnCx, Num, Shape, bindings, without_refs};
-use crate::collections::IndexMap;
 use crate::js::{self, Expr};
+use rust_js_program::collections::IndexMap;
 use rustc_ast::{LitKind, Mutability};
 
 use rustc_hir::def::DefKind;

@@ -5,7 +5,7 @@
 //! reads the generated code's lines and its source map, and gives where each
 //! comment goes in them.
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 use oxc_sourcemap::SourceMap;
 

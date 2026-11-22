@@ -8,7 +8,7 @@
 //! name (`parameter_name`). A declaration prints it, and says nothing a
 //! function takes on its own (#549, #559, #560).
 
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir;

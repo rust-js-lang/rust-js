@@ -39,8 +39,8 @@ impl Module {
     }
 
     /// Each variable its code reads: its `Name`, each once.
-    pub fn read_names(&self) -> crate::collections::IndexSet<&Name> {
-        let mut names = crate::collections::IndexSet::default();
+    pub fn read_names(&self) -> rust_js_program::collections::IndexSet<&Name> {
+        let mut names = rust_js_program::collections::IndexSet::default();
         for item in &self.items {
             item.visit_names(&mut |name| {
                 names.insert(name);
@@ -638,7 +638,7 @@ pub fn declared_variables(function: &Function) -> Vec<Name> {
 /// variable it declares a variable of its own, its reads with it: of the
 /// tree it's a clone of, none (ADR 1150, 4).
 pub fn rebound(stmts: &mut [Stmt]) {
-    let mut fresh: crate::collections::IndexMap<Name, Name> = Default::default();
+    let mut fresh: rust_js_program::collections::IndexMap<Name, Name> = Default::default();
     each_name(stmts, true, &mut |name| {
         if !fresh.contains_key(name) {
             fresh.insert(name.clone(), name.rebound());

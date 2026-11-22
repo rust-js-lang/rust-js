@@ -6,7 +6,7 @@
 //! Split from body_queries.rs by concept, as a file is at most 1500 lines.
 
 use super::{strip, tail};
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind, Thir};
 use rustc_middle::ty::{self, TyCtxt};
@@ -144,7 +144,7 @@ pub(in crate::lower) fn decide_held<'tcx>(
     bodies: &[crate::lower::Body<'tcx>],
     (back_stepped, hinted, keeps_capacity): (
         &crate::lower::analysis::BackStepped<'tcx>,
-        &crate::collections::IndexSet<rustc_middle::ty::Ty<'tcx>>,
+        &rust_js_program::collections::IndexSet<rustc_middle::ty::Ty<'tcx>>,
         bool,
     ),
 ) {
@@ -156,7 +156,7 @@ pub(in crate::lower) fn decide_held<'tcx>(
     let meaning = crate::lower::session::caches(tcx).meaning.get();
     // Which chains are transparent, counted where decisions are asked
     // (#1673), of the bodies the flip reads them of.
-    if crate::decisions::path().is_some() && !meaning {
+    if rust_js_program::decisions::path().is_some() && !meaning {
         for body in bodies {
             crate::lower::iterators::count_chains(recognition, (&body.thir, body.def_id), keeps_capacity);
         }
@@ -189,7 +189,7 @@ fn held_links<'tcx>(
     (mir, flipped): (&rustc_middle::mir::Body<'tcx>, &[DefId]),
     (back_stepped, hinted, keeps_capacity): (
         &crate::lower::analysis::BackStepped<'tcx>,
-        &crate::collections::IndexSet<rustc_middle::ty::Ty<'tcx>>,
+        &rust_js_program::collections::IndexSet<rustc_middle::ty::Ty<'tcx>>,
         bool,
     ),
 ) -> IndexSet<ExprId> {

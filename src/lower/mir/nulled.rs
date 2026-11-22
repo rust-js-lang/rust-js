@@ -4,9 +4,9 @@
 //! (ADRs 0275, 0841, 0861).
 
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::aggregates::Given;
 use crate::lower::representation::NoneForm;
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 mod captured;
 mod defined;

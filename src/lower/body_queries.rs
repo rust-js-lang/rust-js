@@ -3,7 +3,7 @@
 
 use super::bindings::named_callback;
 use super::fn_def;
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef, Mutability};
 use rustc_middle::ty::consts::ConstExt as _;

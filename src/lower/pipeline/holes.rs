@@ -3,8 +3,8 @@
 //! written in a function's body (ADR 0308), and a `const` written there
 //! (ADR 0031, amended).
 
-use crate::collections::IndexMap;
 use crate::js::{self, Expr, StmtKind};
+use rust_js_program::collections::IndexMap;
 
 /// What fills each item's hole, by its item's index: a function a block
 /// makes and gives (ADR 0296), or one written in a function's body (ADR

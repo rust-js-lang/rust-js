@@ -73,7 +73,7 @@ pub(in crate::lower) fn count_chains<'tcx>(
     keeps_capacity: bool,
 ) {
     for chain in chains(recognition, body, keeps_capacity) {
-        crate::decisions::record("transparent-chain", chain.answer.name());
+        rust_js_program::decisions::record("transparent-chain", chain.answer.name());
     }
 }
 

@@ -25,6 +25,7 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, write
 import { join } from "node:path";
 
 import { lists, type Mutation, testResults } from "./mutations";
+import { compilerSourceGlobs } from "./compiler-crates";
 import { cratePaths, portPaths, type SliceReport } from "./iteratorSlice";
 import { failedIn } from "./selector-audit";
 
@@ -74,7 +75,7 @@ export function sliceReruns(reports: [SliceReport, string][]): SliceRerun[] {
  * the newest commit of the batch that touched its inputs is named, as a
  * mutations job's runner (`runnerFiles`). */
 export const unrerunnable: Record<string, string[]> = {
-  "metamorphic rewrites of the change's cases": ["src/**", "std/**", "test/corpus/*.rs", "test/metamorphic.test.ts", "test/metamorphic/**", "scripts/iteratorSlice.ts"],
+  "metamorphic rewrites of the change's cases": [...compilerSourceGlobs(), "std/**", "test/corpus/*.rs", "test/metamorphic.test.ts", "test/metamorphic/**", "scripts/iteratorSlice.ts"],
   "crate corpus": cratePaths,
   "react-in-rust port": portPaths,
 };

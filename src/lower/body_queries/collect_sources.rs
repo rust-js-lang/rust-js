@@ -6,9 +6,9 @@
 //! is at most 1500 lines.
 
 use super::strip;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::fn_def;
 use crate::lower::recognition::{StdItem, is_std_def, std_item, trait_method};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;

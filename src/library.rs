@@ -2,8 +2,8 @@
 //! item another crate can reach is in JS, and what a consumer can't work out
 //! from the types alone. Versioned on its own, beside the host manifest.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::manifest::{Compiler, Manifest};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::path::Path;

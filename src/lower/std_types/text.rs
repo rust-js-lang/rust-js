@@ -4,8 +4,8 @@
 //! be another Unicode version's: `c.is_whitespace()` is `$isWhitespace(c)`
 //! (#1888, ADR 1163).
 
-use crate::collections::IndexSet;
 use crate::lower::temporary_names::Role;
+use rust_js_program::collections::IndexSet;
 
 use crate::js;
 use crate::js::result;

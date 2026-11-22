@@ -7,9 +7,9 @@
 //! a loop of `i` with `j`.
 
 use super::reclaim::{mentions, names_mut};
-use crate::collections::IndexMap;
 use crate::js::scopes;
 use crate::js::{self, Name};
+use rust_js_program::collections::IndexMap;
 
 /// Each item's counters spelled, outer before inner as its tree has them,
 /// once the program's names are reclaimed (`reclaim::module`), so a
@@ -63,7 +63,7 @@ fn counter_word(name: &Name, tree: &scopes::Tree) -> Option<String> {
 /// `name`'s word where its item has no tree, a scope of it declaring a
 /// word twice: the first of its candidates no name of its module has
 /// (`taken`), which no scope can mistake for another's.
-fn counter_word_apart(name: &Name, taken: &crate::collections::IndexSet<String>) -> String {
+fn counter_word_apart(name: &Name, taken: &rust_js_program::collections::IndexSet<String>) -> String {
     let base = name.made_base().expect("a counter is made");
     candidates(base)
         .find(|to| !crate::names::kept_word(to) && !taken.contains(to))

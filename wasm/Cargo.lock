@@ -1902,6 +1902,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
 
 [[package]]
+name = "rust-js-program"
+version = "0.0.4"
+dependencies = [
+ "indexmap",
+ "rustc-hash 2.1.1",
+]
+
+[[package]]
 name = "rust-js-wasm"
 version = "0.0.0"
 dependencies = [
@@ -1918,6 +1926,7 @@ dependencies = [
  "oxc_sourcemap",
  "oxc_span",
  "oxc_syntax",
+ "rust-js-program",
  "rustc-hash 2.1.1",
  "rustc_abi",
  "rustc_arena",

@@ -3,7 +3,7 @@
 //! clones and whether that runs the crate's code (ADRs 0973, 0997).
 
 use super::*;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 
 /// Whether `ty` is a zip std folds otherwise than it steps it, where that
 /// shows: of sides both `TrustedLen` but not both `TrustedRandomAccess`,

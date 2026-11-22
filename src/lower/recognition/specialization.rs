@@ -257,7 +257,7 @@ pub(crate) fn collects_in_place<'tcx>(
         Some(false) => "apart",
         None => "callers",
     };
-    crate::decisions::record("collect-in-place", answer);
+    rust_js_program::decisions::record("collect-in-place", answer);
     in_place
 }
 
@@ -272,7 +272,7 @@ pub(crate) fn vec_collect_way(in_place: bool, trusted: bool) -> &'static str {
         (false, true) => "fold",
         (false, false) => "next",
     };
-    crate::decisions::record("vec-collect-way", way);
+    rust_js_program::decisions::record("vec-collect-way", way);
     way
 }
 

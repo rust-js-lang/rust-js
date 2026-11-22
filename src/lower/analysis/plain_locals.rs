@@ -6,7 +6,7 @@ use super::super::Body;
 use super::super::body_queries::strip;
 use super::super::fn_def;
 use super::super::recognition::{StdItem, is_local_borrow, is_local_with, is_std_def, local_key_access};
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, GenericArgsRef, TyCtxt};
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};

@@ -2,9 +2,9 @@
 //! one between the code of one and the next's, or its comments (`tops`,
 //! `comments_of`), and none where it has none (ADR 0444, amended).
 
-use crate::collections::IndexMap;
 use oxc_ast::ast::Statement;
 use oxc_ast_visit::Visit;
+use rust_js_program::collections::IndexMap;
 
 /// `comments`, each of `body`'s statements but the first with a blank line
 /// before it where the Rust has one between the code of the one before

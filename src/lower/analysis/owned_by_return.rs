@@ -28,9 +28,9 @@
 //! the same of its own (`crate::library::Calling::owned_by_return`).
 
 use super::self_handles::{Uses, assign_at, drops, whole};
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::recognition::{HandleStep, handle_step, rc_pointee, trait_holds_in};
 use crate::lower::{Body, fn_def};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
 use rustc_middle::mir::{self, AggregateKind, Local, Location, Operand, Place, PlaceElem, Rvalue, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};

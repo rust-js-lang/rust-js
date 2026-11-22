@@ -371,7 +371,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// amended).
     pub(in crate::lower) fn holds_value(&self, field: &ty::FieldDef) -> bool {
         let holds = self.ref_cells().holds_value(self.tcx, field);
-        crate::decisions::record("refcell-field", if holds { "holds-value" } else { "cell" });
+        rust_js_program::decisions::record("refcell-field", if holds { "holds-value" } else { "cell" });
         holds
     }
 

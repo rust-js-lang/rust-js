@@ -13,9 +13,9 @@
 //! The function's THIR is beside it, for its shape: names and spans.
 
 mod made;
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::temporary_names::{Base, Role};
 pub(super) use made::Made;
+use rust_js_program::collections::{IndexMap, IndexSet};
 mod alternatives;
 pub(in crate::lower) mod arguments_use;
 mod assign;
@@ -197,7 +197,7 @@ pub(super) struct Found {
     /// Of a body lowered from its MIR, the `Vec` each `collect()` std may
     /// make in place is made of, by the call's span: its variable's name,
     /// `in_place_collect_sources`'s (#1259).
-    pub(super) in_place_sources: crate::collections::IndexMap<rustc_span::Span, js::Name>,
+    pub(super) in_place_sources: rust_js_program::collections::IndexMap<rustc_span::Span, js::Name>,
     /// Of a body lowered from its MIR, the temporaries a function that skips
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
@@ -912,7 +912,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.libraries(),
             Some(self.krate.cell_borrows),
         );
-        let lowered = crate::decisions::in_body(own, || self.mir_function(lowering, captures, seed));
+        let lowered = rust_js_program::decisions::in_body(own, || self.mir_function(lowering, captures, seed));
         self.locals.mir.dictionaries = dictionaries;
         self.locals.mir.declaring = declaring;
         lowered

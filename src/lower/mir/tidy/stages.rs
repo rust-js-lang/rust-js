@@ -5,7 +5,7 @@
 
 use super::contracts::{self, Contract};
 use super::*;
-use crate::collections::{IndexMap, IndexSet};
+use rust_js_program::collections::{IndexMap, IndexSet};
 
 /// One of tidy's rewrites: what it does to a body, by what `hints` say.
 pub(super) struct Pass {
@@ -1299,7 +1299,7 @@ fn decided_trees(b: &mut Vec<Stmt>, h: &Hints, kept: bool) {
 
 #[cfg(test)]
 mod tests {
-    use crate::collections::IndexSet;
+    use rust_js_program::collections::IndexSet;
 
     /// Each pass's name, `stage/pass`, is its own, as `--tidy-until` names it.
     #[test]

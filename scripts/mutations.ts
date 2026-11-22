@@ -38,6 +38,7 @@ import { resultsFile, verdictOf, type Result as CrateResult, type Verdict } from
 import { devTimes, ownsTimes } from "./devTimes";
 import { floorBytes } from "../test/bounded";
 import { freeBytes } from "../tooling/bounded.js";
+import { crateOf } from "./compiler-crates";
 
 const root = join(import.meta.dir, "..");
 
@@ -238,7 +239,8 @@ export async function harnessChangedSince(base: string): Promise<boolean> {
 /** The module of the crate's source file `file`, as a `cargo test` filter
  * names it from the crate's root, `src/lower/mir/tidy/jumps.rs`'s
  * `lower::mir::tidy::jumps`; the root's is `""`. Nothing for a file that
- * isn't the crate's Rust. */
+ * isn't the crate's Rust: the binary's, whose unit tests a mutation runs
+ * (`--bin rust-js`), not another of the compiler's crates' (ADR 1181). */
 export function unitTestsModule(file: string): string | undefined {
   if (!file.startsWith("src/") || !file.endsWith(".rs")) return undefined;
   const path = file.slice("src/".length, -".rs".length).replace(/(?:^|\/)mod$/, "");
@@ -404,6 +406,8 @@ export const crateFiles = [
   "build.rs",
   "rust-toolchain.toml",
   "src",
+  // The compiler's other crates, its workspace's (ADR 1181).
+  "crates",
   "std",
   "vendor",
   "test/vec-collect-ways.txt",
@@ -646,7 +650,8 @@ export function aloneProblem(mutation: Mutation, problem: string): string {
 
 /** Which mutation a build of many is, as it runs: its file's name, which
  * the runner gives each mutation's copy, or `RUST_JS_MUTANT`, for a test
- * that runs a copy of its own. Written at the end of the crate's root. */
+ * that runs a copy of its own. Written at the end of the root of each of
+ * the compiler's crates a site is in (ADR 1181), whose `crate::` it is. */
 const chooser = `
 /// Which of the mutations built in this compiler is (scripts/mutations.ts).
 #[doc(hidden)]
@@ -712,7 +717,10 @@ export function schema(batch: Sited[], read: (file: string) => string): Map<stri
     }
     files.set(file, text.slice(0, start) + `${chain}{${original}}` + text.slice(end));
   }
-  return files.set("src/main.rs", (files.get("src/main.rs") ?? read("src/main.rs")) + chooser);
+  for (const rootFile of new Set(sites.map((at) => crateOf(at[0].site!.file)!.rootFile))) {
+    files.set(rootFile, (files.get(rootFile) ?? read(rootFile)) + chooser);
+  }
+  return files;
 }
 
 /** Each file under `paths` of `dir`, a file or a directory's, by its path from `dir`. */

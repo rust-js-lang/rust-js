@@ -8,11 +8,11 @@
 //! ones.
 
 use super::{FnInfo, escapes, reachable};
-use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::lower::instances::{called, is_state, reads};
 use crate::lower::std_types::cell::is_box;
 use crate::program::LoweredModule;
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId, LocalModId};

@@ -6,9 +6,9 @@
 //! items is of it; what's refused of one; and its functions' JS, `this`
 //! where Rust has `self`.
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::recognition::{StdItem, is_std_def, opt_std_item};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir;
 use rustc_middle::ty::{self, TyCtxt};

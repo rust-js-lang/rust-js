@@ -6,8 +6,8 @@
 //! JS's object, so what it changes in place of one JS sees again, where
 //! Rust's next call gets its own (`copies/kept.rs`, which copies it).
 
-use crate::collections::IndexSet;
 use crate::lower::Body;
+use rust_js_program::collections::IndexSet;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;

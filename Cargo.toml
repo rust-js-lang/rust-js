@@ -9,15 +9,33 @@ description = "Compile Rust to readable JavaScript, in the spirit of ReScript"
 [package.metadata.rust-analyzer]
 rustc_private = true
 
+# The compiler's crates (ADR 1181): this one, the binary, with rustc's
+# front end, and each of `crates/`, with no rustc in it, which it depends
+# on. Its members are their one list (scripts/compiler-crates.ts reads it);
+# a plain `cargo build`, `test` or `clippy` takes them all. Every other
+# Cargo package in the checkout is its own: a binding crate, an example,
+# a vendored crate or the playground's build, each built where it is.
+[workspace]
+members = ["crates/rust-js-program"]
+default-members = [".", "crates/rust-js-program"]
+exclude = ["builtins", "examples", "next", "node", "react", "react-native", "scripts", "test", "target", "tooling", "vendor", "wasm", "webapi"]
+
+# What more than one of the crates depends on, at one version.
+[workspace.dependencies]
+# The compiler's maps and sets, walked in the order their entries were put
+# in (ADR 1098), with rustc's hasher.
+indexmap = "2"
+rustc-hash = "2"
+
 # oxc prints the JS, formats it as oxfmt does, and builds source maps. It is
 # pre-1.0 and changes often: pin one release, and keep every use of its API in
 # src/to_oxc.rs and src/format.rs. Its formatter isn't published to crates.io,
 # so every oxc crate comes from that release's tag, as one copy.
 [dependencies]
-# The compiler's maps and sets, walked in the order their entries were put
-# in (ADR 1098), with rustc's hasher.
-indexmap = "2"
-rustc-hash = "2"
+# The compiler's owned output (ADR 1181).
+rust-js-program = { path = "crates/rust-js-program" }
+indexmap.workspace = true
+rustc-hash.workspace = true
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 oxc_allocator = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }

@@ -12,7 +12,6 @@
 //! type parameters, each of its callers' (#388). No type's set besides: the
 //! lowering asks the value (`stepped_from_its_back`).
 
-use crate::collections::{IndexMap, IndexSet};
 use crate::lower::generic_facts::{GivenADrop, given_a_drop_of};
 use crate::lower::mir::locals::user_variable;
 use crate::lower::recognition::{
@@ -22,6 +21,7 @@ use crate::lower::recognition::{
     zipped_sources,
 };
 use crate::lower::{Body, fn_def};
+use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty::{self, Ty, TyCtxt};

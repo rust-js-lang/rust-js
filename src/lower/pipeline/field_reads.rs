@@ -4,7 +4,7 @@
 //! `untagged::field_reads`).
 
 use super::super::Body;
-use crate::collections::IndexSet;
+use rust_js_program::collections::IndexSet;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 
