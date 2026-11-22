@@ -290,4 +290,20 @@ export const mutations: Mutation[] = [
     replace: "whole",
     tests: ["test/select.test.ts", "-t", "a known list's edit runs the tests that read that list"],
   },
+  {
+    name: "item-layer-unasked-outside-functions",
+    breaks: "a change at a line outside any function's counted code selects everything though the map's item layer knows what reaches it, a variant added say (#2288)",
+    file: "scripts/testMap.ts",
+    find: "          const byItem = map.items === undefined ? undefined : (touchedByItem(map.items, file, from) ?? touchedByItem(map.items, file, from + 1));\n",
+    replace: "          const byItem = undefined as number[] | undefined;\n",
+    tests: ["test/testMap-items.test.ts"],
+  },
+  {
+    name: "impl-header-rewrite-everything",
+    breaks: "an `impl`'s header rewritten, its bounds or its trait, selects everything though the layer knows its methods and its trait's users (#2288)",
+    file: "scripts/testMap.ts",
+    find: "      const header = map.items?.impls.find((i) => i.file === file && i.header[0] <= from && from + Math.max(count, 1) - 1 <= i.header[1]);\n",
+    replace: "      const header = undefined as { refs: number[] } | undefined;\n",
+    tests: ["test/testMap-items.test.ts"],
+  },
 ];

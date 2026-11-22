@@ -60,6 +60,7 @@ import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
 import { downloaded } from "./artifacts";
 import { readJobTimes } from "./jobTimes";
+import { type ItemLayer, implBodyAt, inUnitTests, itemLayer, scipIndex, touchedByItem, touchedByNewFile } from "./testMapItems";
 import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
 
 const root = join(import.meta.dir, "..");
@@ -105,6 +106,11 @@ export type TestMap = {
   /** Of an incremental recording, the map it carried from, and how many of
    * its tests it recorded and carried. */
   carried?: { from: string; recorded: number; carried: number };
+  /** Which functions reach each item outside any function, and each
+   * `impl`'s header (scripts/testMapItems.ts, #2288): a change there selects
+   * them where it would select everything. A map without it, every map
+   * before it or one whose index failed, selects as before. */
+  items?: ItemLayer;
 };
 
 /** How far an incremental recording carries from: a map at most this many
@@ -630,6 +636,48 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   // field, an `impl`'s header, a constant's value, an item a macro makes,
   // where it's everything. A `pub` one's reach is wherever it's imported,
   // and a glob's names no word says: everything (ADR 1101, amended).
+  // A `use` or `pub use` changed, a re-export added say, which no other
+  // rule takes: each place its names are used, the function holding it or
+  // the functions reaching the item it's in, by the item layer (#2288).
+  // None where a use is in neither.
+  const useNamed = (file: string, from: number, count: number, added: string[], removed: string[] | undefined): number[] | undefined => {
+    if (map.items === undefined || removed === undefined) return undefined;
+    const written = [...added, ...removed].filter((line) => !commentOnly(line)).map((line) => line.replace(/\/\/.*$/, ""));
+    if (written.length === 0 || !written.every((line) => /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:use\s+)?[\w\s:{},;*]*$/.test(line))) return undefined;
+    if (written.some((line) => line.includes("*"))) return undefined;
+    const text = sources.text(file);
+    if (text === undefined) return undefined;
+    const lines = text.split("\n");
+    // The lines it replaces, each of a `use`; of an addition, its own lines
+    // are what's read, above.
+    for (let line = from; line < from + count; line++) if (!commentOnly(lines[line - 1] ?? "") && constHolding(lines, line, line, useItem) === undefined && !/^\s*(?:pub(?:\([^)]*\))?\s+)?use\b/.test(lines[line - 1] ?? "")) return undefined;
+    // Of an addition: whole `use`s, or lines inside a `use`'s list.
+    const code = added.filter((line) => !commentOnly(line));
+    if (count === 0 && !code.every((line) => /^\s*(?:pub(?:\([^)]*\))?\s+)?use\b/.test(line)) && constHolding(lines, from, from + 1, useItem) === undefined) return undefined;
+    // The names it brings in: each path's last, or its alias, not the
+    // modules on the way, `ExprKind` of `use crate::js::ExprKind;`.
+    const reserved = new Set(["use", "pub", "crate", "self", "super", "in", "as", "Self"]);
+    const joined = written.join(" ").replace(/\bpub(?:\([^)]*\))?/g, " ");
+    const words = new Set(
+      [...joined.matchAll(/\b([A-Za-z_]\w*)\s*(?=[,};]|\s+as\b|\s*$)|\bas\s+([A-Za-z_]\w*)/g)].map((m) => m[2] ?? m[1]!).filter((word) => !reserved.has(word)),
+    );
+    const found = new Set<number>();
+    for (const word of words) {
+      for (const site of sources.naming(word)) {
+        const held = holding(site.file, site.line);
+        if (held.length > 0) {
+          for (const f of held) found.add(f);
+          continue;
+        }
+        const of = linesOf(site.file);
+        if (commentOnly(of[site.line - 1] ?? "") || inUnitTests(map.items, site.file, site.line) || constHolding(of, site.line, site.line, useItem) !== undefined || /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:use\b|mod\s+\w+\s*;)/.test(of[site.line - 1] ?? "")) continue;
+        const byItem = touchedByItem(map.items, site.file, site.line);
+        if (byItem === undefined) return undefined;
+        for (const f of byItem) found.add(f);
+      }
+    }
+    return [...found];
+  };
   const useChanged = (file: string, from: number, count: number, added: string[], removed: string[] | undefined): number[] | undefined => {
     if (removed === undefined) return undefined;
     const text = sources.text(file);
@@ -707,7 +755,12 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       // addition, and the functions changed to use it select its tests.
       const text = existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : undefined;
       if (text !== undefined && unreferencedModule(text)) continue;
-      return { kind: "all", why: `${file} is new since the map's commit` };
+      // What moved there, by name, and what reaches the items it defines,
+      // where the map knows them (#2288).
+      const moved = map.items === undefined || text === undefined ? undefined : touchedByNewFile(map.items, text);
+      if (moved === undefined || typeof moved === "string") return { kind: "all", why: `${file} is new since the map's commit${typeof moved === "string" ? `: ${moved}` : ""}` };
+      for (const f of moved) touched.add(f);
+      continue;
     }
     for (const [from, count, added = [], removed] of hunks) {
       // Comments alone, or blank lines, change nothing a test runs.
@@ -738,7 +791,7 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
         }
       }
       if (holding(file, from).length === 0 && newNamesUsed(file, from, count, added, removed)) continue;
-      const resolving = holding(file, from).length === 0 ? (useChanged(file, from, count, added, removed) ?? signatureChanged(file, from, count, added, removed)) : undefined;
+      const resolving = holding(file, from).length === 0 ? (useChanged(file, from, count, added, removed) ?? signatureChanged(file, from, count, added, removed) ?? useNamed(file, from, count, added, removed)) : undefined;
       if (resolving !== undefined) {
         for (const f of resolving) touched.add(f);
         continue;
@@ -751,6 +804,23 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
       // An item it writes inside a function, an `impl` say, may be used
       // where the function isn't run.
       const item = added.find((line) => nestedItem.test(line));
+      // A constant or a static whose value alone changed, its name the
+      // same: the functions holding it, and what reaches it where the item
+      // layer knows (#2288).
+      const valued = (line: string) => line.match(/^\s*(?:pub(?:\([^)]*\))?\s+)?(?:const|static)\s+(?:mut\s+)?([A-Za-z_]\w*)\s*:/)?.[1];
+      const written = added.filter((line) => nestedItem.test(line));
+      if (item !== undefined && map.items !== undefined && removed !== undefined && written.every((line) => valued(line) !== undefined && removed.some((was) => valued(was) === valued(line)))) {
+        for (const f of holding(file, from)) touched.add(f);
+        for (const f of touchedByItem(map.items, file, from) ?? []) touched.add(f);
+        continue;
+      }
+      // An `impl`'s header rewritten, its bounds, its trait or its `Self`:
+      // its methods and its trait's referencers, by the layer (#2288).
+      const header = map.items?.impls.find((i) => i.file === file && i.header[0] <= from && from + Math.max(count, 1) - 1 <= i.header[1]);
+      if (item !== undefined && header !== undefined && written.every((line) => /^\s*(?:unsafe\s+)?impl\b/.test(line)) && removed?.some((line) => /^\s*(?:unsafe\s+)?impl\b/.test(line))) {
+        for (const f of header.refs) touched.add(f);
+        continue;
+      }
       if (item !== undefined) return { kind: "all", why: `${file}'s change at line ${from} writes an item, \`${item.trim()}\`` };
       if (count === 0) {
         // Lines added between two: in a function where each is counted
@@ -760,13 +830,51 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
         const before = holding(file, from);
         const after = holding(file, from + 1);
         const inside = before.some((a) => after.some((b) => a === b || within(a, b) || within(b, a)));
-        if (!inside) return { kind: "all", why: `${file}'s change between lines ${from} and ${from + 1} is outside any function's counted code` };
+        // Methods added to an inherent `impl`, between two of its own: new
+        // functions, reached by the functions changed to call them, but
+        // where one shadows a trait's method of its name, each function
+        // that names it (#2288).
+        const body = map.items === undefined || inside ? undefined : implBodyAt(map.items, file, from);
+        const newFns = [...added.join("\n").matchAll(/\bfn\s+([A-Za-z_]\w*)/g)].map((m) => m[1]!);
+        if (body !== undefined && !body.trait && newFns.length > 0 && removed !== undefined && removed.length === 0 && !added.some((line) => nestedItem.test(line) && !/\bfn\b/.test(line))) {
+          for (const name of newFns) for (const site of sources.naming(name)) for (const f of holding(site.file, site.line)) touched.add(f);
+          continue;
+        }
+        if (!inside) {
+          // Of an item outside any function, a variant added between two:
+          // the functions that reach it, where the map knows them (#2288).
+          const byItem = map.items === undefined ? undefined : (touchedByItem(map.items, file, from) ?? touchedByItem(map.items, file, from + 1));
+          if (byItem === undefined) return { kind: "all", why: `${file}'s change between lines ${from} and ${from + 1} is outside any function's counted code` };
+          for (const f of byItem) touched.add(f);
+          continue;
+        }
         for (const f of [...before, ...after]) touched.add(f);
         continue;
       }
       for (let line = from; line < from + count; line++) {
         const found = holding(file, line);
-        if (found.length === 0) return { kind: "all", why: `${file}'s change at line ${line} is outside any function's counted code` };
+        if (found.length === 0 && map.items !== undefined) {
+          // A doc comment or an attribute reads nothing; a signature line
+          // is of the function it opens (#2288).
+          const at = linesOf(file)[line - 1] ?? "";
+          if (commentOnly(at) || /^\s*#!?\[/.test(at)) continue;
+          const opened = inSignature(linesOf(file), line) ? following(file, line) : undefined;
+          if (opened !== undefined) {
+            touched.add(opened);
+            // And its callers, whose calls a signature may change unseen.
+            const name = map.items.names[opened];
+            if (name) for (const site of sources.naming(name)) for (const f of holding(site.file, site.line)) touched.add(f);
+            continue;
+          }
+        }
+        if (found.length === 0) {
+          // Of an item outside any function, its variant, field, constant
+          // or `impl` header: the functions that reach it (#2288).
+          const byItem = map.items === undefined ? undefined : touchedByItem(map.items, file, line);
+          if (byItem === undefined) return { kind: "all", why: `${file}'s change at line ${line} is outside any function's counted code` };
+          for (const f of byItem) touched.add(f);
+          continue;
+        }
         for (const f of found) touched.add(f);
       }
     }
@@ -1236,6 +1344,8 @@ export type Plan = {
    * full base, and the tests it records, files and case units; the corpus's
    * cases and std's iterator structs' it runs, a list each its parts read. */
   carry?: { from: string; base: { commit: string; made: number }; recorded: string[]; cases: string[]; forms: string[] };
+  /** The item layer of its commit, or none where its index failed. */
+  items?: ItemLayer;
 };
 
 /** Where `build` writes the plan and each part's recording is, the merge's
@@ -1294,6 +1404,26 @@ export function planUnits(files: string[], shards: number, perShard: number, sec
  * there are cores on all of them, the push suite's files dealt by what
  * check:fast keeps of each one's time on this machine (scripts/jobTimes.ts),
  * none where it keeps none, CI's. */
+/** The item layer of the checkout's `functions` (scripts/testMapItems.ts),
+ * or none, said loudly: a map without it selects as before. */
+function recordItems(functions: TestMap["functions"]): ItemLayer | undefined {
+  const started = Date.now();
+  const channel = /channel\s*=\s*"([^"]+)"/.exec(readFileSync(join(root, "rust-toolchain.toml"), "utf8"))?.[1] ?? "stable";
+  const documents = scipIndex(root, join(mapDir, "scip"), channel);
+  if (typeof documents === "string") {
+    console.log(`⚠ the map has no item layer, its index failed: ${documents}; a change outside any function selects everything, as before`);
+    return undefined;
+  }
+  const text = new Map<string, string[]>();
+  const lines = (file: string) => {
+    if (!text.has(file)) text.set(file, existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8").split("\n") : []);
+    return text.get(file)!;
+  };
+  const layer = itemLayer(documents, functions, lines);
+  console.log(`the item layer: ${layer.items.length} items, ${layer.impls.length} impl headers, ${((Date.now() - started) / 1000).toFixed(0)} s`);
+  return layer;
+}
+
 async function build(shards: number, carry?: (names: string[], files: string[], caseNames: string[]) => Promise<NonNullable<Plan["carry"]> | string>): Promise<Plan> {
   if (git(["status", "--porcelain"]).out.trim() !== "") throw new Error(unclean);
   const started = Date.now();
@@ -1326,6 +1456,7 @@ async function build(shards: number, carry?: (names: string[], files: string[], 
   mkdirSync(table, { recursive: true });
   const { names, functions } = functionTable(countingBinary, table, tools);
   rmSync(table, { recursive: true, force: true });
+  const items = recordItems(functions);
 
   const perShard = machine().cores;
   const parts = shards * perShard;
@@ -1362,6 +1493,7 @@ async function build(shards: number, carry?: (names: string[], files: string[], 
     includes: includes(),
     units,
     ...(carrying === undefined ? {} : { carry: carrying }),
+    ...(items === undefined ? {} : { items }),
   };
   writeFileSync(planFile, JSON.stringify(plan));
   return plan;
@@ -1629,10 +1761,10 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number, from?
     if (why !== undefined) always.push(`${unit} (${why})`);
     if (isFile && why === "it ran no compiler") noCompiler.push(unit);
   }
-  const { version, commit, toolchain, functions, includes, corpusReaders, names } = plan;
+  const { version, commit, toolchain, functions, includes, corpusReaders, names, items } = plan;
   const base = plan.carry?.base ?? { commit, made };
   const carried = plan.carry === undefined ? {} : { carried: { from: plan.carry.from, recorded: Object.keys(units).length - carriedCount, carried: carriedCount } };
-  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried }, always };
+  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler, names, base, ...carried, ...(items === undefined ? {} : { items }) }, always };
 }
 
 /** The map of the plan's recording, every part's, kept in the machine's

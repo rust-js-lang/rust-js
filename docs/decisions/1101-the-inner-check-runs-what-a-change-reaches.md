@@ -931,3 +931,61 @@ A push whose rebase brought commits ran its round again. 69240fd35's second roun
 - The sanity pass checks nothing where the selector's interaction of the change and the incoming commits is none (`sanitySkipped`). No test is reached by both, so each one's outcome is the round before's or the incoming pushers'.
 
 The push's line then says "none (incoming reach nothing this change reaches)", so a later surprise can be traced to a skipped round. `main`'s CI check runs whole after the push either way. Held by test/push.test.ts's "a round past a rebase type-checks the mutants and checks the interaction only where the incoming commits can change them", and the mutations `push-mutants-every-round` and `push-sanity-never-skipped`.
+
+## Amended: the item layer, in shadow (#2288)
+
+Half of the compiler's pushes selected everything (9 of 18 on the Mac
+mini; 13 of the 20 compiler commits replayed here): a line outside any
+function's counted code, an enum's variant, a const, an `impl`'s header, a
+`use`, or a new file the map can't say anything of. The map now records an
+item layer at its commit (scripts/testMapItems.ts), from rust-analyzer's
+SCIP index of the crate (the pinned toolchain's component; 38–46 s, 4 GB):
+each item outside a function, its extent, and the functions that reach it.
+They are SCIP's references to it or a member, every function whose counted
+code names it or a member, its variants', fields' and methods' identifiers,
+and, through another item that names it (`passes: JUMPS` in a const
+`STAGES` a function iterates), that one's, to a fixed point. Each `impl`'s
+header reaches its methods and every function that references its trait or
+a method of it; each function's own name finds one moved to a new file;
+`#[cfg(test)]` modules are known as code no test of the map runs. Where the
+index can't be made, the map has no layer, said, and selects as before;
+never part of one.
+
+The rustc crates resolve to nothing in that index (0 references; neither
+`rustc.source` nor the CLI's config reaches them), and SCIP marks nothing
+unresolved: 76% of the map's 23,943 functions hold an identifier it leaves
+unresolved, measured by position. A fallback that took each such function
+for one that reaches every item its file imports would have selected
+everything again, so it isn't used; the names carry what SCIP misses, and
+the mutation catalog holds the result to account.
+
+What a change outside any function selects with the layer: the outermost
+item holding the line's reachers, an `impl` header's, or, between an
+inherent `impl`'s methods, the functions that name a method it adds (an
+added method can only shadow a trait's of its name there, where a trait
+impl's overrides a default); a `use`'s, through the names it brings in, each
+use of them; a const's or a static's value, its holders and reachers; a doc
+comment or an attribute, nothing; a signature line, its function and the
+functions that name it; a new file, the map's functions of the names it
+defines and what reaches the items it defines, or everything where it
+defines a macro.
+
+The evidence. Of the mutation catalog's 54 mutations of `src/` that select
+everything today, 50 select with the layer, each holding the test that
+catches the mutation, and 4 still select everything (the "writes an item"
+text test taking a JS `const` in a Rust string, `union(` for a union).
+Replayed against each commit's nearest map, 13 of 20 compiler commits that
+select everything select 2 with the layer; over 389 commits against one
+map, 42 select 12, those of files outside the compiler. The honest finding:
+most changes outside a function touch central code, an enum every lowering
+matches, a function every compile runs, tidy's `STAGES`, whose selection
+really is nearly everything (8 of the 11 that turned picked held 3,271 to
+3,279 of 3,279 tests and cases; 3 held 108 to 229). There the next lever is
+the full check's own speed, not selection.
+
+It runs in shadow first: each push's and check:fast's selection is the
+map's without the layer, as before, and the layer's beside it is said on
+the push's line, `[items: <its outcome>, missed <n>]`, `missed` each test
+that failed in the run the layer's would have left out (`shadowMissed`).
+The switch comes after some 30 pushes across the machines with none
+missed, read from the machines' logs.

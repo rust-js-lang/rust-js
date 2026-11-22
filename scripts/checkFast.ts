@@ -25,7 +25,7 @@ import { currentBuild, prune } from "../test/compiles";
 import {childWarnings} from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins, type Family } from "./iteratorSlice";
 import { OWNER_PAGE, ownerTable, sourceLine } from "./owners";
-import { outcome, readOnly, recordSanity, selectChange, selectionFile, suiteFiles } from "./select";
+import { outcome, readOnly, recordSanity, selectChange, selectionFile, shadowMissed, suiteFiles } from "./select";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, pooledParts } from "./shard";
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
@@ -977,7 +977,8 @@ if (import.meta.main) {
     console.log(`the selection: ${outcome(selection)}${selection.all ? "" : `, of ${pushSuite} test files and ${cases.length} corpus cases: ${selection.why}`}`);
   }
   // What it selected, which `bun run push` says on its line.
-  if (given === undefined) writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null }));
+  const shadow = selection.shadow === undefined ? null : { outcome: outcome(selection.shadow), all: selection.shadow.all, files: selection.shadow.files, cases: selection.shadow.cases, forms: selection.shadow.forms };
+  if (given === undefined) writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null, shadow }));
   // Of a change to the iterators' code, the rows of their tables it names,
   // which size its job (#1364): some 0.1 s.
   const rows = touchesIterators([...changed, ...branch])
@@ -998,6 +999,12 @@ if (import.meta.main) {
   // Of another compiler's run, each test that failed with it, by its file,
   // which the retirement names (scripts/mutations.ts's `--retire`).
   const { failedTests } = await import("./mutations");
+  // Of the item layer's selection in shadow, each test that failed here it
+  // would have left out, a miss, which the push's line says (#2288).
+  if (given === undefined && shadow !== null) {
+    const missed = shadowMissed(shadow, failed.map(({ job: { cmd }, log }) => ({ file: cmd[2] ?? "", tests: failedTests(log) })));
+    writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null, shadow: { ...shadow, missed } }));
+  }
   if (given !== undefined) for (const { job: { cmd }, log } of failed) for (const test of failedTests(log)) console.log(`failed with it: ${cmd[2]}\t${test}`);
   // Each failing job's whole output, kept past the next run as it failed
   // (#1622, #1706).

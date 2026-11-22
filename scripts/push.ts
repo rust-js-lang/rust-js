@@ -221,6 +221,15 @@ export function loadedModules(): string[] {
     .map((path) => path.slice(root.length + 1));
 }
 
+/** A check:fast's selection as the push's line says it: what ran, and the
+ * item layer's in shadow, where there was one, with how many tests that
+ * failed it left out, which the switch is read from (#2288). */
+export function shadowSaid(written: { outcome: string; shadow?: { outcome: string; missed?: string[] } | null }): string {
+  if (!written.shadow) return written.outcome;
+  const missed = written.shadow.missed === undefined ? "" : `, missed ${written.shadow.missed.length}${written.shadow.missed.length > 0 ? ` (${written.shadow.missed.slice(0, 3).join(", ")})` : ""}`;
+  return `${written.outcome} [items: ${written.shadow.outcome}${missed}]`;
+}
+
 export function onlyPushedFiles(changed: string[], pushed: string[]): string[] {
   const ours = new Set(pushed);
   return changed.filter((file) => !ours.has(file));
@@ -375,7 +384,7 @@ async function main() {
         } else {
           rmSync(selectionFile, { force: true });
           run(name, ["bun", "run", "check:fast", ...asked]);
-          selection = existsSync(selectionFile) ? JSON.parse(readFileSync(selectionFile, "utf8")).outcome : said;
+          selection = existsSync(selectionFile) ? shadowSaid(JSON.parse(readFileSync(selectionFile, "utf8"))) : said;
         }
         // A map not fetched says why on the push's line (b355dc824's said
         // only that there was none).

@@ -90,6 +90,12 @@ jobs:
           path: .cache/test-maps
           key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ env.SHA }}
           restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+      # The item layer's index (scripts/testMapItems.ts, #2288): the pinned
+      # toolchain's rust-analyzer. Where it can't be had, the map is written
+      # without the layer, said, and selects as before.
+      - name: rust-analyzer for the item layer
+        run: |
+          rustup component add rust-analyzer || echo "::warning::rust-analyzer couldn't be installed: the map has no item layer"
       - name: The map kept, or the counting build and the plan of its recording
         id: map
         env:

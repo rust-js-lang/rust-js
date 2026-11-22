@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     replace: "skipped: { files: [], cases: [] } };",
     tests: ["test/select.test.ts", "-t", "a sanity pass runs what reaches most of the change first"],
   },
+  {
+    name: "shadow-selection-run",
+    breaks: "the item layer's selection runs before its switch, not in shadow beside the one that runs (#2288)",
+    file: "scripts/select.ts",
+    find: "  const ran = selectOf({ ...map, items: undefined }, base, sanity, rule);\n",
+    replace: "  const ran = selectOf(map, base, sanity, rule);\n",
+    tests: ["test/testMap-items.test.ts"],
+  },
+  {
+    name: "shadow-case-misses-unseen",
+    breaks: "a corpus case that failed in the run, which the layer's selection in shadow leaves out, isn't said to be a miss (#2288)",
+    file: "scripts/select.ts",
+    find: "      for (const test of tests) if (!shadow.cases.includes(test)) missed.push(`${file}: ${test}`);\n",
+    replace: "",
+    tests: ["test/testMap-items.test.ts"],
+  },
 ];

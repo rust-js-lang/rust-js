@@ -70,6 +70,10 @@ export type Selection = {
   functions?: number[];
   /** Of a sanity pass's budget, what it left out (`budgeted`). */
   skipped?: { files: string[]; cases: string[] };
+  /** What the map's item layer would have selected, where it has one, run
+   * in shadow beside this one, which runs (#2288): logged on the push's
+   * line, with whether it held every test that failed, until the switch. */
+  shadow?: Selection;
 };
 
 /** What a change selects of: the push suite's test files (`suiteFiles`),
@@ -332,7 +336,7 @@ export function reachOf(files: string[]): Reach {
 /** The map's commit's diff to the working tree, untracked files too. */
 /** The changes from `from` to `to`, or to the working tree with what it
  * doesn't track. */
-function changesBetween(from: string, to?: string): Change[] {
+export function changesBetween(from: string, to?: string): Change[] {
   if (to === undefined) return changesSince(from);
   const diff = Bun.spawnSync(["git", "diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", from, to], { cwd: root, stdout: "pipe" }).stdout.toString();
   return hunksOf(diff);
@@ -368,9 +372,17 @@ export type Rule = "full" | "push";
  * (`interaction`), what both the branch's own change and the commits the
  * rebase brought can affect. */
 export function selectChange(base = "origin/main", sanity?: string, rule: Rule = "full"): Selection & { map?: string } {
+  const map = nearestMap(mapStore, root, toolchainOf());
+  // The selection that runs is the map's without its item layer; the
+  // layer's, beside it, in shadow until the switch (#2288).
+  if (map?.items === undefined) return selectOf(map, base, sanity, rule);
+  const ran = selectOf({ ...map, items: undefined }, base, sanity, rule);
+  return { ...ran, shadow: selectOf(map, base, sanity, rule) };
+}
+
+function selectOf(map: TestMap | undefined, base: string, sanity: string | undefined, rule: Rule): Selection & { map?: string } {
   const files = suiteFiles();
   const cases = corpusCases();
-  const map = nearestMap(mapStore, root, toolchainOf());
   const own = ownFiles(base);
   const reach = reachOf([...files, caseFiles[1]]);
   if (map === undefined) {
@@ -510,7 +522,7 @@ function diffHunks(a: string, b: string, file: string): [number, number, number,
  * pushes and checks of 2026-11-17, 7 took that fallback, and 2905d5cdc's
  * own change, src/output.rs, selected 291 files where the map at
  * 7fe40bde3 placed it in one function, 7. */
-function sideSelection(changes: Change[], from: string, context: { files: string[]; cases: string[]; map: TestMap; reach: Reach; own: (file: string) => boolean }): Selection {
+export function sideSelection(changes: Change[], from: string, context: { files: string[]; cases: string[]; map: TestMap; reach: Reach; own: (file: string) => boolean }): Selection {
   const differing = changes.filter((change) => change.file.startsWith("src/") && change.hunks !== "new" && differs(context.map.commit, from, change.file));
   const placed = new Map(differing.flatMap((change) => {
     const at = hunksAtMap(change, diffHunks(context.map.commit, from, change.file));
@@ -693,6 +705,23 @@ export function sanityRecord(selection: Selection, head: string, checked: string
 
 /** A selection in a line: `all (why)`, `some (N files, M cases)`, `none`;
  * every push's line and CI's summary say it. */
+/** Of a selection in shadow, `shadow`, the tests that failed in the run of
+ * the one that ran, `failed` (each job's file and the tests it names), that
+ * it leaves out: a corpus case or an iterator-forms case it doesn't hold, or
+ * a test file it doesn't, by name. None of one that selects everything. */
+export function shadowMissed(shadow: { all: boolean; files: string[]; cases: string[]; forms: string[] }, failed: { file: string; tests: string[] }[]): string[] {
+  if (shadow.all) return [];
+  const missed: string[] = [];
+  for (const { file, tests } of failed) {
+    if (file === caseFiles[0]) {
+      for (const test of tests) if (!shadow.cases.includes(test)) missed.push(`${file}: ${test}`);
+    } else if (file === caseFiles[1]) {
+      for (const test of tests) if (!shadow.forms.includes(test.replace(/ with .*$/, ""))) missed.push(`${file}: ${test}`);
+    } else if (file !== "" && !shadow.files.includes(file)) missed.push(file);
+  }
+  return missed;
+}
+
 export function outcome(selection: Selection): string {
   const behind = selection.map ? `, map ${selection.map.slice(0, 9)} ${selection.behind ?? "?"} behind` : "";
   return `${outcomeOf(selection)}${behind}`;
