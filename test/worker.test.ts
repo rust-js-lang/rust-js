@@ -24,7 +24,7 @@ import { cases, corpus, directives } from "./corpus-cases";
 import { partSetting } from "./part-settings";
 import { compileCommand } from "./programs";
 import { root } from "./support";
-import { workerJob, workerPid } from "./workers";
+import { measureKept, workerJob, workerPid } from "./workers";
 
 const SAMPLE = 24;
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
@@ -82,7 +82,9 @@ test.each(mine.map((c) => [c.name, c] as const))("%s: a job's builds are their o
     const written = files(dir);
     for (const order of [[0, 1], [1, 0]]) {
       emptied(dir);
-      const answered = await workerJob(order.map((i) => builds[i]), root, timeout, env);
+      // Kept whatever it holds: the rows hold the worker's reuse, the
+      // last row its replacement past its share.
+      const answered = await workerJob(order.map((i) => builds[i]), root, timeout, env, Infinity);
       pids.add(workerPid());
       apart.of += order.length;
       order.forEach((build, k) => {
@@ -125,6 +127,23 @@ test("each build of a job is given the record of what the session read, as its o
     const answered = await workerJob(builds, root, timeout, env);
     expect(answered.map((answer) => answer?.code)).toEqual([0, 0]);
     for (const i of [0, 1]) expect(readFileSync(join(dir, `${i}.d`), "utf8")).toContain(c.name);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a kept worker past its share of the machine's memory is replaced, and its next job answered", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
+  try {
+    const c = running[0];
+    const builds = [false, true].map((library) => compileCommand(join(corpus, c.name), dir, c.edition, library, []).cmd);
+    await workerJob(builds, root, timeout, env);
+    const before = workerPid();
+    expect(measureKept()).toBeGreaterThan(1);
+    // A share of one byte, which it holds more than.
+    const answered = await workerJob(builds, root, timeout, env, 1);
+    expect(workerPid()).not.toBe(before);
+    expect(answered.map((answer) => answer?.code)).toEqual([0, 0]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

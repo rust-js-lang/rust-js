@@ -22,4 +22,12 @@ export const mutations: Mutation[] = [
     replace: "  return answer.builds.reverse().map((build) => {\n",
     tests: tested,
   },
+  {
+    name: "worker-kept-past-its-share",
+    breaks: "a kept worker holding more than a test's share of the machine's memory is kept on: twelve of them keep 13 to 20 GB on a 16 GB machine (#2301)",
+    file: "test/workers.ts",
+    find: "  if (kept?.key !== key || kept.held > share) stop();\n",
+    replace: "  if (kept?.key !== key) stop();\n",
+    tests: tested,
+  },
 ];

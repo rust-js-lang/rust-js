@@ -3,11 +3,16 @@
 // compiler's start, loading rustc's libraries, is paid once a test process,
 // not once a job. Its jobs are one at a time, in the order they're asked.
 // One that gives no answer by its deadline, or ends it, is stopped, and its
-// builds are compiled apart; the next job starts another.
+// builds are compiled apart; the next job starts another. And one that
+// holds more than a test's share of the machine's memory
+// (`testShareBytes`), as a large case leaves it, macOS keeping what it
+// freed, is replaced before its next job: twelve parts each keeping 1.1 to
+// 1.7 GB would be 13 to 20 GB on a 16 GB machine.
 
 import type { Subprocess } from "bun";
 
-import { guarded, stopGroup, type Exit } from "./child";
+import { testShareBytes } from "../scripts/shard";
+import { guarded, processTree, stopGroup, treeBytes, type Exit } from "./child";
 
 type Answered = { builds: ({ code: number; stdout: string; stderr: string } | { apart: string })[] } | { error: string };
 
@@ -19,7 +24,15 @@ type Kept = {
   reader: ReadableStreamDefaultReader<Uint8Array>;
   buffered: string;
   key: string;
+  /** What it held when last measured, every `measureEvery` ms, and the
+   * timer that measures it. */
+  held: number;
+  watch: ReturnType<typeof setInterval>;
 };
+
+/** How often a kept worker's memory is measured, in ms: measuring takes
+ * about 20 ms (`treeBytes`), too long to ask after each job. */
+const measureEvery = 2000;
 let kept: Kept | undefined;
 /** The pid of the worker that answered the last job. */
 let answeredBy: number | undefined;
@@ -28,8 +41,15 @@ let queue: Promise<unknown> = Promise.resolve();
 
 function stop() {
   if (kept === undefined) return;
+  clearInterval(kept.watch);
   stopGroup(kept.proc.pid);
   kept = undefined;
+}
+
+/** What the kept worker holds, measured now, as its timer measures it. */
+export function measureKept(): number | undefined {
+  if (kept !== undefined) kept.held = treeBytes(processTree(kept.proc.pid));
+  return kept?.held;
 }
 
 function start(program: string, cwd: string, env: Record<string, string | undefined>, key: string): Kept {
@@ -46,7 +66,9 @@ function start(program: string, cwd: string, env: Record<string, string | undefi
   // It neither keeps this process alive nor outlives it: its stdin closes
   // as this process ends, and its watcher stops it (`guarded`).
   proc.unref();
-  return { proc, reader: proc.stdout.getReader(), buffered: "", key };
+  const watch = setInterval(measureKept, measureEvery);
+  watch.unref();
+  return { proc, reader: proc.stdout.getReader(), buffered: "", key, held: 0, watch };
 }
 
 /** The worker's next line, or `undefined` where it ended or `deadline` came first. */
@@ -73,16 +95,22 @@ async function line(worker: Kept, deadline: number): Promise<string | undefined>
 /** Each build's answer of a job of `cmds`, each build's own compile's
  * command: its exit, as its own compile's, or `undefined` of one the
  * worker ran apart, or of each where it gave none. `timeout` a build. */
-export function workerJob(cmds: string[][], cwd: string, timeout: number, env: Record<string, string | undefined>): Promise<(Exit | undefined)[]> {
-  const run = queue.then(() => answered(cmds, cwd, timeout, env));
+export function workerJob(
+  cmds: string[][],
+  cwd: string,
+  timeout: number,
+  env: Record<string, string | undefined>,
+  share = testShareBytes(),
+): Promise<(Exit | undefined)[]> {
+  const run = queue.then(() => answered(cmds, cwd, timeout, env, share));
   queue = run.catch(() => undefined);
   return run;
 }
 
-async function answered(cmds: string[][], cwd: string, timeout: number, env: Record<string, string | undefined>): Promise<(Exit | undefined)[]> {
+async function answered(cmds: string[][], cwd: string, timeout: number, env: Record<string, string | undefined>, share: number): Promise<(Exit | undefined)[]> {
   const program = cmds[0][0];
   const key = JSON.stringify([program, cwd, env]);
-  if (kept?.key !== key) stop();
+  if (kept?.key !== key || kept.held > share) stop();
   kept ??= start(program, cwd, env, key);
   const worker = kept;
   const none = cmds.map(() => undefined);

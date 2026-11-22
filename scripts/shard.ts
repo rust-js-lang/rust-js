@@ -408,6 +408,14 @@ export function memoryBudget(total = totalmem(), free = availableMemory()): numb
   return Math.max(peakGB.compilerBuild, Math.min(total / 2 ** 30 - 6, free / 2 ** 30 - 2));
 }
 
+/** The bytes one process of the work run at once may hold, a test's or
+ * what it keeps running, a native run or a kept compiler (#2301): the
+ * memory the machine's runs may hold together (`memoryBudget`) shared by
+ * one on each core, as the most that run at once, at least 512 MB. */
+export function testShareBytes(budgetGB = memoryBudget(), cores = machine().cores): number {
+  return Math.max(512 * 2 ** 20, Math.floor((budgetGB * 2 ** 30) / cores));
+}
+
 /** The machine a run sizes itself by, as it starts: its cores,
  * `availableParallelism()`, a container's share of them where it has one,
  * and its memory, in GB, all of it and what's free (`availableMemory`).

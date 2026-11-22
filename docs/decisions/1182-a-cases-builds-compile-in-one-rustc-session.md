@@ -137,4 +137,15 @@ libraries, is paid once per test process, not once per job.
   1: corpus wall time 48 s → 37 s, compiles summed 490 s → 374 s, process
   start and exit 118 s → 16 s. Against the two-process harness before
   #2301: 68 s → 37 s (−46%).
-- **Mutations:** `worker-not-kept`, `worker-answers-swapped`.
+- **The size bound** (the lead's review): a kept worker holding more than
+  a test's share of the machine's memory is replaced before its next job.
+  The share is `testShareBytes` (scripts/shard.ts): `memoryBudget` shared
+  by one process a core, at least 512 MB, the share native runs are held
+  to. macOS keeps what a large case freed, so twelve workers each keeping
+  1.1–1.7 GB would be 13–20 GB on a 16 GB machine. What a worker holds is
+  `treeBytes`', measured every 2 s by an unref'd timer, as a measure takes
+  about 20 ms, too long for after every job. On the M6 (share 853 MB), a
+  corpus run replaced 4 of its 12 workers: 39 s wall, compiles 385 s summed,
+  against 37 s and 374 s unbounded.
+- **Mutations:** `worker-not-kept`, `worker-answers-swapped`,
+  `worker-kept-past-its-share`.

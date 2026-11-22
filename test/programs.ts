@@ -7,7 +7,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { runInNewContext } from "node:vm";
 
-import { machine, memoryBudget } from "../scripts/shard";
+import { testShareBytes } from "../scripts/shard";
 import { compileFailure, run as runAsync, runBuilds, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
 import { helpersModule, stdDir } from "./packages-of";
@@ -223,12 +223,11 @@ export function nativeCommand(binary: string, outcomeFile: string): string[] {
   return ["env", `WATCH=${memoryWatch()}`, `MARK=${pastShareMark(outcomeFile)}`, "sh", "-c", watch, binary, outcomeFile];
 }
 
-/** The bytes a native run may hold on macOS: the memory the machine's
- * runs may hold together (`memoryBudget`, scripts/shard.ts, the one
- * authority), shared by one run on each core, as the most that run at
- * once, at least 512 MB; asked once, as a run starts. */
+/** The bytes a native run may hold on macOS: a test's share of the
+ * machine's memory (`testShareBytes`, scripts/shard.ts, the one
+ * authority); asked once, as a run starts. */
 export function nativeShare(): number {
-  nativeShareBytes ??= Math.max(512 * 2 ** 20, Math.floor((memoryBudget() * 2 ** 30) / machine().cores));
+  nativeShareBytes ??= testShareBytes();
   return nativeShareBytes;
 }
 let nativeShareBytes: number | undefined;
