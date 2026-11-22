@@ -65,11 +65,6 @@ export type Mutation = {
   /** What its tests run with besides, the iterator matrix's row that
    * catches it, `ITERATOR_MATRIX`'s (#1971). */
   env?: Record<string, string>;
-  /** The GB its tests may hold, past what a run of tests is given
-   * (`testsMemory`): a stopgap for a test whose compile holds more, until
-   * the compiler holds less, `main-stack-default`'s long function's 5.4 GB
-   * (#2310). Its runs as the compiler is are given it too. */
-  memory?: number;
 };
 
 // Mutations are grouped by their repository source file. Each list's
@@ -1029,7 +1024,7 @@ let testRuns = 0;
  * starts: half the machine's budget, 4 GB at least. A run's peak is a
  * test file's compiles, under 2 GB; one past this is a compiler that runs
  * away, which took CI's runners of 16 GB down before (#1097). */
-export const testsMemory = (memory?: number) => Math.max(4, memoryBudget() / 2, memory ?? 0) * 2 ** 30;
+const testsMemory = () => Math.max(4, memoryBudget() / 2) * 2 ** 30;
 
 /** How `tests` do with `compiler`, what they printed, and how many ran:
  * to its first failure, or, `bail` false, each of them, with `env` besides. */
@@ -1037,7 +1032,7 @@ async function test(
   tests: string[],
   compiler: string,
   snapshots: Snapshots = false,
-  { bail = true, env = {}, directory = root, memory }: { bail?: boolean; env?: Record<string, string>; directory?: string; memory?: number } = {},
+  { bail = true, env = {}, directory = root }: { bail?: boolean; env?: Record<string, string>; directory?: string } = {},
 ): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
   // What the JS does is what's checked: a corpus snapshot differs with
   // nearly any change to the compiler, a mutation's or not. One that only
@@ -1066,7 +1061,7 @@ async function test(
     directory,
     testTimeout,
     testsEnv(compiler, own, snapshots, env),
-    testsMemory(memory),
+    testsMemory(),
   );
   rmSync(own, { recursive: true, force: true });
   const output = p.stdout + p.stderr;
@@ -1103,13 +1098,12 @@ async function testsInParts(
   env: Record<string, string> | undefined,
   beside: <T>(work: () => Promise<T>, weight?: number) => Promise<T>,
   parts = caseParts(machine().cores),
-  memory?: number,
 ): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
-  if (!ofWholeCorpus(tests)) return beside(() => test(tests, compiler, snapshots, { env, memory }));
+  if (!ofWholeCorpus(tests)) return beside(() => test(tests, compiler, snapshots, { env }));
   // Each part the cores it keeps busy of the slots (`casePartCores`).
   const weight = casePartCores(machine().cores);
   const ran = await Promise.all(
-    Array.from({ length: parts }, (_, i) => beside(() => test(tests, compiler, snapshots, { env: { ...env, RUST_JS_CASES: `${i + 1}/${parts}` }, memory }), weight)),
+    Array.from({ length: parts }, (_, i) => beside(() => test(tests, compiler, snapshots, { env: { ...env, RUST_JS_CASES: `${i + 1}/${parts}` } }), weight)),
   );
   const failed = ran.find((part) => !part.passed);
   return {
@@ -1252,8 +1246,8 @@ export function corpusCaseNames(): string[] {
 
 /** A mutation's test set, as the controls run it: its snapshots or not,
  * its settings, and its tests; mutations of one key share one control. */
-export function testSetKey(m: { snapshots?: boolean; env?: Record<string, string>; memory?: number; tests: string[] }): string {
-  return [m.snapshots ? "snapshots" : "", envKey(m.env), ...(m.memory === undefined ? [] : [`memory ${m.memory}`]), ...m.tests].join("\0");
+export function testSetKey(m: { snapshots?: boolean; env?: Record<string, string>; tests: string[] }): string {
+  return [m.snapshots ? "snapshots" : "", envKey(m.env), ...m.tests].join("\0");
 }
 
 /** A mutation's settings, `env`, as one key, whatever their order. */
@@ -2114,27 +2108,25 @@ async function main() {
   const sets = [...new Map(chosen.filter((m) => m.tests && !sources.has(m)).map((m) => [testSetKey({ ...m, tests: m.tests! }), m])).values()].map((m) => ({
     snapshots: m.snapshots === true,
     env: m.env ?? {},
-    memory: m.memory,
     tests: m.tests!,
     ...testSet(m.tests!),
   }));
-  type Run = { compiler: string; snapshots: boolean; env: Record<string, string>; memory?: number; file: string; pattern?: string; part?: string };
+  type Run = { compiler: string; snapshots: boolean; env: Record<string, string>; file: string; pattern?: string; part?: string };
   const runs: Run[] = [];
-  const modeKey = (set: { snapshots: boolean; env: Record<string, string>; memory?: number }) => `${set.snapshots}\0${envKey(set.env)}\0${set.memory ?? ""}`;
-  const modes = [...new Map(sets.map((set) => [modeKey(set), { snapshots: set.snapshots, env: set.env, memory: set.memory }])).values()];
-  for (const { snapshots, env, memory } of modes) {
-    const ofMode = sets.filter((set) => modeKey(set) === modeKey({ snapshots, env, memory }));
+  const modes = [...new Map(sets.map((set) => [`${set.snapshots}\0${envKey(set.env)}`, { snapshots: set.snapshots, env: set.env }])).values()];
+  for (const { snapshots, env } of modes) {
+    const ofMode = sets.filter((set) => set.snapshots === snapshots && envKey(set.env) === envKey(env));
     for (const file of new Set(ofMode.flatMap((set) => set.files))) {
       const naming = ofMode.filter((set) => set.files.includes(file));
       const pattern = naming.some((set) => set.pattern === undefined) ? undefined : naming.map((set) => `(?:${set.pattern})`).join("|");
       const parts = file === "test/corpus.test.ts" ? caseParts(machine().cores) : 1;
       for (const compiler of [unmutated, broken]) {
-        for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, env, memory, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined });
+        for (let part = 1; part <= parts; part++) runs.push({ compiler, snapshots, env, file, pattern, part: parts > 1 ? `${part}/${parts}` : undefined });
       }
     }
   }
   const ran = new Map<string, Map<string, Map<string, boolean>>>();
-  const ranOf = (run: { compiler: string; snapshots: boolean; env: Record<string, string>; memory?: number }) => `${run.compiler}\0${modeKey(run)}`;
+  const ranOf = (run: { compiler: string; snapshots: boolean; env: Record<string, string> }) => `${run.compiler}\0${run.snapshots}\0${envKey(run.env)}`;
   let reports = 0;
   const printedBy = new Map<string, string>();
   // Each run in the cores' slots, a corpus part the cores it keeps busy
@@ -2146,7 +2138,7 @@ async function main() {
         const report = join(work, "reports", `${++reports}.xml`);
         mkdirSync(dirname(report), { recursive: true });
         const args = [`--reporter=junit`, `--reporter-outfile=${report}`, run.file, ...(run.pattern === undefined ? [] : ["-t", run.pattern])];
-        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: { ...run.env, ...(run.part ? { RUST_JS_CASES: run.part } : {}) }, memory: run.memory });
+        const { output, exit } = await test(args, run.compiler, run.snapshots, { bail: false, env: { ...run.env, ...(run.part ? { RUST_JS_CASES: run.part } : {}) } });
         const junit = existsSync(report) ? readFileSync(report, "utf8") : "";
         rmSync(report, { force: true });
         // What the run as the compiler is printed, of one that fails or runs
@@ -2154,7 +2146,7 @@ async function main() {
         // ended, a signal, its memory or its exit code, where it printed
         // nothing more than bun's header (#1368).
         if (run.compiler === unmutated) {
-          const key = `${modeKey(run)}\0${run.file}`;
+          const key = `${run.snapshots}\0${envKey(run.env)}\0${run.file}`;
           printedBy.set(key, `${printedBy.get(key) ?? ""}${output.slice(-1500)}\n(${endedAs(exit)}${run.part ? `, part ${run.part}` : ""})\n`);
         }
         const byFile = ran.get(ranOf(run)) ?? new Map<string, Map<string, boolean>>();
@@ -2175,7 +2167,7 @@ async function main() {
   for (const set of sets) {
     const as = setPasses(set, ran.get(ranOf({ compiler: unmutated, ...set })) ?? new Map());
     if (as !== true) {
-      const printed = set.files.map((file) => printedBy.get(`${modeKey(set)}\0${file}`) ?? "").join("\n");
+      const printed = set.files.map((file) => printedBy.get(`${set.snapshots}\0${envKey(set.env)}\0${file}`) ?? "").join("\n");
       problems.push(`\`bun test ${set.tests.join(" ")}\` ${as === undefined ? "runs nothing" : "doesn't pass"} as the compiler is:\n${printed.slice(-1500)}`);
       failedSets.set(testSetKey(set), `INCONCLUSIVE: its tests ${as === undefined ? "run nothing" : "don't pass"} as the compiler is`);
     } else if (setPasses(set, ran.get(ranOf({ compiler: broken, ...set })) ?? new Map()) === true) {
@@ -2362,10 +2354,10 @@ async function main() {
     // The seconds its tests held a slot, not those they waited for one.
     const held = { seconds: 0 };
     const own = holding(held);
-    const byTests = await testsInParts(mutation.tests!, mutant, mutation.snapshots ?? false, mutation.env, own, undefined, mutation.memory);
+    const byTests = await testsInParts(mutation.tests!, mutant, mutation.snapshots ?? false, mutation.env, own);
     const { ran, exit } = byTests;
     const twice = confirming
-      ? await judgeTwice(exit, byTests.output, mutation.tests!, (tests) => testsInParts(tests, mutant, mutation.snapshots ?? false, mutation.env, own, undefined, mutation.memory))
+      ? await judgeTwice(exit, byTests.output, mutation.tests!, (tests) => testsInParts(tests, mutant, mutation.snapshots ?? false, mutation.env, own))
       : { verdict: judge(exit, byTests.output), again: "", flake: undefined };
     let output = byTests.output + twice.again;
     let verdict = twice.verdict;

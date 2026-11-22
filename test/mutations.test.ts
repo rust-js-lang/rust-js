@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, failingOf, testSetKey, testsMemory, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -270,13 +270,6 @@ test("a failed control leaves its own mutations unjudged, not the shard's", () =
   expect([...unjudged.keys()]).toEqual([failing, same, unit]);
   expect(unjudged.get(unit)).toContain("unit tests");
   expect(unjudgedBy([other], failedSets, new Map()).size).toBe(0);
-  // One given more memory is a control of its own (#2310).
-  const roomier = { tests: ["test/match-trees.test.ts", "-t", "seed 2"], memory: 7 };
-  expect(testSetKey(roomier)).not.toBe(testSetKey(failing));
-  expect(unjudgedBy([roomier], failedSets, new Map()).size).toBe(0);
-  // And its runs are given it, past what a run is given.
-  expect(testsMemory(1000)).toBe(1000 * 2 ** 30);
-  expect(testsMemory()).toBeLessThan(1000 * 2 ** 30);
 });
 
 // A run of every mutation, the nightly's, files its survivors and fails
