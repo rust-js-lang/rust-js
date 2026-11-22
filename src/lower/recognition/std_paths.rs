@@ -21,7 +21,7 @@ macro_rules! std_paths {
     ($($item:ident => $path:literal,)*) => {
         /// One of std's items a recognizer knows by its path.
         #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-        pub(crate) enum StdPath {
+        pub enum StdPath {
             $($item,)*
         }
 

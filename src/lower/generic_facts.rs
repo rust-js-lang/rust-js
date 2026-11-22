@@ -927,7 +927,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if args.has_non_region_param() || args.has_aliases() {
             return made(self);
         }
-        let name = super::camel_case(self.tcx.item_name(def_id).as_str());
+        let name = rust_js_program::casing::camel_case(self.tcx.item_name(def_id).as_str());
         let base = format!("{}Fn", super::traits::instance_name(self.tcx, &name, args));
         self.module_fn_pointer((fn_def_ty, &base), made)
     }

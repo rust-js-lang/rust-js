@@ -10,7 +10,8 @@
 use super::super::recursive_fns::Kind;
 use super::super::refusal::{Refused, refuse};
 use super::super::temporary_names::Base;
-use super::super::{FnCx, R, Shape, lower_first};
+use super::super::{FnCx, R, Shape};
+use rust_js_program::casing::lower_first;
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rust_js_program::js;
 use rust_js_program::js::{Expr, Prop};

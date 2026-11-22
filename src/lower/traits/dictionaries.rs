@@ -151,7 +151,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.in_copied_default()
             && holds_a_function(&made)
         {
-            let shared = crate::lower::lower_first(self.tcx.item_name(tr.def_id).as_str());
+            let shared = rust_js_program::casing::lower_first(self.tcx.item_name(tr.def_id).as_str());
             Some((self.dictionary_name(tr), shared))
         } else {
             None

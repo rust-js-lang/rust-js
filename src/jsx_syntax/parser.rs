@@ -357,7 +357,7 @@ impl Jsx<'_> {
             let function = match builtin {
                 Some(n) => format!("::react::{n}"),
                 None if tag => "::react::tag".to_string(),
-                None => format!("::react::html::r#{}", snake(&name)),
+                None => format!("::react::html::r#{}", rust_js_program::casing::snake(&name)),
             };
             let mut expr = call(
                 self.sess,
@@ -381,7 +381,7 @@ impl Jsx<'_> {
                 let (method, args) = if attr.contains('-') {
                     ("attr".into(), vec![template(self.sess, format!("{attr:?}"), at), value])
                 } else {
-                    (snake(&attr), vec![value])
+                    (rust_js_program::casing::snake(&attr), vec![value])
                 };
                 expr = method_call(self.sess, expr, &method, args, at);
             }
@@ -532,7 +532,7 @@ impl Jsx<'_> {
                 }
                 let mut given = Vec::new();
                 for (attr, value, at) in attrs {
-                    let field = snake(&attr);
+                    let field = rust_js_program::casing::snake(&attr);
                     given.extend(template(self.sess, format!("r#{field}:"), at).iter().cloned());
                     given.extend(value.iter().cloned());
                     given.extend(template(self.sess, ",".into(), at).iter().cloned());
@@ -555,7 +555,7 @@ impl Jsx<'_> {
                 for (attr, value, at) in attrs {
                     // `aria-label` is a field a Rust struct can have, `aria_label`,
                     // which `rust_js::name` gives JS's name again (ADR 0200).
-                    let field = snake(&attr);
+                    let field = rust_js_program::casing::snake(&attr);
                     fields.extend(template(self.sess, format!("r#{field}:"), at).iter().cloned());
                     fields.extend(value.iter().cloned());
                     fields.extend(template(self.sess, ",".into(), at).iter().cloned());
@@ -629,31 +629,6 @@ fn spelled(sess: &Session, written: &[(String, Span)], expr: TokenStream, span: 
     tokens.extend(template(sess, "let _ = ();".into(), span).iter().cloned());
     tokens.extend(expr.iter().cloned());
     TokenStream::new(vec![group(Delimiter::Brace, TokenStream::new(tokens), span)])
-}
-
-/// A JS name as the bindings generators name it in Rust, `scripts/rust-names.ts`'s
-/// `snake`: `aria-label` is `aria_label`; HTML stays one word, while
-/// innerHTML and HTMLInput become inner_html and html_input.
-pub(crate) fn snake(name: &str) -> String {
-    let mut result = String::new();
-    let chars: Vec<char> = name.chars().collect();
-    for (i, &c) in chars.iter().enumerate() {
-        if c == '-' {
-            result.push('_');
-        } else if c.is_ascii_uppercase() {
-            let previous = i.checked_sub(1).map(|i| chars[i]);
-            let next = chars.get(i + 1);
-            if previous.is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
-                || (previous.is_some_and(|c| c.is_ascii_uppercase()) && next.is_some_and(|c| c.is_ascii_lowercase()))
-            {
-                result.push('_');
-            }
-            result.push(c.to_ascii_lowercase());
-        } else {
-            result.push(c);
-        }
-    }
-    result
 }
 
 fn group(delimiter: Delimiter, tokens: TokenStream, span: Span) -> TokenTree {

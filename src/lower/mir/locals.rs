@@ -172,7 +172,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                         locals.given_name[place.local] = true;
                         named.clone()
                     }
-                    _ => crate::lower::camel_case(&name),
+                    _ => rust_js_program::casing::camel_case(&name),
                 });
                 locals.user[place.local] = true;
                 sources[place.local] = info.name.as_u32();

@@ -465,7 +465,7 @@ pub fn call_suggestion(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 /// variable's, lower camel case: `trailingZeros` of `trailing_zeros`,
 /// `httpServer` of `HTTPServer`; none where that's no JS identifier.
 pub fn suggested(name: &str) -> Option<String> {
-    let name = variable_name(&crate::lower::camel_case(name));
+    let name = variable_name(&rust_js_program::casing::camel_case(name));
     (rust_js_program::names::js_ident(&name) == name).then_some(name)
 }
 

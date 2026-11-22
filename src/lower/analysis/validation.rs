@@ -778,7 +778,7 @@ pub(super) fn reject_parameter_name_misuse(tcx: TyCtxt<'_>) -> bool {
                 valid = false;
                 continue;
             };
-            let default = crate::lower::camel_case(ident.name.as_str());
+            let default = rust_js_program::casing::camel_case(ident.name.as_str());
             valid &= names_a_variable(tcx, attr, ident, given, &default, "a `let`'s");
         }
         for (param, attr) in bindings::named_parameters(tcx, owner) {

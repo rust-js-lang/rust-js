@@ -129,7 +129,7 @@ impl<'tcx> Uses<'tcx> {
             {
                 continue;
             }
-            let rust = crate::jsx_syntax::snake(text);
+            let rust = rust_js_program::casing::snake(text);
             if let Some(field) = fields.iter().find(|f| f.name.as_str() == rust) {
                 let js = super::bindings::field_key(self.tcx, field);
                 let js = js.name().unwrap_or(rust.as_str());

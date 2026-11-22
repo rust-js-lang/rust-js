@@ -1,7 +1,8 @@
 //! Lower JSX bindings into the framework-independent JS tree.
 
-use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
+use super::{FnCx, R, Shape, fn_def, js_ident};
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::casing::camel_case;
 use rust_js_program::collections::IndexMap;
 use rust_js_program::js;
 use rust_js_program::js::{Expr, Prop, Stmt, StmtKind};

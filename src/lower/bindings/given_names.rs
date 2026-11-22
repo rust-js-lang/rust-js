@@ -93,10 +93,10 @@ fn cased_like(given: &str, name: &str) -> Option<String> {
         return Some(name.to_string());
     }
     // Its words, of a `SCREAMING` alias or a `snake_case` one.
-    let camel = crate::lower::variable_case(name);
+    let camel = rust_js_program::casing::variable_case(name);
     match (word, first.is_ascii_lowercase(), first.is_ascii_uppercase()) {
         (true, true, _) => Some(camel),
-        (true, _, true) => Some(crate::lower::upper_first(&camel)),
+        (true, _, true) => Some(rust_js_program::casing::upper_first(&camel)),
         _ => None,
     }
 }

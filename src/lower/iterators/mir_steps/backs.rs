@@ -218,7 +218,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let named: Vec<rust_js_program::js::Name> = names.iter().map(|&name| self.fresh(name)).collect();
         // `makeMap`, `makeChain`, `makeCopied`.
-        let make = self.fresh(Base::Prefixed(Role::Make, &crate::lower::upper_first(name)));
+        let make = self.fresh(Base::Prefixed(Role::Make, &rust_js_program::casing::upper_first(name)));
         let adapter = build(self, named.iter().map(Expr::var).collect())?;
         let mut cloned = Vec::new();
         let mut clones = Vec::new();

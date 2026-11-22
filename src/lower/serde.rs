@@ -34,7 +34,8 @@ use rust_js_program::collections::IndexMap;
 
 use super::recognition::{SkipPredicate, StdItem, std_item};
 use super::representation::{Num, variant_field};
-use super::{FnCx, R, lower_first};
+use super::{FnCx, R};
+use rust_js_program::casing::lower_first;
 use rust_js_program::js::result;
 use rust_js_program::js::{self, Expr, Op, Stmt, StmtKind};
 use rustc_ast::visit::{self, Visitor};

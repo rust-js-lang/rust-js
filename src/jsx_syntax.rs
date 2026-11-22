@@ -8,7 +8,6 @@ mod parser;
 mod props;
 pub mod resolved;
 
-pub(crate) use parser::snake;
 use rust_js_program::collections::{IndexMap, IndexSet};
 
 use std::cell::RefCell;

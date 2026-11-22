@@ -2,6 +2,7 @@
 //! its own, with no rustc in it. The front end (`src/lower/`) builds it and
 //! the printer reads it; this crate knows neither.
 
+pub mod casing;
 pub mod collections;
 pub mod comments;
 pub mod css_modules;

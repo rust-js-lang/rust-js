@@ -553,7 +553,7 @@ pub(crate) fn const_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
     (member(tcx, def_id) == Some(Member::Const)).then(|| {
         let named = crate::lower::bindings::fn_name(tcx, def_id);
         match named == tcx.item_name(def_id).as_str() {
-            true => crate::lower::camel_case(&named.to_lowercase()),
+            true => rust_js_program::casing::camel_case(&named.to_lowercase()),
             false => named,
         }
     })

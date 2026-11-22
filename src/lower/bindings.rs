@@ -47,7 +47,7 @@ pub(super) use given_before::reject_made_in_place;
 pub(in crate::lower) use given_names::alias_cased;
 pub(super) use given_names::{given_let_names, given_parameter_name, named_lets, named_parameters};
 pub(in crate::lower) use held::{Held, HeldBinding, HeldRead, Holder, held, held_path, library_uses};
-pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace_name, required, stem_binding};
+pub(super) use imports::{Export, file_stem, js_import, module_binding, namespace_name, required};
 use indexed::indexed_refused;
 pub(in crate::lower) use indexed::is_indexed_list;
 pub(super) use nullable::{
@@ -217,7 +217,7 @@ pub fn js_path(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 /// its `#[rust_js::name]`, `unstable_shouldYield`, or its name camelCase, as
 /// any other (ADRs 0573, 0596).
 pub(super) fn alias_name(tcx: TyCtxt<'_>, use_item: DefId, alias: Symbol) -> String {
-    given_name(tcx, use_item).unwrap_or_else(|| super::camel_case(alias.as_str()))
+    given_name(tcx, use_item).unwrap_or_else(|| rust_js_program::casing::camel_case(alias.as_str()))
 }
 
 /// The name `use_item`, a `use` that names `item` by `ident`, imports or
@@ -864,16 +864,16 @@ pub(in crate::lower) fn cased_as(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> 
         DefKind::Variant | DefKind::Struct | DefKind::Enum | DefKind::Union => name.to_string(),
         DefKind::Const if thread_local_value(tcx, def_id).is_some_and(|held| primitive(tcx, held)) => name.to_string(),
         DefKind::Const if thread_local_value(tcx, def_id).is_some() => variable_name(tcx, def_id, name),
-        _ => super::camel_case(name),
+        _ => rust_js_program::casing::camel_case(name),
     }
 }
 
 /// A thread-local's name, `name`, as its module's variable: camelCase,
 /// capitalized where it holds a component.
 fn variable_name(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> String {
-    let variable = super::variable_case(name);
+    let variable = rust_js_program::casing::variable_case(name);
     match holds_component(tcx, def_id) {
-        true => super::upper_first(&variable),
+        true => rust_js_program::casing::upper_first(&variable),
         false => variable,
     }
 }
@@ -937,7 +937,7 @@ fn another_named(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
             && (!exported || exported_by_name(tcx, other))
             && given_name(tcx, other).unwrap_or_else(|| match thread_local_value(tcx, other) {
                 Some(_) => variable_name(tcx, other, tcx.item_name(other).as_str()),
-                None => super::camel_case(tcx.item_name(other).as_str()),
+                None => rust_js_program::casing::camel_case(tcx.item_name(other).as_str()),
             }) == name
     })
 }

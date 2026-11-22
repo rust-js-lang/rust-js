@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a context's thread-local is `theme`, which JSX can't take as a component's name",
     file: "src/lower/bindings.rs",
-    find: "        true => super::upper_first(&variable),\n",
+    find: "        true => rust_js_program::casing::upper_first(&variable),\n",
     replace: "        true => variable,\n",
     tests: [
       "test/jsx-types.test.ts",

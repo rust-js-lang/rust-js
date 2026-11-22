@@ -890,7 +890,7 @@ export const mutations: Mutation[] = [
     breaks: "a module's default a Rust type types is imported by its module's name, `Request`, not its own, `WebRequest`, as its JS imports it (rd678)",
     file: "src/lower/declarations.rs",
     find: "            Some(item) => self.tcx.item_name(item).to_string(),\n",
-    replace: "            Some(_) => crate::lower::namespace_name(super::bindings::file_stem(from)),\n",
+    replace: "            Some(_) => rust_js_program::casing::namespace_name(super::bindings::file_stem(from)),\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
   },
   {

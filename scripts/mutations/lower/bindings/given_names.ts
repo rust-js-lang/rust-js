@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a use's alias of a PascalCase item is camelCase, `IdlePriority as idleSchedulerPriority`",
     file: "src/lower/bindings/given_names.rs",
-    find: "        (true, _, true) => Some(crate::lower::upper_first(&camel)),\n",
+    find: "        (true, _, true) => Some(rust_js_program::casing::upper_first(&camel)),\n",
     replace: "        (true, _, true) => Some(camel),\n",
     tests: [
       "test/cross-crate-items.test.ts",
@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/bindings/given_names.rs",
     find: "        return Some(name.to_string());\n    }\n    // Its words",
     replace:
-      "        return Some(crate::lower::variable_case(name));\n    }\n    // Its words",
+      "        return Some(rust_js_program::casing::variable_case(name));\n    }\n    // Its words",
     tests: [
       "test/cross-crate-items.test.ts",
       "-t",

@@ -215,7 +215,7 @@ pub fn reexports(
             Some(Res::Def(DefKind::Mod, named)) => {
                 // Through a module that re-exports it, that module's export
                 // (rd338).
-                let own = || super::camel_case(ident.as_str());
+                let own = || rust_js_program::casing::camel_case(ident.as_str());
                 if let Some((through, export)) = through_reexport(tcx, path, named, own)
                     && let Some(from) = paths.get(&through)
                 {
@@ -651,7 +651,11 @@ fn globbed(
             // `pub use` of it by its name gives it (#1102, #1420).
             DefKind::Mod => {
                 if let Some(from) = namespace_file(foreign, paths, id) {
-                    found.push((written, from, ("*".to_string(), super::camel_case(&name))));
+                    found.push((
+                        written,
+                        from,
+                        ("*".to_string(), rust_js_program::casing::camel_case(&name)),
+                    ));
                 }
             }
             DefKind::Struct if super::classes::is_class(tcx, id) => {

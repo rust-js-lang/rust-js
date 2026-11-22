@@ -424,7 +424,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 .copied()
                 .flatten()
                 .map_or("value".to_string(), |i| i.name.to_string());
-            let name = self.fresh(Base::Named(&crate::lower::camel_case(&base)));
+            let name = self.fresh(Base::Named(&rust_js_program::casing::camel_case(&base)));
             let held = match inner {
                 Some(crossing) => self.form_given(Form::Box, crossing, place.clone(), span)?,
                 None => place.clone(),

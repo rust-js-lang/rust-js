@@ -26,7 +26,8 @@ use rustc_span::def_id::DefId;
 use super::recognition::{ChannelEnd, StdItem};
 use super::representation::variant_field;
 use super::traits::item_drop_key;
-use super::{FnCx, R, lower_first};
+use super::{FnCx, R};
+use rust_js_program::casing::lower_first;
 use rust_js_program::js::{self, Expr, Stmt, StmtKind};
 
 mod facts;

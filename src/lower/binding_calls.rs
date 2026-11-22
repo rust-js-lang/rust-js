@@ -685,7 +685,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .and_then(|(def_id, offset)| self.tcx.fn_arg_idents(def_id).get(i + offset).copied().flatten()))
                 .map(|ident| ident.name.to_string())
                 .filter(|name| name != "this" && !name.starts_with('_'))
-                .map(|name| super::camel_case(&name));
+                .map(|name| rust_js_program::casing::camel_case(&name));
                 of = match named {
                     Some(name) => self.spill(Base::Named(&name), of, out),
                     None => self.spill(Role::Arg, of, out),

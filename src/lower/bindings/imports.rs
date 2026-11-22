@@ -49,7 +49,7 @@ pub(in crate::lower) fn namespace_name(path: &str) -> Option<&str> {
 /// What a default or namespace import is called: after its module, as in
 /// ReScript. `./greet.js` is `greet`, and `@codemirror/lang-rust` is `langRust`.
 pub(in crate::lower) fn module_binding(from: &str) -> String {
-    stem_binding(file_stem(from))
+    rust_js_program::casing::stem_binding(file_stem(from))
 }
 
 /// A JS module's file's name without its directory or extension,
@@ -59,20 +59,4 @@ pub(in crate::lower) fn module_binding(from: &str) -> String {
 pub(in crate::lower) fn file_stem(from: &str) -> &str {
     let file = from.rsplit(['/', ':']).find(|s| !s.is_empty()).unwrap_or_default();
     file.split('.').next().unwrap_or_default()
-}
-
-/// A JS name of a file's stem, `module_binding`'s: `langRust` of
-/// `lang-rust`, `ChangeEventPlugin` of itself.
-pub(in crate::lower) fn stem_binding(stem: &str) -> String {
-    // Its words, `lang` and `rust`, joined as a Rust name's are in JS.
-    let words: Vec<&str> = stem
-        .split(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '$')
-        .filter(|w| !w.is_empty())
-        .collect();
-    let name = crate::lower::camel_case(&words.join("_"));
-    if name.is_empty() || name.starts_with(|c: char| c.is_ascii_digit()) {
-        format!("_{name}")
-    } else {
-        name
-    }
 }

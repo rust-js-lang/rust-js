@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's `const IS_REACT_COMPONENT` is the prototype's `IS_REACT_COMPONENT`, not `isReactComponent`, which React reads",
     file,
-    find: "            true => crate::lower::camel_case(&named.to_lowercase()),\n",
+    find: "            true => rust_js_program::casing::camel_case(&named.to_lowercase()),\n",
     replace: "            true => named,\n",
     tests: base,
   },

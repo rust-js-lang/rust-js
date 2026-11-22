@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
     name: "capture-copy-named-apart",
     breaks: "a closure's copy of a variable as it is now, which it changes after, is named for the variable apart, `const n$1 = n;` of `let mut n = n;`, not `captured` (rd656)",
     file: "src/lower/mir/closures.rs",
-    find: "                                    && crate::lower::camel_case(info.name.as_str()) == *name))\n",
+    find: "                                    && rust_js_program::casing::camel_case(info.name.as_str()) == *name))\n",
     replace: "                                    && false))\n",
     tests: ["test/lowering-moves.test.ts", "-t", "a closure's capture read first is named for its variable"],
   },

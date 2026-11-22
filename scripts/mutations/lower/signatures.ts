@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
       "a parameter's declaration keeps the `_` its JS name drops, `ref` declared `_ref`",
     file: "src/lower/signatures.rs",
     find: "    let named = super::parameter_name(tcx, function, &name);\n",
-    replace: "    let named = super::camel_case(&name);\n",
+    replace: "    let named = rust_js_program::casing::camel_case(&name);\n",
     tests: ["test/lowering-names.test.ts", "-t", "leading underscore"],
   },
   {

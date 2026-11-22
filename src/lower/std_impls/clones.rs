@@ -6,7 +6,8 @@
 use crate::lower::recognition::StdItem;
 use crate::lower::recursive_fns::Kind;
 use crate::lower::temporary_names::{Base, Role};
-use crate::lower::{FnCx, R, Shape, lower_first};
+use crate::lower::{FnCx, R, Shape};
+use rust_js_program::casing::lower_first;
 use rust_js_program::collections::IndexSet;
 use rust_js_program::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;

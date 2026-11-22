@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
     breaks:
       '`#[rust_js::name = "value"] let value`, a second way to write its name, is not refused (ADR 0855, amended)',
     file: "src/lower/analysis/validation.rs",
-    find: "            let default = crate::lower::camel_case(ident.name.as_str());\n",
+    find: "            let default = rust_js_program::casing::camel_case(ident.name.as_str());\n",
     replace: "            let default = String::new();\n",
     tests: [
       "test/lowering-symbols.test.ts",

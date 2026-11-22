@@ -9,9 +9,10 @@ use super::recognition::Std;
 use super::representation::Num;
 use super::std_types::number::{NumOp, math};
 use super::std_types::text::TextOp;
-use super::{FnCx, R, camel_case};
+use super::{FnCx, R};
 use crate::lower::recognition::{StdItem, is_std_def};
 use crate::lower::temporary_names::{Base, Role};
+use rust_js_program::casing::camel_case;
 use rust_js_program::js;
 use rust_js_program::js::{Expr, ExprKind, Op, Pattern, StmtKind};
 
@@ -420,9 +421,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         self.fresh(Base::Named(&camel_case(&name)))
                     }
                     _ => match input.peel_refs().kind() {
-                        ty::Adt(adt, _) => {
-                            self.fresh(Base::Named(&super::lower_first(self.tcx.item_name(adt.did()).as_str())))
-                        }
+                        ty::Adt(adt, _) => self.fresh(Base::Named(&rust_js_program::casing::lower_first(
+                            self.tcx.item_name(adt.did()).as_str(),
+                        ))),
                         _ => self.fresh(Base::Numbered(Role::Arg, i)),
                     },
                 },

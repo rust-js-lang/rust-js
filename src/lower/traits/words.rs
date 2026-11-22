@@ -39,7 +39,7 @@ fn named_apart(tcx: TyCtxt<'_>, id: DefId) -> String {
                 (None, Some(c)) => js_word(&c.to_string()),
                 (None, None) => continue,
             };
-            name.push_str(&crate::lower::upper_first(&word));
+            name.push_str(&rust_js_program::casing::upper_first(&word));
         }
         name
     };
@@ -62,7 +62,7 @@ fn named_apart(tcx: TyCtxt<'_>, id: DefId) -> String {
                 let parent = tcx.parent(tr.def_id);
                 let module =
                     (tcx.opt_item_name(parent)).map_or_else(|| tcx.def_path_str(parent), |name| name.to_string());
-                crate::lower::upper_first(&crate::lower::camel_case(&module))
+                rust_js_program::casing::upper_first(&rust_js_program::casing::camel_case(&module))
             }
             false => String::new(),
         }
@@ -136,7 +136,9 @@ fn full_type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
                 {
                     continue;
                 }
-                name.push_str(&crate::lower::upper_first(&js_word(&full_type_word(tcx, arg))));
+                name.push_str(&rust_js_program::casing::upper_first(&js_word(&full_type_word(
+                    tcx, arg,
+                ))));
             }
             name
         }
@@ -258,7 +260,7 @@ pub(in crate::lower) fn instance_name<'tcx>(tcx: TyCtxt<'tcx>, name: &str, args:
             ty::GenericArgKind::Const(c) => Some(c.to_string()),
             ty::GenericArgKind::Lifetime(_) => None,
         })
-        .map(|word| crate::lower::upper_first(&js_word(&word)))
+        .map(|word| rust_js_program::casing::upper_first(&js_word(&word)))
         .collect();
     match words.is_empty() {
         true => format!("{name}Value"),
@@ -275,14 +277,14 @@ fn type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
         ty::Ref(_, inner, mutability) => {
             let inner = js_word(&type_word(tcx, *inner));
             let kind = if mutability.is_mut() { "RefMut" } else { "Ref" };
-            format!("{kind}{}", crate::lower::upper_first(&inner))
+            format!("{kind}{}", rust_js_program::casing::upper_first(&inner))
         }
         // An associated type's, `BItem` of `<B as Array>::Item`.
         ty::Alias(..) => evidence_word(tcx, ty),
         // A slice's, its item's, `U32Slice` of `[u32]`.
         ty::Slice(item) => {
             let item = js_word(&type_word(tcx, *item));
-            format!("{}Slice", crate::lower::upper_first(&item))
+            format!("{}Slice", rust_js_program::casing::upper_first(&item))
         }
         _ => ty.to_string(),
     }
@@ -319,9 +321,9 @@ pub(super) fn trait_word_with_refs<'tcx>(tcx: TyCtxt<'tcx>, tr: ty::TraitRef<'tc
         let pointee = js_word(&type_word(tcx, pointee));
         match word.is_empty() {
             true => word.push_str(&pointee),
-            false => word.push_str(&crate::lower::upper_first(&pointee)),
+            false => word.push_str(&rust_js_program::casing::upper_first(&pointee)),
         }
-        name.push_str(&crate::lower::upper_first(&word));
+        name.push_str(&rust_js_program::casing::upper_first(&word));
     }
     name
 }

@@ -1176,7 +1176,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
             false => {
                 self.flush(state, out)?;
                 let field = match &object.kind {
-                    js::ExprKind::Member(_, field) => Some(crate::lower::camel_case(field)),
+                    js::ExprKind::Member(_, field) => Some(rust_js_program::casing::camel_case(field)),
                     _ => None,
                 };
                 let name = field.as_deref().map_or(Base::Role(Role::Item), Base::Named);

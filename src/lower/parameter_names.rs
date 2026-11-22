@@ -5,7 +5,8 @@
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
 
-use super::{bindings, camel_case};
+use super::bindings;
+use rust_js_program::casing::camel_case;
 
 /// A parameter's name as JS writes it: its `#[rust_js::name = ".."]`,
 /// `Context` of React's `useContext` (ADR 0855); else camelCase, without

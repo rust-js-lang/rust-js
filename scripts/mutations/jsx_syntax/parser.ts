@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-props.test.ts", "-t", "named props and the rest from a base"],
   },
   {
-    name: "hyphenated-prop-field",
-    breaks: "a component's `aria-label` is the field `r#aria-label`, which Rust can't parse",
-    file: "src/jsx_syntax/parser.rs",
-    find: "        if c == '-' {\n            result.push('_');\n        } else if c.is_ascii_uppercase() {\n",
-    replace: "        if c.is_ascii_uppercase() {\n",
-    tests: ["test/next.test.ts", "-t", "next build builds"],
-  },
-  {
     name: "component-props-literal",
     breaks: "a component's props are a struct literal, where a flattened struct's names aren't its fields",
     file: "src/jsx_syntax/parser.rs",

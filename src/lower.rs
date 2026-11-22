@@ -40,7 +40,6 @@ mod bodies;
 pub mod body_queries;
 pub mod call_graph;
 pub mod calls;
-mod casing;
 pub mod classes;
 pub mod combinators;
 pub mod copies;
@@ -110,13 +109,12 @@ pub use analysis::{
 /// a crate `--rustc` compiles for its metadata too (ADR 0573).
 pub use bindings::given_names_differ;
 use bindings::{Export, is_binding};
-use casing::{camel_case, namespace_name, unhyphenated, variable_case};
-pub(super) use casing::{lower_first, upper_first};
 pub(crate) use declarations::std_types::module as std_declarations;
 /// Whether each `#[rust_js::types]` is a TypeScript type rust-js reads, of
 /// a crate `--rustc` compiles for its metadata too (ADR 0811).
 pub use declarations::validate_types;
 pub use instances::{Instances, instance_bodies};
+use rust_js_program::casing::{camel_case, unhyphenated};
 use rust_js_program::names::{fresh_in, js_ident};
 /// Whether each `From` into an untagged enum is the variant of its
 /// argument, of a crate `--rustc` compiles, whose JS rust-js doesn't write

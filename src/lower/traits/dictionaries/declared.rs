@@ -70,7 +70,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Array(..) | ty::Slice(_) => "items".to_string(),
             _ => String::new(),
         };
-        crate::lower::lower_first(&format!("{boxed}{of}{}", self.tcx.item_name(tr.def_id)))
+        rust_js_program::casing::lower_first(&format!("{boxed}{of}{}", self.tcx.item_name(tr.def_id)))
     }
 }
 

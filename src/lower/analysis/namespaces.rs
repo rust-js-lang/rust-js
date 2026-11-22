@@ -49,11 +49,11 @@ pub(in crate::lower) fn module_paths<'tcx>(
 }
 
 /// The name a crate's module's namespace is imported by: its JS file's,
-/// as `crate::lower::namespace_name` cases it, `Plugin` of `plugin.js`,
+/// as `rust_js_program::casing::namespace_name` cases it, `Plugin` of `plugin.js`,
 /// `DOMPluginEventSystem` of a `#[path]`'s `DOMPluginEventSystem.js`
 /// (rd114b/c, ADR 1018).
 pub(in crate::lower) fn namespace_of(tcx: TyCtxt<'_>, module: LocalModId) -> String {
-    crate::lower::namespace_name(&crate::lower::module_file_stem(tcx, module))
+    rust_js_program::casing::namespace_name(&crate::lower::module_file_stem(tcx, module))
 }
 
 /// The name a crate's module's namespace is imported by in `module`: the
@@ -75,7 +75,7 @@ pub fn namespace_in(tcx: TyCtxt<'_>, module: LocalModId, target: LocalModId) -> 
     };
     (super::naming::renamed_in(tcx, module).into_iter())
         .filter(|&(id, _)| named(id))
-        .map(|(_, alias)| crate::lower::namespace_name(&alias))
+        .map(|(_, alias)| rust_js_program::casing::namespace_name(&alias))
         .min()
         .unwrap_or_else(|| namespace_of(tcx, target))
 }
@@ -91,9 +91,9 @@ fn library_namespace(
 ) -> String {
     match foreign.import_key(function, scope) {
         Some((from, _)) if !module.is_crate_root() => {
-            crate::lower::namespace_name(crate::lower::bindings::file_stem(&from))
+            rust_js_program::casing::namespace_name(crate::lower::bindings::file_stem(&from))
         }
-        _ => crate::lower::namespace_name(tcx.item_name(module).as_str()),
+        _ => rust_js_program::casing::namespace_name(tcx.item_name(module).as_str()),
     }
 }
 

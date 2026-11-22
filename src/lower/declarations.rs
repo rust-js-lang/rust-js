@@ -882,7 +882,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }
         let local = match item {
             Some(item) => self.tcx.item_name(item).to_string(),
-            None => crate::lower::namespace_name(super::bindings::file_stem(from)),
+            None => rust_js_program::casing::namespace_name(super::bindings::file_stem(from)),
         };
         self.imports.insert((from.to_string(), local.clone(), true));
         format!("{local}{}", &name[first.len()..])

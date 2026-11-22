@@ -63,9 +63,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a default class used for its statics, in `mod greeter`, is `greeter`, not `Greeter`",
     file: "src/lower/analysis/naming.rs",
-    find: '                ("default", None, Some(module)) if statics => {\n',
-    replace:
-      '                ("default", None, Some(module)) if false && statics => {\n',
+    find: '                ("default", None, Some(module)) if statics => upper_first(',
+    replace: '                ("default", None, Some(module)) if false && statics => upper_first(',
     tests: ["test/modules.test.ts", "-t", "default import of a class"],
   },
   {
@@ -179,9 +178,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace whose bindings `mod ContextMenu` holds is named by its file, `import * as Menu`",
     file: "src/lower/analysis/naming.rs",
-    find: "        Some(module) if holds_only(tcx, module, &export.0) => {\n",
-    replace:
-      "        Some(module) if false && holds_only(tcx, module, &export.0) => {\n",
+    find: "        Some(module) if holds_only(tcx, module, &export.0) => namespace_name(",
+    replace: "        Some(module) if false && holds_only(tcx, module, &export.0) => namespace_name(",
     tests: ["test/modules.test.ts", "-t", "namespace import is named"],
   },
   {
@@ -315,8 +313,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace import a snake_case module holds is named `side_menu`, not PascalCase `SideMenu`",
     file: "src/lower/analysis/naming.rs",
-    find: "            crate::lower::namespace_name(tcx.item_name(module).as_str())\n",
-    replace: "            tcx.item_name(module).to_string()\n",
+    find: "=> namespace_name(tcx.item_name(module).as_str()),\n",
+    replace: "=> tcx.item_name(module).to_string(),\n",
     tests: [
       "test/modules.test.ts",
       "-t",
@@ -350,8 +348,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a namespace whose bindings a module of other code holds, `mod cache` calling `scheduler#*.unstable_now`, is named after that module, `import * as Cache`, not `Scheduler`",
     file: "src/lower/analysis/naming.rs",
-    find: "        Some(module) if holds_only(tcx, module, &export.0) => {\n",
-    replace: "        Some(module) => {\n",
+    find: "        Some(module) if holds_only(tcx, module, &export.0) => namespace_name(",
+    replace: "        Some(module) => namespace_name(",
     tests: [
       "test/modules.test.ts",
       "-t",
@@ -665,7 +663,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding's namespace imported from its file is `import * as scheduler`, camelCase, where every namespace is PascalCase, `import * as Scheduler`, as React writes it (rd114b, ADR 1018)",
     file: "src/lower/analysis/naming.rs",
-    find: "        _ => crate::lower::namespace_name(bindings::file_stem(&export.0)),\n",
+    find: "        _ => namespace_name(bindings::file_stem(&export.0)),\n",
     replace: "        _ => module_binding(&export.0),\n",
     tests: [
       "test/lowering-bindings.test.ts",

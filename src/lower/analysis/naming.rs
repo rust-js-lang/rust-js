@@ -4,8 +4,9 @@
 use crate::lower::bindings;
 use crate::lower::bindings::{Export, is_binding, js_import, js_path, module_binding};
 use crate::lower::traits;
-use crate::lower::{Body, FnInfo, camel_case, fresh_in};
+use crate::lower::{Body, FnInfo, fresh_in};
 use indexmap::map::Entry;
+use rust_js_program::casing::{camel_case, lower_first, namespace_name, upper_first};
 use rust_js_program::collections::{IndexMap, IndexSet};
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::{self as hir, ItemKind};
@@ -281,9 +282,7 @@ pub(super) fn name_imports(
             let base = match (export.as_str(), held_by, holder) {
                 _ if uses.named.contains_key(export_key) => uses.named[export_key].clone(),
                 ("default", Some(name), _) => name,
-                ("default", None, Some(module)) if statics => {
-                    crate::lower::upper_first(&camel_case(tcx.item_name(module).as_str()))
-                }
+                ("default", None, Some(module)) if statics => upper_first(&camel_case(tcx.item_name(module).as_str())),
                 // A namespace PascalCase, as every namespace is, `side_menu` as
                 // `SideMenu` (rd114b, ADR 1018; ADR 0256, amended). A module
                 // of other items too, a file that calls a few of its members,
@@ -358,14 +357,12 @@ pub(super) fn name_imports(
 /// names it, `#* as Name` (ADR 0256, amended): the module that holds its
 /// bindings alone, `ContextMenu` of `mod ContextMenu` (`holds_only`), else
 /// what it's imported from, `Scheduler` of `scheduler`, as
-/// `crate::lower::namespace_name` names every namespace (rd114b, ADR
+/// `casing::namespace_name` names every namespace (rd114b, ADR
 /// 1018).
 fn namespace_default(tcx: TyCtxt<'_>, uses: &JsUses, export: &Export) -> String {
     match holder(tcx, uses, export) {
-        Some(module) if holds_only(tcx, module, &export.0) => {
-            crate::lower::namespace_name(tcx.item_name(module).as_str())
-        }
-        _ => crate::lower::namespace_name(bindings::file_stem(&export.0)),
+        Some(module) if holds_only(tcx, module, &export.0) => namespace_name(tcx.item_name(module).as_str()),
+        _ => namespace_name(bindings::file_stem(&export.0)),
     }
 }
 
@@ -983,7 +980,7 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
     // (ADR 0127).
     if tcx.def_kind(def_id) == DefKind::AnonConst {
         let function = tcx.typeck_root_def_id(def_id);
-        return format!("{}Const", crate::lower::lower_first(tcx.item_name(function).as_str()));
+        return format!("{}Const", lower_first(tcx.item_name(function).as_str()));
     }
     if crate::lower::classes::shown_class(tcx, def_id).is_some() {
         return "toString".to_owned();
@@ -1000,7 +997,7 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
         let prefix = if trait_impls.contains(&parent) {
             traits::impl_name(tcx, parent)
         } else {
-            crate::lower::lower_first(tcx.item_name(parent).as_str())
+            lower_first(tcx.item_name(parent).as_str())
         };
         return format!("{prefix}_{}", bindings::fn_name(tcx, def_id));
     }
@@ -1397,7 +1394,7 @@ pub fn receiver_name<'tcx>(tcx: TyCtxt<'tcx>, receiver: ty::Ty<'tcx>) -> Option<
         ty = held.peel_refs();
     }
     match ty.kind() {
-        ty::Adt(adt, _) => Some(crate::lower::lower_first(tcx.item_name(adt.did()).as_str())),
+        ty::Adt(adt, _) => Some(lower_first(tcx.item_name(adt.did()).as_str())),
         _ => None,
     }
 }

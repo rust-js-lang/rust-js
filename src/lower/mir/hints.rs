@@ -1288,5 +1288,5 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
 /// A label the program wrote, `'get_tag`, as JS writes it: camelCase,
 /// `getTag`, as every name is (ADRs 0573, 0944).
 fn written_label(label: &rustc_ast::Label) -> String {
-    crate::lower::camel_case(label.ident.name.as_str().trim_start_matches('\''))
+    rust_js_program::casing::camel_case(label.ident.name.as_str().trim_start_matches('\''))
 }

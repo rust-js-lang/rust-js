@@ -24,7 +24,8 @@ use super::recognition::{
     known_derive, std_item, tracks_caller,
 };
 use super::representation::{Num, const_js, eval_const};
-use super::{FnCx, R, lower_first};
+use super::{FnCx, R};
+use rust_js_program::casing::lower_first;
 use rust_js_program::js::{self, Expr, Op, Prop, StmtKind};
 use rustc_hir::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;

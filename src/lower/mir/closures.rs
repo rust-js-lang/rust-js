@@ -104,7 +104,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         let captured = self.tcx.closure_captures(def_id.as_local()?).get(i)?;
         let name = captured.var_ident.name;
         (captured.place.projections.is_empty() && !name.as_str().is_empty())
-            .then(|| crate::lower::camel_case(name.as_str()))
+            .then(|| rust_js_program::casing::camel_case(name.as_str()))
     }
 
     /// `mir_closure`'s function, of what it took.
@@ -254,7 +254,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                             !matches!(&e.kind, js::ExprKind::Var(v) if (state.body.var_debug_info.iter()).any(|info|
                                 matches!(info.value, mir::VarDebugInfoContents::Place(p)
                                     if p.projection.is_empty() && *v == state.locals.names[p.local])
-                                    && crate::lower::camel_case(info.name.as_str()) == *name))
+                                    && rust_js_program::casing::camel_case(info.name.as_str()) == *name))
                         });
                         self.spill(base.as_deref().map_or(Base::Role(Role::Captured), Base::Named), e, out)
                     };

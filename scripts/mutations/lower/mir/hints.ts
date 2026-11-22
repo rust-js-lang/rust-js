@@ -450,7 +450,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the program's `'get_tag` is `get_tag:` in JS, not camelCase as every name is (ADR 0944)",
     file: "src/lower/mir/hints.rs",
-    find: "    crate::lower::camel_case(label.ident.name.as_str().trim_start_matches('\\''))\n",
+    find: "    rust_js_program::casing::camel_case(label.ident.name.as_str().trim_start_matches('\\''))\n",
     replace:
       "    label.ident.name.as_str().trim_start_matches('\\'').to_string()\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],

@@ -410,7 +410,7 @@ pub(in crate::lower) fn drop_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Stri
         // A type built of a function's slots (#737): a tuple's of its
         // parts', `UsizeSelfItem` of `(usize, Self::Item)`; any's a name.
         ty::Tuple(parts) => (parts.iter())
-            .map(|part| crate::lower::upper_first(&drop_word(tcx, part)))
+            .map(|part| rust_js_program::casing::upper_first(&drop_word(tcx, part)))
             .collect(),
         _ => js_word(&evidence_word(tcx, ty)),
     }
