@@ -3,9 +3,9 @@
 //! from_unknown(Type)`, `content` for `let content = content.clone()`,
 //! where `n` holds that value wherever `n$1` is read.
 
-use rust_js_program::collections::IndexSet;
+use crate::collections::IndexSet;
 
-use rust_js_program::js::{self, Expr, ExprKind, Function, Name, Pattern, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Function, Name, Pattern, Stmt, StmtKind};
 
 /// `function`'s shadows of their own value, and each of its closures'.
 pub(super) fn function(function: &mut Function) {

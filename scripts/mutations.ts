@@ -101,8 +101,8 @@ export function mutationFile(name: string): string | undefined {
  * by the corpus's snapshots too (#864). test/mutations.test.ts holds it to
  * the architecture. */
 export const readabilityOwners = [
-  "src/prepare.rs",
-  "src/prepare/**",
+  "crates/rust-js-program/src/prepare.rs",
+  "crates/rust-js-program/src/prepare/**",
   "src/to_oxc.rs",
   "src/to_oxc/**",
   "src/format.rs",

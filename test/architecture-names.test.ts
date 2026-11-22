@@ -116,7 +116,7 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
   // Preparation's speller, a loop's counter's its `counters` (#2032).
   // And its imports' spelling, which gives way to the program's names not
   // spelled yet by the word they'll take (#2070).
-  expect(with_(/\.made_base\(\)/).sort()).toEqual(["src/prepare.rs", "src/prepare/counters.rs", "src/prepare/import_names.rs", "src/prepare/reclaim.rs", "src/prepare/temporaries.rs"]);
+  expect(with_(/\.made_base\(\)/).sort()).toEqual(["crates/rust-js-program/src/prepare.rs", "crates/rust-js-program/src/prepare/counters.rs", "crates/rust-js-program/src/prepare/import_names.rs", "crates/rust-js-program/src/prepare/reclaim.rs", "crates/rust-js-program/src/prepare/temporaries.rs"]);
 });
 
 // A name given apart, `node$2` of `node`, is spelled by `names.rs` alone,
@@ -129,7 +129,7 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
 test("a name given apart is read by its name's API alone", () => {
   const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
   const reading = sources.filter((file) => file !== "crates/rust-js-program/src/names.rs" && /names::apart\(/.test(outsideTests(file)));
-  expect(reading.sort()).toEqual(["crates/rust-js-program/src/js/name.rs", "src/prepare/reclaim.rs"]);
+  expect(reading.sort()).toEqual(["crates/rust-js-program/src/js/name.rs", "crates/rust-js-program/src/prepare/reclaim.rs"]);
 });
 
 // A place a tree reads is keyed by `js::Path` alone (ADR 1150, step 3): its
@@ -152,7 +152,7 @@ test("a place is keyed by js::Path, never a name formatted with its fields", () 
 // it reads no name's word: preparation spells every binding, imports
 // included (`prepare/import_names.rs`, ADR 1150).
 test("link reads no name's word", () => {
-  const text = read("src/link.rs");
+  const text = read("crates/rust-js-program/src/link.rs");
   expect(text.match(/\.(?:into_)?word\(\)/g) ?? []).toEqual([]);
 });
 
@@ -166,7 +166,7 @@ test("link reads no name's word", () => {
 // their reads, by their ids (`reach`, `not_read_as_themselves`), which ask
 // no word.
 test("js::scopes' words are asked only where names are spelled or checked", () => {
-  const spelling = (file: string) => file.startsWith("src/prepare/") || file === "src/prepare.rs"
+  const spelling = (file: string) => file.startsWith("crates/rust-js-program/src/prepare/") || file === "crates/rust-js-program/src/prepare.rs"
     || file.startsWith("src/to_oxc") || file === "crates/rust-js-program/src/js/scopes.rs" || file === "crates/rust-js-program/src/js/validate.rs";
   const asked = sources.filter(file => !spelling(file)).flatMap(file => {
     const text = read(file);
@@ -200,7 +200,7 @@ test("a suffix is a js::Suffix, never written as text", () => {
 test("a name's kinship and form are never asked by parsing its word outside its owners", () => {
   const owners = (file: string) => file === "crates/rust-js-program/src/js/name.rs" || file === "crates/rust-js-program/src/names.rs"
     || file === "crates/rust-js-program/src/runtime.rs" || file.startsWith("src/to_oxc")
-    || file === "src/prepare.rs" || file.startsWith("src/prepare/");
+    || file === "crates/rust-js-program/src/prepare.rs" || file.startsWith("crates/rust-js-program/src/prepare/");
   const patterns = [/\.apart_of\(\)/g, /names::apart\(/g, /split\('\$'\)/g, /split_once\('\$'\)/g,
     /starts_with\('\$'\)/g, /starts_with\("_\$"\)/g, /strip_prefix\("__arg"\)/g, /\bparam\.root\(\)/g];
   const parsed = sources.filter(file => !owners(file)).flatMap(file =>
@@ -216,7 +216,7 @@ test("a name's kinship and form are never asked by parsing its word outside its 
 // exemption has; or a diagnostic's text, inside a `format!` or a
 // validation `Problem` it makes, which names what it refuses. No other.
 test("a name's word is read outside preparation and printing only where JS sees it or a diagnostic says it", () => {
-  const outside = (file: string) => !file.startsWith("src/prepare/") && file !== "src/prepare.rs"
+  const outside = (file: string) => !file.startsWith("crates/rust-js-program/src/prepare/") && file !== "crates/rust-js-program/src/prepare.rs"
     && !file.startsWith("src/to_oxc") && file !== "crates/rust-js-program/src/js/name.rs" && file !== "crates/rust-js-program/src/js/scopes.rs";
   // The spans of each `format!(..)` and `Problem::X(..)`, by their brackets.
   const messages = (text: string) => [...text.matchAll(/format!\(|Problem::\w+\(/g)].map((m) => {

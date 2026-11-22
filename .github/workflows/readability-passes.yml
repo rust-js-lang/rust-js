@@ -12,8 +12,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src/prepare.rs'
-      - 'src/prepare/**'
+      - 'crates/rust-js-program/src/prepare.rs'
+      - 'crates/rust-js-program/src/prepare/**'
       - 'src/lower/mir/tidy.rs'
       - 'src/lower/mir/tidy/**'
       - 'test/tidy-stages.test.ts'

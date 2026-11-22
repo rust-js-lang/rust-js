@@ -25,7 +25,7 @@ all three of F-LOOPDROP; the corpus found none.
 
 `test/tidy-stages.test.ts` ran each of tidy's stages against native Rust
 (ADR 0659), on the corpus. Nothing did the same of preparation
-(`src/prepare/`), the second half of the readability work, which runs on
+(`crates/rust-js-program/src/prepare/`), the second half of the readability work, which runs on
 the finished tree; nor of the generated programs; and native Rust can't
 see a read twice of what JS made, where a getter would answer twice: #430,
 #485 and #564 were found by hand.

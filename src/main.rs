@@ -52,15 +52,12 @@ mod command;
 mod format;
 mod hooks;
 mod jsx_syntax;
-mod link;
 mod lower;
 mod node_session;
 mod output;
 mod phase_times;
-mod prepare;
 mod prettier;
 mod publish;
-mod reachability;
 #[cfg(not(target_os = "wasi"))]
 mod source_format;
 mod std_sysroot;
@@ -121,7 +118,7 @@ struct RustJs {
     /// What's lowered, and the sources it was of, planned and published once
     /// rustc is done, and has written the metadata too: a library's JS and
     /// its metadata are one build's, or neither is.
-    lowered: Option<(link::Linked, Vec<PathBuf>)>,
+    lowered: Option<(rust_js_program::link::Linked, Vec<PathBuf>)>,
     /// `--std-coverage <file>`: where to write how much of std's data
     /// structures rust-js lowers (ADR 0314).
     std_coverage: Option<PathBuf>,
@@ -473,7 +470,7 @@ impl RustJs {
         if let Some(unlinked) = lowered
             && tcx.dcx().has_errors().is_none()
         {
-            let linked = link::link(unlinked);
+            let linked = rust_js_program::link::link(unlinked);
             phase_times::mark("link");
             let sources = tcx
                 .sess
@@ -605,7 +602,7 @@ fn run() -> ExitCode {
             return ExitCode::SUCCESS;
         }
         Ok(command::Command::PreparePasses) => {
-            for (_, name) in prepare::PASSES {
+            for (_, name) in rust_js_program::prepare::PASSES {
                 println!("{name}");
             }
             return ExitCode::SUCCESS;
@@ -880,7 +877,10 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
     .map(|path| rust_js_program::paths::absolute(path))
     .collect::<Result<_, _>>()?;
     let recording = prepare_fired.is_some();
-    plan.prepare = (prepare::Passes::without(&prepare_without, recording), prepare_fired);
+    plan.prepare = (
+        rust_js_program::prepare::Passes::without(&prepare_without, recording),
+        prepare_fired,
+    );
     let (without_recognizers, recognizers_found) = (build_without_recognizers, build_recognizers_found);
     let callbacks = RustJs {
         dependencies,

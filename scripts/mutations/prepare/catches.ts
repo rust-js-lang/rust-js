@@ -1,11 +1,11 @@
-// Mutations of src/prepare/catches.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/prepare/catches.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     "name": "ignored-try-kept",
     "breaks": "an ignored `$try(() => f())`, `let _ = f();`, stays the helper, not `try { f(); } catch {}`",
-    "file": "src/prepare/catches.rs",
+    "file": "crates/rust-js-program/src/prepare/catches.rs",
     "find": "            && let Some((call, caught)) = e.caught()\n",
     "replace": "            && let Some((call, caught)) = e.caught().filter(|_| false)\n",
     "tests": ["test/lowering-bindings.test.ts", "-t", "ignored result of a call"]
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-with-error-read",
     breaks: "an `Err` arm that reads the `Result` otherwise, `?`'s `return result;`, is a `catch` where it's undefined",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    if reads != usize::from(held.is_some() && value_name.is_none()) {\n",
     replace: "    if false {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "threw-kept-as-helper",
     breaks: "whether a JS call threw, returned, is `return $try(() => f()).TAG !== \"Ok\";`, not `try { f(); return false; } catch { return true; }`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            && let Some((call, of_throw, kind)) = threw(e)\n",
     replace: "            && let Some((call, of_throw, kind)) = threw(e).filter(|_| false)\n",
     tests: ["test/bindings-any-values.test.ts", "-t", "concat_text of any value"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "threw-the-other-way",
     breaks: "`is_err()` is `try { f(); return true; } catch { return false; }`, true where it didn't throw",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    Some((call, eq != ok, caught))\n",
     replace: "    Some((call, eq == ok, caught))\n",
     tests: ["test/bindings-any-values.test.ts", "-t", "concat_text of any value"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-past-declared-blocked",
     breaks: "a `match` whose value a `let` declared ahead takes, in MIR, is `$try` and its `TAG`, not JS's `try`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))\n",
     replace: "            .take_while(|_| false)\n",
     tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-of-trailing-return-blocked",
     breaks: "a `match` of two returns, the `Err`'s past the `if` in MIR, is `$try` and its `TAG`, not JS's `try`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        (true, None) if leaves(rest) => (then, rest, rest.len()),\n",
     replace: "        (true, None) if false && leaves(rest) => (then, rest, rest.len()),\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call's Result is try and catch"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-assign-past-unended-if",
     breaks: "an `if let Ok` that sets, then returns what's set, is a `try` whose `catch` alone returns: undefined where it's `Ok`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        (true, None) if !leaves(then) => (then, &[], 0),\n",
     replace: "",
     tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-binding-read-otherwise",
     breaks: "an `Ok`'s binding read in a `format!` is the call's value returned, `\"!\"` dropped",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            StmtKind::Return(Some(e)) if read(e) => Some(StmtKind::Return(Some(call.clone()))),\n",
     replace: "            StmtKind::Return(Some(_)) => Some(StmtKind::Return(Some(call.clone()))),\n",
     tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-ok-arm-caught",
     breaks: "what the `Ok` arm does is in the `try`, so its own throw is caught as the call's `Err`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    if ok.iter().all(cannot_throw) {\n",
     replace: "    if true {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-err-arm-going-on",
     breaks: "an `Err` arm that goes on is a `catch` the `Ok` arm's code after it follows, run of an `Err` too",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    if !leaves(err) || !value_name.as_ref().is_none_or(unread) {\n",
     replace: "    if !value_name.as_ref().is_none_or(unread) {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-of-err-first-unread",
     breaks: "an `if` of the `Err` first, `if (r.TAG !== \"Ok\") { return; }`, keeps `$try` and its `TAG`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        (false, None) if leaves(then) => (rest, then, rest.len()),\n",
     replace: "        (false, None) if false && leaves(then) => (rest, then, rest.len()),\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-catch-unbound",
     breaks: "an `Err` arm that binds the error keeps `$try` and its `TAG`, not `catch (error)`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let (value_name, error) = (bound(ok).map(|(name, _)| name), bound(err));\n",
     replace: "    let (value_name, error) = (bound(ok).map(|(name, _)| name), None::<(Name, bool)>);\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-catch-shadow-unbound",
     breaks: "an `Err` arm whose binding is a shadow it sets again, `let x = r._0; x = ..`, keeps `$catchUnwind` and its `TAG`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        Some(StmtKind::Let(name, Some(value))) if js::result::reads_held(value, result.word()) => {\n            Some((name.clone(), true))\n        }\n",
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "destructors leave catch_unwind"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-err-tag-misread",
     breaks: "an `if` of `TAG === \"Err\"` is read as the `Ok`'s, its arms swapped",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let of_ok = ok == eq;\n",
     replace: "    let of_ok = eq;\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "returned-unwrap-or-tried",
     breaks: "a throwing call's `unwrap_or(d)` returned is `$try` and its `TAG`, not `try { return f(); } catch { return d; }`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            arms = StmtKind::If((**test).clone(), returned(then), Some(returned(otherwise))).at(tested.span);\n            &arms\n",
     replace: "            arms = StmtKind::If((**test).clone(), returned(then), Some(returned(otherwise))).at(tested.span);\n            _ = &arms;\n            tested\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "unwrap_or of a throwing call"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwound-caught-raw",
     breaks: "a `catch_unwind`'s `Err` arm, written in a `catch`, reads what was thrown as its payload",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        (js::Caught::Unwound, Some(payload)) => {\n",
     replace: "        (js::Caught::Unwound, Some(payload)) if false => {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a payload is a panic's message"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "thrown-shadowed",
     breaks: "a `catch_unwind`'s `catch (thrown)` hides a `thrown` its `Err` arm reads, React's renderNode's `let thrown;` (rd551): the name spelled as it is, not by preparation apart from what its scope reads (ADR 1150)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    Name::made_apart(\"thrown\")\n",
     replace: "    Name::declared(\"thrown\".to_string())\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch_unwind whose arm reads a thrown of its own|reads an error of its own"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "caught-error-shadowed",
     breaks: "a `catch_unwind` whose `Err` arm binds nothing catches into `error`, spelled as it is, which hides the `error` parameter its arm reads, `error + 1` of what was thrown (ADR 1150)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let name = binding.unwrap_or_else(|| Name::made_apart(\"error\"));\n",
     replace: "    let name = binding.unwrap_or_else(|| Name::declared(\"error\".to_string()));\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "reads an error of its own"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "tail-try-return-kept",
     breaks: "a `try` that ends its function keeps the `return;` of a `let Err(x) = catch_unwind(..) else { return; }` as its last statement",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            if tried.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(None))) {\n",
     replace: "            if false {\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch_unwind whose arm reads a thrown of its own"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "ok-arm-leaving-alone-kept",
     breaks: "`if let Ok(v) = catch_unwind(..) { return v; }`, nothing after it in its block, is the `Result` made and its `TAG` tested, not `try { return ..; } catch {}`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        (true, None) => (then, &[], 0),\n",
     replace: "        (true, None) => return None,\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "an if let Ok of catch_unwind"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-made-again",
     breaks: "`resume_unwind` of a payload caught stays `throw $unwinding(payload)`, a new `$Unwinding` of one of the program's own",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if resumed_as_given(e) || e.thrown_error_of().is_some_and(of_payload) {\n",
     replace: "        if e.thrown_error_of().is_some_and(of_payload) {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a port throws an Error by panic!"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-after-write",
     breaks: "a payload whose message a `downcast_mut` changed is thrown again as it was caught, its old message",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        e.facts.has(js::Known::AsGiven)\n            && matches!",
     replace: "        matches!",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_message_changed.rs$"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "thrown-error-read-as-payload",
     breaks: "a `catch`'s downcast of its payload to `&JsError` is read of the payload, not what was thrown",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if resumed_as_given(e) || e.thrown_error_of().is_some_and(of_payload) {\n",
     replace: "        if resumed_as_given(e) {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "resumed-of-another-variable",
     breaks: "a resume of another variable than the payload, one a closure in the `catch` declares, is thrown as what was caught, not as the payload it holds",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "if callee.helper_name() == Some(\"$unwinding\") && matches!(args.as_slice(), [arg] if of_payload(arg)))\n    };\n",
     replace: "if callee.helper_name() == Some(\"$unwinding\") && matches!(args.as_slice(), [_]))\n    };\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_payload_where_read.rs$"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwound-made-first",
     breaks: "a `catch`'s payload is made before what its arm does first, so a write the arm makes first never happens where the stack is spent (rd550)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        Some(at) if at > 0 => {\n",
     replace: "        Some(at) if at > usize::MAX - 1 => {\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch makes its payload where it's first read"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "thrown-shadow-unwound",
     breaks: "a payload's shadow set to what was thrown, `let x = $unwound(thrown); x = thrown;`, is kept, not the `catch (x)`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        && js::mentions_of(rest, &thrown) == 0\n    {\n",
     replace: "        && false\n    {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "every unwind"],
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
   {
     name: "catch-unnamed",
     breaks: "a `catch` that reads its payload no other way stays `catch (thrown)`, not the `Err`'s binding",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    (Some(payload), rest)\n",
     replace: "    (Some(thrown), rest)\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a port throws an Error by panic!"],
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwound-let-kept",
     breaks: "`let Err(x) = catch_unwind(|| panic!(\"\"))` stays `const { _0: x } = $catchUnwind(..)`, not JS's `try`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    unwound_lets(body);\n",
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a port throws an Error by panic!"],
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
   {
     name: "caught-run-unclosed",
     breaks: "the `catch` of a `let Err(x)` ends at the last read of `x`, so what it declares and what follows reads is out of reach",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if last < taken {\n",
     replace: "        if taken > 0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_irrefutable.rs$"],
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwound-let-hoisted-moved",
     breaks: "a function the `catch` of a `let Err(x)` would declare, called before it, moves into it, out of the call's reach",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    if hoisted {\n",
     replace: "    if hoisted && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_irrefutable.rs$"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwound-let-shadow-const",
     breaks: "a payload a shadow sets again is a `const` in the `catch`, which the shadow's assignment throws of",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let made = if mutable {\n",
     replace: "    let made = if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_irrefutable.rs$"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "asked-first-kept-in-test",
     breaks: "`if (c && $catchUnwind(f).TAG === \"Err\") { .. }` keeps the helper and its `TAG`, not `if (c) { try { .. } catch { .. } }`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if let Some(asked) = asked_first(&body[i], &body[..i]) {\n",
     replace: "        if let Some(asked) = asked_first(&body[i], &body[..i]).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_tested_last.rs$"],
@@ -266,7 +266,7 @@ export const mutations: Mutation[] = [
   {
     name: "asked-first-only-the-first",
     breaks: "of `if (a && b && $catchUnwind(f).TAG === \"Err\")`, the outer `if` tests `a` alone, the `try` run where `b` is false",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    Some(StmtKind::If(joined(&parts[..at]), caught, None).at(stmt.span))\n",
     replace: "    Some(StmtKind::If(joined(&parts[..1]), caught, None).at(stmt.span))\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_tested_last.rs$"],
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
   {
     name: "asked-first-else-dropped",
     breaks: "an `if (c && $catchUnwind(f).TAG === \"Err\") { .. } else { .. }` is the `try` inside `if (c)`, its `else` gone",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let StmtKind::If(test, then, None) = &stmt.kind else {\n        return None;\n    };\n    let mut parts = Vec::new();\n",
     replace: "    let StmtKind::If(test, then, _) = &stmt.kind else {\n        return None;\n    };\n    let mut parts = Vec::new();\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_tested_last.rs$"],
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-not-unchained",
     breaks: "an `if let Err(e) = catch_unwind(f) && c` chain stays `$catchUnwind` and its `TAG`, not `try { .. } catch (e) { if (c) .. }`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let (tested, otherwise) = unchained(result, tested)?;\n",
     replace: "    let (tested, otherwise) = unchained(result, tested).filter(|_| false)?;\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a catch_unwind that heads an if let chain is a try"],
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-tested-where-made-kept",
     breaks: "a chain whose `Result` is tested where it's made, `if ($catchUnwind(f).TAG === \"Err\" && c)`, stays the helper",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if let Some((made, tested)) = made_where_tested(&body[i])\n",
     replace: "        if let Some((made, tested)) = made_where_tested(&body[i]).filter(|_| false)\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a catch_unwind that heads an if let chain is a try"],
@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-else-of-going-on-after",
     breaks: "a chain's `else`, where its arm goes on, is after the `try`: it runs after the arm too",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: " || (otherwise.is_some() && !leaves) {\n",
     replace: " {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_chained.rs$"],
@@ -307,7 +307,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-else-dropped",
     breaks: "a chain's `else` where its arm returns is left out: what runs where it's false is nothing",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    caught.extend(otherwise[otherwise.len() - kept..].iter().cloned());\n",
     replace: "",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a catch_unwind that heads an if let chain is a try"],
@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-shadow-left-in-if",
     breaks: "what sets the payload's binding again, `e = e.error;`, stays in `c`'s `if`, so the `catch` keeps `$unwound`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            1 + (then[1..].iter())\n",
     replace: "            1 + (then[1..1].iter())\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a catch_unwind that heads an if let chain is a try"],
@@ -323,7 +323,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-if-before-its-comment",
     breaks: "`c`'s `if` is where the chain starts, so a comment before `c` is after it",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let at = if chained.span.is_none() { span } else { chained.span };\n",
     replace: "    let at = span;\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "a catch_unwind that heads an if let chain is a try"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
   {
     name: "ok-value-read-in-place-unseen",
     breaks: "an `Ok` arm that reads its value only where a pattern inside tests it, `Ok(Some(f)) => return f`, keeps `$catchUnwind` and its `TAG`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        None if held_reads(ok, result) > 0 && held_reads(ok, result) == js::mentions_of(ok, result) => {\n",
     replace: "        None if false => {\n",
     tests: ["test/lowering-unwinds.test.ts", "-t", "Ok arm that sets a binding"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
   {
     name: "ok-value-unread-bound",
     breaks: "an `Ok(_)` arm that reads nothing of its value binds it all the same, `const decodeUriComponent = decodeURIComponent(..)` of a value nothing reads",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        None if held_reads(ok, result) > 0 && held_reads(ok, result) == js::mentions_of(ok, result) => {\n",
     replace: "        None if held_reads(ok, result) == js::mentions_of(ok, result) => {\n",
     tests: ["test/snapshots.test.ts", "-t", "throws"],
@@ -348,7 +348,7 @@ export const mutations: Mutation[] = [
   {
     name: "ok-value-reads-counted-as-results",
     breaks: "the `Ok` arm's reads of its value, by the result's name, count as reads of the `Result`, so the `try` isn't made",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let ok_reads = match value_name.as_ref() == Some(result) {\n        true => 0,\n",
     replace: "    let ok_reads = match value_name.as_ref() == Some(result) {\n        true => js::mentions_of(ok, result),\n",
     tests: ["test/corpus.test.ts", "-t", "^(catch_unwind_guard_returned|catch_unwind_nested_ok).rs$"],
@@ -357,7 +357,7 @@ export const mutations: Mutation[] = [
   {
     name: "cannot-throw-if-arms-unread",
     breaks: "an `if` whose arm throws is taken as one that can't, so what the `Ok` arm throws is caught",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            !test.may_throw() && then.iter().all(cannot_throw) && otherwise.iter().flatten().all(cannot_throw)\n",
     replace: "            !test.may_throw()\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_nested_ok.rs$"],
@@ -366,7 +366,7 @@ export const mutations: Mutation[] = [
   {
     name: "cannot-throw-if-refused",
     breaks: "an `if` that only returns a value is taken as one that may throw, so `Ok(Some(f)) => return f` keeps its `TAG`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        StmtKind::If(test, then, otherwise) => {\n            !test.may_throw()",
     replace: "        StmtKind::If(test, then, otherwise) => {\n            false && !test.may_throw()",
     tests: ["test/lowering-unwinds.test.ts", "-t", "Ok arm that sets a binding"],
@@ -374,7 +374,7 @@ export const mutations: Mutation[] = [
   {
     name: "ok-binding-alias-kept",
     breaks: "`Ok(Some(f)) => return f` keeps its pattern's alias of the `try`'s value, `const value = ..; if (value) { const f = value; return f; }`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            let name = match whole_binding(&ok, result, &call) {\n",
     replace: "            let name = match None::<Name> {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
@@ -383,7 +383,7 @@ export const mutations: Mutation[] = [
   {
     name: "ok-binding-clash-unchecked",
     breaks: "the `try`'s value is named by the pattern's binding where the closure has that name too, so one of them stays given apart, `const picked$1 = pick(n)`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let unclashed = !clashes;\n",
     replace: "    let unclashed = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
   {
     name: "ok-arm-leaving-err-after-kept",
     breaks: "`match catch_unwind(f) { Ok(()) => return .., Err(e) => .. }` with code after it stays `$catchUnwind` and its `TAG` tested (ADR 0637, amended)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        (true, None) if let Some(n) = caught_run(result, rest) => (then, &rest[..n], n),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
@@ -401,7 +401,7 @@ export const mutations: Mutation[] = [
   {
     name: "tail-try-of-if-skipped",
     breaks: "a `try` that ends an `if`'s branch that ends the function keeps its closure called in it (ADR 0660, amended)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        StmtKind::If(_, then, otherwise) => {\n            tail_tries(then);\n",
     replace: "        StmtKind::If(_, then, otherwise) => {\n            let _ = then;\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
   {
     name: "flagged-try-never",
     breaks: "a flag a closure gives out of `catch_unwind` to return from its function stays `$catchUnwind(() => ..)` and `if (r.TAG === \"Ok\" && r._0)`, not React's `try { ..; return false; } catch {}`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if let Some(flagged) = flagged_try(&body[i], &body[i + 1])\n",
     replace: "        if let Some(flagged) = flagged_try(&body[i], &body[i + 1]).filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_flag_return.rs$"],
@@ -419,7 +419,7 @@ export const mutations: Mutation[] = [
   {
     name: "flagged-try-negation-unseen",
     breaks: "of `!r._0`, the flag the other way, each `return false` is taken for falling out and each `return true` for the `if`'s",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        ExprKind::Unary(js::UnaryOp::Not, read) => (&**read, false),\n",
     replace: "        ExprKind::Unary(js::UnaryOp::Not, read) => (&**read, true),\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_flag_return.rs$"],
@@ -428,7 +428,7 @@ export const mutations: Mutation[] = [
   {
     name: "flagged-try-result-read-after",
     breaks: "the flag's `Result` read after the `if` is gone with its `const`, a `ReferenceError`",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            && js::mentions_of(&body[i + 2..], result) == 0\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_flag_return.rs$"],
@@ -436,7 +436,7 @@ export const mutations: Mutation[] = [
   {
     name: "err-ending-function-goes-on",
     breaks: "an `Err` arm that ends the function, after an `Ok` arm that can throw, is no `catch`: the `match` stays a `$catchUnwind` result tested `.TAG === \"Ok\"` (ADR 0637, amended)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let err = match ends && after.is_empty() && !leaves(err)",
     replace: "    let err = match false && after.is_empty() && !leaves(err)",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
   {
     name: "err-ending-return-after-its-if",
     breaks: "the `return;` that ends the `catch` is after its last `if`, `if (c) { throw error; } else { f(x); } return;`, not in the branch that goes on (ADR 0637, amended)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        Some(StmtKind::If(_, then, Some(otherwise))) => {\n            for branch in [then, otherwise] {",
     replace: "        Some(StmtKind::If(_, then, Some(otherwise))) if false => {\n            for branch in [then, otherwise] {",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwind-try-at-ok-arm",
     breaks: "a `try` of a `match` of `catch_unwind` is where its `Ok` arm is, so the comments above the `match` are in the `try` (rd156)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let span = match value.span.is_none() || (!made.span.is_none() && made.span.lo <= value.span.lo) {\n",
     replace: "    let span = match true {\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "comments around a match of catch_unwind"],
@@ -460,7 +460,7 @@ export const mutations: Mutation[] = [
   {
     name: "unwind-comment-only-err-after",
     breaks: "an `Err` arm of only comments is after the `try`, not the `catch`'s (rd156)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        (true, None) if leaves(then) && rest.first().is_some_and(|s| matches!(s.kind, StmtKind::Comments)) => {\n",
     replace: "        (true, None) if false => {\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "comments around a match of catch_unwind"],
@@ -469,7 +469,7 @@ export const mutations: Mutation[] = [
     name: "tried-return-at-the-call",
     breaks:
       "the `return` a `try` makes of an `Ok` arm's `return function;` is placed at the call, in the `if`'s test, so the `// eslint-disable-next-line no-eval` above it is lost (rd525)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            (kind, written.then_some(stmt.span), arm)\n",
     replace: "            (kind, written.then_some(stmt.span).filter(|_| false), arm)\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above the call's return in the try"],
@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
     name: "tried-assignment-where-its-arm-is",
     breaks:
       "an `Ok` arm's value, `Ok(v) => v`, kept as the `try`'s `value = (0, eval)(code)`, is where that arm is, so it maps to the arm's line, not the call's where the value is made (rd545); since a `catch_unwind`'s closure is called and applied in place (#462), only a JS call's `$try` tells",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            let written = matches!(stmt.kind, StmtKind::Return(_))\n",
     replace: "            let written = true\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a try's assignment of a JS call's Ok value maps to the call"],
@@ -486,7 +486,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-in-place-never",
     breaks: "React's isRenderConsistentWithExternalStores is `const catchUnwind = objectIs(..); if (!catchUnwind)`, the value named after the `Result`, not `if (!objectIs(..))` (ADR 0706, amended)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            js::read_where_made(&mut tried, name);\n",
     replace: "",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "evaluated first is the call"],
@@ -494,7 +494,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-named-kept",
     breaks: "a value the program names, read once where it's read, keeps its name in the `try`, `const word = wordAt(text, 0); return word ?? null;`, where tidy reads any such `const` in place (rd16)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if let Some(name) = value_name.as_ref() {\n",
     replace: "        if let Some(name) = value_name.as_ref().filter(|name| result.is(name.word())) {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_value_read_first.rs$"],
@@ -503,7 +503,7 @@ export const mutations: Mutation[] = [
   {
     name: "arms-returned-never",
     breaks: "React's throwAndUnwindWorkLoop keeps a flag named after the `Result`, `catchUnwind = true;` and `if (catchUnwind) { return 0; }`, not `return 0;` where the closure returns `true` (rd60, ADR 0706 amended)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        && let Some((mut tried, rest)) = arms_where_returned(body, result, ok)\n",
     replace: "        && let Some((mut tried, rest)) = arms_where_returned(body, result, ok).filter(|_| false)\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "literal the closure returns"],
@@ -511,7 +511,7 @@ export const mutations: Mutation[] = [
   {
     name: "arms-returned-throwing",
     breaks: "an arm that may throw, `Ok(true) => panic!(..)` or a flag's `return finish(state)`, is moved into the `try`, whose `catch` catches what it throws",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if !arm.iter().all(cannot_throw) || (places > 1",
     replace: "        if (places > 1",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(arms_where_returned|flag_return).rs$"],
@@ -519,7 +519,7 @@ export const mutations: Mutation[] = [
   {
     name: "arms-returned-rest-in-try",
     breaks: "the rest of an `Ok` arm, which may throw, is in the `try` where the `catch` leaves, so the `catch` catches what it throws",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            true => rest.to_vec(),\n",
     replace: "            true => {\n                tried.extend(rest.iter().cloned());\n                Vec::new()\n            }\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
@@ -527,7 +527,7 @@ export const mutations: Mutation[] = [
   {
     name: "arms-returned-negation-unseen",
     breaks: "an arm of `!value` is taken where the value is `true`, the other arm's",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        ExprKind::Unary(js::UnaryOp::Not, inner) => holds(inner, value, v).map(|h| !h),\n",
     replace: "        ExprKind::Unary(js::UnaryOp::Not, inner) => holds(inner, value, v),\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(arms_where_returned|flag_return).rs$"],
@@ -535,7 +535,7 @@ export const mutations: Mutation[] = [
   {
     name: "arms-returned-ne-as-eq",
     breaks: "an arm of `value === 1` is taken where the value is any other number, as `!==` would",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            Some(same_literal(other, v)? == (*op == js::Op::Eq))\n",
     replace: "            Some(same_literal(other, v)? != (*op == js::Op::Eq))\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
   {
     name: "arms-returned-written-twice",
     breaks: "an arm of more than a jump, of a value the closure returns in two places, is written in each",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "|| (places > 1 && !arm.is_empty() && !one_jump) {\n",
     replace: "|| (false && places > 1 && !arm.is_empty() && !one_jump) {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
   {
     name: "arms-returned-comment-lost",
     breaks: "what's said above an `Ok` arm, `// Where it's thrown.`, is lost where the arm is placed where the closure returns its value",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "                first.span.lo = stmt.span.lo;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
@@ -561,7 +561,7 @@ export const mutations: Mutation[] = [
   {
     name: "arms-returned-spans-kept",
     breaks: "an arm placed before more of the closure keeps where it's written, so a comment the closure writes after that `return`, `// Not fatal.`, is taken into the arm",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        if at.is_none() || at.lo < last {\n",
     replace: "        if at.is_none() {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_arms_where_returned.rs$"],
@@ -570,7 +570,7 @@ export const mutations: Mutation[] = [
   {
     name: "held-assignment-without-its-arm",
     breaks: "a `try`'s assignment of a `match`'s `Ok` value is of the call alone, so the comment above `Ok(v) => v,` is in no statement and lost (rd630)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            let arm = (!written).then_some(stmt.span);\n",
     replace: "            let arm: Option<js::Span> = None;\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
@@ -579,7 +579,7 @@ export const mutations: Mutation[] = [
     name: "flagged-try-catch-uncommented",
     breaks:
       "a comment right above the `if let Ok(true) = r` a flag's `try` folds is above the `try`, not in its `catch`, upstream's `} catch (x) { // Fall through to reveal. }` (rd634)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let (binding, caught) = catchable(js::Caught::Unwound, None, Vec::new(), tested.span);\n",
     replace: "    let (binding, caught) = catchable(js::Caught::Unwound, None, Vec::new(), made.span);\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "flagged catch_unwind"],
@@ -588,7 +588,7 @@ export const mutations: Mutation[] = [
     name: "flagged-try-at-its-test",
     breaks:
       "a flag's `try` is placed where the `if` it folds is, after its body, so a comment in the closure before its `false` is above the `try`, not at its end (rd634)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    Some(StmtKind::TryCatch(tried, binding, caught).at(made.span))\n",
     replace: "    Some(StmtKind::TryCatch(tried, binding, caught).at(tested.span))\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "flagged catch_unwind"],
@@ -597,7 +597,7 @@ export const mutations: Mutation[] = [
     name: "err-test-comment-unsaid",
     breaks:
       "a comment right above an `if r.is_err() { .. }` a `try` folds is lost, not first in its `catch` (#489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let said = (!said_of_ok && !in_condition).then(|| StmtKind::Comments.at(tested_at));\n",
     replace: "    let said: Option<Stmt> = None;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
@@ -606,7 +606,7 @@ export const mutations: Mutation[] = [
     name: "ok-test-comment-caught",
     breaks:
       "a comment right above an `if let Ok(n) = r { return n; }` a `try` folds is put in its `catch`, which is the other way's (#489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        true => of_ok,\n",
     replace: "        true => false,\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
@@ -615,7 +615,7 @@ export const mutations: Mutation[] = [
     name: "thrown-binding-before-comment",
     breaks:
       "a `catch`'s payload binding, `const e = $unwound(thrown);`, is where the call's `let` is, so a comment above the `if let Err(e)` a `try` folds is after it, not first in the `catch` (#489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            .at(said.as_ref().map_or(span, |said| said.span));\n",
     replace: "            .at(span);\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
@@ -624,7 +624,7 @@ export const mutations: Mutation[] = [
     name: "ok-arm-comment-unsaid",
     breaks:
       "a comment right above an `if let Ok(n) = r` a `try` folds, or a `match`'s `Ok(()) => {}`, is lost, not before what the arm does (#489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        .then(|| StmtKind::Comments.at(tested_at))\n        .into_iter()\n",
     replace: "        .then(|| StmtKind::Comments.at(tested_at))\n        .filter(|_| false)\n        .into_iter()\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
@@ -632,7 +632,7 @@ export const mutations: Mutation[] = [
   {
     name: "ok-value-comment-unsaid",
     breaks: "a comment right above a `let Ok(n) = r else { .. }` a `try` folds is lost, not before `n = ..;` (#489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            vec![StmtKind::Comments.at(binding.span)]\n",
     replace: "            Vec::new()\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
@@ -641,7 +641,7 @@ export const mutations: Mutation[] = [
     name: "ok-arm-comment-first-in-try",
     breaks:
       "a comment right above an `if let Ok(n) = r` a `try` folds is first in the `try`, before the closure's code, not before what the arm does (#489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        tried.splice(at..at, arm_said.iter().cloned());\n",
     replace: "        tried.splice(0..0, arm_said.iter().cloned());\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
@@ -650,7 +650,7 @@ export const mutations: Mutation[] = [
     name: "ok-arm-comment-after-value",
     breaks:
       "a comment right above an `if let Ok(n) = r { return n; }` a `try` folds is after its `return`, at the `try`'s end, as the arm's own statements would be (#489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            vec![caught(vec![held.at(written.unwrap_or(through_arm))], &said, &[])],\n",
     replace: "            vec![caught(vec![held.at(written.unwrap_or(through_arm))], &[], &said)],\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
@@ -659,7 +659,7 @@ export const mutations: Mutation[] = [
     name: "ok-arm-comment-after-try-unsaid",
     breaks:
       "a comment right above an `if let Ok(n) = r { log.push(n); .. }` whose arm a `try` leaves after it is lost, not before `log.push(n);` (#489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    out.extend(arm_said);\n",
     replace: "",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded Ok test"],
@@ -668,7 +668,7 @@ export const mutations: Mutation[] = [
     name: "arm-set-comment-said-again",
     breaks:
       "a comment above a `match`'s `Ok` arm whose value the `try` sets, `// c\\n Ok(v) => v,`, is above the `let` before the `try`, not in it at its own place (rd630, #489)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "            Some(_) => Vec::new(),\n            None => [arm_said, value_said].concat(),\n",
     replace: "            _ => [arm_said, value_said].concat(),\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above a match.s Ok arm is above its value in the try"],
@@ -677,7 +677,7 @@ export const mutations: Mutation[] = [
     name: "first-arm-then-marker-kept",
     breaks:
       "a first arm of nothing with a comment above it, `// Fine.\\n Ok(()) => {}`, is an `if` of nothing, `if (r.TAG === \"Ok\") {} else { .. }` (#508)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        *test = tested.negated_test();\n        *then = rest;\n",
     replace: "        *test = tested;\n        *otherwise = Some(rest);\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment above an arm that does nothing is the arm.s"],
@@ -686,7 +686,7 @@ export const mutations: Mutation[] = [
     name: "condition-call-comment-caught",
     breaks:
       "a comment above an `if` whose condition makes the call, `// eslint-disable-next-line no-eval\\n if js::eval(c).is_err()`, is the `catch`'s, not before the call in the `try` (rd736)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let in_condition = !written_at.is_none() && !tested_at.is_none() && written_at.lo >= tested_at.lo;\n",
     replace: "    let in_condition = false;\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
@@ -694,7 +694,7 @@ export const mutations: Mutation[] = [
   {
     name: "condition-call-comment-unsaid",
     breaks: "a comment above an `if` whose condition makes the call is lost, not before the call in the `try` (rd736)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        tried.splice(0..0, call_said.iter().cloned());\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
@@ -703,7 +703,7 @@ export const mutations: Mutation[] = [
     name: "condition-call-try-at-the-call",
     breaks:
       "the `try` of an `if` whose condition makes the call is where the call is, so the comment above the `if` is above the `try`, not before the call in it (rd736)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let (span, call_at) = match in_condition && !value.span.is_none() && tested_at.lo < value.span.lo {\n",
     replace: "    let (span, call_at) = match false {\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
@@ -712,7 +712,7 @@ export const mutations: Mutation[] = [
     name: "closure-condition-comment-in-the-try",
     breaks:
       "a comment above an `if` whose condition is a closure's `catch_unwind`, `// c\\n if catch_unwind(|| { .. }).is_err()`, is first in the `try`, the closure's body, not above the `try`, as React's getOffsets writes it (#688)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let of_call = in_condition && js::called_body(&call).is_none();\n",
     replace: "    let of_call = in_condition;\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "closure's catch_unwind"],
@@ -721,7 +721,7 @@ export const mutations: Mutation[] = [
     name: "condition-call-taken-for-a-closure",
     breaks:
       "a comment above an `if` whose condition makes a call of no closure body, `// eslint-disable-next-line no-eval\\n if js::eval(c).is_err()`, is above the `try`, not before the call in it (#688)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    let of_call = in_condition && js::called_body(&call).is_none();\n",
     replace: "    let of_call = false;\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "condition makes the call"],
@@ -730,7 +730,7 @@ export const mutations: Mutation[] = [
     name: "closure-let-else-said-in-the-try",
     breaks:
       "a comment above a `let Ok(v) = catch_unwind(|| ..) else` is before the value's statement in the `try`, not above the `try` (#688)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "        (true, Some(binding)) if !closure_said && !binding.span.is_none() && binding.span.lo < tested_at.lo => {\n",
     replace: "        (true, Some(binding)) if !binding.span.is_none() && binding.span.lo < tested_at.lo => {\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "closure's catch_unwind"],
@@ -738,7 +738,7 @@ export const mutations: Mutation[] = [
   {
     name: "inline-catch-unwind-catches-all",
     breaks: "the inline `catch_unwind`'s `catch` takes an abort, what rust-js doesn't support and a stack overflow for a panic (ADR 0660's limit, #1193)",
-    file: "src/prepare/catches.rs",
+    file: "crates/rust-js-program/src/prepare/catches.rs",
     find: "    if caught != js::Caught::Unwound {\n        return (binding, handler);\n",
     replace: "    if true {\n        return (binding, handler);\n",
     tests: ["test/vec-capacity.test.ts", "-t", "capacity\\(\\) of a Vec whose growth wasn't kept"],

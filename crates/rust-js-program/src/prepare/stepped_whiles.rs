@@ -1,7 +1,7 @@
 //! A `while` that counts its variable last, as a `for` that steps it (ADR
 //! 0974); and a counter read and then stepped, `x++` (ADR 0948).
 
-use rust_js_program::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind};
 
 /// `let i = 0; while (i < n) { ..; i++; }`: `for (let i = 0; i < n; i++)
 /// { .. }`, as React counts. Each runs the same: the start, then the test,

@@ -158,7 +158,7 @@ object.
 - **Which comments are where is the literal's** (`aggregates.rs`,
   `commented_fields`): the keys a comment is on, `ObjectLayout::commented`,
   and the keys one is before, `ObjectLayout::led`; **which keys are left
-  out is preparation's** (`src/prepare/undefined_keys.rs`), which alone
+  out is preparation's** (`crates/rust-js-program/src/prepare/undefined_keys.rs`), which alone
   sees each value as it ends, and keeps a led `None` only where no key
   after it is kept.
 - **What this undoes**: the amendment above, and the first amendment's

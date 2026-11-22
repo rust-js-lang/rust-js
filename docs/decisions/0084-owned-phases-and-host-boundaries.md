@@ -18,7 +18,7 @@ module APIs rather than introducing a plugin framework or a second Rust IR.
   resemble JavaScript names. Linking reserves local names, assigns imports,
   and consumes symbols before printing. An unresolved symbol is an internal
   compiler invariant violation, never valid generated JavaScript. The resolver
-  lives in `src/link.rs` and accepts only owned modules, symbols, import candidates
+  lives in `crates/rust-js-program/src/link.rs` and accepts only owned modules, symbols, import candidates
   and reserved names. Lowering translates rustc module identities into symbols
   before this boundary. `crates/rust-js-program/src/names.rs` owns the shared identifier and collision
   policy. Neither linking nor name allocation depends on rustc or lowering.
@@ -33,7 +33,7 @@ module APIs rather than introducing a plugin framework or a second Rust IR.
   The result owns its collections and borrows captured THIR; it is not a second
   Rust IR or a frontend-independent artifact. The pipeline retains diagnostic
   accumulation and the existing demand-driven codec/reachability ordering.
-  Dependency traversal lives in `src/reachability.rs` with opaque identity inputs
+  Dependency traversal lives in `crates/rust-js-program/src/reachability.rs` with opaque identity inputs
   and no rustc or emission dependencies. The pipeline chooses roots using the
   existing derived-implementation policy; the traversal handles cycles and
   transitive dependencies iteratively. This is not general dead-code elimination

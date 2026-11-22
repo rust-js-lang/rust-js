@@ -1,11 +1,11 @@
-// Mutations of src/prepare.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/prepare.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "prepare-some-where-unwritten",
     breaks: "a `SomeWhere` isn't prepared as the conditional it prints, so `w ? w : undefined` isn't `w || undefined`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            *e = Expr {\n                kind: ExprKind::Cond(Box::new(test), Box::new(value), Box::new(Expr::js_undefined())),\n                ..std::mem::replace(e, Expr::taken())\n            };\n            expr(e);\n",
     replace: "            let _ = (test, value);\n",
     tests: ["test/corpus.test.ts", "-t", "^btree_append_drops.rs$"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-function-const",
     breaks: "a thread-local's with_this function stays a `const` of a function expression, `const onUnsuspend = function () { .. }`, where upstream declares `function onUnsuspend() { .. }` (rd196)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::DeclaredModuleFunctions, module, |module| {\n        declared::declared_module_functions(&mut module.items)\n    });\n",
     replace: "",
     tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "let-else-guard-a-loop-head",
     breaks: "a `let … else`'s guard first in a loop is the loop's test, `while ((parentA = a.return) != null)`, not the guard written (ADR 0879, amended)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                && !facts.has(js::Known::Guard)\n",
     replace: "",
     tests: ["test/lowering-early-exits.test.ts", "-t", "let elses that each break a loop"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-method-reads-this",
     breaks: "a field's closure that reads a class's `this` is a method, `read(k) { this.n }`, whose `this` is the object it's in",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    if js::reads_this(body) {\n        return None;\n    }\n",
     replace: "",
     tests: ["test/classes.test.ts", "-t", "reads this stays"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-method-never",
     breaks: "a field that's a closure of statements stays an arrow, `then: (resolve, reject) => { .. }`, not ReactAct's `then(resolve, reject) { .. }`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                    if let Some(method) = method(prop, beside)\n",
     replace: "                    if let Some(method) = method(prop, beside).filter(|_| false)\n",
     tests: ["test/classes.test.ts", "-t", "reads this stays"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-method-in-object-spread",
     breaks: "a function stored beside an object spread becomes a method, changing the source text given by JavaScript's Function.prototype.toString",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            if !props.iter().any(|prop| matches!(prop, Prop::Spread(_))) {",
     replace: "            if true {",
     tests: ["test/create-details.test.ts", "-t", "runs Codex's contract"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-method-of-a-value",
     breaks: "a field of a closure of a value alone, `double: (x) => x * 2`, is a method of a `return`, `double(x) { return x * 2; }`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    if !beside\n        && matches!(\n",
     replace: "    if false\n        && matches!(\n",
     tests: ["test/snapshots.test.ts", "-t", "async"],
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-method-beside-unseen",
     breaks: "a field of a closure of a value alone beside a method stays an arrow, `readContext: (context) => readContext(context)`, not React's DEV dispatchers' `readContext(context) { .. }`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                let beside = props.iter().any(|prop| method(prop, false).is_some());\n",
     replace: "                let beside = false;\n",
     tests: ["test/lowering-arrows.test.ts", "-t", "has each function field a method"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-method-beside-any",
     breaks: "a lone field of a closure of a value, `{ double: (x) => x * 2 }`, is a method because a field of the object is a function, though none is a method",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                let beside = props.iter().any(|prop| method(prop, false).is_some());\n",
     replace: "                let beside = props.iter().any(|prop| method(prop, true).is_some());\n",
     tests: ["test/lowering-arrows.test.ts", "-t", "has each function field a method"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-held-kept",
     breaks: "`const type = a || b || undefined; return type ?? \"Object\";` stays, not `a || b || \"Object\"`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::FallbacksHeld, body, |body| fallen_held(body));\n",
     replace: "",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-held-read-twice",
     breaks: "a chain held and read again after its fallback's statement takes the fallback, where it was `undefined`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        if js::mentions_of(&after[1..], name) != 0 || js::mentions_of(&after[..1], name) != 1 {\n",
     replace: "        if js::mentions_of(&after[..1], name) != 1 {\n",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "truth-kept-unfallen",
     breaks: "`(a || undefined) ?? b`, a `filter` by truth's then `or(b)`, stays, not `a || b`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        last if last.is_nullish() => parts(y, &mut chained),\n",
     replace: "        last if last.is_nullish() => return None,\n",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-chain-any-last",
     breaks: "`(a || b) ?? c` is `a || b`, the `?? c` of a `b` that may be `undefined` dropped",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        _ => return None,\n    }\n    chained.into_iter().reduce(",
     replace: "        last => chained.push(last),\n    }\n    chained.into_iter().reduce(",
     tests: ["test/lowering-options.test.ts", "-t", "filter by truth then a fallback"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "declared-at-top-off",
     breaks: "an exported thread-local's closure of its value alone, of a test, stays `(() => { if (t) { return a; } return b; })()`, not `export const AREA = t ? a : undefined;` (ADR 0870, amended)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::InitializersAtTop, module, initializers::declared_at_top);\n",
     replace: "",
     tests: ["test/lowering-cells.test.ts", "-t", "an exported thread-local an if makes None of is a conditional"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-in-place-off",
     breaks: "a thread-local an `if` makes is `(() => { if (..) return ..; .. })()`, not `let x; if (..) { x = ..; }`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::InitializersInPlace, module, |module| {\n        initializers::assigned_in_place(&mut module.items)\n    });\n",
     replace: "",
     tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "unread-property-dropped",
     breaks: "`const _width = el.offsetWidth;`, a binding's getter that lays the page out, is dropped",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                if !read.contains(name) && value.reads_only_vars())\n",
     replace: "                if !read.contains(name))\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "an unread getter of a binding"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "unread-read-dropped",
     breaks: "a `const` that's read is dropped too, `{ code: code$1 }` of nothing",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                if !read.contains(name) && value.reads_only_vars())\n",
     replace: "                if value.reads_only_vars())\n",
     tests: ["test/lowering-names.test.ts", "-t", "a binding only a guard reads"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "handler-of-one-call-blocked",
     breaks: "a handler of one call is a block, `() => { setCount(1); }`, where React ignores what it returns",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                            passes::run(Pass::HandlerReturns, value, js::returning_its_call);\n",
     replace: "",
     tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-kept-as-helper",
     breaks: "a `match` of what a JS call threw is `$try` and its `TAG`, not JS's `try`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::TryCatches, body, |body| catches::try_catches(body, ends));\n",
     replace: "",
     tests: ["test/js-errors.test.ts", "-t", "a JS error is shown"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "coalescing-if",
     breaks: "`if (SEEN == null) { SEEN = n; }`, not `SEEN ??= n`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        if let Some(coalesced) = coalescing(stmt)\n",
     replace: "        if let Some(coalesced) = coalescing(stmt).filter(|_| false)\n",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "coalescing-another",
     breaks: "`if (SEEN == null) { other = n; }` is `other ??= n`, set where `SEEN` isn't none",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    if !js::same_path(tested, target) {\n",
     replace: "    if false {\n",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "template-values-unprepared",
     breaks: "an object in a `format!`'s template keeps its `undefined` field, `{ value: undefined }`, which a callback's `\"value\" in options` sees",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            values.iter_mut().for_each(expr);\n            passes::run(Pass::TemplatesSpliced, e, Expr::splice_templates);\n",
     replace: "            passes::run(Pass::TemplatesSpliced, e, Expr::splice_templates);\n",
     tests: ["test/lowering-options.test.ts", "-t", "undefined field is no key in"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
   {
     name: "component-callback-returns",
     breaks: "a component's callback that drops its one call's value returns it, `onCheck={() => parseInt(\"7\")}`, which the component may read",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                        if element && js::is_handler_name(name) {\n",
     replace: "                        if js::is_handler_name(name) {\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "only a DOM element"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
   {
     name: "let-undefined-kept",
     breaks: "a `let` that starts `undefined` says so, `let timeout = undefined;`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && value.as_ref().is_some_and(|v| matches!(v.kind, ExprKind::Undefined))\n",
     replace: "            && false\n",
     tests: ["test/lowering-cells.test.ts", "-t", "cell only its function"],
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
   {
     name: "dynamic-import-then",
     breaks: "`const run = await import(..).then((m) => m.run)`, not `const { run } = await import(..)`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::DynamicImports, &mut function.body, |body| {\n        js::each_block_mut(body, &mut |stmts| imported(stmts))\n    });\n",
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
   {
     name: "truth-callback-arrow",
     breaks: "a truth test as a callback stays `(g) => !!g`, not `Boolean`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        && matches!(&tested.kind, ExprKind::Var(name) if name == param)\n",
     replace: "        && matches!(&tested.kind, ExprKind::Var(name) if name == param && false)\n",
     tests: ["test/lowering-options.test.ts", "-t", "a truth test as a callback is Boolean"],
@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
   {
     name: "async-block-closure-called",
     breaks: "a closure of an `async` block is `() => (async () => { .. })()`, not `async () => { .. }`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        && own.is_empty()\n",
     replace: "        && own.is_empty()\n        && false\n",
     tests: ["test/compiler.test.ts", "-t", "async code becomes"],
@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
   {
     name: "null-or-falsy-kept",
     breaks: "`escaped == null || !escaped`, not `!escaped`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            ExprKind::Unary(js::UnaryOp::Not, y) if js::same_path(x, y) && passes::applies(Pass::NullOrFalsy) => {\n",
     replace: "            ExprKind::Unary(js::UnaryOp::Not, y) if false && js::same_path(x, y) && passes::applies(Pass::NullOrFalsy) => {\n",
     tests: ["test/lowering-options.test.ts", "-t", "a truth test as a callback is Boolean"],
@@ -231,7 +231,7 @@ export const mutations: Mutation[] = [
   {
     name: "bitwise-assign-spelled-out",
     breaks: "`lanes = lanes & ~lane`, not `lanes &= ~lane`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                || matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor | Op::Shl | Op::Shr | Op::UShr);\n",
     replace: "                || false;\n",
     tests: ["test/lowering-bits.test.ts", "-t", "assignment is its compound"],
@@ -239,7 +239,7 @@ export const mutations: Mutation[] = [
   {
     name: "coalesce-assign-spelled-out",
     breaks: "`SEEN = SEEN ?? n`, not `SEEN ??= n`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem | Op::Coalesce)\n",
     replace: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem)\n",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
@@ -247,7 +247,7 @@ export const mutations: Mutation[] = [
   {
     name: "constants-not-destructured",
     breaks: "constants each reading a property of one object stay apart, not its destructuring",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        while let Some(next) = items.peek()\n",
     replace: "        while let Some(next) = items.peek().filter(|_| false)\n",
     tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
@@ -255,7 +255,7 @@ export const mutations: Mutation[] = [
   {
     name: "constants-of-two-objects-destructured",
     breaks: "constants reading properties of two objects are destructured from the first",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && same_var(&object, &of)\n",
     replace: "            && (true || same_var(&object, &of))\n",
     tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
@@ -263,7 +263,7 @@ export const mutations: Mutation[] = [
   {
     name: "exported-reads-apart",
     breaks: "exported constants side by side each reading a property of one object stay apart, not one export of its destructuring (rd751)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && (!constant.export || constant.name.is(property));\n",
     replace: "            && !constant.export;\n",
     tests: ["test/lowering-constants.test.ts", "-t", "exported constants side by side"],
@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
   {
     name: "exported-renamed-read-together",
     breaks: "an exported constant named otherwise than the property it reads joins the destructuring, which binds the property's name (rd751)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && (!constant.export || constant.name.is(property));\n",
     replace: "            && true;\n",
     tests: ["test/lowering-constants.test.ts", "-t", "exported constants side by side"],
@@ -279,7 +279,7 @@ export const mutations: Mutation[] = [
   {
     name: "exported-and-unexported-read-together",
     breaks: "an unexported constant after exported ones of the same object joins their export (rd751)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && exported == export\n",
     replace: "",
     tests: ["test/lowering-constants.test.ts", "-t", "exported constants side by side"],
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
   {
     name: "else-after-return-kept",
     breaks: "`if (c) { return a; } else { return b; }` keeps its `else`, which JS writes as `return b;` after it",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && then.last().is_some_and(js::ends)\n            && !",
     replace: "            && false\n            && !",
     tests: ["test/snapshots.test.ts"],
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
   {
     name: "else-dropped-of-any-branch",
     breaks: "an `else` of a branch that doesn't leave is run after it too: `total += n; total -= n`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && then.last().is_some_and(js::ends)\n            && !",
     replace: "            && true\n            && !",
     tests: ["test/lowering-labels.test.ts", "-t", "an else the program wrote in a case, or after a branch that goes on, stays"]
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
   {
     name: "same-test-and-value-conditional",
     breaks: "`code ? code : null`, not `code || null`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            } else if js::same_path(a, b) && passes::applies(Pass::ConditionalsAsLogicals) {\n",
     replace: "            } else if false && js::same_path(a, b) && passes::applies(Pass::ConditionalsAsLogicals) {\n",
     tests: ["test/lowering-options.test.ts", "-t", "nullable field's None is null|a filter by truth then a fallback is JS"]
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-and-else-conditional",
     breaks: "`module ? module[key] : module`, not `module && module[key]`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            } else if js::same_path(a, c) && a.reads_same() && passes::applies(Pass::ConditionalsAsLogicals) {\n",
     replace: "            } else if false && js::same_path(a, c) && a.reads_same() && passes::applies(Pass::ConditionalsAsLogicals) {\n",
     tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-and-else-of-a-getter",
     breaks: "`o.k ? o.j : o.k`, a getter's read twice, is `o.k && o.j`, which reads it once",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            } else if js::same_path(a, c) && a.reads_same() && passes::applies(Pass::ConditionalsAsLogicals) {\n",
     replace: "            } else if js::same_path(a, c) && passes::applies(Pass::ConditionalsAsLogicals) {\n",
     tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
@@ -328,7 +328,7 @@ export const mutations: Mutation[] = [
   {
     name: "return-undefined-written",
     breaks: "a `return` of `undefined` says it, `return undefined;`, where JS writes `return;`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        if let StmtKind::Let(_, value) | StmtKind::Return(value) = &mut stmt.kind\n",
     replace: "        if let StmtKind::Let(_, value) = &mut stmt.kind\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"]
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-double-negation-kept",
     breaks: "an `if`'s test of a value's truth keeps its `!!`, `if (!!x)`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                passes::rewrite(Pass::Tests, e, Expr::tested);\n",
     replace: "",
     tests: ["test/snapshots.test.ts"]
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
   {
     name: "jsx-undefined-attribute-written",
     breaks: "a JSX attribute that's `undefined`, a `None`, is written, `title={undefined}`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            jsx.props.retain(|p| {\n",
     replace: "            jsx.props.retain(|p| true || {\n",
     tests: ["test/jsx-children.test.ts", "test/jsx-evaluation-order.test.ts", "test/jsx-events.test.ts", "test/jsx-props.test.ts", "test/jsx-react-dev.test.ts", "test/jsx-types.test.ts", "test/jsx.test.ts"]
@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
   {
     name: "pair-without-impl",
     breaks: "a number's `&mut dyn` pair is written without its `impl`, and `d.impl.bump` throws",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        let props = dictionary\n            .into_iter()\n",
     replace: "        let props = dictionary\n            .into_iter()\n            .take(0)\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_mut"]
@@ -360,7 +360,7 @@ export const mutations: Mutation[] = [
   {
     name: "handle-setter-reads-its-param",
     breaks: "a handle on `value[0]` names its setter's parameter `value_`, not `newValue`, as a person names it",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        if reads(&param) {\n            param = \"newValue\".to_string();\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "handle_named_value"],
@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
   {
     name: "trailing-return-written",
     breaks: "a function's last `return;` is written, where it falls off its end",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        .is_some_and(|stmt| matches!(stmt.kind, StmtKind::Return(None)))\n",
     replace: "        .is_some_and(|_| false)\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"],
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-trailing-return-written",
     breaks: "a closure's last `return;` is written, where it falls off its end",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                false => function_body(params, body),\n",
     replace: "                false => block(body, true),\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a return of undefined is a bare return"],
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
   {
     name: "left-out-named-field",
     breaks: "the one field a rest's pattern leaves out keeps its `_field` name, where a person writes `_`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            fields[k].1 = js::Pattern::Name(js::Name::unread(\"_\".to_string()));\n        }\n    }\n}\n\n/// A function's parameters",
     replace: "            let _ = (fields, k);\n        }\n    }\n}\n\n/// A function's parameters",
     tests: ["test/jsx-props.test.ts", "-t", "flattened field is the rest"],
@@ -393,7 +393,7 @@ export const mutations: Mutation[] = [
   {
     name: "left-out-param-named-field",
     breaks: "the one field a parameter's pattern leaves out keeps its `_field` name",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    block(body, true);\n    left_out_params(params, body);\n",
     replace: "    block(body, true);\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened field is the rest"],
@@ -401,7 +401,7 @@ export const mutations: Mutation[] = [
   {
     name: "left-out-of-many",
     breaks: "each of more fields a rest's pattern leaves out is `_`, a name twice",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        [k] => Some(k),\n",
     replace: "        [k, ..] => Some(k),\n",
     tests: ["test/jsx-props.test.ts", "-t", "a chain of flattened structs as props"],
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-by-truth-unfolded",
     breaks: "`(c ? x : undefined) || y` stays, not `(c && x) || y`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            if let Some(truth) = kept_by_truth(a)\n",
     replace: "            if let Some(truth) = kept_by_truth(a).filter(|_| false)\n",
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
   {
     name: "kept-by-truth-effects-skipped",
     breaks: "`x != null && f() && x[k]` of `||` is `f() && x?.[k]`, which calls `f` where `x` is `None`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        && parts[1..].iter().all(|p| !p.has_effects())\n",
     replace: "",
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
@@ -425,7 +425,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-declared-kept",
     breaks: "`let name = error.name; if (!name) { name = \"Error\"; }` stays, not `const name = error.name || \"Error\"`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::FallbacksDeclared, body, fallen_declared);\n",
     replace: "",
     tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
@@ -433,7 +433,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-declared-reads-itself",
     breaks: "a fallback that reads the variable is the declaration's, which reads it before it's made",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && !fallback.mentions_name(name)\n",
     replace: "",
     tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
@@ -441,7 +441,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-declared-set-after-const",
     breaks: "a variable set after its fallback is a `const`, and setting it throws",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            body[i].kind = match js::Writes::of(&body[i + 2..]).may_replace(&name) {\n",
     replace: "            body[i].kind = match false && js::Writes::of(&body[i + 2..]).may_replace(&name) {\n",
     tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
@@ -449,7 +449,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-declared-any-test",
     breaks: "a fallback where the test isn't the value's truth, `f === 0` or `name === \"x\"`, is `||` of it",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        StmtKind::If(test, then, None) if falsy(test) => match then.as_slice() {\n",
     replace: "        StmtKind::If(_, then, None) => match then.as_slice() {\n",
     tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
@@ -457,7 +457,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-declared-coalesce-or",
     breaks: "a fallback where the value is none, `x ??= c`, is `||` of it, and falls back on `0` too",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            ExprKind::Binary(Op::Coalesce, x, fallback) if is(x) => Some((Op::Coalesce, (**fallback).clone())),\n",
     replace: "            ExprKind::Binary(Op::Coalesce, x, fallback) if is(x) => Some((Op::Or, (**fallback).clone())),\n",
     tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback"],
@@ -465,7 +465,7 @@ export const mutations: Mutation[] = [
   {
     name: "else-if-unelsed",
     breaks: "`if (a) { x } else if (b) { return; } else { y }` is `else { if (b) { return; } y }`, its chain broken",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && !link\n",
     replace: "",
     snapshots: true,
@@ -474,7 +474,7 @@ export const mutations: Mutation[] = [
   {
     name: "else-if-links-unheld",
     breaks: "an `else if` of an arm that goes on isn't held a link, so its `else` goes past a `return`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    let link = slot == js::Slot::Else\n",
     replace: "    let link = slot == js::Slot::Block\n",
     tests: ["test/lowering-written-branches.test.ts", "-t", "an if the program wrote before a return keeps its body inside"],
@@ -482,7 +482,7 @@ export const mutations: Mutation[] = [
   {
     name: "handle-setter-stores-as-given",
     breaks: "a handle's setter stores what it's given, where its storage says `?? null`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        let written = storage.written(Expr::var(param.clone()), js::Undefined::ByForm);\n",
     replace: "        let written = Expr::var(param.clone());\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
   {
     name: "not-operand-untested",
     breaks: "what `!` turns isn't read as a test, `const off = !(flag ?? false)`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        ExprKind::Unary(js::UnaryOp::Not, a) => {\n            passes::rewrite(Pass::Tests, &mut **a, Expr::tested);\n",
     replace: "        ExprKind::Unary(js::UnaryOp::Not, a) => {\n",
     tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
@@ -499,7 +499,7 @@ export const mutations: Mutation[] = [
   {
     name: "while-test-untested",
     breaks: "a `while`'s test isn't read as a test, `while (flags[i] ?? false)`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                passes::rewrite(Pass::Tests, cond, Expr::tested);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "option_bool_tested"],
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
   {
     name: "template-in-template-kept",
     breaks: "`format!(\"{}-{index}\", js::shown(msg))` is `${`${msg}`}-${index}`, a template in a template",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            passes::run(Pass::TemplatesSpliced, e, Expr::splice_templates);\n",
     replace: "",
     tests: ["test/bindings-any-values.test.ts", "-t", "js::shown is shown as a template"],
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-test-unmade",
     breaks: "a loop's first `const` its test reads stays, `while (true) { const step = iterator.next(); if (step.done) { break; } .. }`, not `while (!(step = iterator.next()).done)` (ADR 0860)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    each_block(Pass::TestedAssignments, module, &mut tested_assignments);\n",
     replace: "",
     tests: ["test/js-builtins.test.ts", "-t", "an iterator is stepped by its next"],
@@ -524,7 +524,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-test-captured",
     breaks: "a loop's `const` a closure in it keeps is one `let` of every turn, each closure reading the last (ADR 0860)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                js::each_expr(rest, &mut |e| captured |= caught(e));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "loop_assigned_tests"],
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-test-read-first-unasked",
     breaks: "a loop's test that reads something else first, `stack.length === 0 || top == null`, makes the `const` after it, which then reads the stack before the `pop` (ADR 0860)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                && matches!(&first_read(test).kind, ExprKind::Var(v) if v == name)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "loop_assigned_tests"],
@@ -540,7 +540,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-test-read-twice",
     breaks: "a loop's test that reads its `const` twice, `top == null || top > limit`, makes it in the first, `(top = stack.at(-1)) == null || ..` (ADR 0860)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                    reads == 1\n",
     replace: "                    reads >= 1\n",
     tests: ["test/corpus.test.ts", "-t", "loop_assigned_tests"],
@@ -549,7 +549,7 @@ export const mutations: Mutation[] = [
   {
     name: "tail-try-skipped",
     breaks: "a `return` in `catch_unwind`'s closure, where the `try` ends the function, stays a closure called in the `try` (ADR 0660, amended)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::TailTries, body, |body| catches::tail_tries(body));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_ok_returns.rs$"],
@@ -558,15 +558,15 @@ export const mutations: Mutation[] = [
   {
     name: "item-compound-unchecked",
     breaks: "an item's `v[i] = v[$at(v, i)] | lane` stays spelled out, not `v[$at(v, i)] |= lane` (ADR 0894, amended)",
-    file: "src/prepare.rs",
-    find: "        .is_some_and(rust_js_program::runtime::checks_an_index)\n",
-    replace: "        .is_some_and(rust_js_program::runtime::checks_an_index)\n        && false\n",
+    file: "crates/rust-js-program/src/prepare.rs",
+    find: "    helper.helper_name().is_some_and(crate::runtime::checks_an_index)\n",
+    replace: "    helper.helper_name().is_some_and(crate::runtime::checks_an_index) && false\n",
     tests: ["test/lowering-bits.test.ts", "-t", "an item.s bitwise assignment is its compound"],
   },
   {
     name: "post-step-unmade",
     breaks: "React's `const globalClientId = globalClientIdCounter++;` is a read then `globalClientIdCounter = globalClientId + 1` (ADR 0948)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::Counters, module, stepped_whiles::counters);\n",
     replace: "",
     tests: ["test/lowering-module-variables.test.ts", "-t", "x\\+\\+"],
@@ -574,7 +574,7 @@ export const mutations: Mutation[] = [
   {
     name: "let-closure-stays-arrow",
     breaks: "React's factory's `const deleteChild = (..) => { .. }`, not `function deleteChild(..) { .. }` (ADR 0882, amended)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    each_block(Pass::DeclaredFunctions, module, &mut |stmts| {\n        declared::declared_functions(stmts)\n    });\n",
     replace: "",
     tests: ["test/lowering-arrows.test.ts", "-t", "function declared"],
@@ -582,7 +582,7 @@ export const mutations: Mutation[] = [
   {
     name: "truths-joined-apart",
     breaks: "React's `!!(prototype && prototype.isReactComponent)` is `!!prototype && !!prototype.isReactComponent` (ADR 0953)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        && let (Some(a), Some(b)) = (truth_of(a), truth_of(b))\n",
     replace: "        && let (Some(a), Some(b), false) = (truth_of(a), truth_of(b), true)\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "truths joined"],
@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
   {
     name: "truths-joined-by-and",
     breaks: "`!!a || !!b` is `!!(a && b)` (ADR 0953)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        let joined = Expr::bin(*op, a.clone(), b.clone());\n",
     replace: "        let joined = Expr::bin(js::Op::And, a.clone(), b.clone());\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "truths joined"],
@@ -598,7 +598,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-else-unelsed",
     breaks: "React's BeginWork's `if (c) { ..; return x; } else { .. }` loses the `else` the program wrote (ADR 0237, amended, the user's decision, 2026-10-28)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            && !facts.has(js::Known::Else)\n",
     replace: "",
     tests: ["test/lowering-written-arms.test.ts", "-t", "an else after a branch that returns stays"],
@@ -606,7 +606,7 @@ export const mutations: Mutation[] = [
   {
     name: "bitwise-chain-not-compound",
     breaks: "React's `workInProgress.flags = workInProgress.flags | Update | LayoutStatic`, a chain of its target, not `|=` (ADR 0631, amended)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            if bitwise && js::same_path(first, target) {\n",
     replace: "            if false && bitwise && js::same_path(first, target) {\n",
     tests: ["test/lowering-math.test.ts", "-t", "bitwise chain"]
@@ -614,7 +614,7 @@ export const mutations: Mutation[] = [
   {
     name: "bitwise-chain-of-any-operator",
     breaks: "a chain of `-` of its target, `x = x - a - b`, made `x -= a - b`, another value",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            let bitwise = matches!(op, Op::BitAnd | Op::BitOr | Op::BitXor);\n",
     replace: "            let bitwise = true;\n",
     tests: ["test/lowering-math.test.ts", "-t", "bitwise chain"]
@@ -622,7 +622,7 @@ export const mutations: Mutation[] = [
   {
     name: "err-ending-a-block-returns",
     breaks: "a `match` of `catch_unwind` that ends an `if`'s branch is taken to end the function, so its `catch` returns where what follows the `if` runs (ADR 0637, amended)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::TryCatches, body, |body| catches::try_catches(body, ends));\n",
     replace: "    passes::run(Pass::TryCatches, body, |body| catches::try_catches(body, true));\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "an Err arm that ends the function"],
@@ -631,7 +631,7 @@ export const mutations: Mutation[] = [
     name: "in-place-setter-assigns",
     breaks:
       "a flattened state's handle given away, a closure's `&mut` lent on, `|v| finish(state, v)`, sets the variable its object is, not each key (rd380, #482)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            sets.unwrap_or_else(|| vec![StmtKind::Assign((**place).clone(), written).at(place.span)]),",
     replace: "            vec![StmtKind::Assign((**place).clone(), written).at(place.span)],",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_closure_writes.rs$"],
@@ -640,7 +640,7 @@ export const mutations: Mutation[] = [
     name: "this-handles-not-read-apart",
     breaks:
       "a handle kept on a place of a `with_this` function's `this`, or of a trait's default a class's prototype takes until tidy's `drops`, reads `this` in its own getter and setter, the handle object (#449, #459)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    this_handles::this_read_apart(body);\n",
     replace: "",
     tests: ["test/js-constructors.test.ts", "test/tidy-stages.test.ts", "-t", "RefCell field sets|^class_trait_methods after"],
@@ -648,7 +648,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-closure-no-method",
     breaks: "a closure a symbol names is an arrow, `[Symbol.asyncIterator]: () => {..}`, where a field's is a method",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    let (Prop::Field(_, value) | Prop::Keyed(_, value)) = prop else {",
     replace: "    let Prop::Field(_, value) = prop else {",
     tests: [
@@ -660,7 +660,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-where-made-never",
     breaks: "React's throwAndUnwindWorkLoop is `const didFatal$1 = throwException(..); .. didFatal = didFatal$1;` in its `try`, not `didFatal = throwException(..)` (rd534)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::TriedSets, body, |body| js::tried_set_where_made(body));\n",
     replace: "",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "sets its variable where"],
@@ -668,7 +668,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-function-kept",
     breaks: "`function getTime(n) { return GET_TIME(n); }` stays, where it's the variable `getTime`",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::ForwardedFunctions, module, forwarding::functions);\n",
     replace: "",
     tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
@@ -676,7 +676,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-fields-kept",
     breaks: "alien-signals' `function link(dep, sub, version) { system.link(dep, sub, version); }` stays, where upstream takes the system apart, `const { link, .. } = createReactiveSystem(..)` (#533)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    passes::run(Pass::ForwardedFields, module, forwarding::fields);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
@@ -686,7 +686,7 @@ export const mutations: Mutation[] = [
     name: "text-truth-conditional-unfolded",
     breaks:
       "text kept where it isn't empty, `(!w.is_empty()).then_some(w)`, is `w !== \"\" ? w : undefined`, not JS's `w || undefined` (rd732)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            if let Some(or) = Expr::text_or(a, b, c)\n",
     replace: "            if let Some(or) = None::<Expr>\n",
     tests: ["test/corpus.test.ts", "-t", "^map_while_drops.rs$"],
@@ -696,7 +696,7 @@ export const mutations: Mutation[] = [
     name: "text-fallback-unfolded",
     breaks:
       "a `let` of text then its fallback where it's empty, `let mut name = error.name; if name.is_empty() { name = \"Error\" }`, is `let name = ..; if (name === \"\") { .. }`, not `const name = error.name || \"Error\";` (ADR 0651, rd732)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        _ => test.clone().negated_test().text_truth().is_some_and(is),\n",
     replace: "        _ => false,\n",
     tests: ["test/lowering-options.test.ts", "-t", "a let then its fallback where it's falsy is one"],
@@ -705,7 +705,7 @@ export const mutations: Mutation[] = [
     name: "null-or-empty-text-unfolded",
     breaks:
       "an `Option` of text that's `None` or empty, `escaped.is_none_or(|e| e.is_empty())`, is `escaped == null || escaped === \"\"`, not `!escaped` (ADR 0313, rd732)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "                    .is_some_and(|y| js::same_path(x, y))\n                && passes::applies(Pass::NullOrFalsy) =>\n",
     replace: "                    .is_some_and(|_| false)\n                && passes::applies(Pass::NullOrFalsy) =>\n",
     tests: ["test/lowering-loops.test.ts", "-t", "Console's loops, spreads and calls"],
@@ -713,7 +713,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-members-read-together",
     breaks: "constants side by side of a JS module's members, or a global's, are destructured as one Rust value's fields, `export const { log, unstable_setDisableYieldValue } = Scheduler;` (#633)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "        if !values.contains(value.word()) {\n",
     replace: "        if false && !values.contains(value.word()) {\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a JS module's members are each their own"],
@@ -721,7 +721,7 @@ export const mutations: Mutation[] = [
   {
     name: "breaking-pass-of-every-pass",
     breaks: "what broke a module refused is said to be the first of preparation's passes, whichever did: a refusal that names a pass that didn't (#1681)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "            self::module(&mut module, passes.and_without(*pass));\n            !broken(&module)\n",
     replace: "            self::module(&mut module, passes.and_without(*pass));\n            true\n",
     unitTests: "prepare::tests::the_breaking_pass_is_the_one_without_which_it_holds",
@@ -729,7 +729,7 @@ export const mutations: Mutation[] = [
   {
     name: "unspelled-left-unspelled",
     breaks: "preparation leaves a name lowering made unspelled, `value#1`, which the validator refuses (#1681)",
-    file: "src/prepare.rs",
+    file: "crates/rust-js-program/src/prepare.rs",
     find: "    reclaim::spelled(module);\n",
     replace: "",
     unitTests: "prepare::reclaim::tests::an_unspelled_name_is_spelled_apart_from_the_modules",

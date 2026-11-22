@@ -85,12 +85,12 @@ test("a row is five cells, its owners and APIs the names it ticks, its source a 
 });
 
 test("an owner is its module, its submodules and its folder", () => {
-  const files = ["src/lower/iterators.rs", "src/lower/iterators/eager.rs", "src/lower/drops/types.rs", "crates/rust-js-program/src/names.rs", "crates/rust-js-program/src/runtime/steps.js", "src/prepare/shadows.rs", "src/lower/iterators_more.rs"];
+  const files = ["src/lower/iterators.rs", "src/lower/iterators/eager.rs", "src/lower/drops/types.rs", "crates/rust-js-program/src/names.rs", "crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/prepare/shadows.rs", "src/lower/iterators_more.rs"];
   expect(files.filter((file) => ofOwner("iterators.rs", file, files))).toEqual(["src/lower/iterators.rs", "src/lower/iterators/eager.rs"]);
   expect(files.filter((file) => ofOwner("drops/", file, files))).toEqual(["src/lower/drops/types.rs"]);
   expect(files.filter((file) => ofOwner("names.rs", file, files))).toEqual(["crates/rust-js-program/src/names.rs"]);
   expect(files.filter((file) => ofOwner("runtime/steps.js", file, files))).toEqual(["crates/rust-js-program/src/runtime/steps.js"]);
-  expect(files.filter((file) => ofOwner("src/prepare/shadows.rs", file, files))).toEqual(["src/prepare/shadows.rs"]);
+  expect(files.filter((file) => ofOwner("crates/rust-js-program/src/prepare/shadows.rs", file, files))).toEqual(["crates/rust-js-program/src/prepare/shadows.rs"]);
   expect(ownerFound("gone.rs", files)).toBe(false);
 });
 

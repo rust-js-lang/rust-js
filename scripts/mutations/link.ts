@@ -1,11 +1,11 @@
-// Mutations of src/link.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/link.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "unread-module-imported",
     breaks: "a module imports another's item it doesn't read, a numbered enum's variant whose test an exhaustive `match` needn't write, `import { Fast, Slow }`",
-    file: "src/link.rs",
+    file: "crates/rust-js-program/src/link.rs",
     find: "        .filter(|request| request.always || read.contains(&request.symbol))\n",
     replace: "",
     tests: ["test/lowering-repr-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
@@ -13,15 +13,15 @@ export const mutations: Mutation[] = [
   {
     name: "written-helper-unasked",
     breaks: "a helper written as the runtime's, tidying's `$lazyRange(0, n)`, isn't asked for, and its module doesn't import it: a ReferenceError where it runs",
-    file: "src/link.rs",
-    find: "                    written.extend(rust_js_program::runtime::helper_of(name));\n",
+    file: "crates/rust-js-program/src/link.rs",
+    find: "                    written.extend(crate::runtime::helper_of(name));\n",
     replace: "                    let _ = name;\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "a range made where it's stepped"],
   },
   {
     name: "imported-types-module-unwritten",
     breaks: "a module of types alone another module's JS re-exports, `export * as bar from \"./foo/bar.js\"`, writes no JS, so the program throws as it loads (ADR 1005, amended; rustc's imports/use-mod.rs)",
-    file: "src/link.rs",
+    file: "crates/rust-js-program/src/link.rs",
     find: "        module.types_only = false;\n",
     replace: "        let _ = &module;\n",
     tests: ["test/corpus.test.ts", "-t", "^module_of_types_reexported.rs$"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "reimport-dropped-unread",
     breaks:
       "a library's item imported from the crate's module that re-exports it, read by its name and not a symbol, is taken for unread and not imported: `createState` is undeclared (rd650)",
-    file: "src/link.rs",
+    file: "crates/rust-js-program/src/link.rs",
     find: "        .filter(|request| request.always || read.contains(&request.symbol))\n",
     replace: "        .filter(|request| read.contains(&request.symbol))\n",
     tests: ["test/reexports-through.test.ts", "-t", "a use through a module"],
@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     name: "crate-uses-one-import",
     breaks:
       "two `use`s of one of the crate's modules are one import at the first, `import { clear, lane, last, merge, next } from \"./lanes.js\"` (rd649)",
-    file: "src/link.rs",
+    file: "crates/rust-js-program/src/link.rs",
     find: "            let key = (request.path.clone(), (request.at.lo, request.at.hi));\n",
     replace: "            let key = (request.path.clone(), (0, 0));\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "storage-helper-unasked",
     breaks: "the helper a pair's storage writes with, `$assign`, isn't asked for where the pair is, so the compile refuses JS that reads an undeclared `$assign` (#968)",
-    file: "src/link.rs",
+    file: "crates/rust-js-program/src/link.rs",
     find: "                for name in e.helper_name().into_iter().chain(stored) {\n",
     replace: "                for name in e.helper_name().into_iter().chain(stored.filter(|_| false)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "addresses-unexposed",
     breaks: "a module that makes addresses pointers again never exposes them, so `addr as *const u8` is a pointer to no place, read as refused (#1426)",
-    file: "src/link.rs",
+    file: "crates/rust-js-program/src/link.rs",
     find: "            if finds_places_by_address {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^addresses_of_short_lived_allocations.rs$"],

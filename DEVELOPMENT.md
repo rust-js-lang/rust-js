@@ -1130,7 +1130,7 @@ the issue watch gives it an owner.
 cases and the first six generated programs (`TIDY_STAGES=programs`), each
 after every one of tidy's stages and without each of preparation's
 rewrites that changed it (ADR 1087), of a push whose `paths` are
-`src/prepare*`, `src/lower/mir/tidy*` or the oracles' own files. A sample:
+`crates/rust-js-program/src/prepare*`, `src/lower/mir/tidy*` or the oracles' own files. A sample:
 the nightly runs every corpus case and the night's 600 programs so. On the
 Mac, the nine cases took 90 s with their runs kept, six programs 150 s and
 the read cases 16 s (2026-11-04, a debug build, the load near 13). Started

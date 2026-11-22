@@ -1,4 +1,4 @@
-// Mutations of src/prepare/shadows.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/prepare/shadows.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "copy-of-a-closure-parameter-kept",
     breaks:
       "a closure's copy of its parameter, `const p$13 = p$12;` of `|p| .. p(d)`, stays, `(d) => p$13(d)`, where it's the parameter",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "        true => of.root() == root,\n",
     replace: "        true => of.is(root),\n",
     tests: ["test/corpus.test.ts", "-t", "^back_predicate_unwinds.rs$"],
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "alias-of-its-holder-kept",
     breaks:
       "a holder lowering made of a variable, `const a$1 = a;`, unspelled where this pass runs, stays, `a$1[value] = ..`, where it's the variable",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "    alias.apart_of().is_some_and(|(root, _)| base(root)) || of.is_origin_of(alias)\n",
     replace: "    alias.apart_of().is_some_and(|(root, _)| base(root))\n",
     tests: ["test/corpus.test.ts", "-t", "^(kept_element_ref|frozen_borrow_named).rs$"],
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-ended-way-runs-on",
     breaks: "what a way that ends runs, `if (callServer$1 == null) { throw new Error(..); }`, is taken to run before what follows it, so React's Parcel client keeps `const callServer$1 = callServer;` (rd646)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "    match (ends(a), ends(b)) {\n        (true, false) => in_b,\n",
     replace: "    match (ends(a), ends(b)) {\n        (true, false) => in_a || in_b,\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-way-going-on-runs-nothing",
     breaks: "an `if` one of whose ways ends is taken to run nothing for what follows, so a copy read past the other way, which set the variable, is the variable, the new callback's answer (rd646)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "        (false, true) => in_a,\n",
     replace: "        (false, true) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-ended-way-sets-on",
     breaks: "a set of the variable in a way that ends, `if (clear) { callServer = undefined; return 1; }`, is taken to be before what follows it, which keeps its copy (rd646)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "                *set = after_ways((a, b), (*set, other), top);\n",
     replace: "                *set |= other;\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_read_past_an_exit.rs$"],
@@ -52,7 +52,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-receiver-read-after-getter",
     breaks: "a copy of a module's variable read as a property's object is taken to be read after the property's getter, so `activeElement.detachEvent(..)` keeps `const activeElement$1 = activeElement;` (rd146)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "        ExprKind::Member(object, _) => {\n            let ok = read_first(object, alias, ran);\n",
     replace: "        ExprKind::Member(object, _) if false => {\n            let ok = read_first(object, alias, ran);\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "read as a property's object"],
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-getter-runs-nothing",
     breaks: "a property's getter is taken to run nothing once its object is read, so a copy read again after it is the variable, which the getter set",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            let ok = read_first(object, alias, ran);\n            *ran = true;\n",
     replace: "            let ok = read_first(object, alias, ran);\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "read as a property's object"],
@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
   {
     name: "outer-shadow-read-past-a-call",
     breaks: "a copy of a module's variable read after a call in its statement, `bump() < count$1`, is the variable, which the call changed (ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            let ok = read_first(callee, alias, ran) && args.iter().all(|arg| read_first(arg, alias, ran));\n            *ran = true;\n",
     replace: "            let ok = read_first(callee, alias, ran) && args.iter().all(|arg| read_first(arg, alias, ran));\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_of_module_variable.rs$"],
@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
   {
     name: "outer-shadow-read-before-a-call-copied",
     breaks: "a copy of a module's variable read only before anything runs, `if (holder$1 != null) { bump(holder$1); }`, stays copied, not the variable",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "        return !read || !*ran;\n",
     replace: "        return !read;\n",
     tests: ["test/corpus.test.ts", "-t", "^(refcell_field_derive_meets|let_else_guard_returns).rs$"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-of-outer-variable-aliased",
     breaks: "a local copy of a module's variable, `const count$1 = count;`, is taken for the variable, which a call then changes, so `let count = COUNT.get(); bump(); count` gives the new count (ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "        let seen = own.contains(&of) || rest.is_some_and(|rest| read_before_code(rest, &alias, &mut false, true));\n",
     replace: "        let seen = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_of_module_variable.rs$"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "alias-of-another-name",
     breaks: "`let kept = text` is `text`, not the name written",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "    alias.apart_of().is_some_and(|(root, _)| base(root)) || of.is_origin_of(alias)\n",
     replace: "    !alias.word().is_empty()\n",
     tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-in-loop-aliased",
     breaks: "a shadow a loop sets again is the variable, a closure of each turn reading the last",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "(sets.is_empty() || !looped && sets.iter().all(|&set| set < at) || unread_after())",
     replace: "(sets.is_empty() || sets.iter().all(|&set| set < at) || unread_after())",
     tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-shadow-kept",
     breaks: "a closure's parameter shadowed by its own value is `const item$1 = item`",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            let given: IndexSet<Name> = params.iter().flat_map(|p| p.bound()).cloned().collect();\n            shadows(body, &own, &given);\n",
     replace: "",
     tests: ["test/compiler.test.ts", "-t", "async code becomes async functions and await"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-kept",
     breaks: "`let text = text.clone()` is `const text$1 = text`, not `text`",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "    shadows(&mut function.body, &own, &IndexSet::default());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-read-in-try-copied",
     breaks: "a copy of a module's variable read in a `try` before anything there runs, React's `isomorphicDefaultTransitionIndicator()`, stays `const indicator$1 = indicator;` (ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            StmtKind::Try(block, after) | StmtKind::TryCatch(block, _, after) => {\n",
     replace: "            StmtKind::Try(block, after) | StmtKind::TryCatch(block, _, after) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_of_module_variable_in_try.rs$"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "runs-nothing-runs-code",
     breaks: "a weak set's `has(fiber)`, which runs none of the program's code, may set its variables, so `failedBoundaries` is copied, `const failedBoundaries$1 = failedBoundaries;` (ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            ExprKind::Call(..) | ExprKind::New(..) | ExprKind::OptionalCall(..) if !e.facts.has(js::Known::RunsNothing)\n",
     replace: "            ExprKind::Call(..) | ExprKind::New(..) | ExprKind::OptionalCall(..)\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "a JS caller's set's method is its own"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-set-after-never-read-in-place",
     breaks: "a copy of a thread-local a loop sets after its last read stays a copy, `const hydrationParentFiber$1 = hydrationParentFiber;`, not the variable, React's `switch (hydrationParentFiber.tag)` (ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at) || unread_after());\n",
     replace: "            && (sets.is_empty() || !looped && sets.iter().all(|&set| set < at));\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_over_a_thread_local.rs$"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-read-later-in-place",
     breaks: "a copy a closure or a handle reads, when it's called, after the variable is set, is the variable, so `read()` gives the new count (a wrong answer, ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            rest.is_some_and(|rest| !read_later(rest, &alias) && read_before_set(rest, &alias, &of, &mut false, true))\n",
     replace: "            rest.is_some_and(|rest| read_before_set(rest, &alias, &of, &mut false, true))\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "read after the variable is set stays a copy"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-read-after-set-in-place",
     breaks: "a copy read after the variable is set, `total += count$1 * 10 + count`, is the variable, which holds the new value (a wrong answer, ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "                let ok = !read || !*set && !sets;\n",
     replace: "                let ok = true;\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "read after the variable is set stays a copy"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-stored-after-set-in-place",
     breaks: "a copy read by a second store of the variable, `count = count$1 + 5` after `count = count$1 + 1`, is the variable, which holds the first store's value (a wrong answer, ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "                let ok = !*set || !value.mentions_name(alias);\n",
     replace: "                let ok = true;\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "read after the variable is set stays a copy"],
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-tested-after-set-in-place",
     breaks: "a copy an `if` tests after the variable is set is the variable, `if (count === 1)` of the new count (a wrong answer, ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "                let first = !*set || !test.mentions_name(alias);\n",
     replace: "                let first = true;\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "read after the variable is set stays a copy"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-switched-after-set-in-place",
     breaks: "a copy a `switch` is of after the variable is set is the variable, `switch (count)` of the new count (a wrong answer, ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "                let first = !*set || !discriminant.mentions_name(alias);\n",
     replace: "                let first = true;\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "read after the variable is set stays a copy"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-back-off",
     breaks: "a module's variable read into a local and stored again keeps its local, `let fallbackText$1 = fallbackText; .. fallbackText = fallbackText$1;` (ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "    written_back(&mut function.body, &own, &IndexSet::default());\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "stored again is the variable"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-back-past-code",
     breaks: "a written-back local read past a call that may set its variable is the variable, so `kept` returns what `reset()` set (ADR 0277, amended)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            && (own.contains(of) || synced_reads(body, alias, of, &mut false))\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "stored again is the variable"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-back-unsynced",
     breaks: "a store of a written-back local doesn't make it its variable again, so a read after a call before the store keeps the local",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "            {\n                *ran = false;\n                true\n            }\n",
     replace: "            {\n                true\n            }\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "stored again is the variable"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-back-unpaired",
     breaks: "a written-back local set without its store after is the variable, so a write the program kept local reaches the module's",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "                        paired &= list.get(i + 1).is_some_and(\n",
     replace: "                        paired &= true || list.get(i + 1).is_some_and(\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "stored again is the variable"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-of-a-word-only-variable-folded",
     breaks: "a copy of a variable made of its word alone, which neither its id nor `js::validate` tells from another of its spelling, is folded: a read where another of that spelling is declared would read that one, unrefused (ADR 1150)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "        if kept_apart.contains(&alias) || !(of.has_id() || of.is_global() || of.is_module()) {\n",
     replace: "        if kept_apart.contains(&alias) {\n",
     unitTests: "prepare::shadows::tests::a_copy_of_a_variable_of_its_word_alone_stays",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-read-where-redeclared",
     breaks: "a copy, `const busboyStream$1 = busboyStream`, is folded where a function beside it reads it into one of its own of that name, `const busboyStream = busboyStream$1`, which then reads itself before it's made: React's Flight server, refused by `js::validate` (`js::scopes::not_read_as_themselves`, ADR 1150)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "        match js::scopes::not_read_as_themselves(&folded, &[&of]).is_empty() {\n",
     replace: "        match true {\n",
     unitTests: "prepare::shadows::tests::a_copy_read_into_a_function_s_own_of_its_name_stays",
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-destructured-not-own",
     breaks: "a name `const [id, chunks] = metadata;` declares isn't the function's own, so `let id = id.clone();` read in a closure keeps `const id$1 = id;`, React's Flight client's preloadModule's (rd712)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "                StmtKind::Destructure { pattern, .. } => {\n",
     replace: "                StmtKind::Destructure { pattern, .. } if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_of_a_destructured_binding.rs$"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "shadow-of-a-global-unmarked",
     breaks: "a `const performance$1 = performance;` made `performance` leaves each read of it a name that isn't the global's: refused, a read nothing declares (#1681)",
-    file: "src/prepare/shadows.rs",
+    file: "crates/rust-js-program/src/prepare/shadows.rs",
     find: "        js::each_expr_mut(&mut folded, &mut |e| {\n            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {\n                e.kind = ExprKind::Var(of.clone());\n            }\n        });\n        js::each_block_mut(&mut folded, &mut |stmts| {\n            stmts.retain(|s| {\n",
     replace: "        js::each_expr_mut(&mut folded, &mut |e| {\n            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {\n                e.kind = ExprKind::Var(js::Name::declared(of.word().to_string()));\n            }\n        });\n        js::each_block_mut(&mut folded, &mut |stmts| {\n            stmts.retain(|s| {\n",
     tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],

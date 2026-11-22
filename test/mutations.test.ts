@@ -683,16 +683,17 @@ test("a readability owner's mutation is judged by its cases' snapshots, of the a
   const owners = readFileSync(join(root, "docs/architecture.md"), "utf8")
     .split("\n")
     .filter((line) => /^\| (Readability and printing|Body readability passes) \|/.test(line))
-    // The compiler's: the first table's of `src/`, the lowering's of `src/lower/`.
+    // The compiler's: the first table's of a crate's sources, the
+    // lowering's of `src/lower/`.
     .flatMap((line) =>
-      [...(line.split("|")[2] ?? "").replace(/\(.*?\)/g, "").matchAll(/`([\w/]+(?:\.rs|\/))`/g)]
+      [...(line.split("|")[2] ?? "").replace(/\(.*?\)/g, "").matchAll(/`([\w/-]+(?:\.rs|\/))`/g)]
         .map((m) => m[1])
-        .filter((module) => module.startsWith("src/") || module.startsWith("mir/")),
+        .filter((module) => isCompilerSource(module) || module.startsWith("mir/")),
     )
-    .map((module) => (module.startsWith("src/") ? module : `src/lower/${module}`))
+    .map((module) => (isCompilerSource(module) ? module : `src/lower/${module}`))
     .map((module) => (module.endsWith("/") ? `${module}x.rs` : module));
   expect(owners).toContain("src/lower/mir/tidy/jumps/x.rs");
-  expect(owners).toContain("src/prepare.rs");
+  expect(owners).toContain("crates/rust-js-program/src/prepare.rs");
   expect(owners.filter((module) => !ofReadabilityOwner(module))).toEqual([]);
   const tracked = Bun.spawnSync(["git", "ls-files"], { cwd: root }).stdout.toString().split("\n");
   expect(readabilityOwners.filter((glob) => !tracked.some((file) => new Bun.Glob(glob).match(file)))).toEqual([]);

@@ -2,7 +2,7 @@
 //! value and testing it, or ends testing whether to leave, as a `do { .. }
 //! while (test)` (ADR 0978).
 
-use rust_js_program::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// `while (true) { if (a) { ..; if (T(e)) { x = e; continue; } } else {
 /// ..; const next = e2; if (T(next)) { x = next; continue; } } break; }`,

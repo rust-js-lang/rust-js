@@ -41,7 +41,7 @@ b) { .. }`, `async name() { .. }` of an async one. One of a value alone
 stays an arrow, `double: (x) => x * 2`. One whose body reads `this` stays
 an arrow.**
 
-Preparation decides it (`src/prepare.rs`'s `method`), on the completed
+Preparation decides it (`crates/rust-js-program/src/prepare.rs`'s `method`), on the completed
 tree, where the object's fields are as they'll print: `js::Prop::Method`
 says so, and the printer writes it. It's every object literal's, a
 struct's, a dictionary's `$drop` and a `$unionField` table's alike, one

@@ -116,7 +116,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "selector-new-module-runs-all",
-    breaks: "a new module of items nothing refers to selects everything, as 4ba38fa64's src/prepare/import_names.rs did every incoming side it was on",
+    breaks: "a new module of items nothing refers to selects everything, as 4ba38fa64's crates/rust-js-program/src/prepare/import_names.rs did every incoming side it was on",
     file: "scripts/testMap.ts",
     find: "      if (text !== undefined && unreferencedModule(text)) continue;\n",
     replace: "",

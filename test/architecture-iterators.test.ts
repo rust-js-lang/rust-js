@@ -354,7 +354,7 @@ test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone"
 test("what the lowering runs as a panic unwinds is guarded by drops/parts.rs alone", () => {
   const guard = "src/lower/drops/parts.rs";
   const writes = (pattern: RegExp, allowed: string[]) =>
-    ["src/lower.rs", ...files("src/lower"), ...files("src/prepare")]
+    ["src/lower.rs", ...files("src/lower"), ...files("crates/rust-js-program/src/prepare")]
       .filter((file) => file.endsWith(".rs") && !allowed.includes(file))
       .flatMap((file) =>
         // A unit test's JS, `#[cfg(test)]`'s, writes nothing the lowering runs.

@@ -1,11 +1,11 @@
-// Mutations of src/prepare/forwarding.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/prepare/forwarding.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "forwarding-function-loaded",
     breaks: "a function the module's load calls is a variable set after, read before it's set",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "    js::mentions_of(&loaded, name) > 0 || module.default_export.as_deref() == Some(name.word())\n",
     replace: "    module.default_export.as_deref() == Some(name.word())\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-function-of-a-js-function",
     breaks: "`export const called = rustJsHook;` gives what a JS caller gives past `n` to a JS function",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "        if given.is_empty() || !(returns && given.iter().all(arrows) || called_only_privately(module, i)) {\n",
     replace: "        if given.is_empty() {\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn is its JS"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-called-only-never",
     breaks: "ReactAct's `function queueSeveralMicrotasks(callback) { QUEUE_SEVERAL_MICROTASKS(callback); }` stays beside its `const`",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "        if given.is_empty() || !(returns && given.iter().all(arrows) || called_only_privately(module, i)) {\n",
     replace: "        if given.is_empty() || !(returns && given.iter().all(arrows)) {\n",
     tests: ["test/lowering-forwarding.test.ts"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-called-only-of-a-value",
     breaks: "a function passed as a value, `const given = runNow;`, is its variable, which a JS caller gives past its parameters",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "    reads == calls\n}",
     replace: "    reads == calls || true\n}",
     tests: ["test/lowering-forwarding.test.ts"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-called-only-exported",
     breaks: "a `pub fn` of no value is its variable, a JS function a JS caller gives past its parameters",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "    !function.export\n        && !module.aliases",
     replace: "    true\n        && !module.aliases",
     tests: ["test/lowering-forwarding.test.ts"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-called-only-aliased",
     breaks: "a function a `pub use` exports by another name is its variable, a JS function a JS caller gives past its parameters",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "        && !module.aliases.iter().any(|(local, _)| function.name.is(local))\n",
     replace: "",
     tests: ["test/lowering-forwarding.test.ts"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-function-unexported",
     breaks: "the variable a `pub fn` became isn't exported, `export { getTime }`",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "                if export {\n                    module.aliases.push((name.word().to_string(), name.word().to_string()));\n",
     replace: "                if false {\n                    module.aliases.push((name.word().to_string(), name.word().to_string()));\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-fields-this-read",
     breaks: "a binding's method, `epoch.getTime()`, is taken apart, `const { getTime: epochTime } = epoch`, called with no `this`: \"this is not a Date object\" (#533)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "        if !call.facts.has(js::Known::ThisUnread)\n            || ",
     replace: "        if false\n            || ",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a thread-local's field"],
@@ -69,15 +69,15 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-fields-of-no-identifier",
     breaks: "a field named `check-dirty` is a destructuring's key unquoted, `const { check-dirty: checkDirty }`, no JS (#533)",
-    file: "src/prepare/forwarding.rs",
-    find: "            || !rust_js_program::names::is_identifier(field)\n",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
+    find: "            || !crate::names::is_identifier(field)\n",
     replace: "",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a thread-local's field"],
   },
   {
     name: "forwarding-fields-out-of-line",
     breaks: "an `#[inline(never)]` function is taken apart, its call no longer kept out of line (ADR 0649, #533)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "            || function.noinline\n            || !called_only_privately(module, i)\n",
     replace: "            || !called_only_privately(module, i)\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-fields-of-a-value",
     breaks: "a function named as a value, `const apply = namedAdd;`, or exported, `export function openAdd`, is taken apart, its identity and `length` the field's, or no export (#533)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "            || function.noinline\n            || !called_only_privately(module, i)\n",
     replace: "            || function.noinline\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-fields-read-elsewhere",
     breaks: "a thread-local read by another function too, `shared.add(a, 2)`, is taken apart, that function reading a variable no longer declared (#533)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "        let Some(at) = at.filter(|_| reads == 0) else {\n",
     replace: "        let Some(at) = at.filter(|_| true) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-fields-exported",
     breaks: "a thread-local another module reads, `export const wide`, is taken apart, its importer's `wide` gone (#533)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "if c.name == value && !c.export && c.fields.is_empty())",
     replace: "if c.name == value && c.fields.is_empty())",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_field_forwarders.rs$"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-called-only-by-as-many",
     breaks: "a function a call leaves a `None` out of, `unlinkDep(1)` of `unlink_dep(1, None)`, stays beside its system, where the call gives on what it would given `undefined` (ADR 0313, #533)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "            if args.len() <= arity && ",
     replace: "            if args.len() == arity && ",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a thread-local's field"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "noinline-forwarded",
     breaks: "a forwarding function marked `#[inline(never)]` is its variable, out of the stack",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "        if function.noinline {\n",
     replace: "        if false {\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     name: "members-of-a-value-read",
     breaks:
       "a thread-local also read as a value is taken apart, `return [createContainer(1), KEPT]` reads a `KEPT` no longer declared (#561)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "            || calls != reads\n",
     replace: "",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
@@ -137,16 +137,16 @@ export const mutations: Mutation[] = [
     name: "members-name-taken",
     breaks:
       "a member named as the module's own function is taken apart, so `createContainer()` calls the member, and the module declares the name twice (#561)",
-    file: "src/prepare/forwarding.rs",
-    find: "                .any(|m| !rust_js_program::names::is_identifier(m) || names.contains(m))\n",
-    replace: "                .any(|m| !rust_js_program::names::is_identifier(m))\n",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
+    find: "                .any(|m| !crate::names::is_identifier(m) || names.contains(m))\n",
+    replace: "                .any(|m| !crate::names::is_identifier(m))\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
   },
   {
     name: "members-this-read",
     breaks:
       "a JS object's method, which may read its `this`, is read apart from it, `const { getTime } = new Date(0)`, whose call throws (#561)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
     replace: "    matches!(&of.kind, ExprKind::Var(v) if v == value).then_some(member)\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     name: "members-of-a-struct-of-fields",
     breaks:
       "a `const` struct of a fn field, read only to call it, is taken apart, `const { react_stack_bottom_frame } = {..}`, where upstream keeps `createFakeCallStack.react_stack_bottom_frame(..)` (#584)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
     replace: "    (e.facts.has(js::Known::ThisUnread) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a const struct of fields read only to call them keeps its name"],
@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "members-beside-a-method-kept",
     breaks:
       "a member named as a type's method, `const Host = { createContainer(tag) { .. } }`, keeps its value whole, `NOOP.createContainer(4)`, as if the method's key declared a variable it would take (#561)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "    let mut names: IndexSet<String> = js::scopes::Tree::of_module(module).names().map(str::to_owned).collect();\n",
     replace:
       "    let mut names: IndexSet<String> = js::scopes::Tree::of_module(module).names().map(str::to_owned).collect();\n    for item in &module.items {\n        if let js::Item::Namespace(namespace) = item {\n            names.extend(namespace.methods.iter().map(|method| method.name.word().to_string()));\n        }\n    }\n",
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
     name: "members-names-unreserved",
     breaks:
       "a second thread-local of the same methods is taken apart too, declaring `createContainer` twice (#561)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "        names.extend(members);\n",
     replace: "",
     tests: ["test/lowering-forwarding.test.ts", "-t", "a private thread-local of a namespace read only for its methods is taken apart once"],
@@ -183,7 +183,7 @@ export const mutations: Mutation[] = [
     name: "prototype-forwarding-load-unread",
     breaks:
       "a function a prototype's property is, read where the module loads, is made the variable it calls (ADR 0610), which the load may read before it's set (rd715)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "                    .filter_map(|method| class.forwarded(method))\n",
     replace: "                    .filter_map(|method| class.forwarded(method).filter(|_| false))\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a declaration its module's load can read"],
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-function-comments-untaken",
     breaks: "a function that's its variable loses its comments, `// The next one.` of its body (#535)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "        // (#535).\n        module.taken_into.push((function.span, declared));\n",
     replace: "        // (#535).\n        let _ = (function.span, declared);\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
@@ -199,7 +199,7 @@ export const mutations: Mutation[] = [
   {
     name: "forwarding-fields-comments-untaken",
     breaks: "a function that's a thread-local's field taken apart loses its comments, `// Links.` above it (#535)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "                module.taken_into.push((function.span, declared));\n",
     replace: "                let _ = (function.span, declared);\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
   {
     name: "each-count-read-twice",
     breaks: "a forwarding function's call of each count, which reads its value once in each count, is counted as two reads, so the value isn't taken apart (#1890)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "            if !fields.iter().any(|&(taken, ..)| taken == i) {\n",
     replace: "            if true {\n",
     tests: ["test/forwarding-each-count.test.ts", "-t", "crate's own functions is that field"],
@@ -215,7 +215,7 @@ export const mutations: Mutation[] = [
   {
     name: "each-count-full-unread",
     breaks: "ADR 0610's forwarding function doesn't read a call of each count as its call of all, so `unlink` stays a function of each count (#1890)",
-    file: "src/prepare/forwarding.rs",
+    file: "crates/rust-js-program/src/prepare/forwarding.rs",
     find: "    let all = js::full_count_call(call)?.clone();\n",
     replace: "    let all = None::<Expr>?;\n",
     tests: ["test/forwarding-each-count.test.ts", "-t", "crate's own functions is that field"],

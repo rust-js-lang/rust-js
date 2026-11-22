@@ -673,7 +673,7 @@ pub fn lower_crate<'tcx>(
     // What the crate's own code reaches: a dictionary its consumers alone
     // read is read once every module of the crate has loaded, so no load
     // cycle of the crate's reaches it (ADR 0592, amended).
-    let reached_here = crate::reachability::reachable(own_roots.clone(), edges.clone());
+    let reached_here = rust_js_program::reachability::reachable(own_roots.clone(), edges.clone());
     let roots = own_roots
         // `@rust-js/std`'s consumers may reach one (ADR 0561); a library's
         // compile their own (ADR 0914, amended).
@@ -683,7 +683,7 @@ pub fn lower_crate<'tcx>(
                 .copied()
                 .filter(|&id| exports_reachable && super::library::reachable(tcx, id)),
         );
-    let reached = crate::reachability::reachable(roots, edges);
+    let reached = rust_js_program::reachability::reachable(roots, edges);
     let fmt_into_left = lowered_items.iter().any(|(_, item)| item.dependencies.fmt_into_left);
     let mut pass = Pass::default();
     for (def_id, mut lowered) in lowered_items

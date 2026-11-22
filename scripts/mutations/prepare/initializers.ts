@@ -1,11 +1,11 @@
-// Mutations of src/prepare/initializers.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/prepare/initializers.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "initialized-chain-private-none-kept",
     breaks: "a private thread-local's chain with a `None` arm is `let MAYBE; if (..) { MAYBE = double; } ..`, not one nested conditional, `level() > 5 ? double : level() > 1 ? triple : undefined`, as React DOM's `const localPromise = typeof Promise === \"function\" ? Promise : undefined;` (rd247)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "            ] => Some(v.clone()),\n",
     replace: "            ] => (!matches!(v.kind, ExprKind::Undefined)).then(|| v.clone()),\n",
     tests: ["test/lowering-returned-chains.test.ts", "-t", "thread-local"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "initialized-chain-end-unvalued",
     breaks: "a thread-local's chain that ends with nothing, `if (__DEV__) { return x; }`, isn't its conditional, `__DEV__ ? x : undefined` (rd247)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "            [] => end.then(Expr::js_undefined),\n",
     replace: "            [] => None,\n",
     tests: ["test/lowering-cells.test.ts", "-t", "build global.s if|None of is assigned only"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "valued-alone-kept",
     breaks: "an exported thread-local's closure of nothing but its value stays called where it's made",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "        constant.value = Expr {\n            span: constant.value.span,\n            ..value\n        };\n",
     replace: "",
     tests: ["test/lowering-cells.test.ts", "-t", "exported thread-local an if makes None of"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "declared-consts-dropped",
     breaks: "a thread-local's closure of `const`s before its value is taken for its value alone, so the `const`s are dropped and its value reads what's never declared, `offset`, a ReferenceError (#407)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "            Some(([], value)) => value,\n",
     replace: "            Some((_, value)) => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_values.rs$"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-declares-at-top",
     breaks: "`const at` of a thread-local's closure is the module's own",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "        if assigned.iter().any(declares) {\n",
     replace: "        if false && assigned.iter().any(declares) {\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-undefined-written",
     breaks: "a thread-local an `if` makes `None` of is `else { cache = undefined; }`, which `let cache;` is already",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "                if !matches!(value.kind, ExprKind::Undefined) {\n",
     replace: "                if true {\n",
     tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-empty-then-kept",
     breaks: "of a thread-local `None` where its test holds, `if (t) {} else { x = 1; }`, not the other's test",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "                    (true, false) => StmtKind::If(test.clone().negated_test(), otherwise, None),\n",
     replace: "                    (true, false) => StmtKind::If(test.clone(), then, Some(otherwise)),\n",
     tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-if-of-no-else-not-assigned",
     breaks: "React's `componentFrameCache`, `if (__DEV__) { return new WeakMap(); }` and nothing after, stays a closure called where it's made, not `let componentFrameCache; if (__DEV__) { componentFrameCache = .. }`",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "                    None => Vec::new(),\n",
     replace: "                    None => return None,\n",
     tests: ["test/lowering-cells.test.ts", "-t", "None of is assigned only"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "initialized-chain-called-in-place",
     breaks: "a thread-local's initializer of an `if` chain with an arrow arm is an arrow called in place, `(() => { if (..) { return queueMicrotask; } else if .. })()`, not one nested conditional (rd234)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "            _ => match chained(body) {\n",
     replace: "            _ => match None::<Expr>.filter(|_| chained(body).is_some()) {\n",
     tests: ["test/lowering-returned-chains.test.ts", "-t", "thread-local"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "initialized-chain-guard-falls-through",
     breaks: "a guard's `then` that gives no value, falling through to what follows, is `undefined` in the conditional (rd234)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "                let (yes, no) = (value(then, false)?, value(rest, end)?);\n",
     replace: "                let (yes, no) = (value(then, true)?, value(rest, end)?);\n",
     tests: ["test/lowering-returned-chains.test.ts", "-t", "thread-local"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "initialized-chain-arm-statements-dropped",
     breaks: "an initializer's arm that does more than give its value, `const n = level(); return n * n + n;`, is folded into the conditional, its statements lost (rd234)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "            [\n                Stmt {\n                    kind: StmtKind::Return(Some(v)),\n                    ..\n                },\n            ] => Some(v",
     replace: "            [\n                ..,\n                Stmt {\n                    kind: StmtKind::Return(Some(v)),\n                    ..\n                },\n            ] => Some(v",
     tests: ["test/lowering-returned-chains.test.ts", "-t", "thread-local"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "initialized-chain-turned-guard-kept",
     breaks: "an initializer's guard MIR turned is `!(level() > 5) ? triple : double`, not as written, `level() > 5 ? double : triple` (rd234)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "                    ExprKind::Unary(js::UnaryOp::Not, inner) => cond(inner, no, yes, *span),\n",
     replace: "                    ExprKind::Unary(js::UnaryOp::Not, _) if false => cond(t, no, yes, *span),\n",
     tests: ["test/lowering-returned-chains.test.ts", "-t", "thread-local"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-and-given-left-a-call",
     breaks: "a thread-local whose initializer makes a table and gives it stays a closure called where it's made, `const regionDays = (() => { const regionDays = new Map(); .. return regionDays; })();`, where the vercel-ui SDK writes the module's own statements (G1)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "            if let Some(stmts) = made_and_given(body, &constant.name) {\n",
     replace: "            if let Some(stmts) = None::<Vec<Stmt>> {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_table_made_at_the_top\\.rs$"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-and-given-past-an-early-return",
     breaks: "an initializer that gives a value early, `if (given.length > 1) { .. return fewer; } return given;`, is made the module's statements, a `return` at its top, which no module may have (G1)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "    if js::returns(before).0 {\n",
     replace: "    if false && js::returns(before).0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_table_made_at_the_top\\.rs$"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-and-given-of-more-names",
     breaks: "an initializer that declares more than the local it gives, `const base = ..; const counted = [];`, is made the module's statements, its other names the module's (G1)",
-    file: "src/prepare/initializers.rs",
+    file: "crates/rust-js-program/src/prepare/initializers.rs",
     find: "    if declared.next().is_some()\n        || ",
     replace: "    if ",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_table_made_at_the_top\\.rs$"],

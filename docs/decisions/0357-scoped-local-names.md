@@ -57,4 +57,4 @@ on its way to its own, and no read of `to` passes one declaring `from`.
 The tree is renamed with the item, so each candidate is a check of its
 own reads: inbox is a second again, its JS the same. The conditions no
 Rust rust-js lowers reaches, as it numbers names in order, are
-`src/prepare/scopes.rs`'s unit tests.
+`crates/rust-js-program/src/prepare/scopes.rs`'s unit tests.

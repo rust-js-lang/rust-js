@@ -25,8 +25,7 @@ const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/std_sysroot.rs", "src/source_format.rs", "src/source_format/",
     "src/phase_times.rs", "src/worker.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
-  owned: ["src/reachability.rs", "src/link.rs", "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/hooks.rs",
-    "crates/rust-js-program/src/"],
+  owned: ["src/output.rs", "src/output/", "src/publish.rs", "src/hooks.rs", "crates/rust-js-program/src/"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/format/", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
 };
 const layerOf = (file: string) =>
@@ -283,7 +282,7 @@ test("each `$` name the compiler writes is the runtime's", () => {
     ["$drop", "crates/rust-js-program/src/js.rs"], // a `dyn`'s dictionary's destructor
     ["$steps", "src/lower/mir/rvalues/aggregate.rs"], // a compiled std iterator's `next` and `size_hint`, `$stdIterator`'s, its clone's too (ADR 0561)
     ["$knows", "src/lower/mir/rvalues/aggregate.rs"], // what a use gave a compiled std iterator, `$knowing`'s, its clone's too (ADR 0561, #1976)
-    ["$tested", "src/prepare.rs"], // a variable marked as a test reads it, never printed
+    ["$tested", "crates/rust-js-program/src/prepare.rs"], // a variable marked as a test reads it, never printed
     ["$subject", "src/lower/mir/hints.rs"], // what a variant's test is of, as a `switch`'s constant has it, never printed (ADR 0668)
     ["$circleShape", "crates/rust-js-program/src/names.rs"], // a dictionary's cache, in a unit test
   ]);
@@ -531,7 +530,7 @@ test("a lowering decision isn't read back from the JS's shape", () => {
 test("an enum's JS is `js`'s, and a `Result`'s `js::result`'s", () => {
   // Its code, not the comments that show the JS it makes.
   const code = (file: string) => read(file).split("\n").filter(line => !/^\s*\/\//.test(line)).join("\n");
-  const askers = ["src/lower.rs", ...files("src/lower"), "src/prepare.rs", ...files("src/prepare")];
+  const askers = ["src/lower.rs", ...files("src/lower"), "crates/rust-js-program/src/prepare.rs", ...files("crates/rust-js-program/src/prepare")];
   for (const [owner, spelled] of [
     ["crates/rust-js-program/src/js.rs", /"TAG"|format!\("_\{i\}"\)/],
     ["crates/rust-js-program/src/js/result.rs", /"(?:Ok|Err)"/],
@@ -1142,7 +1141,7 @@ test("an arrow that passes on what it's given is passed_on's alone", () => {
   expect(sources.filter((file) => functions(file).some(optional))).toEqual(["src/lower/passed_on.rs"]);
   const owned = /fn (passed_on\(f: &Expr|passes_on|passed_handler|called_alone|called_by_name|calls_rust|closure_calls_rust|forwarded_to)\b/;
   expect(sources.filter((file) => owned.test(read(file)))).toEqual(["src/lower/passed_on.rs", "crates/rust-js-program/src/js/stmt_walk.rs"]);
-  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["crates/rust-js-program/src/js.rs", "src/lower/passed_on.rs", "src/prepare/forwarding.rs"]);
+  expect(sources.filter((file) => /\bpasses_on\(/.test(read(file).replace(/fn passes_on/g, ""))).sort()).toEqual(["crates/rust-js-program/src/js.rs", "crates/rust-js-program/src/prepare/forwarding.rs", "src/lower/passed_on.rs"]);
   // Who asks, each by its position, and where the closure's fact is made:
   // once, where MIR makes the closure.
   const asking = sources.filter((file) => file !== "src/lower/passed_on.rs" && /\bpassed_on\(/.test(read(file).replace(/fn passed_on\(/g, "")));
@@ -1298,7 +1297,7 @@ test("trait selection is asked through `traits::select` alone", () => {
 test("no caller of substitute falls back to the expression unrenamed", () => {
   const falls = /\.substitute(?:_in_callbacks)?\([^;]*?\)\)?\s*\.unwrap_or(?:_else)?\(/s;
   const rust = (dir: string) => files(dir).filter((file) => file.endsWith(".rs"));
-  expect(["src/lower.rs", ...rust("src/lower"), ...rust("crates/rust-js-program/src/js"), ...rust("src/prepare")].filter((file) => falls.test(read(file)))).toEqual([]);
+  expect(["src/lower.rs", ...rust("src/lower"), ...rust("crates/rust-js-program/src/js"), ...rust("crates/rust-js-program/src/prepare")].filter((file) => falls.test(read(file)))).toEqual([]);
   // The test sees the fallback written as it was.
   expect(falls.test("(target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target)")).toBe(true);
 });

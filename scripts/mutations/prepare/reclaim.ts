@@ -1,4 +1,4 @@
-// Mutations of src/prepare/reclaim.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/prepare/reclaim.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 const tests = ["test/lowering-names.test.ts", "-t", "nothing it shadows"];
@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     name: "variables-of-one-word-reclaimed-together",
     breaks:
       "two variables spelled alike, `result$1` of two blocks, are reclaimed as one word, so neither is `result`",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "    apart_by_variable(&mut apart);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(calculator|interpreter).rs$"],
@@ -18,7 +18,7 @@ export const mutations: Mutation[] = [
     name: "arrows-reclaimed-last",
     breaks:
       "an arrow's parameter is reclaimed after what its function declares around it, which takes its name first: `(item$2) => ..`",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "    declared.sort_by_key(|local| (!programs.contains(local.word()), !arrows.contains(local.word())));\n",
     replace: "    declared.sort_by_key(|local| !programs.contains(local.word()));\n",
     tests: ["test/corpus.test.ts", "-t", "^array_repeat.rs$"],
@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     name: "closure-parameter-of-a-capture-shared",
     breaks:
       "a closure's parameter lowering names as the variable it captures, one `Name` declared twice, is reclaimed as that variable, `(shared$1) =>`",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "            .filter(|name| declarations.get(*name).is_some_and(|&n| n > 1))\n",
     replace: "            .filter(|name| declarations.get(*name).is_some_and(|&n| n > 1) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
@@ -37,15 +37,15 @@ export const mutations: Mutation[] = [
   {
     name: "kept-word-never-reclaimed",
     breaks: "a word JS keeps given apart, `arguments$$1`, stays so, where its own spelling, `arguments$`, is free",
-    file: "src/prepare/reclaim.rs",
-    find: "    if given.is_some()\n        && base.strip_suffix('$').is_some_and(rust_js_program::names::kept_word)\n        && !mentioned.contains(base)\n    {\n",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
+    find: "    if given.is_some() && base.strip_suffix('$').is_some_and(crate::names::kept_word) && !mentioned.contains(base) {\n",
     replace: "    if false {\n",
     tests: ["test/js-builtins.test.ts", "-t", "proxy's traps"],
   },
   {
     name: "import-alias-only-its-base",
     breaks: "an import given apart is reclaimed to its base or not at all, `add$2` where `add$1` is free",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "                .find(|to| !mentioned.contains(to))\n",
     replace: "                .find(|to| !mentioned.contains(to) && !to.contains('$'))\n",
     tests: ["test/link.test.ts", "-t", "late import aliases"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "import-alias-old-word-kept",
     breaks: "an import's alias reclaimed leaves its old word taken, so the next import is `Card$3` where `Card$2` is free",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "        mentioned.shift_remove(&local);\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "named component imports avoid"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "holder-spelled-of-its-own-word",
     breaks:
       "a holder of another variable's value is spelled of the word lowering gave its source, `value$1$1` of `value$1`, never of what that variable is of, `value$2`",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "            let base = sources\n                .get(name.word())\n                .map_or_else(|| name.made_base().expect(\"made\"), String::as_str);\n",
     replace: "            let base = name.made_base().expect(\"made\");\n",
     tests: ["test/corpus.test.ts", "-t", "^(given_last_unwinds|refcell_vec_element_places|reference_a_field_holds_set_again)\\.rs$"],
@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
   {
     name: "aliased-import-kept",
     breaks: "`import SAME ..; const same = SAME;`, not `import same ..`",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "    aliased_imports(module);\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "an import read only by a const"],
@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
   {
     name: "aliased-import-read-twice",
     breaks: "an import read twice is renamed for one `const`, and the other read names nothing",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "        if reads != 1 {\n            continue;\n        }\n        // The `const` that reads it",
     replace: "        if reads == 0 {\n            continue;\n        }\n        // The `const` that reads it",
     tests: ["test/modules.test.ts", "-t", "an import read only by a const"],
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
   {
     name: "reclaim-shadowing-read",
     breaks: "a local is named as the module's function it reads, which it then shadows",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "                .find(|to| !mentioned.contains(to))\n",
     replace: "                .next()\n",
     tests,
@@ -95,15 +95,15 @@ export const mutations: Mutation[] = [
   {
     name: "reclaim-keyword",
     breaks: "a parameter named `class` in Rust is `class` in JS, a word JS keeps",
-    file: "src/prepare/reclaim.rs",
-    find: "    if rust_js_program::names::kept_word(base) {",
-    replace: "    if false && rust_js_program::names::kept_word(base) {",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
+    find: "    if crate::names::kept_word(base) {",
+    replace: "    if false && crate::names::kept_word(base) {",
     tests,
   },
   {
     name: "reclaim-conversion-unread",
     breaks: "a local is `String` where a conversion, `String(n)`, reads the global",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "        ExprKind::Stringed(_) if reads => f(&mut Name::global(\"String\")),",
     replace: "        ExprKind::Stringed(_) if false => f(&mut Name::global(\"String\")),",
     tests: ["test/lowering-names.test.ts", "-t", "an import named as a global"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "reclaim-no-imports",
     breaks: "an import named apart from a global nothing reads keeps its `$`",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "    imports(module);\n",
     replace: "",
     tests,
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "reclaim-no-locals",
     breaks: "a local named apart from a module's name its function never reads keeps its `$1`",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "        locals(item);\n",
     replace: "",
     tests,
@@ -127,16 +127,16 @@ export const mutations: Mutation[] = [
   {
     name: "reclaim-no-lower-suffix",
     breaks: "`result$2` stays, after `result$1` became `result`, where it could be `result$1`",
-    file: "src/prepare/reclaim.rs",
-    find: "            .chain((1..suffix).map(|i| rust_js_program::names::given_apart(base, i)))",
-    replace: "            .chain((1..1).map(|i| rust_js_program::names::given_apart(base, i)))",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
+    find: "            .chain((1..suffix).map(|i| crate::names::given_apart(base, i)))",
+    replace: "            .chain((1..1).map(|i| crate::names::given_apart(base, i)))",
     tests: ["test/snapshots.test.ts", "-t", "calc"],
     snapshots: true,
   },
   {
     "name": "own-item-kept-apart",
     "breaks": "a module's own function named as a global it never reads stays `Math$`",
-    "file": "src/prepare/reclaim.rs",
+    "file": "crates/rust-js-program/src/prepare/reclaim.rs",
     "find": "    imports(module);\n    own_items(module);",
     "replace": "    imports(module);",
     "tests": ["test/lowering-names.test.ts", "-t", "own function named as a global"]
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
   {
     "name": "own-item-exported-reclaimed",
     "breaks": "an exported function named apart by its `#[rust_js::name]`, `query$`, is reclaimed, `export function query`, and JS importing `query$` finds nothing",
-    "file": "src/prepare/reclaim.rs",
+    "file": "crates/rust-js-program/src/prepare/reclaim.rs",
     "find": "            js::Item::Function(function) if !function.export => Some(function.name.word().to_string()),",
     "replace": "            js::Item::Function(function) => Some(function.name.word().to_string()),",
     "tests": ["test/lowering-names.test.ts", "-t", "own function named as a global"]
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-alias-reclaimed-unlisted",
     breaks: "a function exported by its alias alone, given back a global's name, `function console`, is still `console$` in `export { console$ as log }`, which names nothing",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "        module.aliases.iter_mut().map(|(local, _)| local).for_each(&mut rename);\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "a function exported by its .* alone is named as an unexported one"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "live-import-aliased",
     breaks: "`const rendering = isRendering;` of another module's variable is the import by that name, read where the `const` is read, after its module set it again (ADR 0270, amended)",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "                        if !value.facts.has(js::Known::Live) && matches!(&value.kind, ExprKind::Var(v) if v.is(&local)))\n",
     replace: "                        if matches!(&value.kind, ExprKind::Var(v) if v.is(&local)))\n",
     tests: ["test/corpus.test.ts", "-t", "^exported_cells.rs$"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-name-alias-kept",
     breaks: "an export named apart whose module reads no global of its name, reclaimed, is `function console() {}` and `export { console }`, not `export function console()` (#338)",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "        if module.aliases.iter().any(|alias| own_name(alias) && name.is(&alias.0)) {\n",
     replace: "        if false && module.aliases.iter().any(|alias| own_name(alias) && name.is(&alias.0)) {\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
   {
     name: "unspelled-spelled-over-a-read",
     breaks: "a name lowering made is spelled its word where that takes a read of another's, `(item) => item(item)` beside a module's function `item` (#1681)",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "                    .find(|to| tree.renames(name.word(), to))?;\n",
     replace: "                    .find(|_| true)?;\n",
     unitTests: "prepare::reclaim::tests::an_unspelled_name_is_spelled_apart_from_the_modules",
@@ -184,8 +184,8 @@ export const mutations: Mutation[] = [
   {
     name: "unspelled-its-word-without-a-tree",
     breaks: "of an item whose scopes declare a name twice, a name lowering made is spelled its word, which may be one of the module's (#1681)",
-    file: "src/prepare/reclaim.rs",
-    find: "            let to = in_scope.unwrap_or_else(|| rust_js_program::names::fresh_apart(&mut taken, base));\n",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
+    find: "            let to = in_scope.unwrap_or_else(|| crate::names::fresh_apart(&mut taken, base));\n",
     replace: "            let to = in_scope.unwrap_or_else(|| base.to_string());\n",
     unitTests: "prepare::reclaim::tests::an_unspelled_name_is_spelled_apart_from_the_modules",
   },
@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
     name: "program-name-without-way-given",
     breaks:
       "a name lowering made keeps the plain spelling a local the program named wants, `const state` of a spill beside the program's `state$1` (ADR 1150)",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "        if programs.contains(local.word()) || !wanted.contains(local.word()) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^(flattened_state_handed_on|taken_and_returned|copied_default_box_named_apart).rs$"],
@@ -203,7 +203,7 @@ export const mutations: Mutation[] = [
     name: "program-names-not-first",
     breaks:
       "the names lowering made reclaim spellings in the order they're met, ahead of the program's, `bound$1` of a `for` loop's `bound` (ADR 1150)",
-    file: "src/prepare/reclaim.rs",
+    file: "crates/rust-js-program/src/prepare/reclaim.rs",
     find: "    // An arrow's parameters first, before what its function declares\n    // around it, which reclaims a name around it then, as `(item) => ..`.\n    let mut arrows: IndexSet<String> = IndexSet::default();\n    js::each_item_expr_mut(std::slice::from_mut(item), &mut |e| {\n        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {\n            arrows.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));\n        }\n    });\n    declared.sort_by_key(|local| (!programs.contains(local.word()), !arrows.contains(local.word())));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(std_mixed_enum_mut|taken_and_returned|flattened_state_handed_on).rs$"],

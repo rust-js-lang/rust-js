@@ -8,8 +8,8 @@
 //! scope of gives way to it (#1975). A JS module's or a helper's import
 //! keeps its word.
 
-use rust_js_program::collections::IndexSet;
-use rust_js_program::js::{self, Expr, ExprKind, Function, Item, JsxTag, Name, Pattern, Prop, Stmt, StmtKind};
+use crate::collections::IndexSet;
+use crate::js::{self, Expr, ExprKind, Function, Item, JsxTag, Name, Pattern, Prop, Stmt, StmtKind};
 
 /// `module`'s imports spelled, then its locals given way to helpers.
 pub(super) fn spelled(module: &mut js::Module) {
@@ -23,7 +23,7 @@ pub(super) fn spelled(module: &mut js::Module) {
         },
     );
     for name in std::mem::take(&mut module.import_names.apart) {
-        let to = rust_js_program::names::fresh_in(&mut taken, name.word());
+        let to = crate::names::fresh_in(&mut taken, name.word());
         if to == name.word() {
             continue;
         }
@@ -169,7 +169,7 @@ fn block(body: &[Stmt], visitor: &mut Words<'_>) {
                 default,
             } => {
                 expr(discriminant, visitor);
-                for rust_js_program::js::Case { values, body, .. } in cases.iter() {
+                for crate::js::Case { values, body, .. } in cases.iter() {
                     values.iter().for_each(|value| expr(value, visitor));
                     block(body, visitor);
                 }

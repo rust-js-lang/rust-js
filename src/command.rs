@@ -103,7 +103,7 @@ pub(crate) struct Build {
     /// `--prepare-without <pass>`, any number: each module prepared with
     /// every rewrite but these, to see that each changes nothing a program
     /// does (ADR 1087).
-    pub prepare_without: Vec<crate::prepare::Pass>,
+    pub prepare_without: Vec<rust_js_program::prepare::Pass>,
     /// `--prepare-fired <file>`: where to write which of preparation's
     /// rewrites changed something, a line each (ADR 1087).
     pub prepare_fired: Option<PathBuf>,
@@ -278,7 +278,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     }
     let mut prepare_without = Vec::new();
     while let Some(name) = valued(&mut ours, "--prepare-without", "a rewrite of preparation's")? {
-        let Some(pass) = crate::prepare::Pass::named(&name) else {
+        let Some(pass) = rust_js_program::prepare::Pass::named(&name) else {
             return Err(format!(
                 "--prepare-without: no rewrite `{name}`; `rust-js --prepare-passes` lists them"
             ));

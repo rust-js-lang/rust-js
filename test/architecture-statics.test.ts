@@ -45,7 +45,7 @@ const statics: Record<string, Class> = {
   "src/jsx_syntax.rs CRATE_ID": "compile",
   "src/main.rs RUSTC_TOOLS": "constant",
   "src/phase_times.rs TIMES": "compile",
-  "src/prepare/passes.rs RUNNING": "compile",
+  "crates/rust-js-program/src/prepare/passes.rs RUNNING": "compile",
   "crates/rust-js-program/src/js/make.rs UNDEFINED": "constant",
   "crates/rust-js-program/src/js/known.rs FORGOTTEN": "flag",
   "crates/rust-js-program/src/js/known.rs FOUND": "report",

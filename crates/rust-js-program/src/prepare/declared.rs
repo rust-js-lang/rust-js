@@ -4,8 +4,8 @@
 //! property named as it. Split from prepare.rs by concept, as a file is at
 //! most 1500 lines.
 
-use rust_js_program::js;
-use rust_js_program::js::{Expr, ExprKind, Stmt, StmtKind};
+use crate::js;
+use crate::js::{Expr, ExprKind, Stmt, StmtKind};
 
 /// A module's `const` of a function made as a value, a thread-local's
 /// `js::function::with_this` function: declared, `function onUnsuspend()
@@ -116,8 +116,8 @@ fn named_as(value: &mut Expr, property: &str) {
         return;
     };
     if function.name.word().is_empty()
-        && rust_js_program::names::is_identifier(property)
-        && !rust_js_program::names::kept_word(property)
+        && crate::names::is_identifier(property)
+        && !crate::names::kept_word(property)
         && !js::scopes::spelled(&function.body).contains(property)
     {
         function.name = js::Name::declared(property.to_string());

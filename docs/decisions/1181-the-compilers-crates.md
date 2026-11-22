@@ -181,3 +181,7 @@ only), versions more than one crate takes being the workspace's:
   `find` off its line: after a move, `bun scripts/format.ts`, then test
   that each mutation applies (`test/mutations.test.ts -t applies`), and
   repoint those that don't, as M2's push found eight.
+
+M4 moves `reachability`, `link` and `prepare`, with no dependency of
+their own: owned output's crate then holds all of it but `output`,
+`publish` and `hooks`, which call printing and go with it at M5.

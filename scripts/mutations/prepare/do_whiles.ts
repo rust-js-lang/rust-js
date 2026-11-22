@@ -1,4 +1,4 @@
-// Mutations of src/prepare/do_whiles.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/prepare/do_whiles.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 const corpus = ["test/corpus.test.ts", "-t", "^do_while_advances.rs$"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-never",
     breaks: "React's updateReducerImpl's walk stays `while (true) { .. if (..) { update = update.next; continue; } .. break; }`, not upstream's `do { .. } while (..)` (ADR 0978)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "    if !declared\n",
     replace: "    if true || !declared\n",
     tests: corpus,
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-read-after",
     breaks: "a `do` whose variable is read after it, `return total + update.lane`, reads the value its test refused (ADR 0978)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "        || js::mentions_of(after, variable) > 0\n",
     replace: "",
     tests: corpus,
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-tests-unlike",
     breaks: "a `loop` whose ways advance on two tests is a `do` of the first's, which the other way never asked (ADR 0978)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "!a.variable.is(variable.word()) || !same(&a.test, &first.test)",
     replace: "!a.variable.is(variable.word())",
     tests: corpus,
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-test-reads-variable",
     breaks: "a test that reads the variable apart from its next value, `next.lane > update.lane`, is the `do`'s test of it given that value, `update.lane > update.lane` (ADR 0978)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "    if holed.mentions_name(variable) || !holed.mentions_name(&hole) {\n",
     replace: "    if !holed.mentions_name(&hole) {\n",
     tests: corpus,
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-end-unturned",
     breaks: "a loop whose body ends `if (next == null || next === first) { break; } update = next;` stays `while (true)`, not React's `do { .. update = update.next; } while (update !== null && update !== first)` (ADR 0978, amended)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "    ended_by_advance(&mut body, label.as_ref().map(|n| n.word()));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^do_while_advances.rs$"],
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-inner-advance-unturned",
     breaks: "a way that advances inside an `if` and goes on, `if (T) { update = next; continue; } break;`, its other path falling to the loop's last advance, keeps the `while (true)`, as updateReducerImpl's skip did (ADR 0978, amended)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "    turned(&mut turn, label.as_ref().map(|n| n.word()), &mut advances)?;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^do_while_advances.rs$"],
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-inner-advance-continued",
     breaks: "an inner advance's `continue` is never put back, so `update = update.next;` goes on to what follows it in the turn, not to the `do`'s test (ADR 0978, amended)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "                stmt.kind = StmtKind::Continue(None);\n",
     replace: "                stmt.kind = StmtKind::Comments;\n",
     tests: ["test/corpus.test.ts", "-t", "^do_while_advances.rs$"],
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-tested-last-never",
     breaks: "a `loop` whose last statement is `if n == 0 { break; }` stays `while (true) { ..; if (n === 0) { break; } }`, not `do { .. } while (n !== 0)`, as React's revealCompletedBoundaries walks its nodes (ADR 0978, amended)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "    if let Some(looped) = tested_last(label, body, looped.span) {\n",
     replace: "    if let Some(looped) = tested_last(label, body, looped.span).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^do_while_tested_last.rs$"],
@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-tested-last-continued",
     breaks: "a `loop` ending `if n < 2 { break; }` with a `continue` in it is a `do`, whose `continue` goes on to the test, so an odd `n` below 2 leaves where Rust's loop goes on (ADR 0978, amended)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "        || js::continues(turn, label.as_ref())\n        || reads_declared(done, turn)",
     replace: "        || reads_declared(done, turn)",
     tests: ["test/corpus.test.ts", "-t", "^do_while_tested_last.rs$"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-tested-last-declared",
     breaks: "a `loop` ending `if square > limit { break; }`, `square` its body's `const`, is a `do` whose test reads a `square` out of its scope, a ReferenceError (ADR 0978, amended)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "        || reads_declared(done, turn)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^do_while_tested_last.rs$"],
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
   {
     name: "do-while-tested-last-comments-lost",
     breaks: "the comment before a `loop`'s last `break`, `// Past the end.`, is printed before the `do`, not last in its body above the test (ADR 0978, amended)",
-    file: "src/prepare/do_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/do_whiles.rs",
     find: "    body.extend(ends.map(|s| StmtKind::Comments.at(js::Span { lo: s.lo, hi: s.lo + 1 })));\n",
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a loop's break is before the break"],

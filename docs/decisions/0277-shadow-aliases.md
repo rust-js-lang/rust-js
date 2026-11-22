@@ -72,7 +72,7 @@ saved; const now = button.onclick;`. The function's own names, its
 parameters and what its blocks declare, a `catch`'s, a loop's and a
 function's too, are as before; so are a closure's.
 
-The rule is `src/prepare/shadows.rs`'s now, out of `prepare.rs`.
+The rule is `crates/rust-js-program/src/prepare/shadows.rs`'s now, out of `prepare.rs`.
 
 Case "results change" ([0262](0262-when-rust-and-js-disagree.md)):
 Rust's answer, preserved. Tested by `test/corpus/shadow_of_module_variable.rs`

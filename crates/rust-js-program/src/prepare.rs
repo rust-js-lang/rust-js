@@ -3,9 +3,9 @@
 //! too, as a person writes them, and oxfmt lays them out where they are (ADR 0218). The printer
 //! only lays out the result.
 
+use crate::collections::IndexSet;
+use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 pub use passes::{Fired, PASSES, Pass, Passes};
-use rust_js_program::collections::IndexSet;
-use rust_js_program::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind, UnaryOp};
 
 mod assigned_breaks;
 mod catches;
@@ -271,7 +271,7 @@ fn read_together(module: &mut js::Module) {
         if !values.contains(value.word()) {
             return None;
         }
-        let readable = rust_js_program::names::is_identifier(property)
+        let readable = crate::names::is_identifier(property)
             && !constant.mutable
             && constant.fields.is_empty()
             && (!constant.export || constant.name.is(property));
@@ -416,9 +416,7 @@ fn checked_item(checked: &Expr, other: &Expr) -> bool {
     let [of, index] = args.as_slice() else {
         return false;
     };
-    helper
-        .helper_name()
-        .is_some_and(rust_js_program::runtime::checks_an_index)
+    helper.helper_name().is_some_and(crate::runtime::checks_an_index)
         && js::same_path(items, same)
         && js::same_path(of, items)
         && (js::same_path(index, key)

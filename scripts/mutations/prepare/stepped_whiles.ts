@@ -1,4 +1,4 @@
-// Mutations of src/prepare/stepped_whiles.rs (ADR 0093).
+// Mutations of crates/rust-js-program/src/prepare/stepped_whiles.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 const corpus = ["test/corpus.test.ts", "-t", "^while_let_steps.rs$"];
@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-while-never",
     breaks: "a count, `let at = n; while (at > 0) { ..; at -= 2; }`, stays a `while`, not upstream's `for (let at = n; at > 0; at -= 2)` (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "    if !matches!(&target.kind, ExprKind::Var(v) if v == name)\n",
     replace: "    if true || !matches!(&target.kind, ExprKind::Var(v) if v == name)\n",
     tests: corpus,
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-while-continued",
     breaks: "a `while` whose body has a `continue` before its step is a `for`, whose `continue` runs the step the `while`'s skips (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "        || js::continues(rest, label.as_ref())\n",
     replace: "",
     tests: corpus,
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-while-read-after",
     breaks: "a `while` whose variable is read after it is a `for`, which keeps it to itself: `return i` throws a ReferenceError (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "        || js::mentions_of(after, name) > 0\n",
     replace: "",
     tests: corpus,
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-while-body-declared",
     breaks: "a step that reads what the body declares, `i += stride`, is a `for`'s update, which can't see it (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "function_names(value, name) || reads_declared(value, rest))\n",
     replace: "function_names(value, name))\n",
     tests: corpus,
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-while-set-before",
     breaks: "a `while` whose body sets its variable before its last statement, `if (at === 9) { at = 4; }`, is a `for` (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "        || js::Writes::sets(rest, name)\n",
     replace: "",
     tests: corpus,
@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-while-untested",
     breaks: "a `while` whose test doesn't read the variable its body counts last, `let prev = 100; while (k > 0) { ..; prev -= 3.5; }`, is a `for` of it (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "        || !cond.mentions_name(name)\n",
     replace: "",
     tests: corpus,
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-while-compound-any",
     breaks: "a step of two, `at -= 2`, is `at--` (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "    let one = |e: &Expr| matches!(e.kind, ExprKind::Num(n) if n == 1.0);\n",
     replace: "    let one = |_: &Expr| true;\n",
     tests: corpus,
@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
   {
     name: "stepped-while-bits",
     breaks: "a `while` that clears its lanes' lowest bit last, `rest &= rest - 1`, is a `for` of it, where React's getEntangledLanes writes a `while` (ADR 0974)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "        StmtKind::Compound(op @ (Op::Add | Op::Sub), target, by) =>",
     replace: "        StmtKind::Compound(op, target, by) =>",
     tests: ["test/lowering-loops.test.ts", "-t", "a while that ends an if's branch keeps its test"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
   {
     name: "post-step-of-any-number",
     breaks: "a two-unit counter step is emitted as a one-unit postfix update",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "        && matches!(amount.kind, ExprKind::Num(n) if n == 1.0)\n",
     replace: "        && matches!(amount.kind, ExprKind::Num(_))\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "a counter read and then stepped"],
@@ -82,7 +82,7 @@ export const mutations: Mutation[] = [
   {
     name: "post-step-compound-unrecognized",
     breaks: "a counter increment formed from Cell::replace keeps its separate read and write",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "        StmtKind::Compound(op, target, amount) if compound && matches!(read.kind, ExprKind::Var(_)) => {\n",
     replace: "        StmtKind::Compound(op, target, amount) if false => {\n",
     tests: ["test/class-constructors.test.ts", "-t", "keeps a counter step"],
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
   {
     name: "post-step-constructor-reused",
     breaks: "a constructor inlines a counter step whose old value is read again",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "                    && js::mentions_of(&stmts[i + 2..], name) == 0 =>\n",
     replace: "                    =>\n",
     tests: ["test/class-constructors.test.ts", "-t", "keeps a counter step"],
@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
   {
     name: "compound-counter-folded-everywhere",
     breaks: "a program's own `const a = x; x++;` is folded to `const a = x++;` outside a constructor's field, as React's `act` printed `const prevActScopeDepth = actScopeDepth++;` where upstream writes the two statements (#2079's fold, the constructor's alone)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "            let step = counter_step(&stmts[i], &stmts[i + 1], false);\n",
     replace: "            let step = counter_step(&stmts[i], &stmts[i + 1], true);\n",
     tests: ["test/class-constructors.test.ts", "-t", "counter step"],
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
   {
     name: "post-step-constructor-compound-reused",
     breaks: "a constructor takes a compound step into its field where the old value is read again, `let first = ID.replace(..); Self { first, second: first }`, whose `second` would read the variable stepped (#2079)",
-    file: "src/prepare/stepped_whiles.rs",
+    file: "crates/rust-js-program/src/prepare/stepped_whiles.rs",
     find: "            && js::mentions_of(&stmts[i + 3..], name) == 0\n",
     replace: "",
     tests: ["test/class-constructors.test.ts", "-t", "counter step"],

@@ -649,7 +649,7 @@ reads, react/'s build and the app seed's CLI, most tests do read.
 ### Amended: a new module of items nothing refers to selects nothing of its own (2026-11-17)
 
 A new src file selected everything ("is new since the map's commit"), as
-4ba38fa64's src/prepare/import_names.rs did on every rebase's incoming
+4ba38fa64's crates/rust-js-program/src/prepare/import_names.rs did on every rebase's incoming
 side. Nothing written before refers to a new module's items: it's reached
 through its `mod` line, a pure addition, and the functions changed to use
 it, whose own hunks select their tests. So a new module selects nothing of

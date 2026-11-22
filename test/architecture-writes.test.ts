@@ -64,7 +64,7 @@ test("whether a local is written is body_queries' alone, a box's content its own
 test("whether a tree sets a variable is js::Writes' alone", () => {
   const shapes = [
     // The consecutive `name = value;`s hoisted before a `try` with it.
-    "src/prepare/catches.rs: .take_while(|s| {",
+    "crates/rust-js-program/src/prepare/catches.rs: .take_while(|s| {",
     // The first statement of a `catch` that sets the variable afresh.
     "crates/rust-js-program/src/js/applied/tried.rs: let first_set = caught.iter().position(|s| {",
     // Each mention of a temporary in a `switch` a case's assignment of it.

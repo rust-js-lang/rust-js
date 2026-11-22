@@ -4,23 +4,23 @@
 //! import apart from the module's names, and a local apart from a runtime
 //! helper's read (`prepare::import_names`, ADR 1150, #1975).
 
-use rust_js_program::collections::{IndexMap, IndexSet};
-use rust_js_program::js::{ExprKind, Name};
-use rust_js_program::program::{ImportRequest, Lowered, LoweredImport, LoweredModule, Unlinked};
+use crate::collections::{IndexMap, IndexSet};
+use crate::js::{ExprKind, Name};
+use crate::program::{ImportRequest, Lowered, LoweredImport, LoweredModule, Unlinked};
 use std::collections::BTreeMap;
 
 /// Proof that import resolution and runtime dependency closure completed.
 /// The private field prevents other phases from constructing this directly.
-pub(crate) struct Linked(Lowered);
+pub struct Linked(Lowered);
 
 impl Linked {
-    pub(crate) fn into_program(self) -> Lowered {
+    pub fn into_program(self) -> Lowered {
         self.0
     }
 }
 
 /// Consume symbolic output; printing only receives the completed linked crate.
-pub(crate) fn link(unlinked: Unlinked) -> Linked {
+pub fn link(unlinked: Unlinked) -> Linked {
     let mut modules: Vec<LoweredModule> = unlinked
         .modules
         .into_iter()
@@ -29,29 +29,30 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
             // Each helper its tree reads, asked for by being written.
             let mut written = Vec::new();
             let mut finds_places_by_address = false;
-            rust_js_program::js::each_item_expr_mut(&mut item.module.items, &mut |e| {
+            crate::js::each_item_expr_mut(&mut item.module.items, &mut |e| {
                 finds_places_by_address |= matches!(e.helper_name(), Some("$ptrFrom" | "$ptrAt"));
                 // And what a handle's storage writes with, which preparation
                 // writes out (`Storage::helper`, #968).
                 let stored = match &e.kind {
-                    rust_js_program::js::ExprKind::Handle(_, storage)
-                    | rust_js_program::js::ExprKind::Pair(_, _, storage) => storage.helper(),
+                    crate::js::ExprKind::Handle(_, storage) | crate::js::ExprKind::Pair(_, _, storage) => {
+                        storage.helper()
+                    }
                     _ => None,
                 };
                 for name in e.helper_name().into_iter().chain(stored) {
-                    written.extend(rust_js_program::runtime::helper_of(name));
+                    written.extend(crate::runtime::helper_of(name));
                 }
             });
             // A module that finds places by their addresses exposes each as
             // it's asked, from when it loads, before anything asks one
             // (ADR 0562, amended, #1426).
             if finds_places_by_address {
-                let expose = rust_js_program::js::Expr::call_helper("$exposeAddresses", Vec::new());
-                let statement = rust_js_program::js::StmtKind::Expr(expose).at(rust_js_program::js::Span::NONE);
+                let expose = crate::js::Expr::call_helper("$exposeAddresses", Vec::new());
+                let statement = crate::js::StmtKind::Expr(expose).at(crate::js::Span::NONE);
                 item.module
                     .items
-                    .insert(0, rust_js_program::js::Item::Statements(vec![statement]));
-                written.extend(rust_js_program::runtime::helper_of("$exposeAddresses"));
+                    .insert(0, crate::js::Item::Statements(vec![statement]));
+                written.extend(crate::runtime::helper_of("$exposeAddresses"));
             }
             written.sort();
             written.dedup();
@@ -76,8 +77,8 @@ fn keep_imported(modules: &mut [LoweredModule]) {
     let imported: IndexSet<Vec<String>> = (modules.iter())
         .flat_map(|module| {
             let reexported = module.reexports.iter().filter_map(|reexport| match &reexport.from {
-                rust_js_program::js::ImportFrom::Module(path) => Some(path.clone()),
-                rust_js_program::js::ImportFrom::Specifier(_) => None,
+                crate::js::ImportFrom::Module(path) => Some(path.clone()),
+                crate::js::ImportFrom::Specifier(_) => None,
             });
             module
                 .imports
@@ -93,8 +94,8 @@ fn keep_imported(modules: &mut [LoweredModule]) {
 
 fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], reserved: IndexSet<String>) {
     // The other modules' items the module reads, by their symbols.
-    let mut read: IndexSet<rust_js_program::js::Symbol> = IndexSet::default();
-    rust_js_program::js::each_item_expr_mut(&mut module.items, &mut |e| {
+    let mut read: IndexSet<crate::js::Symbol> = IndexSet::default();
+    crate::js::each_item_expr_mut(&mut module.items, &mut |e| {
         if let ExprKind::Symbol(symbol) = &e.kind {
             read.insert(symbol.clone());
         }
@@ -102,8 +103,8 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], reserved: Inde
     // One import of each `use` of a module, where it's written (rd649): by
     // its path and its `use`'s place.
     type Written = (Vec<String>, (u32, u32));
-    let mut grouped: BTreeMap<Written, Vec<(String, rust_js_program::js::Name)>> = BTreeMap::new();
-    let mut namespaces: IndexMap<Written, rust_js_program::js::Name> = IndexMap::default();
+    let mut grouped: BTreeMap<Written, Vec<(String, crate::js::Name)>> = BTreeMap::new();
+    let mut namespaces: IndexMap<Written, crate::js::Name> = IndexMap::default();
     // An import of what the module reads: one its lowering asked for whose
     // read tidy took out, a test of a numbered enum's variant an
     // exhaustive `match` needn't write, `Dark` (ADR 0722), isn't written.
@@ -122,7 +123,7 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], reserved: Inde
             let key = (request.path.clone(), (request.at.lo, request.at.hi));
             let named = grouped.entry(key.clone()).or_default();
             // The module itself, its own `import * as` (rd114, ADR 1018).
-            match request.export == rust_js_program::js::NAMESPACE {
+            match request.export == crate::js::NAMESPACE {
                 true => _ = namespaces.insert(key, alias.clone()),
                 false => named.push((request.export.clone(), alias.clone())),
             }
@@ -138,12 +139,12 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], reserved: Inde
                 path,
                 named,
                 namespace,
-                span: rust_js_program::js::Span { lo, hi },
+                span: crate::js::Span { lo, hi },
             }
         })
         .collect();
     // Each read of another module's item, of its import's `Name`.
-    rust_js_program::js::each_item_expr_mut(&mut module.items, &mut |e| {
+    crate::js::each_item_expr_mut(&mut module.items, &mut |e| {
         if let ExprKind::Symbol(symbol) = &e.kind {
             let alias = replacements
                 .get(symbol)
@@ -151,5 +152,5 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], reserved: Inde
             e.kind = ExprKind::Var(alias.clone());
         }
     });
-    module.import_names = rust_js_program::js::ImportNames { reserved, apart };
+    module.import_names = crate::js::ImportNames { reserved, apart };
 }

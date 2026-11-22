@@ -84,12 +84,12 @@ const ranHere = checkJobs.jobs;
 // readability-passes.yml's paths, the one list (the user, #998).
 test("the readability passes run where readability-passes.yml's paths say, of --all too", () => {
   const paths = readabilityPaths();
-  expect(paths).toEqual(expect.arrayContaining(["src/prepare/**", "src/lower/mir/tidy/**", "test/getter-reads/**", ".github/workflows/readability-passes.yml"]));
+  expect(paths).toEqual(expect.arrayContaining(["crates/rust-js-program/src/prepare/**", "src/lower/mir/tidy/**", "test/getter-reads/**", ".github/workflows/readability-passes.yml"]));
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
     jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.some((job) => job.name === "readability passes");
   expect(named({ all: true, changed: ["src/lower/copies.rs"], branch: [] })).toBe(false);
   expect(named({ all: true, changed: [], branch: ["src/lower/mir/tidy/exits.rs"] })).toBe(true);
-  expect(named({ all: false, changed: ["src/prepare.rs"], branch: [] })).toBe(true);
+  expect(named({ all: false, changed: ["crates/rust-js-program/src/prepare.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: ["test/getter-reads/counts.rs"], branch: [] })).toBe(true);
   expect(touchesReadability(["src/lower/mir/tidying.rs", "docs/guide/README.md"])).toBe(false);
   expect(() => readabilityPaths("on:\n  push:\n")).toThrow("no `on.push.paths`");

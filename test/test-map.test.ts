@@ -153,7 +153,7 @@ test("a new module of items nothing refers to selects nothing but what its users
   }
   // Of the map, nothing but what runs on every change; a new file the
   // selector can't read, everything.
-  expect(pick(map, [{ file: "src/prepare/import_names.rs", hunks: "new" }], files, cases)).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"], cases: [] });
+  expect(pick(map, [{ file: "crates/rust-js-program/src/prepare/import_names.rs", hunks: "new" }], files, cases)).toMatchObject({ kind: "picked", files: ["test/reads.test.ts"], cases: [] });
   expect(pick(map, [{ file: "src/not-there.rs", hunks: "new" }], files, cases).kind).toBe("all");
 });
 

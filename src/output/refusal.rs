@@ -12,13 +12,13 @@ pub(super) fn refusal(
     js_path: &Path,
     lowered: &js::Module,
     module: &js::Module,
-    passes: crate::prepare::Passes,
+    passes: rust_js_program::prepare::Passes,
 ) -> Option<String> {
     let problem = js::validate::module(module).into_iter().next()?;
     let broken = |module: &js::Module| js::validate::module(module).contains(&problem);
     let by = match broken(lowered) {
         true => "as it was lowered".to_string(),
-        false => match crate::prepare::breaking_pass(lowered, passes, &broken) {
+        false => match rust_js_program::prepare::breaking_pass(lowered, passes, &broken) {
             Some(pass) => format!("by preparation's `{pass}`"),
             None => "by preparation".to_string(),
         },
@@ -44,7 +44,7 @@ mod tests {
             items: vec![Item::Statements(vec![StmtKind::Expr(read).at(js::Span::NONE)])],
             ..Module::default()
         };
-        let passes = crate::prepare::Passes::default();
+        let passes = rust_js_program::prepare::Passes::default();
         let path = Path::new("dist/main.js");
         let unresolved = module(Expr::var("console"));
         assert_eq!(

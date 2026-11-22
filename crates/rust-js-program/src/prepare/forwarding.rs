@@ -3,8 +3,8 @@
 //! function: the variable by the function's name, or the value taken apart
 //! where it's made (ADR 0610, amended).
 
-use rust_js_program::collections::IndexSet;
-use rust_js_program::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
+use crate::collections::IndexSet;
+use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// `function getTime(n) { return GET_TIME(n); }`, a function that only
 /// calls a module variable's function with its parameters, a thread-local's
@@ -220,7 +220,7 @@ pub(super) fn fields(module: &mut js::Module) {
             continue;
         };
         if !call.facts.has(js::Known::ThisUnread)
-            || !rust_js_program::names::is_identifier(field)
+            || !crate::names::is_identifier(field)
             || function.noinline
             || !called_only_privately(module, i)
         {
@@ -329,7 +329,7 @@ pub(super) fn members(module: &mut js::Module) {
             || calls != reads
             || members
                 .iter()
-                .any(|m| !rust_js_program::names::is_identifier(m) || names.contains(m))
+                .any(|m| !crate::names::is_identifier(m) || names.contains(m))
         {
             continue;
         }

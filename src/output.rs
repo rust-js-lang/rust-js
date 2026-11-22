@@ -42,7 +42,7 @@ pub struct OutputPlan {
     /// Preparation's rewrites each module is prepared with,
     /// `--prepare-without`'s, and where `--prepare-fired` writes which of
     /// them changed something, a test hook (ADR 1087).
-    pub prepare: (crate::prepare::Passes, Option<PathBuf>),
+    pub prepare: (rust_js_program::prepare::Passes, Option<PathBuf>),
     /// The JS files the plan has, once planned, which a crate's checks read.
     pub written: Vec<PathBuf>,
     /// What the build read besides the crate, once planned: the app's
@@ -126,7 +126,7 @@ struct Laid {
     destination: PathBuf,
     printed: to_oxc::Output,
     /// Which of preparation's rewrites changed it, where they're recorded.
-    fired: crate::prepare::Fired,
+    fired: rust_js_program::prepare::Fired,
 }
 
 impl OutputPlan {
@@ -377,7 +377,9 @@ impl OutputPlan {
         // Which of preparation's rewrites changed a module, a line each,
         // where it's asked (ADR 1087).
         if let (_, Some(path)) = &self.prepare {
-            let fired = (laid.iter()).fold(crate::prepare::Fired::default(), |fired, laid| fired.and(laid.fired));
+            let fired = (laid.iter()).fold(rust_js_program::prepare::Fired::default(), |fired, laid| {
+                fired.and(laid.fired)
+            });
             artifacts.push(Artifact {
                 path: absolute(path)?,
                 bytes: fired
@@ -465,7 +467,7 @@ impl OutputPlan {
         // As it was lowered, kept to say which pass broke a tree the check
         // refuses (`js::validate`, #1681): checked in every build.
         let lowered = js_module.clone();
-        let fired = crate::prepare::module(&mut js_module, self.prepare.0);
+        let fired = rust_js_program::prepare::module(&mut js_module, self.prepare.0);
         if let Some(refused) = refusal::refusal(&js_path, &lowered, &js_module, self.prepare.0) {
             return Err(refused);
         }
@@ -755,7 +757,11 @@ impl OutputPlan {
         }
     }
 
-    pub fn plan(&mut self, linked: crate::link::Linked, sources: Vec<PathBuf>) -> Result<ArtifactPlan, String> {
+    pub fn plan(
+        &mut self,
+        linked: rust_js_program::link::Linked,
+        sources: Vec<PathBuf>,
+    ) -> Result<ArtifactPlan, String> {
         let mut lowered = linked.into_program();
         self.placed_tests = lowered.tests.placed.iter().cloned().collect();
         self.jsx = lowered
