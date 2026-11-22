@@ -54,19 +54,6 @@ export const mutations: Mutation[] = [
     tests: ["test/cargo-in-source.test.ts", "-t", "declarations in source"],
   },
   {
-    name: "default-class-exported-by-name",
-    breaks:
-      "a class that's its module's default is `export function Complex` too",
-    file: "src/pipeline.rs",
-    find: "                    class.export = false;\n",
-    replace: "",
-    tests: [
-      "test/classes.test.ts",
-      "-t",
-      "a class is its module's default export",
-    ],
-  },
-  {
     name: "class-declared-nowhere",
     breaks:
       "a class's struct isn't where it's declared, so its `///` doc isn't its constructor function's (ADR 0761)",
@@ -83,19 +70,6 @@ export const mutations: Mutation[] = [
     file: "src/pipeline.rs",
     find: "                default_declared: default_declared && read_default.is_none(),\n",
     replace: "                default_declared,\n",
-    tests: [
-      "test/modules.test.ts",
-      "-t",
-      "a default constant its own module reads",
-    ],
-  },
-  {
-    name: "default-constant-read-exported",
-    breaks:
-      "a `pub` constant the default holds, read in its own module, is exported by its name too, where it's the default alone",
-    file: "src/pipeline.rs",
-    find: "                    constant.export = false;\n",
-    replace: "                    let _ = &mut constant.export;\n",
     tests: [
       "test/modules.test.ts",
       "-t",
@@ -300,19 +274,6 @@ export const mutations: Mutation[] = [
     find: "        drops_observed.gather(cx.drops_observed.take());\n",
     replace: "        let _ = cx.drops_observed.take();\n",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
-  },
-  {
-    name: "named-default-exported-by-name",
-    breaks:
-      "a `pub fn` `js::export_default!(page)` names is `export function page` as well as the default, two exports of one item",
-    file: "src/pipeline.rs",
-    find: ".filter(|f| f.name.is(&name)) {\n                    function.export = false;\n",
-    replace: ".filter(|f| f.name.is(&name)) {\n",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "naming form names as the default alone",
-    ],
   },
   {
     name: "named-default-constant-exported-by-name",

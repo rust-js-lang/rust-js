@@ -1080,27 +1080,14 @@ pub fn lower_crate<'tcx>(
             });
             // What either form of `js::export_default!` makes the default, a
             // function or a constant of the module's own, is its default
-            // alone, whatever its visibility: `const v = ..; export default
-            // v;`, never `export const v` too, as every importer imports it
-            // as the default (ADRs 0611, 0773, amended). A binding's is
+            // alone (`Pass::default_alone`); a binding's is
             // `HeldBinding::exported_by_name`'s.
             if let Some(own) = default_export.filter(|&own| bindings::held_path(tcx, own).is_none()) {
-                let name = bindings::fn_name(tcx, own);
-                for constant in const_items
-                    .entry(module)
-                    .or_default()
-                    .iter_mut()
-                    .filter(|c| c.name.is(&name))
-                {
-                    constant.export = false;
-                }
-                for function in (pass.functions.entry(module).or_default().iter_mut()).filter(|f| f.name.is(&name)) {
-                    function.export = false;
-                }
-                // A class, its constructor and prototype (ADR 0761).
-                for class in (pass.namespaces.entry(module).or_default().iter_mut()).filter(|n| n.name.is(&name)) {
-                    class.export = false;
-                }
+                pass.default_alone(
+                    module,
+                    &bindings::fn_name(tcx, own),
+                    const_items.entry(module).or_default(),
+                );
             }
             let no_ref_cells = drops::RefCells::default();
             let ref_cells = ref_cells.get().unwrap_or(&no_ref_cells);

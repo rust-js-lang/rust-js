@@ -40,3 +40,22 @@ pub(super) struct Pass {
     /// Each class's prototype a `js::on_load!` replaces (#448), each ES class's read (#568).
     pub(super) prototypes: rust_js_lower::classes::Prototypes,
 }
+
+impl Pass {
+    /// `module`'s default, its function, class or constant named `name`,
+    /// of `constants` its own, is its default alone, whatever its
+    /// visibility: `const v = ..; export default v;`, never `export const
+    /// v` too, as every importer imports it as the default (ADRs 0611,
+    /// 0773, amended). A class is its constructor and prototype (ADR 0761).
+    pub(super) fn default_alone(&mut self, module: LocalModId, name: &str, constants: &mut [js::Const]) {
+        for constant in constants.iter_mut().filter(|c| c.name.is(name)) {
+            constant.export = false;
+        }
+        for function in (self.functions.entry(module).or_default().iter_mut()).filter(|f| f.name.is(name)) {
+            function.export = false;
+        }
+        for class in (self.namespaces.entry(module).or_default().iter_mut()).filter(|n| n.name.is(name)) {
+            class.export = false;
+        }
+    }
+}
