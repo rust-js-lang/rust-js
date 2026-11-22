@@ -34,6 +34,20 @@ test.skipIf(!existsSync(wasm))("rust-js.wasm compiles the playground as the nati
     .toBe(source.split("\n").findIndex(l => l.includes("<span")));
 }, 300_000);
 
+// The WASI compiler names the playground's files as the native compiler run
+// from the repository's root does, relative to it, where a panic's location
+// names them (#2345): its rustc arguments' remap of the WASI root, applied
+// as rustc applies `--remap-path-prefix` to a file's name. Without the wasm.
+test("rust-js.wasm's compile of the playground names its files as the native compiler does", async () => {
+  const { playgroundRustc } = await import("../wasm/web/compile-rust.ts");
+  const remapped = (file: string) =>
+    playgroundRustc
+      .map((arg) => /^--remap-path-prefix=(.*)=(.*)$/.exec(arg))
+      .reduce((name, remap) => (remap && name.startsWith(remap[1]) ? remap[2] + name.slice(remap[1].length) : name), file);
+  // The native compile's input, `wasm/web/rust/lib.rs`, from the root.
+  expect(remapped("/wasm/web/rust/compiler.rs")).toBe("wasm/web/rust/compiler.rs");
+});
+
 // A CSS Module's binding is checked against the file as the WASI compiler
 // reads it, through its virtual file system, as the native compiler does
 // (ADR 1133): a class the file exports, a class it doesn't, and no file.

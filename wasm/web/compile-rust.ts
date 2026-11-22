@@ -105,6 +105,15 @@ export async function runRustJs(
 }
 
 /**
+ * The playground's compile's rustc arguments besides the crates: the WASI file
+ * system's root left out of each file's name, as the native compiler run from
+ * the repository's root names `wasm/web/rust/lib.rs`, so a panic's location is
+ * the same in both, `wasm/web/rust/compiler.rs:437:58` (#2345). It names only
+ * what's displayed: the manifest's paths are each file's own, which it leaves.
+ */
+export const playgroundRustc = ["--remap-path-prefix=/="];
+
+/**
  * Compile ./rust/lib.rs, with the react, webapi and js crates. With `manifest`,
  * write the compiler's manifest there, its paths the real ones. Throws
  * rustc's errors.
@@ -116,12 +125,7 @@ export async function compileRust(job: { manifest?: string } = {}) {
   const virtualPath = (path: string) => path.startsWith(repository + "/") ? path.slice(repository.length) : path;
   const previous = existsSync(published) ? JSON.stringify(mapManifestPaths(parseManifest(readFileSync(published, "utf8")), virtualPath)) : undefined;
   const out = new PreopenDirectory("/out", new Map(previous ? [["manifest.json", new File(new TextEncoder().encode(previous))]] : []));
-  // The WASI file system's root left out of each file's name, as the native
-  // compiler run from the repository's root names `wasm/web/rust/lib.rs`, so
-  // a panic's location is the same in both, `wasm/web/rust/compiler.rs:437:58`
-  // (#2345); the manifest's paths are each file's own, which it leaves.
-  const remap = ["--remap-path-prefix=/="];
-  const { exit, stderr, crateDir } = await runRustJs(virtual, sourcesIn(rustDir), out, ["--manifest", "/out/manifest.json"], remap);
+  const { exit, stderr, crateDir } = await runRustJs(virtual, sourcesIn(rustDir), out, ["--manifest", "/out/manifest.json"], playgroundRustc);
   if (exit !== 0) throw new Error(`rust-js failed on wasm/web/rust/lib.rs (exit ${exit}):\n${stderr.join("\n")}`);
   // Warnings, on success.
   if (stderr.length > 0) console.warn(stderr.join("\n"));
