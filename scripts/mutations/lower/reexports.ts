@@ -340,8 +340,8 @@ export const mutations: Mutation[] = [
     name: "type-reexport-by-its-own-name",
     breaks: "a `pub use .. as` of a type re-exports it by its own name, `Size`, not the name the `use` gives it, `Measure` (rd642)",
     file: "src/lower/reexports.rs",
-    find: "            false => ident.to_string(),\n",
-    replace: "            false => export.clone(),\n",
+    find: "            true => own,\n            false => ident.to_string(),\n",
+    replace: "            true => own,\n            false => export.clone(),\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
   {
@@ -547,5 +547,21 @@ export const mutations: Mutation[] = [
     find: "        .find(|&(_, (at, _))| at.lo() == statement.lo())\n",
     replace: "        .find(|&(_, (at, _))| at == statement)\n",
     tests: ["test/reexport-docs.test.ts", "-t", "a type and a value"],
+  },
+  {
+    name: "trait-reexport-untyped",
+    breaks: "a `pub use` of a trait re-exports none of the types its declarations declare, a type map's aliases or its dictionaries' interface, so the root's .d.ts lacks `Vocabulary`, `Key` and `ValueOf` (#2095)",
+    file: "src/lower/reexports.rs",
+    find: "    let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::Trait, named)) =\n",
+    replace: "    let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias, named)) =\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "re-exports its map, keys and lookup"],
+  },
+  {
+    name: "type-map-aliases-renamed",
+    breaks: "a `pub use .. as Sort` of a type map's trait re-exports each of its aliases by the trait's new name, `Vocabulary as Sort`, where `as` renames the trait alone (#2095)",
+    file: "src/lower/reexports.rs",
+    find: "                .chain(aliases.into_iter().map(|alias| (alias.clone(), alias)));\n",
+    replace: "                .chain(aliases.into_iter().map(|alias| (alias.clone(), local(&alias))));\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "re-exports its map, keys and lookup"],
   },
 ];

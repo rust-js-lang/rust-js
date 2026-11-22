@@ -221,3 +221,12 @@ graph needs them (#2090). An erased value or generic call that reads a
 dictionary still reaches it. A type map member reads its associated type as
 written, and a record keeps a type-map key as a type parameter even when only
 one field uses it. A written generic default likewise keeps its alias.
+
+## Amendment: a `pub use` of a type map's trait re-exports its aliases (#2095, 2026-11-22)
+
+`pub use model::Kind;` of a type map's trait in the crate's root
+re-exports its map, keys and lookup from the module that declares them,
+each by the name the attribute gives, `export type { Vocabulary, Key,
+ValueOf } from "./model.js";`, as a `use` of a struct re-exports its type
+(ADR 0874, amended): there is no JS value to export. `as` renames the trait,
+not its aliases.

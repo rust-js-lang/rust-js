@@ -289,10 +289,10 @@ pub(super) fn reexports(
 /// `use` gives it; the module's own by another name from none, `export
 /// type { Size as Measure };`. A type has no JS to re-export (ADR 0240); a
 /// class is its constructor, which `reexports` re-exports.
-pub(super) fn type_reexports(
-    tcx: TyCtxt<'_>,
+pub(super) fn type_reexports<'tcx>(
+    tcx: TyCtxt<'tcx>,
     module: LocalModId,
-    foreign: &super::library::Foreign<'_, '_>,
+    foreign: &super::library::Foreign<'_, 'tcx>,
     paths: &IndexMap<LocalModId, Vec<String>>,
 ) -> Vec<TypeReexport> {
     let mut found = Vec::new();
@@ -301,6 +301,30 @@ pub(super) fn type_reexports(
             continue;
         };
         if !tcx.visibility(leaf.def_id).is_public() {
+            continue;
+        }
+        // A trait, the crate's: what its declarations declare, its
+        // dictionaries' interface, by the name a `use .. as` gives it, and
+        // its type map's aliases, each by its own (#2095).
+        if tcx.def_kind(named) == DefKind::Trait {
+            let Some(local) = named.as_local() else {
+                continue;
+            };
+            let home = tcx.parent_module_from_def_id(local);
+            let Some(file) = paths.get(&home) else {
+                continue;
+            };
+            let from = (home != module).then(|| js::ImportFrom::Module(file.clone()));
+            let (interface, aliases) = super::declarations::trait_types(tcx, foreign, named);
+            let local = |own: &str| match ident.name == tcx.item_name(named) {
+                true => own.to_string(),
+                false => ident.to_string(),
+            };
+            let names = (interface.map(|own| (own.clone(), local(&own))).into_iter())
+                .chain(aliases.into_iter().map(|alias| (alias.clone(), alias)));
+            for named in names {
+                found.push((statement_of(&leaf), from.clone(), named, leaf.item.owner_id.to_def_id()));
+            }
             continue;
         }
         // Each by the name its declarations give it, `ISODate` of
@@ -341,10 +365,11 @@ pub(super) fn type_reexports(
 }
 
 /// The type `leaf` names, where it names one alone, of no JS: a struct, an
-/// enum, a union or an alias, not a class, which is its constructor, nor
-/// what's a value too. A macro of its name, a derive's, has no JS either.
+/// enum, a union, an alias or a trait (#2095), not a class, which is its
+/// constructor, nor what's a value too. A macro of its name, a derive's,
+/// has no JS either.
 fn type_alone(tcx: TyCtxt<'_>, leaf: &super::uses::UseLeaf<'_>) -> Option<DefId> {
-    let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias, named)) =
+    let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias | DefKind::Trait, named)) =
         leaf.path.res.type_ns
     else {
         return None;

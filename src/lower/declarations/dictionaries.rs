@@ -28,6 +28,20 @@ pub(in crate::lower) fn declared_methods<'tcx>(
     crate::lower::traits::method_dictionary(tcx, foreign, trait_id)
 }
 
+/// The types the declarations of `trait_id`, the crate's public trait,
+/// declare, which a `pub use` of it re-exports (#2095): the type of its
+/// dictionaries, `interface Shape<Self>`, by the trait's name, where it has
+/// one (#550); and its type map's aliases, each by the name its attribute
+/// gives it, which a `use .. as` doesn't rename (ADR 1164).
+pub(in crate::lower) fn trait_types<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    trait_id: DefId,
+) -> (Option<String>, Vec<String>) {
+    let interface = declared_methods(tcx, foreign, trait_id).map(|_| tcx.item_name(trait_id).to_string());
+    (interface, super::type_maps::aliases(tcx, trait_id))
+}
+
 impl<'tcx> Declarations<'_, 'tcx> {
     /// `declared_methods` of `trait_id`, of this crate's dependencies.
     fn declared_methods(&self, trait_id: DefId) -> Option<Vec<DefId>> {

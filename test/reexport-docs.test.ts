@@ -128,3 +128,45 @@ pub fn cn(parts: &[&str]) -> String {
   expect(js).toContain("/** The classes given, joined. */\nexport function cn(parts) {");
   expect(js).not.toContain("Pixels and a unit");
 });
+
+// A `pub use` of a trait, which has no JS, re-exports the type of its
+// dictionaries, `interface Shape<Self>`, by the name the `use` gives it
+// (#2095), and its doc comment is that `export type`'s, nowhere in the JS,
+// as a type's is (#1869).
+test("a pub use of a trait re-exports its interface, with its doc comment", () => {
+  const dir = fixture("reexport-docs-trait");
+  writeFileSync(join(dir, "shapes.rs"), `/// A shape.
+pub trait Shape {
+    fn area(&self) -> f64;
+}
+
+pub struct Square {
+    pub side: f64,
+}
+
+impl Shape for Square {
+    fn area(&self) -> f64 {
+        self.side * self.side
+    }
+}
+
+pub fn twice<S: Shape>(s: &S) -> f64 {
+    s.area() * 2.0
+}
+`);
+  writeFileSync(join(dir, "lib.rs"), `mod shapes;
+
+/// Shapes, by a kit's name.
+pub use shapes::Shape as Form;
+
+/// Twice a shape's area.
+pub use shapes::{Square, twice};
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("by a kit's name");
+  expect(js).toContain('/** Twice a shape\'s area. */\nexport { twice } from "./shapes.js";');
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('/** Shapes, by a kit\'s name. */\nexport type { Shape as Form } from "./shapes.js";');
+  expect(declarations).toContain('export type { Square } from "./shapes.js";');
+});

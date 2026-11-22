@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "            let _ = (from, default);\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "a dyn of a library"],
   },
+  {
+    name: "trait-interface-unreexported",
+    breaks: "a `pub use` of a trait leaves out the type of its dictionaries, `export type { Shape as Form }`, which its module's declarations declare (#2095)",
+    file: "src/lower/declarations/dictionaries.rs",
+    find: "    let interface = declared_methods(tcx, foreign, trait_id).map(|_| tcx.item_name(trait_id).to_string());\n",
+    replace: "    let interface = declared_methods(tcx, foreign, trait_id).and(None::<String>);\n",
+    tests: ["test/reexport-docs.test.ts", "-t", "re-exports its interface"],
+  },
 ];

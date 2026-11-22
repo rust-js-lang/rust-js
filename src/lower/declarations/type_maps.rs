@@ -58,6 +58,16 @@ fn names(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<Result<Names, Span>> {
     }
 }
 
+/// The aliases `trait_id`'s `#[rust_js::type_map(..)]` declares, by the
+/// names it gives them: its map's, then its keys' and its lookup's where
+/// it names them; none of a trait without one.
+pub(super) fn aliases(tcx: TyCtxt<'_>, trait_id: DefId) -> Vec<String> {
+    match names(tcx, trait_id) {
+        Some(Ok(Names { map, keys, lookup })) => [Some(map), keys, lookup].into_iter().flatten().collect(),
+        _ => Vec::new(),
+    }
+}
+
 /// Whether this trait owns a declaration type map.
 pub(in crate::lower) fn is_type_map(tcx: TyCtxt<'_>, trait_id: DefId) -> bool {
     matches!(names(tcx, trait_id), Some(Ok(_)))

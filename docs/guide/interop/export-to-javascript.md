@@ -2425,7 +2425,10 @@ export function firstWord(text) {
 
 A `pub use` of a type has no JS: JS imports a type's methods from the
 module that defines it. Its declarations re-export the type,
-`export type { Kind } from "./shapes.js";`. A class's is its
+`export type { Kind } from "./shapes.js";`. Of a trait, which has no JS
+either, they re-export what its module declares of it: its dictionaries'
+interface by the name the `use` gives it, and a type map's map, keys and
+lookup by their own names (#2095). A class's is its
 constructor's, and a module's its namespace, `export * as ns from`
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)).
 Its doc comment, of types alone, is that `export type`'s JSDoc, and
@@ -2663,7 +2666,8 @@ A unit struct named as a string, `#[cfg_attr(rust_js, rust_js::name =
 ".."))]`, of one associated type, declares its impls for such structs as
 one object type, in the order they're written, each key with its struct's
 doc comment; its `keys`, `keyof` that type; and its `lookup`, a key's
-value, of any other string the value of its impl for `&'static str`. So
+value, of any other string the value of its impl for `&'static str`; a
+`pub use` of the trait re-exports all three. So
 a vocabulary of reasons and the event each reports has one source, its
 impls, as upstream's `ReasonVocabulary` and `EventOf` are one. The
 trait's associated type of a reason `R` is its lookup's, `EventOf<R>`.

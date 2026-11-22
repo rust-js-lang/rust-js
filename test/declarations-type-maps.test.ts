@@ -144,6 +144,57 @@ export const wrong: EventOf<"escape-key"> = new MouseEvent("click");
   expect(typeChecked(dir, "consumer.ts", checking)).toEqual([]);
 });
 
+// A `pub use` of a type map's trait re-exports its aliases, each by the
+// name its attribute gives, from the module that declares them: the root's
+// declarations name the map, its keys and its lookup, as the model's do
+// (#2095); `as` renames the trait, not them.
+test("a pub use of a type map's trait re-exports its map, keys and lookup", () => {
+  const dir = fixture("declarations-type-map-reexport");
+  writeFileSync(join(dir, "model.rs"), `/// Escape.
+#[cfg_attr(rust_js, rust_js::name = "escape-key")]
+#[derive(Clone, Copy)]
+pub struct EscapeKey;
+
+/// Every kind, and its count.
+#[cfg_attr(rust_js, rust_js::type_map(map = "Vocabulary", keys = "Key", lookup = "ValueOf"))]
+#[cfg_attr(rust_js, rust_js::types = "string")]
+pub trait Kind: Copy {
+    type Value;
+}
+
+impl Kind for EscapeKey {
+    type Value = u32;
+}
+
+impl Kind for &'static str {
+    type Value = String;
+}
+
+pub fn escape() -> EscapeKey {
+    EscapeKey
+}
+`);
+  writeFileSync(join(dir, "lib.rs"), `mod model;
+
+pub use model::Kind as Sort;
+pub use model::{EscapeKey, escape};
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('export type { Vocabulary, Key, ValueOf } from "./model.js";');
+  expect(declarations).not.toContain("Sort");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).not.toContain("Vocabulary");
+  writeFileSync(join(dir, "consumer.ts"), `import { escape, type Key, type ValueOf, type Vocabulary } from "./lib.js";
+export const key: Key = escape();
+export const count: ValueOf<"escape-key"> = 3;
+export const other: ValueOf<"anything"> = "text";
+export const counted: Vocabulary["escape-key"] = 1;
+// @ts-expect-error No such key.
+export const unknown: Key = "enter";
+`);
+  expect(typeChecked(dir, "consumer.ts", checking)).toEqual([]);
+});
+
 test("a type map written otherwise, or of an impl that names no key, is refused", () => {
   const dir = fixture("declarations-type-maps-refused");
   writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::type_map(map = "Vocabulary", lookup = "Of"))]

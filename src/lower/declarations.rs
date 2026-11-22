@@ -27,6 +27,7 @@ mod cells;
 mod classes;
 mod comments;
 mod dictionaries;
+pub(super) use dictionaries::trait_types;
 mod enums;
 mod functions;
 mod globals;

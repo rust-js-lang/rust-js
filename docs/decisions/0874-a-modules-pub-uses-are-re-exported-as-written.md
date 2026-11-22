@@ -755,3 +755,26 @@ alone.
 
 Held by `test/reexport-docs.test.ts`; mutations value-reexport-undocumented
 (`declarations/imports.rs`), use-written-at-whole-span (`reexports.rs`).
+
+## Amendment: a `pub use` of a trait re-exports the types it declares (#2095, 2026-11-22)
+
+A trait has no JS, and a `pub use` of one re-exported nothing: not in the
+JS, rightly, and not in the `.d.ts` either, where its module declares its
+dictionaries' interface, `export interface Shape<Self>` (#550), and a
+`#[rust_js::type_map]` trait's aliases, its map, keys and lookup (ADR
+1164). **A trait is a type alone** (`reexports::type_alone`), as a
+struct is, so a statement of nothing else is of no JS where it's written,
+its comments its re-export's (#1869), and **its re-export is what its
+declarations declare** (`declarations::trait_types`): its interface by the
+name the `use` gives it, `export type { Shape as Form } from`, and each
+of its type map's aliases by the name its attribute gives, which `as`
+renames not, `export type { Vocabulary, Key, ValueOf } from`. A trait
+that declares neither re-exports nothing. A library's trait isn't
+re-exported, as its contract records no trait's types; that waits for a
+consumer that needs it. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, declarations alone.
+
+Held by `test/declarations-type-maps.test.ts` and
+`test/reexport-docs.test.ts`; mutations trait-reexport-untyped,
+type-map-aliases-renamed (`reexports.rs`), trait-interface-unreexported
+(`declarations/dictionaries.rs`).
