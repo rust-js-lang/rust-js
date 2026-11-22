@@ -3,7 +3,10 @@
 // `rust-js --worker`, in either order, write the same files and print the
 // same output, byte for byte, as each compiled in a process of its own;
 // where the session runs a build apart, the harness compiles it alone,
-// which is its own compile by construction, and the row counts it.
+// which is its own compile by construction, and the row counts it. Every
+// row's jobs go to the one worker this process keeps (`test/workers.ts`),
+// so each case's builds follow every case's before them in one process,
+// as a test process's compiles do (step 2).
 //
 // A sample of the corpus here, spread over it, every `library-refused` case
 // among it; every case in the nightly's, `RUST_JS_WORKER_CASES=all`, in
@@ -16,11 +19,12 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:f
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
-import { spawnedSync, workerJob, type Exit } from "./child";
+import { spawnedSync, type Exit } from "./child";
 import { cases, corpus, directives } from "./corpus-cases";
 import { partSetting } from "./part-settings";
 import { compileCommand } from "./programs";
 import { root } from "./support";
+import { workerJob, workerPid } from "./workers";
 
 const SAMPLE = 24;
 const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
@@ -66,7 +70,10 @@ function emptied(dir: string) {
 /** How often a build of a job was run apart, of those the rows compiled. */
 const apart = { builds: 0, of: 0 };
 
-test.each(mine.map((c) => [c.name, c] as const))("%s: a job's builds are their own compiles', in either order", (_, c) => {
+/** The worker each row's jobs went to. */
+const pids = new Set<number | undefined>();
+
+test.each(mine.map((c) => [c.name, c] as const))("%s: a job's builds are their own compiles', in either order", async (_, c) => {
   const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
   try {
     const file = join(corpus, c.name);
@@ -75,7 +82,8 @@ test.each(mine.map((c) => [c.name, c] as const))("%s: a job's builds are their o
     const written = files(dir);
     for (const order of [[0, 1], [1, 0]]) {
       emptied(dir);
-      const answered = workerJob(order.map((i) => builds[i]), root, timeout, env);
+      const answered = await workerJob(order.map((i) => builds[i]), root, timeout, env);
+      pids.add(workerPid());
       apart.of += order.length;
       order.forEach((build, k) => {
         const answer = answered[k];
@@ -102,9 +110,11 @@ test("the worker's jobs ran apart only where a build before printed", () => {
   const refusedFirst = mine.filter((c) => c.refused).length;
   expect(apart.builds).toBeLessThanOrEqual(refusedFirst);
   if (apart.of > 0) console.log(`worker: ${apart.builds} of ${apart.of} builds ran apart`);
+  // And every row's jobs went to one worker, kept between them.
+  if (mine.length > 0) expect([...pids].length).toBe(1);
 });
 
-test("each build of a job is given the record of what the session read, as its own compile is", () => {
+test("each build of a job is given the record of what the session read, as its own compile is", async () => {
   const dir = mkdtempSync(join(tmpdir(), "rust-js-worker-"));
   try {
     const c = running[0];
@@ -112,7 +122,7 @@ test("each build of a job is given the record of what the session read, as its o
       const { cmd } = compileCommand(join(corpus, c.name), dir, c.edition, library, []);
       return [...cmd, `--emit=dep-info=${join(dir, `${i}.d`)}`];
     });
-    const answered = workerJob(builds, root, timeout, env);
+    const answered = await workerJob(builds, root, timeout, env);
     expect(answered.map((answer) => answer?.code)).toEqual([0, 0]);
     for (const i of [0, 1]) expect(readFileSync(join(dir, `${i}.d`), "utf8")).toContain(c.name);
   } finally {

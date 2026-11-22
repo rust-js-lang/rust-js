@@ -167,18 +167,12 @@ function wrap(mutant: CorpusMutant, compiler: string, args: string[]): Wrapped {
   return { code, stdout, stderr };
 }
 
-/** The worker's jobs, `--worker` (ADR 1182), each build compiled alone as
- * `mutant`, so a mutant's wrong answer reaches the harness by its jobs as
- * by its compiles. */
-function wrapJobs(mutant: CorpusMutant, compiler: string, input: string): string {
-  return input
-    .split("\n")
-    .filter((line) => line.trim() !== "")
-    .map((line) => {
-      const job = JSON.parse(line) as { builds: string[][] };
-      return `${JSON.stringify({ builds: job.builds.map((args) => wrap(mutant, compiler, args)) })}\n`;
-    })
-    .join("");
+/** A worker's job, a line of `--worker`'s (ADR 1182), each build compiled
+ * alone as `mutant`, so a mutant's wrong answer reaches the harness by its
+ * jobs as by its compiles. */
+function wrapJob(mutant: CorpusMutant, compiler: string, line: string): string {
+  const job = JSON.parse(line) as { builds: string[][] };
+  return `${JSON.stringify({ builds: job.builds.map((args) => wrap(mutant, compiler, args)) })}\n`;
 }
 
 if (import.meta.main) {
@@ -187,8 +181,12 @@ if (import.meta.main) {
   if (!mutant) throw new Error(`no corpus mutant ${name}`);
   // Written whole before it exits: a pipe's `write` may not be, and the
   // runtime's module, `--runtime-module`, is long.
+  // Each job answered as it comes: the harness keeps its worker, whose
+  // stdin ends only with the test process.
   if (args.length === 1 && args[0] === "--worker") {
-    await Bun.write(Bun.stdout, wrapJobs(mutant, compiler, await Bun.stdin.text()));
+    for await (const line of console) {
+      if (line.trim() !== "") await Bun.write(Bun.stdout, wrapJob(mutant, compiler, line));
+    }
     process.exit(0);
   }
   const wrapped = wrap(mutant, compiler, args);

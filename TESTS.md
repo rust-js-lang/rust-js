@@ -211,7 +211,8 @@ and then as the worker's jobs, program-first and library-first, comparing
 exits, output and files byte for byte, in about 9 s; the nightly's
 determinism job runs every case. `test/architecture-statics.test.ts`
 classifies each of the compiler's 29 statics. The corpus compiles a case's
-two builds as one job.
+two builds as one job, each test process keeping one worker for its jobs
+(step 2), so a corpus part pays the compiler's start once.
 
 Added #1899 coverage on 2026-11-15: four optional-call cases prove the
 unchecked Node receiver, rustc's unsafe requirement, the safe helper's strict

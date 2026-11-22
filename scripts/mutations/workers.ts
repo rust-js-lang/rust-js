@@ -1,0 +1,25 @@
+// Mutations of test/workers.ts (ADR 0093): the worker a test process keeps
+// between its jobs, each answered as its own builds' compiles would be
+// (#2301 step 2, ADR 1182).
+import type { Mutation } from "../mutations";
+
+const tested = ["test/worker.test.ts"];
+
+export const mutations: Mutation[] = [
+  {
+    name: "worker-not-kept",
+    breaks: "each job starts a worker of its own, paying the compiler's start again (#2301 step 2)",
+    file: "test/workers.ts",
+    find: "  const worker = kept;\n",
+    replace: "  const worker = kept;\n  kept = undefined;\n",
+    tests: tested,
+  },
+  {
+    name: "worker-answers-swapped",
+    breaks: "a job's answers are given to its builds in the other order: the program is given the library's exit and output (#2301)",
+    file: "test/workers.ts",
+    find: "  return answer.builds.map((build) => {\n",
+    replace: "  return answer.builds.reverse().map((build) => {\n",
+    tests: tested,
+  },
+];

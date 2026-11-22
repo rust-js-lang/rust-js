@@ -95,7 +95,7 @@ async function check(file: string): Promise<string[]> {
   // A case that runs is built as a library too (below), its two builds
   // compiled together, in one rustc session (#2301).
   const alsoAsLibrary = want.kind !== "compile-fail" && want.kind !== "ignore-rust-js";
-  const [compiled, libraryBuild] = timed("compile", () => compileBuilds(file, dir, want.edition, alsoAsLibrary ? [false, true] : [false]));
+  const [compiled, libraryBuild] = await timedAsync("compile", () => compileBuilds(file, dir, want.edition, alsoAsLibrary ? [false, true] : [false]));
   if (want.kind === "compile-fail") {
     if ("js" in compiled) return ["rust-js compiled it, but `compile-fail` says it can't"];
     // A rejection, not a crash, which may begin with the rejection it expects.

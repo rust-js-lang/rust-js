@@ -311,10 +311,11 @@ export function compileJs(
 
 /** `compileJs` of each of `libraries`' builds of `file`, the program's
  * (`false`) and the library's (`true`): those not kept compiled together,
- * in one rustc session (`runBuilds`, #2301). */
-export function compileBuilds(file: string, dir: string, edition: string, libraries: boolean[]): ({ js: string } | CompileError)[] {
+ * in one rustc session, by the worker this process keeps (`runBuilds`,
+ * #2301). */
+export async function compileBuilds(file: string, dir: string, edition: string, libraries: boolean[]): Promise<({ js: string } | CompileError)[]> {
   const commands = libraries.map((library) => compileCommand(file, dir, edition, library, []));
-  const exits = runBuilds(commands.map(({ cmd }) => cmd), root, compileTimeout);
+  const exits = await runBuilds(commands.map(({ cmd }) => cmd), root, compileTimeout);
   return exits.map((p, i) => compiled(p, commands[i].js));
 }
 

@@ -104,3 +104,37 @@ compiles one build per process, as `rust-js <input.rs> ..`.
   already held. Every test's `compileJs` moves onto the worker only after
   the nightly's whole-corpus check has run clean for a few nights (the
   lead, 2026-11-22).
+
+## Amendment (2026-11-22, #2301 step 2): the worker is kept between jobs
+
+**A test process keeps one worker and sends it every job.** Before, it
+started one worker per job. Now it starts the worker at its first job
+(`test/workers.ts`'s `workerJob`), so the compiler's start, loading rustc's
+libraries, is paid once per test process, not once per job.
+
+- **Jobs:** sent one at a time, in the order they're asked. A job that
+  gives no answer by its deadline (each build's `timeout`, summed), or
+  ends the process, stops the worker. That job's builds are compiled
+  apart, and the next job starts a new worker. A job of another compiler,
+  working directory or environment also starts its own.
+- **Process lifetime:** the worker neither keeps the test process alive
+  nor outlives it. Its stdin closes as the test process ends, and
+  `guarded`'s watcher stops it.
+- **Cache:** `test/compiles.ts`'s `keeping` is the cache's one part of a
+  case's builds (plan, found, record, keep), which `keptBuilds` and
+  `keptBuildsAsync` share. A compile alone is still a job of one build.
+- **What each build leaves:** each rustc session sets its own state as it
+  starts: jsx's crate id in `expand`, its props' state in `begin`, its held
+  diagnostics as its emitter is made, and the lowering session. Every other
+  static is classified in test/architecture-statics.test.ts. So a job after
+  any number of others compiles as its own process would.
+  test/worker.test.ts's rows all go to one kept worker (checked by its pid),
+  each case's builds after every earlier case's, in both orders.
+- **Memory:** a kept worker holds 150–240 MB between jobs, steady over a
+  corpus part's ~240 jobs. A large case's peak (up to 1.7 GB) is its own,
+  as it would be in a process of its own.
+- **Measured** on the quiet 12-core M6, warm, cache bypassed, against step
+  1: corpus wall time 48 s → 37 s, compiles summed 490 s → 374 s, process
+  start and exit 118 s → 16 s. Against the two-process harness before
+  #2301: 68 s → 37 s (−46%).
+- **Mutations:** `worker-not-kept`, `worker-answers-swapped`.

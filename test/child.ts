@@ -4,7 +4,8 @@
 // on all of it, never on what it printed alone. A compile of rust-js's is
 // kept by its inputs, and given again (`test/compiles.ts`, ADR 1099).
 
-import { keptBuilds, keptCompile, keptCompileAsync } from "./compiles";
+import { keptBuildsAsync, keptCompile, keptCompileAsync } from "./compiles";
+import { workerJob } from "./workers";
 
 export type Exit = {
   code: number | null;
@@ -103,43 +104,18 @@ export function runSync(cmd: string[], cwd: string, timeout: number, env: Record
 }
 
 /** `cmds`, a case's builds, each its own compile's command, through the
- * cache: those not kept compiled as one job of the worker, `rust-js
- * --worker` (#2301, ADR 1182), in one rustc session; a build it ran apart,
- * or each of a job it gave no answer of, as its own compile. Each `timeout`
- * a build, the job's theirs together. */
-export function runBuilds(cmds: string[][], cwd: string, timeout: number, env: Record<string, string | undefined> = {}): Exit[] {
-  return keptBuilds(cmds, cwd, env, (given) => workerJob(given, cwd, timeout, env), (cmd) => spawnedSync(cmd, cwd, timeout, env));
+ * cache: those not kept compiled as one job of the worker this process
+ * keeps (`test/workers.ts`, #2301, ADR 1182), in one rustc session; a build
+ * it ran apart, or each of a job it gave no answer of, as its own compile.
+ * Each `timeout` a build, the job's theirs together. */
+export function runBuilds(cmds: string[][], cwd: string, timeout: number, env: Record<string, string | undefined> = {}): Promise<Exit[]> {
+  return keptBuildsAsync(cmds, cwd, env, (given) => workerJob(given, cwd, timeout, env), (cmd) => spawned(cmd, cwd, timeout, env));
 }
 
-type Answered = { builds: ({ code: number; stdout: string; stderr: string } | { apart: string })[] } | { error: string };
-
-/** What the worker answered of a job of `cmds`, each build's exit, or
- * `undefined` of one it ran apart, or of each where it gave no answer, a
- * crash's or a deadline's. */
-export function workerJob(cmds: string[][], cwd: string, timeout: number, env: Record<string, string | undefined>): (Exit | undefined)[] {
-  const job = `${JSON.stringify({ builds: cmds.map((cmd) => cmd.slice(1)) })}\n`;
-  const p = spawnedSync([cmds[0][0], "--worker"], cwd, timeout * cmds.length, env, job);
-  let answered: Answered | undefined;
-  try {
-    answered = JSON.parse(p.stdout.trim().split("\n").at(-1) ?? "");
-  } catch {
-    answered = undefined;
-  }
-  if (answered !== undefined && "error" in answered) throw new Error(`the worker refused a job: ${answered.error}`);
-  if (p.code !== 0 || answered === undefined || answered.builds.length !== cmds.length) return cmds.map(() => undefined);
-  return answered.builds.map((build) => {
-    if (!("code" in build)) return undefined;
-    const bytes = { stdout: Buffer.from(build.stdout), stderr: Buffer.from(build.stderr) };
-    return { code: build.code, signal: null, timedOut: false, overflowed: false, stdout: build.stdout, stderr: build.stderr, bytes };
-  });
-}
-
-/** `runSync`'s run of `cmd`, a compile kept or not (`test/compiles.ts`);
- * or, given `input`, of the worker, `input` its stdin (`keptBuilds`). */
-export function spawnedSync(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>, input?: string): Exit {
+/** `runSync`'s run of `cmd`, a compile kept or not (`test/compiles.ts`). */
+export function spawnedSync(cmd: string[], cwd: string, timeout: number, env: Record<string, string | undefined>): Exit {
   const p = Bun.spawnSync(guarded(cmd), {
     cwd,
-    ...(input === undefined ? {} : { stdin: Buffer.from(input) }),
     stdout: "pipe",
     stderr: "pipe",
     timeout,
