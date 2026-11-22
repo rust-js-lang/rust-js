@@ -246,9 +246,9 @@ assumptions; rustc lang items remain available through rustc's identity API.
 | JS classes, `#[rust_js::class]`, objects of methods, `#[rust_js::object]` (ADR 0943), and module namespaces, `#[rust_js::namespace]` (ADR 1037), whose calls' `self` naming one, and what holds it then, is `classes/namespaces.rs`'; a class that extends a binding's class, an ES class (ADR 1041), `classes/subclasses.rs`'; a class that extends JS's `Error`, `js::ErrorClass`, its `message` and `cause` given `super` and what's refused of it (ADR 1158, #1808), `classes/errors.rs`'; which method is a getter, its own or one of the class it extends, and what's refused of one (ADR 0761, amended; ADR 1041, amended, rd679), `classes/getters.rs`'; a class's form, an ES class or a constructor function, and what's refused of it (ADR 0761, amended, rd682), `classes/forms.rs`'; an ES class's field declarations, `class(es, fields)`, and what's refused of them (ADR 0761, amended, #568), `classes/fields.rs`'; a trait of classes' defaults, each prototype's (ADR 1035), `classes/defaults.rs`'; a trait of classes' method that only gives its field, read in place where it's called, of the crate's HIR or a library's MIR (rd304, #1032), `classes/accessors.rs`'; a class's flattened state, its constructor's keys and each `new`'s (ADR 1044), `classes/states.rs`'; a class's prototype its load replaces, set right after its constructor (ADR 0761, amended, #448), `classes/prototypes.rs`'; what a class's constructor gives, `Self` or an `Rc` of it, and its refusal of one the crate counts (ADR 0761, amended, rd554), and the nullable fields each constructor the crate writes of a struct sets first, present (ADR 0810, amended, rd628), `classes/constructors.rs`' | `classes.rs`; `classes/member_functions.rs`, a member's function made its class's, its `self` `this` and a constructor's literal set on it |
 | Exported TypeScript declaration model, and the reader of `#[rust_js::types]` | `declarations.rs`, `declarations/` |
 
-A body's MIR is taken in `Mir::new` (`mir/prepared.rs`, which settles
+A body's MIR is taken in `Mir::new` (`analysis/prepared.rs`, which settles
 what can't unwind and what an optimized body left), where
-`mir/revealed.rs` (`revealed`)
+`analysis/revealed.rs` (`revealed`)
 makes each `impl Trait` in it the type it hides, as rustc's codegen reads
 it (#1142): every rule of a body's lowering asks of the type its value is,
 and none of `mir/`, `iterators/` or `combinators/` reveals a type itself
@@ -257,7 +257,7 @@ types read elsewhere, a THIR's or a signature's, in a typing environment
 that reveals; `eq_sides`, asked in one that may not, of a caller's THIR,
 reveals by `mir::revealed` itself (#1229).
 
-MIR determines execution order. `mir/cfg.rs` structures blocks;
+MIR determines execution order. `analysis/cfg.rs` structures blocks;
 `mir/temporaries.rs` folds temporary reads only when intervening effects allow
 it. `mir/hints.rs` and `mir/hints/` supply source facts and `mir/offsets.rs` analyzes string
 offsets without emission. `mir/tidy/stages.rs` lists the body rewrites, in
@@ -744,7 +744,7 @@ area's sweep phrases it as one.
 | Does nothing read what the call being lowered gives? (ADR 0847, rd418) | `mir/dispatch/known_calls.rs` | `result_unread` | | 1 |
 | Which static does a constant point to the start of? | `mir/operands.rs` | `const_static` | | 1 |
 | Is a range a variable no step can leave exhausted? (#418) | `mir/noted.rs` | `never_exhausted` | | 1: `never_exhausted` (a MIR local's `Name`, its identity, not its spelling) |
-| What body does a closure's `call_once` run, itself taken by value? (ADR 1020) | `mir/prepared.rs` | `called_once` | | 1 |
+| What body does a closure's `call_once` run, itself taken by value? (ADR 1020) | `analysis/prepared.rs` | `called_once` | | 1 |
 
 **Calls.** `mir/dispatch.rs::mir_call` handles special calls and sends evaluated
 arguments to `mir_call_values`. A method std's impl for a `&mut W` or a

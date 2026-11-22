@@ -83,5 +83,5 @@ test("no unwinding judge asks std_call_never_unwinds", () => {
   const callers = files("src")
     .filter((file) => file.endsWith(".rs"))
     .filter((file) => /(?<!fn )\bstd_call_never_unwinds\s*\(/.test(uncommented(file)));
-  expect(callers).toEqual(["src/lower/mir/prepared.rs"]);
+  expect(callers).toEqual(["src/lower/analysis/prepared.rs"]);
 });

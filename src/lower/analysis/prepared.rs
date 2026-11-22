@@ -6,7 +6,18 @@
 //! closure's body in another's terms (`instantiated`) or as `call_once`
 //! runs it (`called_once`).
 
-use super::*;
+use super::{awaits, revealed};
+use crate::collections::{IndexMap, IndexSet};
+use crate::lower::bindings;
+use crate::lower::recognition::{PureStd, is_unreachable_hint, pure_std};
+use rustc_abi::FieldIdx;
+use rustc_index::IndexVec;
+use rustc_middle::mir::visit::{MutatingUseContext, PlaceContext, Visitor};
+use rustc_middle::mir::{
+    self, BasicBlock, Local, Operand, Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnwindAction,
+};
+use rustc_middle::ty::{self};
+use rustc_span::Span;
 
 /// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
 pub struct Mir<'tcx> {

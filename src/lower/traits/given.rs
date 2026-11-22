@@ -149,10 +149,10 @@ pub(in crate::lower) fn default_typing_env<'tcx>(
 /// `<Enumerated<P> as Pull>::Out` its impl's `(usize, P::Out)` (#803).
 pub(in crate::lower) fn default_mir<'tcx>(
     tcx: TyCtxt<'tcx>,
-    mir: &crate::lower::mir::Mir<'tcx>,
+    mir: &crate::lower::analysis::Mir<'tcx>,
     args: ty::GenericArgsRef<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
-) -> crate::lower::mir::Mir<'tcx> {
+) -> crate::lower::analysis::Mir<'tcx> {
     use rustc_middle::ty::TypeFoldable;
     let mut normal = ty::BottomUpFolder {
         tcx,

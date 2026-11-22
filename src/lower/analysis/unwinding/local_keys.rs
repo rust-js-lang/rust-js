@@ -10,13 +10,13 @@ use rustc_span::def_id::LocalDefId;
 use std::cell::OnceCell;
 
 pub(super) struct Calls<'a, 'tcx> {
-    mir: &'a crate::lower::mir::Mir<'tcx>,
+    mir: &'a crate::lower::analysis::Mir<'tcx>,
     // Built only for a body that calls with, once across the fixed point.
     assigned: OnceCell<IndexMap<Local, Option<&'a Rvalue<'tcx>>>>,
 }
 
 impl<'a, 'tcx> Calls<'a, 'tcx> {
-    pub(super) fn new(mir: &'a crate::lower::mir::Mir<'tcx>) -> Self {
+    pub(super) fn new(mir: &'a crate::lower::analysis::Mir<'tcx>) -> Self {
         Self {
             mir,
             assigned: OnceCell::new(),

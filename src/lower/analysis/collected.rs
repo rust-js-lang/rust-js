@@ -189,13 +189,13 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
         let (built, promoted) = tcx.mir_promoted(local);
         body.mir = match (built.is_stolen() || promoted.is_stolen(), evaluated(local)) {
             (false, _) => {
-                let mut mir = crate::lower::mir::Mir::new(tcx, built.borrow().clone(), promoted.borrow().clone());
+                let mut mir = crate::lower::analysis::Mir::new(tcx, built.borrow().clone(), promoted.borrow().clone());
                 crate::lower::mir::with_elaborated(tcx, local, &mut mir);
                 Some(mir)
             }
             (true, true) => {
                 let def_id = body.def_id;
-                Some(crate::lower::mir::Mir::new(
+                Some(crate::lower::analysis::Mir::new(
                     tcx,
                     tcx.mir_for_ctfe(def_id).clone(),
                     tcx.promoted_mir(def_id).clone(),

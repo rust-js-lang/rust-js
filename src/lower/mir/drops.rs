@@ -371,7 +371,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// #700).
     /// And compared with rustc's own, where the session records it
     /// (`--drops-shadow`, `elaborated.rs`).
-    pub(super) fn mir_elaboration(&self, mir: &super::prepared::Mir<'tcx>) -> (Option<Elaboration<'tcx>>, QuietCells) {
+    pub(super) fn mir_elaboration(
+        &self,
+        mir: &crate::lower::analysis::Mir<'tcx>,
+    ) -> (Option<Elaboration<'tcx>>, QuietCells) {
         let cells = self.mir_quiet_cells(&mir.body, &mir.promoted);
         let elaboration = self.elaborated(&mir.body, &cells.unchecked_guards());
         self.shadow_drops(mir, elaboration.as_ref(), &cells.unchecked_guards());

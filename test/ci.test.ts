@@ -76,7 +76,7 @@ test("each push's lint job checks std/ is what its sources make, after the compi
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code, the numbers' and the pointers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs", "src/lower/mir/awaits.rs", "src/lower/unions.rs", "src/lower/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["src/runtime/steps.js", "src/runtime/pad.js", "src/runtime/div.js", "src/typescript.rs", "src/lower/analysis/awaits.rs", "src/lower/unions.rs", "src/lower/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 // The readability passes' oracles run of a change to tidy, preparation or

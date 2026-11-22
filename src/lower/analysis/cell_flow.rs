@@ -126,7 +126,7 @@ impl CellFlow {
         let tcx = recognition.tcx;
         // The crate's own bodies, functions, methods and closures, each of
         // which needs its MIR: one without it may move a cell anywhere.
-        let mut own: Vec<(DefId, &crate::lower::mir::Mir<'tcx>)> = Vec::new();
+        let mut own: Vec<(DefId, &crate::lower::analysis::Mir<'tcx>)> = Vec::new();
         for body in bodies {
             if !body.def_id.is_local() || body.root().is_none() {
                 continue;
@@ -321,7 +321,7 @@ struct Flow<'r, 'tcx> {
     recognition: Recognition<'r, 'tcx>,
     borrows: &'r CellBorrows<'tcx>,
     graph: Graph,
-    bodies: Vec<(DefId, &'r crate::lower::mir::Mir<'tcx>)>,
+    bodies: Vec<(DefId, &'r crate::lower::analysis::Mir<'tcx>)>,
     index: IndexMap<DefId, usize>,
     locals: IndexMap<(usize, Local), u32>,
     /// Each thread-local's key's `LocalKey`, its storage.

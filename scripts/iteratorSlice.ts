@@ -262,7 +262,7 @@ const dropPaths = ["src/lower/drops/**", "src/lower/analysis/unwinding.rs"];
 /** How a future awaits and what an async body drops as it unwinds, as
  * globs of the repository's paths: `.await`'s lowering, the drops and
  * their unwinding's owners, and the table and its runner. */
-export const asyncPaths = ["src/lower/mir/awaits.rs", ...dropPaths, "test/async-points.ts", "test/panic-points.ts"];
+export const asyncPaths = ["src/lower/analysis/awaits.rs", ...dropPaths, "test/async-points.ts", "test/panic-points.ts"];
 
 const asyncGlobs = asyncPaths.map((path) => new Bun.Glob(path));
 

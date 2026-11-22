@@ -80,7 +80,7 @@ pub(in crate::lower) fn foreign_bodies(
                 decl.local_info =
                     rustc_middle::mir::ClearCrossCrate::Set(Box::new(rustc_middle::mir::LocalInfo::Boring));
             }
-            let mir = super::super::mir::Mir::new(tcx, body, tcx.promoted_mir(def_id).clone());
+            let mir = super::Mir::new(tcx, body, tcx.promoted_mir(def_id).clone());
             Body {
                 def_id,
                 thir: rustc_middle::thir::Thir::new(rustc_middle::thir::BodyTy::Const(tcx.types.unit)),

@@ -19,11 +19,11 @@ pub(super) use made::Made;
 mod alternatives;
 pub(in crate::lower) mod arguments_use;
 mod assign;
-mod awaits;
 mod bounds;
 mod calls;
 mod census;
-mod cfg;
+// A body's control-flow graph, the base's (`analysis::cfg`, #2299).
+pub(in crate::lower::mir) use crate::lower::analysis::cfg;
 mod closures;
 mod dispatch;
 mod drops;
@@ -50,13 +50,12 @@ mod partly_written;
 mod patterns;
 mod places;
 mod positions;
-mod prepared;
-pub use prepared::Mir;
+// A body's MIR as it's taken, the base's (`analysis::prepared`, #2299).
+pub use crate::lower::analysis::Mir;
 mod queries;
-mod revealed;
+pub(in crate::lower) use crate::lower::analysis::revealed;
 pub(in crate::lower) use hints::forget_thir_hints;
 pub(in crate::lower) use queries::{referred_constant, referred_key};
-pub(in crate::lower) use revealed::revealed;
 pub(in crate::lower) use temporaries::held_names;
 pub(in crate::lower) mod result_use;
 mod rvalues;
@@ -87,7 +86,7 @@ use rustc_index::IndexVec;
 use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{
     self, AggregateKind, AssertKind, BasicBlock, BinOp, BorrowKind, Const, ConstOperand, Local, LocalKind, Operand,
-    Place, PlaceElem, PlaceRef, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp, UnwindAction,
+    Place, PlaceElem, PlaceRef, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp,
 };
 use rustc_middle::thir;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -99,8 +98,7 @@ use super::generic_facts::{Crossing, Form};
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{
-    BuilderStep, DebugBuilder, PureStd, Std, StdItem, TraitCall, is_std_def, is_unreachable_hint,
-    known_by_a_dictionary, pure_std, std_item, trait_method,
+    BuilderStep, DebugBuilder, Std, StdItem, TraitCall, is_std_def, known_by_a_dictionary, std_item, trait_method,
 };
 use super::refusal::{Refused, refuse};
 use super::representation::{null_params, variant_field};

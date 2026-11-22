@@ -33,7 +33,7 @@ guard asked `enumerates_a_compiled_struct` of the unrevealed type. A
 ## Decision
 
 **`Mir::new` makes each `impl Trait` in a body, and in its promoteds, the
-type it hides (`mir/revealed.rs`, `revealed`), as rustc's codegen reads
+type it hides (`analysis/revealed.rs`, `revealed`), as rustc's codegen reads
 it after analysis.** It expands each opaque type with rustc's own
 `try_expand_impl_trait_type`; one that holds itself, an `async fn` that
 awaits itself through a box, stays as it is past where it does. So every

@@ -1,6 +1,13 @@
 //! Collect crate facts before emission; no function lowering or linking.
 
 mod accessors;
+mod awaits;
+pub(in crate::lower) mod cfg;
+mod fields_read;
+mod revealed;
+pub(in crate::lower) use revealed::revealed;
+pub(in crate::lower) mod prepared;
+pub use prepared::Mir;
 pub(super) mod arguments;
 mod back_stepped;
 pub(in crate::lower) mod read_bounds;
