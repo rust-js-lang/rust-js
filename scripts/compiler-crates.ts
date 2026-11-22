@@ -111,3 +111,61 @@ export function topModules(crate: CompilerCrate, at = checkout): string[] {
 export function crateOfModule(module: string, at = checkout): CompilerCrate | undefined {
   return compilerCrates(at).find((crate) => topModules(crate, at).includes(module));
 }
+
+/** A package as `cargo metadata --no-deps` gives it: its features, each
+ * with what it turns on, and its dependencies as its manifest declares
+ * them, `kind` `null` a normal one's. */
+export type MemberPackage = {
+  name: string;
+  features: Record<string, string[]>;
+  dependencies: { name: string; rename?: string | null; kind: string | null; features: string[]; uses_default_features: boolean; optional: boolean }[];
+};
+
+/** The features a build of `root` turns on of each member of the workspace,
+ * `packages`, by its manifests alone: `root`'s defaults, and through each
+ * member's dependencies on another member, those of `rootKinds` of the
+ * root's own (`null` normal, `"dev"`, `"build"`) and a normal or build one
+ * of each other's, as Cargo builds a dependency's own dev-dependencies
+ * never, and its resolver keeps a dev-dependency's features out of a normal
+ * build: the features each dependency names and its defaults, and what each
+ * feature turns on, a member's own or a dependency's (`dep/feature`,
+ * `dep?/feature`), till nothing more is. Only members can turn on a
+ * member's feature, so this needs no registry, where `cargo tree` resolves
+ * every crate's and fails offline without them (#2348). A dependency
+ * declared on every target and an optional one are counted on, which can
+ * only find more. */
+export function memberFeatures(packages: MemberPackage[], root: string, rootKinds: (string | null)[]): Map<string, Set<string>> {
+  const byName = new Map(packages.map((p) => [p.name, p]));
+  const on = new Map<string, Set<string>>();
+  const turnOn = (name: string, features: string[]): boolean => {
+    const p = byName.get(name);
+    if (p === undefined) return false;
+    const set = on.get(name) ?? new Set<string>();
+    const fresh = !on.has(name);
+    on.set(name, set);
+    const before = set.size;
+    for (const feature of features) if (feature in p.features) set.add(feature);
+    return fresh || set.size > before;
+  };
+  turnOn(root, ["default"]);
+  for (let more = true; more; ) {
+    more = false;
+    for (const [name, set] of [...on]) {
+      const p = byName.get(name)!;
+      const kinds = name === root ? rootKinds : [null, "build"];
+      for (const feature of [...set]) {
+        for (const item of p.features[feature] ?? []) {
+          const of = /^([^/?:]+)\??\/(.+)$/.exec(item);
+          const dep = of && p.dependencies.find((d) => (d.rename ?? d.name) === of[1]);
+          if (dep) more = turnOn(dep.name, [of![2]]) || more;
+          else if (!item.includes("/") && !item.startsWith("dep:")) more = turnOn(name, [item]) || more;
+        }
+      }
+      for (const dep of p.dependencies) {
+        if (!kinds.includes(dep.kind)) continue;
+        more = turnOn(dep.name, [...dep.features, ...(dep.uses_default_features ? ["default"] : [])]) || more;
+      }
+    }
+  }
+  return on;
+}

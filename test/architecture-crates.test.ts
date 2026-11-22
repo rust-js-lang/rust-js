@@ -5,7 +5,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { binaryCrate, compilerCrates, compilerRustFiles, crateOf, crateOfModule, isBinarySource, isCompilerSource, modulePath, topModules } from "../scripts/compiler-crates";
+import { binaryCrate, compilerCrates, compilerRustFiles, crateOf, crateOfModule, isBinarySource, isCompilerSource, memberFeatures, modulePath, topModules, type MemberPackage } from "../scripts/compiler-crates";
 import { root } from "./support";
 
 type Manifest = { package?: { name: string }; dependencies?: Record<string, unknown>; workspace?: { members?: string[]; exclude?: string[] } };
@@ -101,16 +101,32 @@ test("which crate a file and a module are of is the layout's answer", () => {
 
 // What a test makes and a compile never does, the `testing` feature of a
 // crate (a `Name` of a word alone, #2034), is the tests' alone: a normal
-// build of the binary, the compiler a user runs, has none of it.
+// build of the binary, the compiler a user runs, has none of it. Read of
+// the members' manifests, `cargo metadata --no-deps`, which needs no
+// registry: `cargo tree --offline` resolved every crate's, and failed, exit
+// 101, on a test shard whose compiler came from the cache, as it restores
+// no `~/.cargo/registry` (#2348).
 test("a crate's `testing` feature never reaches a normal build", () => {
-  const tree = Bun.spawnSync(["cargo", "tree", "--locked", "--offline", "-p", "rust-js", "-e", "normal,features", "--prefix", "none"], { cwd: root });
-  expect(tree.exitCode).toBe(0);
-  const lines = tree.stdout.toString().split("\n");
-  expect(lines.some((line) => line.startsWith("rust-js-program"))).toBe(true);
-  expect(lines.filter((line) => /feature "testing"/.test(line))).toEqual([]);
+  const metadata = Bun.spawnSync(["cargo", "metadata", "--no-deps", "--offline", "--format-version", "1"], { cwd: root });
+  if (metadata.exitCode !== 0) throw new Error(`cargo metadata exited ${metadata.exitCode}: ${metadata.stderr.toString()}`);
+  const packages: MemberPackage[] = JSON.parse(metadata.stdout.toString()).packages;
+  const testing = (features: Map<string, Set<string>>) => [...features].filter(([, on]) => on.has("testing")).map(([name]) => name);
+  const normal = memberFeatures(packages, binary.package, [null, "build"]);
+  expect(normal.has("rust-js-program")).toBe(true);
+  expect(testing(normal)).toEqual([]);
   // And the tests' build has it, so the guard is real.
-  const dev = Bun.spawnSync(["cargo", "tree", "--locked", "--offline", "-p", "rust-js", "-e", "dev,features", "--prefix", "none"], { cwd: root });
-  expect(dev.stdout.toString()).toMatch(/rust-js-program feature "testing"/);
+  expect(testing(memberFeatures(packages, binary.package, [null, "build", "dev"]))).toEqual(["rust-js-program"]);
+  // A feature turned on through another member's feature, or a normal
+  // dependency's, reaches it; a dependency's own dev-dependency never does.
+  const pkg = (name: string, features: Record<string, string[]>, dependencies: MemberPackage["dependencies"]): MemberPackage => ({ name, features, dependencies });
+  const dep = (name: string, kind: string | null, features: string[] = []) => ({ name, kind, features, uses_default_features: true, optional: false });
+  const made = [
+    pkg("bin", { default: ["mid/fast"] }, [dep("mid", null), dep("leaf", "dev", ["testing"])]),
+    pkg("mid", { fast: ["leaf/testing"] }, [dep("leaf", null), dep("other", "dev", ["testing"])]),
+    pkg("leaf", { testing: [] }, []),
+    pkg("other", { testing: [] }, []),
+  ];
+  expect(testing(memberFeatures(made, "bin", [null, "build"]))).toEqual(["leaf"]);
 });
 
 // The front end builds owned output and never prints it: of the compiler's
