@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "std-zero-sized-not-held",
+    breaks: "an `iter::Empty` constant a consumer compiles of a library's body is `[]`, not held as `iter::empty()`'s value is, `$iter([])`, and stepping it behind a `Box<dyn Iterator>` throws (#1420)",
+    file: "src/lower/mir/operands.rs",
+    find: "            return Ok(Some(match self.std_value_as(Value::Expr(std.value()), ty, &[]) {\n",
+    replace: "            return Ok(Some(match Value::Expr(std.value()) {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
+  },
+  {
     name: "projected-read-shared",
     breaks: "a flattened struct read by value, `r.range`, or copied out of a reference, `*range`, is its parent's object, which JS given it sees with the parent's keys (#1820)",
     file: "src/lower/mir/operands.rs",

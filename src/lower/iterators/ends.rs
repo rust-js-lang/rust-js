@@ -275,7 +275,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.zipped((a, tys[0]), (b, tys[1]), span)?
             }
             Std::IterSource(IterSource::Once) => Expr::array(vec![arg()]),
-            Std::IterSource(IterSource::Empty) => Expr::array(vec![]),
+            Std::IterSource(IterSource::Empty) => crate::lower::representation::StdZeroSized::IterEmpty.value(),
             // Its value's drop too, which it runs when it's closed (ADR 0422);
             // `repeat_n`'s, its count's, the last its value (ADR 0513).
             Std::IterSource(source @ (IterSource::Repeat | IterSource::RepeatN)) => {

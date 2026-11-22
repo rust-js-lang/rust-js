@@ -666,6 +666,14 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
     /// it holds that nothing writes, optimized MIR having dropped a write of
     /// no size, `_0 = Refused` (#1889). `None` of a type with a size.
     pub(super) fn zero_sized_value(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        // std's own, its constructor's call's value, held as a body holds
+        // that call's, `$iter([])` of an `iter::Empty` (#1420).
+        if let Some(std) = crate::lower::representation::StdZeroSized::of(self.tcx, ty) {
+            return Ok(Some(match self.std_value_as(Value::Expr(std.value()), ty, &[]) {
+                Value::Expr(held) => held,
+                _ => unreachable!("an expression is held as one"),
+            }));
+        }
         if matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) {
             return self
                 .adt_value(ty, VariantIdx::ZERO, Vec::new(), &[], None, span)

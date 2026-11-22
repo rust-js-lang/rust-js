@@ -31,8 +31,8 @@ mod options;
 mod variants;
 
 pub(in crate::lower) use cells::property_of_cell;
+pub(super) use consts::{StdZeroSized, const_js, zero_sized_js};
 use consts::{Units, const_js_by};
-pub(super) use consts::{const_js, zero_sized_js};
 pub(in crate::lower) use mut_ref::{MutRefForm, SignatureForms, held_ts};
 pub(in crate::lower) use options::{
     NoneForm, NonePlace, Writers, may_look_like_none, none_form, null_params, payload_through,

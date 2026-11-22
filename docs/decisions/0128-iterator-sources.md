@@ -103,3 +103,25 @@ refused too). Its `next_back` is refused as any generator's is. Case none of
 `test/corpus/iter_once_with.rs`; mutations `once-with-calls-f-where-made`,
 `once-with-calls-f-each-step` (`runtime/once_with.ts`) and `once-with-unanswered`
 (`lower/recognition/calls.ts`).
+
+## Amendment: an `iter::Empty` constant (#1420)
+
+A consumer compiles some of a library's bodies itself, from their optimized
+MIR (ADR 0914), quickcheck's `Arbitrary::shrink` and `empty_shrinker` among
+them. There, inlining leaves `iter::empty()`'s value as a constant of no size,
+`const Empty::<A>(PhantomData)`, which was refused, "this constant, from its
+MIR", so itertools' 142 quickcheck tests never ran. `StdZeroSized`
+(`representation/consts.rs`) is the one answer to what each of std's types of
+no size is in JS where that isn't its struct: `iter::Empty`'s `[]`,
+`io::Empty`'s, `PhantomData`'s and `BuildHasherDefault`'s `undefined`. It
+answers `iter::empty()`'s and `io::empty()`'s calls, `Default` (which makes
+`Default` of an `iter::Empty` or an `io::Empty` supported where it was refused)
+and a constant of one, which a body holds as it holds the call's value
+(`std_value_as`): `$iter([])`. `zero_sized_js`, where no body holds it, still
+writes none, as `const_js` writes no std struct whose JS isn't its fields.
+No program's JS changes. Case none of
+[0262](0262-when-rust-and-js-disagree.md). Held by
+`test/crates/pairs/empty_of_a_librarys_default_compiled_by_its_consumer`, against
+native Rust; mutations `std-zero-sized-iter-empty-unknown`,
+`std-zero-sized-io-empty-unknown`, `build-hasher-default-refused`
+(`representation/consts.ts`) and `std-zero-sized-not-held` (`mir/operands.ts`).

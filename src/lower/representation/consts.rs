@@ -30,10 +30,56 @@ fn innermost(mut value: ty::Value<'_>) -> Option<ty::Value<'_>> {
     Some(value)
 }
 
+/// std's types of no size whose JS value isn't their Rust struct's, each
+/// the value its constructor's call makes, whatever it's of: one value of
+/// each whether its constructor makes it, `Default` does, or it's a
+/// constant of it optimized MIR inlined, quickcheck's `iter::empty()` in a
+/// library's body a consumer compiles (ADR 0914, #1420), which a body then
+/// holds as it holds the call's (`std_value_as`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StdZeroSized {
+    /// `iter::Empty<T>`: `[]`, an array's iterator of no items (ADR 0128).
+    IterEmpty,
+    /// `io::Empty`: `undefined`, read by `$emptyReader` (#1156).
+    IoEmpty,
+    /// `PhantomData<T>`: `undefined`, which holds nothing.
+    PhantomData,
+    /// `BuildHasherDefault<H>`: `undefined`, which holds nothing but the
+    /// hasher's type (#1155).
+    BuildHasherDefault,
+}
+
+impl StdZeroSized {
+    /// Which `ty` is, `None` of another type.
+    pub fn of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<StdZeroSized> {
+        use crate::lower::recognition::{StdPath, is_std_path};
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        let did = adt.did();
+        Some(match () {
+            _ if is_std_path(tcx, did, StdPath::IterEmpty) => StdZeroSized::IterEmpty,
+            _ if is_std_path(tcx, did, StdPath::IoEmpty) => StdZeroSized::IoEmpty,
+            _ if tcx.is_lang_item(did, LangItem::PhantomData) => StdZeroSized::PhantomData,
+            _ if is_std_def(tcx, did, StdItem::BuildHasherDefault) => StdZeroSized::BuildHasherDefault,
+            _ => return None,
+        })
+    }
+
+    /// Its one value.
+    pub fn value(self) -> Expr {
+        match self {
+            StdZeroSized::IterEmpty => Expr::array(Vec::new()),
+            StdZeroSized::IoEmpty | StdZeroSized::PhantomData | StdZeroSized::BuildHasherDefault => {
+                Expr::js_undefined()
+            }
+        }
+    }
+}
+
 /// The JS value of a type of no size, which has one value: `undefined` of
 /// `()` or a unit struct, `[]` of `[T; 0]`, as `const_js` writes a constant
 /// of it (ADR 0562). `None` of a type with a size, or one `const_js` can't
-/// write.
+/// write: std's own (`StdZeroSized`), whose value as a body holds it isn't
+/// its struct's.
 pub fn zero_sized_js<'tcx>(tcx: TyCtxt<'tcx>, keyed: &IndexSet<DefId>, ty: Ty<'tcx>) -> Option<Expr> {
     fn tree<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<ty::ValTree<'tcx>> {
         let part = |t: Ty<'tcx>| Some(ty::Const::new_value(tcx, tree(tcx, t)?, t));

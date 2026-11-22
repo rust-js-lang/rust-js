@@ -129,10 +129,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `&str`'s is `""`, a slice's `[]`, and an array's its items'.
             ty::Ref(_, inner, _) if inner.is_str() => Expr::str(""),
             ty::Ref(_, inner, _) if inner.is_slice() => Expr::array(Vec::new()),
-            // A `Box<str>`'s and a `Box<[T]>`'s, and `PhantomData`, which holds nothing.
+            // A `Box<str>`'s and a `Box<[T]>`'s.
             ty::Str => Expr::str(""),
             ty::Slice(_) => Expr::array(Vec::new()),
-            _ if self.is_lang_adt(ty, LangItem::PhantomData) => Expr::js_undefined(),
+            // std's of no size, `PhantomData`, `BuildHasherDefault` (#1155)
+            // and `iter::Empty`, the one value its constructor makes.
+            _ if let Some(std) = crate::lower::representation::StdZeroSized::of(self.tcx, ty) => std.value(),
             // A C string's, its nul alone, a `&CStr`'s `c""` (#1157).
             _ if crate::lower::recognition::is_c_string_like(self.tcx, ty.peel_refs()) => {
                 Expr::literal_array(vec![Expr::int(0)])
@@ -187,9 +189,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, &format!("`Default` of `{ty}`")))?;
                 self.unit_variant(adt.did(), adt.variant_with_ctor_id(variant))
             }
-            // `BuildHasherDefault`'s, which holds nothing but the hasher's
-            // type, a `PhantomData`, as an empty struct's (#1155).
-            ty::Adt(..) if std(StdItem::BuildHasherDefault) => Expr::js_undefined(),
             // A `RandomState`, which holds nothing JS sees (#1420).
             ty::Adt(..) if std(StdItem::RandomState) => Expr::js_undefined(),
             // A std hasher's, as its `new()` (ADR 0463).

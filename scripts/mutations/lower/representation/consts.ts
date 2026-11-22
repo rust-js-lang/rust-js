@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "build-hasher-default-refused",
+    breaks: "`BuildHasherDefault::<DefaultHasher>::default()`, which holds nothing, is refused, so uuid's `test_compare` is (#1155)",
+    file: "src/lower/representation/consts.rs",
+    find: "            _ if is_std_def(tcx, did, StdItem::BuildHasherDefault) => StdZeroSized::BuildHasherDefault,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^build_hasher_default.rs$"],
+  },
+  {
+    name: "std-zero-sized-iter-empty-unknown",
+    breaks: "an `iter::Empty` constant of a library's body a consumer compiles from its optimized MIR, quickcheck's `shrink`, is refused, \"this constant, from its MIR\", and `Default` of one is (#1420)",
+    file: "src/lower/representation/consts.rs",
+    find: "            _ if is_std_path(tcx, did, StdPath::IterEmpty) => StdZeroSized::IterEmpty,\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
+  },
+  {
+    name: "std-zero-sized-io-empty-unknown",
+    breaks: "`Default` of an `io::Empty` is refused (#1420)",
+    file: "src/lower/representation/consts.rs",
+    find: "            _ if is_std_path(tcx, did, StdPath::IoEmpty) => StdZeroSized::IoEmpty,\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "two crates: empty_of_a_librarys_default_compiled_by_its_consumer"],
+  },
+  {
     name: "nullable-const-field-undefined",
     breaks:
       "a constant's `#[rust_js::nullable]` field's `None` is left out, `{ count: 0 }`, React's `CacheContext` without its `_currentValue: null` (ADR 0586, amended)",

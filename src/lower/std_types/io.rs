@@ -204,7 +204,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
             IoOp::BufReaderCapacity => Expr::member(Expr::member(next(), "buf"), "length"),
-            IoOp::Empty => Expr::js_undefined(),
+            IoOp::Empty => crate::lower::representation::StdZeroSized::IoEmpty.value(),
             IoOp::Repeat => Expr::object(vec![Prop::Field("byte".into(), next())]),
         }))
     }
