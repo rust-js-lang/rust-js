@@ -17,6 +17,8 @@ mod one_none;
 mod presence_paths;
 mod proofs;
 
+pub(super) use proofs::WriteIndex;
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
     /// `#[rust_js::nullable]` field or binding parameter takes it as it is
@@ -965,6 +967,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// A write of a local: an assignment's, or the result of the call its
 /// block ends with.
+#[derive(Clone, Copy)]
 enum Write<'b, 'tcx> {
     Assign(&'b Rvalue<'tcx>),
     Call(BasicBlock, &'b Operand<'tcx>, &'b [rustc_span::Spanned<Operand<'tcx>>]),

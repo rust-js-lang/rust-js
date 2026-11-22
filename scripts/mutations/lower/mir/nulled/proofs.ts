@@ -183,8 +183,8 @@ export const mutations: Mutation[] = [
     name: "cleanup-write-counted",
     breaks: "a cleanup's write of a local, the value its body's write gives as the old one's drop unwinds, is counted beside it, so a `let mut` written `js::null()` and then a nullable function's result is returned `active ?? null` (#1933)",
     file: "src/lower/mir/nulled/proofs.rs",
-    find: "                            if !data.is_cleanup {\n",
-    replace: "                            if true {\n",
+    find: "                        } else if !data.is_cleanup {\n",
+    replace: "                        } else if true {\n",
     tests: [
       "test/lowering-nullable-tests.test.ts",
       "-t",
@@ -219,8 +219,8 @@ export const mutations: Mutation[] = [
     name: "kept-lend-never",
     breaks: "any `&mut` lend of an `Option` local makes its writes say nothing, so getParentFragmentInstances' `match &mut found` returns `found ?? null`, tidy's to drop (#1933)",
     file: "src/lower/mir/nulled/proofs.rs",
-    find: "                            && !self.lend_keeps_some(state, *lent, assign.0)\n",
-    replace: "",
+    find: "        if of.unwhole || !(of.lends.iter()).all(|&(lent, reference)| self.lend_keeps_some(state, lent, reference)) {\n",
+    replace: "        if of.unwhole || !of.lends.is_empty() {\n",
     tests: [
       "test/lowering-nullable-tests.test.ts",
       "-t",
@@ -283,5 +283,21 @@ export const mutations: Mutation[] = [
     replace: "        cast.then_some(from)\n",
     tests: ["test/corpus.test.ts", "-t", "^option_none_forms_through_captures.rs$"],
     snapshots: true,
+  },
+  {
+    name: "write-index-lends-unchecked",
+    breaks: "a local lent as a `&mut` that may take its `Some` away, `take(&mut found)`'s, is taken for one written whole alone, so a `None` the lend leaves is proved present (#2307)",
+    file: "src/lower/mir/nulled/proofs.rs",
+    find: "        if of.unwhole || !(of.lends.iter()).all(|&(lent, reference)| self.lend_keeps_some(state, lent, reference)) {\n",
+    replace: "        if of.unwhole {\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "test/lowering-nullable-truthy.test.ts", "test/lowering-nullable-classified.test.ts"],
+  },
+  {
+    name: "write-index-raw-pointer-unseen",
+    breaks: "a `*mut` taken of a local, through which anything may write it, is no write of it, so what its whole writes say is proved of it (#2307)",
+    file: "src/lower/mir/nulled/proofs.rs",
+    find: "                            of.entry(lent.local).or_default().unwhole = true;\n",
+    replace: "                            let _ = lent;\n",
+    tests: ["test/lowering-nullable-borrows.test.ts", "-t", "a local a \\*mut is taken of"],
   },
 ];

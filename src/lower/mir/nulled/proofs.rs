@@ -419,54 +419,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// cleanup's, which writes the value a body's write of it does as the
     /// old one's drop unwinds, `active = closest(f)`'s of a `let mut active
     /// = js::null()` twice, and which the body's count of its writes leaves
-    /// out (`Locals::writes`, #1933).
+    /// out (`Locals::writes`, #1933). Of the body's writes found once, as
+    /// the first proof asks (`WriteIndex`, #2307): a proof asks of many
+    /// locals, each once a walk of the whole body.
     pub(super) fn whole_writes<'b>(&self, state: &'b State<'_, 'tcx>, local: Local) -> Option<Vec<Write<'b, 'tcx>>> {
-        let mut writes = Vec::new();
-        for (block, data) in state.body.basic_blocks.iter_enumerated() {
-            for statement in &data.statements {
-                match &statement.kind {
-                    mir::StatementKind::Assign(assign) => {
-                        if assign.0.local == local {
-                            if !assign.0.projection.is_empty() {
-                                return None;
-                            }
-                            if !data.is_cleanup {
-                                writes.push(Write::Assign(&assign.1));
-                            }
-                        }
-                        // A `&mut` that never takes a `Some` away is no write
-                        // of a `None` (`lend_keeps_some`, #1933 step 4 (B)).
-                        if let Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) = &assign.1
-                            && lent.local == local
-                            && !self.lend_keeps_some(state, *lent, assign.0)
-                        {
-                            return None;
-                        }
-                        if let Rvalue::RawPtr(mir::RawPtrKind::Mut, lent) = &assign.1
-                            && lent.local == local
-                        {
-                            return None;
-                        }
-                    }
-                    mir::StatementKind::SetDiscriminant { place, .. } if place.local == local => return None,
-                    _ => {}
-                }
-            }
-            if let mir::TerminatorKind::Call {
-                func,
-                args,
-                destination,
-                ..
-            } = &data.terminator().kind
-                && destination.local == local
-            {
-                if !destination.projection.is_empty() {
-                    return None;
-                }
-                writes.push(Write::Call(block, func, args));
-            }
+        let index = state.facts.writes(state.body);
+        let Some(of) = index.0.get(&local) else {
+            return Some(Vec::new());
+        };
+        // A `&mut` that never takes a `Some` away is no write of a `None`
+        // (`lend_keeps_some`, #1933 step 4 (B)).
+        if of.unwhole || !(of.lends.iter()).all(|&(lent, reference)| self.lend_keeps_some(state, lent, reference)) {
+            return None;
         }
-        Some(writes)
+        Some(of.whole.clone())
     }
 
     /// The place `local` holds a copy of, a move of or a borrow of, where its
@@ -554,5 +520,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let lent = self.recognition().classify(callee, generic_args) == Some(crate::lower::recognition::Std::Pointee)
             && matches!(from.ty(body, self.tcx).ty.kind(), ty::Ref(_, _, ty::Mutability::Not));
         (cast || lent).then_some(from)
+    }
+}
+
+/// Each local's writes in a body, in the order it's walked: its whole ones,
+/// an assignment's or a call's result, but a cleanup's assignment; whether
+/// one isn't whole, a field's or an element's, a `*mut` taken of it, or its
+/// variant set; and each `&mut` lent of it, with the place that holds it,
+/// whose `lend_keeps_some` its asker checks (`whole_writes`, #2307).
+pub(in crate::lower::mir) struct WriteIndex<'m, 'tcx>(IndexMap<Local, LocalWrites<'m, 'tcx>>);
+
+#[derive(Default)]
+struct LocalWrites<'m, 'tcx> {
+    whole: Vec<Write<'m, 'tcx>>,
+    unwhole: bool,
+    lends: Vec<(Place<'tcx>, Place<'tcx>)>,
+}
+
+impl<'m, 'tcx> WriteIndex<'m, 'tcx> {
+    pub(in crate::lower::mir) fn of(body: &'m mir::Body<'tcx>) -> Self {
+        let mut of: IndexMap<Local, LocalWrites<'m, 'tcx>> = IndexMap::default();
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            for statement in &data.statements {
+                match &statement.kind {
+                    mir::StatementKind::Assign(assign) => {
+                        let written = of.entry(assign.0.local).or_default();
+                        if !assign.0.projection.is_empty() {
+                            written.unwhole = true;
+                        } else if !data.is_cleanup {
+                            written.whole.push(Write::Assign(&assign.1));
+                        }
+                        if let Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) = &assign.1 {
+                            of.entry(lent.local).or_default().lends.push((*lent, assign.0));
+                        }
+                        if let Rvalue::RawPtr(mir::RawPtrKind::Mut, lent) = &assign.1 {
+                            of.entry(lent.local).or_default().unwhole = true;
+                        }
+                    }
+                    mir::StatementKind::SetDiscriminant { place, .. } => {
+                        of.entry(place.local).or_default().unwhole = true
+                    }
+                    _ => {}
+                }
+            }
+            if let mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } = &data.terminator().kind
+            {
+                let written = of.entry(destination.local).or_default();
+                match destination.projection.is_empty() {
+                    true => written.whole.push(Write::Call(block, func, args)),
+                    false => written.unwhole = true,
+                }
+            }
+        }
+        WriteIndex(of)
     }
 }

@@ -18,6 +18,9 @@ use super::*;
 pub(super) type Seeds = (Option<offsets::Seed>, Option<Expr>, bool);
 
 pub(super) struct LocalFacts<'m, 'tcx> {
+    /// Each local's writes, found once, as a proof of its `Option` first
+    /// asks (`nulled::WriteIndex`, #2307).
+    writes: std::cell::OnceCell<super::nulled::WriteIndex<'m, 'tcx>>,
     /// The blocks whose call is an `.await` (`awaits.rs`).
     awaits: &'m IndexSet<BasicBlock>,
     /// Each block an arm goes on to its case through, of a `match` of what
@@ -169,6 +172,12 @@ impl QuietCells {
 }
 
 impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
+    /// Each local's writes in `body`, its MIR, found as it's first asked
+    /// (`nulled::WriteIndex`, #2307).
+    pub(super) fn writes(&self, body: &'m mir::Body<'tcx>) -> &super::nulled::WriteIndex<'m, 'tcx> {
+        self.writes.get_or_init(|| super::nulled::WriteIndex::of(body))
+    }
+
     pub(super) fn awaits(&self) -> &'m IndexSet<BasicBlock> {
         self.awaits
     }
@@ -496,6 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         let facts = LocalFacts {
+            writes: std::cell::OnceCell::new(),
             awaits: &mir.awaits,
             cases: &mir.cases,
             promoted: &mir.promoted,

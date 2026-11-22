@@ -247,3 +247,46 @@ pub fn start(response: &Response, owner: Option<&'static str>) {
   lib.start(response, "App");
   expect(response).toEqual({ rootOwner: "App", rootStack: "react-stack-top-frame" });
 });
+
+// A `*mut` taken of a local may write anything to it, `None` among them,
+// which no whole write of it says: what its whole writes say, a null or
+// a nullable function's result, proves nothing of it then, and its read
+// keeps `?? null` (#2307's index of a body's writes).
+test("a local a *mut is taken of keeps its ?? null, whatever its whole writes say", async () => {
+  const dir = fixture("nullable-borrows-raw-written");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `use std::rc::Rc;
+
+pub struct Key {
+    pub id: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn key_of(key: &Rc<Key>, look: bool) -> Option<Rc<Key>> {
+    if look { Some(Rc::clone(key)) } else { js::null() }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn cleared(key: &Rc<Key>, look: bool, clear: bool) -> Option<Rc<Key>> {
+    let mut active = js::null();
+    if look {
+        active = key_of(key, look);
+    }
+    if clear {
+        let at = &raw mut active;
+        unsafe { *at = None };
+    }
+    active
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--edition=2024", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 120_000);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const cleared = js.slice(js.indexOf("export function cleared("), js.indexOf("\n}\n", js.indexOf("export function cleared(")));
+  expect(cleared).toContain("?? null");
+  const lib = await import(join(dir, "lib.js"));
+  const key = { id: 1 };
+  expect(lib.cleared(key, true, false)).toBe(key);
+  expect(lib.cleared(key, true, true)).toBe(null);
+});
