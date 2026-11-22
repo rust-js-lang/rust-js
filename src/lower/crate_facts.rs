@@ -83,6 +83,11 @@ pub struct CrateFacts<'a, 'tcx> {
     pub bodies: &'a IndexMap<DefId, &'a Body<'tcx>>,
     pub fns: &'a IndexMap<DefId, FnInfo>,
     pub imports: &'a IndexMap<LocalModId, IndexMap<Export, String>>,
+    /// Each module's imports as the paths a body reads as plain, whose
+    /// fields JS's modules never change, `HighlightStyle.define`, as
+    /// `reads_alike` has them: made once of `imports`, not for each body
+    /// (#2315).
+    pub plain_imports: &'a IndexMap<LocalModId, IndexSet<js::Path>>,
     /// The exports read through `require(module)`, not imported (ADR 0305).
     pub required: &'a IndexSet<Export>,
     /// Each library's function a module's `use` reads through
@@ -324,6 +329,7 @@ carried! {
     bodies => CrateOnly,
     fns => CrateOnly,
     imports => CrateOnly,
+    plain_imports => CrateOnly,
     required => CrateOnly,
     required_uses => CrateOnly,
     held_reads => CrateOnly,
@@ -378,6 +384,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(CARRIED.len(), 65);
+        assert_eq!(CARRIED.len(), 66);
     }
 }

@@ -882,7 +882,7 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
 /// `readable_temporaries` then names. Of each statement, in the order it
 /// evaluates what it's made of, while what it evaluates first may be read
 /// after it, `read_past_calls`; not where a test decides whether it runs.
-pub(super) fn applied_values(stmts: &mut Vec<Stmt>, set: &IndexSet<js::Name>, plain: &IndexSet<js::Path>) {
+pub(super) fn applied_values(stmts: &mut Vec<Stmt>, set: &IndexSet<js::Name>, plain: &super::Plain) {
     let mut i = 0;
     while i < stmts.len() {
         let name = js::Name::made_temporary("value");
@@ -929,7 +929,7 @@ fn first_applied(
     before: &mut Before,
     name: &js::Name,
     set: &IndexSet<js::Name>,
-    plain: &IndexSet<js::Path>,
+    plain: &super::Plain,
 ) -> Option<Expr> {
     if !before.past && !before.reads {
         return None;

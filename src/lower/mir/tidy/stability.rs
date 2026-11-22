@@ -2,10 +2,53 @@
 use rust_js_program::collections::IndexSet;
 use rust_js_program::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
+/// What a body reads as plain, which nothing changes (`Hints::plain`): its
+/// own plain values (`Locals::plain`), and its module's imports, whose
+/// fields JS's modules never change either, but those the item reads that
+/// change in place (`Dependencies::changing_imports`, #1028), less the
+/// parameters of a function called at once that name one apart. Asked of
+/// the sets as they are, the module's made once for every body (#2315).
+#[derive(Clone)]
+pub(crate) struct Plain<'a> {
+    own: &'a IndexSet<js::Path>,
+    imports: Option<&'a IndexSet<js::Path>>,
+    changing: IndexSet<js::Path>,
+    shadowed: Vec<js::Path>,
+}
+
+impl<'a> Plain<'a> {
+    pub(crate) fn new(
+        own: &'a IndexSet<js::Path>,
+        imports: Option<&'a IndexSet<js::Path>>,
+        changing: IndexSet<js::Path>,
+    ) -> Self {
+        Plain {
+            own,
+            imports,
+            changing,
+            shadowed: Vec::new(),
+        }
+    }
+
+    /// Whether `path` is read as plain.
+    fn contains(&self, path: &js::Path) -> bool {
+        !self.shadowed.contains(path)
+            && (self.own.contains(path)
+                || (self.imports.is_some_and(|imports| imports.contains(path)) && !self.changing.contains(path)))
+    }
+
+    /// What's plain where `path` names another variable, a parameter's.
+    fn shadowing(&self, path: js::Path) -> Self {
+        let mut plain = self.clone();
+        plain.shadowed.push(path);
+        plain
+    }
+}
+
 /// Whether `e` is a read of plain Rust data, which nothing changes: a field
 /// however deep of a variable of plain data, or one of a plain variable's
 /// of a struct not all plain, `q.title` beside a `Cell` (`Found::plain`).
-pub(super) fn plain_field(e: &Expr, plain: &IndexSet<js::Path>) -> bool {
+pub(super) fn plain_field(e: &Expr, plain: &Plain) -> bool {
     let mut root = e;
     while let ExprKind::Member(of, _) = &root.kind {
         root = of;
@@ -22,7 +65,7 @@ pub(super) fn plain_field(e: &Expr, plain: &IndexSet<js::Path>) -> bool {
 /// change, as MIR's lowering reads it where it's read, or a builtin's
 /// function, `Object.fromEntries`; an element of such, a closure made, and a
 /// test or a choice of such, `selected ? "page" : undefined`.
-pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<js::Name>, plain: &IndexSet<js::Path>) -> bool {
+pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<js::Name>, plain: &Plain) -> bool {
     let past = |e: &Expr| read_past_calls(e, set, plain);
     let mut root = e;
     while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
@@ -95,9 +138,7 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<js::Name>, plain: &IndexS
                 ] = body.as_slice()
                 && let [given] = args.as_slice() =>
         {
-            let mut plain = plain.clone();
-            plain.swap_remove(&js::Path::var(param));
-            past(given) && read_past_calls(result, set, &plain)
+            past(given) && read_past_calls(result, set, &plain.shadowing(js::Path::var(param)))
         }
         _ => e.is_made_of_constants(),
     }

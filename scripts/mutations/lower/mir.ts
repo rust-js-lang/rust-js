@@ -101,8 +101,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an import's member, `tags.link`, made before a branch that calls, is held, `const link = tags.link`, not read where it's given",
     file: "src/lower/mir.rs",
-    find: "        plain.extend(\n            (imports.values())\n                .filter(|name| !changing.contains(*name))\n                .map(|name| js::Path::var(&js::Name::module(name))),\n        );\n",
-    replace: "        plain.extend(\n            (imports.values())\n                .filter(|_| false)\n                .map(|name| js::Path::var(&js::Name::module(name))),\n        );\n",
+    find: "            let paths = names.values().map(|name| js::Path::var(&js::Name::module(name)));\n",
+    replace: "            let paths = names.values().filter(|_| false).map(|name| js::Path::var(&js::Name::module(name)));\n",
     tests: [
       "test/lowering-moves.test.ts",
       "-t",
@@ -447,8 +447,8 @@ export const mutations: Mutation[] = [
     name: "plain-names-of-changing-imports",
     breaks: "every import is plain to tidy, a library's changing static's too, its read moved past a write (#1028)",
     file: "src/lower/mir.rs",
-    find: "        plain.extend(\n            (imports.values())\n                .filter(|name| !changing.contains(*name))\n                .map(|name| js::Path::var(&js::Name::module(name))),\n        );\n",
-    replace: "        plain.extend(\n            (imports.values())\n                .filter(|name| changing.len() < usize::MAX || !changing.contains(*name))\n                .map(|name| js::Path::var(&js::Name::module(name))),\n        );\n",
+    find: "        let changing = (self.dependencies.borrow().changing_imports.iter())\n",
+    replace: "        let changing = (self.dependencies.borrow().changing_imports.iter().filter(|_| false))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
   },
   {

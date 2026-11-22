@@ -3,6 +3,22 @@ import type {Mutation} from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "plain-param-called-at-once-not-shadowing",
+    breaks: "a function called at once whose parameter names a plain value's variable apart, `((q) => q.title)(other)`, reads its parameter's field as the plain value's, moved past calls (#2315)",
+    file: "src/lower/mir/tidy/stability.rs",
+    find: "        plain.shadowed.push(path);\n",
+    replace: "        let _ = path;\n        plain.shadowed.clear();\n",
+    unitTests: "lower::mir::tidy::literal_movement_tests::plain_reads_are_own_and_imports_less_changing_and_shadowed",
+  },
+  {
+    name: "plain-imports-changing-ignored",
+    breaks: "an import whose fields change in place, a library's changing static, is read as plain, its read moved past a write (#1028)",
+    file: "src/lower/mir/tidy/stability.rs",
+    find: "(self.imports.is_some_and(|imports| imports.contains(path)) && !self.changing.contains(path))",
+    replace: "self.imports.is_some_and(|imports| imports.contains(path))",
+    unitTests: "lower::mir::tidy::literal_movement_tests::plain_reads_are_own_and_imports_less_changing_and_shadowed",
+  },
+  {
     name: "mir-tidy-stable-literal-arguments-kept",
     breaks: "stable fresh object and array arguments prevent later native getter expressions from remaining at the call site",
     file: "src/lower/mir/tidy/stability.rs",
@@ -177,7 +193,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function called at once on a held value is taken to read what a call may change, and the `Option` formatted after it stays a function called in place",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "            past(given) && read_past_calls(result, set, &plain)\n",
+    find: "            past(given) && read_past_calls(result, set, &plain.shadowing(js::Path::var(param)))\n",
     replace: "            false\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,

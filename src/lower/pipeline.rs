@@ -342,6 +342,8 @@ pub fn lower_crate<'tcx>(
     let struct_literals = super::aggregates::struct_literals(tcx);
     // The nullable fields each constructor of their struct sets first (rd628).
     let constructed = super::classes::set_where_constructed(tcx, &named_anywhere);
+    // The module's imports a body reads as plain, made once (#2315).
+    let plain_imports = super::mir::plain_imports(&import_names);
     let crate_facts = CrateFacts {
         flattened: &flattened,
         foreign: &foreign,
@@ -386,6 +388,7 @@ pub fn lower_crate<'tcx>(
         bodies: &function_bodies,
         fns: &fns,
         imports: &import_names,
+        plain_imports: &plain_imports,
         required: &required,
         required_uses: &required_uses,
         held_reads: &held.reads,

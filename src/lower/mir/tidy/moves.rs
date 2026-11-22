@@ -13,7 +13,7 @@ pub(super) struct MoveFacts<'a> {
     pub set: &'a IndexSet<js::Name>,
     /// The variables whose value is plain data, whose fields no call
     /// changes.
-    pub plain: &'a IndexSet<js::Path>,
+    pub plain: &'a Plain<'a>,
     /// The elements made ahead of a branch, which may be read where it is.
     pub captured: &'a IndexSet<js::Name>,
     /// What holds a place MIR's lowering fixed, `const item =
@@ -942,6 +942,7 @@ mod tests {
     fn decided(body: &[Stmt]) -> Option<Why> {
         let no_names: IndexSet<js::Name> = IndexSet::default();
         let no_paths: IndexSet<js::Path> = IndexSet::default();
+        let no_paths = Plain::new(&no_paths, None, IndexSet::default());
         let facts = MoveFacts {
             changing: &no_names,
             set: &no_names,

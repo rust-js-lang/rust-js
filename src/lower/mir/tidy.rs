@@ -40,6 +40,7 @@ mod values;
 pub(super) use self::again::Again;
 pub(super) use self::bindings::{is_temporary, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
+pub(super) use self::stability::Plain;
 use self::stability::{plain_field, read_past_calls};
 pub(super) use self::values::writer_body;
 use self::{
@@ -123,7 +124,7 @@ pub(super) struct Hints<'h> {
     pub(super) floats: &'h IndexSet<js::Name>,
     /// The variables of plain values, which nothing changes, and `...items`
     /// of arrays whose items nothing changes (`Locals::plain`).
-    pub(super) plain: &'h IndexSet<js::Path>,
+    pub(super) plain: &'h Plain<'h>,
     /// Each closure of one call, where it's written and what it passes its
     /// call on to (ADR 0605, amended).
     pub(super) forwarding: &'h [crate::lower::passed_on::Forwarding],
@@ -515,7 +516,7 @@ mod tests {
     use rust_js_program::collections::IndexSet;
 
     use super::{
-        MoveFacts, decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails,
+        MoveFacts, Plain, decided_tests, inlined, is_temporary, paired_temporaries, settle_jumps, shared_tails,
         spread_spreads, turned, user_name,
     };
     use crate::lower::temporary_names::{spelled_as_temporary, temporary};
@@ -1051,6 +1052,7 @@ mod tests {
         let changing: IndexSet<js::Name> = IndexSet::from_iter([t5.clone(), t6.clone()]);
         let no_names: IndexSet<js::Name> = IndexSet::default();
         let no_paths: IndexSet<js::Path> = IndexSet::default();
+        let no_paths = Plain::new(&no_paths, None, IndexSet::default());
         let facts = MoveFacts {
             changing: &changing,
             set: &no_names,

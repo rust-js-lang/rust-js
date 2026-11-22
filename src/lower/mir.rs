@@ -1134,7 +1134,7 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
                 booleans: &booleans,
                 numbers: &numbers,
                 floats: &floats,
-                plain: &self.plain_names(),
+                plain: &self.plain_reads(),
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),
                 flags: &drops::flag_names(&state, mir_body),
@@ -1152,24 +1152,35 @@ impl<'mcx, 'a, 'tcx> MirCx<'mcx, 'a, 'tcx> {
         Ok((params.into_inner(), out))
     }
 
-    /// The names of plain values, which nothing changes (`Locals::plain`),
-    /// and the module's imports, whose fields JS's modules never change
-    /// either, `HighlightStyle.define`, as `reads_alike` has them.
-    fn plain_names(&self) -> IndexSet<js::Path> {
-        let mut plain = self.locals.mir.plain.clone();
-        let Some(imports) = self.krate.imports.get(&self.module) else {
-            return plain;
-        };
-        // But a library's static whose value changes in place, read here
-        // (`Dependencies::changing_imports`, #1028).
-        let changing = &self.dependencies.borrow().changing_imports;
-        plain.extend(
-            (imports.values())
-                .filter(|name| !changing.contains(*name))
-                .map(|name| js::Path::var(&js::Name::module(name))),
-        );
-        plain
+    /// What the body reads as plain (`tidy::Plain`): its own plain values,
+    /// and its module's imports (`CrateFacts::plain_imports`) but those
+    /// whose fields change in place, read here, a library's static of a
+    /// type that does (`Dependencies::changing_imports`, #1028), which no
+    /// read moves past a write.
+    fn plain_reads(&self) -> tidy::Plain<'_> {
+        let changing = (self.dependencies.borrow().changing_imports.iter())
+            .map(|name| js::Path::var(&js::Name::module(name)))
+            .collect();
+        tidy::Plain::new(
+            &self.locals.mir.plain,
+            self.krate.plain_imports.get(&self.module),
+            changing,
+        )
     }
+}
+
+/// Each module's imports, as the paths a body reads as plain
+/// (`CrateFacts::plain_imports`): whose fields JS's modules never change,
+/// `HighlightStyle.define`, as `reads_alike` has them.
+pub(super) fn plain_imports(
+    imports: &IndexMap<rustc_span::def_id::LocalModId, IndexMap<crate::lower::bindings::Export, String>>,
+) -> IndexMap<rustc_span::def_id::LocalModId, IndexSet<js::Path>> {
+    (imports.iter())
+        .map(|(&module, names)| {
+            let paths = names.values().map(|name| js::Path::var(&js::Name::module(name)));
+            (module, paths.collect())
+        })
+        .collect()
 }
 
 /// Of a body's drop functions, `hoisted`, those its statements, `body`,

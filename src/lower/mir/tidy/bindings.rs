@@ -355,7 +355,7 @@ pub(super) fn last_assigns(stmts: &[Stmt], t: &js::Name) -> bool {
 /// a temporary or what an element reads: `q.title` where `t` is read, each
 /// time. Not a read a getter may answer, which may give another value each
 /// time it's read (`Expr::reads_same`, #189).
-pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<js::Path>, captured: &IndexSet<js::Name>) {
+pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &super::Plain, captured: &IndexSet<js::Name>) {
     let mut i = 0;
     while i < stmts.len() {
         let read = match &stmts[i].kind {
