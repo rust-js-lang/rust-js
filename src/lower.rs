@@ -74,7 +74,9 @@ mod ordering;
 mod parameter_names;
 mod passed_on;
 mod patterns;
-mod pipeline;
+// The driver's side, which names `mir`: what main.rs, worker.rs and
+// command.rs ask of the lowering beyond the root's facade (#2299).
+pub(crate) mod pipeline;
 mod places;
 mod plain;
 mod pointers;
@@ -115,25 +117,12 @@ pub(crate) use declarations::std_types::module as std_declarations;
 /// a crate `--rustc` compiles for its metadata too (ADR 0811).
 pub use declarations::validate_types;
 pub use instances::{Instances, instance_bodies};
-pub use pipeline::{Built, Lowered, lower_crate};
 use rust_js_program::names::{fresh_in, js_ident};
 /// Whether each `From` into an untagged enum is the variant of its
 /// argument, of a crate `--rustc` compiles, whose JS rust-js doesn't write
 /// (ADR 0214, amended).
 pub use untagged::binding_froms_give_their_variants;
 
-/// A lowering session of `tcx` begun, its flags `flags`, until the guard
-/// it gives is dropped (`session::start`), given MIR's lowering's hooks,
-/// which the base asks of it (`mir_hooks`, #2299): the driver's, which
-/// names both.
-pub(crate) fn start_session(tcx: TyCtxt<'_>, flags: session::Flags) -> session::Session {
-    session::start(tcx, flags, &mir::hooks::Hooks)
-}
-
-/// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).
-pub fn tidy_pass_names() -> Vec<String> {
-    mir::tidy_pass_names()
-}
 use recognition::{Std, TypeFact};
 use representation::{MutRefForm, Num, const_js, eval_const, f32_literal, static_value};
 pub use serde::{SerdeAttributes, attributes as serde_attributes};

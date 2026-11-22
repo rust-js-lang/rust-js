@@ -130,3 +130,24 @@ test("the lowering re-exports no other module's item, each item one path", () =>
     "src/lower/traits.rs:pub(super) use super::recognition::is_operator;",
   ]);
 });
+
+// The root, the base's, names nothing of `mir` or of the pipeline, the
+// driver's side (#2299's commit 6), whose cut puts them in other crates:
+// the driver asks `lower::pipeline` for what names `mir`, a session begun
+// with its hooks and tidy's passes. And the root's facade, its `pub use`s
+// of the base's modules, is the one path the driver has to each item:
+// their modules stay private to the lowering, never named outside it.
+test("the root names neither mir nor the pipeline, and its facade is the driver's one path", () => {
+  const code = (text: string) => text.split("\n").filter((line) => !/^\s*\/\//.test(line)).join("\n");
+  const root = code(read("src/lower.rs"));
+  expect(root.match(/(?<!rustc_middle::)\b(?:mir|pipeline)::[\w{]+/g) ?? []).toEqual([]);
+  const facade = [...root.matchAll(/^pub(?:\(crate\))? use (\w+)::/gm)].map((m) => m[1]!);
+  expect(facade.length).toBeGreaterThan(0);
+  const declared = (module: string) => root.match(new RegExp(`^(pub(?:\\([^)]*\\))? )?mod ${module};`, "m"));
+  expect(facade.filter((module) => declared(module)?.[1] !== undefined)).toEqual([]);
+  const driver = files("src").filter((file) => file.endsWith(".rs") && file !== "src/lower.rs" && !file.startsWith("src/lower/"));
+  const reached = driver.flatMap((file) =>
+    facade.filter((module) => new RegExp(`\\blower::${module}::`).test(code(read(file)))).map((module) => `${file} lower::${module}::`),
+  );
+  expect(reached).toEqual([]);
+});

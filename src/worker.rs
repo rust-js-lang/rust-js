@@ -251,7 +251,7 @@ impl Callbacks for Shared<'_, '_> {
         // Each build's bodies copied once, before borrowck steals them,
         // and their MIR read once: in the first build's lowering session,
         // as its own compile reads them in it, and filtered by each.
-        let session = lower::start_session(tcx, self.builds[0].session_flags());
+        let session = lower::pipeline::start_session(tcx, self.builds[0].session_flags());
         let mut copied = lower::copied_bodies(tcx);
         let mut initializers = lower::collect_initializers(tcx);
         lower::collect_mir(tcx, &mut copied);
@@ -273,7 +273,7 @@ impl Callbacks for Shared<'_, '_> {
             }
             self.ran = i + 1;
             let build = &mut self.builds[i];
-            let _session = lower::start_session(tcx, build.session_flags());
+            let _session = lower::pipeline::start_session(tcx, build.session_flags());
             let mut bodies = lower::bodies_of_build(tcx, copied.clone(), build.library_filter());
             let mut given = initializers.clone();
             build.lower_build(tcx, (&mut bodies, &mut given), &serde_attrs);

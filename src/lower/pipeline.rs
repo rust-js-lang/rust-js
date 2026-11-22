@@ -4,6 +4,8 @@ mod built;
 mod consts;
 mod contexts;
 mod copies;
+mod driver;
+pub(crate) use self::driver::{start_session, tidy_pass_names};
 mod crate_imports;
 mod field_reads;
 mod forwarders;

@@ -343,7 +343,7 @@ impl Callbacks for RustJs {
         };
         // The lowering session, its caches its own, dropped as it ends (ADR
         // 1111).
-        let _session = lower::start_session(tcx, self.session_flags());
+        let _session = lower::pipeline::start_session(tcx, self.session_flags());
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
         let mut bodies = lower::collect_bodies(tcx, self.library_filter());
         // `@rust-js/std`'s: std's own, from the MIR of a `core` built to
@@ -431,7 +431,7 @@ impl RustJs {
             if tcx.dcx().has_errors().is_some() {
                 break None;
             }
-            let built = lower::Built {
+            let built = lower::pipeline::Built {
                 library: self.export_library,
                 program: self.program,
                 std_bodies: self.std_bodies,
@@ -440,21 +440,21 @@ impl RustJs {
                 tidy_until: self.tidy_until.as_deref(),
                 js_modules: &self.local_js,
             };
-            match lower::lower_crate(
+            match lower::pipeline::lower_crate(
                 tcx,
                 (bodies, initializers),
                 serde_attrs,
                 (&self.dependencies, &instances, &made_where_used),
                 built,
             ) {
-                lower::Lowered::Crate(unlinked) => break unlinked.map(|unlinked| *unlinked),
-                lower::Lowered::Instances(more) => {
+                lower::pipeline::Lowered::Crate(unlinked) => break unlinked.map(|unlinked| *unlinked),
+                lower::pipeline::Lowered::Instances(more) => {
                     let (more_bodies, made) = lower::instance_bodies(tcx, &more);
                     bodies.extend(more_bodies);
                     instances.extend(more);
                     instances.extend(made);
                 }
-                lower::Lowered::MadeWhereUsed(keys) => made_where_used.extend(keys),
+                lower::pipeline::Lowered::MadeWhereUsed(keys) => made_where_used.extend(keys),
             }
         };
         // Which std functions a recogniser took, of the crate's analysis and
@@ -603,7 +603,7 @@ fn run() -> ExitCode {
         #[cfg(not(target_os = "wasi"))]
         Ok(command::Command::Worker) => return worker::run(),
         Ok(command::Command::TidyPasses) => {
-            for pass in lower::tidy_pass_names() {
+            for pass in lower::pipeline::tidy_pass_names() {
                 println!("{pass}");
             }
             return ExitCode::SUCCESS;
@@ -1019,7 +1019,7 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
         }
         // Which of tidy's passes changed a body, and how many (#1461).
         if let Some(path) = &tidy_fired {
-            std::fs::write(path, lower::session::tidy_fired(&lower::tidy_pass_names()))
+            std::fs::write(path, lower::session::tidy_fired(&lower::pipeline::tidy_pass_names()))
                 .map_err(|error| format!("can't write the tidy passes fired to {}: {error}", path.display()))?;
         }
         // Each compiler-made label kept, by its shape (#1461).

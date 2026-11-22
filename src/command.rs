@@ -270,7 +270,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let std_catalogue = valued(&mut ours, "--std-catalogue", "a path")?.map(PathBuf::from);
     let tidy_until = valued(&mut ours, "--tidy-until", "a pass, `stage/pass`")?;
     if let Some(pass) = &tidy_until
-        && !crate::lower::tidy_pass_names().contains(pass)
+        && !crate::lower::pipeline::tidy_pass_names().contains(pass)
     {
         return Err(format!(
             "--tidy-until: no pass `{pass}`; `rust-js --tidy-passes` lists them"
