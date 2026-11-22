@@ -327,12 +327,44 @@ pub fn main() {
 // what's known at every block of every body, `examples/inbox.rs` taking
 // 6.8 GB and a mutation's tests past CI's 5 GB (#1672). It keeps those at
 // calls of a function only calls reach alone: under 1 GB.
+// Since the walk's states share what they hold (#2310), walking every body
+// costs time, not gigabytes, 339 MB where it's 273: the shadow says how
+// many the walks for what callers give walk, of how many there are, none of
+// a crate whose calls reach no function only calls reach (#2313).
 test("the MIR intervals of serde's derived bodies take what a compile does, not gigabytes", () => {
-  const out = join(fixture("inbox-memory"), "inbox.js");
-  const p = Bun.spawnSync([compiler, "examples/inbox.rs", "-o", out, "--", ...buildSerde()], { cwd: root, stdout: "ignore", stderr: "pipe" });
+  const dir = fixture("inbox-memory");
+  const log = join(dir, "shadow.txt");
+  writeFileSync(log, "");
+  const p = Bun.spawnSync([compiler, "--intervals-shadow", log, "examples/inbox.rs", "-o", join(dir, "inbox.js"), "--", ...buildSerde()], { cwd: root, stdout: "ignore", stderr: "pipe" });
   expect(p.exitCode, p.stderr.toString()).toBe(0);
   expect(p.resourceUsage.maxRSS).toBeLessThan(2 * 2 ** 30);
+  const walked = readFileSync(log, "utf8").split("\n").find((line) => line.startsWith("walked-for-callers\t"))?.split("\t");
+  expect(walked).toBeDefined();
+  const [, walks, bodies] = walked!.map(Number);
+  expect(bodies).toBeGreaterThan(50);
+  expect(walks).toBeLessThan(bodies! / 10);
 }, underLoad(120_000));
+
+// The shadow's count of what the walks for what callers give walk: of `plus`
+// and `twice`, which only `main`'s calls reach, `main` alone (#2313).
+test("the shadow says how many bodies the walks for what callers give walked", () => {
+  const dir = fixture("intervals-walked");
+  const log = join(dir, "shadow.txt");
+  writeFileSync(join(dir, "case.rs"), `fn plus(n: u32) -> u32 {
+    n + 100
+}
+fn twice(n: u32) -> u32 {
+    n * 2
+}
+pub fn main() {
+    println!("{} {}", plus(5), twice(7));
+}
+`);
+  writeFileSync(log, "");
+  const out = runSync([compiler, "--intervals-shadow", log, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024"], dir, 60_000);
+  expect(out.code, out.stderr).toBe(0);
+  expect(readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("walked-for-callers\t"))).toEqual(["walked-for-callers\t1\t3"]);
+});
 
 test("a macro's repeated index: of `[$($v[$i]),*]`, MIR proves `v[k]` alone", () => {
   expect(shadowOf(`macro_rules! pick {

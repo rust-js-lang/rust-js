@@ -143,4 +143,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "a split collected straight"],
   },
+  {
+    name: "slice-position-rposition-unknown",
+    breaks: "an iterator's `rposition()` isn't taken for one, so its `Some` isn't known an index of the slice, and `v.remove(i)` of it keeps its check (#2313)",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: '        && matches!(tcx.item_name(callee).as_str(), "position" | "rposition")\n',
+    replace: '        && matches!(tcx.item_name(callee).as_str(), "position")\n',
+    tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
+    snapshots: true,
+  },
 ];

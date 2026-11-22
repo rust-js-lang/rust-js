@@ -5,7 +5,7 @@
 use super::shared::{SharedMap, SharedSet};
 use super::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub(super) struct Interval {
     pub(super) lo: i128,
     pub(super) hi: i128,

@@ -15,6 +15,8 @@ pub(super) fn capture_intervals<'tcx>(
     tcx: TyCtxt<'tcx>,
     bodies: &IndexMap<DefId, &Body<'tcx>>,
     given: &mut IndexMap<DefId, Given>,
+    made: &IndexMap<DefId, Vec<(DefId, Location)>>,
+    points: &FixedPoints,
 ) {
     let depth = |mut id: DefId| {
         let mut depth = 0;
@@ -24,23 +26,6 @@ pub(super) fn capture_intervals<'tcx>(
         }
         depth
     };
-    // Where each closure is made, by the body that makes it.
-    let mut made: IndexMap<DefId, Vec<(DefId, Location)>> = IndexMap::default();
-    for (&maker, body) in bodies {
-        for (block, data) in body.basic_blocks.iter_enumerated() {
-            for (statement_index, statement) in data.statements.iter().enumerate() {
-                if let StatementKind::Assign(assign) = &statement.kind
-                    && let Rvalue::Aggregate(kind, _) = &assign.1
-                    && let mir::AggregateKind::Closure(closure, _) = **kind
-                    && closure.is_local()
-                {
-                    made.entry(closure)
-                        .or_default()
-                        .push((maker, Location { block, statement_index }));
-                }
-            }
-        }
-    }
     let spoiled: IndexSet<DefId> = (made.iter())
         .filter(|&(&closure, sites)| sites.iter().any(|&(maker, _)| depth(maker) >= depth(closure)))
         .map(|(&closure, _)| closure)
@@ -63,7 +48,7 @@ pub(super) fn capture_intervals<'tcx>(
             })
             .collect();
         let typing_env = ty::TypingEnv::post_analysis(tcx, maker);
-        let walk = walk(tcx, typing_env, body, given.get(&maker).cloned().unwrap_or_default());
+        let walk = walk(tcx, typing_env, body, given.get(&maker).cloned().unwrap_or_default()).keeping_in(points);
         for (location, state) in sites.iter().zip(walk.at(&sites)) {
             let StatementKind::Assign(assign) =
                 &walk.body.basic_blocks[location.block].statements[location.statement_index].kind
@@ -210,9 +195,32 @@ impl<'tcx> Walk<'_, 'tcx> {
     }
 
     /// What's known just before each of `locations`' statements: none of
-    /// one no flow reaches.
+    /// one no flow reaches. Of a closure's maker asked at the closures it
+    /// makes, what an earlier walk of it with the same `Given` found
+    /// (`FixedPoints`).
     fn at(&self, locations: &[Location]) -> Vec<Option<State>> {
-        let entry = self.entries();
+        if let Some(points) = self.fixed_points
+            && points
+                .sites
+                .get(&self.body.source.def_id())
+                .is_some_and(|sites| sites[..] == *locations)
+            && let Some(known) = points
+                .at_sites
+                .borrow()
+                .get(&(self.body.source.def_id(), self.from_callers.clone()))
+        {
+            return known.clone();
+        }
+        self.at_from(&self.entries(), locations)
+    }
+
+    /// What's known just before each of `locations`' statements, of the
+    /// fixed point `entry`.
+    pub(super) fn at_from(
+        &self,
+        entry: &IndexVec<BasicBlock, Option<State>>,
+        locations: &[Location],
+    ) -> Vec<Option<State>> {
         (locations.iter())
             .map(|location| {
                 let mut state = entry[location.block].clone()?;
@@ -399,4 +407,26 @@ pub(super) fn captures_written(body: &Body<'_>) -> IndexSet<usize> {
 /// to one.
 fn ty_is_value(ty: Ty<'_>) -> bool {
     ty.builtin_deref(true).is_none()
+}
+
+/// Where each of the crate's closures is made, by the body that makes it,
+/// and where in it.
+pub(super) fn closures_made(bodies: &IndexMap<DefId, &Body<'_>>) -> IndexMap<DefId, Vec<(DefId, Location)>> {
+    let mut made: IndexMap<DefId, Vec<(DefId, Location)>> = IndexMap::default();
+    for (&maker, body) in bodies {
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            for (statement_index, statement) in data.statements.iter().enumerate() {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let Rvalue::Aggregate(kind, _) = &assign.1
+                    && let mir::AggregateKind::Closure(closure, _) = **kind
+                    && closure.is_local()
+                {
+                    made.entry(closure)
+                        .or_default()
+                        .push((maker, Location { block, statement_index }));
+                }
+            }
+        }
+    }
+    made
 }

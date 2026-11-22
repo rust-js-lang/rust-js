@@ -29,6 +29,7 @@ use rustc_middle::mir::{
 use rustc_middle::ty::consts::ConstExt as _;
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
+use rustc_span::def_id::DefId;
 use std::collections::BTreeSet;
 
 mod arithmetic;
@@ -42,6 +43,7 @@ mod captures;
 mod cells;
 mod derived;
 mod fields;
+mod fixed_points;
 mod guards;
 mod keys;
 mod proved;
@@ -55,6 +57,7 @@ mod tables;
 use crate::lower::pointers::Libraries;
 use callers::parameter_intervals;
 use captures::{capture_intervals, closure_results};
+use fixed_points::FixedPoints;
 use ranges::stepped_ranges;
 pub(in crate::lower) use session::*;
 use state::*;
@@ -63,7 +66,7 @@ use state::*;
 /// parameter's interval, and each relation between them, `i < s.len()`
 /// of `item(items, i)` under `i < items.len()` (#1672 M3), the one
 /// parameter's index below the other's length, strictly or not.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, PartialEq, Eq, Hash)]
 pub(crate) struct Given {
     intervals: Vec<Option<Interval>>,
     below: Vec<(usize, usize, bool)>,
@@ -144,6 +147,9 @@ struct Walk<'a, 'tcx> {
     /// The crate's libraries, which `pointer_may_keep` asks, where the
     /// walk lowers a body; none of a walk for what callers give (#1947).
     libraries: Option<Libraries<'a, 'tcx>>,
+    /// Where the walk's fixed point is kept for another walk of the same
+    /// body and `Given` (`FixedPoints`), of a walk for what callers give.
+    fixed_points: Option<&'a FixedPoints>,
     /// What each statement may write, where the session records the
     /// shadow: the query the rules are compared with (`shadowed`).
     effects: Option<crate::lower::analysis::Effects>,
@@ -258,6 +264,7 @@ fn walk<'a, 'tcx>(
         kept_rows,
         formats_code,
         libraries: None,
+        fixed_points: None,
         effects: None,
         located: IndexMap::default(),
     }
@@ -342,8 +349,8 @@ impl<'tcx> Walk<'_, 'tcx> {
             .collect()
     }
 
-    /// What's known as each block begins, at its fixed point.
-    fn entries(&self) -> IndexVec<BasicBlock, Option<State>> {
+    /// What's known as each block begins, at its fixed point, walked.
+    fn fixed_point(&self) -> IndexVec<BasicBlock, Option<State>> {
         let blocks = self.body.basic_blocks.len();
         let mut entry: IndexVec<BasicBlock, Option<State>> = IndexVec::from_elem_n(None, blocks);
         let mut visits: IndexVec<BasicBlock, u32> = IndexVec::from_elem_n(0, blocks);

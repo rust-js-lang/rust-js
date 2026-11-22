@@ -367,9 +367,12 @@ impl<'tcx> Walk<'_, 'tcx> {
 }
 
 /// Whether `callee` is `Iterator::position` or `Iterator::rposition`,
-/// whose `Some` is an index of an item the iterator gave (#1945).
+/// whose `Some` is an index of an item the iterator gave (#1945): one of
+/// the trait's own items, so named, asked of each call at each visit, not
+/// found among the trait's items each time, which was 2% of the React
+/// port's compiler time (#2313).
 fn slice_position(tcx: rustc_middle::ty::TyCtxt<'_>, callee: rustc_span::def_id::DefId) -> bool {
-    use crate::lower::recognition::{StdItem, std_item, trait_method};
-    let iterator = std_item(tcx, StdItem::Iterator);
-    callee == trait_method(tcx, iterator, "position") || callee == trait_method(tcx, iterator, "rposition")
+    use crate::lower::recognition::{StdItem, is_std_def};
+    (tcx.trait_of_assoc(callee)).is_some_and(|of| is_std_def(tcx, of, StdItem::Iterator))
+        && matches!(tcx.item_name(callee).as_str(), "position" | "rposition")
 }

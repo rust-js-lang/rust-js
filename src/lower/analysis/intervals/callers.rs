@@ -24,6 +24,7 @@ pub(super) fn parameter_intervals<'tcx>(
     graph: &CallGraph,
     bodies: &IndexMap<DefId, &Body<'tcx>>,
     only_called: &IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>,
+    points: &FixedPoints,
 ) -> IndexMap<DefId, Given> {
     let mut given: IndexMap<DefId, Given> = IndexMap::default();
     let mut calls_seen: IndexMap<DefId, usize> = IndexMap::default();
@@ -36,12 +37,14 @@ pub(super) fn parameter_intervals<'tcx>(
         if !calls_itself {
             for &function in component {
                 let own = given_of(function, only_called, &given, &calls_seen);
-                for (callee, passed) in passes(tcx, graph, bodies, only_called, function, own) {
+                for (callee, passed) in passes(tcx, graph, bodies, only_called, function, own, points) {
                     take(&mut given, &mut calls_seen, callee, passed);
                 }
             }
             continue;
         }
+        // Its members walked again each round, and once settled.
+        points.keep(&members);
         // Its calls from inside, each member's count, which with those
         // from outside seen are every call of it.
         let mut inside_calls: IndexMap<DefId, usize> = IndexMap::default();
@@ -81,7 +84,7 @@ pub(super) fn parameter_intervals<'tcx>(
                 let Some(own) = own_of(member, &inside, &given) else {
                     continue;
                 };
-                for (callee, passed) in passes(tcx, graph, bodies, only_called, member, own) {
+                for (callee, passed) in passes(tcx, graph, bodies, only_called, member, own, points) {
                     if members.contains(&callee) {
                         match next.get_mut(&callee) {
                             Some(known) => *known = joined(known, &passed),
@@ -124,7 +127,7 @@ pub(super) fn parameter_intervals<'tcx>(
             .map(|&member| (member, own_of(member, &inside, &given).unwrap_or_default()))
             .collect();
         for (member, own) in settled {
-            for (callee, passed) in passes(tcx, graph, bodies, only_called, member, own.clone()) {
+            for (callee, passed) in passes(tcx, graph, bodies, only_called, member, own.clone(), points) {
                 if !members.contains(&callee) {
                     take(&mut given, &mut calls_seen, callee, passed);
                 }
@@ -133,6 +136,7 @@ pub(super) fn parameter_intervals<'tcx>(
             calls_seen.insert(member, total);
             given.insert(member, own);
         }
+        points.release(&members);
     }
     (only_called.keys())
         .map(|&function| (function, given_of(function, only_called, &given, &calls_seen)))
@@ -152,6 +156,7 @@ fn passes<'tcx>(
     only_called: &IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>,
     function: DefId,
     own: Given,
+    points: &FixedPoints,
 ) -> Vec<(DefId, Given)> {
     let Some(&body) = bodies.get(&function) else {
         return Vec::new();
@@ -164,7 +169,7 @@ fn passes<'tcx>(
         return Vec::new();
     }
     let typing_env = ty::TypingEnv::post_analysis(tcx, function);
-    let walk = walk(tcx, typing_env, body, own);
+    let walk = walk(tcx, typing_env, body, own).keeping_in(points);
     let ends = walk.ends(&reaching);
     let mut found = Vec::new();
     for call in graph.calls.get(&function).into_iter().flatten() {

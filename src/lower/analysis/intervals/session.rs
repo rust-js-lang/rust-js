@@ -42,8 +42,18 @@ pub(in crate::lower) fn given_parameters<'tcx>(
 ) {
     let results = closure_results(tcx, &calls.bodies);
     crate::lower::session::caches(tcx).intervals.borrow_mut().results = results;
-    let mut given = parameter_intervals(tcx, &calls.graph, &calls.bodies, only_called);
-    capture_intervals(tcx, &calls.bodies, &mut given);
+    let made = captures::closures_made(&calls.bodies);
+    let points = FixedPoints::keeping(&made);
+    let mut given = parameter_intervals(tcx, &calls.graph, &calls.bodies, only_called, &points);
+    capture_intervals(tcx, &calls.bodies, &mut given, &made, &points);
+    // How many of the bodies the walks for what callers give walked, where
+    // the session records the shadow: only those whose calls reach a
+    // function only calls reach, a closure's makers and once each with a
+    // `Given` (#1672, #2313).
+    if let Some(shadow) = &crate::lower::session::caches(tcx).intervals_shadow {
+        let walked = format!("walked-for-callers\t{}\t{}\n", points.walked.get(), calls.bodies.len());
+        shadow.borrow_mut().lines.insert(walked);
+    }
     crate::lower::session::caches(tcx).intervals.borrow_mut().given = given;
 }
 
@@ -185,7 +195,9 @@ pub(super) fn record_effects(tcx: TyCtxt<'_>, line: String) {
 }
 
 /// Each check MIR's intervals prove, a line each,
-/// `proved-<kind><TAB>function<TAB>where`: what `--intervals-shadow` writes.
+/// `proved-<kind><TAB>function<TAB>where`, and how many bodies the walks for
+/// what callers give walked, `walked-for-callers<TAB>walked<TAB>bodies`:
+/// what `--intervals-shadow` writes.
 pub(crate) fn shadow_report(tcx: TyCtxt<'_>) -> String {
     let caches = crate::lower::session::caches(tcx);
     caches

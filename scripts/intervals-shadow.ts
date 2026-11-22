@@ -48,7 +48,8 @@ await Promise.all(
 rmSync(work, { recursive: true, force: true });
 lines.sort();
 const counts = new Map<string, number>();
-for (const line of lines) counts.set(line.split("\t")[0], (counts.get(line.split("\t")[0]) ?? 0) + 1);
+// Each a site but each case's count of its walks (#2313).
+for (const line of lines.filter((l) => !l.startsWith("walked-for-callers\t"))) counts.set(line.split("\t")[0], (counts.get(line.split("\t")[0]) ?? 0) + 1);
 console.log(`${cases.length} cases, ${lines.length} sites MIR proves: ${[...counts].map(([k, n]) => `${k} ${n}`).join(", ")}`);
 if (out) writeFileSync(out, lines.join("\n") + "\n");
 if (failed.length > 0) {

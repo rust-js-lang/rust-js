@@ -82,3 +82,25 @@ keep correct, where a maintained crate does the same.
   a constant-factor cost here, 8 s for 3,000 statements in a debug build.
 - A new `State` field takes a `SharedMap` or a `SharedSet`. An `IndexMap`
   field would be held whole in every block's state again.
+
+## Amended: the walks for what callers give share their fixed points (#2313)
+
+`parameter_intervals` and `capture_intervals` walked a body again with the
+same `Given`: a recursive component's settled round, and a closure's
+maker after its callers' walk, 41% of what they walked in the React port.
+`FixedPoints` (`intervals/fixed_points.rs`) lets them share what they
+found. Those two walks alone share it: neither knows the crate's
+libraries or the effects query, and both run once `closure_results` has
+set the closure results the transfer reads, so a body and its `Given`
+decide everything a walk knows. `closure_results`' own walks, before
+those results exist, and the proofs' walks, which know the libraries,
+share nothing. Only what's asked again is kept: a recursive component's
+members' fixed points while its rounds run, and of each closure's maker
+what's known at each closure it makes. Keeping every body's fixed point
+cost 17% more memory in a crate of the port.
+
+Since #2310 shares the states, walking every body costs time, not
+gigabytes: serde's example takes 339 MB with it, 273 MB without, so the
+test's 2 GB bound no longer catches it. `--intervals-shadow` now says how
+many bodies the walks walked, `walked-for-callers<TAB>walked<TAB>bodies`,
+and the test asserts that count.
