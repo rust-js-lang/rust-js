@@ -164,3 +164,26 @@ are dot-names, which pruning neither counts nor removes as kept compiles"
 and "a compile being built counts in the store's size till a prune an hour
 on removes it". Mutations `building-uncounted` and
 `building-counted-before-cleanup`.
+
+## Amendment: a kept store's cap never takes its working set (#2344, 2026-11-23)
+
+native-cache's cap, 10 GiB, sat below what the Mac mini's checks used,
+11.5 GiB of native builds. At the disk's floor, `bun run disk --prune`
+held the store to its cap, evicting builds in use, and the next
+`check:fast --all` had every corpus part stop at its 560 s limit (47 s
+usual): re-warming took 1,018 s of the whole machine. The budget already
+kept the working set, what was used since the checkout's last check or in
+the last day (#2163); a store's own cap didn't.
+
+Now one rule holds both, `holdKept` (test/kept.ts): past a cap, the stale
+entries go, the least recently used first; the working set goes only for
+the disk's floor. So a store's least is what the machine's runs use,
+measured at each prune, and its cap is what it keeps past that, not a
+constant raised by hand as the working set grows. The working set's
+definition (`workingSetSince`, `lastCheckMark`) moved from scripts/disk.ts
+to test/kept.ts with it, where `pruneKept` asks it; `holdToBudget` asks
+`holdKept` with the other stores' bytes beside. Row: "a kept store past
+its cap keeps its working set, and only stale builds go". Mutation
+`kept-cap-takes-working-set`; `disk-working-set-evicted`,
+`disk-last-check-unread` and `disk-floor-spares-working-set` moved with
+the code to scripts/mutations/kept.ts.

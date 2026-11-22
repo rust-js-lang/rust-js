@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, s
 import { dirname, join } from "node:path";
 
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
-import { floorBytes, machineStore, retiredMachineStore } from "./bounded";
+import { checkout, floorBytes, machineStore, retiredMachineStore } from "./bounded";
 import { checkoutTarget, target } from "./packages-of";
 
 const day = 24 * 60 * 60;
@@ -40,19 +40,54 @@ export const rustlantisCap = 512 * 2 ** 20;
 export const machineVerifiedRuns = join(machineStore, "verified-runs");
 export const verifiedRuns = target === checkoutTarget ? machineVerifiedRuns : join(target, "corpus-cache");
 
-/** The stores of what the tests keep, and the most each keeps: a
- * `check:fast --all` from nothing keeps about 1 GB of native programs,
- * which a change to the compiler keeps, and the metamorphic net's every
- * rewrite of every case about 7 GB more, the machine's (#1047); 8 MB of
- * their wrappers, the checkout's whichever target the tests run in (#875);
- * and the corpus's verified runs, about 8 MB for each build of it, a week
- * of builds about 500 MB (#914), and the net's about 100 MB more. */
+/** The stores of what the tests keep, and the most each keeps past its
+ * working set (`holdKept`), which is what the machine's runs measure
+ * themselves: a `check:fast --all` from nothing keeps about 1 GB of native
+ * programs, which a change to the compiler keeps, and the metamorphic
+ * net's every rewrite of every case about 7 GB more, the machine's
+ * (#1047), 11.5 GiB of them in use on the Mac mini, past the cap, which
+ * evicted them for a 1,018 s re-warm (#2344); 8 MB of their wrappers, the
+ * checkout's whichever target the tests run in (#875); and the corpus's
+ * verified runs, about 8 MB for each build of it, a week of builds about
+ * 500 MB (#914), and the net's about 100 MB more. */
 export const keptStores = [
   { dir: nativeCache, cap: 10 * 2 ** 30 },
   { dir: join(checkoutTarget, "native-sources"), cap: 64 * 2 ** 20 },
   { dir: verifiedRuns, cap: 512 * 2 ** 20 },
   { dir: nativeOutcomes, cap: 256 * 2 ** 20 },
 ];
+
+/** The least a working set is: what was used in the last day. */
+export const workingSetMs = 24 * 3600 * 1000;
+
+/** Where a checkout's check marks when it last started: `check:fast`'s
+ * prune, `--quiet`, touches it (scripts/disk.ts). */
+export const lastCheckMark = join(checkout, "target", "last-check");
+
+/** When the working set starts: this checkout's last check's start, or a
+ * day before `now`, the earlier, so what every check of it reuses, a
+ * corpus case's verified run, is in it however long ago that check was. */
+export function workingSetSince(now = Date.now(), mark = lastCheckMark): number {
+  const last = statSync(mark, { throwIfNoEntry: false })?.mtimeMs ?? now;
+  return Math.min(last, now - workingSetMs);
+}
+
+/** `kept`, entries a store keeps, held to `cap` with `rest` bytes beside
+ * them that nothing here removes: the stale, unused since `since`, the
+ * least recently used first, until the whole is under it or none is left;
+ * the working set, what was used since, never for the cap, so what the
+ * machine's runs use is the least a store keeps, measured, not a constant
+ * below it (#2163 of the budget, #2344 of a store's cap). Only the disk's
+ * floor takes from it, the least recently used first. What it removed,
+ * and the size of the entries left. The one rule of both. */
+export function holdKept(kept: Kept[], { cap, free, since, rest = 0 }: { cap: number; free: () => number; since: number; rest?: number }): { removed: number; size: number } {
+  const stale = kept.filter((entry) => entry.used < since);
+  const working = kept.filter((entry) => entry.used >= since);
+  const workingBytes = working.reduce((n, entry) => n + entry.bytes, 0);
+  const old = evict(stale, { cap: Math.max(0, cap - rest - workingBytes), free, floor: floorBytes });
+  const floored = evict(working, { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes });
+  return { removed: old.removed + floored.removed, size: old.size + floored.size };
+}
 
 /** Mark `entry`, a kept one, used now: what's used stays. */
 export function markUsed(entry: string) {
@@ -63,13 +98,19 @@ export function markUsed(entry: string) {
 }
 
 /** Drop the entries in `cache` unused for `days`, and those a crash left
- * half made, `.building-*`, an hour on; then the least recently used,
- * until what's left is under `cap` and the disk's `free` space above its
- * floor; then a thing with none left. `now` is in seconds. What it
- * removed, and the size of what's left. */
+ * half made, `.building-*`, an hour on; then held to `cap`, its working
+ * set, used since `since` (ms), kept, and to the disk's `free` space above
+ * its floor (`holdKept`); then a thing with none left. `now` is in
+ * seconds. What it removed, and the size of what's left. */
 export function pruneKept(
   cache: string,
-  { now = Date.now() / 1000, days = 7, cap = Number.POSITIVE_INFINITY, free = () => freeBytes(cache) }: { now?: number; days?: number; cap?: number; free?: () => number } = {},
+  {
+    now = Date.now() / 1000,
+    days = 7,
+    cap = Number.POSITIVE_INFINITY,
+    free = () => freeBytes(cache),
+    since = workingSetSince(),
+  }: { now?: number; days?: number; cap?: number; free?: () => number; since?: number } = {},
 ): { removed: number; size: number } {
   let programs: string[];
   try {
@@ -99,7 +140,7 @@ export function pruneKept(
       }
     }
   }
-  const evicted = evict(keptBuilds(cache), { cap, free, floor: floorBytes });
+  const evicted = holdKept(keptBuilds(cache), { cap, free, since });
   for (const program of programs) {
     try {
       if (readdirSync(join(cache, program)).length === 0) rmSync(join(cache, program), { recursive: true, force: true });

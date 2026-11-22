@@ -9,8 +9,8 @@ import { basename, dirname, join, relative } from "node:path";
 
 import { bytesOf } from "../tooling/bounded.js";
 import { floorBytes, mainCheckoutOf } from "./bounded";
-import { boundEntries, entriesOf, holdToBudget, overBudget, pinnedToolchains, unpinnedToolchains, workingSetMs, workingSetSince, type Store } from "../scripts/disk";
-import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns } from "./kept";
+import { boundEntries, entriesOf, holdToBudget, overBudget, pinnedToolchains, unpinnedToolchains, type Store } from "../scripts/disk";
+import { adoptRetiredStores, keptAppsCap, keptStores, mayKeep, nativeCache, pruneKept, pruneKeptApps, pruneKeptStores, retiredStores, verifiedRuns, workingSetMs, workingSetSince } from "./kept";
 import { generatedTexts, record, runKey, verified } from "./verified-runs";
 import { runNative } from "./programs";
 import { boundCrateProjects } from "../scripts/crate-corpus";
@@ -280,11 +280,13 @@ test("a kept cache is held to its cap, the least recently used first, and to the
   const newest = entry("r", "a", 100);
   const each = bytesOf(newest);
   expect(each).toBeGreaterThanOrEqual(64 * 1024);
-  expect(pruneKept(cache, { now, cap: 2 * each, free: () => Number.POSITIVE_INFINITY })).toEqual({ removed: 2, size: 2 * each });
+  // Each build stale here: a store's working set is the next test's.
+  const since = Date.now();
+  expect(pruneKept(cache, { now, cap: 2 * each, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 2, size: 2 * each });
   expect([oldest, older, newer, newest].map(existsSync)).toEqual([false, false, true, true]);
   expect(existsSync(join(cache, "q"))).toBe(false);
   // Under the floor: pruned until it's back, here once one more is gone.
-  expect(pruneKept(cache, { now, cap: 2 * each, free: () => (existsSync(newer) ? floorBytes - 1 : floorBytes) })).toEqual({ removed: 1, size: each });
+  expect(pruneKept(cache, { now, cap: 2 * each, free: () => (existsSync(newer) ? floorBytes - 1 : floorBytes), since })).toEqual({ removed: 1, size: each });
   expect([newer, newest].map(existsSync)).toEqual([false, true]);
   // Each store's cap.
   expect(keptStores.map(({ dir, cap }) => [basename(dir), cap / 2 ** 20])).toEqual([
@@ -293,6 +295,39 @@ test("a kept cache is held to its cap, the least recently used first, and to the
     [basename(verifiedRuns), 512],
     ["native-outcomes", 256],
   ]);
+});
+
+// A store's cap never takes its working set, what the machine's runs used
+// since this checkout's last check or in the last day: native-cache's 10 GiB
+// sat below the 11.5 GiB the Mac mini's checks used, so a prune evicted
+// builds in use, and the next check's every corpus part stopped at its
+// limit, a 1,018 s re-warm (#2344). The least a store keeps is what's
+// measured in use; past its cap only the stale go, and the disk's floor
+// takes from the rest, the least recently used first.
+test("a kept store past its cap keeps its working set, and only stale builds go", () => {
+  const cache = fixture("native-working-set");
+  const now = Date.now() / 1000;
+  const hour = 3600;
+  const entry = (name: string, ago: number) => {
+    const dir = join(cache, name, "build");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "native"), Buffer.alloc(64 * 1024));
+    utimesSync(dir, now - ago, now - ago);
+    return dir;
+  };
+  const used = entry("used an hour ago", hour);
+  const usedLater = entry("used a minute ago", 60);
+  const stale = entry("stale", 3 * 24 * hour);
+  const staler = entry("staler", 4 * 24 * hour);
+  const each = bytesOf(used);
+  const since = Date.now() - workingSetMs;
+  // Its cap one build, its working set two: the stale go, the working set stays.
+  expect(pruneKept(cache, { now, cap: each, free: () => Number.POSITIVE_INFINITY, since })).toEqual({ removed: 2, size: 2 * each });
+  expect([used, usedLater, stale, staler].map(existsSync)).toEqual([true, true, false, false]);
+  // The disk at its floor takes from it, the least recently used first.
+  let free = floorBytes - 1;
+  expect(pruneKept(cache, { now, cap: each, free: () => free++, since })).toEqual({ removed: 1, size: each });
+  expect([used, usedLater].map(existsSync)).toEqual([false, true]);
 });
 
 // The kept apps (#882) are held to their cap, the least recently used first,

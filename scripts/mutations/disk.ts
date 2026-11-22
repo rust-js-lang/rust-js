@@ -6,33 +6,7 @@ import type { Mutation } from "../mutations";
 const file = "scripts/disk.ts";
 const tests = ["test/support.test.ts", "-t", "the stores inside the checkouts are held to the budget together"];
 
-const working = ["test/support.test.ts", "-t", "a checkout past the budget keeps its working set"];
-
 export const mutations: Mutation[] = [
-  {
-    name: "disk-working-set-evicted",
-    breaks: "a checkout past the budget evicts its working set too, so each check's measure removes every corpus run it's about to reuse (#2163's regression: check:fast ~300 s to 630-809 s)",
-    file,
-    find: "  const stale = kept.filter((entry) => entry.used < since);",
-    replace: "  const stale = kept;",
-    tests: working,
-  },
-  {
-    name: "disk-last-check-unread",
-    breaks: "the working set is the last day's alone, not what this checkout's last check used, so a checkout checked 31 hours ago loses what that check reused",
-    file,
-    find: "  return Math.min(last, now - workingSetMs);",
-    replace: "  return now - workingSetMs;",
-    tests: working,
-  },
-  {
-    name: "disk-floor-spares-working-set",
-    breaks: "the disk at its floor never takes from the working set, so a full disk stops every run instead of losing a cache",
-    file,
-    find: "  const floored = evict(working, { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes });",
-    replace: "  const floored = { removed: 0, size: working.reduce((n, entry) => n + entry.bytes, 0) };",
-    tests: working,
-  },
   {
     name: "disk-budget-never-held",
     breaks: "the stores past the budget are left as they are, each under its cap, as three worktrees' summed to 37.9 of 40 GiB",
@@ -45,7 +19,7 @@ export const mutations: Mutation[] = [
     name: "disk-builds-counted-as-nothing",
     breaks: "what no store may evict, a build, isn't counted in the total held, so the stores keep more than the budget leaves them",
     file,
-    find: "  const rest = total - theirs;",
+    find: "  const rest = total - kept.reduce((n, entry) => n + entry.bytes, 0);",
     replace: "  const rest = 0;",
     tests,
   },

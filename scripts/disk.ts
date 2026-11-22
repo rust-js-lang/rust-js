@@ -35,7 +35,7 @@ import { worktreeRoots } from "./strays";
 import { sanityRunsCap, sanityRunsStore } from "./select";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
-import { keptAppsCap, keptBuilds, keptStores, pruneKeptStores, rustlantisCap, rustlantisStore } from "../test/kept";
+import { holdKept, keptAppsCap, keptBuilds, keptStores, lastCheckMark, pruneKeptStores, rustlantisCap, rustlantisStore, workingSetSince } from "../test/kept";
 import { boundCrateProjects, crateProjectsCap, crateProjectsKept } from "./crate-corpus";
 import { boundCrater, craterCap, craterKept } from "./crater";
 import { bound as boundPorts, ports, portsCap } from "./react-in-rust";
@@ -96,21 +96,6 @@ export function entriesOf(dir: string): Kept[] {
  * sum past the budget, which no prune took a byte from (#2163). */
 export const heldBytes = 0.9 * budgetBytes;
 
-/** The least a working set is: what was used in the last day. */
-export const workingSetMs = 24 * 3600 * 1000;
-
-/** Where a checkout's check marks when it last started: `check:fast`'s
- * prune, `--quiet`, touches it. */
-export const lastCheckMark = join(checkout, "target", "last-check");
-
-/** When the working set starts: this checkout's last check's start, or a
- * day before `now`, the earlier, so what every check of it reuses, a
- * corpus case's verified run, is in it however long ago that check was. */
-export function workingSetSince(now = Date.now(), mark = lastCheckMark): number {
-  const last = statSync(mark, { throwIfNoEntry: false })?.mtimeMs ?? now;
-  return Math.min(last, now - workingSetMs);
-}
-
 /** This checkout's check marked started now, `workingSetSince`'s mark. */
 function markCheckStarted(mark = lastCheckMark) {
   mkdirSync(join(mark, ".."), { recursive: true });
@@ -138,13 +123,9 @@ export function holdToBudget(
 ) {
   if (total <= held) return { removed: 0, size: total };
   const kept = stores.filter((store) => !store.outside).flatMap((store) => store.kept?.() ?? []);
-  const stale = kept.filter((entry) => entry.used < since);
-  const working = kept.filter((entry) => entry.used >= since);
-  const theirs = stale.reduce((n, entry) => n + entry.bytes, 0);
-  const rest = total - theirs;
-  const old = evict(stale, { cap: Math.max(0, held - rest), free, floor: floorBytes });
-  const floored = evict(working, { cap: Number.POSITIVE_INFINITY, free, floor: floorBytes });
-  return { removed: old.removed + floored.removed, size: rest + old.size - (working.reduce((n, entry) => n + entry.bytes, 0) - floored.size) };
+  const rest = total - kept.reduce((n, entry) => n + entry.bytes, 0);
+  const left = holdKept(kept, { cap: held, free, since, rest });
+  return { removed: left.removed, size: rest + left.size };
 }
 
 /** The repo's exact Rust toolchains, `1.100.0` (ADR 0109): what its

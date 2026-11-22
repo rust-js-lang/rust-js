@@ -282,9 +282,12 @@ used of all their stale entries first, as each store's cap alone let
 several worktrees' sum past it (#2163); a build, kept apps, kept compiles
 and the test maps keep their own bounds. The working set, what was used
 since the checkout's last check (`target/last-check`) or in the last day,
-is never evicted to meet the budget, only to keep the disk above its
-floor: idle worktrees' builds past the budget once made every check's
-measure remove every corpus run it was about to reuse. `check:fast` prunes the stores inside the
+is never evicted to meet the budget or a kept store's cap, only to keep
+the disk above its floor (`holdKept`, test/kept.ts): idle worktrees'
+builds past the budget once made every check's measure remove every
+corpus run it was about to reuse, and native-cache's 10 GiB cap, below
+the 11.5 GiB the Mac mini's checks used, evicted builds in use (#2344).
+A kept store's cap is what it keeps past its working set. `check:fast` prunes the stores inside the
 checkouts as it starts, and its measure made apart holds them to the
 budget so; past it with all they may lose gone, it names the largest
 holders, a stale worktree's build mostly, for someone to remove.
