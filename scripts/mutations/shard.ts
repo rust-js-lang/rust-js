@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "untimed-mutations-to-the-least",
     breaks: "a change's untimed mutations are dealt to the least loaded shard, all to one when they're estimated alike, not in turn",
     file: "scripts/shard.ts",
-    find: "    load[k % count] = load[k % count]! + estimate(item);\n    shards[k % count]!.push(item);\n",
-    replace: "    const at = leastLoaded(load.map((l, i) => (i === 0 ? -1 : l)));\n    load[at] = load[at]! + estimate(item);\n    shards[at]!.push(item);\n",
+    find: "  untimed.forEach((item, k) => put(k % count, item, estimate(item)));\n",
+    replace: "  untimed.forEach((item) => put(leastLoaded(load.map((l, i) => (i === 0 ? -1 : l))), item, estimate(item)));\n",
     tests: ["test/shards.test.ts", "-t", "a change's untimed mutations are dealt first"],
   },
   {
@@ -153,5 +153,21 @@ export const mutations: Mutation[] = [
     find: "  return choices[slowest.findIndex((seconds) => seconds <= soonest)]!;",
     replace: "  return choices.at(-1)!;",
     tests: ["test/shards.test.ts", "-t", "a check's suite takes the machines its selection's expected time needs"],
+  },
+  {
+    name: "deal-control-runs-unread",
+    breaks: "a mutation shard is dealt by its mutations' times alone, its tests as the compiler is left out, 10 to 19 min of a nightly shard, so mutations of one test file are spread across shards that each run its control (#2304)",
+    file: "scripts/shard.ts",
+    find: "    for (let at = 1; at < count; at++) if (load[at]! + added(at, item) < load[best]! + added(best, item)) best = at;\n",
+    replace: "    for (let at = 1; at < count; at++) if (load[at]! < load[best]!) best = at;\n",
+    tests: ["test/shards.test.ts", "-t", "a shard's tests as the compiler is are dealt with its mutations"],
+  },
+  {
+    name: "deal-control-runs-counted-twice",
+    breaks: "a shard's load counts a control run each mutation needs, though the shard runs each once, so its expected time grows with each mutation of one test file (#2304)",
+    file: "scripts/shard.ts",
+    find: "  const added = (at: number, item: string) => (controls?.(item) ?? []).reduce((sum, [key, cost]) => (held[at]!.has(key) ? sum : sum + cost), 0);\n",
+    replace: "  const added = (at: number, item: string) => (controls?.(item) ?? []).reduce((sum, [, cost]) => sum + cost + 0 * at, 0);\n",
+    tests: ["test/shards.test.ts", "-t", "a shard's tests as the compiler is are dealt with its mutations"],
   },
 ];

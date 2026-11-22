@@ -8,8 +8,8 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { gunzipSync } from "node:zlib";
 import { join } from "node:path";
-import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, testsAsItIsRuns, testsAsItIsSeconds, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
-import { mutations } from "../scripts/mutations";
+import { decodedTestTimings, decodedTimings, MERGED_MUTATION_TIMES, encodedTestTimings, encodedTimings, mergedTimings, mergedTimingsRun, MUTATION_SHARDS, mutationShards, mutationShardPlan, heldJobs, freeJobs, shardSummary, CONCURRENT_JOBS, SHARD_BUDGET_SECONDS, TEST_SHARD_SETUP_SECONDS, TEST_SHARDS, testShardList, testShards, testShardSeconds, timingsRuns } from "../scripts/ci";
+import { controlRuns, mutations, testsAsItIsRuns, testsAsItIsSeconds } from "../scripts/mutations";
 import { jobs } from "../scripts/checkFast";
 import { runs } from "../scripts/iteratorSlice";
 import { balancedByGroup, browsers, casePartCores, dealtByGroup, fewestShards, shardFacts, shareOfShard, slots, testFileSeconds, testShardFiles } from "../scripts/shard";
@@ -548,6 +548,29 @@ test("the shards balance by the newest kept timings", () => {
   expect(timingsRuns(artifacts, 1)).toEqual([3]);
   expect(timingsRuns(artifacts.filter((a) => a.run !== 3))).toEqual([2]);
   expect(timingsRuns([artifact("bless-test-1", 7, "2026-10-21T12:00:00Z")])).toEqual([]);
+});
+
+// A shard runs its mutations' tests as the compiler is before any mutant,
+// each test file once, 10 to 19 min of a nightly shard that the deal left
+// out (#2304): each mutation's runs (`controlRuns`) are in its shard's load,
+// once a shard, and a mutation goes where its time and the runs it adds are
+// least, so it joins the shard that already runs its test file.
+test("a shard's tests as the compiler is are dealt with its mutations", () => {
+  const byName = {
+    x1: { name: "x1", tests: ["test/x.test.ts"] },
+    y1: { name: "y1", tests: ["test/y.test.ts"] },
+    x2: { name: "x2", tests: ["test/x.test.ts"] },
+  };
+  const seconds = new Map([["x1", 30], ["y1", 29], ["x2", 1]]);
+  const controls = (name: string) => controlRuns(byName[name as keyof typeof byName], []);
+  expect(controls("x1").map(([, cost]) => cost)).toEqual([3.7, 4]);
+  const dealt = dealtByGroup(["x1", "y1", "x2"], 2, seconds, () => "suite", controls);
+  // x2 joins x1, whose shard runs test/x.test.ts, though the other has less.
+  expect(dealt.shards).toEqual([["x1", "x2"], ["y1"]]);
+  // Each shard's load: its mutations' times and its test files' runs, once.
+  expect(dealt.load.map((load) => +load.toFixed(1))).toEqual([30 + 1 + 7.7, 29 + 7.7]);
+  // Without them, the least-loaded shard took it, as before.
+  expect(dealtByGroup(["x1", "y1", "x2"], 2, seconds, () => "suite").shards).toEqual([["x1"], ["x2", "y1"]]);
 });
 
 test("a change's untimed mutations are dealt first, in turn, each its file's usual or the timed ones' 90th percentile, so no shard takes several", () => {

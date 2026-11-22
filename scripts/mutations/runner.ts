@@ -322,4 +322,20 @@ export const mutations: Mutation[] = [
     replace: "  return missed.filter(([, result]) => !result.startsWith(\"SURVIVED\") || every).map(([name]) => name);\n",
     tests: ["test/mutations.test.ts", "-t", "a run of every mutation fails on what it couldn't judge"],
   },
+  {
+    name: "tests-as-it-is-corpus-cases-uncounted",
+    breaks: "a shard's tests as the compiler is are expected without the corpus cases its mutations' `-t`s name, a third of a second each: a check of 155 mutations a shard ran them 284 to 371 s (#2228)",
+    file: "scripts/mutations.ts",
+    find: "    if (file === \"test/corpus.test.ts\") return casesNamed(set.pattern, cases).map((name) => [`case\\0${mode}\\0${name}`, c.corpusCase]);\n",
+    replace: "    if (file === \"test/corpus.test.ts\") return [];\n",
+    tests: ["test/shards.test.ts", "-t", "distinct test files and the corpus cases they name"],
+  },
+  {
+    name: "tests-as-it-is-modes-merged",
+    breaks: "a shard's tests as the compiler is count a file run in two modes, with snapshots and without, once, where each mode runs it (#2228)",
+    file: "scripts/mutations.ts",
+    find: "  const mode = `${m.snapshots === true}\\0${envKey(m.env)}`;\n",
+    replace: "  const mode = \"\";\n",
+    tests: ["test/shards.test.ts", "-t", "distinct test files and the corpus cases they name"],
+  },
 ];

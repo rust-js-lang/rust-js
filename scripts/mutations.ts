@@ -1164,8 +1164,71 @@ export function testResults(junit: string): Map<string, boolean> {
   return said;
 }
 
-/** Whether a set's tests pass, of `ran`, what each of its files' tests did
- * by name; `undefined` where none of them ran. */
+/** What a shard's mutations' tests as the compiler is take, run once as it
+ * is and once as one that compiles nothing, before any mutant
+ * (`mutations.ts`'s "each mutation's tests as the compiler is"): a run of
+ * each test file, of the union of its sets' `-t`s, by mode, each about
+ * `file` seconds, `whole` more where one runs it all, and of the corpus,
+ * `corpusCase` a case its `-t`s name, beside the shard's own `shard`. Fit to
+ * 40 shards of main's checks of 2026-11-19 to 21, 6 to 371 s
+ * (test/fixtures/tests-as-it-is.tsv): a constant 120 s, #2220's, was 251 s
+ * short of a check of 155 mutations a shard (#2228). */
+export const TESTS_AS_IT_IS = { shard: 7, file: 3.7, whole: 4, corpusCase: 0.35 };
+
+/** The runs `m`'s tests as the compiler is take, each by a key its
+ * shard's other mutations' share, with its seconds (`TESTS_AS_IT_IS`): a
+ * test file's, by mode, `file`; `whole` more where it runs it all; and each
+ * corpus case, of `cases`, its `-t` names, `corpusCase`. A shard runs each
+ * key once, so its control's time is its keys' (`testsAsItIsRuns`), and the
+ * shards are dealt by it, a mutation where its time and the runs it adds
+ * there are least (`dealtByGroup`, #2304). */
+export function controlRuns(
+  m: { tests?: string[]; snapshots?: boolean; env?: Record<string, string> },
+  cases: readonly string[],
+): [string, number][] {
+  if (m.tests === undefined) return [];
+  const c = TESTS_AS_IT_IS;
+  const set = testSet(m.tests);
+  const mode = `${m.snapshots === true}\0${envKey(m.env)}`;
+  return set.files.flatMap((file): [string, number][] => {
+    if (file === "test/corpus.test.ts") return casesNamed(set.pattern, cases).map((name) => [`case\0${mode}\0${name}`, c.corpusCase]);
+    return [[`file\0${mode}\0${file}`, c.file], ...(set.pattern === undefined ? [[`whole\0${mode}\0${file}`, c.whole] as [string, number]] : [])];
+  });
+}
+
+/** Of the corpus's `cases`, those a `-t` names, every one of none. */
+const casesNamedBy = new Map<string, readonly string[]>();
+function casesNamed(pattern: string | undefined, cases: readonly string[]): readonly string[] {
+  if (pattern === undefined) return cases;
+  const key = `${pattern}\0${cases.length}`;
+  if (!casesNamedBy.has(key)) casesNamedBy.set(key, cases.filter((name) => new RegExp(pattern).test(name)));
+  return casesNamedBy.get(key)!;
+}
+
+/** What `chosen`'s tests as the compiler is run (`TESTS_AS_IT_IS`): the
+ * test files other than the corpus, by mode, those run whole, and the
+ * corpus's cases, of `cases`, that their `-t`s name: their `controlRuns`'
+ * keys, each once. */
+export function testsAsItIsRuns(
+  chosen: readonly { tests?: string[]; snapshots?: boolean; env?: Record<string, string> }[],
+  cases: readonly string[],
+): { files: number; whole: number; corpusCases: number } {
+  const keys = new Set(chosen.flatMap((m) => controlRuns(m, cases).map(([key]) => key)));
+  const of = (kind: string) => [...keys].filter((key) => key.startsWith(`${kind}\0`)).length;
+  return { files: of("file"), whole: of("whole"), corpusCases: of("case") };
+}
+
+/** `TESTS_AS_IT_IS`'s seconds of `runs`. */
+export function testsAsItIsSeconds(runs: { files: number; whole: number; corpusCases: number }): number {
+  const c = TESTS_AS_IT_IS;
+  return c.shard + c.file * runs.files + c.whole * runs.whole + c.corpusCase * runs.corpusCases;
+}
+
+/** The corpus's cases, its files' names, `test/corpus/<case>.rs`. */
+export function corpusCaseNames(): string[] {
+  return readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+}
+
 /** A mutation's test set, as the controls run it: its snapshots or not,
  * its settings, and its tests; mutations of one key share one control. */
 export function testSetKey(m: { snapshots?: boolean; env?: Record<string, string>; tests: string[] }): string {
@@ -1197,6 +1260,8 @@ export function unjudgedBy<M extends Pick<Mutation, "tests" | "snapshots" | "env
   return unjudged;
 }
 
+/** Whether a set's tests pass, of `ran`, what each of its files' tests did
+ * by name; `undefined` where none of them ran. */
 export function setPasses(set: { files: string[]; pattern?: string }, ran: Map<string, Map<string, boolean>>): boolean | undefined {
   // As `bun test -t` reads a name: with each `describe`'s before it.
   const named = (name: string) => set.pattern === undefined || new RegExp(set.pattern).test(name);
@@ -1934,7 +1999,11 @@ async function main() {
   }
   const sharded = shardArg(args);
   if (sharded) {
-    const names = timedShard(chosen.map((m) => m.name), sharded.index, sharded.count, args.find((arg) => arg.startsWith("--timings="))?.slice(10), mutationFile);
+    // Dealt as the check's plan expects them, each's tests as the compiler
+    // is beside its time (`controlRuns`, #2304).
+    const byName = new Map(chosen.map((m) => [m.name, m]));
+    const cases = corpusCaseNames();
+    const names = timedShard(chosen.map((m) => m.name), sharded.index, sharded.count, args.find((arg) => arg.startsWith("--timings="))?.slice(10), mutationFile, (name) => controlRuns(byName.get(name)!, cases));
     chosen = chosen.filter((m) => names.includes(m.name));
   }
   // The corpus harness's mutants (#918): of a change to the harness, and
@@ -2152,7 +2221,7 @@ async function main() {
   // alone, in parts at once. A case whose JS isn't its snapshot catches it,
   // where the compiler as it is makes that snapshot; the first in each part
   // ends it.
-  const caseNames = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+  const caseNames = corpusCaseNames();
   // HEAD's map, recorded here where the machine keeps none of HEAD or an
   // ancestor, once a run, as the first survivor asks it: CI's comes of its
   // `test-map` job, and its run fails without one.

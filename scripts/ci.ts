@@ -19,7 +19,7 @@ import { join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIntervals, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
-import { changedSince, type Mutation, mutationFile, mutations, testSet } from "./mutations";
+import { changedSince, controlRuns, corpusCaseNames, type Mutation, mutationFile, mutations, TESTS_AS_IT_IS, testSet } from "./mutations";
 import { outcome, type Selection, selectChange, suiteFiles } from "./select";
 import { downloaded } from "./artifacts";
 import { browsers, caseFiles, dealtByGroup, drivesBrowser, fewestShards, type ShardFacts, shardFacts, shardTimings, testFileSeconds, timingsUnder } from "./shard";
@@ -225,58 +225,6 @@ export const SHARD_SETUP_SECONDS = 60;
 /** And the compiler as it is, built before any mutant: 87 to 130 s of
  * each shard's `phases.json` (main's check 44441824204). */
 export const SHARD_COMPILER_SECONDS = 120;
-/** What a shard's mutations' tests as the compiler is take, run once as it
- * is and once as one that compiles nothing, before any mutant
- * (`mutations.ts`'s "each mutation's tests as the compiler is"): a run of
- * each test file, of the union of its sets' `-t`s, by mode, each about
- * `file` seconds, `whole` more where one runs it all, and of the corpus,
- * `corpusCase` a case its `-t`s name, beside the shard's own `shard`. Fit to
- * 40 shards of main's checks of 2026-11-19 to 21, 6 to 371 s
- * (test/fixtures/tests-as-it-is.tsv): a constant 120 s, #2220's, was 251 s
- * short of a check of 155 mutations a shard (#2228). */
-export const TESTS_AS_IT_IS = { shard: 7, file: 3.7, whole: 4, corpusCase: 0.35 };
-
-/** What `chosen`'s tests as the compiler is run (`TESTS_AS_IT_IS`): the
- * test files other than the corpus, by mode, those run whole, and the
- * corpus's cases, of `cases`, that their `-t`s name. */
-export function testsAsItIsRuns(
-  chosen: readonly { tests?: string[]; snapshots?: boolean; env?: Record<string, string> }[],
-  cases: readonly string[],
-): { files: number; whole: number; corpusCases: number } {
-  const modes = new Map<string, Map<string, { whole: boolean; patterns: Set<string> }>>();
-  for (const m of chosen) {
-    if (m.tests === undefined) continue;
-    const set = testSet(m.tests);
-    const mode = `${m.snapshots === true}\0${JSON.stringify(Object.entries(m.env ?? {}).sort())}`;
-    const files = modes.get(mode) ?? new Map<string, { whole: boolean; patterns: Set<string> }>();
-    modes.set(mode, files);
-    for (const file of set.files) {
-      const run = files.get(file) ?? { whole: false, patterns: new Set<string>() };
-      if (set.pattern === undefined) run.whole = true;
-      else run.patterns.add(set.pattern);
-      files.set(file, run);
-    }
-  }
-  const runs = { files: 0, whole: 0, corpusCases: 0 };
-  for (const files of modes.values()) {
-    for (const [file, run] of files) {
-      if (file === "test/corpus.test.ts") {
-        const named = [...run.patterns].map((pattern) => new RegExp(pattern));
-        runs.corpusCases += run.whole ? cases.length : cases.filter((name) => named.some((re) => re.test(name))).length;
-      } else {
-        runs.files++;
-        if (run.whole) runs.whole++;
-      }
-    }
-  }
-  return runs;
-}
-
-/** `TESTS_AS_IT_IS`'s seconds of `runs`. */
-export function testsAsItIsSeconds(runs: { files: number; whole: number; corpusCases: number }): number {
-  const c = TESTS_AS_IT_IS;
-  return c.shard + c.file * runs.files + c.whole * runs.whole + c.corpusCase * runs.corpusCases;
-}
 /** And where one of its mutations survived at its last check's base too,
  * latent (`latent-survivors.ts`), surviving again: the survivors run again
  * at the base, the compiler built whole there, 283 to 320 s of main's
@@ -358,12 +306,14 @@ export function mutationShardPlan(
   const drives = new Map(chosen.map((m) => [m.name, m.tests !== undefined && browser(m.tests[0]!)]));
   const byName = new Map(chosen.map((m) => [m.name, m]));
   const expected = (count: number) => {
-    const { shards, load } = dealtByGroup(chosen.map((m) => m.name), count, seconds, groupOf);
+    // Its load holds each mutation's share and its tests as the compiler is,
+    // dealt with them (`controlRuns`, #2304).
+    const { shards, load } = dealtByGroup(chosen.map((m) => m.name), count, seconds, groupOf, (name) => controlRuns(byName.get(name)!, cases));
     return shards.map(
       (names, i) =>
         SHARD_SETUP_SECONDS +
         SHARD_COMPILER_SECONDS +
-        testsAsItIsSeconds(testsAsItIsRuns(names.map((name) => byName.get(name)!), cases)) +
+        TESTS_AS_IT_IS.shard +
         load[i]! +
         (names.some((name) => latent.has(name)) ? SHARD_BASE_SECONDS : 0) +
         (names.some((name) => drives.get(name)) ? SHARD_BROWSER_SECONDS : 0),
@@ -406,12 +356,6 @@ function heldByOthers(): number | undefined {
   }
 }
 
-/** The corpus's cases, `test/corpus/*.rs`'s names, which a mutation's
- * `-t` names (`testsAsItIsRuns`). */
-function corpusCases(): string[] {
-  return readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
-}
-
 /** Start the check of `branch`, as it's pushed: the local one, if it's
  * ahead, isn't what would be checked. Its mutations are of what changed
  * since `since`: of `main`, by default, since its last finished check, or
@@ -436,7 +380,7 @@ async function check(branch: string, shards: string | undefined, since?: string)
     (file) => drivesBrowser(root, file),
     mutationFile,
     new Set(),
-    corpusCases(),
+    corpusCaseNames(),
   );
   // The suite's machines are the workflow's own, unless `--shards=` says.
   const suite = shards === undefined ? [] : ["-f", `test_shards=${shards}`];
@@ -531,7 +475,7 @@ async function plan(given?: string, testShardsGiven?: string) {
     (file) => drivesBrowser(root, file),
     mutationFile,
     latent,
-    corpusCases(),
+    corpusCaseNames(),
     held === undefined ? Number.POSITIVE_INFINITY : freeJobs(held, own),
   );
   console.log(`shards=${shardPlan.count}`);
@@ -630,7 +574,7 @@ export function testShards(
   times?: { seconds: ReadonlyMap<string, number>; facts: ShardFacts },
   given?: string,
   suite: () => string[] = suiteFiles,
-  corpusCases: () => number = () => readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")).length,
+  corpusCases: () => number = () => corpusCaseNames().length,
 ): string {
   if (given !== undefined) return given;
   if (times === undefined || times.seconds.size === 0) return !selection.all && selection.files.length <= 60 && selection.cases.length <= 400 ? "1" : "2";

@@ -1350,3 +1350,25 @@ broke. Held by `test/mutations.test.ts`, "a run of every mutation fails on
 what it couldn't judge, not on its survivors"; mutations
 `every-mutation-survivors-fail` and `some-mutations-survivors-spared`
 (scripts/mutations/runner.ts).
+
+## Amendment: a shard's tests as the compiler is are dealt with its mutations (2026-11-22, #2304 (c))
+
+A shard runs its mutations' tests as the compiler is before any mutant,
+each test file once by mode, 599 to 1,119 s of nightly 44963035271's
+shards, and the deal left that out: each mutation went to the least-loaded
+shard by its own time, so one test file's mutations were spread across
+shards that each ran its control, and a check's plan added the control's
+estimate only after dealing. **Each mutation's control runs are now keyed
+costs** (`controlRuns`, in `scripts/mutations.ts` beside `testSet`: a test
+file's run by mode, its whole run, each corpus case its `-t` names, at
+`TESTS_AS_IT_IS`'s seconds), **counted once a shard in its load**, and a
+timed mutation goes where its time and the runs it adds there are least
+(`dealtByGroup`'s `controls`), so it joins a shard already running its test
+file. The plan (`mutationShardPlan`) and each shard's own deal
+(`timedShard`) read the same costs, of the same corpus listing
+(`corpusCaseNames`); `testsAsItIsRuns` counts the same keys, so the
+estimate and the deal can't drift. Held by `test/shards.test.ts`, "a
+shard's tests as the compiler is are dealt with its mutations"; mutations
+`deal-control-runs-unread` and `deal-control-runs-counted-twice`, and the
+moved `tests-as-it-is-corpus-cases-uncounted` and
+`tests-as-it-is-modes-merged`.

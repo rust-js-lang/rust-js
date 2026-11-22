@@ -55,10 +55,16 @@ export function balanced<T extends string>(items: T[], index: number, count: num
  * `timings.json`s are under `dir`, its build's share and its tests
  * (`balanced`), as CI's shards are given the last nightly's (`ci.ts
  * mutation-timings`); with none given, dealt out in turn (`shard`). */
-export function timedShard<T extends string>(items: T[], index: number, count: number, dir?: string, groupOf?: (item: string) => string | undefined): T[] {
+export function timedShard<T extends string>(items: T[], index: number, count: number, dir?: string, groupOf?: (item: string) => string | undefined, controls?: Controls): T[] {
   if (dir === undefined) return shard(items, index, count);
-  return groupOf === undefined ? balanced(items, index, count, timingsUnder(dir)) : balancedByGroup(items, index, count, timingsUnder(dir), groupOf);
+  return groupOf === undefined ? balanced(items, index, count, timingsUnder(dir)) : balancedByGroup(items, index, count, timingsUnder(dir), groupOf, controls);
 }
+
+/** What an item adds to its shard beside its own time, by keys the shard's
+ * other items share, each run once a shard: a mutation's tests as the
+ * compiler is (`controlRuns`), 10 to 19 min of a nightly shard, which the
+ * deal left out (#2304). */
+export type Controls = (item: string) => readonly (readonly [string, number])[];
 
 /** Of `items`, shard `index` of `count`, by what each took, `seconds`, and
  * of one no run timed, a change's new mutation, an estimate: the median of
@@ -69,11 +75,11 @@ export function timedShard<T extends string>(items: T[], index: number, count: n
  * longest first, each to the shard with the least so far. Of run
  * 43976170163's eight shards, dealt as the median, 10.7 s, its change's new
  * mutations made one 536 s and another 277 (2026-11-17). */
-export function balancedByGroup<T extends string>(items: T[], index: number, count: number, seconds: ReadonlyMap<string, number>, groupOf: (item: string) => string | undefined): T[] {
+export function balancedByGroup<T extends string>(items: T[], index: number, count: number, seconds: ReadonlyMap<string, number>, groupOf: (item: string) => string | undefined, controls?: Controls): T[] {
   if (!Number.isInteger(index) || !Number.isInteger(count) || index < 1 || index > count) {
     throw new Error(`a shard is 1 to ${count}, not ${index}`);
   }
-  return dealtByGroup(items, count, seconds, groupOf).shards[index - 1]!;
+  return dealtByGroup(items, count, seconds, groupOf, controls).shards[index - 1]!;
 }
 
 /** What a mutation no run timed is expected to take where no run timed
@@ -119,8 +125,11 @@ export function shareOfShard(own: { build: number; tests: number }, jobs: number
 /** `balancedByGroup`'s deal of `items` to `count` shards: each shard's
  * items, sorted, and what it's expected to take, in seconds, its untimed
  * items by their estimate. `plan` sizes the mutations' machines by it, as
- * each shard deals its own by it. */
-export function dealtByGroup<T extends string>(items: T[], count: number, seconds: ReadonlyMap<string, number>, groupOf: (item: string) => string | undefined): { shards: T[][]; load: number[] } {
+ * each shard deals its own by it. Of `controls`, each item's runs its
+ * shard makes once, its load holds them too, and a timed item goes where
+ * its time and the runs it adds there are least, so mutations of one test
+ * file share its control (#2304). */
+export function dealtByGroup<T extends string>(items: T[], count: number, seconds: ReadonlyMap<string, number>, groupOf: (item: string) => string | undefined, controls?: Controls): { shards: T[][]; load: number[] } {
   const all = [...seconds.values()].sort((a, b) => a - b);
   const p90 = all.length === 0 ? UNTIMED_SECONDS : all[Math.min(all.length - 1, Math.floor(all.length * 0.9))]!;
   const byGroup = new Map<string, number[]>();
@@ -137,14 +146,23 @@ export function dealtByGroup<T extends string>(items: T[], count: number, second
   const timed = items.filter((item) => seconds.has(item)).sort((a, b) => seconds.get(b)! - seconds.get(a)! || byName(a, b));
   const load = new Array<number>(count).fill(0);
   const shards: T[][] = Array.from({ length: count }, () => []);
-  untimed.forEach((item, k) => {
-    load[k % count] = load[k % count]! + estimate(item);
-    shards[k % count]!.push(item);
-  });
+  const held: Set<string>[] = Array.from({ length: count }, () => new Set());
+  const added = (at: number, item: string) => (controls?.(item) ?? []).reduce((sum, [key, cost]) => (held[at]!.has(key) ? sum : sum + cost), 0);
+  const put = (at: number, item: T, own: number) => {
+    load[at] = load[at]! + own + added(at, item);
+    for (const [key] of controls?.(item) ?? []) held[at]!.add(key);
+    shards[at]!.push(item);
+  };
+  untimed.forEach((item, k) => put(k % count, item, estimate(item)));
   for (const item of timed) {
-    const least = leastLoaded(load);
-    load[least] = load[least]! + seconds.get(item)!;
-    shards[least]!.push(item);
+    const own = seconds.get(item)!;
+    if (controls === undefined) {
+      put(leastLoaded(load), item, own);
+      continue;
+    }
+    let best = 0;
+    for (let at = 1; at < count; at++) if (load[at]! + added(at, item) < load[best]! + added(best, item)) best = at;
+    put(best, item, own);
   }
   return { shards: shards.map((shard) => shard.sort()), load };
 }
