@@ -287,7 +287,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = crate::recognition::held_unboxed(ty);
         let js_iterator = match ty.kind() {
             ty::Param(param) => !given_as_it_is(self.tcx, id, *param),
-            ty::Alias(..) => true,
+            // Not one its type's own value, its trait's dictionary steps
+            // (`projection_as_it_is`, #2330).
+            ty::Alias(..) => !projection_as_it_is(self.tcx, id, ty),
             _ => false,
         };
         let env = ty::TypingEnv::post_analysis(self.tcx, id);
@@ -309,7 +311,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Box<I>` passes on (`boxed_iterator_dictionary`, #1611).
         let ty = crate::recognition::held_unboxed(ty);
         matches!(ty.kind(), ty::Param(param) if self.param_given_as_it_is(*param))
-            || into_iter_as_it_is(self.tcx, self.generics_fn(), self.declared_ty(ty))
+            || projection_as_it_is(self.tcx, self.generics_fn(), self.declared_ty(ty))
     }
 
     /// Whether `param`, a type parameter of the function being lowered, is

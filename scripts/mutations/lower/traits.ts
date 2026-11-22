@@ -422,4 +422,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^index_bound_generic.rs$"],
     snapshots: true,
   },
+  {
+    name: "assoc-iterator-extension-alone-no-iterator-entry",
+    breaks:
+      "a trait's associated iterator declared by an extension alone, \`type Out: DoubleEndedIterator\`, has no \`Iterator\` entry in its dictionary, so generic code stepping it finds none: \`$jsIterator\` of a range (#2330)",
+    file: "crates/rust-js-lower/src/traits.rs",
+    find: "        if super::iterators::assoc_iterator_as_it_is(tcx, item.def_id) && !declared_iterator {\n",
+    replace: "        if super::iterators::assoc_iterator_as_it_is(tcx, item.def_id) && !declared_iterator && false {\n",
+    tests: ["test/associated-iterator-matrix.test.ts"],
+  },
 ];

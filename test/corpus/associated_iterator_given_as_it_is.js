@@ -5,11 +5,8 @@ import {
   $cleanup,
   $collectDropping,
   $given,
-  $givenDrop,
   $held,
   $iter,
-  $iterator,
-  $jsIterator,
   $live,
   $next,
   $nextBack,
@@ -42,20 +39,10 @@ function countdownDrop_drop(countdown) {
 }
 
 const countedSource = {
-  IterDoubleEndedIterator() {
-    return { next_back: $nextBack };
-  },
-  items(counted) {
-    return $iterator(
-      countedSource_items(counted),
-      countdownIterator_next,
-      false,
-      countdownDoubleEndedIterator_nextBack,
-    );
-  },
-  $dropIter(it) {
-    countdownDrop_drop(it.of);
-  },
+  IterIterator: () => ({ next: countdownIterator_next }),
+  IterDoubleEndedIterator: () => ({ next_back: countdownDoubleEndedIterator_nextBack }),
+  items: countedSource_items,
+  $dropIter: countdownDrop_drop,
   IterVecCollect: "next",
 };
 function countedSource_items(counted) {
@@ -63,6 +50,7 @@ function countedSource_items(counted) {
 }
 
 const listedSource = {
+  IterIterator: () => ({ next: $next }),
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
   items: listedSource_items,
   IterVecCollect: { inPlace: 4 },
@@ -85,21 +73,19 @@ function keptSource(IIterator, IDoubleEndedIterator, IClone, IVecCollect, dropI)
     $keptSource,
     [IIterator, IDoubleEndedIterator, IClone, IVecCollect, dropI],
     () => ({
+      IterIterator() {
+        return IIterator;
+      },
       IterDoubleEndedIterator() {
-        return { next_back: $nextBack };
+        return IDoubleEndedIterator;
       },
       items(kept) {
-        return $given(
-          keptSource_items(kept, IClone, dropI),
-          IIterator,
-          false,
-          IDoubleEndedIterator,
-        );
+        return keptSource_items(kept, IClone, dropI);
       },
       $drop(kept) {
         dropI?.(kept[0]);
       },
-      $dropIter: $givenDrop(dropI),
+      $dropIter: dropI,
       IterVecCollect: IVecCollect,
     }),
   );
@@ -145,9 +131,10 @@ function fromTheBack(it, replacement, IDoubleEndedIterator, dropI) {
 }
 
 function second(source, SSource) {
+  const IterIterator = SSource.IterIterator();
   const items = $held(SSource.items(source));
   try {
-    advance(items, undefined, $jsIterator, SSource.$dropIter);
+    advance(items, undefined, IterIterator, SSource.$dropIter);
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
@@ -156,7 +143,7 @@ function second(source, SSource) {
   }
   let result;
   try {
-    result = $next(items);
+    result = IterIterator.next(items);
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
@@ -168,6 +155,7 @@ function second(source, SSource) {
 }
 
 function swapped(source, other, SSource) {
+  const IterIterator = SSource.IterIterator();
   const items = $held(SSource.items(source));
   let tmp;
   try {
@@ -179,7 +167,7 @@ function swapped(source, other, SSource) {
     throw error;
   }
   try {
-    advance(items, tmp, $jsIterator, SSource.$dropIter);
+    advance(items, tmp, IterIterator, SSource.$dropIter);
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
@@ -189,7 +177,7 @@ function swapped(source, other, SSource) {
   const iter = items;
   let result;
   try {
-    result = $collectDropping($roomForHint(iter, 4, false));
+    result = $collectDropping($roomForHint($given(iter, IterIterator), 4, false));
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(iter);
@@ -216,9 +204,10 @@ function last(source, SSource) {
 }
 
 function secondBorrowed(container, CContainer) {
+  const IterIterator = CContainer.IterIterator();
   const items = $held(CContainer.iter(container));
   try {
-    advance(items, undefined, CContainer.IterIterator(), CContainer.$dropIter);
+    advance(items, undefined, IterIterator, CContainer.$dropIter);
   } catch (error) {
     $cleanup(() => {
       CContainer.$dropIter?.(items);
@@ -227,7 +216,7 @@ function secondBorrowed(container, CContainer) {
   }
   let result;
   try {
-    result = $next(items);
+    result = IterIterator.next(items);
   } catch (error) {
     $cleanup(() => {
       CContainer.$dropIter?.(items);

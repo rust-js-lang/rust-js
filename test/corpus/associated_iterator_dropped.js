@@ -5,10 +5,9 @@ import {
   $cleanup,
   $closing,
   $collectDropping,
+  $given,
+  $givenDrop,
   $held,
-  $iterator,
-  $next,
-  $nextBack,
   $rev,
   $roomForHint,
 } from "@rust-js/std";
@@ -30,21 +29,15 @@ function countdownDoubleEndedIterator_nextBack(countdown) {
   return next != null ? (next + 10) >>> 0 : undefined;
 }
 
+function countdownDrop_drop(countdown) {
+  console.log(`drop at ${countdown[0]}`);
+}
+
 const countedSource = {
-  IterDoubleEndedIterator() {
-    return { next_back: $nextBack };
-  },
-  items(counted) {
-    return $iterator(
-      countedSource_items(counted),
-      countdownIterator_next,
-      false,
-      countdownDoubleEndedIterator_nextBack,
-    );
-  },
-  $dropIter(it) {
-    console.log(`drop at ${it.of[0]}`);
-  },
+  IterIterator: () => ({ next: countdownIterator_next }),
+  IterDoubleEndedIterator: () => ({ next_back: countdownDoubleEndedIterator_nextBack }),
+  items: countedSource_items,
+  $dropIter: countdownDrop_drop,
   IterVecCollect: "next",
 };
 function countedSource_items(counted) {
@@ -55,7 +48,7 @@ function first(source, SSource) {
   const items = $held(SSource.items(source));
   let result;
   try {
-    result = $next(items);
+    result = SSource.IterIterator().next(items);
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
@@ -70,7 +63,7 @@ function last(source, SSource) {
   const items = $held(SSource.items(source));
   let result;
   try {
-    result = $nextBack(items);
+    result = SSource.IterDoubleEndedIterator().next_back(items);
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);
@@ -85,7 +78,7 @@ function all(source, SSource) {
   const iter = SSource.items(source);
   let result;
   try {
-    result = $collectDropping($roomForHint(iter, 4, false));
+    result = $collectDropping($roomForHint($given(iter, SSource.IterIterator()), 4, false));
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(iter);
@@ -98,7 +91,22 @@ function all(source, SSource) {
 
 function backwards(source, SSource) {
   return $collectDropping(
-    $roomForHint($rev($closing(SSource.items(source), SSource.$dropIter, false)), 4, false),
+    $roomForHint(
+      $rev(
+        $closing(
+          $given(
+            SSource.items(source),
+            SSource.IterIterator(),
+            false,
+            SSource.IterDoubleEndedIterator(),
+          ),
+          $givenDrop(SSource.$dropIter),
+          false,
+        ),
+      ),
+      4,
+      false,
+    ),
   );
 }
 
@@ -126,7 +134,7 @@ function replaced(source, other, SSource) {
   }
   let result;
   try {
-    result = $next(items);
+    result = SSource.IterIterator().next(items);
   } catch (error) {
     $cleanup(() => {
       SSource.$dropIter?.(items);

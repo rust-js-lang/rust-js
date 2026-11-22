@@ -5,8 +5,8 @@ import {
   $checked,
   $count,
   $debugStr,
+  $given,
   $iter,
-  $iterator,
   $next,
   $nextSome,
   $rangeNext,
@@ -49,11 +49,12 @@ function countdownContainer_items(countdown) {
 }
 
 function count(c, CContainer) {
-  return $count(CContainer.items(c));
+  return $count($given(CContainer.items(c), CContainer.IterIterator(), true));
 }
 
 function first(c, CContainer) {
-  return $nextSome(CContainer.items(c));
+  const items = CContainer.items(c);
+  return CContainer.IterIterator().next(items);
 }
 
 function advance(it) {
@@ -61,9 +62,10 @@ function advance(it) {
 }
 
 function second(c, CContainer) {
+  const IterIterator = CContainer.IterIterator();
   const items = CContainer.items(c);
-  advance(items);
-  return $nextSome(items);
+  advance($given(items, IterIterator, true));
+  return IterIterator.next(items);
 }
 
 function show(c, CContainer) {
@@ -79,10 +81,7 @@ function byteFilled_filled(byte, N) {
 // An associated type bound by `Iterator` an impl gives a range, or an
 // iterator of the crate's, for: a JS iterator in generic code.
 
-const uptoSource = {
-  IterIterator: () => ({ next: $next }),
-  numbers: (upto) => $iterator(uptoSource_numbers(upto), $rangeNext),
-};
+const uptoSource = { IterIterator: () => ({ next: $rangeNext }), numbers: uptoSource_numbers };
 function uptoSource_numbers(upto) {
   return { start: 0, end: upto[0] };
 }
@@ -96,8 +95,8 @@ function downIterator_next(down) {
 }
 
 const from3Source = {
-  IterIterator: () => ({ next: $next }),
-  numbers: (from3) => $iterator(from3Source_numbers(from3), downIterator_next),
+  IterIterator: () => ({ next: downIterator_next }),
+  numbers: from3Source_numbers,
 };
 function from3Source_numbers(from3) {
   return [3];
@@ -112,7 +111,7 @@ function total(it) {
 }
 
 function summed(s, SSource) {
-  return total(SSource.numbers(s));
+  return total($given(SSource.numbers(s), SSource.IterIterator()));
 }
 
 function main() {

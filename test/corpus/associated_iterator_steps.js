@@ -4,8 +4,8 @@ import {
   $foldOf,
   $iter,
   $iterator,
+  $jsIteratorSome,
   $next,
-  $nextSome,
   $rangeNext,
   $traitImpl,
   fuseIterator___iteratorGetUnchecked,
@@ -28,7 +28,7 @@ const $markerFusedI = new WeakMap();
 
 export function markerFusedI(IIterator, IClone, IFused) {
   return $traitImpl($markerFusedI, [IIterator, IClone, IFused], () => ({
-    OutIterator: () => ({ next: $nextSome }),
+    OutIterator: () => ({ next: (iterator) => wrapIterator_next(iterator, $jsIteratorSome) }),
     OutFromI: () => ({ from: (value) => wrapFromI_from(value, IIterator, IClone, IFused) }),
   }));
 }

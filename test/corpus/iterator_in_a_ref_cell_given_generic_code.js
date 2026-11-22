@@ -4,6 +4,7 @@ import {
   $borrowMut,
   $cleanup,
   $collectVec,
+  $given,
   $held,
   $iter,
   $iterator,
@@ -30,27 +31,22 @@ function countdownDoubleEndedIterator_nextBack(countdown) {
   return next != null ? (10 + next) >>> 0 : undefined;
 }
 
+function countdownDrop_drop(countdown) {
+  console.log(`drop countdown at ${countdown[0]}`);
+}
+
 const countedSource = {
-  IterDoubleEndedIterator() {
-    return { next_back: $nextBack };
-  },
-  items(counted) {
-    return $iterator(
-      countedSource_items(counted),
-      countdownIterator_next,
-      false,
-      countdownDoubleEndedIterator_nextBack,
-    );
-  },
-  $dropIter(it) {
-    console.log(`drop countdown at ${it.of[0]}`);
-  },
+  IterIterator: () => ({ next: countdownIterator_next }),
+  IterDoubleEndedIterator: () => ({ next_back: countdownDoubleEndedIterator_nextBack }),
+  items: countedSource_items,
+  $dropIter: countdownDrop_drop,
 };
 function countedSource_items(counted) {
   return [counted[0]];
 }
 
 const listedSource = {
+  IterIterator: () => ({ next: $next }),
   IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
   items: listedSource_items,
 };
@@ -157,7 +153,7 @@ function last(source, SSource) {
   }
   let result;
   try {
-    result = $nextBack(borrowMut.value);
+    result = SSource.IterDoubleEndedIterator().next_back(borrowMut.value);
   } catch (error) {
     $cleanup(() => {
       $unborrow(borrowMut);
@@ -175,6 +171,7 @@ function last(source, SSource) {
 }
 
 function secondOf(source, SSource) {
+  const IterIterator = SSource.IterIterator();
   const items = { value: { value: $held(SSource.items(source)) }, strong: 1, weak: 0 };
   let borrowMut;
   try {
@@ -188,7 +185,7 @@ function secondOf(source, SSource) {
     throw error;
   }
   try {
-    step(borrowMut.value);
+    step($given(borrowMut.value, IterIterator));
   } catch (error) {
     $cleanup(() => {
       $unborrow(borrowMut);
@@ -212,7 +209,7 @@ function secondOf(source, SSource) {
   }
   let result;
   try {
-    result = $next(tmp.value);
+    result = IterIterator.next(tmp.value);
   } catch (error) {
     $cleanup(() => {
       $unborrow(tmp);
@@ -266,13 +263,13 @@ function called(f) {
 
 function main() {
   const value = first($iterator([3], countdownIterator_next), (it) => {
-    console.log(`drop countdown at ${it.of[0]}`);
+    countdownDrop_drop(it.of);
   });
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = first($iter([4, 5]));
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = second($iterator([3], countdownIterator_next), (it) => {
-    console.log(`drop countdown at ${it.of[0]}`);
+    countdownDrop_drop(it.of);
   });
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = second($iter([4, 5, 6]));

@@ -256,6 +256,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// and stepped as an empty one (#1292). The one answer, of what its
     /// methods give and what its drop drops (#978).
     pub(super) fn made_js_iterator(&self, alias: Ty<'tcx>, env: ty::ParamEnv<'tcx>, ty: Ty<'tcx>) -> bool {
+        // Not a trait's own associated iterator, its type's own value in
+        // generic code too, stepped by the trait's dictionary
+        // (`assoc_iterator_as_it_is`, #2330).
+        if let ty::Alias(
+            _,
+            ty::AliasTy {
+                kind: ty::Projection { def_id },
+                ..
+            },
+        ) = *alias.kind()
+            && crate::iterators::assoc_iterator_as_it_is(self.tcx, def_id)
+        {
+            return false;
+        }
         matches!(alias.kind(), ty::Alias(..))
             && (self.declared_bounds(alias, env).into_iter()).any(|id| is_std_def(self.tcx, id, StdItem::Iterator))
             && (self.range_kind(ty).is_some()

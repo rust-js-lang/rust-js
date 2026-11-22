@@ -680,6 +680,7 @@ pub(super) fn item_bounds<'tcx>(
             None => tcx.lifetimes.re_erased.into(),
         });
         let bounds = tcx.explicit_item_bounds(item.def_id);
+        let at = found.len();
         for ((declared, _), (instantiated, _)) in
             bounds.iter_identity_copied().map(|item| item.skip_normalization()).zip(
                 bounds
@@ -714,6 +715,22 @@ pub(super) fn item_bounds<'tcx>(
             let item_word = words::item_word(tcx, item.def_id);
             let name = format!("{item_word}{path}{}", trait_word(tcx, declared.trait_ref));
             found.push((name, instantiated.trait_ref));
+        }
+        // An associated iterator its type's own value in generic code,
+        // stepped by the dictionary (`assoc_iterator_as_it_is`), declared
+        // by an extension alone, `type Iter: DoubleEndedIterator`: its
+        // `Iterator` too, first, which generic code finds it by, as an
+        // extension's dictionary holds no `next` (#2330).
+        let iterator = super::recognition::std_item(tcx, super::recognition::StdItem::Iterator);
+        let declared_iterator = found[at..].iter().any(|(_, bound)| bound.def_id == iterator);
+        if super::iterators::assoc_iterator_as_it_is(tcx, item.def_id) && !declared_iterator {
+            let projection = ty::Ty::new_projection(tcx, ty::IsRigid::No, item.def_id, item_args);
+            let name = format!(
+                "{}{}",
+                words::item_word(tcx, item.def_id),
+                trait_word(tcx, ty::TraitRef::new(tcx, iterator, [projection]))
+            );
+            found.insert(at, (name, ty::TraitRef::new(tcx, iterator, [projection])));
         }
     }
     found

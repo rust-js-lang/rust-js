@@ -3,7 +3,10 @@
 import {
   $collectDropping,
   $foldBack,
+  $foldOf,
+  $given,
   $knowing,
+  $next,
   $nextBack,
   $rangeLen,
   $rangeNext,
@@ -14,8 +17,10 @@ import {
   $tryOf,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
   mapExactSizeIterator_len,
+  mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -23,34 +28,48 @@ export function entry() {
 }
 
 const tensSource = {
-  IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
+  IterIterator: () => ({
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+  }),
+  IterDoubleEndedIterator: () => ({
+    next_back: (iterator) =>
+      mapDoubleEndedIterator_nextBack(iterator, {
+        next_back: $rangeNextBack,
+        nthBack: $rangeNthBack,
+      }),
+    rfold: (iterator, init, f, unwind, ends) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+  }),
   HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
-  items: (n) =>
-    $knowing(
-      tensSource_items(n),
-      (iterator) =>
-        mapDoubleEndedIterator_nextBack(iterator, {
-          next_back: $rangeNextBack,
-          nthBack: $rangeNthBack,
-        }),
-      (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-      undefined,
-      undefined,
-      (iterator, init, f, broke, unwind, ends) =>
-        mapDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $rangeNext },
-          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-          $tryOf(broke),
-          undefined,
-          undefined,
-          undefined,
-          unwind,
-          ends,
-        ),
-    ),
+  items: tensSource_items,
   hidden: (n) =>
     $knowing(
       tensSource_hidden(n),
@@ -86,8 +105,18 @@ function tensSource_hidden(n) {
 }
 
 function fromItsBack(SSource) {
+  const IterDoubleEndedIterator = SSource.IterDoubleEndedIterator();
   const it = SSource.items(4);
-  return [$nextBack(it), $collectDropping($roomForHint($rev(it), 4, false))];
+  return [
+    IterDoubleEndedIterator.next_back(it),
+    $collectDropping(
+      $roomForHint(
+        $rev($given(it, SSource.IterIterator(), false, IterDoubleEndedIterator)),
+        4,
+        false,
+      ),
+    ),
+  ];
 }
 
 function hidden(SSource) {
@@ -95,7 +124,11 @@ function hidden(SSource) {
 }
 
 function folded(SSource) {
-  return $foldBack(SSource.items(4), 0, (a, x) => (((a * 2) >>> 0) + x) >>> 0);
+  return $foldBack(
+    $given(SSource.items(4), SSource.IterIterator(), false, SSource.IterDoubleEndedIterator()),
+    0,
+    (a, x) => (((a * 2) >>> 0) + x) >>> 0,
+  );
 }
 
 function main() {

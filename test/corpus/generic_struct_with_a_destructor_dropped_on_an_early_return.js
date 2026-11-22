@@ -2,11 +2,9 @@
 
 import {
   $cleanup,
-  $givenDrop,
   $held,
   $iter,
   $next,
-  $nextSome,
   $someValue,
   $strictlyEqual,
   $traitImpl,
@@ -24,7 +22,7 @@ const $tokenParser = new WeakMap();
 function tokenParser(TIterator, TItemPartialEq, dropT, dropTItem) {
   return $traitImpl($tokenParser, [TIterator, TItemPartialEq, dropT, dropTItem], () => ({
     InputIterator() {
-      return { next: $nextSome };
+      return TIterator;
     },
     parse(token, input) {
       return tokenParser_parse(token, input, TIterator, TItemPartialEq, dropT, dropTItem);
@@ -33,7 +31,7 @@ function tokenParser(TIterator, TItemPartialEq, dropT, dropTItem) {
       tokenDrop_drop(token, dropT, dropTItem);
       dropTItem?.(token[0]);
     },
-    $dropInput: $givenDrop(dropT),
+    $dropInput: dropT,
   }));
 }
 function tokenParser_parse(token, input, TIterator, TItemPartialEq, dropT, dropTItem) {

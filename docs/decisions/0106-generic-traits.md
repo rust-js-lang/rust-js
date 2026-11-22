@@ -420,3 +420,12 @@ env hasn't fails, it doesn't crash. Corpus case
 `const_generic_impl_reached_by_a_trait_default_where_caught`, against
 native in both builds, which also holds #1608's `params_owned_by` in
 `may_run`; two mutations, and `field-projection-kept` retargeted.
+
+## Amendment: an associated iterator's value is its type's own (2026-11-22, #2330)
+
+The #972 and #1292 amendments, which make a JS iterator of the value an
+impl gives for an associated type bound by `Iterator`, are superseded for
+any trait that isn't std's by [ADR 0061's amendment of
+2026-11-22](0061-generic-iterators.md#amendment-a-traits-associated-iterator-is-its-types-own-value-2026-11-22-2328-2330).
+The value is its type's own, and the bound's entry is that type's own
+steps.

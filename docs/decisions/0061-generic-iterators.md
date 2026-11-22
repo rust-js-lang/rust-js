@@ -387,3 +387,81 @@ and #2254's metamorphic-known lines are gone. Test
 `test/diagnostics.test.ts`'s "a non-object iterator held otherwise
 inside what crosses into generic code is refused" and the guide's
 limitation hold the refusal.
+
+## Amendment: a trait's associated iterator is its type's own value (2026-11-22, #2328, #2330)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. One case was a silent wrong answer, the other a
+`TypeError`.
+
+Generic code had a value of a trait's associated type bound by
+`Iterator`, `type Out: Iterator`, as a JS iterator. The impl's dictionary
+made one of what its methods gave, `make: (r) =>
+$iterator(rangedMaker_make(r), $rangeNext)`, and its bound's entry stepped
+that JS iterator, `OutIterator: () => ({ next: $next })` (ADR 0106's #972
+and #1292 amendments). That gave one value two representations, and each
+place it crossed from one to the other went wrong:
+
+- **Given back to concrete code** (#2330): `fn made<T: Maker>(t: &T) ->
+  T::Out { t.make() }` gave `main` the JS iterator. `main` reads
+  `T::Out` as the impl's `Range<u32>`, and printed `undefined..undefined`
+  where native Rust prints `3..6`.
+- **Made by another of the type's bounds** (#2328): itertools'
+  `HasCombination<I>` declares `type Combination: From<I> +
+  Iterator<Item = Self>`, and `T::Combination::from(iter)` is the
+  `From` entry's value, the impl's struct, which no entry made a JS
+  iterator. `TupleCombinations::next` stepped it as one and threw `it.next
+  is not a function`.
+
+Unwrapping the JS iterator where it reaches concrete code was rejected,
+because an iterator already stepped can't be turned back into a range.
+
+**A trait's associated type bound by `Iterator`, of a trait that isn't
+std's, is its type's own value wherever it's held: a range is a range, the
+crate's own iterator is itself, std's compiled struct is itself, and std's
+JS iterator is a JS iterator. Generic code steps it by the trait's
+dictionary, `TMaker.OutIterator().next(it)`, or `$given` of that entry
+where it needs a JS iterator, as it steps a type parameter given as it is
+(ADR 0411). The entry is the type's own steps, `{ next: $rangeNext }` or
+the crate's impl's `next`, and no entry makes a JS iterator of it.** A
+method's `-> impl Iterator`, rustc's associated type of it, stays a JS
+iterator (the #2005 amendment above). An opaque type can only be stepped,
+so concrete code never reads its fields and it never needs two
+representations. A
+type declared by an extension alone, `type Out: DoubleEndedIterator`, has
+an `Iterator` entry too, listed first, because an extension's dictionary
+has no `next`.
+
+- **One answer.** `assoc_iterator_as_it_is` (iterators.rs) answers it of
+  the associated type. `held_by_generic_code` asks it of an impl's
+  entries and methods. `projection_as_it_is` asks it of generic code's
+  projection, as `iterator_given_as_it_is` and `extension_param` do, where
+  one was taken for a JS iterator by its kind alone, `ty::Alias(..) =>
+  true`. An architecture test bans that second decider.
+- **std's `IntoIterator`'s `IntoIter` relates to this as follows.** It is
+  the same question, answered by the same `projection_as_it_is`, with one
+  real difference. A caller gives a `T: IntoIterator` that nothing holds
+  as it is as a JS iterator, `$intoIter`'s (this ADR), so its `IntoIter` is
+  that JS iterator unless the function holds it as it is (ADR 0552,
+  `into_iter_held_as_it_is`). Another trait's associated value is only
+  ever made by its impl's methods, as they make it, so it is always its
+  type's own. A generic function that gives its `T::IntoIter` back to
+  concrete code still gives the JS iterator: #2331, a sibling wrong answer,
+  is taken next, in `into_iter_held_as_it_is` through the same answer.
+
+The premise is tested by `test/associated-iterator-matrix.test.ts`. Each
+shape of the type, a range, the crate's own iterator, std's JS iterator
+and std's compiled struct, is stepped in generic code, given back to
+concrete code that reads it as the impl's type, stepped and then given
+back, stepped from its back, and made by a `From<I>` bound. Each runs as
+a program and as a library against native Rust, and its `wrong` list holds
+`IntoIter`'s row under #2331. The pair `library_associated_iterator_flows_back`
+covers a library's trait and generic code with its consumer's own impl.
+Mutations: `assoc-iterator-a-js-iterator`,
+`projection-js-iterator-to-generic-code`,
+`projection-as-it-is-knows-its-back`,
+`impl-makes-assoc-iterator-a-js-iterator` and
+`assoc-iterator-extension-alone-no-iterator-entry` and
+`assoc-iterator-impl-trait-in-trait-as-it-is`; two retargeted. This
+supersedes ADR 0106's #972 and #1292 amendments where they make a JS
+iterator of an associated type's value.

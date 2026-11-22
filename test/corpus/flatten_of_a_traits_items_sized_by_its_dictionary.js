@@ -3,7 +3,6 @@
 import {
   $collectDropping,
   $iter,
-  $iterator,
   $jsIterator,
   $knowing,
   $next,
@@ -47,10 +46,11 @@ const pairsSource = {
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),
   }),
-  IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
+  IterIterator: () => ({ next: $rangeNext }),
+  IterDoubleEndedIterator: () => ({ next_back: $rangeNextBack, nthBack: $rangeNthBack }),
   HiddenDoubleEndedIterator: () => ({ next_back: $nextBack }),
   items: pairsSource_items,
-  iter: (n) => $iterator(pairsSource_iter(n), $rangeNext, false, $rangeNextBack),
+  iter: pairsSource_iter,
   hidden: (n) =>
     $knowing(
       pairsSource_hidden(n),
@@ -111,6 +111,7 @@ function gathered(SSource) {
 
 function back(SSource) {
   const IterDoubleEndedIterator = SSource.IterDoubleEndedIterator();
+  const IterIterator = SSource.IterIterator();
   return $collectDropping(
     $roomForHint(
       $rev(
@@ -119,7 +120,7 @@ function back(SSource) {
             { start: 1, end: 4 },
             (n) => SSource.iter(n),
             { next: $rangeNext },
-            { intoIter: (items) => items, IntoIterIterator: () => $jsIterator },
+            { intoIter: (items) => items, IntoIterIterator: () => IterIterator },
             true,
             SSource.IterConstSize,
             SSource.IterOneShot,
@@ -129,7 +130,7 @@ function back(SSource) {
               iterator,
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              { intoIter: (items) => items, IntoIterIterator: () => $jsIterator },
+              { intoIter: (items) => items, IntoIterIterator: () => IterIterator },
               IterDoubleEndedIterator,
               true,
               SSource.IterOneShot,
@@ -142,7 +143,7 @@ function back(SSource) {
               f,
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              { intoIter: (items) => items, IntoIterIterator: () => $jsIterator },
+              { intoIter: (items) => items, IntoIterIterator: () => IterIterator },
               IterDoubleEndedIterator,
               SSource.IterOneShot,
               undefined,
@@ -159,7 +160,7 @@ function back(SSource) {
               f,
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              { intoIter: (items) => items, IntoIterIterator: () => $jsIterator },
+              { intoIter: (items) => items, IntoIterIterator: () => IterIterator },
               IterDoubleEndedIterator,
               $tryOf(broke),
               true,
@@ -176,7 +177,7 @@ function back(SSource) {
               n,
               { next: $rangeNext },
               { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-              { intoIter: (items) => items, IntoIterIterator: () => $jsIterator },
+              { intoIter: (items) => items, IntoIterIterator: () => IterIterator },
               IterDoubleEndedIterator,
               true,
               SSource.IterOneShot,

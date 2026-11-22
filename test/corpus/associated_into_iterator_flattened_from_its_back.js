@@ -10,6 +10,7 @@ import {
   $knowing,
   $next,
   $nextBack,
+  $nextSome,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -29,6 +30,7 @@ export function entry() {
 }
 
 const vecsSource = {
+  PairsIterator: () => ({ next: $nextSome }),
   PairsIntoIterator: () => ({
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),
@@ -42,6 +44,7 @@ function vecsSource_pairs(n) {
 }
 
 const arraysSource = {
+  PairsIterator: () => ({ next: $nextSome }),
   PairsIntoIterator: () => ({
     intoIter: (items) => $iter(items),
     IntoIterIterator: () => ({ next: $next }),

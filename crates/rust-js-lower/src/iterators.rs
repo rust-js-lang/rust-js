@@ -277,15 +277,50 @@ fn is_held_into_iter(tcx: ty::TyCtxt<'_>, id: DefId, param: ty::ParamTy) -> bool
         })
 }
 
-/// Whether `ty` is what a type parameter of `id` makes as an `IntoIterator`,
-/// `<I as IntoIterator>::IntoIter`, held as it is (ADR 0552): stepped by the
-/// `Iterator` its `IntoIterator` dictionary carries of it.
-pub(crate) fn into_iter_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty<'tcx>) -> bool {
+/// Whether `ty`, a projection, an associated type's iterator, is its type's
+/// own value in `id`, stepped by the `Iterator` its trait's dictionary
+/// carries of it, `TMaker.OutIterator()`, never a JS iterator: the one
+/// answer of what generic code holds of one (ADR 0061, amended, #2330).
+/// std's `IntoIterator`'s `IntoIter`, where `id` holds it as it is (ADR
+/// 0552): its caller gives an `IntoIterator` not held so as a JS iterator,
+/// `$intoIter`'s, whose `IntoIter` is that JS iterator. Any other trait's
+/// that it bounds by `Iterator`, always (`assoc_iterator_as_it_is`).
+pub(crate) fn projection_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, ty: Ty<'tcx>) -> bool {
+    let ty::Alias(
+        _,
+        ty::AliasTy {
+            kind: ty::Projection { def_id },
+            args,
+            ..
+        },
+    ) = *ty.kind()
+    else {
+        return false;
+    };
     let into_iterator = std_item(tcx, StdItem::IntoIterator);
-    let into_iter = super::recognition::trait_method(tcx, into_iterator, "IntoIter");
-    matches!(*ty.kind(), ty::Alias(_, ty::AliasTy {
-        kind: ty::Projection { def_id }, args, ..
-    }) if def_id == into_iter && into_iter_held_as_it_is(tcx, id, args.type_at(0)))
+    if def_id == super::recognition::trait_method(tcx, into_iterator, "IntoIter") {
+        return into_iter_held_as_it_is(tcx, id, args.type_at(0));
+    }
+    assoc_iterator_as_it_is(tcx, def_id)
+}
+
+/// Whether a value of `item`, an associated type, is its type's own value
+/// in generic code wherever it's held, which its trait's dictionary steps:
+/// one of a trait not std's that bounds it by `Iterator`, `type Out:
+/// Iterator`, whose values only its impls' methods make, as they make them,
+/// a range a range, the crate's own iterator itself, so one value has one
+/// representation in generic code and concrete alike (ADR 0061, amended,
+/// #2328, #2330). `held_by_generic_code` asks it of an impl's.
+pub(crate) fn assoc_iterator_as_it_is(tcx: ty::TyCtxt<'_>, item: DefId) -> bool {
+    !super::recognition::is_std_crate(tcx, item)
+        && matches!(tcx.def_kind(item), rustc_hir::def::DefKind::AssocTy)
+        // Not a method's `-> impl Iterator`, rustc's associated type of it,
+        // whose type no caller names to read: a JS iterator, as this ADR's
+        // #2005 amendment has it.
+        && !tcx.is_impl_trait_in_trait(item)
+        && (tcx.item_bounds(item).skip_binder().iter())
+            .filter_map(|bound| bound.as_trait_clause())
+            .any(|p| super::recognition::is_std_def(tcx, p.def_id(), StdItem::Iterator) || super::recognition::is_iterator_extension(tcx, p.def_id()))
 }
 
 /// Whether `callee`'s type parameter `index` is its trait's, `Self` or a

@@ -966,3 +966,20 @@ test("what a sized box of an iterator is, is held_unboxed's alone", () => {
   ]);
   expect(read("crates/rust-js-lower/src/recognition/held.rs")).toContain("pub(crate) fn held_unboxed");
 });
+
+// Whether a projection's iterator is its type's own value, stepped by its
+// trait's dictionary, or a JS iterator, is one answer: `projection_as_it_is`
+// in generic code, of std's `IntoIterator`'s `IntoIter` and any other
+// trait's associated iterator alike, and `assoc_iterator_as_it_is`, which
+// `held_by_generic_code` asks of an impl's (ADR 0061, amended, #2330). A
+// second decider, a projection taken for a JS iterator by its kind alone,
+// `ty::Alias(..) => true`, gave one value two representations: a range given
+// back to concrete code read as `undefined..undefined`.
+test("a projection's iterator is told its type's own value by projection_as_it_is alone", () => {
+  const defines = /\bfn (projection_as_it_is|assoc_iterator_as_it_is)\b/;
+  expect(compilerRustFiles().filter((file) => defines.test(read(file)))).toEqual(["crates/rust-js-lower/src/iterators.rs"]);
+  const byKind = compilerRustFiles()
+    .filter((file) => file.startsWith("crates/rust-js-lower/src/iterators") || file.startsWith("crates/rust-js-lower/src/traits"))
+    .flatMap((file) => read(file).split("\n").filter((line) => /^\s*ty::Alias\(\.\.\) => true/.test(line)).map((line) => `${file}: ${line.trim()}`));
+  expect(byKind).toEqual([]);
+});

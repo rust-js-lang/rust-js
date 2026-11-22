@@ -4,8 +4,10 @@ import {
   $collectDropping,
   $debugStr,
   $foldBack,
+  $foldOf,
+  $given,
   $knowing,
-  $nextBack,
+  $next,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
@@ -17,13 +19,15 @@ import {
   iterator_map,
   iterator_rev,
   mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
   mapExactSizeIterator_len,
+  mapIterator___iteratorGetUnchecked,
   revDoubleEndedIterator_advanceBackBy,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
+  revDoubleEndedIterator_rfold,
   revDoubleEndedIterator_tryRfold,
-  revExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -31,33 +35,47 @@ export function entry() {
 }
 
 const tensSource = {
-  IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
-  items: (n, tag) =>
-    $knowing(
-      tensSource_items(n, tag),
-      (iterator) =>
-        mapDoubleEndedIterator_nextBack(iterator, {
-          next_back: $rangeNextBack,
-          nthBack: $rangeNthBack,
-        }),
-      (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-      undefined,
-      undefined,
-      (iterator, init, f, broke, unwind, ends) =>
-        mapDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: $rangeNext },
-          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-          $tryOf(broke),
-          undefined,
-          undefined,
-          undefined,
-          unwind,
-          ends,
-        ),
-    ),
+  IterIterator: () => ({
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+  }),
+  IterDoubleEndedIterator: () => ({
+    next_back: (iterator) =>
+      mapDoubleEndedIterator_nextBack(iterator, {
+        next_back: $rangeNextBack,
+        nthBack: $rangeNthBack,
+      }),
+    rfold: (iterator, init, f, unwind, ends) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+  }),
+  items: tensSource_items,
   hidden: (n, M) =>
     $knowing(
       tensSource_hidden(n, M),
@@ -125,27 +143,35 @@ const $scaledSource = new Map();
 
 function scaledSource(K) {
   return $traitImpl($scaledSource, [K], () => ({
-    IterDoubleEndedIterator: () => ({ next_back: $nextBack }),
-    items: (n, tag) =>
-      $knowing(
-        scaledSource_items(n, tag, K),
-        (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
-        (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
-        undefined,
-        (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
-        (iterator, init, f, broke, unwind, ends) =>
-          revDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $rangeNext },
-            $tryOf(broke),
-            undefined,
-            unwind,
-            ends,
-          ),
-        (iterator, n) => revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
-      ),
+    IterIterator: () => ({ next: $next, fold: $foldOf }),
+    IterDoubleEndedIterator: () => ({
+      next_back: (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
+      rfold: (iterator, init, f, unwind, ends) =>
+        revDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeNext },
+          undefined,
+          unwind,
+          ends,
+        ),
+      nthBack: (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
+        revDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeNext },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
+      advanceBackBy: (iterator, n) =>
+        revDoubleEndedIterator_advanceBackBy(iterator, n, { next: $rangeNext }),
+    }),
+    items: (n, tag) => scaledSource_items(n, tag, K),
     hidden: (n, M) =>
       $knowing(
         scaledSource_hidden(n, K, M),
@@ -217,8 +243,18 @@ function scaledSource_tagged(n, tag, K) {
 }
 
 function fromItsBack(SSource) {
+  const IterDoubleEndedIterator = SSource.IterDoubleEndedIterator();
   const it = SSource.items(4, "a");
-  return [$nextBack(it), $collectDropping($roomForHint($rev(it), 4, false))];
+  return [
+    IterDoubleEndedIterator.next_back(it),
+    $collectDropping(
+      $roomForHint(
+        $rev($given(it, SSource.IterIterator(), false, IterDoubleEndedIterator)),
+        4,
+        false,
+      ),
+    ),
+  ];
 }
 
 function hidden(SSource) {

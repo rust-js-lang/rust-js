@@ -161,7 +161,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`rev()` of an `I::IntoIter` a bound says is double-ended is refused",
     file: "crates/rust-js-lower/src/iterators/knowing.rs",
-    find: "            ty::Alias(..) => true,\n            _ => false,\n        };\n",
+    find: "            ty::Alias(..) => !projection_as_it_is(self.tcx, id, ty),\n            _ => false,\n        };\n",
     replace: "            _ => false,\n        };\n",
     tests: [
       "test/corpus.test.ts",
@@ -934,5 +934,23 @@ export const mutations: Mutation[] = [
     find: "        let ty = crate::recognition::held_unboxed(ty);\n        let js_iterator = match ty.kind() {\n",
     replace: "        let js_iterator = match ty.kind() {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_box_enumerated_asks_its_own_nth.rs$"],
+  },
+  {
+    name: "projection-js-iterator-to-generic-code",
+    breaks:
+      "generic code steps a trait's associated iterator as a JS iterator, \`$next(it)\`, though its impl gives it as its type's own value: a \`TypeError\` (#2330)",
+    file: "crates/rust-js-lower/src/iterators/knowing.rs",
+    find: "            || projection_as_it_is(self.tcx, self.generics_fn(), self.declared_ty(ty))\n",
+    replace: "            || (projection_as_it_is(self.tcx, self.generics_fn(), self.declared_ty(ty)) && !matches!(self.declared_ty(ty).kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. }) if crate::iterators::assoc_iterator_as_it_is(self.tcx, *def_id)))\n",
+    tests: ["test/associated-iterator-matrix.test.ts"],
+  },
+  {
+    name: "projection-as-it-is-knows-its-back",
+    breaks:
+      "a trait's associated iterator bound by \`DoubleEndedIterator\`, its type's own value, is taken for a JS iterator that knows its back, so \`rev()\` of it is \`$rev(it)\` of a range: a \`TypeError\` (#2330)",
+    file: "crates/rust-js-lower/src/iterators/knowing.rs",
+    find: "            ty::Alias(..) => !projection_as_it_is(self.tcx, id, ty),\n",
+    replace: "            ty::Alias(..) => true,\n",
+    tests: ["test/associated-iterator-matrix.test.ts"],
   },
 ];

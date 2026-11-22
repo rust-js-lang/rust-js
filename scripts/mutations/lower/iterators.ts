@@ -487,4 +487,22 @@ export const mutations: Mutation[] = [
       "^own_iterator_dropped_through_adapters.rs$",
     ],
   },
+  {
+    name: "assoc-iterator-a-js-iterator",
+    breaks:
+      "a trait's associated iterator is a JS iterator in generic code, which its impl's method makes one of, so a range it gives back to concrete code reads as \`undefined..undefined\` and a \`From<I>\` bound's value steps as a JS iterator, a \`TypeError\` (#2328, #2330)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "    !super::recognition::is_std_crate(tcx, item)\n        && matches!(tcx.def_kind(item), rustc_hir::def::DefKind::AssocTy)\n",
+    replace: "    false\n        && matches!(tcx.def_kind(item), rustc_hir::def::DefKind::AssocTy)\n",
+    tests: ["test/associated-iterator-matrix.test.ts"],
+  },
+  {
+    name: "assoc-iterator-impl-trait-in-trait-as-it-is",
+    breaks:
+      "a trait method's `-> impl DoubleEndedIterator`, rustc's associated type of it, is taken for its type's own value, so generic code's `rev()` of it is refused (#2330)",
+    file: "crates/rust-js-lower/src/iterators.rs",
+    find: "        && !tcx.is_impl_trait_in_trait(item)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_of_a_method_with_its_own_generics.rs$"],
+  },
 ];

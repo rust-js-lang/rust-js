@@ -767,4 +767,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "library_trait_method_fact_through_a_dictionary"],
   },
+  {
+    name: "impl-makes-assoc-iterator-a-js-iterator",
+    breaks:
+      "an impl's method giving its trait's associated iterator makes a JS iterator of it, \`$iterator(make(r), $rangeNext)\`, which generic code gives back to concrete code that reads a range: \`undefined..undefined\` (#2330)",
+    file: "crates/rust-js-lower/src/traits/impls.rs",
+    find: "            && crate::iterators::assoc_iterator_as_it_is(self.tcx, def_id)\n        {\n            return false;\n",
+    replace: "            && crate::iterators::assoc_iterator_as_it_is(self.tcx, def_id)\n            && false\n        {\n            return false;\n",
+    tests: ["test/associated-iterator-matrix.test.ts"],
+  },
 ];
