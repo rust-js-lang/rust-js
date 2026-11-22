@@ -1,0 +1,30 @@
+# The compiler's printing (ADR 1181): owned output's program, written as JS
+# and its maps by oxc, as declarations by TypeScript, laid out by Prettier,
+# and published. It reads owned output, and knows nothing of the front end.
+[package]
+name = "rust-js-emit"
+version = "0.0.4"
+edition = "2024"
+publish = false
+
+[dependencies]
+rust-js-program = { path = "../rust-js-program" }
+indexmap.workspace = true
+rustc-hash.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+oxc_allocator.workspace = true
+oxc_ast.workspace = true
+oxc_ast_visit.workspace = true
+oxc_codegen.workspace = true
+oxc_formatter.workspace = true
+oxc_formatter_core.workspace = true
+oxc_parser.workspace = true
+oxc_regular_expression.workspace = true
+oxc_sourcemap.workspace = true
+oxc_span.workspace = true
+oxc_syntax.workspace = true
+
+# Owned output's test conveniences, a `Name` of a word alone (its `testing`).
+[dev-dependencies]
+rust-js-program = { path = "../rust-js-program", features = ["testing"] }

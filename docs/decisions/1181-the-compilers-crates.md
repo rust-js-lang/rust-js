@@ -185,3 +185,23 @@ only), versions more than one crate takes being the workspace's:
 M4 moves `reachability`, `link` and `prepare`, with no dependency of
 their own: owned output's crate then holds all of it but `output`,
 `publish` and `hooks`, which call printing and go with it at M5.
+
+M5 makes printing a crate, `rust-js-emit`: `to_oxc`, `format`,
+`typescript`, `prettier`, `node_session`, and `output` (with `local_js`),
+`publish` and `hooks`, which plan, print and publish each module. It
+depends on `rust-js-program` alone, and oxc's crates are its alone, their
+pinned release the workspace's dependencies (the binary and the
+playground's build name none). The binary's front end names no crate but
+owned output's (`test/architecture-crates.test.ts`); the driver calls
+printing. `output`, `publish` and `hooks` stay in the owned-output layer of
+`test/architecture.test.ts`, the orchestration that starts printing, as
+before. A unit test that reads the checkout's files where its crate is,
+`format.rs`'s snapshots, reads them two folders up.
+
+Measured at M5, a crate's own build after a change to its root, and its
+unit tests, on the Mac mini under another push's check (load 8; a quiet
+machine's numbers are lower): `rust-js-program` 11.4 s and 3.5 s (69
+tests), `rust-js-emit` 15.3 s and 0.7 s (13 tests), the binary 41.9 s
+after a change to `main.rs`. Cargo still builds the binary again after a
+change to either crate, as it depends on both; what the crates make
+possible is building and testing owned output and printing without rustc.

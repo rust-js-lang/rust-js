@@ -44,5 +44,5 @@ crates/rust-js-program/src/program.rs	3
 crates/rust-js-program/src/runtime/steps.js	2
 crates/rust-js-program/src/settings.rs	1
 src/std_sysroot.rs	1
-src/to_oxc/arms.rs	1
-src/to_oxc/trailing.rs	1
+crates/rust-js-emit/src/to_oxc/arms.rs	1
+crates/rust-js-emit/src/to_oxc/trailing.rs	1

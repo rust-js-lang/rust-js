@@ -49,20 +49,12 @@ extern crate rustc_trait_selection;
 mod cargo;
 mod clippy;
 mod command;
-mod format;
-mod hooks;
 mod jsx_syntax;
 mod lower;
-mod node_session;
-mod output;
 mod phase_times;
-mod prettier;
-mod publish;
 #[cfg(not(target_os = "wasi"))]
 mod source_format;
 mod std_sysroot;
-mod to_oxc;
-mod typescript;
 #[cfg(not(target_os = "wasi"))]
 mod worker;
 
@@ -162,7 +154,7 @@ struct RustJs {
     panics_abort: bool,
     /// The JS files of the program's own its bindings import, read where
     /// lowering asks what they load (ADR 0031, amended).
-    local_js: output::LocalJs,
+    local_js: rust_js_emit::output::LocalJs,
     /// `--emit=dep-info=<path>` of a file compiled alone: its record names
     /// each crate it loaded, and is written as the session stops, where
     /// rustc's driver would write it after (ADR 1099).
@@ -318,7 +310,7 @@ impl Callbacks for RustJs {
         // each app, and each `-vV` started a Node session (ADR 1003,
         // amended; #892).
         if self.cargo {
-            for var in [cargo::APPS, cargo::TEST_BUILD, prettier::LAYOUT] {
+            for var in [cargo::APPS, cargo::TEST_BUILD, rust_js_emit::prettier::LAYOUT] {
                 let value = std::env::var(var).ok().map(|value| Symbol::intern(&value));
                 compiler.sess.env_depinfo.lock().insert((Symbol::intern(var), value));
             }
@@ -665,7 +657,7 @@ fn run() -> ExitCode {
         // A crate's checks of its JS as a host has it, once Cargo is done (ADR 0117).
         Ok(command::Command::Checks(checks)) => {
             let checked = rust_js_program::settings::read(&checks.input, false)
-                .and_then(|settings| hooks::check(&settings, &checks.files));
+                .and_then(|settings| rust_js_emit::hooks::check(&settings, &checks.files));
             return match checked {
                 Ok(()) => ExitCode::SUCCESS,
                 Err(error) => {
@@ -736,7 +728,7 @@ type StagedPaths = (PathBuf, PathBuf);
 struct Prepared {
     rustc_args: Vec<String>,
     callbacks: RustJs,
-    plan: output::OutputPlan,
+    plan: rust_js_emit::output::OutputPlan,
     stage: Stage,
     /// What Cargo is told of the build: its manifest and its metadata's
     /// staged and published paths (ADR 0101).
@@ -768,7 +760,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
     // to print its declarations, where no `RUST_JS_TYPESCRIPT` names the
     // printer, whose files it reads then (`printer_reads`).
     let printer_reads = match build.declarations {
-        true => crate::typescript::printer_reads()?,
+        true => rust_js_emit::typescript::printer_reads()?,
         false => Some(Vec::new()),
     };
     if !build.cargo && staged.dep_info.is_some() {
@@ -852,7 +844,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         declarations,
         ..read_settings
     };
-    let mut plan = output::OutputPlan::new(input, output, manifest);
+    let mut plan = rust_js_emit::output::OutputPlan::new(input, output, manifest);
     plan.metadata = metadata.clone();
     plan.settings = settings;
     plan.std_bodies = std_bodies;
@@ -904,7 +896,7 @@ fn prepare_build(build: command::Build) -> Result<Prepared, String> {
         drops_shadow,
         cargo,
         panics_abort: false,
-        local_js: output::LocalJs::new(&plan),
+        local_js: rust_js_emit::output::LocalJs::new(&plan),
         dep_info: !cargo && dep_info.is_some(),
     };
     Ok(Prepared {
@@ -996,7 +988,7 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
                 Box::new(move |read: &[PathBuf], wrote: &[PathBuf]| {
                     let read: Vec<PathBuf> = read.iter().cloned().chain(reading).collect();
                     let wrote: Vec<PathBuf> = wrote.iter().cloned().chain(coverage).chain(reports).collect();
-                    output::file_dep_info(&written, &wrote, &read)
+                    rust_js_emit::output::file_dep_info(&written, &wrote, &read)
                 }),
             ));
         }
@@ -1030,7 +1022,7 @@ fn finish_build(prepared: Prepared, exit: ExitCode) -> Result<ExitCode, String> 
     // Once it's all written, the crate's checks of it. Cargo's build runs
     // rust-js for each crate, so its driver is to run them, once (ADR 0117).
     if exit == ExitCode::SUCCESS && !cargo {
-        hooks::check(&plan.settings, &plan.written)?;
+        rust_js_emit::hooks::check(&plan.settings, &plan.written)?;
     }
     phase_times::mark("the crate's checks");
     Ok(exit)

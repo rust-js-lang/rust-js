@@ -1,11 +1,11 @@
-// Mutations of src/to_oxc/statements.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/to_oxc/statements.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "object-method-params-unplaced",
     breaks: "a line comment after a type's method's parameter, `by: f64, // DEV-only` of its object's `moved(info, by)`, is lost: its parameters map to no Rust, so nothing is after them (rd554)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    let params = self.params_at(FormalParameterKind::FormalParameter, &f.params, &f.param_spans);\n                    let body = self.function_body(&f.body);\n                    let value = Expression::new_function_expression(",
     replace: "                    let params = self.params(FormalParameterKind::FormalParameter, &f.params);\n                    let body = self.function_body(&f.body);\n                    let value = Expression::new_function_expression(",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after a parameter"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-method-on-the-constructor",
     breaks: "a class's method is written `Component.setState = function ..`, the constructor's, so an instance's `this.setState` is `undefined` (ADR 0761)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                true => prototype(),\n",
     replace: "                true => js::Expr::var(&n.name),\n",
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-constructor-unexported",
     breaks: "a class's constructor function isn't exported, so `import { Component }` finds none (ADR 0761)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            constructor.export = n.export;\n",
     replace: "            constructor.export = false;\n",
     tests: ["test/classes.test.ts", "-t", "React's Component is a constructor function"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "step-of-any-number-incremented",
     breaks: "a statement `j += 2` is `j++`, a step of one",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                kind: ExprKind::Num(1.0),\n",
     replace: "                kind: ExprKind::Num(_),\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "stepping by one"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "bitwise-and-assign-printed-or",
     breaks: "a compound `lanes &= ~lane` is printed `lanes |= ~lane`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        Op::BitAnd => AssignmentOperator::BitwiseAnd,\n",
     replace: "        Op::BitAnd => AssignmentOperator::BitwiseOR,\n",
     tests: ["test/corpus.test.ts", "-t", "^(bitwise_operators|lane_bits).rs$"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "step-down-incremented",
     breaks: "a statement `t -= 1.0` is `t++`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    _ => UpdateOperator::Decrement,\n",
     replace: "                    _ => UpdateOperator::Increment,\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "stepping by one"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "body-directives-unprinted",
     breaks: "a body's directives aren't in its prologue",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        let directives = ArenaVec::from_iter_in(directives, b);",
     replace: "        let directives = ArenaVec::from_iter_in(directives.take(0), b);",
     tests: ["test/modules.test.ts", "-t", "in a body is the body"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-link-own-chain",
     breaks: "a link of a chain is a chain of its own, `(o?.inner).v`, which reads `.v` of `undefined`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        if !in_chain(object) {",
     replace: "        if true {",
     tests: ["test/lowering-optional-chains.test.ts", "-t", "an option's property chain ends"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-field-assigned-dotted",
     breaks: "`files.two_d = Some(3)` of a field named `2d` is `files.2d = 3`, which doesn't parse",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "by its key.\n            ExprKind::Member(object, property) if !member_name(property) => {",
     replace: "by its key.\n            ExprKind::Member(object, property) if false && !member_name(property) => {",
     tests: ["test/lowering-names.test.ts", "-t", "isn't a name is read by its key"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-field-chained-dotted",
     breaks: "an optional read of a field named `worker-bundle` is `files?.worker-bundle`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                if member_name(property) {\n                    let name = IdentifierName::new(SPAN, self.name(property), b);",
     replace: "                if true {\n                    let name = IdentifierName::new(SPAN, self.name(property), b);",
     tests: ["test/lowering-names.test.ts", "-t", "isn't a name is read by its key"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-member-plain",
     breaks: "`options?.alternate` is printed `options.alternate`, which throws for a writer given no options",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                let optional = matches!(e.kind, ExprKind::OptionalMember(..));",
     replace: "                let optional = false;",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "spread-argument-unwritten",
     breaks: "a call's `...values` argument isn't written, and printing it panics",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            ExprKind::Spread(all) => Argument::new_spread_element(span(a.span), self.expr(all), &self.b),\n",
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "variadic binding"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "pattern-key-unquoted",
     breaks: "a destructured field that isn't a JS name is bare, `{ data-platform: dataPlatform }`, which JS can't parse",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    let key = if rust_js_program::names::is_identifier(field) {",
     replace: "                    let key = if true || rust_js_program::names::is_identifier(field) {",
     tests: ["test/jsx-props.test.ts", "-t", "hyphenated name is quoted"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "let-undefined-written",
     breaks: "a module's variable set later is `let SEEN = undefined;`, not `let SEEN;`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            (ExprKind::Undefined, true) => None,\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "method-name-unmapped",
     breaks: "a method's name in its type's object, `doubled(tally) {`, maps back to no Rust",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "let key = PropertyKey::new_static_identifier(span(f.name_span), self.name(f.name.word()), b);",
     replace: "let key = PropertyKey::new_static_identifier(SPAN, self.name(f.name.word()), b);",
     tests: ["test/modules.test.ts", "-t", "methods across modules and in a thread-local, by their names in JS"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "optional-index-plain",
     breaks: "`e?.[1]` is printed `e[1]`, which throws where `e` is `None`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    matches!(e.kind, ExprKind::OptionalIndex(..)),\n",
     replace: "                    false,\n",
     tests: ["test/lowering-branches.test.ts", "-t", "only gives a value"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-constants-unprinted",
     breaks: "a type's object's constants aren't printed, so `S.ID` is `undefined`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        let constants = n.constants.iter().map(|c| {\n",
     replace: "        let constants = n.constants.iter().take(0).map(|c| {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_fn_consts.rs$"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "rest-param-dropped",
     breaks: "a function's `...args` isn't written, and it gathers nothing",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        FormalParameters::new(SPAN, kind, ArenaVec::from_iter_in(params, b), rest, b)\n",
     replace: "        FormalParameters::new(SPAN, kind, ArenaVec::from_iter_in(params, b), rest.filter(|_| false), b)\n",
     tests: ["test/corpus.test.ts", "-t", "^c_variadic.rs$"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "defaulted-param-default-lost",
     breaks: "a parameter with a default, a `dyn`'s shim's `location = { .. }`, is written without it",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    Some(ArenaBox::new_in(self.expr(default), b)),\n",
     replace: "                    None,\n",
     tests: ["test/corpus.test.ts", "-t", "^track_caller_traits.rs$"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "switch-case-falls-through",
     breaks: "a case that goes on has no `break;`, and falls through to the next",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            stmts.push(Statement::new_break_statement(at, None, &self.b));\n",
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "switch-case-declares-unblocked",
     breaks: "a case that declares isn't a block, `case 1: const s = ..`, its names the other cases' too",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            true => ArenaVec::from_iter_in([Statement::new_block_statement(SPAN, stmts, &self.b)], &self.b),\n",
     replace: "            true => stmts,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "switch-or-pattern-unstacked",
     breaks: "an or-pattern's constants but the last aren't cases, `1 | 2 | 3` only `case 3:`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    for (value, next) in stacked.iter().zip(&case.values[1..]) {\n",
     replace: "                    for (value, next) in stacked.iter().zip(&case.values[1..]).take(0) {\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants is a switch"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "last-case-unbroken",
     breaks: "a `switch`'s last case that goes on has no `break;`, which upstream writes, the user's decision (ADR 0629, amended 2026-11-03)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                        self.case_body(&case.body, case.falls),\n",
     replace: "                        self.case_body(&case.body, case.falls || (default.is_none() && k + 1 == cases.len())),\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "a case needs no break"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-unbroken",
     breaks: "a `switch`'s `default` that goes on has no `break;`, `default: level = 0; }`, where upstream writes one (ADR 0629, amended 2026-11-03)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    clauses.push(SwitchCase::new(at, None, self.case_body(default, false), b));\n",
     replace: "                    clauses.push(SwitchCase::new(at, None, self.case_body(default, true), b));\n",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "a default after a guarded case ends"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "for-in-printed-of",
     breaks: "a loop of an object's keys is printed `for (const key of o)`, which throws of an object that isn't iterable",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                let l = if *keys {\n",
     replace: "                let l = if *keys && false {\n",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "comments-block-unspanned",
     breaks: "a block of only comments has no span to its end, so its comments are printed after it",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        Statement::new_block_statement(commented_end(stmts), self.stmts(stmts), &self.b)\n",
     replace: "        Statement::new_block_statement(SPAN, self.stmts(stmts), &self.b)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a branch of only comments"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "function-body-comments-outside",
     breaks: "a function's comments at its end, `// Nothing found.`, are printed after it, outside its `}` (ADR 0862)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        FunctionBody::new(commented_end(&stmts), directives, self.stmts(&stmts), b)\n",
     replace: "        FunctionBody::new(SPAN, directives, self.stmts(&stmts), b)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a None given"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "clause-block-comments-outside",
     breaks: "a `catch_unwind` closure's last comment, `/* eslint-enable no-new */`, is the `catch`'s first, and a `catch`'s last after the `try` (ADR 0862, amended)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        let end = commented_end(stmts).end;\n",
     replace: "        let end = SPAN.end;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment at the end of catch_unwind's closure"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "clause-block-starts-at-comments",
     breaks: "a `catch`'s block starts where its comments are, which oxc prints before its `{`, `catch (_e)\\n// It threw.\\n{` (ADR 0862, amended)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        BlockStatement::boxed(Span::new(end, end), self.stmts(stmts), &self.b)\n",
     replace: "        BlockStatement::boxed(Span::new(end.saturating_sub(1), end), self.stmts(stmts), &self.b)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment at the end of catch_unwind's closure"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "try-catch-finally-nested",
     breaks: "a guard's `finally` whose `try` holds a `catch_unwind`'s `try` and `catch` alone is `try { try { .. } catch { .. } } finally { .. }`, where JS writes one `try`, `catch` and `finally`",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    ] => (\n                        inner,\n                        Some(self.catch_clause(error.as_ref().map(|n| n.word()), handler)),\n                    ),\n",
     replace: "                    ] if false => (\n                        inner,\n                        Some(self.catch_clause(error.as_ref().map(|n| n.word()), handler)),\n                    ),\n",
     tests: ["test/lowering.test.ts", "-t", "guard dropped around catch_unwind"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "commented-else-if",
     breaks: "an `else`'s block that starts with a comment before its only `if`, `// Nothing has been pinged.`, is an `else if`, and the comment lost",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    ] if only.span.is_none() || !self.commented.contains(&only.span.lo) || at_its_first(only) => {\n",
     replace: "                    ] => {\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
   {
     name: "else-if-at-its-first-commented",
     breaks: "an `else if` of a later `match` arm with a comment first in its block or above it, `(2, 2) => { // Two of two.`, nests the chain, `} else { // Two of two.\\n if (a === 2 && b === 2) {` (#595)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: " || at_its_first(only) => {\n",
     replace: " => {\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "keeps its else if"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
   {
     name: "else-if-at-its-first-of-any-start",
     breaks: "an `else`'s only `if` the program wrote after a comment, `} else {\\n // Nothing has been pinged.\\n if (..)`, is an `else if`, its comment moved into the `if`'s block (#595)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "    (then.iter().find(|s| !s.span.is_none())).is_some_and(|first| first.span.lo == stmt.span.lo)\n",
     replace: "    (then.iter().find(|s| !s.span.is_none())).is_some_and(|first| first.span.lo >= stmt.span.lo)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallen-case-broken",
     breaks: "a case that falls through to the next ends in `break;`, so a failed guard leaves the `switch`, not runs the next case",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                        self.case_body(&case.body, case.falls),\n",
     replace: "                        self.case_body(&case.body, false),\n",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-mapped-nowhere",
     breaks: "a parameter's JS maps nowhere, so a comment before it is lost and its line isn't the Rust's",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            let at = spans.get(i).map_or(SPAN, |&s| span(s));\n",
     replace: "            let at = spans.get(i).map_or(SPAN, |_| SPAN);\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
   {
     name: "getter-printed-as-method",
     breaks: "a class's getter is printed as a prototype method, `QueenPosition.prototype.leftDiagonal = function () { .. }` (#357)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            if class.getters.iter().any(|g| f.name.is(g)) {\n",
     replace: "            if false {\n",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "labeled-switch-printed-as-block",
     breaks: "a labeled `switch` is printed in a block, `getTag: { switch (type) { .. } }`, not as JS writes it (ADR 0944)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    ] => self.stmt(only),\n",
     replace: "                    ] if false => self.stmt(only),\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
   {
     name: "for-step-by-assigned",
     breaks: "a `for`'s step of two, `at -= 2`, is printed `at = 2` (ADR 0974)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "compound_operator(*op), target, self.expr(value), b)\n",
     replace: "AssignmentOperator::Assign, target, self.expr(value), b)\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_steps.rs$"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
   {
     name: "case-break-before-comments",
     breaks: "a case of only comments, `case 4: // TODO`, ends with a `break;` before them, so they print in the next case (ADR 0753, amended)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                Some(end) if matches!(end.kind, StmtKind::Comments) && !end.span.is_none() => {\n",
     replace: "                Some(end) if false && matches!(end.kind, StmtKind::Comments) => {\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "an arm of only comments keeps them before its break"],
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
   {
     name: "made-after-comments-unplaced",
     breaks: "a `break;` tidy makes after a branch's comments is past them, `break; // Commit the placeholder.` (ADR 0753, amended)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            if s.span.is_none()\n                && let Some(comments) = after_comments\n",
     replace: "            if s.span.is_none()\n                && let Some(comments) = after_comments.filter(|_| false)\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "an arm of only comments keeps them before its break"],
@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
   {
     name: "pattern-case-unplaced",
     breaks: "a case's values after its first have no place, so a comment between an arm's patterns is in the case's body",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                            false => Span::new(next.span.lo, next.span.lo),\n",
     replace: "                            false => SPAN,\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
   {
     name: "stacked-case-first-unplaced",
     breaks: "a comment above an arm of more than one pattern is between its `case`s, `case HostSingleton: // Unlike .. case HostComponent:`, not above the first (rd143)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                        .or(first)\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above an arm of patterns"],
@@ -341,7 +341,7 @@ export const mutations: Mutation[] = [
   {
     name: "block-default-comment-in-body",
     breaks: "a comment above a `_` arm that opens a block, `// The default is now forwards.`, is in its `default`'s body, not before its label (rd214)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                        .or_else(|| super::cases::clause_start(self.source, default))\n",
     replace: "",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "_ arm that opens a block"],
@@ -349,7 +349,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-a-constructor-function",
     breaks: "an ES class, one that extends one too, is a constructor function, `function Label(props) { super(props); .. }`, which can't extend",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        if class.es {\n",
     replace: "        if false {\n",
     tests: [
@@ -361,7 +361,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-static-on-the-prototype",
     breaks: "a class component's function of no `self`, `Label.greeting()`, is its prototype's, undefined on the class",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                    !class.prototype.iter().any(|p| f.name.is(p)),\n",
     replace: "                    false,\n",
     tests: [
@@ -373,7 +373,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-prototype-set-dropped",
     breaks: "a class's prototype set at load isn't printed, its instances no Promises (#448)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        out.extend(self.stmts(prototype_set));\n",
     replace: "",
     tests: [
@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
   {
     name: "replaced-prototype-method-assigned",
     breaks: "a method of a class whose prototype its load replaced is assigned, which throws where Promise.prototype is frozen (SES), the module never loading (#448, rd393)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            if class.prototype_set && class.prototype.iter().any(|p| f.name.is(p)) {\n",
     replace: "            if false {\n",
     tests: [
@@ -397,7 +397,7 @@ export const mutations: Mutation[] = [
   {
     name: "replaced-prototype-constant-assigned",
     breaks: "a constant of a class whose prototype its load replaced is assigned, which throws where what it inherits holds it unwritable (#448, rd393)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            if class.prototype_set {\n                assigned.push(defined(c.name.word(), c.value.clone(), c.span));\n",
     replace: "            if false {\n                assigned.push(defined(c.name.word(), c.value.clone(), c.span));\n",
     tests: [
@@ -409,7 +409,7 @@ export const mutations: Mutation[] = [
   {
     name: "replaced-prototype-method-not-writable",
     breaks: "a method defined on a replaced prototype isn't writable, where an assignment's would be (#448, rd393)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                field(\"writable\", js::Expr::bool(true)),\n",
     replace: "",
     tests: [
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-value-fields-unprinted",
     breaks: "a namespace thread-local's `const` declares its own name, `export const noop = create(3);`, not its value's fields, its module's exports (rd293, ADR 1037, amended)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "        let id = match c.fields.is_empty() {\n",
     replace: "        let id = match c.fields.is_empty() || true {\n",
     tests: ["test/namespace-values.test.ts", "-t", "fields are its module's exports"],
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
   {
     name: "subclass-getter-printed-as-method",
     breaks: "a getter of an ES class, one that extends a binding's, is printed as a method, `type() { .. }` (rd679)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                false if class.getters.iter().any(|g| f.name.is(g)) => {\n",
     replace: "                false if false => {\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
   {
     name: "es-class-default-declared-alone",
     breaks: "an ES class that's its module's default is declared without `export default`, `class Plugin { .. }`, and its module exports no default (rd682)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            (true, Declaration::ClassDeclaration(declared)) => Statement::new_export_default_declaration(\n",
     replace: "            (false, Declaration::ClassDeclaration(declared)) => Statement::new_export_default_declaration(\n",
     tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
     name: "prototype-forwarding-printed-as-function",
     breaks:
       "a prototype's method that's the function it passes on to is printed as its own function, `X.prototype.m = function (..) { f(..); }` (rd715)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            let mut value = match class.forwarded(f) {\n",
     replace: "            let mut value = match None::<js::Expr> {\n",
     tests: ["test/method-forwarding.test.ts", "-t", "a prototype's method that only passes its parameters on"],
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
   {
     name: "es-class-fields-unprinted",
     breaks: "an ES class's declared fields are printed nowhere, `chunkName;` gone (#568)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.chain(elements), b), b),\n",
     replace: "            ClassBody::boxed(SPAN, ArenaVec::from_iter_in(fields.take(0).chain(elements), b), b),\n",
     tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
@@ -462,7 +462,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-pattern-unmapped",
     breaks: "a destructured parameter's pattern, `[a, b]`, is mapped nowhere, so the comment after it on its line, `// the pair`, has no JS to follow and is the body's first line (#1717)",
-    file: "src/to_oxc/statements.rs",
+    file: "crates/rust-js-emit/src/to_oxc/statements.rs",
     find: "                pattern => (self.pattern_at(pattern, at), None),\n",
     replace: "                pattern => (self.pattern(pattern), None),\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a destructured parameter"],

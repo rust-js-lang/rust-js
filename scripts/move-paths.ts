@@ -405,6 +405,15 @@ export function widened(at = root): string[] {
     const sites = new Map<string, string | undefined>();
     type Span = { file_name: string; line_start: number; label?: string | null };
     const walk = (message: { message: string; code?: { code: string } | null; spans: Span[]; children: { message: string; spans: Span[] }[] }) => {
+      // A type a public item hands out that its crate keeps to itself, as
+      // `private_interfaces` warns: the type, where the warning says it is.
+      if (["private_interfaces", "private_bounds"].includes(message.code?.code ?? "")) {
+        for (const child of message.children) {
+          if (!/only usable at visibility/.test(child.message)) continue;
+          for (const span of child.spans) if (crateOf(span.file_name, at)?.dir) sites.set(`${span.file_name}:${span.line_start}`, undefined);
+        }
+        return;
+      }
       if (!["E0603", "E0624", "E0616"].includes(message.code?.code ?? "")) return;
       const name = /`(\w+)` is private/.exec(message.message)?.[1];
       for (const span of message.spans) if (span.label && /defined here|private/.test(span.label) && crateOf(span.file_name, at)?.dir) sites.set(`${span.file_name}:${span.line_start}`, name);

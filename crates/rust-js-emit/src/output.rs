@@ -1170,14 +1170,14 @@ fn exports(module: &program::LoweredModule) -> Vec<String> {
 
 /// What a build writes and what it leaves stale, constructed by `plan` alone,
 /// after every name and content has been validated: its fields are its own.
-pub(crate) struct ArtifactPlan {
+pub struct ArtifactPlan {
     artifacts: Vec<Artifact>,
     stale: Vec<manifest::Artifact>,
 }
 
 impl ArtifactPlan {
     /// Carry the plan out: the publisher writes what it says.
-    pub(crate) fn publish(self) -> Result<(), String> {
+    pub fn publish(self) -> Result<(), String> {
         crate::publish::publish(&self.artifacts, &self.stale)
     }
 }

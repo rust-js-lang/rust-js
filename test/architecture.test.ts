@@ -25,8 +25,9 @@ const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/std_sysroot.rs", "src/source_format.rs", "src/source_format/",
     "src/phase_times.rs", "src/worker.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
-  owned: ["src/output.rs", "src/output/", "src/publish.rs", "src/hooks.rs", "crates/rust-js-program/src/"],
-  printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/format/", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
+  owned: ["crates/rust-js-program/src/", "crates/rust-js-emit/src/output.rs", "crates/rust-js-emit/src/output/", "crates/rust-js-emit/src/publish.rs",
+    "crates/rust-js-emit/src/hooks.rs"],
+  printing: ["crates/rust-js-emit/src/lib.rs", "crates/rust-js-emit/src/to_oxc.rs", "crates/rust-js-emit/src/to_oxc/", "crates/rust-js-emit/src/format.rs", "crates/rust-js-emit/src/format/", "crates/rust-js-emit/src/typescript.rs", "crates/rust-js-emit/src/prettier.rs", "crates/rust-js-emit/src/node_session.rs"],
 };
 const layerOf = (file: string) =>
   Object.entries(layers).find(([, paths]) => paths.some(p => p.endsWith("/") ? file.startsWith(p) : file === p))?.[0];
@@ -52,9 +53,9 @@ const allowed: Record<string, string[]> = {
   printing: ["printing", "owned"],
 };
 const orchestration: Record<string, string[]> = {
-  "src/output.rs": ["src/to_oxc.rs", "src/typescript.rs", "src/prettier.rs", "src/format.rs"],
-  "src/output/local_js.rs": ["src/to_oxc.rs"],
-  "src/hooks.rs": ["src/format.rs"],
+  "crates/rust-js-emit/src/output.rs": ["crates/rust-js-emit/src/to_oxc.rs", "crates/rust-js-emit/src/typescript.rs", "crates/rust-js-emit/src/prettier.rs", "crates/rust-js-emit/src/format.rs"],
+  "crates/rust-js-emit/src/output/local_js.rs": ["crates/rust-js-emit/src/to_oxc.rs"],
+  "crates/rust-js-emit/src/hooks.rs": ["crates/rust-js-emit/src/format.rs"],
 };
 // A top-level module of `crate`'s, as the file it is: `crates/rust-js-program/src/js.rs`, or a
 // folder's, `src/lower/`.
@@ -141,14 +142,14 @@ test("the layer check finds a module however a file names it", () => {
     ["src/cargo.rs", "use crate::{lower::{self, Body}, command, jsx_syntax};", ["src/command.rs", "src/jsx_syntax.rs", "src/lower.rs"]],
     ["src/lower/drops/types.rs", "use super::super::super::command::Plan;", ["src/command.rs"]],
     ["src/lower/drops/types.rs", "use super::super::traits::Route;", []],
-    ["src/format.rs", 'mod tests {\n    use super::*;\n    fn f() { let s = "{"; let c = \'}\'; }\n}\nuse super::lower::Body;', ["src/lower.rs"]],
+    ["src/command.rs", 'mod tests {\n    use super::*;\n    fn f() { let s = "{"; let c = \'}\'; }\n}\nuse super::lower::Body;', ["src/lower.rs"]],
     ["src/cargo.rs", '// crate::lower, in a comment\nfn f() { let s = "super::lower"; }', []],
     ["src/main.rs", "use crate::cargo; mod tests { use super::lower; }", ["src/cargo.rs", "src/lower.rs"]],
     ["src/cargo.rs", "use crate::*;\nfn sneak(_: lower::Body) {}", [WHOLE]],
     ["src/cargo.rs", "use super::*;", [WHOLE]],
     ["src/cargo.rs", "use crate as root;\nfn sneak(_: root::lower::Body) {}", [WHOLE]],
     ["src/cargo.rs", "use crate::{self as root, command};", ["src/command.rs", WHOLE]],
-    ["src/format.rs", "mod tests {\n    use super::*;\n}", []],
+    ["src/command.rs", "mod tests {\n    use super::*;\n}", []],
     ["src/lower/drops/types.rs", "use super::*;", []],
     ["src/lower/drops/types.rs", "use rust_js_program::{collections::IndexMap, lines};", ["crates/rust-js-program/src/collections.rs", "crates/rust-js-program/src/lines.rs"]],
     ["crates/rust-js-program/src/decisions.rs", "use crate::collections::IndexMap;", ["crates/rust-js-program/src/collections.rs"]],
@@ -235,8 +236,8 @@ test("owned compiler output and downstream phases do not depend on rustc", () =>
 // helper's name (found in review).
 test("runtime imports are chosen before printing", () => {
   // The printer is given them, chosen where the module is prepared.
-  expect(read("src/to_oxc.rs")).not.toMatch(/imported_helpers|read_vars|read_helpers/);
-  expect(read("src/output.rs")).toContain("imported_helpers(helper_sources, &js_module.read_helpers())");
+  expect(read("crates/rust-js-emit/src/to_oxc.rs")).not.toMatch(/imported_helpers|read_vars|read_helpers/);
+  expect(read("crates/rust-js-emit/src/output.rs")).toContain("imported_helpers(helper_sources, &js_module.read_helpers())");
   expect(read("crates/rust-js-program/src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
 });
 
@@ -331,7 +332,7 @@ test("only the publisher and the driver write files", () => {
   // the unit tests that bless a table made of an owner, `BLESS=1 cargo
   // test`: the library contract's and the in-place forms' (ADR 1176).
   // And the worker, which redirects a build's output to its files (#2301).
-  const writers = ["src/publish.rs", "src/main.rs", "src/worker.rs", "src/std_sysroot.rs", "crates/rust-js-program/src/library/scopes.rs", "src/source_format.rs", "src/lower/iterators/in_place_forms.rs"];
+  const writers = ["crates/rust-js-emit/src/publish.rs", "src/main.rs", "src/worker.rs", "src/std_sysroot.rs", "crates/rust-js-program/src/library/scopes.rs", "src/source_format.rs", "src/lower/iterators/in_place_forms.rs"];
   // Its code alone: a lowering of std's files names them in its comments
   // and in the paths it recognizes, `"std::fs::write"` (#1156).
   const code = (file: string) => read(file).replace(/\/\/.*$/gm, "").replace(/"(?:[^"\\\n]|\\.)*"/g, '""');

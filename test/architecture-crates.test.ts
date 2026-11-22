@@ -17,6 +17,7 @@ const members = compilerCrates().filter((crate) => crate !== binary);
 // owned output on none. A crate added names its place here.
 const allowed: Record<string, string[]> = {
   "rust-js-program": [],
+  "rust-js-emit": ["rust-js-program"],
 };
 
 test("each crate depends only on the compiler's crates its layer may", () => {
@@ -90,4 +91,15 @@ test("a crate's `testing` feature never reaches a normal build", () => {
   // And the tests' build has it, so the guard is real.
   const dev = Bun.spawnSync(["cargo", "tree", "--locked", "--offline", "-p", "rust-js", "-e", "dev,features", "--prefix", "none"], { cwd: root });
   expect(dev.stdout.toString()).toMatch(/rust-js-program feature "testing"/);
+});
+
+// The front end builds owned output and never prints it: of the compiler's
+// crates it names `rust-js-program` alone (#2297), printing's crate the
+// driver's to call.
+test("the front end names no crate but owned output's", () => {
+  const front = compilerRustFiles().filter((file) => file === "src/lower.rs" || file.startsWith("src/lower/") || file === "src/jsx_syntax.rs" || file.startsWith("src/jsx_syntax/"));
+  expect(front.length).toBeGreaterThan(100);
+  const others = members.filter((crate) => crate.package !== "rust-js-program").map((crate) => crate.name);
+  const strays = front.filter((file) => others.some((name) => new RegExp(`\\b${name}::`).test(readFileSync(join(root, file), "utf8"))));
+  expect(strays).toEqual([]);
 });

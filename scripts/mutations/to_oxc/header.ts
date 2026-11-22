@@ -1,11 +1,11 @@
-// Mutations of src/to_oxc/header.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/to_oxc/header.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "module-doc-always-apart",
     breaks: "a module's `//!` right above its first `use` has a blank line after it, which the Rust doesn't (#486)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        tight = !docs.apart;\n",
     replace: "        tight = false;\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-doc-never-apart",
     breaks: "a module's `//!` and a blank line, then its first `use`, has no blank line before its import (#486)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        tight = !docs.apart;\n",
     replace: "        tight = true;\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-doc-runs-joined",
     breaks: "two runs of a module's `//!`, a blank line between, are one paragraph of its JSDoc, no ` *` between (#486, rd644)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "                    said.push(\"\");\n",
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-doc-plain",
     breaks: "a module's `//!` lines are `//` lines, where upstream's files describe themselves in one JSDoc, React's ReactNoopServer's `/**\\n * This is a renderer of React ..` (rd644)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            match rust_js_program::comments::jsdoc(&said) {\n",
     replace: "            match None::<String> {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "one JSDoc"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-block-doc-plain",
     breaks: "an inline module's `/*! The lanes. */` is a plain `/* */`, not its file's JSDoc (rd644)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        lines.push(format!(\"/**{block}\"));\n",
     replace: "        lines.push(format!(\"/*{block}\"));\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "one JSDoc"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "named-imports-unwritten",
     breaks: "a module's named imports of a JS module, `import { readFileSync } from \"fs\"`, are left out, and what they name is unbound",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        if clause {\n",
     replace: "        if clause && package.default.is_some() {\n",
     tests: ["test/node-bindings.test.ts", "-t", "node's modules are imported, and its globals called"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "imports-unsorted",
     breaks: "imports stay in the order they were found, `./local` before `@scope/alpha`",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "    named.sort_by(|(a_relative, a), (b_relative, b)| {\n        (written(a.placed), a_relative, a.from).cmp(&(written(b.placed), b_relative, b.from))\n    });\n",
     replace: "    let _ = written;\n",
     tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "imports-relative-mixed",
     breaks: "relative modules sort among packages, `./helper.js` before `@scope/alpha`",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        (written(a.placed), a_relative, a.from).cmp(&(written(b.placed), b_relative, b.from))\n",
     replace: "        (written(a.placed), a.from, a_relative).cmp(&(written(b.placed), b.from, b_relative))\n",
     tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "imports-effects-first",
     breaks: "what a module imports for its effect comes first, its CSS before what it styles",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        .chain(effects)\n        .chain(runtime)\n",
     replace: "        .chain(runtime)\n        .chain(effects)\n",
     tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-import-braced",
     breaks: "a default import is printed as a named one, `import { default as Label }`",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "                    .map(|&default| ImportDeclarationSpecifier::new_import_default_specifier(SPAN, local(default), b));\n",
     replace:
       "                    .map(|&default| ImportDeclarationSpecifier::new_import_specifier(SPAN, name(\"default\"), local(default), ImportOrExportKind::Value, b));\n",
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-import-unwritten",
     breaks: "a module read through its namespace, `Plugin.extractEvents(..)`, imports none, so `Plugin` is undefined (rd114, ADR 1018)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        if let Some(namespace) = &import.namespace {\n            named.push((relative, entry(Says::Namespace(namespace.word()))));\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "header-on-code-spaced",
     breaks: "a file's leading comments right above its code are a blank line above its JS, where the source has none, React's `// This is a generated file.` above its first `export` (#419)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "    if !(on_code || tight) {\n",
     replace: "    if true {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "right above the code are right above its JS"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     name: "imports-by-path-not-use",
     breaks:
       "a module's imports are ordered by their specifiers, not where their `use`s are, so JS loads its modules in another order than the program writes, React DOM's ReactFizzConfigDOM before ReactFizzServer (rd570, ADR 1063)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "    let written = |span: js::Span| (span.is_none(), span.lo);\n",
     replace: "    let written = |_: js::Span| (false, 0);\n",
     tests: ["test/libraries.test.ts", "-t", "uses that make them"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "imports-unused-first",
     breaks: "an import no `use` makes, a binding's of the crate's own, comes before those `use`s make, `../../a.js` first (ADR 1063)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "    (placed.into_iter())\n        .chain(unplaced)\n",
     replace: "    (unplaced.into_iter())\n        .chain(placed)\n",
     tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexport-lines-unprinted",
     breaks: "a module's `pub use` writes no `export { .. } from`, and what imports it finds nothing",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        named.push((relative, entry));\n",
     replace: "        let _ = (relative, entry);\n",
     tests: ["test/modules.test.ts", "-t", "re-exported from it"],
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexport-ordered-by-its-span",
     breaks: "a re-export is placed where it's written, a namespace's forwarding method's after every import, not at its module's `use` (rd620)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            placed: reexport.at,\n",
     replace: "            placed: reexport.span,\n",
     tests: ["test/cargo-link.test.ts", "-t", "forwarding method's re-export"],
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexport-comments-left",
     breaks: "a re-export's own comments aren't its statement's, so its doc comment, `/** The idle priority .. */`, isn't before its `export { .. } from` (rd620)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            commented: reexport.span,\n",
     replace: "            commented: js::Span::NONE,\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "re-export printed first"],
@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
   {
     name: "namespace-reexport-as-a-name",
     breaks: "a `pub use` of a module's namespace is `export { * as ns } from`, which isn't JS, not `export * as ns from` (ADR 0240, amended)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            ([(namespace, alias)], _) if namespace == \"*\" => Says::ReexportAll(Some(alias)),\n",
     replace: "            ([(namespace, alias)], _) if namespace == \"\" => Says::ReexportAll(Some(alias)),\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],
@@ -151,7 +151,7 @@ export const mutations: Mutation[] = [
   {
     name: "imports-all-first",
     breaks: "every import prints before the code, React's ReactFizzConfigMarkup's `export const isPrimaryRenderer = false;` before its second import, where it's declared between two `use`s (rd652)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        if !at.is_none() {\n            after = before(at);\n",
     replace: "        if false {\n            after = before(at);\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "an item between two uses"],
@@ -159,7 +159,7 @@ export const mutations: Mutation[] = [
   {
     name: "imports-after-what-holds-them",
     breaks: "a `use` inside a function places its import after the function, not right above it, where it's written",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "                at.start != 0 && at.end <= placed.lo && file_of(at.start) == file_of(placed.lo)\n",
     replace: "                at.start != 0 && at.start <= placed.lo && file_of(at.start) == file_of(placed.lo)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "an item between two uses"],
@@ -167,7 +167,7 @@ export const mutations: Mutation[] = [
   {
     name: "header-apart-from-code-after-imports",
     breaks: "a file's leading comments right above its code are a blank line above it where its imports are after the code, `use super::answer;` written last (#419, rd652)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "    let first = placed.first().is_some_and(|&(at, _)| at == 0);\n",
     replace: "    let first = !placed.is_empty();\n",
     tests: ["test/emission.test.ts", "-t", "a file's leading comments are its JS's"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
   {
     name: "declared-import-spaced",
     breaks: "imports placed at bindings' declarations are a blank line apart, as the function items are, where they're one block (rd637)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            false if self.declared => js::Span {\n",
     replace: "            false if false => js::Span {\n",
     tests: ["test/snapshots.test.ts", "-t", "imports"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
   {
     name: "every-export-listed",
     breaks: "a re-export of every name is printed as its list, not `export * from` (#593)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            _ if reexport.every => Says::ReexportAll(None),\n",
     replace: "",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
   {
     name: "unplaced-import-after-last-reexport",
     breaks: "the runtime's import, which no `use` places, prints after a `pub use`'s re-export below the code, the module's last line, not with the imports (rd725)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        .rposition(|entry| !reexport(entry))\n",
     replace: "        .rposition(|_| true)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "an import no use places"],
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
   {
     name: "unplaced-import-last-without-imports",
     breaks: "of a module no `use` imports into, the runtime's import prints after its last re-export, not first (rd725)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        .map_or(0, |last| last + 1);\n",
     replace: "        .map_or(placed.len(), |last| last + 1);\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "an import no use places"],
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-import-comments-lost",
     breaks: "the comments above a binding whose import is placed at it, no `use` naming it, are lost (rd752)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "                true => package.named_at,\n                false => package.span,\n",
     replace: "                true => package.span,\n                false => package.span,\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a binding's comments are above the import it makes"],
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-import-blank-lines-unquieted",
     breaks: "an import placed at a binding takes the blank lines around its function item, a blank line between two such imports (rd752)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        .filter(|entry| entry.declared && entry.commented == entry.placed)\n",
     replace: "        .filter(|entry| entry.declared && entry.commented == entry.placed && false)\n",
     tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-import-end-before-an-import",
     breaks: "two imports placed at bindings are apart where the function items are, the end of the first told before the second (rd752)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: " && body.get(i + 1).is_some_and(|next| !imported(next)))\n",
     replace: ")\n",
     tests: ["test/modules.test.ts", "-t", "imports are where their bindings are declared"],
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
   {
     name: "imported-reexport-from",
     breaks: "a `pub use` each of whose names the module imports is `export {..} from` beside the import, not upstream's `export { detachDeletedInstance };` (rd705)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "        let says = match (reexport.named.as_slice(), locals) {\n",
     replace: "        let says = match (reexport.named.as_slice(), locals.filter(|_| false)) {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a pub use of what the module imports exports its binding"],
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
   {
     name: "partly-imported-reexport-local",
     breaks: "a `pub use` of which the module imports only some names exports each as a binding of the module's, `export { read, unread };` of an `unread` nothing binds, which JS refuses to load (rd705)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            .map(|(export, _)| (imported.get(&(reexport.from.as_str(), export.as_str()))).and_then(above))\n",
     replace: "            .map(|(export, _)| (imported.get(&(reexport.from.as_str(), export.as_str()))).and_then(above).or(Some(export.as_str())))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a pub use of what the module imports exports its binding"],
@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
   {
     name: "import-below-reexport-local",
     breaks: "a `pub use` whose name a `use` below it imports exports that import's binding above it, `export { _areaDEV as area };` before `import { area as _areaDEV }`, what the module hasn't imported yet as it reads (rd705)",
-    file: "src/to_oxc/header.rs",
+    file: "crates/rust-js-emit/src/to_oxc/header.rs",
     find: "            (!at.is_none() && !reexport.at.is_none() && at.lo <= reexport.at.lo).then_some(local)\n",
     replace: "            (!at.is_none()).then_some(local)\n",
     tests: ["test/modules.test.ts", "-t", "re-exported as written"],

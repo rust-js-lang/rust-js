@@ -114,7 +114,7 @@ the map's columns after a comment. Mutations
 `inside-comment-map-unmoved` (`to_oxc.ts`) and
 `value-comment-equals-only-before` (`to_oxc/trailing.ts`): where a comment
 after code on its line goes, which this made `to_oxc.rs` too long to
-hold, is `src/to_oxc/trailing.rs`'s.
+hold, is `crates/rust-js-emit/src/to_oxc/trailing.rs`'s.
 
 ## Amendment: one on a line of its own between an `=` and the value
 

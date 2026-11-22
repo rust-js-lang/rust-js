@@ -1,5 +1,5 @@
 // A build publishes the same way whichever host runs it: the native
-// compiler (src/output.rs) and the WASI host's publisher (tooling/publish.js)
+// compiler (crates/rust-js-emit/src/output.rs) and the WASI host's publisher (tooling/publish.js)
 // remove a file an older build wrote only if it's still theirs to remove
 // (ADR 0091). Each case here runs against both, from the same older manifest.
 //

@@ -452,7 +452,7 @@ fn layout(
         };
         code = code.replace(&marker(i), &placeholder(i, wide, stem));
     }
-    let out = crate::format::jsx_expression(&code, width as u16, job.tab as u8)
+    let out = rust_js_emit::format::jsx_expression(&code, width as u16, job.tab as u8)
         .map_err(|why| format!("{}: oxc couldn't lay out a `jsx!`: {why}", job.name.display()))?;
     // oxc moves its tokens, never changes one: a `{" "}` it adds, or any
     // other, is an error.

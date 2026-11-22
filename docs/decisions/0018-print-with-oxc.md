@@ -125,7 +125,7 @@ A name is what a tool shows for the JS identifier, so it would be right
 only as the JS's own name, which oxc leaves out, or as nothing. Without
 one, a frame is named as V8 names the JS, `beginWork`, as a person's JS
 would be, and the map still takes each position to its Rust.
-`restore_sources` in `src/to_oxc/expressions.rs`, where oxc's map becomes
+`restore_sources` in `crates/rust-js-emit/src/to_oxc/expressions.rs`, where oxc's map becomes
 rust-js's, carries no name; formatting's remaps copy what it carries.
 
 Alternatives: names kept where the span is a Rust identifier alone,

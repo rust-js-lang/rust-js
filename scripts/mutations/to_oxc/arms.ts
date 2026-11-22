@@ -1,4 +1,4 @@
-// Mutations of src/to_oxc/arms.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/to_oxc/arms.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "guard-if-at-its-first-unread",
     breaks:
       "a comment above a later arm a returned chain's guard `if` is, `// c\\n (2, 3) => {`, is between its test's operands, `b === 3 &&\\n // c\\n a === 2`, not above the `if`, which is placed where its block's first statement is (#617)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                    && first.span.lo == stmt.span.lo\n",
     replace: "                    && first.span.lo == stmt.span.lo\n                    && false\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "tuple's or-pattern is the arm's"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "concat-piece-no-start",
     breaks: "a `concat!`'s piece is no start a comment is before, so the comment goes after the strings (ADR 0641)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                ExprKind::Written(pieces) => pieces.iter().skip(1).map(|piece| (piece.span, \"+\", false)).collect(),\n",
     replace: "",
     tests: ["test/lowering-concat.test.ts", "-t", "a comment inside a concat!"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "concat-split-not-at-plus",
     breaks: "a comment before a `concat!`'s piece isn't split after its `+`, so it's lost (ADR 0641)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "(piece.span, \"+\", false)",
     replace: "(piece.span, \"?\", false)",
     tests: ["test/lowering-concat.test.ts", "-t", "a comment inside a concat!"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-comment-after-question-only",
     breaks: "a comment before a conditional's second branch is split at its `?`, before the first",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "(no.span, \":\", false)",
     replace: "(no.span, \"?\", false)",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where it.s in the Rust"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "operand-no-start",
     breaks: "a binary's right operand is no start, so a comment before it is before its statement, or lost, `a && b` (ADR 0444, amended)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                ExprKind::Binary(op, _, r) => {\n",
     replace: "                ExprKind::Binary(op, _, r) if false => {\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between a binary's operands"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "if-test-no-start",
     breaks: "an `if`'s test is no start, so `if\\n // $FlowFixMe\\n a || b {`'s comment is before the `if`, not after its `if (`",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                    starts.entry(lo).or_insert(arm);\n",
     replace: "                    let _ = (lo, arm);\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "commented-arrow-expression",
     breaks: "an arrow of a value with a comment before it is written `(x) => x`, and the comment is lost, not after its `=>` (ADR 0883)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => expressions::arrow_value(body)\n                    .map(|value| (value.span, \"=>\", false))\n",
     replace: "                ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => None\n                    .map(|value: &js::Expr| (value.span, \"=>\", false))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "unplaced-operand-no-start",
     breaks: "an operand placed nowhere, `|| (a && b)`'s, is no start, so a comment before it is lost",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                        true => written_extent(r).map_or(js::Span::NONE, |(lo, hi)| js::Span { lo, hi }),\n",
     replace: "                        true => js::Span::NONE,\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-extent-of-a-binding",
     breaks: "an operand placed nowhere starts where a variable it reads is bound, `a` of `if let Some(a) = a && ..`, before a comment inside the test, which is then before the loop",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "            *part = js::Expr::js_undefined();\n",
     replace: "",
     tests: ["test/lowering-written-branches.test.ts", "-t", "continues are as written"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-comments-unplaced",
     breaks: "a comment before a function's parameter is lost, as it was (ADR 0708, amended)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "        let params = (f.param_spans.iter().enumerate()).filter(|(_, s)| !s.is_none());\n",
     replace: "        let params = (f.param_spans.iter().enumerate()).filter(|_| false);\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-comment-first-after-a-comma",
     breaks: "a comment before a function's first parameter, after its `(`, is lost",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "            let operator = if i == 0 { \"(\" } else { \",\" };\n",
     replace: "            let operator = if i == usize::MAX { \"(\" } else { \",\" };\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a parameter is before it"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-item-no-start",
     breaks: "a comment between an array's items, getAttributeAlias's `// HTML and SVG attributes, ..`, is lost, or before the statement (ADR 0708, amended)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                        .map(|(i, span)| (span, if i == 0 { \"[\" } else { \",\" }, false))\n",
     replace: "                        .map(|(i, _)| (js::Span::NONE, if i == 0 { \"[\" } else { \",\" }, false))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "between an array's items"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "array-items-out-of-order-arms",
     breaks: "an array rust-js made of `heap.swap(i, j)`, each item of the same `heap`, is taken for one written, and the comment before the swap goes inside `heap[index]` (ADR 0708, amended)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                        .filter(|_| written)\n",
     replace: "",
     tests: ["test/port-scheduler.test.ts"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     name: "concat-first-piece-comment-lost",
     breaks:
       "a comment before `concat!`'s first piece, a `const`'s value, is lost, where upstream's `const badgeStyle =\\n  // ..\\n  'background: ..' +` keeps it (rd342)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "            && let [first, _, ..] = pieces.as_slice()\n",
     replace: "            && let [first, _, ..] = pieces.as_slice()\n            && false\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "concat!'s first piece"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "concat-first-piece-comment-of-a-module-const-only",
     breaks:
       "a comment before the first piece of a function's `concat!` `let` is lost, as only a module's `const`'s is kept (rd342)",
-    file: "src/to_oxc/arms.rs",
+    file: "crates/rust-js-emit/src/to_oxc/arms.rs",
     find: "                    if let StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) = &stmt.kind {\n",
     replace: "                    if let StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) = &stmt.kind && false {\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "concat!'s first piece"],

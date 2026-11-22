@@ -1,11 +1,11 @@
-// Mutations of src/to_oxc/trailing.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/to_oxc/trailing.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "param-trailing-comment-after-the-line",
     breaks: "a line comment after a function's last parameter on its line, `start: f64, // DEV-only`, is after the `{`, the body's first line (ADR 0708, amended)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "        if let Some((line, column)) = comment.after_param\n",
     replace: "        if let Some((line, column)) = comment.after_param.filter(|_| false)\n",
     tests: ["test/lowering-comments-ends.test.ts"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-trailing-comment-of-a-method-after-the-line",
     breaks: "a line comment after a class's constructor's last parameter on its line, React's Flight server's `keepDebugAlive, // DEV-only`, is the body's first line, as a type's methods' parameters were none a comment is after (rd554)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            rust_js_program::js::Item::Namespace(namespace) => &namespace.methods[..],\n",
     replace: "            rust_js_program::js::Item::Namespace(_) => &[],\n",
     tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it makes this"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "trailing-comment-dropped",
     breaks: "a comment after code on its line, `let n = 1; // why`, is lost",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                    after.entry(last).or_default().push(&comment.text);",
     replace: "                    let _ = (last, comment);",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-comment-equals-only-before",
     breaks: "a value whose statement's JS is placed where the value is, `let mut last = /* first */ mode`, or of a thread local, has its comment at its line's end or after its `let`",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                let found = (text[..at].rfind(\" = \")).or_else(|| text[at..].find(\" = \").map(|i| at + i))?;\n",
     replace: "                let found = text[..at].rfind(\" = \")?;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "wrapped-value-comment-goes-at-line-end",
     breaks: "a block comment after `=` becomes part of a multiline string where the initializer begins on the next line",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: '            && comment.text.starts_with("/*")\n',
     replace: '            && comment.text.starts_with("/*")\n            && comment.inside\n',
     tests: ["test/lowering-comments-inside.test.ts", "-t", "before a wrapped initializer"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "line-comment-after-the-line",
     breaks: "a line comment a later line's JS follows on its JS line is after all of it, `// ellipsis // ellipsis`",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            (_, Some((line, end))) => ends.entry(line).or_default().push((end, &comment.text)),\n",
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "a line comment is after its code"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "line-comment-cut-before-operator",
     breaks: "a line comment's line is cut before the next line's code, after its `:`, `? \"…\" : // ellipsis`",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                .trim_end_matches(|c: char| c.is_whitespace() || \"([{?:,\".contains(c))\n",
     replace: "                .trim_end_matches(char::is_whitespace)\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a line comment is after its code"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "after-value-not-at-close",
     breaks: "a comment after a branch's value is after it only where no `}` follows, so ApplyGesture's `// TODO` above the loop stays",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "    if !value_ends.contains(&(end as u32)) || !text[after..].starts_with('}') {",
     replace: "    if !value_ends.contains(&(end as u32)) || text[after..].starts_with('}') {",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a branch's value"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "after-value-any-code",
     breaks: "a line comment after any code, not a branch's value, before a `}`, is placed after that code, so a block's last statement's comment moves onto its line",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "    if !value_ends.contains(&(end as u32)) || !text[after..].starts_with('}') {",
     replace: "    if !text[after..].starts_with('}') {",
     tests: ["test/lowering-comments-ends.test.ts"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-before-code-at-line-end",
     breaks: "a block comment right after a call's `(`, `.r(/* requestFormReset */ form)`, is moved after the statement, `form); /* requestFormReset */` (rd63)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                if comment.inside\n                    && let Some((line, column)) = next() =>\n",
     replace: "                if false\n                    && let Some((line, column)) = next() =>\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "call chain"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
     name: "setter-comment-after-equals",
     breaks:
       "a block comment ending the line before a setter's link is after its `=`, `internals.p = /* CurrentUpdatePriority */ priority`, not before it as upstream's ReactDOMFlushSync has it",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                    assigned.then(|| (t.get_dst_line(), place.trim_end().len() + 1))\n",
     replace: "                    (assigned && false).then(|| (t.get_dst_line(), place.trim_end().len() + 1))\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "setter"],
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
     name: "setter-comment-before-any-equals",
     breaks:
       "a block comment before a method whose JS is an `===`, `name /* c */\\n.eq(other)`, goes past the operator, `name ===/* c */ other`, not after the name it's written after",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                    let assigned = !place.ends_with(|c: char| \"=!<>+-*/%&|^?\".contains(c));\n",
     replace: "                    let assigned = true;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "setter"],
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     name: "comment-before-block-lost",
     breaks:
       "a block comment rustfmt writes on a line of its own between an `if`'s condition and its `{`, `/* \"/\" */`, is lost, where upstream has `=== 47 /* \"/\" */) {` (rd344)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "    if !text[after..].starts_with('{') || !opens.iter().any(|o| condition.starts_with(o)) {\n",
     replace: "    if true {\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "condition and its"],
@@ -113,7 +113,7 @@ export const mutations: Mutation[] = [
     name: "comment-before-block-of-a-while-unseen",
     breaks:
       "a block comment before a `while`'s `{`, after its condition's last `&&` line, is lost, as only an `if`'s first line is read (rd344)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "    let opens = [\"if \", \"} else if \", \"while \", \"&& \", \"|| \"];\n",
     replace: "    let opens = [\"if \", \"} else if \"];\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "condition and its"],
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     name: "setter-comment-of-a-converted-value-lost",
     breaks:
       "a block comment before a setter's link whose value a call the JS has none of makes, `.set_p(i32::from(DISCRETE_EVENT_PRIORITY))`, is lost, ReactDOMFlushSync's `try`'s",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                .filter(|t| t.get_src_line() == next && t.get_src_col() >= value)\n",
     replace: "                .filter(|t| t.get_src_line() == next && t.get_src_col() == value)\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "setter"],
@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     name: "default-pattern-comment-placed-as-code",
     breaks:
       "a `_` arm's pattern comment, `_ /* \"{\" \"[\" */ => {`, is placed by its line's code, which no JS maps to: it's lost, where upstream writes `default: /* .. */ {` (rd525)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "        if comment.of_default {\n",
     replace: "        if false {\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`|whose pattern has a comment"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     name: "default-pattern-comment-after-brace",
     breaks:
       "a `_` arm's pattern comment of a block clause is after its `{`, `default: { /* .. */`, not before it as upstream's `default: /* .. */ {` (rd525)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                match (rest.starts_with('{'), rest.is_empty()) {\n",
     replace: "                match (false, rest.is_empty()) {\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     name: "default-pattern-comment-after-statement",
     breaks:
       "a `_` arm's pattern comment, `_ /* \"{\" \"}\" */ => { log.push(row); }`, is after the arm's first statement, `log.push(row); /* .. */`, not after its `default:` (d1)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                    (false, false) => ends.entry(line).or_default().push((colon, &comment.text)),\n",
     replace: "                    (false, false) => after.entry(line).or_default().push(&comment.text),\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "pattern.s comment has brackets"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "statement-comment-on-last-item",
     breaks:
       "a line comment after an array's statement on its line, `[9.0, 13.0, 27.0, 32.0]; // Tab, ..`, is after the array's last item, the JS's line of it, `32, // Tab, ..` inside the array an item a line, not after the statement as upstream's (rd605)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                    .map(|(last, first)| closed_after(first, last, &comment.closes, generated_lines));\n",
     replace: "                    .map(|(last, _)| last);\n",
     tests: ["test/corpus.test.ts", "-t", "^array_trailing_comments\\.rs$"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     name: "closed-lines-past-their-brackets",
     breaks:
       "a statement comment goes past the lines of brackets the JS of its line didn't open, `o: null, // object cache` after the object's `};`, where `Cell::new(None)`'s `)` closed nothing JS has (rd605)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "    let mut open = opened(&text).min(closes.chars().count() as u32);\n",
     replace: "    let mut open = closes.chars().count() as u32;\n",
     tests: ["test/corpus.test.ts", "-t", "^array_trailing_comments\\.rs$"],
@@ -178,7 +178,7 @@ export const mutations: Mutation[] = [
     name: "promoted-argument-comment-past-call",
     breaks:
       "a line comment after an argument promoted to a constant, `&[\"\"], // path`, whose JS the map places only at its `]`, is after the call's `);`, not after `[\"\"],` (rd525)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "        let end = (before.or_else(closed).or_else(argument))\n",
     replace: "        let end = before.or(None::<(u32, MapCol)>.filter(|_| { let _ = closed; false })).or_else(argument)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment after a promoted array argument"],
@@ -186,7 +186,7 @@ export const mutations: Mutation[] = [
   {
     name: "argument-lines-unread",
     breaks: "a line comment after an argument's closing brackets alone, `}, // defaults to true`, which no JS of its line maps to, is lost (rd615)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "        let argument = (comment.opened_on).map(|open| open..comment.line + 1);\n",
     replace: "        let argument = None::<std::ops::Range<u32>>;\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after an argument.s closing brackets"],
@@ -194,7 +194,7 @@ export const mutations: Mutation[] = [
   {
     name: "argument-end-unseen",
     breaks: "a line comment after an argument's closing brackets alone is after the call's `);`, not after the argument's JS, `dev && (..), // defaults to true` (rd615)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                .and(of_lines().map(|t| (t.get_dst_line(), MapCol(t.get_dst_col()))).max())\n",
     replace: "                .and(None)\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after an argument.s closing brackets"],
@@ -202,7 +202,7 @@ export const mutations: Mutation[] = [
   {
     name: "opened-on-an-else",
     breaks: "a line comment after an `if` given as an argument, `}, // defaults to true`, is placed by its `else`'s lines, not its `if`'s, and lost (rd615)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                if depth == 0 && !text[line..i].trim_start().starts_with('}') {\n",
     replace: "                if depth == 0 {\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after an argument.s closing brackets"],
@@ -211,7 +211,7 @@ export const mutations: Mutation[] = [
     name: "after-params-before-paren",
     breaks:
       "a block comment after a function's return type is inside its parameters' list, `options /* .. */) {`, not after its `)` (rd641)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                        let open = text.get(from..)?.find(\") {\")? + from + 2;\n",
     replace: "                        let open = text.get(from..)?.find(\") {\")? + from;\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type"],
@@ -220,7 +220,7 @@ export const mutations: Mutation[] = [
     name: "after-params-of-no-parameter-unplaced",
     breaks:
       "a block comment after the return type of a function of no parameter is after its name, `now /* Milliseconds. */() {`, not after its `()` (#506)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            .filter(|f| !f.name_span.is_none())\n",
     replace: "            .filter(|f| !f.name_span.is_none() && !f.param_spans.is_empty())\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type is before its body, of no parameter"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
     name: "after-params-generics-unread",
     breaks:
       "a block comment after the return type of a generic function of no parameter, `generic<T: Default>() -> T /* Made. */ {`, is after its name, not after its `()` (#506)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            Some(generics) => match generics_end(generics) {\n",
     replace: "            Some(generics) => match None::<usize>.filter(|_| generics.is_empty()) {\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type is before its body, of no parameter"],
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
     name: "after-params-generics-end-at-an-arrow",
     breaks:
       "a generic `F: Fn() -> u8`'s arrow ends its generics, so a block comment after the return type of `called<F: Fn() -> u8>() -> u8 /* .. */ {` is after its name (#506)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            '>' if previous != '-' => {\n",
     replace: "            '>' => {\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type is before its body, of no parameter"],
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
   {
     name: "reexport-last-name-comment-after-statement",
     breaks: "a comment after a `pub use` list's last name, `use_state, // the hook`, is after the statement, `} from \"./client.js\"; // the hook`, not after its name (rd338)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                        .starts_with([')', '}', ','])\n",
     replace: "                        .starts_with([')', ','])\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a pub use list.s comments are its names."],
@@ -255,7 +255,7 @@ export const mutations: Mutation[] = [
     name: "closed-lines-of-another-kind",
     breaks:
       "a comment after a drop guard's `let`, `let _restore = Finally(|| depth.set(0)); // zeroed`, goes past the `finally`'s `}`, a bracket of a kind its `)`s don't close, the `let` being the `try {` (#501)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            .all(|c| \";,\".contains(c) || (\")]}\".contains(c) && closes.contains(c)))\n",
     replace: "            .all(|c| \";,\".contains(c) || \")]}\".contains(c))\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a comment after a guard.s let"],
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     name: "before-link-own-line-only",
     breaks:
       "a comment ending a link's line, `.d() /* ReactDOMCurrentDispatcher */`, of a call whose arguments rustfmt writes a line each, is lost (rd710)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                .filter(|t| t.get_src_line() >= next)\n",
     replace: "                .filter(|t| t.get_src_line() == next)\n",
     tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "of-default-same-line-unread",
     breaks:
       "a block comment on a `_` pattern whose arm is on its line, `_ /* \"x\" */ => panic!(..)`, is lost (#574)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                        || (t.get_src_line() == comment.line && t.get_src_col() > comment.column)\n",
     replace: "                        || (false && t.get_src_line() == comment.line && t.get_src_col() > comment.column)\n",
     tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-splits-an-exponent",
     breaks: "a comment after a float written with a signed exponent goes after its `e`, `3.3e /* c */-01`, which no JS parser reads: libm's `k_tan.rs` was refused (#1117)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "        let signed = !radix && matches!(c, '+' | '-') && matches!(previous, Some('e' | 'E'));\n",
     replace: "        let signed = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^comments_after_literals.rs$"],
@@ -291,7 +291,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-splits-an-escaped-string",
     breaks: "a comment after a string with an escaped quote goes before its end, at the escaped quote, `\"a\\\\\" /* c */b\"` (#1117)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            '\\\\' => _ = chars.next(),\n",
     replace: "            '\\\\' => {}\n",
     unitTests: "to_oxc::trailing::tests::a_literal_is_one_token_a_comment_goes_after",
@@ -299,7 +299,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf16-after-code-at-the-map-column",
     breaks: "a comment after an argument is placed at the map's column taken as a byte, short of it past non-ASCII text, inside a string or after another argument (#1668)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                    .map_or(0, |text| column.byte_in(text));\n",
     replace: "                    .map_or(0, |_| column.0 as usize);\n",
     tests: ["test/comments-utf16.test.ts", "-t", "after an argument is after it"],
@@ -307,7 +307,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf16-after-name-at-the-map-column",
     breaks: "a re-exported name's end is looked for from the map's column taken as a byte, so its comment is after the whole statement (#1668)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                    let end = param_end(text, MapCol(t.get_dst_col()).byte_in(text))?;\n",
     replace: "                    let end = param_end(text, t.get_dst_col() as usize)?;\n",
     tests: ["test/comments-utf16.test.ts", "-t", "after a re-exported name"],
@@ -315,7 +315,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf16-inside-width-in-bytes",
     breaks: "a comment inside a line moves the map's columns after it by its bytes, not its UTF-16 units, so the JS after a non-ASCII comment maps past its Rust (#1668)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "        moved.push((end, MapCol(inserted.encode_utf16().count() as u32)));\n",
     replace: "        moved.push((end, MapCol(inserted.len() as u32)));\n",
     tests: ["test/comments-utf16.test.ts", "-t", "maps to its Rust"],
@@ -323,7 +323,7 @@ export const mutations: Mutation[] = [
   {
     name: "utf16-map-column-a-byte",
     breaks: "a map's column is a byte in its line, the two units mixed again: each comment past non-ASCII text misplaced (#1668)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            if units >= self.0 {\n",
     replace: "            if at as u32 >= self.0 {\n",
     tests: ["test/comments-utf16.test.ts", "-t", "past non-ASCII text"],
@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
   {
     name: "param-pattern-end-a-word",
     breaks: "a destructured parameter's JS ends where a name would, which `[a, b]` has none of, so its comment isn't placed after it (#1717)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                    let end = param_end(text, MapCol(t.get_dst_col()).byte_in(text))?;\n",
     replace: "                    let end = word_end(text, MapCol(t.get_dst_col()).byte_in(text))?;\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a destructured parameter"],
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
   {
     name: "middle-param-pattern-unplaced",
     breaks: "a comment after a parameter is placed after it only where the list's `)` follows, so one after a destructured parameter that isn't last, `[a, b], // the pair`, lands in the body (#1717)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "                        .starts_with([')', '}', ','])\n",
     replace: "                        .starts_with([')', '}'])\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a destructured parameter"],
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
   {
     name: "inside-comment-closes-unread",
     breaks: "a block comment after an index place goes after the index, inside its brackets, `u[0 /* the first */] = 3`, past none of the brackets its source closes before it (#1718)",
-    file: "src/to_oxc/trailing.rs",
+    file: "crates/rust-js-emit/src/to_oxc/trailing.rs",
     find: "            Inside::AfterCode(closes) => Some((closed_past(line, word_end(line, column)?, closes), text, false)),\n",
     replace: "            Inside::AfterCode(_) => Some((word_end(line, column)?, text, false)),\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "after an index place"],

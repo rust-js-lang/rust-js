@@ -534,7 +534,7 @@ function diffHunks(a: string, b: string, file: string): [number, number, number,
  * changed since the map isn't the map's, so of such a file, every test the
  * map saw run any of its functions (`unitsReaching`). Of 35 of ioCM's
  * pushes and checks of 2026-11-17, 7 took that fallback, and 2905d5cdc's
- * own change, src/output.rs, selected 291 files where the map at
+ * own change, crates/rust-js-emit/src/output.rs, selected 291 files where the map at
  * 7fe40bde3 placed it in one function, 7. */
 export function sideSelection(changes: Change[], from: string, context: { files: string[]; cases: string[]; map: TestMap; reach: Reach; own: (file: string) => boolean }): Selection {
   const differing = changes.filter((change) => isCompilerSource(change.file) && change.hunks !== "new" && differs(context.map.commit, from, change.file));

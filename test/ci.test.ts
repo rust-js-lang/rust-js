@@ -76,7 +76,7 @@ test("each push's lint job checks std/ is what its sources make, after the compi
 // alone, went red on `main` unseen (801d40c55, 336984bff).
 // Of a change to the iterators' code, the formatting code, the numbers' and the pointers', whose
 // jobs check.yml runs where its change is one (scripts/iteratorSlice.ts).
-const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "src/typescript.rs", "src/lower/analysis/awaits.rs", "src/lower/unions.rs", "src/lower/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
+const checkJobs = jobs({ all: true, changed: [], branch: ["crates/rust-js-program/src/runtime/steps.js", "crates/rust-js-program/src/runtime/pad.js", "crates/rust-js-program/src/runtime/div.js", "crates/rust-js-emit/src/typescript.rs", "src/lower/analysis/awaits.rs", "src/lower/unions.rs", "src/lower/analysis/intervals/state.rs", "test/corpus/array_map.rs"], added: [], extra: [], cores: 4 });
 const ranHere = checkJobs.jobs;
 
 // The readability passes' oracles run of a change to tidy, preparation or
@@ -577,7 +577,9 @@ test("the vendored oxc_formatter_core and oxc_formatter are both compilers' and 
   expect([...pinned]).toHaveLength(1);
   expect(tags(manifest("vendor/oxc_formatter_core/Cargo.toml"))).toEqual(pinned);
   expect(tags(manifest("vendor/oxc_formatter/Cargo.toml"))).toEqual(pinned);
-  expect(tags(manifest("wasm/Cargo.toml"))).toEqual(pinned);
+  // The playground's build names no oxc crate of its own: it takes them
+  // through printing's crate, at the workspace's tag (ADR 1181).
+  expect(tags(manifest("wasm/Cargo.toml"))).toEqual(new Set());
   expect(manifest("Cargo.toml")).toContain('[patch."https://github.com/oxc-project/oxc"]\noxc_formatter_core = { path = "vendor/oxc_formatter_core" }\noxc_formatter = { path = "vendor/oxc_formatter" }');
   expect(manifest("wasm/Cargo.toml")).toContain('[patch."https://github.com/oxc-project/oxc"]\noxc_formatter_core = { path = "../vendor/oxc_formatter_core" }\noxc_formatter = { path = "../vendor/oxc_formatter" }');
 });

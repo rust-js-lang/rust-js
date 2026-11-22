@@ -51,7 +51,7 @@ literal of another value, is JS's digits.
 
 - `test/lowering-numbers.test.ts`, "a number literal keeps its base and
   its exponent".
-- `src/to_oxc/expressions.rs`'s test of `as_written`, of a value its text
+- `crates/rust-js-emit/src/to_oxc/expressions.rs`'s test of `as_written`, of a value its text
   isn't.
 - Mutations `number-as-written-unread`, `constant-number-unplaced`,
   `const-number-unplaced`.
@@ -79,7 +79,7 @@ IS_NON_DELEGATED = 1 << 1;`; its port's `pub const IS_NON_DELEGATED: i32 =
 **A constant's value, where its source is an expression of number
 literals and operators that JS reads as that value, is written as the
 program wrote it:** `1 << 1`, `(1 << 4) - 1`, `-(1 << 3)`, `(0b1 << 3) |
-0x1`. The printer (`as_written_expression`, `src/to_oxc/expressions.rs`)
+0x1`. The printer (`as_written_expression`, `crates/rust-js-emit/src/to_oxc/expressions.rs`)
 reads the value's source, takes integer literals (each as a literal is
 written, `as_written`), unary `-` and `~`, `* + - << >> & ^ |` and
 parentheses, evaluates it as JS does, by JS's precedence, `<<`, `>>` and

@@ -1,11 +1,11 @@
-// Mutations of src/to_oxc/expressions.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/to_oxc/expressions.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "method-printed-as-a-function-field",
     breaks: "a field's method is printed `then: function (k) { .. }`, not `then(k) { .. }`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        let method = kind == PropertyKind::Init;\n",
     replace: "        let method = false;\n",
     tests: ["test/classes.test.ts", "-t", "reads this stays"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "chain-member-outside",
     breaks: "a member of a `?.` link is outside its chain, `(o?.inner).v`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => in_chain(object),",
     replace: "ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => false,",
     tests: ["test/lowering-optional-chains.test.ts", "-t", "an option's property chain ends"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "template-lines-escaped",
     breaks: "a template whose format string was written across lines prints its line breaks as `\\n`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                raw: self.name(&template_raw(text, lines)).into(),",
     replace: "                raw: self.name(&template_raw(text, false)).into(),",
     tests: ["test/lowering-strings.test.ts", "-t", "a format string written across lines"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "template-pieces-reversed",
     breaks: "a template written as `concat!`'s pieces prints them last first",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                let first = pieces.next().expect(\"a template's first piece\");\n                pieces.fold(first, |joined, next| {\n                    Expression::new_binary_expression(sp, joined, BinaryOperator::Addition, next, b)",
     replace: "                let first = pieces.next().expect(\"a template's first piece\");\n                pieces.fold(first, |joined, next| {\n                    Expression::new_binary_expression(sp, next, BinaryOperator::Addition, joined, b)",
     tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "template-text-piece-templated",
     breaks: "a piece of a template's `concat!` that holds no value is a template literal, not a string",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                        (true, false) => self.string_literal(sp, piece_texts[0]),\n",
     replace: "                        (true, false) if false => self.string_literal(sp, piece_texts[0]),\n",
     tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "template-piece-lines-dropped",
     breaks: "a piece of a template's `concat!` written across lines prints its line breaks as `\\n`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                            self.template_literal(sp, &piece_texts, &values[from..to], across, lines)",
     replace: "                            self.template_literal(sp, &piece_texts, &values[from..to], across, false)",
     tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "template-piece-middle-texts-lost",
     breaks: "a piece of a template's `concat!` with two values or more loses the texts between them",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                            .chain(texts[from + 1..to].iter().map(String::as_str))\n",
     replace: "",
     tests: ["test/lowering-concat.test.ts", "-t", "a format string of a concat! is its pieces joined by"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "import-specifier-unlinked",
     breaks: "an `import`'s specifier isn't in its module's links, so a host that copies the files keeps the build's name",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        fn visit_import_declaration(&mut self, it: &ImportDeclaration<'a>) {\n            self.add(&it.source);",
     replace: "        fn visit_import_declaration(&mut self, it: &ImportDeclaration<'a>) {\n            let _ = it;",
     tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "export-from-specifier-unlinked",
     breaks: "an `export .. from`'s specifier isn't in its module's links, so a re-export keeps the build's name",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        fn visit_export_from_declaration(&mut self, it: &ExportFromDeclaration<'a>) {\n            self.add(&it.source);",
     replace: "        fn visit_export_from_declaration(&mut self, it: &ExportFromDeclaration<'a>) {\n            let _ = it;",
     tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-field-read-dotted",
     breaks: "a field named `worker-bundle` is read `files.worker-bundle`, a subtraction",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "a subtraction.\n            ExprKind::Member(object, property) if !member_name(property) => {",
     replace: "a subtraction.\n            ExprKind::Member(object, property) if false && !member_name(property) => {",
     tests: ["test/lowering-names.test.ts", "-t", "isn't a name is read by its key"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-pieces-reversed",
     breaks: "a string written as `concat!`'s pieces prints them last first",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                let first = pieces.next().expect(\"a written string's pieces\");\n                pieces.fold(first, |joined, next| {\n                    Expression::new_binary_expression(sp, joined, BinaryOperator::Addition, next, b)",
     replace: "                let first = pieces.next().expect(\"a written string's pieces\");\n                pieces.fold(first, |joined, next| {\n                    Expression::new_binary_expression(sp, next, BinaryOperator::Addition, joined, b)",
     tests: ["test/lowering-concat.test.ts", "-t", "a concat! of literals is its pieces joined by"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "lines-escaped",
     breaks: "a string written across lines is a template literal of `\\n`s",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            '\\n' if lines => raw.push('\\n'),",
     replace: "            '\\n' if lines => raw.push_str(\"\\\\n\"),",
     tests: ["test/lowering-strings.test.ts", "-t", "a string written across lines"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "adjacent-text-joined",
     breaks: "text right before text is JSX text, which JSX reads as one with the next, and React renders one text node, not two",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            text[i] = writable && !text.get(i + 1).is_some_and(|&next| next);",
     replace: "            text[i] = writable;",
     tests: ["test/jsx-children.test.ts", "-t", "adjacent text children"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "regex-literal-unwritten",
     breaks: "`reg_exp::new(\"%s\", \"g\")` is `new RegExp(\"%s\", \"g\")`, not the literal JS writes, `/%s/g`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "    if !matches!(&callee.kind, ExprKind::Var(name) if name.is(\"RegExp\")) {",
     replace: "    if true {",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "regex-slash-unescaped",
     breaks: "a pattern's `/` ends its literal, `/a/b/`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            '/' if !escaped && !class => body.push('\\\\'),",
     replace: "            '/' if false => body.push('\\\\'),",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "regex-class-unread",
     breaks: "a `/` in a class is escaped, `[\\/]`, where it needn't be",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            '[' if !escaped => class = true,",
     replace: "            '[' if false => class = true,",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "regex-empty-comment",
     breaks: "an empty pattern is `//`, a comment, not `/(?:)/`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "    if body.is_empty() {\n        body.push_str(\"(?:)\");",
     replace: "    if false {\n        body.push_str(\"(?:)\");",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "regex-unparsed-literal",
     breaks: "a pattern JS can't parse is a literal, and the module doesn't load, not throwing as it runs",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        .parse()\n        .ok()?;\n    Some(format!(",
     replace: "        .parse()\n        .ok();\n    Some(format!(",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
   {
     name: "regex-line-break-literal",
     breaks: "a pattern with a line break is a literal, which can't hold one",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "    if pattern.contains(['\\n', '\\r', '\\u{2028}', '\\u{2029}']) {",
     replace: "    if pattern.contains(['\\u{2028}', '\\u{2029}']) {",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
@@ -157,7 +157,7 @@ export const mutations: Mutation[] = [
   {
     name: "object-key-unquoted",
     breaks: "an object's key that isn't a JS name, `data-marked`, is written bare, `{ data-marked: \"yes\" }`, which doesn't parse",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                let key = if computed || !rust_js_program::names::is_identifier(name) {",
     replace: "                let key = if computed {",
     tests: ["test/react.test.ts", "test/jsx-types.test.ts", "-t", "JSX components clone some of their children|React's and React DOM's APIs are hand-written React, and they run"],
@@ -165,7 +165,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-other-files-dropped",
     breaks: "a module's JS copied from another file, as a trait's default body, has no mapping into that file: only the module's own Rust is in its map",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        let Some(i) = sources.file_at(token.get_src_line()) else {\n",
     replace: "        let Some(i) = sources.file_at(token.get_src_line()).filter(|&i| Some(i) == primary) else {\n",
     tests: ["test/emission.test.ts", "-t", "copied trait defaults map to their original source file"],
@@ -173,7 +173,7 @@ export const mutations: Mutation[] = [
   {
     name: "number-as-written-unread",
     breaks: "`1e4` and `0xff` are written as JS's own digits, `10000` and `255`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        let digits = written.unwrap_or_else(|| js_number(n.abs()));\n",
     replace: "        let digits = written.filter(|_| false).unwrap_or_else(|| js_number(n.abs()));\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
@@ -181,7 +181,7 @@ export const mutations: Mutation[] = [
   {
     name: "literal-leading-zeros-kept",
     breaks: "a decimal literal's leading zeros are kept, `00e+10`, which JS reads as no number",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            let digits = body.trim_start_matches('0');\n",
     replace: "            let digits = body;\n",
     tests: ["test/lowering-numbers.test.ts", "-t", "a number literal keeps its base and its exponent"],
@@ -189,7 +189,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-comment-unplaced",
     breaks: "a comment before an object literal's field is attached where no property starts, and lost",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                    at,\n                    PropertyKind::Init,\n",
     replace: "                    SPAN,\n                    PropertyKind::Init,\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before an argument or a field"],
@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
   {
     name: "unseen-string-raw",
     breaks: "a figure space in a string is written as it is, `\" \xA0\"`, which reads as a space",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        if !text.chars().any(|c| c.is_control() || unseen(c)) {\n",
     replace: "        if true {\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -205,7 +205,7 @@ export const mutations: Mutation[] = [
   {
     name: "unseen-template-raw",
     breaks: "a figure space in a string or a template is written as it is",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        c if unseen(c) => raw.push_str(&match c as u32 {\n",
     replace: "        c if false => raw.push_str(&match c as u32 {\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -213,7 +213,7 @@ export const mutations: Mutation[] = [
   {
     name: "unseen-spaces-seen",
     breaks: "only a mark one can't see is escaped, not a space one can't tell from `' '`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "    (c.is_whitespace() && !matches!(c, ' ' | '\\n' | '\\r' | '\\u{2028}' | '\\u{2029}'))\n",
     replace: "    false\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -221,7 +221,7 @@ export const mutations: Mutation[] = [
   {
     name: "unseen-joiner-escaped",
     breaks: "what joins an emoji's parts is escaped too, `\"👨\\u200D👩\"`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            '\\u{AD}'\n",
     replace: "            '\\u{AD}' | '\\u{200D}' | '\\u{FE0F}'\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -229,7 +229,7 @@ export const mutations: Mutation[] = [
   {
     name: "objects-across-lines-untold",
     breaks: "the formatter isn't told which objects are written across lines, and every object is on one line where it fits (ADR 0835)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                    self.across_lines.borrow_mut().insert(&**made as *const _);\n",
     replace: "                    let _ = made;\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -237,7 +237,7 @@ export const mutations: Mutation[] = [
   {
     name: "one-field-object-across-lines",
     breaks: "an object of one field whose struct literal rustfmt writes across lines is across lines, `{\\n  highWaterMark: 2048,\\n}`, where a person writes `{highWaterMark: 2048}` (ADR 0835, amended, rd665)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                    && (made.properties.len() > 1 || layout.commented)\n",
     replace: "                    && (made.properties.len() > 0 || layout.commented)\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
   {
     name: "one-field-object-comment-ignored",
     breaks: "an object of one field whose literal writes a comment in it is on one line, `{ description: /* why */ \"..\" }`, not across lines as written (ADR 0835, amended, rd665)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                    && (made.properties.len() > 1 || layout.commented)\n",
     replace: "                    && made.properties.len() > 1\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -253,7 +253,7 @@ export const mutations: Mutation[] = [
   {
     name: "assigned-value-alone",
     breaks: "a loop's test's `(step = iterator.next())` sets another variable, `unset`, its `step` never set (ADR 0860)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                self.assignment_target(target),\n                self.expr(value),\n",
     replace: "                self.assignment_target(&js::Expr::var(js::Name::declared(\"unset\".to_string()))),\n                self.expr(value),\n",
     tests: ["test/corpus.test.ts", "-t", "loop_assigned_tests"],
@@ -261,7 +261,7 @@ export const mutations: Mutation[] = [
   {
     name: "branch-first-unplaced",
     breaks: "a match arm's comment, of a conditional's branch whose first JS is a name read where it's bound, `prev` of `prev.types`, has no place in the JS, and is lost (ADR 0444, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            first.span = e.span;\n",
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
@@ -269,7 +269,7 @@ export const mutations: Mutation[] = [
   {
     name: "stringed-unplaced",
     breaks: "`String(n)` has no place in the JS, and a match arm's comment before it, in a conditional, is lost (ADR 0444, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "global(\"String\"), vec![(**value).clone()]).or_at(e.span))\n",
     replace: "global(\"String\"), vec![(**value).clone()]))\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
   {
     name: "operand-first-unplaced",
     breaks: "a binary's right operand's first JS, `b` of `a && b`, a name read where it's bound, has no place where the operand is, and its comment is lost (ADR 0444, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                let (l, r) = (self.expr(l), self.branch(r));\n",
     replace: "                let (l, r) = (self.expr(l), self.expr(r));\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between a binary's operands"],
@@ -285,7 +285,7 @@ export const mutations: Mutation[] = [
   {
     name: "post-step-down-is-up",
     breaks: "`const left = ids.left; ids.left = left - 1;` is `ids.left++` (ADR 0948)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            ExprKind::Stepped(op, target) => {\n                let operator = match op {\n                    Op::Add => UpdateOperator::Increment,\n",
     replace: "            ExprKind::Stepped(op, target) => {\n                let operator = match op {\n                    Op::Add | Op::Sub => UpdateOperator::Increment,\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "x\\+\\+"],
@@ -293,7 +293,7 @@ export const mutations: Mutation[] = [
   {
     name: "escape-hex-uppercase",
     breaks: "an escape's hex is in uppercase, `\"\\u2007\\xA0\"`, not upstream's `\\xa0` (ADR 0732, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            n @ ..=0xFF => format!(\"\\\\x{n:02x}\"),\n            n @ ..=0xFFFF => format!(\"\\\\u{n:04x}\"),\n",
     replace: "            n @ ..=0xFF => format!(\"\\\\x{n:02X}\"),\n            n @ ..=0xFFFF => format!(\"\\\\u{n:04X}\"),\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -301,7 +301,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-raw-quote-unescaped",
     breaks: "a string written as its source with an unseen code point leaves its `\"` as it is, which ends it (ADR 0732, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            '\"' => raw.push_str(\"\\\\\\\"\"),\n",
     replace: "",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -309,7 +309,7 @@ export const mutations: Mutation[] = [
   {
     name: "string-raw-backslash-unescaped",
     breaks: "a string written as its source with an unseen code point leaves its `\\` as it is, an escape of what's after (ADR 0732, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "    raw.push('\"');\n    for c in text.chars() {\n        match c {\n            '\"' => raw.push_str(\"\\\\\\\"\"),\n            '\\\\' => raw.push_str(\"\\\\\\\\\"),\n",
     replace: "    raw.push('\"');\n    for c in text.chars() {\n        match c {\n            '\"' => raw.push_str(\"\\\\\\\"\"),\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -317,7 +317,7 @@ export const mutations: Mutation[] = [
   {
     name: "source-map-names-kept",
     breaks: "the map keeps oxc's names, the Rust each identifier's span covers, which a stack trace through it shows as a frame's name (ADR 0018, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: `    for token in map.get_tokens() {
         if token.get_source_id().is_none() {
             out.add_token(token.get_dst_line(), token.get_dst_col(), 0, 0, None, None);
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
   {
     name: "regexp-empty-flags-written",
     breaks: "isAttributeNameSafe's `new RegExp(pattern)` of a pattern made at run time is `new RegExp(pattern, \"\")` (ADR 0243, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                && matches!(&flags.kind, ExprKind::Str(flags) if flags.is_empty()) =>\n",
     replace: "                && matches!(&flags.kind, ExprKind::Str(flags) if flags.is_empty() && false) =>\n",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
   {
     name: "regexp-any-flags-dropped",
     breaks: "`new RegExp(pattern, \"g\")` of a pattern made at run time loses its flags, a search that isn't global",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                && matches!(&flags.kind, ExprKind::Str(flags) if flags.is_empty()) =>\n",
     replace: "                && matches!(&flags.kind, ExprKind::Str(_)) =>\n",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-expression-unchecked",
     breaks: "a constant's expression is written whatever JS reads it as, so a `u32`'s `1 << 31` is JS's negative `-2147483648`",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "    (at == tokens.len() && value == n && value.is_finite()).then_some(written)",
     replace: "    (at == tokens.len() && value.is_finite()).then_some(written)",
     tests: ["test/lowering-numbers.test.ts", "-t", "constant expression of literals"],
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-expression-shift-unmasked",
     breaks: "`<<` is evaluated of 64-bit integers, not JS's 32, so a `u32`'s `1 << 31` is written as JS's negative",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                \"<<\" => a.wrapping_shl(b as u32 & 31) as f64,",
     replace: "                \"<<\" => ((left.1 as i64) << (b as u32 & 63)) as f64,",
     tests: ["test/lowering-numbers.test.ts", "-t", "constant expression of literals"],
@@ -394,7 +394,7 @@ export const mutations: Mutation[] = [
   {
     name: "written-expression-precedence-flat",
     breaks: "operators are read left to right, so `0b1 << 3 | 0x1` and `(1 << 4) - 1` are evaluated otherwise than JS reads them, and their values are written",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            let (text, right) = parse(tokens, at, precedence + 1, literal, int32)?;",
     replace: "            let (text, right) = parse(tokens, at, 7, literal, int32)?;",
     tests: ["test/lowering-numbers.test.ts", "-t", "constant expression of literals"],
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
   {
     name: "unseen-noncharacters-raw",
     breaks: "a noncharacter, U+FFFE or U+10FFFF, is written raw, which no font draws (#176)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        || (c as u32) & 0xFFFE == 0xFFFE\n",
     replace: "",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -410,7 +410,7 @@ export const mutations: Mutation[] = [
   {
     name: "unseen-private-use-raw",
     breaks: "a private use code point, U+E000, is written raw, which no font draws (#176)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                | '\\u{E000}'..='\\u{F8FF}'\n",
     replace: "",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -418,7 +418,7 @@ export const mutations: Mutation[] = [
   {
     name: "unseen-astral-escape-unbraced",
     breaks: "U+10FFFF's escape is `\\u10ffff`, a `\\u10ff` and two `f`s, a wrong answer (#176)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            n @ ..=0xFFFF => format!(\"\\\\u{n:04x}\"),\n            n => format!(\"\\\\u{{{n:x}}}\"),\n",
     replace: "            n => format!(\"\\\\u{n:04x}\"),\n",
     tests: ["test/lowering-strings.test.ts", "-t", "written as its escape"],
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
   {
     name: "super-printed-as-this",
     breaks: "a class component's `super(props)` is `this(props)`, a TypeError",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            ExprKind::Super => Expression::new_super(sp, b),\n",
     replace: "            ExprKind::Super => Expression::new_this_expression(sp, b),\n",
     tests: [
@@ -438,7 +438,7 @@ export const mutations: Mutation[] = [
   {
     name: "unary-plus-negates",
     breaks: "JS's unary `+`, `+width`, is printed `-width`, the number's negation (rd331c)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                    UnaryOp::Plus => UnaryOperator::UnaryPlus,\n",
     replace: "                    UnaryOp::Plus => UnaryOperator::UnaryNegation,\n",
     tests: ["test/js-any-values.test.ts", "-t", "to_number is JS's unary"],
@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
   {
     name: "unbound-printed-bound",
     breaks: "`(0, eval)(source)` prints `eval(source)`, a direct eval, which reads the caller's variables (ADR 1033, amended)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                Expression::new_sequence_expression(sp, ArenaVec::from_iter_in([zero, self.expr(f)], b), b)\n",
     replace: "                { let _ = zero; self.expr(f) }\n",
     tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
@@ -454,7 +454,7 @@ export const mutations: Mutation[] = [
   {
     name: "keyed-method-uncomputed",
     breaks: "a method a symbol names is printed named by the symbol's text, `Symbol.asyncIterator() {..}`, which JS refuses",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            AccessorKey::Computed(key) => (PropertyKey::from(self.expr(key)), true),",
     replace: "            AccessorKey::Computed(key) => (PropertyKey::from(self.expr(key)), false),",
     tests: [
@@ -466,7 +466,7 @@ export const mutations: Mutation[] = [
   {
     name: "export-all-unlinked",
     breaks: "an `export * from` of a module placed outside its crate's directory keeps its specifier from the crate's build directory where its JS goes in source, a file that isn't there (#602, P0)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            self.add(&it.source);\n        }\n        // And a dynamic",
     replace: "            let _ = it;\n        }\n        // And a dynamic",
     tests: ["test/cargo-in-source.test.ts", "-t", "export \\* of a module placed outside"],
@@ -474,7 +474,7 @@ export const mutations: Mutation[] = [
   {
     name: "dynamic-import-unlinked",
     breaks: "a dynamic `import()` from a module placed outside its crate's directory keeps its specifier from the crate's build directory where its JS goes in source, a file that isn't there, and its promise rejects (P0, as #602's)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "            if let Expression::StringLiteral(source) = &it.source {\n                self.add(source);",
     replace: "            if let Expression::StringLiteral(source) = &it.source {\n                let _ = source;",
     tests: ["test/cargo-in-source.test.ts", "-t", "and require from a module placed outside"],
@@ -482,7 +482,7 @@ export const mutations: Mutation[] = [
   {
     name: "require-unlinked",
     breaks: "a `require(..)` of a binding's JS from a module placed outside its crate's directory keeps its specifier from the crate's build directory where its JS goes in source, a file that isn't there, and the call throws (#618, P0)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                && let [oxc_ast::ast::Argument::StringLiteral(source)] = it.arguments.as_slice()\n            {\n                self.add(source);",
     replace: "                && let [oxc_ast::ast::Argument::StringLiteral(source)] = it.arguments.as_slice()\n            {\n                let _ = source;",
     tests: ["test/cargo-in-source.test.ts", "-t", "and require from a module placed outside"],
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
   {
     name: "jsx-text-space-runs",
     breaks: "a string of a run of spaces is JSX text, which a formatter lays out as one space, `{\"  \"}` a space short (#1807)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        && !s.contains(\"  \")\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "keeps its whitespace"],
@@ -498,7 +498,7 @@ export const mutations: Mutation[] = [
   {
     name: "jsx-text-edge-spaces",
     breaks: "a string of a space at the start or end of an element's children is JSX text, which a line break beside the tag drops (#1807)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        && (s == \" \" || ((!first || !s.starts_with(' ')) && (!last || !s.ends_with(' '))))\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "keeps its whitespace"],
@@ -506,7 +506,7 @@ export const mutations: Mutation[] = [
   {
     name: "adjacent-text-earlier-always",
     breaks: "of two strings side by side, the earlier is always in braces, `{\"If this is a mistake\"}, `",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                && spaced(later)",
     replace: "                && spaced(later)\n                && false",
     tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
@@ -514,7 +514,7 @@ export const mutations: Mutation[] = [
   {
     name: "jsx-text-tabs",
     breaks: "a string of a tab is JSX text, which JSX makes a space, `\\tend\\t` ` end ` (#1807)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        && !s.chars().any(|c| c.is_whitespace() && c != ' ')\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "keeps its whitespace"],
@@ -522,7 +522,7 @@ export const mutations: Mutation[] = [
   {
     name: "jsx-text-braced-under-prettier",
     breaks: "under the app's Prettier, a JSX text's edge space beside a child is JSX text, which Prettier breaks a line at, a text node of its own (#1807)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "        let edges = |i: usize| (i == 0 || self.prettier, i == last || self.prettier);\n",
     replace: "        let edges = |i: usize| (i == 0, i == last);\n",
     tests: ["test/settings.test.ts", "-t", "its texts braced"],
@@ -530,7 +530,7 @@ export const mutations: Mutation[] = [
   {
     name: "lone-space-beside-text",
     breaks: "a `{\" \"}` beside JSX text stays braced, which a formatter joins to the text, `{\" \"}— ` to ` — `, one text node of two (#1807)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                    if let Some(text) = text.get_mut(beside) {\n                        *text = false;\n                    }\n",
     replace: "                    let _ = beside;\n",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a tag broken onto lines keeps its mappings in order"],
@@ -538,7 +538,7 @@ export const mutations: Mutation[] = [
   {
     name: "strict-presence-written-of-the-other-none",
     breaks: "an `Option`'s strict test of its one `None`, `undefined`, is written of the other, `x !== null`, which is true of `undefined`, so a `None` reads as there (#2112 C S5)",
-    file: "src/to_oxc/expressions.rs",
+    file: "crates/rust-js-emit/src/to_oxc/expressions.rs",
     find: "                        js::OnlyNone::Undefined => js::Expr::js_undefined(),\n",
     replace: "                        js::OnlyNone::Undefined => js::Expr::null(),\n",
     tests: ["test/lowering-written-branches.test.ts", "test/lowering-bindings.test.ts", "test/none-given.test.ts"],

@@ -1,11 +1,11 @@
-// Mutations of src/prettier.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/prettier.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "prettier-never-asked",
     breaks: "the app's Prettier is never run, and an app with a config has rust-js's layout, which its format check fails",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "    if files.is_empty() || !settings.cargo || cfg!(target_os = \"wasi\") {",
     replace: "    if true {",
     tests: ["test/settings.test.ts", "-t", "where Prettier finds a config"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-without-a-config",
     breaks: "a file Prettier has no config for is laid out by Prettier's defaults, and a crate without one isn't rust-js's layout",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "  if (!config) {",
     replace: "  if (false) {",
     tests: ["test/settings.test.ts", "-t", "no config of its own keeps rust-js's layout"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-for-a-file-compiled-alone",
     breaks: "a file compiled alone, a test's, is laid out by whatever Prettier config is above it, and each compile starts Node to ask",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "    if files.is_empty() || !settings.cargo || cfg!(target_os = \"wasi\") {",
     replace: "    if files.is_empty() || cfg!(target_os = \"wasi\") {",
     tests: ["test/settings.test.ts", "-t", "a file compiled alone keeps"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-editorconfig-ignored",
     breaks: "Prettier's config is read without the app's `.editorconfig`, which its own `prettier --check` reads",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "  const options = await prettier.resolveConfig(file, { editorconfig: true });\n",
     replace: "  const options = await prettier.resolveConfig(file, { editorconfig: false });\n",
     tests: ["test/settings.test.ts", "-t", "editorconfig"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-commonjs-unread",
     breaks: "Prettier 2's API, CommonJS, its module's `default`, is looked for by name, and an app on Prettier 2, react.dev, fails its build",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "  prettier = typeof module.format === \"function\" ? module : module.default;",
     replace: "  prettier = module;",
     tests: ["test/settings.test.ts", "-t", "CommonJS Prettier"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-identity-of-its-directories-alone",
     breaks: "which Prettier lays out the crates' JS, as Cargo is told it, is their directories alone, not what's installed, so an upgrade of it at the same path keeps the old layout (#684)",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "        add(&read(&found.prettier)?);\n",
     replace: "        add(&read(&found.prettier)?[..0]);\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "told which Prettier"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-identity-found-nowhere",
     breaks: "no crate's Prettier is found for what Cargo is told, so an upgrade of it keeps the old layout (#684)",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: '  const prettier = manifest("prettier", here);\n',
     replace: '  const prettier = manifest("prettier-nowhere", here);\n',
     tests: ["test/cargo-workspace.test.ts", "-t", "told which Prettier"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-identity-without-plugins",
     breaks: "which Prettier lays out the crates' JS, as Cargo is told it, is its package alone, not the plugins its config names, so an upgrade of one, react-in-rust's `prettier-plugin-hermes-parser`, keeps the old layout (#692)",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "        for plugin in &found.plugins {\n",
     replace: "        for plugin in found.plugins.iter().take(0) {\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "told which Prettier plugins"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-plugin-found-nowhere",
     breaks: "a plugin a config names is hashed by its name alone, its package found nowhere, so an upgrade of it keeps the old layout (#692)",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "    return { name, manifest: at ? manifest(at) : manifest(name, here) };\n",
     replace: "    return { name, manifest: null };\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "told which Prettier plugins"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-plugins-of-no-file",
     breaks: "no file's config is asked which plugins it names, so none is in what Cargo is told, and an upgrade of one keeps the old layout (#692)",
-    file: "src/prettier.rs",
+    file: "crates/rust-js-emit/src/prettier.rs",
     find: "  if (prettier) {\n",
     replace: "  if (false) {\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "told which Prettier plugins"],

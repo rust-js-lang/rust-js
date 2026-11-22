@@ -1,11 +1,11 @@
-// Mutations of src/to_oxc/cases.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/to_oxc/cases.rs (ADR 0093).
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "fallthrough-unsaid",
     breaks: "a case that falls through to the next has no `// falls through` before the next, which ESLint's `no-fallthrough` asks",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    (before.falls && !first.span.is_none()).then_some(first.span.lo)\n",
     replace: "    (false && before.falls && !first.span.is_none()).then_some(first.span.lo)\n",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to its case"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-fallthrough-unsaid",
     breaks: "a case that falls through to the `default` has no `// falls through` before it, which ESLint's `no-fallthrough` asks",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    let fallen = cases.last()?.falls && !first.span.is_none();\n",
     replace: "    let fallen = false && cases.last()?.falls && !first.span.is_none();\n",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "falls through to the default"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
     name: "default-fallen-to-past-its-open",
     breaks:
       "a `default` fallen to whose `_` arm opens a block is printed at its first statement, so the program's `// Fallthrough` above the arm is lost and rust-js's `// falls through` written in its place (rd638)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    fallen.then(|| clause_start(source, default).unwrap_or(first.span.lo))\n",
     replace: "    fallen.then(|| first.span.lo)\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above a block's"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-comment-before-every-case",
     breaks: "a comment before any arm of a `switch` is before its `case`, the scheduler's `// Times out immediately` too, not in its body (ADR 0590)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    let mut starts = fallthrough_starts(module, source);\n",
     replace: "    let mut starts = Vec::new();\n    each_switch(module, &mut |cases, _| starts.extend(cases.iter().filter_map(|c| c.values.first()).filter(|v| !v.span.is_none()).map(|v| v.span.lo)));\n",
     tests: ["test/lowering-matches.test.ts", "-t", "a match of constants cases each by its name, its comments in its arms"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "fallthrough-said-twice",
     breaks: "a case the program's `// falls through` is before gets `// falls through` beside it too",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "        .any(|said| text.contains(said))\n",
     replace: "        .any(|said| said.is_empty() && text.contains(said))\n",
     snapshots: true,
@@ -47,7 +47,7 @@ export const mutations: Mutation[] = [
   {
     name: "pattern-comment-in-body",
     breaks: "a comment between a match arm's patterns, `\"keydown\" // .. | \"keyup\"`, is in the case's body, not before `case \"keyup\":`",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "        starts.extend(values.filter(|v| !v.span.is_none()).map(|v| v.span.lo));\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a comment between an arm"],
@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
   {
     name: "stacked-case-starts-of-one-pattern",
     breaks: "a case of more than one value is printed where none is written, so a comment or a blank line above its arm, `\"rp\" | \"rt\" => ..`, is in its body, not above its first `case` (rd143)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    case.values.len() > 1 || written_apart(case, source)\n",
     replace: "    written_apart(case, source)\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above an arm of patterns is above its first case"],
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     name: "block-case-start-unlisted",
     breaks:
       "a case whose arm opens a block, or is guarded and does nothing, isn't a start a comment above its arm is before, and the comment is its body's first statement's, `if (skip)`'s on the guard's line (rd166, rd619)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "        starts.extend(apart.map(|case| case.values[0].span.lo));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
@@ -74,7 +74,7 @@ export const mutations: Mutation[] = [
     name: "default-pattern-comment-unread",
     breaks:
       "a `_ /* \"{\" \"[\" */ => {` arm isn't read as its `default`'s opening, so the `// falls through` above it is lost from before `default:` (rd525)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    while let Some(open) = code.find(\"/*\")\n",
     replace: "    while false\n        && let Some(open) = code.find(\"/*\")\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment"],
@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     name: "arm-opening-before-its-if-unseen",
     breaks:
       "a `_` arm whose first statement is an `if` whose span starts at its test, `if __DEV__ && row.is_empty() {`, has no clause start, so the `// falls through` above it is stacked above the `switch` (rd525)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    if code[line..].trim() == \"if\"\n        && line > 0\n",
     replace: "    if false\n        && line > 0\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment"],
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     name: "default-let-start-unread",
     breaks:
       "a `_` arm whose block opens with a `let`, whose span is its value's, `let mut tail_node = render_state.tail..`, has no clause start, so the comment above the arm prints above the `switch`, React's cutOffTailIfNeeded's `// Hidden is now the default.` (rd532)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    let mut end = let_start(before).unwrap_or(before.len());\n",
     replace: "    let mut end = before.len();\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
     name: "default-let-start-of-no-let",
     breaks:
       "a `_` arm's first statement after any line ending in `=` is read as a `let`'s value, so a clause starts where none does; and none of a `let` whose line lacks its `=` (rd532)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    (head.starts_with(\"let \") && head.ends_with('=')).then_some(line)\n",
     replace: "    (head.starts_with(\"let \") && head.ends_with(';')).then_some(line)\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "block-case-comment-in-body",
     breaks:
       "a comment above an arm of one pattern that opens a block, `// Don't fire the event ..` above `\"mousedown\" => {`, is in its case's body, not before its `case` (rd166, rd619)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "        false => !head.contains(['{', '}', ';']) && (body.starts_with('{') || unit),\n",
     replace: "        false => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^(switch_guard_skips_its_case|switch_guarded_or_pattern).rs$"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "guarded-nothing-case-comment-in-body",
     breaks:
       "a comment above a guarded arm that does nothing, `// Chrome and IE fire ..` above `\"selectionchange\" if skip => {}`, is in its case, before the guard's `if`, not above `case \"selectionchange\":` as upstream writes it (rd619)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "            unit || body\n",
     replace: "            false && body\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guard_skips_its_case.rs$"],
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     name: "guarded-doing-case-comment-above",
     breaks:
       "a comment above a guarded arm that does something, `// Remove unwanted keypresses.` above `\"keypress\" if char_code(..) == 0 => return None`, is above its `case`, not before the guard's `if` in it, as upstream's SimpleEventPlugin writes it (rd619)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "            unit || body\n",
     replace: "            true || body\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_text_guard_falls.rs$"],
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     name: "commented-arm-not-written-apart",
     breaks:
       "a comment above an arm of only comments, `// Above the last case.` above `3 => { // .. }`, is inside its `case`, not above it, as it is above any arm that opens a block (rd619, ADR 0629 amended)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "    (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))\n",
     replace:
       "    !matches!(case.body.first().map(|s| &s.kind), Some(StmtKind::Comments))\n        && (case.values.first()).is_some_and(|first| !first.span.is_none() && opens_or_guards(source, first.span.hi))\n",
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
     name: "unit-arm-not-apart",
     breaks:
       "a comment above an arm of the unit value, `1 => (),`, is above the `switch`, not its `case` (#574)",
-    file: "src/to_oxc/cases.rs",
+    file: "crates/rust-js-emit/src/to_oxc/cases.rs",
     find: "        false => !head.contains(['{', '}', ';']) && (body.starts_with('{') || unit),\n",
     replace: "        false => !head.contains(['{', '}', ';']) && body.starts_with('{'),\n",
     tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],

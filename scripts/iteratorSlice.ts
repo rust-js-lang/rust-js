@@ -188,7 +188,7 @@ const numberGlobs = numberPaths.map((path) => new Bun.Glob(path));
  * struct Sized`, left the harness's `?Sized` unbuilt, which only the
  * nightly saw. All of it runs, some 22 s, in its own job. */
 export const declarationPaths = [
-  "src/typescript.rs",
+  "crates/rust-js-emit/src/typescript.rs",
   "src/lower/representation/nones.rs",
   "src/lower/representation/options.rs",
   "src/lower/bindings/nullable.rs",

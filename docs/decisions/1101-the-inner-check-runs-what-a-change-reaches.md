@@ -665,7 +665,7 @@ The interaction sanity's three examples (2905d5cdc, d0ce7d1ab,
 before it as the incoming side: 2905d5cdc's incoming side everything
 before, 362 files after; d0ce7d1ab's and 336483fa0's, limitations.md 365
 files to 5. Each interaction is still 291 to 362 files: both sides change
-functions every test reaches (`lower_crate`, src/output.rs's), which the
+functions every test reaches (`lower_crate`, crates/rust-js-emit/src/output.rs's), which the
 hubs' region coverage is to narrow.
 
 ### Amended: a name no item declared, added to a `use`, is no change of its own (2026-11-17)
@@ -702,7 +702,7 @@ every hub hunk of theirs, `lower_crate`'s among them, lies in a region
 every test runs, which narrows nothing. Their changes touch code every
 compile runs. The recording side is reverted.
 
-What the examples did show: 2905d5cdc's own change, src/output.rs, was
+What the examples did show: 2905d5cdc's own change, crates/rust-js-emit/src/output.rs, was
 291 files by the stale map's fallback ("by every test of its functions",
 a file the map's commit and the change's base differ on) and 7 by a map
 that places it; which the selector's placing a moved line by its text
@@ -721,7 +721,7 @@ since the map falls back. And the fallback runs, as `pick` does, each test
 the map says runs on every change (`movedUnits`), which it ran none of.
 
 Of the 24 commits to src since the map at 7150cc3ad, by that map, each
-commit's own side: 2905d5cdc stays the fallback, its src/output.rs hunks
+commit's own side: 2905d5cdc stays the fallback, its crates/rust-js-emit/src/output.rs hunks
 being in text the #1681 series changed since (290 files to 362, the
 always-run tests added); d0ce7d1ab is placed, in `lower_crate`, every
 test's (285 to 366, the fallback having run 81 fewer than the placed

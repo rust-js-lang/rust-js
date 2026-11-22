@@ -56,7 +56,7 @@ AST, and it writes no source map.
 - **Debuggers still show the Rust**: the source map tests (eight JS → Rust
   probes) pass on the formatted output.
 - **It's a small change.** The printer, and the layout it gives JSX, stay
-  as they are; one file, `src/format.rs`, formats and moves the map.
+  as they are; one file, `crates/rust-js-emit/src/format.rs`, formats and moves the map.
 
 ## Alternatives
 

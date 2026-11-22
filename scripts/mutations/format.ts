@@ -1,11 +1,11 @@
-// Mutations of src/format.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/format.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "bare-let-apart",
     breaks: "`let PICK;` and the `if` that sets it are a blank line apart",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "|| !declared_only && (first < last || next < next_last);",
     replace: "|| (first < last || next < next_last);",
     tests: ["test/lowering-cells.test.ts", "-t", "a thread-local an if makes"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "transform-map-unmoved",
     breaks: "a transform's text is written with the map of the text it was given, which points at other lines",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "    let map = moved(code, &text, map, &before, &after, js_file_name);\n    Ok((text, map))",
     replace: "    let _ = (&before, &after);\n    Ok((text, map.to_json_string()))",
     tests: ["test/settings.test.ts", "-t", "a transform's text is written"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "transform-layout-is-program",
     breaks: "Prettier's JSX text lines and `{\" \"}` count as another program, and its layout is refused",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "        if !(space || spaces || kind == AstType::JSXText) {",
     replace: "        if true {",
     unitTests: "format::tests::a_space_laid_out_as_braces_is_the_same_program",
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "transform-unchecked",
     breaks: "a transform that takes out a statement is written, its map pointing at other code",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "    if let Some(at) = (0..was.len().max(is.len())).find(|&i| was.get(i) != is.get(i)) {",
     replace: "    if let Some(at) = (0..0).find(|&i| was.get(i) != is.get(i)) {",
     tests: ["test/settings.test.ts", "-t", "is refused, and its input kept"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "format-moved-node-uncarried",
     breaks: "a node a layout moves onto a line of its own, `setCount(`, keeps no mapping, its line pointing nowhere in the Rust",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            && from != to\n",
     replace: "            && false\n",
     tests: ["test/settings.test.ts", "-t", "Prettier's layout"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     "name": "format-pairs-layout",
     "breaks": "a `{\" \"}` the formatter made text is paired with a later node, and every mapping after it points a line early",
-    "file": "src/format.rs",
+    "file": "crates/rust-js-emit/src/format.rs",
     "find": "    let pairs = pair(&layout_free(before, code), &layout_free(after, text));",
     "replace": "    let pairs = pair(before, after);",
     "tests": ["test/jsx-evaluation-order.test.ts", "-t", "keeps its mappings in order"]
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "transform-meaning-unchecked",
     breaks: "a transform that renames a variable, or changes a text, of the same nodes is kept, another program",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            && a != b\n",
     replace: "            && false\n",
     tests: ["test/settings.test.ts", "-t", "changes the program"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-lines-none",
     breaks: "top-level statements that span lines, or functions, aren't set apart by a blank line",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            (apart && !(imports.0 && imports.1) && (last + 1 == next || after)).then_some(last + 1)\n",
     replace: "            (false && apart && (last + 1 == next || after)).then_some(last + 1)\n",
     tests: ["test/corpus.test.ts", "-t", "^(wrapping|weak_debug).rs$"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-lines-in-imports",
     breaks: "an import that spans lines is set apart from the others, splitting the import block",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            (apart && !(imports.0 && imports.1) && (last + 1 == next || after)).then_some(last + 1)\n",
     replace: "            (apart && (last + 1 == next || after)).then_some(last + 1)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "the header's blank lines"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "imports-code-together",
     breaks: "an import the Rust tells nothing of, the runtime's helpers', is right above the code after it, no blank line between (rd637)",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            let apart = imports.0 != imports.1\n",
     replace: "            let apart = false\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "the header's blank lines"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "imports-comment-glued",
     breaks: "an import the Rust tells nothing of is right above a comment block above the code, apart from the code itself (rd637)",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            let after = imports.0 != imports.1 && lines_of.get(last + 1).is_some_and(|line| !line.trim().is_empty());\n",
     replace: "            let after = false && lines_of.get(last + 1).is_some_and(|line| !line.trim().is_empty());\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "the header's blank lines"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-lines-one-line",
     breaks: "two one-line statements are set apart, `const a = 1;` from `const b = 2;`",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "|| !declared_only && (first < last || next < next_last);\n",
     replace: "|| true;\n",
     tests: ["test/corpus.test.ts", "-t", "^(let_chain_values|thread_local_reads_another_set).rs$"],
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
   {
     name: "formatted-map-unmoved",
     breaks: "JS laid out by the formatter is written with the map of the JS before it, so its positions point at other lines and columns of the Rust",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "    let (code, map) = formatted(&code, &unformatted, js_file_name, across_lines).unwrap_or((code, map));\n",
     replace: "    let (code, map) = formatted(&code, &unformatted, js_file_name, across_lines)\n        .map(|(formatted, _)| (formatted, map.clone()))\n        .unwrap_or((code, map));\n",
     tests: ["test/traits.test.ts", "test/format.test.ts", "-t", "trait method expressions keep their Rust source locations|maps handlers to the formatted source"],
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
   {
     name: "spaced-comment-apart",
     breaks: "a statement's comments right above it aren't counted as its, so no blank line is between them and the function before",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            let next = top(next);\n",
     replace: "            let next = next.max(top(next));\n",
     tests: ["test/corpus.test.ts", "-t", "^(ref_mut_of_mut_payload|thread_local_made_where_used).rs$"],
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
   {
     name: "object-of-one-field-not-broken",
     breaks: "an object of one field whose literal writes a comment in it, across lines, is on one line, as the printer writes it, where its struct literal is across lines (ADR 0835, amended)",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            (true, false) => \"\\n\",\n",
     replace: "            (true, false) => continue,\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
   {
     name: "objects-kept-as-printed",
     breaks: "every object of two fields is across lines, as the printer writes it, where its struct literal is on one line (ADR 0835)",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            (false, true) if between.trim().is_empty() => \" \",\n",
     replace: "            (false, true) if false => \" \",\n",
     tests: ["test/lowering-object-layout.test.ts", "-t", "across lines where"],
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
   {
     name: "interpolation-line-unwritten",
     breaks: "a template's value written across lines is on the template's line however long, `(found: ${childrenString === .. : childrenString}). `, 182 columns, where Prettier breaks it after `${` (ADR 0641, amended)",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            edits.push((start, start, \"\\n\"));\n",
     replace: "",
     tests: ["test/lowering-strings.test.ts", "-t", "a format argument written across lines"],
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
   {
     name: "told-statements-spaced",
     breaks: "a blank line is added where the Rust tells there's none, `const EMPTY = {};` and the `if` of the `js::on_load!` right below it",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "        .filter(|&(i, _)| !is_told(i + 1))\n",
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line is where the Rust has one"],
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
   {
     name: "mapping-past-its-line",
     breaks: "a mapping on a line the formatter wrote shorter is moved past it, past the text's end too, and rust-js panics (ADR 1042)",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "            .is_none_or(|moved| moved.contains('\\n'))\n",
     replace: "            .is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^repr_enum_numbers.rs$"],
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
   {
     name: "local-export-own-block",
     breaks: "a `pub use`'s `export { hello };` is set apart from its import by a blank line, where the two are one `use`'s and one block of imports and re-exports (rd705)",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "                | Statement::ExportAllDeclaration(_)\n                | Statement::ExportNamedDeclaration(_)\n",
     replace: "                | Statement::ExportAllDeclaration(_)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a pub use of what the module imports exports its binding"],
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   {
     name: "hook-layout-split-kept",
     breaks: "a hook's layout that splits a JSX text into two text nodes, Prettier's `text{\" \"}`, is kept as the same program (#1807)",
-    file: "src/format.rs",
+    file: "crates/rust-js-emit/src/format.rs",
     find: "    if source_type.is_jsx() && jsx_shape::shape(code, source_type) != jsx_shape::shape(&text, source_type) {\n",
     replace: "    if false {\n",
     unitTests: "format::tests::a_text_split_by_a_layout_is_another_program",

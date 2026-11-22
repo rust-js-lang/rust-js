@@ -722,7 +722,8 @@ mod tests {
     #[test]
     fn snapshots_are_formatted() {
         let mut checked = 0;
-        let mut dirs = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("test/snapshots")];
+        // The checkout's, two folders above the crate's (ADR 1181).
+        let mut dirs = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("../../test/snapshots")];
         while let Some(dir) = dirs.pop() {
             for entry in std::fs::read_dir(&dir).expect("the snapshots") {
                 let path = entry.expect("an entry").path();

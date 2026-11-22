@@ -115,7 +115,7 @@ from`, as that was the first node printed past it, and the function was
 
 **Each re-export is printed at a place of its own before every other
 node and comment of its module, its own comments with it** (`comments_of`,
-`src/to_oxc.rs`): the least offsets no statement starts at, one for each,
+`crates/rust-js-emit/src/to_oxc.rs`): the least offsets no statement starts at, one for each,
 its comments' and its blank line's there. What's before it is still before
 it, and no comment of a block below it is before it. Its source map's line
 is that place's, not its `pub use`'s: the export of another module's item

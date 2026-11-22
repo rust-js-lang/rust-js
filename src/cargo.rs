@@ -556,7 +556,7 @@ fn verbose_version(rustc: &str) -> Invocation {
     } = Compiler::current();
     let build = rust_js_program::manifest::build();
     // What prints its `.d.ts`, which isn't in the binary (#675).
-    let printer = match crate::typescript::printer() {
+    let printer = match rust_js_emit::typescript::printer() {
         Ok(printer) => printer.map(|hash| format!(", declarations {hash}")).unwrap_or_default(),
         Err(error) => {
             eprintln!("rust-js: {error}");
@@ -591,7 +591,7 @@ pub fn layout() -> Result<Option<String>, String> {
     }
     match dirs.is_empty() {
         true => Ok(None),
-        false => crate::prettier::identity(&dirs),
+        false => rust_js_emit::prettier::identity(&dirs),
     }
 }
 

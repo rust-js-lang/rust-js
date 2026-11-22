@@ -1,4 +1,4 @@
-// Mutations of src/output.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/output.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "internal-in-file-exports",
     breaks:
       "a module's file exports count what it exports its private state by, `$$SIDES`, so a glob's `pub use shapes::*` lists names where it's `export *` (#2017)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        .filter(|(_, exported)| !rust_js_program::library::is_internal_export(exported))\n",
     replace: "        .filter(|_| true)\n",
     tests: ["test/cross-crate-private-state.test.ts"],
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-manifest-of-a-build",
     breaks: "`@rust-js/std`'s committed manifest says which build of the compiler wrote it, so each build's is another (ADR 1003)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                    .of_no_build()\n",
     replace: "",
     tests: ["test/std-package.test.ts"],
@@ -22,7 +22,7 @@ export const mutations: Mutation[] = [
   {
     name: "cargo-unit-of-another-refused",
     breaks: "a Cargo build into the unit directory a crate of the same name at another path wrote first fails, its manifest taken for another compilation's",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                if (previous.input != input || previous.output != output) && !self.settings.cargo {\n",
     replace: "                if previous.input != input || previous.output != output {\n",
     tests: ["test/rust-js-test.test.ts", "-t", "two crates of one name"],
@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
   {
     name: "alias-not-exported",
     breaks: "an alias isn't among the module's exports, which what imports it checks",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "own.chain(reexported).chain(default).chain(aliased)",
     replace: "own.chain(reexported).chain(default)",
     tests: ["test/manifest.test.ts", "-t", "a manifest says what each module exports"],
@@ -38,7 +38,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-specifier-linked",
     breaks: "a package's specifier, `@rust-js/std`, is a link to a file beside the module that isn't there",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        .filter(|(_, _, specifier)| rust_js_program::program::is_relative_specifier(specifier))\n",
     replace: "",
     tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   {
     name: "type-links-unset",
     breaks: "a module's declarations have no links, so a host that copies them keeps the build's names",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                module.type_links = links(&artifacts, types, true)?;",
     replace: "                let _ = types;",
     tests: ["test/manifest.test.ts", "-t", "links are each relative specifier"],
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   {
     name: "obsolete-declarations-kept",
     breaks: "obsolete generated declarations remain after a module is removed or declarations are disabled",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: '|| old.to_string_lossy().ends_with(".d.ts");',
     replace: '|| false;',
     tests: ["test/publication.test.ts", "-t", "declaration"],
@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-result-uncalled",
     breaks: "a `#[test]` returning an `Err` passes, its result never looked at",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                None if registered.returns_result => outcome(\n",
     replace: "                None if false => outcome(\n",
     tests: ["test/browser.test.ts", "-t", "fails the way"],
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-metadata-unplanned",
     breaks: "a library's metadata is published where it's asked for, unchecked, over a source of the crate",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                planned.push(path.clone());\n",
     replace: "                drop(path.clone());\n",
     tests: ["test/crates.test.ts", "-t", "a source of the crate"],
@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
   {
     name: "runtime-import-missing",
     breaks: "a module compiled against @rust-js/std calls its helpers, and neither defines nor imports them",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        js_module.helpers = rust_js_program::runtime::imported_helpers(helper_sources, &js_module.read_helpers());\n",
     replace: "",
     tests: ["test/runtime-package.test.ts"],
@@ -86,7 +86,7 @@ export const mutations: Mutation[] = [
   {
     name: "declarations-setting-ignored",
     breaks: "a build's `--declarations` writes no `.d.ts`, and TypeScript types its modules from their JS",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            let declarations = match self.settings.declarations {\n                true => module.declarations,\n",
     replace: "            let declarations = match self.settings.declarations {\n                true => None.or(None::<serde_json::Value>).filter(|_| module.declarations.is_some()),\n",
     tests: ["test/declarations.test.ts"],
@@ -94,7 +94,7 @@ export const mutations: Mutation[] = [
   {
     name: "declarations-header-dropped",
     breaks: "a module's .d.ts has no header, `// Generated by rust-js from ..`",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                declarations[\"header\"] = header.into();\n",
     replace: "",
     tests: ["test/declarations.test.ts"],
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-import-unresolved",
     breaks: "an import of another module's types is given no file it's from",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                    (self.scope_specifier(&module.path, path)).unwrap_or_else(|| self.specifier(&module.path, path))\n",
     replace: "                    path.join(\"/\")\n",
     tests: ["test/declarations.test.ts"],
@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-module-by-its-path",
     breaks: "a `#[path]` module's JS is where its module path says, `y.js`, not beside its file, `x/[y].js`",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "    if let Some(file) = located {\n",
     replace: "    if let Some(file) = located.filter(|_| false) {\n",
     tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
   {
     name: "linked-specifier-from-module",
     breaks: "a relative link name is left as the root's file has it, `./data.js` in `x/` for `../data.js`",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        self.file_specifier(from, &file)\n",
     replace: "        let _ = file;\n        specifier.to_string()\n",
     tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-module-root-relative",
     breaks: "a `#[path]` module's JS is placed by its file's path from the working directory, not the root's",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "    let below = relative(parent_dir(input), file);\n",
     replace: "    let below = relative(std::path::Path::new(\".\"), file);\n",
     tests: ["test/modules.test.ts", "-t", "path. module's JS is beside"],
@@ -134,7 +134,7 @@ export const mutations: Mutation[] = [
   {
     name: "path-module-escapes-output",
     breaks: "a `#[path]` module outside the root's directory, `../shared/model.rs`, is written outside the output's, through a directory that isn't there",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "(!below.starts_with(\"..\")).then(",
     replace: "true.then(",
     tests: ["test/shared-code.test.ts"],
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-file-is-root",
     breaks: "a module in a file of its own is taken to live in the crate root's file, so its source map names `lib.rs` for code in `stats.rs`",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            let rust_path = module.file.clone().unwrap_or_else(|| self.input.clone());",
     replace: "            let rust_path = self.input.clone();",
     tests: ["test/compiler.test.ts", "-t", "a crate split across files becomes one JS file per module"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "declarations-unprinted-silently",
     breaks: "a crate whose declarations TypeScript can't print, for want of @rust-js/typescript, builds without them, and says nothing",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                .zip(crate::typescript::print(&self.settings, &models)?)",
     replace: "                .zip(crate::typescript::print(&self.settings, &models).unwrap_or_default())",
     tests: ["test/declarations.test.ts", "-t", "declarations where @rust-js/typescript isn't say to install"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "map-sources-absolute",
     breaks: "a source map names its Rust files by their absolute paths, not relative to the map, so a copied build points at files that aren't there",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        let path_of = |i: usize| relative_resolved(&dir, &resolved[i]);",
     replace: "        let path_of = |i: usize| resolved[i].display().to_string();",
     tests: ["test/emission.test.ts", "-t", "source map points from fib.js back into fib.rs"],
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
   {
     name: "output-collision-unchecked",
     breaks: "a root and a child module whose JS is the same file, `same.js`, both write it, one over the other, where it's refused before anything's written",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            if sources.contains(path) || path == &input || !paths.insert(path.clone()) {",
     replace: "            if sources.contains(path) || path == &input || !paths.insert(path.clone()) && false {",
     tests: ["test/emission.test.ts", "-t", "root and child output collisions leave no partial artifacts"],
@@ -174,7 +174,7 @@ export const mutations: Mutation[] = [
   {
     name: "import-of-jsx-names-js",
     breaks: "an import of a module with JSX names its `.js` file, `./view.js`, which isn't there: it's `view.jsx`",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        self.file_specifier(from, &self.js_path(to))\n",
     replace: "        self.file_specifier(from, &self.js_path(to).with_extension(\"js\"))\n",
     tests: ["test/emission.test.ts", "-t", "mixed JS and JSX modules use their final paths in imports and the manifest"],
@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
   {
     name: "exports-unlisted",
     breaks: "a module's exported function isn't in its manifest's `exports`, and a host can't tell a program has a `main`",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        js::Item::Function(function) if function.export => Some(function.name.word().to_string()),",
     replace: "        js::Item::Function(function) if false => Some(function.name.word().to_string()),",
     tests: ["test/manifest.test.ts", "-t", "what each module exports"],
@@ -190,7 +190,7 @@ export const mutations: Mutation[] = [
   {
     name: "tests-runner-unrecorded",
     breaks: "a `--test` build's manifest doesn't say where its tests' runner is",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                tests,\n            };",
     replace: "                tests: None,\n            };",
     tests: ["test/manifest.test.ts", "-t", "what each module exports"],
@@ -198,7 +198,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-source-mod-file-moved",
     breaks: "a module whose file is `nested/mod.rs` has its JS in source at `nested.js`, not beside it",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        if own.last().is_some_and(|name| name == \"mod\") {\n            own.pop();\n        }\n",
     replace: "",
     tests: ["test/cargo-in-source.test.ts", "-t", "follows the modules"],
@@ -206,7 +206,7 @@ export const mutations: Mutation[] = [
   {
     name: "in-source-path-module-moved",
     breaks: "a `#[path]` module's JS in source is where its module path says, not beside its file, a Next.js page's",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        if own == path || located {\n",
     replace: "        if own == path {\n",
     tests: ["test/next.test.ts", "-t", "next build builds"],
@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
   {
     name: "specifier-from-root",
     breaks: "a module in a subdirectory imports as the root's file does, `./wave.js` for `../wave.js`",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        rust_js_program::paths::specifier(parent_dir(&self.js_path(from)), to)\n",
     replace: "        rust_js_program::paths::specifier(parent_dir(&self.output), to)\n",
     tests: ["test/modules.test.ts", "-t", "a module in a #.path. directory has its JS beside its file"],
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
   {
     name: "declarations-not-laid-out",
     breaks: "a crate's `.d.ts` is written as TypeScript's printer lays it out, where the app's Prettier has a config for it, and its format check fails",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                bytes: laid_out.clone().unwrap_or(text).into_bytes(),",
     replace: "                bytes: text.into_bytes(),",
     tests: ["test/settings.test.ts", "-t", "declarations are laid out by Prettier"],
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
   {
     name: "output-leading-comments-dropped",
     breaks: "a file's leading comments, a license's, aren't its JS's",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                header.push_str(comments);\n",
     replace: "                let _ = comments;\n",
     tests: ["test/emission.test.ts", "-t", "leading comments"],
@@ -238,7 +238,7 @@ export const mutations: Mutation[] = [
   {
     name: "header-path-as-cargo-gives",
     breaks: "a module's header names its Rust as Cargo gave it, from the app, so a package's JS an app writes isn't its author's, `node_modules/.pnpm/..`",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
     replace: "            |_| rust_path.to_path_buf(),\n",
     tests: ["test/libraries.test.ts", "-t", "from npm into"],
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
   {
     name: "header-from-nearest-manifest",
     breaks: "a file compiled alone names its Rust from the nearest `Cargo.toml`, maybe another crate's, `web/rust/codemirror.rs` from the compiler's",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            false => absolute(&self.input)\n                .ok()\n                .and_then(|input| input.parent().map(Path::to_path_buf)),\n",
     replace: "            false => absolute(&self.settings.dir).ok(),\n",
     tests: ["test/jsx.test.ts", "-t", "forwarded refs"],
@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-reexport-unlocated",
     breaks: "a binding's re-export names its JS module as the root names it, `./math.js` from a folder below",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                js::ImportFrom::Specifier(specifier) => located(specifier),\n",
     replace: "                js::ImportFrom::Specifier(specifier) => specifier.clone(),\n",
     tests: ["test/modules.test.ts", "-t", "JS module's binding is re-exported"],
@@ -262,7 +262,7 @@ export const mutations: Mutation[] = [
   {
     name: "output-case-collision-allowed",
     breaks: "two modules whose files differ only by case, `shapes.js` and `Shapes.js`, are written, one file on macOS and Windows",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "folded.insert(path.to_string_lossy().to_lowercase(), path)",
     replace: "folded.insert(path.to_string_lossy().to_string(), path)",
     tests: ["test/emission.test.ts", "-t", "differ only by case"],
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-at-the-built-path",
     breaks: "the app's Prettier is asked for a file's config where Cargo's build has it, in its target directory, and an override by path, React's `trailingComma: 'all'` of `packages/*/src/**/*.js`, is never the file's (ADR 0381)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            files.push((laid.destination.clone(), laid.printed.code.as_str()));\n",
     replace: "            files.push((laid.file.clone(), laid.printed.code.as_str()));\n",
     tests: ["test/settings.test.ts", "-t", "overrides for where the file goes"],
@@ -278,7 +278,7 @@ export const mutations: Mutation[] = [
   {
     name: "prettier-declarations-at-the-built-path",
     breaks: "the app's Prettier is asked for a `.d.ts`'s config where Cargo's build has it, and an override by path is never its (ADR 0381)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                typed.push((types_path(&js_path), types_path(&destination), declarations));\n",
     replace: "                typed.push((types_path(&js_path), types_path(&js_path), declarations));\n",
     tests: ["test/settings.test.ts", "-t", "overrides for where the file goes"],
@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
   {
     name: "package-entry-unread-by-cargo",
     breaks: "a library's package.json and entry aren't what Cargo is told its build read, so an edit of either leaves its consumer importing what its entry no longer re-exports (ADR 1008)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            .chain(packaged)\n",
     replace: "            .chain(packaged.into_iter().take(0))\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
   {
     name: "entry-root-written",
     breaks: "a crate's root whose only job is re-exporting what its package's hand-written entry does writes its JS anyway, a second entry, React's react.js beside index.js (the user's decision, ADR 1008, amended)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                lowered.modules.retain(|module| !entry_is_root(package, module));\n",
     replace: "                lowered.modules.retain(|module| !entry_is_root(package, module) || true);\n",
     tests: ["test/libraries.test.ts", "-t", "entry re-exports"],
@@ -303,7 +303,7 @@ export const mutations: Mutation[] = [
     name: "header-path-as-cargo-spells",
     breaks:
       "a Cargo build's header names a module a `#[path]` reaches through `..` as Cargo's working directory spells it, `server/set/../Runtime.rs`, where it's past its crate's directory (m6-wife's report, ADR 0414)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            |(file, dir)| PathBuf::from(relative_resolved(&dir, &file)),\n",
     replace: "            |(file, dir)| file.strip_prefix(&dir).map_or_else(|_| rust_path.to_path_buf(), Path::to_path_buf),\n",
     tests: ["test/cargo-in-source.test.ts", "-t", "through"],
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     name: "own-subpath-same-package",
     breaks:
       "a crate's module imports another of its own package by that package's subpath, `dom/src/zeta`, not its file, where upstream writes the file (ADR 0770, amended)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        if from_scope.as_ref().is_some_and(|own| own.dir == scope.dir) {\n",
     replace: "        if false && from_scope.as_ref().is_some_and(|own| own.dir == scope.dir) {\n",
     tests: ["test/libraries.test.ts", "-t", "another package"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
     name: "own-subpath-not-installed",
     breaks:
       "a crate's module in another package is imported by that package's subpath where Node finds no copy of the package from the importer, so the import fails where the file's path loads (ADR 0770, amended)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        (found.as_ref() == Some(&scope.dir))\n",
     replace: "        (found.is_some() || found.is_none())\n",
     tests: ["test/libraries.test.ts", "-t", "another package"],
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "manifest-imports-repeated",
     breaks:
       "the manifest lists a file a module imports once for each of its `use`s (rd649)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            imports.retain(|import| seen.insert(import.clone()));\n",
     replace: "            imports.retain(|import| seen.insert(import.clone()) || true);\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "two uses of one module"],
@@ -338,7 +338,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-runner-module-ignored",
     breaks: "a test file imports Node's `test` whatever runner its crate names (ADR 1076)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            from: self.settings.test.runner.module().to_string(),\n",
     replace: "            from: \"node:test\".to_string(),\n",
     tests: ["test/test-files.test.ts", "-t", "the runner the crate names"],
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-import-shadowed",
     breaks: "a test file imports the runner's `test` by its name though the module has a `test` of its own, declared twice (ADR 1076)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        let test = rust_js_program::names::fresh_in(&mut taken, \"test\");\n",
     replace: "        let test = \"test\".to_string();\n",
     tests: ["test/test-files.test.ts", "-t", "one module of tests is its test file"],
@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
   {
     name: "ignored-test-run",
     breaks: "an `#[ignore]` test is registered by `test`, not `test.skip`, and runs (ADR 0026)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                true => js::Expr::member(js::Expr::module(&test), \"skip\"),\n",
     replace: "                true => js::Expr::module(&test),\n",
     tests: ["test/test-files.test.ts", "-t", "one module of tests is its test file"],
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-of-tests-at-its-path",
     breaks: "a module of tests is written where its path says, `shapes/tests.js`, and its parent's test file is another (ADR 1076)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            && self.placed_tests.contains(module)\n",
     replace: "            && false\n",
     tests: ["test/test-files.test.ts", "-t", "one module of tests is its test file"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
   {
     name: "registered-test-taken-for-local",
     breaks: "a test file of registrations alone names its module's tests as its own, which it doesn't have (ADR 1076)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        for registered in tests.iter().filter(|test| Some(test.module.as_slice()) != own) {\n",
     replace: "        for registered in tests.iter().filter(|test| test.module.as_slice() != beside) {\n",
     tests: ["test/test-files.test.ts", "-t", "several modules of tests"],
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
   {
     name: "test-files-one-listed",
     breaks: "a test build's manifest lists only its first test file, and the others' tests never run (ADR 1076)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            if !test_files.contains(&file) {\n",
     replace: "            if test_files.is_empty() {\n",
     tests: ["test/test-files.test.ts", "-t", "several modules of tests"],
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
   {
     name: "glob-every-never",
     breaks: "a glob of every name its module's file exports lists them, `export { TWO, one } from`, where upstream writes `export * from` (#593)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "    reexport.glob && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
     replace: "    false && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     name: "glob-every-unequal",
     breaks:
       "a glob of some of its module's file's names is `export * from`, which re-exports a private item that module exports for another, `helper`, and a name a private `use` shadows, `five` (#593, a wrong answer)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "    reexport.glob && all.is_some_and(|all| all.iter().map(String::as_str).eq(names.iter().copied()))\n",
     replace: "    reexport.glob && all.is_some()\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of every name its module's file exports is export \\* from"],
@@ -403,7 +403,7 @@ export const mutations: Mutation[] = [
   {
     name: "require-specifier-of-the-root",
     breaks: "a `require(..)` in a module below the root names its file from the crate root's file, `require(\"../dep/element.js\")` in `outer/inner.js`, a file that isn't there, and the call throws (#618, P0)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            if let js::ExprKind::Import(import) | js::ExprKind::Specifier(import) = &mut e.kind {",
     replace: "            if let js::ExprKind::Specifier(js::ImportFrom::Specifier(_)) = &e.kind {\n            } else if let js::ExprKind::Import(import) | js::ExprKind::Specifier(import) = &mut e.kind {",
     tests: ["test/require.test.ts", "-t", "below the root"],
@@ -411,7 +411,7 @@ export const mutations: Mutation[] = [
   {
     name: "library-glob-listed",
     breaks: "a glob of a library's module of every name its file exports lists them, `export {bindToConsole} from 'react-client/src/ReactClientConsoleConfigPlain'`, where upstream writes `export * from` (#629)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "        js::ImportFrom::Specifier(_) => reexport.file_exports.as_ref(),\n",
     replace: "        js::ImportFrom::Specifier(_) => None,\n",
     tests: ["test/glob-reexports.test.ts", "-t", "a glob of a library's module of every name its file exports is export \\* from"],
@@ -419,7 +419,7 @@ export const mutations: Mutation[] = [
   {
     name: "file-record-without-manifest-written",
     breaks: "a file's record doesn't say it wrote the manifest, which a cache keyed by it then never gives again (ADR 1099)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                .chain(manifest_path.clone())\n",
     replace: "",
     tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
@@ -427,7 +427,7 @@ export const mutations: Mutation[] = [
   {
     name: "file-record-without-env",
     breaks: "a file's record leaves out each variable an `env!` read (ADR 1099)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "    let env: Vec<&str> = text.lines().filter(|line| line.starts_with(\"# env-dep:\")).collect();\n",
     replace: "    let env: Vec<&str> = Vec::new();\n",
     tests: ["test/compiles.test.ts", "-t", "a file's record of its build"],
@@ -435,7 +435,7 @@ export const mutations: Mutation[] = [
   {
     name: "std-crate-hash-rustcs",
     breaks: "`@rust-js/std`'s manifest keeps rustc's crate hash, of where the checkout and the toolchain are and of `RUSTC_BOOTSTRAP`, so each checkout and machine commits another (#1094)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "                    .of_no_build()\n                    .of_its_inputs(&self.toolchain),\n",
     replace: "                    .of_no_build(),\n",
     tests: ["test/std-package.test.ts", "-t", "crate hash"],
@@ -443,7 +443,7 @@ export const mutations: Mutation[] = [
   {
     name: "settings-manifest-unread",
     breaks: "neither Cargo's record of a crate it builds nor a file's names the `Cargo.toml` its settings are of: a test runner named there alone, no Rust changed, isn't the next run's, the remembered build's kept (#1751, ADR 1099)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            .chain(packaged)\n            .chain(settings)\n",
     replace: "            .chain(packaged)\n",
     tests: ["test/rust-js-test-runners.test.ts", "test/compiles.test.ts", "-t", "alone is the next run|a file's record of its build"],
@@ -451,7 +451,7 @@ export const mutations: Mutation[] = [
   {
     name: "alone-header-as-given",
     breaks: "a file compiled alone names its Rust file in the header as it was given, an absolute path a fixture's or a build machine's, so the same crate built in two places isn't the same bytes (ADR 0414, amended)",
-    file: "src/output.rs",
+    file: "crates/rust-js-emit/src/output.rs",
     find: "            false => absolute(&self.input)\n                .ok()\n                .and_then(|input| input.parent().map(Path::to_path_buf)),\n",
     replace: "            false => None,\n",
     tests: ["test/emission.test.ts", "-t", "no absolute path of the build"],

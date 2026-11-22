@@ -17,7 +17,7 @@ import { installPackages } from "./packages-of";
 import { node } from "./programs";
 import { limitations } from "./limitations-of";
 import { fixture, root, run } from "./support";
-import { compilerRustFiles, isCompilerSource } from "../scripts/compiler-crates";
+import { compilerRustFiles, crateOf, isCompilerSource } from "../scripts/compiler-crates";
 
 // What the crate includes from beyond `src/`, `include_str!("../../../test/
 // vec-collect-ways.txt")`, is in the crate the mutations build, or its unit
@@ -31,8 +31,10 @@ test("the crate the mutations build has each file the compiler includes", () => 
       const path = relative(root, normalize(joined(root, dirname(file), included)));
       if (!isCompilerSource(path)) outside.add(path);
     }
-    // And what a unit test reads where the crate is (`CARGO_MANIFEST_DIR`).
-    for (const [, read] of readFileSync(joined(root, file), "utf8").matchAll(/env!\("CARGO_MANIFEST_DIR"\)\)\s*\.join\("([^"]+)"\)/g)) outside.add(read);
+    // And what a unit test reads where its crate is (`CARGO_MANIFEST_DIR`).
+    for (const [, read] of readFileSync(joined(root, file), "utf8").matchAll(/env!\("CARGO_MANIFEST_DIR"\)\)\s*\.join\("([^"]+)"\)/g)) {
+      outside.add(relative(root, normalize(joined(root, crateOf(file)!.dir, read))));
+    }
   }
   const copied = (path: string) => crateFiles.some((kept) => path === kept || path.startsWith(`${kept}/`));
   expect([...outside].filter((path) => !copied(path))).toEqual([]);

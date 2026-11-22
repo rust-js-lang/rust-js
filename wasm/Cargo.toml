@@ -27,6 +27,7 @@ path = "../src/main.rs"
 [dependencies]
 # The compiler's crates with no rustc in them (ADR 1181), as ../Cargo.toml's.
 rust-js-program = { path = "../crates/rust-js-program" }
+rust-js-emit = { path = "../crates/rust-js-emit" }
 # The MIR intervals' persistent maps (#2310, ADR 1183), as ../Cargo.toml's.
 imbl = { version = "7.0.2", default-features = false }
 # The compiler's maps and sets, walked in the order their entries were put
@@ -59,18 +60,6 @@ rustc_span = { path = "rustc/compiler/rustc_span" }
 rustc_structures = { path = "rustc/compiler/rustc_structures" }
 rustc_target = { path = "rustc/compiler/rustc_target" }
 rustc_trait_selection = { path = "rustc/compiler/rustc_trait_selection" }
-# The same oxc release as ../Cargo.toml, from its tag (see there).
-oxc_allocator = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_ast = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_ast_visit = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_codegen = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_formatter = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_formatter_core = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_parser = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_regular_expression = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_sourcemap = "=8.1.2"
-oxc_span = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
-oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 
 # Standalone: not part of the rust-js package one directory up.
 [workspace]

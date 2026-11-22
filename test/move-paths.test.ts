@@ -33,7 +33,7 @@ test("the `super`s that reach the root are its path, and no fewer", () => {
     "use rust_js_program::js::Expr;\nuse super::super::js::Other;\n",
   );
   // In an inline module, one more.
-  expect(rewrite("src/output.rs", "mod tests {\n    use super::super::js::Expr;\n}\nuse super::js::Expr;\n").text).toBe(
+  expect(rewrite("crates/rust-js-emit/src/output.rs", "mod tests {\n    use super::super::js::Expr;\n}\nuse super::js::Expr;\n").text).toBe(
     "mod tests {\n    use rust_js_program::js::Expr;\n}\nuse rust_js_program::js::Expr;\n",
   );
 });

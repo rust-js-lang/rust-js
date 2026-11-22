@@ -20,8 +20,8 @@ rustc_private = true
 # edition 2024's): the binary's tests' `rust-js-program/testing` never
 # reaches the compiler a user runs.
 resolver = "3"
-members = ["crates/rust-js-program"]
-default-members = [".", "crates/rust-js-program"]
+members = ["crates/rust-js-program", "crates/rust-js-emit"]
+default-members = [".", "crates/rust-js-program", "crates/rust-js-emit"]
 exclude = ["builtins", "examples", "next", "node", "react", "react-native", "scripts", "test", "target", "tooling", "vendor", "wasm", "webapi"]
 
 # What more than one of the crates depends on, at one version.
@@ -35,18 +35,10 @@ serde_json = "1"
 # A crate's settings, in its Cargo.toml (ADR 0117), and a source's: read
 # natively only, as the playground has none.
 toml = "1"
-
 # oxc prints the JS, formats it as oxfmt does, and builds source maps. It is
 # pre-1.0 and changes often: pin one release, and keep every use of its API in
 # src/to_oxc.rs and src/format.rs. Its formatter isn't published to crates.io,
 # so every oxc crate comes from that release's tag, as one copy.
-[dependencies]
-# The compiler's owned output (ADR 1181).
-rust-js-program = { path = "crates/rust-js-program" }
-indexmap.workspace = true
-rustc-hash.workspace = true
-serde.workspace = true
-serde_json.workspace = true
 oxc_allocator = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_ast = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_ast_visit = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
@@ -58,6 +50,15 @@ oxc_regular_expression = { git = "https://github.com/oxc-project/oxc", tag = "cr
 oxc_sourcemap = "=8.1.2"
 oxc_span = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
 oxc_syntax = { git = "https://github.com/oxc-project/oxc", tag = "crates_v0.151.0" }
+
+[dependencies]
+# The compiler's owned output and its printing (ADR 1181).
+rust-js-program = { path = "crates/rust-js-program" }
+rust-js-emit = { path = "crates/rust-js-emit" }
+indexmap.workspace = true
+rustc-hash.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 imbl = { version = "7.0.2", default-features = false }
 
 # The unit tests' conveniences of owned output's crate (its `testing`).

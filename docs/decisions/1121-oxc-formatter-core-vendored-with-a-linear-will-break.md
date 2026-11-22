@@ -70,7 +70,7 @@ outside oxc's workspace, the same dependencies at the same tag; its
 
 ## Consequences
 
-- `src/format.rs`'s `nested_calls_laid_out_in_linear_time` lays out calls
+- `crates/rust-js-emit/src/format.rs`'s `nested_calls_laid_out_in_linear_time` lays out calls
   32 deep within 5 s, in a thread, so a regression fails it rather than
   hanging the suite; the corpus case `calls_nested_32_deep_laid_out.rs`
   compiles typenum's shape, a type-level number of 32 bits, and a call 32

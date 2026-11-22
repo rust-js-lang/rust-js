@@ -67,7 +67,7 @@ git log origin/main --no-merges --since='7 days ago' --format='@%s' --name-only 
 
 # One cluster's fixes per day: its owner's files and its mechanism's words
 git log origin/main --no-merges --since='21 days ago' --date=short --format='%ad %s' \
-  -- src/to_oxc.rs src/to_oxc/ | grep -E '^[0-9-]+ fix' | grep -iE 'comment|blank line' \
+  -- crates/rust-js-emit/src/to_oxc.rs crates/rust-js-emit/src/to_oxc/ | grep -E '^[0-9-]+ fix' | grep -iE 'comment|blank line' \
   | cut -c1-10 | uniq -c
 
 # The decisions amended most, and the owners whose row takes a paragraph
@@ -162,7 +162,7 @@ The owners most changed by fixes of the largest cells:
 
 | Cell | Files most changed (fixes) |
 |---|---|
-| `readability-passes` × `missing case` | `mir/tidy/stages.rs` 91, `src/to_oxc.rs` 52, `mir/tidy.rs` 43, `mir/tidy/jumps/tails.rs` 34, `mir/tidy/branches.rs` 31 |
+| `readability-passes` × `missing case` | `mir/tidy/stages.rs` 91, `crates/rust-js-emit/src/to_oxc.rs` 52, `mir/tidy.rs` 43, `mir/tidy/jumps/tails.rs` 34, `mir/tidy/branches.rs` 31 |
 | `iterators` × `missing case` | `mir/iter.rs` 44, the runtime 37, `iterators.rs` 33, `iterators/knowing.rs` 25, `combinators.rs` 22 |
 | `iterators` × `protocol gap` | the runtime 90, `runtime/back_steps.js` 26, `runtime/closing.js` 26, `recognition/iterators.rs` 26, `mir/iter.rs` 24 |
 | `readability-passes` × `unsound optimization` | `mir/tidy.rs` 28, `mir/tidy/stages.rs` 20, `mir.rs` 16, `mir/tidy/branches.rs` 13, `mir/tidy/logicals.rs` 11 |
@@ -283,7 +283,7 @@ filed are listed with their issue.
    `drops/inlined.rs`, `drops.rs`, `mir/drops.rs`, `traits/drop_params.rs`,
    `traits/dyns.rs`. Net: #854.
 2. **A comment's place carried from lowering, not found by spans as it's
-   printed** (readability, 139 fixes, 60 in the last week; `src/to_oxc.rs`
+   printed** (readability, 139 fixes, 60 in the last week; `crates/rust-js-emit/src/to_oxc.rs`
    changed by 65 of them). Every fix teaches `comments_of`
    another gap: a `let` whose value opens (20b0739df #758 #767), a
    `continue` arm (508e85347 #693, d56517ab4 #680, 8c14c9c4d #666,
@@ -297,7 +297,7 @@ filed are listed with their issue.
    statement or item it precedes as lowering makes it, carried as a fact
    that tidy's and preparation's moves take along, and printed where its
    node is; and generate each construct × comment position as a matrix.
-   Owners: `src/to_oxc.rs` (`comments_of`), `src/to_oxc/trailing.rs`,
+   Owners: `crates/rust-js-emit/src/to_oxc.rs` (`comments_of`), `crates/rust-js-emit/src/to_oxc/trailing.rs`,
    `starts.rs`, `openings.rs`, `crates/rust-js-program/src/comments.rs`.
 3. **Structured control flow from MIR in one pass, labels only where
    needed** (readability, 62 fixes; #771: about 40% of generated functions

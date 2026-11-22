@@ -1,11 +1,11 @@
-// Mutations of src/to_oxc.rs (ADR 0093).
+// Mutations of crates/rust-js-emit/src/to_oxc.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
     name: "module-doc-lost",
     breaks: "a module's `//!` above a trait or a struct, items with no JS, is lost (#486)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "        if !own_docs.is_empty() {\n",
     replace: "        if false && !own_docs.is_empty() {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
@@ -13,7 +13,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-doc-of-an-inner-module",
     breaks: "an inline module's `/*!` is its parent's too, above the parent's JS (#486)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            !code.is_none() && code.lo <= c.lo && c.inner == Some(code.hi) && c.lo >= past\n",
     replace: "            !code.is_none() && code.lo <= c.lo && c.inner.is_some() && c.lo >= past\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
   {
     name: "module-doc-also-a-statements",
     breaks: "a module's `//!` is printed twice: above its JS and above the statement or import after it (#486)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c) && !of_module(c))\n",
     replace: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment is above its JS"],
@@ -29,7 +29,7 @@ export const mutations: Mutation[] = [
   {
     name: "inner-doc-printed-from-source",
     breaks: "a `/*!` a statement's comment is printed by oxc from the source as written, not as `in_js` writes it, `/* The lanes. */` (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                let (lo, hi) = match js != text[lo as usize..hi as usize] {\n",
     replace: "                let (lo, hi) = match false && js != text[lo as usize..hi as usize] {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "inner doc comment"],
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
   {
     name: "printed-first-of-its-span-alone",
     breaks: "a blank line and a comment before an `if let`'s line are before its `if`, past what its test's `take()` prints first",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            .unwrap_or(start)\n            .max(line_end)\n",
     replace: "            .unwrap_or(start)\n            .max(line_end.min(start))\n",
     tests: ["test/lowering-comments.test.ts", "-t", "what its test's take"],
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-doc-unattached",
     breaks: "a class struct's `///` doc isn't before its constructor function, `/** Base class helpers .. */ function Component` (ADR 0761)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            let attached_to = (classes.get(&at).copied())\n",
     replace: "            let attached_to = (None::<u32>)\n",
     tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
   {
     name: "class-doc-blank-between",
     breaks: "a blank line before a class's `new` is between its struct's doc and its constructor function (ADR 0761)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    pieces.drain(..blanks);\n",
     replace: "",
     tests: ["test/classes.test.ts", "-t", "doc is its constructor function's"],
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-before-attributes-lost",
     breaks: "a blank line before `#[cfg_attr(..)] pub const D` is lost",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                && (last.trim_start().starts_with(\"#[\") || macro_opening(last) || closure_opening(last))\n",
     replace: "                && (macro_opening(last) || closure_opening(last))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a blank line before an item's attributes"],
@@ -69,7 +69,7 @@ export const mutations: Mutation[] = [
   {
     name: "removed-let-comment-dropped",
     breaks: "a comment before `let first = Rc::clone(first);`, which has no JS, is lost",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                let (lets, rest) = leading_statements(&between);\n",
     replace: "                let (lets, rest): (Vec<&str>, &str) = (Vec::new(), &between);\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a let that has no JS"],
@@ -77,7 +77,7 @@ export const mutations: Mutation[] = [
   {
     name: "aliases-unprinted",
     breaks: "`export { currentTime as unstable_now };` isn't written",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "    if !module.aliases.is_empty() {\n",
     replace: "    if false && !module.aliases.is_empty() {\n",
     tests: ["test/modules.test.ts", "-t", "another name of the module's own"],
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
   {
     name: "load-statements-unprinted",
     breaks: "what a module runs when it's loaded is left out of its JS",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            js::Item::Statements(stmts) => body.extend(cx.stmts(stmts)),\n",
     replace: "            js::Item::Statements(_) => {}\n",
     tests: ["test/modules.test.ts", "-t", "js::on_load!"],
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
   {
     name: "comments-unprinted",
     breaks: "no comment of the Rust is in the JS",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "        ArenaVec::from_iter_in(comments, b),\n",
     replace: "        ArenaVec::from_iter_in(comments.into_iter().take(0), b),\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -101,7 +101,7 @@ export const mutations: Mutation[] = [
   {
     name: "doc-comment-not-jsdoc",
     breaks: "a `///` doc comment is written as a line comment, not JSDoc",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                match rust_js_program::comments::jsdoc(&lines).filter(|_| run > 0) {",
     replace: "                match rust_js_program::comments::jsdoc(&lines).filter(|_| false) {",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
   {
     name: "trailing-comment-leading",
     breaks: "a comment after code on its line is also written before the next statement",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !of_no_js(c) && !of_module(c))\n",
     replace: "            .filter(|c| c.lo >= past && !before_value(c) && !of_no_js(c) && !of_module(c))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-line-lost",
     breaks: "a blank line in the Rust, between statements, isn't in the JS",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            gap.matches('\\n').count() >= 2",
     replace: "            gap.matches('\\n').count() >= 3",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -125,7 +125,7 @@ export const mutations: Mutation[] = [
   {
     name: "header-comment-twice",
     breaks: "a file's leading comment, its JS's header's, is written again before its first item",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "        let past = (start + rust_js_program::comments::leading_comments(&file.text).len()) as u32;",
     replace: "        let past = start as u32;",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -133,7 +133,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-across-code",
     breaks: "a comment before code that has no start of its own is written past it, at the next start, a match arm's at the arm after (since #643 a type's declaration is an item of no JS, and its doc comment nowhere, so the struct's case no longer holds it)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                let only_starts = lets\n                    .iter()\n                    .all(|s| s.starts_with(\"let \") || type_alias(s) || use_item(s))\n                    && !rest.contains([';', '}'])\n                    && !openings::whole_arm(rest)\n                    && opens;\n",
     replace: "                let only_starts = true;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines is its value's, none lost"],
@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-first-printed-own",
     breaks: "a comment is attached to its statement, not the temporary printed before it",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            .find(|&&(lo, _)| lo >= start && (lo < end || lo == start))",
     replace: "            .find(|&&(lo, _)| lo == start && false)",
     tests: ["test/corpus.test.ts", "-t", "^(channels|copy_mutation).rs$"],
@@ -150,7 +150,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-line-before-span",
     breaks: "a blank line before a statement whose span starts inside its line, an `if`'s at its test, is lost",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            let mut before = &before[..before.rfind('\\n').map_or(0, |i| i + 1)];\n",
     replace: "            let mut before = before;\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where"],
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-across-closure-lost",
     breaks: "a comment before a closure whose body is in its place is lost, as its opening's `{` is between them",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        || head.ends_with('|')\n                        || macro_opening",
     replace: "                        || false\n                        || macro_opening",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-before-a-match-lost",
     breaks: "a comment before a `match` MIR makes an `if` of, `// Append the captured update.` before `match &new_last {`, is lost, as the `if` starts at its first arm's pattern",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        || match_opening(head) && rest[i + 1..].trim().is_empty()\n",
     replace: "",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a match an if is made of is the if's"],
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
     name: "comment-above-a-let-of-a-value-lost",
     breaks:
       "a comment above `let listeners = match .. {` in a `catch_unwind` closure is above the `try`, and one above `let f = {` is lost, as the `let`'s opening is between it and the value's first start (#758, #767)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        || let_value(head).is_some_and(|value| value.is_empty() || match_opening(value))\n",
     replace: "                        || let_value(head).is_some_and(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_above_a_let_of_a_value.rs$"],
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-above-a-let-of-a-block-lost",
     breaks: "a comment above `let f = {`, whose block's first statement is the `let`'s first JS, is lost (#767)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        || let_value(head).is_some_and(|value| value.is_empty() || match_opening(value))\n",
     replace: "                        || let_value(head).is_some_and(|value| match_opening(value))\n",
     tests: ["test/corpus.test.ts", "-t", "^comment_above_a_let_of_a_value.rs$"],
@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
   {
     name: "closure-opening-a-blank",
     breaks: "a closure's opening line, between a comment and the statement after it, prints as a blank line",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    gap.len() > 2 && gap[1..gap.len() - 1].iter().any(|line| line.trim().is_empty())\n",
     replace: "                    gap.len() > 2\n",
     tests: ["test/lowering-cells.test.ts", "-t", "closure called as a statement is its body"],
@@ -201,7 +201,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-macro-comment-lost",
     breaks: "a comment before `thread_local! {` is lost, as its opening's `{` is between it and the first item",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        || macro_opening(&rest[..=i])\n",
     replace: "",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
@@ -209,7 +209,7 @@ export const mutations: Mutation[] = [
   {
     name: "item-macro-blank-lost",
     breaks: "the blank line between a comment and `thread_local! {` is lost before its first item's comment",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                && (last.trim_start().starts_with(\"#[\") || macro_opening(last) || closure_opening(last))\n",
     replace: "                && (last.trim_start().starts_with(\"#[\") || closure_opening(last))\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
@@ -217,7 +217,7 @@ export const mutations: Mutation[] = [
   {
     name: "end-comment-lost",
     breaks: "a comment after a module's last code, at its file's end, is lost",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            starts_and_end.push((sources.text.len() as u32, ends));\n",
     replace: "",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
@@ -225,7 +225,7 @@ export const mutations: Mutation[] = [
   {
     name: "end-comment-past-code",
     breaks: "a comment before an inline module's `}`, its last, ends its parent's JS too",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                sources.text[past..code.hi as usize].trim().is_empty()\n",
     replace: "                matches!(sources.text[past..code.hi as usize].trim(), \"\" | \"}\")\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before a macro's opening"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-constant-declared",
     breaks: "a constant declared as the default is `const V = ..;` and no `export default`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            js::Item::Const(c) if defaulted(module) == Some(c.name.word()) => body.push(cx.default_value(c)),\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
   {
     name: "inside-comment-at-line-end",
     breaks: "`code != 37 /* \"%\" */` has its comment at its line's end, or inside the block after it",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    inside,\n                    before_value,\n",
     replace: "                    inside: false,\n                    before_value,\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment inside an expression is after the code before it"],
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-comment-after-declaration",
     breaks: "`NoMode = /* .. */ 0b0000000`'s comment is after `export`, `export /* .. */ const NoMode = 0b0000000`, not before its value (ADR 0630, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    before_value,\n                    text: rust_js_program::comments::in_js(written),\n",
     replace: "                    before_value: false,\n                    text: rust_js_program::comments::in_js(written),\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   {
     name: "value-comment-after-comparison",
     breaks: "a comment after `==` is taken for one after an `=`, `const same = /* .. */ a === b`, not after `a`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    .is_some_and(|before| !before.ends_with(|c: char| \"=!<>+-*/%&|^\".contains(c)));\n",
     replace: "                    .is_some();\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment between an = and its value"],
@@ -265,7 +265,7 @@ export const mutations: Mutation[] = [
   {
     name: "noinline-beside-its-docs",
     breaks: "`@noinline` is a JSDoc of its own beside a function's docs, not their last line",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                if noinline && run > 0 && i + run == own.len() {\n",
     replace: "                if false {\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
@@ -273,7 +273,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-comment-unplaced",
     breaks: "a comment before a conditional's branch is given to oxc, which writes none there, so `? // Yes.` is lost",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            if let Some(&Arm { hi, operator, .. }) = arms.get(&at)\n",
     replace: "            if let Some(&Arm { hi, operator, .. }) = arms.get(&at).filter(|_| false)\n",
     tests: ["test/lowering-names.test.ts", "-t", "a comment is in the JS where it.s in the Rust"],
@@ -281,7 +281,7 @@ export const mutations: Mutation[] = [
   {
     name: "argument-comment-unplaced",
     breaks: "a comment before a call's argument, `// $FlowFixMe[cannot-write]` above `'name'`, is lost: no start is after it before the call's `;`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "    starts.extend(parts.keys().copied());\n",
     replace: "",
     tests: ["test/lowering-names.test.ts", "-t", "a comment before an argument or a field"],
@@ -289,7 +289,7 @@ export const mutations: Mutation[] = [
   {
     name: "statement-comment-in-its-arguments",
     breaks: "a comment before a statement whose JS starts at its call's argument, `// A character split ..` above `io::stdout().write_all(&[0xC3])`, is put inside `$printBytes(` before `[195]`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo && whole != at)\n",
     replace: "                        false\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments in an else"],
@@ -297,7 +297,7 @@ export const mutations: Mutation[] = [
   {
     name: "comments-end-not-orphaned",
     breaks: "a block of only comments prints `{}`, its comments attached to no node oxc prints",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                if comment_ends.contains(&at) {\n",
     replace: "                if false && comment_ends.contains(&at) {\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a branch of only comments"],
@@ -305,7 +305,7 @@ export const mutations: Mutation[] = [
   {
     name: "unsafe-opening-code",
     breaks: "a comment before an `unsafe` block that's its function's value is lost, the block's `{` taken for code between",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: " || unsafe_opening(head)\n",
     replace: "\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an unsafe block is its code's"],
@@ -313,7 +313,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-comment-run-split",
     breaks: "of a run of comments before a match arm, only the last line is the arm's value's, the others before the `if`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    && only_comments(c.hi, at)\n",
     replace: "                    && sources.text.get(c.hi as usize..at as usize).is_some_and(|gap| gap.trim().is_empty())\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
@@ -321,7 +321,7 @@ export const mutations: Mutation[] = [
   {
     name: "unattached-comments-lost",
     breaks: "a match arm's comment, of a `match` read as `prev?.types`, is before nothing printed, and lost",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                false => attached.push((c, lo)),\n",
     replace: "                false => {}\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a match arm's comment of many lines"],
@@ -329,7 +329,7 @@ export const mutations: Mutation[] = [
   {
     name: "erased-lets-before-nothing-else",
     breaks: "a comment before a `let` read in place is the next statement's only where that starts right after it, not `let cache = match ..`'s, whose JS starts at what it matches (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    .all(|s| s.starts_with(\"let \") || type_alias(s) || use_item(s))\n                    && !rest.contains",
     replace: "                    .all(|s| s.starts_with(\"let \") || type_alias(s) || use_item(s))\n                    && (lets.is_empty() || rest.trim().is_empty())\n                    && !rest.contains",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before a let read in place"],
@@ -337,7 +337,7 @@ export const mutations: Mutation[] = [
   {
     name: "operand-past-code",
     breaks: "a binary's right operand takes a comment code is between it and, a match arm's, `n ?? // Its own .. given` (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        || arms.get(&at).is_some_and(|arm| arm.operand) && !only_operators(c.hi, at)\n",
     replace: "                        || arms.get(&at).is_some_and(|arm| arm.operand) && false\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "a later arm read as an operand"],
@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
   {
     name: "erased-let-blank-lost",
     breaks: "a blank line before an erased cast's `let`, which has no JS, isn't before the statement after it, ReactChildren's `const iterator =`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            gap.matches('\\n').count() >= 2 || past_lets\n",
     replace: "            gap.matches('\\n').count() >= 2\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line is where the Rust has one"],
@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-blank-lost",
     breaks: "a blank line between a struct literal's fields isn't between its object's properties, ReactNoopUpdateQueue's",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            let part = (parts.get(&at)).is_some_and(|&(_, field)| !field) && !spans.iter().any(|&(lo, _)| lo == at);\n",
     replace: "            let part = parts.contains_key(&at) && !spans.iter().any(|&(lo, _)| lo == at);\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line is where the Rust has one"],
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
   {
     name: "let-chain-let-code",
     breaks: "a let-chain's `&& let` is code between a comment and the operand it's before, so it's lost or before the statement (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                                    opened.is_empty() || opened == \"let\" || opened == \"if\"\n",
     replace: "                                    opened.is_empty() || opened == \"if\"\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or-pattern's alternative"],
@@ -370,7 +370,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-export-told-untold",
     breaks: "a module's `export default`, after its code, tells nothing of it, so what the Rust tells is of the statement before, and ReactSharedInternalsClient's `if` is set apart from its literal (ADR 0865, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "        code.push_str(&format!(\"\\nexport default {function};\\n\"));\n        written.told.push(true);\n",
     replace: "        code.push_str(&format!(\"\\nexport default {function};\\n\"));\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a guard's let"],
@@ -378,7 +378,7 @@ export const mutations: Mutation[] = [
   {
     name: "aliases-told-untold",
     breaks: "a module's `export { .. as .. }` of its `pub use`s, after its code, tells nothing of it, so what the Rust tells is of the statement before (ADR 0865, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "        code.push_str(&format!(\"\\nexport {{ {} }};\\n\", named.join(\", \")));\n        written.told.push(true);\n",
     replace: "        code.push_str(&format!(\"\\nexport {{ {} }};\\n\", named.join(\", \")));\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a guard's let"],
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
   {
     name: "if-test-takes-any-comment",
     breaks: "an `if`'s test takes the comment before the `if` too, `if (\\n // before an or\\n value == null ||`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "own.into_iter().partition(|c| after_if(c));",
     replace: "own.into_iter().partition(|_| true);",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment before an or's if"],
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-before-if-test-comment-lost",
     breaks: "a blank line before `if\\n // c\\n a && b {` is lost, its test's comments after the `if` (ADR 0883)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    written = keyword;\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^closures_of_their_value.rs$"],
@@ -404,7 +404,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-before-folded-if-comment-lost",
     breaks: "a blank line before `if\\n // c\\n let Some(r) = o .. { r } else { n }`, the `return` of a conditional, is lost (ADR 0883)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "if (blank_before(if_keyword(&comment).unwrap_or(comment.lo)) || (i == 0",
     replace: "if (blank_before(comment.lo) || (i == 0",
     tests: ["test/corpus.test.ts", "-t", "^closures_of_their_value.rs$"],
@@ -413,7 +413,7 @@ export const mutations: Mutation[] = [
   {
     name: "start-rules-asked-once",
     breaks: "a comment past an operand isn't asked again whether it's outside a call's part, so one after `if` is in the test's call, `$index(\\n // c\\n entanglements, index)`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    next += 1;\n                }\n                let at = *starts.get(next).filter(|&&at| in_file(at))?;\n",
     replace: "                    next += 1;\n                    break;\n                }\n                let at = *starts.get(next).filter(|&&at| in_file(at))?;\n",
     tests: ["test/lowering-comments.test.ts", "-t", "ReactFiberLane's comments"],
@@ -421,7 +421,7 @@ export const mutations: Mutation[] = [
   {
     name: "else-if-comment-in-block",
     breaks: "a comment written before an `else if`'s `else`, react.dev's `// Single page without children`, makes it an `else { if }`",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            if let Some(&hi) = else_ifs.starts.get(&at)\n",
     replace: "            if let Some(&hi) = else_ifs.starts.get(&at).filter(|_| false)\n",
     tests: ["test/lowering-loops-else-ifs.test.ts", "-t", "else-if at a loop's end"],
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-line-value-comment-unplaced",
     breaks: "a comment on its own line between an `=` and its value, ReactFiberFlags' `/*    */`, is lost (ADR 0630, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c) {\n",
     replace: "            if let Some((line, column)) = own_line_before_value(&sources.text, &file.comments, c).filter(|_| false) {\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment on its own line between an = and its value"],
@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
   {
     name: "own-line-value-comment-also-before-statement",
     breaks: "a comment on its own line between an `=` and its value is before the value and before its statement too, twice",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            .filter(|c| c.lo >= past && !after_code(c) && !before_value(c) && !ends.iter().any(|e| e.lo == c.lo))\n",
     replace: "            .filter(|c| c.lo >= past && !after_code(c) && !ends.iter().any(|e| e.lo == c.lo))\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a comment on its own line between an = and its value"],
@@ -445,7 +445,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-before-chain-at-its-call",
     breaks: "a blank line before `root.entangled_lanes\n.set(..)` is looked for before `.set`'s line, the receiver's, and lost (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                .starts_with('.')\n                && let Some(body) = before.strip_suffix('\\n')\n",
     replace: "                .starts_with('\\u{0}')\n                && let Some(body) = before.strip_suffix('\\n')\n",
     tests: ["test/lowering-comments.test.ts", "-t", "a blank line before a method call on the line after its receiver"],
@@ -453,7 +453,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-comment-attached-inside",
     breaks: "a comment before an arm fallen to is attached to the statement its case starts with, not the case",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            let case = case_starts.binary_search(&at).is_ok().then_some(at);\n",
     replace: "            let case = case_starts.binary_search(&at).is_ok().then_some(at).filter(|_| false);\n",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "a guarded arm whose constants the next arm names falls through to its case"],
@@ -461,7 +461,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-comment-of-an-unguarded-arm-in-its-body",
     breaks: "a comment before an unguarded arm fallen to, `// c\\n A | B => {`, is in its body, after its `// falls through` and labels",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    && case_starts.binary_search(&at).is_err()\n",
     replace: "",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "a guarded arm whose constants the next arm names falls through to its case"],
@@ -469,7 +469,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-comment-case-no-start",
     breaks: "a comment before an arm fallen to is in its body, after its `// falls through` and labels: its case is no start (ADR 0905, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "    starts.extend(case_starts.iter().copied());\n",
     replace: "",
     tests: ["test/lowering-switch-fallthrough.test.ts", "-t", "a guarded arm whose constants the next arm names falls through to its case"],
@@ -477,7 +477,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-after-an-argument-trailing",
     breaks: "a block comment after an argument's comma, `1, /* Resolved; see ReactLazy */`, is its line's, after the `if`'s `{`, in its block",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                let inside = block && (!sources.text[c.hi as usize..line_end].trim().is_empty() || after_argument);\n",
     replace: "                let inside = block && !sources.text[c.hi as usize..line_end].trim().is_empty();\n                let _ = after_argument;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a block comment after an argument.s comma is after the argument"],
@@ -485,7 +485,7 @@ export const mutations: Mutation[] = [
   {
     name: "line-comment-after-an-argument-inside",
     breaks: "a line comment after an argument's comma, `0, // Pending`, is taken inside the expression, where it would end the line's code",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                let block = written.starts_with(\"/*\");\n",
     replace: "                let block = true;\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "a block comment after an argument.s comma is after the argument"],
@@ -493,7 +493,7 @@ export const mutations: Mutation[] = [
   {
     name: "default-arm-comment-before-switch",
     breaks: "React's `// Fall through` before getTag's `_` arm is printed before the `switch`, a synthetic `// falls through` before `default:` (ADR 0905, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                }) || default;\n",
     replace: "                });\n",
     tests: ["test/lowering-labels.test.ts", "-t", "return calls"],
@@ -501,7 +501,7 @@ export const mutations: Mutation[] = [
   {
     name: "operand-if-opening-code",
     breaks: "a comment before an `||`'s operand of an `if`'s value, beginWork's `// Force a re-render if the implementation changed due to hot reload:`, is lost (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                                    opened.is_empty() || opened == \"let\" || opened == \"if\"\n",
     replace: "                                    opened.is_empty() || opened == \"let\"\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "if's value is before it"],
@@ -509,7 +509,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-doc-after-blank-line",
     breaks: "a field's doc comment is printed above the blank line before its field, `/** .. */\\n\\n    isPersistent: yes`, not right before it (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                let blanks = pieces.iter().take_while(|&&(lo, hi)| lo == hi).count();\n                pieces.insert(blanks, (lo, text.len() as u32));\n",
     replace: "                pieces.insert(0, (lo, text.len() as u32));\n",
     tests: ["test/lowering-comment-fields.test.ts", "-t", "doc comment is before it"],
@@ -517,7 +517,7 @@ export const mutations: Mutation[] = [
   {
     name: "use-comment-in-the-code",
     breaks: "a comment above a `use` that makes an import is taken for the code's, not above the import in the header (rd92)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "    starts.extend(commented_at.keys().copied());\n",
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "above a use"],
@@ -525,7 +525,7 @@ export const mutations: Mutation[] = [
   {
     name: "arm-opening-not-an-opening",
     breaks: "a comment before an arm whose body is a block, `// Nothing is released.` before `None => { DOWN.set(false); }`, moves above the chain, not into its `else` before its first statement, React DOM's SelectEventPlugin (rd119, ADR 0905 amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        || (arm_opening(head) || head.trim() == \"=>\" && of_no_default(c))\n                            && receiver_only(&rest[i + 1..])\n",
     replace: "",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "an arm of a block of an if chain"],
@@ -533,7 +533,7 @@ export const mutations: Mutation[] = [
   {
     name: "stacked-case-blank-line-between",
     breaks: "a blank line above an arm of more than one pattern is printed again between its `case`s, `case \"rp\":` blank `case \"rt\":` (rd143)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "    statement_starts.extend(pattern_starts.iter().copied());\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "above an arm of patterns"],
@@ -541,7 +541,7 @@ export const mutations: Mutation[] = [
   {
     name: "blank-before-closure-opening-unseen",
     breaks: "a blank line before `NAMES.with(|names| {`, whose body is in its place, is dropped, its statement taken to follow the opening's line (rd44)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: " || macro_opening(last) || closure_opening(last))\n",
     replace: " || macro_opening(last))\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "closure whose body"],
@@ -549,7 +549,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-before-link-unseen",
     breaks: "a block comment ending a call chain's link's line, `.d() /* CurrentDispatcher */`, is lost (rd63)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    .filter(|next| next.trim_start().starts_with('.'))\n",
     replace: "                    .filter(|_| false)\n",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "call chain"],
@@ -557,7 +557,7 @@ export const mutations: Mutation[] = [
   {
     name: "field-comment-to-printed-first",
     breaks: "a field's blank line is given the statement its value prints first on its line, `getInstanceFromNode() { throw .. }`'s `throw`, and lost (rd296)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                .or(field)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^object_field_comments.rs$"],
@@ -566,7 +566,7 @@ export const mutations: Mutation[] = [
   {
     name: "safety-blank-lost",
     breaks: "the blank line above a `// SAFETY:` comment the JS leaves out is lost, what was after it right below the code before (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    Some(c) => lo = c.lo,\n",
     replace: "                    Some(_) => break false,\n",
     tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
@@ -574,7 +574,7 @@ export const mutations: Mutation[] = [
   {
     name: "safety-statement-comment-written",
     breaks: "a `// SAFETY:` comment before a statement is written, its arena's `written` ignored (ADR 0444, amended)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            own.retain(|c| c.written);\n",
     replace: "",
     tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
@@ -582,7 +582,7 @@ export const mutations: Mutation[] = [
   {
     name: "safety-line-end-written",
     breaks: "a `// SAFETY:` comment after code on its line is written at the line's end",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            .filter(|c| c.lo >= past && c.written && after_code(c))\n",
     replace: "            .filter(|c| c.lo >= past && after_code(c))\n",
     tests: ["test/lowering-comments-left-out.test.ts", "-t", "a SAFETY comment is left out"],
@@ -590,7 +590,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-apart-commented-function-no-blank",
     breaks: "a scope struct's method's function with a doc comment has no blank line before its comment",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: " || (i == 0 && set_apart.contains(&at)))",
     replace: ")",
     tests: ["test/corpus.test.ts", "-t", "scope_struct_functions"],
@@ -599,7 +599,7 @@ export const mutations: Mutation[] = [
   {
     name: "set-apart-function-first-on-its-line",
     breaks: "what's after a scope struct's methods' functions, a temporary written within its line, has no blank line before it",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "((first_on_line && blank_before(written)) || set_apart.contains(&at))",
     replace: "first_on_line && (blank_before(written) || set_apart.contains(&at))",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_kept.rs$"],
@@ -609,7 +609,7 @@ export const mutations: Mutation[] = [
     name: "comment-between-read-apart",
     breaks:
       "the code between a comment and the start it's before is read in pieces around a comment there, so `// Fallthrough` above `114 /* \"r\" */ => {` is stacked above the `switch` (rd525)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    between.replace_range(lo..hi, &\" \".repeat(hi - lo));\n",
     replace: "                    let _ = (lo, hi);\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "whose pattern has a comment|pattern's comment has brackets"],
@@ -618,7 +618,7 @@ export const mutations: Mutation[] = [
     name: "default-pattern-comment-unmarked",
     breaks:
       "a `_` arm's pattern comment, `_ /* \"{\" \"[\" */ => {`, isn't its `default:`'s: placed by its line's code, which no JS maps to, it's lost (rd525)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                let of_default = sources.text[line_start..c.lo as usize].trim() == \"_\"\n",
     replace: "                let of_default = false && sources.text[line_start..c.lo as usize].trim() == \"_\"\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "opens with a `let`|whose pattern has a comment"],
@@ -627,7 +627,7 @@ export const mutations: Mutation[] = [
     name: "printed-first-of-a-let-on-its-line",
     breaks:
       "a comment above `let settled = match &mut *chunk.state.borrow_mut() { .. }` is before the JS of its scrutinee's span, a later arm's binding, not above the `if` of its first arm, React's Flight client's `then` (rd533)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            .max(let_end(&sources.text, start).unwrap_or(0));\n",
     replace: "            .max(0);\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "of a .match. is above the chain"],
@@ -635,7 +635,7 @@ export const mutations: Mutation[] = [
   {
     name: "comment-attached-past-a-whole-arm",
     breaks: "a comment above `Ok(h) => h,`, whose value has no start of its own, is the next arm's, printed in the `catch` (rd630)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    && !openings::whole_arm(rest)\n",
     replace: "",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
@@ -643,7 +643,7 @@ export const mutations: Mutation[] = [
   {
     name: "inner-comment-at-the-outer-start",
     breaks: "a comment inside a statement that starts where the `try` it's in starts is before the first printed there, above `let value;`, not above the value in the `try` (rd630)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                true => inner.push((c, (lo, hi))),\n",
     replace: "                true => attached.push((c, lo)),\n",
     tests: ["test/lowering-comments-jumps.test.ts", "-t", "Ok arm is above its value"],
@@ -651,7 +651,7 @@ export const mutations: Mutation[] = [
   {
     name: "part-at-its-whole-start-skipped",
     breaks: "a comment above a branch's value, a call starting where its constant argument does, `$f64ToInt(SPECIFIC, ..)`, is skipped past as the argument's and lost (rd617)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo && whole != at)\n",
     replace: "                        parts.get(&at).is_some_and(|&(whole, _)| whole > c.lo)\n",
     tests: ["test/corpus.test.ts", "-t", "^conditional_branch_comments.rs$"],
@@ -660,7 +660,7 @@ export const mutations: Mutation[] = [
   {
     name: "opened-on-unread",
     breaks: "a line comment after an argument's closing brackets alone, `}, // defaults to true`, isn't told where its argument opened, and is lost (rd615)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    .then(|| trailing::opened_on(&sources.text, (line_start, c.lo as usize)))\n",
     replace: "                    .then(|| None::<u32>)\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment after an argument.s closing brackets"],
@@ -668,7 +668,7 @@ export const mutations: Mutation[] = [
   {
     name: "export-list-comments-unread",
     breaks: "the comments of a namespace thread-local's struct, `// TODO: Remove this ..` above a field, aren't in its export list, `export const { _Scheduler, render } = ..`, as React's noop entries write them (rd610)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "        closing::split_exports(&exports, map, &generated_lines, &offset, &mut splits);\n",
     replace: "",
     tests: ["test/namespace-values.test.ts", "-t", "of an entry.s own fields of one value"],
@@ -677,7 +677,7 @@ export const mutations: Mutation[] = [
     name: "after-params-unplaced",
     breaks:
       "a block comment after a function's return type, `) -> T /* We don't use URLSearchParams yet but maybe */ {`, is lost, not after the parameters' `)` (rd641)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                let after_params = block\n",
     replace: "                let after_params = false\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "after a function.s return type"],
@@ -685,7 +685,7 @@ export const mutations: Mutation[] = [
   {
     name: "es-class-default-exported-twice",
     breaks: "an ES class declared as its module's default is exported again after, `export default Plugin;`, a second default JS refuses (rd682)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "        && !declares_default_class(module)\n",
     replace: "",
     tests: ["test/es-classes.test.ts", "-t", "whose struct says es is an ES class"],
@@ -694,7 +694,7 @@ export const mutations: Mutation[] = [
     name: "before-argument-never",
     breaks:
       "a block comment first on its line before a call's argument, `/* preinitModuleScript */ href,`, is on a line of its own above the argument, so the call can't be one line (rd710)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            (!sources.text[line_start..c.lo as usize].trim().is_empty() || before_argument(c))\n",
     replace: "            (!sources.text[line_start..c.lo as usize].trim().is_empty() || false && before_argument(c))\n",
     tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
@@ -704,7 +704,7 @@ export const mutations: Mutation[] = [
     name: "of-no-default-never",
     breaks:
       "a block comment on a `_` pattern of no `default:`, `_ /* \"{\" */ => {` of an `else` or a `match` gone, is lost (#574)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                && !of_no_default(c)\n",
     replace: "                && !(false && of_no_default(c))\n",
     tests: ["test/corpus.test.ts", "-t", "^match_arm_comments_kept.rs$"],
@@ -713,7 +713,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-comments-unattached",
     breaks: "a function's comments that's now its variable are attached to where it was, no node, and lost (#535)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                .or(taken_into.get(&at).copied())\n",
     replace: "",
     tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
@@ -721,7 +721,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-trailing-on-no-line",
     breaks: "a comment after code on its line in a function that's now its variable, `// Doubled.`, is placed by a line with no JS, and lost (#535)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                && !in_taken(c)\n",
     replace: "",
     tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
@@ -729,7 +729,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-comments-before-own",
     breaks: "a function's comments that's now a declaration written below it are before the blank line above the declaration (#535)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "    found.extend(after_own);\n",
     replace: "    found.splice(0..0, after_own);\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
@@ -737,7 +737,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-comments-blank-between",
     breaks: "a blank line is between a declaration's comments and those of the function it now is, where the Rust has one above the function (#535)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    && !(part || taken || (i == 0 && declared_at.contains_key(&at)))\n",
     replace: "                    && !(part || (i == 0 && declared_at.contains_key(&at)))\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
@@ -745,7 +745,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-blank-where-written",
     breaks: "a function of no comments that's now its variable puts a blank line before the declaration, where the Rust has one above the function (#535)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            if part || taken || declared_at.contains_key(&at) {\n",
     replace: "            if part || declared_at.contains_key(&at) {\n",
     tests: ["test/lowering-forwarding.test.ts", "-t", "keeps its comments above the declaration"],
@@ -753,7 +753,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-into-reexport-unresolved",
     breaks: "a forwarding method's comments are attached to its re-export's `use`, where nothing is printed, not to the re-export's statement, and lost (rd758)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "        .map(|&(function, declared)| (function.lo, *commented_at.get(&declared.lo).unwrap_or(&declared.lo)))\n",
     replace: "        .map(|&(function, declared)| (function.lo, declared.lo))\n",
     tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
@@ -761,7 +761,7 @@ export const mutations: Mutation[] = [
   {
     name: "taken-into-reexport-own-as-taken",
     breaks: "the comments above a re-export's first forwarding method, its own, lose the blank line between them (rd758)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "            let taken = taken_into.contains_key(&at) && !commented_at.contains_key(&at);\n",
     replace: "            let taken = taken_into.contains_key(&at);\n",
     tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
@@ -769,7 +769,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-import-blank-before-comments",
     breaks: "an import placed at a binding has the blank line above its function item before its comments, between two imports (rd752)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    && !(part || taken || (i == 0 && declared_at.contains_key(&at)))\n",
     replace: "                    && !(part || taken)\n",
     tests: ["test/snapshots.test.ts", "-t", "imports"],
@@ -778,7 +778,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-comments-apart-between",
     breaks: "the comments above two bindings of no JS, before one item, are apart by the blank lines between the function items (#634)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    && !(i > 0 && starts::bound_between(module, (own[i - 1].hi, comment.lo)))\n",
     replace: "",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a binding's comments are above the import it makes"],
@@ -786,7 +786,7 @@ export const mutations: Mutation[] = [
   {
     name: "binding-comments-apart-after",
     breaks: "a comment above a binding of no JS is a blank line above the code it's before, rustfmt's between the items (#634)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: " && !starts::bound_between(module, (last, at)) && {\n",
     replace: " && {\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a comment above a binding of no JS is right above"],
@@ -794,7 +794,7 @@ export const mutations: Mutation[] = [
   {
     name: "plain-block-opening-unseen",
     breaks: "a comment above a plain block whose JS has none of its own is left out, its first statement a temporary past the block's `{` (#2112's change D)",
-    file: "src/to_oxc.rs",
+    file: "crates/rust-js-emit/src/to_oxc.rs",
     find: "                    head.is_empty()\n                        || head.ends_with('|')\n",
     replace: "                    head.ends_with('|')\n",
     tests: ["test/lowering-comments-ends.test.ts", "-t", "a comment above a block of no JS of its own is above its first statement"],

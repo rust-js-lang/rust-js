@@ -1214,6 +1214,19 @@ dependencies = [
  "declare_clippy_lint",
  "imbl",
  "indexmap",
+ "rust-js-emit",
+ "rust-js-program",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "toml",
+]
+
+[[package]]
+name = "rust-js-emit"
+version = "0.0.4"
+dependencies = [
+ "indexmap",
  "oxc_allocator",
  "oxc_ast",
  "oxc_ast_visit",
@@ -1229,7 +1242,6 @@ dependencies = [
  "rustc-hash",
  "serde",
  "serde_json",
- "toml",
 ]
 
 [[package]]
