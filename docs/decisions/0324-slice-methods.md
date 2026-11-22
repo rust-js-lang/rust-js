@@ -94,3 +94,23 @@ object's place. `slice::from_ref(&x)` is `[x]`, as above. Case C of
 `METAMORPHIC=all`, and `diagnostics.test.ts`'s refusal; mutations
 `from-mut-of-an-object-allowed` (`lower/std_types/slice.ts`) and
 `one-item-view-writes-nothing` (`runtime/slice_view.ts`).
+
+## Amendment: `clone_from_slice` of trivially cloned items is `copy_from_slice` (#2318)
+
+std's `[T]::clone_from_slice` is a specialization: of items that are
+`TrivialClone`, an integer, a `#[derive(Clone, Copy)]` type, a tuple or an
+array of them, it's `copy_from_slice`, which panics of another length with
+its own message, `copy_from_slice: source slice length (2) does not match
+destination slice length (3)`; of others, a hand-written `Clone` of a
+`Copy` type too, it clones each, after its assertion, `destination and
+source slices have different lengths`. rust-js gave every item type the
+latter, so a payload `catch_unwind` reads was wrong (P0). Of items
+rustc's answer of `TrivialClone` holds of, `trivially_cloned` in
+`std_impls/clones.rs`, `slice_values` lowers it as `copy_from_slice`,
+`$copyFromSlice` with its bits' copy; others keep `$cloneFromSlice`. Of a
+type parameter's items, a generic body's, whether they're `TrivialClone`
+is its caller's answer, which its `Clone` dictionary doesn't carry: they
+keep `$cloneFromSlice`'s message, #2318's remainder. Case "Results change"
+of [0262](0262-when-rust-and-js-disagree.md). Held by
+`test/corpus/clone_from_slice_trivial_panic.rs`, against native Rust;
+mutation `clone-from-slice-trivial-cloned` (`lower/std_types/slice.ts`).

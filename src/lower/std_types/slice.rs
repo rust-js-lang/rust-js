@@ -433,6 +433,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item = || generic_args.type_at(0);
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
+        // Of items std clones as their bits, `clone_from_slice` is std's
+        // specialization's `copy_from_slice`, its message too (#2318).
+        let op = match op {
+            SliceOp::CloneFromSlice
+                if crate::lower::std_impls::trivially_cloned(self.tcx, self.recognition().typing_env, item()) =>
+            {
+                SliceOp::CopyFromSlice
+            }
+            op => op,
+        };
         Ok(match op {
             SliceOp::GenericIndex { mutable } => {
                 let (items, index) = (arg(), arg());
@@ -498,7 +508,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Each a copy where something changes one in place: its bits,
             // `Copy`'s, as std's `memcpy` copies them, never a hand-written
-            // `Clone` of a `Copy` type.
+            // `Clone` of a `Copy` type; and `clone_from_slice`'s of items std
+            // clones as their bits, `TrivialClone`'s (#2318).
             SliceOp::CopyFromSlice => {
                 let (items, source) = (arg(), arg());
                 let copy = self.bits_copy_fn(item());

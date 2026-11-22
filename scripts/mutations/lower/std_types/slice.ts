@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "clone-from-slice-trivial-cloned",
+    breaks:
+      "`clone_from_slice` of integers of another length panics with its own assertion's message, not std's specialization's `copy_from_slice` one (#2318)",
+    file: "src/lower/std_types/slice.rs",
+    find: "            SliceOp::CloneFromSlice\n                if crate::lower::std_impls::trivially_cloned(",
+    replace: "            SliceOp::CloneFromSlice\n                if false && crate::lower::std_impls::trivially_cloned(",
+    tests: ["test/corpus.test.ts", "-t", "clone_from_slice_trivial_panic"],
+  },
+  {
     name: "retain-mut-no-handles",
     breaks:
       "`retain_mut` of numbers gives each as a value, so what `f` writes is lost",
