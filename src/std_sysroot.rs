@@ -63,12 +63,30 @@ pub fn sysroot(toolchain: &Path, target: &str) -> Result<PathBuf, String> {
     // target, and how each crate is built, its arguments and its settings,
     // so one built otherwise is never taken for it.
     let alloc = toolchain.join("lib/rustlib/src/rust/library/alloc/src/lib.rs");
+    // std's source named as the shipped std names it, `/rustc/<commit>/`,
+    // never where this machine keeps it: a panic's location in std's body
+    // is the same JS on every machine (ADR 0262's difference 62, #2343).
+    let remap = format!(
+        "--remap-path-prefix={}={}",
+        toolchain.join("lib/rustlib/src/rust").display(),
+        shipped_source(toolchain)?
+    );
     let args = |building: &Path| {
         let lib = building.join("lib/rustlib").join(target).join("lib");
+        let named = |mut args: Vec<String>| {
+            args.push(remap.clone());
+            args
+        };
         [
-            crate_args("core", &core.display().to_string(), building, &lib, target),
+            named(crate_args("core", &core.display().to_string(), building, &lib, target)),
             crate_args("compiler_builtins", "compiler_builtins.rs", building, &lib, target),
-            crate_args("alloc", &alloc.display().to_string(), building, &lib, target),
+            named(crate_args(
+                "alloc",
+                &alloc.display().to_string(),
+                building,
+                &lib,
+                target,
+            )),
         ]
     };
     let mut key = std::hash::DefaultHasher::new();
@@ -99,6 +117,21 @@ pub fn sysroot(toolchain: &Path, target: &str) -> Result<PathBuf, String> {
 
 /// rustc's arguments for `name`, of `input`, its metadata written into
 /// `lib`, the sysroot `building`'s: built to unwind, its bodies' MIR kept.
+/// Where the shipped std's files are, `/rustc/<commit>`, of the toolchain
+/// at `toolchain`, its `rustc -vV`'s commit.
+fn shipped_source(toolchain: &Path) -> Result<String, String> {
+    let rustc = toolchain.join("bin/rustc");
+    let out = std::process::Command::new(&rustc)
+        .arg("-vV")
+        .output()
+        .map_err(|error| format!("cannot run `{} -vV`: {error}", rustc.display()))?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    let commit = (text.lines())
+        .find_map(|line| line.strip_prefix("commit-hash: "))
+        .ok_or_else(|| format!("`{} -vV` names no commit", rustc.display()))?;
+    Ok(format!("/rustc/{commit}"))
+}
+
 fn crate_args(name: &str, input: &str, building: &Path, lib: &Path, target: &str) -> Vec<String> {
     vec![
         "rust-js".to_string(),

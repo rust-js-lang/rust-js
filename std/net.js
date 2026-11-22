@@ -345,9 +345,9 @@ export const IpAddr = {
       return ipAddr;
     }
     const v6 = ipAddr._0;
-    const ipv4Mapped = Ipv6Addr.toIpv4Mapped(v6);
-    if (ipv4Mapped != null) {
-      return { TAG: "V4", _0: { ...ipv4Mapped, octets: ipv4Mapped.octets.slice() } };
+    const value = Ipv6Addr.toIpv4Mapped(v6);
+    if (value != null) {
+      return { TAG: "V4", _0: { ...value, octets: value.octets.slice() } };
     }
     return ipAddr;
   },

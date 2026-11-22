@@ -19,4 +19,12 @@ export const mutations: Mutation[] = [
     replace: "const ALLOC: Settings = Settings {\n    always_encode_mir: true,\n    inline_mir: true,\n};",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "std-source-named-where-it-is",
+    breaks: "std's `core` and `alloc` are built of rust-src named where this machine keeps it, so a panic's location in std's bodies is a path into its home, not the shipped std's `/rustc/<commit>/` (#2343)",
+    file: "src/std_sysroot.rs",
+    find: "            args.push(remap.clone());\n",
+    replace: "",
+    tests: ["test/std-sites.test.ts", "-t", "std's bodies name std's files as the shipped std does"],
+  },
 ];

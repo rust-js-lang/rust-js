@@ -1,5 +1,7 @@
 # Tests at a glance
 
+Changed on 2026-11-23 (#2343): test/std-sites.test.ts gains two tests: no committed JS rust-js wrote, std/, the runtime, the corpus's and the snapshots', names a machine's own copy of std's source or its home; and std's bodies, compiled into a fixture, name std's files `/rustc/<commit>/library/..`.
+
 Changed on 2026-11-23 (#2333, ADR 1184 amended): test/runtime-marks.test.ts, nine tests: the runtime makes no mark by `Symbol(..)`, all ten in runtime/marks.js, and each mark of a value one copy makes and another reads, an `Rc`'s, an array iterator's, a part's, chunks', a closure's clone's, an `IterMut` item's, a sliced `IntoIter`'s, run against native Rust with a library on a copy of the runtime of its own.
 
 Changed on 2026-11-22 (#2292, ADR 1184): test/binaries.test.ts, thirteen tests, each a binary's run against native Rust's on Node and Bun read as one stream; test/std-sites.test.ts holds `bun run std`'s `$stdSites`; test/runtime-marks.test.ts, two tests, holds the runtime's marks every copy of it reads, and a library's copy's panic read by its app's against native Rust's. Every net that runs a program against native Rust (test/programs.ts) now compares where a panic was raised, `{ panic, at }`, but where a case's `//@ located-otherwise: #<issue>` says it waits (three cases, #2324 and #2335); the corpus's uncached run, 2 min 31 s in twelve parts here, against 2 min 33 s before. The inline JS tests' compiles leave their fixture's directory out of the files they name (test/child.ts `located`), so a location reads `lib.rs:6:5`.

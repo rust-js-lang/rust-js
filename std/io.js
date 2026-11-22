@@ -93,7 +93,7 @@ const $cursorDefault = new WeakMap();
 
 export function linesIterator_next(lines, BBufRead, dropB) {
   let buf = "";
-  const readLine = bufRead_readLine(
+  const value = bufRead_readLine(
     {
       get value() {
         return lines.buf;
@@ -114,9 +114,9 @@ export function linesIterator_next(lines, BBufRead, dropB) {
     BBufRead.Read(),
     dropB,
   );
-  if (readLine.TAG === "Ok") {
-    if (readLine._0 !== 0) {
-      const _n = readLine._0;
+  if (value.TAG === "Ok") {
+    if (value._0 !== 0) {
+      const _n = value._0;
       if (buf.endsWith("\n")) {
         const popped = $strPop(buf);
         buf = popped[0];
@@ -129,13 +129,13 @@ export function linesIterator_next(lines, BBufRead, dropB) {
     }
     return;
   }
-  const e = readLine._0;
+  const e = value._0;
   return { TAG: "Err", _0: e };
 }
 
 export function splitIterator_next(split, BBufRead, dropB) {
   const buf = [];
-  const readUntil = bufRead_readUntil(
+  const value = bufRead_readUntil(
     {
       get value() {
         return split.buf;
@@ -150,14 +150,14 @@ export function splitIterator_next(split, BBufRead, dropB) {
     BBufRead.Read(),
     dropB,
   );
-  if (readUntil.TAG === "Ok") {
-    if (readUntil._0 !== 0) {
-      const _n = readUntil._0;
+  if (value.TAG === "Ok") {
+    if (value._0 !== 0) {
+      const _n = value._0;
       if (
         $index(
           buf,
           (buf.length - 1) >>> 0,
-          "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/io/util.rs:423:23",
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/io/util.rs:423:23",
         ) === split.delim
       ) {
         $keepCapacity(buf);
@@ -167,7 +167,7 @@ export function splitIterator_next(split, BBufRead, dropB) {
     }
     return;
   }
-  const e = readUntil._0;
+  const e = value._0;
   return { TAG: "Err", _0: e };
 }
 
@@ -374,7 +374,7 @@ export function takeRead_read(take, buf, TRead, dropT) {
     $view(
       buf,
       0,
-      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/io/util.rs:243:41",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/io/util.rs:243:41",
       max,
     ),
   );
@@ -386,7 +386,7 @@ export function takeRead_read(take, buf, TRead, dropT) {
   if (!(value$1 <= take.limit)) {
     throw $panic(
       "number of read bytes exceeds limit",
-      "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/io/util.rs:244:9",
+      "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/io/util.rs:244:9",
     );
   }
   take.limit = BigInt.asUintN(64, take.limit - value$1);
@@ -528,13 +528,13 @@ export function read_bytes(self, SelfRead, dropSelf) {
 }
 
 export function seek_rewind(self, SelfSeek, dropSelf) {
-  const seek = SelfSeek.seek(self, { TAG: "Start", _0: 0n });
+  const value = SelfSeek.seek(self, { TAG: "Start", _0: 0n });
   let tmp;
-  if (seek.TAG === "Ok") {
-    tmp = { TAG: "Continue", _0: seek._0 };
+  if (value.TAG === "Ok") {
+    tmp = { TAG: "Continue", _0: value._0 };
     return;
   }
-  tmp = { TAG: "Break", _0: { TAG: "Err", _0: seek._0 } };
+  tmp = { TAG: "Break", _0: { TAG: "Err", _0: value._0 } };
   return $ioThrow(tmp._0._0);
 }
 
@@ -553,9 +553,9 @@ export function rSpecReadByte_specReadByte(self, RRead, dropR) {
 export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
   let read = 0;
   while (true) {
-    const fillBuf = RBufRead.fillBuf(r);
-    if (fillBuf.TAG === "Ok") {
-      let available = fillBuf._0;
+    const value = RBufRead.fillBuf(r);
+    if (value.TAG === "Ok") {
+      let available = value._0;
       const i = $memchr(available, [delim]);
       let used;
       let tmp;
@@ -563,7 +563,7 @@ export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
         available = $slice(
           available,
           0,
-          "/Users/chauluu/.rustup/toolchains/1.100.0-aarch64-apple-darwin/lib/rustlib/src/rust/library/alloc/src/io/buf_read.rs:444:45",
+          "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a/library/alloc/src/io/buf_read.rs:444:45",
           i + 1,
           true,
         );
@@ -592,9 +592,9 @@ export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
       }
       return { TAG: "Ok", _0: read };
     }
-    const e = fillBuf._0;
+    const e = value._0;
     if (e.kind !== "Interrupted") {
-      const e = fillBuf._0;
+      const e = value._0;
       return { TAG: "Err", _0: e };
     }
   }
@@ -603,9 +603,9 @@ export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
 export function defaultSkipUntil(r, delim, RBufRead, dropR) {
   let read = 0;
   while (true) {
-    const fillBuf = RBufRead.fillBuf(r);
-    if (fillBuf.TAG === "Ok") {
-      const available = fillBuf._0;
+    const value = RBufRead.fillBuf(r);
+    if (value.TAG === "Ok") {
+      const available = value._0;
       const i = $memchr(available, [delim]);
       let used;
       if (i != null) {
@@ -622,9 +622,9 @@ export function defaultSkipUntil(r, delim, RBufRead, dropR) {
       }
       return { TAG: "Ok", _0: read };
     }
-    const e = fillBuf._0;
+    const e = value._0;
     if (e.kind !== "Interrupted") {
-      const e = fillBuf._0;
+      const e = value._0;
       return { TAG: "Err", _0: e };
     }
   }

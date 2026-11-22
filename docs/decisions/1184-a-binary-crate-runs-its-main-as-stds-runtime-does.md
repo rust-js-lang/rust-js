@@ -119,7 +119,11 @@ its own.
 - std's own sites are named under `/rustc/<commit>/library/..` on every
   machine, as the shipped std names its files; native Rust names a site of
   a body the caller's crate compiles, a generic or inlined one's, by the
-  toolchain's local source where `rust-src` is installed. Difference 62,
+  toolchain's local source where `rust-src` is installed. So does the JS
+  of std's own bodies, `@rust-js/std`'s: the `core` and `alloc` it's built
+  of, of rust-src, are built with it named `/rustc/<commit>/`
+  (`std_sysroot.rs`, #2343), so std/ is the same from any machine.
+  Difference 62,
   the user's decision. Tests normalize native's local prefix.
 - Some locations don't reach their helper yet, named `<unknown>` or the
   caller's: a `#[track_caller]` std method called through a dictionary
