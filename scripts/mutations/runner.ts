@@ -306,4 +306,20 @@ export const mutations: Mutation[] = [
     replace: "    const why = m.tests && failedSets.get(testSetKey({ ...m, tests: m.tests }));\n",
     tests: ["test/mutations.test.ts", "-t", "a failed control leaves its own mutations unjudged"],
   },
+  {
+    name: "every-mutation-survivors-fail",
+    breaks: "a run of every mutation, the nightly's, fails on its survivors, which it files whole, so each of its shards is red every night and a broken harness looks like the rest (#2304)",
+    file: "scripts/mutations.ts",
+    find: "  return missed.filter(([, result]) => !(every && result.startsWith(\"SURVIVED\"))).map(([name]) => name);\n",
+    replace: "  return missed.map(([name]) => name);\n",
+    tests: ["test/mutations.test.ts", "-t", "a run of every mutation fails on what it couldn't judge"],
+  },
+  {
+    name: "some-mutations-survivors-spared",
+    breaks: "a run of some mutations, a push's, is spared its survivors as a run of every mutation is, so a push that makes a mutation survive passes (#2304)",
+    file: "scripts/mutations.ts",
+    find: "  return missed.filter(([, result]) => !(every && result.startsWith(\"SURVIVED\"))).map(([name]) => name);\n",
+    replace: "  return missed.filter(([, result]) => !result.startsWith(\"SURVIVED\") || every).map(([name]) => name);\n",
+    tests: ["test/mutations.test.ts", "-t", "a run of every mutation fails on what it couldn't judge"],
+  },
 ];

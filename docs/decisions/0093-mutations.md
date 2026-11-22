@@ -1331,3 +1331,22 @@ loudly; only a run with nothing left to judge throws, as before. Held by
 `test/mutations.test.ts`, "a failed control leaves its own mutations
 unjudged, not the shard's"; mutations `failed-control-unjudges-all` and
 `failed-unit-control-unread` (scripts/mutations/runner.ts).
+
+## Amendment: a run of every mutation files its survivors and fails only on what it couldn't judge (2026-11-22, #2304, the lead's decision)
+
+A run of some mutations, a push's or the ones named, fails on a survivor
+that isn't latent at its base. A run of every mutation, the nightly's
+(`recorded`), has no base to spare one by, and its every survivor already
+goes whole into "Mutation survivors on main" (`scripts/survivors-issue.ts
+nightly`, of each shard's `results.json`). Failing on them too left
+nightly 44963035271's every shard red on 4 to 11 survivors each, so a
+shard whose harness broke looked like the others. **Such a run now fails
+only on what it couldn't judge** (`failingOf`): an inconclusive or unrun
+mutation, a corpus-harness mutant out of place, a fresh build that judged
+otherwise. Its survivors are said, counted, written to `results.json` as
+before, uploaded and filed by the `survivors` job, which runs however the
+shards end (`always()`). A red run of every mutation means the harness
+broke. Held by `test/mutations.test.ts`, "a run of every mutation fails on
+what it couldn't judge, not on its survivors"; mutations
+`every-mutation-survivors-fail` and `some-mutations-survivors-spared`
+(scripts/mutations/runner.ts).

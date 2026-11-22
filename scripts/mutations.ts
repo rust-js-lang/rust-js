@@ -940,6 +940,18 @@ export function narrowedTo(tests: string[], failed: string[]): string[] {
  * a survivor's finding to the next recorded run, where confirming every
  * catch cost half again a change's run (ADR 0093, amended). `--retire`'s
  * verdicts confirm their own (`failingWith`). */
+/** Of a run's `missed` mutations, each its name and result, those that fail
+ * it. A survivor fails a run of some mutations, a push's or the ones named,
+ * which a latent one's base already spares (`latentSurvivors`); a run of
+ * every mutation, the nightly's (`every`, `recorded`), files its survivors
+ * whole in "Mutation survivors on main" (`scripts/survivors-issue.ts`, of
+ * `results.json`) and fails only on what the harness couldn't judge, an
+ * inconclusive or unrun one: its every shard was red on survivors every
+ * night, so a broken harness looked like the rest (#2304, ADR 0093). */
+export function failingOf(missed: [string, string][], every: boolean): string[] {
+  return missed.filter(([, result]) => !(every && result.startsWith("SURVIVED"))).map(([name]) => name);
+}
+
 export function recorded(args: string[]): boolean {
   return !args.some((arg) => arg.startsWith("--changed=")) && args.every((arg) => arg.startsWith("--"));
 }
@@ -2440,7 +2452,11 @@ async function main() {
     // five times a shared one's: it's said against runs of as few.
     console.log(timed("mutation, each", elapsed() / rows.length, { detail: `${rows.length} run`, ran: rows.length < 3 ? "fewer than 3" : undefined }));
   }
-  if (missed.length > 0) process.exitCode = 1;
+  // A run of every mutation, the nightly's, files its survivors in
+  // "Mutation survivors on main" and fails only on what it couldn't judge.
+  const failing = failingOf(missed.map(([mutation, result]) => [mutation.name, result]), recorded(args));
+  if (failing.length < missed.length) console.log(`survivors, filed and not failing a run of every mutation: ${missed.length - failing.length}`);
+  if (failing.length > 0) process.exitCode = 1;
   // And `--fresh`'s builds, each mutation's verdict the same as the build
   // with an incremental cache gave, or the run fails.
   if (freshly > 0) console.log(freshDiffers.length === 0 ? "each fresh build's verdicts are its incremental build's" : `fresh builds that judged otherwise:\n${freshDiffers.join("\n")}`);

@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { againstWholeCorpus, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
+import { againstWholeCorpus, failingOf, testSetKey, unjudgedBy, duplicateNames, drivesABrowser, ofWholeCorpus, belowFloor, betweenTests, byControl, catchingTest, crateFiles, failures, inconclusiveEnd, judge, judgeTwice, judgeUnit, lists, mutate, mutations, narrowedTo, ofReadabilityOwner, recorded, readabilityOwners, refusedFlags, regenDiffers, removedOfCrate, retiredBy, retiredTrailer, retiringNames, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, verdictsDiffer } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -276,6 +276,23 @@ test("a failed control leaves its own mutations unjudged, not the shard's", () =
   expect([...unjudged.keys()]).toEqual([failing, same, unit]);
   expect(unjudged.get(unit)).toContain("unit tests");
   expect(unjudgedBy([other], failedSets, new Map()).size).toBe(0);
+});
+
+// A run of every mutation, the nightly's, files its survivors and fails
+// only on what it couldn't judge; a run of some mutations, a push's or the
+// ones named, still fails on a survivor (#2304, ADR 0093).
+test("a run of every mutation fails on what it couldn't judge, not on its survivors", () => {
+  const survived: [string, string][] = [["a", "SURVIVED: its 1 tests passed with it"], ["b", "SURVIVED: its 2 tests passed with it, snapshots not compared"]];
+  const inconclusive: [string, string] = ["c", "INCONCLUSIVE: its tests don't pass as the compiler is"];
+  expect(failingOf(survived, true)).toEqual([]);
+  expect(failingOf([...survived, inconclusive, ["d", "not run"]], true)).toEqual(["c", "d"]);
+  expect(failingOf(survived, false)).toEqual(["a", "b"]);
+  expect([recorded(["--shard=3/16", "--fresh=0.05", "--timings=target/mutation-timings"]), recorded(["--changed=main"]), recorded(["copy-on-read"])]).toEqual([true, false, false]);
+  // What it spares is still filed: each shard's `results.json` is uploaded
+  // and the issue's job runs however the shards ended, passing too.
+  const workflow = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  expect(workflow).toMatch(/- if: always\(\)\n\s+uses: actions\/upload-artifact@v\d+\n\s+with:\n\s+name: mutation-results-/);
+  expect(workflow).toMatch(/\n  survivors:\n    if: \$\{\{ always\(\) && /);
 });
 
 // `bun test` reads one `-t`, the last: a mutation of two ran its first
