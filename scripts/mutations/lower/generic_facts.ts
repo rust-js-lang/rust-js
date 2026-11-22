@@ -376,4 +376,40 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^generic_fn_value_takes_its_callers_forms.rs$"],
     snapshots: true,
   },
+  {
+    name: "ref-held-box-unread",
+    breaks:
+      "a reference generic code holds in its box, `c: &mut C` given `&mut range` or `&mut v`, is given its dictionary as the box itself, which its `into_iter` steps (#2336, ADR 0454)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "            RefHeld::InBox => box_back(value),\n",
+    replace: "            RefHeld::InBox => value,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_iterator_through_a_reference_bound.rs$"],
+  },
+  {
+    name: "ref-held-as-it-is-taken-for-js",
+    breaks:
+      "a `T: IntoIterator` given as it is, given `&mut range`, has its dictionary step the range as the JS iterator a type parameter given one is (#2336)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "            ty::Param(p) if given_as_it_is(p) => RefHeld::AsItIs,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_iterator_through_a_reference_bound.rs$"],
+  },
+  {
+    name: "named-into-iter-unboxed",
+    breaks:
+      "an `IntoIterator` of a `&mut Vec` or a `&mut range` reached through `impl Is<I>` is taken to arrive as its own crossing says, not as that one's value: `bump(&mut v)` writes nothing, the range is stepped as a JS iterator (#966, #2336)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "                self.ref_held_by_a_parameter(instantiated)\n",
+    replace: "                unconverted\n",
+    tests: ["test/corpus.test.ts", "-t", "^into_iterator_named_by_another_bound.rs$|^mut_ref_iterator_through_a_reference_bound.rs$"],
+  },
+  {
+    name: "into-iter-param-boxed",
+    breaks:
+      "a `U: IntoIterator` given a `&mut [T]` is given a dictionary that takes the box a `&mut C` is: std's `zip` reads `cell.value` of the array, `undefined is not iterable` (ADR 0976)",
+    file: "crates/rust-js-lower/src/generic_facts.rs",
+    find: "            ty::Param(p) if given_as_it_is(p) => RefHeld::AsItIs,\n",
+    replace: "            ty::Param(p) if given_as_it_is(p) => RefHeld::InBox,\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^zip_into_mut_slice with"],
+  },
 ];

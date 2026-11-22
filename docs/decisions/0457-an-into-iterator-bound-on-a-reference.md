@@ -9,6 +9,9 @@ Amended by [0552](0552-an-into-iterator-held-as-it-is-is-given-as-it-is.md)'s
 #2331 amendment: what the dictionary's `into_iter` makes is its type's own
 value, stepped by its `IntoIterIterator` entry, `for (const x of
 $iterator(C.intoIter(c), C.IntoIterIterator().next))`.
+Amended (#2336): how generic code holds the reference is `ref_held`'s
+one answer; a `&mut I` it holds as concrete code does is stepped as
+`&mut I`'s own.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the same items, and
 what's written through a `&mut` one is written to the collection.
@@ -128,6 +131,76 @@ chain of `&mut`s of the crate's iterator, beside a `Vec`'s `&mut` and `&`,
 against native Rust in both builds; the mutations are
 `ref-iterator-into-iter-by-collection` and `ref-iterator-not-itself`
 (`lower/traits/dictionaries.ts`).
+
+## Amendment (2026-11-23): how generic code holds a reference is one answer (#2336)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved. `fn two<C>(c: &mut C) where for<'a> &'a mut
+C: IntoIterator<Item = u32>` given `&mut range` threw a TypeError. The
+caller crosses a `c: &mut C` of a `C` no bound says steps into generic
+code's box, `$cellOf(r)` (`Form::Box`, ADR 0454). Its dictionary of
+std's `impl IntoIterator for I` of `I = &mut Range` was `{ intoIter:
+(items) => items, IntoIterIterator: () => ({ next: $next }) }`, which is
+right only where generic code holds the `&mut I` as the JS iterator its
+caller made, as a `T: IntoIterator` or a `C: Iterator` given one does
+(ADR 0061). Generic code stepped the cell. The new case's metamorphic
+rewrites found three more shapes of this, all of which failed on main too:
+a `T` of `t: impl Is<T>` (#966), a `T: IntoIterator` given as it is that
+steps what it makes, and a `&mut C` whose `C` the callee takes as it is.
+
+**How generic code holds a reference its caller gives is one answer,
+`ref_held` (generic_facts.rs), for a collection's `&C` or `&mut C` and
+for an iterator's `&mut I` alike.** It returns one of three:
+
+- `InBox`: the box its caller makes of a `&mut` to an object, a `c: &mut
+  C`'s (`form_differs` for `Form::Box`).
+- `AsItIs`: as concrete code has it. This covers a type parameter given
+  as it is, a `&mut` of one, a collection's given to a type parameter
+  (`zip`'s `U`, ADR 0976), and a type parameter another bound names,
+  `impl Is<I>`'s, whose value arrives as that one's
+  (`ref_held_by_a_parameter`, #966).
+- `Stepped`: the JS iterator its caller made of an iterator given to a
+  type parameter (ADR 0061).
+
+`RefHeld::read` gives the value back as the caller has it, through the
+same box read as `form_back`. dictionaries.rs's `held_in_box` of this
+dictionary is gone: a dictionary made with no crossing, which is where a
+collection's `&mut C` and a type parameter another bound names get theirs,
+asks `ref_held_by_a_parameter`, the answer for a type parameter given the
+type. calls.rs's `as_it_is` keeps only the routing: a collection's given
+to a type parameter of its own is made there, unkept, as before, with
+`ref_held`'s answer. Every collection's snapshot is byte-identical.
+
+The dictionary for anything but `Stepped` is `ref_into_iter_dictionary`'s.
+Of a collection it's as before. Of a `&mut I` it gives the `&mut` as its
+caller has it, stepped by `&mut I`'s own `Iterator` with `I`'s steps
+passed on (`mut_ref_iterator_dictionary`), and it is kept once per
+function like the others (`kept`): `two($cellOf(r), { intoIter: (cell) =>
+cell.value, IntoIterIterator: () => ({ next: $rangeNext }) })`. A
+function's own dictionary of a `&mut C` it holds as it is (a `C:
+Iterator`'s), passed on to a callee that boxes it, gets its `into_iter`
+given what the box holds: `$throughBox(CRefMutIntoIterator, { intoIter:
+[1] })`.
+
+`test/corpus/mut_ref_iterator_through_a_reference_bound.rs` checks, in
+both builds against native Rust:
+
+- a range, a `vec::IntoIter`, the crate's iterator, and std's `map` and
+  `copied` adapters;
+- a `C: Iterator` passing its own on, and an `I: Iterator` forwarding
+  `&mut i`;
+- a sum and a `while let`;
+- a `T` of `impl Is<T>`;
+- a `T: IntoIterator` given as it is that keeps what it makes.
+
+Its controls, a `T: IntoIterator` and a `C: Iterator` given the `&mut`,
+are in the same case. The mutations are:
+
+- `iterator-ref-stepped-as-js` (`lower/traits/dictionaries.ts`);
+- `ref-held-box-unread`, `ref-held-as-it-is-taken-for-js`,
+  `named-into-iter-unboxed` and `into-iter-param-boxed`
+  (`lower/generic_facts.ts`; the last two retargeted from calls.rs);
+- `own-mut-ref-into-iter-unboxed` (`lower/traits/calls.ts`).
 
 ## Amended by #803
 

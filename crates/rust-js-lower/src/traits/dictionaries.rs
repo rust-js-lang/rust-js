@@ -145,6 +145,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`given_entries`).
     pub fn dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
         let made = self.dictionary_made(tr, span)?;
+        Ok(self.kept(tr, made))
+    }
+
+    /// `made`, `tr`'s dictionary, kept where the function's others are,
+    /// once for every call that gives it, `const rangeIntoIterator = ..`,
+    /// where it reads only what's there; else as it is.
+    pub(super) fn kept(&mut self, tr: ty::TraitRef<'tcx>, made: Expr) -> Expr {
         let named = if is_impl_call(&made) {
             let word = bound_word(self.tcx, tr);
             Some((word.clone(), word))
@@ -162,7 +169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             self.keep_dictionary(&made, name, shared);
         }
-        Ok(made)
+        made
     }
 
     /// `io::Read`'s, `BufRead`'s or `Seek`'s of one of std's byte sources
@@ -755,7 +762,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // box (ADR 0454): a handle on each item of a `&mut`, as `for x in &mut
         // v` makes, or std's own of what it's given.
         if self.ref_into_iter_of_collection(tr) {
-            return self.ref_into_iter_dictionary(tr, self.held_in_box(ty), span);
+            return self.ref_into_iter_dictionary(tr, self.ref_held_by_a_parameter(ty), span);
         }
         // std's `IntoIterator` of one of the function's own type parameters
         // it holds as the iterable its caller gave, an `impl IntoIterator`
@@ -772,7 +779,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             let into_iter = crate::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
             let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), itself)];
-            props.extend(self.made_steps(tr, false, span)?);
+            props.extend(self.made_steps(tr, (false, false), span)?);
             return Ok(Expr::object(props));
         }
         // std's `IntoIterator` of a type known here, given where what it
@@ -791,7 +798,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![made_items.clone().into()],
                 vec![StmtKind::Return(Some(Expr::var(&made_items))).at(js::Span::NONE)],
             );
-            let steps = self.made_steps(tr, true, span)?;
+            let steps = self.made_steps(tr, (true, false), span)?;
             if self.recognition().iterates_as_itself(ty) {
                 let mut props = vec![Prop::Field(
                     bindings::trait_method_name(self.tcx, tr.def_id, "into_iter"),
@@ -1153,8 +1160,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// associated types' drops, `$dropIntoIter`, as every impl's dictionary
     /// has them (`item_drops`, ADR 0178): what generic code holding what it
     /// makes drops it by, std's `Flatten` replacing its inner one (#1510):
-    /// of the value itself, where it gives what it makes `as_it_is`.
-    fn made_steps(&mut self, tr: ty::TraitRef<'tcx>, as_it_is: bool, span: Span) -> R<Vec<Prop>> {
+    /// of the value itself, where it gives what it makes `as_it_is`. Where
+    /// what it makes is a `&mut I` as its caller has it, `held`, not the JS
+    /// iterator a type parameter given one is (ADR 0061), stepped by `&mut
+    /// I`'s own `Iterator`, `I`'s steps passed on (#2336).
+    fn made_steps(&mut self, tr: ty::TraitRef<'tcx>, (as_it_is, held): (bool, bool), span: Span) -> R<Vec<Prop>> {
         let mut steps = Vec::new();
         for (name, bound) in item_bounds(self.tcx, tr.def_id, tr.args) {
             if is_std_def(self.tcx, bound.def_id, StdItem::Iterator) {
@@ -1164,7 +1174,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or(of);
                 // A type parameter's given as it is, its own, as what an
                 // `I: Iterator` makes is itself (ADR 0920).
-                let dictionary = self.iterator_dictionary_of(of, span)?;
+                let dictionary = match held {
+                    true => self.dictionary(ty::TraitRef::new(self.tcx, bound.def_id, [of]), span)?,
+                    false => self.iterator_dictionary_of(of, span)?,
+                };
                 steps.push(Prop::Field(
                     name,
                     Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dictionary)).at(js::Span::NONE)]),

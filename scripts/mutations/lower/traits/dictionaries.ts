@@ -513,8 +513,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what an `I: Iterator` makes, itself, is stepped as a JS iterator in its `IntoIterator` dictionary, not by `I`'s own, so std's `chain` of two ranges given as they are throws (ADR 0920)",
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "                let dictionary = self.iterator_dictionary_of(of, span)?;\n",
-    replace: "                let dictionary = self.iterator_dictionary(of, span)?;\n",
+    find: "                    false => self.iterator_dictionary_of(of, span)?,\n",
+    replace: "                    false => self.iterator_dictionary(of, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^lazy_iterator_clone.rs$"],
   },
   {
@@ -831,8 +831,8 @@ export const mutations: Mutation[] = [
     name: "into-iterator-as-it-is-dropped-as-made",
     breaks: "std's `IntoIterator` dictionary that gives what it makes as it is drops it as a JS iterator made of it, its `of`, which the value itself hasn't (#1510)",
     file: "crates/rust-js-lower/src/traits/dictionaries.rs",
-    find: "            let steps = self.made_steps(tr, true, span)?;\n",
-    replace: "            let steps = self.made_steps(tr, false, span)?;\n",
+    find: "            let steps = self.made_steps(tr, (true, false), span)?;\n",
+    replace: "            let steps = self.made_steps(tr, (false, false), span)?;\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^flatten_nth_drops_each_inner_it_runs_out.rs$|^flatten_nth_drops_each_inner_it_runs_out with"],
   },
   {
@@ -906,5 +906,14 @@ export const mutations: Mutation[] = [
       "-t",
       "^std_dictionaries_drop_their_values.rs$"
     ]
+  },
+  {
+    name: "iterator-ref-stepped-as-js",
+    breaks:
+      "what std's `IntoIterator` of a `&mut I` makes where generic code holds it as concrete code does, the `&mut I` itself, is stepped as a JS iterator, `$next` of a range (#2336)",
+    file: "crates/rust-js-lower/src/traits/dictionaries.rs",
+    find: "                    true => self.dictionary(ty::TraitRef::new(self.tcx, bound.def_id, [of]), span)?,\n",
+    replace: "                    true => self.iterator_dictionary_of(of, span)?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_iterator_through_a_reference_bound.rs$"],
   },
 ];

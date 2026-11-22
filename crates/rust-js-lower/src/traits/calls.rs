@@ -2,7 +2,7 @@
 //! and a generic impl's constant.
 
 use super::*;
-use crate::generic_facts::{Arguments, made_before};
+use crate::generic_facts::{Arguments, RefHeld, made_before};
 use crate::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -195,14 +195,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .instantiate(self.tcx, args)
                         .skip_normalization();
                     let erased = self.tcx.erase_and_anonymize_regions(bound);
+                    let crossing = (id, declared.self_ty(), bound.self_ty());
                     // A type parameter bound by `IntoIterator` given a `&C`
                     // or a `&mut C`, `zip`'s `U`, held as it is, never in a
-                    // box (ADR 0976); not one another bound names, `impl
-                    // Is<I>`'s, whose value arrives as that one's, in the box
-                    // generic code holds a `&mut` to an object in (#966).
+                    // box (ADR 0976), as `ref_held` says; not one another
+                    // bound names, `impl Is<I>`'s, whose value arrives as
+                    // that one's, its dictionary a type parameter's given
+                    // the type (`ref_held_by_a_parameter`, #966).
                     let as_it_is = matches!(*declared.self_ty().kind(), ty::Param(p)
                         if !crate::iterators::named_by_another_bound(self.tcx, id, p))
                         && self.ref_into_iter_of_collection(bound);
+                    // std's `IntoIterator` of an iterator's `&mut I`, where
+                    // generic code holds it as concrete code does, in the
+                    // box a `&mut` to an object is or as it is, not as the
+                    // JS iterator its caller made (`ref_held`, ADR 0061,
+                    // #2336).
+                    let iterator_held = (self.iterator_ref(bound))
+                        .then(|| self.ref_held(crossing))
+                        .filter(|&held| held != RefHeld::Stepped);
                     // An extension's of a `T::IntoIter` generic code holds as a
                     // JS iterator (ADR 0480), of the crate's iterator this call
                     // gives made one (`made_into_iter_of`, #1604): the JS
@@ -218,7 +228,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         None if let Some(made) = made => {
                             values.push(self.made_iterator_extension_dictionary(bound.def_id, made))
                         }
-                        None if as_it_is => values.push(self.ref_into_iter_dictionary(bound, false, span)?),
+                        None if as_it_is => {
+                            values.push(self.ref_into_iter_dictionary(bound, self.ref_held(crossing), span)?)
+                        }
+                        None if let Some(held) = iterator_held => {
+                            let made = self.ref_into_iter_dictionary(bound, held, span)?;
+                            values.push(self.kept(bound, made))
+                        }
+                        // This function's own, of a `&mut` it holds as it
+                        // is, a `C: Iterator`'s, given where its callee holds
+                        // it in its box (#2336).
+                        None if self.mut_ref_in_box(bound, crossing)
+                            && let Some(own) = self.evidence_for(bound) =>
+                        {
+                            values.push(self.mut_ref_through_box(bound, own))
+                        }
                         // Of a type generic code holds in a place of its
                         // own, its entries read the place (#2255).
                         None => match self.placed_dictionary(id, (declared, bound), span)? {

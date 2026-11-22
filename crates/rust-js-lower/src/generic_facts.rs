@@ -967,6 +967,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
+    /// How generic code `def_id` holds a reference its caller gives where
+    /// its `declared` type goes, `instantiated` the caller's `&C` or `&mut
+    /// C`, which a bound by std's `IntoIterator` on it reads (ADR 0457):
+    /// the one answer of a collection's and of an iterator's `&mut I`
+    /// (#2336). A type parameter another bound names, `impl Is<I>`'s, holds
+    /// it as that one's value, as a type parameter given it holds it
+    /// (`ref_held_by_a_parameter`, #966); one given as it is, or a `&mut`
+    /// of one, as concrete code has it; another, of an iterator, as the JS
+    /// iterator its caller made (ADR 0061), of a collection as it is (ADR
+    /// 0976); a `&mut` of a type parameter in the box its caller makes of
+    /// a `&mut` to an object (`Form::Box`, ADR 0454).
+    pub(crate) fn ref_held(&self, crossing: Crossing<'tcx>) -> RefHeld {
+        let (def_id, declared, instantiated) = crossing;
+        let ty::Ref(_, pointee, _) = *instantiated.kind() else {
+            return RefHeld::AsItIs;
+        };
+        let given_as_it_is = |p: ty::ParamTy| crate::iterators::given_as_it_is(self.tcx, def_id, p);
+        let unconverted = match self.implements_iterator(pointee) {
+            true => RefHeld::Stepped,
+            false => RefHeld::AsItIs,
+        };
+        match *declared.kind() {
+            ty::Param(p) if crate::iterators::named_by_another_bound(self.tcx, def_id, p) => {
+                self.ref_held_by_a_parameter(instantiated)
+            }
+            ty::Param(p) if given_as_it_is(p) => RefHeld::AsItIs,
+            ty::Param(_) => unconverted,
+            _ if self.form_differs(Form::Box, crossing) => RefHeld::InBox,
+            ty::Ref(_, inner, _) if matches!(*inner.kind(), ty::Param(p) if given_as_it_is(p)) => RefHeld::AsItIs,
+            _ => unconverted,
+        }
+    }
+
+    /// How a type parameter given `ty`, a reference, holds it, where no
+    /// crossing says more (`ref_held`): in generic code's box where it has
+    /// one and the caller's `&mut` isn't that box already, a cell's, an
+    /// object's (`in_generic_box`, ADR 0454); else as it is.
+    pub(crate) fn ref_held_by_a_parameter(&self, ty: Ty<'tcx>) -> RefHeld {
+        match *ty.kind() {
+            ty::Ref(_, pointee, Mutability::Mut)
+                if self.in_generic_box(ty) && !self.mut_ref_form(pointee).is_cell() =>
+            {
+                RefHeld::InBox
+            }
+            _ => RefHeld::AsItIs,
+        }
+    }
+
     /// `value`, generic code's of its `declared` type, given back where
     /// its caller's type is `instantiated`: in the caller's form, a
     /// handle's `value` (ADR 1114), a held box's box of the object
@@ -976,7 +1024,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return value;
         }
         match form {
-            Form::Handle | Form::Box => Expr::held(value),
+            Form::Handle | Form::Box => box_back(value),
             Form::Placed => self.placed_shape(crossing).expect("a placed crossing").back(value),
             Form::HeldBox => Expr::call_helper("$heldObjectOf", vec![value]),
             Form::Tagged => Expr::call_helper("$writeOf", vec![value]),
@@ -1229,4 +1277,31 @@ pub(crate) fn trusted_len_asked<'tcx>(
         return Vec::new();
     }
     facts.into_iter().filter(|&(part, _)| part.has_param()).collect()
+}
+
+/// How generic code holds a reference its caller gave (`ref_held`): in the
+/// box its caller made of a `&mut` to an object, as concrete code has it,
+/// or as the JS iterator its caller made of an iterator's (#2336).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum RefHeld {
+    InBox,
+    AsItIs,
+    Stepped,
+}
+
+impl RefHeld {
+    /// `value`, generic code's, as its caller has it: out of the box, as
+    /// `form_back` reads `Form::Box`'s; else itself.
+    pub(crate) fn read(self, value: Expr) -> Expr {
+        match self {
+            RefHeld::InBox => box_back(value),
+            RefHeld::AsItIs | RefHeld::Stepped => value,
+        }
+    }
+}
+
+/// What generic code's box, `Form::Box`'s and a handle's, holds: its
+/// `value`, the one read of it back (`form_back`, `RefHeld::read`).
+fn box_back(value: Expr) -> Expr {
+    Expr::held(value)
 }

@@ -12,15 +12,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^non_object_iterator_given_to_generic_code\\.rs$"],
   },
   {
-    name: "named-into-iter-unboxed",
-    breaks:
-      "an `IntoIterator` of a `&mut Vec` reached through `impl Is<I>` reads the array where generic code has its box: `bump(&mut v)` writes nothing (#966)",
-    file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "                        if !crate::iterators::named_by_another_bound(self.tcx, id, p))\n",
-    replace: "                        if true)\n",
-    tests: ["test/corpus.test.ts", "-t", "^into_iterator_named_by_another_bound.rs$"],
-  },
-  {
     name: "default-dictionaries-kept",
     breaks:
       "a compiled std function's call writes each default dictionary it takes where it's given none, `{ next: $next }`, at its end (ADR 0995)",
@@ -30,15 +21,6 @@ export const mutations: Mutation[] = [
       "                && is_plain_dictionary(last, *default)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^std_map.rs$"],
     snapshots: true,
-  },
-  {
-    name: "into-iter-param-boxed",
-    breaks:
-      "a `U: IntoIterator` given a `&mut [T]` is given a dictionary that takes the box a `&mut C` is: std's `zip` reads `cell.value` of the array, `undefined is not iterable` (ADR 0976)",
-    file: "crates/rust-js-lower/src/traits/calls.rs",
-    find: "                        None if as_it_is => values.push(self.ref_into_iter_dictionary(bound, false, span)?),\n",
-    replace: "",
-    tests: ["test/iterator-forms.test.ts", "-t", "^zip_into_mut_slice with"],
   },
   {
     name: "identity-eq-impl-called",
@@ -642,5 +624,14 @@ export const mutations: Mutation[] = [
     find: "            || (matches!(self.tcx.def_kind(id), rustc_hir::def::DefKind::Impl { .. })\n",
     replace: "            || (false && matches!(self.tcx.def_kind(id), rustc_hir::def::DefKind::Impl { .. })\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
+  {
+    name: "own-mut-ref-into-iter-unboxed",
+    breaks:
+      "a function's own `&mut C: IntoIterator` dictionary, of a `C: Iterator` it holds as it is, is passed on unchanged where its callee holds the `&mut` in its box, so its `into_iter` gives the box (#2336)",
+    file: "crates/rust-js-lower/src/traits/calls.rs",
+    find: "                            values.push(self.mut_ref_through_box(bound, own))\n",
+    replace: "                            values.push(own)\n",
+    tests: ["test/corpus.test.ts", "-t", "^mut_ref_iterator_through_a_reference_bound.rs$"],
   },
 ];

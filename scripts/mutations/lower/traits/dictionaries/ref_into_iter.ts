@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a reference's `IntoIterator` dictionary carries no `Iterator` of what it makes, so a held flatten of `&[T; N]` items can't step them",
     file: "crates/rust-js-lower/src/traits/dictionaries/ref_into_iter.rs",
-    find: "        let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        props.extend(self.made_steps(tr, false, span)?);\n        Ok(Expr::object(props))\n",
+    find: "        let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        props.extend(self.made_steps(tr, (itself, itself), span)?);\n        Ok(Expr::object(props))\n",
     replace: "        let props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];\n        Ok(Expr::object(props))\n",
     tests: ["test/corpus.test.ts", "-t", "^std_flatten.rs$"],
   },
@@ -26,6 +26,6 @@ export const mutations: Mutation[] = [
     file: "crates/rust-js-lower/src/traits/dictionaries/ref_into_iter.rs",
     find: "            && !self.recognition().iterates_as_itself(ty)\n            && !self.has_user_impl(tr.def_id, ty)\n",
     replace: "            && !self.has_user_impl(tr.def_id, ty)\n",
-    tests: ["test/iterator-forms.test.ts", "-t", "^mut_ref_iterators_into_iter with std"],
+    tests: ["test/iterator-forms.test.ts", "test/corpus.test.ts", "-t", "^mut_ref_iterators_into_iter with std|^mut_ref_iterator_through_a_reference_bound.rs$"],
   },
 ];
