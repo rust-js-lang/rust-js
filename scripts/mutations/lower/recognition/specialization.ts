@@ -44,9 +44,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a std-private trait's method whose impl rustc leaves to the caller's type, `FuseImpl::next` of a `Fuse<I>`, isn't seen to be picked by `I` being a `FusedIterator`, and is refused",
     file: "src/lower/recognition/specialization.rs",
-    find: "        .filter(|&other| {\n            other != impl_id\n",
-    replace:
-      "        .filter(|&other| {\n            false\n                && other != impl_id\n",
+    find: "            other != impl_id && tcx.specializes((other, impl_id)) && same_kinds_of_generics(tcx, other, impl_id)\n",
+    replace: "            false && other != impl_id && tcx.specializes((other, impl_id)) && same_kinds_of_generics(tcx, other, impl_id)\n",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -149,8 +148,8 @@ export const mutations: Mutation[] = [
     name: "specialization-generics-counted",
     breaks: "a more specific impl's generics are counted, not matched kind by kind, so `SpecReadByte`'s `StdinLock<'_>` impl, a lifetime, is instantiated with `R`'s type, and the compiler crashes (#1156)",
     file: "src/lower/recognition/specialization.rs",
-    find: "                && same_kinds_of_generics(tcx, other, impl_id)\n",
-    replace: "                && tcx.generics_of(other).count() == tcx.generics_of(impl_id).count()\n",
+    find: "&& tcx.specializes((other, impl_id)) && same_kinds_of_generics(tcx, other, impl_id)\n",
+    replace: "&& tcx.specializes((other, impl_id)) && tcx.generics_of(other).count() == tcx.generics_of(impl_id).count()\n",
     tests: ["test/corpus.test.ts", "-t", "^io_read_chain_take_bytes.rs$"],
   },
   {
@@ -218,5 +217,13 @@ export const mutations: Mutation[] = [
     find: "        (\"ZipFmt\", TypeFact::RandomAccessNoCoerce),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
+  {
+    name: "specializing-of-its-type-unasked",
+    breaks: "a fact specialization asks only a trait's blanket impls, not those of the selected impl's own type, so `Fuse<I>`'s specialization for a `FusedIterator` is never found and both of its impls go uncompiled (#2306)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "            .chain(impls.non_blanket_impls().get(&simplified).into_iter().flatten())\n",
+    replace: "            .chain(None::<&Vec<DefId>>.into_iter().flatten())\n",
+    tests: ["test/std-package.test.ts"],
   },
 ];

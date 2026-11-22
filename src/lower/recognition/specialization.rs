@@ -38,6 +38,30 @@ impl<'tcx> FactSpecialization<'tcx> {
     }
 }
 
+/// The impls of `trait_id` that specialize `impl_id`, with the same kinds
+/// of generics, in `all_impls`' order. One that specializes an impl for a
+/// type, `Fuse<I>`, is for that type too, so only the impls rustc keeps under
+/// its simplified type are asked, and the blanket ones, where every impl of
+/// the trait was: of `Iterator`'s hundreds, for each impl a call of std's
+/// bodies selects, it was 9.6% of the corpus's compiler time (#2306).
+fn specializing_impls(tcx: TyCtxt<'_>, trait_id: DefId, impl_id: DefId) -> Vec<DefId> {
+    use rustc_middle::ty::fast_reject::{TreatParams, simplify_type};
+    let impls = tcx.trait_impls_of(trait_id);
+    let self_ty = tcx.impl_trait_ref(impl_id).skip_binder().self_ty();
+    let candidates: Vec<DefId> = match simplify_type(tcx, self_ty, TreatParams::InstantiateWithInfer) {
+        Some(simplified) => (impls.blanket_impls().iter())
+            .chain(impls.non_blanket_impls().get(&simplified).into_iter().flatten())
+            .copied()
+            .collect(),
+        None => tcx.all_impls(trait_id).collect(),
+    };
+    (candidates.into_iter())
+        .filter(|&other| {
+            other != impl_id && tcx.specializes((other, impl_id)) && same_kinds_of_generics(tcx, other, impl_id)
+        })
+        .collect()
+}
+
 /// `callee`, a trait's method, called with `args` in `typing_env`, where
 /// rustc resolves it to no one impl: a `FactSpecialization`, or none.
 pub(crate) fn fact_specialization<'tcx>(
@@ -57,16 +81,12 @@ pub(crate) fn fact_specialization<'tcx>(
         return None;
     }
     let method = |imp: DefId| tcx.impl_item_implementor_ids(imp).get(&callee).copied();
-    let mut specializing: Vec<DefId> = (tcx.all_impls(trait_id))
+    let mut specializing: Vec<DefId> = (specializing_impls(tcx, trait_id, impl_id).into_iter())
         .filter(|&other| {
-            other != impl_id
-                && tcx.specializes((other, impl_id))
-                && same_kinds_of_generics(tcx, other, impl_id)
-                && tcx
-                    .impl_trait_ref(other)
-                    .instantiate(tcx, impl_args)
-                    .skip_normalization()
-                    == tr
+            tcx.impl_trait_ref(other)
+                .instantiate(tcx, impl_args)
+                .skip_normalization()
+                == tr
         })
         .collect();
     // The most specific first, the one each fact of which a more general
