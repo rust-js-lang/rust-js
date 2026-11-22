@@ -635,4 +635,12 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n",
     tests: ["test/crates-refused.test.ts", "-t", "asking a fact its contract"],
   },
+  {
+    name: "impl-facts-of-old-contract",
+    breaks: "`@rust-js/std`'s build reads what a std impl's methods ask of its parameters from the contract its previous build wrote, so `Zip`'s `Debug` dictionary takes no fact of its sides (#2252)",
+    file: "src/lower/traits/calls.rs",
+    find: "            || (matches!(self.tcx.def_kind(id), rustc_hir::def::DefKind::Impl { .. })\n",
+    replace: "            || (false && matches!(self.tcx.def_kind(id), rustc_hir::def::DefKind::Impl { .. })\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

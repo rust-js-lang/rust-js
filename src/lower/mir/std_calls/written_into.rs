@@ -449,10 +449,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Ok(Some(instance)) if self.writes_through_sink(instance.def_id()) => Some(instance),
                     _ => None,
                 };
+                // Of a std trait's method whose impl its types' facts pick,
+                // `Zip`'s `ZipFmt::fmt` (ADR 0975), each impl's writer framed:
+                // the one picked, armed, in the branch its facts pick (#2252).
+                let picked = (framed.is_none())
+                    .then(|| {
+                        crate::lower::recognition::fact_specialization(self.tcx, self.typing_env, def_id, generic_args)
+                    })
+                    .flatten()
+                    .filter(|spec| spec.methods().all(|method| self.writes_through_sink(method)));
                 let mut given = Vec::new();
                 for value in values {
                     given.push(self.shown_in_place(value, span)?);
                 }
+                let picked = match picked {
+                    // Its options as the impls' writers take them, the one
+                    // picked when none is the general one's.
+                    Some(spec) => {
+                        let mut given = given.clone();
+                        given.extend(self.given_to_writer(Some(spec.selected.0)));
+                        let called = self.trait_call(def_id, generic_args, given, false, span, out)?;
+                        Some(called.and_then(armed_branches))
+                    }
+                    None => None,
+                };
                 let armed = match framed {
                     // A trait's default its impl doesn't write, copied into
                     // the impl's dictionary (ADR 0049): that copy, as a call
@@ -479,9 +499,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     None => None,
                 };
-                match armed {
-                    Some(write) => vec![write],
-                    None => {
+                match (picked, armed) {
+                    (Some(Some(writes)), _) => writes,
+                    (None, Some(write)) => vec![write],
+                    _ => {
                         return Err(self.refused_in_a_writer("a function given the writer's `Formatter`", span));
                     }
                 }
@@ -679,5 +700,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn own_writer(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> bool {
         matches!(self.resolve_self_instance(def_id, generic_args), Ok(Some(instance))
             if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()))
+    }
+}
+
+/// The writes of `called`, a writer's call or a choice of them by a test,
+/// `fact ? special(x, f) : general(x, f)`, each call armed with the sink,
+/// `$writingInto(f, special, x)`, in its branch (#2252). `None` of anything
+/// else.
+fn armed_branches(called: Expr) -> Option<Vec<SinkWrite>> {
+    match called.kind {
+        js::ExprKind::Call(callee, args) => {
+            let mut armed = vec![*callee];
+            armed.extend(args);
+            Some(vec![SinkWrite::Helper("$writingInto", armed)])
+        }
+        js::ExprKind::Cond(test, yes, no) => {
+            Some(vec![SinkWrite::If(*test, armed_branches(*yes)?, armed_branches(*no)?)])
+        }
+        _ => None,
     }
 }

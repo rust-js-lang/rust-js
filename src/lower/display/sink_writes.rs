@@ -25,21 +25,25 @@ pub(in crate::lower) enum SinkWrite {
     /// Writes made only where `test` holds, read where it's met, after the
     /// writes before it, as std's `fmt` tests it: `if (test) { f.write(..); }`
     /// in place, the one form of a conditional write, each of its writes'
-    /// errors stopping the rest as any write's does. A `RangeInclusive`'s
-    /// ` (exhausted)` (#1963).
-    If(Expr, Vec<SinkWrite>),
+    /// errors stopping the rest as any write's does, and those made where it
+    /// doesn't, `else { .. }`, where there are any. A `RangeInclusive`'s
+    /// ` (exhausted)` (#1963); the writer of the impl a fact picks, `Zip`'s
+    /// `ZipFmt` (#2252).
+    If(Expr, Vec<SinkWrite>, Vec<SinkWrite>),
 }
 
 impl SinkWrite {
     /// Its statement, written into `sink`.
     pub(in crate::lower) fn written_into(self, sink: &Expr, js_span: js::Span) -> Stmt {
         let call = match self {
-            SinkWrite::If(test, writes) => {
-                let then = writes
-                    .into_iter()
-                    .map(|write| write.written_into(sink, js_span))
-                    .collect();
-                return StmtKind::If(test, then, None).at(js_span);
+            SinkWrite::If(test, writes, otherwise) => {
+                let written = |writes: Vec<SinkWrite>| -> Vec<Stmt> {
+                    (writes.into_iter())
+                        .map(|write| write.written_into(sink, js_span))
+                        .collect()
+                };
+                let otherwise = (!otherwise.is_empty()).then(|| written(otherwise));
+                return StmtKind::If(test, written(writes), otherwise).at(js_span);
             }
             SinkWrite::Str(text) => Expr::call(Expr::member(sink.clone(), "write"), vec![text]),
             SinkWrite::Char(c) => Expr::call(Expr::member(sink.clone(), "writeChar"), vec![c]),

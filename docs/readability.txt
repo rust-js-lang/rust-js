@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2851
-lines	388018
+files	2853
+lines	388412
 temporaries	0	0
 labeled blocks	0	0
 while (true)	245	6.3
-$iter	3427	88.3
+$iter	3433	88.4
 Iterator.from	310	8
 return;	451	11.6
-renamed x$1	17433	449.3
-role fallbacks	9697	249.9
+renamed x$1	17445	449.1
+role fallbacks	9707	249.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	60
@@ -586,7 +586,7 @@ test/corpus/debug_hex_integers.js	19	0	0	0	0	0	0	0	0
 test/corpus/debug_hex_of_values_a_writer_makes.js	36	0	0	0	0	0	0	0	0
 test/corpus/debug_impl_of_a_reference_box_or_pin.js	186	0	0	0	0	0	0	8	4
 test/corpus/debug_of_a_fn_pointers_holder.js	56	0	0	0	0	0	1	0	0
-test/corpus/debug_of_a_zip.js	74	0	0	0	6	0	0	0	0
+test/corpus/debug_of_a_zip.js	272	0	0	0	12	0	0	2	2
 test/corpus/debug_of_adapters_compiled_as_their_meaning.js	154	0	0	0	2	0	0	0	2
 test/corpus/debug_of_chunks_and_windows.js	226	0	0	0	14	0	0	13	8
 test/corpus/debug_of_flatten_and_flat_map.js	311	0	0	0	6	0	0	5	0
@@ -2278,7 +2278,9 @@ test/corpus/size_hint_of_adapters_made_in_place_over_a_type_parameters_items.js	
 test/corpus/size_hints_made_in_place.js	27	0	0	0	1	0	0	9	4
 test/corpus/size_hints_of_while_and_scan_adapters_made_in_place.js	197	0	0	0	14	0	0	2	5
 test/corpus/size_of.js	23	0	0	0	0	0	0	2	2
+test/corpus/size_of_a_type_built_of_an_impls_parameters.js	78	0	0	0	0	0	0	5	4
 test/corpus/size_of_an_iterators_item.js	84	0	0	0	2	0	1	6	4
+test/corpus/size_of_self_in_a_traits_default.js	118	0	0	0	0	0	0	5	4
 test/corpus/size_of_val_of_a_slice.js	62	0	0	0	1	0	0	7	2
 test/corpus/size_of_what_rustc_knows_of_any_parameter.js	23	0	0	0	0	0	0	0	0
 test/corpus/skip_advanced_from_its_back_by_its_source.js	64	0	0	0	3	0	0	0	0

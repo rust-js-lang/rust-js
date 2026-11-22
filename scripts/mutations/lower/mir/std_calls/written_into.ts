@@ -148,4 +148,20 @@ export const mutations: Mutation[] = [
     replace: "                    Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() && false => {\n",
     tests: ["test/crates.test.ts", "-t", "trait_default_written_by_a_librarys_display"],
   },
+  {
+    name: "picked-writer-unarmed",
+    breaks: "a writer's call of a method whose impl facts pick, `ZipFmt::fmt`, is refused: no branch is armed (#2252)",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: ".filter(|spec| spec.methods().all(|method| self.writes_through_sink(method)));",
+    replace: ".filter(|_| false);",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
+  {
+    name: "picked-writer-options-of-trait",
+    breaks: "the writers a fact picks are given options as the trait's method is, which `@rust-js/std` doesn't compile, so none, and their dictionaries shift (#2252)",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "given.extend(self.given_to_writer(Some(spec.selected.0)));",
+    replace: "given.extend(self.given_to_writer(Some(def_id)));",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

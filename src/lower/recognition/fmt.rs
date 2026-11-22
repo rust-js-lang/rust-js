@@ -334,7 +334,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 WriteCall::Tuple
             }
             _ if known_function && trait_id.is_none() => WriteCall::Function,
-            _ if trait_id.is_some_and(|t| t.is_local()) => WriteCall::Trait,
+            // Of the crate's trait, or of one std keeps private whose impls
+            // `@rust-js/std` compiles with what calls it, `Zip`'s `ZipFmt`,
+            // its impl picked by its sides' facts (#2252).
+            _ if trait_id
+                .is_some_and(|t| t.is_local() || (std_crate(tcx, t.krate).is_some() && std_private(tcx, t))) =>
+            {
+                WriteCall::Trait
+            }
             _ => WriteCall::Unsupported,
         }
     }

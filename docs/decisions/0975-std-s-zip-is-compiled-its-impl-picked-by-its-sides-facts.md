@@ -212,3 +212,36 @@ Also held by the copy matrix's `cloned.map.zip`, `copied.map.zip` and
 `copied.enumerate.zip` rows, and the mutations
 `index-reader-only-where-generic-code-knows` and
 `random-access-of-a-param-taken-here`.
+
+## Amendment (2026-11-22, #2252): `Zip`'s `Debug` is std's compiled body, its `ZipFmt` picked by the same facts
+
+`{:?}` of a `Zip` was refused, and then of two random-access sides it was
+`Zip` by a type test in the lowering (`display/debug.rs`): a second owner
+of `ZipFmt`'s choice beside std's own. Now `Zip`'s `Debug` is compiled into
+`@rust-js/std` like its other bodies, and its call of `ZipFmt::fmt` is
+picked by the sides' `TrustedRandomAccessNoCoerce` facts, as `ZipImpl`'s
+are. That gives `Zip` alone of slices' iterators, ranges, a `map` of one or
+a `Vec`'s, and `Zip { a: .., b: .. }` of any other, each side as stepping
+leaves it, through generic code too. The type test is gone. Four changes
+made it, each to its owner:
+
+- `ZipFmt` is in `specialized_on`'s table of what a fact picks.
+- A writer's call of a method of a trait std keeps private is a trait's
+  call (`recognition::write_call`), whose impl is picked as any is. Only
+  `@rust-js/std`'s bodies make one.
+- A writer's call that facts pick arms each impl's writer in the branch
+  its facts pick (`armed_branches`). `SinkWrite::If`, the one form of a
+  conditional write, gains its `else`. Its options are as the impl's
+  writer takes them, not the trait's method, which nothing compiles.
+- An impl is compiled here where a method of it is
+  (`traits::calls::compiled_here`). `@rust-js/std`'s build read what a std
+  impl's methods ask of its parameters, the facts its dictionary takes,
+  from the contract its previous build wrote, so a newly compiled impl's
+  dictionary could never take one.
+
+The `Zip` of a slice's `Chunks`, `v.chunks(1).zip(v.iter())`, which
+printed `Zip` by type, asks `Chunks: Debug` now, as std's `impl<A: Debug,
+B: Debug> Debug for Zip<A, B>` does. That landed first (ADR 0335,
+amended), so no program that printed starts being refused. Held by
+`debug_of_a_zip.rs` against native, and the whole corpus and crate corpus
+compiled with it.

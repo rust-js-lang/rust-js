@@ -231,4 +231,12 @@ export const mutations: Mutation[] = [
     replace: "    let &made_at = its.last()?;\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
+  {
+    name: "std-private-writer-trait-unsupported",
+    breaks: "a writer's call of a trait's method std keeps private, `Zip`'s `ZipFmt::fmt`, is refused where `@rust-js/std` compiles its impls (#2252)",
+    file: "src/lower/recognition/fmt.rs",
+    find: "(std_crate(tcx, t.krate).is_some() && std_private(tcx, t))",
+    replace: "(std_crate(tcx, t.krate).is_some() && std_private(tcx, t) && false)",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

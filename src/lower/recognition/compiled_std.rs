@@ -258,6 +258,7 @@ pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
     (StdPath::IterZip, Some("DoubleEndedIterator"), "next_back"),
     (StdPath::IterZip, Some("Iterator"), "__iterator_get_unchecked"),
     (StdPath::IterZip, Some("Clone"), "clone"),
+    (StdPath::IterZip, Some("Debug"), "fmt"),
     // A plain struct's (#1458).
     (StdPath::IterRepeatN, Some("Iterator"), "next"),
     (StdPath::IterRepeatN, Some("Iterator"), "size_hint"),

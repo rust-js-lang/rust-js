@@ -211,4 +211,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
   },
 
+  {
+    name: "zip-fmt-unpicked",
+    breaks: "`Zip`'s `ZipFmt` isn't picked by its sides' facts, so `@rust-js/std` can't compile `Zip`'s `Debug` (#2252)",
+    file: "src/lower/recognition/specialization.rs",
+    find: "        (\"ZipFmt\", TypeFact::RandomAccessNoCoerce),\n",
+    replace: "",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
 ];

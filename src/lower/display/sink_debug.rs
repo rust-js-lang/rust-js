@@ -257,6 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 writes.push(SinkWrite::If(
                     exhausted,
                     vec![SinkWrite::Str(Expr::str(" (exhausted)"))],
+                    Vec::new(),
                 ));
             }
             return Ok(Some(writes));

@@ -949,6 +949,7 @@ const $stepByClone = new WeakMap();
 const $chainClone = new WeakMap();
 const $chainABDebug = new WeakMap();
 const $zipClone = new WeakMap();
+const $zipDebug = new WeakMap();
 const $repeatNClone = new WeakMap();
 const $repeatNDebug = new WeakMap();
 const $repeatClone = new WeakMap();
@@ -9764,6 +9765,34 @@ export function zipClone_clone(zip, AClone, BClone, dropA, dropB) {
   return result;
 }
 
+export function zipDebug_fmt(
+  zip,
+  options,
+  ADebug,
+  BDebug,
+  ARandomAccessNoCoerce,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+) {
+  const f = $sink();
+  if (ARandomAccessNoCoerce && BRandomAccessNoCoerce) {
+    $writingInto(
+      f,
+      zipZipFmtABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fmt,
+      zip,
+      options,
+      ADebug,
+      BDebug,
+      dropA,
+      dropB,
+    );
+  } else {
+    $writingInto(f, zipZipFmtAB_fmt, zip, options, ADebug, BDebug, dropA, dropB);
+  }
+  return f.done();
+}
+
 export function repeatNIterator_next(repeatN, AClone, dropA) {
   if (repeatN.inner == null) {
     return;
@@ -15417,6 +15446,33 @@ export function zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoer
   return result;
 }
 
+export function zipZipFmtAB_fmt(zip, options, ADebug, BDebug, dropA, dropB) {
+  const f = $sink();
+  const struct = $debugStruct(f, "Zip", options?.alternate);
+  struct.fieldWith("a", zip.a, (f, value) => {
+    $writeBy(f, ADebug, value, options);
+  });
+  struct.fieldWith("b", zip.b, (f, value) => {
+    $writeBy(f, BDebug, value, options);
+  });
+  struct.finish();
+  return f.done();
+}
+
+export function zipZipFmtABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fmt(
+  zip,
+  options,
+  ADebug,
+  BDebug,
+  dropA,
+  dropB,
+) {
+  const f = $sink();
+  const struct = $debugStruct(f, "Zip", options?.alternate);
+  struct.finish();
+  return f.done();
+}
+
 export function zipZipImplAB_new(
   a,
   b,
@@ -16603,6 +16659,51 @@ export function zipClone(AClone, BClone, dropA, dropB) {
       zip.return();
     },
   }));
+}
+
+export function zipDebug(
+  ADebug,
+  BDebug,
+  ARandomAccessNoCoerce,
+  BRandomAccessNoCoerce,
+  dropA,
+  dropB,
+) {
+  return $traitImpl(
+    $zipDebug,
+    [ADebug, BDebug, ARandomAccessNoCoerce, BRandomAccessNoCoerce, dropA, dropB],
+    () => ({
+      fmt(zip, options) {
+        return zipDebug_fmt(
+          zip,
+          options,
+          ADebug,
+          BDebug,
+          ARandomAccessNoCoerce,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+        );
+      },
+      $drop(zip) {
+        zip.return();
+      },
+      fmtInto(f, value, options) {
+        return $writingInto(
+          f,
+          zipDebug_fmt,
+          value,
+          options,
+          ADebug,
+          BDebug,
+          ARandomAccessNoCoerce,
+          BRandomAccessNoCoerce,
+          dropA,
+          dropB,
+        );
+      },
+    }),
+  );
 }
 
 export function repeatNClone(AClone) {

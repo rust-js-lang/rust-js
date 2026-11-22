@@ -415,10 +415,11 @@ what's held before it, as a browser's console takes whole lines
   `@rust-js/std`'s compiled bodies, a `Flatten`'s and a `FlatMap`'s too,
   `Flatten { inner: FlattenCompat { iter: Fuse { iter: Some(IntoIter([[1],
   [2]])) }, frontiter: None, backiter: None } }`, its private
-  `FlattenCompat` as stepping leaves it. A `Zip` of two random-access
-  sides, slices' iterators, is `Zip` alone, as std's `ZipFmt` writes it by
-  their types; of others, and of a `StepBy`, a `Once` or a `Successors`,
-  `{:?}` is refused (#2252). A slice's `Chunks` and `Windows` show std's
+  `FlattenCompat` as stepping leaves it, and a `Zip`'s, whose `ZipFmt`
+  its sides' facts pick as std's specialization picks it by their types:
+  of two random-access sides, slices' iterators or ranges, `Zip` alone;
+  of others, `Zip { a: Chars(['b']), b: Iter([7]) }`. Of a `StepBy`, a
+  `Once` or a `Successors`, `{:?}` is refused (#2252, #2289). A slice's `Chunks` and `Windows` show std's
   struct of them, `Chunks { v: [5], chunk_size: 2 }`: the slice they have
   left, as stepping from either end leaves it, and the size they cut by;
   a `ChunksMut`'s is refused, as std's shows the address of the raw

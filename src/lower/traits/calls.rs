@@ -300,6 +300,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         id.is_local()
             || self.krate.foreign.is_instance(id)
             || crate::lower::recognition::is_compiled_std(self.tcx, id) && self.krate.fns.contains_key(&id)
+            // An impl whose dictionary this build makes of the methods it
+            // compiles, `Zip`'s `Debug` of `@rust-js/std`'s build: what they
+            // ask of its parameters is this build's, never the contract its
+            // previous build wrote (#2252).
+            || (matches!(self.tcx.def_kind(id), rustc_hir::def::DefKind::Impl { .. })
+                && (self.tcx.associated_item_def_ids(id).iter()).any(|&item| {
+                    matches!(self.tcx.def_kind(item), rustc_hir::def::DefKind::AssocFn) && self.compiled_here(item)
+                }))
     }
 
     /// `tr`'s impl, where it's a library's whose dictionary its JS exports.

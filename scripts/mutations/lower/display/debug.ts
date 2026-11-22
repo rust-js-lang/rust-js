@@ -3,22 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "zip-of-random-access-refused",
-    breaks: "`{:?}` of a `Zip` of slices' iterators, which std shows `Zip` alone, is refused (#2252)",
-    file: "src/lower/display/debug.rs",
-    find: "                Ok(Expr::str(\"Zip\"))\n",
-    replace: "                Err(self.unsupported(span, &format!(\"`{{:?}}` of a `{ty}`\")))\n",
-    tests: ["test/corpus.test.ts", "-t", "^debug_of_a_zip.rs$"],
-  },
-  {
-    name: "zip-of-any-shown-bare",
-    breaks: "`{:?}` of a `Zip` of sides that aren't random access, `chars()`'s, is `Zip`, where std shows them, `Zip { a: Chars([..]), b: .. }` (#2252)",
-    file: "src/lower/display/debug.rs",
-    find: "(0..2).all(|i| self.recognition().implements_trait(args.type_at(i), random))",
-    replace: "(0..2).all(|i| { let _ = (i, random, args); true })",
-    tests: ["test/diagnostics.test.ts", "-t", "a Zip of chars' Debug"],
-  },
-  {
     name: "random-state-shown-otherwise",
     breaks: "`{:?}` of a `RandomState` shows `RandomState`, not std's `RandomState { .. }`",
     file: "src/lower/display/debug.rs",

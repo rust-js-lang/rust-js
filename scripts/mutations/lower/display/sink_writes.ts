@@ -136,8 +136,8 @@ export const mutations: Mutation[] = [
     name: "sink-write-if-always",
     breaks: "a conditional write into a writer is made whether its test holds or not: a `RangeInclusive` not stepped through shows ` (exhausted)` (#1963)",
     file: "src/lower/display/sink_writes.rs",
-    find: "                return StmtKind::If(test, then, None).at(js_span);\n",
-    replace: "                return StmtKind::If(Expr::bool(true), then, None).at(js_span);\n",
+    find: "                return StmtKind::If(test, written(writes), otherwise).at(js_span);\n",
+    replace: "                return StmtKind::If(Expr::bool(true), written(writes), otherwise).at(js_span);\n",
     tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
   },
   {
@@ -194,6 +194,14 @@ export const mutations: Mutation[] = [
     file: "src/lower/display/sink_writes.rs",
     find: "            && (self.krate.foreign.lists_fmt_into(adt) || self.krate.prints.published.contains(&adt));\n",
     replace: "            && self.krate.foreign.lists_fmt_into(adt);\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
+  },
+  {
+    name: "conditional-write-else-dropped",
+    breaks: "a conditional write's `else` is left out, so a `Zip` of sides that aren't random access writes nothing of its `Zip { a, b }` (#2252)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "                let otherwise = (!otherwise.is_empty()).then(|| written(otherwise));\n",
+    replace: "                let otherwise: Option<Vec<Stmt>> = { let _ = otherwise; None };\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
 ];

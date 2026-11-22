@@ -10839,6 +10839,64 @@
         ]
       },
       {
+        "key": "core::iter::adapters::zip::{impl#14}",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::fmt::Debug>",
+        "module": [
+          "iter"
+        ],
+        "export": "zipDebug",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccessNoCoerce"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccessNoCoerce"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::zip::{impl#14}::fmt",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::fmt::Debug>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "zipDebug_fmt",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccessNoCoerce"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop"
+            ],
+            "facts": [
+              "RandomAccessNoCoerce"
+            ]
+          }
+        ]
+      },
+      {
         "key": "core::iter::adapters::zip::{impl#2}::next_back",
         "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::DoubleEndedIterator>::next_back",
         "module": [
@@ -11258,6 +11316,54 @@
           },
           {
             "index": 5,
+            "marks": [
+              "drop"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::zip::{impl#15}::fmt",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipFmt<A, B>>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipFmtAB_fmt",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop",
+              "written_into"
+            ]
+          },
+          {
+            "index": 1,
+            "marks": [
+              "drop",
+              "written_into"
+            ]
+          }
+        ]
+      },
+      {
+        "key": "core::iter::adapters::zip::{impl#16}::fmt",
+        "rust_path": "rust_js_std::<core::iter::Zip<A, B> as core::iter::adapters::zip::ZipFmt<A, B>>::fmt",
+        "module": [
+          "iter"
+        ],
+        "export": "zipZipFmtABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fmt",
+        "member": null,
+        "params": [
+          {
+            "index": 0,
+            "marks": [
+              "drop"
+            ]
+          },
+          {
+            "index": 1,
             "marks": [
               "drop"
             ]
@@ -16468,6 +16574,9 @@
       "core::iter::adapters::take_while::{impl#1}",
       "core::iter::adapters::take_while::{impl#2}",
       "core::iter::adapters::take_while::{impl#7}",
+      "core::iter::adapters::zip::{impl#14}",
+      "core::iter::adapters::zip::{impl#15}",
+      "core::iter::adapters::zip::{impl#16}",
       "core::iter::adapters::zip::{impl#18}",
       "core::iter::adapters::zip::{impl#19}",
       "core::iter::adapters::zip::{impl#1}",
@@ -16562,6 +16671,7 @@
       "core::iter::adapters::skip_while::SkipWhile",
       "core::iter::adapters::take::Take",
       "core::iter::adapters::take_while::TakeWhile",
+      "core::iter::adapters::zip::Zip",
       "core::iter::sources::repeat::Repeat",
       "core::iter::sources::repeat_n::RepeatN"
     ],
@@ -16936,6 +17046,7 @@
         "zipDoubleEndedIterator_nextBack",
         "zipIterator___iteratorGetUnchecked",
         "zipClone_clone",
+        "zipDebug_fmt",
         "repeatNIterator_next",
         "repeatNIterator_sizeHint",
         "repeatNIterator_advanceBy",
@@ -17045,6 +17156,8 @@
         "zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack",
         "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_nextBack",
         "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_getUnchecked",
+        "zipZipFmtAB_fmt",
+        "zipZipFmtABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_fmt",
         "zipZipImplAB_new",
         "zipZipImplABTrustedRandomAccessTrustedRandomAccess_new",
         "zipZipImplABTrustedRandomAccessNoCoerceTrustedRandomAccessNoCoerce_new",
@@ -17097,6 +17210,7 @@
         "chainClone",
         "chainABDebug",
         "zipClone",
+        "zipDebug",
         "repeatNClone",
         "repeatNDebug",
         "repeatClone",
@@ -17277,7 +17391,7 @@
   "artifacts": [
     {
       "file": "iter.js",
-      "hash": "7918e53d0caea15e"
+      "hash": "033113451eca263d"
     },
     {
       "file": "iter.js.map",

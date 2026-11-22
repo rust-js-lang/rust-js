@@ -443,6 +443,8 @@ fn specialized_on(tcx: TyCtxt<'_>, trait_id: DefId, bound: DefId) -> Option<Type
         ("ZipImpl", TypeFact::RandomAccessNoCoerce),
         ("SpecFold", TypeFact::TrustedLen),
         ("SpecTrustedRandomAccess", TypeFact::RandomAccessNoCoerce),
+        // Its `Debug`, `Zip` alone of two random-access sides (#2252).
+        ("ZipFmt", TypeFact::RandomAccessNoCoerce),
     ];
     let of_zip = |fact: TypeFact| {
         ZIPS.iter()
