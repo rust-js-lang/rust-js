@@ -244,6 +244,20 @@ export function printTree(tree: Tree): string {
   return tree.tail ? `${path} ${tree.tail}` : path;
 }
 
+/** The top modules `pairs` take out of their crate, by their old names:
+ * `jsx_syntax` of `src/jsx_syntax.rs`, never the modules of the crate it
+ * became, whose names an app's prose shares (`crate::props` of a
+ * component's, which a sweep took for JSX's). */
+export function movedModules(pairs: [string, string][], at = root): Set<string> {
+  return new Set(
+    pairs.flatMap(([from, to]) => {
+      const was = crateOf(from, at);
+      const below = was ? from.slice(was.src.length + 1) : "";
+      return was && below !== "" && crateOf(to, at)?.name !== was.name ? [below.split("/")[0]!.replace(/\.rs$/, "")] : [];
+    }),
+  );
+}
+
 /** The names `code` binds at its top itself, each `use`'s last segment or
  * alias, `mod x` and `extern crate x`: a root's bare `js::Name` where it
  * says `use rust_js_program::js;` is its import's, never a moved module's
@@ -367,13 +381,23 @@ export function rustPathsRewritten(
   // tree's group, `std::{collections::HashMap}`'s.
   if (ownModule.length === 0) {
     const bound = boundNames(code);
+    // An attribute's paths are its tool's, `#[allow(clippy::vec_box)]`.
+    const attributes = [...code.matchAll(/#!?\[/g)].map((m) => {
+      let depth = 0;
+      let end = m.index!;
+      for (; end < code.length; end++) {
+        if (code[end] === "[") depth++;
+        else if (code[end] === "]" && --depth === 0) break;
+      }
+      return [m.index!, end] as const;
+    });
     const uses = [...code.matchAll(/(^|[^\w$])use\s+[^;]*;/g)].map((m) => [m.index! + m[1]!.length, m.index! + m[0].length] as const);
     for (const m of code.matchAll(/(^|[^\w$:.])([a-z_]\w*)(\s*::)/g)) {
       const at = m.index! + m[1]!.length;
       if (inHandled(at) || toRoot(at) !== 0) continue;
       const inUse = uses.find(([from, to]) => from <= at && at < to);
       if (inUse && !/^use\s+$/.test(code.slice(inUse[0], at))) continue;
-      if (bound.has(m[2]!)) continue;
+      if (bound.has(m[2]!) || attributes.some(([from, to]) => from <= at && at < to)) continue;
       const crate = elsewhere(m[2]!);
       if (!crate || !reachable(crate, at, m[2]!)) continue;
       rewrites.push({ from: at, to: at, text: `${crate.name}::` });
@@ -618,14 +642,7 @@ if (import.meta.main) {
   const declaring = new Map<string, CompilerCrate[]>();
   for (const crate of compilerCrates()) for (const module of topModules(crate)) declaring.set(module, [...(declaring.get(module) ?? []), crate]);
   for (const [module, crates] of declaring) if (crates.length === 1) modulesOf.set(module, crates[0]!);
-  const moved = new Set(
-    pairs.flatMap(([, to]) => {
-      const crate = crateOf(to);
-      if (!crate) return [];
-      const below = belowSrc(to);
-      return below === "" || to === crate.rootFile ? topModules(crate) : [below.split("/")[0]!.replace(/\.rs$/, "")];
-    }),
-  );
+  const moved = movedModules(pairs);
   const problems: string[] = [];
   let paths = 0;
   for (const file of compilerRustFiles()) {

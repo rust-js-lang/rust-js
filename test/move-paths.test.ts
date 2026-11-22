@@ -7,7 +7,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { root } from "./support";
 import { binaryCrate, compilerCrates, type CompilerCrate } from "../scripts/compiler-crates";
-import { boundNames, codeOf, privateSites, rewritten, rustPathsRewritten, segmented, statementLine, textFiles } from "../scripts/move-paths";
+import { boundNames, codeOf, movedModules, privateSites, rewritten, rustPathsRewritten, segmented, statementLine, textFiles } from "../scripts/move-paths";
 
 const crates = compilerCrates();
 const binary = binaryCrate();
@@ -74,6 +74,16 @@ test("a root's bare name it imports itself is its import's, never a moved module
   const root = "use rust_js_program::js::{self, Expr};\nuse std::collections as output;\n\nfn f() -> js::Name {\n    output::x()\n}\n";
   expect(rewrite("src/main.rs", root).text).toBe(root);
   expect(boundNames(codeOf(root))).toEqual(new Set(["js", "Expr", "output"]));
+  // An attribute's path is its tool's, never the binary's `clippy`.
+  const attributed = "#[allow(clippy::vec_box)]\nfn f() {}\n";
+  expect(rustPathsRewritten("crates/rust-js-program/src/lib.rs", attributed, new Map([["clippy", binary]]))).toEqual({ text: attributed, problems: [] });
+});
+
+test("the modules a move takes out of their crate are their old names, never the new crate's", () => {
+  expect(movedModules([["src/jsx_syntax.rs", "crates/rust-js-jsx/src/lib.rs"], ["src/jsx_syntax/props.rs", "crates/rust-js-jsx/src/props.rs"]])).toEqual(new Set(["jsx_syntax"]));
+  expect(movedModules([["src/collections.rs", "crates/rust-js-program/src/collections.rs"]])).toEqual(new Set(["collections"]));
+  // Within a crate, nothing leaves it.
+  expect(movedModules([["src/pipeline/a.rs", "src/pipeline/b.rs"]])).toEqual(new Set());
 });
 
 test("a crate's path to the binary's module is said, never written", () => {
