@@ -624,8 +624,12 @@ pub(super) fn type_fact_params<'tcx>(
         // (ADRs 0185, 0561), `Iterator::fuse`'s: of `Self` too, given as a
         // value is; and a library's the crate compiles itself so, alone
         // (`instance_over_self`), itertools' `collect_vec` (#1370).
-        let compiled =
-            crate::lower::recognition::is_compiled_std(tcx, id) || collects::instance_over_self(tcx, foreign, id);
+        // A library's default the crate compiles is one over `Self`, alone
+        // (`instance_over_self`) or for its own impls that copy it,
+        // `sz_al(self, SelfSz)`: of the trait's own, `Self`'s layout no
+        // dictionary carries, its impls' entries give (#2291).
+        let compiled = crate::lower::recognition::is_compiled_std(tcx, id)
+            || (tcx.trait_of_assoc(id).is_some() && foreign.is_instance(id));
         // Of an impl's method, the size std grows a `Vec` of an associated
         // type's items by, an item slot, which its dictionary can't give
         // (#934): not taken, its `room_value` `undefined` (#1260).

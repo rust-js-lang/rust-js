@@ -405,9 +405,9 @@ export const mutations: Mutation[] = [
     name: "instance-self-facts-unasked",
     breaks: "a library's default compiled here as a function over `Self` asks its callers nothing of `Self`, as a trait method's dictionary would give it, so its collect of `Self` is refused (#1370)",
     file: "src/lower/analysis/type_facts.rs",
-    find: "            crate::lower::recognition::is_compiled_std(tcx, id) || collects::instance_over_self(tcx, foreign, id);\n",
-    replace: "            crate::lower::recognition::is_compiled_std(tcx, id);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_default_collects_self_in_place"],
+    find: "            || (tcx.trait_of_assoc(id).is_some() && foreign.is_instance(id));\n",
+    replace: "            || false;\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: (library_default_collects_self_in_place|library_default_size_of_self_in_a_consumers_impl)"],
   },
   {
     name: "mir-body-std-call-asks-unread",
