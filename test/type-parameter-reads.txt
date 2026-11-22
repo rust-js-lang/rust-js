@@ -63,11 +63,11 @@ src/lower/mir/assign.rs	1
 src/lower/mir/calls.rs	1
 src/lower/mir/entries.rs	1
 src/lower/mir/iter.rs	2
-src/lower/mir/iter/backs.rs	3
-src/lower/mir/iter/closing.rs	6
-src/lower/mir/iter/collect.rs	3
-src/lower/mir/iter/copies.rs	1
-src/lower/mir/iter/sources.rs	4
+src/lower/iterators/mir_steps/backs.rs	3
+src/lower/iterators/mir_steps/closing.rs	6
+src/lower/iterators/mir_steps/collect.rs	3
+src/lower/iterators/mir_steps/copies.rs	1
+src/lower/iterators/mir_steps/sources.rs	4
 src/lower/mir/patterns/null_nones.rs	1
 src/lower/mir/std_calls.rs	1
 src/lower/mir/writer.rs	1

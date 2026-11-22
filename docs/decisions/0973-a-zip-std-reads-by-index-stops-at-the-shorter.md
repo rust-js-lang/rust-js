@@ -106,7 +106,7 @@ It runs against native Rust in both builds. Mutations:
 (`lower/analysis/back_stepped.ts`),
 `back-stepped-range-map-length-unknown` and
 `back-stepped-range-map-length-always` (`lower/iterators/knowing.ts`),
-`range-map-made-lengthless` (`lower/mir/iter/backs.ts`).
+`range-map-made-lengthless` (`lower/iterators/mir_steps/backs.ts`).
 
 ## Amended (2026-11-10, #1225): a boxed function runs code, and an `impl Trait` is what it hides
 

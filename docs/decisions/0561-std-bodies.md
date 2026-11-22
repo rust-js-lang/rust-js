@@ -466,7 +466,7 @@ the mutations `consumed-unclosed-on-throw` and
 `compiled-fold-given-no-unwind` (`lower/iterators/knowing.ts`),
 `given-drop-ignored` (`lower/traits/calls.ts`),
 `std-iterator-fold-unwind-lost` (`runtime/std_iterator.ts`) and
-`fold-of-a-param-unwinding-unseen` (`lower/mir/iter/collect.ts`).
+`fold-of-a-param-unwinding-unseen` (`lower/iterators/mir_steps/collect.ts`).
 
 ## Amendment: a compiled iterator's hint is `held_hint_known`'s alone (2026-11-06, #799)
 

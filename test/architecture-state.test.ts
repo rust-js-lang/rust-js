@@ -99,7 +99,7 @@ const owners: Record<string, string[]> = {
   // The first name of each base `fresh` gives out in the item, what one
   // given apart from it is of, by its id (ADR 1150): `fresh`'s alone.
   "self.first_of": ["src/lower.rs"],
-  "self.asking_made": ["src/lower/iterators/back_facts.rs", "src/lower/mir/iter/backs.rs"],
+  "self.asking_made": ["src/lower/iterators/back_facts.rs", "src/lower/iterators/mir_steps/backs.rs"],
   // While the crate's iterator is made the JS iterator behind a `dyn`
   // wrapper, that wrapper, which `own_methods` filters by (#2217): set
   // and read by stepping.rs alone, `seen_through`'s.

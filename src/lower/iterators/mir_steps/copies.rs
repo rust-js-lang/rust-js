@@ -64,7 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as `copied_items` copies it (ADR 0525, #1181). Never of the JS
     /// iterator made of it, which its clone would take for the value
     /// (#2130).
-    pub(super) fn copied_cloned_apart(
+    pub(in crate::lower) fn copied_cloned_apart(
         &mut self,
         (it, method, item): (Expr, IterMethod, Ty<'tcx>),
         (iter_ty, receiver_ty, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
@@ -124,7 +124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Its source made knowing its back where it's to know its own, as a
     /// map's is: a `step_by(n)`'s, `$stepByEnds` (#851); or its hint alone,
     /// where it's made knowing that, never asked its back for it (#2209).
-    pub(super) fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn copied_items(&mut self, it: Expr, item: Ty<'tcx>, output: Ty<'tcx>, span: Span) -> R<Expr> {
         let back = self.knows_its_back(output);
         let hint = !back && self.made_knowing_its_hint(output);
         self.copied_items_knowing(it, item, output, (back, hint), span)

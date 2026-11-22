@@ -131,7 +131,7 @@ test("which source an adapter's fold or nth asks is the OwnStep catalog's alone"
 // with the type where a compiled `fuse()` closed nothing of a `Vec`'s rest
 // (#653). Neither gate is given the JS it gates.
 test("whether an iterator's steps may panic is steps_may_panic's alone", () => {
-  const ends = ["collect.rs", "consumers.rs"].map((file) => read(`src/lower/mir/iter/${file}`)).join("\n");
+  const ends = ["collect.rs", "consumers.rs"].map((file) => read(`src/lower/iterators/mir_steps/${file}`)).join("\n");
   for (const gate of ["unwinding_collect", "stranded_drop"]) {
     expect(ends, gate).toContain(`fn ${gate}(`);
     const signature = ends.slice(ends.indexOf(`fn ${gate}(`), ends.indexOf(") ->", ends.indexOf(`fn ${gate}(`)));
@@ -204,9 +204,9 @@ test("a consumer's closure folded by value is dropped by $consume alone", () => 
   const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
   const writing = lowering.filter((file) => read(file).includes('"$consume"'));
   for (const file of writing) expect(read(file), file).toContain("consumed_ends(");
-  expect(writing.sort()).toEqual(["src/lower/mir/iter/backs.rs", "src/lower/mir/iter/consumers.rs"]);
+  expect(writing.sort()).toEqual(["src/lower/iterators/mir_steps/backs.rs", "src/lower/iterators/mir_steps/consumers.rs"]);
   const asking = lowering.filter((file) => read(file).includes("consumed_function("));
-  expect(asking.sort()).toEqual(["src/lower/mir/dispatch.rs", "src/lower/mir/iter/consumers.rs"]);
+  expect(asking.sort()).toEqual(["src/lower/iterators/mir_steps/consumers.rs", "src/lower/mir/dispatch.rs"]);
   expect(read("src/runtime/fold_of.js")).toContain("function $consume(it, step, init, f, unwind, ends)");
 });
 
@@ -337,7 +337,7 @@ test("a runtime helper drops what it holds as a panic unwinds by $unwinds alone"
   expect(stale).toEqual([]);
   // And the lowering of iterators writes none into the JS: a `skip_while`'s
   // test is the runtime's `$kept` (#817).
-  const lowering = [...files("src/lower/iterators"), ...files("src/lower/mir/iter")]
+  const lowering = [...files("src/lower/iterators"), ...files("src/lower/iterators/mir_steps")]
     .filter((file) => file.endsWith(".rs"))
     .filter((file) => /StmtKind::Try(Catch)?\(/.test(read(file)));
   expect(lowering).toEqual([]);
@@ -452,7 +452,7 @@ test("what's stepped from its back is asked where a value is made, or as a type'
   const allowed: Record<string, [number, string]> = {
     "src/lower/mir/iter.rs": [1, "`cloned_apart_call`, the maker of a map or a filter cloned apart"],
     "src/lower/mir/std_calls/iterators.rs": [1, "`mir_iter_std_call`, the maker of a std adapter made in place"],
-    "src/lower/mir/iter/backs.rs": [
+    "src/lower/iterators/mir_steps/backs.rs": [
       2,
       "`back_kept`, the maker of an enumeration it steps from its back, and `rev_called`, a `rev()`'s, of what `rev_items` makes; a type parameter given as it is is made knowing its back whatever's asked of it (#2139)",
     ],
@@ -685,7 +685,7 @@ test("whether a consumer keeps each item is one catalog", () => {
   const defining = (name: string) => lowering.filter((file) => new RegExp(`fn ${name}\\b`).test(read(file)));
   expect(defining("keeps_each")).toEqual(["src/lower/recognition/methods.rs"]);
   expect(defining("leaves_none")).toEqual([]);
-  expect(read("src/lower/mir/iter/closing.rs")).toContain("crate::lower::recognition::keeps_each(name)");
+  expect(read("src/lower/iterators/mir_steps/closing.rs")).toContain("crate::lower::recognition::keeps_each(name)");
 });
 
 // Which adapters a body makes in place is decided once, by its owner,
@@ -887,7 +887,7 @@ test("each MEANING_ONLY entry is on its way, of an issue, or kept, of an ADR and
 });
 
 // Whether a `copied()` is its source in JS is `is_its_source`'s alone
-// (mir/iter/copies.rs, ADR 0480, revised for #2130): std's `Copied` doesn't
+// (iterators/mir_steps/copies.rs, ADR 0480, revised for #2130): std's `Copied` doesn't
 // pass `nth_back` on, so a copy of what writes it is a map of it. Each other
 // reader of `recognition::copied_source` asks a question of the type that
 // holds of a map too (its hint, its length, what steps it from its back),
@@ -895,11 +895,11 @@ test("each MEANING_ONLY entry is on its way, of an issue, or kept, of an ADR and
 // reader fails, and so does a gone one until its row goes too.
 test("whether a copy is its source is asked of is_its_source alone", () => {
   const allowed: Record<string, [number, string]> = {
-    "src/lower/mir/iter/copies.rs": [5, "the owner: `is_its_source`, `copied_given` and the copy's maker"],
+    "src/lower/iterators/mir_steps/copies.rs": [5, "the owner: `is_its_source`, `copied_given` and the copy's maker"],
     "src/lower/iterators/knowing.rs": [2, "made knowing its back or its length: of its source where `is_its_source`, else `copy_made_knowing`"],
     "src/lower/iterators/hint_knowing.rs": [1, "made knowing its hint alone: of its source where `is_its_source`"],
     "src/lower/iterators/hint_asks.rs": [2, "its hint's parts, of its source where `is_its_source`; whether its hint is its parts', which a map's is too"],
-    "src/lower/mir/iter/sources.rs": [2, "`counted_in_place`, a copy's count its source's, as std's `Copied::count` asks it; `steps_an_array`, where `is_its_source`"],
+    "src/lower/iterators/mir_steps/sources.rs": [2, "`counted_in_place`, a copy's count its source's, as std's `Copied::count` asks it; `steps_an_array`, where `is_its_source`"],
     "src/lower/std_impls/clones.rs": [1, "its clone, `copied_clone`, which asks `is_its_source`"],
     "src/lower/analysis/back_stepped.rs": [3, "what steps it from its back, a copy as a map"],
     "src/lower/analysis/hint_asked.rs": [1, "whether its hint is asked, as a map's"],
@@ -929,8 +929,8 @@ test("what a sized box of an iterator is, is held_unboxed's alone", () => {
     "src/lower/recognition/held.rs",
     "src/lower/recognition/iterators.rs",
     "src/lower/recognition/lengths.rs",
-    "src/lower/mir/iter/closing.rs",
-    "src/lower/mir/iter/backs.rs",
+    "src/lower/iterators/mir_steps/closing.rs",
+    "src/lower/iterators/mir_steps/backs.rs",
     "src/lower/iterators/stepping.rs",
     "src/lower/iterators/knowing.rs",
   ];

@@ -11,7 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// given as it is, with its `Iterator` dictionary (ADR 0411), `by_ref()`
     /// and `into_iter()`, itself, and `next(&mut it)`, the dictionary's, as
     /// `next_back(&mut it)` and `len(&it)` are its extensions' (ADR 0487).
-    pub(super) fn given_iterator_call(
+    pub(in crate::lower) fn given_iterator_call(
         &self,
         method: Option<IterMethod>,
         iter_ty: Ty<'tcx>,
@@ -57,7 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// dropped (ADRs 0422, 0465, 0473), and of one lent, `by_ref().take(n)`,
     /// itself, its lender's (ADR 0468); else one that may leave some items
     /// with a destructor is refused.
-    pub(super) fn dropping_source(
+    pub(in crate::lower) fn dropping_source(
         &mut self,
         it: Expr,
         (method, iter_ty, lent): (Option<IterMethod>, Ty<'tcx>, bool),
@@ -91,7 +91,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`consumer_closes`), the one answer of who drops it, which
     /// `dropped_after` asks too, else as it is, dropped after it by
     /// `consumed_call`, never both (#1120, #1123).
-    pub(in crate::lower::mir) fn consumer_closing(
+    pub(in crate::lower) fn consumer_closing(
         &mut self,
         it: Expr,
         (method, iter_ty, lent): (Option<IterMethod>, Ty<'tcx>, bool),
@@ -122,7 +122,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// iterator: what its closing drops, nothing drops after it
     /// (`dropped_after`), or the crate's iterator with a `Drop` was
     /// dropped twice (#637).
-    pub(in crate::lower::mir) fn consumer_closes(
+    pub(in crate::lower) fn consumer_closes(
         &self,
         method: Option<IterMethod>,
         iter_ty: Ty<'tcx>,
@@ -271,7 +271,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether closing a `ty` drops what it holds, `closing_drop`'s: one
     /// that owns items with a destructor, a generic one whose drop its
     /// caller gives, or the crate's own with one.
-    pub(super) fn closes_to_drop(&self, ty: Ty<'tcx>) -> bool {
+    // helper: asked by `mir::iter` alone, the entry it was beneath before #2299 moved it
+    pub(in crate::lower) fn closes_to_drop(&self, ty: Ty<'tcx>) -> bool {
         // What a sized box holds, closed as it is (#2219).
         let ty = crate::lower::recognition::held_unboxed(ty);
         match self.recognition().owned_into_items(ty) {
@@ -288,7 +289,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Rust steps them; of items with a destructor, each pair dropped as
     /// it's compared, and each closed at the end, as std's are dropped (ADR
     /// 0465, #1145).
-    pub(super) fn iterators_eq(
+    pub(in crate::lower) fn iterators_eq(
         &mut self,
         (it, other): (Expr, Expr),
         (item, iter_ty, other_ty): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
@@ -492,7 +493,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it against 0, which `partial_cmp`'s `None`, `undefined`, fails, as
     /// std's are `false` of it. Of items with a destructor, which it doesn't
     /// drop as it compares them, refused.
-    pub(super) fn iterators_cmp(
+    pub(in crate::lower) fn iterators_cmp(
         &mut self,
         (it, other): (Expr, Expr),
         (item, other_ty): (Option<Ty<'tcx>>, Ty<'tcx>),
@@ -538,7 +539,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `skip(n)` of `it`: JS's `drop(n)`; of items with a destructor,
     /// `$skipping`, each it skips dropped as it's skipped, as Rust's `nth`
     /// drops it (ADRs 0422, 0465).
-    pub(super) fn skipped(&mut self, it: Expr, n: Expr, dropping: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn skipped(&mut self, it: Expr, n: Expr, dropping: Option<Ty<'tcx>>, span: Span) -> R<Expr> {
         // Made in place, never std's struct (#718), as its maker marks it
         // (`made_by`, #730).
         Ok(match dropping {
@@ -554,7 +555,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// has a destructor: `nth(n)`'s, `$nthDropping`, and `find(test)`'s,
     /// `$findDropping`, each it passes dropped, as std's are (ADR 0098), its
     /// `Some` boxed where it may look like `None` (ADR 0051).
-    pub(super) fn dropping_pick(
+    pub(in crate::lower) fn dropping_pick(
         &mut self,
         helper: &'static str,
         it: Expr,
@@ -574,7 +575,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// reaches the crate's own, its `last`, as `nth` is `$nth` (#182), its
     /// `Some` boxed where the item looks like `None` (ADR 0051); else its
     /// last item, `last_value`, of what steps it by its `fold`.
-    pub(super) fn last_called(
+    pub(in crate::lower) fn last_called(
         &mut self,
         it: Expr,
         iter_ty: Ty<'tcx>,
@@ -613,7 +614,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.last_value(it, item, span, made)
     }
 
-    pub(super) fn last_value(&mut self, it: Expr, item: Option<Ty<'tcx>>, span: Span, made: &mut Vec<Stmt>) -> R<Expr> {
+    pub(in crate::lower) fn last_value(
+        &mut self,
+        it: Expr,
+        item: Option<Ty<'tcx>>,
+        span: Span,
+        made: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         match item
             .map(|item| self.std_drop_function(item, span))
             .transpose()?

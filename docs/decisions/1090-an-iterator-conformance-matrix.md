@@ -84,7 +84,7 @@ std's structs alone, and compares each case's lines.**
   - every case each night, nightly.yml's `matrix`, on six machines of four
     parts each, and `bun run nightly matrix` here;
   - a sample of the day's 8 batches, of a push to `main` that changes
-    `src/runtime/`, `src/lower/iterators/` or `src/lower/mir/iter/`, by
+    `src/runtime/`, `src/lower/iterators/` or `src/lower/iterators/mir_steps/`, by
     iterator-matrix.yml, beside its check, not in it;
   - not in a push's suite: the file is in `scripts/shard.ts`'s `nightly`.
 

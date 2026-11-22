@@ -45,7 +45,7 @@ runtime's `$resize`, `$fill` and `$repeat` loop by hand; `inspect` is an
 with a destructor made before a later part whose making may panic is
 dropped as that one unwinds.** Its owner is `std_impls`, its rule `std_impls/in_turn.rs`:
 
-- `clone_may_panic` (moved there from `mir/iter/collect.rs`, its one
+- `clone_may_panic` (moved there from `iterators/mir_steps/collect.rs`, its one
   answer, which a `cloned()` iterator's steps ask too) and
   `default_may_panic` say whether making a part may panic. A `Copy`
   value's clone never does, nor an `Rc`'s or a `Weak`'s, which counts; a

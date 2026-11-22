@@ -96,4 +96,4 @@ that can panic keeps the cleanup around its call, a plain one's, an
 `Rc`'s and a `Box`'s), each against native Rust in both builds, and the
 crates test `two crates: impl_iterator_of_a_library`. Mutations:
 `impl-trait-unrevealed` (`lower/mir.ts`) and `compiled-struct-has-its-back`
-(`lower/mir/iter/backs.ts`).
+(`lower/iterators/mir_steps/backs.ts`).

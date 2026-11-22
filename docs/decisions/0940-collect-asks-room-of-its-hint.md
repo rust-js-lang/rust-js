@@ -125,7 +125,7 @@ against native Rust in both builds; it joins iterator-forms' few (TESTS.md:
 64). Mutations: `room-for-hint-asks-before-next` and
 `room-for-hint-steps-none-again` (`runtime/capacity.ts`);
 `endless-once-item-undropped` and `endless-once-item-drop-ungiven` (its
-`lower/mir/iter/collect.ts`), each of the first item's drop, now held by
+`lower/iterators/mir_steps/collect.ts`), each of the first item's drop, now held by
 both cases; `endless-room-by-lower` and `endless-once-unstepped` follow
 the code.
 
@@ -408,7 +408,7 @@ asks `ITrustedLen`. Mutations `flatten-trusted-asked-whole`,
 `flatten-items-const-size-unasked` (`recognition/specialization.ts`),
 `trusted-part-decided-here-asked` (`generic_facts.ts`), `built-collect-trusted-unasked`
 (`analysis/type_facts/collects.ts`) and
-`built-collect-callers-trusted-unread` (`mir/iter/collect.ts`).
+`built-collect-callers-trusted-unread` (`iterators/mir_steps/collect.ts`).
 
 ## Amendment (2026-11-13, #1678)
 

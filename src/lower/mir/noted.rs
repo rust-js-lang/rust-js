@@ -100,7 +100,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// there, are of sources apart, so none is the call's
     /// (`in_place_source_names`, ADR 1151): its capacity, where it's read,
     /// is refused, naming #1789.
-    pub(super) fn collect_sources_apart(&self, span: rustc_span::Span) -> bool {
+    // helper: MIR state the base's `iterators::mir_steps::collect` asks, a hook at #2299's commit 5
+    pub(in crate::lower) fn collect_sources_apart(&self, span: rustc_span::Span) -> bool {
         self.collect_sources_at(span).next().is_some() && !self.locals.mir.in_place_sources.contains_key(&span)
     }
 

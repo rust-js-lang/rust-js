@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `&mut dyn I`, whose steps std's impl passes on only in part, its
     /// `try_fold` and `try_rfold` the traits' defaults (`Wrapper::lending`,
     /// #2180), so whatever branch steps it steps those.
-    pub(super) fn unsized_self_lent(&mut self, mut values: Vec<Expr>, receiver_ty: Ty<'tcx>) -> Vec<Expr> {
+    pub(in crate::lower) fn unsized_self_lent(&mut self, mut values: Vec<Expr>, receiver_ty: Ty<'tcx>) -> Vec<Expr> {
         let lent = matches!(receiver_ty.kind(), ty::Ref(_, through, Mutability::Mut) if through.is_mutable_ptr())
             && Wrapper::lending(self.tcx, self.typing_env, receiver_ty) == Wrapper::MutRefUnsized;
         if lent && !values.is_empty() {
@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values
     }
 
-    pub(super) fn method_source(
+    pub(in crate::lower) fn method_source(
         &mut self,
         value: Expr,
         receiver_ty: Ty<'tcx>,
@@ -130,7 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `v.length`; else `it.end - it.at`, `it` held if it's made here. Of
     /// what `steps_an_array` says is one, never of another that has a back
     /// (`has_a_back`, #851).
-    pub(super) fn items_left(&mut self, it: Expr, made: &mut Vec<Stmt>) -> Expr {
+    pub(in crate::lower) fn items_left(&mut self, it: Expr, made: &mut Vec<Stmt>) -> Expr {
         if crate::lower::iterators::is_stepped_items(&it)
             && let js::ExprKind::Call(_, items) = &it.kind
         {
@@ -152,12 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// range of numbers', its count, and its `step_by(s)`'s, that many `s`
     /// apart; a `repeat_n(x, n)`'s, `n`; a generic one's, its own (#246).
     /// `None` of another form, which is refused.
-    pub(in crate::lower::mir) fn len_in_place(
-        &mut self,
-        it: &Expr,
-        ty: Ty<'tcx>,
-        made: &mut Vec<Stmt>,
-    ) -> Option<Expr> {
+    pub(in crate::lower) fn len_in_place(&mut self, it: &Expr, ty: Ty<'tcx>, made: &mut Vec<Stmt>) -> Option<Expr> {
         self.counted_in_place(it, ty, made, true).ok()
     }
 
@@ -170,7 +165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// once, in its order: what reads it before making the iterator of the
     /// same text, a collect's room or an `eq`'s lengths, asks
     /// `unless_run_again` (#1044, #1441).
-    pub(in crate::lower::mir) fn counted_in_place(
+    pub(in crate::lower) fn counted_in_place(
         &mut self,
         it: &Expr,
         ty: Ty<'tcx>,
@@ -374,7 +369,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// stepped: of an array's items, a `$iter` made here or held, where it
     /// is (`items_left`); of another made in place, `counted_in_place`'s
     /// count, of one not made after where it `discards`.
-    pub(in crate::lower::mir) fn counted_before_stepping(
+    pub(in crate::lower) fn counted_before_stepping(
         &mut self,
         it: &Expr,
         ty: Ty<'tcx>,
@@ -459,7 +454,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What `counted_range` makes its array of, `(0..n).map(f)`'s `n`,
     /// `f`'s parameters and body: `None` of another, which it leaves as it
     /// is, and which asks the room its hint asks where it must (#1436).
-    pub(super) fn counted_range_parts<'e>(
+    pub(in crate::lower) fn counted_range_parts<'e>(
         &mut self,
         it: &'e Expr,
         iter_ty: Ty<'tcx>,
@@ -488,7 +483,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// }, (_, i) => ..)`, as a person makes `n` items, room for them asked
     /// first, `$roomFor(n, size)`, as `$range` would (ADR 0774, amended),
     /// in `made` (#361). `None` of another, `mapped_range`'s.
-    pub(super) fn counted_range(
+    pub(in crate::lower) fn counted_range(
         &mut self,
         it: &Expr,
         iter_ty: Ty<'tcx>,
@@ -525,7 +520,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// first. Room for its `item`s asked first, as std's `collect` asks it
     /// of an iterator that knows its length, where it may not fit (ADR
     /// 0774, amended).
-    pub(super) fn mapped_range(&mut self, it: &Expr, iter_ty: Ty<'tcx>, item: Option<Ty<'tcx>>) -> Option<Expr> {
+    pub(in crate::lower) fn mapped_range(
+        &mut self,
+        it: &Expr,
+        iter_ty: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+    ) -> Option<Expr> {
         let mut maps = Vec::new();
         let mut at = it;
         while let js::ExprKind::Call(callee, args) = &at.kind
@@ -580,7 +580,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a JS iterator, which no `Iterator.from` wraps (`is_js_iterator`, ADR
     /// 0570, amended), so `collected` finds no list of it, and a runtime
     /// helper's, which `collected` refuses (ADR 0510).
-    pub(super) fn collected_items(&self, it: &Expr) -> Option<Expr> {
+    pub(in crate::lower) fn collected_items(&self, it: &Expr) -> Option<Expr> {
         collected(it)
     }
 
@@ -609,7 +609,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A function JS's helpers give an item, and its index too, as one
     /// that takes the item alone: an arrow of one parameter as it is,
     /// anything else called with the item alone.
-    pub(super) fn unary_callback(&mut self, f: Expr, own: bool) -> Expr {
+    pub(in crate::lower) fn unary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,
             _ if own => f,
@@ -629,7 +629,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// And a binding that says it reads only its parameters, and no `this`,
     /// `measureClonedInstance` (rd648, ADR 0605, amended, the user's
     /// decision).
-    pub(super) fn is_called_as_written(&self, ty: Ty<'tcx>) -> bool {
+    // helper: asked by `mir::iter` alone, the entry it was beneath before #2299 moved it
+    pub(in crate::lower) fn is_called_as_written(&self, ty: Ty<'tcx>) -> bool {
         match *ty.kind() {
             ty::FnDef(def_id, _) if bindings::is_binding(self.tcx, def_id) => {
                 bindings::reads_only_its_parameters(self.tcx, def_id)
@@ -644,7 +645,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// too. `f64::max`'s and `f64::min`'s helpers take two alone.
     /// `f`, of an item, as a fold's callback, of what it's made so far and
     /// the item: `(_, x) => ..` of `(x) => ..`.
-    pub(super) fn unary_folded(&mut self, f: Expr) -> Expr {
+    pub(in crate::lower) fn unary_folded(&mut self, f: Expr) -> Expr {
         let made = self.fresh(Role::Unread);
         match f.kind {
             js::ExprKind::Arrow(mut params, body) if params.len() == 1 => {
@@ -662,7 +663,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn binary_callback(&mut self, f: Expr, own: bool) -> Expr {
+    pub(in crate::lower) fn binary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,
             _ if own => f,
@@ -681,7 +682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 /// `counted_chain`'s `$iter(xs).drop(1).take(2)`: the array it steps,
 /// `xs.slice(1).slice(0, 2)`; a `for…of`'s too (ADR 0748).
-pub(in crate::lower::mir) fn sliced(e: &Expr) -> Expr {
+pub(in crate::lower) fn sliced(e: &Expr) -> Expr {
     match &e.kind {
         js::ExprKind::Call(callee, args)
             if let js::ExprKind::Member(source, name) = &callee.kind
@@ -699,7 +700,7 @@ pub(in crate::lower::mir) fn sliced(e: &Expr) -> Expr {
 
 /// Whether `e` is an array's items made there, `$iter(xs)`, skipped or taken
 /// from, `.drop(1)`, by a count that does nothing (`len()`'s).
-pub(in crate::lower::mir) fn counted_chain(e: &Expr) -> bool {
+pub(in crate::lower) fn counted_chain(e: &Expr) -> bool {
     let mut at = e;
     let mut stages = 0;
     while let js::ExprKind::Call(callee, args) = &at.kind
@@ -718,7 +719,7 @@ pub(in crate::lower::mir) fn counted_chain(e: &Expr) -> bool {
 /// it before making the iterator of the same text, a collect's room or an
 /// `eq`'s lengths: `RunsCode` where reading it runs code, which making the
 /// iterator would run again (#1044, #1441, #1483). The one answer of it.
-pub(in crate::lower::mir) fn unless_run_again(count: Result<Expr, Uncounted>) -> Result<Expr, Uncounted> {
+pub(in crate::lower) fn unless_run_again(count: Result<Expr, Uncounted>) -> Result<Expr, Uncounted> {
     match count {
         Ok(len) if len.has_effects() => Err(Uncounted::RunsCode),
         count => count,
@@ -727,7 +728,7 @@ pub(in crate::lower::mir) fn unless_run_again(count: Result<Expr, Uncounted>) ->
 
 /// Why `counted_in_place` has no count of an iterator made in place.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower::mir) enum Uncounted {
+pub(in crate::lower) enum Uncounted {
     /// Its form isn't one it counts.
     Unknown,
     /// What it reads or leaves unread runs code (#1044, #1483).

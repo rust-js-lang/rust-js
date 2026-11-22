@@ -38,7 +38,7 @@ removed.
 
 ## Decision
 
-`len_in_place`, beside `items_left` in `mir/iter/sources.rs`, counts an
+`len_in_place`, beside `items_left` in `iterators/mir_steps/sources.rs`, counts an
 iterator made in place by its type, as std's `len()` of each adapter asks
 its source's, reading each value's form through the recognizers'
 readers:

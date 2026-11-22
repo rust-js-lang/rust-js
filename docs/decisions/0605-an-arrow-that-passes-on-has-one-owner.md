@@ -707,7 +707,7 @@ an unmarked binding's arrow, whose JS function reads the index; and "a
 binding's mark that it reads only its parameters is refused where it can't
 be said", of a method, a function of the crate's and a variadic binding.
 Mutations `parameters-read-unmarked-value` (`items.ts`),
-`parameters-read-callback-wrapped` (`mir/iter/sources.ts`), and
+`parameters-read-callback-wrapped` (`iterators/mir_steps/sources.ts`), and
 `parameters-mark-of-a-body`, `parameters-mark-of-a-method` and
 `parameters-mark-of-rest` (`bindings/effects.ts`).
 

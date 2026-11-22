@@ -114,7 +114,7 @@ in order; what differs, closing, is made the same below.
 
 - One form, one owner: `js::Expr::collected(it)` makes `Array.from(it)`,
   and `collected_of` reads it, for every consumer that collects: `collect`
-  into a `Vec`, a `String`'s join, a heap's items (`mir/iter/collect.rs`),
+  into a `Vec`, a `String`'s join, a heap's items (`iterators/mir_steps/collect.rs`),
   `last` (`closing.rs`), `nth`'s `Array.from(it.drop(n).take(1))[0]`
   (`combinators/adapters.rs`, `iterators/in_place.rs`'s `nth_of`), the
   eager chains that make it an array's own (`iterators/eager.rs`: `[...a,

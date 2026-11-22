@@ -104,7 +104,7 @@ Their capacity can't be told: **MIR tells its calls apart by their span
 alone**, and a macro's repetition writes both at one, so neither source is
 the call's. Where the body reads it, of a `let` not `mut`, it's refused
 where it's compiled, naming #1789, with what to write instead, each collect
-outside the macro (`collect_sources_apart`, `mir/iter/collect.rs`); else
+outside the macro (`collect_sources_apart`, `iterators/mir_steps/collect.rs`); else
 where it runs, as any capacity not known (#1180). The guide's limitation
 is that case alone. Mutation collects-at-one-span-of-sources-apart
 (lower/mir/locals.ts), any collect at the span taken, is held by it: the

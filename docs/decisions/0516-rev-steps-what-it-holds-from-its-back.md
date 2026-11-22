@@ -86,4 +86,4 @@ against native Rust: `rfold`, `nth_back`, `rfind` and `try_rfold` of a
 `rev()` of a `Vec<String>`'s map, of a slice's and of a `Vec<D>`'s. The
 matrix's `map made` adapter (#1826) found it. Mutations
 `back-stepped-rev-reversed-inward` (`lower/mir/tidy/stages.ts`) and
-`rev-no-back-stepper` (`lower/mir/iter/backs.ts`).
+`rev-no-back-stepper` (`lower/iterators/mir_steps/backs.ts`).

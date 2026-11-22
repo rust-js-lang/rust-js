@@ -243,7 +243,7 @@ range's `step_by(s)`. A program could catch std's panic with
 `catch_unwind`, and the JS ran on, so results change: ADR 0262 has Rust's
 behavior kept.
 
-`collected_counted` (`mir/iter/collect.rs`) asks `room_for`'s `$roomFor(n,
+`collected_counted` (`iterators/mir_steps/collect.rs`) asks `room_for`'s `$roomFor(n,
 size)` of a `Vec`'s `collect()`, where three things hold:
 - the iterator is made in place;
 - its length is a count the program gives (`repeat_n`, a `take(n)` of an
@@ -289,7 +289,7 @@ nor into a heap, whose `$heapFrom` is made of the array: `$range` as
 before. Case N: the same items in the same order, the same check first.
 Held by `test/corpus/range_map_collected.rs` against native Rust, 13
 other corpus cases reading so, and the mutations `counted-range-*`
-(`mir/iter/sources.ts`, `mir/iter/collect.ts`).
+(`iterators/mir_steps/sources.ts`, `iterators/mir_steps/collect.ts`).
 
 ## Amendment: a count read through a call asks its room by the hint (#1044)
 
@@ -329,9 +329,9 @@ hints are std's; an iterator held in a local, #1046's, below.
 - The mutations are `counted-collect-of-a-called-count-unasked`,
   `counted-collect-asked-by-hint-unmarked`,
   `counted-collect-of-what-drops-asked-in-place`,
-  `counted-collect-asked-by-hint-twice` (`mir/iter/collect.ts`),
+  `counted-collect-asked-by-hint-twice` (`iterators/mir_steps/collect.ts`),
   `count-read-through-a-call-read-again` and
-  `repeat-n-of-a-cloned-value-uncounted` (`mir/iter/sources.ts`).
+  `repeat-n-of-a-cloned-value-uncounted` (`iterators/mir_steps/sources.ts`).
 
 ## Amendment: a counted iterator held before it's collected asks its hint (#1046)
 
@@ -367,7 +367,7 @@ a range from a function, a `RangeFrom`'s, a `u64` range's reversed, asks
   and `$lazyRangeBack`'s hint given to generic code, against native Rust.
   The `option` and `rc-refcell` rewrites of `collected_counts_ask_room.rs`
   run as native, taken off.
-- The mutations are `counted-collect-held-unasked` (`mir/iter/collect.ts`),
+- The mutations are `counted-collect-held-unasked` (`iterators/mir_steps/collect.ts`),
   `step-by-of-unbounded-as-filter` (`combinators/adapters.ts`),
   `lazy-range-back-unhinted` and `lazy-range-back-hint-counted-apart`
   (`runtime/lazy_range.ts`).

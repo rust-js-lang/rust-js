@@ -17,7 +17,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// items as they are, a map's or a set's in its order, collected into
     /// `C` as `collect` collects, with no iterator of them to drop. `None`
     /// of another, `into_iter()` then `collect()` (`collected_from_iter`).
-    pub(super) fn collected_as_they_are(
+    pub(in crate::lower) fn collected_as_they_are(
         &mut self,
         items: &Expr,
         given: Ty<'tcx>,
@@ -100,7 +100,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// that drops what it holds, the room its hint asks (#1044).
     /// `receiver`, the type `collect` is given, an inclusive range lent,
     /// `&mut r`, is what's collected as that, by its `fold` (#414).
-    pub(in crate::lower::mir) fn collected_counted(
+    pub(in crate::lower) fn collected_counted(
         &mut self,
         it: Expr,
         (output, item): (Ty<'tcx>, Option<Ty<'tcx>>),

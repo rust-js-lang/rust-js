@@ -373,12 +373,12 @@ Each of these is one owner's answer, today asked per type:
 
 | Fact | Owner | Its JS |
 |---|---|---|
-| who closes a consumed iterator | `consumer_closes` (`mir/iter/closing.rs:107`) | `$closing(it, drop)` |
+| who closes a consumed iterator | `consumer_closes` (`iterators/mir_steps/closing.rs:107`) | `$closing(it, drop)` |
 | whether an adapter holds a function with a destructor, and where its fold drops it | `closing_function` (`mir/iter.rs:268`), `held_function_folded` | `$holding(it, drop, moved)` |
-| whether a `Vec`'s value drops what it passes as one slice where its type is lost | `slice_seen`, `slicing` (`mir/iter/closing.rs:510`) | `$slicing(it, drop)` |
+| whether a `Vec`'s value drops what it passes as one slice where its type is lost | `slice_seen`, `slicing` (`iterators/mir_steps/closing.rs:510`) | `$slicing(it, drop)` |
 | which of the crate's own steps std's adapters reach | `reaches_its_own`, `OwnStep` (`recognition/own_steps.rs`) | which helper is called |
 | whether a value is stepped from its back, and so made knowing it | `back_stepped` (`analysis/back_stepped.rs`), `knowing_held` (`iterators/knowing.rs:1234`) | `$knowing(..)`, `$rev(..)` |
-| whether stepping may panic | `steps_may_panic` (`mir/iter/collect.rs:394`), `stepping_work` | `unwind`, `$collectDropping` |
+| whether stepping may panic | `steps_may_panic` (`iterators/mir_steps/collect.rs:394`), `stepping_work` | `unwind`, `$collectDropping` |
 | what a type parameter is given | `iterator_dictionary` (`iterators/dictionaries.rs:228`) | `$given(..)` and dictionaries |
 | whether a struct is compiled where it's made | `compiled_struct_at`, `in_place_adapters` | `$stdIterator(..)` or the runtime's |
 
@@ -1195,7 +1195,7 @@ as a panic unwinds by $unwinds alone") refuses a `try`, `catch` or `finally`
 in `src/runtime/` outside `$unwinds`, `$dropsUnwinding` and `$inTurnOf`,
 but of 21 helpers it names, each with why: those that aren't an iterator's,
 whose unwinding #854's panic points will check. It also refuses a
-`StmtKind::Try` built by `lower/iterators/` or `lower/mir/iter/`. The
+`StmtKind::Try` built by `lower/iterators/` or `lower/iterators/mir_steps/`. The
 combinators' own emitted unwinding (`combinators.rs`'s `comb_values`,
 `combinators/values.rs`, `adapters.rs`'s `inspect`) is the lowering's and
 is left for later. 60 mutations name their lines as they now read.

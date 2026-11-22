@@ -109,7 +109,7 @@ into the fold: `$consume(it, step, init, f, unwind, ends)`.**
   dDrop_drop(g); }); } finally { dDrop_drop(iter._held); }`, its `rest`
   in the outer `finally`, where the first proposal had it inside
   `$consume`.
-- `consumed_function` (`mir/iter/collect.rs`) alone says which:
+- `consumed_function` (`iterators/mir_steps/collect.rs`) alone says which:
   `fold`'s, `rfold`'s, `for_each`'s and `reduce`'s last argument, of a
   function whose drop drops something, over an iterator that drops
   something after it or whose fold moves a function an adapter holds; and
@@ -294,7 +294,7 @@ case's order couldn't be std's. **The iterator is given to `$maxByKey`
 closed, `$closing($iterator(it, next), drop)`**, as a `Vec`'s source is:
 `$consume` drops the key, then closes it, at the fold's end, and
 `$extremeByKey`'s `after` runs the key's drop after it closes, where the
-first step ends. One answer, `keyed_consumer_closes` (`mir/iter/collect.rs`,
+first step ends. One answer, `keyed_consumer_closes` (`iterators/mir_steps/collect.rs`,
 beside `consumed_function`, which it asks): `extreme_called` closes the iterator, and
 `dropped_after` drops nothing after the call. The user's decision, through
 m6-react: an existing form, no other changed.
@@ -304,7 +304,7 @@ Rust's order is kept; a refusal of valid Rust lifted. Held by corpus
 `max_by_key_of_a_dropping_key_over_its_iterator`, against native Rust in
 both builds: `max_by_key` and `min_by_key`, empty and not, a key that
 panics on the first item and on a later one. Mutations
-`keyed-extreme-unclosed` (`mir/iter/collect.ts`) and
+`keyed-extreme-unclosed` (`iterators/mir_steps/collect.ts`) and
 `keyed-extreme-dropped-after` (`mir/iter.ts`). The guide's limitation is
 gone.
 
@@ -420,7 +420,7 @@ iterator as its fold ends, then the kept pair's key, as the `let` takes it
 apart. Of keys with a destructor, over the crate's iterator with one,
 `$extremeByKey` dropped the kept key, and the iterator was dropped by its
 caller after the call: `drop key 3`, `drop Up` where native Rust prints
-`drop Up` first. `keyed_consumer_closes` (`mir/iter/consumers.rs`) closes
+`drop Up` first. `keyed_consumer_closes` (`iterators/mir_steps/consumers.rs`) closes
 it where the keys drop too, so it drops at the fold's end, before the kept
 key; and of a type parameter's as well as the crate's, which had the same
 order, and so did #789's key function that drops over a type parameter's,
@@ -433,7 +433,7 @@ it against native Rust in both builds: `max_by_key` and `min_by_key`,
 empty, of one item and more, of a type parameter's, of one given an
 iterator with no `Drop`, lent, and a key that panics. Mutations
 `keyed-extreme-of-dropping-keys-unclosed` and
-`keyed-extreme-of-a-type-parameter-unclosed` (`mir/iter/consumers.ts`).
+`keyed-extreme-of-a-type-parameter-unclosed` (`iterators/mir_steps/consumers.ts`).
 
 ## Amended (2026-11-17, #2031): a closure moved where it's called by `FnOnce`, however it gets there
 

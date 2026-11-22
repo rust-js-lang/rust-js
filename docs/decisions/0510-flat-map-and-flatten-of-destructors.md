@@ -126,7 +126,7 @@ in both builds. The mutations `flat-map-js-close-order` and
 from its back is `$flattenEnds` as `.flatMap` is), `flat-map-no-inners`,
 `flat-map-source-unfused`, `flat-map-last-source-unfused`,
 `flat-map-fold-by-next`, `flat-map-source-kept-at-its-end`,
-`string-collected-by-next` (`mir/iter/collect.ts`),
+`string-collected-by-next` (`iterators/mir_steps/collect.ts`),
 `last-inners-default` and `last-inners-kept-on-panic` (`runtime/`), and
 `named-private-fns-uncompiled`, `closure-constant-captures-none`,
 `closure-constant-functions-uncalled` and `std-nested-fn-named-bare`

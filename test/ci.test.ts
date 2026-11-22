@@ -131,7 +131,7 @@ test("the crate corpus runs where its paths say, of plain check:fast too", () =>
   const none = { files: new Set<string>(), cases: [], caseList: "/c.txt", forms: [], formsList: "/f.txt" };
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
     jobs({ ...scope, added: [], extra: [], cores: 12, picked: none }).jobs.some((job) => job.name === "the crate corpus");
-  expect(named({ all: false, changed: ["src/lower/mir/iter/closing.rs"], branch: [] })).toBe(true);
+  expect(named({ all: false, changed: ["src/lower/iterators/mir_steps/closing.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: [], branch: ["src/runtime/byte_len.js"] })).toBe(true);
   expect(named({ all: false, changed: ["scripts/crate-corpus/itertools.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: ["docs/guide/README.md", "test/ci.test.ts"], branch: [] })).toBe(false);

@@ -127,7 +127,7 @@ test("each route into generic code adapts what it gives by `crossing_into` alone
     ["src/lower/traits/calls.rs", "fn own_into_iter_of"],
     ["src/lower/traits/dictionaries/conversions.rs", "fn compiled_conversion"],
     ["src/lower/traits/impls.rs", "fn impl_call"],
-    ["src/lower/mir/iter/collect.rs", "fn made_by_own_from_iter"],
+    ["src/lower/iterators/mir_steps/collect.rs", "fn made_by_own_from_iter"],
     ["src/lower/display.rs", "fn writer_given"],
   ];
   const body = (file: string, fn: string) => {

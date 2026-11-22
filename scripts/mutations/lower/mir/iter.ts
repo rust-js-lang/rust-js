@@ -524,16 +524,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iterator_drop_consumed.rs$"],
   },
   {
-    name: "rev-in-place-compiled",
-    breaks:
-      "a `rev()` stepped where it's made is std's compiled `rev()`, not the recognizers'",
-    file: "src/lower/mir/iter.rs",
-    find: "        self.frame.facts.in_place_adapters.made_at(self.frame.thir, span)\n",
-    replace: "        self.frame.facts.in_place_adapters.made_at(self.frame.thir, span) && false\n",
-    snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
-  },
-  {
     name: "flatten-count-by-reduce",
     breaks: "a flatten made in place is counted by `reduce`, never by `$count`, so the inner iterators' own `count` that `$flatMap` asks is never reached (#736)",
     file: "src/lower/mir/iter.rs",

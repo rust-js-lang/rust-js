@@ -949,7 +949,7 @@ std's 9 and 6, and `grown().into_iter()` collected into a `let` is refused;
 `pushed` and `caught`, of a `let mut`, still throw. The metamorphic net's
 `plain opaque vec_collected_in_place_capacity.rs` is off its known list.
 Mutation `capacity-read-of-a-hidden-source-unrefused`
-(`lower/mir/iter/collect.ts`). Keeping the capacity through a crate's own
+(`lower/iterators/mir_steps/collect.ts`). Keeping the capacity through a crate's own
 function that gives its parameter's iterator is #1934, below.
 
 ## Amendment (2026-11-15, #1934): a crate's function that returns its parameter's iterator keeps its source

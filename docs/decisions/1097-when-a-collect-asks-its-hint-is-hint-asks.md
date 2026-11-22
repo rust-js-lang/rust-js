@@ -18,10 +18,10 @@ lowered:
 |---|---|
 | whether asking runs the crate's own, `writes_size_hint`, `hint_reaches_own` | `recognition/lengths.rs` |
 | which destinations std grows as a `Vec`, `grows_as_vec` | `recognition/types.rs` |
-| whether a `Vec`'s collect asks room, `$roomForHint`, `TrustedLen`, endless, endless once stepped, the first item's drop | `mir/iter/collect.rs`'s `collected_as_vec` |
-| the size its items grow it by, `TSize` where it's a caller's, `grown_item_size` | `mir/iter/collect.rs` |
+| whether a `Vec`'s collect asks room, `$roomForHint`, `TrustedLen`, endless, endless once stepped, the first item's drop | `iterators/mir_steps/collect.rs`'s `collected_as_vec` |
+| the size its items grow it by, `TSize` where it's a caller's, `grown_item_size` | `iterators/mir_steps/collect.rs` |
 | the same, asked of the caller, `grown_asked` | `analysis/type_facts.rs` |
-| a `String`'s and a hash table's reserve, `$reserveHint`, `reserved_by_hint` | `mir/iter/collect.rs` |
+| a `String`'s and a hash table's reserve, `$reserveHint`, `reserved_by_hint` | `iterators/mir_steps/collect.rs` |
 
 The lowering's `grown_item_size` and the analysis's `grown_asked` were
 two conditions of one rule, kept alike by hand.

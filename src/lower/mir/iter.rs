@@ -6,31 +6,22 @@
 //! `&mut it`, steps it through `$lent`, which a helper that stops early
 //! closes in its place, as Rust leaves the iterator to go on.
 
-mod backs;
-pub(in crate::lower::mir) use backs::reversed_in_body;
-mod closing;
-mod collect;
-mod consumers;
-mod copies;
-pub(in crate::lower::mir) mod sources;
+// Its iterator half, collecting, consuming, closing, copying and the
+// sources an adapter steps, is the base's (`iterators::mir_steps`, #2299).
+use crate::lower::iterators::mir_steps::consumers;
+pub(in crate::lower::mir) use crate::lower::iterators::mir_steps::reversed_in_body;
 
-use self::sources::*;
 use crate::lower::iterators::was_made_knowing_its_back as knows_back;
 use crate::lower::recognition::{OwnStep, Reach};
 use crate::lower::temporary_names::Role;
 
-use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Mutability, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::iterators::{collected, is_js_iterator, made_array, stepped_range};
 use crate::lower::recognition::{IterMethod, Parted, StdItem, is_std_def, std_item};
-use crate::lower::representation::Num;
-use crate::lower::std_types::heap::HeapOp;
-use crate::lower::std_types::range::RangeKind;
-use crate::lower::{FnCx, R, bindings};
+use crate::lower::{FnCx, R};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of an `Iterator`'s or an `IntoIterator`'s method, of a std
@@ -705,17 +696,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             made.push(StmtKind::If(unfolded, dropped, None).at(self.js_span(span)));
         }
         Ok(())
-    }
-
-    /// Whether a call of `def_id` at `span` is a `rev()`, an `enumerate()`
-    /// or a `map()` whose adapter a std iterator's method steps where it's
-    /// made, `body_queries::in_place_adapters` says: what the recognizers
-    /// make of it, not std's compiled one (ADR 0871). It records only the
-    /// calls of `HELD_COMPILED`'s makers of a type compiled for this build
-    /// (`makes_held_compiled`), each its THIR call, asked of each at the
-    /// span (`each_call_at`, #1671 change 3 M5).
-    pub(super) fn adapter_in_place(&self, _def_id: rustc_span::def_id::DefId, span: Span) -> bool {
-        self.frame.facts.in_place_adapters.made_at(self.frame.thir, span)
     }
 
     /// `made`, what a call of `def_id` at `span` gives: of a `rev()`, an

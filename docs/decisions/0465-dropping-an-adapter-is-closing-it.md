@@ -480,9 +480,9 @@ passed. Held by `panic_mid_iteration_drops.rs` against native Rust and the
 mutations `closing-fold-unclosed-on-throw` (`runtime/closing.ts`),
 `collect-dropping-keeps-collected` (`runtime/fold_of.ts`),
 `extend-unclosed-on-throw` (`runtime/extend.ts`),
-`consumer-source-unclosed` (`lower/mir/iter/closing.ts`),
+`consumer-source-unclosed` (`lower/iterators/mir_steps/closing.ts`),
 `eager-taker-throw-unseen` (`lower/iterators/eager.ts`) and
-`collect-unwinding-unseen` (`lower/mir/iter/collect.ts`). `docs/readability.txt`'s
+`collect-unwinding-unseen` (`lower/iterators/mir_steps/collect.ts`). `docs/readability.txt`'s
 `$iter` share went from 82.1 to 82.4 in 10,000 lines, blessed: each a
 source that keeps its `$closing`, `$closing($iter(v), ..)`, where a closure
 may panic, and the new case's own.
@@ -540,7 +540,7 @@ Rust and the mutations `discarded-throw-keeps-item` (`lower/iterators/ends.ts`),
 `rest-first-never`, `map-collect-unwinding-unseen`,
 `sorted-collect-unwinding-unseen`, `string-collect-unwinding-unseen`,
 `heap-collect-unwinding-unseen` and `folded-collect-given-no-drop`
-(`lower/mir/iter/collect.ts`), `fallible-rest-first-dropped`
+(`lower/iterators/mir_steps/collect.ts`), `fallible-rest-first-dropped`
 (`lower/iterators/stepping.ts`) and `never-unwinding-predicate-may-throw`
 (`lower/iterators/in_place.ts`).
 
@@ -601,7 +601,7 @@ No corpus case's JS changed. Held by `panic_mid_fold_drops.rs` and
 `fold-dropping-given-to-own-fold-lost` (`runtime/fold_of.ts`),
 `last-fold-unwind-lost`, `extreme-fold-unwind-lost`, `reduce-unwind-lost`,
 `fold-acc-unwind-unseen` and `fold-stage-by-type-unseen`
-(`lower/mir/iter/collect.ts`).
+(`lower/iterators/mir_steps/collect.ts`).
 
 ## Amendment: what takes a step that panics closes it (2026-10-30, #426)
 
@@ -644,7 +644,7 @@ second source's call, was taken to throw nothing: native drops 2, 3, 12,
 5 corpus cases read so, 17 lines more, a `$collectDropping` where an
 `Array.from` was. Held by `panic_part_way_drops.rs`'s `zip of a stage`
 against native Rust and the mutations `hidden-stage-unseen` and
-`folded-collect-after-unwinding` (`lower/mir/iter/collect.ts`) and
+`folded-collect-after-unwinding` (`lower/iterators/mir_steps/collect.ts`) and
 `callbacks-uncounted` (`lower/iterators/in_place.ts`).
 
 ## Amendment: a consumer that keeps what it takes is given its source closed (2026-10-30, #423)
@@ -736,9 +736,9 @@ now in the iterator forms test's default list, and
 them and of std's structs, against native Rust; and the mutations
 `compiled-try-fold-given-no-unwind` (`lower/iterators/knowing.ts`),
 `own-fold-unwind-as-impl-drop` (`lower/iterators/stepping.ts`),
-`try-fold-acc-unwind-unseen` (`lower/mir/iter/collect.ts`),
+`try-fold-acc-unwind-unseen` (`lower/iterators/mir_steps/collect.ts`),
 `rfold-acc-unwind-unseen` and `try-rfold-acc-unseen`
-(`lower/mir/iter/backs.ts`), `rfold-consumed-undropped` and
+(`lower/iterators/mir_steps/backs.ts`), `rfold-consumed-undropped` and
 `rfold-consumed-by-fold-asked` (`lower/mir/iter.ts`), and of the runtime
 `dictionary-fold-unwind-lost`, `dictionary-rfold-unwind-lost`,
 `dictionary-try-rfold-unwind-lost` (`iterator.ts`),
@@ -847,9 +847,9 @@ mutations `skipping-fold-of-own-fold-by-next`, `skipping-fold-unwind-lost`
 (`skipping.ts`), `closing-own-last-unforwarded`,
 `closing-nth-drop-unpassed` (`closing.ts`), `extend-map-by-next`
 (`map_ops.ts`), `by-fold-ignores-dropping-nth`,
-`string-of-strings-folded-whole` (`lower/mir/iter/collect.ts`),
+`string-of-strings-folded-whole` (`lower/iterators/mir_steps/collect.ts`),
 `folded-first-by-fold` (`folded.ts`), `own-last-of-destructors-undropped`
-and `dropping-last-folded-first` (`lower/mir/iter/closing.ts`) are caught.
+and `dropping-last-folded-first` (`lower/iterators/mir_steps/closing.ts`) are caught.
 `map-extend-steps` and `extend-map-unclosed-on-throw` are gone with the
 code they held. `skipping-nth-only-own` and `folded-fold-unexposed` now
 name the case that reaches their code.
@@ -914,7 +914,7 @@ Each has the same root: what may throw as an iterator is stepped, and who
 drops what as it unwinds.
 
 - **What may throw is `steps_may_panic`'s one answer**
-  (`lower/mir/iter/collect.rs`). It's what `stranded_drop` (a `fold`'s and
+  (`lower/iterators/mir_steps/collect.rs`). It's what `stranded_drop` (a `fold`'s and
   a `try_fold`'s `unwind`), `unwinding_collect` (a collect's
   `$collectDropping`) and `consumed_call` (an iterator consumed, dropped
   though the call throws) ask. It counted the closures and functions of
@@ -982,7 +982,7 @@ Mutations: `map-ends-fold-not-its-sources`, `enumerate-fold-unwind-lost`,
 `own-iterator-steps-unseen`, `own-iterator-never-unwinding-ignored`,
 `dyn-iterator-steps-unseen`, `collect-own-steps-unseen`,
 `try-fold-option-unwind-ungiven` and `opaque-stage-unseen`
-(`lower/mir/iter/collect.ts`), the last checking `Calm`'s fold, whose
+(`lower/iterators/mir_steps/collect.ts`), the last checking `Calm`'s fold, whose
 steps never unwind, stays `reduce` (`snapshots`). `fold-stage-by-type-unseen`
 now leaves the unseen steps' answer in place, and 20 mutations of the
 adapters these forward through name their new text, each as it meant.
@@ -1004,7 +1004,7 @@ crate's own with a `Drop`, so the second did too. With the crate's own
 panic in the fold's closure dropped what was left twice, items too.
 
 **The consumer's closing is the one owner.** `consumer_closes`
-(`mir/iter/closing.rs`) says whether a consumer closes what it's given: one
+(`iterators/mir_steps/closing.rs`) says whether a consumer closes what it's given: one
 that takes each item, of items with a destructor, of what closing drops
 (`closes_to_drop`), not lent, not a type parameter's, not a `collect()`.
 `dropping_source` closes by it, and `dropped_after` asks it, of the
@@ -1022,7 +1022,7 @@ Rust: `fold`, `fold` panicking, `for_each`, `for_each` panicking, `count`,
 `try_for_each`, a held `fold`, an opaque one's, a generic one's, a
 `by_ref()`'s and a `filter`'s `count`. Mutations: `consumed-closed-dropped-again`
 and `consumer-closes-unrevealed` (`lower/mir/iter.ts`), `consumer-closes-lent`
-(`lower/mir/iter/closing.ts`).
+(`lower/iterators/mir_steps/closing.ts`).
 
 ## Amendment: what closing passes on, it passes by `$forward` (2026-11-04, ADR 1089)
 
@@ -1196,7 +1196,7 @@ std's steps give what its defaults do. Of another it stays
 
 `rev_of_rev_folds_its_source.rs` holds both against native Rust, with an
 array's `rev().rev()`, which is still the array's items. Mutations:
-`rev-of-rev-of-own-steps-dropped` (`lower/mir/iter/backs.ts`) and
+`rev-of-rev-of-own-steps-dropped` (`lower/iterators/mir_steps/backs.ts`) and
 `rev-rfold-by-back` (`runtime/rev.ts`); `rev-of-rev-kept` names the
 collapse as it now reads.
 
@@ -1220,7 +1220,7 @@ and a `BTreeSet` collect so, in both builds.
 `collect_of_own_iterator_drops_it_first.rs` holds both, and a collect that
 ends, against native Rust; `consumed_own_iterator_dropped_once.rs`'s
 collect is one `$collectDropping($closing(..))` now, from nested `finally`s.
-Mutation: `own-collect-unclosed` (`lower/mir/iter/closing.ts`).
+Mutation: `own-collect-unclosed` (`lower/iterators/mir_steps/closing.ts`).
 
 Still open in #655:
 - Generic code's collect, `generic own Every | <adapters> | vec | next`
@@ -1249,7 +1249,7 @@ of them, `$skipping`, knew its back already and is as it was.
 
 `enumerate_of_take_from_back_refused.rs` holds the refusal, and the guide's
 limitations list it. Mutation: `enumerate-of-take-from-back-unknowing`
-(`lower/mir/iter/backs.ts`). Amended (#718, ADR 0545): a `take()` of items
+(`lower/iterators/mir_steps/backs.ts`). Amended (#718, ADR 0545): a `take()` of items
 with a destructor is made knowing its back and its length now,
 `$taking(source, n, drop)`, so the case runs against native Rust, renamed
 `enumerate_of_take_from_back.rs`; a `step_by()`'s is still refused.
@@ -1292,7 +1292,7 @@ leaks or drops, and what's left is closed either way.
 `take_while`'s and a map's filter's against native Rust, with a `map` that
 panics, which drops what it collected, and a filter that ends. Two corpus
 cases' in-place collects read `$foldToArray` now. Mutations:
-`in-place-collect-by-next` (`lower/mir/iter/collect.ts`) and
+`in-place-collect-by-next` (`lower/iterators/mir_steps/collect.ts`) and
 `fold-to-array-in-place-drops-again` (`runtime/fold_of.ts`);
 `fold-to-array-unwinds-nothing` names the catch as it now reads.
 
@@ -1335,7 +1335,7 @@ build that rewrites adapters refuses a `Take` stepped from its back, so
 `next` with std's structs. Mutations: `advance-slice-stops-at-a-panic`
 (`runtime/closing.ts`), `drop-each-of-a-throwing-drop-unseen`
 (`lower/drops/functions.ts`), `by-its-fold-past-nth-back`
-(`lower/mir/iter/collect.ts`), `nth-back-of-a-take-unasked`
+(`lower/iterators/mir_steps/collect.ts`), `nth-back-of-a-take-unasked`
 (`lower/recognition/slice_steps.ts`).
 
 ## Amendment: a `Vec`'s `nth` from its front drops a slice too (2026-11-04, #668)
@@ -1389,7 +1389,7 @@ A `String` or a set collected of one is folded already, as
 `Vec`'s and of a `skip`'s, which isn't `TrustedLen`, a `String` and a set,
 against native Rust. Mutations: `trusted-len-of-a-collect-unasked`
 (`lower/analysis/type_facts.ts`), `generic-vec-collect-by-next`
-(`lower/mir/iter/collect.ts`).
+(`lower/iterators/mir_steps/collect.ts`).
 
 ## Amendment: a zip whose second side panics drops what it took from its first (2026-11-04, #695)
 
@@ -1499,7 +1499,7 @@ off with them.
 Mutations: `rest-first-never` (moved), `in-place-of-a-parameter-unasked`,
 `never-in-place-not-first`, `in-place-default-in-trait-terms`,
 `in-place-by-caller-by-next`, `in-place-by-caller-fold-unasked`
-(`lower/mir/iter/collect.ts`), `fallible-rest-first-dropped` (moved,
+(`lower/iterators/mir_steps/collect.ts`), `fallible-rest-first-dropped` (moved,
 `lower/iterators/stepping.ts`), `fused-may-collect-in-place`,
 `in-place-source-unkept` (`lower/recognition/specialization.ts`),
 `in-place-unasked`, `in-place-items-layout-unasked`,
@@ -1616,7 +1616,7 @@ not made knowing them (`enumerate_of_a_fuse_from_back.rs`). That case is
 crate's iterator that ends, one whose `next` panics and one that peeked at
 nothing, against native Rust in both builds. Mutations:
 `enumerate-compiled-count-unseen` and
-`enumerate-reversible-compiled-count-taken` (`lower/mir/iter/backs.ts`);
+`enumerate-reversible-compiled-count-taken` (`lower/iterators/mir_steps/backs.ts`);
 `enumerate-of-a-slice-nth-mapped` and `enumerate-of-own-count-mapped` name
 their lines as they now read.
 
@@ -1665,7 +1665,7 @@ builds: of the crate's own whose `next` panics, of one that ends, of a
 and std, are taken off, and the 244 batches of generic collects find no
 unlisted failure, 49 more case-builds of #650, #653 and #677 among them
 running as native Rust. Mutation `parameter-collect-unclosed`
-(`lower/mir/iter/closing.ts`).
+(`lower/iterators/mir_steps/closing.ts`).
 
 ## Amendment: a `Vec`'s value is given its slice's steps where its type is lost (2026-11-04, #668, #651, #703, #704)
 
@@ -1696,7 +1696,7 @@ panic unwinds (#703, #668's build of std's structs alone, #651's two).
 `$closing` of one does. Every helper asks the value's own step, and else
 steps each: the shape default and the `slices` flags of `$nthBack` and
 `$advanceBackBy` are gone. Whether it's seen is `slice_seen`'s
-(`mir/iter/closing.rs`), of a type `recognition::drops_passed_as_slice`
+(`iterators/mir_steps/closing.rs`), of a type `recognition::drops_passed_as_slice`
 says, whose items' drop shows it: from the front only one that may panic
 (`drop_may_panic`), from the back any drop, whose order shows. Generic
 code is given an iterator two ways, and each says it its way:
@@ -1736,10 +1736,10 @@ Mutations: `slicing-unsaid`, `nth-back-slices-by-shape`,
 `given-slicing-unasked` (runtime), `slicing-undictionaried`
 (`lower/iterators/dictionaries.ts`),
 `slicing-of-each-dropper`, `slicing-front-unasked`
-(`lower/mir/iter/closing.ts`), `generic-code-given-no-slicing`
+(`lower/iterators/mir_steps/closing.ts`), `generic-code-given-no-slicing`
 (`lower/iterators/stepping.ts`), `nth-of-a-vec-unsliced`
-(`lower/mir/iter/closing.ts`), `nth-back-of-a-vec-unsliced`
-(`lower/mir/iter/backs.ts`); `drain-passed-as-slice` asks it of generic code too;
+(`lower/iterators/mir_steps/closing.ts`), `nth-back-of-a-vec-unsliced`
+(`lower/iterators/mir_steps/backs.ts`); `drain-passed-as-slice` asks it of generic code too;
 `nth-back-slice-from-back` is gone with the shape default it mutated.
 
 **A `step_by()` of a `flatten()` is std's `StepBy`, stepped by `nth`**
@@ -1769,7 +1769,7 @@ from a `Drain`, and its `last` folded it. `ds().into_iter().fuse().last()`,
 D(3)'s drop panicking, dropped D(5) and never D(4).
 
 That protocol is `$slicing`, which the one owner, `slice_seen`
-(`mir/iter/closing.rs`), says a value is given, by the `Iterator`
+(`iterators/mir_steps/closing.rs`), says a value is given, by the `Iterator`
 dictionary's `advanceBy: $advanceSlice` or a step's helper: it now gives
 the value its `last` too, `ownLast`, std's `IntoIter::last`. It takes the
 back, then drops what's left as one slice by the drop it's given,
@@ -1879,7 +1879,7 @@ enumerations of a `skip()`, a `take()`, a `rev()` and a `map()` made in
 place, reversed, and a `Vec`'s items' enumeration held and stepped by
 `next_back()` beside one reversed. Each runs against native
 Rust in both builds. Mutations: `enumerate-reversible-compiled-count-unseen`
-and `enumerate-reversible-compiled-count-taken` (`lower/mir/iter/backs.ts`),
+and `enumerate-reversible-compiled-count-taken` (`lower/iterators/mir_steps/backs.ts`),
 `enumerate-of-compiled-struct-stepped-unrecorded` and
 `enumerate-of-compiled-struct-asked-unrecorded`
 (`lower/analysis/back_stepped.ts`),
@@ -1943,7 +1943,7 @@ both builds, holds a `fuse()`'s and a `peekable()`'s collect of the
 crate's iterator whose `size_hint` panics, and one that ends. Mutations:
 `room-for-hint-unclosed` (`runtime/capacity.ts`),
 `consumed-collect-closing-any` (`lower/mir/iter.ts`),
-`collect-dropping-closing-unsaid` (`lower/mir/iter/collect.ts`).
+`collect-dropping-closing-unsaid` (`lower/iterators/mir_steps/collect.ts`).
 
 ## Amendment: a `rev()` of a `rev()` of a `Vec`'s items with a destructor isn't its source (2026-11-05, #722)
 
@@ -1976,7 +1976,7 @@ iterators. Regression of a9ebb21a4, bisected by the nightly.
 `last`, with a panicking drop, against native Rust in both builds.
 Mutation: `rev-of-rev-of-closed-items-collapsed`; `rev-of-rev-kept` and
 `rev-of-rev-of-own-steps-dropped` name their lines as they now read
-(`lower/mir/iter/backs.ts`).
+(`lower/iterators/mir_steps/backs.ts`).
 
 ## Amendment: a predicate asked from the back drops its item as it unwinds, by `$kept` (2026-11-05, #738)
 
@@ -2352,7 +2352,7 @@ Held by `test/corpus/iterator_comparisons_drop_as_std.rs` against native
 Rust in both builds, and by the net, whose 660 rows under the three
 issues are off `test/iterator-matrix-known.txt`. Mutations
 `closing-closes-again`, `cmp-argument-unclosed`
-(`lower/mir/iter/closing.ts`), `compared-unheld` (`runtime/iter_cmp.ts`)
+(`lower/iterators/mir_steps/closing.ts`), `compared-unheld` (`runtime/iter_cmp.ts`)
 and `iter-eq-taken-leaked-at-a-step-panic` (`runtime/cmp_items.ts`) new;
 `eq-closes-unasked` refitted to `dropping_source`, whose answer the
 removed call repeated.
@@ -2422,7 +2422,7 @@ list. Mutations `extend-of-folded-by-next` (`runtime/extend.ts`),
 (`runtime/folded.ts`), `collect-dropping-of-folded-by-next`
 (`runtime/fold_of.ts`), `unzip-drops-ungiven`
 (`lower/combinators/adapters.ts`), `partition-of-param-dropped-after` and
-`unzip-method-leaves-some` (`lower/mir/iter/closing.ts`) new; `extend-by-next`
+`unzip-method-leaves-some` (`lower/iterators/mir_steps/closing.ts`) new; `extend-by-next`
 and `unzip-steps` refitted.
 
 ## Amendment: an enumeration counts by a compiled `count` wherever it's one (#1142, #1109)
@@ -2501,13 +2501,13 @@ first, `const iter = chain(..)`, so the drop after the call can name it
 (`consumed_call`). Where the call closes it, `$collectDropping`, which
 drops it, nothing comes after, and the name was left read once:
 `const iter = chain(..); const counted = $collectDropping($roomForHint(iter,
-4, false))`. `unheld` (mir/iter/consumers.rs) puts it back where it's read,
+4, false))`. `unheld` (iterators/mir_steps/consumers.rs) puts it back where it's read,
 `$collectDropping($roomForHint(chain(..), 4, false))`, where the statement
 holding it is the last made, it's read once, and it's what the call
 evaluates first: each call's first argument down to it, of a callee that
 does nothing, so it's made when it was. Seventeen snapshots changed, each
 that alone. Mutations `held-iterator-spilled` (snapshots) and
-`held-iterator-put-anywhere` (the unit tests `lower::mir::iter::consumers::tests`: one
+`held-iterator-put-anywhere` (the unit tests `lower::iterators::mir_steps::consumers::tests`: one
 read after a call stays held) hold it.
 
 ## Amendment (2026-11-12, #1498): a range's map made as its array, one rule
@@ -2521,7 +2521,7 @@ closure, skipped that question, so `(0..w).map(|n| { if n == 2 { panic!() }
 Cell(7) }).collect::<Vec<Cell>>()` dropped neither `Cell` it had made where
 native Rust drops both as it unwinds (found by the metamorphic net's
 `loud-call`). Both forms now ask one question, `range_array_collected`
-(mir/iter/collect.rs): a range's map is made as its array where its items
+(iterators/mir_steps/collect.rs): a range's map is made as its array where its items
 drop nothing as it unwinds, or where none of its map functions may throw
 (`iterators::may_throw`, as an owning chain's stages are asked, #422), so
 `(0..n).map(|n| Cell(n + 100))` and a `println!` in one keep the array
@@ -2546,7 +2546,7 @@ reaches the crate's own `fold(self, ..)`, which takes the iterator and
 drops it. `$extendMap` and `$extend` call that `fold`, and the drop after
 dropped it again. A B-tree's `collect` gathers a `Vec` by `next` first,
 so `collects_by_fold` says no of it, but its `extend` folds.
-`extends_by_fold` (mir/iter/collect.rs) is now the one answer of which
+`extends_by_fold` (iterators/mir_steps/collect.rs) is now the one answer of which
 `extend` folds. `dropped_after` asks it as it asks `consumes_by_fold` of
 a consumer: an `extend` that folds, of an iterator whose own `fold` it
 reaches, drops nothing after. Results change (a second drop), so Rust's

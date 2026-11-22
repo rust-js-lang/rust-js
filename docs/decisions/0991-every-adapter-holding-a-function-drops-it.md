@@ -135,11 +135,11 @@ and `holding-alone-as-after`
 `filter-folded-after`, `flat-map-folded-after` and `take-while-folded`
 (`lower/recognition/iterators.ts`), `holding-unmoved`
 (`lower/mir/iter.ts`), `folds-held-function-never`
-(`lower/mir/iter/closing.ts`), `collect-trusted-by-next`
-(`lower/mir/iter/collect.ts`) and `extend-trusted-by-next`
+(`lower/iterators/mir_steps/closing.ts`), `collect-trusted-by-next`
+(`lower/iterators/mir_steps/collect.ts`) and `extend-trusted-by-next`
 (`lower/combinators.ts`); of std's compiled structs, `fold-given-no-ends`,
 `fold-given-no-ends-of-a-param` and `in-place-of-numbers-unsaid`
-(`lower/mir/iter/collect.ts`), `compiled-fold-f-undropped`
+(`lower/iterators/mir_steps/collect.ts`), `compiled-fold-f-undropped`
 (`lower/iterators/knowing.ts`), `std-iterator-fold-ends-lost`
 (`runtime/std_iterator.ts`), `in-place-by-fold` (`runtime/fold_of.ts`).
 

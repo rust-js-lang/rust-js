@@ -97,7 +97,7 @@ renames, and a table would separate each from its comment.
 Case ([0262](0262-when-rust-and-js-disagree.md)): R. Each changed results, so Rust's behavior is kept.
 
 - **What may panic as an iterator is stepped is `steps_may_panic`'s alone**
-  (`mir/iter/collect.rs`), the iterator's revealed type's answer. A
+  (`iterators/mir_steps/collect.rs`), the iterator's revealed type's answer. A
   collect's unwinding (`unwinding_collect`) and a fold's `unwind`
   (`stranded_drop`) also read the JS: `chain_may_throw` said an arrow may
   throw, and `closes_a_source` said a source is `$closing(..)`. A `fuse()`,
@@ -142,10 +142,10 @@ Corpus cases: `rfold_and_rev_close_what_they_step.rs`,
 `copied_skip_take_and_filter_stepped_from_back.rs` and
 `own_fold_and_count_where_adapters_call_them.rs`. Mutations:
 `rfold-receiver-unclosed`, `generic-rev-unclosed` and `copy-of-skip-backless`
-(`lower/mir/iter/backs.ts`), `filter-of-a-rev-backless`
+(`lower/iterators/mir_steps/backs.ts`), `filter-of-a-rev-backless`
 (`lower/analysis/back_stepped.ts`), `collect-holding-unclosed`
-(`lower/mir/iter/collect.ts`), `last-holding-unclosed`
-(`lower/mir/iter/closing.ts`), `step-by-of-own-fold-filtered`
+(`lower/iterators/mir_steps/collect.ts`), `last-holding-unclosed`
+(`lower/iterators/mir_steps/closing.ts`), `step-by-of-own-fold-filtered`
 (`lower/combinators/adapters.ts`), `skip-own-count-unsaid`,
 `enumerate-own-count-unsaid` and `closing-count-drop-unpassed` (runtime).
 `hidden-stage-unseen` and `callbacks-uncounted` are gone with the JS count
@@ -400,7 +400,7 @@ Mutations: `zip-drops-no-items`, `zip-drops-first-side-alone`,
 `cycle-clones-nothing` and `repeat-clones-nothing`
 (`lower/recognition/iterators.ts`), `exhausted-drop-panic-unseen`,
 `own-clone-never-panics` and `folded-unwinding-by-closures`
-(`lower/mir/iter/collect.ts`), `repeating-closed-twice` and
+(`lower/iterators/mir_steps/collect.ts`), `repeating-closed-twice` and
 `repeating-js-iterator` (`runtime/repeating.ts`) and `cycle-js-iterator`
 (`runtime/cycle.ts`); `passed-drops-panic-unseen`,
 `folded-collect-given-no-drop`, `fold-stage-by-type-unseen`,

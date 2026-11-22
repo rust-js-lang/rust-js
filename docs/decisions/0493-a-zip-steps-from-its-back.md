@@ -73,7 +73,7 @@ builds, and `zip_from_back`. Mutations `zip-not-made-knowing-its-back`,
 `zip-back-trims-undropped`, `zip-not-counted-held`,
 `rev-of-zip-not-made-knowing` (`iterators/knowing.ts`),
 `zip-not-back-stepped` (`analysis/back_stepped.ts`), `zip-len-the-longer`
-(`mir/iter/sources.ts`), and `zip-ends-trim-keeps-a`,
+(`iterators/mir_steps/sources.ts`), and `zip-ends-trim-keeps-a`,
 `zip-ends-back-throw-keeps-a`, `zip-ends-len-longer` (`runtime/lazy_zip.ts`),
 with `zip-back-untrimmed` on the new trim. #400's rule, a
 `size_hint()` of a `rev()` sized in place only where what it's made of is,

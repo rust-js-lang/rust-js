@@ -356,9 +356,9 @@ this against native Rust in both builds:
 Mutations: `sorted-dropping-replaced-kept`, `sorted-dropping-curr-kept`,
 `sorted-dropping-replaced-before-set`, `slice-sorted-by-key-undropped`
 (`runtime/slice_ops.ts`), `is-sorted-by-key-drop-unpassed`
-(`lower/mir/iter/collect.ts`), `slice-is-sorted-by-key-drop-unpassed`
+(`lower/iterators/mir_steps/collect.ts`), `slice-is-sorted-by-key-drop-unpassed`
 (`lower/std_types/slice.ts`) and `is-sorted-by-key-leaves-none`
-(`lower/mir/iter/closing.ts`). The guide's limitations no longer list it.
+(`lower/iterators/mir_steps/closing.ts`). The guide's limitations no longer list it.
 Kind: missing case, both. Area: iterators for #776, drops-unwind for #783.
 
 ## Amendment: a stable sort whose calls can be seen is std's driftsort (2026-11-08, #925, #907)
@@ -576,7 +576,7 @@ and generic code's `C`. `collect_fallible_into` and
 collects `$tryProcessOptions`. Mutations: `try-process-made-kept`,
 `try-process-shunt-fieldless`, `try-process-err-kept-unwinding`,
 `try-process-err-replaced-kept` (`runtime/try_process.ts`),
-`try-processed-never` (`lower/mir/iter/collect.ts`) and
+`try-processed-never` (`lower/iterators/mir_steps/collect.ts`) and
 `try-processed-dropped-after` (`lower/mir/iter.ts`),
 `try-processed-entry-given-no-drop` and `collecting-entry-param-unsized`
 (`lower/traits/dictionaries.ts`).

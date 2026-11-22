@@ -891,7 +891,7 @@ fn counted(body: &mut Vec<Stmt>, counter: &js::Name, label: Option<&js::Name>) {
 /// iterator would read each item as it's stepped: nothing changes the
 /// array meanwhile, as Rust lends it to the iterator (ADR 0748).
 fn taken_part(iterable: Expr) -> Expr {
-    use crate::lower::mir::iter::sources::{counted_chain, sliced};
+    use crate::lower::iterators::mir_steps::sources::{counted_chain, sliced};
     let span = iterable.span;
     let part = if counted_chain(&iterable) {
         sliced(&iterable)

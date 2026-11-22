@@ -426,7 +426,7 @@ fallible collect closes only what isn't the crate's own.
 `test/corpus/fallible_collect_drops_its_iterator_once.rs` holds it
 against native Rust in both builds, of items that drop nothing and of
 items that drop, stopped by a `None` and not. Mutation
-`fallible-collect-closes-own-iterator-twice` (`lower/mir/iter/collect.ts`).
+`fallible-collect-closes-own-iterator-twice` (`lower/iterators/mir_steps/collect.ts`).
 
 ## Amendment: held past the end
 

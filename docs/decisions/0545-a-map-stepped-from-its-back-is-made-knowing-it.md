@@ -162,7 +162,7 @@ that body's source is given its back.
 Held by `test/corpus/generic_map_folded_and_rfolded.rs`, a wrapper's
 `fold` and `rfold`, and a filter's `count` and `next_back`, of a range and
 of a forward-only `repeat(..).take(..)`, against native Rust; and the
-mutation `type-parameter-source-unstepped` (`lower/mir/iter/backs.ts`).
+mutation `type-parameter-source-unstepped` (`lower/iterators/mir_steps/backs.ts`).
 
 ## Amendment: an `inspect(f)` too
 
@@ -414,7 +414,7 @@ and a panic in its closure, against native Rust in both builds.
 A flatten of a slice's maps held and stepped by `next_back()` is there
 too. Mutations: `rev-of-a-parameter-not-made-knowing`
 (`lower/iterators/knowing.ts`),
-`rev-reversed-inward-unread` (`lower/mir/iter/backs.ts`),
+`rev-reversed-inward-unread` (`lower/iterators/mir_steps/backs.ts`),
 `chain-of-droppers-asked-unrecorded` (`lower/analysis/back_stepped.ts`),
 `chain-stepped-from-back-made-unknowing` (`lower/mir/std_calls.ts`);
 `rev-chain-refused` names its line as it now reads.
@@ -581,7 +581,7 @@ a back flag by the source's `DoubleEndedIterator` survived as an
 equivalent. `back_folds_of_sources_made_knowing_their_back` holds each
 against native Rust in both builds; mutations `enumerate-of-take-from-back-unknowing`
 (its line the rule's now) and `copy-of-compiled-struct-backless`
-(`lower/mir/iter/backs.ts`), and
+(`lower/iterators/mir_steps/backs.ts`), and
 `dropping-skip-uncounted` and `cloned-map-uncounted`
 (`lower/iterators/knowing.ts`). An enumeration not recorded, of items
 with nothing to drop, stepped by its own `next_back()`, is still #764's.
@@ -800,7 +800,7 @@ holds #790's chain, mapped and filtered, a held `skip`, mapped, and a held
 map, filtered. Mutations: `dropping-skip-uncounted` (retargeted),
 `dropping-take-dropless` and `counted-made-knowing-unread`
 (`lower/iterators/knowing.ts`), `counted-back-stepped-made-unknowing`
-(`lower/mir/iter/backs.ts`), `counted-given-held-unrecorded`,
+(`lower/iterators/mir_steps/backs.ts`), `counted-given-held-unrecorded`,
 `counted-chain-side-unstepped`, `held-beneath-unrecorded`,
 `held-beneath-chain-as-adapter` and `held-beneath-through-one`
 (`lower/analysis/back_stepped.ts`), `taking-passed-undropped`,
@@ -867,9 +867,9 @@ both builds; no other snapshot changes, and both iterator slices pass.
 Mutations `back-stepped-temporary-unrecorded` (`mir/temporaries.ts`),
 `back-stepped-temporary-made-unknowing` (`mir/assign.ts`),
 `back-stepped-temporary-unmarked`, `back-stepped-temporary-of-any-adapter-made`,
-`back-stepped-temporary-held-made` (`mir/iter/backs.ts`, by its snapshots),
+`back-stepped-temporary-held-made` (`iterators/mir_steps/backs.ts`, by its snapshots),
 `next-back-of-marked-unread`, `take-made-unmarked-in-place` (`mir/iter.ts`),
-`skip-made-unmarked-in-place` (`mir/iter/closing.ts`),
+`skip-made-unmarked-in-place` (`iterators/mir_steps/closing.ts`),
 `next-back-asks-no-back` (`recognition/iterators.ts`).
 
 ## Amended (2026-11-06, #718): a `step_by(n)` of a `Vec`'s items with a destructor, and one counted
@@ -902,7 +902,7 @@ refusal of valid Rust lifted. Held by corpus
 other snapshot changes, and both iterator slices pass. Mutations
 `every-nth-of-droppers-unread` (`std_types/range.ts`), `step-by-made-uncounted`
 (`iterators/knowing.ts`), `back-stepped-temporary-held-unread`
-(`mir/iter/backs.ts`), `step-by-ends-uncounted` (`runtime/back_steps.ts`);
+(`iterators/mir_steps/backs.ts`), `step-by-ends-uncounted` (`runtime/back_steps.ts`);
 `step-by-made-unstepped` and `step-by-made-by-nth-backless` name their
 lines as they now read, in `iterators/stepping.ts` with their code.
 Still refused: `len()` of a `step_by(n)` of a slice's items made in
@@ -930,7 +930,7 @@ refusal of valid Rust lifted. Held by corpus
 `rev_of_a_type_parameter_held_as_it_is`, of numbers, a map, a `Vec`'s
 items with a destructor and the crate's iterator whose `nth` is its own,
 against native Rust in both builds; mutation
-`rev-of-given-param-unknowing` (`mir/iter/backs.ts`).
+`rev-of-given-param-unknowing` (`iterators/mir_steps/backs.ts`).
 
 ## Amended (2026-11-06, #823): #383's enumeration rule is back, and a `step_by(n)` from its back drops what it skips
 

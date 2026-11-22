@@ -191,6 +191,6 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's beha
 
 Held by:
 - corpus `generic_eq_of_an_endless_trusted_len.rs`, against native: endless against finite and finite against endless, two endless sides, `0u64..`, `0u8..`, a zip and a chain of endless ones, a map of `0..` whose function prints, a `repeat` of what drops, and a finite `repeat(x).take(n)` beside;
-- the mutations `length-first-endless-collected` (lower/mir/iter/closing.ts) and `length-first-endless-counted` (runtime/cmp_items.ts).
+- the mutations `length-first-endless-collected` (lower/iterators/mir_steps/closing.ts) and `length-first-endless-counted` (runtime/cmp_items.ts).
 
 `repeat(x).rev()` is refused in the plain build (#2127), so it's in no case and no mutation holds the `Rev` arm until then. It was probed with `--std-iterators`, where it matches native.

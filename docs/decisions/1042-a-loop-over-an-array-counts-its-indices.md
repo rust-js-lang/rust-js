@@ -143,7 +143,7 @@ Closure's ES5 build polyfilled `Iterator.from` and its iteration, about
   it had printed `while ((item = $next(iter)) != null)` since #444.
 - Held by `test/corpus/array_counted_loops.rs`, run against native Rust,
   and the mutations of `scripts/mutations/lower/mir/tidy/loops.ts` and
-  `lower/mir/iter/sources.ts`.
+  `lower/iterators/mir_steps/sources.ts`.
 
 ## Amendment: a counter is no other `let` of its name (rd356, 2026-11-01)
 

@@ -195,7 +195,7 @@ as it steps, steps the items `$iter` would. One asked anything else, its
 makes it. Case ([0262](0262-when-rust-and-js-disagree.md)): none. Held by
 `lowering-iterators.test.ts`'s "a slice's iterator only stepped is the
 array's own" and the mutations `stepped-slices-length-kept` and
-`stepped-slices-unmade` (`lower/iterators.ts`, `lower/mir/iter/sources.ts`).
+`stepped-slices-unmade` (`lower/iterators.ts`, `lower/iterators/mir_steps/sources.ts`).
 
 
 ## Amendment (2026-11-12, #1152): an `$iter` of an `$iter` is the one

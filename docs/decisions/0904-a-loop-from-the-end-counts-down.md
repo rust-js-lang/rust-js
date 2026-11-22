@@ -84,4 +84,4 @@ for (let i = b; i >= a; i--) { .. }
   ranges exclusive, inclusive, empty and negative, one whose start the
   body changes, one of `char`s.
 - Mutations in `scripts/mutations/lower/mir/tidy/loops.ts` and
-  `scripts/mutations/lower/mir/iter/backs.ts`.
+  `scripts/mutations/lower/iterators/mir_steps/backs.ts`.

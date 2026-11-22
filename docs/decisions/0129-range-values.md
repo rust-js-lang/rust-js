@@ -194,7 +194,7 @@ plain `r.by_ref().collect()` is seen lent. Held by
 `range_inclusive_exhausted.rs` (a plain one's, a `map`'s, a `filter`'s, a
 `take`'s, a string's, a `for` over a `map` of one) against native Rust and
 the mutations `steps-lent-inclusive-never` (`lower/std_types/range.ts`)
-and `collected-lent-range-peeled` (`lower/mir/iter/collect.ts`). With it,
+and `collected-lent-range-peeled` (`lower/iterators/mir_steps/collect.ts`). With it,
 #414 is done.
 
 ## Amendment: two `RangeFull`s are equal, of no bound to compare (2026-10-30)

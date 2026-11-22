@@ -65,7 +65,7 @@ export const iteratorPaths = [
   "src/lower/combinators.rs",
   "src/lower/combinators/**",
   "src/lower/mir/iter.rs",
-  "src/lower/mir/iter/**",
+  "src/lower/iterators/mir_steps/**",
   "src/lower/mir/vec_growth.rs",
   // Where a std iterator method's MIR call is lowered (the owner table's row, #2162).
   "src/lower/mir/std_calls/iterators.rs",

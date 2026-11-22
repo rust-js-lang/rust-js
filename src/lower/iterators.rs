@@ -14,6 +14,7 @@ mod hint_knowing;
 mod in_place;
 pub(in crate::lower) mod in_place_forms;
 mod knowing;
+pub(in crate::lower) mod mir_steps;
 mod source_iter;
 mod stepping;
 mod transparent;
