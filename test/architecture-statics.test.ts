@@ -7,9 +7,9 @@
 // compiles. (A rustc session's ids are never held in one but the lowering
 // session's caches: architecture.test.ts.)
 import { expect, test } from "bun:test";
-import { readFileSync, readdirSync } from "node:fs";
-import { join, relative } from "node:path";
-import { compilerCrates } from "../scripts/compiler-crates";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { compilerRustFiles } from "../scripts/compiler-crates";
 import { root } from "./support";
 
 type Class =
@@ -65,23 +65,15 @@ const statics: Record<string, Class> = {
   "src/lower/mir/tidy/moves.rs T1": "identity",
 };
 
-// Each file under `dir`, by its path from the repository's root.
-const files = (dir: string): string[] =>
-  readdirSync(dir, { withFileTypes: true })
-    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
-    .flatMap((entry) => (entry.isDirectory() ? files(join(dir, entry.name)) : [relative(root, join(dir, entry.name))]));
-
 /** Each `static` of `text`, an item's or a `thread_local!`'s, by its name. */
 export function declaredStatics(text: string): string[] {
   return [...text.matchAll(/^\s*(?:pub(?:\([^)]*\))?\s+)?static\s+([A-Z_][A-Z0-9_]*)\s*:/gm)].map((m) => m[1]);
 }
 
 test("each static of the compiler says what it holds between a process's builds", () => {
-  // Every crate's of the compiler's, the binary's `src` among them.
-  const found = [join(root, "src"), ...compilerCrates().filter((c) => c.src !== "src").map((c) => join(root, c.src))]
-    .flatMap(files)
-    .filter((path) => path.endsWith(".rs"))
-    .flatMap((path) => declaredStatics(readFileSync(join(root, path), "utf8")).map((name) => `${path} ${name}`));
+  // Every crate's of the compiler's (scripts/compiler-crates.ts), which
+  // the test map reads as this test reading them all.
+  const found = compilerRustFiles().flatMap((path) => declaredStatics(readFileSync(join(root, path), "utf8")).map((name) => `${path} ${name}`));
   const unsaid = found.filter((key) => !(key in statics));
   expect(unsaid.map((key) => `${key}: say its class in test/architecture-statics.test.ts`)).toEqual([]);
   // And none is listed that's gone.
