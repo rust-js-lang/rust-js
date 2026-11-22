@@ -133,37 +133,12 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
         let typing_env = ty::TypingEnv::post_analysis(tcx, caller);
-        // A caller's parameter given to a library's function, a compiled std
-        // body's among them (ADR 0561), which its manifest says it steps by
-        // a trait of its bounds, or a supertrait of one, `Iterator` of an
-        // `I: DoubleEndedIterator`: stepped by it here.
+        // A caller's parameter given to a library's function, stepped by
+        // what its manifest says (`library_steps`).
         let steps_through =
             |stepped: &mut IndexSet<(DefId, u32, DefId)>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
-                for (index, arg) in args.iter().enumerate() {
-                    let Some(ty) = arg.as_type() else { continue };
-                    let ty::Param(param) = ty.peel_refs().kind() else {
-                        continue;
-                    };
-                    let generics = tcx.generics_of(callee);
-                    if generics.count() <= index {
-                        continue;
-                    }
-                    let theirs = generics.param_at(index, tcx);
-                    let theirs = ty::Ty::new_param(tcx, theirs.index, theirs.name);
-                    for (clause, _) in tcx.clauses_of(callee).instantiate_identity(tcx) {
-                        let Some(bound) = clause.skip_normalization().as_trait_clause() else {
-                            continue;
-                        };
-                        if bound.self_ty().skip_binder() != theirs {
-                            continue;
-                        }
-                        for by in rustc_middle::ty::elaborate::supertrait_def_ids(tcx, bound.def_id()) {
-                            if foreign.steps(callee, index as u32, by) {
-                                stepped.insert((caller, param.index, by));
-                            }
-                        }
-                    }
-                }
+                let steps = library_steps(tcx, foreign, callee, args);
+                stepped.extend(steps.into_iter().map(|(param, by)| (caller, param, by)));
             };
         let pass_on = |passed: &mut Vec<_>, callee: DefId, args: ty::GenericArgsRef<'tcx>| {
             for (index, arg) in args.iter().enumerate() {
@@ -176,6 +151,39 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     passed.push(((caller, param.index), (callee, index as u32)));
                 }
             }
+        };
+        // What a call steps, as `followed` found it: what it's given, passed
+        // on to it where it's compiled here; a library's, as its manifest
+        // says. Whether it's either.
+        let follow_of = |stepped: &mut IndexSet<(DefId, u32, DefId)>,
+                         passed: &mut Vec<_>,
+                         found: Option<Followed>,
+                         callee: DefId,
+                         args: ty::GenericArgsRef<'tcx>| {
+            match found {
+                Some(Followed::Here) => pass_on(passed, callee, args),
+                Some(Followed::Library(steps)) => {
+                    stepped.extend(steps.into_iter().map(|(param, by)| (caller, param, by)));
+                }
+                None => return false,
+            }
+            true
+        };
+        // Of a call of `callee` (`followed`).
+        let follow = |stepped: &mut IndexSet<(DefId, u32, DefId)>,
+                      passed: &mut Vec<_>,
+                      callee: DefId,
+                      args: ty::GenericArgsRef<'tcx>| {
+            follow_of(stepped, passed, followed(tcx, fns, foreign, callee, args), callee, args)
+        };
+        // Of an iterator's `next` the caller holds a value of
+        // (`followed_held`).
+        let follow_held = |stepped: &mut IndexSet<(DefId, u32, DefId)>,
+                           passed: &mut Vec<_>,
+                           held: ty::Ty<'tcx>,
+                           instance: ty::Instance<'tcx>| {
+            let found = followed_held(tcx, fns, foreign, held, instance);
+            follow_of(stepped, passed, found, instance.def_id(), instance.args)
         };
         // A closure it makes of a function rustc's MIR inlined: that
         // function's parameters, as if it were called (ADR 0899).
@@ -193,11 +201,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                 if let Ok(Some(instance)) =
                     crate::lower::items::resolve_instance_in(tcx, typing_env, method, tcx.mk_args(&[held.into()]))
                 {
-                    if fns.contains_key(&instance.def_id()) {
-                        pass_on(&mut passed, instance.def_id(), instance.args);
-                    } else if foreign.item(instance.def_id()).is_some() {
-                        steps_through(&mut stepped, instance.def_id(), instance.args);
-                    }
+                    follow(&mut stepped, &mut passed, instance.def_id(), instance.args);
                 }
             }
         }
@@ -239,11 +243,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     if imp.is_local() {
                         continue;
                     }
-                    if crate::lower::traits::is_lowered_impl(foreign, imp) {
-                        pass_on(&mut passed, imp, impl_args);
-                    } else if foreign.item(imp).is_some() {
-                        steps_through(&mut stepped, imp, impl_args);
-                    } else {
+                    if !follow(&mut stepped, &mut passed, imp, impl_args) {
                         continue;
                     }
                     asked.push((imp, impl_args));
@@ -255,11 +255,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             if let Some(spec) = crate::lower::recognition::fact_specialization(tcx, typing_env, callee, args) {
                 let impl_args = spec.selected.1;
                 for method in spec.methods() {
-                    if fns.contains_key(&method) {
-                        pass_on(&mut passed, method, impl_args);
-                    } else if foreign.item(method).is_some() {
-                        steps_through(&mut stepped, method, impl_args);
-                    }
+                    follow(&mut stepped, &mut passed, method, impl_args);
                     // A std adapter of the caller's parameter it's given,
                     // `FlatMap`'s `Map<I, F>` that `FlattenCompat`'s back
                     // asks a `DoubleEndedIterator` of: what that adapter's
@@ -361,11 +357,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                             if let Ok(Some(instance)) =
                                 crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args)
                             {
-                                if fns.contains_key(&instance.def_id()) {
-                                    pass_on(&mut passed, instance.def_id(), instance.args);
-                                } else if foreign.item(instance.def_id()).is_some() {
-                                    steps_through(&mut stepped, instance.def_id(), instance.args);
-                                }
+                                follow(&mut stepped, &mut passed, instance.def_id(), instance.args);
                                 defaulted = tcx.trait_of_assoc(callee) == Some(by)
                                     && tcx.trait_of_assoc(instance.def_id()) == Some(by);
                             }
@@ -409,16 +401,16 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                         }));
                     }
                 }
-                // The crate's iterator holding it, stepped by its impl's `next`.
-                // A compiled std iterator holding it, `Peekable<I>` (ADR 0561),
+                // The crate's iterator holding it, or a library's, stepped by
+                // its impl's `next`, as `followed_held` says (#1420). A
+                // compiled std iterator holding it, `Peekable<I>` (ADR 0561),
                 // is a JS iterator, stepped with no dictionary of it; what its
                 // compiled impl of an extension takes, `next_back`'s of `I:
                 // DoubleEndedIterator`, its manifest says.
                 if let Ok(Some(instance)) =
                     crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[self_ty.into()]))
-                    && fns.contains_key(&instance.def_id())
                 {
-                    pass_on(&mut passed, instance.def_id(), instance.args);
+                    follow_held(&mut stepped, &mut passed, self_ty, instance);
                 }
                 continue;
             }
@@ -427,8 +419,8 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             let resolved = match crate::lower::items::resolve_instance_in(tcx, typing_env, callee, args) {
                 Ok(Some(instance)) if fns.contains_key(&instance.def_id()) => instance,
                 // A library's, by what its manifest says it steps.
-                Ok(Some(instance)) if foreign.item(instance.def_id()).is_some() => {
-                    steps_through(&mut stepped, instance.def_id(), instance.args);
+                Ok(Some(instance)) => {
+                    follow(&mut stepped, &mut passed, instance.def_id(), instance.args);
                     continue;
                 }
                 // A trait's method of a type parameter, its dictionary's: what
@@ -478,14 +470,14 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     }
                 }
             }
-            // The crate's iterator holding it, given where a generic iterator
-            // goes: a JS iterator, stepped by its impl's `next` (ADR 0061).
+            // The crate's iterator holding it, or a library's, given where a
+            // generic iterator goes: a JS iterator, stepped by its impl's
+            // `next` (ADR 0061), as `followed` says.
             for given in resolved.args.types().filter(|t| !matches!(t.kind(), ty::Param(_))) {
                 if let Ok(Some(instance)) =
                     crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[given.into()]))
-                    && fns.contains_key(&instance.def_id())
                 {
-                    pass_on(&mut passed, instance.def_id(), instance.args);
+                    follow_held(&mut stepped, &mut passed, given, instance);
                 }
             }
         }
@@ -496,7 +488,7 @@ pub(in crate::lower) fn stepped_params<'tcx>(
     // Iterator> Trait for T`, as a function steps one passed on; or, of the
     // crate's iterator holding them, `Holder<I>`, what its impl's `next`
     // steps, where it's stepped (ADR 0492).
-    let mut kept_through: Vec<(Param, (Param, Param))> = Vec::new();
+    let mut kept_through: Vec<(Param, Kept)> = Vec::new();
     // The crate's impls, and its libraries' it compiles itself, whose
     // dictionaries it makes (ADR 0914, amended; #1409).
     let impls = crate::lower::traits::lowered_impls(tcx, foreign);
@@ -514,14 +506,26 @@ pub(in crate::lower) fn stepped_params<'tcx>(
                     passed.push(((imp, param.index), default));
                 } else if let Ok(Some(instance)) =
                     crate::lower::items::resolve_instance_in(tcx, typing_env, next, tcx.mk_args(&[ty.into()]))
-                    && fns.contains_key(&instance.def_id())
                 {
-                    for (at, held) in instance.args.iter().enumerate() {
-                        if let Some(held) = held.as_type()
-                            && let ty::Param(param) = held.kind()
-                        {
-                            kept_through.push((default, ((imp, param.index), (instance.def_id(), at as u32))));
+                    match followed_held(tcx, fns, foreign, ty, instance) {
+                        Some(Followed::Here) => {
+                            for (at, held) in instance.args.iter().enumerate() {
+                                if let Some(held) = held.as_type()
+                                    && let ty::Param(param) = held.kind()
+                                {
+                                    let edge = ((imp, param.index), (instance.def_id(), at as u32));
+                                    kept_through.push((default, Kept::Passed(edge)));
+                                }
+                            }
                         }
+                        // A library's iterator holding them, by what its
+                        // manifest says its `next` steps (#1420).
+                        Some(Followed::Library(steps)) => kept_through.extend(
+                            steps
+                                .into_iter()
+                                .map(|(param, by)| (default, Kept::Stepped((imp, param), by))),
+                        ),
+                        None => {}
                     }
                 }
             }
@@ -566,8 +570,18 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             else {
                 continue;
             };
-            if !iterates || !fns.contains_key(&instance.def_id()) {
+            if !iterates {
                 continue;
+            }
+            match followed_held(tcx, fns, foreign, value, instance) {
+                Some(Followed::Here) => {}
+                // A library's iterator holding them, by what its manifest
+                // says its `next` steps (#1420).
+                Some(Followed::Library(steps)) => {
+                    stepped.extend(steps.into_iter().map(|(param, by)| (imp, param, by)));
+                    continue;
+                }
+                None => continue,
             }
             for (at, held) in instance.args.iter().enumerate() {
                 let Some(held) = held.as_type() else { continue };
@@ -619,10 +633,17 @@ pub(in crate::lower) fn stepped_params<'tcx>(
         changed = false;
         // The crate's iterator a kept default steps, its `Self`: its impl's
         // `next`'s, passed on.
-        for &(default, edge) in &kept_through {
-            if stepped.iter().any(|&(id, index, _)| (id, index) == default) && !passed.contains(&edge) {
-                passed.push(edge);
-                changed = true;
+        for &(default, kept) in &kept_through {
+            if !stepped.iter().any(|&(id, index, _)| (id, index) == default) {
+                continue;
+            }
+            match kept {
+                Kept::Passed(edge) if !passed.contains(&edge) => {
+                    passed.push(edge);
+                    changed = true;
+                }
+                Kept::Stepped((id, index), by) if stepped.insert((id, index, by)) => changed = true,
+                _ => {}
             }
         }
         for &(from, to) in &passed {
@@ -661,6 +682,100 @@ pub(in crate::lower) fn stepped_params<'tcx>(
             }
     });
     stepped
+}
+
+/// What a trait's default an impl keeps steps where it steps its `Self`, of
+/// an iterator holding the impl's type parameters: a parameter passed on to
+/// the crate's iterator's `next`, or one a library's steps (ADR 0492).
+#[derive(Clone, Copy)]
+enum Kept {
+    Passed((Param, Param)),
+    Stepped(Param, DefId),
+}
+
+/// What stepping `held` by `instance`, its `next`, steps, as `followed` says, of an iterator the caller holds a
+/// value of, the crate's own or a library's (#1420). Not a std one's that
+/// isn't compiled here, `Peekable<I>`'s: a JS iterator, which its compiled
+/// impl steps with no dictionary of what it holds (ADR 0561).
+fn followed_held<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    fns: &IndexMap<DefId, FnInfo>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    held: ty::Ty<'tcx>,
+    instance: ty::Instance<'tcx>,
+) -> Option<Followed> {
+    let of_std = matches!(held.kind(), ty::Adt(adt, _) if is_std_crate(tcx, adt.did()));
+    match followed(tcx, fns, foreign, instance.def_id(), instance.args)? {
+        Followed::Library(_) if of_std => None,
+        found => Some(found),
+    }
+}
+
+/// What a call of a resolved function, or an impl whose dictionary is
+/// made, steps of its caller's type parameters: the one answer of each
+/// place `stepped_params` follows one (ADR 0411, amended, #1420). One
+/// compiled here, the crate's own or a library's it compiles itself (ADR
+/// 0914), `Here`, steps what it's given as its own analysis finds, which
+/// its caller passes on; a library's, `Library`, what its manifest says,
+/// `library_steps`; `None` of any other, std's, which rust-js lowers itself.
+enum Followed {
+    Here,
+    Library(Vec<(u32, DefId)>),
+}
+
+fn followed<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    fns: &IndexMap<DefId, FnInfo>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Followed> {
+    let impl_here = matches!(tcx.def_kind(callee), DefKind::Impl { of_trait: true })
+        && crate::lower::traits::is_lowered_impl(foreign, callee);
+    if fns.contains_key(&callee) || impl_here {
+        return Some(Followed::Here);
+    }
+    (foreign.item(callee).is_some()).then(|| Followed::Library(library_steps(tcx, foreign, callee, args)))
+}
+
+/// Each of a caller's type parameters, by its index, that it gives
+/// `callee`, a library's function, a compiled std body's among them (ADR
+/// 0561), as one its manifest says it steps by a trait of its bounds, or a
+/// supertrait of one, `Iterator` of an `I: DoubleEndedIterator`, and by
+/// which: stepped by it in the caller.
+fn library_steps<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    callee: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Vec<(u32, DefId)> {
+    let mut steps = Vec::new();
+    for (index, arg) in args.iter().enumerate() {
+        let Some(ty) = arg.as_type() else { continue };
+        let ty::Param(param) = ty.peel_refs().kind() else {
+            continue;
+        };
+        let generics = tcx.generics_of(callee);
+        if generics.count() <= index {
+            continue;
+        }
+        let theirs = generics.param_at(index, tcx);
+        let theirs = ty::Ty::new_param(tcx, theirs.index, theirs.name);
+        for (clause, _) in tcx.clauses_of(callee).instantiate_identity(tcx) {
+            let Some(bound) = clause.skip_normalization().as_trait_clause() else {
+                continue;
+            };
+            if bound.self_ty().skip_binder() != theirs {
+                continue;
+            }
+            for by in rustc_middle::ty::elaborate::supertrait_def_ids(tcx, bound.def_id()) {
+                if foreign.steps(callee, index as u32, by) {
+                    steps.push((param.index, by));
+                }
+            }
+        }
+    }
+    steps
 }
 
 /// What std's impl of `by`, an iterator's extension, for `adapter` asks of

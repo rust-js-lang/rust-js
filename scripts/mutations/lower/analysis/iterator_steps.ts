@@ -24,9 +24,9 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Skip::rfold`, compiled, calls `self.try_rfold(..)`, which steps `I` from its back, but isn't given `I`'s `DoubleEndedIterator`: std's bodies don't compile (ADR 0927)",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                                if fns.contains_key(&instance.def_id()) {\n                                    pass_on(&mut passed, instance.def_id(), instance.args);\n                                } else if foreign.item(instance.def_id()).is_some() {\n",
+    find: "                                follow(&mut stepped, &mut passed, instance.def_id(), instance.args);\n                                defaulted",
     replace:
-      "                                if false {\n                                    pass_on(&mut passed, instance.def_id(), instance.args);\n                                } else if foreign.item(instance.def_id()).is_some() {\n",
+      "                                if !fns.contains_key(&instance.def_id()) {\n                                    follow(&mut stepped, &mut passed, instance.def_id(), instance.args);\n                                }\n                                defaulted",
     tests: ["test/std-package.test.ts"],
   },
   {
@@ -43,8 +43,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`skip_one`, which steps a `Doubled<I>` by its impl's `next`, is given no dictionary for `I`",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                    pass_on(&mut passed, instance.def_id(), instance.args);\n                }\n                continue;\n",
-    replace: "                }\n                continue;\n",
+    find: "                    follow_held(&mut stepped, &mut passed, self_ty, instance);\n                }\n                continue;\n",
+    replace:
+      "                    if !fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, self_ty, instance);\n                    }\n                }\n                continue;\n",
     tests: adapters,
   },
   {
@@ -146,7 +147,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl for `Holder<I>` that keeps a default stepping its `Self` is given no `Iterator` dictionary for `I`",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                            kept_through.push((default, ((imp, param.index), (instance.def_id(), at as u32))));\n",
+    find: "                                    kept_through.push((default, Kept::Passed(edge)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
   },
@@ -155,8 +156,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl for `Holder<I>` whose kept defaults don't step its `Self` is given `I`'s `Iterator` dictionary anyway",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "            if stepped.iter().any(|&(id, index, _)| (id, index) == default) && !passed.contains(&edge) {\n",
-    replace: "            if !passed.contains(&edge) {\n",
+    find: "            if !stepped.iter().any(|&(id, index, _)| (id, index) == default) {\n                continue;\n            }\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^copied_iterator_defaults.rs$"],
     snapshots: true,
   },
@@ -165,9 +166,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an impl whose associated type is an iterator holding its type parameter isn't given that parameter's dictionary, and a library's is refused",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "            if !iterates || !fns.contains_key(&instance.def_id()) {\n",
-    replace:
-      "            if true || !iterates || !fns.contains_key(&instance.def_id()) {\n",
+    find: "            if !iterates {\n                continue;\n            }\n",
+    replace: "            if true {\n                continue;\n            }\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_steps.rs$"],
   },
   {
@@ -242,8 +242,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter given to a library function whose manifest says it steps it by a supertrait of its bound, `Iterator` of an `I: DoubleEndedIterator`, isn't stepped by it, so `rfold` of a held `Fuse` is refused",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                        for by in rustc_middle::ty::elaborate::supertrait_def_ids(tcx, bound.def_id()) {\n",
-    replace: "                        for by in [bound.def_id()] {\n",
+    find: "            for by in rustc_middle::ty::elaborate::supertrait_def_ids(tcx, bound.def_id()) {\n",
+    replace: "            for by in [bound.def_id()] {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_stepped_from_its_back.rs$"],
   },
   {
@@ -354,17 +354,66 @@ export const mutations: Mutation[] = [
     breaks:
       "a caller's `I: Iterator + Clone`, given as it is, given to a library's blanket impl's default that hands it on unstepped, `first_of`, isn't stepped though the impl's dictionary it makes steps it by its other defaults: refused, \"stepping `I`\" (#1409)",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                    } else if foreign.item(imp).is_some() {\n                        steps_through(&mut stepped, imp, impl_args);\n",
-    replace: "                    } else if foreign.item(imp).is_some() {\n",
+    find: "                    if !follow(&mut stepped, &mut passed, imp, impl_args) {\n",
+    replace:
+      "                    if foreign.item(imp).is_none() && !crate::lower::traits::is_lowered_impl(foreign, imp) {\n                        continue;\n                    }\n                    if crate::lower::traits::is_lowered_impl(foreign, imp) && !follow(&mut stepped, &mut passed, imp, impl_args) {\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_blanket_impl_steps_a_callers_parameter$"],
+  },
+  {
+    name: "library-iterator-held-unfollowed",
+    breaks:
+      "a consumer's generic code stepping a library's iterator that holds its `I`, itertools' `Powerset` its `Combinations`, or the crate's own `Pairs<I>` one, isn't stepped by what the library's manifest says that iterator's `next` steps: refused, \"stepping `I`\" (#1420)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                    follow_held(&mut stepped, &mut passed, self_ty, instance);\n                }\n                continue;\n",
+    replace:
+      "                    if fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, self_ty, instance);\n                    }\n                }\n                continue;\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+  },
+  {
+    name: "given-library-iterator-unfollowed",
+    breaks:
+      "a library's iterator holding a consumer's `I`, `Combinations<I>`, given where a generic iterator goes, `total(combs)`, is made a JS iterator its `next` steps, but `I` isn't stepped as the library's manifest says: refused, \"stepping `I`\" (#1420)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                    follow_held(&mut stepped, &mut passed, given, instance);\n",
+    replace:
+      "                    if fns.contains_key(&instance.def_id()) {\n                        follow_held(&mut stepped, &mut passed, given, instance);\n                    }\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+  },
+  {
+    name: "kept-default-library-holder-unseen",
+    breaks:
+      "an impl for a library's iterator holding its `I`, `impl<I: Iterator> FirstTwo for Combinations<I>`, keeps a default stepping its `Self`, but isn't given `I`'s dictionary, which the library's `next` steps: refused, \"stepping `I`\" (#1420)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                        Some(Followed::Library(steps)) => kept_through.extend(\n",
+    replace: "                        Some(Followed::Library(steps)) => Vec::<(Param, Kept)>::new().extend(\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+  },
+  {
+    name: "associated-library-iterator-unstepped",
+    breaks:
+      "an impl whose `IntoIter` is a library's iterator holding its `I`, `type IntoIter = Combinations<I>`, isn't given `I`'s dictionary, which the library's `next` steps: refused, \"stepping `I`\" (#1420)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "                    stepped.extend(steps.into_iter().map(|(param, by)| (imp, param, by)));\n",
+    replace: "                    let _ = steps;\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
+  },
+  {
+    name: "followed-library-arm-dropped",
+    breaks:
+      "what a call of a library's function or iterator steps, by its manifest, is never followed, wherever `stepped_params` follows one: a library's iterator holding a consumer's `I`, given where a generic iterator goes, as an impl's `IntoIter` or by a kept default, is refused, \"stepping `I`\" (#1420)",
+    file: "src/lower/analysis/iterator_steps.rs",
+    find: "    (foreign.item(callee).is_some()).then(|| Followed::Library(library_steps(tcx, foreign, callee, args)))\n",
+    replace: "    let _ = library_steps;\n    None\n",
+    tests: ["test/crates.test.ts", "-t", "^two crates: library_iterator_holding_its_consumers_parameter$"],
   },
   {
     name: "instance-impl-of-a-callers-param-unpassed",
     breaks:
       "a caller's `I: DoubleEndedIterator + Clone`, given as it is, given to a library's blanket impl the crate compiles itself, isn't stepped by what that impl's defaults step, so it's given no `Iterator` dictionary: refused, \"stepping `I`\" (#1409)",
     file: "src/lower/analysis/iterator_steps.rs",
-    find: "                    if crate::lower::traits::is_lowered_impl(foreign, imp) {\n                        pass_on(&mut passed, imp, impl_args);\n",
-    replace: "                    if crate::lower::traits::is_lowered_impl(foreign, imp) && false {\n                        pass_on(&mut passed, imp, impl_args);\n",
+    find: "                    if !follow(&mut stepped, &mut passed, imp, impl_args) {\n",
+    replace:
+      "                    if crate::lower::traits::is_lowered_impl(foreign, imp) || !follow(&mut stepped, &mut passed, imp, impl_args) {\n",
     tests: ["test/crates.test.ts", "-t", "^two crates: library_instance_impl_asks_its_defaults_facts$"],
   },
   {

@@ -266,3 +266,50 @@ crate and as a library, against native Rust; no other case's JS, and no
 `impl-associated-type-holding-param-unseen` and
 `into-iter-named-by-another-bound-unheld`, caught. itertools'
 test_core.rs: 36 of 36 tests as native.
+
+## Amendment: a library's iterator holding it is stepped as its manifest says (#1420)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): C. Rust runs, and
+rust-js refused it, "stepping `I`, which rust-js found nothing here
+steps", where it should keep Rust's behavior. There was no wrong answer.
+
+`stepped_params` follows a call to find what it steps of the caller's
+type parameters, at each place it finds one: a call of the crate's
+function or a library's, a struct a body makes, a std-private trait's
+method, a compiled std iterator's method, an impl whose dictionary the
+caller makes, an iterator the caller holds stepped by its `next`, one
+given where a generic iterator goes, a default an impl keeps stepping its
+`Self`, and an impl's associated iterator. Each asked the same question,
+"compiled here, or a library's whose manifest says what it steps?", and
+the last four knew only the first answer. So an iterator of a library's
+that holds the caller's `I` stepped nothing. That covers itertools'
+`Powerset<I>`, whose impl its consumer compiles itself (ADR 0914), with
+`self.combs.next()` and `it.by_ref().fold(..)` of the `Combinations<I>`
+the library exports. It also covers the crate's own `struct Pairs<I> {
+combs: Combinations<I> }`. Each was given no dictionary of `I`, and was
+refused.
+
+**One answer, `followed`: a function or impl compiled here passes on what
+it's given, to be stepped as its own analysis finds; a library's steps
+what its manifest says (`library_steps`).** Each of those places asks
+it. Of an iterator the caller holds, `followed_held` asks the same of its
+`next`, except a std iterator that isn't compiled here: `Peekable<I>` is a
+JS iterator that its compiled impl steps with no dictionary (ADR 0561).
+Each place keeps its own way of recording what's compiled here, a kept
+default's conditional edge among them.
+
+Held by the pair `library_iterator_holding_its_consumers_parameter`,
+against native Rust. Its library has `Combinations` and `Powerset` in two
+modules, as itertools does. Its consumer steps a powerset by `next`,
+`nth` and `fold`, of a range, of the crate's own iterator and of
+`String`s. It also holds the library's `Combinations` in a struct of its
+own, gives it where a generic iterator goes, uses it as an impl's
+`IntoIter`, and keeps a trait default that steps it. Mutations:
+`library-iterator-held-unfollowed`, `given-library-iterator-unfollowed`,
+`kept-default-library-holder-unseen`,
+`associated-library-iterator-unstepped` and
+`followed-library-arm-dropped`. Eight more were retargeted at the code
+that moved, and all are caught. The corpus's 5,598 compiles, as programs
+and as libraries, are byte-identical, and so is `@rust-js/std`.
+itertools' Crater went from 131 to 195 of 415 tests run as native, with
+none refused at "stepping `I`".
